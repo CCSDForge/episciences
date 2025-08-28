@@ -25,7 +25,7 @@ function formatFileLabel(label, index)
     html += '<span class="glyphicon glyphicon-remove-circle" title="' + translate("Annuler") + '"'
          +  'onclick="clearFile(' + index +')" style="margin-right: 5px; cursor: pointer">'
          +  '</span>';
-    html += label;
+    html += $('<div>').text(label).html();
     html += '</div>';
     return html;
 }

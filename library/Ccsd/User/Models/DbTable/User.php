@@ -35,7 +35,7 @@ class Ccsd_User_Models_DbTable_User extends Zend_Db_Table_Abstract {
 
             $finalQuery = '%' . $q . '%';
 
-            if (strpos($q, ' ') !== false) {
+            if (str_contains($q, ' ')) {
                 //Recherche nom prenom + prenom nom
                 $sql->where("(CONCAT_WS(' ', FIRSTNAME, LASTNAME) LIKE ? OR CONCAT_WS(' ', LASTNAME, FIRSTNAME) LIKE ? )", $finalQuery);
             } else {

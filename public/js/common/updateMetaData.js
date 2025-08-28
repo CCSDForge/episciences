@@ -1,20 +1,29 @@
-function updateMetaData(button, docId) {
-    let $recordLoading = $("#record-loading");
-    $recordLoading.html(getLoader());
-    $recordLoading.show();
+async function updateMetaData(button, docId) {
+    const recordLoading = document.getElementById('record-loading');
+    recordLoading.innerHTML = getLoader();
+    recordLoading.style.display = 'block';
 
-    $(button).unbind(); // Remove a previously-attached event handler from the elements
+    // Remove all event listeners from the button
+    const newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
 
-    let post = $.ajax({
-        type: "POST",
-        url: JS_PREFIX_URL + "paper/updaterecorddata",
-        data: {docid: docId}
-    });
+    try {
+        const formData = new URLSearchParams();
+        formData.append('docid', docId);
 
-    post.done(function (result) {
+        const response = await fetch(JS_PREFIX_URL + 'paper/updaterecorddata', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        });
+
+        const result = await response.text();
 
         try {
-            let obj_result = JSON.parse(result);
+            const obj_result = JSON.parse(result);
             alert(obj_result.message);
 
             if (!('error' in obj_result) && obj_result.affectedRows !== 0) {
@@ -25,7 +34,10 @@ function updateMetaData(button, docId) {
             console.log(error);
         }
 
-        $recordLoading.hide();
-
-    });
+    } catch (error) {
+        console.error('Fetch error:', error);
+        alert('An error occurred while updating metadata');
+    } finally {
+        recordLoading.style.display = 'none';
+    }
 }

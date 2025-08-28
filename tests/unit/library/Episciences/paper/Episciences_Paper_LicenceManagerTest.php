@@ -2,7 +2,6 @@
 
 namespace unit\library\Episciences;
 
-use Episciences_OpenAireResearchGraphTools;
 use Episciences_Paper_LicenceManager;
 use PHPUnit\Framework\TestCase;
 

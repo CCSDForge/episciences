@@ -3,7 +3,7 @@ name: JavaScript Tests
 # Run tests on pull requests and pushes to main branch
 on:
   pull_request:
-    branches: [ main, preprod, preprod-epi-manager, main-epi-manager ]
+    branches: [ main, preprod, preprod-epi-manager, main-epi-manager, staging ]
     paths:
       - 'public/js/**'
       - 'tests/js/**'
@@ -11,13 +11,18 @@ on:
       - 'yarn.lock'
       - '.github/workflows/js-tests.yml'
   push:
-    branches: [ main, preprod, preprod-epi-manager, main-epi-manager ]
+    branches: [ main, preprod, preprod-epi-manager, main-epi-manager, staging ]
     paths:
       - 'public/js/**'
       - 'tests/js/**'
       - 'package.json'
       - 'yarn.lock'
       - '.github/workflows/js-tests.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   test:
@@ -29,7 +34,7 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       
     - name: Setup Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
@@ -38,13 +43,13 @@ jobs:
         cache: 'yarn'
         
     - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      run: yarn install
       
     - name: Run JavaScript tests
       run: yarn test --coverage --watchAll=false
       
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       if: matrix.node-version == '20.x'
       with:
         file: ./coverage/lcov.info

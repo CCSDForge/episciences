@@ -166,7 +166,7 @@ class Episciences_Rating_Manager
                 $description .=  '</div>';
 
                 if ($criterion->hasAttachment() && file_exists($grid->getPath() . $criterion->getAttachment())) {
-                    $filepath = '/' . $grid->getDocid() . '/report/' . $grid->getId() . '/' . $criterion->getAttachment();
+                    $filepath = PREFIX_URL . $grid->getDocid() . '/report/' . $grid->getId() . '/' . $criterion->getAttachment();
 
                     $file_delete_url = PREFIX_URL . 'paper/deleteattachmentreport/docid/' .
                         $grid->getDocid() . '/uid/' . $grid->getUid() .
@@ -203,21 +203,22 @@ class Episciences_Rating_Manager
 
             // display group
             if (!empty($group)) {
-                switch ($criterion->getVisibility()) {
-                    case 'public':
-                        $color = 'red';
-                        $tooltip = $translator->translate("Votre réponse à ce critère pourra être visible publiquement sur la page de l'article.");
-                        break;
-                    case 'contributor':
-                        $color = 'orange';
-                        $tooltip = $translator->translate("Votre réponse à ce critère pourra être vue par l'auteur.");
-                        break;
+                $visibility = $criterion->getVisibility();
+                switch ($visibility) {
                     default:
-                        $color = 'lightergrey';
+                    case Episciences_Rating_Criterion::VISIBILITY_EDITORS:
                         $tooltip = $translator->translate('Votre réponse à ce critère ne pourra être vue que par les rédacteurs.');
                         break;
+
+                    case Episciences_Rating_Criterion::VISIBILITY_PUBLIC:
+                        $tooltip = $translator->translate("Votre réponse à ce critère pourra être visible publiquement sur la page de l'article.");
+                        break;
+
+                    case Episciences_Rating_Criterion::VISIBILITY_CONTRIBUTOR:
+                        $tooltip = $translator->translate("Votre réponse à ce critère pourra être vue par l'auteur.");
+                        break;
                 }
-                $info = '<span class="glyphicon glyphicon-exclamation-sign ' . $color . '" data-toggle="tooltip" title="' . $tooltip . '"></span> ';
+                $info = sprintf("[%s %s %s <span class=\"fa-solid fa-circle-question\" data-toggle=\"tooltip\" title=\"%s\"></span>] ", $translator->translate('Visibilité'), Episciences_Rating_Criterion::$visibilityEmojis[$visibility], $translator->translate(ucfirst($visibility)), $tooltip);
                 $form->addDisplayGroup($group, 'criterion_' . $id, array("legend" => $info . $criterion->getLabel()));
                 $displayGroup = $form->getDisplayGroup('criterion_' . $id);
                 $displayGroup->setDescription($criterion_description);

@@ -46,9 +46,9 @@ class Episciences_Repositories
         self::HAL_REPO_ID => 'hal-01234567',
         self::ARXIV_REPO_ID => '0123.45678',
         self::CWI_REPO_ID => '22211',
-        self::ZENODO_REPO_ID => '123456 / (DOI)10.5281/zenodo.123456',
-        self::BIO_RXIV_ID => '(DOI) 10.1101/339747',
-        self::MED_RXIV_ID => '(DOI) 10.1101/339747'
+        self::ZENODO_REPO_ID => '123456 or 10.5281/zenodo.123456',
+        self::BIO_RXIV_ID => '10.1101/339747',
+        self::MED_RXIV_ID => '10.1101/339747'
     ];
 
     public static function getRepositories(): array
@@ -85,7 +85,8 @@ class Episciences_Repositories
 
     public static function getBaseUrl($repoId)
     {
-        return self::getRepositories()[$repoId][self::REPO_BASEURL];
+        $repositories = self::getRepositories();
+        return isset($repositories[$repoId]) ? $repositories[$repoId][self::REPO_BASEURL] : null;
     }
 
     public static function getIdentifier($repoId, $identifier, $version = null)

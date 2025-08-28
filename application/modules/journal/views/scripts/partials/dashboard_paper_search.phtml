@@ -2,18 +2,18 @@
 $suffix = isset($this->from) ? '_'. $this->from : '';
 $title = $this->title ?? 'Accès à un article';
 ?>
-<div class="col-md-11">
+<div class="col-md-11" data-component="dashboard-paper-search" data-suffix="<?= $suffix ?>" data-from="<?= $this->from ?? '' ?>">
     <div class="panel-heading">
         <h2 class="panel-title"><?= $this->translate($title) ?></h2>
     </div>
     <div>
         <div class="row">
             <div class="input-group">
-                <input id="paper_identifier<?= $suffix ?>" class="form-control"
+                <input data-role="paper-identifier" class="form-control"
                        style="border-right:0; border-color:#ccc;"
                        placeholder="<?= $this->translate("Identifiant de l'article") ?>">
                 <span class="input-group-addon">
-                        <button id="go_to_article<?= $suffix ?>" type="submit" style="border:0; background:transparent;">
+                        <button data-role="submit-btn" type="submit" style="border:0; background:transparent;">
                             <span class="glyphicon glyphicon-arrow-right"></span>
                         </button>
                     </span>
@@ -22,62 +22,7 @@ $title = $this->title ?? 'Accès à un article';
     </div>
 </div>
 
-<script type="text/javascript">
-    $(function () {
-
-        let $identifier = $('#paper_identifier' + '<?= $suffix ?>');
-        let $goToArticle = $('#go_to_article' + '<?= $suffix ?>');
-
-        $goToArticle.on('click', function () {
-            goToArticle();
-        });
-
-        $identifier.on('keyup', function (e) {
-            if (e.keyCode === 13) {
-                goToArticle();
-            }
-        });
-
-        function goToArticle() {
-            let idValue = $identifier.val().trim();
-            let url = '/';
-            if (!idValue) {
-                alert(translate("Veuillez indiquer l'identifiant du document."));
-                return;
-            }
-
-            if (isNaN(idValue) || idValue <= 0) {
-                alert(translate("La valeur saisie n'est pas correcte, l'identifiant doit être un nombre positif."));
-                return;
-            }
-
-            // get last docid
-
-            let request = $.ajax({
-                type: "POST",
-                url: JS_PREFIX_URL + "paper/ajaxgetlastpaperid",
-                data: {id: idValue, from: '<?= $this->from ?>'}
-            });
-            request.done(function (response) {
-                let jsonParsed = JSON.parse(response);
-                let lastDocid = parseInt(jsonParsed.docid);
-                if (jsonParsed.exception) {
-                    console.log(jsonParsed.exception);
-                }
-                if (lastDocid !== 0) {
-                    url = JS_PREFIX_URL + jsonParsed.controller + '/view?id=' + lastDocid;
-                    document.location.href = url;
-                    return true;
-                } else if (jsonParsed.error) {
-                    alert(jsonParsed.error);
-                    return false;
-                }
-            });
-        }
-
-    });
-
-</script>
+<?php $this->jQuery()->addJavascriptFile("/js/user/dashboard-paper-search.js"); ?>
 
 
 

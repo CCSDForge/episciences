@@ -147,7 +147,7 @@ class Episciences_Repositories_Common
                         ($key === 'identifier' && Episciences_Tools::isDoi($currentValue)) ? 'info:doi:' . $currentValue : $currentValue
                     );
 
-                    if ($key === 'description') {
+                    if (($key === 'description') || ($key === 'title')) {
                         $xmlElement->setAttribute('xml:lang', lcfirst(mb_substr($currentLanguage, 0,2)));
                     }
 
@@ -159,10 +159,10 @@ class Episciences_Repositories_Common
 
                 $xmlElement = $xml->createElement($prefix . $key, $values);
 
-                if ($key === 'description') {
-
+                if (($key === 'description') || ($key === 'title')) {
                     $xmlElement->setAttribute('xml:lang', $defaultLanguage);
                 }
+
 
                 $root->appendChild($xmlElement);
 

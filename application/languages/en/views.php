@@ -628,7 +628,7 @@ return array(
     "Créer une grille pour le volume :" => 'Create a new grid for this volume:',
     "Créer la grille" => 'Create this grid',
     "Visibilité du critère" => "Criterion visibility",
-    "Visibilité" => "visibility",
+    "Visibilité" => "Visibility",
     "Type de notation" => "Rating type",
     "Type d'évaluation" => "Evaluation type",
     "Notation sur 10" => "Grading on a 0-10 scale",
@@ -1071,6 +1071,9 @@ return array(
     "Effectué par" => "Done by",
     "Fait le" => "Done on",
     "Dernier statut connu" => "Last known status",
+    "Type de donnée liée" => "Linked data type",
+    "Valeur" => "Value",
+    "Relation" => "Relationship",
     "Historique indisponible" => 'Paper history is unavailable',
     "Filtrer les logs par date" => 'Filter logs by date',
     "Depuis" => 'From',
@@ -1120,6 +1123,8 @@ return array(
     "Le volume n'a pas été trouvé" => "The volume wasn't found",
     "La section n'a pas été trouvée" => "The section wasn't found",
     "Cette rubrique a été supprimée" => "This section has been removed",
+    'La nouvelle rubrique a bien été créée.' => 'The new section has been created.',
+    "La nouvelle rubrique n'a pas pu être créée." => 'The creation of the new section failed.',
 
     //Notifications
     "Paramètres de notification" => "Notification Settings",

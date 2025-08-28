@@ -101,8 +101,7 @@ class Episciences_OpenAireResearchGraphTools
         ////// CACHE GLOBAL RESEARCH GRAPH
         $fileOpenAireGlobalResponse = trim(explode("/", $doiTrim)[1]) . ".json";
         $cacheOARG = new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-        $getsGlobalOARG = $cacheOARG->getItem($fileOpenAireGlobalResponse);
-        return $getsGlobalOARG;
+        return $cacheOARG->getItem($fileOpenAireGlobalResponse);
     }
 
     /**
@@ -195,11 +194,11 @@ class Episciences_OpenAireResearchGraphTools
 
             // see if the author name appears anywhere in the API data
             if (array_search($needleFullName, $authorInfoFromApi, false) !== false ||
-                array_search(Episciences_Tools::replace_accents($needleFullName), $authorInfoFromApi, false)) {
+                array_search(Episciences_Tools::replaceAccents($needleFullName), $authorInfoFromApi, false)) {
                 $isMatch = true;
             }
             elseif (isset($authorInfoFromApi['$']) &&
-                Episciences_Tools::replace_accents($needleFullName) === Episciences_Tools::replace_accents($authorInfoFromApi['$'])) {
+                Episciences_Tools::replaceAccents($needleFullName) === Episciences_Tools::replaceAccents($authorInfoFromApi['$'])) {
                 $isMatch = true;
             }
 
@@ -280,14 +279,14 @@ class Episciences_OpenAireResearchGraphTools
          * SECOND IF REPLACE ALL ACCENT IN BOTH FULLNAME
          */
         $msgLogAuthorFound = "Author Found \n Searching :\n" . print_r($needleFullName, true) . "\n API: \n" . print_r($authorInfoFromApi, true) . " DB DATA:\n " . print_r($decodeAuthor, true);
-        if (array_search($needleFullName, $authorInfoFromApi, false) !== false || array_search(Episciences_Tools::replace_accents($needleFullName), $authorInfoFromApi, false)) {
+        if (array_search($needleFullName, $authorInfoFromApi, false) !== false || array_search(Episciences_Tools::replaceAccents($needleFullName), $authorInfoFromApi, false)) {
             self::logErrorMsg($msgLogAuthorFound);
             if (array_key_exists("@orcid", $authorInfoFromApi) && !isset($decodeAuthor[$keyDbJson]['orcid'])) {
                 $decodeAuthor[$keyDbJson]['orcid'] = Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($authorInfoFromApi['@orcid']);
                 $flagNewOrcid = 1;
             }
 
-        } elseif (Episciences_Tools::replace_accents($needleFullName) === Episciences_Tools::replace_accents($authorInfoFromApi['$'])) {
+        } elseif (Episciences_Tools::replaceAccents($needleFullName) === Episciences_Tools::replaceAccents($authorInfoFromApi['$'])) {
             self::logErrorMsg($msgLogAuthorFound);
             if (array_key_exists("@orcid", $authorInfoFromApi)) {
                 $decodeAuthor[$keyDbJson]['orcid'] = Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($authorInfoFromApi['@orcid']);

@@ -1,22 +1,48 @@
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
 
-	$("#delete-photo").click(function() {
-        var ajax = $.ajax({
-			url : JS_PREFIX_URL + "user/ajaxdeletephoto",
-			type : "POST",
-			dataType : "html",
-            data: {uid: $(this).attr('attr-uid')},
-			success : function(data) {
-                if (data == '1') {
-                    $(".user-photo-normal, .user-photo-thumb").fadeOut("slow");
+    const deletePhotoButton = document.getElementById('delete-photo');
+    if (deletePhotoButton) {
+        deletePhotoButton.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const uid = this.getAttribute('attr-uid');
+            const formData = new FormData();
+            formData.append('uid', uid);
+
+            fetch(JS_PREFIX_URL + 'user/ajaxdeletephoto', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
-                $(".user-photo").fadeOut("slow");
-                $("#delete-photo").addClass('hidden');
+            })
+            .then(response => response.text())
+            .then(data => {
+                if (data == '1') {
+                    const photoElements = document.querySelectorAll('.user-photo-normal, .user-photo-thumb');
+                    photoElements.forEach(element => {
+                        element.style.transition = 'opacity 0.5s ease';
+                        element.style.opacity = '0';
+                        setTimeout(() => element.style.display = 'none', 500);
+                    });
+                }
+
+                const userPhotoElement = document.querySelector('.user-photo');
+                if (userPhotoElement) {
+                    userPhotoElement.style.transition = 'opacity 0.5s ease';
+                    userPhotoElement.style.opacity = '0';
+                    setTimeout(() => userPhotoElement.style.display = 'none', 500);
+                }
+
+                deletePhotoButton.classList.add('hidden');
                 message('Photo supprimée.', 'alert-success');
-			},
-			error : message('La suppression a échoué.', 'alert-danger')
-		});
-		return false;
-	});
+            })
+            .catch(error => {
+                message('La suppression a échoué.', 'alert-danger');
+            });
+
+            return false;
+        });
+    }
 
 });

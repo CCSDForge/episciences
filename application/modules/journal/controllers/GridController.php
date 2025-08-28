@@ -236,6 +236,8 @@ class GridController extends Episciences_Controller_Action
      */
     private function savecriterion(Episciences_Rating_Grid $oGrid, Episciences_Rating_Criterion $oCriterion, $type = 'criterion')
     {
+        $subType = null; // Initialize subType variable
+        
         if ($type == 'criterion') {
 
             // options
@@ -244,11 +246,13 @@ class GridController extends Episciences_Controller_Action
 
 
             foreach ($_POST as $key => $value) {
-                if (preg_match('#^option_#', $key)) {
+                if (str_starts_with($key, 'option_')) {
                     $labels = [];
                     foreach ($value as $lang => $label) {
-                        if (trim($label) != '')
-                            $labels [$lang] = $label;
+                        $cleanLabel = trim(strip_tags($label));
+                        if ($cleanLabel != '') {
+                            $labels [$lang] = htmlspecialchars($cleanLabel, ENT_QUOTES, 'UTF-8');
+                        }
                     }
                     $options [$i] = ['value' => $i, 'label' => $labels];
                     $i++;
@@ -285,19 +289,31 @@ class GridController extends Episciences_Controller_Action
 
 
         // trim and clean description input
+        $cleanedDescriptions = [];
         foreach ($_POST['description'] as $lang => $label) {
-            if (trim($label) == '')
-                unset ($_POST ['description'] [$lang]);
+            $cleanLabel = trim(strip_tags($label));
+            if ($cleanLabel != '') {
+                $cleanedDescriptions[$lang] = htmlspecialchars($cleanLabel, ENT_QUOTES, 'UTF-8');
+            }
+        }
+
+        // clean and sanitize criterion labels
+        $cleanedLabels = [];
+        foreach ($_POST['critere'] as $lang => $label) {
+            $cleanLabel = trim(strip_tags($label));
+            if ($cleanLabel != '') {
+                $cleanedLabels[$lang] = htmlspecialchars($cleanLabel, ENT_QUOTES, 'UTF-8');
+            }
         }
 
         // populate criterion
         $values = [
             'type' => $type,
             '$subType' => $subType,
-            'labels' => $_POST ['critere'],
-            'descriptions' => $_POST ['description'],
-            'visibility' => $_POST ['visibility'],
-            'coefficient' => (array_key_exists('evaluation_type', $_POST) && $_POST['evaluation_type'] == Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE) ? $_POST ['coef'] : null,
+            'labels' => $cleanedLabels,
+            'descriptions' => $cleanedDescriptions,
+            'visibility' => htmlspecialchars(trim($_POST['visibility']), ENT_QUOTES, 'UTF-8'),
+            'coefficient' => (array_key_exists('evaluation_type', $_POST) && $_POST['evaluation_type'] == Episciences_Rating_Criterion::EVALUATION_TYPE_QUANTITATIVE) ? (float)filter_var($_POST['coef'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION) : null,
             'comment_setting' => Ccsd_Tools::ifsetor($_POST ['comment'], null),
             'attachment_setting' => Ccsd_Tools::ifsetor($_POST ['upload'], null),
             'options' => Ccsd_Tools::ifsetor($options, null)

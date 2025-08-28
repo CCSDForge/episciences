@@ -26,6 +26,8 @@ RUN apt-get install -y --no-install-recommends --no-install-suggests \
      git \
      vim \
      poppler-utils \
+     jq \
+     less \
     && apt-get clean
 
 RUN docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/
@@ -51,6 +53,9 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Add Xdebug configuration
 COPY ./src/php-fpm/xdebug.ini /usr/local/etc/php/conf.d/
+
+# Add upload configuration
+COPY ./src/php-fpm/upload.ini /usr/local/etc/php/conf.d/
 
 # disable opcache configuration
 #COPY ./src/php-fpm/opcache.ini /usr/local/etc/php/conf.d/

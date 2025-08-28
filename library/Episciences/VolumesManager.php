@@ -150,13 +150,13 @@ class Episciences_VolumesManager
 
     /**
      * Supprime un volume
-     * @param $id
+     * @param int $id
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    public static function delete($id): bool
+    public static function delete(int $id): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $docIds = array_keys(self::getAssignedPapers($id));
@@ -194,13 +194,15 @@ class Episciences_VolumesManager
 
             // Suppression des metadatas du volume
             if ($db->delete(T_VOLUME_METADATAS, 'VID = ' . $id)) {
-                $path = REVIEW_FILES_PATH . 'volumes/' . $id;
-                $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
-                foreach ($files as $file) {
-                    unlink($file->getPathName());
+                try {
+                    self::deleteVolumeMetadataFiles($id);
+                } catch (InvalidArgumentException | RuntimeException $e) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                    return false;
                 }
-                rmdir($path);
+
             }
+
 
             //suppression de la file pour le volume
 
@@ -692,6 +694,66 @@ class Episciences_VolumesManager
         $select = self::isPapersInVolumeQuery($vid);
         return (int)$db->fetchOne($select) > 0;
     }
+
+    /**
+     * @param int $id
+     * @return void
+     */
+    private static function deleteVolumeMetadataFiles(int $id): void
+    {
+        if ($id <= 0) {
+            throw new InvalidArgumentException("Invalid volume ID: must be positive integer");
+        }
+
+        // Build and normalize base path
+        $baseDir = rtrim(REVIEW_PUBLIC_PATH, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'volumes';
+        $path = $baseDir . DIRECTORY_SEPARATOR . $id;
+
+        $realBase = realpath($baseDir);
+        $realTarget = realpath($path);
+
+        // If the target doesn't exist, nothing to do
+        if ($realTarget === false) {
+            return;
+        }
+
+        // Ensure the target is inside the base directory
+        if (!str_starts_with($realTarget, $realBase)) {
+            throw new RuntimeException("Deletion path is outside the allowed directory");
+        }
+
+        // Use child-first order to delete files before directories
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($realTarget, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($files as $file) {
+            $filePath = $file->getPathname();
+
+            // Symlink protection
+            if ($file->isLink()) {
+                continue;
+            }
+
+            // File or directory deletion
+            if ($file->isDir()) {
+                if (!rmdir($filePath)) {
+                    throw new RuntimeException("Failed to delete directory: $filePath");
+                }
+            } else {
+                if (!unlink($filePath)) {
+                    throw new RuntimeException("Failed to delete file: $filePath");
+                }
+            }
+        }
+
+        // Remove the main directory
+        if (!rmdir($realTarget)) {
+            throw new RuntimeException("Failed to delete base directory: $realTarget");
+        }
+    }
+
 
 
 }
