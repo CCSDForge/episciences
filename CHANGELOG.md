@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - #702 Inclusion of arxiv article version invalidates document identifier
 - When updating Authors' affiliations, redirect to the latest paper version, not the 1st version
 - #629 Malfunction when updating volume description
+- #639 DOAJ Export unavailable. Added a function to Convert between ISO 639-2/T and ISO 639-2/B codes. DOAJ is in the team iso_639-2b whereas our current tools create iso_639-2t not supported by the DOAJ Schema 
 - Fixed unescaped identifiers causing invalid XML in OpenAire export format
 - #600 Abstract ignores line breaks
 - #694 accents via LaTeX macros in abstracts aren't rendered
