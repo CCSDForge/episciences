@@ -153,18 +153,10 @@ class Export
         $paperLanguagelength = strlen($paperLanguage);
         $docid = (string)$paper->getDocid();
         if ($paperLanguagelength > 3 || $paperLanguagelength < 2) {
-            trigger_error(
-                sprintf(PHP_EOL . "Paper # %s : {%s} is not a valid language. Invalid length %s", $docid, htmlspecialchars($paperLanguage), $paperLanguagelength),
-                E_USER_WARNING
-            );
             $paperLanguage = $default;
         }
 
         if ($paperLanguage && !Languages::exists($paperLanguage)) {
-            trigger_error(
-                sprintf(PHP_EOL . "Paper # %s : {%s} is not a valid language. Language not found", $docid, htmlspecialchars($paperLanguage)),
-                E_USER_WARNING
-            );
             // Crossref schema 5.3.1 says language is optional
             $paperLanguage = $default; // Invalid language, set to $default
         }
@@ -175,10 +167,6 @@ class Export
                 $paperLanguage = Languages::getAlpha2Code($paperLanguage);
             } catch (MissingResourceException $e) {
                 $paperLanguage = $default; // Fallback if invalid
-                trigger_error(
-                    sprintf(PHP_EOL . "Paper # %s: %s", $docid, $e->getMessage()),
-                    E_USER_WARNING
-                );
             }
         }
 
@@ -189,10 +177,6 @@ class Export
                 $paperLanguage = Languages::getAlpha3Code($paperLanguage);
             } catch (MissingResourceException $e) {
                 $paperLanguage = $default; // Fallback if invalid
-                trigger_error(
-                    sprintf(PHP_EOL . "Paper # %s: - %s - %s", $docid, $paperLanguage, $e->getMessage()),
-                    E_USER_WARNING
-                );
             }
             if ($convertIso639Code) {
                 // DOAJ is in the iso_639-2b Team VS our library is in the iso_639-2t team
@@ -223,19 +207,11 @@ class Export
             // Validate or set default language
 
             if (!Languages::exists($language)) {
-                trigger_error(
-                    sprintf("Paper %s of # %s: {%s} is not a valid language", ucfirst($method), $docid, htmlspecialchars($language)),
-                    E_USER_WARNING
-                );
                 $language = $default; // invalid language, default to $default
             }
             $strlenOfMetaLanguage = strlen($language);
 
             if ($strlenOfMetaLanguage > 3 || $strlenOfMetaLanguage < 2) {
-                trigger_error(
-                    sprintf("Paper %s of # %s: {%s} is not a valid language. Invalid length: %s", ucfirst($method), $docid, htmlspecialchars($language), $strlenOfMetaLanguage),
-                    E_USER_WARNING
-                );
                 $language = $default;
             }
 
@@ -246,10 +222,6 @@ class Export
                     $language = Languages::getAlpha2Code($language);
                 } catch (MissingResourceException $e) {
                     $language = $default; // If the language is still invalid, set to $default
-                    trigger_error(
-                        sprintf("Paper %s of # %s: %s", ucfirst($method), $docid, $e->getMessage()),
-                        E_USER_WARNING
-                    );
                 }
             }
 
@@ -258,10 +230,6 @@ class Export
                     $language = Languages::getAlpha3Code($language);
                 } catch (MissingResourceException $e) {
                     $language = $default; // If the language is still invalid, set to $default
-                    trigger_error(
-                        sprintf("Paper %s of # %s: %s", ucfirst($method), $docid, $e->getMessage()),
-                        E_USER_WARNING
-                    );
                 }
                 if ($convertIso639Code) {
                     // DOAJ is in the iso_639-2b Team VS our library is in the iso_639-2t team
