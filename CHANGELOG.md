@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ## Unreleased
 
+v1.0.52 - 2025-08-28
+
 ### Fixed
 - DOI metadata: stop overwriting acceptance date with the last modification date
 - #693 allow to save comment without attachment
