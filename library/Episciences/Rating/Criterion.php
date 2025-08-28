@@ -8,6 +8,11 @@ class Episciences_Rating_Criterion
     const VISIBILITY_PUBLIC = 'public';
     const VISIBILITY_CONTRIBUTOR = 'contributor';
     const VISIBILITY_EDITORS = 'editors';
+    public static $visibilityEmojis = [
+        self::VISIBILITY_PUBLIC => '🌐',
+        self::VISIBILITY_CONTRIBUTOR => '✏️',
+        self::VISIBILITY_EDITORS => '👥'
+    ];
 
     const EVALUATION_TYPE_FREE = 'free';
     const EVALUATION_TYPE_QUANTITATIVE = 'quantitative';

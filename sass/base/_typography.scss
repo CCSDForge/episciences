@@ -20,7 +20,7 @@ h1 {
   line-height: 30px;
   padding-bottom: 5px;
   margin-bottom: 30px;
-  border-bottom: 1px solid tint($h1-text-color, 75);
+  border-bottom: 1px solid tint($h1-text-color, 75%);
 }
 
 h2 {

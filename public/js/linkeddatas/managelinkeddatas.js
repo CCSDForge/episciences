@@ -103,11 +103,13 @@ $(function () {
       if (newRelationship.length === 0) {
         $("#error-relationship").remove();
         let text = translate("Veuillez sélectionner un type de relation");
-        $("#container-datasets").after(
-          "<i id='error-relationship' class='pull-right' style='color: red;'>" +
-            text +
-            "</i>",
-        );
+        // Create DOM element securely instead of HTML string concatenation
+        $("<i>")
+          .attr("id", "error-relationship")
+          .addClass("pull-right")
+          .css("color", "red")
+          .text(text)
+          .insertAfter($("#container-datasets"));
         return;
       }
       $.ajax({
@@ -144,28 +146,35 @@ $(function () {
       let paperId = $("#paper_id").val();
       let relationship = $("#select-relationship").find(":selected").val();
 
-      let textError = "";
+      let errors = [];
       $("#error-form-ld").remove();
       if (!typeLd) {
-        textError = translate("Le type de document est obligatoire");
+        errors.push(translate("Le type de document est obligatoire"));
       }
 
       if (!relationship) {
-        textError =
-          textError + "<br>" + translate("Le type de relation est obligatoire");
+        errors.push(translate("Le type de relation est obligatoire"));
       }
 
       if (!valueLd) {
-        textError =
-          textError + "<br>" + translate("Le document à lier est obligatoire");
+        errors.push(translate("Le document à lier est obligatoire"));
       }
 
-      if (textError !== "") {
-        $("#container-datasets").after(
-          "<i id='error-form-ld' class='pull-right' style='color: red;'>" +
-            textError +
-            "</i>",
-        );
+      if (errors.length > 0) {
+        // Create DOM element securely with multiple error messages
+        const $errorContainer = $("<i>")
+          .attr("id", "error-form-ld")
+          .addClass("pull-right")
+          .css("color", "red");
+        
+        errors.forEach((error, index) => {
+          if (index > 0) {
+            $errorContainer.append($("<br>"));
+          }
+          $errorContainer.append(document.createTextNode(error));
+        });
+        
+        $errorContainer.insertAfter($("#container-datasets"));
         return;
       }
 
@@ -178,11 +187,13 @@ $(function () {
           }
         });
         if (flagError === 0 && flagDoubleValue === 1) {
-          $(
-            "<em id='error-input-ld' class='help-block' style='color: red;'>" +
-              $("span#error_msg_same_val").text() +
-              "</em>",
-          ).insertBefore($("input#input-ld"));
+          // Create DOM element securely instead of HTML string concatenation
+          $("<em>")
+            .attr("id", "error-input-ld")
+            .addClass("help-block")
+            .css("color", "red")
+            .text($("span#error_msg_same_val").text())
+            .insertBefore($("input#input-ld"));
           flagError = 1;
         }
         if (flagDoubleValue) {

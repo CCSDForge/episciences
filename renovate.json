@@ -10,10 +10,21 @@
     "workarounds:all"
   ],
   "baseBranches": ["staging"],
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "packageRules": [
     {
       "matchBaseBranches": ["staging"],
       "labels": ["staging-update"]
+    },
+    {
+      "matchManagers": ["composer"],
+      "matchDepTypes": ["require", "require-dev"],
+      "constraintsFiltering": "strict",
+      "ignoreUnstable": false,
+      "composerIgnorePlatformReqs": false,
+      "php": "8.1"
     }
   ]
 }

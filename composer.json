@@ -23,6 +23,7 @@
     "ext-simplexml": "*",
     "ext-xml": "*",
     "ext-xsl": "*",
+    "ext-zip": "*",
     "apereo/phpcas": "1.6.1",
     "cottagelabs/coar-notifications": "^0.9.70",
     "defuse/php-encryption": "^2.3",
@@ -57,8 +58,8 @@
     "symfony/property-access": "^6.4",
     "symfony/serializer": "^6.4",
     "symfony/yaml": "^6.4",
-    "vlucas/phpdotenv": "^5.5",
-    "symfony/intl": "^6.4"
+    "symfony/intl": "^6.4",
+    "symfony/dotenv": "^6.4"
   },
 
   "require-dev": {

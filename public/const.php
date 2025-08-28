@@ -1,11 +1,12 @@
 <?php
 
+use Symfony\Component\Dotenv\Dotenv;
 
-function defineProtocol()
+function defineProtocol(): void
 {
     if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
         $protocol = 'https';
-    } elseif ((isset($_SERVER['HTTPS'])) && (!empty($_SERVER['HTTPS'])) && (strtolower($_SERVER['HTTPS']) === 'on')) {
+    } elseif ((!empty($_SERVER['HTTPS'])) && (strtolower($_SERVER['HTTPS']) === 'on')) {
         $protocol = 'https';
     } else {
         $protocol = 'http';
@@ -15,26 +16,47 @@ function defineProtocol()
 }
 
 /**
- * define application constants
+ * defines application constants
  */
-function defineApplicationConstants()
+function defineApplicationConstants(): void
 {
-    // environnements
-    define('ENV_PROD', 'production');
-    define('ENV_PREPROD', 'preprod');
-    define('ENV_TEST', 'testing');
-    define('ENV_DEV', 'development');
 
-    // modules
-    define('PORTAL', 'portal');
-    define('OAI', 'oai');
-    define('JOURNAL', 'journal');
-    define('CONFIG', 'config/');
+    $entries = [
+        // environnements
+        'ENV_PROD' => 'production',
+        'ENV_PREPROD' => 'preprod',
+        'ENV_TEST' => 'testing',
+        'ENV_DEV' => 'development',
+        // modules
+        'PORTAL' => 'portal',
+        'OAI' => 'oai',
+        'JOURNAL' => 'journal',
+        'CONFIG' => 'config/'
+    ];
 
+    foreach ($entries as $key => $value) {
+        if (!defined($key)) {
+            define($key, $value);
+        }
+    }
+
+    if (empty($_ENV)) {
+        $dotEnv = new Dotenv();
+        $envPath = sprintf('%s/.env', dirname(__DIR__));
+        //Loads env vars from .env. local. php if the file exists or from the other .env files otherwise
+        $dotEnv->bootEnv($envPath);
+    }
+
+    // Some cron jobs are started with the app_env parameter, which is initialised elsewhere. @see  Script::initApp()
+    $isFromCli = !isset($_SERVER ['SERVER_SOFTWARE']) && (PHP_SAPI === 'cli' || (is_numeric($_SERVER ['argc']) && $_SERVER ['argc'] > 0));
 
     // define application environment
-    if (!defined('APPLICATION_ENV') && getenv('APPLICATION_ENV')) {
-        define('APPLICATION_ENV', getenv('APPLICATION_ENV'));
+    if (!defined('APPLICATION_ENV') && !$isFromCli) {
+        if (getenv('APPLICATION_ENV')) {
+            define('APPLICATION_ENV', getenv('APPLICATION_ENV'));
+        } elseif (isset($_ENV['APP_ENV'])) {
+            define('APPLICATION_ENV', $_ENV['APP_ENV']);
+        }
     }
 
     // define application paths
@@ -96,7 +118,11 @@ function defineJournalConstants(string $rvCode = null): void
 
         if (is_file(CONFIGURABLE_CONSTANTS_PATH)) {
             /** @var array $configurableConst */
-            $configurableConst = json_decode(file_get_contents(CONFIGURABLE_CONSTANTS_PATH), true);
+            try {
+                $configurableConst = json_decode(file_get_contents(CONFIGURABLE_CONSTANTS_PATH), true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                trigger_error($e->getMessage());
+            }
 
             $allowedExtensions = $configurableConst['allowed_extensions'] ?? ['pdf'];
             $allowedMimesTypes = $configurableConst['allowed_mimes_types'] ?? ['application/pdf'];
@@ -137,7 +163,7 @@ function defineJournalConstants(string $rvCode = null): void
 /**
  * define db table constants
  */
-function defineSQLTableConstants()
+function defineSQLTableConstants(): void
 {
     define('T_ALIAS', 'REVIEWER_ALIAS');
     define('T_ASSIGNMENTS', 'USER_ASSIGNMENT');
@@ -195,7 +221,7 @@ function defineSQLTableConstants()
 /**
  * define some simple constants
  */
-function defineSimpleConstants()
+function defineSimpleConstants(): void
 {
     define('DOMAIN', 'episciences.org');
     define('KO', 1024);
@@ -215,7 +241,7 @@ function defineSimpleConstants()
 /**
  * Constants to include vendor JS Libraries
  */
-function defineVendorJsLibraries()
+function defineVendorJsLibraries(): void
 {
     define('VENDOR_BOOTBOX', 'https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.5.3/bootbox.min.js');
     define('VENDOR_BOOTSTRAP_COLORPICKER', 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/js/bootstrap-colorpicker.min.js');
@@ -237,7 +263,7 @@ function defineVendorJsLibraries()
 /**
  * Constants to include vendor CSS
  */
-function defineVendorCssLibraries()
+function defineVendorCssLibraries(): void
 {
     define('VENDOR_BOOTSTRAP', 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css');
     define('VENDOR_BOOTSTRAP_COLORPICKER_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/css/bootstrap-colorpicker.css');
@@ -255,7 +281,7 @@ function defineVendorCssLibraries()
  * Prevent warning from code analyzers for undefined constants
  * @see config pwd.json
  */
-function fixUndefinedConstantsForCodeAnalysis()
+function fixUndefinedConstantsForCodeAnalysis(): void
 {
     if (0 > 1) {
         define('EPISCIENCES_EXCEPTIONS_LOG_PATH', '');
@@ -300,6 +326,20 @@ function fixUndefinedConstantsForCodeAnalysis()
         define('ENDPOINTS_INDEXING_TIMEOUT', 0);
         define('DOI_EMAIL_CONTACT', '');
         define('NOTIFY_TARGET_HAL_LINKED_REPOSITORY', null);
+        define('EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER', []);
         define('EPISCIENCES_BIBLIOREF', []);
+        define('OAI', '');
+        define('PORTAL', '');
+        define('ENV_PROD', '');
+        define('EPISCIENCES_MAIL_PATH', '');
+        define('ENV_DEV', '');
+        define('MANAGER_APPLICATION_URL', '');
+        define('INBOX_ID', '');
+        define('INBOX_URL', '');
+        define('INBOX_DB_HOST', '');
+        define('INBOX_DB_DRIVER', '');
+        define('INBOX_DB_USER', '');
+        define('INBOX_DB_PASSWORD', '');
+        define('INBOX_DB_NAME', '');
     }
 }

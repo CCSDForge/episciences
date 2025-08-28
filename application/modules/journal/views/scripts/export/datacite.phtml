@@ -215,7 +215,7 @@
     <datacite:relatedIdentifiers>
         <?php if ($paper->getRepoid() === Episciences_Repositories::getRepoIdByLabel('arXiv')) : ?>
             <datacite:relatedIdentifier relatedIdentifierType="arXiv" relationType="IsIdenticalTo">
-                arXiv:<?= $paper->getIdentifier(); ?></datacite:relatedIdentifier>
+                arXiv:<?= $this->escape($paper->getIdentifier()); ?></datacite:relatedIdentifier>
             <datacite:relatedIdentifier relatedIdentifierType="DOI"
                                         relationType="IsIdenticalTo"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>
                 /arXiv.<?= $this->escape($paper->getIdentifier()); ?></datacite:relatedIdentifier>
@@ -225,7 +225,7 @@
                 /zenodo.<?= $this->escape($paper->getIdentifier()); ?></datacite:relatedIdentifier>
         <?php else: ?>
             <datacite:relatedIdentifier relatedIdentifierType="URL"
-                                        relationType="IsIdenticalTo"><?= $paper->getDocUrl(); ?></datacite:relatedIdentifier>
+                                        relationType="IsIdenticalTo"><?= $this->escape($paper->getDocUrl()); ?></datacite:relatedIdentifier>
         <?php endif; ?>
 
         <?php if (isset($issn) && $issn !== '') : ?>

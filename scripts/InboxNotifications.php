@@ -32,7 +32,9 @@ class InboxNotifications extends Script
 
     public function __construct(string $id = '', array $type = [], array $origin = [])
     {
-        define('SERVER_PROTOCOL', 'https');
+        if (!defined('SERVER_PROTOCOL')) {
+            define('SERVER_PROTOCOL', 'https');
+        }
         $this->setRequiredParams([]);
         $this->setArgs(array_merge($this->getArgs(), ['delNotifs|dpn' => "delete processed inbox notifications"]));
 
@@ -1414,7 +1416,7 @@ class InboxNotifications extends Script
         $formatter = new LineFormatter(null, null, false, true);
         $handler->setFormatter($formatter);
         $logger->pushHandler($handler);
-        $logger->pushHandler(new StreamHandler('php://stdout', Logger::DEBUG));
+        $logger->pushHandler(new StreamHandler('php://stdout', Logger::CRITICAL));
         $this->setLogger($logger);
     }
 
