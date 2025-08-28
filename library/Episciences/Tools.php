@@ -1962,6 +1962,21 @@ class Episciences_Tools
     }
 
     /**
+     * Check if a string is a HAL URL containing a valid HAL identifier
+     * @param string $url
+     * @return bool
+     */
+    public static function isHalUrl(string $url): bool
+    {
+        // Check if it's a URL that contains a HAL identifier
+        if (preg_match('~^https?://.*hal~', $url)) {
+            $matches = self::getHalIdInString($url);
+            return !empty($matches) && self::isHal($matches[0]);
+        }
+        return false;
+    }
+
+    /**
      * @param string $swhid
      * @return bool
      */
@@ -2027,7 +2042,7 @@ class Episciences_Tools
         }
 
         $checks = [
-            'hal' => fn($val) => self::isHal($val),
+            'hal' => fn($val) => self::isHalUrl($val) || self::isHal($val),
             'doi' => fn($val) => self::isDoi($val),
             'software' => fn($val) => self::isSoftwareHeritageId($val),
             'arxiv' => fn($val) => self::isArxiv($val),

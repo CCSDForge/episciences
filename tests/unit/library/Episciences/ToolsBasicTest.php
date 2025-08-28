@@ -77,10 +77,20 @@ class ToolsBasicTest extends TestCase
         $this->assertSame('hal', Episciences_Tools::checkValueType('cea-01234567v2'));
         $this->assertSame('hal', Episciences_Tools::checkValueType('inria-01234567'));
         
+        // Valid HAL URLs should return 'hal'
+        $this->assertSame('hal', Episciences_Tools::checkValueType('https://hal.science/hal-04202866v1'));
+        $this->assertSame('hal', Episciences_Tools::checkValueType('https://hal.archives-ouvertes.fr/hal-01234567'));
+        $this->assertSame('hal', Episciences_Tools::checkValueType('http://hal.inria.fr/inria-12345678'));
+        $this->assertSame('hal', Episciences_Tools::checkValueType('https://hal.inria.fr/inria-12345678v2'));
+        
         // Invalid HAL identifiers should not return 'hal'
         $this->assertNotSame('hal', Episciences_Tools::checkValueType('hal-123'));
         $this->assertNotSame('hal', Episciences_Tools::checkValueType('hal'));
         $this->assertNotSame('hal', Episciences_Tools::checkValueType('hal-abcdefgh'));
+        
+        // URLs with 'hal' but no valid HAL ID should not return 'hal'
+        $this->assertNotSame('hal', Episciences_Tools::checkValueType('https://hal.science/invalid'));
+        $this->assertNotSame('hal', Episciences_Tools::checkValueType('https://hal.science'));
     }
 
     /**
