@@ -2,6 +2,9 @@
 
 header("content-type: application/x-javascript");
 
+// Load autoloader first
+require_once '../../vendor/autoload.php';
+
 require_once '../const.php';
 defineProtocol();
 defineSimpleConstants();
