@@ -1,5 +1,10 @@
 <?php
 
+// Ensure autoloader is loaded
+if (!class_exists('Composer\Autoload\ClassLoader') && file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
+
 use Symfony\Component\Dotenv\Dotenv;
 
 function defineProtocol(): void
