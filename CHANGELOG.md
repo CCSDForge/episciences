@@ -39,12 +39,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Javascript Tests with Jest
 - PHP tests with Phpunit (updated test + new tests)
 - Prettier to format Javascript
-- Configured Github actions for CI (PHP+JS tests)
+- Configured GitHub actions for CI (PHP+JS tests)
 - Updated Renovate and Dependabot tests to target staging branch
 - New Makefile with reorganised commands + new commands
 - Document view:
     - Now displaying the abstract in all languages we have, prefixed with the language code
     - Now displaying keywords prefixed with their language code
+- Relationships module: 
+  - added logs details for added/removed values
+  - improved content escaping
 
 ### Changed
 - Refactored some Javascript with more modern approach

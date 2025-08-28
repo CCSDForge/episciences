@@ -30,6 +30,7 @@ $logs_with_details = [
     Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE,
     Episciences_Paper_Logger::CODE_LD_ADDED,
     Episciences_Paper_Logger::CODE_LD_CHANGED,
+    Episciences_Paper_Logger::CODE_LD_REMOVED,
 ]; ?>
 
 <?php foreach ($this->logs as $log) : ?>
@@ -153,7 +154,7 @@ $logs_with_details = [
                         <?= $this->translate("à") . ' ' . implode(', ', $detail['mail']['To']) ?>
                     <?php endif; ?>
                     <?= $this->translate(' :') ?>
-                    <?= $detail['mail']['Subject'] ?>
+                    <?= $this->escape($detail['mail']['Subject']) ?>
                     <?php break; ?>
 
                 <?php case Episciences_Paper_Logger::CODE_SECTION_SELECTION: ?>
@@ -187,19 +188,19 @@ $logs_with_details = [
                 case Episciences_Paper_Logger::CODE_CE_AUTHOR_SOURCES_REQUEST:
                     ?>
                     <?= $this->translate(' :') ?>
-                    <?= $fullName . ' > ' . $detail['submitter']['fullname'] ?>
+                    <?= $fullName . ' > ' . $this->escape($detail['submitter']['fullname']) ?>
                     <?php break; ?>
 
                 <?php case Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE: ?>
                 <?php case Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED: ?>
                     <?= $this->translate(' :') ?>
-                    <?= $detail['newDate'] . ' > ' ?>
+                    <?= $this->escape($detail['newDate']) . ' > ' ?>
                     <?= $fullName ?>
                     <?php break; ?>
 
                 <?php case Episciences_Paper_Logger::CODE_COI_REPORTED: ?>
                     <?= $this->translate(' :') ?>
-                    <?= strtoupper($this->translate($detail['conflict']['answer'])) . ' > ' ?>
+                    <?= $this->escape(strtoupper($this->translate($detail['conflict']['answer']))) . ' > ' ?>
                     <?= $fullName ?>
                     <?php break; ?>
 
@@ -212,10 +213,10 @@ $logs_with_details = [
                 <?php case Episciences_Paper_Logger::CODE_LD_REMOVED: ?>
                     <?= $this->translate('par') . ' ' . $detail['username'] ?>
                     <?= $this->translate(' :') ?>
-                    <?= $detail['typeLd'] . " =>" ?>
-                    <?= $detail['valueLd'] ?>
+                    <?= $this->escape($detail['typeLd']) . " =>" ?>
+                    <?= $this->escape($detail['valueLd']) ?>
                     <?php if(isset($detail['relationship'])):?>
-                        <?= 'relation => '.$detail['relationship'] ?>
+                        <?= 'relation => '.$this->escape($detail['relationship']) ?>
                     <?php endif; ?>
                     <?php break; ?>
                 <?php case Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW: ?>
