@@ -2019,36 +2019,28 @@ class Episciences_Tools
         return $matches;
     }
 
-    /**
-     * @param $value
-     * @return false|string
-     */
-    public static function checkValueType($value)
+
+    public static function checkValueType($value): bool|string
     {
-        $isHal = self::isHal($value);
-        if ($isHal) {
-            return 'hal';
+        if (empty($value) || !is_string($value)) {
+            return false;
         }
-        $isDoi = self::isDoi($value);
-        if ($isDoi) {
-            return 'doi';
+
+        $checks = [
+            'hal' => fn($val) => self::isHal($val),
+            'doi' => fn($val) => self::isDoi($val),
+            'software' => fn($val) => self::isSoftwareHeritageId($val),
+            'arxiv' => fn($val) => self::isArxiv($val),
+            'handle' => fn($val) => self::isHandle($val),
+            'url' => fn($val) => Zend_Uri::check($val)
+        ];
+
+        foreach ($checks as $type => $checkFunction) {
+            if ($checkFunction($value)) {
+                return $type;
+            }
         }
-        $isSwhid = self::isSoftwareHeritageId($value);
-        if ($isSwhid) {
-            return 'software';
-        }
-        $isUrl = Zend_Uri::check($value);
-        if ($isUrl) {
-            return 'url';
-        }
-        $isHdl = self::isHandle($value);
-        if ($isHdl) {
-            return 'handle';
-        }
-        $isArxiv = self::isArxiv($value);
-        if ($isArxiv) {
-            return 'arxiv';
-        }
+
         return false;
     }
 
