@@ -15,24 +15,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
+### Added
+- Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
+### Fixed
+- [#776](https://github.com/CCSDForge/episciences/issues/776) Action Required: Fix Renovate Configuration
 
-v1.0.52-manager - 2025-08-28
+## v1.0.52-manager - 2025-08-28
 ### Fixed
 - DOI metadata: stop overwriting acceptance date with the last modification date
-- #693 allow to save comment without attachment
-- #690 ORCID might be duplicated when one of the authors has no ORCID
-- #702 Inclusion of arxiv article version invalidates document identifier
+- [#693](https://github.com/CCSDForge/episciences/issues/693) allow to save comment without attachment
+- [#690](https://github.com/CCSDForge/episciences/issues/690) ORCID might be duplicated when one of the authors has no ORCID
+- [#702](https://github.com/CCSDForge/episciences/issues/702) Inclusion of arxiv article version invalidates document identifier
+- When updating Authors' affiliations, redirect to the latest paper version, not the 1st version
+- [#629](https://github.com/CCSDForge/episciences/issues/629) Malfunction when updating volume description
+- [#639](https://github.com/CCSDForge/episciences/issues/639) DOAJ Export unavailable. Added a function to Convert between ISO 639-2/T and ISO 639-2/B codes. DOAJ is in the team iso_639-2b whereas our current tools create iso_639-2t not supported by the DOAJ Schema 
+- Fixed unescaped identifiers causing invalid XML in OpenAire export format
+- [#600](https://github.com/CCSDForge/episciences/issues/600) Abstract ignores line breaks
+- [#694](https://github.com/CCSDForge/episciences/issues/694) accents via LaTeX macros in abstracts aren't rendered
+- Manager: Fixed path to reviewer report attachments without prefix
 - Manager: Force predefined pages to be public
 - Manager: Review Report: attached document URL has not been updated for the manager application
-- When updating Authors' affiliations, redirect to the latest paper version, not the 1st version
-- #629 Malfunction when updating volume description
-- #639 DOAJ Export unavailable. Added a function to Convert between ISO 639-2/T and ISO 639-2/B codes. DOAJ is in the team iso_639-2b whereas our current tools create iso_639-2t not supported by the DOAJ Schema
-- Manager: Fixed path to reviewer report attachments without prefix
-- Fixed unescaped identifiers causing invalid XML in OpenAire export format
-- #600 Abstract ignores line breaks
-- #694 accents via LaTeX macros in abstracts aren't rendered
-
-
+ 
 ### Added
 - DOI management automation: Added shell scripts for batch DOI operations and enhanced getDoi.php with logging and journal fetching capabilities
 - CSV import functionality for sections
@@ -55,7 +58,7 @@ v1.0.52-manager - 2025-08-28
 - Editor Comments: in case conflict of interests is enabled in the journal, editors will receive the comments even if they have not yet answered to COI. If they declare a COI, they will be unassigned and will stop receiving editors comments
 - Crossref title export: in case of multiple titles, the priority is given to the title in the language of the document or fallback to the fist title if no language
 
-v1.0.51 - 2025-04-07
+## v1.0.51 - 2025-04-07
 ### Changed
 - [#650](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
 - Ability to customise application environment variables

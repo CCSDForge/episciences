@@ -3,6 +3,8 @@
 header("content-type: application/x-javascript");
 
 $lang = $_GET['lang'] ?? 'en';
+$lang = in_array($lang, ['fr', 'en'], true) ? $lang : 'en';
+
 
 // define application paths
 if (!defined('APPLICATION_PATH')) {
