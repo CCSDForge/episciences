@@ -15,24 +15,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 ## Unreleased
-
 ### Added
 - Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
-
+### Fixed
+- [#776](https://github.com/CCSDForge/episciences/issues/776) Action Required: Fix Renovate Configuration
 
 ## v1.0.52 - 2025-08-28
 
 ### Fixed
 - DOI metadata: stop overwriting acceptance date with the last modification date
-- #693 allow to save comment without attachment
-- #690 ORCID might be duplicated when one of the authors has no ORCID
-- #702 Inclusion of arxiv article version invalidates document identifier
+- [#693](https://github.com/CCSDForge/episciences/issues/693) allow to save comment without attachment
+- [#690](https://github.com/CCSDForge/episciences/issues/690) ORCID might be duplicated when one of the authors has no ORCID
+- [#702](https://github.com/CCSDForge/episciences/issues/702) Inclusion of arxiv article version invalidates document identifier
 - When updating Authors' affiliations, redirect to the latest paper version, not the 1st version
-- #629 Malfunction when updating volume description
-- #639 DOAJ Export unavailable. Added a function to Convert between ISO 639-2/T and ISO 639-2/B codes. DOAJ is in the team iso_639-2b whereas our current tools create iso_639-2t not supported by the DOAJ Schema 
+- [#629](https://github.com/CCSDForge/episciences/issues/629) Malfunction when updating volume description
+- [#639](https://github.com/CCSDForge/episciences/issues/639) DOAJ Export unavailable. Added a function to Convert between ISO 639-2/T and ISO 639-2/B codes. DOAJ is in the team iso_639-2b whereas our current tools create iso_639-2t not supported by the DOAJ Schema 
 - Fixed unescaped identifiers causing invalid XML in OpenAire export format
-- #600 Abstract ignores line breaks
-- #694 accents via LaTeX macros in abstracts aren't rendered
+- [#600](https://github.com/CCSDForge/episciences/issues/600) Abstract ignores line breaks
+- [#694](https://github.com/CCSDForge/episciences/issues/694) accents via LaTeX macros in abstracts aren't rendered
 
 
 ### Added

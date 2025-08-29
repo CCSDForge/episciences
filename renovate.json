@@ -24,7 +24,9 @@
       "constraintsFiltering": "strict",
       "ignoreUnstable": false,
       "composerIgnorePlatformReqs": false,
-      "php": "8.1"
+      "constraints": {
+        "php": "8.1"
+      }
     }
   ]
 }
