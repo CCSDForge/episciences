@@ -16,7 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ## Unreleased
 
-v1.0.52 - 2025-08-28
+### Added
+- Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
+
+
+## v1.0.52 - 2025-08-28
 
 ### Fixed
 - DOI metadata: stop overwriting acceptance date with the last modification date
@@ -53,7 +57,7 @@ v1.0.52 - 2025-08-28
 - Editor Comments: in case conflict of interests is enabled in the journal, editors will receive the comments even if they have not yet answered to COI. If they declare a COI, they will be unassigned and will stop receiving editors comments
 - Crossref title export: in case of multiple titles, the priority is given to the title in the language of the document or fallback to the fist title if no language
 
-v1.0.51 - 2025-04-07
+## v1.0.51 - 2025-04-07
 ### Changed
 - [#650](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
 - published dataset/software: the title of the data/software descriptor is its identifier.
