@@ -324,6 +324,10 @@
                     </div>
                 </xsl:if>
 
+                <!-- Only show HR if there are admin buttons to display -->
+                <xsl:if test="episciences and (not(episciences/tmp/text() = '1') or episciences/reassign_button)">
+                    <hr />
+                </xsl:if>
                 <xsl:if test="episciences">
                     <div id='record-loading' style="display:none"/>
                          <xsl:if test="not(episciences/tmp/text() = '1')">
