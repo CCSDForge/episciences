@@ -9,14 +9,14 @@
     "replacements:all",
     "workarounds:all"
   ],
-  "baseBranches": ["staging"],
+  "baseBranches": ["preprod"],
   "lockFileMaintenance": {
     "enabled": true
   },
   "packageRules": [
     {
-      "matchBaseBranches": ["staging"],
-      "labels": ["staging-update"]
+      "matchBaseBranches": ["preprod"],
+      "labels": ["preprod-update"]
     },
     {
       "matchManagers": ["composer"],
@@ -25,7 +25,7 @@
       "ignoreUnstable": false,
       "composerIgnorePlatformReqs": false,
       "constraints": {
-        "php": "8.1"
+        "php": "8.2"
       }
     }
   ]
