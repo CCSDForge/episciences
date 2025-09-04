@@ -14,11 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
 ## Unreleased
 ### Added
 - Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
+- New option to allow Editors to receive 'Comments for editors' before declaring a conflict of interest (disabled by default)
+
 ### Fixed
 - [#776](https://github.com/CCSDForge/episciences/issues/776) Action Required: Fix Renovate Configuration
+- [#657](https://github.com/CCSDForge/episciences/issues/657) Conditionally remove the `<hr>` separator in the public and admin views of article metadata
+
 
 ## v1.0.52-manager - 2025-08-28
 ### Fixed
@@ -57,7 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored some Javascript with more modern approach
 - Editor Comments: in case conflict of interests is enabled in the journal, editors will receive the comments even if they have not yet answered to COI. If they declare a COI, they will be unassigned and will stop receiving editors comments
 - Crossref title export: in case of multiple titles, the priority is given to the title in the language of the document or fallback to the fist title if no language
-
+- [#657](https://github.com/CCSDForge/episciences/issues/657) Move "Download this file" button a bit and rename "Download this paper" 
+ 
 ## v1.0.51 - 2025-04-07
 ### Changed
 - [#650](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited

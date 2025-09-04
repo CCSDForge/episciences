@@ -315,13 +315,10 @@
                     </div>
                 </xsl:if>
 
-<!--                <xsl:if test="episciences/classification/text() != ''">-->
-<!--                    <div class="small">-->
-<!--                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Classifications :')"/>-->
-<!--                        <xsl:value-of select="episciences/classification" disable-output-escaping="yes"/>-->
-<!--                    </div>-->
-<!--                </xsl:if>-->
-                <hr />
+                <!-- Only show HR if there are buttons to display -->
+                <xsl:if test="((episciences/status = '') and (episciences/uid = php:function('Episciences_Auth::getUid')) and (episciences/hasOtherVersions = '')) or (episciences and not(episciences/tmp/text() = '1') and (($rightOrcid = '1') or (episciences/isAllowedToListAssignedPapers/text() = '1'))) or (episciences/uid = php:function('Episciences_Auth::getUid'))">
+                    <hr />
+                </xsl:if>
                 <xsl:if test="(episciences/status = '') and (episciences/uid = php:function('Episciences_Auth::getUid') and episciences/hasOtherVersions = '')">
                     <a>
                         <xsl:attribute name="href">

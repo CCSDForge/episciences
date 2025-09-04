@@ -367,10 +367,14 @@ class PaperDefaultController extends DefaultController
             Episciences_Review::checkReviewNotifications($recipients, $strict);
             // remove users if COI is enabled
             Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
-            // Put editors back in the loop anyway
-            // Why? because if COI is active, we will unassign an editor who declares a COI
-            // The goal is to make sure editors receive comments even before checking the COI
-            $recipients = $recipients + $editors;
+            $journal = Episciences_ReviewsManager::find(RVCODE);
+            $isEditorToBeNotifiedWithCoiEnabled = $journal->getSetting(Episciences_Review::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED);
+            if ($isEditorToBeNotifiedWithCoiEnabled) {
+                // Put editors back in the loop anyway
+                // Why? because if COI is enabled, we will unassign an editor who declares a COI
+                // The goal is to make sure editors receive comments even before checking the COI
+                $recipients = $recipients + $editors;
+            }
             $CC = $paper->extractCCRecipients($recipients);
         } catch (Zend_Db_Statement_Exception $e) {
             $logger?->critical($e);
