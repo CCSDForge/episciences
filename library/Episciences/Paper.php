@@ -1214,7 +1214,7 @@ class Episciences_Paper
                     //insert licence when save paper
                     try {
                         $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), (int)$this->getVersion());
-                        Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
+                        Episciences_Paper_LicenceManager::insertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
 
                     } catch (\GuzzleHttp\Exception\GuzzleException|JsonException $e) {
                         trigger_error($e->getMessage());
@@ -3229,16 +3229,6 @@ class Episciences_Paper
         } else {
             $node->appendChild($dom->createElement('funding', ""));
         }
-
-
-        //$classification = Episciences_Paper_ClassificationsManager::formatClassificationForview($this->_paperId);
-
-//        if (!empty($classification)) {
-//            $node->appendChild($dom->createElement('classification', $classification));
-//        } else {
-//            $node->appendChild($dom->createElement('classification', ""));
-//        }
-
 
         ($this->isAllowedToManageOrcidAuthor(true)) ? $node->appendChild($dom->createElement('rightOrcid', '1'))
             : $node->appendChild($dom->createElement('rightOrcid', "0"));
