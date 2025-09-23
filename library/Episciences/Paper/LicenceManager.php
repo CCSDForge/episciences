@@ -13,34 +13,70 @@ class Episciences_Paper_LicenceManager
     const DATACITE_DOI_API = 'https://api.datacite.org/dois/';
 
     /**
-     * @param $repoId
-     * @param $identifier
+     * @param string|int $repoId
+     * @param string $identifier
      * @param int $version
      * @return string
      * @throws GuzzleException
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function getApiResponseByRepoId($repoId, $identifier, int $version): string
+    public static function getApiResponseByRepoId($repoId, string $identifier, int $version): string
     {
-        $callArrayResp = '';
-        switch ($repoId) {
-            case "1": //HAL
-                $callArrayResp = self::getLicenceFromTeiHal($identifier, $version);
-                break;
-            case "2": //ARXIV
-                $url = self::DATACITE_DOI_API . self::ARXIV_DOI_PREFIX . $identifier;
-                $callArrayResp = self::callApiForLicenceByRepoId($url);
-                sleep(1);
-                break;
-            case "4": //ZENODO
-                $url = self::DATACITE_DOI_API . self::ZENODO_DOI_PREFIX . $identifier;
-                $callArrayResp = self::callApiForLicenceByRepoId($url);
-                sleep(1);
-                break;
-            default: //OTHERS
-                break;
+        if (empty(trim($identifier))) {
+            return '';
         }
-        return $callArrayResp;
+
+        $repoId = (string) $repoId;
+        
+        $response = match ($repoId) {
+            Episciences_Repositories::HAL_REPO_ID => self::getLicenceFromTeiHal($identifier, $version),
+            Episciences_Repositories::ARXIV_REPO_ID => self::getDataciteLicence(self::ARXIV_DOI_PREFIX . $identifier),
+            Episciences_Repositories::ZENODO_REPO_ID => self::getDataciteLicence(self::ZENODO_DOI_PREFIX . $identifier),
+            Episciences_Repositories::ARCHE_ID => self::getLicenceFromArcheDatacite($identifier),
+            default => ''
+        };
+
+        if (self::shouldRateLimit($repoId)) {
+            self::applyRateLimit();
+        }
+
+        return $response;
+    }
+
+    /**
+     * Check if rate limiting should be applied for the given repository
+     *
+     * @param string $repoId
+     * @return bool
+     */
+    private static function shouldRateLimit(string $repoId): bool
+    {
+        return in_array($repoId, [
+            Episciences_Repositories::ARXIV_REPO_ID,
+            Episciences_Repositories::ZENODO_REPO_ID,
+            Episciences_Repositories::ARCHE_ID
+        ], true);
+    }
+
+    /**
+     * Apply rate limiting to avoid overwhelming external APIs
+     */
+    private static function applyRateLimit(): void
+    {
+        sleep(1);
+    }
+
+    /**
+     * Get license information from DataCite API
+     *
+     * @param string $doiIdentifier
+     * @return string
+     * @throws GuzzleException
+     */
+    private static function getDataciteLicence(string $doiIdentifier): string
+    {
+        $url = self::DATACITE_DOI_API . $doiIdentifier;
+        return self::callApiForLicenceByRepoId($url);
     }
 
     /**
@@ -61,6 +97,41 @@ class Episciences_Paper_LicenceManager
         }
         return $licence;
     }
+
+    /**
+     * @param string $identifier
+     * @return string
+     */
+    public static function getLicenceFromArcheDatacite(string $identifier): string
+    {
+        $client = new Client();
+        try {
+            $response = $client->get(Episciences_Repositories_ARCHE_Hooks::ARCHE_OAI_PMH_API . $identifier);
+        } catch (GuzzleException $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return '';
+        }
+
+        $xmlString = $response->getBody()->getContents();
+        $metadata = simplexml_load_string($xmlString);
+        if ($metadata === false) {
+            trigger_error('Invalid XML', E_USER_WARNING);
+        }
+
+        // Register namespaces for OAI-PMH and DataCite
+        $metadata->registerXPathNamespace('oai', 'http://www.openarchives.org/OAI/2.0/');
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-3');
+        // Extract license information
+        $rightsNodes = $metadata->xpath('//datacite:rightsList/datacite:rights');
+        $license = '';
+        if (!empty($rightsNodes)) {
+            $rightsNode = $rightsNodes[0];
+            $license = (string)$rightsNode['rightsURI'] ?: (string)$rightsNode;
+        }
+
+        return self::cleanLicence($license);
+    }
+
 
     /**
      * @param string $licence
@@ -116,52 +187,113 @@ class Episciences_Paper_LicenceManager
     }
 
     /**
-     * @param $repoId
-     * @param $callArrayResp
-     * @param $docId
-     * @param $identifier
+     * @param string $repoId
+     * @param string $callArrayResp
+     * @param int $docId
+     * @param string $identifier
      * @return int
      * @throws JsonException|\Psr\Cache\InvalidArgumentException
      */
-    public static function InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier): int
+    public static function insertLicenceFromApiByRepoId(string $repoId, string $callArrayResp, int $docId, string $identifier): int
+    {
+        if (empty($callArrayResp)) {
+            return 0;
+        }
+
+        $licenceData = self::extractLicenceData($repoId, $callArrayResp);
+        
+        if ($licenceData === null) {
+            self::cacheEmptyResult($identifier);
+            return 0;
+        }
+
+        self::cacheLicenceData($identifier, $licenceData['cacheData']);
+        
+        return self::insert([
+            [
+                'licence' => $licenceData['licence'],
+                'docId' => $docId,
+                'sourceId' => $licenceData['sourceId']
+            ]
+        ]);
+    }
+
+    /**
+     * @param string $repoId
+     * @param string $callArrayResp
+     * @return array|null
+     * @throws JsonException
+     */
+    private static function extractLicenceData(string $repoId, string $callArrayResp): ?array
+    {
+        $result = null;
+        
+        if ($repoId === Episciences_Repositories::ARXIV_REPO_ID || $repoId === Episciences_Repositories::ZENODO_REPO_ID) {
+            $result = self::extractDataciteLicenceData($callArrayResp);
+        } elseif ($repoId === Episciences_Repositories::HAL_REPO_ID) {
+            $result = [
+                'licence' => $callArrayResp,
+                'sourceId' => Episciences_Repositories::HAL_REPO_ID,
+                'cacheData' => $callArrayResp
+            ];
+        } elseif ($repoId === Episciences_Repositories::ARCHE_ID) {
+            $result = [
+                'licence' => $callArrayResp,
+                'sourceId' => Episciences_Repositories::ARCHE_ID,
+                'cacheData' => $callArrayResp
+            ];
+        }
+        
+        return $result;
+    }
+
+    /**
+     * @param string $callArrayResp
+     * @return array|null
+     * @throws JsonException
+     */
+    private static function extractDataciteLicenceData(string $callArrayResp): ?array
+    {
+        $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
+        
+        if (!isset($licenceArray['data']['attributes']['rightsList'][0]['rightsUri'])) {
+            return null;
+        }
+        
+        $rightsData = $licenceArray['data']['attributes']['rightsList'][0];
+        $licenceUri = $rightsData['rightsUri'];
+        
+        return [
+            'licence' => self::cleanLicence($licenceUri),
+            'sourceId' => Episciences_Repositories::DATACITE_REPO_ID,
+            'cacheData' => $rightsData
+        ];
+    }
+
+    /**
+     * @param string $identifier
+     * @param mixed $data
+     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws JsonException
+     */
+    private static function cacheLicenceData(string $identifier, $data): void
     {
         $cleanID = md5($identifier);
-        $repoId = (string)$repoId;
         $cache = new FilesystemAdapter('enrichmentLicences', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-        $sets = $cache->getItem($cleanID . "_licence.json");
-        $sets->expiresAfter(self::ONE_MONTH);
-        if ($callArrayResp !== "") {
-            if ($repoId === Episciences_Repositories::ARXIV_REPO_ID || $repoId === Episciences_Repositories::ZENODO_REPO_ID) {
-                $licenceArray = json_decode($callArrayResp, true, 512, JSON_THROW_ON_ERROR);
-                if (isset($licenceArray['data']['attributes']['rightsList'][0]['rightsUri'])) {
-                    $sets->set(json_encode($licenceArray['data']['attributes']['rightsList'][0], JSON_THROW_ON_ERROR));
-                    $cache->save($sets);
-                    $licenceGetter = $licenceArray['data']['attributes']['rightsList'][0]['rightsUri'];
-                    $licenceGetter = self::cleanLicence($licenceGetter);
-                      return self::insert([
-                        [
-                            'licence' => $licenceGetter,
-                            'docId' => (int)$docId,
-                            'sourceId' => Episciences_Repositories::DATACITE_REPO_ID
-                        ]
-                    ]);
-                } else {
-                    $sets->set(json_encode([""]));
-                    $cache->save($sets);
-                }
-            } elseif ($repoId === Episciences_Repositories::HAL_REPO_ID) {
-                $sets->set(json_encode($callArrayResp, JSON_THROW_ON_ERROR));
-                $cache->save($sets);
-                return self::insert([
-                    [
-                        'licence' => $callArrayResp,
-                        'docId' => (int)$docId,
-                        'sourceId' => Episciences_Repositories::HAL_REPO_ID
-                    ]
-                ]);
-            }
-        }
-        return 0;
+        $cacheItem = $cache->getItem($cleanID . "_licence.json");
+        $cacheItem->expiresAfter(self::ONE_MONTH);
+        $cacheItem->set(json_encode($data, JSON_THROW_ON_ERROR));
+        $cache->save($cacheItem);
+    }
+
+    /**
+     * @param string $identifier
+     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws JsonException
+     */
+    private static function cacheEmptyResult(string $identifier): void
+    {
+        self::cacheLicenceData($identifier, [""]);
     }
 
     /**

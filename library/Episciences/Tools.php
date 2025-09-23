@@ -14,7 +14,7 @@ class Episciences_Tools
 {
 
     public const DEFAULT_MKDIR_PERMISSIONS = 0770;
-    
+
     /**
      * Bidirectional mapping between ISO 639-2/T and ISO 639-2/B codes
      */
@@ -920,24 +920,24 @@ class Episciences_Tools
     public static function decodeLatex($string, $preserveLineBreaks = false)
     {
         $result = str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $string);
-        
+
         if ($preserveLineBreaks) {
             // First handle double line breaks (clear paragraph breaks)
             $result = preg_replace('/\n\s*\n/', '<br /><br />', $result);
-            
+
             // Then handle single line breaks more intelligently:
             // Convert single line breaks to <br> EXCEPT when they appear to be text wrapping
-            
+
             // Text wrapping patterns (convert to spaces):
             // 1. Line breaks after short words (articles, prepositions, conjunctions)
             $result = preg_replace('/(\b\w{1,3})\s*\n/', '$1 ', $result);
             // 2. Line breaks in the middle of sentences (not after punctuation)
             $result = preg_replace('/([^.!?:;])\s*\n(?!\s*[-*•])/', '$1 ', $result);
-            
+
             // Convert remaining single line breaks to <br> (intentional paragraph breaks)
             $result = preg_replace('/\n/', '<br />', $result);
         }
-        
+
         return $result;
     }
 
@@ -1996,13 +1996,52 @@ class Episciences_Tools
         return $matches;
     }
 
+
     /**
-     * @param string $handle
-     * @return bool
+     * Extracts a raw Handle string from a full Handle URL, excluding DOIs.
+     *
+     * @param string $input Input string
+     * @return string Cleaned handle (original string if not a Handle URL or if it’s a DOI)
      */
-    public static function isHandle(string $handle): bool
+    public static function cleanHandle(string $input): string
     {
-        return (bool)preg_match('/(^[\x00-\x7F]+(\.[\x00-\x7F]+)*\/[\S]+[^;,.\s])/', $handle);
+        $input = trim($input);
+
+        // Skip cleaning if it’s a DOI URL
+        if (preg_match('~^https?://doi\.org/~i', $input)) {
+            return $input;
+        }
+
+        // Clean Handle.net URLs (with or without protocol)
+        return preg_replace(
+            '~^(https?:\/\/)?hdl\.handle\.net\/~i',
+            '',
+            $input
+        );
+    }
+
+    /**
+     * Validates whether a string is a Handle (Handle.net) identifier.
+     * DOIs (starting with "10.") are explicitly excluded.
+     *
+     * @param string $handle The handle to validate
+     * @param bool $clean Whether to clean the handle first (removing URL prefixes)
+     * @return bool True if valid handle, false otherwise
+     */
+    public static function isHandle(string $handle, bool $clean = true): bool
+    {
+        if ($clean) {
+            $handle = self::cleanHandle($handle);
+        }
+
+        // Exclude DOIs (common DOI prefix pattern)
+        if (preg_match('/^10\.\d{4,9}\//', $handle)) {
+            return false;
+        }
+
+        // Basic Handle regex
+        $pattern = '/^[0-9]+(\.[0-9]+)*\/[^\s]+$/u';
+        return (bool) preg_match($pattern, $handle);
     }
 
     /**
@@ -2054,7 +2093,7 @@ class Episciences_Tools
             if ($checkFunction($value)) {
                 return $type;
             }
-        }
+            }
 
         return false;
     }
@@ -2151,10 +2190,11 @@ class Episciences_Tools
         if (empty($code) || strlen($code) !== 3) {
             return $code;
         }
-        
+
         $code = strtolower($code);
-        
+
         return self::ISO639_BIDIRECTIONAL_MAP[$code] ?? $code;
     }
+
 
 }
