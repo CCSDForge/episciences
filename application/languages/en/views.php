@@ -356,6 +356,7 @@ return array(
     "Il s'agit d'une ancienne version de %s cet article %s" => "It is an older version of %s this article %s",
     "cet article" => "this article",
     "Télécharger l'article" => "Download article",
+    "Télécharger le fichier" => "Download this file",
     "Voir la page du document sur" => "See the document's page on",
     "Voir le jeu de données sur" => "See the dataset on",
     "Voir le logiciel sur" => "See the software on",
