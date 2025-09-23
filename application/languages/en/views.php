@@ -1908,7 +1908,7 @@ return array(
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
-    "Évaluation" => "Evaluation",
+    "Évaluation" => "Review",
     "Évaluations reçues" => "Reviews received",
     "Évaluations demandées" => "Reviews requested",
     "Nombre médian d'évaluations d'articles de recherche" => "Median number of reviews for research articles",
@@ -1990,6 +1990,8 @@ return array(
     "Conflit d'intérêts (CI)" => "Conflict Of Interest (COI)",
     "Activer la déclaration CI" => "Enable declaring COI",
     "Le mode conflit d'intérêts (CI) aura les effets suivants : toutes les informations non publiques concernant une soumission ne sont pas accessibles aux éditeurs en chef et aux éditeurs tant qu'ils n'auront pas déclaré l'absence de tout conflit d'intérêts." => "This mode will have the following effects: all non-public information about a submission is not accessible to an editor in chief and an editor until he/she has declared the absence of any conflict of interest.",
+    "Les rédacteurs reçoivent les 'commentaires pour les rédacteurs' avant la déclaration d'un conflit d'intérêt" => "Editors receive 'comments for editors' before declaring a conflict of interest",
+    "Activer pour permettre aux éditeurs de recevoir des commentaires sur l'article avant d'avoir déclaré un conflit d'intérêts." => "Enable to allow editors to receive comments on the article before they have declared a conflict of interest.",
     "Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission . " => "You've been redirected, because you have declared a conflict of interest with this submission.",
     "Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission" => "You've been redirected, because you must confirm the lack of conflict of interest to access this submission",
     "Conflit d'intérêt" => 'Conflict of interest',
