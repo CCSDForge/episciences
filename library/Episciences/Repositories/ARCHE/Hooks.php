@@ -169,29 +169,43 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
     private static function extractPersons($metadata, &$creatorsDc): array
     {
         $authors = [];
+        $seenNames = [];
 
         // Find creators first (primary authors)
         $creators = $metadata->xpath('//datacite:creators/datacite:creator');
         foreach ($creators as $creator) {
-            $person = self::processPerson($creator, 'creatorName', $creatorsDc);
+            $person = self::processPerson($creator, 'creatorName', $creatorsDc, $seenNames);
             if (!empty($person)) {
                 $authors[] = $person;
             }
         }
 
-        // Find contributors (additional contributors)
+        // Find contributors (additional contributors) - only include individual contributors, not institutions
         $contributors = $metadata->xpath('//datacite:contributors/datacite:contributor');
         foreach ($contributors as $contributor) {
-            $person = self::processPerson($contributor, 'contributorName', $creatorsDc);
-            if (!empty($person)) {
-                $authors[] = $person;
+            $contributorType = (string)$contributor['contributorType'];
+
+            // Only process individual contributors, skip institutional ones
+            $individualContributorTypes = [
+                'ContactPerson',
+                'DataCurator',
+                'Editor',
+                'ProjectLeader',
+                'Other'
+            ];
+
+            if (in_array($contributorType, $individualContributorTypes)) {
+                $person = self::processPerson($contributor, 'contributorName', $creatorsDc, $seenNames);
+                if (!empty($person)) {
+                    $authors[] = $person;
+                }
             }
         }
 
         return $authors;
     }
 
-    private static function processPerson($person, $nameField, &$creatorsDc): array
+    private static function processPerson($person, $nameField, &$creatorsDc, &$seenNames): array
     {
         $affiliations = [];
         $tmp = [];
@@ -202,6 +216,13 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
         }
 
         $name = $personName;
+
+        // Check for duplicates
+        if (in_array($name, $seenNames)) {
+            return [];
+        }
+
+        $seenNames[] = $name;
         $creatorsDc[] = $name;
 
         // Parse name assuming "First Last" format (not "Last, First")
@@ -243,9 +264,23 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
     private static function extractMultilingualContent($metadata, $xpath, $language): array
     {
         $result = [];
+        $seenValues = [];
         $nodes = $metadata->xpath($xpath);
 
         foreach ($nodes as $node) {
+            $value = (string)$node;
+
+            // Skip empty values
+            if (empty($value)) {
+                continue;
+            }
+
+            // Skip duplicate values
+            if (in_array($value, $seenValues)) {
+                continue;
+            }
+            $seenValues[] = $value;
+
             // Try different ways to get xml:lang attribute
             $nodeLanguage = '';
 
@@ -269,7 +304,7 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
             }
 
             $result[] = [
-                'value' => (string)$node,
+                'value' => $value,
                 'language' => $nodeLanguage
             ];
         }
