@@ -264,9 +264,23 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
     private static function extractMultilingualContent($metadata, $xpath, $language): array
     {
         $result = [];
+        $seenValues = [];
         $nodes = $metadata->xpath($xpath);
 
         foreach ($nodes as $node) {
+            $value = (string)$node;
+
+            // Skip empty values
+            if (empty($value)) {
+                continue;
+            }
+
+            // Skip duplicate values
+            if (in_array($value, $seenValues)) {
+                continue;
+            }
+            $seenValues[] = $value;
+
             // Try different ways to get xml:lang attribute
             $nodeLanguage = '';
 
@@ -290,7 +304,7 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
             }
 
             $result[] = [
-                'value' => (string)$node,
+                'value' => $value,
                 'language' => $nodeLanguage
             ];
         }
