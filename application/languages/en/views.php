@@ -1897,6 +1897,8 @@ return array(
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
+    "articles acceptés (non encore publiés)" => "accepted articles (not yet published)",
+    'non encore publiés' => 'not yet published',
     "Évaluation" => "Review",
     "Évaluations reçues" => "Reviews received",
     "Évaluations demandées" => "Reviews requested",
@@ -1943,6 +1945,7 @@ return array(
     "Aucune information n'est disponible pour cette page pour le moment." => "No information is available for this page at the moment.",
     'délai soumission-acceptation' => 'Submission-acceptance time',
     'délai soumission-publication' => 'Submission-publication time',
+    'Cela inclut les articles qui ont déjà été publiés' => 'This includes articles that have already been published',
     // datasets
     'administratelinkeddata-addld' => 'Add a related work',
     'administratelinkeddata-removeld' => 'Remove a related work',
