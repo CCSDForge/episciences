@@ -54,10 +54,8 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                             <li>
                                 <?= ucfirst($this->translate('articles acceptés')) ?>
                                 <code><?= $this->allAcceptations ?></code>
-                                <?php if ($isYear): ?>
-                                    <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                                        title="<?= $this->translate($acceptedTooltipInfo) ?>"></em>
-                                <?php endif; ?>
+
+                                <em class="fas fa-info-circle fa-sm" data-toggle="tooltip" title="<?= $this->translate($acceptedTooltipInfo) ?>"></em>
 
                             </li>
 
