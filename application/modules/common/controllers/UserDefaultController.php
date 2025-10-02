@@ -1392,6 +1392,37 @@ class UserDefaultController extends Zend_Controller_Action
             $acl = new Episciences_Acl();
             $roles = $acl->getEditableRoles();
 
+            // Verify whether the user has the editor role
+            $isEditor = in_array(Episciences_Acl::ROLE_EDITOR, $userRoles) ||
+                in_array(Episciences_Acl::ROLE_CHIEF_EDITOR, $userRoles) ||
+                in_array(Episciences_Acl::ROLE_GUEST_EDITOR, $userRoles);
+
+            // Retrieve the current availability status
+            $isAvailable = false;
+            if ($isEditor) {
+                $isAvailable = Episciences_UsersManager::isEditorAvailable($uid, RVID);
+            }
+
+            // Modify the editor role labels to include the availability checkbox
+            $editorRoles = [
+                Episciences_Acl::ROLE_EDITOR,
+                Episciences_Acl::ROLE_CHIEF_EDITOR,
+                Episciences_Acl::ROLE_GUEST_EDITOR
+            ];
+
+            foreach ($roles as $roleId => $roleLabel) {
+                if (in_array($roleId, $editorRoles)) {
+                    // Cocher seulement si l'utilisateur possède CE rôle spécifique ET est indisponible
+                    $hasThisRole = in_array($roleId, $userRoles);
+                    $checked = ($hasThisRole && !$isAvailable) ? 'checked' : '';
+                    $roles[$roleId] = $roleLabel .
+                        '<span style="float: right; padding: 2px 6px; background-color: #f5f5f5; border-radius: 3px; font-weight: normal; white-space: nowrap; min-width: 100px; text-align: center; font-size: 11px;">' .
+                        '<input type="checkbox" name="is_unavailable_' . $uid . '" value="1" ' . $checked . ' id="is_unavailable_' . $uid . '" style="vertical-align: middle; margin: 0; margin-right: 3px;">' .
+                        '<label for="is_unavailable_' . $uid . '" style="display: inline; font-weight: normal; cursor: pointer; vertical-align: middle; font-size: 11px;">Unavailable</label>' .
+                        '</span>';
+                }
+            }
+
             $form = new Zend_Form();
             $form->setAction('/user/saveroles');
             $element = new Zend_Form_Element_MultiCheckbox('roles_' . $uid, ['multiOptions' => $roles]);
@@ -1399,6 +1430,7 @@ class UserDefaultController extends Zend_Controller_Action
             $element->setSeparator('<br/>');
             $element->removeDecorator('Label');
             $element->addDecorator('HtmlTag', ['tag' => 'div', 'class' => "checkbox"]);
+            $element->setAttrib('escape', false);
             //$element->getDecorator('HtmlTag')->setOption('tag', 'div');
             $form->addElement($element);
 
@@ -1421,6 +1453,7 @@ class UserDefaultController extends Zend_Controller_Action
 
             $this->_helper->layout->disableLayout();
             $this->view->form = $form;
+            $this->view->uid = $uid;
         }
     }
 
@@ -1443,7 +1476,31 @@ class UserDefaultController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->layout->disableLayout();
 
-        if ($user->saveUserRoles($uid, $roles)) {
+        // Save roles
+        $rolesSaved = $user->saveUserRoles($uid, $roles);
+
+        // Save the editor availability if the user has an editor role
+        if ($rolesSaved) {
+            $editorRoles = [
+                Episciences_Acl::ROLE_EDITOR,
+                Episciences_Acl::ROLE_CHIEF_EDITOR,
+                Episciences_Acl::ROLE_GUEST_EDITOR
+            ];
+
+            // Check if the user has at least one editor role
+            $hasEditorRole = !empty(array_intersect($roles, $editorRoles));
+
+            if ($hasEditorRole) {
+                // Inverted logic: if the "Unavailable" checkbox is checked -> editor UNAVAILABLE
+                // If the checkbox is unchecked -> editor AVAILABLE
+                $isUnavailable = array_key_exists('is_unavailable_' . $uid, $params);
+                $isAvailable = !$isUnavailable;
+                Episciences_UsersManager::setEditorAvailability($uid, RVID, $isAvailable);
+            }
+        }
+
+
+        if ($rolesSaved) {
             echo 1;
         } else {
             echo 0;

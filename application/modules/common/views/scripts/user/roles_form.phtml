@@ -1,0 +1,38 @@
+<form action="<?php echo $this->form->getAction(); ?>" method="post">
+    <?php
+    $rolesElement = $this->form->getElement('roles_' . $this->uid);
+    $options = $rolesElement->getMultiOptions();
+    $values = $rolesElement->getValue();
+
+    foreach ($options as $value => $label):
+        $checked = in_array($value, (array)$values) ? 'checked="checked"' : '';
+
+        // Extraire le label du rôle et la checkbox "Available" si elle existe
+        $roleLabel = $label;
+        $availableCheckbox = '';
+
+        if (strpos($label, '<span style="float: right;') !== false) {
+            // Séparer le label du rôle et la checkbox "Available"
+            preg_match('/(.*?)(<span style="float: right;.*?<\/span>)/s', $label, $matches);
+            if (count($matches) === 3) {
+                $roleLabel = $matches[1];
+                $availableCheckbox = $matches[2];
+            }
+        }
+    ?>
+        <div class="checkbox" style="width: 100%; overflow: hidden; position: relative; <?php echo $availableCheckbox ? 'padding-right: 120px;' : ''; ?>">
+            <label style="display: inline-block;">
+                <input type="checkbox" name="<?php echo $rolesElement->getName(); ?>[]" value="<?php echo $value; ?>" <?php echo $checked; ?>>
+                <?php echo $roleLabel; ?>
+            </label>
+            <?php if ($availableCheckbox): ?>
+                <div style="position: absolute; right: 0; top: 0;">
+                    <?php echo $availableCheckbox; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    <?php endforeach; ?>
+
+    <?php echo $this->form->getElement('updateUserRoles'); ?>
+    <?php echo $this->form->getElement('cancel'); ?>
+</form>

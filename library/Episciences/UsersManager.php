@@ -348,4 +348,52 @@ class Episciences_UsersManager
         return $tmp;
     }
 
+    /**
+     * Vérifie si un éditeur est disponible
+     * @param int $uid
+     * @param int $rvid
+     * @return bool
+     */
+    public static function isEditorAvailable(int $uid, int $rvid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_USER_ROLES, ['IS_AVAILABLE'])
+            ->where('UID = ?', $uid)
+            ->where('RVID = ?', $rvid)
+            ->where('ROLEID IN (?)', [
+                Episciences_Acl::ROLE_EDITOR,
+                Episciences_Acl::ROLE_CHIEF_EDITOR,
+                Episciences_Acl::ROLE_GUEST_EDITOR
+            ]);
+
+        $result = $db->fetchOne($select);
+        return (bool)$result;
+    }
+
+    /**
+     * Définit la disponibilité d'un éditeur
+     * @param int $uid
+     * @param int $rvid
+     * @param bool $isAvailable
+     * @return int Number of affected rows
+     */
+    public static function setEditorAvailability(int $uid, int $rvid, bool $isAvailable): int
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $data = ['IS_AVAILABLE' => $isAvailable ? 1 : 0];
+        $where = [
+            'UID = ?' => $uid,
+            'RVID = ?' => $rvid,
+            'ROLEID IN (?)' => [
+                Episciences_Acl::ROLE_EDITOR,
+                Episciences_Acl::ROLE_CHIEF_EDITOR,
+                Episciences_Acl::ROLE_GUEST_EDITOR
+            ]
+        ];
+
+        return $db->update(T_USER_ROLES, $data, $where);
+    }
+
 }
