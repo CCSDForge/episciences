@@ -125,12 +125,24 @@ class AddMissingLogs extends JournalScript
             if ($paper) {
 
                 if ($status === Episciences_Paper::STATUS_SUBMITTED) {
-                    $pDate = $paper->getWhen();
+                    $pDate = $paper->getSubmission_date();
                 } elseif ($status === Episciences_Paper::STATUS_PUBLISHED) {
                     $pDate = $paper->getPublication_date();
                 } else {
                     $pDate = $paper->getModification_date();
                 }
+
+
+                $isImported = $paper->getFlag() === 'imported' ||
+                    (
+                        date('Y-m-d', strtotime($paper->getPublication_date())) <= date('Y-m-d', strtotime($paper->getSubmission_date()))
+                        || (int)date('Y', strtotime($paper->getSubmission_date())) < 2013
+                        || (int)date('Y-m-d', strtotime($paper->getPublication_date())) < 2013
+                        || (
+                            date('Y-m-d', strtotime($paper->getSubmission_date())) > date('Y-m-d', strtotime($paper->getWhen()))
+                            and $paper->getStatus() === Episciences_Paper::STATUS_PUBLISHED
+                        )
+                    );
 
                 $data = [
                     'LOGID' => 'NULL',
@@ -141,7 +153,7 @@ class AddMissingLogs extends JournalScript
                     'ACTION' => $db->quote(Episciences_Paper_Logger::CODE_STATUS),
                     'FILE' => 'NULL',
                     'DATE' => $db->quote($pDate),
-                    'DETAIL' => $db->quote(Zend_Json::encode(['status' => $status])),
+                    'DETAIL' => $db->quote(Zend_Json::encode(['status' => $status, 'imported' => $isImported])),
                 ];
 
 

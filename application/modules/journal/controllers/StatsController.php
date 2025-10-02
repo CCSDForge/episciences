@@ -197,10 +197,17 @@ class StatsController extends Zend_Controller_Action
         $label6 = ucfirst($this->view->translate('articles acceptés (soumis la même année)'));
         $label7 = ucfirst($this->view->translate('articles acceptés (non encore publiés)'));
 
+        $rateLabel1 = ucfirst($this->view->translate('taux de publication'));
+        $rateLabel3 = ucfirst($this->view->translate('taux de refus'));
+        $rateLabel2 = ucfirst($this->view->translate("taux d'acceptation"));
+        $rateLabel4 = ucfirst($this->view->translate('autre'));
+
         // The API only returns these values if the "startAfterDate" filter is enabled: they provide an overview of the data, without taking this filter into account.
         $totalArticles = $dashboard['value']['totalWithoutStartAfterDate']['totalSubmissions'] ?? $dashboard['value'][self::NB_SUBMISSIONS] ?? null;
         $totalImported = $dashboard['value']['totalWithoutStartAfterDate']['totalImported'] ?? $dashboard['value'][self::NB_IMPORTED] ?? null;
         $totalPublished = $dashboard['value']['totalWithoutStartAfterDate']['totalPublished'] ?? $dashboard['value'][self::NB_PUBLISHED] ?? null;
+        $totalImportedPublished =  $dashboard['value']['totalWithoutStartAfterDate']['totalImportedPublished'] ?? $dashboard['value']['nbImportedPublished'] ?? null;
+
 
         $allSubmissions = $dashboard['value'][self::NB_SUBMISSIONS] ?? null;
         $this->view->chart1Title = $this->view->translate("En un coup d'oeil");
@@ -208,27 +215,32 @@ class StatsController extends Zend_Controller_Action
         // Indicators
         $this->view->totalArticles = $totalArticles;
         $this->view->allSubmissions = $allSubmissions;
-        $this->view->totalImportedArticles = $totalImported;
-        $this->view->totalPublishedArticles = $totalPublished;
+        $this->view->totalImportedArticles = $totalImported; // without "startAfterDate" filter
+        $this->view->imported = $dashboard['value']['nbImported'] ?? null; // filter's "startAfterDate" taking into account.
+        $this->view->totalPublishedArticles = $totalPublished + $totalImportedPublished ;
+        $this->view->totalImportedPublished = $totalImportedPublished;
+
         $this->view->allRefusals = $dashboard['value'][self::NB_REFUSED];
         $this->view->allAcceptations = $dashboard['value'][self::NB_ACCEPTED] ?? null;
         $this->view->allOtherStatus = $dashboard['value'][self::NB_OTHER_STATUS];
-        $this->view->acceptanceRate = $dashboard['value']['acceptanceRate'] ?? null;
-        $this->view->imported = $dashboard['value']['nbImported'] ?? null;
+        $this->view->acceptanceRate = $dashboard['value']['rate']['accepted'] ?? null;
+        $this->view->publicationRate = $dashboard['value']['rate']['published'] ?? null;
+        $this->view->declineRate = $dashboard['value']['rate']['refused'] ?? null;
         $this->view->allPublications = $dashboard['value']['nbPublished'] ?? null;
         $this->view->acceptedNotYetPublished = $dashboard['value'][self::NB_ACCEPTED_NOT_YET_PUBLISHED] ?? null;
-        $this->view->acceptedSubmittedSameYaer = $dashboard['value']['totalAcceptedSubmittedSameYear'] ?? null;
-        $this->view->acceptationRateSubmittedSameYear = $dashboard['details'][self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$yearQuery]['acceptanceRate'] ?? null;
+        $this->view->acceptedSubmittedSameYear = $dashboard['value']['totalAcceptedSubmittedSameYear'] ?? null;
+        $this->view->publishedSubmittedSameYear = $dashboard['value']['totalPublishedSubmittedSameYear'] ?? null;
+        $this->view->refusedSubmittedSameYear = $dashboard['value']['totalRefusedSubmittedSameYear'] ?? null;
         $this->view->reviewsRequested = $reviewsRequested ?? null;
         $this->view->reviewsReceived = $reviewsReceived ?? null;
         $this->view->medianReviewsNumber = $medianReviewsNumber ?? null;
 
 
         // Percentages
-        $publishedPercentage = $dashboard['value']['percentage']['published'] ?? 0;
-        $acceptedPercentage = $dashboard['value']['percentage']['accepted'] ?? 0;
-        $refusedPercentage = $dashboard['value']['percentage']['refused'] ?? 0;
-        $otherPercentage = $dashboard['value']['percentage']['other'] ?? 0;
+        $publishedPercentage = $dashboard['value']['rate']['published'] ?? 0;
+        $acceptedPercentage = $dashboard['value']['rate']['accepted'] ?? 0;
+        $refusedPercentage = $dashboard['value']['rate']['refused'] ?? 0;
+        $otherPercentage = $dashboard['value']['rate']['other'] ?? 0;
 
 
         $seriesJs['allSubmissionsPercentage']['datasets'][] = [
@@ -245,7 +257,7 @@ class StatsController extends Zend_Controller_Action
         $this->view->submissionPublicationTimeUnit = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['unit'] ?? null;
 
 
-        $seriesJs['allSubmissionsPercentage']['labels'] = [$label2, $label4, $label3, $label5];
+        $seriesJs['allSubmissionsPercentage']['labels'] = [$rateLabel1, $rateLabel2, $rateLabel3, $rateLabel4];
         $seriesJs['allSubmissionsPercentage']['chartType'] = self::CHART_TYPE['PIE'];
 
         //figure 2 > Breakdown of submissions by year and status
@@ -280,7 +292,7 @@ class StatsController extends Zend_Controller_Action
             $this->view->translate("Répartition des soumissions par <code>archive</code>");
 
         $seriesJs['submissionsByRepo']['repositories']['chartType'] = self::CHART_TYPE['BAR'];
-        $seriesJs['submissionsByRepo']['percentage']['chartType'] = self::CHART_TYPE['PIE'];
+        $seriesJs['submissionsByRepo']['rate']['chartType'] = self::CHART_TYPE['PIE'];
 
 
         // figure4 > Average time in days between submission and acceptance (submission and publication)
