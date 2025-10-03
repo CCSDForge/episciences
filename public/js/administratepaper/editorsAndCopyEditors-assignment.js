@@ -65,6 +65,11 @@ function getAssignUserForm(button, docid, vid, partial) {
             }, 4)
         });
 
+        // Initialize editor availability handling
+        if (buttonId === 'editors') {
+            initializeEditorAvailability();
+        }
+
         let saveAction = '/administratepaper/save' + buttonId;
 
         $('form[id^=assign]').on('submit', function () {
