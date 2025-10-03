@@ -239,7 +239,9 @@ class Episciences_Submit
                 /* @var  $user Episciences_User */
                 foreach ($users as $uid => $user) {
                     // Liste des rédacteurs et rédacteurs en chef (on filtre root, ainsi que le compte connecté)
-                    if ($uid !== 1 && $uid !== Episciences_Auth::getUid()) {
+                    // ET on filtre aussi les éditeurs qui ne sont pas disponibles
+                    if ($uid !== 1 && $uid !== Episciences_Auth::getUid()
+                        && Episciences_UsersManager::isEditorAvailable($uid, RVID)) {
                         $options[$uid] = $user->getFullName();
                     }
                 }

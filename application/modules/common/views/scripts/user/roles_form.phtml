@@ -7,19 +7,19 @@
     foreach ($options as $value => $label):
         $checked = in_array($value, (array)$values) ? 'checked="checked"' : '';
 
-        // Extraire le label du rôle et la checkbox "Available" si elle existe
+        // Extract the role label and the "Available" checkbox if it exists
         $roleLabel = $label;
         $availableCheckbox = '';
 
         if (strpos($label, '<span style="float: right;') !== false) {
-            // Séparer le label du rôle et la checkbox "Available"
+            // Separate the role label and the "Available" checkbox
             preg_match('/(.*?)(<span style="float: right;.*?<\/span>)/s', $label, $matches);
             if (count($matches) === 3) {
                 $roleLabel = $matches[1];
                 $availableCheckbox = $matches[2];
             }
         }
-    ?>
+        ?>
         <div class="checkbox" style="width: 100%; overflow: hidden; position: relative; <?php echo $availableCheckbox ? 'padding-right: 120px;' : ''; ?>">
             <label style="display: inline-block;">
                 <input type="checkbox" name="<?php echo $rolesElement->getName(); ?>[]" value="<?php echo $value; ?>" <?php echo $checked; ?>>

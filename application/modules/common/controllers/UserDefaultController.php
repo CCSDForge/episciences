@@ -1454,6 +1454,7 @@ class UserDefaultController extends Zend_Controller_Action
             $this->_helper->layout->disableLayout();
             $this->view->form = $form;
             $this->view->uid = $uid;
+            $this->renderScript('user/roles_form.phtml');
         }
     }
 
@@ -1491,7 +1492,6 @@ class UserDefaultController extends Zend_Controller_Action
             $hasEditorRole = !empty(array_intersect($roles, $editorRoles));
 
             if ($hasEditorRole) {
-                // Inverted logic: if the "Unavailable" checkbox is checked -> editor UNAVAILABLE
                 // If the checkbox is unchecked -> editor AVAILABLE
                 $isUnavailable = array_key_exists('is_unavailable_' . $uid, $params);
                 $isAvailable = !$isUnavailable;

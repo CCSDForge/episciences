@@ -349,7 +349,7 @@ class Episciences_UsersManager
     }
 
     /**
-     * Vérifie si un éditeur est disponible
+     * Checks if an editor is available
      * @param int $uid
      * @param int $rvid
      * @return bool
@@ -368,11 +368,14 @@ class Episciences_UsersManager
             ]);
 
         $result = $db->fetchOne($select);
-        return (bool)$result;
+
+        // If IS_AVAILABLE is NULL or 0, consider as not available
+        // Only return true if IS_AVAILABLE is explicitly set to 1
+        return $result === '1' || $result === 1;
     }
 
     /**
-     * Définit la disponibilité d'un éditeur
+     * Sets the availability of an editor
      * @param int $uid
      * @param int $rvid
      * @param bool $isAvailable
@@ -395,5 +398,4 @@ class Episciences_UsersManager
 
         return $db->update(T_USER_ROLES, $data, $where);
     }
-
 }
