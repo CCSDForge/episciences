@@ -1897,7 +1897,11 @@ return array(
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
+    'autre' => 'other',
+    "Les articles importés ne sont pas inclus" => "Imported articles are not included",
     "Évaluation" => "Review",
+    "articles acceptés (non encore publiés)" => "accepted articles (not yet published)",
+    'non encore publiés' => 'not yet published',
     "Évaluations reçues" => "Reviews received",
     "Évaluations demandées" => "Reviews requested",
     "Nombre médian d'évaluations d'articles de recherche" => "Median number of reviews for research articles",
@@ -1906,7 +1910,9 @@ return array(
     "toutes les soumissions" => "all submissions",
     "le nombre d'articles acceptés" => "the number of accepted articles",
     "En un coup d'oeil" => "At a glance",
-    "Taux d'acceptation" => "Acceptance rate",
+    "taux d'acceptation" => "acceptance rate",
+    "taux de publication" => "publication rate",
+    "taux de refus" => "decline rate",
     'Dépôt-Acceptation' => 'Submission-Acceptance',
     'Dépôt-Publication' => 'Submission-Publication',
     'Statistiques' => 'Statistics',
@@ -1943,6 +1949,7 @@ return array(
     "Aucune information n'est disponible pour cette page pour le moment." => "No information is available for this page at the moment.",
     'délai soumission-acceptation' => 'Submission-acceptance time',
     'délai soumission-publication' => 'Submission-publication time',
+    'Cela inclut les articles qui ont déjà été publiés' => 'This includes articles that have already been published',
     // datasets
     'administratelinkeddata-addld' => 'Add a related work',
     'administratelinkeddata-removeld' => 'Remove a related work',
