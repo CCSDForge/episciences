@@ -369,9 +369,9 @@ class Episciences_UsersManager
 
         $result = $db->fetchOne($select);
 
-        // If IS_AVAILABLE is NULL or 0, consider as not available
-        // Only return true if IS_AVAILABLE is explicitly set to 1
-        return $result === '1' || $result === 1;
+        // If IS_AVAILABLE is NULL or 1, consider as available
+        // Only return false if IS_AVAILABLE is explicitly set to 0
+        return $result !== '0' && $result !== 0;
     }
 
     /**

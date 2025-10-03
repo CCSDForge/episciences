@@ -1227,13 +1227,23 @@ class Episciences_PapersManager
 
         // Checkbox
         /** @var Episciences_User $user */
+
         foreach ($users as $user) {
-            $options[$user->getUid()] = $user->getFullname();
+            $userName = $user->getFullname();
+
+            // Add "unavailable" indicator for editors who are not available
+            if ($name === 'editors' && !Episciences_UsersManager::isEditorAvailable($user->getUid(), RVID)) {
+                $userName .=' <span style="background-color: #ff8c00; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; margin-left: 5px;">unavailable</span>';
+            }
+
+            $options[$user->getUid()] = $userName;
         }
+
 
         $form->addElement('multiCheckbox', $name, [
             'multiOptions' => $options,
             'separator' => '<br/>',
+            'escape' => false,
             'decorators' => ['ViewHelper', ['HtmlTag', ['tag' => 'div', 'class' => $name . '-list', 'style' => 'margin-left: 15px']]]
         ]);
 
