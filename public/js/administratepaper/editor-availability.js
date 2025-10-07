@@ -1,8 +1,8 @@
 /**
  * Handle editor availability in paper assignment forms
- * - Disable checkboxes for unavailable editors
- * - Allow unchecking unavailable editors if already selected
- * - Re-disable after unchecking
+ * Disable checkboxes for unavailable editors
+ * Allow unchecking unavailable editors if already selected
+ * Redisable after unchecking
  */
 
 function initializeEditorAvailability() {
