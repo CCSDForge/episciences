@@ -1228,14 +1228,26 @@ class Episciences_PapersManager
         // Checkbox
         /** @var Episciences_User $user */
 
+        $translator = Zend_Registry::get('Zend_Translate');
         $unavailableEditors = [];
         foreach ($users as $user) {
-            $userName = $user->getFullname();
+            $userName = '';
+
+            // Add icon for editors (guest editor = star, editor = user icon)
+            if ($name === 'editors') {
+                $class = ($user->isGuestEditor()) ? 'grey glyphicon glyphicon-star' : 'lightergrey glyphicon glyphicon-user';
+                $type = ($user->isGuestEditor()) ? ucfirst($translator->translate(Episciences_Acl::ROLE_GUEST_EDITOR)) : ucfirst($translator->translate(Episciences_Acl::ROLE_EDITOR));
+                $icon = '<span class="' . $class . '" style="margin-right:10px"></span>';
+                $icon = '<span style="cursor: pointer" data-toggle="tooltip" title="' . $type . '">' . $icon . '</span>';
+                $userName .= $icon;
+            }
+
+            $userName .= $user->getFullname();
 
             // Track unavailable editors for JavaScript handling
             if ($name === 'editors' && !Episciences_UsersManager::isEditorAvailable($user->getUid(), RVID)) {
                 $unavailableEditors[] = $user->getUid();
-                $userName .= ' <span class="unavailable-badge" style="background-color: #ff8c00; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; margin-left: 5px;">unavailable</span>';
+                $userName .= ' <span class="unavailable-badge" style="background-color: #ff8c00; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; margin-left: 5px;">' . $translator->translate('unavailable') . '</span>';
             }
 
             $options[$user->getUid()] = $userName;

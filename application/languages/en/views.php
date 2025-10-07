@@ -2174,6 +2174,7 @@ return array(
     'Descripteurs de données' => 'Data descriptors',
     'Descripteurs de logiciel' => 'Software descriptors',
     "File 'file_data_descriptor' was not uploaded" => "Descriptor file not downloaded.",
-    "La version que vous essayez d'envoyer existe déjà." => "The version you are trying to send already exists."
+    "La version que vous essayez d'envoyer existe déjà." => "The version you are trying to send already exists.",
+    'unavailable' => 'unavailable'
 
 );
