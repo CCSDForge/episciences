@@ -1897,6 +1897,8 @@ return array(
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
+    'Moyenne [en %s]' => 'Average [in %s]',
+    'Médiane [en %s]' => 'Median [in %s]',
     'autre' => 'other',
     "Les articles importés ne sont pas inclus" => "Imported articles are not included",
     "Évaluation" => "Review",

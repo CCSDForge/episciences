@@ -1,20 +1,35 @@
-<?php if ($this->submissionAcceptanceTime || $this->submissionPublicationTime) : ?>
+<?php if (
+        $this->submissionAcceptanceTime ||
+        $this->submissionPublicationTime ||
+        $this->submissionPublicationTimeMedian ||
+        $this->submissionAcceptanceTimeMedian
+) : ?>
     <div>
-        <?php if ($this->submissionAcceptanceTime): ?>
 
-            <li>
-                <?= ucfirst($this->translate('délai soumission-acceptation')) ?>
-                <code><?= $this->submissionAcceptanceTime ?></code>&nbsp<?= $this->translate(strtolower($this->submissionAcceptanceTimeUnit)) ?>
-            </li>
+        <table class="delay table table-striped">
 
-        <?php endif; ?>
+            <thead>
+            <tr>
+                <th scope="col"></th>
+                <th scope="col"><?= sprintf($this->translate('Moyenne [en %s]'), $this->translate(strtolower($this->submissionAcceptanceTimeUnit))) ?></th>
+                <th scope="col"><?= sprintf($this->translate('Médiane [en %s]'), $this->translate(strtolower($this->submissionAcceptanceTimeMedianUnit))) ?></th>
+            </tr>
+            </thead>
+            <tbody>
 
-        <?php if ($this->submissionPublicationTime): ?>
+            <tr>
+                <th><?= ucfirst($this->translate('délai soumission-publication')) ?></th>
+                <td><?= $this->submissionPublicationTime ?></td>
+                <td><?= $this->submissionPublicationTimeMedian ?></td>
+            </tr>
 
-            <li>
-                <?= ucfirst($this->translate('délai soumission-publication')) ?>
-                <code><?= $this->submissionPublicationTime ?></code>&nbsp<?= $this->translate(strtolower($this->submissionPublicationTimeUnit)) ?>
-            </li>
-        <?php endif; ?>
+            <tr>
+                <th><?= ucfirst($this->translate('délai soumission-acceptation')) ?></th>
+                <td><?= $this->submissionAcceptanceTime ?></td>
+                <td><?= $this->submissionAcceptanceTimeMedian ?></td>
+            </tr>
+            </tbody>
+        </table>
+
     </div>
 <?php endif; ?>

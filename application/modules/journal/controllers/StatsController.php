@@ -256,6 +256,12 @@ class StatsController extends Zend_Controller_Action
         $this->view->submissionPublicationTime = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['value'] ?? null;
         $this->view->submissionPublicationTimeUnit = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['unit'] ?? null;
 
+        $this->view->submissionPublicationTimeMedian = $dashboard['value']['submissionPublicationTimeMedian']['value'] ?? null;
+        $this->view->submissionPublicationTimeMedianUnit = $dashboard['value']['submissionPublicationTimeMedian']['unit'] ?? null;
+
+        $this->view->submissionAcceptanceTimeMedian = $dashboard['value']['submissionAcceptanceTimeMedian']['value'] ?? null;
+        $this->view->submissionAcceptanceTimeMedianUnit = $dashboard['value']['submissionAcceptanceTimeMedian']['unit'] ?? null;
+
 
         $seriesJs['allSubmissionsPercentage']['labels'] = [$rateLabel1, $rateLabel2, $rateLabel3, $rateLabel4];
         $seriesJs['allSubmissionsPercentage']['chartType'] = self::CHART_TYPE['PIE'];
