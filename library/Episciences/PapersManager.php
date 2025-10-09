@@ -1247,7 +1247,7 @@ class Episciences_PapersManager
             // Track unavailable editors for JavaScript handling
             if ($name === 'editors' && !Episciences_UsersManager::isEditorAvailable($user->getUid(), RVID)) {
                 $unavailableEditors[] = $user->getUid();
-                $userName .= ' <span class="unavailable-badge label-default text-white" style="padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; margin-left: 5px;">' . $translator->translate('unavailable') . '</span>';
+                $userName .= ' <span class="unavailable-badge">' . $translator->translate('unavailable') . '</span>';
             }
 
             $options[$user->getUid()] = $userName;

@@ -85,7 +85,7 @@ class Episciences_VolumesManager
                     $unavailableEditors[] = $uid;
                     // Translate to "unavailable" for English, "Indisponible" for French
                     $unavailableText = $translator->translate('unavailable');
-                    $unavailableLabel = ' <span class="unavailable-badge label-default text-white" style="padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; margin-left: 5px;">' . $unavailableText . '</span>';
+                    $unavailableLabel = ' <span class="unavailable-badge">' . $unavailableText . '</span>';
                     $label .= $unavailableLabel;
                 }
 
