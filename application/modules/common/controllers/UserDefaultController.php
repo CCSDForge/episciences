@@ -1391,6 +1391,7 @@ class UserDefaultController extends Zend_Controller_Action
 
             $acl = new Episciences_Acl();
             $roles = $acl->getEditableRoles();
+            $translator = Zend_Registry::get('Zend_Translate');
 
             // Verify whether the user has the editor role
             $isEditor = in_array(Episciences_Acl::ROLE_EDITOR, $userRoles) ||
@@ -1411,15 +1412,20 @@ class UserDefaultController extends Zend_Controller_Action
             ];
 
             foreach ($roles as $roleId => $roleLabel) {
+                // Translate the role label
+                $translatedLabel = $translator->translate($roleId);
+
                 if (in_array($roleId, $editorRoles)) {
                     // Cocher seulement si l'utilisateur possède CE rôle spécifique ET est indisponible
                     $hasThisRole = in_array($roleId, $userRoles);
                     $checked = ($hasThisRole && !$isAvailable) ? 'checked' : '';
-                    $roles[$roleId] = $roleLabel .
+                    $roles[$roleId] = $translatedLabel .
                         '<span style="float: right; padding: 2px 6px; background-color: #f5f5f5; border-radius: 3px; font-weight: normal; white-space: nowrap; min-width: 100px; text-align: center; font-size: 11px;">' .
                         '<input type="checkbox" name="is_unavailable_' . $uid . '" value="1" ' . $checked . ' id="is_unavailable_' . $uid . '" style="vertical-align: middle; margin: 0; margin-right: 3px;">' .
-                        '<label for="is_unavailable_' . $uid . '" style="display: inline; font-weight: normal; cursor: pointer; vertical-align: middle; font-size: 11px;">Unavailable</label>' .
+                        '<label for="is_unavailable_' . $uid . '" style="display: inline; font-weight: normal; cursor: pointer; vertical-align: middle; font-size: 11px;">' . $translator->translate('unavailable') . '</label>' .
                         '</span>';
+                } else {
+                    $roles[$roleId] = $translatedLabel;
                 }
             }
 
