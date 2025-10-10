@@ -1416,7 +1416,7 @@ class UserDefaultController extends Zend_Controller_Action
                 $translatedLabel = $translator->translate($roleId);
 
                 if (in_array($roleId, $editorRoles)) {
-                    // Cocher seulement si l'utilisateur possède CE rôle spécifique ET est indisponible
+                    // Check only if the user has this specific role and is unavailable.
                     $hasThisRole = in_array($roleId, $userRoles);
                     $checked = ($hasThisRole && !$isAvailable) ? 'checked' : '';
                     $roles[$roleId] = $translatedLabel .
