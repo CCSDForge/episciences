@@ -11,8 +11,16 @@
         $roleLabel = $label;
         $availableCheckbox = '';
 
-        if (strpos($label, '<span style="float: right;') !== false) {
-            // Separate the role label and the "Available" checkbox
+        // Check for both old inline style and new CSS class approach
+        if (strpos($label, '<div style="display: flex;') !== false) {
+            // New flexbox approach - extract the checkbox span
+            preg_match('/<div[^>]*>.*?<span>(.*?)<\/span>.*?(<span class="editor-availability-checkbox">.*?<\/span>).*?<\/div>/s', $label, $matches);
+            if (count($matches) === 3) {
+                $roleLabel = $matches[1];
+                $availableCheckbox = $matches[2];
+            }
+        } elseif (strpos($label, '<span style="float: right;') !== false) {
+            // Old inline style approach
             preg_match('/(.*?)(<span style="float: right;.*?<\/span>)/s', $label, $matches);
             if (count($matches) === 3) {
                 $roleLabel = $matches[1];

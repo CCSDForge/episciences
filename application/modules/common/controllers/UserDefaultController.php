@@ -1419,11 +1419,13 @@ class UserDefaultController extends Zend_Controller_Action
                     // Check only if the user has this specific role and is unavailable.
                     $hasThisRole = in_array($roleId, $userRoles);
                     $checked = ($hasThisRole && !$isAvailable) ? 'checked' : '';
-                    $roles[$roleId] = $translatedLabel .
-                        '<span style="float: right; padding: 2px 6px; background-color: #f5f5f5; border-radius: 3px; font-weight: normal; white-space: nowrap; min-width: 100px; text-align: center; font-size: 11px;">' .
-                        '<input type="checkbox" name="is_unavailable_' . $uid . '" value="1" ' . $checked . ' id="is_unavailable_' . $uid . '" style="vertical-align: middle; margin: 0; margin-right: 3px;">' .
-                        '<label for="is_unavailable_' . $uid . '" style="display: inline; font-weight: normal; cursor: pointer; vertical-align: middle; font-size: 11px;">' . $translator->translate('unavailable') . '</label>' .
-                        '</span>';
+                    $roles[$roleId] = '<div style="display: flex; justify-content: space-between; align-items: center;">' .
+                        '<span>' . $translatedLabel . '</span>' .
+                        '<span class="editor-availability-checkbox">' .
+                        '<input type="checkbox" name="is_unavailable_' . $uid . '" value="1" ' . $checked . ' id="is_unavailable_' . $uid . '">' .
+                        '<label for="is_unavailable_' . $uid . '">' . $translator->translate('unavailable') . '</label>' .
+                        '</span>' .
+                        '</div>';
                 } else {
                     $roles[$roleId] = $translatedLabel;
                 }
