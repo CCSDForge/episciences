@@ -14,7 +14,7 @@ class Episciences_OpenAireResearchGraphTools
     // if not call one time api and put cache for all concerned info like licences and creator (at this moment) and all the response from this api
     // avoid multiple call for this api
 
-    public static function checkOpenAireGlobalInfoByDoi($doi,$paperId): void
+    public static function checkOpenAireGlobalInfoByDoi($doi, $paperId): void
     {
 
         $dir = CACHE_PATH_METADATA . 'openAireResearchGraph/';
@@ -27,25 +27,25 @@ class Episciences_OpenAireResearchGraphTools
         }
 
 
-        $fileOpenAireGlobalResponse = trim(explode("/", $doi)[1]) . ".json";
+        $fileOpenAireGlobalResponse = md5(trim($doi)) . ".json";
         $cache = new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
         $sets = $cache->getItem($fileOpenAireGlobalResponse);
         $sets->expiresAfter(self::ONE_MONTH);
         if (!$sets->isHit()) {
             $client = new Client();
-            if (PHP_SAPI === 'cli'){
-                $info = PHP_EOL . 'https://api.openaire.eu/search/publications/?doi=' . $doi . '&format=json'. PHP_EOL ;
+            if (PHP_SAPI === 'cli') {
+                $info = PHP_EOL . 'https://api.openaire.eu/search/publications/?doi=' . $doi . '&format=json' . PHP_EOL;
                 echo $info;
             }
             $openAireCallArrayResp = self::callOpenAireApi($client, $doi);
             try {
                 $decodeOpenAireResp = json_decode($openAireCallArrayResp, true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                $sets->set(json_encode($decodeOpenAireResp,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+                $sets->set(json_encode($decodeOpenAireResp, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
                 $cache->save($sets);
-            }catch (JsonException $e) {
+            } catch (JsonException $e) {
                 $eMsg = $e->getMessage() . " for PAPER " . $paperId . ' URL called https://api.openaire.eu/search/publications?doi=' . $doi . '&format=json ';
                 if (PHP_SAPI === 'cli') {
-                    echo PHP_EOL. $eMsg .PHP_EOL;
+                    echo PHP_EOL . $eMsg . PHP_EOL;
                 }
                 // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
                 self::logErrorMsg($eMsg);
@@ -87,10 +87,11 @@ class Episciences_OpenAireResearchGraphTools
     public static function logErrorMsg($msg): void
     {
         $logger = new Logger('openaire_researchgraph_tools');
-        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'openAireResearchGraph_'.date('Y-m-d').'.log', Logger::INFO));
+        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'openAireResearchGraph_' . date('Y-m-d') . '.log', Logger::INFO));
 
         $logger->info($msg);
     }
+
     /**
      * @param string $doiTrim
      * @return mixed
@@ -99,7 +100,7 @@ class Episciences_OpenAireResearchGraphTools
     public static function getsGlobalOARGCache(string $doiTrim)
     {
         ////// CACHE GLOBAL RESEARCH GRAPH
-        $fileOpenAireGlobalResponse = trim(explode("/", $doiTrim)[1]) . ".json";
+        $fileOpenAireGlobalResponse = md5($doiTrim) . ".json";
         $cacheOARG = new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
         return $cacheOARG->getItem($fileOpenAireGlobalResponse);
     }
@@ -113,7 +114,7 @@ class Episciences_OpenAireResearchGraphTools
     {
         ////// CACHE CREATOR ONLY
         $cacheCreator = new FilesystemAdapter('enrichmentAuthors', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-        $pathOpenAireCreator = trim(explode("/", $doiTrim)[1]) . "_creator.json";
+        $pathOpenAireCreator = md5($doiTrim) . "_creator.json";
         $setsOpenAireCreator = $cacheCreator->getItem($pathOpenAireCreator);
         return array($cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator);
     }
@@ -127,7 +128,7 @@ class Episciences_OpenAireResearchGraphTools
     public static function insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId): int
     {
         $affectedRow = 0;
-        if ($setsOpenAireCreator->isHit()){
+        if ($setsOpenAireCreator->isHit()) {
             return $affectedRow;
         }
         try {
@@ -142,6 +143,7 @@ class Episciences_OpenAireResearchGraphTools
                 $reformatFileFound = $fileFound;
             }
             $selectAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
+
             foreach ($selectAuthor as $key => $authorInfo) {
                 // LOOP IN ARRAY FROM DB
                 $decodeAuthor = json_decode($authorInfo['authors'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
@@ -161,8 +163,8 @@ class Episciences_OpenAireResearchGraphTools
                             echo PHP_EOL . "Added ORCID $foundOrcid for author $authorFullName (record $key, paper $paperId)" . PHP_EOL;
                         }
                     }
-                    }
-                if ($recordUpdated && $decodeAuthor  !== $originalAuthorsArray) {
+                }
+                if ($recordUpdated && $decodeAuthor !== $originalAuthorsArray) {
                     self::insertAuthors($decodeAuthor, $paperId, $key);
                     $affectedRow++;
                 }
@@ -196,8 +198,7 @@ class Episciences_OpenAireResearchGraphTools
             if (array_search($needleFullName, $authorInfoFromApi, false) !== false ||
                 array_search(Episciences_Tools::replaceAccents($needleFullName), $authorInfoFromApi, false)) {
                 $isMatch = true;
-            }
-            elseif (isset($authorInfoFromApi['$']) &&
+            } elseif (isset($authorInfoFromApi['$']) &&
                 Episciences_Tools::replaceAccents($needleFullName) === Episciences_Tools::replaceAccents($authorInfoFromApi['$'])) {
                 $isMatch = true;
             }
@@ -226,29 +227,6 @@ class Episciences_OpenAireResearchGraphTools
         self::logErrorMsg("ORCID not found for author: " . $needleFullName);
         return null;
     }
-    /**
-     * @param $decodeOpenAireResp
-     * @param $doi
-     * @return void
-     * @throws JsonException
-     */
-    public static function putCreatorInCache($decodeOpenAireResp, $doi): void
-    {
-        $cache = new FilesystemAdapter('enrichmentAuthors', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-        $fileName = trim(explode("/", $doi)[1]) . "_creator.json";
-        $sets = $cache->getItem($fileName);
-        $sets->expiresAfter(self::ONE_MONTH);
-        if ($decodeOpenAireResp !== [""] && !is_null($decodeOpenAireResp) && !empty($decodeOpenAireResp['response']['results'])) {
-            if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
-                $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
-                $sets->set(json_encode($creatorArrayOpenAire, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
-                $cache->save($sets);
-            }
-        } else {
-            $sets->set(json_encode([""]));
-            $cache->save($sets);
-        }
-    }
 
     /**
      * @param $decodeAuthor
@@ -264,6 +242,31 @@ class Episciences_OpenAireResearchGraphTools
         $newAuthorInfos->setAuthorsId($key);
         return Episciences_Paper_AuthorsManager::update($newAuthorInfos);
     }
+
+    /**
+     * @param $decodeOpenAireResp
+     * @param $doi
+     * @return void
+     * @throws JsonException
+     */
+    public static function putCreatorInCache($decodeOpenAireResp, $doi): void
+    {
+        $cache = new FilesystemAdapter('enrichmentAuthors', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+        $fileName = md5(trim($doi)) . "_creator.json";
+        $sets = $cache->getItem($fileName);
+        $sets->expiresAfter(self::ONE_MONTH);
+        if ($decodeOpenAireResp !== [""] && !is_null($decodeOpenAireResp) && !empty($decodeOpenAireResp['response']['results'])) {
+            if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
+                $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
+                $sets->set(json_encode($creatorArrayOpenAire, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+                $cache->save($sets);
+            }
+        } else {
+            $sets->set(json_encode([""]));
+            $cache->save($sets);
+        }
+    }
+
     /**
      * @param $needleFullName
      * @param $authorInfoFromApi
@@ -314,12 +317,12 @@ class Episciences_OpenAireResearchGraphTools
         if ($decodeOpenAireResp !== [""] && !is_null($decodeOpenAireResp) && !is_null($decodeOpenAireResp['response']['results'])) {
             if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
                 $preFundingArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result'];
-                if (array_key_exists('rels',$preFundingArrayOpenAire)) {
-                    if (!empty($preFundingArrayOpenAire['rels']) && array_key_exists('rel',$preFundingArrayOpenAire['rels'])){
+                if (array_key_exists('rels', $preFundingArrayOpenAire)) {
+                    if (!empty($preFundingArrayOpenAire['rels']) && array_key_exists('rel', $preFundingArrayOpenAire['rels'])) {
                         $arrayFunding = $preFundingArrayOpenAire['rels']['rel'];
-                        $sets->set(json_encode($arrayFunding,JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+                        $sets->set(json_encode($arrayFunding, JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
                         $cache->save($sets);
-                    }else{
+                    } else {
                         $sets->set(json_encode([""]));
                         $cache->save($sets);
                     }
@@ -333,6 +336,7 @@ class Episciences_OpenAireResearchGraphTools
             $cache->save($sets);
         }
     }
+
     /**
      * @param string $doiTrim
      * @return array
