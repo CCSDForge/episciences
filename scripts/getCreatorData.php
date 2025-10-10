@@ -93,7 +93,7 @@ class GetCreatorData extends JournalScript
 
         // Handle single paper processing by Paper ID
         if ($this->getParam('paperid')) {
-            $paperId = (int) $this->getParam('paperid');
+            $paperId = (int)$this->getParam('paperid');
             $this->processSinglePaper($paperId);
             return;
         }
@@ -145,70 +145,11 @@ class GetCreatorData extends JournalScript
     }
 
     /**
-     * Delete cache entries for a specific DOI
-     *
-     * @param string $doi The DOI to clear cache for
-     * @return void
-     */
-    private function deleteCacheForDoi(string $doi): void
-    {
-        try {
-            $cacheDir = dirname(APPLICATION_PATH) . '/cache/';
-
-            // Delete OpenAIRE Research Graph cache for this DOI
-            $fileOpenAireGlobalResponse = trim(explode("/", $doi)[1]) . ".json";
-            $cacheOARG = new FilesystemAdapter('openAireResearchGraph', 0, $cacheDir);
-            $cacheOARG->deleteItem($fileOpenAireGlobalResponse);
-
-            // Delete enrichment authors cache for this DOI
-            $pathOpenAireCreator = trim(explode("/", $doi)[1]) . "_creator.json";
-            $cacheEnrichment = new FilesystemAdapter('enrichmentAuthors', 0, $cacheDir);
-            $cacheEnrichment->deleteItem($pathOpenAireCreator);
-
-            $this->logger->info("Deleted cache entries for DOI: {$doi}");
-        } catch (Exception $e) {
-            $this->logger->error("Failed to delete cache for DOI {$doi}: " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Process a single paper by its Paper ID
-     *
-     * @param int $paperId Paper ID
-     * @return void
-     * @throws JsonException
-     * @throws Zend_Db_Statement_Exception
-     */
-    private function processSinglePaper(int $paperId): void
-    {
-        $this->logger->info("Processing single paper by ID: {$paperId}");
-
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()
-            ->from(T_PAPERS, ['DOI', 'PAPERID', 'DOCID', 'IDENTIFIER', 'REPOID', 'VERSION'])
-            ->where('PAPERID = ?', $paperId)
-            ->where("DOI != ''")
-            ->order('DOCID DESC');
-        ;
-
-        $result = $db->fetchRow($select);
-
-        if (!$result) {
-            $this->logger->error("Paper not found with ID: {$paperId}");
-            return;
-        }
-
-        $this->processPaper($result);
-        $this->logger->info("Processing completed for paper ID: {$paperId}");
-    }
-
-    /**
      * Process a single paper by its DOI
      *
      * @param string $doi DOI identifier
      * @return void
      * @throws JsonException
-     * @throws Zend_Db_Statement_Exception
      */
     private function processSingleDoi(string $doi): void
     {
@@ -235,7 +176,7 @@ class GetCreatorData extends JournalScript
      *
      * @param array $paperData Paper data from database
      * @return void
-     * @throws JsonException
+     * @throws JsonException|\Psr\Cache\InvalidArgumentException
      */
     private function processPaper(array $paperData): void
     {
@@ -266,6 +207,7 @@ class GetCreatorData extends JournalScript
      *
      * @param array $paperData Paper data from database
      * @return void
+     * @throws Zend_Db_Statement_Exception
      */
     private function processEmptyDoi(array $paperData): void
     {
@@ -282,7 +224,7 @@ class GetCreatorData extends JournalScript
      *
      * @param array $paperData Paper data from database
      * @return void
-     * @throws JsonException
+     * @throws \Psr\Cache\InvalidArgumentException|Zend_Db_Statement_Exception|JsonException
      */
     private function processPaperWithDoi(array $paperData): void
     {
@@ -349,6 +291,56 @@ class GetCreatorData extends JournalScript
     }
 
     /**
+     * Check if script should bypass cache
+     *
+     * @return bool
+     */
+    public function isNoCache(): bool
+    {
+        return $this->_noCache;
+    }
+
+    /**
+     * Set no-cache mode
+     *
+     * @param bool $noCache
+     * @return void
+     */
+    public function setNoCache(bool $noCache): void
+    {
+        $this->_noCache = $noCache;
+    }
+
+    /**
+     * Delete cache entries for a specific DOI
+     *
+     * @param string $doi The DOI to clear cache for
+     * @return void
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    private function deleteCacheForDoi(string $doi): void
+    {
+        try {
+            $cacheDir = dirname(APPLICATION_PATH) . '/cache/';
+
+            // Delete OpenAIRE Research Graph cache for this DOI
+            // Use MD5 hash to avoid special characters in cache key
+            $fileOpenAireGlobalResponse = md5($doi) . ".json";
+            $cacheOARG = new FilesystemAdapter('openAireResearchGraph', 0, $cacheDir);
+            $cacheOARG->deleteItem($fileOpenAireGlobalResponse);
+
+            // Delete enrichment authors cache for this DOI
+            $pathOpenAireCreator = md5($doi) . "_creator.json";
+            $cacheEnrichment = new FilesystemAdapter('enrichmentAuthors', 0, $cacheDir);
+            $cacheEnrichment->deleteItem($pathOpenAireCreator);
+
+            $this->logger->info("Deleted cache entries for DOI: {$doi}");
+        } catch (Exception $e) {
+            $this->logger->error("Failed to delete cache for DOI {$doi}: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Process HAL repository specific enrichment with TEI metadata
      *
      * @param array $paperData Paper data from database
@@ -359,7 +351,7 @@ class GetCreatorData extends JournalScript
     {
         $paperId = $paperData['PAPERID'];
         $identifier = trim($paperData['IDENTIFIER']);
-        $version = (int) trim($paperData['VERSION']);
+        $version = (int)trim($paperData['VERSION']);
 
         $this->logger->info("Processing HAL repository metadata for identifier: {$identifier}");
 
@@ -424,6 +416,36 @@ class GetCreatorData extends JournalScript
     }
 
     /**
+     * Process a single paper by its Paper ID
+     *
+     * @param int $paperId Paper ID
+     * @return void
+     * @throws JsonException
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    private function processSinglePaper(int $paperId): void
+    {
+        $this->logger->info("Processing single paper by ID: {$paperId}");
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPERS, ['DOI', 'PAPERID', 'DOCID', 'IDENTIFIER', 'REPOID', 'VERSION'])
+            ->where('PAPERID = ?', $paperId)
+            ->where("DOI != ''")
+            ->order('DOCID DESC');
+
+        $result = $db->fetchRow($select);
+
+        if (!$result) {
+            $this->logger->error("Paper not found with ID: {$paperId}");
+            return;
+        }
+
+        $this->processPaper($result);
+        $this->logger->info("Processing completed for paper ID: {$paperId}");
+    }
+
+    /**
      * Check if script is running in dry-run mode
      *
      * @return bool
@@ -442,27 +464,6 @@ class GetCreatorData extends JournalScript
     public function setDryRun(bool $dryRun): void
     {
         $this->_dryRun = $dryRun;
-    }
-
-    /**
-     * Check if script should bypass cache
-     *
-     * @return bool
-     */
-    public function isNoCache(): bool
-    {
-        return $this->_noCache;
-    }
-
-    /**
-     * Set no-cache mode
-     *
-     * @param bool $noCache
-     * @return void
-     */
-    public function setNoCache(bool $noCache): void
-    {
-        $this->_noCache = $noCache;
     }
 
 
