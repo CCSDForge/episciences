@@ -202,14 +202,25 @@ class StatsController extends Zend_Controller_Action
         $rateLabel2 = ucfirst($this->view->translate("taux d'acceptation"));
         $rateLabel4 = ucfirst($this->view->translate('autre'));
 
+
+        // all(Sub.., Pub.., Acce..., Aru..., Oth... ) : Imported articles are not included
+        $allSubmissions = $dashboard['value'][self::NB_SUBMISSIONS] ?? null;
+        $allPublications = $dashboard['value'][self::NB_PUBLISHED] ?? null;
+        $allAcceptations = $dashboard['value'][self::NB_ACCEPTED];
+        $allRefusals = $dashboard['value'][self::NB_REFUSED];
+        $allOtherStatus = $dashboard['value'][self::NB_OTHER_STATUS];
+
+
+        $importedPublished = $dashboard['value']['nbImportedPublished']; // imported and published
+
+
         // The API only returns these values if the "startAfterDate" filter is enabled: they provide an overview of the data, without taking this filter into account.
         $totalArticles = $dashboard['value']['totalWithoutStartAfterDate']['totalSubmissions'] ?? $dashboard['value'][self::NB_SUBMISSIONS] ?? null;
         $totalImported = $dashboard['value']['totalWithoutStartAfterDate']['totalImported'] ?? $dashboard['value'][self::NB_IMPORTED] ?? null;
-        $totalPublished = $dashboard['value']['totalWithoutStartAfterDate']['totalPublished'] ?? $dashboard['value'][self::NB_PUBLISHED] ?? null;
-        $totalImportedPublished =  $dashboard['value']['totalWithoutStartAfterDate']['totalImportedPublished'] ?? $dashboard['value']['nbImportedPublished'] ?? null;
+        $totalPublished = $dashboard['value']['totalWithoutStartAfterDate']['totalPublished'] ?? ($allPublications + $importedPublished)  ?? null;
+        $totalImportedPublished =  $dashboard['value']['totalWithoutStartAfterDate']['totalImportedPublished'] ?? $importedPublished ?? null;
 
 
-        $allSubmissions = $dashboard['value'][self::NB_SUBMISSIONS] ?? null;
         $this->view->chart1Title = $this->view->translate("En un coup d'oeil");
 
         // Indicators
@@ -217,16 +228,18 @@ class StatsController extends Zend_Controller_Action
         $this->view->allSubmissions = $allSubmissions;
         $this->view->totalImportedArticles = $totalImported; // without "startAfterDate" filter
         $this->view->imported = $dashboard['value']['nbImported'] ?? null; // filter's "startAfterDate" taking into account.
-        $this->view->totalPublishedArticles = $totalPublished + $totalImportedPublished ;
+        $this->view->totalPublishedArticles = $totalPublished;
         $this->view->totalImportedPublished = $totalImportedPublished;
 
-        $this->view->allRefusals = $dashboard['value'][self::NB_REFUSED];
-        $this->view->allAcceptations = $dashboard['value'][self::NB_ACCEPTED] ?? null;
-        $this->view->allOtherStatus = $dashboard['value'][self::NB_OTHER_STATUS];
+        $this->view->allPublications = $allPublications ?? null;
+        $this->view->allRefusals = $allRefusals ?? null;
+        $this->view->allAcceptations = $allAcceptations ?? null;
+        $this->view->allOtherStatus = $allOtherStatus ?? null;
+
         $this->view->acceptanceRate = $dashboard['value']['rate']['accepted'] ?? null;
         $this->view->publicationRate = $dashboard['value']['rate']['published'] ?? null;
         $this->view->declineRate = $dashboard['value']['rate']['refused'] ?? null;
-        $this->view->allPublications = $dashboard['value']['nbPublished'] ?? null;
+
         $this->view->acceptedNotYetPublished = $dashboard['value'][self::NB_ACCEPTED_NOT_YET_PUBLISHED] ?? null;
         $this->view->acceptedSubmittedSameYear = $dashboard['value']['totalAcceptedSubmittedSameYear'] ?? null;
         $this->view->publishedSubmittedSameYear = $dashboard['value']['totalPublishedSubmittedSameYear'] ?? null;
