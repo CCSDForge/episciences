@@ -14,7 +14,7 @@ class AddMissingLogs extends JournalScript
     protected Logger $logger;
     protected bool $isVerbose = true;
     protected bool $isDebug = false;
-    protected bool $withoutImported = true;
+    protected bool $withoutImported = false;
 
     public function __construct()
     {
