@@ -763,4 +763,133 @@ class ToolsTest extends TestCase
         $this->assertFalse(Episciences_Tools::isRtlLanguage('es')); // Spanish
     }
 
+    // ============================================================================
+    // Tests for validateDoi()
+    // ============================================================================
+
+    public function testValidateDoi_WithValidDoi_ReturnsCleanedDoi(): void
+    {
+        $validDoi = '10.1234/test-doi';
+        $result = Episciences_Tools::validateDoi($validDoi);
+        $this->assertSame($validDoi, $result);
+    }
+
+    public function testValidateDoi_WithWhitespace_ReturnsTrimmedDoi(): void
+    {
+        $result = Episciences_Tools::validateDoi('  10.1234/test-doi  ');
+        $this->assertSame('10.1234/test-doi', $result);
+    }
+
+    public function testValidateDoi_WithEmptyString_ThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('DOI cannot be empty');
+        Episciences_Tools::validateDoi('');
+    }
+
+    public function testValidateDoi_WithInvalidFormat_ThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid DOI format');
+        Episciences_Tools::validateDoi('not-a-doi');
+    }
+
+    public function testValidateDoi_WithExcessiveLength_ThrowsException(): void
+    {
+        // Create a DOI that's longer than default MAX_DOI_LENGTH (200 characters)
+        $longDoi = '10.1234/' . str_repeat('a', 200);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('DOI exceeds maximum length');
+        Episciences_Tools::validateDoi($longDoi);
+    }
+
+    public function testValidateDoi_WithCustomMaxLength_ThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('DOI exceeds maximum length of 20 characters');
+        Episciences_Tools::validateDoi('10.1234/this-is-a-very-long-doi', 20);
+    }
+
+    public function testValidateDoi_WithComplexValidDoi_ReturnsCleanedDoi(): void
+    {
+        // Test with complex but valid DOI containing special characters
+        $validDoi = '10.1234/test-DOI.with_special(chars)';
+        $result = Episciences_Tools::validateDoi($validDoi);
+        $this->assertSame($validDoi, $result);
+    }
+
+    public function testValidateDoi_WithRealWorldDois_ReturnsCleanedDoi(): void
+    {
+        // Test with real-world DOI examples
+        $realDois = [
+            '10.1016/j.neuron.2018.01.023',
+            '10.1038/nature12373',
+            '10.1126/science.aaa1234',
+            '10.48550/arXiv.2104.12345',
+        ];
+
+        foreach ($realDois as $doi) {
+            $result = Episciences_Tools::validateDoi($doi);
+            $this->assertSame($doi, $result);
+        }
+    }
+
+    // ============================================================================
+    // Tests for isValidOrcid()
+    // ============================================================================
+
+    public function testIsValidOrcid_WithValidOrcid_ReturnsTrue(): void
+    {
+        $validOrcids = [
+            '0000-0002-1825-0097',
+            '0000-0001-5000-0007',
+            '0000-0002-9079-593X', // X is valid checksum
+            '0000-0003-1234-5678',
+        ];
+
+        foreach ($validOrcids as $orcid) {
+            $result = Episciences_Tools::isValidOrcid($orcid);
+            $this->assertTrue($result, "ORCID $orcid should be valid");
+        }
+    }
+
+    public function testIsValidOrcid_WithInvalidOrcid_ReturnsFalse(): void
+    {
+        $invalidOrcids = [
+            '0000-0002-1825',        // Too short
+            '0000-0002-1825-00971',  // Too long
+            '0000-00021-1825-0097',  // Wrong format
+            'not-an-orcid',          // Completely invalid
+            '',                      // Empty
+            '0000-0002-1825-009Y',   // Invalid checksum (Y not allowed)
+        ];
+
+        foreach ($invalidOrcids as $orcid) {
+            $result = Episciences_Tools::isValidOrcid($orcid);
+            $this->assertFalse($result, "ORCID '$orcid' should be invalid");
+        }
+    }
+
+    public function testIsValidOrcid_WithWhitespace_HandlesTrimming(): void
+    {
+        $result = Episciences_Tools::isValidOrcid('  0000-0002-1825-0097  ');
+        $this->assertTrue($result);
+    }
+
+    public function testIsValidOrcid_WithRealWorldOrcids_ReturnsTrue(): void
+    {
+        // Test with some real ORCID examples (format-wise)
+        $realOrcids = [
+            '0000-0002-1694-233X',
+            '0000-0001-9448-0967',
+            '0000-0003-0000-0001',
+        ];
+
+        foreach ($realOrcids as $orcid) {
+            $result = Episciences_Tools::isValidOrcid($orcid);
+            $this->assertTrue($result, "ORCID $orcid should be valid");
+        }
+    }
+
 }

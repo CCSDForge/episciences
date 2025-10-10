@@ -1920,13 +1920,62 @@ class Episciences_Tools
     }
 
     /**
+     * Validate DOI format and length with proper error handling
+     *
+     * @param string $doi The DOI to validate
+     * @param int $maxLength Maximum allowed length (default 200)
+     * @return string The validated and trimmed DOI
+     * @throws InvalidArgumentException If DOI is invalid or too long
+     */
+    public static function validateDoi(string $doi, int $maxLength = 200): string
+    {
+        $doi = trim($doi);
+
+        if (empty($doi)) {
+            throw new InvalidArgumentException('DOI cannot be empty');
+        }
+
+        if (!self::isDoi($doi)) {
+            throw new InvalidArgumentException('Invalid DOI format: ' . $doi);
+        }
+
+        if (strlen($doi) > $maxLength) {
+            throw new InvalidArgumentException("DOI exceeds maximum length of {$maxLength} characters");
+        }
+
+        return $doi;
+    }
+
+    /**
      * @param string $strDoi
      * @return bool
      */
-    public static function isDoiWithUrl(string $strDoi)
+    public static function isDoiWithUrl(string $strDoi): bool
     {
         $pattern = '~^((https?://)?(dx.)?doi\.org/)?10.\d{4,9}/[-._;()\/:A-Z0-9]+$~i';
         return (bool)preg_match($pattern, $strDoi);
+    }
+
+    /**
+     * Validate ORCID identifier format
+     *
+     * ORCID format: 0000-0002-1825-0097
+     * Four groups of four digits separated by hyphens
+     * Last digit can be 0-9 or X (checksum)
+     *
+     * @param string $orcid The ORCID identifier to validate
+     * @return bool True if valid ORCID format, false otherwise
+     */
+    public static function isValidOrcid(string $orcid): bool
+    {
+        $orcid = trim($orcid);
+
+        if (empty($orcid)) {
+            return false;
+        }
+
+        // ORCID format: 4 groups of 4 digits separated by hyphens, last digit can be X
+        return (bool)preg_match('/^\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/', $orcid);
     }
 
     /**
