@@ -1036,6 +1036,35 @@ class Episciences_User extends Ccsd_User_Models_User
         $acl = new Episciences_Acl();
         $editableRoles = $acl->getEditableRoles();
 
+        // Deactivate assignments BEFORE deleting roles
+        // Set assignments to 'inactive' for roles that are no longer present
+        $removedRoles = array_diff($editableRoles, $roles);
+
+        if (!empty($removedRoles)) {
+            // For each removed role, set active assignments to 'inactive'
+            $quotedRoles = array_map([$this->_db, 'quote'], $removedRoles);
+            $rolesInClause = implode(',', $quotedRoles);
+
+            $this->_db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
+            SELECT `u`.`RVID`, `u`.`ITEMID`, `u`.`ITEM`, `u`.`UID`, `u`.`ROLEID`, 'inactive', NOW()
+            FROM USER_ASSIGNMENT `u`
+            WHERE `u`.`UID` = ?
+            AND `u`.`RVID` = ?
+            AND `u`.`ROLEID` IN (" . $rolesInClause . ")
+            AND `u`.`STATUS` = 'active'
+            AND `u`.`WHEN` IN (
+                SELECT MAX(`ua`.`WHEN`) AS `MAXDATE`
+                FROM USER_ASSIGNMENT `ua`
+                WHERE `ua`.`UID` = `u`.`UID`
+                AND `ua`.`ITEM` = `u`.`ITEM`
+                AND `ua`.`ITEMID` = `u`.`ITEMID`
+                AND `ua`.`ROLEID` = `u`.`ROLEID`
+                AND `ua`.`RVID` = `u`.`RVID`
+                GROUP BY `ua`.`ROLEID`
+            )", [$uid, $rvId]);
+        }
+
+        // Maintenant on peut supprimer les rôles de USER_ROLES
         foreach ($editableRoles as $role) {
             $this->_db->delete(T_USER_ROLES, ['RVID = ?' => $rvId, 'UID = ?' => $uid, 'ROLEID = ?' => $role]);
         }
