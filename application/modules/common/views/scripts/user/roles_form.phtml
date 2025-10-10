@@ -1,0 +1,46 @@
+<form action="<?php echo $this->form->getAction(); ?>" method="post">
+    <?php
+    $rolesElement = $this->form->getElement('roles_' . $this->uid);
+    $options = $rolesElement->getMultiOptions();
+    $values = $rolesElement->getValue();
+
+    foreach ($options as $value => $label):
+        $checked = in_array($value, (array)$values) ? 'checked="checked"' : '';
+
+        // Extract the role label and the "Available" checkbox if it exists
+        $roleLabel = $label;
+        $availableCheckbox = '';
+
+        // Check for both old inline style and new CSS class approach
+        if (strpos($label, '<div style="display: flex;') !== false) {
+            // New flexbox approach - extract the checkbox span
+            preg_match('/<div[^>]*>.*?<span>(.*?)<\/span>.*?(<span class="editor-availability-checkbox">.*?<\/span>).*?<\/div>/s', $label, $matches);
+            if (count($matches) === 3) {
+                $roleLabel = $matches[1];
+                $availableCheckbox = $matches[2];
+            }
+        } elseif (strpos($label, '<span style="float: right;') !== false) {
+            // Old inline style approach
+            preg_match('/(.*?)(<span style="float: right;.*?<\/span>)/s', $label, $matches);
+            if (count($matches) === 3) {
+                $roleLabel = $matches[1];
+                $availableCheckbox = $matches[2];
+            }
+        }
+        ?>
+        <div class="checkbox" style="width: 100%; overflow: hidden; position: relative; <?php echo $availableCheckbox ? 'padding-right: 120px;' : ''; ?>">
+            <label style="display: inline-block;">
+                <input type="checkbox" name="<?php echo $rolesElement->getName(); ?>[]" value="<?php echo $value; ?>" <?php echo $checked; ?>>
+                <?php echo $roleLabel; ?>
+            </label>
+            <?php if ($availableCheckbox): ?>
+                <div style="position: absolute; right: 0; top: 0;">
+                    <?php echo $availableCheckbox; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    <?php endforeach; ?>
+
+    <?php echo $this->form->getElement('updateUserRoles'); ?>
+    <?php echo $this->form->getElement('cancel'); ?>
+</form>

@@ -31,6 +31,17 @@
 
 <?php if ($this->editorsForm) : ?>
     <?php echo $this->editorsForm; ?>
+    <script type="text/javascript">
+        var unavailableEditors = <?= isset($this->unavailableEditors) ? json_encode($this->unavailableEditors) : '[]' ?>;
+        console.log('Unavailable editors from PHP:', unavailableEditors);
+
+        // Initialize editor availability immediately
+        if (typeof initializeEditorAvailability === 'function') {
+            setTimeout(function() {
+                initializeEditorAvailability();
+            }, 100);
+        }
+    </script>
 <?php else : ?>
     <?php echo $this->translate('Aucun rédacteur enregistré') . '.' ?>
 <?php endif; ?>

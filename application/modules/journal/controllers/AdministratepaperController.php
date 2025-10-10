@@ -2349,6 +2349,15 @@ class AdministratepaperController extends PaperDefaultController
             try {
                 $this->view->editors = $editors;
                 $this->view->editorsForm = Episciences_PapersManager::getEditorsForm($docId, $editors);
+
+                // Get unavailable editors
+                $unavailableEditors = [];
+                foreach ($editors as $editor) {
+                    if (!Episciences_UsersManager::isEditorAvailable($editor->getUid(), RVID)) {
+                        $unavailableEditors[] = $editor->getUid();
+                    }
+                }
+                $this->view->unavailableEditors = $unavailableEditors;
             } catch (Exception $e) {
                 trigger_error('EDITORS_FORM_ACTION : ' . $e, E_USER_WARNING);
             }

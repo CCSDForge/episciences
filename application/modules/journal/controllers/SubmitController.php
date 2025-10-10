@@ -315,10 +315,15 @@ class SubmitController extends DefaultController
         $cEditors = [];
 
         foreach ($editors as $editor) {
-            $cEditors[$editor->getUid()] = ['uid' => $editor->getUid(), 'fullname' => $editor->getFullname()];
-        }
-        return $cEditors;
+            // Only include editors who marked themselves as available
+            $isAvailable = Episciences_UsersManager::isEditorAvailable($editor->getUid(), RVID);
 
+            if ($isAvailable) {
+                $cEditors[$editor->getUid()] = ['uid' => $editor->getUid(), 'fullname' => $editor->getFullname()];
+            }
+        }
+
+        return $cEditors;
     }
 
     public function ajaxhashookAction()

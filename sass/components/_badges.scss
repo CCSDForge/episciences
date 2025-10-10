@@ -1,0 +1,40 @@
+/**
+ * Badge components
+ */
+
+.unavailable-badge {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: bold;
+  margin-left: 5px;
+  background-color: #999; // label-default color
+  color: #fff;
+}
+
+.editor-availability-checkbox {
+  float: right;
+  padding: 2px 6px;
+  background-color: #f5f5f5;
+  border-radius: 3px;
+  font-weight: normal;
+  white-space: nowrap;
+  min-width: 100px;
+  text-align: center;
+  font-size: 11px;
+
+  input[type="checkbox"] {
+    vertical-align: middle;
+    margin: 0;
+    margin-right: 3px;
+  }
+
+  label {
+    display: inline;
+    font-weight: normal;
+    cursor: pointer;
+    vertical-align: middle;
+    font-size: 11px;
+    margin-bottom: 0;
+  }
+}

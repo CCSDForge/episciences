@@ -2,11 +2,31 @@
 .editors-list {
 	max-height: 150px;
 	overflow: auto;
-	margin-bottom: 10px;
+	margin-left: 15px;
+	margin-right: 15px;
+	margin-bottom: 15px;
+}
+
+#filter {
+	margin-left: 15px;
+	margin-right: 15px;
+	padding: 8px;
+	width: calc(100% - 30px);
 }
 </style>
 <?php if ($this->editorsForm) : ?>
 	<?php echo $this->editorsForm; ?>
+	<script type="text/javascript">
+		var unavailableEditors = <?= isset($this->unavailableEditors) ? json_encode($this->unavailableEditors) : '[]' ?>;
+		console.log('Unavailable editors from PHP:', unavailableEditors);
+
+		// Initialize editor availability immediately
+		if (typeof initializeEditorAvailability === 'function') {
+			setTimeout(function() {
+				initializeEditorAvailability();
+			}, 100);
+		}
+	</script>
 <?php else : ?>
 	<?php echo $this->translate('Aucun rédacteur enregistré') . '.' ?>
 <?php endif;?>

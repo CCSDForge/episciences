@@ -147,7 +147,15 @@ class VolumeController extends Zend_Controller_Action
 
         $volume = Episciences_VolumesManager::find($vid);
         $currentEditors = $volume->getEditors();
-        $this->view->editorsForm = Episciences_VolumesManager::getEditorsForm($currentEditors);
+        $formData = Episciences_VolumesManager::getEditorsForm($currentEditors);
+
+        if ($formData) {
+            $this->view->editorsForm = $formData['form'];
+            $this->view->unavailableEditors = $formData['unavailableEditors'];
+        } else {
+            $this->view->editorsForm = false;
+            $this->view->unavailableEditors = [];
+        }
 
         $this->_helper->layout->disableLayout();
         return true;
