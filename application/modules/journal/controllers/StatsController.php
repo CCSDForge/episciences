@@ -236,9 +236,6 @@ class StatsController extends Zend_Controller_Action
         $this->view->allAcceptations = $allAcceptations ?? null;
         $this->view->allOtherStatus = $allOtherStatus ?? null;
 
-        $this->view->acceptanceRate = $dashboard['value']['rate']['accepted'] ?? null;
-        $this->view->publicationRate = $dashboard['value']['rate']['published'] ?? null;
-        $this->view->declineRate = $dashboard['value']['rate']['refused'] ?? null;
 
         $this->view->acceptedNotYetPublished = $dashboard['value'][self::NB_ACCEPTED_NOT_YET_PUBLISHED] ?? null;
         $this->view->acceptedSubmittedSameYear = $dashboard['value']['totalAcceptedSubmittedSameYear'] ?? null;
@@ -250,34 +247,38 @@ class StatsController extends Zend_Controller_Action
 
 
         // Percentages
-        $publishedPercentage = $dashboard['value']['rate']['published'] ?? 0;
-        $acceptedPercentage = $dashboard['value']['rate']['accepted'] ?? 0;
-        $refusedPercentage = $dashboard['value']['rate']['refused'] ?? 0;
-        $otherPercentage = $dashboard['value']['rate']['other'] ?? 0;
+        $publishedPercentage = $dashboard['value']['rate']['published'] ?? null;
+        $acceptedPercentage = $dashboard['value']['rate']['accepted'] ?? null;
+        $refusedPercentage = $dashboard['value']['rate']['refused'] ?? null;
+        $otherPercentage = $dashboard['value']['rate']['other'] ?? null;
 
+        $this->view->acceptanceRate = $acceptedPercentage;
+        $this->view->publicationRate = $publishedPercentage;
+        $this->view->declineRate = $refusedPercentage;
+
+
+        $piChartData = [$acceptedPercentage, $refusedPercentage, $otherPercentage];
+        $piChartColors = [self::COLORS_CODE[5], self::COLORS_CODE[2], self::COLORS_CODE[0]];
+        $piChartLabels = [$rateLabel2, $rateLabel3, $rateLabel4];
 
         $seriesJs['allSubmissionsPercentage']['datasets'][] = [
-            'data' => [$publishedPercentage, $acceptedPercentage, $refusedPercentage, $otherPercentage],
-            'backgroundColor' => [self::COLORS_CODE[4], self::COLORS_CODE[5], self::COLORS_CODE[2], self::COLORS_CODE[0]]
+            'data' => $piChartData,
+            'backgroundColor' => $piChartColors
         ];
+
+        $seriesJs['allSubmissionsPercentage']['labels'] = $piChartLabels;
+        $seriesJs['allSubmissionsPercentage']['chartType'] = self::CHART_TYPE['PIE'];
 
 
         $this->view->submissionAcceptanceTime = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['value'] ?? null;
         $this->view->submissionAcceptanceTimeUnit = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['unit'] ?? null;
-
-
         $this->view->submissionPublicationTime = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['value'] ?? null;
         $this->view->submissionPublicationTimeUnit = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['unit'] ?? null;
-
         $this->view->submissionPublicationTimeMedian = $dashboard['value']['submissionPublicationTimeMedian']['value'] ?? null;
         $this->view->submissionPublicationTimeMedianUnit = $dashboard['value']['submissionPublicationTimeMedian']['unit'] ?? null;
-
         $this->view->submissionAcceptanceTimeMedian = $dashboard['value']['submissionAcceptanceTimeMedian']['value'] ?? null;
         $this->view->submissionAcceptanceTimeMedianUnit = $dashboard['value']['submissionAcceptanceTimeMedian']['unit'] ?? null;
 
-
-        $seriesJs['allSubmissionsPercentage']['labels'] = [$rateLabel1, $rateLabel2, $rateLabel3, $rateLabel4];
-        $seriesJs['allSubmissionsPercentage']['chartType'] = self::CHART_TYPE['PIE'];
 
         //figure 2 > Breakdown of submissions by year and status
         $this->view->chart2Title = !$yearQuery ?
