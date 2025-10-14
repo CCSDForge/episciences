@@ -1032,6 +1032,14 @@ class Episciences_User extends Ccsd_User_Models_User
     public function saveUserRoles($uid, $roles, int $rvId = RVID): bool
     {
         $uid = (int)$uid;
+
+        // Récupérer les rôles actuels avant suppression pour détecter les rôles retirés
+        $sqlCurrentRoles = $this->_db->select()
+            ->from(T_USER_ROLES, 'ROLEID')
+            ->where('UID = ?', $uid)
+            ->where('RVID = ?', $rvId);
+        $currentRoles = $this->_db->fetchCol($sqlCurrentRoles);
+
         // Reset des rôles de l'utilisateur
         $acl = new Episciences_Acl();
         $editableRoles = $acl->getEditableRoles();
@@ -1067,6 +1075,36 @@ class Episciences_User extends Ccsd_User_Models_User
                     Episciences_Auth::updateIdentity($user);
                 }
             }
+        }
+
+        // Détecter les rôles retirés (editor, reviewer, copy_editor)
+        $assignmentRoles = ['editor', 'reviewer', 'copy_editor'];
+        $removedRoles = array_diff($currentRoles, $roles);
+        $removedAssignmentRoles = array_intersect($removedRoles, $assignmentRoles);
+
+        // Désactiver les assignments pour les rôles retirés
+        if (!empty($removedAssignmentRoles)) {
+            // Créer les placeholders pour IN clause
+            $placeholders = implode(',', array_fill(0, count($removedAssignmentRoles), '?'));
+            $params = array_merge([$uid, $rvId], array_values($removedAssignmentRoles));
+
+            $this->_db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
+            SELECT `u`.`RVID`, `u`.`ITEMID`, `u`.`ITEM`, `u`.`UID`, `u`.`ROLEID`, 'disabled', NOW()
+            FROM USER_ASSIGNMENT `u`
+            WHERE `u`.`UID` = ?
+            AND `u`.`RVID` = ?
+            AND `u`.`ROLEID` IN ($placeholders)
+            AND `u`.`STATUS` = 'active'
+            AND `u`.`WHEN` IN (
+                SELECT MAX(`ua`.`WHEN`) AS `MAXDATE`
+                FROM USER_ASSIGNMENT `ua`
+                WHERE `ua`.`UID` = `u`.`UID`
+                AND `ua`.`ITEM` = `u`.`ITEM`
+                AND `ua`.`ITEMID` = `u`.`ITEMID`
+                AND `ua`.`ROLEID` = `u`.`ROLEID`
+                AND `ua`.`RVID` = `u`.`RVID`
+                GROUP BY `ua`.`ROLEID`
+            )", $params);
         }
 
         return true;

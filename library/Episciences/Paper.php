@@ -2528,21 +2528,61 @@ class Episciences_Paper
             return false;
         }
 
-        $oAssignment = new Episciences_User_Assignment([
-            'uid' => $uid,
-            'item' => Episciences_User_Assignment::ITEM_PAPER,
-            'itemid' => $this->getDocid(),
-            'roleid' => $roleId,
-            'status' => Ccsd_Tools::ifsetor($status, Episciences_User_Assignment::STATUS_INACTIVE)
+        // First look for an ACTIVE assignment
+        $oAssignment = Episciences_User_AssignmentsManager::find([
+            'UID' => $uid,
+            'ITEM' => Episciences_User_Assignment::ITEM_PAPER,
+            'ITEMID' => $this->getDocid(),
+            'ROLEID' => $roleId,
+            'STATUS' => Episciences_User_Assignment::STATUS_ACTIVE
         ]);
 
-        $oAssignment->setRvid($this->getRvid());
+        if (!$oAssignment) {
+            // If no active assignment is found, check if an INACTIVE assignment already exists
+            $inactiveAssignment = Episciences_User_AssignmentsManager::find([
+                'UID' => $uid,
+                'ITEM' => Episciences_User_Assignment::ITEM_PAPER,
+                'ITEMID' => $this->getDocid(),
+                'ROLEID' => $roleId,
+                'STATUS' => Episciences_User_Assignment::STATUS_INACTIVE
+            ]);
 
-        if ($oAssignment->save()) {
-            return $oAssignment->getId();
+            if ($inactiveAssignment) {
+                //If the assignment is already INACTIVE, return its ID
+                return $inactiveAssignment->getId();
+            }
+
+            // No active or inactive assignment found
+            return false;
         }
 
-        throw new Zend_Exception("Failed to save assignment.");
+
+        // Create a NEW assignment with INACTIVE status
+        $params = [
+            'rvid' => $this->getRvid(),
+            'itemid' => $this->getDocid(),
+            'item' => Episciences_User_Assignment::ITEM_PAPER,
+            'roleid' => $roleId,
+            'status' => Episciences_User_Assignment::STATUS_INACTIVE,
+            'tmp_user' => $oAssignment->isTmp_user()
+        ];
+
+        /** @var Episciences_User_Assignment $newAssignment */
+        $newAssignments = Episciences_UsersManager::unassign($uid, $params);
+
+        if (!empty($newAssignments) && isset($newAssignments[0])) {
+            $newAssignment = $newAssignments[0];
+
+            // Copy the INVITATION_ID from the old assignment if it exists
+            if ($oAssignment->getInvitation_id()) {
+                $newAssignment->setInvitation_id($oAssignment->getInvitation_id());
+                $newAssignment->save();
+            }
+
+            return $newAssignment->getId();
+        }
+
+        throw new Zend_Exception("Failed to create inactive assignment.");
 
     }
 
