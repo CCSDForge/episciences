@@ -211,7 +211,7 @@ class StatsController extends Zend_Controller_Action
         $allOtherStatus = $dashboard['value'][self::NB_OTHER_STATUS];
 
 
-        $importedPublished = $dashboard['value']['nbImportedPublished']; // imported and published
+        $importedPublished = $dashboard['value']['nbImportedPublished'] ?? 0; // imported and published
 
 
         // The API only returns these values if the "startAfterDate" filter is enabled: they provide an overview of the data, without taking this filter into account.
