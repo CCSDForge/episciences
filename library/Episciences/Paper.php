@@ -2543,6 +2543,7 @@ class Episciences_Paper
         }
 
         throw new Zend_Exception("Failed to save assignment.");
+
     }
 
     /**
