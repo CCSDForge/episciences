@@ -90,7 +90,13 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                     } ?>
                 <?php endif; ?>
                 <td>
-                    <div class="tags" style="float:left; max-width: 250px; display: inline">
+                    <?php if (APPLICATION_ENV != 'demo' && (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor())) : ?>
+                        <button onclick="getRoles(this, <?php echo $user['uid'] ?>)"
+                                class="btn btn-sm btn-default popover-link" style="float: right; font-size: 10px; margin-left: 10px;"><span
+                                    class="darkgrey caret"></span></button>
+                    <?php endif; ?>
+
+                    <div class="tags" style="overflow: hidden; max-width: calc(100% - 35px); display: flex; flex-wrap: wrap; gap: 3px;">
                         <?php if ($user['ROLES'][RVID]) : ?>
                             <?php
                             if (count($user['ROLES'][RVID]) > 1){
@@ -102,12 +108,6 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                             echo $this->partial('partials/user_roles.phtml', array('roles' => $user['ROLES'][RVID])) ?>
                         <?php endif; ?>
                     </div>
-
-                    <?php if (APPLICATION_ENV !== 'demo' && (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor())) : ?>
-                        <button onclick="getRoles(this, <?php echo $user['uid'] ?>)"
-                                class="btn btn-sm btn-default popover-link" style="float: right; font-size: 10px"><span
-                                    class="darkgrey caret"></span></button>
-                    <?php endif; ?>
 
                 </td>
                 <td style="text-align:right;">

@@ -43,7 +43,7 @@ class Episciences_VolumesManager
     /**
      * Renvoie le formulaire d'assignation de rédacteurs à un volume
      * @param null $currentEditors
-     * @return bool|Ccsd_Form
+     * @return bool|array ['form' => Ccsd_Form, 'unavailableEditors' => array]
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
@@ -68,12 +68,27 @@ class Episciences_VolumesManager
             ]));
 
             // Checkbox
+            $options = [];
+            $unavailableEditors = [];
             foreach ($editors as $uid => $editor) {
                 $class = ($editor->isGuestEditor()) ? 'grey glyphicon glyphicon-star' : 'lightergrey glyphicon glyphicon-user';
                 $type = ($editor->isGuestEditor()) ? ucfirst($translator->translate(Episciences_Acl::ROLE_GUEST_EDITOR)) : ucfirst($translator->translate(Episciences_Acl::ROLE_EDITOR));
                 $icon = '<span class="' . $class . '" style="margin-right:10px"></span>';
                 $icon = '<span style="cursor: pointer" data-toggle="tooltip" title="' . $type . '">' . $icon . '</span>';
+
+                // Check availability
+                $isAvailable = Episciences_UsersManager::isEditorAvailable($uid, RVID);
+
                 $label = $icon . $editor->getFullname();
+
+                if (!$isAvailable) {
+                    $unavailableEditors[] = $uid;
+                    // Translate to "unavailable" for English, "Indisponible" for French
+                    $unavailableText = $translator->translate('unavailable');
+                    $unavailableLabel = ' <span class="unavailable-badge">' . $unavailableText . '</span>';
+                    $label .= $unavailableLabel;
+                }
+
                 $options[$uid] = $label;
             }
 
@@ -107,7 +122,10 @@ class Episciences_VolumesManager
                 'decorators' => ['ViewHelper', ['HtmlTag', ['tag' => 'div', 'closeOnly' => true]]]
             ]));
 
-            return $form;
+            return [
+                'form' => $form,
+                'unavailableEditors' => $unavailableEditors
+            ];
         }
 
         return false;
