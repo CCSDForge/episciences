@@ -1,0 +1,55 @@
+<?php if ($this->totalArticles) : ?>
+    <div class="submissions-totals row">
+
+    <li>
+        <?= $this->translate('Total :') ?>
+        <code><?= $this->totalArticles ?></code><?= $this->translate($this->totalArticles > 1 ? 'articles' : 'article') ?>
+        <?php if ($this->totalImportedArticles): ?>
+            <?php $importedMsg = $this->totalImportedArticles > 1 ? 'dont %s importés' : 'dont %s importé'; ?>
+            <p class="help-block" style="display: inline;">
+                (<?= sprintf($this->translate($importedMsg), '<code>' . $this->totalImportedArticles . '</code>') ?>
+                )
+            </p>
+        <?php endif; ?>
+        <?php if (isset($this->year)): ?>
+            <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
+                title="<?= $this->translate('Cela inclut seulement les articles soumis cette année.') ?>"></em>
+        <?php endif; ?>
+
+        <?php if (isset($this->totalPublishedArticles)): ?>
+            |
+            <code><?= $this->totalPublishedArticles ?></code> <?= $this->translate($this->totalPublishedArticles > 1 ? 'publiés' : 'publié') ?>
+            <?php if ($this->totalImportedPublished) : ?>
+                <?php $importedMsg = $this->totalImportedPublished > 1 ? 'dont %s importés' : 'dont %s importé'; ?>
+                <p class="help-block" style="display: inline;">
+                    (<?= sprintf($this->translate($importedMsg), '<code>' . $this->totalImportedPublished . '</code>') ?>
+                    )
+                </p>
+            <?php endif; ?>
+            <?php if (isset($this->year)): ?>
+                <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
+                    title="<?= $this->translate('Cela inclut les articles qui ont été soumis antérieurement et publiés cette année.') ?>"></em>
+            <?php endif; ?>
+
+        <?php endif; ?>
+    </li>
+
+
+<?php else: ?>
+    <li>
+        <?= $this->translate('Soumissions') ?>
+        <code><?= $this->allSubmissions ?></code>
+        <?php if ($this->imported): ?>
+            <?php $importedMsg = $this->imported > 1 ? 'dont %s importés' : 'dont %s importé'; ?>
+            <p class="help-block" style="display: inline;">
+                (<?= sprintf($this->translate($importedMsg), '<code>' . $this->imported . '</code>') ?>
+                )
+            </p>
+        <?php endif; ?>
+
+    </li>
+
+    </div>
+
+
+<?php endif; ?>
