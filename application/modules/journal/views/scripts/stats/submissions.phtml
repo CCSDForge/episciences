@@ -2,7 +2,7 @@
 $isYear = isset($this->year);
 $acceptedNoYetPublishedTooltipInfo = "Cela inclut les versions acceptées (mise en forme ou non)";
 $acceptedTooltipInfo = "Cela inclut les articles qui ont déjà été publiés";
-$refusedTooltipInfo = "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année.";
+$refusedTooltipInfo = "La revue peut rejeter plusieurs fois le même article. Dans ce cas, un seul rejet est comptabilisé par article.";
 $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
 ?>
 <div class="panel panel-default collapsable">
@@ -84,10 +84,17 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                             <li>
                                 <?= ucfirst($this->translate('articles refusés')) ?>
                                 <code><?= $this->allRefusals ?></code>
-                                <?php if ($isYear): ?>
-                                    <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                                        title="<?= $this->translate($refusedTooltipInfo) ?>"></em>
+                                <?php if ($isYear):
+
+                                    $refusedTooltipInfo = $this->translate("Cela inclut les articles qui ont été soumis antérieurement et refusés cette année.")
+                                            . ' ' .
+                                            $this->translate($refusedTooltipInfo);
+                                    ?>
                                 <?php endif; ?>
+                                <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
+                                    title="<?= $this->translate($refusedTooltipInfo) ?>"></em>
+
+
                             </li>
 
                         <?php endif; ?>
