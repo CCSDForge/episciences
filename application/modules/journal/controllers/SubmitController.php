@@ -153,11 +153,17 @@ class SubmitController extends DefaultController
 
                 if ($result['code'] === 0) {
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                    $this->_helper->redirector('submitted', 'paper');
                 } else {
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+                    // Redirect to paper detail page for possible edits
+                    $docId = $result['docId'] ?? null;
+                    if ($docId) {
+                        $this->_helper->redirector('view', 'paper', null, ['id' => $docId]);
+                    } else {
+                        $this->_helper->redirector('submitted', 'paper');
+                    }
                 }
-
-                $this->_helper->redirector('submitted', 'paper');
                 return;
             } // End isValid
 

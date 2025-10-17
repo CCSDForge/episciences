@@ -24,8 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#776](https://github.com/CCSDForge/episciences/issues/776) Action Required: Fix Renovate Configuration
 - [#657](https://github.com/CCSDForge/episciences/issues/657) Conditionally remove the `<hr>` separator in the public and admin views of article metadata
 - [#786](https://github.com/CCSDForge/episciences/issues/786) English translation of 'Télécharger le fichier'
-- [RT#259551] it is now possible to modify the Copy Editor at any time
-- [#678](https://github.com/CCSDForge/episciences/issues/678) COIs not considered in revision emails
+- [#646](https://github.com/CCSDForge/episciences/issues/786) Rediriger sur la page de l'article qui vient d'être soumis au lieu de la page qui liste toutes les soumissions
 
 ## v1.0.52 - 2025-08-28
 
