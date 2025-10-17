@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed unescaped identifiers causing invalid XML in OpenAire export format
 - [#600](https://github.com/CCSDForge/episciences/issues/600) Abstract ignores line breaks
 - [#694](https://github.com/CCSDForge/episciences/issues/694) accents via LaTeX macros in abstracts aren't rendered
+- [#541](https://github.com/CCSDForge/episciences/issues/541) remove user assignation (editor) when a user is removed from the journal
 
 
 ### Added
