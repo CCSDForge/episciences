@@ -7,8 +7,8 @@ $this->headTitle($this->translate('Gérer un article'));
 $this->headTitle("#" . $paper->getDocid() . ' - ' . $paper->getTitle() . ' (v' . $paper->getVersionNumber() . ')');
 
 $editors = $this->editors;
-$copyEditors = $this->copyEditors;
-$showCopyEditorsBloc = $paper->isEditable() && ($paper->isAcceptedSubmission() || $paper->isCopyEditingProcessStarted() || $paper->isReadyToPublish());
+$copyEditors = $this->copyEditors; // assigned copy editors
+$showCopyEditorsBloc = $paper->isEditable() || $copyEditors; // RT#259551
 $invitations = $this->invitations;
 $this->suggestedRefuse = false;
 $this->suggestedAccept = false;
@@ -385,5 +385,6 @@ $this->jQuery()->addJavascriptFile('/js/paper/updateOrcidAuthors.js');
 $this->jQuery()->addJavascriptFile('/js/paper/paperAffiAuthors.js');
 $this->jQuery()->addJavascriptFile('/js/administratepaper/coauthors.js');
 $this->jQuery()->addJavascriptFile('/js/paper/biblioRef.js');
+$this->jQuery()->addJavascriptFile('/js/administratepaper/editor-availability.js');
 ?>
 

@@ -37,6 +37,7 @@ return array(
     "Rédacteurs invités" => "Guest editors",
     "rédacteurs" => "editors",
     'temporaire' => 'temporary',
+    'Taux' => 'Rates',
 
     "Relecteur" => array("Reviewer", "Reviewers"),
     // DOCUMENT TYPES
@@ -1911,6 +1912,8 @@ return array(
     "le nombre de soumissions sur l'ensemble de l'année" => 'the total number of articles submitted during this period',
     "toutes les soumissions" => "all submissions",
     "le nombre d'articles acceptés" => "the number of accepted articles",
+    "le nombre d'articles publiées" => "the number of published articles",
+    "le nombre d'articles refusés" => "the number of refused articles",
     "En un coup d'oeil" => "At a glance",
     "taux d'acceptation" => "acceptance rate",
     "taux de publication" => "publication rate",
@@ -1941,6 +1944,8 @@ return array(
     "Cela inclut les autres statuts." => "This includes other status.",
     "Cela inclut les articles qui ont été soumis antérieurement" => 'This includes articles that were previously submitted',
     "articles acceptés (soumis la même année)" => "accepted articles (submitted in the same year)",
+    "articles refusés (soumis la même année)" => "refused articles (submitted in the same year)",
+    "articles publiés (soumis la même année)" => "published articles (submitted in the same year)",
     'soumis la même année' => 'submitted in the same year',
     'En cours de publication' => 'Being published',
     "À l'exception des statistiques sur les utilisateurs, les indicateurs ci-dessous ne comprennent que des données postérieures au " => "With the exception of user statistics, the indicators below only include data after ",
@@ -2183,6 +2188,7 @@ return array(
     'Descripteurs de données' => 'Data descriptors',
     'Descripteurs de logiciel' => 'Software descriptors',
     "File 'file_data_descriptor' was not uploaded" => "Descriptor file not downloaded.",
-    "La version que vous essayez d'envoyer existe déjà." => "The version you are trying to send already exists."
+    "La version que vous essayez d'envoyer existe déjà." => "The version you are trying to send already exists.",
+    'unavailable' => 'Unavailable'
 
 );

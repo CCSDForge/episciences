@@ -42,9 +42,9 @@ class StatsController extends Zend_Controller_Action
         try {
             /** @var Monolog\Logger $logger */
             $logger = Zend_Registry::get('appLogger');
-        } catch (Zend_Exception $e) {
-            $logger = null;
-            trigger_error($e->getMessage());
+        } catch (Throwable $e) {
+             $logger = null;
+             error_log($e->getMessage());
         }
 
 
@@ -211,7 +211,7 @@ class StatsController extends Zend_Controller_Action
         $allOtherStatus = $dashboard['value'][self::NB_OTHER_STATUS];
 
 
-        $importedPublished = $dashboard['value']['nbImportedPublished']; // imported and published
+        $importedPublished = $dashboard['value']['nbImportedPublished'] ?? 0; // imported and published
 
 
         // The API only returns these values if the "startAfterDate" filter is enabled: they provide an overview of the data, without taking this filter into account.

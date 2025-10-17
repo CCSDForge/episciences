@@ -317,4 +317,5 @@ return [
     'classification_jel' => 'JEL Classification System',
     'classification_msc2020' => 'Mathematics Subject Classification 2020',
     "File 'file_data_descriptor' was not uploaded" => "Fichier descripteur non téléchargé.",
+    'unavailable' => 'Indisponible',
 ];
