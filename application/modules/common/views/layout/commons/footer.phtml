@@ -18,7 +18,7 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                             printf('<li><i aria-hidden="true" class="fas fa-envelope"></i>&nbsp;<a href="mailto:%s" >%s </a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL_EMAIL], $this->translate('Courriel'));
                         }
                         if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL] !== '') {
-                            printf('<li><i aria-hidden="true" class="fas fa-address-book"></i >&nbsp;<a href="%s" >%s </a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL], $this->translate('Contact'));
+                            printf('<li><i aria-hidden="true" class="fas fa-address-book"></i>&nbsp;<a href="%s" >%s </a></li>', $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL], $this->translate('Contact'));
                         }
                         if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') {
                             $eissnOfJournal = $this->FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]);
