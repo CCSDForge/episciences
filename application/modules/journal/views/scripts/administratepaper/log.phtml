@@ -290,4 +290,45 @@
         <?= $this->partial('administratepaper/new-deadline-log-details.phtml', ['log' => $this->log, 'user' => $this->user]) ?>
         <?php break; ?>
 
+    <?php 
+    case Episciences_Paper_Logger::CODE_LD_ADDED:
+    case Episciences_Paper_Logger::CODE_LD_CHANGED:
+    case Episciences_Paper_Logger::CODE_LD_REMOVED: ?>
+        <table class="log-details">
+            <tr>
+                <td class="td-label"><?= $this->translate("Date") ?></td>
+                <td class="small"><?= $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Effectué par") ?></td>
+                <td class="small"><?= $this->escape($this->user['fullname']) ?></td>
+            </tr>
+            <?php if (isset($this->log['detail']['typeLd'])): ?>
+            <tr>
+                <td class="td-label"><?= $this->translate("Type de donnée liée") ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['typeLd']) ?></td>
+            </tr>
+            <?php endif; ?>
+            <?php if (isset($this->log['detail']['valueLd'])): ?>
+            <?php
+            $valueLd = $this->escape($this->log['detail']['valueLd']);
+            if (strlen($valueLd) > 50) {
+                $valueLd = Ccsd_Tools_String::truncate($valueLd, 50);
+            }
+
+            ?>
+            <tr>
+                <td class="td-label"><?= $this->translate("Valeur") ?></td>
+                <td class="small"><?= $valueLd; ?></td>
+            </tr>
+            <?php endif; ?>
+            <?php if (isset($this->log['detail']['relationship'])): ?>
+            <tr>
+                <td class="td-label"><?= $this->translate("Relation") ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['relationship']) ?></td>
+            </tr>
+            <?php endif; ?>
+        </table>
+        <?php break; ?>
+
     <?php endswitch ?>

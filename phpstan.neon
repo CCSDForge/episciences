@@ -4,4 +4,16 @@ parameters:
 		- application
 		- library
 		- public
-		- script
+		- scripts
+	excludePaths:
+		- cache
+		- data
+		- log
+		- logs
+		- tmp
+		- vendor
+	ignoreErrors:
+		- '#Call to an undefined method Zend_.*#'
+		- '#Access to an undefined property Zend_.*#'
+	bootstrapFiles:
+		- phpstan-bootstrap.php

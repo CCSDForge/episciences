@@ -5,29 +5,6 @@ class Episciences_VolumesManager
     public const MAX_STRING_LENGTH = 255;
     public const MAX_STRING_LENGTH_VOL_NUM = 6;
 
-      public static function find($vid, int $rvid = 0): Episciences_Volume|bool
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        $select = $db->select()->from(T_VOLUMES)->where('VID = ?', $vid);
-        if ($rvid !== 0) {
-            $select->where('RVID = ?', $rvid);
-        }
-        $volume = $db->fetchRow($select);
-
-        if (empty($volume)) {
-            return false;
-        }
-
-        Episciences_VolumesAndSectionsManager::dataProcess($volume, 'decode');
-
-        $oVolume = new Episciences_Volume($volume);
-        $oVolume->loadSettings();
-        $oVolume->loadMetadatas();
-
-        return $oVolume;
-    }
-
     /**
      * Retourne la liste des volumes
      * @param array|null $options
@@ -173,18 +150,18 @@ class Episciences_VolumesManager
 
     /**
      * Supprime un volume
-     * @param $id
+     * @param int $id
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    public static function delete($id): bool
+    public static function delete(int $id): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $docIds = array_keys(self::getAssignedPapers($id));
 
-        if (count($docIds)){ // Si des articles sont rattachés à ce volume, on empêche sa suppression
+        if (count($docIds)) { // Si des articles sont rattachés à ce volume, on empêche sa suppression
             $str = '(#' . implode(';#', $docIds) . ')';
             $str = sprintf(Zend_Registry::get('Zend_Translate')->translate('Des articles %s ont déjà été publiés dans ce volume.'), $str);
             echo $str;
@@ -217,35 +194,25 @@ class Episciences_VolumesManager
 
             // Suppression des metadatas du volume
             if ($db->delete(T_VOLUME_METADATAS, 'VID = ' . $id)) {
-                $path = REVIEW_FILES_PATH . 'volumes/' . $id;
-                $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
-                foreach ($files as $file) {
-                    unlink($file->getPathName());
+                try {
+                    self::deleteVolumeMetadataFiles($id);
+                } catch (InvalidArgumentException | RuntimeException $e) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                    return false;
                 }
-                rmdir($path);
+
             }
+
 
             //suppression de la file pour le volume
 
-            $db->delete(T_DOI_QUEUE_VOLUMES, 'VID = '. $id);
+            $db->delete(T_DOI_QUEUE_VOLUMES, 'VID = ' . $id);
             Episciences_VolumeProceeding::deleteByVid($id);
             return true;
         }
 
         return false;
     }
-
-    /**
-     * @param int $vid
-     * @return bool
-     */
-    private static function isPapersInVolume(int $vid): bool
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = self::isPapersInVolumeQuery($vid);
-        return (int)$db->fetchOne($select) > 0;
-    }
-
 
     private static function getAssignedPapers(int $vid): array
     {
@@ -274,9 +241,14 @@ class Episciences_VolumesManager
      */
     public static function getFormDefaults(Episciences_Volume $volume): array
     {
-
-        $defaults['title'] = $volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML);
-        $defaults['description'] = $volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML);
+        //$defaults = self::volumeTitleToTextArray($volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML));
+        //$defaults['title'] = $volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML);
+        // $defaults['description'] = $volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML);
+        //$defaults = self::volumeDescriptionToTextareaArray($volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML));
+        $defaults = array_merge(
+            self::volumeTitleToTextArray($volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML)),
+            self::volumeDescriptionToTextareaArray($volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML))
+        );
 
         foreach ($volume->getSettings() as $setting => $value) {
             $defaults[$setting] = $value;
@@ -284,6 +256,38 @@ class Episciences_VolumesManager
 
         return $defaults;
     }
+
+    private static function volumeTitleToTextArray(?array $titles): array
+    {
+        $output = [];
+        if (empty($titles)) {
+            return $output;
+        }
+
+        foreach ($titles as $lang => $value) {
+            $output["title_$lang"] = $value;
+        }
+
+        return $output;
+    }
+
+    private static function volumeDescriptionToTextareaArray(?array $descriptions): array
+    {
+        $output = [];
+        if (empty($descriptions)) {
+            return $output;
+        }
+
+        foreach ($descriptions as $lang => $value) {
+            $output["description_$lang"] = $value;
+        }
+
+        return $output;
+    }
+
+
+
+
 
     /**
      * Retourne le formulaire de gestion d'un volume
@@ -294,7 +298,8 @@ class Episciences_VolumesManager
      * @throws Zend_Form_Exception
      * @throws Zend_Validate_Exception
      */
-    public static function getForm(string $referer = '', Episciences_Volume $volume = null): \Ccsd_Form
+    public
+    static function getForm(string $referer = '', Episciences_Volume $volume = null): \Ccsd_Form
     {
         if (empty($referer)) {
             $referer = '/volume/list';
@@ -313,30 +318,28 @@ class Episciences_VolumesManager
             'FormCss',
             'FormJavascript'
         ]);
-        if ($volume !== null && $volume->getSetting('conference_proceedings_doi') !== null){
-            $form->getDecorator('ViewScript')->setOption('value',substr(strrchr($volume->getSetting('conference_proceedings_doi'), "."), 1));
+        if ($volume !== null && $volume->getSetting('conference_proceedings_doi') !== null) {
+            $form->getDecorator('ViewScript')->setOption('value', substr(strrchr($volume->getSetting('conference_proceedings_doi'), "."), 1));
         }
-        $lang = ['class' => 'Episciences_Tools', 'method' => 'getLanguages'];
-        $reqLang = ['class' => 'Episciences_Tools', 'method' => 'getRequiredLanguages'];
 
-        // Nom du volume
-        $form->addElement(new Ccsd_Form_Element_MultiTextSimpleLang([
-            'name' => 'title',
-            'label' => 'Nom',
-            'populate' => $lang,
-            'validators' => [new Ccsd_Form_Validate_RequiredLang(['populate' => $reqLang])],
-            'required' => true,
-            'display' => Ccsd_Form_Element_MultiText::DISPLAY_SIMPLE
-        ]));
+        $languages = Episciences_Tools::getLanguages();
+        foreach ($languages as $languageCode => $language) {
 
-        // Description du volume
-        $form->addElement('MultiTextAreaLang', 'description', [
-            'label' => 'Description',
-            'populate' => $lang,
-            'tiny' => true,
-            'rows' => 5,
-            'display' => Ccsd_Form_Element_MultiText::DISPLAY_ADVANCED
-        ]);
+            // Nom du volume
+            $form->addElement('text', Episciences_Volume::VOLUME_PREFIX_TITLE . $languageCode, [
+                'label' => 'Nom (' . $language . ')',
+                'maxlength' => self::MAX_STRING_LENGTH,
+                'required' => true,
+            ]);
+
+            $form->addElement('textarea', Episciences_Volume::VOLUME_PREFIX_DESCRIPTION . $languageCode, [
+                'label' => 'Description (' . $language . ')',
+                'tiny' => true,
+                'rows' => 5,
+                'maxlength' => self::MAX_STRING_LENGTH,
+            ]);
+        }
+
 
         // Référence bibliographique du volume
         $form->addElement('text', 'bib_reference', [
@@ -363,7 +366,7 @@ class Episciences_VolumesManager
         $form->addElement('text', 'year', [
             'label' => 'Année du volume',
             'value' => ($volume !== null) ? $volume->getVol_year() : '',
-           // 'required' => true,
+            // 'required' => true,
             'style' => 'width:300px;position: static;',
             'validators' => [
                 [new Zend_Validate_Int()],
@@ -394,12 +397,13 @@ class Episciences_VolumesManager
             'style' => 'width:300px'
         ]);
 
-        self::getProceedingForm($form,$volume);
+        self::getProceedingForm($form, $volume);
 
         return $form;
     }
 
-    public static function getProceedingForm(Ccsd_Form $form, Episciences_Volume $volume = null): \Ccsd_Form
+    public
+    static function getProceedingForm(Ccsd_Form $form, Episciences_Volume $volume = null): \Ccsd_Form
     {
         // Acte de conferences
         $checkboxDecorators = [
@@ -445,14 +449,14 @@ class Episciences_VolumesManager
             'class' => 'datepicker',
             'format' => 'Y-m-d',
         ]);
-        if ($volume !== null){
-            $form->addElement('hidden','doi_status',[
+        if ($volume !== null) {
+            $form->addElement('hidden', 'doi_status', [
                 'value' => Episciences_Volume_DoiQueueManager::findByVolumesId($volume->getVid())->getDoi_status(),
                 'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volume/form.phtml)
 
             ]);
-        }else{
-            $form->addElement('hidden','doi_status',[
+        } else {
+            $form->addElement('hidden', 'doi_status', [
                 'value' => Episciences_Volume_DoiQueue::STATUS_NOT_ASSIGNED,
                 'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volumes/form.phtml)
             ]);
@@ -463,15 +467,14 @@ class Episciences_VolumesManager
             'value' => Zend_Registry::get('Zend_Translate')->translate("Titre de l'acte de conférence"),
             'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volume/form.phtml)
         ]);
-        $form->addElement('hidden','translate_text_doi_request', [
+        $form->addElement('hidden', 'translate_text_doi_request', [
 
-            'value' =>  Zend_Registry::get('Zend_Translate')->translate("Le DOI qui va être demandé"),
+            'value' => Zend_Registry::get('Zend_Translate')->translate("Le DOI qui va être demandé"),
             'data-none' => true, // to make the element Display none; because the construtions of the form is particulary check (volume/form.phtml)
 
         ]);
         return $form;
     }
-
 
     /**
      * Retourne le formulaire de gestion d'une metadata
@@ -479,7 +482,8 @@ class Episciences_VolumesManager
      * @throws Zend_Form_Exception
      * @throws Zend_Validate_Exception
      */
-    public static function getMetadataForm(): \Ccsd_Form
+    public
+    static function getMetadataForm(): \Ccsd_Form
     {
         $form = new Ccsd_Form;
         $form->setAttrib('class', 'form-horizontal');
@@ -529,7 +533,8 @@ class Episciences_VolumesManager
      * @param int $vid
      * @return bool
      */
-    public static function isPublishedPapersInVolume(int $vid): bool
+    public
+    static function isPublishedPapersInVolume(int $vid): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = self::isPapersInVolumeQuery($vid);
@@ -542,7 +547,8 @@ class Episciences_VolumesManager
      * @param $vid
      * @param $paper_positions
      */
-    public static function savePaperPositionsInVolume($vid, $paper_positions)
+    public
+    static function savePaperPositionsInVolume($vid, $paper_positions)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -573,7 +579,8 @@ class Episciences_VolumesManager
      * @param int $vid
      * @return array ['DOCID' => 'POSITION]
      */
-    public static function loadPositionsInVolume(int $vid = 0): array
+    public
+    static function loadPositionsInVolume(int $vid = 0): array
     {
         try {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -594,8 +601,8 @@ class Episciences_VolumesManager
         return $res;
     }
 
-
-    public static function translateVolumeKey(string $volumeKey, string $language = null, bool $force = true): string
+    public
+    static function translateVolumeKey(string $volumeKey, string $language = null, bool $force = true): string
     {
         $vId = (int)filter_var($volumeKey, FILTER_SANITIZE_NUMBER_INT);
 
@@ -620,4 +627,133 @@ class Episciences_VolumesManager
 
         return $volume->getNameKey($language, $force);
     }
+
+    public static function find($vid, int $rvid = 0): Episciences_Volume|bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $select = $db->select()->from(T_VOLUMES)->where('VID = ?', $vid);
+        if ($rvid !== 0) {
+            $select->where('RVID = ?', $rvid);
+        }
+        $volume = $db->fetchRow($select);
+
+        if (empty($volume)) {
+            return false;
+        }
+
+        Episciences_VolumesAndSectionsManager::dataProcess($volume, 'decode');
+
+        $oVolume = new Episciences_Volume($volume);
+        $oVolume->loadSettings();
+        $oVolume->loadMetadatas();
+
+        return $oVolume;
+    }
+
+    public static function revertVolumeDescriptionToTextareaArray(?array $input): ?array
+    {
+        $output = [];
+        if (empty($input)) {
+            return null;
+        }
+        foreach ($input as $key => $value) {
+            if (str_starts_with($key, Episciences_Volume::VOLUME_PREFIX_DESCRIPTION)) {
+                $lang = substr($key, strlen(Episciences_Volume::VOLUME_PREFIX_DESCRIPTION));
+                $output[$lang] = $value;
+            }
+        }
+
+        return $output;
+    }
+
+    public static function revertVolumeTitleToTextArray(?array $input): ?array
+    {
+        $output = [];
+        if (empty($input)) {
+            return null;
+        }
+        foreach ($input as $key => $value) {
+            if (str_starts_with($key, Episciences_Volume::VOLUME_PREFIX_TITLE)) {
+                $lang = substr($key, strlen(Episciences_Volume::VOLUME_PREFIX_TITLE));
+                $output[$lang] = $value;
+            }
+        }
+
+        return $output;
+    }
+
+
+    /**
+     * @param int $vid
+     * @return bool
+     */
+    private static function isPapersInVolume(int $vid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = self::isPapersInVolumeQuery($vid);
+        return (int)$db->fetchOne($select) > 0;
+    }
+
+    /**
+     * @param int $id
+     * @return void
+     */
+    private static function deleteVolumeMetadataFiles(int $id): void
+    {
+        if ($id <= 0) {
+            throw new InvalidArgumentException("Invalid volume ID: must be positive integer");
+        }
+
+        // Build and normalize base path
+        $baseDir = rtrim(REVIEW_PUBLIC_PATH, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'volumes';
+        $path = $baseDir . DIRECTORY_SEPARATOR . $id;
+
+        $realBase = realpath($baseDir);
+        $realTarget = realpath($path);
+
+        // If the target doesn't exist, nothing to do
+        if ($realTarget === false) {
+            return;
+        }
+
+        // Ensure the target is inside the base directory
+        if (!str_starts_with($realTarget, $realBase)) {
+            throw new RuntimeException("Deletion path is outside the allowed directory");
+        }
+
+        // Use child-first order to delete files before directories
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($realTarget, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($files as $file) {
+            $filePath = $file->getPathname();
+
+            // Symlink protection
+            if ($file->isLink()) {
+                continue;
+            }
+
+            // File or directory deletion
+            if ($file->isDir()) {
+                if (!rmdir($filePath)) {
+                    throw new RuntimeException("Failed to delete directory: $filePath");
+                }
+            } else {
+                if (!unlink($filePath)) {
+                    throw new RuntimeException("Failed to delete file: $filePath");
+                }
+            }
+        }
+
+        // Remove the main directory
+        if (!rmdir($realTarget)) {
+            throw new RuntimeException("Failed to delete base directory: $realTarget");
+        }
+    }
+
+
+
 }

@@ -88,7 +88,7 @@ $rvid = RVID;
                                         </span>
                                     </a>
                                 <?php endif; ?>
-                                <a class="btn btn-default" href="/user/view/userid/<?= $coAuthorInfo->getUid() ?>"
+                                <a class="btn btn-default" href="<?= $this->url(['controller' => 'user', 'action' => 'view', 'userid' => $coAuthorInfo->getUid()]) ?>"
                                    target="_blank">
                                     <span data-toggle="tooltip"
                                           class="fas fa-address-card"

@@ -351,29 +351,74 @@ class UserDefaultController extends Episciences_Controller_Action
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender(true);
-        $res = [];
-        $keyword = $_GET['term'];
-        $ignore_list = (isset($_GET['ignore_list'])) ? $_GET['ignore_list'] : [];
-
-        if ($keyword) {
-            $users = new Ccsd_User_Models_DbTable_User();
-            foreach ($users->search($_GET['term'], 100, true) as $user) {
-                // if uid is in ignore list, skip this user
-                if (in_array($user['UID'], $ignore_list) || in_array($user['EMAIL'], EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER, true)) {
-                    continue;
-                }
-                $fullname = $user['FIRSTNAME'] . ' ' . $user['LASTNAME'];
-                $label = $fullname . ' (' . $user['UID'] . ') - ' . $user['EMAIL'];
-                $res[] = [
-                    'id' => $user['UID'],
-                    'email' => $user['EMAIL'],
-                    'user_name' => $user['USERNAME'],
-                    'full_name' => $fullname,
-                    'label' => $label];
-            }
+        
+        // Input validation and sanitization
+        $keyword = isset($_GET['term']) ? trim($_GET['term']) : '';
+        $ignore_list = isset($_GET['ignore_list']) && is_array($_GET['ignore_list']) ? $_GET['ignore_list'] : [];
+        
+        // Early exit for invalid input
+        if (empty($keyword) || strlen($keyword) < 2) {
+            $this->getResponse()->setHeader('Content-Type', 'application/json');
+            echo json_encode([]);
+            return;
         }
 
-        echo Zend_Json::encode($res);
+        $keyword = htmlspecialchars($keyword, ENT_QUOTES | ENT_HTML401, 'UTF-8');
+        
+        try {
+            $users = new Ccsd_User_Models_DbTable_User();
+            $searchResults = $users->search($keyword, 100, true);
+            
+            // Convert ignore lists to hash maps for O(1) lookup instead of O(n)
+            $ignoreUidMap = array_flip($ignore_list);
+            $ignoreEmailMap = defined('EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER')
+                ? array_flip(EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER)
+                : [];
+            
+            // Pre-allocate result array for better memory usage
+            $res = [];
+            $count = 0;
+            $maxResults = 100; // Reasonable limit for autocomplete
+            
+            foreach ($searchResults as $user) {
+                // Fast hash lookup instead of in_array
+                if (isset($ignoreUidMap[$user['UID']]) || isset($ignoreEmailMap[$user['EMAIL']])) {
+                    continue;
+                }
+                
+                // Build fullname efficiently
+                $firstName = $user['FIRSTNAME'] ?? '';
+                $lastName = $user['LASTNAME'] ?? '';
+                $fullname = trim($firstName . ' ' . $lastName);
+                
+                // Only build label if we have a valid user
+                if (!empty($fullname) && !empty($user['EMAIL'])) {
+                    $res[] = [
+                        'id' => (int)$user['UID'],
+                        'email' => $user['EMAIL'],
+                        'user_name' => $user['USERNAME'] ?? '',
+                        'full_name' => $fullname,
+                        'label' => $fullname . ' (' . $user['UID'] . ') - ' . $user['EMAIL']
+                    ];
+                    
+                    // Limit results to prevent memory issues
+                    if (++$count >= $maxResults) {
+                        break;
+                    }
+                }
+            }
+            
+        } catch (Exception $e) {
+            // Log error but don't expose to client
+            error_log('User search error: ' . $e->getMessage());
+            $res = [];
+        }
+        
+        // Prepare JSON response
+        $jsonResponse = json_encode($res, JSON_UNESCAPED_UNICODE);
+        
+        $this->getResponse()->setHeader('Content-Type', 'application/json');
+        echo $jsonResponse;
     }
 
     public function listAction()
@@ -391,6 +436,7 @@ class UserDefaultController extends Episciences_Controller_Action
     private function autocomplete()
     {
         $this->view->jQuery()->addJavascriptFile("/js/vendor/jquery.ui.autocomplete.html.js");
+        $this->view->jQuery()->addJavascriptFile('/js/autocomplete-utils.js');
         $this->view->jQuery()->addJavascriptFile('/js/user/functions.js');
         $this->view->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
 
@@ -1815,12 +1861,12 @@ class UserDefaultController extends Episciences_Controller_Action
             }
 
             if ($operationType === 'disassemble') {
-                if (is_array($value) && array_key_exists('label', $value) && array_key_exists('rorId', $value)) {
-                    $output[$index] = $value;
-                    continue;
-                }
+                    if (is_array($value) && array_key_exists('label', $value) && array_key_exists('rorId', $value)) {
+                        $output[$index] = $value;
+                        continue;
+                    }
 
-                if (is_string($value)) {
+                    if (is_string($value)) {
                     $explodedValue = explode($separator, $value);
 
                     $label = isset($explodedValue[0]) ? trim($explodedValue[0]): '';
@@ -1832,23 +1878,23 @@ class UserDefaultController extends Episciences_Controller_Action
                     continue;
 
                 }
-                $output[$index] = ['label' => '', 'rorId' => ''];
+                    $output[$index] = ['label' => '', 'rorId' => ''];
             } elseif ($operationType === 'assemble') {
 
-                if (is_array($value)) {
-                    $label = array_key_exists('label', $value) ? $value['label'] : '';
-                    $rorId = array_key_exists('rorId', $value) ? $value['rorId'] : '';
+                    if (is_array($value)) {
+                        $label = array_key_exists('label', $value) ? $value['label'] : '';
+                        $rorId = array_key_exists('rorId', $value) ? $value['rorId'] : '';
 
-                    if (!empty($rorId)) {
-                        $output[$index] = $label . $separator . $rorId;
-                    } else {
-                        $output[$index] = $label;
+                        if (!empty($rorId)) {
+                            $output[$index] = $label . $separator . $rorId;
+                        } else {
+                            $output[$index] = $label;
+                        }
+                        continue;
                     }
-                    continue;
-                }
 
-                $output[$index] = is_string($value) ? $value : '';
-            }
+                    $output[$index] = is_string($value) ? $value : '';
+                }
         }
 
         return $output;

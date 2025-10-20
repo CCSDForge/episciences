@@ -1,86 +1,184 @@
 <?php $this->layout()->description = $this->translate("Le tableau ci-dessous reprend l'ensemble des ressources visibles déposées sur le site. Vous pouvez les visualiser dans un nouvel onglet et repérer leur url sur le site ou les supprimer."); ?>
 
 <div class="form-actions">
-     <form action="<?= $this->url(['controller' => 'website', 'action' => 'public'])?>" method="post" id="form" class="form" enctype="multipart/form-data">
-         <input type="hidden" name="method" id="method" value="" />
-         <input type="hidden" name="name" id="name" value="" />
-         <input type="file" name="file" id="file" style="display:none;"/>
-         <div class="row">
-             <div class="col-lg-3 text-right">
-                 <?php echo $this->translate("Ajouter un nouveau fichier"); ?>
-             </div>
-             <div class="col-lg-6">
-                 <div class="input-group">
-                     <input class="form-control" type="text" name="file" id="value_file" disabled="disabled" />
-                    <span class="input-group-btn">
-                        <button class="btn btn-default" type="button" onclick="$('#file').click();"><i class="glyphicon glyphicon-file"></i>&nbsp;<?php echo $this->translate("Parcourir"); ?></button>
+    <form action="<?= $this->url(['controller' => 'website', 'action' => 'public']) ?>" method="post" id="form"
+          class="form" enctype="multipart/form-data">
+        <input type="hidden" name="method" id="method" value=""/> <input type="hidden" name="name" id="name" value=""/>
+        <input type="file" name="file" id="file" style="display:none;"/>
+        <div class="row">
+            <div class="col-lg-3 text-right">
+                <?php echo $this->translate("Ajouter un nouveau fichier"); ?>
+            </div>
+            <div class="col-lg-6">
+                <div class="input-group">
+                    <input class="form-control" type="text" name="file" id="value_file" disabled="disabled"/> <span
+                            class="input-group-btn">
+                        <button class="btn btn-default" type="button" onclick="$('#file').click();"><i
+                                    class="glyphicon glyphicon-file"></i>&nbsp;<?php echo $this->translate("Parcourir"); ?></button>
                     </span>
-                 </div>
-             </div>
-             <div class="col-lg-3">
-                 <button type="submit" class="btn btn-default"><i class="glyphicon glyphicon-plus"></i>&nbsp;<?php echo $this->translate("Déposer le fichier"); ?></button>
-             </div>
-         </div>
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <button type="submit" class="btn btn-primary"><i
+                            class="glyphicon glyphicon-plus"></i>&nbsp;<?php echo $this->translate("Déposer le fichier"); ?>
+                </button>
+            </div>
+        </div>
 
-         <div class="row">
+        <div class="row">
 
-             <div class="col-md-offset-2 col-md-10">
-                 <br>
-                 <input type="checkbox" id="overwrite-existing-file" name="overwriteFile" />
-                 <label for="overwrite-existing-file"><?= $this->translate('Écraser le fichiers existant avec un nom identique') ?></label>
-             </div>
-
-
-         </div>
-         <script>
-             $('#file').change(function() {
-                 $('#value_file').val($(this).val().replace('C:\\fakepath\\', ''));
-             });
-         </script>
-
-     </form>
+            <div class="col-md-offset-2 col-md-10">
+                <br> <input type="checkbox" id="overwrite-existing-file" name="overwriteFile"/> <label
+                        for="overwrite-existing-file"><?= $this->translate('Écraser le fichiers existant avec un nom identique') ?></label>
+            </div>
+        </div>
+    </form>
 </div>
 
-<table class="table table-striped table-hover">
-	<thead>
-		<tr>
-			<th width="10px"></th>
-			<th><?php echo $this->translate("Fichiers"); ?></th>
-			<th width="20px"><?php echo $this->translate("Actions"); ?></th>
-		</tr>
-	</thead>
-	<tbody>
-		<?php foreach ($this->files as $name => $link) {
-			$ext = Ccsd_File::getExtension($link);
-			?>
-			<tr class="file">
-				<td width="10px"><span class="<?php echo Ccsd_File::getIconeExtension($ext);?> active"></span></td>
-				<td>
-                    <?php $href = REVIEW_URL . $name ?>
-					<a href="<?php echo REVIEW_URL . $name?>" target="_blank"><span class="name"><?php echo $name?></span></a>
-					<blockquote style="display:none;"><?php echo $this->translate("Lien"); ?> :  <b><?php echo REVIEW_URL . $name?></b><br />
-					<?php echo $this->translate("Extension"); ?> : <b><?php echo $ext?></b><br />
-					<?php echo $this->translate("Taille"); ?> : <b><?php echo Ccsd_File::getSize($link);?></b><br/>
-					<?php echo $this->translate("Dernière modification"); ?> : <b><?php echo date ("d/m/Y", filemtime($link))?></b></blockquote>
-				</td>
-				<td style="text-align:right">
-					<a href="javascript:void(0)" onclick="$(this).closest('tr.file').find('blockquote').toggle();" title="<?php echo $this->translate("Informations"); ?>"><span class="glyphicon glyphicon-info-sign"></span></a>&nbsp;
-					<a href="javascript:void(0)" class="delete-file" title="<?php echo $this->translate("Supprimer"); ?>"><span class="glyphicon glyphicon-trash"></span></a></td>
-			</tr>
-		<?php }?>
-	</tbody>
-</table>
+<table class="table table-striped table-hover table-bordered">
+    <thead>
+    <tr>
+        <th style="width:10px"></th>
+        <th style="width:auto"><?php echo $this->translate("Fichiers"); ?></th>
+        <th style="width:auto"
+            data-toggle="tooltip"
+            title="<?= $this->translate("Copiez ce lien pour l'utiliser dans les pages de contenu destinées au site public") ?>">
+            <?php echo $this->translate("URL publique - pages de contenu"); ?>&nbsp;<i class="fa-solid fa-circle-info"></i>
+        </th>
+        <th style="width:90px"><?php echo $this->translate("Date"); ?></th>
+        <th style="width:auto"><?php echo $this->translate("Poids"); ?></th>
+        <th style="width:60px"><?php echo $this->translate("Actions"); ?></th>
+    </tr>
+    </thead>
+    <tbody>
+    <?php
 
+    $linkId = 0;
+    foreach ($this->files as $filename => $link) {
+        $linkIdText = 'publicText-' . $linkId;
+        $publicAccessPath = $this->escape(sprintf("/%s/resources/%s", RVCODE, $filename));
+        $managerAccessPath = $this->escape(REVIEW_URL . $filename);
+        $filename = $this->escape($filename);
+        ?>
+        <tr class="file">
+            <td>
+                <i class="fa-solid fa-file-<?= Ccsd_File::getExtension($link) ?>"></i>
+            </td>
+            <td>
+                <a href="<?php echo $managerAccessPath ?>" target="_blank"> <span
+                            class="name"><?php echo $filename ?></span> </a>
+            </td>
+            <td>
+                <button type="button" class="btn btn-default btn-xs"
+                        onclick="copyToClipboard(event, '#<?= $linkIdText ?>', this);">
+                    <i class="fa-regular fa-clipboard"></i> <?= $this->translate("Copier URL"); ?>
+                </button>
+                <code id="<?= $linkIdText ?>"><?= $publicAccessPath ?></code>
+            </td>
+            <td>
+                <?= date("Y-m-d", filemtime($link)) ?>
+            </td>
+            <td>
+                <?= Ccsd_File::getSize($link); ?>
+            </td>
+            <td>
+                <button href="javascript:void(0)" class="delete-file btn btn-danger btn-xs"
+                        title="<?php echo $this->translate("Supprimer"); ?>">
+                    <span class="glyphicon glyphicon-trash"></span>
+                </button>
+            </td>
+        </tr>
+        <?php
+        $linkId++;
+    }
+    ?>
+    </tbody>
+</table>
 <?php echo $this->confirm("Confirmation", "Souhaitez-vous supprimer le fichier ?")
-			->setTrigger('.delete-file')
-			->setJsInit('$("#confirm-id").val($(this).closest("tr.file").find(".name").text());')
-			->setJsCallback('deleteFile();');?>
-			
+    ->setTrigger('.delete-file')
+    ->setJsInit('$("#confirm-id").val($(this).closest("tr.file").find(".name").text());')
+    ->setJsCallback('deleteFile();'); ?>
+
+
 <script>
-function deleteFile()
-{
-	$('#method').val('remove');
-	$('#name').val($('#confirm-id').val());
-	$('#form').submit();
-}
+    $('#file').change(function () {
+        $('#value_file').val($(this).val().replace('C:\\fakepath\\', ''));
+    });
+
+    function deleteFile() {
+        $('#method').val('remove');
+        $('#name').val($('#confirm-id').val());
+        $('#form').submit();
+    }
+
+    function copyToClipboard(event, selector, button) {
+        // Store current scroll position
+        const scrollX = window.scrollX || window.pageXOffset;
+        const scrollY = window.scrollY || window.pageYOffset;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        var textElement = document.querySelector(selector);
+        if (textElement) {
+            var text = textElement.innerText || textElement.textContent;
+
+            if (window.isSecureContext && navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    // Restore scroll position after successful copy
+                    window.scrollTo(scrollX, scrollY);
+                    showCopyFeedback(button);
+                }).catch(err => {
+                    console.error("Erreur lors de la copie :", err);
+                    // Restore scroll position on error too
+                    window.scrollTo(scrollX, scrollY);
+                });
+            } else {
+                fallbackCopyText(text, button, scrollX, scrollY);
+            }
+        } else {
+            console.error("Element not found:", selector);
+            // Restore scroll position if element not found
+            window.scrollTo(scrollX, scrollY);
+        }
+
+        return false;
+    }
+
+    // Modify the fallback function to restore scroll position
+    function fallbackCopyText(text, button, scrollX, scrollY) {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        // Make the textarea out of viewport
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+            document.execCommand("copy");
+            showCopyFeedback(button);
+        } catch (err) {
+            console.error("Fallback copy failed:", err);
+        } finally {
+            document.body.removeChild(textArea);
+            // Restore scroll position
+            window.scrollTo(scrollX, scrollY);
+        }
+    }
+
+    // Update the feedback function to also maintain scroll position
+    function showCopyFeedback(button) {
+        var originalText = button.innerHTML;
+        button.innerHTML = '<i class="fa-regular fa-clipboard-check"></i> ' + translate('URL copiée') + ' <i class="fa-regular fa-circle-check fa-bounce"></i>';
+        button.disabled = true;
+
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }, 5000);
+    }
+
 </script>

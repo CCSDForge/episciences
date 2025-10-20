@@ -16,6 +16,7 @@ use Episciences_Review;
 use Episciences_ReviewsManager;
 use Episciences_Section;
 use Episciences_SectionsManager;
+use Episciences_Tools;
 use Episciences_Volume;
 use Episciences_VolumesManager;
 use Episciences_ZbjatsTools;
@@ -144,47 +145,42 @@ class Export
     /**
      * Handles 2 or 3 language code conversions
      */
-    public static function getPaperLanguageCode(Episciences_Paper $paper, int $langCodeLength = 2, string $default = ''): string
+    public static function getPaperLanguageCode(Episciences_Paper $paper, int $returnWithLangCodeLength = 2, string $default = '', $convertIso639Code = false): string
     {
         // Ensure that the language metadata is treated as a string
         $paperLanguage = (string)$paper->getMetadata('language');
 
         $paperLanguagelength = strlen($paperLanguage);
+        $docid = (string)$paper->getDocid();
         if ($paperLanguagelength > 3 || $paperLanguagelength < 2) {
-            return $default;
+            $paperLanguage = $default;
         }
 
-        if ($paperLanguage)
-
+        if ($paperLanguage && !Languages::exists($paperLanguage)) {
             // Crossref schema 5.3.1 says language is optional
-            if (!Languages::exists($paperLanguage)) {
-                $paperLanguage = $default; // Invalid language, set to $default
-            }
+            $paperLanguage = $default; // Invalid language, set to $default
+        }
 
         // Crossref requires 2-character language codes
-        if ((strlen($paperLanguage) === 3) && ($langCodeLength === 2)) {
+        if ((strlen($paperLanguage) === 3) && ($returnWithLangCodeLength === 2)) {
             try {
                 $paperLanguage = Languages::getAlpha2Code($paperLanguage);
             } catch (MissingResourceException $e) {
                 $paperLanguage = $default; // Fallback if invalid
-                trigger_error(
-                    sprintf("Paper # %s: %s", $paper->getDocid(), $e->getMessage()),
-                    E_USER_WARNING
-                );
             }
         }
 
         // DOAJ requires 3-character language codes
-        if ((strlen($paperLanguage) === 2) && ($langCodeLength === 3)) {
+        if ((strlen($paperLanguage) === 2) && ($returnWithLangCodeLength === 3)) {
 
             try {
                 $paperLanguage = Languages::getAlpha3Code($paperLanguage);
             } catch (MissingResourceException $e) {
                 $paperLanguage = $default; // Fallback if invalid
-                trigger_error(
-                    sprintf("Paper # %s: - %s - %s", $paper->getDocid(), $paperLanguage, $e->getMessage()),
-                    E_USER_WARNING
-                );
+            }
+            if ($convertIso639Code) {
+                // DOAJ is in the iso_639-2b Team VS our library is in the iso_639-2t team
+                $paperLanguage = Episciences_Tools::convertIso639Code($paperLanguage);
             }
         }
         return $paperLanguage;
@@ -200,15 +196,16 @@ class Export
         return self::getMetaWithLanguagesCode($paper, 'getAllTitles', 2, '');
     }
 
-    private static function getMetaWithLanguagesCode(Episciences_Paper $paper, string $method, int $langCodeLength = 2, string $default = ''): array
+    private static function getMetaWithLanguagesCode(Episciences_Paper $paper, string $method, int $returnWithLangCodeLength = 2, string $default = '', $convertIso639Code = false): array
     {
 
         $collection = [];
         $items = $paper->$method();
-
+        $docid = (string)$paper->getDocid();
         foreach ($items as $language => $content) {
 
             // Validate or set default language
+
             if (!Languages::exists($language)) {
                 $language = $default; // invalid language, default to $default
             }
@@ -220,27 +217,23 @@ class Export
 
             // Convert 3-character codes to 2-character codes
 
-            if (($strlenOfMetaLanguage === 3) && ($langCodeLength === 2)) {
+            if (($strlenOfMetaLanguage === 3) && ($returnWithLangCodeLength === 2)) {
                 try {
                     $language = Languages::getAlpha2Code($language);
                 } catch (MissingResourceException $e) {
                     $language = $default; // If the language is still invalid, set to $default
-                    trigger_error(
-                        sprintf("Paper %s of # %s: %s", ucfirst($method), htmlspecialchars($content), $e->getMessage()),
-                        E_USER_WARNING
-                    );
                 }
             }
 
-            if (($strlenOfMetaLanguage === 2) && ($langCodeLength === 3)) {
+            if (($strlenOfMetaLanguage === 2) && ($returnWithLangCodeLength === 3)) {
                 try {
                     $language = Languages::getAlpha3Code($language);
                 } catch (MissingResourceException $e) {
                     $language = $default; // If the language is still invalid, set to $default
-                    trigger_error(
-                        sprintf("Paper %s of # %s: %s", ucfirst($method), htmlspecialchars($content), $e->getMessage()),
-                        E_USER_WARNING
-                    );
+                }
+                if ($convertIso639Code) {
+                    // DOAJ is in the iso_639-2b Team VS our library is in the iso_639-2t team
+                    $language = Episciences_Tools::convertIso639Code($language);
                 }
             }
 
@@ -361,7 +354,7 @@ class Export
         $doi = $paper->getDoi();
 
 
-        $paperLanguage = self::getPaperLanguageCode($paper, 3, 'eng');
+        $paperLanguage = self::getPaperLanguageCode($paper, 3, 'eng', true);
         $abstracts = self::doajGetAbstractsWithLanguages($paper);
         $titles = self::doajGetTitlesWithLanguages($paper);
 
@@ -762,7 +755,7 @@ class Export
      */
     private static function doajGetTitlesWithLanguages(Episciences_Paper $paper): array
     {
-        return self::getMetaWithLanguagesCode($paper, 'getAllTitles', 3, '');
+        return self::getMetaWithLanguagesCode($paper, 'getAllTitles', 3, '', true);
     }
 
     /**
@@ -772,7 +765,7 @@ class Export
      */
     private static function doajGetAbstractsWithLanguages(Episciences_Paper $paper): array
     {
-        return self::getMetaWithLanguagesCode($paper, 'getAbstractsCleaned', 3, 'eng');
+        return self::getMetaWithLanguagesCode($paper, 'getAbstractsCleaned', 3, 'eng', true);
     }
 
     /**

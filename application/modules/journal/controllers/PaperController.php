@@ -1159,7 +1159,17 @@ class PaperController extends PaperDefaultController
         $newAuthorInfos->setPaperId($paperId);
         Episciences_Paper_AuthorsManager::update($newAuthorInfos);
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Modifications des affiliations bien prise en compte');
-        $this->_helper->redirector->gotoUrl($this->url([self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER, self::ACTION => 'view', 'id' => $paperId ]));
+
+
+        try {
+            // Attempt to redirect to the latest version
+            $paper = Episciences_PapersManager::getLastPaper($paperId, true);
+            $docid = $paper->getDocid();
+        } catch (Zend_Db_Statement_Exception $e) {
+            $docid = $paperId;
+        }
+
+        $this->_helper->redirector->gotoUrl($this->url([self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER, self::ACTION => 'view', 'id' => $docid ]));
     }
 
     /**
@@ -2429,9 +2439,9 @@ class PaperController extends PaperDefaultController
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        // Il est possible (depuis la page de la gestion de l'article) d':
-        // jouter un rapport de relecture à la place d'un autre relecteur (relire à la la place...)
-        // ajouter un nouveau rapport de relecture (relire cet article...)
+        // Il est possible (depuis la page de la gestion de l'article) :
+        // d'ajouter un rapport de relecture à la place d'un autre relecteur (relire à la place...)
+        // d'ajouter un nouveau rapport de relecture (relire cet article...)
         $reviewer_uid = (int)$request->getParam('reviewer_uid');
 
         // paper block ***********************************************************************************

@@ -224,23 +224,7 @@ class Ccsd_File
         return ($dir == '' ? '.' : $dir);
     }
 
-    /**
-     * Retourne l'icone associée à une extension
-     *
-     * @param string $ext
-     * @return string
-     */
-    public static function getIconeExtension($ext)
-    {
-        $icon = 'file';
-        foreach (self::$_extension as $group => $formats) {
-            if (in_array($ext, $formats)) {
-                $icon = $group;
-                break;
-            }
-        }
-        return 'icon-' . $icon;
-    }
+
 
     /**
      * Renommage d'un fichier

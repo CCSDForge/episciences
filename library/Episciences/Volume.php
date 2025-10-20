@@ -31,6 +31,8 @@ class Episciences_Volume
     const VOLUME_YEAR = 'year';
 
     const VOLUME_NUM = 'num';
+    public const VOLUME_PREFIX_DESCRIPTION = 'description_';
+    public const VOLUME_PREFIX_TITLE = 'title_';
 
     protected $_db = null;
     private $_vid;
@@ -670,7 +672,8 @@ class Episciences_Volume
     public function save(array $data, int $vid = null, array $post = []): bool
     {
         $post = array_merge($post, $data);
-        $post['description'] = $post['description'] ?? null;
+        $post['title'] = Episciences_VolumesManager::revertVolumeTitleToTextArray($post) ?? null;
+        $post['description'] = Episciences_VolumesManager::revertVolumeDescriptionToTextareaArray($post) ?? null;
         $post['bib_reference'] = $post['bib_reference'] ?? null;
 
         // Enregistrement de la position des articles
@@ -897,65 +900,129 @@ class Episciences_Volume
     }
 
     /**
-     * @param $post
-     * @return bool
+     * Save volume metadata from POST data with XSS prevention
+     * @param array $post POST data containing metadata
+     * @return bool Success status
+     * @throws JsonException
      */
     public function saveVolumeMetadata($post): bool
     {
+        if (empty($post) || !is_array($post)) {
+            return false;
+        }
 
-        // Enregistrement des nouvelles metadatas et des metadatas modifiées
         $position = 0;
         $newMetadataIds = [];
-        $values = [];
+        $errors = [];
 
         foreach ($post as $key => $value) {
-            if (strpos($key, 'md_ui-id-') === 0) {
-                $position++;
-                try {
-                    $values = array_merge(
-                        json_decode(
-                            $value, true,
-                            512,
-                            JSON_THROW_ON_ERROR
-                        ),
-                        ['vid' => $this->getVid(), 'position' => $position]
-                    );
-                } catch (JsonException $e) {
-                    trigger_error($e->getMessage());
+            if (!str_starts_with($key, 'md_ui-id-')) {
+                continue;
+            }
+
+            $position++;
+            
+            try {
+                $decodedValues = $this->decodeAndValidateMetadata($value);
+            } catch (JsonException $e) {
+                $errors[] = "Failed to decode metadata for key {$key}: " . $e->getMessage();
+                continue;
+            }
+
+            // Sanitize user input to prevent XSS
+            $sanitizedValues = $this->sanitizeMetadataValues($decodedValues);
+            
+            // Add required fields
+            $sanitizedValues['vid'] = $this->getVid();
+            $sanitizedValues['position'] = $position;
+
+            $metadata = new Episciences_Volume_Metadata($sanitizedValues);
+            
+            if (!$metadata->save()) {
+                $errors[] = "Failed to save metadata at position {$position}";
+                continue;
+            }
+
+            $this->setMetadata($metadata);
+            $newMetadataIds[] = $metadata->getId();
+        }
+
+        // Clean up old metadata
+        $this->deleteOldMetadata($newMetadataIds);
+
+        // Log errors if any occurred
+        if (!empty($errors)) {
+            error_log('Volume metadata save errors: ' . implode('; ', $errors));
+        }
+
+        return empty($errors);
+    }
+
+    /**
+     * Decode and validate JSON metadata from form input
+     * @param string $value JSON string from form
+     * @return array Decoded metadata
+     * @throws JsonException
+     */
+    private function decodeAndValidateMetadata(string $value): array
+    {
+        $decodedValues = json_decode($value, true, 512, JSON_THROW_ON_ERROR);
+        
+        if (!is_array($decodedValues)) {
+            throw new JsonException('Decoded metadata must be an array');
+        }
+
+        // Handle nested tmpfile JSON
+        if (array_key_exists('tmpfile', $decodedValues) && !empty($decodedValues['tmpfile'])) {
+            $decodedValues['tmpfile'] = json_decode(
+                $decodedValues['tmpfile'],
+                true,
+                512,
+                JSON_THROW_ON_ERROR
+            );
+        }
+
+        return $decodedValues;
+    }
+
+    /**
+     * Sanitize metadata values to prevent XSS attacks
+     * @param array $values Raw metadata values
+     * @return array Sanitized metadata values
+     */
+    private function sanitizeMetadataValues(array $values): array
+    {
+        $sanitized = [];
+
+        // Sanitize title array - HTML escape each language version
+        if (isset($values['title']) && is_array($values['title'])) {
+            $sanitized['title'] = [];
+            foreach ($values['title'] as $lang => $title) {
+                if (is_string($title)) {
+                    $sanitized['title'][$lang] = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
                 }
-
-                if (array_key_exists('tmpfile', $values)) {
-                    try {
-                        $values['tmpfile'] = json_decode(
-                            $values['tmpfile'],
-                            true,
-                            512,
-                            JSON_THROW_ON_ERROR
-                        );
-                    } catch (JsonException $e) {
-                        trigger_error($e->getMessage());
-                    }
-                }
-
-                $metadata = new Episciences_Volume_Metadata($values);
-
-                $saveResult = $metadata->save();
-
-                if (!$saveResult) {
-                    return false;
-                }
-
-
-                $this->setMetadata($metadata);
-
-                $newMetadataIds[] = $metadata->getId();
             }
         }
 
-        $this->deleteOldMetadata($newMetadataIds);
+        // Sanitize content array - HTML escape each language version  
+        if (isset($values['content']) && is_array($values['content'])) {
+            $sanitized['content'] = [];
+            foreach ($values['content'] as $lang => $content) {
+                if (is_string($content)) {
+                    $sanitized['content'][$lang] = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
+                }
+            }
+        }
 
-        return true;
+        // Pass through safe values without modification
+        $safeFields = ['id', 'tmpfile', 'file', 'deletelist'];
+        foreach ($safeFields as $field) {
+            if (isset($values[$field])) {
+                $sanitized[$field] = $values[$field];
+            }
+        }
 
+        return $sanitized;
     }
 
     /**

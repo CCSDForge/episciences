@@ -1,0 +1,67 @@
+.review-container {
+    margin-top: 30px;
+    margin-bottom: 50px;
+}
+
+.review-title {
+    font-size: 32px;
+    margin-bottom: 30px;
+}
+
+.review-logo {
+    height: 42px;
+    margin-right: 10px;
+    float: left;
+    width: 42px;
+}
+
+.review-name {
+    line-height: 40px;
+}
+
+.review-link {
+    float: right;
+    line-height: 40px;
+}
+
+.pagination-container {
+    margin-top: 30px;
+}
+
+.review-count {
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .review-container .col-xs-4 {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    .review-container .text-right {
+        text-align: center !important;
+    }
+
+    .review-container .pagination-container .col-xs-4 {
+        margin-bottom: 10px;
+    }
+
+    .list-group-item {
+        padding-right: 30px;
+    }
+
+    .list-group-item .review-link {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .list-group .list-group-item .review-name {
+        max-width: 60%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}

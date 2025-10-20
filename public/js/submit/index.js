@@ -59,7 +59,7 @@ $(document).ready(function () {
   function setPlaceholder() {
     const searchDocDocId = document.getElementById("search_doc-docId");
     const searchDocRepoId = document.getElementById("search_doc-repoId");
-
+    
     if (searchDocDocId && searchDocRepoId) {
       const placeholderText = translate("exemple : ") + examples[searchDocRepoId.value];
       searchDocDocId.setAttribute("placeholder", placeholderText);
@@ -90,14 +90,14 @@ $(document).ready(function () {
       const url = new URL(input);
       let identifier = "";
       let versionFromUrl = null;
-
+      
       // Handle different repository types
       if ($isDataverseRepo || url.search) {
         // For Dataverse repos or URLs with query parameters
         if (url.search.includes("persistentId=")) {
-          identifier = url.searchParams.get("persistentId") ||
+          identifier = url.searchParams.get("persistentId") || 
                       url.search.replace(/^\?.*persistentId=/, "").split("&")[0];
-
+          
           // Check for version parameter in URL
           const versionParam = url.searchParams.get("version");
           if (versionParam) {
@@ -125,12 +125,12 @@ $(document).ready(function () {
           }
         } else {
           // General handling for other repos
-          // Remove leading path segments and slashes
-          identifier = url.pathname
-            .replace(/^\/+/, "")           // Remove leading slashes
-            .replace(/\/\w+\/$/, "")       // Remove trailing /word/ pattern
-            .replace(/\/+$/, "");          // Remove trailing slashes
-        }
+        // Remove leading path segments and slashes
+        identifier = url.pathname
+          .replace(/^\/+/, "")           // Remove leading slashes
+          .replace(/\/\w+\/$/, "")       // Remove trailing /word/ pattern
+          .replace(/\/+$/, "");          // Remove trailing slashes
+      }
       }
 
       // Clean up empty identifier
@@ -159,15 +159,15 @@ $(document).ready(function () {
   function removeVersionFromIdentifier(identifier) {
     const versionField = document.getElementById('search_doc-version');
     const versionMatch = identifier.match(/v(\d+)$/);
-
+    
     if (versionMatch && versionField) {
       // Extract the version number (without the 'v' prefix)
       versionField.value = versionMatch[1];
-
+      
       // Return identifier without the version
       return identifier.replace(/v\d+$/, '');
     }
-
+    
     // If no version found, clear the version field and return original identifier
     if (versionField) {
       versionField.value = '';
@@ -179,12 +179,12 @@ $(document).ready(function () {
   function checkDataverse() {
     const searchDocRepoId = document.getElementById("search_doc-repoId");
     const submitEntry = document.querySelector("a[href='/submit/index']");
-
+    
     if (!searchDocRepoId) return;
-
+    
     const formData = new FormData();
     formData.append("repoId", searchDocRepoId.value);
-
+    
     fetch(JS_PREFIX_URL + "submit/ajaxisdataverse", {
       method: "POST",
       headers: {
@@ -198,7 +198,7 @@ $(document).ready(function () {
       $isDataverseRepo = oResponse.hasOwnProperty("isDataverse")
         ? oResponse.isDataverse
         : false;
-
+      
       if (submitEntry) {
         const submitEntryTitle = $isDataverseRepo
           ? "Proposer un jeu de données"

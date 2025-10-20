@@ -37,7 +37,7 @@
                 <?php if ($criterion->hasAttachment()) :
                     ?><strong><?= $this->translate('Fichier'); ?></strong>
                     <div>
-                        <a href="<?= SERVER_PROTOCOL . '://' . $_SERVER['HTTP_HOST'] . '/' . $this->report->getDocid() . '/report/' . $this->report->getId() . '/' . $criterion->getAttachment() ?>" target="_blank">
+                        <a href="<?= SERVER_PROTOCOL . '://' . $_SERVER['HTTP_HOST'] . PREFIX_URL . $this->report->getDocid() . '/report/' . $this->report->getId() . '/' . $criterion->getAttachment() ?>" target="_blank">
                             <?= $this->translate('Télécharger le fichier', $this->locale) ?>
                         </a>
                     </div>

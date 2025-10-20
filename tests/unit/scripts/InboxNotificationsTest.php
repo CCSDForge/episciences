@@ -20,27 +20,34 @@ class InboxNotificationsTest extends TestCase
     }
 
 
-
-//    public function testNotificationProcess() : void{
-//
-//    }
-
     public function testCheckNotifyPayloads(): void
     {
 
         $validPayload = json_decode($this->payloadTest('hal-02558198v1'), true, 512, JSON_THROW_ON_ERROR);
 
+        // Create notification with matching origin from the test payload
+        $notification = (new InboxNotifications())
+            ->setCoarNotifyId('https://hal.science/')
+            ->setCoarNotifyType([
+                'Offer',
+                'coar-notify:ReviewAction'
+            ])
+            ->setCoarNotifyOrigin([
+                'id' => 'https://hal.science/',
+                'inbox' => 'https://inbox-preprod.hal.science/',
+                'type' => InboxNotifications::INBOX_SERVICE_TYPE
+            ]);
 
-        self::assertEquals(true, $this->getNotification()->checkNotifyPayloads($validPayload), 'matched: origin property');
+        self::assertTrue($notification->checkNotifyPayloads($validPayload), 'matched: origin property');
 
-        self::assertEquals(
-            false,
-            $this->getNotification()->setCoarNotifyOrigin([
-                'id' => NOTIFY_TARGET_HAL_URL, // defined in pwd.json
-                'inbox' => NOTIFY_TARGET_HAL_INBOX,
+        self::assertFalse(
+            $notification->setCoarNotifyOrigin([
+                'id' => 'https://different.url/', // different URL should not match
+                'inbox' => 'https://different.inbox/',
                 'type' => InboxNotifications::INBOX_SERVICE_TYPE
             ])
-                ->checkNotifyPayloads($validPayload), 'not matched: origin property');
+                ->checkNotifyPayloads($validPayload),
+            'not matched: origin property');
 
 
     }

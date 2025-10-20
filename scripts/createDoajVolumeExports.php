@@ -9,8 +9,8 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 $localopts = [
     'rvcode=s' => "The journalCode or use 'allJournals' to process all the journals",
-    'ignorecache=b' => 'cache ignore for test',
-    'removecache=b' => 'remove all cache'
+    'ignorecache=b' => 'if 1 then ignore caches for tests',
+    'removecache=b' => 'if 1 then remove all caches'
 ];
 
 if (file_exists(__DIR__ . "/loadHeader.php")) {

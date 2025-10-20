@@ -73,7 +73,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         self::PAGE_BROWSE_BY_AUTHOR,
         self::PAGE_BROWSE_BY_DATE,
         self::PAGE_BROWSE_BY_SECTION,
-        self:: PAGE_BROWSE_BY_VOLUME,
+        self::PAGE_BROWSE_BY_VOLUME,
         self::PAGE_BROWSE_LATEST,
         self::PAGE_BROWSE_CURRENT_ISSUES,
         self::PAGE_BROWSE_SPECIAL_ISSUES,

@@ -45,6 +45,15 @@ class Episciences_Website_Navigation_Page_Predefined extends Episciences_Website
                 'class' => 'permalien',
             ]);
         }
+
+        $this->_form->addElement('select', 'visibility',
+            ['label' => 'Visibilité de la page',
+                'belongsTo' => 'pages_' . $pageidx,
+                'onchange' => "setVisibility($pageidx, this)",
+                'multioptions' => ['Publique'], // Predefined pages are always public
+                'value' => 0 // 0 means public
+            ]);
+
         $this->_form->getElement('labels')->setOptions(['class' => 'inputlangmulti permalien-src']);
         return $this->_form;
     }

@@ -329,7 +329,8 @@ class PaperDefaultController extends DefaultController
     protected function newCommentNotifyManager(Episciences_Paper $paper, Episciences_Comment $oComment, array $tags = [], array $additionalAttachments = [], array $options = []): bool
     {
 
-       $logger = AppRegistry::getMonoLogger();
+        $logger = AppRegistry::getMonoLogger();
+        $editors = [];
 
         $commentatorUid = $oComment->getUid();
         $commentator = new Episciences_User();
@@ -337,7 +338,7 @@ class PaperDefaultController extends DefaultController
         try {
             $commentator->findWithCAS($commentatorUid);
         } catch (Exception $e) {
-            $logger?->critical('NEW_COMMENT_NOTIFY_MANAGERS_FAILED_TO_FETCH_CAS_DATA_UID_' . $commentatorUid . ' : ' . $e);
+            $logger?->critical('NEW_COMMENT_NOTIFY_MANAGERS_FAILED_TO_FETCH_CAS_DATA_UID_' . $commentatorUid . ' : ' . $e->getMessage());
             return false;
         }
 
@@ -349,6 +350,7 @@ class PaperDefaultController extends DefaultController
             $recipients = $this->getAllEditors($paper);
             // ne pas notifier le commentateur
             unset($recipients[$commentatorUid]);
+            $editors = $recipients;
         } catch (JsonException|Zend_Db_Statement_Exception$e) {
             $logger?->warning($e);
         }
@@ -363,7 +365,16 @@ class PaperDefaultController extends DefaultController
 
         try {
             Episciences_Review::checkReviewNotifications($recipients, $strict);
+            // remove users if COI is enabled
             Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+            $journal = Episciences_ReviewsManager::find(RVCODE);
+            $isEditorToBeNotifiedWithCoiEnabled = $journal->getSetting(Episciences_Review::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED);
+            if ($isEditorToBeNotifiedWithCoiEnabled) {
+                // Put editors back in the loop anyway
+                // Why? because if COI is enabled, we will unassign an editor who declares a COI
+                // The goal is to make sure editors receive comments even before checking the COI
+                $recipients = $recipients + $editors;
+            }
             $CC = $paper->extractCCRecipients($recipients);
         } catch (Zend_Db_Statement_Exception $e) {
             $logger?->critical($e);

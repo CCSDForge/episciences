@@ -91,6 +91,7 @@ class Episciences_Review
     public const SETTING_SYSTEM_CAN_NOTIFY_SECRETARIES = 'systemCanNotifySecretaries';
     public const SETTING_SYSTEM_NOTIFICATIONS = 'systemNotifications';
     public const SETTING_SYSTEM_IS_COI_ENABLED = 'isCoiEnabled'; //Conflict Of Interest (COI) is Disabled by default
+    public const SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED = 'coiCommentsToEditorsEnabled';
 
     public const ASSIGNMENT_EDITORS_DETAIL = [
         self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS => '0',
@@ -213,6 +214,7 @@ class Episciences_Review
             self::SETTING_ENCAPSULATE_COPY_EDITORS,
             self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
             self::SETTING_SYSTEM_IS_COI_ENABLED,
+            self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED,
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
             self::SETTING_ARXIV_PAPER_PASSWORD,
@@ -364,12 +366,15 @@ class Episciences_Review
         if ($paper) {
 
             if (!$role) {
+
                 self::checkReviewNotifications($cc);
-                Episciences_Submit::addIfNotExists($paper->getEditors(), $cc);
 
                 if ($isEditorsNotified) {
-                    Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $cc);
+
+                    Episciences_Submit::addIfNotExists($paper->getEditors(), $cc);
                 }
+
+                Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $cc);
 
             } elseif ($role === Episciences_Acl::ROLE_REVIEWER) {
 
@@ -1100,6 +1105,7 @@ class Episciences_Review
         $form->addDisplayGroup([
             self::SETTING_TO_REQUIRE_REVISION_DEADLINE,
             self::SETTING_SYSTEM_IS_COI_ENABLED,
+            self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED,
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
             self::SETTING_DISPLAY_STATISTICS,
             self::SETTING_START_STATS_AFTER_DATE,
@@ -1623,10 +1629,15 @@ class Episciences_Review
             ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
             ['Errors', ['placement' => 'APPEND']]
         ];
-
-        return $form->addElement('checkbox', self::SETTING_SYSTEM_IS_COI_ENABLED, [
+        $form->addElement('checkbox', self::SETTING_SYSTEM_IS_COI_ENABLED, [
                 'label' => "Activer la déclaration CI",
                 'description' => "Le mode conflit d'intérêts (CI) aura les effets suivants : toutes les informations non publiques concernant une soumission ne sont pas accessibles aux éditeurs en chef et aux éditeurs tant qu'ils n'auront pas déclaré l'absence de tout conflit d'intérêts.",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+        return $form->addElement('checkbox', self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED, [
+                'label' => "Les rédacteurs reçoivent les 'commentaires pour les rédacteurs' avant la déclaration d'un conflit d'intérêt",
+                'description' => "Activer pour permettre aux éditeurs de recevoir des commentaires sur l'article avant d'avoir déclaré un conflit d'intérêts.",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
         );
@@ -1880,7 +1891,7 @@ class Episciences_Review
 
         // COI
         $settingsValues[self::SETTING_SYSTEM_IS_COI_ENABLED] = $this->getSetting(self::SETTING_SYSTEM_IS_COI_ENABLED);
-
+        $settingsValues[self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED] = $this->getSetting(self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED);
         // Article - final decision
         $settingsValues[self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] = $this->getSetting(self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION);
 

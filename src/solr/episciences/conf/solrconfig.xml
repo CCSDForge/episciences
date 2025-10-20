@@ -22,56 +22,6 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
          affect both how text is indexed and queried.
     -->
     <luceneMatchVersion>9.10</luceneMatchVersion>
-
-    <!-- <lib/> directives can be used to instruct Solr to load any Jars
-         identified and use them to resolve any "plugins" specified in
-         your solrconfig.xml or schema.xml (ie: Analyzers, Request
-         Handlers, etc...).
-
-         All directories and paths are resolved relative to the
-         instanceDir.
-
-         Please note that <lib/> directives are processed in the order
-         that they appear in your solrconfig.xml file, and are "stacked"
-         on top of each other when building a ClassLoader - so if you have
-         plugin jars with dependencies on other jars, the "lower level"
-         dependency jars should be loaded first.
-
-         If a "./lib" directory exists in your instanceDir, all files
-         found in it are included as if you had used the following
-         syntax...
-
-                <lib dir="./lib" />
-      -->
-
-    <!-- A 'dir' option by itself adds any files found in the directory
-         to the classpath, this is useful for including all jars in a
-         directory.
-
-         When a 'regex' is specified in addition to a 'dir', only the
-         files in that directory which completely match the regex
-         (anchored on both ends) will be included.
-
-         If a 'dir' option (with or without a regex) is used and nothing
-         is found that matches, a warning will be logged.
-
-         The example below can be used to load a solr-contrib along
-         with their external dependencies.
-      -->
-    <!-- <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" /> -->
-
-    <lib dir="${solr.install.dir:../../../..}/modules/analysis-extras/lib" regex="icu4j-\d.*\.jar"/>
-    <lib dir="${solr.install.dir:../../../..}/modules/analysis-extras/lib" regex="lucene-analysis-icu-\d.*\.jar"/>
-    <lib dir="${solr.install.dir:../../../..}/modules/analysis-extras/lib" regex="solr-analysis-extras-\d.*\.jar"/>
-
-    <!-- an exact 'path' can be used instead of a 'dir' to specify a
-         specific jar file.  This will cause a serious error to be logged
-         if it can't be loaded.
-      -->
-    <!--
-       <lib path="../a-jar-that-does-not-exist.jar" />
-    -->
-
     <!-- Data Directory
 
          Used to specify an alternate directory to hold all index data
@@ -259,16 +209,9 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
              is recommended (see below).
              "dir" - the target directory for transaction logs, defaults to the
                     solr data directory.
-             "numVersionBuckets" - sets the number of buckets used to keep
-                    track of max version values when checking for re-ordered
-                    updates; increase this value to reduce the cost of
-                    synchronizing access to version buckets during high-volume
-                    indexing, this requires 8 bytes (long) * numVersionBuckets
-                    of heap space per Solr core.
         -->
         <updateLog>
             <str name="dir">${solr.ulog.dir:}</str>
-            <int name="numVersionBuckets">${solr.ulog.numVersionBuckets:65536}</int>
         </updateLog>
 
         <!-- AutoCommit
@@ -676,25 +619,18 @@ FYI: https://lucene.apache.org/solr/guide/solr-control-script-reference.html#upl
          queries across multiple shards
       -->
 
-    <!-- Standard Search Handler
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="inc-select-search-handler.xml">
-      <xi:fallback>
-       -->
+    <!-- Standard Search Handler  -->
+    
     <requestHandler name="/select" class="solr.SearchHandler">
-        <lst name="defaults">
-            <str name="echoParams">explicit</str>
-            <int name="rows">30</int>
-            <str name="df">text</str>
-            <str name="wt">json</str>
-            <str name="q.op">AND</str>
+      <lst name="defaults">
+        <str name="echoParams">explicit</str>
+        <int name="rows">30</int>
+        <str name="df">text</str>
+        <str name="wt">json</str>
+        <str name="q.op">AND</str>
             <str name="fl">docid,paperid,doi_s,*_paper_title_t,paper_title_t,abstract_t,author_fullname_s,publication_date_tdate,volume_id_i,*_volume_title_t,section_id_i,*_section_title_t</str>
-        </lst>
+      </lst>
     </requestHandler>
-    <!--
-      </xi:fallback>
-    </xi:include>
-    -->
-
 
     <!-- A request handler that returns indented JSON by default -->
     <requestHandler name="/query" class="solr.SearchHandler">

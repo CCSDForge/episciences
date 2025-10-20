@@ -88,7 +88,6 @@ class WebsiteDefaultController extends Episciences_Controller_Action
      */
     public function publicAction(): void
     {
-
         $dir = REVIEW_PATH . 'public/';
         if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
             throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
@@ -96,7 +95,6 @@ class WebsiteDefaultController extends Episciences_Controller_Action
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-
         $params = $request->getParams();
 
         try {
@@ -108,53 +106,57 @@ class WebsiteDefaultController extends Episciences_Controller_Action
 
         if (isset($params['method']) && $request->isPost()) {
             if ($params['method'] === 'remove') {
-                //Suppression d'un fichier
-                if (isset($params['name']) && is_file($dir . $params['name'])) {
-                    unlink($dir . $params['name']);
+                // Suppression d'un fichier
+                if (isset($params['name'])) {
+                    $fileName = basename($params['name']);
+                    $filePath = $dir . $fileName;
+                    if (is_file($filePath)) {
+                        unlink($filePath);
+                    }
                 }
-            } else if (isset($_FILES['file']['tmp_name']) && $_FILES['file']['tmp_name'] !== '') {
-
-                //Ajout d'un fichier
-
+            } elseif (isset($_FILES['file']['tmp_name']) && $_FILES['file']['tmp_name'] !== '') {
+                // Ajout d'un fichier
                 $isOverwritten = isset($params['overwriteFile']) && $params['overwriteFile'] === 'on';
-
-                preg_match('/[^a-z0-9_\.-\/\\\\]/i', $_FILES['file']['name'], $matches);
-
+                preg_match('/[^a-z0-9_\.-]/i', $_FILES['file']['name'], $matches);
                 $renamedFile = Ccsd_File::renameFile($_FILES['file']['name'], $dir, !$isOverwritten);
-
-                copy($_FILES['file']['tmp_name'], $dir . $renamedFile);
-
+                move_uploaded_file($_FILES['file']['tmp_name'], $dir . $renamedFile);
                 if ($translator) {
                     $message = $translator->translate('Le fichier a été déposé.');
-
                     if ($renamedFile !== $_FILES['file']['name']) {
-                        $message = $translator->translate('Le fichier a été téléchargé et a été renommé');
-                        $message .= ' "';
-                        $message .= $renamedFile;
-                        $message .= '"';
-                        $message .= ' ';
-                        $message .= $translator->translate('car');
-                        $message .= ' "';
-                        $message .= $_FILES['file']['name'];
-                        $message .= '" ';
-                        $message .= empty($matches) ? $translator->translate('existe déjà.') : $translator->translate('contient des caractères non valides');
+                        $message = sprintf(
+                            '%s "%s" %s "%s" %s',
+                            $translator->translate('Le fichier a été téléchargé et a été renommé'),
+                            $renamedFile,
+                            $translator->translate('car'),
+                            $_FILES['file']['name'],
+                            empty($matches) ? $translator->translate('existe déjà.') : $translator->translate('contient des caractères non valides')
+                        );
                     }
-
                 }
 
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage($message);
-                //Prevent the file from being saved repeatedly each time the page is refreshed.
+                // Prevent the file from being saved repeatedly each time the page is refreshed.
                 $this->_helper->redirector->goToUrl($request->getRequestUri());
             }
         }
 
+        $files = $this->getFileCollectionForUser($dir);
+        $this->view->files = $files;
+    }
+
+    /**
+     * @param string $dir
+     * @return array
+     */
+    private function getFileCollectionForUser(string $dir): array
+    {
         $files = [];
-        foreach (scandir($dir) as $file) {
-            if (!in_array($file, ['.', '..', 'paper-status'])) {
-                $files[$file] = $dir . $file;
+        foreach (new FilesystemIterator($dir, FilesystemIterator::SKIP_DOTS) as $fileInfo) {
+            if ($fileInfo->isFile() && $fileInfo->getFilename() !== 'style.css') {
+                $files[$fileInfo->getFilename()] = $fileInfo->getPathname();
             }
         }
-        $this->view->files = $files;
+        return $files;
     }
 
     /**
@@ -226,6 +228,22 @@ class WebsiteDefaultController extends Episciences_Controller_Action
         $this->view->order = $this->_session->website->getOrder();
         $this->view->pageTypes = $pageTypes;
         $this->view->groupedPageTypes = $groupedPageTypes;
+
+    }
+
+    private function processPageTypes(array $pageTypes = []): array
+    {
+
+        $processed = [];
+        foreach ($pageTypes as $type => $label) {
+            foreach (Episciences_Website_Navigation::$groupedPages as $group => $gTypes) {
+                if (in_array($type, $gTypes, true)) {
+                    $processed[$group][] = $type;
+                }
+            }
+        }
+        ksort($processed);
+        return $processed;
 
     }
 
@@ -343,22 +361,6 @@ class WebsiteDefaultController extends Episciences_Controller_Action
             $news->delete($params['newsid']);
             Episciences_JournalNews::deleteByLegacyId($params['newsid']);
         }
-    }
-
-    private function processPageTypes(array $pageTypes = []): array
-    {
-
-        $processed = [];
-        foreach ($pageTypes as $type => $label) {
-            foreach (Episciences_Website_Navigation::$groupedPages as $group => $gTypes) {
-                if (in_array($type, $gTypes, true)) {
-                    $processed[$group][] = $type;
-                }
-            }
-        }
-        ksort($processed);
-        return $processed;
-
     }
 }
 

@@ -52,7 +52,18 @@ $(function() {
         let prefix = $('input#doi_proceedings_prefix_input').val();
         let doiSuffix = $('input#conference_proceedings_doi').val();
         if (!$('em#display-doi-proceeding').length) {
-            $('input#btn-request-proceedings').after( "<div class=\"col-sm-3 d-inline-block\"><em style='padding-top: 2%;display: inline-block;vertical-align: middle;' id='display-doi-proceeding'>"+$('input#translate_text_doi_request').val()+" -> "+prefix+doiSuffix+"</em></div>" );
+            // Create DOM elements securely instead of HTML string concatenation
+            const $div = $('<div>').addClass('col-sm-3 d-inline-block');
+            const $em = $('<em>')
+                .attr('id', 'display-doi-proceeding')
+                .css({
+                    'padding-top': '2%',
+                    'display': 'inline-block',
+                    'vertical-align': 'middle'
+                })
+                .text($('input#translate_text_doi_request').val() + " -> " + prefix + doiSuffix);
+            $div.append($em);
+            $('input#btn-request-proceedings').after($div);
         } else {
             $('em#display-doi-proceeding').text($('input#translate_text_doi_request').val()+" -> "+prefix+doiSuffix);
         }
@@ -61,15 +72,15 @@ $(function() {
         $('input#btn-cancel-request-proceedings').show();
     });
     function setRequiredInput(confName) {
-        $("#"+confName).attr('required',"required");
-        $("label[for='" + confName + "']").removeClass('optional');
-        $("label[for='" + confName + "']").addClass("required");
+        // Use attribute selector for safer DOM querying
+        $("[id='" + confName.replace(/'/g, "\\'") + "']").attr('required',"required");
+        $("label[for='" + confName.replace(/'/g, "\\'") + "']").removeClass('optional').addClass("required");
     }
 
     function unsetRequiredInput(confName){
-        $("#"+confName).attr('required',"");
-        $("label[for='" + confName + "']").removeClass('required');
-        $("label[for='" + confName + "']").addClass("optional");
+        // Use attribute selector for safer DOM querying
+        $("[id='" + confName.replace(/'/g, "\\'") + "']").attr('required',"");
+        $("label[for='" + confName.replace(/'/g, "\\'") + "']").removeClass('required').addClass("optional");
     }
 
     function addDoi(){
@@ -91,7 +102,13 @@ $(function() {
         let prefix = $('input#doi_proceedings_prefix_input').val();
         let doiSuffix = $('input#conference_proceedings_doi').val();
         $('input#conference_proceedings_doi').remove();
-        $('input#doi_proceedings_prefix_input').replaceWith( "<div><em id='display-doi-proceeding'>"+prefix+doiSuffix+"</em></div>" );
+        // Create DOM elements securely instead of HTML string concatenation
+        const $div = $('<div>');
+        const $em = $('<em>')
+            .attr('id', 'display-doi-proceeding')
+            .text(prefix + doiSuffix);
+        $div.append($em);
+        $('input#doi_proceedings_prefix_input').replaceWith($div);
         $('input#btn-request-proceedings').remove();
     }
 });

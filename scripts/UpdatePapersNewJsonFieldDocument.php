@@ -16,6 +16,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                 'sqlwhere-s' => "to specify the SQL condition to be used to find DOCIDs (exp. --sqlwhere 'DOCID > xxxx')",
                 'buffer|b=i' => "Number of documents to update at the same time [default: buffer = 500]",
                 'updateRecord|u' => 'Update record',
+                'json|j' => 'Output the result as JSON (for use with jq)',
             ]));
 
         parent::__construct();
@@ -69,9 +70,12 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
         }
 
         $data = $db->fetchAssoc($dataQuery);
+        $isJsonOutput = $this->hasParam('json');
 
         if (empty($data)) {
-            $this->displayInfo(sprintf('No data to process%s', $docParamMsg), true);
+            if (!$isJsonOutput) {
+                $this->displayInfo(sprintf('No data to process%s', $docParamMsg), true);
+            }
             exit(0);
         }
 
@@ -80,8 +84,9 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
         $totalPages = ceil($count / $buffer);
 
         $cpt = 1;
+        $isJsonOutput = $this->hasParam('json');
 
-        if ($this->isVerbose()) {
+        if ($this->isVerbose() && !$isJsonOutput) {
             $this->displayInfo("*** Updating of the `DOCUMENT` column in the `PAPERS` table ***", true);
             $this->displayTrace('** Preparing the update...', true);
             $this->displayTrace(sprintf('Buffer: %s', $buffer), true);
@@ -90,19 +95,22 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
 
         for ($page = 1; $page <= $totalPages; $page++) {
 
-            if ($this->isVerbose()) {
+            if ($this->isVerbose() && !$isJsonOutput) {
                 $this->displayTrace(sprintf('Page #%s', $page), true);
             }
 
             $toUpdate = '';
             $offset = ($page - 1) * $buffer;
             $cData = array_slice($data, $offset, $buffer);
-            $this->getProgressBar()->start();
+            
+            if (!$isJsonOutput) {
+                $this->getProgressBar()->start();
+            }
 
             foreach ($cData as $values) {
                 $docId = $values['DOCID'];
 
-                if ($this->isVerbose()) {
+                if ($this->isVerbose() && !$isJsonOutput) {
                     $this->displayTrace(sprintf('[DOCID #%s]', $docId), true);
                 }
                 $progress = round(($cpt * 100) / $count);
@@ -110,7 +118,9 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                     $currentPaper = new Episciences_Paper($values);
 
                 } catch (Zend_Db_Statement_Exception $e) {
-                    $this->displayCritical($e->getMessage());
+                    if (!$isJsonOutput) {
+                        $this->displayCritical($e->getMessage());
+                    }
                     continue;
                 }
 
@@ -131,20 +141,27 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                                 continue;
                             }
 
-                            $this->displayCritical('/!\ No Previous version');
-
+                            if (!$isJsonOutput) {
+                                $this->displayCritical('/!\ No Previous version');
+                            }
 
                         } catch (Zend_Db_Statement_Exception|Zend_Db_Adapter_Exception $e) {
-                            $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
+                            if (!$isJsonOutput) {
+                                $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
+                            }
                         }
 
                     }
 
                     try {
                         $affectedRows = Episciences_PapersManager::updateRecordData($currentPaper);
-                        $this->displayTrace(sprintf('Update metadata... > Affected rows: %s', $affectedRows), true);
+                        if (!$isJsonOutput) {
+                            $this->displayTrace(sprintf('Update metadata... > Affected rows: %s', $affectedRows), true);
+                        }
                     } catch (Exception|\GuzzleHttp\Exception\GuzzleException|\Psr\Cache\InvalidArgumentException $e) {
-                        $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
+                        if (!$isJsonOutput) {
+                            $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
+                        }
                     }
 
                 }
@@ -152,27 +169,37 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                 try {
                     $toJson = $currentPaper->toJson();
 
-                    if ($this->isVerbose()) {
+                    // Output raw JSON if --json option is used
+                    if ($this->hasParam('json')) {
+                        echo $toJson . PHP_EOL;
+                    }
+
+                    if ($this->isVerbose() && !$isJsonOutput) {
                         $this->displaySuccess(sprintf('** [#%s] exported to json format ...', $docId), true);
                         $toUpdate .= sprintf('%sUPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', PHP_EOL, $db->quote($toJson), $docId);
                     }
                 } catch (Zend_Db_Statement_Exception $e) {
-                    $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
+                    if (!$isJsonOutput) {
+                        $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
+                    }
                 }
 
-
-                $this->getProgressBar()->setProgress($progress);
+                if (!$isJsonOutput) {
+                    $this->getProgressBar()->setProgress($progress);
+                }
 
                 ++$cpt;
             }
 
-            if ($this->isVerbose()) {
+            if ($this->isVerbose() && !$isJsonOutput) {
                 $this->displayTrace(sprintf('Applying Update... %s %s', PHP_EOL, $toUpdate), true);
             }
 
             if (!$this->isDebug()) {
                 if (empty(trim($toUpdate))) {
-                    $this->displayCritical('#' . $docId . " Nothing to update! SQL Request is empty");
+                    if (!$isJsonOutput) {
+                        $this->displayCritical('#' . $docId . " Nothing to update! SQL Request is empty");
+                    }
                     continue;
                 }
                 try {
@@ -181,12 +208,14 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                     $statement->closeCursor();
                 } catch (Zend_Db_Statement_Exception|Exception $e) {
                     $result = 0;
-                    $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
+                    if (!$isJsonOutput) {
+                        $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
+                    }
                 }
 
             }
 
-            if ($this->isVerbose()) {
+            if ($this->isVerbose() && !$isJsonOutput) {
 
                 if (!$this->isDebug()) {
 
@@ -205,7 +234,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
             }
         }
 
-        if ($this->isVerbose()) {
+        if ($this->isVerbose() && !$isJsonOutput) {
             $this->displaySuccess('Updating complete', true);
         }
 

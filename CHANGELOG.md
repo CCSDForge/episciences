@@ -14,19 +14,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Security
 -->
+
 ## Unreleased
+### Added
+- Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
+- New option to allow Editors to receive 'Comments for editors' before declaring a conflict of interest (disabled by default)
 
 ### Fixed
-- DOI metadata: stop overwriting acceptance date with the last modification date
-- #693 allow to save comment without attachment
-- #690 ORCID might be duplicated when one of the authors has no ORCID
-- #702 Inclusion of arxiv article version invalidates document identifier
+- [#776](https://github.com/CCSDForge/episciences/issues/776) Action Required: Fix Renovate Configuration
+- [#657](https://github.com/CCSDForge/episciences/issues/657) Conditionally remove the `<hr>` separator in the public and admin views of article metadata
+- [#786](https://github.com/CCSDForge/episciences/issues/786) English translation of 'Télécharger le fichier'
+- [RT#259551] it is now possible to modify the Copy Editor at any time
+- [#678](https://github.com/CCSDForge/episciences/issues/678) COIs not considered in revision emails
 
+## v1.0.52-manager - 2025-08-28
+### Fixed
+- DOI metadata: stop overwriting acceptance date with the last modification date
+- [#693](https://github.com/CCSDForge/episciences/issues/693) allow to save comment without attachment
+- [#690](https://github.com/CCSDForge/episciences/issues/690) ORCID might be duplicated when one of the authors has no ORCID
+- [#702](https://github.com/CCSDForge/episciences/issues/702) Inclusion of arxiv article version invalidates document identifier
+- When updating Authors' affiliations, redirect to the latest paper version, not the 1st version
+- [#629](https://github.com/CCSDForge/episciences/issues/629) Malfunction when updating volume description
+- [#639](https://github.com/CCSDForge/episciences/issues/639) DOAJ Export unavailable. Added a function to Convert between ISO 639-2/T and ISO 639-2/B codes. DOAJ is in the team iso_639-2b whereas our current tools create iso_639-2t not supported by the DOAJ Schema 
+- Fixed unescaped identifiers causing invalid XML in OpenAire export format
+- [#600](https://github.com/CCSDForge/episciences/issues/600) Abstract ignores line breaks
+- [#694](https://github.com/CCSDForge/episciences/issues/694) accents via LaTeX macros in abstracts aren't rendered
+- Manager: Fixed path to reviewer report attachments without prefix
+- Manager: Force predefined pages to be public
+- Manager: Review Report: attached document URL has not been updated for the manager application
+ 
 ### Added
 - DOI management automation: Added shell scripts for batch DOI operations and enhanced getDoi.php with logging and journal fetching capabilities
 - CSV import functionality for sections
+- When pasting URL for repository identifiers, the URL is automatically cleaned to keep only the identifier, if the version number is in the URL, it is also automatically added into the "Version" field
+- Javascript Tests with Jest
+- PHP tests with Phpunit (updated test + new tests)
+- Prettier to format Javascript
+- Configured GitHub actions for CI (PHP+JS tests)
+- Updated Renovate and Dependabot tests to target staging branch
+- New Makefile with reorganised commands + new commands
+- Document view:
+    - Now displaying the abstract in all languages we have, prefixed with the language code
+    - Now displaying keywords prefixed with their language code
+- Relationships module: 
+  - added logs details for added/removed values
+  - improved content escaping
 
-v1.0.51 - 2025-04-07
+### Changed
+- Refactored some Javascript with more modern approach
+- Editor Comments: in case conflict of interests is enabled in the journal, editors will receive the comments even if they have not yet answered to COI. If they declare a COI, they will be unassigned and will stop receiving editors comments
+- Crossref title export: in case of multiple titles, the priority is given to the title in the language of the document or fallback to the fist title if no language
+- [#657](https://github.com/CCSDForge/episciences/issues/657) Move "Download this file" button a bit and rename "Download this paper" 
+ 
+## v1.0.51 - 2025-04-07
 ### Changed
 - [#650](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
 - Ability to customise application environment variables
@@ -35,6 +75,7 @@ v1.0.51 - 2025-04-07
     - It is no longer possible to manually add certain public pages to the site.
     - The list of pages has been reorganised by group.
     - Hide "Publishing policies" page: included in the "About" page.
+- Updated 'Resources' module to manage public files
 
 - published dataset/software: the title of the data/software descriptor is its identifier.
 - Only PDF files are backed up

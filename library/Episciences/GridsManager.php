@@ -399,10 +399,15 @@ class Episciences_GridsManager
             'label' => 'Valider',
             'class' => 'btn btn-primary'
         ]);
+
+        $cancelUrl = (new Episciences_View_Helper_Url())->url(array(
+            'controller' => 'grid',
+            'action' => 'index'
+        ));
         $form->setActions(true)->createCancelButton('back', [
             'label' => 'Annuler',
             'class' => 'btn btn-default',
-            'onclick' => "window.location='/grid'"]);
+            'onclick' => "window.location='$cancelUrl'"]);
 
         if ($defaults) {
             $form->setDefaults($defaults);
@@ -459,10 +464,14 @@ class Episciences_GridsManager
             'label' => 'Valider',
             'class' => 'btn btn-primary'
         ]);
+        $cancelUrl = (new Episciences_View_Helper_Url())->url(array(
+            'controller' => 'grid',
+            'action' => 'index'
+        ));
         $form->setActions(true)->createCancelButton('back', [
             'label' => 'Annuler',
             'class' => 'btn btn-default',
-            'onclick' => "window.location='/grid'"]);
+            'onclick' => "window.location='$cancelUrl'"]);
 
         if ($defaults) {
             $form->setDefaults($defaults);

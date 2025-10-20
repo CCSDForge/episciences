@@ -37,6 +37,7 @@ return array(
     "Rédacteurs invités" => "Guest editors",
     "rédacteurs" => "editors",
     'temporaire' => 'temporary',
+    'Taux' => 'Rates',
 
     "Relecteur" => array("Reviewer", "Reviewers"),
     // DOCUMENT TYPES
@@ -93,6 +94,11 @@ return array(
     // Navigation
     "Accueil" => "Home",
     "Retourner à l'accueil" => 'Go back to homepage',
+
+    // Homepage
+    "Liste des revues" => "Journal List",
+    "Nombre total de revues" => "Total number of journals",
+    "Aucune revue disponible" => "No journals available",
 
     // Roles
 
@@ -356,6 +362,7 @@ return array(
     "Il s'agit d'une ancienne version de %s cet article %s" => "It is an older version of %s this article %s",
     "cet article" => "this article",
     "Télécharger l'article" => "Download article",
+    "Télécharger le fichier" => "Download this file",
     "Voir la page du document sur" => "See the document's page on",
     "Voir le jeu de données sur" => "See the dataset on",
     "Voir le logiciel sur" => "See the software on",
@@ -623,7 +630,7 @@ return array(
     "Créer une grille pour le volume :" => 'Create a new grid for this volume:',
     "Créer la grille" => 'Create this grid',
     "Visibilité du critère" => "Criterion visibility",
-    "Visibilité" => "visibility",
+    "Visibilité" => "Visibility",
     "Type de notation" => "Rating type",
     "Type d'évaluation" => "Evaluation type",
     "Notation sur 10" => "Grading on a 0-10 scale",
@@ -727,6 +734,11 @@ return array(
     "Créer un volume" => "Create a new volume",
     "Modifier un volume" => "Edit this volume",
     "Nom du volume" => "Volume name",
+    'Nom (French)' => 'Name (French)',
+    'Nom (English)' => 'Name (English)',
+    'Description (English)' => 'Description (English)',
+    'Description (French)' => 'Description (French)',
+
     "Aucun volume enregistré" => "No volume yet",
     "Métadonnées" => "Metadata",
     "Dans ce cas, le glisser-déposer repositionne tous les éléments affichés, les faisant apparaître en haut de la liste." => "In this case, drag & drop repositions all displayed items, making them appear at the top of the list.",
@@ -1061,6 +1073,9 @@ return array(
     "Effectué par" => "Done by",
     "Fait le" => "Done on",
     "Dernier statut connu" => "Last known status",
+    "Type de donnée liée" => "Linked data type",
+    "Valeur" => "Value",
+    "Relation" => "Relationship",
     "Historique indisponible" => 'Paper history is unavailable',
     "Filtrer les logs par date" => 'Filter logs by date',
     "Depuis" => 'From',
@@ -1110,6 +1125,8 @@ return array(
     "Le volume n'a pas été trouvé" => "The volume wasn't found",
     "La section n'a pas été trouvée" => "The section wasn't found",
     "Cette rubrique a été supprimée" => "This section has been removed",
+    'La nouvelle rubrique a bien été créée.' => 'The new section has been created.',
+    "La nouvelle rubrique n'a pas pu être créée." => 'The creation of the new section failed.',
 
     //Notifications
     "Paramètres de notification" => "Notification Settings",
@@ -1893,7 +1910,13 @@ return array(
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
-    "Évaluation" => "Evaluation",
+    'Moyenne [en %s]' => 'Average [in %s]',
+    'Médiane [en %s]' => 'Median [in %s]',
+    'autre' => 'other',
+    "Les articles importés ne sont pas inclus" => "Imported articles are not included",
+    "Évaluation" => "Review",
+    "articles acceptés (non encore publiés)" => "accepted articles (not yet published)",
+    'non encore publiés' => 'not yet published',
     "Évaluations reçues" => "Reviews received",
     "Évaluations demandées" => "Reviews requested",
     "Nombre médian d'évaluations d'articles de recherche" => "Median number of reviews for research articles",
@@ -1901,8 +1924,12 @@ return array(
     "le nombre de soumissions sur l'ensemble de l'année" => 'the total number of articles submitted during this period',
     "toutes les soumissions" => "all submissions",
     "le nombre d'articles acceptés" => "the number of accepted articles",
+    "le nombre d'articles publiées" => "the number of published articles",
+    "le nombre d'articles refusés" => "the number of refused articles",
     "En un coup d'oeil" => "At a glance",
-    "Taux d'acceptation" => "Acceptance rate",
+    "taux d'acceptation" => "acceptance rate",
+    "taux de publication" => "publication rate",
+    "taux de refus" => "decline rate",
     'Dépôt-Acceptation' => 'Submission-Acceptance',
     'Dépôt-Publication' => 'Submission-Publication',
     'Statistiques' => 'Statistics',
@@ -1922,13 +1949,15 @@ return array(
     "Nombre total d'utilisateurs : " => "Total number of users: ",
     "Nombre d'utilisateurs" => "Users number",
     "Un utilisateur peut avoir plusieurs rôles." => "A user can have multiple roles.",
-    "Cela inclut les articles en cours de mise en forme et en attente de publication." => "This includes articles that are being copy editing and awaiting publication.",
+    "Cela inclut les versions acceptées (mise en forme ou non)" => "This includes accepted versions (with or without formatting).",
     "Cela inclut seulement les articles soumis cette année." => "This includes only articles submitted this year.",
-    "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année." => "This includes articles that were previously submitted and published this year.",
+    "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année." => "This includes articles that were p reviously submitted and published this year.",
     "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année." => "This includes articles that were previously submitted and refused this year.",
     "Cela inclut les autres statuts." => "This includes other status.",
     "Cela inclut les articles qui ont été soumis antérieurement" => 'This includes articles that were previously submitted',
     "articles acceptés (soumis la même année)" => "accepted articles (submitted in the same year)",
+    "articles refusés (soumis la même année)" => "refused articles (submitted in the same year)",
+    "articles publiés (soumis la même année)" => "published articles (submitted in the same year)",
     'soumis la même année' => 'submitted in the same year',
     'En cours de publication' => 'Being published',
     "À l'exception des statistiques sur les utilisateurs, les indicateurs ci-dessous ne comprennent que des données postérieures au " => "With the exception of user statistics, the indicators below only include data after ",
@@ -1939,6 +1968,8 @@ return array(
     "Aucune information n'est disponible pour cette page pour le moment." => "No information is available for this page at the moment.",
     'délai soumission-acceptation' => 'Submission-acceptance time',
     'délai soumission-publication' => 'Submission-publication time',
+    'Cela inclut les articles qui ont déjà été publiés' => 'This includes articles that have already been published',
+    'La revue peut rejeter plusieurs fois le même article. Dans ce cas, un seul rejet est comptabilisé par article.' => 'The journal may reject the same article several times. In this case, only one rejection is counted per article.',
     // datasets
     'administratelinkeddata-addld' => 'Add a related work',
     'administratelinkeddata-removeld' => 'Remove a related work',
@@ -1975,6 +2006,8 @@ return array(
     "Conflit d'intérêts (CI)" => "Conflict Of Interest (COI)",
     "Activer la déclaration CI" => "Enable declaring COI",
     "Le mode conflit d'intérêts (CI) aura les effets suivants : toutes les informations non publiques concernant une soumission ne sont pas accessibles aux éditeurs en chef et aux éditeurs tant qu'ils n'auront pas déclaré l'absence de tout conflit d'intérêts." => "This mode will have the following effects: all non-public information about a submission is not accessible to an editor in chief and an editor until he/she has declared the absence of any conflict of interest.",
+    "Les rédacteurs reçoivent les 'commentaires pour les rédacteurs' avant la déclaration d'un conflit d'intérêt" => "Editors receive 'comments for editors' before declaring a conflict of interest",
+    "Activer pour permettre aux éditeurs de recevoir des commentaires sur l'article avant d'avoir déclaré un conflit d'intérêts." => "Enable to allow editors to receive comments on the article before they have declared a conflict of interest.",
     "Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission . " => "You've been redirected, because you have declared a conflict of interest with this submission.",
     "Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission" => "You've been redirected, because you must confirm the lack of conflict of interest to access this submission",
     "Conflit d'intérêt" => 'Conflict of interest',

@@ -1,5 +1,10 @@
 <?php
 
+// Ensure autoloader is loaded
+if (!class_exists('Composer\Autoload\ClassLoader') && file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
+
 use Symfony\Component\Dotenv\Dotenv;
 
 function defineProtocol(): void
@@ -133,15 +138,21 @@ function defineJournalConstants(string $rvCode = null): void
         define('PREFIX_URL', $prefixUrl);
     }
 
+    // Ensure PREFIX_URL is always defined, even if RVCODE was already defined
+    if (!defined('PREFIX_URL')) {
+        $prefixUrl = ($rvCode && $rvCode !== 'portal') ? sprintf('/%s/', $rvCode) : PORTAL_PREFIX_URL;
+        define('PREFIX_URL', $prefixUrl);
+    }
+
     if ($rvCode) {
 
         // define application ur
         if (!defined('APPLICATION_URL')) {
             if (getenv('RVCODE')) {
                 define('APPLICATION_URL', SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN);
-            } elseif(isset($_SERVER['SERVER_NAME'])) {
+            } elseif (isset($_SERVER['SERVER_NAME'])) {
                 define('APPLICATION_URL', sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], rtrim(PREFIX_URL, '/')));
-            } elseif(isset($_ENV['MANAGER_APPLICATION_URL'])){
+            } elseif (isset($_ENV['MANAGER_APPLICATION_URL'])) {
                 define('APPLICATION_URL', sprintf('%s%s', rtrim($_ENV['MANAGER_APPLICATION_URL'], '/'), rtrim(PREFIX_URL, '/')));
             } else {
                 // Fallback for CLI usage
@@ -350,6 +361,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('EPISCIENCES_UID', 0);
         define('EPISCIENCES_Z_SUBMIT', 0);
         define('EPISCIENCES_USER_AGENT', '');
+        define('EPISCIENCES_SUPPORT','');
         define('NOTIFY_TARGET_HAL_INBOX', '');
         define('NOTIFY_TARGET_HAL_URL', '');
         define('OPENALEX_MAILTO', '');
@@ -388,5 +400,12 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('EPISCIENCES_MAIL_PATH', '');
         define('ENV_DEV', '');
         define('MANAGER_APPLICATION_URL', '');
+        define('INBOX_ID', '');
+        define('INBOX_URL', '');
+        define('INBOX_DB_HOST', '');
+        define('INBOX_DB_DRIVER', '');
+        define('INBOX_DB_USER', '');
+        define('INBOX_DB_PASSWORD', '');
+        define('INBOX_DB_NAME', '');
     }
 }

@@ -70,36 +70,24 @@ $(document).ready(function () {
         $new_user.show();
     });
 
-    // autocomplete init (existing user selection)
-    let cache = {};
-
-    $autocomplete.autocomplete({
-        html: true,
-        source: function (request, response) {
-            let term = request.term;
-            if (term in cache) {
-                response(cache[term]);
-                return;
-            }
-            if (ignore_list) {
-                request.ignore_list = ignore_list;
-            }
-            $.getJSON("/user/findcasusers", request, function (data) {
-                cache[term] = data;
-                response(data);
-            });
-        },
-        select: function (event, ui) {
-            $(this).val('');
-            setInvitationValues(ui.item, 2);
+    // Modern autocomplete init (existing user selection)
+    const autocompleteInstance = createUserAutocomplete({
+        inputId: 'autocomplete',
+        selectedUserIdField: null, // We handle selection differently
+        selectButtonId: null,
+        url: JS_PREFIX_URL + 'user/findcasusers',
+        maxResults: 100,
+        onSelectCallback: function(user) {
+            $('#autocomplete').val('');
+            setInvitationValues({
+                id: user.id,
+                email: user.email,
+                full_name: user.full_name,
+                user_name: user.user_name || '',
+                label: user.label || user.full_name
+            }, 2);
             step2();
-            return false;
         }
-    });
-
-    // Autocomplete: au focus, on affiche les résultats en cache
-    $autocomplete.focus(function () {
-        $(this).autocomplete("search", this.value);
     });
 
     // Vérification de l'adresse mail

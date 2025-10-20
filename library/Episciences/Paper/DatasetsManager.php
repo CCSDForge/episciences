@@ -119,7 +119,8 @@ class Episciences_Paper_DatasetsManager
         $query = $db->select()->from(T_PAPER_DATASETS)
             ->where('id = ?', $id);
 
-        return new Episciences_Paper_Dataset($db->fetchRow($query));
+        $result = $db->fetchRow($query);
+        return $result ? new Episciences_Paper_Dataset($result) : false;
 
     }
 

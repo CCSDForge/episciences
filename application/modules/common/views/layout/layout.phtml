@@ -12,7 +12,8 @@ echo $this->doctype('HTML5');
 ?>
 <html xmlns="http://www.w3.org/1999/xhtml">
 
-<head <?php if ($controller === "paper" || $controller === "administratepaper"): ?>prefix="og: https://ogp.me/ns# article: http://ogp.me/ns/article# profile: http://ogp.me/ns/profile#"<?php endif;?>>
+<head
+    <?php if ($controller === "paper" || $controller === "administratepaper"): ?>prefix="og: https://ogp.me/ns# article: http://ogp.me/ns/article# profile: http://ogp.me/ns/profile#"<?php endif; ?>>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <?php if (APPLICATION_ENV != ENV_PROD) : ?>
         <meta name="robots" content="noindex">
@@ -59,7 +60,6 @@ echo $this->doctype('HTML5');
 
 
     // JS
-    $this->jQuery()->addJavascriptFile("/js/tools.js");
     $this->jQuery()->addJavascriptFile("/js/translation.php?lang=" . Zend_Registry::get('lang'));
     $this->jQuery()->addJavascriptFile(VENDOR_BOOTBOX);
     $this->jQuery()->addJavascriptFile("/js/functions.js");
@@ -70,14 +70,31 @@ echo $this->doctype('HTML5');
     $this->jQuery()->addJavascriptFile(VENDOR_BOOTSTRAP_JS);
     echo $this->jQuery();
     ?>
-    <script src="<?php echo VENDOR_MATHJAX ?>" async></script>
-    <script type='text/x-mathjax-config'>MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['$$','$$']]}});</script>
+
+    <?php if (APPLICATION_MODULE !== 'portal') : ?>
+        <script src="<?php echo VENDOR_MATHJAX ?>" async></script>
+        <script type='text/x-mathjax-config'>MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['$$','$$']]}});
+        </script>
+    <?php endif; ?>
 </head>
 
 <body>
 
 
-<?php $this->navbar(true, ['languages' => Zend_Registry::get('languages'), 'lang' => Zend_Registry::get('lang')], true, ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml']); ?>
+<?php
+if (APPLICATION_MODULE !== 'portal') {
+    $displayLogin = true;
+} else {
+    $displayLogin = false;
+}
+$this->navbar(true, [
+    'languages' => Zend_Registry::get('languages'),
+    'lang' => Zend_Registry::get('lang')],
+    $displayLogin,
+    ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml'
+    ]);
+?>
+
 <div id="container" class="container<?php echo $this->containerClass; ?>">
 
 
@@ -104,7 +121,12 @@ echo $this->doctype('HTML5');
             <?php } else { ?>
             <div class="col-md-12">
                 <?php } ?>
-                <?php echo $this->sidebar($this->navigation, $this->nav()); ?>
+
+                <?php
+                if (APPLICATION_MODULE !== 'portal') {
+                    echo $this->sidebar($this->navigation, $this->nav());
+                }
+                ?>
 
                 <?php if ($this->navigation == Ccsd_Website_Style::MENU_LIST || $this->navigation == Ccsd_Website_Style::MENU_ACCORDION) { ?>
             </div>
@@ -195,7 +217,7 @@ echo $this->doctype('HTML5');
     </script>
     <?php
     if (APPLICATION_ENV == ENV_DEV) {
-    echo $this->render('commons/debug.phtml');
+        echo $this->render('commons/debug.phtml');
     }
     ?>
 

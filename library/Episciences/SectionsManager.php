@@ -5,6 +5,8 @@ class Episciences_SectionsManager
     public const TABLE = T_SECTIONS;
     public const SETTINGS_TABLE = T_SECTION_SETTINGS;
 
+    public const MAX_STRING_LENGTH = 255;
+
     /**
      * Renvoie la liste de toutes les rubriques d'une revue
      * @param array|null $options
@@ -152,7 +154,7 @@ class Episciences_SectionsManager
     {
         // Passer les param par défaut (currentEditors)
         $editors = Episciences_Review::getEditors(false);
-
+        $options = [];
         if ($editors) {
 
             $form = new Zend_Form();
@@ -218,27 +220,24 @@ class Episciences_SectionsManager
         $form = new Ccsd_Form;
         $form->setAttrib('class', 'form-horizontal');
 
-        $lang = array('class' => 'Episciences_Tools', 'method' => 'getLanguages');
-        $reqLang = array('class' => 'Episciences_Tools', 'method' => 'getRequiredLanguages');
+        $languages = Episciences_Tools::getLanguages();
+        foreach ($languages as $languageCode => $language) {
 
-        // Nom de la rubrique
-        $form->addElement(new Ccsd_Form_Element_MultiTextSimpleLang(array(
-            'name' => 'titles',
-            'label' => 'Nom',
-            'populate' => $lang,
-            'validators' => array(new Ccsd_Form_Validate_RequiredLang(array('populate' => $reqLang))),
-            'required' => true,
-            'display' => Ccsd_Form_Element_MultiText::DISPLAY_ADVANCED
-        )));
+            // Nom de la rubrique
+            $form->addElement('text', Episciences_Section::SECTION_PREFIX_TITLE . $languageCode,  [
+                'label' => 'Nom (' . $language . ')',
+                'maxlength' => self::MAX_STRING_LENGTH,
+                'required' => true,
+            ]);
 
-        // Description de la rubrique
-        $form->addElement('MultiTextAreaLang', 'descriptions', array(
-            'label' => 'Description',
-            'populate' => $lang,
-            'tiny' => true,
-            'rows' => 5,
-            'display' => Ccsd_Form_Element_MultiText::DISPLAY_ADVANCED
-        ));
+            // Description de la rubrique
+            $form->addElement('textarea', Episciences_Section::SECTION_PREFIX_DESCRIPTION . $languageCode, [
+                'label' => 'Description (' . $language . ')',
+                'tiny' => true,
+                'rows' => 5,
+                'maxlength' => self::MAX_STRING_LENGTH,
+            ]);
+        }
 
         // Statut (ouvert/fermé)
         $form->addElement('select', 'status', array(
@@ -253,10 +252,16 @@ class Episciences_SectionsManager
             'label' => 'Valider',
             'class' => 'btn btn-primary'
         ));
+
+
+        $cancelUrl = (new Episciences_View_Helper_Url())->url(array(
+            'controller' => 'section',
+            'action' => 'index'
+        ));
         $form->setActions(true)->createCancelButton('back', array(
             'label' => 'Annuler',
             'class' => 'btn btn-default',
-            'onclick' => "window.location='/section'"));
+            'onclick' => "window.location='$cancelUrl'"));
 
         if ($defaults) {
             $form->setDefaults($defaults);
@@ -290,4 +295,38 @@ class Episciences_SectionsManager
 
         return $section->getNameKey($language, $force);
     }
+
+    public static function revertSectionDescriptionToTextareaArray(?array $input): ?array
+    {
+        $output = [];
+        if (empty($input)) {
+            return null;
+        }
+        foreach ($input as $key => $value) {
+            if (str_starts_with($key, Episciences_Section::SECTION_PREFIX_DESCRIPTION)) {
+                $lang = substr($key, strlen(Episciences_Section::SECTION_PREFIX_DESCRIPTION));
+                $output[$lang] = $value;
+            }
+        }
+
+        return $output;
+    }
+
+    public static function revertSectionTitleToTextArray(?array $input): ?array
+    {
+        $output = [];
+        if (empty($input)) {
+            return null;
+        }
+        foreach ($input as $key => $value) {
+            if (str_starts_with($key, Episciences_Section::SECTION_PREFIX_TITLE)) {
+                $lang = substr($key, strlen(Episciences_Section::SECTION_PREFIX_TITLE));
+                $output[$lang] = $value;
+            }
+        }
+
+        return $output;
+    }
+
 }
+

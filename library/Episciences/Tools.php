@@ -14,6 +14,32 @@ class Episciences_Tools
 {
 
     public const DEFAULT_MKDIR_PERMISSIONS = 0770;
+
+    /**
+     * Bidirectional mapping between ISO 639-2/T and ISO 639-2/B codes
+     */
+    private const ISO639_BIDIRECTIONAL_MAP = [
+        'alb' => 'sqi', 'sqi' => 'alb', // Albanian
+        'arm' => 'hye', 'hye' => 'arm', // Armenian
+        'baq' => 'eus', 'eus' => 'baq', // Basque
+        'bur' => 'mya', 'mya' => 'bur', // Burmese
+        'chi' => 'zho', 'zho' => 'chi', // Chinese
+        'cze' => 'ces', 'ces' => 'cze', // Czech
+        'dut' => 'nld', 'nld' => 'dut', // Dutch
+        'fre' => 'fra', 'fra' => 'fre', // French
+        'geo' => 'kat', 'kat' => 'geo', // Georgian
+        'ger' => 'deu', 'deu' => 'ger', // German
+        'gre' => 'ell', 'ell' => 'gre', // Greek (modern)
+        'ice' => 'isl', 'isl' => 'ice', // Icelandic
+        'mac' => 'mkd', 'mkd' => 'mac', // Macedonian
+        'mao' => 'mri', 'mri' => 'mao', // Maori
+        'may' => 'msa', 'msa' => 'may', // Malay
+        'per' => 'fas', 'fas' => 'per', // Persian
+        'rum' => 'ron', 'ron' => 'rum', // Romanian
+        'slo' => 'slk', 'slk' => 'slo', // Slovak
+        'tib' => 'bod', 'bod' => 'tib', // Tibetan
+        'wel' => 'cym', 'cym' => 'wel', // Welsh
+    ];
     public static $bashColors = [
         'red' => "\033[0;31m",
         'blue' => "\033[0;34m",
@@ -51,6 +77,8 @@ class Episciences_Tools
         //caron/háček ("v") over the letter
         "\\v{s}" => 'š',
         "\\v s" => 'š',
+        "\\v{r}" => 'ř',
+        "\\v r" => 'ř',
         // git #270 : (circumflex)
         '\\^a' => 'â',
 
@@ -93,6 +121,15 @@ class Episciences_Tools
         //acute accent
         "\\'{o}" => 'ó',
         "\\'o" => 'ó',
+        // c with acute accent (Polish)
+        "\\'{c}" => 'ć',
+        "\\'c" => 'ć',
+        // n with acute accent (Polish)
+        "\\'{n}" => 'ń',
+        "\\'n" => 'ń',
+        // y with acute accent (Czech/Slovak)
+        "\\'{y}" => 'ý',
+        "\\'y" => 'ý',
         //circumflex
         "\\^{o}" => 'ô',
         "\\^o" => 'ô',
@@ -880,10 +917,44 @@ class Episciences_Tools
         return trim($name);
     }
 
-    public static function decodeLatex($string)
+    public static function decodeLatex($string, $preserveLineBreaks = false)
     {
-        //$string = Ccsd_Tools::decodeLatex($string);
-        return str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $string);
+        $result = str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $string);
+
+        if ($preserveLineBreaks) {
+            // First handle double line breaks (clear paragraph breaks)
+            $result = preg_replace('/\n\s*\n/', '<br /><br />', $result);
+
+            // Then handle single line breaks more intelligently:
+            // Convert single line breaks to <br> EXCEPT when they appear to be text wrapping
+
+            // Text wrapping patterns (convert to spaces):
+            // 1. Line breaks after short words (articles, prepositions, conjunctions)
+            $result = preg_replace('/(\b\w{1,3})\s*\n/', '$1 ', $result);
+            // 2. Line breaks in the middle of sentences (not after punctuation)
+            $result = preg_replace('/([^.!?:;])\s*\n(?!\s*[-*•])/', '$1 ', $result);
+
+            // Convert remaining single line breaks to <br> (intentional paragraph breaks)
+            $result = preg_replace('/\n/', '<br />', $result);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Check if a language code represents a right-to-left language
+     *
+     * @param string|null $langCode Language code (e.g., 'ar', 'he', 'fa')
+     * @return bool True if the language is RTL, false otherwise
+     */
+    public static function isRtlLanguage(?string $langCode): bool
+    {
+        if (empty($langCode)) {
+            return false;
+        }
+
+        $rtlLanguages = ['ar', 'he', 'fa', 'ur', 'ps', 'syr', 'dv', 'ku', 'yi', 'arc'];
+        return in_array(strtolower(trim($langCode)), $rtlLanguages, true);
     }
 
     // check if an url begins with http:// or https://. if not, add http at the beginning of the string.
@@ -1502,11 +1573,53 @@ class Episciences_Tools
         return !empty($tmp) ? $tmp : null;
     }
 
-    public static function replace_accents($str): string
+    /**
+     * Remove accents from a string by converting accented characters to their base form
+     *
+     * Uses Unicode normalization (NFD) to decompose characters and then removes diacritical marks.
+     * Falls back to transliteration if Normalizer is not available.
+     *
+     * @param string $str The string to process
+     * @return string The string with accents removed
+     */
+    public static function replaceAccents(string $str): string
     {
+        if (empty($str)) {
+            return $str;
+        }
+
+        // Method 1: Use Normalizer if available (most efficient and comprehensive)
+        if (class_exists('Normalizer')) {
+            // Normalize to NFD (decomposed form) and remove combining diacritical marks
+            $normalized = Normalizer::normalize($str, Normalizer::FORM_D);
+            if ($normalized !== false) {
+                // Remove combining diacritical marks (Unicode category Mn)
+                return preg_replace('/\p{Mn}/u', '', $normalized);
+            }
+        }
+
+        // Method 2: Use iconv transliteration (fallback)
+        if (function_exists('iconv')) {
+            $result = iconv('UTF-8', 'ASCII//TRANSLIT', $str);
+            if ($result !== false) {
+                // Clean up any remaining unwanted characters from transliteration
+                return preg_replace('/[\'`"^~]/', '', $result);
+            }
+        }
+
+        // Method 3: Legacy fallback using htmlentities (original method)
         $str = htmlentities($str, ENT_COMPAT, "UTF-8");
         $str = preg_replace('/&([a-zA-Z])(uml|acute|grave|circ|tilde|ring|slash);/', '$1', $str);
         return html_entity_decode($str);
+    }
+
+    /**
+     * @deprecated Use replaceAccents() instead
+     */
+    public static function replace_accents($str): string
+    {
+        trigger_error('replace_accents() is deprecated. Use replaceAccents() instead.', E_USER_DEPRECATED);
+        return self::replaceAccents($str);
     }
 
     /**
@@ -1849,6 +1962,21 @@ class Episciences_Tools
     }
 
     /**
+     * Check if a string is a HAL URL containing a valid HAL identifier
+     * @param string $url
+     * @return bool
+     */
+    public static function isHalUrl(string $url): bool
+    {
+        // Check if it's a URL that contains a HAL identifier
+        if (preg_match('~^https?://.*hal~', $url)) {
+            $matches = self::getHalIdInString($url);
+            return !empty($matches) && self::isHal($matches[0]);
+        }
+        return false;
+    }
+
+    /**
      * @param string $swhid
      * @return bool
      */
@@ -1868,13 +1996,52 @@ class Episciences_Tools
         return $matches;
     }
 
+
     /**
-     * @param string $handle
-     * @return bool
+     * Extracts a raw Handle string from a full Handle URL, excluding DOIs.
+     *
+     * @param string $input Input string
+     * @return string Cleaned handle (original string if not a Handle URL or if it’s a DOI)
      */
-    public static function isHandle(string $handle): bool
+    public static function cleanHandle(string $input): string
     {
-        return (bool)preg_match('/(^[\x00-\x7F]+(\.[\x00-\x7F]+)*\/[\S]+[^;,.\s])/', $handle);
+        $input = trim($input);
+
+        // Skip cleaning if it’s a DOI URL
+        if (preg_match('~^https?://doi\.org/~i', $input)) {
+            return $input;
+        }
+
+        // Clean Handle.net URLs (with or without protocol)
+        return preg_replace(
+            '~^(https?:\/\/)?hdl\.handle\.net\/~i',
+            '',
+            $input
+        );
+    }
+
+    /**
+     * Validates whether a string is a Handle (Handle.net) identifier.
+     * DOIs (starting with "10.") are explicitly excluded.
+     *
+     * @param string $handle The handle to validate
+     * @param bool $clean Whether to clean the handle first (removing URL prefixes)
+     * @return bool True if valid handle, false otherwise
+     */
+    public static function isHandle(string $handle, bool $clean = true): bool
+    {
+        if ($clean) {
+            $handle = self::cleanHandle($handle);
+        }
+
+        // Exclude DOIs (common DOI prefix pattern)
+        if (preg_match('/^10\.\d{4,9}\//', $handle)) {
+            return false;
+        }
+
+        // Basic Handle regex
+        $pattern = '/^[0-9]+(\.[0-9]+)*\/[^\s]+$/u';
+        return (bool) preg_match($pattern, $handle);
     }
 
     /**
@@ -1906,36 +2073,28 @@ class Episciences_Tools
         return $matches;
     }
 
-    /**
-     * @param $value
-     * @return false|string
-     */
-    public static function checkValueType($value)
+
+    public static function checkValueType($value): bool|string
     {
-        $isHal = self::isHal($value);
-        if ($isHal) {
-            return 'hal';
+        if (empty($value) || !is_string($value)) {
+            return false;
         }
-        $isDoi = self::isDoi($value);
-        if ($isDoi) {
-            return 'doi';
-        }
-        $isSwhid = self::isSoftwareHeritageId($value);
-        if ($isSwhid) {
-            return 'software';
-        }
-        $isUrl = Zend_Uri::check($value);
-        if ($isUrl) {
-            return 'url';
-        }
-        $isHdl = self::isHandle($value);
-        if ($isHdl) {
-            return 'handle';
-        }
-        $isArxiv = self::isArxiv($value);
-        if ($isArxiv) {
-            return 'arxiv';
-        }
+
+        $checks = [
+            'hal' => fn($val) => self::isHalUrl($val) || self::isHal($val),
+            'doi' => fn($val) => self::isDoi($val),
+            'software' => fn($val) => self::isSoftwareHeritageId($val),
+            'arxiv' => fn($val) => self::isArxiv($val),
+            'handle' => fn($val) => self::isHandle($val),
+            'url' => fn($val) => Zend_Uri::check($val)
+        ];
+
+        foreach ($checks as $type => $checkFunction) {
+            if ($checkFunction($value)) {
+                return $type;
+            }
+            }
+
         return false;
     }
 
@@ -2018,5 +2177,24 @@ class Episciences_Tools
             unset($translations[$key]);
         }
     }
+
+
+    /**
+     * Convert between ISO 639-2/T and ISO 639-2/B codes.
+     *
+     * @param string $code ISO 639-2 code (either /T or /B).
+     * @return string Converted code (or the same code if no mapping exists or invalid input).
+     */
+    public static function convertIso639Code(string $code): string
+    {
+        if (empty($code) || strlen($code) !== 3) {
+            return $code;
+        }
+
+        $code = strtolower($code);
+
+        return self::ISO639_BIDIRECTIONAL_MAP[$code] ?? $code;
+    }
+
 
 }

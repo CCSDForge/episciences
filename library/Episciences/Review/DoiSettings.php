@@ -346,7 +346,7 @@ class Episciences_Review_DoiSettings
      * @param int $rvid
      * @return int
      */
-    private function computeNextDoiAutoIncrement($doi, int $rvid)
+    private function computeNextDoiAutoIncrement($doi, int $rvid): int
     {
 
         $doiWihtoutAutoIncrementString = str_replace(self::DOI_FORMAT_PAPER_AUTOINCREMENT, '', $doi);

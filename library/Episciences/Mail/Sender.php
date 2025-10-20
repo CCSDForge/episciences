@@ -1,5 +1,6 @@
 <?php
 
+use Html2Text\Html2Text;
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
 
@@ -103,7 +104,7 @@ class Episciences_Mail_Sender
 
         // Chargement du XML ****************************************************
         if (!is_dir($mailPath)) {
-            return ("Le chemin spécifié n'existe pas : " . $mailPath);
+            return "Le chemin spécifié n'existe pas : " . $mailPath;
         }
 
         $xmlfilename = $mailPath . '/mail.xml';
@@ -165,7 +166,7 @@ class Episciences_Mail_Sender
             $bodyHtml = ($this->mail->bodyHtml) ? htmlspecialchars_decode($this->mail->bodyHtml) : '';
 
             $mailer->msgHTML($bodyHtml, '', function ($bodyHtml) {
-                $converter = new \Html2Text\Html2Text($bodyHtml);
+                $converter = new Html2Text($bodyHtml);
                 return $converter->getText();
             });
 
@@ -173,7 +174,7 @@ class Episciences_Mail_Sender
 
             if (empty($to)) {
                 $this->moveDirectory($mailPath, $this->getPath() . 'log/' . $mail_directory);
-                return ($mailPath . ' : Error: No recipient');
+                return $mailPath . ' : Error: No recipient';
             }
 
             foreach ($to as $TO_recipientArray) {
@@ -255,7 +256,7 @@ class Episciences_Mail_Sender
 
             if (empty($subject) && empty($bodyHtml) && empty($filesList)) {
                 $this->moveDirectory($mailPath, $this->getPath() . 'log/' . $mail_directory);
-                return ($mailPath . ' : ERROR: Message without Content');
+                return $mailPath . ' : ERROR: Message without Content';
             }
 
             if (APPLICATION_ENV == ENV_DEV) {
@@ -317,14 +318,11 @@ class Episciences_Mail_Sender
     /**
      * Récupération d'une liste d'adresses pour le header
      * Le paramètre est le nom de la liste à récupérer (to, cc_, bcc)
-     * @param $listname string
-     * @return string
      */
-    private function getAddressList($listname)
+    private function getAddressList($listname): bool|array
     {
-        $res = false;
         if (empty($this->mail->{$listname . '_list'}->$listname)) {
-            return $res;
+            return false;
         }
 
         $res = [];
@@ -413,7 +411,7 @@ class Episciences_Mail_Sender
      * Met à jour le log
      * @param $message string
      */
-    private function updateLog($message)
+    private function updateLog($message): void
     {
         file_put_contents($this->getPath() . 'log/log.txt', $message . PHP_EOL, FILE_APPEND);
     }

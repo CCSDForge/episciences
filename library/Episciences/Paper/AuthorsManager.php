@@ -519,11 +519,10 @@ class Episciences_Paper_AuthorsManager
         foreach ($authorDb as $indexAuthor => $authorInfoDb) {
             foreach ($authorTei as $indexAuthorTei => $authorInfoTei) {
                 if (($authorInfoDb['fullname'] === $authorInfoTei['fullname'])
-                    || (Episciences_Tools::replace_accents($authorInfoTei['fullname']) === Episciences_Tools::replace_accents($authorInfoDb['fullname']))) {
+                    || (Episciences_Tools::replaceAccents($authorInfoTei['fullname']) === Episciences_Tools::replaceAccents($authorInfoDb['fullname']))) {
                     if (array_key_exists('orcid', $authorInfoTei) && !array_key_exists('orcid', $authorInfoDb)) {
                         $authorDb[$indexAuthor]['orcid'] = $authorInfoTei['orcid'];
                         if (PHP_SAPI === 'cli') {
-                            echo "Orcid Added for " . $authorDb[$indexAuthor]['fullname'];
                             self::logInfoMessage("Orcid Added for " . $authorDb[$indexAuthor]['fullname']);
                         }
                     }
@@ -536,7 +535,6 @@ class Episciences_Paper_AuthorsManager
                                     $authorDb[$indexAuthor]['affiliation'][] = self::putOnlyNameAffiliation($affiliation['name']);
                                 }
                                 if (PHP_SAPI === 'cli') {
-                                    echo PHP_EOL . "Affiliation Added for " . $authorDb[$indexAuthor]['fullname'] . PHP_EOL;
                                     self::logInfoMessage("Affiliation Added with ROR for " . $authorDb[$indexAuthor]['fullname']);
                                 }
                             } elseif (in_array($affiliation['name'], array_column($authorInfoDb['affiliation'], 'name'))
@@ -548,7 +546,6 @@ class Episciences_Paper_AuthorsManager
                                 }
                                 $authorDb[$indexAuthor]['affiliation'][key($authorDb[$indexAuthor]['affiliation'])]['id'] = self::putOnlyRORAffiliation($affiliation['ROR'],$affiliationAcronymToInsert);
                                 if (PHP_SAPI === 'cli') {
-                                    echo PHP_EOL . "ROR to Affiliation Added for " . $authorDb[$indexAuthor]['fullname'] . " - " . $affiliation['name'] . PHP_EOL;
                                     self::logInfoMessage("ROR to Affiliation Added for " . $authorDb[$indexAuthor]['fullname'] . " - " . $affiliation['name']);
                                 }
                             }
@@ -558,13 +555,11 @@ class Episciences_Paper_AuthorsManager
                             if (array_key_exists('ROR', $affiliation)) {
                                 $authorDb[$indexAuthor]['affiliation'][] = self::putAffiliationWithRORinArray($affiliation);
                                 if (PHP_SAPI === 'cli') {
-                                    echo PHP_EOL . 'New Affiliation with ROR Added for ' . $authorDb[$indexAuthor]['fullname'] . " - " . $affiliation['name'] . PHP_EOL;
                                     self::logInfoMessage('New Affiliation with ROR Added for ' . $authorDb[$indexAuthor]['fullname'] . " - " . $affiliation['name']);
                                 }
                             } else {
                                 $authorDb[$indexAuthor]['affiliation'][] = self::putOnlyNameAffiliation($affiliation['name']);
                                 if (PHP_SAPI === 'cli') {
-                                    echo PHP_EOL . 'New Affiliation without ROR found, Added for ' . $authorDb[$indexAuthor]['fullname'] . " - " . $affiliation['name'] . PHP_EOL;
                                     self::logInfoMessage('New Affiliation without ROR found, Added for ' . $authorDb[$indexAuthor]['fullname'] . " - " . $affiliation['name']);
                                 }
                             }

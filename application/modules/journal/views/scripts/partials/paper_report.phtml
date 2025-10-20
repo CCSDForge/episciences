@@ -56,7 +56,7 @@
                     <div id="criterion-attachment-<?= $id ?>" class="row">
                         <?php // echo '/docfiles/reports/'.$this->report->getDocid().'/'.$criterion->getAttachment();?>
                         <div class="col-sm-10">
-                            <a href="<?php echo '/' . $this->report->getDocid() . '/report/' . $this->report->getId() . '/' . $criterion->getAttachment(); ?>"
+                            <a href="<?php echo PREFIX_URL . $this->report->getDocid() . '/report/' . $this->report->getId() . '/' . $criterion->getAttachment(); ?>"
                                target="_blank">
                                 <button class="btn btn-default btn-xs">
                                     <span style="margin-right: 5px" class="glyphicon glyphicon-download"></span>

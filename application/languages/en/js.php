@@ -34,7 +34,9 @@ return [
     "Afficher" => "Display",
     "Lignes" => "Lines",
     "lignes" => "lines",
+    "URL copiée" => "URL Copied",
     "Rechercher" => "Search",
+    "Recherche..." => "Searching...",
     "Aucun résultat" => "No results",
     "à" => "to",
     "sur" => "of",
@@ -69,6 +71,8 @@ return [
     "Note globale" => "Overall rating",
     "Créer un utilisateur" => "Create user",
     "Ajouter cet utilisateur" => "Add this user",
+    "L'article avec l'identifiant : " => "The article identifier: ",
+    " n'existe pas ou n'est pas accessible."=> " doesn't exist or is not accessible.",
 
     'Veuillez renseigner le champ "Modifications à apporter"' => 'Please fill in the "Revision request" field',
 
@@ -248,6 +252,10 @@ return [
     //DD
     'Descripteur de logiciel' => 'Software descriptor',
     'Descripteurs de logiciel' => 'Software descriptors',
+    'Modifier une métadonnée'=> 'Edit a metadata',
 
+    // Dashboard paper search error messages
+    "Erreur lors du traitement de la réponse du serveur." => "Error processing server response.",
+    "Erreur de connexion. Veuillez vérifier votre connexion réseau et réessayer." => "Connection error. Please check your network connection and try again.",
 
 ];

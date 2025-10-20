@@ -5,6 +5,10 @@
                 xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/">
 
     <xsl:import href="abandon_continue_publication_process_button.xsl"/>
+    
+    <!-- Key for grouping subjects by language -->
+    <xsl:key name="subjects-by-lang" match="metadata/oai_dc:dc/dc:subject[@xml:lang]" use="@xml:lang"/>
+    
     <xsl:output method="html" encoding="utf-8" indent="yes"/>
 
     <xsl:template match="/record">
@@ -53,24 +57,6 @@
                 </xsl:when>
                 <xsl:otherwise>
                     <xsl:value-of select="metadata/oai_dc:dc/dc:title"/>
-                </xsl:otherwise>
-            </xsl:choose>
-        </xsl:variable>
-        <xsl:variable name="description">
-            <xsl:choose>
-                <xsl:when test="metadata/oai_dc:dc/dc:description/@xml:lang = $client_language">
-                    <xsl:value-of select="metadata/oai_dc:dc/dc:description[@xml:lang = $client_language]"
-                                  disable-output-escaping="yes"/>
-                </xsl:when>
-                <xsl:when test="metadata/oai_dc:dc/dc:description/@xml:lang = $doc_language">
-                    <xsl:value-of select="metadata/oai_dc:dc/dc:description[@xml:lang = $doc_language]"
-                                  disable-output-escaping="yes"/>
-                </xsl:when>
-                <xsl:when test="metadata/oai_dc:dc/dc:description/@xml:lang">
-                    <xsl:value-of select="metadata/oai_dc:dc/dc:description[@xml:lang]" disable-output-escaping="yes"/>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:value-of select="metadata/oai_dc:dc/dc:description" disable-output-escaping="yes"/>
                 </xsl:otherwise>
             </xsl:choose>
         </xsl:variable>
@@ -151,9 +137,9 @@
                     </i>
                 </p>
                 <xsl:value-of select="episciences/listAffi" disable-output-escaping="yes"/>
-                <p class="small force-word-wrap" style="text-align: justify">
-                    <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string($description))"/>
-                </p>
+                <xsl:call-template name="process-descriptions">
+                    <xsl:with-param name="justify" select="'true'"/>
+                </xsl:call-template>
 
                 <hr/>
 
@@ -295,10 +281,7 @@
                 <xsl:if test="metadata/oai_dc:dc/dc:subject/text()">
                     <div class="small force-word-wrap">
                         <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Mots-clés : ')"/>
-                        <xsl:for-each select="metadata/oai_dc:dc/dc:subject">
-                            <xsl:value-of select="."/>
-                            <xsl:if test="position() != last()">,</xsl:if>
-                        </xsl:for-each>
+                        <xsl:call-template name="process-subjects"/>
                     </div>
                 </xsl:if>
 
@@ -345,6 +328,10 @@
                     </div>
                 </xsl:if>
 
+                <!-- Only show HR if there are admin buttons to display -->
+                <xsl:if test="episciences and (not(episciences/tmp/text() = '1') or episciences/reassign_button)">
+                    <hr />
+                </xsl:if>
                 <xsl:if test="episciences">
                     <div id='record-loading' style="display:none"/>
                          <xsl:if test="not(episciences/tmp/text() = '1')">
@@ -400,6 +387,105 @@
             </div>
         </div>
 
+    </xsl:template>
+
+    <!-- Template for processing descriptions with conditional language prefixes -->
+    <xsl:template name="process-descriptions">
+        <xsl:param name="justify" select="'false'"/>
+        
+        <!-- Count only displayable descriptions (excluding 'International audience') -->
+        <xsl:variable name="displayable_desc_count" select="count(metadata/oai_dc:dc/dc:description[normalize-space(.) != 'International audience'])"/>
+        
+        <xsl:for-each select="metadata/oai_dc:dc/dc:description">
+            <!-- Skip descriptions with value 'International audience' -->
+            <xsl:if test="normalize-space(.) != 'International audience'">
+                <xsl:choose>
+                    <xsl:when test="$justify = 'true'">
+                        <p class="small force-word-wrap" style="text-align: justify">
+                            <!-- Add lang attribute if language is specified -->
+                            <xsl:if test="@xml:lang">
+                                <xsl:attribute name="lang">
+                                    <xsl:value-of select="@xml:lang"/>
+                                </xsl:attribute>
+                                <!-- Add dir attribute for RTL languages -->
+                                <xsl:if test="php:function('Episciences_Tools::isRtlLanguage', string(@xml:lang))">
+                                    <xsl:attribute name="dir">rtl</xsl:attribute>
+                                </xsl:if>
+                            </xsl:if>
+                            <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
+                            <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
+                                <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
+                            </xsl:if>
+                            <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
+                        </p>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <p class="small force-word-wrap" style="">
+                            <!-- Add lang attribute if language is specified -->
+                            <xsl:if test="@xml:lang">
+                                <xsl:attribute name="lang">
+                                    <xsl:value-of select="@xml:lang"/>
+                                </xsl:attribute>
+                                <!-- Add dir attribute for RTL languages -->
+                                <xsl:if test="php:function('Episciences_Tools::isRtlLanguage', string(@xml:lang))">
+                                    <xsl:attribute name="dir">rtl</xsl:attribute>
+                                </xsl:if>
+                            </xsl:if>
+                            <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
+                            <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
+                                <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
+                            </xsl:if>
+                            <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
+                        </p>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:if>
+        </xsl:for-each>
+    </xsl:template>
+
+    <!-- Template for processing subjects with language grouping -->
+    <xsl:template name="process-subjects">
+        <!-- Count total subjects -->
+        <xsl:variable name="subject_count" select="count(metadata/oai_dc:dc/dc:subject)"/>
+        
+        <!-- Only add language prefixes if there are multiple subjects -->
+        <xsl:choose>
+            <xsl:when test="$subject_count > 1">
+                <!-- Group subjects by language -->
+                
+                <!-- First, display subjects without language -->
+                <xsl:variable name="subjects_no_lang" select="metadata/oai_dc:dc/dc:subject[not(@xml:lang)]"/>
+                <xsl:if test="$subjects_no_lang">
+                    <xsl:for-each select="$subjects_no_lang">
+                        <xsl:value-of select="."/>
+                        <xsl:if test="position() != last()">, </xsl:if>
+                    </xsl:for-each>
+                    <xsl:if test="metadata/oai_dc:dc/dc:subject[@xml:lang]">, </xsl:if>
+                </xsl:if>
+                
+                <!-- Then, group by language -->
+                <xsl:for-each select="metadata/oai_dc:dc/dc:subject[@xml:lang][generate-id() = generate-id(key('subjects-by-lang', @xml:lang)[1])]">
+                    <xsl:sort select="@xml:lang"/>
+                    <xsl:variable name="current_lang" select="@xml:lang"/>
+                    
+                    <strong>[<xsl:value-of select="$current_lang"/>] </strong>
+                    
+                    <xsl:for-each select="key('subjects-by-lang', $current_lang)">
+                        <xsl:value-of select="."/>
+                        <xsl:if test="position() != last()">, </xsl:if>
+                    </xsl:for-each>
+                    
+                    <xsl:if test="position() != last()">; </xsl:if>
+                </xsl:for-each>
+            </xsl:when>
+            <xsl:otherwise>
+                <!-- Single subject: no language prefix, just comma-separated -->
+                <xsl:for-each select="metadata/oai_dc:dc/dc:subject">
+                    <xsl:value-of select="."/>
+                    <xsl:if test="position() != last()">, </xsl:if>
+                </xsl:for-each>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
 
 </xsl:stylesheet> 

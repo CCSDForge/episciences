@@ -60,12 +60,19 @@ function addRecipient(target, recipient, type) {
 
         label = htmlEntities(recipient.fullname);
         value = htmlEntities(recipient.fullname + ' <' + recipient.mail + '>');
-        tooltip = "<div class='white'><strong>" + recipient.fullname + "</strong>";
+        
+        // Build tooltip securely using DOM elements
+        const $tooltipDiv1 = $('<div>').addClass('white');
+        const $strong = $('<strong>').text(recipient.fullname);
+        $tooltipDiv1.append($strong);
         if (recipient.username) {
-            tooltip += " (" + recipient.username + ")";
+            $tooltipDiv1.append(' (' + htmlEntities(recipient.username) + ')');
         }
-        tooltip += "</div>";
-        tooltip += "<div class='white'>" + recipient.mail + "</div>";
+        
+        const $tooltipDiv2 = $('<div>').addClass('white').text(recipient.mail);
+        
+        const $tooltipContainer = $('<div>').append($tooltipDiv1).append($tooltipDiv2);
+        tooltip = $tooltipContainer.html();
 
         style = 'default';
         uid = recipient.uid;
@@ -79,10 +86,11 @@ function addRecipient(target, recipient, type) {
     // recipient has been manually inserted
     else {
         label = value = htmlEntities(recipient);
-        tooltip = "<div class='white'>" + translate("Cette adresse est inconnue et n'est peut-être pas valide.") + "</div>";
+        const $tooltipDiv = $('<div>').addClass('white').text(translate("Cette adresse est inconnue et n'est peut-être pas valide."));
+        tooltip = $tooltipDiv.prop('outerHTML');
     }
 
-    let tag = getTag(label, value, uid, htmlEntities(tooltip), style);
+    let tag = getTag(label, value, uid, tooltip, style);
 
     // insert tag
     $tags_container.append(tag);
@@ -163,21 +171,25 @@ function getTag(label, value, uid, tooltip, style) {
     style = style || 'default';
 
     let css = (style === 'default') ? '' : ' ' + style;
-    let tag = '';
-    tag += "<div class='recipient-tag" + css + "'";
+    
+    // Create DOM elements instead of HTML strings for security
+    const $tag = $('<div>').addClass('recipient-tag' + css);
+    
     if (uid) {
-        tag += "data-uid='" + uid + "'";
+        $tag.attr('data-uid', uid);
     }
-    tag += "data-value='" + value + "'>";
-    tag += "<div class='recipient-name'";
+    $tag.attr('data-value', value);
+    
+    const $nameDiv = $('<div>').addClass('recipient-name').text(label);
     if (tooltip) {
-        tag += " data-toggle='tooltip' title='" + tooltip + "'";
+        $nameDiv.attr('data-toggle', 'tooltip').attr('title', tooltip);
     }
-    tag += ">" + label + "</div>";
-    tag += "<span class='grey glyphicon glyphicon-remove icon-action remove-recipient'></span>";
-    tag += "</div> ";
+    
+    const $removeSpan = $('<span>').addClass('grey glyphicon glyphicon-remove icon-action remove-recipient');
+    
+    $tag.append($nameDiv).append($removeSpan);
 
-    return tag;
+    return $tag;
 }
 
 // resize input
