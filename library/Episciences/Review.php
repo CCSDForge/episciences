@@ -366,12 +366,15 @@ class Episciences_Review
         if ($paper) {
 
             if (!$role) {
+
                 self::checkReviewNotifications($cc);
-                Episciences_Submit::addIfNotExists($paper->getEditors(), $cc);
 
                 if ($isEditorsNotified) {
-                    Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $cc);
+
+                    Episciences_Submit::addIfNotExists($paper->getEditors(), $cc);
                 }
+
+                Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $cc);
 
             } elseif ($role === Episciences_Acl::ROLE_REVIEWER) {
 

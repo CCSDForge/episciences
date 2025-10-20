@@ -338,7 +338,7 @@ class PaperDefaultController extends DefaultController
         try {
             $commentator->findWithCAS($commentatorUid);
         } catch (Exception $e) {
-            $logger?->critical('NEW_COMMENT_NOTIFY_MANAGERS_FAILED_TO_FETCH_CAS_DATA_UID_' . $commentatorUid . ' : ' . $e);
+            $logger?->critical('NEW_COMMENT_NOTIFY_MANAGERS_FAILED_TO_FETCH_CAS_DATA_UID_' . $commentatorUid . ' : ' . $e->getMessage());
             return false;
         }
 
