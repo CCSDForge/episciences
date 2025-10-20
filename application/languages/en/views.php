@@ -1957,6 +1957,7 @@ return array(
     'délai soumission-acceptation' => 'Submission-acceptance time',
     'délai soumission-publication' => 'Submission-publication time',
     'Cela inclut les articles qui ont déjà été publiés' => 'This includes articles that have already been published',
+    'La revue peut rejeter plusieurs fois le même article. Dans ce cas, un seul rejet est comptabilisé par article.' => 'The journal may reject the same article several times. In this case, only one rejection is counted per article.',
     // datasets
     'administratelinkeddata-addld' => 'Add a related work',
     'administratelinkeddata-removeld' => 'Remove a related work',

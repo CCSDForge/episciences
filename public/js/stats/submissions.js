@@ -37,7 +37,7 @@ $(function () {
         createChart(context2, statsByRepoData, seriesFromView.submissionsByRepo.repositories.chartType);
     }
 
-    if(submissionDelay.datasets && !isEmptyData(submissionDelay.datasets[0].data)){
+    if(submissionDelay.datasets && (submissionDelay.datasets[0].data.length > 0 || submissionDelay.datasets[1].data.length > 0)){
         createChart(context3, submissionDelay, seriesFromView.submissionDelay.chartType);
     }
 });

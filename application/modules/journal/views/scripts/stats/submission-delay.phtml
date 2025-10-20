@@ -1,10 +1,11 @@
 <?php if (
-        $this->submissionAcceptanceTime ||
-        $this->submissionPublicationTime ||
-        $this->submissionPublicationTimeMedian ||
-        $this->submissionAcceptanceTimeMedian
+        isset($this->submissionAcceptanceTime) ||
+        isset($this->submissionPublicationTime) ||
+        isset($this->submissionPublicationTimeMedian) ||
+        isset($this->submissionAcceptanceTimeMedian)
 ) : ?>
     <div>
+        <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Délai')?></h1>
 
         <table class="delay table table-striped">
 
