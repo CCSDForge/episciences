@@ -10,7 +10,7 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                 class="panel-title"><?= $this->chart1Title ?><?= $this->year ? ' - <code>' . $this->year . '</code>' : '' ?></h2>
     </div>
     <div class="panel-body in">
-        <div class="col-md-6">
+        <div class="col-sm-6">
             <div style="padding-top: 10px; ">
 
                 <div>
@@ -189,22 +189,24 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                         </li>
 
 
-                        <?= $this->render('stats/submission-delay.phtml') ?>
+                        <li>
 
-                        <?php if ($this->acceptedNotYetPublished) : ?>
+                            <?= $this->render('stats/submission-delay.phtml') ?>
+
+                            <?php if ($this->acceptedNotYetPublished) : ?>
 
                             <h1 class="help-block"
                                 style="margin-top: 10px;"><?= $this->translate('En cours de publication') ?></h1>
-                            <li>
-                                <?= ucfirst($this->translate('articles acceptés')) ?>
-                                <span class="small">(<?= $this->translate('non encore publiés') ?>)</span>
-                                <code><?= $this->acceptedNotYetPublished ?></code>
+                        <li>
+                            <?= ucfirst($this->translate('articles acceptés')) ?>
+                            <span class="small">(<?= $this->translate('non encore publiés') ?>)</span>
+                            <code><?= $this->acceptedNotYetPublished ?></code>
 
-                                <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                                    title="<?= $this->translate($acceptedNoYetPublishedTooltipInfo) ?>"></em>
+                            <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
+                                title="<?= $this->translate($acceptedNoYetPublishedTooltipInfo) ?>"></em>
 
-                            </li>
-                        <?php endif; ?>
+                        </li>
+                    <?php endif; ?>
 
 
                     </ul>
@@ -213,7 +215,8 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
             </div>
             <?= $this->render('stats/evaluations.phtml') ?>
         </div>
-        <div class="col-md-6" style="margin-top: 40px; ">
+
+        <div class="col-sm-6" style="margin-top: 40px; ">
             <canvas id="all-submissions-percentage" style="height: auto; width: auto;"></canvas>
         </div>
     </div>
@@ -233,12 +236,18 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
     </div>
 </div>
 
-<div class="panel panel-default collapsable">
-    <div class="panel-heading in"><h2 class="panel-title"><?= $this->chart4Title ?></h2></div>
-    <div class="panel-body in">
-        <canvas id="submissions-delay-chart" style="height: auto; width: auto;"></canvas>
+<?php if (
+        !empty($this->seriesFromView['submissionDelay']['datasets'][0]['data']) ||
+        !empty($this->seriesFromView['submissionDelay']['datasets'][1]['data'][1])
+): ?>
+
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading in"><h2 class="panel-title"><?= $this->chart4Title ?></h2></div>
+        <div class="panel-body in">
+            <canvas id="submissions-delay-chart" style="height: auto; width: auto;"></canvas>
+        </div>
     </div>
-</div>
+<?php endif; ?>
 
 
 
