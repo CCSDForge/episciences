@@ -6,7 +6,7 @@ use Psr\Http\Message\StreamInterface;
 
 class StatsController extends Episciences_Controller_Action
 {
-    public const COLORS_CODE = ["#8e5ea2", "#3e95cd", "#dd2222", "#c45850", "#3cba9f", "#e8c3b9", "#33ff99"];
+    public const COLORS_CODE = ["#8e5ea2", "#3e95cd", "#dd2222", "#c45850", "#3cba9f", "#e8c3b9", "#33ff99", "#29c73b"];
     public const CHART_TYPE = [
         'BAR' => 'bar',
         'PIE' => 'pie',
@@ -17,10 +17,17 @@ class StatsController extends Episciences_Controller_Action
 
     public const ACCEPTED_SUBMISSIONS = Episciences_Paper::ACCEPTED_SUBMISSIONS;
     public const SUBMISSIONS_BY_YEAR = 'submissionsByYear';
-    public const MORE_DETAILS = 'moreDetailsFromModifDate';
+
     public const NB_SUBMISSIONS = 'nbSubmissions';
+    public const NB_IMPORTED = 'nbImported';
+    public const NB_PUBLISHED = 'nbPublished';
+    public const NB_ACCEPTED_NOT_YET_PUBLISHED = 'nbAcceptedNotYetPublished';
+    public const NB_OTHER_STATUS = 'nbOtherStatus';
+    public const NB_REFUSED = 'nbRefused';
+    public const NB_ACCEPTED = 'nbAccepted';
     public const SUBMISSION_ACCEPTANCE_DELAY = 'submissionAcceptanceTime';
     public const SUBMISSION_PUBLICATION_DELAY = 'submissionPublicationTime';
+    public const NB_USERS = 'nbUsers';
 
 
     public const REFERENCE_YEAR = 2013;
@@ -146,89 +153,21 @@ class StatsController extends Episciences_Controller_Action
         $series['submissionsByRepo'] = [];
         $series[self::SUBMISSIONS_BY_YEAR] = [];
 
-        $allPublications = $allRefusals = $allAcceptations = $allOtherStatus = 0;
-        $publicationsPercentage = $acceptationsPercentage = $refusalsPercentage = $otherStatusPercentage = null;
 
         if ($yearQuery) { // for stats by year
             $yearCategories = [$yearQuery];
         }
 
-
-        if (!empty($dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['value'])) {
-            $submissionAcceptanceTime = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['value'];
-            $this->view->submissionAcceptanceTime = $submissionAcceptanceTime;
-            $this->view->submissionAcceptanceTimeUnit = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['unit'];
-
-        }
-
-        if (!empty($dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['value'])) {
-            $submissionPublicationTime = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['value'];
-            $this->view->submissionPublicationTime = $submissionPublicationTime;
-            $this->view->submissionPublicationTimeUnit = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['unit'];
-        }
-
-        $submissionsDelay = $details[self::SUBMISSION_ACCEPTANCE_DELAY];
-        $publicationsDelay = $details[self::SUBMISSION_PUBLICATION_DELAY];
-        $allSubmissions = $dashboard['value'][self::NB_SUBMISSIONS] ?? null; // all review submissions
-        $totalByYear = 0;
-
-
         foreach ($yearCategories as $year) {
 
-            $nbRefusals = $nbAcceptations = $nbOthers = 0;
-
-            $submissionsByYear = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year] ?? [];
-            //$allPublications += $nbPublications; // l'ensemble de la revue
-
-            // stats collectées par rapport à la date de modification
-            //$moreDetails = $details[self::NB_SUBMISSIONS][self::MORE_DETAILS] ?? [];
-            //$submissionsByYearResponse = $moreDetails[$year] ?? [];
-
-
-            if (is_array($submissionsByYear ) )  {
-
-                // Get the number of publications directly
-                $nbPublications = $submissionsByYear['publications'] ?? 0;
-                $allPublications += $nbPublications;
-
-                // Get the total number of submissions directly
-                $totalSubmissions = $submissionsByYear['submissions'] ?? 0;
-
-                // Get the number of acceptances directly
-                $nbAcceptations = ($submissionsByYear['acceptedSubmittedSameYear'] ?? 0) - $nbPublications;
-                $nbAcceptations = max(0, $nbAcceptations);
-                $allAcceptations += $nbAcceptations;
-
-
-                // Get the number of refusals from the value structure
-                $nbRefusals = $dashboard['value']['totalRefused'] ?? 0;
-                $allRefusals += $nbRefusals;
-
-                // Calculate other statuses
-                $nbOthers = $totalSubmissions - $nbPublications - $nbAcceptations - $nbRefusals;
-
-                // Ensure nbOthers doesn't become negative
-                $nbOthers = max(0, $nbOthers);
-                $allOtherStatus += $nbOthers;
-
-                $totalByYear = $nbRefusals + $nbAcceptations + $nbOthers;
-
-            }
-
-
-            $series[self::SUBMISSIONS_BY_YEAR]['submissions'][] = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['submissions'] ?? 0; // only submissions (1st version) of the current year
-            $series['acceptationByYear']['acceptations'][] = $nbAcceptations;
-            $series['refusalsByYear']['refusals'][] = $nbRefusals;
-            $series['publicationsByYear']['publications'][] = $nbPublications;
-            $series['otherStatusByYear']['otherStatus'][] = $nbOthers; //totalNumberOfPapersAccepted
+            $series[self::SUBMISSIONS_BY_YEAR]['submissions'][] = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['submissions'] ?? 0;
+            $series[self::SUBMISSIONS_BY_YEAR]['published'][] = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['published'] ?? 0;
+            $series[self::SUBMISSIONS_BY_YEAR]['accepted'][] = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['accepted'] ?? 0;
+            $series[self::SUBMISSIONS_BY_YEAR]['refused'][] = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['refused'] ?? 0;
+            $series[self::SUBMISSIONS_BY_YEAR]['others'][] = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['others'] ?? 0;
             $series[self::SUBMISSIONS_BY_YEAR]['acceptedSubmittedSameYear'][] = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['acceptedSubmittedSameYear'] ?? 0;
+            $series[self::SUBMISSIONS_BY_YEAR]['acceptedNotYetPublished'][] = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['acceptedNotYetPublished'] ?? 0;
 
-            if ($totalByYear) {
-                $series['acceptationByYear']['percentage'][] = round($nbAcceptations / $totalByYear * 100, 2); //'acceptedSubmittedSameYear'
-                $series['refusalsByYear']['percentage'][] = round($nbRefusals / $totalByYear * 100, 2);
-                $series['publicationsByYear']['percentage'][] = round($nbPublications / $totalByYear * 100, 2);
-                $series['otherStatusByYear']['percentage'][] = round($nbOthers / $totalByYear * 100, 2);
-            }
 
             $subByYear = $details[self::NB_SUBMISSIONS]['submissionsByRepo'][$year] ?? [];
 
@@ -237,116 +176,164 @@ class StatsController extends Episciences_Controller_Action
                 $series['submissionsByRepo'][$repoLabel][self::NB_SUBMISSIONS][] = $val['submissions'];
             }
 
-            if (!empty($submissionsDelay)) {
-                $series[self::SUBMISSION_ACCEPTANCE_DELAY][] = $submissionsDelay[$year]['delay']['value'] ?? null;
+            if (!empty($details[self::SUBMISSION_ACCEPTANCE_DELAY])) {
+                $series[self::SUBMISSION_ACCEPTANCE_DELAY][] = $details[self::SUBMISSION_ACCEPTANCE_DELAY][$year]['delay']['value'] ?? null;
             }
 
-            if (!empty($publicationsDelay)) {
-                $series[self::SUBMISSION_PUBLICATION_DELAY][] = $publicationsDelay[$year]['delay']['value'] ?? null;
+            if (!empty($details[self::SUBMISSION_PUBLICATION_DELAY])) {
+                $series[self::SUBMISSION_PUBLICATION_DELAY][] = $details[self::SUBMISSION_PUBLICATION_DELAY][$year]['delay']['value'] ?? null;
             }
 
         }
 
-        unset($nbPublications, $nbRefusals, $nbOthers);
 
-        if ($yearQuery) {
-            $allSubmissions = $series[self::SUBMISSIONS_BY_YEAR]['submissions'][0];
-            $allPublications = $series['publicationsByYear']['publications'][0]; // par année
-            $allRefusals = $series['refusalsByYear']['refusals'][0];
-            $allAcceptations = $series['acceptationByYear']['acceptations'][0];
-            $allOtherStatus = $series['otherStatusByYear']['otherStatus'][0];
-            $totalStatuses = $allPublications + $allAcceptations + $allRefusals + $allOtherStatus;
-            if ($totalStatuses > 0) {
-                $publicationsPercentage = round($allPublications / $totalStatuses * 100, 2);
-                $refusalsPercentage = round($allRefusals/ $totalStatuses * 100, 2);
-                $acceptationsPercentage = round( $allAcceptations / $totalStatuses * 100, 2);
-                $otherStatusPercentage = round($allOtherStatus / $totalStatuses * 100, 2);
-            } else {
-                $publicationsPercentage = $acceptationsPercentage = $refusalsPercentage = $otherStatusPercentage = 0;
-            }
-
-            unset($totalByYear);
-
-            $this->view->acceptedSubmittedSameYear = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['acceptedSubmittedSameYear'];
-            $this->view->acceptationRateSubmittedSameYear = $details[self::NB_SUBMISSIONS][self::SUBMISSIONS_BY_YEAR][$year]['acceptanceRate'];
-
-
-        } elseif ($allSubmissions) {
-            $publicationsPercentage = round($dashboard['value']['totalPublished'] / $allSubmissions * 100, 2);
-            $refusalsPercentage = round($allRefusals / $allSubmissions * 100, 2);
-            $acceptationsPercentage = round($allAcceptations / $allSubmissions * 100, 2);
-            $otherStatusPercentage = round($allOtherStatus / $allSubmissions * 100, 2);
-        }
-
+        // Figure 1 > At a glance
 
         $label1 = ucfirst($this->view->translate('soumissions'));
         $label2 = ucfirst($this->view->translate('articles publiés'));
         $label3 = ucfirst($this->view->translate('articles refusés'));
-        $label4 = ucfirst($this->view->translate('articles acceptés non publiés'));
+        $label4 = ucfirst($this->view->translate('articles acceptés'));
         $label5 = ucfirst($this->view->translate('autres statuts'));
         $label6 = ucfirst($this->view->translate('articles acceptés (soumis la même année)'));
+        $label7 = ucfirst($this->view->translate('articles acceptés (non encore publiés)'));
 
-        // figure 1
+        $rateLabel1 = ucfirst($this->view->translate('taux de publication'));
+        $rateLabel3 = ucfirst($this->view->translate('taux de refus'));
+        $rateLabel2 = ucfirst($this->view->translate("taux d'acceptation"));
+        $rateLabel4 = ucfirst($this->view->translate('autre'));
+
+
+        // all(Sub.., Pub.., Acce..., Aru..., Oth... ) : Imported articles are not included
+        $allSubmissions = $dashboard['value'][self::NB_SUBMISSIONS] ?? null;
+        $allPublications = $dashboard['value'][self::NB_PUBLISHED] ?? null;
+        $allAcceptations = $dashboard['value'][self::NB_ACCEPTED];
+        $allRefusals = $dashboard['value'][self::NB_REFUSED];
+        $allOtherStatus = $dashboard['value'][self::NB_OTHER_STATUS];
+
+
+        $importedPublished = $dashboard['value']['nbImportedPublished'] ?? 0; // imported and published
+
+
+        // The API only returns these values if the "startAfterDate" filter is enabled: they provide an overview of the data, without taking this filter into account.
+        $totalArticles = $dashboard['value']['totalWithoutStartAfterDate']['totalSubmissions'] ?? $dashboard['value'][self::NB_SUBMISSIONS] ?? null;
+        $totalImported = $dashboard['value']['totalWithoutStartAfterDate']['totalImported'] ?? $dashboard['value'][self::NB_IMPORTED] ?? null;
+        $totalPublished = $dashboard['value']['totalWithoutStartAfterDate']['totalPublished'] ?? ($allPublications + $importedPublished)  ?? null;
+        $totalImportedPublished =  $dashboard['value']['totalWithoutStartAfterDate']['totalImportedPublished'] ?? $importedPublished ?? null;
+
+
         $this->view->chart1Title = $this->view->translate("En un coup d'oeil");
 
+        // Indicators
+        $this->view->totalArticles = $totalArticles;
+        $this->view->allSubmissions = $allSubmissions;
+        $this->view->totalImportedArticles = $totalImported; // without "startAfterDate" filter
+        $this->view->imported = $dashboard['value']['nbImported'] ?? null; // filter's "startAfterDate" taking into account.
+        $this->view->totalPublishedArticles = $totalPublished;
+        $this->view->totalImportedPublished = $totalImportedPublished;
+
+        $this->view->allPublications = $allPublications ?? null;
+        $this->view->allRefusals = $allRefusals ?? null;
+        $this->view->allAcceptations = $allAcceptations ?? null;
+        $this->view->allOtherStatus = $allOtherStatus ?? null;
+
+
+        $this->view->acceptedNotYetPublished = $dashboard['value'][self::NB_ACCEPTED_NOT_YET_PUBLISHED] ?? null;
+        $this->view->acceptedSubmittedSameYear = $dashboard['value']['totalAcceptedSubmittedSameYear'] ?? null;
+        $this->view->publishedSubmittedSameYear = $dashboard['value']['totalPublishedSubmittedSameYear'] ?? null;
+        $this->view->refusedSubmittedSameYear = $dashboard['value']['totalRefusedSubmittedSameYear'] ?? null;
+        $this->view->reviewsRequested = $reviewsRequested ?? null;
+        $this->view->reviewsReceived = $reviewsReceived ?? null;
+        $this->view->medianReviewsNumber = $medianReviewsNumber ?? null;
+
+
+        // Percentages
+        $publishedPercentage = $dashboard['value']['rate']['published'] ?? null;
+        $acceptedPercentage = $dashboard['value']['rate']['accepted'] ?? null;
+        $refusedPercentage = $dashboard['value']['rate']['refused'] ?? null;
+        $otherPercentage = $dashboard['value']['rate']['other'] ?? null;
+
+        $this->view->acceptanceRate = $acceptedPercentage;
+        $this->view->publicationRate = $publishedPercentage;
+        $this->view->declineRate = $refusedPercentage;
+
+
+        $piChartData = [$acceptedPercentage, $refusedPercentage, $otherPercentage];
+        $piChartColors = [self::COLORS_CODE[5], self::COLORS_CODE[2], self::COLORS_CODE[0]];
+        $piChartLabels = [$rateLabel2, $rateLabel3, $rateLabel4];
+
         $seriesJs['allSubmissionsPercentage']['datasets'][] = [
-            'data' => [$publicationsPercentage, $acceptationsPercentage, $refusalsPercentage, $otherStatusPercentage],
-            'backgroundColor' => [self::COLORS_CODE[4], self::COLORS_CODE[5], self::COLORS_CODE[2], self::COLORS_CODE[0]]
+            'data' => $piChartData,
+            'backgroundColor' => $piChartColors
         ];
 
-        $seriesJs['allSubmissionsPercentage']['labels'] = [$label2, $label4, $label3, $label5];
+        $seriesJs['allSubmissionsPercentage']['labels'] = $piChartLabels;
         $seriesJs['allSubmissionsPercentage']['chartType'] = self::CHART_TYPE['PIE'];
 
-        //figure 2
+
+        $this->view->submissionAcceptanceTime = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['value'] ?? null;
+        $this->view->submissionAcceptanceTimeUnit = $dashboard['value'][self::SUBMISSION_ACCEPTANCE_DELAY]['unit'] ?? null;
+        $this->view->submissionPublicationTime = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['value'] ?? null;
+        $this->view->submissionPublicationTimeUnit = $dashboard['value'][self::SUBMISSION_PUBLICATION_DELAY]['unit'] ?? null;
+        $this->view->submissionPublicationTimeMedian = $dashboard['value']['submissionPublicationTimeMedian']['value'] ?? null;
+        $this->view->submissionPublicationTimeMedianUnit = $dashboard['value']['submissionPublicationTimeMedian']['unit'] ?? null;
+        $this->view->submissionAcceptanceTimeMedian = $dashboard['value']['submissionAcceptanceTimeMedian']['value'] ?? null;
+        $this->view->submissionAcceptanceTimeMedianUnit = $dashboard['value']['submissionAcceptanceTimeMedian']['unit'] ?? null;
+
+
+        //figure 2 > Breakdown of submissions by year and status
         $this->view->chart2Title = !$yearQuery ?
             $this->view->translate("La répartition des <code>soumissions</code>par <code>année</code> et par <code>statut</code>") :
             $this->view->translate("La répartition des <code>soumissions</code> par <code>statut</code>");
 
         $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label1, 'data' => $series[self::SUBMISSIONS_BY_YEAR]['submissions'] ?? 0, 'backgroundColor' => self::COLORS_CODE[1]];
-        $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label2, 'data' => $series['publicationsByYear']['publications'] ?? 0, 'backgroundColor' => self::COLORS_CODE[4]];
-        $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label4, 'data' => $series['acceptationByYear']['acceptations'] ?? 0, 'backgroundColor' => self::COLORS_CODE[5]];
-        $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label3, 'data' => $series['refusalsByYear']['refusals'] ?? 0, 'backgroundColor' => self::COLORS_CODE[2]];
-
-        $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label5, 'data' => $series['otherStatusByYear']['otherStatus'] ?? 0, 'backgroundColor' => self::COLORS_CODE[0]];
+        $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label2, 'data' => $series[self::SUBMISSIONS_BY_YEAR]['published'] ?? 0, 'backgroundColor' => self::COLORS_CODE[4]];
+        $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label4, 'data' => $series[self::SUBMISSIONS_BY_YEAR]['accepted'] ?? 0, 'backgroundColor' => self::COLORS_CODE[5]];
+        $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label7, 'data' => $series[self::SUBMISSIONS_BY_YEAR]['acceptedNotYetPublished'] ?? 0, 'backgroundColor' => self::COLORS_CODE[7]];
         $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label6, 'data' => $series[self::SUBMISSIONS_BY_YEAR]['acceptedSubmittedSameYear'] ?? 0, 'backgroundColor' => self::COLORS_CODE[6]];
+        $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label3, 'data' => $series[self::SUBMISSIONS_BY_YEAR]['refused'] ?? 0, 'backgroundColor' => self::COLORS_CODE[2]];
+        $seriesJs[self::SUBMISSIONS_BY_YEAR]['datasets'][] = ['label' => $label5, 'data' => $series[self::SUBMISSIONS_BY_YEAR]['others'] ?? 0, 'backgroundColor' => self::COLORS_CODE[0]];
 
 
         $seriesJs[self::SUBMISSIONS_BY_YEAR]['chartType'] = self::CHART_TYPE['BAR'];
+
+        // Figure3 > Breakdown of submissions by year and repository
 
 
         foreach ($series['submissionsByRepo'] as $repoLabel => $values) {
             $repoId = $repositories[$repoLabel]['id'];
             $colorsCodeSize = count(self::COLORS_CODE);
             $backgroundColor = self::COLORS_CODE[$repoId % $colorsCodeSize];
-            //figure3
             $seriesJs['submissionsByRepo']['repositories']['datasets'][] = ['label' => $repoLabel, 'data' => $values[self::NB_SUBMISSIONS], 'backgroundColor' => $backgroundColor];
 
         }
+
         $this->view->chart3Title = !$yearQuery ?
             $this->view->translate("Répartition des soumissions par <code>année</code> et par <code>archive</code>") :
             $this->view->translate("Répartition des soumissions par <code>archive</code>");
 
         $seriesJs['submissionsByRepo']['repositories']['chartType'] = self::CHART_TYPE['BAR'];
-        $seriesJs['submissionsByRepo']['percentage']['chartType'] = self::CHART_TYPE['PIE'];
+        $seriesJs['submissionsByRepo']['rate']['chartType'] = self::CHART_TYPE['PIE'];
 
 
-        // figure4
+        // figure4 > Average time in days between submission and acceptance (submission and publication)
+
+
         $this->view->chart4Title = $this->view->translate('Délai moyen en <code>jours</code> entre <code>dépôt et acceptation</code> (<code>dépôt et publication</code>)');
 
         $seriesJs['submissionDelay']['datasets'][] = ['label' => $this->view->translate('Dépôt-Acceptation'), 'data' => $series[self::SUBMISSION_ACCEPTANCE_DELAY], 'backgroundColor' => self::COLORS_CODE[5]];
         $seriesJs['submissionDelay']['datasets'][] = ['label' => $this->view->translate('Dépôt-Publication'), 'data' => $series[self::SUBMISSION_PUBLICATION_DELAY], 'backgroundColor' => self::COLORS_CODE[4]];
         $seriesJs['submissionDelay']['chartType'] = self::CHART_TYPE['BAR_H'];
 
-        $isAvailableUsersStats = !$yearQuery && isset($dashboard['value']['nbUsers']);
+        $isAvailableUsersStats = !$yearQuery && isset($dashboard['value'][self::NB_USERS]);
 
-        //Users stats
+        // Figure 5 > Users stats > Number of users by roles : these statistics are not available by year because the database structure does not allow this information to be obtained.
         $rolesJs = [];
         $nbUsersByRole = [];
         $data = [];
 
         if ($isAvailableUsersStats) {
-            $allUsers = $dashboard['value']['nbUsers'];
-            $usersDetails = $details['nbUsers'];
+            $allUsers = $dashboard['value'][self::NB_USERS];
+            $usersDetails = $details[self::NB_USERS];
             $roles = array_keys($usersDetails);
             $rootKey = array_search(Episciences_Acl::ROLE_ROOT, $roles, true);
 
@@ -356,10 +343,9 @@ class StatsController extends Episciences_Controller_Action
 
             foreach ($roles as $role) {
                 $rolesJs[] = $this->view->translate($role);
-                $data[] = $usersDetails[$role]['nbUsers'];
+                $data[] = $usersDetails[$role][self::NB_USERS];
             }
 
-            //figure 5
             $this->view->chart5Title = $this->view->translate("Le nombre d'utilisateurs par <code>rôles</code>");
             $nbUsersByRole['chartType'] = self::CHART_TYPE['BAR'];
             $this->view->allUsers = $allUsers;
@@ -372,51 +358,11 @@ class StatsController extends Episciences_Controller_Action
         $this->view->nbUsersByRole = $nbUsersByRole;
 
 
-        $this->view->allSubmissionsJs = $allSubmissions;
-
-        if (!$yearQuery) {
-
-            try {
-
-
-                $totalPublishedArticles = (int)json_decode($this->askApi('journals/stats/nb-submissions/' . RVCODE, ['status' => Episciences_Paper::STATUS_PUBLISHED]), true, 512, JSON_THROW_ON_ERROR)['value'];
-                $totalArticles = (int)json_decode($this->askApi('journals/stats/nb-submissions/' . RVCODE), true, 512, JSON_THROW_ON_ERROR)['value'];
-                $totalImportedArticles = (int)json_decode($this->askApi('journals/stats/nb-submissions/' . RVCODE, ['flag' => 'imported']), true, 512, JSON_THROW_ON_ERROR)['value'];
-
-                if ($totalImportedArticles > 0) {
-                    $this->view->totalImportedArticles = $totalImportedArticles;
-                }
-
-                if ($totalPublishedArticles > 0) {
-                    $this->view->totalPublishedArticles = $totalPublishedArticles;
-                }
-
-                $this->view->totalArticles = $totalArticles;
-            } catch (GuzzleException|JsonException  $e) {
-                $logger?->critical($e->getMessage());
-            }
-
-
-        }
-
-        $this->view->allPublications = !$yearQuery ? $dashboard['value']['totalPublished'] : $allPublications;
-        $this->view->allRefusals = $allRefusals;
-        $this->view->allAcceptations = $allAcceptations;
-        $this->view->allOtherStatus = $allOtherStatus;
-
-        $this->view->publicationsPercentage = $publicationsPercentage;
-        $this->view->refusalsPercentage = $refusalsPercentage;
-        $this->view->acceptationsPercentage = $acceptationsPercentage;
-
         $this->view->yearCategoriesJs = $yearCategories;
         $this->view->seriesJs = $seriesJs;
         $this->view->yearQuery = $yearQuery;
         $this->view->errorMessage = null;
         $this->view->isAvailableUsersStats = $isAvailableUsersStats;
-
-        $this->view->reviewsRequested = $reviewsRequested ?? null;
-        $this->view->reviewsReceived = $reviewsReceived ?? null;
-        $this->view->medianReviewsNumber = $medianReviewsNumber ?? null;
 
     }
 

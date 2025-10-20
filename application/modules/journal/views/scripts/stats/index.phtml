@@ -19,44 +19,56 @@ $this->layout()->description = $description;
     <div class="col-md-12">
         <div id='loading-stats' style="display:none"></div>
         <?= $this->partial('stats/submissions.phtml', [
-            'totalArticles' => $this->totalArticles ?? null,
-            'allSubmissions' => $this->allSubmissionsJs,
-            'allPublications' => $this->allPublications,
-            'allRefusals' => $this->allRefusals,
-            'allAcceptations' => $this->allAcceptations,
-            'allOtherStatus' => $this->allOtherStatus,
-            'publicationsPercentage' => $this->publicationsPercentage,
-            'refusalsPercentage' => $this->refusalsPercentage,
-            'acceptationsPercentage' => $this->acceptationsPercentage,
-            'chart1Title' => $this->chart1Title,
-            'chart2Title' => $this->chart2Title,
-            'chart3Title' => $this->chart3Title,
-            'chart4Title' => $this->chart4Title,
-            'year' => $this->yearQuery,
-            'acceptationRateSubmittedSameYear' => $this->acceptationRateSubmittedSameYear,
-            'acceptedSubmittedSameYear' => $this->acceptedSubmittedSameYear,
-            'startStatsAfterDate' => $this->startStatsAfterDate,
-            'totalImportedArticles' => $this->totalImportedArticles,
-            'totalPublishedArticles' => $this->totalPublishedArticles,
-            'submissionAcceptanceTime' => $this->submissionAcceptanceTime,
-            'submissionAcceptanceTimeUnit' => $this->submissionAcceptanceTimeUnit,
-            'submissionPublicationTime' => $this->submissionPublicationTime,
-            'submissionPublicationTimeUnit' => $this->submissionPublicationTimeUnit,
-            'reviewsRequested' => $this->reviewsRequested,
-            'reviewsReceived' => $this->reviewsReceived,
-            'medianReviewsNumber' => $this->medianReviewsNumber
+                'totalArticles' => $this->totalArticles ?? null,
+                'allSubmissions' => $this->allSubmissions,
+                'allPublications' => $this->allPublications,
+                'totalImportedPublished' => $this->totalImportedPublished,
+                'allRefusals' => $this->allRefusals,
+                'allAcceptations' => $this->allAcceptations,
+                'allOtherStatus' => $this->allOtherStatus,
+                'publicationsPercentage' => $this->publicationsPercentage,
+                'refusalsPercentage' => $this->refusalsPercentage,
+                'acceptationsPercentage' => $this->acceptationsPercentage,
+                'chart1Title' => $this->chart1Title,
+                'chart2Title' => $this->chart2Title,
+                'chart3Title' => $this->chart3Title,
+                'chart4Title' => $this->chart4Title,
+                'year' => $this->yearQuery,
+                'acceptedSubmittedSameYear' => $this->acceptedSubmittedSameYear,
+                'publishedSubmittedSameYear' => $this->publishedSubmittedSameYear,
+                'refusedSubmittedSameYear' => $this->refusedSubmittedSameYear,
+                'startStatsAfterDate' => $this->startStatsAfterDate,
+                'totalImportedArticles' => $this->totalImportedArticles,
+                'totalPublishedArticles' => $this->totalPublishedArticles,
+                'submissionAcceptanceTime' => $this->submissionAcceptanceTime,
+                'submissionAcceptanceTimeUnit' => $this->submissionAcceptanceTimeUnit,
+                'submissionPublicationTime' => $this->submissionPublicationTime,
+                'submissionPublicationTimeUnit' => $this->submissionPublicationTimeUnit,
+                'reviewsRequested' => $this->reviewsRequested,
+                'reviewsReceived' => $this->reviewsReceived,
+                'medianReviewsNumber' => $this->medianReviewsNumber,
+                'acceptanceRate' => $this->acceptanceRate,
+                'publicationRate' => $this->publicationRate,
+                'declineRate' => $this->declineRate,
+                'imported' => $this->imported,
+                'acceptedNotYetPublished' => $this->acceptedNotYetPublished,
+                'submissionAcceptanceTimeMedian' => $this->submissionAcceptanceTimeMedian,
+                'submissionAcceptanceTimeMedianUnit' => $this->submissionAcceptanceTimeMedianUnit,
+                'submissionPublicationTimeMedian' => $this->submissionPublicationTimeMedian,
+                'submissionPublicationTimeMedianUnit' => $this->submissionPublicationTimeMedianUnit,
+                'seriesFromView' => $this->seriesJs
         ]) ?>
     </div>
 
     <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories]) ?>
 
     <div class="col-md-12">
-        <?php if ($this->isAvailableUsersStats) : ?>
+        <?php if ($this->isAvailableUsersStats && $this->allUsers) : ?>
             <?php $this->jQuery()->addJavascriptFile('/js/stats/users.js'); ?>
             <h2><?= $this->translate('Utilisateurs') ?> <?= $this->yearQuery ? ' - <code>' . $this->yearQuery . '</code>' : '' ?> </h2>
             <?= $this->partial('stats/users.phtml', [
-                'chart5Title' => $this->chart5Title,
-                'allUsers' => $this->allUsers
+                    'chart5Title' => $this->chart5Title,
+                    'allUsers' => $this->allUsers
             ]) ?>
         <?php endif; ?>
     </div>

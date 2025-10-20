@@ -431,30 +431,29 @@ class Ccsd_Tools
     /**
      * @param string|string[] $mixed
      * @param bool $strip_br
-     * @return array|mixed|string|string[]|null
+     * @param bool $allUtf8
+     * @return string|string[]|null
      */
-    public static function space_clean($mixed, $strip_br = true, $allUtf8 = false)
-    {
-
+    public static function space_clean($mixed, $strip_br = true, $allUtf8=false) {
         if (is_array($mixed)) {
-            $new = [];
+            $new = array();
             foreach ($mixed as $val) {
                 $new [] = self::space_clean($val);
             }
             $mixed = array_filter($new);
-        } elseif(!empty($mixed)) {
-            $mixed = preg_replace("/[\x-\x8\xb-\xc\xe-\x1f]/", "", ($strip_br) ? self::br2space($mixed) : $mixed);
-            $mixed = str_replace("\n", ' ', $mixed);
-            $mixed = str_replace("\r", ' ', $mixed);
-            $mixed = str_replace("\t", ' ', $mixed);
-            $mixed = preg_replace('/\t/', ' ', $mixed);
+        } else {
+            $mixed = ($strip_br) ? self::br2space($mixed) : $mixed;
+            // On ne change pas les espaces insécables ou demi-espace...
+            //   \s changerai l'intégralité des espaces.
+            $mixed = preg_replace('/[\n\t\r ]+/', ' ', $mixed);
+            // Suppr control char (CR already transformed)
+            $mixed = preg_replace("/[\x1-\x1f]/", "", $mixed);
+            // On devrait pouvoir supprimer tous les caractères espaces Utf8 (ex: pour repec)
+            // Mais ca doit etre optionnel, on doit accepter les espaces insécables par exemple
             $mixed = preg_replace('/\s\s+/u', ' ', $mixed);
-            // On devrait pouvoir supprimer tous les caracteres Utf8 (ex: pour repec)
-            // Mais ca doit etre optionnel, on doit accepter les espaces insecables par exemple
             if ($allUtf8) {
-                $mixed = preg_replace('/[\x00-\x1F\x7F-\xA0\xAD]/u', '', $mixed);
+                $mixed = preg_replace('/[\x7F-\xA0\xAD\x{2009}]/u','',$mixed);
             }
-
             $mixed = trim($mixed);
         }
         return $mixed;

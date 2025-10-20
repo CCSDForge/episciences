@@ -1,20 +1,36 @@
-<?php if ($this->submissionAcceptanceTime || $this->submissionPublicationTime) : ?>
+<?php if (
+        isset($this->submissionAcceptanceTime) ||
+        isset($this->submissionPublicationTime) ||
+        isset($this->submissionPublicationTimeMedian) ||
+        isset($this->submissionAcceptanceTimeMedian)
+) : ?>
     <div>
-        <?php if ($this->submissionAcceptanceTime): ?>
+        <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Délai')?></h1>
 
-            <li>
-                <?= ucfirst($this->translate('délai soumission-acceptation')) ?>
-                <code><?= $this->submissionAcceptanceTime ?></code>&nbsp<?= $this->translate(strtolower($this->submissionAcceptanceTimeUnit)) ?>
-            </li>
+        <table class="delay table table-striped">
 
-        <?php endif; ?>
+            <thead>
+            <tr>
+                <th scope="col"></th>
+                <th scope="col"><?= sprintf($this->translate('Moyenne [en %s]'), $this->translate(strtolower($this->submissionAcceptanceTimeUnit))) ?></th>
+                <th scope="col"><?= sprintf($this->translate('Médiane [en %s]'), $this->translate(strtolower($this->submissionAcceptanceTimeMedianUnit))) ?></th>
+            </tr>
+            </thead>
+            <tbody>
 
-        <?php if ($this->submissionPublicationTime): ?>
+            <tr>
+                <th><?= ucfirst($this->translate('délai soumission-publication')) ?></th>
+                <td><?= $this->submissionPublicationTime ?></td>
+                <td><?= $this->submissionPublicationTimeMedian ?></td>
+            </tr>
 
-            <li>
-                <?= ucfirst($this->translate('délai soumission-publication')) ?>
-                <code><?= $this->submissionPublicationTime ?></code>&nbsp<?= $this->translate(strtolower($this->submissionPublicationTimeUnit)) ?>
-            </li>
-        <?php endif; ?>
+            <tr>
+                <th><?= ucfirst($this->translate('délai soumission-acceptation')) ?></th>
+                <td><?= $this->submissionAcceptanceTime ?></td>
+                <td><?= $this->submissionAcceptanceTimeMedian ?></td>
+            </tr>
+            </tbody>
+        </table>
+
     </div>
 <?php endif; ?>
