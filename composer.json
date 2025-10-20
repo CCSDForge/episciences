@@ -68,7 +68,7 @@
     "roave/security-advisories": "dev-latest",
     "phpmetrics/phpmetrics": "^2.7",
     "rector/rector": "^1.0.0",
-    "phpstan/phpstan": "^1.8",
+    "phpstan/phpstan": "^2.0",
     "symfony/test-pack": "^1.0"
   },
   "license": "GNU GENERAL PUBLIC LICENSE Version 3",
