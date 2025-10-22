@@ -2,7 +2,10 @@
 
 
 <style>
-
+.readonly-field {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
 </style>
 
 <script>var lang = '<?= Zend_Registry::get('Zend_Translate')->getLocale() ?>';</script>
@@ -10,6 +13,19 @@
 <div class="row">
     <span class="col-md-3 col-md-offset-9 ccsd_form_required"><?= $this->translate('Champ requis') ?></span>
 </div>
+
+<?php if (isset($this->hasPublishedPapers) && $this->hasPublishedPapers): ?>
+<div class="row">
+    <div class="col-md-12">
+        <div class="alert alert-info" role="alert">
+            <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            <strong><?= $this->translate('Information') ?> :</strong>
+            <?= $this->translate('Le nom de ce volume ne peut pas être modifié car des articles sont déjà associés à ce volume.') ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="row">
 
 
