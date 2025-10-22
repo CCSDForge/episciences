@@ -1227,14 +1227,37 @@ class Episciences_PapersManager
 
         // Checkbox
         /** @var Episciences_User $user */
+
+        $translator = Zend_Registry::get('Zend_Translate');
+        $unavailableEditors = [];
         foreach ($users as $user) {
-            $options[$user->getUid()] = $user->getFullname();
+            $userName = '';
+
+            // Add icon for editors (guest editor = star, editor = user icon)
+            if ($name === 'editors') {
+                $class = ($user->isGuestEditor()) ? 'grey glyphicon glyphicon-star' : 'lightergrey glyphicon glyphicon-user';
+                $type = ($user->isGuestEditor()) ? ucfirst($translator->translate(Episciences_Acl::ROLE_GUEST_EDITOR)) : ucfirst($translator->translate(Episciences_Acl::ROLE_EDITOR));
+                $icon = '<span class="' . $class . '" style="margin-right:10px"></span>';
+                $icon = '<span style="cursor: pointer" data-toggle="tooltip" title="' . $type . '">' . $icon . '</span>';
+                $userName .= $icon;
+            }
+
+            $userName .= $user->getFullname();
+
+            // Track unavailable editors for JavaScript handling
+            if ($name === 'editors' && !Episciences_UsersManager::isEditorAvailable($user->getUid(), RVID)) {
+                $unavailableEditors[] = $user->getUid();
+                $userName .= ' <span class="unavailable-badge">' . $translator->translate('unavailable') . '</span>';
+            }
+
+            $options[$user->getUid()] = $userName;
         }
 
         $form->addElement('multiCheckbox', $name, [
             'multiOptions' => $options,
             'separator' => '<br/>',
-            'decorators' => ['ViewHelper', ['HtmlTag', ['tag' => 'div', 'class' => $name . '-list', 'style' => 'margin-left: 15px']]]
+            'escape' => false,
+            'decorators' => ['ViewHelper', ['HtmlTag', ['tag' => 'div', 'class' => $name . '-list', 'style' => 'margin-left: 15px', 'data-unavailable-editors' => json_encode($unavailableEditors)]]]
         ]);
 
         if (is_array($currentUsers)) {

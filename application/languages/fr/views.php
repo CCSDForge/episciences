@@ -326,5 +326,5 @@ return [
 
     // form errors
     "File 'file_data_descriptor' was not uploaded" => "Fichier descripteur non téléchargé.",
-
+    'unavailable' => 'Indisponible',
 ];

@@ -1,5 +1,5 @@
 <div class="editors">
-    <?= $this->partial('partials/paper_assigned_editors_copyeditors.phtml', ['paper' => $this->paper, 'users' => $this->users]); ?>
+    <?= $this->partial('partials/paper_assigned_editors_copyeditors.phtml', ['paper' => $this->paper, 'users' => $this->users, 'userRole' => Episciences_User_Assignment::ROLE_EDITOR]); ?>
     <?php // editors assignment button ********************************************** ?>
     <?php
     if (Episciences_Auth::isSecretary() && $this->paper->isEditable()) : ?>

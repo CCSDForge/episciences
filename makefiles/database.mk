@@ -22,9 +22,9 @@ MYSQL_CONNECT_INDEXING := mysql -u $(DB_USER) -p$(DB_PASS) -h $(DB_HOST) -P $(DB
 MYSQL_CONNECT_AUTH := mysql -u $(DB_USER) -p$(DB_PASS) -h $(DB_HOST) -P $(DB_PORT_AUTH) cas_users
 
 # Volume Names
-VOLUME_MYSQL_EPISCIENCES := $(PROJECT_NAME)_mysql-db-episciences
-VOLUME_MYSQL_INDEXING := $(PROJECT_NAME)_mysql-db-indexing
-VOLUME_MYSQL_AUTH := $(PROJECT_NAME)_mysql-db-auth
+VOLUME_MYSQL_EPISCIENCES := episciences-gpl_mysql-db-episciences
+VOLUME_MYSQL_INDEXING := episciences-gpl_mysql-db-indexing
+VOLUME_MYSQL_AUTH := episciences-gpl_mysql-db-auth
 
 # =============================================================================
 # Database Commands

@@ -3986,6 +3986,10 @@ class Episciences_Paper
                     }
 
                     $update['code'] = 1;
+                    // Pass the docId to allow redirect to the detail page.
+                    if (isset($result['docId'])) {
+                        $update['docId'] = $result['docId'];
+                    }
                 }
             } else {
                 $message .= ' : ';

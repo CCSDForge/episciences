@@ -15,6 +15,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
+- [#646](https://github.com/CCSDForge/episciences/issues/786) Rediriger sur la page de l'article qui vient d'être soumis au lieu de la page qui liste toutes les soumissions
+
+
+- [#541](https://github.com/CCSDForge/episciences/issues/541) remove user assignation (editor) when a user is removed from the journal
+
+
+- Manager: reset password url
+- Manager: account creation token url
+
+- Ability to customise application environment variables
+- A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
+- *Manager only* Website menu:
+    - It is no longer possible to manually add certain public pages to the site.
+    - The list of pages has been reorganised by group.
+    - Hide "Publishing policies" page: included in the "About" page.
+- Updated 'Resources' module to manage public files
+
+
+- Manager: reset password url
+- Manager: account creation token url
+- Manager: Fixed path to reviewer report attachments without prefix
+- Manager: Force predefined pages to be public
+- Manager: Review Report: attached document URL has not been updated for the manager application
+
+### Added
+
 ## Unreleased
 ### Added
 - Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
@@ -27,7 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [RT#259551] it is now possible to modify the Copy Editor at any time
 - [#678](https://github.com/CCSDForge/episciences/issues/678) COIs not considered in revision emails
 
-## v1.0.52-manager - 2025-08-28
+## v1.0.52 - 2025-08-28
+
 ### Fixed
 - DOI metadata: stop overwriting acceptance date with the last modification date
 - [#693](https://github.com/CCSDForge/episciences/issues/693) allow to save comment without attachment
@@ -39,10 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed unescaped identifiers causing invalid XML in OpenAire export format
 - [#600](https://github.com/CCSDForge/episciences/issues/600) Abstract ignores line breaks
 - [#694](https://github.com/CCSDForge/episciences/issues/694) accents via LaTeX macros in abstracts aren't rendered
-- Manager: Fixed path to reviewer report attachments without prefix
-- Manager: Force predefined pages to be public
-- Manager: Review Report: attached document URL has not been updated for the manager application
- 
+
+
 ### Added
 - DOI management automation: Added shell scripts for batch DOI operations and enhanced getDoi.php with logging and journal fetching capabilities
 - CSV import functionality for sections
@@ -69,24 +94,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v1.0.51 - 2025-04-07
 ### Changed
 - [#650](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
-- Ability to customise application environment variables
-- A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
-- *Manager only* Website menu:
-    - It is no longer possible to manually add certain public pages to the site.
-    - The list of pages has been reorganised by group.
-    - Hide "Publishing policies" page: included in the "About" page.
-- Updated 'Resources' module to manage public files
-
 - published dataset/software: the title of the data/software descriptor is its identifier.
 - Only PDF files are backed up
 - [#649](https://github.com/CCSDForge/episciences/issues/649): Assigned editors are now automatically added as (hidden) copies of messages sent to reviewers
 - A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
 
 ### Fixed
-- Manager: reset password url
-- Manager: account creation token url
 - [#653](https://github.com/CCSDForge/episciences/issues/653): Filtering email history doesn't work
-- Manager File Not Found Error
+- File Not Found Error
 - Wrong link on page "Invitation to review an article" for temporary versions
 
 ## v1.0.50.1 - 2025-03-14

@@ -2205,6 +2205,7 @@ return array(
     "La version que vous essayez d'envoyer existe déjà." => "The version you are trying to send already exists.",
 
     // Website > menu
-    'Choisissez une page' => 'Select a page'
+    'Choisissez une page' => 'Select a page',
+    'unavailable' => 'Unavailable'
 
 );

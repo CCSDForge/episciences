@@ -1032,6 +1032,15 @@ class Episciences_User extends Ccsd_User_Models_User
     public function saveUserRoles($uid, $roles, int $rvId = RVID): bool
     {
         $uid = (int)$uid;
+
+        // Récupérer les rôles actuels AVANT suppression pour détecter les rôles retirés
+        $currentRoles = $this->_db->fetchCol(
+            $this->_db->select()
+                ->from(T_USER_ROLES, 'ROLEID')
+                ->where('UID = ?', $uid)
+                ->where('RVID = ?', $rvId)
+        )?:[];
+
         // Reset des rôles de l'utilisateur
         $acl = new Episciences_Acl();
         $editableRoles = $acl->getEditableRoles();
@@ -1068,6 +1077,10 @@ class Episciences_User extends Ccsd_User_Models_User
                 }
             }
         }
+
+        // Détecter les rôles retirés et désactiver leurs assignments si nécessaire
+        $removedRoles = array_diff($currentRoles, $roles);
+        $this->disableAssignmentsForRemovedRoles($uid, $rvId, $removedRoles);
 
         return true;
     }
@@ -1515,6 +1528,49 @@ class Episciences_User extends Ccsd_User_Models_User
             if ($key !== false) {
                 unset($roles[$key]);
             }
+        }
+    }
+
+    /**
+     * Désactive les assignments pour les rôles retirés qui nécessitent une désactivation automatique
+     *
+     * @param int $uid L'ID de l'utilisateur
+     * @param int $rvId L'ID de la revue
+     * @param array $removedRoles Liste des rôles retirés
+     * @return void
+     */
+    private function disableAssignmentsForRemovedRoles(int $uid, int $rvId, array $removedRoles): void
+    {
+        // Liste des rôles dont le retrait entraîne la désactivation automatique des assignments
+        // Ici on utilise un tableau pour étendre facilement à d'autres rôles
+        $rolesWithAutoDisableAssignments = ['editor'];
+
+        // Déterminer quels rôles avec auto-désactivation ont été retirés
+        $rolesToDisable = array_intersect($removedRoles, $rolesWithAutoDisableAssignments);
+
+        // Désactiver les assignments pour chaque rôle retiré
+        if (empty($rolesToDisable)) {
+            return;
+        }
+
+        foreach ($rolesToDisable as $roleToDisable) {
+            $this->_db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
+            SELECT `u`.`RVID`, `u`.`ITEMID`, `u`.`ITEM`, `u`.`UID`, `u`.`ROLEID`, 'disabled', NOW()
+            FROM USER_ASSIGNMENT `u`
+            WHERE `u`.`UID` = ?
+            AND `u`.`RVID` = ?
+            AND `u`.`ROLEID` = ?
+            AND `u`.`STATUS` = 'active'
+            AND `u`.`WHEN` IN (
+                SELECT MAX(`ua`.`WHEN`) AS `MAXDATE`
+                FROM USER_ASSIGNMENT `ua`
+                WHERE `ua`.`UID` = `u`.`UID`
+                AND `ua`.`ITEM` = `u`.`ITEM`
+                AND `ua`.`ITEMID` = `u`.`ITEMID`
+                AND `ua`.`ROLEID` = `u`.`ROLEID`
+                AND `ua`.`RVID` = `u`.`RVID`
+                GROUP BY `ua`.`ROLEID`
+            )", [$uid, $rvId, $roleToDisable]);
         }
     }
 
