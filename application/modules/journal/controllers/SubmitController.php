@@ -159,7 +159,7 @@ class SubmitController extends DefaultController
                     // Redirect to paper detail page for possible edits
                     $docId = $result['docId'] ?? null;
                     if ($docId) {
-                        $this->_helper->redirector('view', 'paper', null, [PREFIX_ROUTE => RVCODE, 'id' => $docId]);
+                        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $docId]));
                     } else {
                         $this->_helper->redirector('submitted', 'paper', null, [PREFIX_ROUTE => RVCODE]);
                     }
