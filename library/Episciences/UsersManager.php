@@ -380,6 +380,7 @@ class Episciences_UsersManager
      * @param int $rvid
      * @param bool $isAvailable
      * @return int Number of affected rows
+     * @throws Zend_Db_Adapter_Exception
      */
     public static function setEditorAvailability(int $uid, int $rvid, bool $isAvailable): int
     {
