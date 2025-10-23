@@ -350,7 +350,7 @@ class VolumeController extends Zend_Controller_Action
 
         $sorted_papers = $volume->getSortedPapersFromVolume();
 
-        // Check if volume has any papers to restrict title editing (#780)
+        // Check if volume has any papers to restrict title editing
         $hasPublishedPapers = Episciences_VolumesManager::isPublishedPapersInVolume($vid);
 
         if ($request->getHeader('Accept') === self::JSON_MIMETYPE && $request->getActionName() === 'all') {
