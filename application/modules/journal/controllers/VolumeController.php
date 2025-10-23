@@ -350,6 +350,8 @@ class VolumeController extends Zend_Controller_Action
 
         $sorted_papers = $volume->getSortedPapersFromVolume();
 
+        // Check if volume has any papers to restrict title editing (#780)
+        $hasPublishedPapers = Episciences_VolumesManager::isPublishedPapersInVolume($vid);
 
         if ($request->getHeader('Accept') === self::JSON_MIMETYPE && $request->getActionName() === 'all') {
             $this->_helper->layout()->disableLayout();
@@ -397,7 +399,7 @@ class VolumeController extends Zend_Controller_Action
         $gaps = Episciences_Volume::findGapsInPaperOrders($sorted_papers);
         $this->view->gapsInOrderingPapers = $gaps;
 
-        $form = Episciences_VolumesManager::getForm($referer, $volume);
+        $form = Episciences_VolumesManager::getForm($referer, $volume, $hasPublishedPapers);
         $journal = Episciences_ReviewsManager::find(Episciences_Review::getCurrentReviewId());
         $journal->loadSettings();
         $journalPrefixDoi = $journal->getDoiSettings()->getDoiPrefix();
@@ -412,8 +414,21 @@ class VolumeController extends Zend_Controller_Action
             $post = $request->getPost();
 
             if ($form->isValid($post)) {
+                // Backend protection: Restore original titles if volume has articles
+                if ($hasPublishedPapers) {
+                    $originalTitles = $volume->getTitles();
+                    $languages = Episciences_Tools::getLanguages();
+
+                    foreach ($languages as $languageCode => $language) {
+                        $titleKey = 'title_' . $languageCode;
+                        if (isset($originalTitles[$languageCode])) {
+                            $post[$titleKey] = $originalTitles[$languageCode];
+                        }
+                    }
+                }
+
                 $this->checkValidateDate($post['year'], $request);
-                $resVol = $volume->save($form->getValues(), $vid, $request->getPost());
+                $resVol = $volume->save($form->getValues(), $vid, $post);
 
                 $volume->saveVolumeMetadata($request->getPost());
 
@@ -451,6 +466,7 @@ class VolumeController extends Zend_Controller_Action
 
         $this->view->form = $form;
         $this->view->paperList = $sorted_papers;
+        $this->view->hasPublishedPapers = $hasPublishedPapers;
 
         $this->view->volume = $volume;
         $this->view->metadataForm = Episciences_VolumesManager::getMetadataForm();

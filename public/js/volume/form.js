@@ -393,24 +393,70 @@ function validMultilangInput(id, mce)
 function reset()
 {
 	$('#modal-box form').trigger('reset');
-	
+
 	// Title
 	$('#mTitle').val('');
 	$('#mTitle').prop('disabled', false);
 	$('#modal-box input[name^="mTitle["]').each(function() {
 		$(this).prev('button').trigger('click');
 	});
-	
+
 	// Content
 	//tinyMCE.get('mContent').setContent('');
 	$('#modal-box textarea[name^="mContent["]').each(function() {
 		$(this).prev('button').trigger('click');
 	});
-	
+
 	// File
 	$('#mTmpData').val('');
 	$('#mFile_content').html('');
-	
+
 	// Errors
 	$('.modal-body .errors').remove();
 }
+
+/**
+ * Volume title editing protection (#780)
+ * Prevents modification of volume titles when articles are already associated
+ * This provides frontend protection complementing the backend validation
+ */
+$(document).ready(function() {
+	var form = $('form[data-library="ccsd"]');
+
+	// Check if volume has articles (data attribute from PHP)
+	var hasArticles = form.data('volume-has-articles') === 'true';
+
+	if (hasArticles) {
+		// Store original values to prevent any modification attempts
+		var originalTitles = {};
+		var titleFields = $('[name^="title_"]');
+
+		titleFields.each(function() {
+			var field = $(this);
+			// Save original value
+			originalTitles[field.attr('name')] = field.val();
+
+			// Apply readonly protection (if not already done by PHP)
+			if (!field.attr('readonly')) {
+				field.attr('readonly', 'readonly');
+				field.addClass('readonly-field');
+				field.attr('title', field.data('readonly-message') || 'Cannot modify volume name with associated articles');
+			}
+		});
+
+		// Additional protection: restore original values on form submit
+		if (form.length) {
+			form.on('submit', function(e) {
+				// Restore all title fields to their original values
+				titleFields.each(function() {
+					var field = $(this);
+					var fieldName = field.attr('name');
+					if (field.val() !== originalTitles[fieldName]) {
+						console.warn('Volume title modification attempt blocked (frontend)');
+						field.val(originalTitles[fieldName]);
+					}
+				});
+			});
+		}
+	}
+});

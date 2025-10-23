@@ -2,7 +2,10 @@
 
 
 <style>
-
+.readonly-field {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
 </style>
 
 <script>var lang = '<?= Zend_Registry::get('Zend_Translate')->getLocale() ?>';</script>
@@ -14,7 +17,21 @@
 
 
     <form class="<?= $this->element->getAttrib('class') ?>" action="<?= $this->element->getAction() ?>"
-          method="<?= $this->element->getMethod() ?>" data-library="ccsd" role="form">
+          method="<?= $this->element->getMethod() ?>" data-library="ccsd" role="form"
+          data-volume-has-articles="<?= isset($this->hasPublishedPapers) && $this->hasPublishedPapers ? 'true' : 'false' ?>">
+
+        <?php if (isset($this->hasPublishedPapers) && $this->hasPublishedPapers): ?>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="alert alert-info" role="alert">
+                    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                    <strong><?= $this->translate('Information') ?> :</strong>
+                    <?= $this->translate('Le nom du volume ne peut pas être modifié car des articles sont déjà associés à ce volume') ?>.
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <?php foreach ($this->element->getElements() as $element) : ?>
             <div id="<?= $element->getName() ?>-element" class="form-group" <?php if ($element->getAttrib('data-none')):?>style="display: none;" <?php endif;?>>
                 <?= $element ?>
@@ -126,3 +143,4 @@
     </form>
 
 </div>
+

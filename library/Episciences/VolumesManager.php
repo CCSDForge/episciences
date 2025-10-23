@@ -311,13 +311,14 @@ class Episciences_VolumesManager
      * Retourne le formulaire de gestion d'un volume
      * @param string $referer
      * @param Episciences_Volume|null $volume
+     * @param bool $hasPublishedPapers Whether the volume contains any papers (disables title editing if true) - despite the name, this now checks for ANY papers, not just published ones (#780)
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      * @throws Zend_Validate_Exception
      */
     public
-    static function getForm(string $referer = '', Episciences_Volume $volume = null): \Ccsd_Form
+    static function getForm(string $referer = '', Episciences_Volume $volume = null, bool $hasPublishedPapers = false): \Ccsd_Form
     {
         if (empty($referer)) {
             $referer = '/volume/list';
@@ -344,11 +345,20 @@ class Episciences_VolumesManager
         foreach ($languages as $languageCode => $language) {
 
             // Nom du volume
-            $form->addElement('text', Episciences_Volume::VOLUME_PREFIX_TITLE . $languageCode, [
+            $titleElementOptions = [
                 'label' => 'Nom (' . $language . ')',
                 'maxlength' => self::MAX_STRING_LENGTH,
                 'required' => true,
-            ]);
+            ];
+
+            // Disable title field if volume has any papers (#780)
+            if ($hasPublishedPapers) {
+                $titleElementOptions['readonly'] = 'readonly';
+                $titleElementOptions['class'] = 'readonly-field';
+                $titleElementOptions['title'] = Zend_Registry::get('Zend_Translate')->translate('Le nom du volume ne peut pas être modifié car des articles sont déjà associés à ce volume');
+            }
+
+            $form->addElement('text', Episciences_Volume::VOLUME_PREFIX_TITLE . $languageCode, $titleElementOptions);
 
             $form->addElement('textarea', Episciences_Volume::VOLUME_PREFIX_DESCRIPTION . $languageCode, [
                 'label' => 'Description (' . $language . ')',
@@ -548,16 +558,18 @@ class Episciences_VolumesManager
     }
 
     /**
-     * @param int $vid
-     * @return bool
+     * Check if a volume has any papers (not just published ones)
+     * This is used to determine if volume title should be locked for editing (#780)
+     *
+     * @param int $vid Volume ID
+     * @return bool True if volume has any papers, false otherwise
      */
-    public
-    static function isPublishedPapersInVolume(int $vid): bool
+    public static function isPublishedPapersInVolume(int $vid): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = self::isPapersInVolumeQuery($vid);
-        $select->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
-        return (int)$db->fetchOne($select) > 0;
+        $count = (int)$db->fetchOne($select);
+        return $count > 0;
     }
 
     /**
