@@ -4526,7 +4526,21 @@ class Episciences_Paper
      */
     public function isImported(): bool
     {
-        return ($this->getFlag() === 'imported');
+
+        return ($this->getFlag() === 'imported' ||
+
+            (
+                date('Y-m-d', strtotime($this->getPublication_date())) <= date('Y-m-d', strtotime($this->getSubmission_date()))
+                || (int)date('Y', strtotime($this->getSubmission_date())) < 2013
+                || (int)date('Y-m-d', strtotime($this->getPublication_date())) < 2013
+                || (
+                    (
+                        date('Y-m-d', strtotime($this->getSubmission_date())) > date('Y-m-d', strtotime($this->getWhen()))
+                        || date('Y-m-d', strtotime($this->getPublication_date())) < date('Y-m-d', strtotime($this->getWhen()))
+                    )
+                    and $this->getStatus() === self::STATUS_PUBLISHED
+                )
+            ));
     }
 
     /**

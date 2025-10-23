@@ -4294,6 +4294,23 @@ class AdministratepaperController extends PaperDefaultController
                     if ($newPublicationDate !== date('Y-m-d', strtotime($oldDate))) {
                         $paper->setPublication_date($newPublicationDate);
                         $paper->save();
+                        $status = $paper->getStatus();
+
+                        // Update DATE in PAPER_LOGS
+
+                        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                        //UPDATE PAPER_LOG pl SET pl.DATE = '2025-10-17' WHERE pl.DOCID = 16543 AND pl.status = 16;
+                        $sql = "UPDATE PAPER_LOG pl SET pl.DATE = '$newPublicationDate' WHERE pl.DOCID = $docId AND pl.status = $status";
+                        $stm = $db?->prepare($sql);
+
+                        try {
+                            $stm->execute();
+                        } catch (Exception $e) {
+                            Episciences_View_Helper_Log::log($e->getMessage(), Psr\Log\LogLevel::CRITICAL);
+                        }
+
+                        $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'oldDate' => Episciences_View_Helper_Date::Date($oldDate, $local), 'newDate' => $localDate];
+                        $paper->log(Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE, Episciences_Auth::getUid(), $details);
 
                         $resOfIndexing = $paper->indexUpdatePaper();
 
@@ -4301,12 +4318,20 @@ class AdministratepaperController extends PaperDefaultController
                             try {
                                 Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
                             } catch (Exception $e) {
-                                trigger_error($e->getMessage(), E_USER_ERROR);
+                                Episciences_View_Helper_Log::log($e->getMessage(), Psr\Log\LogLevel::CRITICAL);
                             }
                         }
 
-                        $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'oldDate' => Episciences_View_Helper_Date::Date($oldDate, $local), 'newDate' => $localDate];
-                        $paper->log(Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE, Episciences_Auth::getUid(), $details);
+                        // if HAL, send coar notify message
+                        if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
+                            $journal = Episciences_ReviewsManager::find(RVID);
+                            $notification = new Episciences_Notify_Hal($paper, $journal);
+                            try {
+                                $notification->announceEndorsement();
+                            } catch (Exception $exception) {
+                                Episciences_View_Helper_Log::log(sprintf("Announcing publication to HAL failed: %s", $exception->getMessage()), Psr\Log\LogLevel::CRITICAL);
+                            }
+                        }
                     }
 
                     echo $localDate;
