@@ -311,7 +311,7 @@ class Episciences_VolumesManager
      * Retourne le formulaire de gestion d'un volume
      * @param string $referer
      * @param Episciences_Volume|null $volume
-     * @param bool $hasPublishedPapers Whether the volume contains any papers (disables title editing if true) - despite the name, this now checks for ANY papers, not just published ones (#780)
+     * @param bool $hasPublishedPapers Whether the volume contains any papers (disables title editing if true) - despite the name, this now checks for ANY papers, not just published ones
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
@@ -351,7 +351,7 @@ class Episciences_VolumesManager
                 'required' => true,
             ];
 
-            // Disable title field if volume has any papers (#780)
+            // Disable title field if volume has any papers
             if ($hasPublishedPapers) {
                 $titleElementOptions['readonly'] = 'readonly';
                 $titleElementOptions['class'] = 'readonly-field';
@@ -559,7 +559,7 @@ class Episciences_VolumesManager
 
     /**
      * Check if a volume has any papers (not just published ones)
-     * This is used to determine if volume title should be locked for editing (#780)
+     * This is used to determine if volume title should be locked for editing
      *
      * @param int $vid Volume ID
      * @return bool True if volume has any papers, false otherwise

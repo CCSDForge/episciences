@@ -416,7 +416,7 @@ function reset()
 }
 
 /**
- * Volume title editing protection (#780)
+ * Volume title editing protection
  * Prevents modification of volume titles when articles are already associated
  * This provides frontend protection complementing the backend validation
  */
