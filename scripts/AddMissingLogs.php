@@ -132,20 +132,7 @@ class AddMissingLogs extends JournalScript
                     $pDate = $paper->getModification_date();
                 }
 
-
-                $isImported = $paper->getFlag() === 'imported' ||
-                    (
-                        date('Y-m-d', strtotime($paper->getPublication_date())) <= date('Y-m-d', strtotime($paper->getSubmission_date()))
-                        || (int)date('Y', strtotime($paper->getSubmission_date())) < 2013
-                        || (int)date('Y-m-d', strtotime($paper->getPublication_date())) < 2013
-                        || (
-                            (
-                                date('Y-m-d', strtotime($paper->getSubmission_date())) > date('Y-m-d', strtotime($paper->getWhen()))
-                                || date('Y-m-d', strtotime($paper->getPublication_date())) < date('Y-m-d', strtotime($paper->getWhen()))
-                            )
-                            and $paper->getStatus() === Episciences_Paper::STATUS_PUBLISHED
-                        )
-                    );
+                $isImported = $paper->isImported();
 
                 $data = [
                     'LOGID' => 'NULL',

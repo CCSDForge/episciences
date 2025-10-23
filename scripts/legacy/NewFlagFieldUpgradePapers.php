@@ -81,8 +81,9 @@ class NewFlagFieldUpgradePapers extends JournalScript
 
                 $paper = Episciences_PapersManager::get($docId, false);
 
-                if ($paper->isPublished() && $paper->getPublication_date() < $paper->getSubmission_date()) {
+                $isImported = $paper->isImported();
 
+                if ($isImported) {
                     if ($paper->getFlag() !== 'imported') {
                         $paper->setFlag('imported');
                         $paper->save();
