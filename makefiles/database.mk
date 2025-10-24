@@ -62,17 +62,15 @@ load-db-episciences: ## Load SQL dump from ~/tmp/episciences.sql into episcience
 	@$(MYSQL_CONNECT_EPISCIENCES) < $(SQL_DUMP_DIR)/episciences.sql
 	@echo "Episciences database loaded successfully!"
 
-load-db-auth: ## Load SQL dump from ~/tmp/cas_users.sql into auth database
+load-db-auth: ## Load SQL dump from ~/tmp/cas_users.sql into auth database  
 	@echo "Loading auth database..."
 	@if [ ! -f $(SQL_DUMP_DIR)/cas_users.sql ]; then \
 		echo "Error: $(SQL_DUMP_DIR)/cas_users.sql not found!"; \
 		echo "Please place your SQL dump at $(SQL_DUMP_DIR)/cas_users.sql"; \
 		exit 1; \
 	fi
-	@echo "File size: $$(du -h $(SQL_DUMP_DIR)/cas_users.sql | cut -f1)"
-	@echo "This may take several minutes for large files..."
 	@$(MAKE) wait-for-db
-	@$(MYSQL_CONNECT_AUTH) < $(SQL_DUMP_DIR)/cas_users.sql 2>&1 | grep -v "Using a password" || true
+	@$(MYSQL_CONNECT_AUTH) < $(SQL_DUMP_DIR)/cas_users.sql
 	@echo "Auth database loaded successfully!"
 
 backup-db: ## Backup all databases to ~/tmp/ directory
