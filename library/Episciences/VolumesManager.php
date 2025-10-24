@@ -240,9 +240,8 @@ class Episciences_VolumesManager
     }
 
     /**
-     * Query to get papers in a volume (both primary and secondary volumes)
-     * @param int $vid Volume ID
-     * @param array $fields Fields to select
+     * @param int $vid
+     * @param array $fields
      * @return Zend_Db_Select
      */
     private static function isPapersInVolumeQuery(int $vid, array $fields = ['COUNT(st.DOCID)']): \Zend_Db_Select
