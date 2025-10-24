@@ -919,4 +919,36 @@ class PaperDefaultController extends DefaultController
         }
     }
 
+    protected function indexAndCOARNotify(Episciences_Paper $paper, Episciences_Review | bool $journal = false): void
+    {
+
+        $resOfIndexing = $paper->indexUpdatePaper();
+
+        if (!$resOfIndexing) {
+            try {
+                Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
+            } catch (Exception $e) {
+                Episciences_View_Helper_Log::log($e->getMessage(), Psr\Log\LogLevel::CRITICAL);
+            }
+        }
+
+        // if HAL, send coar notify message
+        if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
+
+            if (!$journal) {
+                $journal = Episciences_ReviewsManager::find(RVID);
+            }
+
+            if ($journal){
+                $notification = new Episciences_Notify_Hal($paper, $journal);
+                try {
+                    $notification->announceEndorsement();
+                } catch (Exception $exception) {
+                    Episciences_View_Helper_Log::log(sprintf("Announcing publication to HAL failed: %s", $exception->getMessage()), Psr\Log\LogLevel::CRITICAL);
+                }
+            }
+        }
+
+    }
+
 }

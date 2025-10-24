@@ -52,7 +52,7 @@ class Episciences_ReviewsManager
      * @param $id
      * @return bool|Episciences_Review
      */
-    public static function find($id)
+    public static function find($id): Episciences_Review|bool
     {
         if (is_numeric($id)) {
             $review = self::findByRvid($id);
