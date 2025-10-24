@@ -351,11 +351,11 @@ class Episciences_VolumesManager
                 'required' => true,
             ];
 
-            // Disable title field if volume has any papers
+            // Disable title field if volume has published papers
             if ($hasPublishedPapers) {
                 $titleElementOptions['readonly'] = 'readonly';
                 $titleElementOptions['class'] = 'readonly-field';
-                $titleElementOptions['title'] = Zend_Registry::get('Zend_Translate')->translate('Le nom du volume ne peut pas être modifié car des articles sont déjà associés à ce volume');
+                $titleElementOptions['title'] = Zend_Registry::get('Zend_Translate')->translate('Le nom du volume ne peut pas être modifié car des articles publiés sont déjà associés à ce volume');
             }
 
             $form->addElement('text', Episciences_Volume::VOLUME_PREFIX_TITLE . $languageCode, $titleElementOptions);
