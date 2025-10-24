@@ -417,19 +417,23 @@ function reset()
 
 /**
  * Volume title editing protection
- * Prevents modification of volume titles when articles are already associated
+ * Prevents modification of volume titles when published papers are already associated
  * This provides frontend protection complementing the backend validation
  */
 $(document).ready(function() {
 	var form = $('form[data-library="ccsd"]');
 
-	// Check if volume has articles (data attribute from PHP)
-	var hasArticles = form.data('volume-has-articles') === 'true';
+	// Check if volume has published papers (data attribute from PHP)
+	var hasPublishedArticles = form.data('volume-has-articles') === 'true';
 
-	if (hasArticles) {
+	if (hasPublishedArticles) {
 		// Store original values to prevent any modification attempts
 		var originalTitles = {};
 		var titleFields = $('[name^="title_"]');
+
+		// Get translated readonly message from form data attribute
+		var readonlyMessage = form.data('readonly-title-message') ||
+		                      'Cannot modify volume name with published papers';
 
 		titleFields.each(function() {
 			var field = $(this);
@@ -440,7 +444,7 @@ $(document).ready(function() {
 			if (!field.attr('readonly')) {
 				field.attr('readonly', 'readonly');
 				field.addClass('readonly-field');
-				field.attr('title', field.data('readonly-message') || 'Cannot modify volume name with associated articles');
+				field.attr('title', readonlyMessage);
 			}
 		});
 

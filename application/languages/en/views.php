@@ -1242,7 +1242,7 @@ return array(
     "browse-specialissues" => "Browse special issues",
     "browse-volumes" => "Browse all volumes",
     'volume-view' => 'View a volume',
-    'Le nom du volume ne peut pas être modifié car des articles sont déjà associés à ce volume' => 'The volume name cannot be modified because articles are already associated with this volume',
+    'Le nom du volume ne peut pas être modifié car des articles publiés sont déjà associés à ce volume' => 'The volume name cannot be modified because there are already published articles associated with this volume',
     'section-view' => 'View a section',
     'user-delete' => 'delete account',
     'coi-delete' => 'Remove a conflict of interest',
