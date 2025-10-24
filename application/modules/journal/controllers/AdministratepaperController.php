@@ -2030,16 +2030,6 @@ class AdministratepaperController extends PaperDefaultController
             }
 
             if ($paper->save()) {
-                $resOfIndexing = $paper->indexUpdatePaper();
-
-                if (!$resOfIndexing) {
-                    try {
-                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
-                    } catch (Exception $e) {
-                        trigger_error($e->getMessage());
-                    }
-                }
-
                 // log new status
                 $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
 
@@ -2060,16 +2050,7 @@ class AdministratepaperController extends PaperDefaultController
                     . $this->view->translate('Partager')
                     . '</a>');
 
-                // if HAL, send coar notify message
-                if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
-                    $notification = new Episciences_Notify_Hal($paper, $journal);
-                    try {
-                        $idAnnounce = $notification->announceEndorsement();
-                        $this->_helper->FlashMessenger->setNamespace('success')->addMessage(sprintf('Announcing publication to HAL with ID %s succeeded.', $idAnnounce));
-                    } catch (Exception $exception) {
-                        trigger_error(sprintf("Announcing publication to HAL failed: %s", $exception->getMessage()), E_USER_WARNING);
-                    }
-                }
+                $this->indexAndCOARNotify($paper, $journal);
 
             } else {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti !");
@@ -4312,26 +4293,7 @@ class AdministratepaperController extends PaperDefaultController
                         $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'oldDate' => Episciences_View_Helper_Date::Date($oldDate, $local), 'newDate' => $localDate];
                         $paper->log(Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE, Episciences_Auth::getUid(), $details);
 
-                        $resOfIndexing = $paper->indexUpdatePaper();
-
-                        if (!$resOfIndexing) {
-                            try {
-                                Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
-                            } catch (Exception $e) {
-                                Episciences_View_Helper_Log::log($e->getMessage(), Psr\Log\LogLevel::CRITICAL);
-                            }
-                        }
-
-                        // if HAL, send coar notify message
-                        if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
-                            $journal = Episciences_ReviewsManager::find(RVID);
-                            $notification = new Episciences_Notify_Hal($paper, $journal);
-                            try {
-                                $notification->announceEndorsement();
-                            } catch (Exception $exception) {
-                                Episciences_View_Helper_Log::log(sprintf("Announcing publication to HAL failed: %s", $exception->getMessage()), Psr\Log\LogLevel::CRITICAL);
-                            }
-                        }
+                        $this->indexAndCOARNotify($paper);
                     }
 
                     echo $localDate;
