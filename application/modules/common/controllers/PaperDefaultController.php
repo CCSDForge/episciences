@@ -1,11 +1,13 @@
 <?php
 
 use Episciences\AppRegistry;
+use Episciences\Trait\Tools;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
 class PaperDefaultController extends DefaultController
 {
+    use Tools;
     public const MSG_PAPER_DOES_NOT_EXIST = "Le document demandé n’existe pas.";
     public const MSG_REVIEWER_DOES_NOT_EXIST = "Le relecteur pour lequel vous souhaitez relire n'existe pas.";
     public const MSG_REPORT_COMPLETED = "Votre rapport a été déjà renseigné.";
@@ -922,33 +924,8 @@ class PaperDefaultController extends DefaultController
 
     protected function indexAndCOARNotify(Episciences_Paper $paper, Episciences_Review | bool $journal = false): void
     {
-
-        $resOfIndexing = $paper->indexUpdatePaper();
-
-        if (!$resOfIndexing) {
-            try {
-                Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
-            } catch (Exception $e) {
-                Episciences_View_Helper_Log::log($e->getMessage(), Psr\Log\LogLevel::CRITICAL);
-            }
-        }
-
-        // if HAL, send coar notify message
-        if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
-
-            if (!$journal) {
-                $journal = Episciences_ReviewsManager::find(RVID);
-            }
-
-            if ($journal){
-                $notification = new Episciences_Notify_Hal($paper, $journal);
-                try {
-                    $notification->announceEndorsement();
-                } catch (Exception $exception) {
-                    Episciences_View_Helper_Log::log(sprintf("Announcing publication to HAL failed: %s", $exception->getMessage()), Psr\Log\LogLevel::CRITICAL);
-                }
-            }
-        }
+        $this->index($paper);
+        $this->COARNotify($paper, $journal);
 
     }
 
