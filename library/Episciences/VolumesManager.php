@@ -240,8 +240,9 @@ class Episciences_VolumesManager
     }
 
     /**
-     * @param int $vid
-     * @param array $fields
+     * Query to get papers in a volume (both primary and secondary volumes)
+     * @param int $vid Volume ID
+     * @param array $fields Fields to select
      * @return Zend_Db_Select
      */
     private static function isPapersInVolumeQuery(int $vid, array $fields = ['COUNT(st.DOCID)']): \Zend_Db_Select
@@ -311,7 +312,7 @@ class Episciences_VolumesManager
      * Retourne le formulaire de gestion d'un volume
      * @param string $referer
      * @param Episciences_Volume|null $volume
-     * @param bool $hasPublishedPapers Whether the volume contains any papers (disables title editing if true) - despite the name, this now checks for ANY papers, not just published ones
+     * @param bool $hasPublishedPapers Whether the volume contains published papers (STATUS = 16) - disables title editing if true
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
@@ -558,16 +559,18 @@ class Episciences_VolumesManager
     }
 
     /**
-     * Check if a volume has any papers (not just published ones)
+     * Check if a volume contains any published papers (STATUS = 16)
      * This is used to determine if volume title should be locked for editing
      *
      * @param int $vid Volume ID
-     * @return bool True if volume has any papers, false otherwise
+     * @return bool True if volume has at least one published paper, false otherwise
      */
     public static function isPublishedPapersInVolume(int $vid): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = self::isPapersInVolumeQuery($vid);
+        // Filter only published papers (STATUS = 16)
+        $select->where('st.STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
         $count = (int)$db->fetchOne($select);
         return $count > 0;
     }
