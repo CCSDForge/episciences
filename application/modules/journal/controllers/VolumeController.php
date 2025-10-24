@@ -414,7 +414,7 @@ class VolumeController extends Zend_Controller_Action
             $post = $request->getPost();
 
             if ($form->isValid($post)) {
-                // Backend protection: Restore original titles if volume has articles
+                // Backend protection: Restore original titles if volume has published papers
                 if ($hasPublishedPapers) {
                     $originalTitles = $volume->getTitles();
                     $languages = Episciences_Tools::getLanguages();
