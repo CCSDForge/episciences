@@ -558,11 +558,8 @@ class Episciences_VolumesManager
     }
 
     /**
-     * Check if a volume contains any published papers (STATUS = 16)
-     * This is used to determine if volume title should be locked for editing
-     *
-     * @param int $vid Volume ID
-     * @return bool True if volume has at least one published paper, false otherwise
+     * @param int $vid
+     * @return bool
      */
     public
     static function isPublishedPapersInVolume(int $vid): bool
