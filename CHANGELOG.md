@@ -54,6 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [RT#259551] it is now possible to modify the Copy Editor at any time
 - [#678](https://github.com/CCSDForge/episciences/issues/678) COIs not considered in revision emails
 
+- [#646](https://github.com/CCSDForge/episciences/issues/646) Rediriger sur la page de l'article qui vient d'être soumis au lieu de la page qui liste toutes les soumissions
+- [#780](https://github.com/CCSDForge/episciences/issues/780) Option to lock volume name when an article in it is published
 ## v1.0.52 - 2025-08-28
 
 ### Fixed
@@ -67,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed unescaped identifiers causing invalid XML in OpenAire export format
 - [#600](https://github.com/CCSDForge/episciences/issues/600) Abstract ignores line breaks
 - [#694](https://github.com/CCSDForge/episciences/issues/694) accents via LaTeX macros in abstracts aren't rendered
+- [#541](https://github.com/CCSDForge/episciences/issues/541) remove user assignation (editor) when a user is removed from the journal
 
 
 ### Added
