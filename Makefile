@@ -14,7 +14,7 @@ include makefiles/testing.mk
 DOCKER := docker
 DOCKER_COMPOSE := docker compose
 NPX := npx
-PROJECT_NAME := make
+PROJECT_NAME := episciences-gpl
 
 # Container Configuration
 CNTR_NAME_SOLR := solr
