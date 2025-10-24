@@ -196,6 +196,7 @@ return [
     "browse-specialissues" => "Consulter les volumes spéciaux",
     "browse-volumes" => "Consulter tous les volumes",
     'volume-view' => 'Voir un volume',
+    'Le nom du volume ne peut pas être modifié car des articles publiés sont déjà associés à ce volume' => 'Le nom du volume ne peut pas être modifié car des articles publiés sont déjà associés à ce volume',
     'section-view' => 'Voir une rubrique',
     'user-delete' => 'Supprimer un compte',
     'coi-delete' => "Supprimer un conflit d'intérêt",

@@ -99,3 +99,10 @@ button.edit-metadata {
   padding-bottom: 0;
   margin-left: 5px;
 }
+
+/* Readonly volume title field styling */
+.readonly-field {
+  background-color: #f5f5f5 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+}
