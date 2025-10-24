@@ -24,8 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#776](https://github.com/CCSDForge/episciences/issues/776) Action Required: Fix Renovate Configuration
 - [#657](https://github.com/CCSDForge/episciences/issues/657) Conditionally remove the `<hr>` separator in the public and admin views of article metadata
 - [#786](https://github.com/CCSDForge/episciences/issues/786) English translation of 'Télécharger le fichier'
-- [#646](https://github.com/CCSDForge/episciences/issues/786) Rediriger sur la page de l'article qui vient d'être soumis au lieu de la page qui liste toutes les soumissions
-
+- [#646](https://github.com/CCSDForge/episciences/issues/646) Rediriger sur la page de l'article qui vient d'être soumis au lieu de la page qui liste toutes les soumissions
+- [#780](https://github.com/CCSDForge/episciences/issues/780) Option to lock volume name when an article in it is published
 ## v1.0.52 - 2025-08-28
 
 ### Fixed
