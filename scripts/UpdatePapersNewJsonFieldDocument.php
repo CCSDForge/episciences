@@ -1,9 +1,10 @@
 <?php
 require_once "JournalScript.php";
-
+require '../library/Episciences/Trait/Tools.php';
 
 class UpdatePapersNewJsonFieldDocument extends JournalScript
 {
+    use Episciences\Trait\Tools;
     public const TABLE = 'PAPERS';
     public const DOCUMENT_COLUMN = 'DOCUMENT';
     public const DEFAULT_SIZE = 500; // Number of documents to update at the same time
@@ -69,7 +70,9 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
             $dataQuery->where($params['sqlwhere']);
         }
 
-        $data = $db->fetchAssoc($dataQuery);
+        $dataQuery->order(['RVID ASC']);
+
+        $data = $db?->fetchAssoc($dataQuery);
         $isJsonOutput = $this->hasParam('json');
 
         if (empty($data)) {
@@ -84,9 +87,9 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
         $totalPages = ceil($count / $buffer);
 
         $cpt = 1;
-        $isJsonOutput = $this->hasParam('json');
 
-        if ($this->isVerbose() && !$isJsonOutput) {
+
+        if (!$isJsonOutput && $this->isVerbose()) {
             $this->displayInfo("*** Updating of the `DOCUMENT` column in the `PAPERS` table ***", true);
             $this->displayTrace('** Preparing the update...', true);
             $this->displayTrace(sprintf('Buffer: %s', $buffer), true);
@@ -95,22 +98,38 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
 
         for ($page = 1; $page <= $totalPages; $page++) {
 
-            if ($this->isVerbose() && !$isJsonOutput) {
+            if (!$isJsonOutput && $this->isVerbose()) {
                 $this->displayTrace(sprintf('Page #%s', $page), true);
             }
 
             $toUpdate = '';
             $offset = ($page - 1) * $buffer;
             $cData = array_slice($data, $offset, $buffer);
-            
+
+            $currentRvId = 0;
+            $currentJournal = null;
+
             if (!$isJsonOutput) {
-                $this->getProgressBar()->start();
+                $this->getProgressBar()?->start();
             }
 
             foreach ($cData as $values) {
+
+                if ((int)$values['RVID'] !== $currentRvId) {
+                    $currentRvId = (int)$values['RVID'];
+                    $currentJournal = Episciences_ReviewsManager::find($currentRvId);
+
+                    if (!$currentJournal) {
+                        continue;
+                    }
+
+                    $this->displayInfo('Current Journal: ' . $currentJournal->getCode(), true);
+
+                }
+
                 $docId = $values['DOCID'];
 
-                if ($this->isVerbose() && !$isJsonOutput) {
+                if (!$isJsonOutput && $this->isVerbose()) {
                     $this->displayTrace(sprintf('[DOCID #%s]', $docId), true);
                 }
                 $progress = round(($cpt * 100) / $count);
@@ -155,6 +174,11 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
 
                     try {
                         $affectedRows = Episciences_PapersManager::updateRecordData($currentPaper);
+
+                        if($currentJournal->getRvid() === $currentPaper->getRvid()) {
+                            $this->COARNotify($currentPaper, $currentJournal);
+                        }
+
                         if (!$isJsonOutput) {
                             $this->displayTrace(sprintf('Update metadata... > Affected rows: %s', $affectedRows), true);
                         }
@@ -174,10 +198,12 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                         echo $toJson . PHP_EOL;
                     }
 
-                    if ($this->isVerbose() && !$isJsonOutput) {
+                    if (!$isJsonOutput && $this->isVerbose()) {
                         $this->displaySuccess(sprintf('** [#%s] exported to json format ...', $docId), true);
                         $toUpdate .= sprintf('%sUPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', PHP_EOL, $db->quote($toJson), $docId);
                     }
+
+
                 } catch (Zend_Db_Statement_Exception $e) {
                     if (!$isJsonOutput) {
                         $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
@@ -185,20 +211,22 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                 }
 
                 if (!$isJsonOutput) {
-                    $this->getProgressBar()->setProgress($progress);
+                    $this->getProgressBar()?->setProgress($progress);
                 }
 
                 ++$cpt;
             }
 
-            if ($this->isVerbose() && !$isJsonOutput) {
+            if (!$isJsonOutput && $this->isVerbose()) {
                 $this->displayTrace(sprintf('Applying Update... %s %s', PHP_EOL, $toUpdate), true);
             }
+
+            $result = 0;
 
             if (!$this->isDebug()) {
                 if (empty(trim($toUpdate))) {
                     if (!$isJsonOutput) {
-                        $this->displayCritical('#' . $docId . " Nothing to update! SQL Request is empty");
+                        $this->displayCritical('#' . $toUpdate . " Nothing to update! SQL Request is empty");
                     }
                     continue;
                 }
@@ -207,15 +235,14 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                     $result = $statement->rowCount();
                     $statement->closeCursor();
                 } catch (Zend_Db_Statement_Exception|Exception $e) {
-                    $result = 0;
                     if (!$isJsonOutput) {
-                        $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
+                        $this->displayCritical($e->getMessage());
                     }
                 }
 
             }
 
-            if ($this->isVerbose() && !$isJsonOutput) {
+            if (!$isJsonOutput && $this->isVerbose()) {
 
                 if (!$this->isDebug()) {
 
@@ -234,7 +261,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
             }
         }
 
-        if ($this->isVerbose() && !$isJsonOutput) {
+        if (!$isJsonOutput && $this->isVerbose()) {
             $this->displaySuccess('Updating complete', true);
         }
 
