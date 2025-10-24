@@ -568,10 +568,8 @@ class Episciences_VolumesManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = self::isPapersInVolumeQuery($vid);
-        // Filter only published papers (STATUS = 16)
         $select->where('st.STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
-        $count = (int)$db->fetchOne($select);
-        return $count > 0;
+        return (int)$db->fetchOne($select) > 0;
     }
 
     /**
