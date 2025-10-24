@@ -564,7 +564,8 @@ class Episciences_VolumesManager
      * @param int $vid Volume ID
      * @return bool True if volume has at least one published paper, false otherwise
      */
-    public static function isPublishedPapersInVolume(int $vid): bool
+    public
+    static function isPublishedPapersInVolume(int $vid): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = self::isPapersInVolumeQuery($vid);
