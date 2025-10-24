@@ -424,7 +424,7 @@ $(document).ready(function() {
 	var form = $('form[data-library="ccsd"]');
 
 	// Check if volume has published papers (data attribute from PHP)
-	var hasPublishedArticles = form.data('volume-has-articles') === 'true';
+	var hasPublishedArticles = form.data('volume-has-published-articles') === 'true';
 
 	if (hasPublishedArticles) {
 		// Store original values to prevent any modification attempts
