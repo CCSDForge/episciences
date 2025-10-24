@@ -14,7 +14,7 @@
 
     <form class="<?= $this->element->getAttrib('class') ?>" action="<?= $this->element->getAction() ?>"
           method="<?= $this->element->getMethod() ?>" data-library="ccsd" role="form"
-          data-volume-has-articles="<?= isset($this->hasPublishedPapers) && $this->hasPublishedPapers ? 'true' : 'false' ?>"
+          data-volume-has-published-articles="<?= isset($this->hasPublishedPapers) && $this->hasPublishedPapers ? 'true' : 'false' ?>"
           data-readonly-title-message="<?= $this->translate('Le nom du volume ne peut pas être modifié car des articles publiés sont déjà associés à ce volume') ?>">
 
         <?php if (isset($this->hasPublishedPapers) && $this->hasPublishedPapers): ?>
