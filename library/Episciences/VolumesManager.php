@@ -311,13 +311,14 @@ class Episciences_VolumesManager
      * Retourne le formulaire de gestion d'un volume
      * @param string $referer
      * @param Episciences_Volume|null $volume
+     * @param bool $hasPublishedPapers Whether the volume contains published papers (STATUS = 16) - disables title editing if true
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      * @throws Zend_Validate_Exception
      */
     public
-    static function getForm(string $referer = '', Episciences_Volume $volume = null): \Ccsd_Form
+    static function getForm(string $referer = '', Episciences_Volume $volume = null, bool $hasPublishedPapers = false): \Ccsd_Form
     {
         if (empty($referer)) {
             $referer = '/volume/list';
@@ -344,11 +345,20 @@ class Episciences_VolumesManager
         foreach ($languages as $languageCode => $language) {
 
             // Nom du volume
-            $form->addElement('text', Episciences_Volume::VOLUME_PREFIX_TITLE . $languageCode, [
+            $titleElementOptions = [
                 'label' => 'Nom (' . $language . ')',
                 'maxlength' => self::MAX_STRING_LENGTH,
                 'required' => true,
-            ]);
+            ];
+
+            // Disable title field if volume has published papers
+            if ($hasPublishedPapers) {
+                $titleElementOptions['readonly'] = 'readonly';
+                $titleElementOptions['class'] = 'readonly-field';
+                $titleElementOptions['title'] = Zend_Registry::get('Zend_Translate')->translate('Le nom du volume ne peut pas être modifié car des articles publiés sont déjà associés à ce volume');
+            }
+
+            $form->addElement('text', Episciences_Volume::VOLUME_PREFIX_TITLE . $languageCode, $titleElementOptions);
 
             $form->addElement('textarea', Episciences_Volume::VOLUME_PREFIX_DESCRIPTION . $languageCode, [
                 'label' => 'Description (' . $language . ')',
