@@ -1729,6 +1729,7 @@ return array(
     "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Editorial workflow",
     "Episciences_Website_Navigation_Page_PrepareSubmission" => "Prepare your submission",
     "Episciences_Website_Navigation_Page_JournalIndexing" => "Indexed in",
+    "C'est une page prédéfinie" => "This is a predefined page",
 
 
     "Si aucun rôle n'est sélectionné, la page sera publique" => 'If no role is selected, the page will be public',
@@ -2206,6 +2207,6 @@ return array(
 
     // Website > menu
     'Choisissez une page' => 'Select a page',
-    'unavailable' => 'Unavailable'
+    'unavailable' => 'Unavailable',
 
 );
