@@ -397,6 +397,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('OAI', '');
         define('PORTAL', '');
         define('ENV_PROD', '');
+        define('ENV_PREPROD', '');
         define('EPISCIENCES_MAIL_PATH', '');
         define('ENV_DEV', '');
         define('MANAGER_APPLICATION_URL', '');
