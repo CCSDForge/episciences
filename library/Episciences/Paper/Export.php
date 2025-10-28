@@ -103,9 +103,18 @@ class Export
         $volume = '';
         $section = '';
         $proceedingInfo = '';
+
         if ($paper->getVid()) {
-            /* @var $oVolume Episciences_Volume */
-            $oVolume = Episciences_VolumesManager::find($paper->getVid());
+            $volumeCacheKey = 'volume-' . $paper->getVid();
+            try {
+                $oVolume = Zend_Registry::get($volumeCacheKey);
+            } catch (Exception $e) {
+                $oVolume = Episciences_VolumesManager::find($paper->getVid());
+                if ($oVolume) {
+                    Zend_Registry::set($volumeCacheKey, $oVolume);
+                }
+            }
+
             if ($oVolume) {
                 $volume = $oVolume->getName('en', true);
                 if ($oVolume->isProceeding()) {
@@ -116,8 +125,16 @@ class Export
 
 
         if ($paper->getSid()) {
-            /* @var $oSection Episciences_Section */
-            $oSection = Episciences_SectionsManager::find($paper->getSid());
+            $sectionCacheKey = 'section-' . $paper->getSid();
+            try {
+                $oSection = Zend_Registry::get($sectionCacheKey);
+            } catch (Exception $e) {
+                $oSection = Episciences_SectionsManager::find($paper->getSid());
+                if ($oSection) {
+                    Zend_Registry::set($sectionCacheKey, $oSection);
+                }
+            }
+
             if ($oSection) {
                 $section = $oSection->getName('en', true);
             }
@@ -131,11 +148,11 @@ class Export
      */
     private static function getJournalSettings(Episciences_Paper $paper): bool|Episciences_Review
     {
-        $journal = Episciences_ReviewsManager::find($paper->getRvid());
         $loadedSettings = 'reviewSettings-' . $paper->getRvid();
         try {
-            Zend_Registry::get($loadedSettings);
+            $journal = Zend_Registry::get($loadedSettings);
         } catch (Exception $e) {
+            $journal = Episciences_ReviewsManager::find($paper->getRvid());
             $journal->loadSettings();
             Zend_Registry::set($loadedSettings, $journal);
         }
@@ -525,7 +542,7 @@ class Export
             }
             $root->appendChild($description);
         }
-        $journal = Episciences_ReviewsManager::find($paper->getRvid());
+        $journal = self::getJournalSettings($paper);
         $publisher = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_PUBLISHER) ?? DOMAIN;
         $root->appendChild($xml->createElement('publisher', ucfirst(trim($publisher))));
 
@@ -553,8 +570,15 @@ class Export
         $sectionMeta = [];
 
         if ($paper->getVid()) {
-            /* @var $oVolume Episciences_Volume */
-            $oVolume = Episciences_VolumesManager::find($paper->getVid());
+            $volumeCacheKey = 'volume-' . $paper->getVid();
+            try {
+                $oVolume = Zend_Registry::get($volumeCacheKey);
+            } catch (Exception $e) {
+                $oVolume = Episciences_VolumesManager::find($paper->getVid());
+                if ($oVolume) {
+                    Zend_Registry::set($volumeCacheKey, $oVolume);
+                }
+            }
             if ($oVolume) {
                 $volumeMeta[] = $oVolume->toPublicArray();
             }
@@ -562,15 +586,22 @@ class Export
 
 
         if ($paper->getSid()) {
-            /* @var $oSection Episciences_Section */
-            $oSection = Episciences_SectionsManager::find($paper->getSid());
+            $sectionCacheKey = 'section-' . $paper->getSid();
+            try {
+                $oSection = Zend_Registry::get($sectionCacheKey);
+            } catch (Exception $e) {
+                $oSection = Episciences_SectionsManager::find($paper->getSid());
+                if ($oSection) {
+                    Zend_Registry::set($sectionCacheKey, $oSection);
+                }
+            }
             if ($oSection) {
                 $sectionMeta[] = $oSection->toPublicArray();
             }
         }
 
 
-        $journal = Episciences_ReviewsManager::find($paper->getRvid());
+        $journal = self::getJournalSettings($paper);
 
         $result = [];
         $result['docId'] = $paper->getDocid();
