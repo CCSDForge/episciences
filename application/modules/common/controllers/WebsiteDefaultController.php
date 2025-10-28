@@ -224,10 +224,12 @@ class WebsiteDefaultController extends Episciences_Controller_Action
         }
         $pageTypes = $this->_session->website->getPageTypes(true);
         $groupedPageTypes = $this->processPageTypes($pageTypes);
+        $predefinedPageTypes = $this->getPredefinedPageTypes($pageTypes);
         $this->view->pages = $this->_session->website->getPages();
         $this->view->order = $this->_session->website->getOrder();
         $this->view->pageTypes = $pageTypes;
         $this->view->groupedPageTypes = $groupedPageTypes;
+        $this->view->predefinedPageTypes = $predefinedPageTypes;
 
     }
 
@@ -245,6 +247,21 @@ class WebsiteDefaultController extends Episciences_Controller_Action
         ksort($processed);
         return $processed;
 
+    }
+
+    /**
+     * Identifie les types de pages prédéfinies
+     * @param array $pageTypes
+     * @return array Tableau avec les types comme clés et true si prédéfini
+     */
+    private function getPredefinedPageTypes(array $pageTypes = []): array
+    {
+        $predefined = [];
+        foreach ($pageTypes as $type => $label) {
+            $className = sprintf('Episciences_Website_Navigation_Page_%s', ucfirst($type));
+            $predefined[$type] = class_exists($className) && is_a($className, 'Episciences_Website_Navigation_Page_Predefined', true);
+        }
+        return $predefined;
     }
 
     /**

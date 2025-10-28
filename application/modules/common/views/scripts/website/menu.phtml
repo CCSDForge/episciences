@@ -68,6 +68,10 @@ $this->jQuery()
     .label {
         font-size: 100%;
     }
+
+    #type option[data-predefined="true"] {
+        font-weight: 500;
+    }
 </style>
 
 <?php //Ajout de nouvelles pages ?>
@@ -93,7 +97,8 @@ $this->jQuery()
 
                             ?>
 
-                            <option value="<?= $type ?>" <?= $disabled ?> type="<?= $label ?>"><?= $this->translate($label) ?></option>
+                            <option value="<?= $type ?>" <?= $disabled ?> type="<?= $label ?>"><?= $this->translate($label) ?><?php if (!empty($this->predefinedPageTypes[$type])): ?> 🛈 <?php endif; ?>
+                            </option>
 
                         <?php endforeach; ?>
                     </optgroup>
