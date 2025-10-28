@@ -2207,6 +2207,6 @@ return array(
 
     // Website > menu
     'Choisissez une page' => 'Select a page',
-    'unavailable' => 'Unavailable',
+    'unavailable' => 'Unavailable'
 
 );
