@@ -11,7 +11,10 @@
                    title="<?php echo $this->translate("Supprimer"); ?>"><span class="glyphicon glyphicon-trash"></span></a>
 
             </td>
-            <td class="page-label"><?php echo $this->page->getLabel(Zend_Registry::get('lang')) ?>&nbsp;
+            <td class="page-label<?php echo $this->page->isPredefined() ? ' template' : ''; ?>"><?php echo $this->page->getLabel(Zend_Registry::get('lang')) ?>&nbsp;&nbsp;
+                <?php if ($this->page->isPredefined()): ?>
+                    <i class="fa-solid fa-circle-info" data-toggle="tooltip" data-placement="top" data-container="body" title="<?php echo $this->translate("C'est une page prédéfinie"); ?>"></i>&nbsp;&nbsp;
+                <?php endif; ?>
                 <div class="div-plus"
                      style="<?php echo (isset($this->pagesDisplay[$this->i]) && $this->pagesDisplay[$this->i]) ? 'display:block;' : 'display:none;' ?>">
                     <hr/>

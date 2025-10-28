@@ -150,6 +150,11 @@ class Episciences_Website_Navigation_Page extends Ccsd_Website_Navigation_Page
         return $this->getPageClass() === 'Episciences_Website_Navigation_Page_File';
     }
 
+    public function isPredefined()
+    {
+        return  $this instanceof Episciences_Website_Navigation_Page_Predefined;
+    }
+
     /**
      * load privileges: 3 possible levels
      * @return void
