@@ -1056,7 +1056,7 @@ class Episciences_Mail_Reminder
             ->where('ua.RVID = ?', $this->getRvid())
             ->where('ui1.STATUS = ?', 'pending')
             ->where("EXPIRATION_DATE >= $date") // don't send reminders for expired invitations
-            ->group(['DOCID', 'UID']);
+            ->group(['DOCID', 'ua.UID', 'ui1.ID', 'ua.TMP_USER']);
 
         if ($this->getRepetition()) {
 
