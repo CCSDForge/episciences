@@ -15,17 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 -->
 
-- [#646](https://github.com/CCSDForge/episciences/issues/786) Rediriger sur la page de l'article qui vient d'être soumis au lieu de la page qui liste toutes les soumissions
-
-
-- [#541](https://github.com/CCSDForge/episciences/issues/541) remove user assignation (editor) when a user is removed from the journal
-
-
-- Manager: reset password url
-- Manager: account creation token url
+## Unreleased
 
 - Ability to customise application environment variables
-- A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
 - *Manager only* Website menu:
     - It is no longer possible to manually add certain public pages to the site.
     - The list of pages has been reorganised by group.
@@ -39,9 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Manager: Force predefined pages to be public
 - Manager: Review Report: attached document URL has not been updated for the manager application
 
-### Added
 
-## Unreleased
 ### Added
 - Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
 - New option to allow Editors to receive 'Comments for editors' before declaring a conflict of interest (disabled by default)
