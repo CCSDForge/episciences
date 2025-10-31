@@ -180,6 +180,7 @@ try {
                 $paper = null;
 
                 $mail = new Episciences_Mail('UTF-8');
+
                 if (isset($tags['%%ARTICLE_ID%%'])) {
                     $paper = Episciences_PapersManager::get($tags['%%ARTICLE_ID%%']);
                     $mail->setDocid($paper->getDocid());

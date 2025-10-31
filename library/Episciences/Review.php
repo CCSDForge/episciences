@@ -667,6 +667,27 @@ class Episciences_Review
     }
 
     /**
+     * Journal's URL
+     * @return string
+     */
+    public function getBackEndUrl(): string
+    {
+
+        if (!isset($_ENV['MANAGER_APPLICATION_URL']) || !Ccsd_Tools::isFromCli() || !$this->isNewFrontSwitched()) {
+            return sprintf('%s://%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME']);
+        }
+
+        $url = rtrim($_ENV['MANAGER_APPLICATION_URL'], DIRECTORY_SEPARATOR);
+        $url .= DIRECTORY_SEPARATOR;
+        $url .= $this->getCode();
+
+        return $url;
+    }
+
+
+
+
+    /**
      * @return string
      */
     public function getCode(): string
