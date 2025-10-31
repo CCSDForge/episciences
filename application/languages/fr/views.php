@@ -60,6 +60,9 @@ return [
     'Episciences_Website_Navigation_Page_TechnicalBoard' => 'Comité technique',
     'Episciences_Website_Navigation_Page_ScientificAdvisoryBoard' => 'Comité scientifique',
     'Episciences_Website_Navigation_Page_FormerMembers' => 'Anciens membres',
+    'Episciences_Website_Navigation_Page_IntroductionBoard' => 'Présentation des comités',
+    'Episciences_Website_Navigation_Page_ReviewersBoard' => 'Comité de relecture',
+    'Episciences_Website_Navigation_Page_OperatingCharterBoard' => 'Charte de fonctionnement',
 
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Politiques de publication",
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Charte éthique",

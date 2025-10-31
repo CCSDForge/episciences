@@ -1711,6 +1711,9 @@ return array(
     'Episciences_Website_Navigation_Page_TechnicalBoard' => 'Technical board',
     'Episciences_Website_Navigation_Page_ScientificAdvisoryBoard' => 'Scientific advisory board',
     'Episciences_Website_Navigation_Page_FormerMembers' => 'Former members',
+    'Episciences_Website_Navigation_Page_IntroductionBoard' => 'Boards presentation',
+    'Episciences_Website_Navigation_Page_ReviewersBoard' => 'Reviewers',
+    'Episciences_Website_Navigation_Page_OperatingCharterBoard' => 'Operating charter',
 
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Accepted articles to be published",
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Publishing policies",
