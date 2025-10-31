@@ -1,5 +1,5 @@
 -- Script to insert the journal-acknowledgments page code into the pages table
--- This creates a template entry for the Acknowledgments page
+-- This creates a template entry for the Acknowledgements page
 
 
 INSERT INTO pages (code, uid, date_creation, date_updated, title, content, visibility, page_code)
@@ -9,13 +9,13 @@ VALUES (
     NOW(),
     NOW(),
     JSON_OBJECT(
-        'en', 'Acknowledgments',
+        'en', 'Acknowledgements',
         'fr', 'Remerciements'
     ),
     JSON_OBJECT(
-        'en', '# Acknowledgments\n\nContent to be added.',
+        'en', '# Acknowledgements\n\nContent to be added.',
         'fr', '# Remerciements\n\nContenu à ajouter.'
     ),
     JSON_ARRAY('public'),
-    'journal-acknowledgments'
+    'journal-acknowledgements'
 );

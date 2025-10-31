@@ -1721,7 +1721,7 @@ return array(
     "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Editorial workflow",
     "Episciences_Website_Navigation_Page_PrepareSubmission" => "Prepare your submission",
     "Episciences_Website_Navigation_Page_JournalIndexing" => "Abstracted and indexed in",
-    "Episciences_Website_Navigation_Page_JournalAcknowledgments" => "Acknowledgments",
+    "Episciences_Website_Navigation_Page_JournalAcknowledgements" => "Acknowledgements",
 
 
     "Si aucun rôle n'est sélectionné, la page sera publique" => 'If no role is selected, the page will be public',
