@@ -1,7 +1,11 @@
 <?php
 
+use Episciences\Trait\UrlBuilder;
+
 class Episciences_Mail_Reminder
 {
+    use UrlBuilder;
+
     // event types triggering a reminder
     public const TYPE_UNANSWERED_INVITATION = 0;        // unanswered invitation
     public const TYPE_BEFORE_REVIEWING_DEADLINE = 1;    // before rewiewing deadline
@@ -169,7 +173,7 @@ class Episciences_Mail_Reminder
                 $name = self::$_typeLabel[$this->getType()];
             }
             $name .= ' - ' . $translator->translate('copie destinée au ' . mb_strtolower($translator->translate($this->getRecipient(), 'fr'), 'utf-8'), $code);
-            $name .= sprintf(' (%s %s | %s%s %s)', $delay, $translator->translate(array('jour', 'jours', $this->getDelay()), $code),lcfirst($translator->translate('Répétition', $code)),$translator->translate(' :', $code), lcfirst($translator->translate(Episciences_Mail_RemindersManager::REPETITION_MAP[(int)$this->getRepetition()], $code)));
+            $name .= sprintf(' (%s %s | %s%s %s)', $delay, $translator->translate(array('jour', 'jours', $this->getDelay()), $code), lcfirst($translator->translate('Répétition', $code)), $translator->translate(' :', $code), lcfirst($translator->translate(Episciences_Mail_RemindersManager::REPETITION_MAP[(int)$this->getRepetition()], $code)));
             $translations['name'][$code] = $name;
 
             // Reminder Subject & Body
@@ -178,7 +182,7 @@ class Episciences_Mail_Reminder
             if (file_exists($filepath)) {
                 $translations['custom'][$code] = 1;
                 $translations['body'][$code] = file_get_contents($filepath);
-                $translations['subject'][$code] = $translator->translate('reminder_' . $this->getId() . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT , $code);
+                $translations['subject'][$code] = $translator->translate('reminder_' . $this->getId() . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT, $code);
             } else {
                 // else use default template
                 $translations['custom'][$code] = 0;
@@ -230,8 +234,8 @@ class Episciences_Mail_Reminder
 
         foreach ($this->getCustom() as $lang => $custom) {
             $path = REVIEW_LANG_PATH . $lang . '/emails/';
-            if (!file_exists($path)) {
-                mkdir($path);
+            if (!file_exists($path) && !mkdir($path) && !is_dir($path)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
             }
             $filename = $key . '.phtml';
             if ($custom == 1) {
@@ -239,7 +243,7 @@ class Episciences_Mail_Reminder
                 file_put_contents($path . $filename, $this->getBody($lang));
 
                 // subject translations
-                $translations[$lang][$key . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT ] = $this->getSubject($lang);
+                $translations[$lang][$key . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT] = $this->getSubject($lang);
             } else {
                 if ($edit && file_exists($path . $filename)) {
                     unlink($path . $filename);
@@ -257,8 +261,10 @@ class Episciences_Mail_Reminder
      * load recipients list
      * @param bool $debug if debug is true, each query is displayed
      * @param mixed $date if date is not null, reminders are loaded for this specific date (default date is today)
+     * @throws Zend_Date_Exception
+     * @throws Zend_Db_Select_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws JsonException
      */
     public function loadRecipients(bool $debug = false, $date = null): void
     {
@@ -692,102 +698,16 @@ class Episciences_Mail_Reminder
      * @param $date
      * @param $filters
      * @return array
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
     private function getBeforeRevisionDeadlineRecipients($debug, $date, $filters): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $recipients = [];
-        $review = Episciences_ReviewsManager::find($this->getRvid());
-
-        $subquery1 = $db->select()
-            ->from(T_PAPER_COMMENTS, array('DOCID', 'REQUEST_DATE' => new Zend_Db_Expr('MAX(`WHEN`)')))
-            ->where('`TYPE` = ?', Episciences_CommentsManager::TYPE_REVISION_REQUEST)
-            ->group('DOCID');
-
-        $sql = $db->select()
-            ->from(array('x' => new Zend_Db_Expr('(' . $subquery1 . ')')), array())
-            ->join(array('c' => T_PAPER_COMMENTS),
-                'x.DOCID = c.DOCID AND x.REQUEST_DATE = c.WHEN',
-                array('DEADLINE'))
-            ->joinLeft(array('p' => T_PAPERS), 'p.DOCID = c.DOCID', array('DOCID', 'UID' => 'p.UID'))
-            ->where('p.RVID = ?', $this->getRvid())
-            ->where('c.DEADLINE IS NOT NULL')
-            ->where('(p.STATUS = ' . Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION
-                . ' OR p.STATUS = ' . Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION . ')')
-            ->where("DEADLINE >= $date");
-
-        if ($this->getRepetition()) {
-            $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, $date, DEADLINE) <= " . $this->getDelay()));
-            $sql->where(new Zend_Db_Expr("MOD(TIMESTAMPDIFF(DAY, $date, DEADLINE), " . $this->getRepetition() . ') = 0'));
-        } else {
-            $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, $date, DEADLINE) = " . $this->getDelay()));
-        }
-
-        if ($debug) {
-            echo Episciences_Tools::$bashColors['light_blue'] . $sql . Episciences_Tools::$bashColors['default'] . PHP_EOL;
-        }
-        $tmp = $db->fetchAll($sql);
-
-        foreach ($tmp as $data) {
-            $paper = Episciences_PapersManager::get($data['DOCID']);
-            if (!$paper || in_array($paper->getStatus(), $filters, true)) {
-                continue;
-            }
-
-            $author = new Episciences_User;
-            $author->findWithCAS($data['UID']);
-
-            $tags = [
-                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid()
-            ];
-
-            if ($this->getRecipient() === 'editor') {
-                foreach ($paper->getEditors(true, true) as $editor) {
-
-                    $tags = array_merge($tags, [
-                        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
-                        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
-                        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
-                        Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME => $author->getFullName(),
-                        Episciences_Mail_Tags::TAG_AUTHOR_EMAIL => $author->getEmail(),
-                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
-                        Episciences_Mail_Tags::TAG_PAPER_URL => $review->getUrl() . "/administratepaper/view/id/" . $paper->getDocid(),
-                        Episciences_Mail_Tags::TAG_REVISION_DEADLINE => Episciences_View_Helper_Date::Date($data['DEADLINE'], $editor->getLangueid()),
-                    ]);
-
-                    $recipients[] = [
-                        'uid' => $editor->getUid(),
-                        'fullname' => $editor->getFullName(),
-                        'email' => $editor->getEmail(),
-                        'lang' => $editor->getLangueid(true),
-                        'tags' => $tags,
-                        'deadline' => $data['DEADLINE']
-                    ];
-                }
-            } else {
-
-                $tags = array_merge($tags, [
-                    Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $author->getScreenName(),
-                    Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $author->getFullName(),
-                    Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $author->getUsername(),
-                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($author->getLangueid(), true),
-                    Episciences_Mail_Tags::TAG_PAPER_URL => $review->getUrl() . "/" . $paper->getDocid(),
-                    Episciences_Mail_Tags::TAG_REVISION_DEADLINE => Episciences_View_Helper_Date::Date($data['DEADLINE'], $author->getLangueid()),
-                ]);
-
-                $recipients[] = [
-                    'uid' => $author->getUid(),
-                    'fullname' => $author->getFullName(),
-                    'email' => $author->getEmail(),
-                    'lang' => $author->getLangueid(true),
-                    'tags' => $tags];
-            }
-        }
-
-        return $recipients;
+        $sql = $this->getBeforeRevisionDeadlineRecipientsQuery($debug, $date);
+        $tmp = $db?->fetchAll($sql);
+        return $this->processRevisionRecipients($tmp, $filters);
     }
 
     /**
@@ -795,105 +715,20 @@ class Episciences_Mail_Reminder
      * @param $date
      * @param $filters
      * @return array
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
     private function getAfterRevisionDeadlineRecipients($debug, $date, $filters): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $recipients = [];
-        $review = Episciences_ReviewsManager::find($this->getRvid());
 
-        // recupere la dernière demande de modification de chaque article
-        $subquery1 = $db->select()
-            ->from(T_PAPER_COMMENTS, array('DOCID', 'REQUEST_DATE' => new Zend_Db_Expr('MAX(`WHEN`)')))
-            ->where('`TYPE` = ?', Episciences_CommentsManager::TYPE_REVISION_REQUEST)
-            ->group('DOCID');
+        $sql = $this->getAfterRevisionDeadlineRecipientsQuery($debug, $date);
 
-        $sql = $db->select()
-            ->from(array('x' => new Zend_Db_Expr('(' . $subquery1 . ')')), array())
-            ->join(array('c' => T_PAPER_COMMENTS),
-                'x.DOCID = c.DOCID AND x.REQUEST_DATE = c.WHEN',
-                array('DEADLINE'))
-            ->joinLeft(array('p' => T_PAPERS), 'p.DOCID = c.DOCID', array('DOCID', 'UID' => 'p.UID'))
-            ->where('p.RVID = ?', $this->getRvid())
-            ->where('c.DEADLINE IS NOT NULL')
-            ->where('(p.STATUS = ' . Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION
-                . ' OR p.STATUS = ' . Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION . ')')
-            ->where("DEADLINE <= $date");
+        $tmp = $db?->fetchAll($sql);
 
-        if ($this->getRepetition()) {
-            $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, DEADLINE, $date) >= " . $this->getDelay()));
-            $sql->where(new Zend_Db_Expr("MOD(TIMESTAMPDIFF(DAY, DEADLINE, $date), " . $this->getRepetition() . ') = 0'));
-        } else {
-            $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, DEADLINE, $date) = " . $this->getDelay()));
-        }
+        return $this->processRevisionRecipients($tmp, $filters);
 
-        if ($debug) {
-            echo Episciences_Tools::$bashColors['light_blue'] . $sql . Episciences_Tools::$bashColors['default'] . PHP_EOL;
-        }
-        $tmp = $db->fetchAll($sql);
-
-        foreach ($tmp as $data) {
-            $paper = Episciences_PapersManager::get($data['DOCID']);
-            if (!$paper || in_array($paper->getStatus(), $filters, true)) {
-                continue;
-            }
-
-            $author = new Episciences_User;
-            $author->findWithCAS($data['UID']);
-
-            $tags = [
-                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid()
-            ];
-
-            if ($this->getRecipient() === 'editor') {
-                foreach ($paper->getEditors(true, true) as $editor) {
-
-                    $tags = array_merge($tags, [
-                        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
-                        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
-                        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
-                        Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME => $author->getFullName(),
-                        Episciences_Mail_Tags::TAG_AUTHOR_EMAIL => $author->getEmail(),
-                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
-                        Episciences_Mail_Tags::TAG_PAPER_URL => $review->getUrl() . "/administratepaper/view/id/" . $paper->getDocid(),
-                        Episciences_Mail_Tags::TAG_REVISION_DEADLINE => Episciences_View_Helper_Date::Date($data['DEADLINE'], $editor->getLangueid()),
-                    ]);
-
-                    $recipients[] = [
-                        'uid' => $editor->getUid(),
-                        'fullname' => $editor->getFullName(),
-                        'email' => $editor->getEmail(),
-                        'lang' => $editor->getLangueid(true),
-                        'tags' => $tags,
-                        'deadline' => $data['DEADLINE']
-                    ];
-                }
-            } else {
-
-                $tags = array_merge($tags, [
-                    Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $author->getScreenName(),
-                    Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $author->getFullName(),
-                    Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $author->getUsername(),
-                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($author->getLangueid(), true),
-                    Episciences_Mail_Tags::TAG_PAPER_URL => $review->getUrl() . "/" . $paper->getDocid(),
-                    Episciences_Mail_Tags::TAG_REVISION_DEADLINE => Episciences_View_Helper_Date::Date($data['DEADLINE'], $author->getLangueid()),
-                ]);
-
-                $recipients[] = [
-                    'uid' => $author->getUid(),
-                    'fullname' => $author->getFullName(),
-                    'email' => $author->getEmail(),
-                    'lang' => $author->getLangueid(true),
-                    'tags' => $tags,
-                    'deadline' => $data['DEADLINE']
-                ];
-            }
-
-        }
-        return $recipients;
     }
 
     /**
@@ -904,13 +739,14 @@ class Episciences_Mail_Reminder
      * @return array
      * TODO: use $debug & $date parameters
      * @throws Zend_Db_Select_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws JsonException
      */
     private function getNotEnoughReviewersRecipients($debug, $date, $filters): array
     {
         $recipients = [];
         $review = Episciences_ReviewsManager::find($this->getRvid());
+        $journalOptions = ['rvCode' => $review->getCode(), Episciences_Review::IS_NEW_FRONT_SWITCHED => $review->isNewFrontSwitched()];
 
         // si on n'a pas spécifié de nombre minimum de relecteurs, on n'envoie pas de relances
         $required_reviewers = $review->getSetting('requiredReviewers');
@@ -935,6 +771,8 @@ class Episciences_Mail_Reminder
             if (count($invitations) >= $required_reviewers) {
                 continue;
             }
+
+            $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => $this->buildLostLoginUrl($journalOptions)];
 
             // pour chacun des rédacteurs de l'article
             /** @var Episciences_Editor $editor */
@@ -970,14 +808,14 @@ class Episciences_Mail_Reminder
                 // intervalle entre la deadline et aujourd'hui ( en nombre de jours)
                 $interval = (int)date_diff($today, $deadline)->format('%a');
 
-                $tags = [
+                $editorTags = [
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
                     Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
                     Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
-                    Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . "/administratepaper/view/id/" . $paper->getDocid(),
+                    Episciences_Mail_Tags::TAG_ARTICLE_LINK => $this->buildAdminPaperUrl($paper->getDocid(), $journalOptions),
                     Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT => count($invitations),
                     Episciences_Mail_Tags::TAG_REQUIRED_REVIEWERS_COUNT => $required_reviewers,
                 ];
@@ -992,7 +830,7 @@ class Episciences_Mail_Reminder
                         'fullname' => $editor->getFullName(),
                         'email' => $editor->getEmail(),
                         'lang' => $editor->getLangueid(true),
-                        'tags' => $tags
+                        'tags' => array_merge($commonTags, $editorTags)
                     ];
                 }
 
@@ -1011,11 +849,13 @@ class Episciences_Mail_Reminder
      * @param $debug
      * @param $date
      * @param $filters
+     * @param array $commonTags
      * @return array
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    private function getUnansweredInvitationRecipients($debug, $date, $filters): array
+    private function getUnansweredInvitationRecipients($debug, $date, $filters, array $commonTags = []): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $recipients = [];
@@ -1098,7 +938,7 @@ class Episciences_Mail_Reminder
 
             $lang = $this->_defaultLanguage;
             $fullname = 'is probably undefined';
-            $invitation_url = $review->getUrl() . "/reviewer/invitation/id/" . $data['INVITATION_ID'] . '/lang/';
+            $invitation_url = $review->getBackEndUrl() . "/reviewer/invitation/id/" . $data['INVITATION_ID'] . '/lang/';
 
 
             if ((int)$data['TMP_USER'] === 1) {
@@ -1130,40 +970,40 @@ class Episciences_Mail_Reminder
             if ($this->getRecipient() === 'editor') {
                 foreach ($paper->getEditors(true, true) as $editor) {
 
-                    $tags = array_merge($tags, [
+                    $editorTags = [
                         Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
                         Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $fullname,
                         Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $user->getEmail(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername()
-                    ]);
+                    ];
 
                     $recipients[] = [
                         'uid' => $editor->getUid(),
                         'fullname' => $editor->getFullName(),
                         'email' => $editor->getEmail(),
                         'lang' => $editor->getLangueid(true),
-                        'tags' => $tags,
+                        'tags' => array_merge($commonTags, $tags, $editorTags),
                         'deadline' => $data['INVITATION_DATE']
                     ];
                 }
             } else {
 
-                $tags = array_merge($tags, [
+                $reviewerTags = [
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($lang, true),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $user->getUsername(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $user->getScreenName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $fullname,
 
-                ]);
+                ];
 
                 $recipients[] = [
                     'uid' => $data['UID'],
                     'fullname' => $fullname,
                     'email' => $user->getEmail(),
                     'lang' => $lang,
-                    'tags' => $tags,
+                    'tags' => array_merge($commonTags, $tags, $reviewerTags),
                     'deadline' => $data['INVITATION_DATE']
                 ];
             }
@@ -1186,6 +1026,7 @@ class Episciences_Mail_Reminder
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $recipients = [];
         $review = Episciences_ReviewsManager::find($this->getRvid());
+        $journalOptions = ['rvCode' => $review->getCode(), Episciences_Review::IS_NEW_FRONT_SWITCHED => $review->isNewFrontSwitched()];
 
         $deadline_interval = $this->getDeadline();
         if (!$deadline_interval) {
@@ -1249,6 +1090,8 @@ class Episciences_Mail_Reminder
         }
         $tmp = $db->fetchAll($sql);
 
+        $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => $this->buildLostLoginUrl($journalOptions)];
+
         if ($this->getRecipient() === 'editor') {
             foreach ($tmp as $data) {
 
@@ -1271,14 +1114,15 @@ class Episciences_Mail_Reminder
                         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                         Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewer->getScreenName(),
                         Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $reviewer->getEmail(),
-                        Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()];
+                        Episciences_Mail_Tags::TAG_ARTICLE_LINK => $this->buildAdminPaperUrl($paper->getDocid(), $journalOptions)
+                    ];
 
                     $recipients[] = [
                         'uid' => $editor->getUid(),
                         'fullname' => $editor->getFullName(),
                         'email' => $editor->getEmail(),
                         'lang' => $editor->getLangueid(true),
-                        'tags' => $tags,
+                        'tags' => array_merge($commonTags, $tags),
                         'deadline' => $data['DEADLINE']
                     ];
                 }
@@ -1301,14 +1145,15 @@ class Episciences_Mail_Reminder
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $reviewer->getUsername(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $reviewer->getScreenName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $reviewer->getFullName(),
-                    Episciences_Mail_Tags::TAG_ARTICLE_RATING_LINK => $review->getUrl() . '/paper/rating/id/' . $paper->getDocid()];
+                    Episciences_Mail_Tags::TAG_ARTICLE_RATING_LINK => $review->getBackEndUrl() . '/paper/rating/id/' . $paper->getDocid()
+                ];
 
                 $recipients[] = [
                     'uid' => $reviewer->getUid(),
                     'fullname' => $reviewer->getFullName(),
                     'email' => $reviewer->getEmail(),
                     'lang' => $reviewer->getLangueid(true),
-                    'tags' => $tags,
+                    'tags' => array_merge($commonTags, $tags),
                     'deadline' => $data['DEADLINE']
                 ];
             }
@@ -1330,11 +1175,14 @@ class Episciences_Mail_Reminder
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $recipients = [];
         $review = Episciences_ReviewsManager::find($this->getRvid());
+        $journalOptions = ['rvCode' => $review->getCode(), Episciences_Review::IS_NEW_FRONT_SWITCHED => $review->isNewFrontSwitched()];
+
 
         $deadline_interval = $this->getDeadline();
         if (!$deadline_interval) {
             return $recipients;
         }
+
 
         // inner join (last assignments)
         $innerSQ = $db->select()
@@ -1395,6 +1243,8 @@ class Episciences_Mail_Reminder
         }
         $tmp = $db->fetchAll($sql);
 
+        $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => $this->buildLostLoginUrl($journalOptions)];
+
         if ($this->getRecipient() === 'editor') {
             foreach ($tmp as $data) {
 
@@ -1407,7 +1257,7 @@ class Episciences_Mail_Reminder
                 $reviewer->findWithCAS($data['UID']);
 
                 foreach ($paper->getEditors(true, true) as $editor) {
-                    $tags = [
+                    $editorTags = [
                         Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
                         Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                         Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
@@ -1416,14 +1266,15 @@ class Episciences_Mail_Reminder
                         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                         Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewer->getScreenName(),
                         Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $reviewer->getEmail(),
-                        Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . '/administratepaper/view/id/' . $paper->getDocid()];
+                        Episciences_Mail_Tags::TAG_ARTICLE_LINK => $this->buildAdminPaperUrl($paper->getDocid(), $journalOptions)
+                    ];
 
                     $recipients[] = [
                         'uid' => $editor->getUid(),
                         'fullname' => $editor->getFullName(),
                         'email' => $editor->getEmail(),
                         'lang' => $editor->getLangueid(true),
-                        'tags' => $tags,
+                        'tags' => array_merge($commonTags, $editorTags),
                         'deadline' => $data['DEADLINE']
                     ];
                 }
@@ -1439,21 +1290,21 @@ class Episciences_Mail_Reminder
                 $reviewer = new Episciences_User;
                 $reviewer->findWithCAS($data['UID']);
 
-                $tags = [
+                $reviewerTags = [
                     Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
                     Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($reviewer->getLangueid(), true),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $reviewer->getUsername(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $reviewer->getScreenName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $reviewer->getFullName(),
-                    Episciences_Mail_Tags::TAG_ARTICLE_RATING_LINK => $review->getUrl() . '/paper/rating/id/' . $paper->getDocid()];
+                    Episciences_Mail_Tags::TAG_ARTICLE_RATING_LINK => $review->getBackEndUrl() . '/paper/rating/id/' . $paper->getDocid()];
 
                 $recipients[] = [
                     'uid' => $reviewer->getUid(),
                     'fullname' => $reviewer->getFullName(),
                     'email' => $reviewer->getEmail(),
                     'lang' => $reviewer->getLangueid(true),
-                    'tags' => $tags,
+                    'tags' => array_merge($commonTags, $reviewerTags),
                     'deadline' => $data['DEADLINE']
                 ];
             }
@@ -1487,7 +1338,6 @@ class Episciences_Mail_Reminder
      * @param $date
      * @param int $waitingTime (days) : sensible à la date de modification "MODIFICATION_DATE"
      * @return array
-     * @throws DateMalformedStringException
      * @throws Zend_Date_Exception
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
@@ -1504,6 +1354,7 @@ class Episciences_Mail_Reminder
         $repetition = $this->getRepetition();
 
         $review = Episciences_ReviewsManager::find($this->getRvid());
+        $journalOptions = ['rvCode' => $review->getCode(), Episciences_Review::IS_NEW_FRONT_SWITCHED => $review->isNewFrontSwitched()];
 
         $settings = [
             'is' => [
@@ -1517,10 +1368,9 @@ class Episciences_Mail_Reminder
         $paperQuery = $db
             ->select()
             ->from(['p' => $pq])
-            ->join(['pl' => T_LOGS], 'pl.DOCID = p.DOCID', ['ACTION','max(DATE) as  date'])
+            ->join(['pl' => T_LOGS], 'pl.DOCID = p.DOCID', ['ACTION', 'max(DATE) as  date'])
             ->where('ACTION = ?', 'status')
-            ->group('pl.DOCID')
-        ;
+            ->group('pl.DOCID');
 
         $refDate = 'date'; // not based on the "MODIFICATION_DATE" column, which is not immutable: (e.g. modified when metadata is updated)
         $deadline = new Zend_Db_Expr("DATE_ADD(DATE_FORMAT(`$refDate`,'%Y-%m-%d'), INTERVAL $waitingTime DAY)");
@@ -1551,16 +1401,17 @@ class Episciences_Mail_Reminder
 
             $acceptanceDate = $paper->isAcceptedSubmission() ? $paper->getModification_date() : '';
 
-            $commonTag = [
-                Episciences_Mail_Tags::TAG_ARTICLE_LINK => $review->getUrl() . "/administratepaper/view/id/" . $paper->getDocid(),
+            $tags = [
+                Episciences_Mail_Tags::TAG_ARTICLE_LINK => $this->buildAdminPaperUrl($paper->getDocid(), $journalOptions),
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid()
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                Episciences_Mail_Tags::TAG_LOST_LOGINS => $this->buildLostLoginUrl($journalOptions)
             ];
 
             /** @var Episciences_Editor $editor */
             foreach ($editors as $editor) {
 
-                $tags = [
+                $editosTags = [
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
@@ -1575,13 +1426,185 @@ class Episciences_Mail_Reminder
                     'fullname' => $editor->getFullName(),
                     'email' => $editor->getEmail(),
                     'lang' => $editor->getLangueid(true),
-                    'tags' => array_merge($commonTag, $tags),
+                    'tags' => array_merge($tags, $editosTags),
                     'deadline' => $item['date']
                 ];
 
             }
 
         }
+
+        return $recipients;
+
+    }
+
+
+    /**
+     * @param $debug
+     * @param $date
+     * @return Zend_Db_Select
+     */
+    private function getAfterRevisionDeadlineRecipientsQuery($debug, $date): Zend_Db_Select
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        // recupere la dernière demande de modification de chaque article
+        $subquery1 = $db->select()
+            ->from(T_PAPER_COMMENTS, array('DOCID', 'REQUEST_DATE' => new Zend_Db_Expr('MAX(`WHEN`)')))
+            ->where('`TYPE` = ?', Episciences_CommentsManager::TYPE_REVISION_REQUEST)
+            ->group('DOCID');
+
+        $sql = $db->select()
+            ->from(array('x' => new Zend_Db_Expr('(' . $subquery1 . ')')), array())
+            ->join(array('c' => T_PAPER_COMMENTS),
+                'x.DOCID = c.DOCID AND x.REQUEST_DATE = c.WHEN',
+                array('DEADLINE'))
+            ->joinLeft(array('p' => T_PAPERS), 'p.DOCID = c.DOCID', array('DOCID', 'UID' => 'p.UID'))
+            ->where('p.RVID = ?', $this->getRvid())
+            ->where('c.DEADLINE IS NOT NULL')
+            ->where('(p.STATUS = ' . Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION
+                . ' OR p.STATUS = ' . Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION . ')')
+            ->where("DEADLINE <= $date");
+
+        if ($this->getRepetition()) {
+            $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, DEADLINE, $date) >= " . $this->getDelay()));
+            $sql->where(new Zend_Db_Expr("MOD(TIMESTAMPDIFF(DAY, DEADLINE, $date), " . $this->getRepetition() . ') = 0'));
+        } else {
+            $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, DEADLINE, $date) = " . $this->getDelay()));
+        }
+
+        if ($debug) {
+            echo Episciences_Tools::$bashColors['light_blue'] . $sql . Episciences_Tools::$bashColors['default'] . PHP_EOL;
+        }
+
+        return $sql;
+    }
+
+    /**
+     * @param $debug
+     * @param $date
+     * @return Zend_Db_Select
+     */
+
+    private function getBeforeRevisionDeadlineRecipientsQuery($debug, $date): Zend_Db_Select
+    {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $subquery1 = $db?->select()
+            ->from(T_PAPER_COMMENTS, array('DOCID', 'REQUEST_DATE' => new Zend_Db_Expr('MAX(`WHEN`)')))
+            ->where('`TYPE` = ?', Episciences_CommentsManager::TYPE_REVISION_REQUEST)
+            ->group('DOCID');
+
+        $sql = $db?->select()
+            ->from(array('x' => new Zend_Db_Expr('(' . $subquery1 . ')')), array())
+            ->join(array('c' => T_PAPER_COMMENTS),
+                'x.DOCID = c.DOCID AND x.REQUEST_DATE = c.WHEN',
+                array('DEADLINE'))
+            ->joinLeft(array('p' => T_PAPERS), 'p.DOCID = c.DOCID', array('DOCID', 'UID' => 'p.UID'))
+            ->where('p.RVID = ?', $this->getRvid())
+            ->where('c.DEADLINE IS NOT NULL')
+            ->where('(p.STATUS = ' . Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION
+                . ' OR p.STATUS = ' . Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION . ')')
+            ->where("DEADLINE >= $date");
+
+        if ($this->getRepetition()) {
+            $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, $date, DEADLINE) <= " . $this->getDelay()));
+            $sql->where(new Zend_Db_Expr("MOD(TIMESTAMPDIFF(DAY, $date, DEADLINE), " . $this->getRepetition() . ') = 0'));
+        } else {
+            $sql->where(new Zend_Db_Expr("TIMESTAMPDIFF(DAY, $date, DEADLINE) = " . $this->getDelay()));
+        }
+
+        if ($debug) {
+            echo Episciences_Tools::$bashColors['light_blue'] . $sql . Episciences_Tools::$bashColors['default'] . PHP_EOL;
+        }
+
+        return $sql;
+
+    }
+
+    /**
+     * @param array $data
+     * @param array $filters
+     * @return array
+     * @throws Zend_Date_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+
+    private function processRevisionRecipients(array $data, array $filters): array
+    {
+
+        $recipients = [];
+        $review = Episciences_ReviewsManager::find($this->getRvid());
+        $journalOptions = ['rvCode' => $review->getCode(), Episciences_Review::IS_NEW_FRONT_SWITCHED => $review->isNewFrontSwitched()];
+
+        $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => $this->buildLostLoginUrl($journalOptions)];
+
+
+        foreach ($data as $current) {
+
+            $paper = Episciences_PapersManager::get($current['DOCID'], false);
+
+            if (!$paper || in_array($paper->getStatus(), $filters, true)) {
+                continue;
+            }
+
+            $author = new Episciences_User;
+            $author->findWithCAS($current['UID']);
+
+            $tags = [
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+            ];
+
+            if ($this->getRecipient() === 'editor') {
+                foreach ($paper->getEditors(true, true) as $editor) {
+
+                    $editorTags = [
+                        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
+                        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
+                        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
+                        Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME => $author->getFullName(),
+                        Episciences_Mail_Tags::TAG_AUTHOR_EMAIL => $author->getEmail(),
+                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
+                        Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($paper->getDocid(), $journalOptions),
+                        Episciences_Mail_Tags::TAG_REVISION_DEADLINE => Episciences_View_Helper_Date::Date($current['DEADLINE'], $editor->getLangueid()),
+                    ];
+
+                    $recipients[] = [
+                        'uid' => $editor->getUid(),
+                        'fullname' => $editor->getFullName(),
+                        'email' => $editor->getEmail(),
+                        'lang' => $editor->getLangueid(true),
+                        'tags' => array_merge($commonTags, $tags, $editorTags),
+                        'deadline' => $current['DEADLINE']
+                    ];
+
+
+                }
+            } else {
+
+                $contribTags = [
+                    Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $author->getScreenName(),
+                    Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $author->getFullName(),
+                    Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $author->getUsername(),
+                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($author->getLangueid(), true),
+                    Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildPublicPaperUrl($paper->getDocid(), $journalOptions),
+                    Episciences_Mail_Tags::TAG_REVISION_DEADLINE => Episciences_View_Helper_Date::Date($current['DEADLINE'], $author->getLangueid()),
+                ];
+
+                $recipients[] = [
+                    'uid' => $author->getUid(),
+                    'fullname' => $author->getFullName(),
+                    'email' => $author->getEmail(),
+                    'lang' => $author->getLangueid(true),
+                    'tags' => array_merge($commonTags, $tags, $contribTags),
+                    'deadline' => $current['DEADLINE']
+                ];
+            }
+        }
+
 
         return $recipients;
 

@@ -1,7 +1,10 @@
 <?php
 
+use Episciences\Trait\UrlBuilder;
+
 class Episciences_Mail extends Zend_Mail
 {
+    use UrlBuilder;
     /**
      * We're fine
      */
@@ -141,7 +144,6 @@ class Episciences_Mail extends Zend_Mail
      * @param Episciences_User $recipient
      * @param array $options
      * @return bool
-     * @throws Zend_Exception
      */
     public function setTo(Episciences_User $recipient, array $options = []): bool
     {
@@ -149,33 +151,11 @@ class Episciences_Mail extends Zend_Mail
             return false;
         }
 
-        if (!Ccsd_Tools::isFromCli()) {
-            $lostLoginLink = sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], (new Episciences_View_Helper_Url())->url(['controller' => 'user', 'action' => 'lostlogin']));
-        } elseif (isset($options['rvCode'])) {
-
-            if (isset($options[Episciences_Review::IS_NEW_FRONT_SWITCHED]) && $options[Episciences_Review::IS_NEW_FRONT_SWITCHED]) {
-                $lostLoginLink = rtrim(MANAGER_APPLICATION_URL, DIRECTORY_SEPARATOR);
-                $lostLoginLink .= DIRECTORY_SEPARATOR;
-                $lostLoginLink .= $options['rvCode'];
-
-            } else {
-                $lostLoginLink = SERVER_PROTOCOL . '://';
-                $lostLoginLink .= $options['rvCode'] . '.' . DOMAIN;
-
-            }
-
-            $lostLoginLink .= '/user/lostlogin';
-
-        } else {
-            $lostLoginLink = '';
-        }
-
-
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL, $recipient->getEmail());
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME, $recipient->getFullName());
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME, $recipient->getScreenName());
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME, $recipient->getUsername());
-        $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, $lostLoginLink);
+        $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, $this->buildLostLoginUrl());
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_FIRST_NAME, $recipient->getFirstname());
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_LAST_NAME, $recipient->getLastname());
 
