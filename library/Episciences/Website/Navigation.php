@@ -31,6 +31,9 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     const PAGE_TECHNICAL_BOARD = 'technicalBoard';
     const PAGE_SCIENTIFIC_ADVISORY_BOARD = 'scientificAdvisoryBoard';
     const PAGE_FORMER_MEMBERS = 'formerMembers';
+    const PAGE_INTRODUCTION_BOARD = 'introductionBoard';
+    const PAGE_REVIEWERS_BOARD = 'reviewersBoard';
+    const PAGE_OPERATING_CHARTER_BOARD = 'operatingCharterBoard';
 
     protected $_table = 'WEBSITE_NAVIGATION';
     protected $_primary = 'NAVIGATIONID';
