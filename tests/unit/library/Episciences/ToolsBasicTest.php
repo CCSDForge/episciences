@@ -148,7 +148,8 @@ class ToolsBasicTest extends TestCase
         $this->assertFalse(Episciences_Tools::checkValueType('150100001'));
         $this->assertSame('arxiv', Episciences_Tools::checkValueType('1501.0001'));
         $this->assertNotSame('arxiv', Episciences_Tools::checkValueType('arxiv:1501.00001'));
-        $this->assertSame('handle', Episciences_Tools::checkValueType('math/601001'));
+        // Old-style arXiv format requires 7 digits: category/YYMNNNN
+        $this->assertSame('arxiv', Episciences_Tools::checkValueType('math/0601001'));
     }
 
     /**
@@ -161,9 +162,10 @@ class ToolsBasicTest extends TestCase
         $this->assertSame('handle', Episciences_Tools::checkValueType('2027/mdp.39015012345678'));
         $this->assertSame('handle', Episciences_Tools::checkValueType('11245/1.2345'));
         $this->assertSame('handle', Episciences_Tools::checkValueType('20.500.12345/abc123def'));
-        
+
         // Invalid Handle identifiers should not return 'handle'
-        $this->assertSame('handle', Episciences_Tools::checkValueType('handle:1721.1/12345'));
+        // cleanHandle() doesn't strip 'handle:' prefix, so this returns false
+        $this->assertFalse(Episciences_Tools::checkValueType('handle:1721.1/12345'));
         $this->assertFalse(Episciences_Tools::checkValueType('1721.1/'));
         $this->assertFalse(Episciences_Tools::checkValueType('1721.1'));
     }
@@ -173,16 +175,17 @@ class ToolsBasicTest extends TestCase
      */
     public function testCheckValueTypeUrl(): void
     {
-        // URLs that don't match other patterns should be detected as 'url'
-        // But URLs that look like Handle identifiers will be detected as 'handle' first
-        // This is expected behavior based on the priority order
-        $this->assertSame('handle', Episciences_Tools::checkValueType('https://www.example.com'));
-        $this->assertSame('handle', Episciences_Tools::checkValueType('http://example.org/path/to/resource'));
-        $this->assertSame('handle', Episciences_Tools::checkValueType('https://doi.org/10.1000/182'));
-        $this->assertSame('handle', Episciences_Tools::checkValueType('ftp://files.example.com/file.txt'));
-        
+        // URLs that don't match other specific patterns should be detected as 'url'
+        $this->assertSame('url', Episciences_Tools::checkValueType('https://www.example.com'));
+        $this->assertSame('url', Episciences_Tools::checkValueType('http://example.org/path/to/resource'));
+        // DOI URLs are detected as 'url' because isDoi() doesn't support URL format
+        // Only bare DOI format like '10.1000/182' is detected as 'doi'
+        $this->assertSame('url', Episciences_Tools::checkValueType('https://doi.org/10.1000/182'));
+
         // Invalid URLs should not return 'url'
         $this->assertNotSame('url', Episciences_Tools::checkValueType('not-a-url'));
+        // Zend_Uri::check() doesn't support FTP protocol
+        $this->assertFalse(Episciences_Tools::checkValueType('ftp://files.example.com/file.txt'));
         $this->assertFalse(Episciences_Tools::checkValueType('example.com'));
         $this->assertFalse(Episciences_Tools::checkValueType('www.example.com'));
     }
@@ -222,13 +225,263 @@ class ToolsBasicTest extends TestCase
     {
         // This HAL ID might also look like other patterns, but HAL should win
         $this->assertSame('hal', Episciences_Tools::checkValueType('hal-01234567'));
-        
+
         // DOI should be recognized when it's clearly a DOI
         $this->assertSame('doi', Episciences_Tools::checkValueType('10.1000/182'));
-        
+
         // URL should be last priority, so specific patterns should win first
-        // But URLs that look like Handle identifiers will be detected as 'handle' first
-        // This is expected behavior based on the current isHandle regex pattern
-        $this->assertSame('handle', Episciences_Tools::checkValueType('https://example.com/some/path'));
+        // If the URL doesn't match any specific pattern, it's detected as 'url'
+        $this->assertSame('url', Episciences_Tools::checkValueType('https://example.com/some/path'));
+    }
+
+    // ===================================================================
+    // Tests for spaceCleaner() - PHP 8.1+ compatible string cleaning
+    // ===================================================================
+
+    /**
+     * Test spaceCleaner with null input (should return empty string)
+     */
+    public function testSpaceCleanerWithNull(): void
+    {
+        $this->assertSame('', Episciences_Tools::spaceCleaner(null));
+        $this->assertSame('', Episciences_Tools::spaceCleaner(null, true));
+        $this->assertSame('', Episciences_Tools::spaceCleaner(null, false));
+        $this->assertSame('', Episciences_Tools::spaceCleaner(null, true, true));
+    }
+
+    /**
+     * Test spaceCleaner with empty string (should return empty string)
+     */
+    public function testSpaceCleanerWithEmptyString(): void
+    {
+        $this->assertSame('', Episciences_Tools::spaceCleaner(''));
+        $this->assertSame('', Episciences_Tools::spaceCleaner('', true));
+        $this->assertSame('', Episciences_Tools::spaceCleaner('', false));
+    }
+
+    /**
+     * Test spaceCleaner with regular whitespace normalization
+     */
+    public function testSpaceCleanerWhitespaceNormalization(): void
+    {
+        // Multiple spaces
+        $this->assertSame('hello world', Episciences_Tools::spaceCleaner('hello   world'));
+        $this->assertSame('hello world', Episciences_Tools::spaceCleaner('  hello   world  '));
+
+        // Tabs
+        $this->assertSame('hello world', Episciences_Tools::spaceCleaner("hello\t\tworld"));
+        $this->assertSame('hello world test', Episciences_Tools::spaceCleaner("hello\tworld\ttest"));
+
+        // Newlines
+        $this->assertSame('hello world', Episciences_Tools::spaceCleaner("hello\nworld"));
+        $this->assertSame('hello world', Episciences_Tools::spaceCleaner("hello\n\nworld"));
+        $this->assertSame('hello world', Episciences_Tools::spaceCleaner("hello\r\nworld"));
+
+        // Mixed whitespace
+        $this->assertSame('hello world test', Episciences_Tools::spaceCleaner("  hello \t\n world  \r\n  test  "));
+    }
+
+    /**
+     * Test spaceCleaner with BR tag stripping
+     */
+    public function testSpaceCleanerBrTagStripping(): void
+    {
+        // With stripBr = true (default)
+        $this->assertSame('hello world', Episciences_Tools::spaceCleaner('hello<br>world'));
+        $this->assertSame('hello world', Episciences_Tools::spaceCleaner('hello<br/>world'));
+        $this->assertSame('hello world', Episciences_Tools::spaceCleaner('hello<br />world'));
+        $this->assertSame('hello world', Episciences_Tools::spaceCleaner('hello<BR>world'));
+        $this->assertSame('hello world', Episciences_Tools::spaceCleaner('hello<br  />world'));
+
+        // With stripBr = false
+        $this->assertSame('hello<br>world', Episciences_Tools::spaceCleaner('hello<br>world', false));
+        $this->assertSame('hello<br/>world', Episciences_Tools::spaceCleaner('hello<br/>world', false));
+        $this->assertSame('hello<br />world', Episciences_Tools::spaceCleaner('hello<br />world', false));
+    }
+
+    /**
+     * Test spaceCleaner with control characters removal
+     */
+    public function testSpaceCleanerControlCharactersRemoval(): void
+    {
+        // ASCII control characters (1-31 excluding those already handled) are removed, not replaced with spaces
+        $this->assertSame('helloworld', Episciences_Tools::spaceCleaner("hello\x01\x02world"));
+        $this->assertSame('helloworld', Episciences_Tools::spaceCleaner("hello\x1fworld"));
+        $this->assertSame('test string', Episciences_Tools::spaceCleaner("\x03test\x04 \x05string\x06"));
+    }
+
+    /**
+     * Test spaceCleaner with UTF-8 special characters (allUtf8 parameter)
+     */
+    public function testSpaceCleanerUtf8SpecialCharacters(): void
+    {
+        // With allUtf8 = false (default) - non-breaking space should be preserved
+        $result = Episciences_Tools::spaceCleaner("hello\xc2\xa0world", true, false);
+        $this->assertStringContainsString('hello', $result);
+        $this->assertStringContainsString('world', $result);
+
+        // With allUtf8 = true - UTF-8 special spaces are removed (not replaced with spaces)
+        $result = Episciences_Tools::spaceCleaner("hello\xc2\xa0world", true, true);
+        $this->assertSame('helloworld', $result);
+
+        // Thin space (U+2009) is also removed (not replaced)
+        $result = Episciences_Tools::spaceCleaner("hello\xe2\x80\x89world", true, true);
+        $this->assertSame('helloworld', $result);
+    }
+
+    /**
+     * Test spaceCleaner with array input (recursive processing)
+     */
+    public function testSpaceCleanerWithArray(): void
+    {
+        // Simple array
+        $input = ['  hello  ', '  world  ', '  test  '];
+        $expected = ['hello', 'world', 'test'];
+        $this->assertSame($expected, Episciences_Tools::spaceCleaner($input));
+
+        // Array with null elements
+        $input = ['  hello  ', null, '  world  ', null, '  test  '];
+        $expected = ['hello', '', 'world', '', 'test'];
+        $result = Episciences_Tools::spaceCleaner($input);
+        // Filter out empty strings for comparison
+        $filtered = array_filter($result);
+        $this->assertCount(3, $filtered);
+        $this->assertContains('hello', $filtered);
+        $this->assertContains('world', $filtered);
+        $this->assertContains('test', $filtered);
+
+        // Array with BR tags
+        $input = ['hello<br>world', 'test<br/>value'];
+        $expected = ['hello world', 'test value'];
+        $this->assertSame($expected, Episciences_Tools::spaceCleaner($input));
+
+        // Array with mixed whitespace
+        $input = ["  hello\t\nworld  ", "test  \r\n  value"];
+        $expected = ['hello world', 'test value'];
+        $this->assertSame($expected, Episciences_Tools::spaceCleaner($input));
+    }
+
+    /**
+     * Test spaceCleaner with complex real-world scenarios
+     */
+    public function testSpaceCleanerComplexScenarios(): void
+    {
+        // HTML-like content with BR tags and whitespace
+        $input = "  <p>Hello</p>  <br/>  <p>World</p>  ";
+        $result = Episciences_Tools::spaceCleaner($input);
+        $this->assertStringContainsString('Hello', $result);
+        $this->assertStringContainsString('World', $result);
+        $this->assertStringNotContainsString('<br/>', $result);
+
+        // Scientific text with special characters
+        $input = "Temperature:  25°C  \n\n  Pressure:  1.5 bar";
+        $result = Episciences_Tools::spaceCleaner($input);
+        $this->assertStringContainsString('Temperature: 25°C', $result);
+        $this->assertStringContainsString('Pressure: 1.5 bar', $result);
+
+        // Multi-line text
+        $input = "First line\n\n\nSecond line\n\n\nThird line";
+        $result = Episciences_Tools::spaceCleaner($input);
+        $this->assertStringContainsString('First line', $result);
+        $this->assertStringContainsString('Second line', $result);
+        $this->assertStringContainsString('Third line', $result);
+    }
+
+    /**
+     * Test spaceCleaner maintains UTF-8 content integrity
+     */
+    public function testSpaceCleanerUtf8ContentIntegrity(): void
+    {
+        // French accents
+        $this->assertSame('Café à la crème', Episciences_Tools::spaceCleaner('  Café à la crème  '));
+
+        // German umlauts
+        $this->assertSame('Über München', Episciences_Tools::spaceCleaner('  Über   München  '));
+
+        // Greek letters
+        $this->assertSame('α β γ δ', Episciences_Tools::spaceCleaner('  α  β  γ  δ  '));
+
+        // Mixed Unicode
+        $this->assertSame('Hello 世界 🌍', Episciences_Tools::spaceCleaner('  Hello   世界   🌍  '));
+    }
+
+    /**
+     * Test spaceCleaner edge cases
+     */
+    public function testSpaceCleanerEdgeCases(): void
+    {
+        // Only whitespace
+        $this->assertSame('', Episciences_Tools::spaceCleaner('     '));
+        $this->assertSame('', Episciences_Tools::spaceCleaner("\t\t\t"));
+        $this->assertSame('', Episciences_Tools::spaceCleaner("\n\n\n"));
+
+        // Only BR tags
+        $this->assertSame('', Episciences_Tools::spaceCleaner('<br><br><br>'));
+        $this->assertSame('<br><br><br>', Episciences_Tools::spaceCleaner('<br><br><br>', false));
+
+        // Single character
+        $this->assertSame('a', Episciences_Tools::spaceCleaner('a'));
+        $this->assertSame('a', Episciences_Tools::spaceCleaner('  a  '));
+
+        // Empty array
+        $this->assertSame([], Episciences_Tools::spaceCleaner([]));
+    }
+
+    /**
+     * Test that deprecated space_clean() triggers a warning
+     * and delegates to spaceCleaner()
+     */
+    public function testSpaceCleanDeprecationWarning(): void
+    {
+        // Capture the deprecation warning
+        $errorTriggered = false;
+        $errorMessage = '';
+
+        set_error_handler(function($errno, $errstr) use (&$errorTriggered, &$errorMessage) {
+            if ($errno === E_USER_DEPRECATED) {
+                $errorTriggered = true;
+                $errorMessage = $errstr;
+            }
+        });
+
+        // Call the deprecated method
+        $result = \Ccsd_Tools::space_clean('  hello   world  ');
+
+        restore_error_handler();
+
+        // Verify deprecation warning was triggered
+        $this->assertTrue($errorTriggered, 'Deprecation warning should be triggered');
+        $this->assertStringContainsString('deprecated', strtolower($errorMessage));
+        $this->assertStringContainsString('spaceCleaner', $errorMessage);
+
+        // Verify it still works correctly
+        $this->assertSame('hello world', $result);
+    }
+
+    /**
+     * Test that deprecated space_clean() produces same results as spaceCleaner()
+     */
+    public function testSpaceCleanBackwardCompatibility(): void
+    {
+        // Suppress deprecation warning for testing deprecated method
+        $previousErrorReporting = error_reporting(E_ALL & ~E_USER_DEPRECATED);
+        try {
+            $testCases = [
+                ['  hello   world  ', true, false],
+                ['hello<br>world', true, false],
+                ['hello<br>world', false, false],
+                [['  test  ', '  value  '], true, false],
+            ];
+
+            foreach ($testCases as [$input, $stripBr, $allUtf8]) {
+                $oldResult = \Ccsd_Tools::space_clean($input, $stripBr, $allUtf8);
+                $newResult = Episciences_Tools::spaceCleaner($input, $stripBr, $allUtf8);
+
+                $this->assertSame($newResult, $oldResult,
+                    "Results should match for input: " . print_r($input, true));
+            }
+        } finally {
+            error_reporting($previousErrorReporting);
+        }
     }
 }

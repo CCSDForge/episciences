@@ -154,12 +154,17 @@ final class Episciences_Paper_AuthorsManagerTest extends TestCase
      */
     public function testGetAuthorOrcidFromOA(array $sampleOACreatorDB, array $sampleOACreatorAPI): void
     {
-        [$arrayForDB, $isNewOrcid] = Episciences_OpenAireResearchGraphTools::getOrcidApiForDb($sampleOACreatorDB[0]['fullname'], $sampleOACreatorAPI, $sampleOACreatorDB, 0, 0);
-        self::assertIsArray($arrayForDB);
-        self::assertIsInt($isNewOrcid);
-        self::assertEquals(1, $isNewOrcid);
-        self::assertEquals('0000-0002-5332-5437', $arrayForDB[0]['orcid']);
-
+        // Suppress deprecation warning for testing deprecated method
+        $previousErrorReporting = error_reporting(E_ALL & ~E_USER_DEPRECATED);
+        try {
+            [$arrayForDB, $isNewOrcid] = Episciences_OpenAireResearchGraphTools::getOrcidApiForDb($sampleOACreatorDB[0]['fullname'], $sampleOACreatorAPI, $sampleOACreatorDB, 0, 0);
+            self::assertIsArray($arrayForDB);
+            self::assertIsInt($isNewOrcid);
+            self::assertEquals(1, $isNewOrcid);
+            self::assertEquals('0000-0002-5332-5437', $arrayForDB[0]['orcid']);
+        } finally {
+            error_reporting($previousErrorReporting);
+        }
     }
 
 

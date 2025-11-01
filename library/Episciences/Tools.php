@@ -2245,5 +2245,82 @@ class Episciences_Tools
         return self::ISO639_BIDIRECTIONAL_MAP[$code] ?? $code;
     }
 
+    /**
+     * Clean whitespace and control characters from strings or arrays (PHP 8.1+ compatible)
+     *
+     * This method normalizes whitespace in strings or recursively processes arrays.
+     * It removes excessive spaces, tabs, newlines, and optionally BR tags and UTF-8 special characters.
+     *
+     * @param string|array|null $input The input to clean (string, array, or null)
+     * @param bool $stripBr Whether to convert BR tags to spaces before processing (default: true)
+     * @param bool $allUtf8 Whether to remove all UTF-8 special whitespace characters (default: false)
+     * @return string|array Empty string for null string input, empty array for null/empty array input,
+     *                     cleaned string otherwise, or array with cleaned values
+     *
+     * @example
+     * // String cleaning
+     * spaceCleaner("  hello   world  ") // Returns: "hello world"
+     * spaceCleaner(null) // Returns: ""
+     * spaceCleaner("hello<br>world") // Returns: "hello world"
+     * spaceCleaner("hello<br>world", false) // Returns: "hello<br>world"
+     *
+     * // Array cleaning
+     * spaceCleaner(["  test  ", null, "  value  "]) // Returns: ["test", "", "value"]
+     * spaceCleaner(null, true, false) // Returns: ""
+     */
+    public static function spaceCleaner(
+        string|array|null $input,
+        bool $stripBr = true,
+        bool $allUtf8 = false
+    ): string|array {
+        // Handle null input
+        if ($input === null) {
+            return '';
+        }
+
+        // Handle array input recursively
+        if (is_array($input)) {
+            $result = [];
+            foreach ($input as $value) {
+                $cleaned = self::spaceCleaner($value, $stripBr, $allUtf8);
+                if ($cleaned !== null) {
+                    $result[] = $cleaned;
+                }
+            }
+            return array_filter($result, static fn($val) => $val !== null);
+        }
+
+        // Handle empty strings
+        if ($input === '') {
+            return '';
+        }
+
+        // Strip BR tags if requested
+        if ($stripBr) {
+            $input = preg_replace("/<br[[:space:]]*\/?[[:space:]]*>/i", " ", $input);
+        }
+
+        // Normalize regular whitespace (spaces, tabs, newlines, carriage returns)
+        // Keep non-breaking spaces and other UTF-8 spaces intact unless $allUtf8 is true
+        $input = preg_replace('/[\n\t\r ]+/', ' ', $input);
+
+        // Remove control characters (ASCII 1-31, excluding those already handled)
+        $input = preg_replace("/[\x1-\x1f]/", "", $input);
+
+        // Optionally remove all UTF-8 special whitespace characters
+        if ($allUtf8) {
+            // Remove various UTF-8 whitespace and control characters
+            // \x7F-\xA0: DEL and non-breaking space range
+            // \xAD: soft hyphen
+            // \x{2009}: thin space
+            $input = preg_replace('/[\x7F-\xA0\xAD\x{2009}]/u', '', $input);
+        }
+
+        // Remove duplicate spaces that may have been created
+        $input = preg_replace('/\s\s+/u', ' ', $input);
+
+        return trim($input);
+    }
+
 
 }

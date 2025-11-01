@@ -1304,7 +1304,7 @@ class Episciences_Paper
         $serializer = new Serializer([new ObjectNormalizer()], [new XmlEncoder(), new JsonEncoder(new JsonEncode(['json_encode_options' => JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE]))]);
         // from crossref template
         $crossRefXml = Episciences_Paper_XmlExportManager::getXmlCleaned(Episciences_Paper_XmlExportManager::xmlExport($this, Episciences_Paper_XmlExportManager::CROSSREF_FORMAT));
-        $crossRefXml = str_replace(array("jats:p", "jats:"), array("value", ""), Ccsd_Tools::space_clean($crossRefXml));
+        $crossRefXml = str_replace(array("jats:p", "jats:"), array("value", ""), Episciences_Tools::spaceCleaner($crossRefXml));
         $xmlToArray = $serializer->decode($crossRefXml, "xml");
 
         if ($this->isTmp()) {
@@ -1911,9 +1911,9 @@ class Episciences_Paper
             }
         }
         if (is_array($result)) {
-            $result = array_map('Ccsd_Tools::space_clean', $result);
+            $result = array_map('Episciences_Tools::spaceCleaner', $result);
         } else {
-            $result = Ccsd_Tools::space_clean($result);
+            $result = Episciences_Tools::spaceCleaner($result);
         }
         return $result;
 
