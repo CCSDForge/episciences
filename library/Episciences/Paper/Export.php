@@ -143,6 +143,51 @@ class Export
     }
 
     /**
+     * Parse volume string to extract numeric values for volume and issue
+     *
+     * Supported formats:
+     * - "Volume 13, Issue 2" -> ['volume' => '13', 'issue' => '2']
+     * - "Volume 13" -> ['volume' => '13', 'issue' => null]
+     * - "Vol. 13, Issue 2" -> ['volume' => '13', 'issue' => '2']
+     * - "Tome 13" -> ['volume' => '13', 'issue' => null]
+     * - "13, Issue 2" -> ['volume' => '13', 'issue' => '2']
+     * - "13" -> ['volume' => '13', 'issue' => null]
+     *
+     * If no pattern matches, returns the original value in the 'volume' field.
+     *
+     * @param string $volumeString The volume string to parse
+     * @return array Associative array with 'volume' and 'issue' keys
+     */
+    private static function parseVolumeString(string $volumeString): array
+    {
+        $volume = null;
+        $issue = null;
+
+        // Trim the input
+        $volumeString = trim($volumeString);
+
+        // Pattern 1: Match "Volume/Vol./Tome X, Issue Y" or just "X, Issue Y"
+        // This pattern captures both volume and issue
+        if (preg_match('/(?:volume|vol\.|tome)?\s*(\d+)\s*,\s*issue\s*(\d+)/i', $volumeString, $matches)) {
+            $volume = $matches[1];
+            $issue = $matches[2];
+        }
+        // Pattern 2: Match "Volume/Vol./Tome X" or just "X" (no issue)
+        elseif (preg_match('/^(?:volume|vol\.|tome)?\s*(\d+)$/i', $volumeString, $matches)) {
+            $volume = $matches[1];
+        }
+        // If no pattern matches, return the original value
+        else {
+            $volume = $volumeString;
+        }
+
+        return [
+            'volume' => $volume,
+            'issue' => $issue
+        ];
+    }
+
+    /**
      * @param Episciences_Paper $paper
      * @return bool|Episciences_Review
      */
@@ -296,6 +341,10 @@ class Export
         $bibRef = '';
         $previousVersionsUrl = self::getPreviousVersionsUrls($paper);
         list($volume, $section, $proceedingInfo) = self::getPaperVolumeAndSection($paper);
+
+        // Parse volume string to extract numeric values
+        $parsedVolume = self::parseVolumeString($volume);
+
         $journal = self::getJournalSettings($paper);
 
         $paperLanguage = $paper->getMetadata('language');
@@ -321,10 +370,16 @@ class Export
         $view = new Zend_View();
         $view->addScriptPath(APPLICATION_PATH . self::MODULES_JOURNAL_VIEWS_SCRIPTS_EXPORT);
 
+        $licenceUrlString = '';
+        $licenceUrlStringValue = $paper->getLicence();
+        if ($licenceUrlStringValue !== '') {
+            $licenceUrlString = sprintf(' xlink:href="%s"', $licenceUrlStringValue);
+        }
         return self::compactXml($view->partial('zbjats.phtml', [
+            'licenceUrlString' => $licenceUrlString,
             'nbPages' => $nbPages,
             'bibRef' => $bibRef,
-            'volume' => $volume,
+            'volume' => $parsedVolume,
             'proceedingInfo' => $proceedingInfo,
             'section' => $section,
             'journal' => $journal,
@@ -702,7 +757,7 @@ class Export
         $jsonCsl['id'] = $isJournal
             ? "https://doi.org/" . $jsonDb['journal']['journal_article']['doi_data']['doi']
             : "https://doi.org/" . $jsonDb['conference']['conference_paper']['doi_data']['doi'];
-        
+
         $publicationYear = $isJournal
             ? ($jsonDb['journal']['journal_article']['publication_date']['year'] ?? null)
             : ($jsonDb['conference']['conference_paper']['conference_paper']['year'] ?? null);
