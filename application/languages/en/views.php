@@ -441,7 +441,6 @@ return array(
     "nombre uniquement" => "number only",
     "supérieur à " => "greater than ",
     "dernière version soumise à la revue" => "latest version submitted to the journal",
-    'dernière version' => 'latest version',
     "La nouvelle version a bien été mise en ligne dans l'archive ouverte/l'entrepôt" => "The new version is online in the open archive/repository",
 
 
@@ -1723,13 +1722,17 @@ return array(
     'Episciences_Website_Navigation_Page_TechnicalBoard' => 'Technical board',
     'Episciences_Website_Navigation_Page_ScientificAdvisoryBoard' => 'Scientific advisory board',
     'Episciences_Website_Navigation_Page_FormerMembers' => 'Former members',
+    'Episciences_Website_Navigation_Page_IntroductionBoard' => 'Boards presentation',
+    'Episciences_Website_Navigation_Page_ReviewersBoard' => 'Reviewers',
+    'Episciences_Website_Navigation_Page_OperatingCharterBoard' => 'Operating charter',
 
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Accepted articles to be published",
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Publishing policies",
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Ethical charter",
     "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Editorial workflow",
     "Episciences_Website_Navigation_Page_PrepareSubmission" => "Prepare your submission",
-    "Episciences_Website_Navigation_Page_JournalIndexing" => "Indexed in",
+    "Episciences_Website_Navigation_Page_JournalIndexing" => "Abstracted and indexed in",
+    "Episciences_Website_Navigation_Page_JournalAcknowledgements" => "Acknowledgements",
     "C'est une page prédéfinie" => "This is a predefined page",
 
 
