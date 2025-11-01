@@ -43,6 +43,7 @@ class buildDoajVolumeExport extends JournalScript
     {
 
         $this->initApp();
+        $this->initLoggerForJournal('main');
         $rvCode = $this->getParam('rvcode');
         $allJournals = $this->retrieveJournalCodes();
 
