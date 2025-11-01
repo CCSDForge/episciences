@@ -26,19 +26,24 @@ $bibRefList = $this->bibRef;
 $timestamp = time();
 ?><!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.1d2 20140930//EN"
         "http://jats.nlm.nih.gov/publishing/1.1d2/JATS-journalpublishing1.dtd">
-<article xml:lang="<?php echo $this->escape($this->paperLanguage); ?>">
+<article xml:lang="<?php echo $this->escape($this->paperLanguage); ?>" xmlns:xlink="http://www.w3.org/1999/xlink">
     <front>
         <journal-meta>
             <journal-id journal-id-type="publisher"><?php echo DOMAIN; ?></journal-id>
 
-            <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') : ?>
+            <?php $journalSettingsIssn = $journalSettings[Episciences_Review::SETTING_ISSN];
+            $journalIssnFormatted = Episciences_View_Helper_FormatIssn::FormatIssn($journalSettingsIssn);
+            if (isset($journalSettingsIssn) && $journalSettingsIssn !== '') : ?>
                 <journal-id journal-id-type="issn"
-                            specific-use="electronic"><?php echo Episciences_View_Helper_FormatIssn::FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]); ?></journal-id>
+                            specific-use="electronic"><?php echo $journalIssnFormatted; ?></journal-id>
             <?php endif; ?>
 
-            <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') : ?>
+            <?php
+            $journalSettingsIssnPrint = $journalSettings[Episciences_Review::SETTING_ISSN_PRINT];
+            $journalIssnPrintFormatted = Episciences_View_Helper_FormatIssn::FormatIssn($journalSettingsIssnPrint);
+            if (isset($journalSettingsIssnPrint) && $journalSettingsIssnPrint !== '') : ?>
                 <journal-id journal-id-type="issn"
-                            specific-use="print"><?php echo Episciences_View_Helper_FormatIssn::FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]); ?></journal-id>
+                            specific-use="print"><?php echo $journalIssnPrintFormatted; ?></journal-id>
             <?php endif; ?>
 
             <journal-title-group>
@@ -46,12 +51,12 @@ $timestamp = time();
                 <abbrev-journal-title><?php echo mb_strtoupper($this->escape($journal->getCode())); ?></abbrev-journal-title>
             </journal-title-group>
 
-            <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN]) && $journalSettings[Episciences_Review::SETTING_ISSN] !== '') : ?>
-                <issn specific-use="electronic"><?php echo Episciences_View_Helper_FormatIssn::FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN]); ?></issn>
+            <?php if (isset($journalSettingsIssn) && $journalSettingsIssn !== '') : ?>
+                <issn specific-use="electronic"><?php echo $journalIssnFormatted; ?></issn>
             <?php endif; ?>
 
-            <?php if (isset($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]) && $journalSettings[Episciences_Review::SETTING_ISSN_PRINT] !== '') : ?>
-                <issn specific-use="print"><?php echo Episciences_View_Helper_FormatIssn::FormatIssn($journalSettings[Episciences_Review::SETTING_ISSN_PRINT]); ?></issn>
+            <?php if (isset($journalSettingsIssnPrint) && $journalSettingsIssnPrint !== '') : ?>
+                <issn specific-use="print"><?php echo $journalIssnPrintFormatted; ?></issn>
             <?php endif; ?>
 
             <publisher>
@@ -84,6 +89,16 @@ $timestamp = time();
                 <?php $applicationUrl = SERVER_PROTOCOL . '://' . $this->journal->getCode() . '.' . DOMAIN;
                 echo $applicationUrl . '/' . $paper->getPaperid(); ?>
             </article-id>
+
+
+            <?php if ($this->section !== '') : ?>
+                <article-catgories>
+                    <series-text content-type="text"><?php echo $this->escape($this->section); ?></series-text>
+                </article-catgories>
+            <?php endif; ?>
+
+
+
 
             <title-group>
                 <?php $titleCount = 0; ?>
@@ -165,13 +180,20 @@ $timestamp = time();
                 <year><?php echo $publicationYear->format('Y'); ?></year>
             </pub-date>
 
-            <?php if ($this->volume !== '') : ?>
+            <?php if (isset($this->volume['volume']) && $this->volume['volume'] !== null && $this->volume['volume'] !== '') : ?>
 
-                <volume><?php echo $this->escape($this->volume); ?></volume>
+                <volume><?php echo $this->escape($this->volume['volume']); ?></volume>
 
             <?php endif; ?>
-            <?php if ($this->section !== '') : ?>
-                <issue><?php echo $this->escape($this->section); ?></issue>
+            <?php
+            // Priority to parsed issue from volume
+            $issueValue = '';
+            if (isset($this->volume['issue']) && $this->volume['issue'] !== null && $this->volume['issue'] !== '') {
+                $issueValue = $this->volume['issue'];
+            }
+            ?>
+            <?php if ($issueValue !== '') : ?>
+                <issue><?php echo $this->escape($issueValue); ?></issue>
             <?php endif; ?>
 
 
@@ -210,6 +232,7 @@ $timestamp = time();
                 <?php
                 $keywordByLang = [];
                 foreach ($subjects as $keyword) {
+
                     if (is_array($keyword)) {
                         foreach ($keyword as $kwdLang => $kwd) {
                             if (!Zend_Locale::isLocale($kwdLang)) {
@@ -218,8 +241,11 @@ $timestamp = time();
                             }
                             $keywordByLang[$kwdLang][] = '<kwd>' . $this->escape($kwd) . '</kwd>';
                         }
+                    } else {
+                        $keywordByLang[$this->paperLanguage][] = '<kwd>' . $this->escape($keyword) . '</kwd>';
                     }
                 }
+
                 if (!empty($keywordByLang)) {
                     foreach ($keywordByLang as $keywordByLangIndex => $keywordByLangValue) {
                         printf('<kwd-group kwd-group-type="author" xml:lang="%s">', $keywordByLangIndex);
@@ -229,8 +255,11 @@ $timestamp = time();
                 }
                 ?>
             <?php endif; ?>
+
             <permissions>
-                <license license-type="open-access"/>
+                <copyright-year><?php echo $publicationYear->format('Y'); ?></copyright-year>
+                <copyright-holder>The Author(s)</copyright-holder>
+                <license license-type="open-access"<?= $this->licenceUrlString; ?>></license>
             </permissions>
 
             <?php if ($this->nbPages > 0): ?>
