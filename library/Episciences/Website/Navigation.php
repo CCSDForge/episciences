@@ -44,15 +44,18 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         'Home (backend)' => [self::PAGE_INDEX],
         'About' => [
             self::PAGE_ABOUT,
-            self::PAGE_JOURNAL_INDEXING
-
+            self::PAGE_JOURNAL_INDEXING,
+            self::PAGE_JOURNAL_ACKNOWLEDGEMENTS,
         ],
 
         'Boards' => [
+            self::PAGE_INTRODUCTION_BOARD,
             self::PAGE_EDITORIAL_BOARD,
             self::PAGE_TECHNICAL_BOARD,
             self::PAGE_SCIENTIFIC_ADVISORY_BOARD,
-            self::PAGE_FORMER_MEMBERS
+            self::PAGE_REVIEWERS_BOARD,
+            self::PAGE_FORMER_MEMBERS,
+            self::PAGE_OPERATING_CHARTER_BOARD
         ],
 
         'For authors' => [
@@ -92,19 +95,16 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     {
         foreach ($options as $option => $value) {
             $option = strtolower($option);
-            switch ($option) {
-                case 'sid'   :
-                    $this->_sid = $value;
-                    break;
-                case 'languages':
-                    $this->_languages = is_array($value) ? $value : [$value];
-                    break;
+            if ($option == 'sid') {
+                $this->_sid = $value;
+            } elseif ($option == 'languages') {
+                $this->_languages = is_array($value) ? $value : [$value];
             }
 
         }
     }
 
-    public function load()
+    public function load(): void
     {
         $sql = $this->_db->select()
             ->from($this->_table)
@@ -140,7 +140,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             }
             if ($row['PARENT_PAGEID'] == 0) {
                 $this->_order[$row['PAGEID']] = [];
-            } else if (isset($this->_order[$row['PARENT_PAGEID']])) {
+            } elseif (isset($this->_order[$row['PARENT_PAGEID']])) {
                 $this->_order[$row['PARENT_PAGEID']][$row['PAGEID']] = [];
             } else {
                 foreach ($this->_order as $i => $elem) {
@@ -159,7 +159,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     }
 
 
-    public function save()
+    public function save(): void
     {
         // Suppression de l'ancien menu
         $this->_db->delete($this->_table, 'SID = ' . $this->_sid);
@@ -189,7 +189,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         $writer->write(REVIEW_LANG_PATH, 'menu');
     }
 
-    private function processPage($pageId, $parentId, &$lang, &$pageIdCounter)
+    private function processPage($pageId, $parentId, &$lang, &$pageIdCounter): void
     {
         if (isset($this->_pages[$pageId])) {
             $this->_pages[$pageId]->setPageId($pageIdCounter);
@@ -204,12 +204,12 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         }
     }
 
-    public function savePage($page)
+    public function savePage($page): void
     {
         //Cas particulier des pages personnalisable
         if ($page->isCustom()) {
             $page->setPermalien($this->getUniqPermalien($page));
-        } else if ($page->isFile()) {
+        } elseif ($page->isFile()) {
             $page->saveFile();
         }
 
@@ -258,10 +258,8 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     public function createNavigation($filename)
     {
         $dir = substr($filename, 0, strrpos($filename, '/'));
-        if (!is_dir($dir)) {
-            if (!mkdir($dir, 0777, true) && !is_dir($dir)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
-            }
+        if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
         }
         file_put_contents($filename, Zend_Json::encode($this->toArray()));
     }
