@@ -4527,7 +4527,7 @@ class Episciences_Paper
     public function isImported(): bool
     {
 
-        return ($this->getFlag() === 'imported' ||
+        return $this->getFlag() === 'imported' ||
 
             (
                 date('Y-m-d', strtotime($this->getPublication_date())) <= date('Y-m-d', strtotime($this->getSubmission_date()))
@@ -4538,9 +4538,9 @@ class Episciences_Paper
                         date('Y-m-d', strtotime($this->getSubmission_date())) > date('Y-m-d', strtotime($this->getWhen()))
                         || date('Y-m-d', strtotime($this->getPublication_date())) < date('Y-m-d', strtotime($this->getWhen()))
                     )
-                    and $this->getStatus() === self::STATUS_PUBLISHED
+                    && $this->getStatus() === self::STATUS_PUBLISHED
                 )
-            ));
+            );
     }
 
     /**
