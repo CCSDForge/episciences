@@ -248,12 +248,9 @@ function defineSQLTableConstants(): void
  */
 function defineSimpleConstants(): void
 {
-    // Define base units first (needed for dependent constants)
-    safeDef('KO', 1024);
-    safeDef('MO', 1048576);
-
-    // Define remaining constants (some depend on MO)
     $simpleConstants = [
+        'KO'=> 1024,
+        'MO'=> 1048576,
         'DOMAIN' => 'episciences.org',
         'MAX_FILE_SIZE' => 15 * MO,
         'MAX_INPUT_TEXTAREA' => 65000,
@@ -330,69 +327,233 @@ function defineVendorCssLibraries(): void
 function fixUndefinedConstantsForCodeAnalysis(): void
 {
     if (0 > 1) {
-        $dummyConstants = [
-            'EPISCIENCES_EXCEPTIONS_LOG_PATH' => '',
-            'CACHE_PATH' => '',
-            'APPLICATION_VERSION' => '',
-            'PWD_PATH' => '',
-            'FUSION_TOKEN_AUTH' => '',
-            'EPISCIENCES_LOG_PATH' => '',
-            'EPISCIENCES_SOLR_LOG_PATH' => '',
-            'EPISCIENCES_API_URL' => '',
-            'EPISCIENCES_API_SECRET_KEY' => '',
-            'EPISCIENCES_UID' => 0,
-            'EPISCIENCES_Z_SUBMIT' => 0,
-            'EPISCIENCES_USER_AGENT' => '',
-            'EPISCIENCES_SUPPORT' => '',
-            'NOTIFY_TARGET_HAL_INBOX' => '',
-            'NOTIFY_TARGET_HAL_URL' => '',
-            'OPENALEX_MAILTO' => '',
-            'OPENALEX_APIURL' => '',
-            'CROSSREF_MAILTO' => '',
-            'CROSSREF_APIURL' => '',
-            'OPENCITATIONS_MAILTO' => '',
-            'OPENCITATIONS_APIURL' => '',
-            'OPENCITATIONS_TOKEN' => '',
-            'CROSSREF_PLUS_API_TOKEN' => '',
-            'DOI_AGENCY' => '',
-            'DOI_TESTAPI' => '',
-            'DOI_API' => '',
-            'DOI_LOGIN' => '',
-            'DOI_PASSWORD' => '',
-            'DOI_TESTAPI_QUERY' => '',
-            'DOI_API_QUERY' => '',
-            'ENDPOINTS_SEARCH_HOST' => '',
-            'ENDPOINTS_SEARCH_PORT' => 0,
-            'ENDPOINTS_SEARCH_PATH' => '',
-            'ENDPOINTS_SEARCH_TIMEOUT' => 0,
-            'ENDPOINTS_SEARCH_USERNAME' => '',
-            'ENDPOINTS_SEARCH_PASSWORD' => '',
-            'ENDPOINTS_CORENAME' => '',
-            'ENDPOINTS_SEARCH_PROTOCOL' => '',
-            'ENDPOINTS_INDEXING_HOST' => '',
-            'ENDPOINTS_INDEXING_TIMEOUT' => 0,
-            'DOI_EMAIL_CONTACT' => '',
-            'NOTIFY_TARGET_HAL_LINKED_REPOSITORY' => null,
-            'EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER' => [],
-            'EPISCIENCES_BIBLIOREF' => [],
-            'OAI' => '',
-            'PORTAL' => '',
-            'ENV_PROD' => '',
-            'ENV_PREPROD' => '',
-            'EPISCIENCES_MAIL_PATH' => '',
-            'ENV_DEV' => '',
-            'MANAGER_APPLICATION_URL' => '',
-            'INBOX_ID' => '',
-            'INBOX_URL' => '',
-            'INBOX_DB_HOST' => '',
-            'INBOX_DB_DRIVER' => '',
-            'INBOX_DB_USER' => '',
-            'INBOX_DB_PASSWORD' => '',
-            'INBOX_DB_NAME' => '',
-        ];
+        // ========================================
+        // External configuration constants
+        // Defined in config/pwd.json
+        // ========================================
+        define('EPISCIENCES_EXCEPTIONS_LOG_PATH', '');
+        define('CACHE_PATH', '');
+        define('APPLICATION_VERSION', '');
+        define('PWD_PATH', '');
+        define('FUSION_TOKEN_AUTH', '');
+        define('EPISCIENCES_LOG_PATH', '');
+        define('EPISCIENCES_SOLR_LOG_PATH', '');
+        define('EPISCIENCES_API_URL', '');
+        define('EPISCIENCES_API_SECRET_KEY', '');
+        define('EPISCIENCES_UID', 0);
+        define('EPISCIENCES_Z_SUBMIT', 0);
+        define('EPISCIENCES_USER_AGENT', '');
+        define('EPISCIENCES_SUPPORT', '');
+        define('EPISCIENCES_MAIL_PATH', '');
+        define('MANAGER_APPLICATION_URL', '');
 
-        foreach ($dummyConstants as $name => $value) {
-            define($name, $value);
-        }
+        // HAL Notification
+        define('NOTIFY_TARGET_HAL_INBOX', '');
+        define('NOTIFY_TARGET_HAL_URL', '');
+        define('NOTIFY_TARGET_HAL_LINKED_REPOSITORY', null);
+
+        // External APIs
+        define('OPENALEX_MAILTO', '');
+        define('OPENALEX_APIURL', '');
+        define('CROSSREF_MAILTO', '');
+        define('CROSSREF_APIURL', '');
+        define('CROSSREF_PLUS_API_TOKEN', '');
+        define('OPENCITATIONS_MAILTO', '');
+        define('OPENCITATIONS_APIURL', '');
+        define('OPENCITATIONS_TOKEN', '');
+
+        // DOI Configuration
+        define('DOI_AGENCY', '');
+        define('DOI_TESTAPI', '');
+        define('DOI_API', '');
+        define('DOI_LOGIN', '');
+        define('DOI_PASSWORD', '');
+        define('DOI_TESTAPI_QUERY', '');
+        define('DOI_API_QUERY', '');
+        define('DOI_EMAIL_CONTACT', '');
+
+        // Solr/Search endpoints
+        define('ENDPOINTS_SEARCH_HOST', '');
+        define('ENDPOINTS_SEARCH_PORT', 0);
+        define('ENDPOINTS_SEARCH_PATH', '');
+        define('ENDPOINTS_SEARCH_TIMEOUT', 0);
+        define('ENDPOINTS_SEARCH_USERNAME', '');
+        define('ENDPOINTS_SEARCH_PASSWORD', '');
+        define('ENDPOINTS_CORENAME', '');
+        define('ENDPOINTS_SEARCH_PROTOCOL', '');
+        define('ENDPOINTS_INDEXING_HOST', '');
+        define('ENDPOINTS_INDEXING_TIMEOUT', 0);
+
+        // Inbox configuration
+        define('INBOX_ID', '');
+        define('INBOX_URL', '');
+        define('INBOX_DB_HOST', '');
+        define('INBOX_DB_DRIVER', '');
+        define('INBOX_DB_USER', '');
+        define('INBOX_DB_PASSWORD', '');
+        define('INBOX_DB_NAME', '');
+
+        // Other configuration
+        define('EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER', []);
+        define('EPISCIENCES_BIBLIOREF', []);
+
+        // ========================================
+        // Protocol constants
+        // From defineProtocol()
+        // ========================================
+        define('SERVER_PROTOCOL', '');
+
+        // ========================================
+        // Application environment constants
+        // From defineApplicationConstants()
+        // ========================================
+        define('ENV_PROD', '');
+        define('ENV_PREPROD', '');
+        define('ENV_TEST', '');
+        define('ENV_DEV', '');
+        define('PORTAL', '');
+        define('OAI', '');
+        define('JOURNAL', '');
+        define('CONFIG', '');
+        define('APPLICATION_ENV', '');
+        define('APPLICATION_PATH', '');
+        define('CACHE_PATH_METADATA', '');
+        define('APPLICATION_INI', '');
+        define('APPLICATION_PUBLIC_PATH', '');
+        define('PATH_TRANSLATION', '');
+
+        // ========================================
+        // Journal/Review constants
+        // From defineJournalConstants()
+        // ========================================
+        define('RVCODE', '');
+        define('APPLICATION_MODULE', '');
+        define('APPLICATION_URL', '');
+        define('REVIEW_PATH', '');
+        define('CONFIGURABLE_CONSTANTS_PATH', '');
+        define('ALLOWED_EXTENSIONS', []);
+        define('ALLOWED_MIMES_TYPES', []);
+        define('REVIEW_TMP_PATH', '');
+        define('REVIEW_URL', '');
+        define('REVIEW_PUBLIC_PATH', '');
+        define('REVIEW_PAGE_PATH', '');
+        define('REVIEW_FILES_PATH', '');
+        define('REVIEW_GRIDS_PATH', '');
+        define('REVIEW_DOCUMENT_DIR_NAME', '');
+        define('REVIEW_GRID_NAME_DEFAULT', '');
+        define('REVIEW_PATH_DEFAULT', '');
+        define('TMP_PATH', '');
+        define('REVIEW_LANG_PATH', '');
+        define('GRID_LANG_PATH', '');
+        define('RATING_LANG_PATH', '');
+        define('VOLUME_LANG_PATH', '');
+        define('SECTION_LANG_PATH', '');
+
+        // ========================================
+        // SQL Table constants
+        // From defineSQLTableConstants()
+        // ========================================
+        define('T_ALIAS', '');
+        define('T_ASSIGNMENTS', '');
+        define('T_CAS_USERS', '');
+        define('T_DOI_QUEUE', '');
+        define('T_DOI_QUEUE_VOLUMES', '');
+        define('T_LOGS', '');
+        define('T_MAIL_LOG', '');
+        define('T_MAIL_REMINDERS', '');
+        define('T_MAIL_TEMPLATES', '');
+        define('T_NEWS', '');
+        define('T_JOURNAL_NEWS', '');
+        define('T_PAPERS', '');
+        define('T_PAPER_COMMENTS', '');
+        define('T_PAPER_SETTINGS', '');
+        define('T_PAPER_VISITS', '');
+        define('T_REVIEW', '');
+        define('T_REVIEWER_POOL', '');
+        define('T_REVIEWER_REPORTS', '');
+        define('T_REVIEW_SETTINGS', '');
+        define('T_SECTIONS', '');
+        define('T_SECTION_SETTINGS', '');
+        define('T_TMP_USER', '');
+        define('T_USERS', '');
+        define('T_USER_INVITATIONS', '');
+        define('T_USER_INVITATION_ANSWER', '');
+        define('T_USER_INVITATION_ANSWER_DETAIL', '');
+        define('T_USER_MERGE', '');
+        define('T_USER_ROLES', '');
+        define('T_USER_TOKENS', '');
+        define('T_VOLUMES', '');
+        define('T_VOLUME_METADATAS', '');
+        define('T_VOLUME_PAPER', '');
+        define('T_VOLUME_PAPER_POSITION', '');
+        define('T_VOLUME_SETTINGS', '');
+        define('T_VOLUME_PROCEEDING', '');
+        define('VISITS_TEMP', '');
+        define('T_PAPER_FILES', '');
+        define('T_PAPER_DATASETS', '');
+        define('T_PAPER_LICENCES', '');
+        define('T_PAPER_DATASETS_META', '');
+        define('T_PAPER_AUTHORS', '');
+        define('T_PAPER_CONFLICTS', '');
+        define('T_PAPER_METADATA_SOURCES', '');
+        define('T_PAPER_PROJECTS', '');
+        define('T_PAPER_CITATIONS', '');
+        define('T_PAGES', '');
+        define('T_PAPER_CLASSIFICATIONS', '');
+        define('T_PAPER_CLASSIFICATION_MSC2020', '');
+        define('T_PAPER_CLASSIFICATION_JEL', '');
+        define('T_PAPER_DATA_DESCRIPTOR', '');
+        define('T_FILES', '');
+
+        // ========================================
+        // Simple constants
+        // From defineSimpleConstants()
+        // ========================================
+        define('KO', 0);
+        define('MO', 0);
+        define('DOMAIN', '');
+        define('MAX_FILE_SIZE', 0);
+        define('MAX_INPUT_TEXTAREA', 0);
+        define('ABSTRACT_MAX_LENGTH', 0);
+        define('CE_RESOURCES_NAME', '');
+        define('DUPLICATE_ENTRY_SQLSTATE', 0);
+        define('TINYMCE_DIR', '');
+        define('MAX_PWD_INPUT_SIZE', 0);
+        define('MAX_PDF_SIZE', 0);
+        define('ENCODING_TYPE', '');
+
+        // ========================================
+        // Vendor JavaScript Libraries
+        // From defineVendorJsLibraries()
+        // ========================================
+        define('VENDOR_BOOTBOX', '');
+        define('VENDOR_BOOTSTRAP_COLORPICKER', '');
+        define('VENDOR_BOOTSTRAP_JS', '');
+        define('VENDOR_DATATABLES_BOOTSTRAP', '');
+        define('VENDOR_JQUERY', '');
+        define('VENDOR_JQUERY_DATATABLES', '');
+        define('VENDOR_JQUERY_FILE_UPLOAD', '');
+        define('VENDOR_JQUERY_NESTED_SORTABLE', '');
+        define('VENDOR_JQUERY_UI', '');
+        define('VENDOR_JQUERY_URL_PARSER', '');
+        define('VENDOR_MATHJAX', '');
+        define('VENDOR_TINYMCE', '');
+        define('VENDOR_TINYMCE_JQUERY', '');
+        define('VENDOR_CHART', '');
+        define('VENDOR_CHART_PLUGIN_DATALABELS', '');
+
+        // ========================================
+        // Vendor CSS Libraries
+        // From defineVendorCssLibraries()
+        // ========================================
+        define('VENDOR_BOOTSTRAP', '');
+        define('VENDOR_BOOTSTRAP_COLORPICKER_CSS', '');
+        define('VENDOR_DATATABLES_CSS', '');
+        define('VENDOR_FONT_AWESOME', '');
+        define('VENDOR_FONT_AWESOME_BRAND', '');
+        define('VENDOR_FONT_AWESOME_SOLID', '');
+        define('VENDOR_JQUERY_UI_THEME_CSS', '');
+        define('VENDOR_CHART_CSS', '');
+        define('VENDOR_COOKIE_CONSENT_CSS', '');
     }
 }
