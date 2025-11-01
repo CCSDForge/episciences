@@ -480,6 +480,8 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('APPLICATION_INI', '');
         define('APPLICATION_PUBLIC_PATH', '');
         define('PATH_TRANSLATION', '');
+        define('PORTAL_PREFIX_URL','');
+        define('PREFIX_ROUTE', '');
 
         // ========================================
         // Journal/Review constants
