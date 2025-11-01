@@ -248,9 +248,9 @@ function defineSQLTableConstants(): void
  */
 function defineSimpleConstants(): void
 {
+    define('MO', 1048576);
     $simpleConstants = [
         'KO'=> 1024,
-        'MO'=> 1048576,
         'DOMAIN' => 'episciences.org',
         'MAX_FILE_SIZE' => 15 * MO,
         'MAX_INPUT_TEXTAREA' => 65000,
