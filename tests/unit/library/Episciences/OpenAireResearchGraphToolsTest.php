@@ -321,9 +321,8 @@ class OpenAireResearchGraphToolsTest extends TestCase
     {
         $method = $this->getPrivateMethod('decodeJson');
 
-        // Episciences_Tools::isJson() returns false for non-strings, which causes JsonException
-        $this->expectException(JsonException::class);
-        $this->expectExceptionMessage('Invalid JSON data');
+        // Type hint enforcement throws TypeError for non-string input (PHP 8.x behavior)
+        $this->expectException(\TypeError::class);
 
         $method->invoke(null, ['array' => 'not string']); // Non-string input
     }

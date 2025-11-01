@@ -19,14 +19,14 @@ if (file_exists($path)) {
     foreach ($fileContent as $const => $current) {
 
         if (!is_array($current)) {
-            define($const , $current);
+            defined($const) || define($const , $current);
         } else {
             foreach ($current as $key => $value) {
-                define($const . '_' . $key, $value);
+                defined($const . '_' . $key) || define($const . '_' . $key, $value);
             }
 
             if (isset($current['NAME'])) {
-                define($const . '_PDO_URL', "mysql:host=" . $current['HOST'] . (isset($current['PORT']) ? ";port=" . $current['PORT'] : '') . ";dbname=" . $current['NAME']);
+                defined($const . '_PDO_URL') || define($const . '_PDO_URL', "mysql:host=" . $current['HOST'] . (isset($current['PORT']) ? ";port=" . $current['PORT'] : '') . ";dbname=" . $current['NAME']);
             }
 
         }

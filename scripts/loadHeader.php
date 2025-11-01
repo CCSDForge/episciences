@@ -53,7 +53,7 @@ defineApplicationConstants();
 defineProtocol();
 
 // Environnement
-define('APPLICATION_ENV', (isset($opts->e) && in_array($opts->e, $listEnv)) ? $opts->e : $defaultEnv);
+defined('APPLICATION_ENV') || define('APPLICATION_ENV', (isset($opts->e) && in_array($opts->e, $listEnv)) ? $opts->e : $defaultEnv);
 
 // Tant que les library ne sont pas toutes de xxx/library de l'application
 try {

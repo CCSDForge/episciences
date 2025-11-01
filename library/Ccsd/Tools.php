@@ -374,7 +374,7 @@ class Ccsd_Tools
         if ($string === '') {
             return '';
         }
-        $string = mb_strtolower(self::space_clean($string));
+        $string = mb_strtolower(Episciences_Tools::spaceCleaner($string));
         $res = mb_strtoupper(mb_substr($string, 0, 1));
         for ($i = 1, $iMax = mb_strlen($string); $i < $iMax; $i++) {
             $theIchar = mb_substr($string, ($i - 1), 1);
@@ -429,43 +429,50 @@ class Ccsd_Tools
     }
 
     /**
-     * @param string|string[] $mixed
-     * @param bool $strip_br
-     * @param bool $allUtf8
-     * @return string|string[]|null
+     * Clean whitespace and control characters from strings or arrays
+     *
+     * @deprecated Use Episciences_Tools::spaceCleaner() instead.
+     *             This method will be removed in a future version.
+     *             The new method provides better PHP 8.1+ compatibility and null handling.
+     *
+     * @param string|string[]|null $mixed The input to clean
+     * @param bool $strip_br Whether to convert BR tags to spaces (default: true)
+     * @param bool $allUtf8 Whether to remove all UTF-8 special whitespace characters (default: false)
+     * @return string|string[]|null Cleaned string/array, or null if input was null
+     *
+     * @see Episciences_Tools::spaceCleaner() For the modern replacement method
      */
     public static function space_clean($mixed, $strip_br = true, $allUtf8=false) {
-        if (is_array($mixed)) {
-            $new = array();
-            foreach ($mixed as $val) {
-                $new [] = self::space_clean($val);
-            }
-            $mixed = array_filter($new);
-        } else {
-            $mixed = ($strip_br) ? self::br2space($mixed) : $mixed;
-            // On ne change pas les espaces insécables ou demi-espace...
-            //   \s changerai l'intégralité des espaces.
-            $mixed = preg_replace('/[\n\t\r ]+/', ' ', $mixed);
-            // Suppr control char (CR already transformed)
-            $mixed = preg_replace("/[\x1-\x1f]/", "", $mixed);
-            // On devrait pouvoir supprimer tous les caractères espaces Utf8 (ex: pour repec)
-            // Mais ca doit etre optionnel, on doit accepter les espaces insécables par exemple
-            $mixed = preg_replace('/\s\s+/u', ' ', $mixed);
-            if ($allUtf8) {
-                $mixed = preg_replace('/[\x7F-\xA0\xAD\x{2009}]/u','',$mixed);
-            }
-            $mixed = trim($mixed);
-        }
-        return $mixed;
+        // Trigger deprecation warning
+        trigger_error(
+            'Ccsd_Tools::space_clean() is deprecated. Use Episciences_Tools::spaceCleaner() instead.',
+            E_USER_DEPRECATED
+        );
+
+        // Delegate to the new method
+        return Episciences_Tools::spaceCleaner($mixed, $strip_br, $allUtf8);
     }
 
     /**
-     * @param string|string[] $string
-     * @return string|string[]|null
+     * Convert BR tags to spaces in strings or arrays
+     *
+     * @param string|string[]|null $string The input string or array
+     * @return string|string[]|null The string with BR tags replaced by spaces, or null if input was null
      */
     public static function br2space($string)
     {
-        return !empty($string) ? preg_replace("/<br[[:space:]]*\/?[[:space:]]*>/i", " ", $string) : $string;
+        // Handle null explicitly to avoid PHP 8.1 deprecation warnings
+        if ($string === null) {
+            return null;
+        }
+
+        // Handle empty strings
+        if ($string === '') {
+            return '';
+        }
+
+        // Process the string
+        return preg_replace("/<br[[:space:]]*\/?[[:space:]]*>/i", " ", $string);
     }
 
 

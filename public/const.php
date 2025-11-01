@@ -7,6 +7,21 @@ if (!class_exists('Composer\Autoload\ClassLoader') && file_exists(__DIR__ . '/..
 
 use Symfony\Component\Dotenv\Dotenv;
 
+/**
+ * Safe define helper - checks if constant exists before defining
+ * Encapsulates the pattern: defined('X') || define('X', value)
+ *
+ * @param string $name Constant name
+ * @param mixed $value Constant value
+ * @return void
+ */
+function safeDef(string $name, mixed $value): void
+{
+    if (!defined($name)) {
+        define($name, $value);
+    }
+}
+
 function defineProtocol(): void
 {
     if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
@@ -77,9 +92,8 @@ function defineApplicationConstants(): void
         define('APPLICATION_INI', APPLICATION_PATH . '/configs/application.ini');
     }
 
-
-    define('APPLICATION_PUBLIC_PATH', dirname(APPLICATION_PATH) . '/public');
-    define('PATH_TRANSLATION', APPLICATION_PATH . '/languages');
+    defined('APPLICATION_PUBLIC_PATH') || define('APPLICATION_PUBLIC_PATH', dirname(APPLICATION_PATH) . '/public');
+    defined('PATH_TRANSLATION') || define('PATH_TRANSLATION', APPLICATION_PATH . '/languages');
 
 }
 
@@ -170,57 +184,63 @@ function defineJournalConstants(string $rvCode = null): void
  */
 function defineSQLTableConstants(): void
 {
-    define('T_ALIAS', 'REVIEWER_ALIAS');
-    define('T_ASSIGNMENTS', 'USER_ASSIGNMENT');
-    define('T_CAS_USERS', 'T_UTILISATEURS');
-    define('T_DOI_QUEUE', 'doi_queue');
-    define('T_DOI_QUEUE_VOLUMES', 'doi_queue_volumes');
-    define('T_LOGS', 'PAPER_LOG');
-    define('T_MAIL_LOG', 'MAIL_LOG');
-    define('T_MAIL_REMINDERS', 'REMINDERS');
-    define('T_MAIL_TEMPLATES', 'MAIL_TEMPLATE');
-    define('T_NEWS', 'NEWS');
-    define('T_JOURNAL_NEWS', 'news');
-    define('T_PAPERS', 'PAPERS');
-    define('T_PAPER_COMMENTS', 'PAPER_COMMENTS');
-    define('T_PAPER_SETTINGS', 'PAPER_SETTINGS');
-    define('T_PAPER_VISITS', 'PAPER_STAT');
-    define('T_REVIEW', 'REVIEW');
-    define('T_REVIEWER_POOL', 'REVIEWER_POOL');
-    define('T_REVIEWER_REPORTS', 'REVIEWER_REPORT');
-    define('T_REVIEW_SETTINGS', 'REVIEW_SETTING');
-    define('T_SECTIONS', 'SECTION');
-    define('T_SECTION_SETTINGS', 'SECTION_SETTING');
-    define('T_TMP_USER', 'USER_TMP');
-    define('T_USERS', 'USER');
-    define('T_USER_INVITATIONS', 'USER_INVITATION');
-    define('T_USER_INVITATION_ANSWER', 'USER_INVITATION_ANSWER');
-    define('T_USER_INVITATION_ANSWER_DETAIL', 'USER_INVITATION_ANSWER_DETAIL');
-    define('T_USER_MERGE', 'USER_MERGE');
-    define('T_USER_ROLES', 'USER_ROLES');
-    define('T_USER_TOKENS', 'USER_TOKEN');
-    define('T_VOLUMES', 'VOLUME');
-    define('T_VOLUME_METADATAS', 'VOLUME_METADATA');
-    define('T_VOLUME_PAPER', 'VOLUME_PAPER');
-    define('T_VOLUME_PAPER_POSITION', 'VOLUME_PAPER_POSITION');
-    define('T_VOLUME_SETTINGS', 'VOLUME_SETTING');
-    define('T_VOLUME_PROCEEDING', 'volume_proceeding');
-    define('VISITS_TEMP', 'STAT_TEMP');
-    define('T_PAPER_FILES', 'paper_files');
-    define('T_PAPER_DATASETS', 'paper_datasets');
-    define('T_PAPER_LICENCES', 'paper_licences');
-    define('T_PAPER_DATASETS_META', 'paper_datasets_meta');
-    define('T_PAPER_AUTHORS', 'authors');
-    define('T_PAPER_CONFLICTS', 'paper_conflicts');
-    define('T_PAPER_METADATA_SOURCES', 'metadata_sources');
-    define('T_PAPER_PROJECTS', 'paper_projects');
-    define('T_PAPER_CITATIONS', 'paper_citations');
-    define('T_PAGES', 'pages');
-    define('T_PAPER_CLASSIFICATIONS', 'paper_classifications');
-    define('T_PAPER_CLASSIFICATION_MSC2020', 'classification_msc2020');
-    define('T_PAPER_CLASSIFICATION_JEL', 'classification_jel');
-    define('T_PAPER_DATA_DESCRIPTOR', 'data_descriptor');
-    define('T_FILES', 'files');
+    $tableConstants = [
+        'T_ALIAS' => 'REVIEWER_ALIAS',
+        'T_ASSIGNMENTS' => 'USER_ASSIGNMENT',
+        'T_CAS_USERS' => 'T_UTILISATEURS',
+        'T_DOI_QUEUE' => 'doi_queue',
+        'T_DOI_QUEUE_VOLUMES' => 'doi_queue_volumes',
+        'T_LOGS' => 'PAPER_LOG',
+        'T_MAIL_LOG' => 'MAIL_LOG',
+        'T_MAIL_REMINDERS' => 'REMINDERS',
+        'T_MAIL_TEMPLATES' => 'MAIL_TEMPLATE',
+        'T_NEWS' => 'NEWS',
+        'T_JOURNAL_NEWS' => 'news',
+        'T_PAPERS' => 'PAPERS',
+        'T_PAPER_COMMENTS' => 'PAPER_COMMENTS',
+        'T_PAPER_SETTINGS' => 'PAPER_SETTINGS',
+        'T_PAPER_VISITS' => 'PAPER_STAT',
+        'T_REVIEW' => 'REVIEW',
+        'T_REVIEWER_POOL' => 'REVIEWER_POOL',
+        'T_REVIEWER_REPORTS' => 'REVIEWER_REPORT',
+        'T_REVIEW_SETTINGS' => 'REVIEW_SETTING',
+        'T_SECTIONS' => 'SECTION',
+        'T_SECTION_SETTINGS' => 'SECTION_SETTING',
+        'T_TMP_USER' => 'USER_TMP',
+        'T_USERS' => 'USER',
+        'T_USER_INVITATIONS' => 'USER_INVITATION',
+        'T_USER_INVITATION_ANSWER' => 'USER_INVITATION_ANSWER',
+        'T_USER_INVITATION_ANSWER_DETAIL' => 'USER_INVITATION_ANSWER_DETAIL',
+        'T_USER_MERGE' => 'USER_MERGE',
+        'T_USER_ROLES' => 'USER_ROLES',
+        'T_USER_TOKENS' => 'USER_TOKEN',
+        'T_VOLUMES' => 'VOLUME',
+        'T_VOLUME_METADATAS' => 'VOLUME_METADATA',
+        'T_VOLUME_PAPER' => 'VOLUME_PAPER',
+        'T_VOLUME_PAPER_POSITION' => 'VOLUME_PAPER_POSITION',
+        'T_VOLUME_SETTINGS' => 'VOLUME_SETTING',
+        'T_VOLUME_PROCEEDING' => 'volume_proceeding',
+        'VISITS_TEMP' => 'STAT_TEMP',
+        'T_PAPER_FILES' => 'paper_files',
+        'T_PAPER_DATASETS' => 'paper_datasets',
+        'T_PAPER_LICENCES' => 'paper_licences',
+        'T_PAPER_DATASETS_META' => 'paper_datasets_meta',
+        'T_PAPER_AUTHORS' => 'authors',
+        'T_PAPER_CONFLICTS' => 'paper_conflicts',
+        'T_PAPER_METADATA_SOURCES' => 'metadata_sources',
+        'T_PAPER_PROJECTS' => 'paper_projects',
+        'T_PAPER_CITATIONS' => 'paper_citations',
+        'T_PAGES' => 'pages',
+        'T_PAPER_CLASSIFICATIONS' => 'paper_classifications',
+        'T_PAPER_CLASSIFICATION_MSC2020' => 'classification_msc2020',
+        'T_PAPER_CLASSIFICATION_JEL' => 'classification_jel',
+        'T_PAPER_DATA_DESCRIPTOR' => 'data_descriptor',
+        'T_FILES' => 'files',
+    ];
+
+    foreach ($tableConstants as $name => $value) {
+        safeDef($name, $value);
+    }
 }
 
 /**
@@ -228,18 +248,27 @@ function defineSQLTableConstants(): void
  */
 function defineSimpleConstants(): void
 {
-    define('DOMAIN', 'episciences.org');
-    define('KO', 1024);
-    define('MO', 1048576);
-    define('MAX_FILE_SIZE', 15 * MO);
-    define('MAX_INPUT_TEXTAREA', 65000);
-    define('ABSTRACT_MAX_LENGTH', 1500);
-    define('CE_RESOURCES_NAME', 'episciences.zip');
-    define('DUPLICATE_ENTRY_SQLSTATE', 23000);
-    define('TINYMCE_DIR', '/js/tinymce/');
-    define('MAX_PWD_INPUT_SIZE', 40);
-    define('MAX_PDF_SIZE', 500 * MO);
-    define('ENCODING_TYPE', 'UTF-8');
+    // Define base units first (needed for dependent constants)
+    safeDef('KO', 1024);
+    safeDef('MO', 1048576);
+
+    // Define remaining constants (some depend on MO)
+    $simpleConstants = [
+        'DOMAIN' => 'episciences.org',
+        'MAX_FILE_SIZE' => 15 * MO,
+        'MAX_INPUT_TEXTAREA' => 65000,
+        'ABSTRACT_MAX_LENGTH' => 1500,
+        'CE_RESOURCES_NAME' => 'episciences.zip',
+        'DUPLICATE_ENTRY_SQLSTATE' => 23000,
+        'TINYMCE_DIR' => '/js/tinymce/',
+        'MAX_PWD_INPUT_SIZE' => 40,
+        'MAX_PDF_SIZE' => 500 * MO,
+        'ENCODING_TYPE' => 'UTF-8',
+    ];
+
+    foreach ($simpleConstants as $name => $value) {
+        safeDef($name, $value);
+    }
 }
 
 
@@ -248,21 +277,27 @@ function defineSimpleConstants(): void
  */
 function defineVendorJsLibraries(): void
 {
-    define('VENDOR_BOOTBOX', 'https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.5.3/bootbox.min.js');
-    define('VENDOR_BOOTSTRAP_COLORPICKER', 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/js/bootstrap-colorpicker.min.js');
-    define('VENDOR_BOOTSTRAP_JS', "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/js/bootstrap.min.js");
-    define('VENDOR_DATATABLES_BOOTSTRAP', 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/dataTables.bootstrap.min.js');
-    define('VENDOR_JQUERY', 'https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js');
-    define('VENDOR_JQUERY_DATATABLES', 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js');
-    define('VENDOR_JQUERY_FILE_UPLOAD', 'https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/10.32.0/js/jquery.fileupload.min.js');
-    define('VENDOR_JQUERY_NESTED_SORTABLE', 'https://cdnjs.cloudflare.com/ajax/libs/nestedSortable/1.3.4/jquery.ui.nestedSortable.min.js');
-    define('VENDOR_JQUERY_UI', 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'); // Do not upgrade
-    define('VENDOR_JQUERY_URL_PARSER', 'https://cdnjs.cloudflare.com/ajax/libs/jquery-url-parser/2.2.1/purl.min.js');
-    define('VENDOR_MATHJAX', 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML');
-    define('VENDOR_TINYMCE', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.3.0/tinymce.min.js');
-    define('VENDOR_TINYMCE_JQUERY', 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.3.0/tinymce.min.js');
-    define('VENDOR_CHART', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js');
-    define('VENDOR_CHART_PLUGIN_DATALABELS', 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/0.7.0/chartjs-plugin-datalabels.min.js');
+    $jsLibraries = [
+        'VENDOR_BOOTBOX' => 'https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.5.3/bootbox.min.js',
+        'VENDOR_BOOTSTRAP_COLORPICKER' => 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/js/bootstrap-colorpicker.min.js',
+        'VENDOR_BOOTSTRAP_JS' => 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/js/bootstrap.min.js',
+        'VENDOR_DATATABLES_BOOTSTRAP' => 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/dataTables.bootstrap.min.js',
+        'VENDOR_JQUERY' => 'https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js',
+        'VENDOR_JQUERY_DATATABLES' => 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js',
+        'VENDOR_JQUERY_FILE_UPLOAD' => 'https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/10.32.0/js/jquery.fileupload.min.js',
+        'VENDOR_JQUERY_NESTED_SORTABLE' => 'https://cdnjs.cloudflare.com/ajax/libs/nestedSortable/1.3.4/jquery.ui.nestedSortable.min.js',
+        'VENDOR_JQUERY_UI' => 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js', // Do not upgrade
+        'VENDOR_JQUERY_URL_PARSER' => 'https://cdnjs.cloudflare.com/ajax/libs/jquery-url-parser/2.2.1/purl.min.js',
+        'VENDOR_MATHJAX' => 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML',
+        'VENDOR_TINYMCE' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.3.0/tinymce.min.js',
+        'VENDOR_TINYMCE_JQUERY' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.3.0/tinymce.min.js',
+        'VENDOR_CHART' => 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js',
+        'VENDOR_CHART_PLUGIN_DATALABELS' => 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/0.7.0/chartjs-plugin-datalabels.min.js',
+    ];
+
+    foreach ($jsLibraries as $name => $url) {
+        safeDef($name, $url);
+    }
 }
 
 /**
@@ -270,15 +305,21 @@ function defineVendorJsLibraries(): void
  */
 function defineVendorCssLibraries(): void
 {
-    define('VENDOR_BOOTSTRAP', 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css');
-    define('VENDOR_BOOTSTRAP_COLORPICKER_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/css/bootstrap-colorpicker.css');
-    define('VENDOR_DATATABLES_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/dataTables.bootstrap.min.css');
-    define('VENDOR_FONT_AWESOME', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/fontawesome.min.css");
-    define('VENDOR_FONT_AWESOME_BRAND', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/brands.min.css");
-    define('VENDOR_FONT_AWESOME_SOLID', "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/solid.min.css");
-    define('VENDOR_JQUERY_UI_THEME_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/flick/jquery-ui.min.css');
-    define('VENDOR_CHART_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css');
-    define('VENDOR_COOKIE_CONSENT_CSS', 'https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.css');
+    $cssLibraries = [
+        'VENDOR_BOOTSTRAP' => 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css',
+        'VENDOR_BOOTSTRAP_COLORPICKER_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/css/bootstrap-colorpicker.css',
+        'VENDOR_DATATABLES_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/dataTables.bootstrap.min.css',
+        'VENDOR_FONT_AWESOME' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/fontawesome.min.css',
+        'VENDOR_FONT_AWESOME_BRAND' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/brands.min.css',
+        'VENDOR_FONT_AWESOME_SOLID' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/solid.min.css',
+        'VENDOR_JQUERY_UI_THEME_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/flick/jquery-ui.min.css',
+        'VENDOR_CHART_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css',
+        'VENDOR_COOKIE_CONSENT_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.css',
+    ];
+
+    foreach ($cssLibraries as $name => $url) {
+        safeDef($name, $url);
+    }
 }
 
 /**
@@ -289,64 +330,69 @@ function defineVendorCssLibraries(): void
 function fixUndefinedConstantsForCodeAnalysis(): void
 {
     if (0 > 1) {
-        define('EPISCIENCES_EXCEPTIONS_LOG_PATH', '');
-        define('CACHE_PATH', '');
-        define('APPLICATION_VERSION', '');
-        define('PWD_PATH', '');
-        define('FUSION_TOKEN_AUTH', '');
-        define('EPISCIENCES_LOG_PATH', '');
-        define('EPISCIENCES_SOLR_LOG_PATH', '');
-        define('EPISCIENCES_API_URL', '');
-        define('EPISCIENCES_API_SECRET_KEY', '');
-        define('EPISCIENCES_UID', 0);
-        define('EPISCIENCES_Z_SUBMIT', 0);
-        define('EPISCIENCES_USER_AGENT', '');
-        define('EPISCIENCES_SUPPORT','');
-        define('NOTIFY_TARGET_HAL_INBOX', '');
-        define('NOTIFY_TARGET_HAL_URL', '');
-        define('OPENALEX_MAILTO', '');
-        define('OPENALEX_APIURL', '');
-        define('CROSSREF_MAILTO', '');
-        define('CROSSREF_APIURL', '');
-        define('OPENCITATIONS_MAILTO', '');
-        define('OPENCITATIONS_APIURL', '');
-        define('OPENCITATIONS_TOKEN', '');
-        define('CROSSREF_PLUS_API_TOKEN', '');
-        define('DOI_AGENCY', '');
-        define('DOI_TESTAPI', '');
-        define('DOI_API', '');
-        define('DOI_LOGIN', '');
-        define('DOI_PASSWORD', '');
-        define('DOI_TESTAPI_QUERY', '');
-        define('DOI_API_QUERY', '');
+        $dummyConstants = [
+            'EPISCIENCES_EXCEPTIONS_LOG_PATH' => '',
+            'CACHE_PATH' => '',
+            'APPLICATION_VERSION' => '',
+            'PWD_PATH' => '',
+            'FUSION_TOKEN_AUTH' => '',
+            'EPISCIENCES_LOG_PATH' => '',
+            'EPISCIENCES_SOLR_LOG_PATH' => '',
+            'EPISCIENCES_API_URL' => '',
+            'EPISCIENCES_API_SECRET_KEY' => '',
+            'EPISCIENCES_UID' => 0,
+            'EPISCIENCES_Z_SUBMIT' => 0,
+            'EPISCIENCES_USER_AGENT' => '',
+            'EPISCIENCES_SUPPORT' => '',
+            'NOTIFY_TARGET_HAL_INBOX' => '',
+            'NOTIFY_TARGET_HAL_URL' => '',
+            'OPENALEX_MAILTO' => '',
+            'OPENALEX_APIURL' => '',
+            'CROSSREF_MAILTO' => '',
+            'CROSSREF_APIURL' => '',
+            'OPENCITATIONS_MAILTO' => '',
+            'OPENCITATIONS_APIURL' => '',
+            'OPENCITATIONS_TOKEN' => '',
+            'CROSSREF_PLUS_API_TOKEN' => '',
+            'DOI_AGENCY' => '',
+            'DOI_TESTAPI' => '',
+            'DOI_API' => '',
+            'DOI_LOGIN' => '',
+            'DOI_PASSWORD' => '',
+            'DOI_TESTAPI_QUERY' => '',
+            'DOI_API_QUERY' => '',
+            'ENDPOINTS_SEARCH_HOST' => '',
+            'ENDPOINTS_SEARCH_PORT' => 0,
+            'ENDPOINTS_SEARCH_PATH' => '',
+            'ENDPOINTS_SEARCH_TIMEOUT' => 0,
+            'ENDPOINTS_SEARCH_USERNAME' => '',
+            'ENDPOINTS_SEARCH_PASSWORD' => '',
+            'ENDPOINTS_CORENAME' => '',
+            'ENDPOINTS_SEARCH_PROTOCOL' => '',
+            'ENDPOINTS_INDEXING_HOST' => '',
+            'ENDPOINTS_INDEXING_TIMEOUT' => 0,
+            'DOI_EMAIL_CONTACT' => '',
+            'NOTIFY_TARGET_HAL_LINKED_REPOSITORY' => null,
+            'EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER' => [],
+            'EPISCIENCES_BIBLIOREF' => [],
+            'OAI' => '',
+            'PORTAL' => '',
+            'ENV_PROD' => '',
+            'ENV_PREPROD' => '',
+            'EPISCIENCES_MAIL_PATH' => '',
+            'ENV_DEV' => '',
+            'MANAGER_APPLICATION_URL' => '',
+            'INBOX_ID' => '',
+            'INBOX_URL' => '',
+            'INBOX_DB_HOST' => '',
+            'INBOX_DB_DRIVER' => '',
+            'INBOX_DB_USER' => '',
+            'INBOX_DB_PASSWORD' => '',
+            'INBOX_DB_NAME' => '',
+        ];
 
-        define('ENDPOINTS_SEARCH_HOST', '');
-        define('ENDPOINTS_SEARCH_PORT', 0);
-        define('ENDPOINTS_SEARCH_PATH', '');
-        define('ENDPOINTS_SEARCH_TIMEOUT', 0);
-        define('ENDPOINTS_SEARCH_USERNAME', '');
-        define('ENDPOINTS_SEARCH_PASSWORD', '');
-        define('ENDPOINTS_CORENAME', '');
-        define('ENDPOINTS_SEARCH_PROTOCOL', '');
-        define('ENDPOINTS_INDEXING_HOST', '');
-        define('ENDPOINTS_INDEXING_TIMEOUT', 0);
-        define('DOI_EMAIL_CONTACT', '');
-        define('NOTIFY_TARGET_HAL_LINKED_REPOSITORY', null);
-        define('EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER', []);
-        define('EPISCIENCES_BIBLIOREF', []);
-        define('OAI', '');
-        define('PORTAL', '');
-        define('ENV_PROD', '');
-        define('ENV_PREPROD', '');
-        define('EPISCIENCES_MAIL_PATH', '');
-        define('ENV_DEV', '');
-        define('MANAGER_APPLICATION_URL', '');
-        define('INBOX_ID', '');
-        define('INBOX_URL', '');
-        define('INBOX_DB_HOST', '');
-        define('INBOX_DB_DRIVER', '');
-        define('INBOX_DB_USER', '');
-        define('INBOX_DB_PASSWORD', '');
-        define('INBOX_DB_NAME', '');
+        foreach ($dummyConstants as $name => $value) {
+            define($name, $value);
+        }
     }
 }
