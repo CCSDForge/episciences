@@ -1,5 +1,5 @@
 parameters:
-	level: 6
+	level: 4
 	paths:
 		- application
 		- library
@@ -8,7 +8,6 @@ parameters:
 	excludePaths:
 		- cache
 		- data
-		- log
 		- logs
 		- tmp
 		- vendor
