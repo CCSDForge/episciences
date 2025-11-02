@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#646](https://github.com/CCSDForge/episciences/issues/646) Rediriger sur la page de l'article qui vient d'être soumis au lieu de la page qui liste toutes les soumissions
 - [#780](https://github.com/CCSDForge/episciences/issues/780) Option to lock volume name when an article in it is published
 - [#147](https://github.com/CCSDForge/episciences/issues/147) Add new pages Acknowledgements (page code journal-acknowledgements)  in menu 'About'
+- Fixed Paper Metrics based on wrong DocId, it gave null metrics
+
+### Changed
+- Paper metrics Refactored; 1 query instead of 2 ; Episciences_Paper_Visits::count is deprecated
+
 ## v1.0.52 - 2025-08-28
 
 ### Fixed

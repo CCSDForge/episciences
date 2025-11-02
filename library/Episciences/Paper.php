@@ -1412,11 +1412,7 @@ class Episciences_Paper
                     'cited_by' => $citedBy,
                     'classifications' => $classifications,
                     'graphical_abstract_file' => $graphical_abstract_file,
-
-                    'metrics' => [
-                        'page_count' => !$this->isPublished() ? null : Episciences_Paper_Visits::count($this->getDocid()),
-                        'file_count' => !$this->isPublished() ? null : Episciences_Paper_Visits::count($this->getDocid(), 'file')
-                    ],
+                    'metrics' => Episciences_Paper_Visits::getPaperMetricsByPaperId($this->getPaperid()),
 
                 ],
                 'latest_version_item_number' => (int)$this->getLatestVersionId(),
