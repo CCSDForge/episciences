@@ -4074,5 +4074,24 @@ class Episciences_PapersManager
         return $affectedRows;
     }
 
+    /**
+     * Get All the DocIds associated to a PaperId
+     */
+    public static function getDocIdsFromPaperId(int $paperId): array
+    {
+        $result = [];
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db
+            ->select()
+            ->from(T_PAPERS, ['DOCID'])
+            ->where('PAPERID = ?', $paperId);
+        try {
+            $query = $select->query();
+            $result = $query->fetchAll();
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+        return $result;
 
+    }
 }
