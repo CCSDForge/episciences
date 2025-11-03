@@ -4511,25 +4511,127 @@ class Episciences_Paper
     }
 
     /**
-     * @return bool
+     * Safely parse a date string to DateTime object
+     *
+     * @param string|null $date Date string in 'Y-m-d H:i:s' format
+     * @return DateTime|null DateTime object or null if parsing fails or input is null
+     */
+    private function parseDateSafely(?string $date): ?DateTime
+    {
+        if ($date === null || $date === '') {
+            return null;
+        }
+
+        try {
+            $dateTime = DateTime::createFromFormat('Y-m-d H:i:s', $date);
+            if ($dateTime === false) {
+                // Try alternative format without time
+                $dateTime = DateTime::createFromFormat('Y-m-d', $date);
+            }
+            return $dateTime !== false ? $dateTime : null;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Check if paper is explicitly marked as imported via flag
+     *
+     * @return bool True if flag is 'imported'
+     */
+    private function isExplicitlyImported(): bool
+    {
+        return $this->getFlag() === 'imported';
+    }
+
+    /**
+     * Check if publication date is before or equal to submission date (data inconsistency)
+     *
+     * @return bool True if publication_date <= submission_date
+     */
+    private function isPublicationBeforeSubmission(): bool
+    {
+        $publicationDate = $this->parseDateSafely($this->getPublication_date());
+        $submissionDate = $this->parseDateSafely($this->getSubmission_date());
+
+        if ($publicationDate === null || $submissionDate === null) {
+            return false;
+        }
+
+        return $publicationDate <= $submissionDate;
+    }
+
+    /**
+     * Check if submission or publication year is before 2013 (legacy data)
+     *
+     * @return bool True if either date is before 2013
+     */
+    private function isBeforeYear2013(): bool
+    {
+        $publicationDate = $this->parseDateSafely($this->getPublication_date());
+        $submissionDate = $this->parseDateSafely($this->getSubmission_date());
+
+        if ($submissionDate !== null && (int)$submissionDate->format('Y') < 2013) {
+            return true;
+        }
+
+        if ($publicationDate !== null && (int)$publicationDate->format('Y') < 2013) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check for date inconsistencies with the paper creation date (WHEN) for published papers
+     *
+     * @return bool True if published paper has date inconsistencies
+     */
+    private function hasDateInconsistencies(): bool
+    {
+        if ($this->getStatus() !== self::STATUS_PUBLISHED) {
+            return false;
+        }
+
+        $whenDate = $this->parseDateSafely($this->getWhen());
+        if ($whenDate === null) {
+            return false;
+        }
+
+        $submissionDate = $this->parseDateSafely($this->getSubmission_date());
+        $publicationDate = $this->parseDateSafely($this->getPublication_date());
+
+        // Submission date after creation date (inconsistent)
+        if ($submissionDate !== null && $submissionDate > $whenDate) {
+            return true;
+        }
+
+        // Publication date before creation date (inconsistent)
+        if ($publicationDate !== null && $publicationDate < $whenDate) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Determine if this paper was imported from another system
+     *
+     * A paper is considered imported if:
+     * 1. It has the 'imported' flag explicitly set, OR
+     * 2. It exhibits data inconsistencies characteristic of imported legacy data:
+     *    - Publication date is before or equal to submission date
+     *    - Either date is from before 2013 (legacy data era)
+     *    - For published papers: dates are inconsistent with the paper creation date
+     *
+     * @return bool True if paper is imported
      */
     public function isImported(): bool
     {
-
-        return ($this->getFlag() === 'imported' ||
-
-            (
-                date('Y-m-d', strtotime($this->getPublication_date())) <= date('Y-m-d', strtotime($this->getSubmission_date()))
-                || (int)date('Y', strtotime($this->getSubmission_date())) < 2013
-                || (int)date('Y-m-d', strtotime($this->getPublication_date())) < 2013
-                || (
-                    (
-                        date('Y-m-d', strtotime($this->getSubmission_date())) > date('Y-m-d', strtotime($this->getWhen()))
-                        || date('Y-m-d', strtotime($this->getPublication_date())) < date('Y-m-d', strtotime($this->getWhen()))
-                    )
-                    and $this->getStatus() === self::STATUS_PUBLISHED
-                )
-            ));
+        return $this->isExplicitlyImported()
+            || $this->isPublicationBeforeSubmission()
+            || $this->isBeforeYear2013()
+            || $this->hasDateInconsistencies();
     }
 
     /**
