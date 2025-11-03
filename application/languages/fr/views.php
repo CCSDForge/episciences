@@ -68,6 +68,8 @@ return [
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Charte éthique",
     "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Flux de travail éditorial",
     "Episciences_Website_Navigation_Page_PrepareSubmission" => "Preparer votre soumission",
+    "Episciences_Website_Navigation_Page_ForReviewers" => "Pour les relecteurs",
+    "Episciences_Website_Navigation_Page_ForConferenceOrganisers" => "Pour les organisateurs de conférences",
 
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Articles acceptés à publier",
 
