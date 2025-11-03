@@ -24,9 +24,11 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     public const PAGE_PUBLISHING_POLICIES = 'publishingPolicies';
     public const PAGE_ETHICAL_CHARTER = 'ethicalCharter';
     public const PAGE_EDITORIAL_WORKFLOW = 'EditorialWorkflow';
-    public const PAGE_PREPARE_SUBMISSION= 'PrepareSubmission';
+    public const PAGE_PREPARE_SUBMISSION = 'PrepareSubmission';
+    public const PAGE_FOR_REVIEWERS = 'ForReviewers';
+    public const PAGE_FOR_CONFERENCE_ORGANISERS = 'ForConferenceOrganisers';
     public const PAGE_ABOUT = 'about';
-    public const PAGE_JOURNAL_INDEXING= 'journalIndexing';
+    public const PAGE_JOURNAL_INDEXING = 'journalIndexing';
     public const PAGE_JOURNAL_ACKNOWLEDGEMENTS = 'journalAcknowledgements';
     public const PAGE_EDITORIAL_BOARD = 'editorialBoard';
     public const PAGE_TECHNICAL_BOARD = 'technicalBoard';
@@ -35,11 +37,6 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     public const PAGE_INTRODUCTION_BOARD = 'introductionBoard';
     public const PAGE_REVIEWERS_BOARD = 'reviewersBoard';
     public const PAGE_OPERATING_CHARTER_BOARD = 'operatingCharterBoard';
-
-    protected $_table = 'WEBSITE_NAVIGATION';
-    protected $_primary = 'NAVIGATIONID';
-    protected $_sid = 0;
-
     public static array $groupedPages = [
         'Home (backend)' => [self::PAGE_INDEX],
         'About' => [
@@ -58,10 +55,12 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             self::PAGE_OPERATING_CHARTER_BOARD
         ],
 
-        'For authors' => [
+        'Publish' => [
             self::PAGE_EDITORIAL_WORKFLOW,
             self::PAGE_ETHICAL_CHARTER,
             self::PAGE_PREPARE_SUBMISSION,
+            self::PAGE_FOR_REVIEWERS,
+            self::PAGE_FOR_CONFERENCE_ORGANISERS,
         ],
 
         'Other' => [
@@ -72,7 +71,6 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             self::PAGE_LINK,
         ],
     ];
-
     /** You can now find them on the new sites */
 
     public static array $ignoredPageTypes = [
@@ -90,6 +88,9 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         self::PAGE_SEARCH,
         self::PAGE_EDITORIAL_STAFF,
     ];
+    protected $_table = 'WEBSITE_NAVIGATION';
+    protected $_primary = 'NAVIGATIONID';
+    protected $_sid = 0;
 
     public function setOptions($options = []): void
     {
@@ -125,7 +126,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 
             $currentPageKey = lcfirst(str_replace('Episciences_Website_Navigation_Page_', '', $row['TYPE_PAGE']));
 
-            if(in_array($currentPageKey, self::$ignoredPageTypes, true)){
+            if (in_array($currentPageKey, self::$ignoredPageTypes, true)) {
                 continue;
             }
 
@@ -314,7 +315,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 
         foreach ($typePage as $pageKey => $page) {
 
-            if(in_array(lcfirst($pageKey), self::$ignoredPageTypes, true)) {
+            if (in_array(lcfirst($pageKey), self::$ignoredPageTypes, true)) {
                 unset($typePage[$pageKey]);
             }
         }

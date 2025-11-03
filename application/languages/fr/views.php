@@ -68,12 +68,15 @@ return [
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Charte éthique",
     "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Flux de travail éditorial",
     "Episciences_Website_Navigation_Page_PrepareSubmission" => "Préparer votre soumission",
+    "Episciences_Website_Navigation_Page_ForReviewers" => "Pour les relecteurs",
+    "Episciences_Website_Navigation_Page_ForConferenceOrganisers" => "Pour les organisateurs de conférences",
 
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Articles acceptés à publier",
 
-    "C'est une page prédéfinie" => "C'est une page prédéfinie",
+    "C'est une page prédéfinie" => "Page prédéfinie",
     "Episciences_Website_Navigation_Page_JournalIndexing" => "Indexation de la revue",
     "Episciences_Website_Navigation_Page_JournalAcknowledgements" => "Remerciements",
+    "Publish" => "Publier",
 
 
     //Recherche : facettes

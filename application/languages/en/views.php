@@ -1728,12 +1728,15 @@ return array(
 
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Accepted articles to be published",
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Publishing policies",
-    "Episciences_Website_Navigation_Page_EthicalCharter" => "Ethical charter",
-    "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Editorial workflow",
-    "Episciences_Website_Navigation_Page_PrepareSubmission" => "Prepare your submission",
+    "Episciences_Website_Navigation_Page_EthicalCharter" => "For Authors - Ethical charter",
+    "Episciences_Website_Navigation_Page_EditorialWorkflow" => "For Authors - Editorial workflow",
+    "Episciences_Website_Navigation_Page_PrepareSubmission" => "For Authors - Prepare your submission",
+    "Episciences_Website_Navigation_Page_ForReviewers" => "For reviewers",
+    "Episciences_Website_Navigation_Page_ForConferenceOrganisers" => "For conference organisers",
     "Episciences_Website_Navigation_Page_JournalIndexing" => "Abstracted and indexed in",
     "Episciences_Website_Navigation_Page_JournalAcknowledgements" => "Acknowledgements",
-    "C'est une page prédéfinie" => "This is a predefined page",
+    "Page prédéfinie" => "Predefined page",
+    "Publish" => "Publish",
 
 
     "Si aucun rôle n'est sélectionné, la page sera publique" => 'If no role is selected, the page will be public',
