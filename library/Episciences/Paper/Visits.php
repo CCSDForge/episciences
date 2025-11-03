@@ -6,6 +6,8 @@ class Episciences_Paper_Visits
 {
     const CONSULT_TYPE_NOTICE = 'notice';
     const CONSULT_TYPE_FILE = 'file';
+    const PAGE_COUNT_METRICS_NAME = 'page_count';
+    const FILE_COUNT_METRICS_NAME = 'file_count';
 
     /**
      * @param $docId
@@ -22,8 +24,8 @@ class Episciences_Paper_Visits
 
         $data = [
             'DOCID' => (int)$docId,
-            'IP' => new Zend_Db_Expr("IFNULL(INET_ATON('" .
-                $clientIpAnon . "'), INET_ATON('127.1'))"),
+            'IP' => new Zend_Db_Expr("IFNULL(INET_ATON(" .
+                $db->quote($clientIpAnon) . "), INET_ATON('127.1'))"),
             'HTTP_USER_AGENT' => self::getUserAgent(),
             'DHIT' => new Zend_Db_Expr('NOW()'),
             'CONSULT' => $consult
@@ -66,12 +68,18 @@ class Episciences_Paper_Visits
     }
 
     /**
-     * @param $docId
      * @param string $consult
      * @return string
+     * @deprecated @see self::getPaperMetricsByPaperId())
      */
     public static function count($docId, $consult = self::CONSULT_TYPE_NOTICE)
     {
+        trigger_error(
+            __METHOD__ . ' is deprecated. ' .
+            'use self::getPaperMetricsByPaperId()',
+            E_USER_DEPRECATED
+        );
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()
             ->from(T_PAPER_VISITS, new Zend_Db_Expr('SUM(COUNTER)'))
@@ -81,4 +89,52 @@ class Episciences_Paper_Visits
         return (int)$db->fetchOne($sql);
     }
 
+    /**
+     * Get all access metrics for a PaperID
+     */
+    public static function getPaperMetricsByPaperId(int $paperId): array
+    {
+        $allDocIdsArray = Episciences_PapersManager::getDocIdsFromPaperId($paperId);
+        $allDocIdsArray = array_column($allDocIdsArray, 'DOCID');
+        return self::countAccessMetricForDocIds($allDocIdsArray);
+    }
+
+    private static function countAccessMetricForDocIds(array $docIds): array
+    {
+        $result = [
+            self::PAGE_COUNT_METRICS_NAME => 0,
+            self::FILE_COUNT_METRICS_NAME => 0
+        ];
+
+        // Validate and convert all docIds to integers to prevent SQL injection
+        $docIds = array_map('intval', $docIds);
+        $docIds = array_filter($docIds, static fn($id) => $id > 0);
+
+        // Return default result if no valid docIds
+        if (empty($docIds)) {
+            return $result;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $sql = $db
+            ->select()
+            ->from(
+                T_PAPER_VISITS,
+                [
+                    self::PAGE_COUNT_METRICS_NAME => new Zend_Db_Expr("SUM(CASE WHEN CONSULT = '" . self::CONSULT_TYPE_NOTICE . "' THEN COUNTER ELSE 0 END)"),
+                    self::FILE_COUNT_METRICS_NAME => new Zend_Db_Expr("SUM(CASE WHEN CONSULT = '" . self::CONSULT_TYPE_FILE . "' THEN COUNTER ELSE 0 END)")
+                ]
+            )
+            ->where('ROBOT = 0')
+            ->where('DOCID IN (?)', $docIds);
+
+        try {
+            $result = $db->fetchRow($sql);
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+
+        return $result;
+    }
 }

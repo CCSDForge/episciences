@@ -190,9 +190,10 @@ class PaperController extends PaperDefaultController
         }
 
         // paper *************************************************************
+        $paperMetrics = Episciences_Paper_Visits::getPaperMetricsByPaperId($paper->getPaperid());
         $this->view->paper = $paper;
-        $this->view->page_count = Episciences_Paper_Visits::count($docId);
-        $this->view->file_count = Episciences_Paper_Visits::count($docId, 'file');
+        $this->view->page_count = $paperMetrics[Episciences_Paper_Visits::PAGE_COUNT_METRICS_NAME];
+        $this->view->file_count = $paperMetrics[Episciences_Paper_Visits::FILE_COUNT_METRICS_NAME];
 
         // other versions block
         $versions = [];
