@@ -1800,6 +1800,7 @@ return array(
 
     "article refusé" => 'refused article',
     "articles refusés" => 'refused articles',
+    "articles acceptés" => 'accepted articles',
 
     "%s article refusé" => array("%s refused article", "%s refused articles"),
 
