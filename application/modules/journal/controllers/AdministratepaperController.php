@@ -525,7 +525,7 @@ class AdministratepaperController extends PaperDefaultController
         if ($paper->isObsolete()) {
             $latestDocId = $paper->getLatestVersionId();
             $this->view->latestDocId = $latestDocId;
-            $this->view->linkToLatestDocId = $this->buildAdminPaperUrl($latestDocId);
+            $this->view->linkToLatestDocId = $this->adminPaperUrl($latestDocId);
         } else { // redirect if not allowed
             $this->checkPermissions($review, $paper);
         }
@@ -813,7 +813,7 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->available_languages = Zend_Json::encode(Episciences_Tools::getLanguages());
 
         $this->view->paper = $paper;
-        $this->view->paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
+        $this->view->paperUrl = $this->publicPaperUrl($paper->getDocid());
         $this->view->metadata = $paper->getDatasetsFromEnrichment();
         $this->view->siteLocale = Episciences_Tools::getLocale();
         $this->view->defaultLocale = Episciences_Review::getDefaultLanguage();
@@ -2456,10 +2456,10 @@ class AdministratepaperController extends PaperDefaultController
             $removed = array_diff(array_keys($currentCopyEditors), $copyEditors);
 
             //admin paper URL
-            $adminPaperUrl = $this->buildAdminPaperUrl($docId);
+            $adminPaperUrl = $this->adminPaperUrl($docId);
 
             // public paperURL
-            $paperUrl = $this->buildPublicPaperUrl($docId);
+            $paperUrl = $this->publicPaperUrl($docId);
 
             if (!empty($removed)) {
                 $this->unssignUser($paper, $removed, $paperUrl, Episciences_User_Assignment::ROLE_COPY_EDITOR, Episciences_Auth::getUid());
@@ -4097,7 +4097,7 @@ class AdministratepaperController extends PaperDefaultController
             Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME => Episciences_Auth::getFullName()
         ];
 
-        $uidS = $this->unssignUser($paper, [Episciences_Auth::getUid()], $this->buildPublicPaperUrl($docId));
+        $uidS = $this->unssignUser($paper, [Episciences_Auth::getUid()], $this->publicPaperUrl($docId));
 
         // Ici le statut de l'article n'a pas été changé, mais les notifs sont identiques.
         $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_REFUSED_MONITORING, null, $tags, [], false, $uidS);

@@ -2,12 +2,14 @@
 
 use Episciences\AppRegistry;
 use Episciences\Trait\Tools;
+use Episciences\Trait\UrlBuilder;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
 class PaperDefaultController extends DefaultController
 {
     use Tools;
+    use UrlBuilder;
     public const MSG_PAPER_DOES_NOT_EXIST = "Le document demandé n’existe pas.";
     public const MSG_REVIEWER_DOES_NOT_EXIST = "Le relecteur pour lequel vous souhaitez relire n'existe pas.";
     public const MSG_REPORT_COMPLETED = "Votre rapport a été déjà renseigné.";
@@ -394,7 +396,7 @@ class PaperDefaultController extends DefaultController
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_COMMENT => (isset($options['replayedTo']) && $options['replayedTo'] instanceof Episciences_Comment) ? $options['replayedTo']->getMessage() : $oComment->getMessage(),
-            Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($docId),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $this->adminPaperUrl($docId),
             Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => Episciences_Auth::getScreenName(),
             Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
             Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
@@ -496,32 +498,18 @@ class PaperDefaultController extends DefaultController
      * @param int $docId
      * @return string
      */
-    public function buildAdminPaperUrl(int $docId): string
+    public function adminPaperUrl(int $docId): string
     {
-        $adminPaperUrl = $this->view->url(
-            [
-                self::CONTROLLER => self::ADMINISTRATE_PAPER_CONTROLLER,
-                self::ACTION => 'view',
-                'id' => $docId
-            ]);
-
-        return SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $adminPaperUrl;
+        return self::buildAdminPaperUrl($docId);
     }
 
     /**
      * @param int $docId
      * @return string
      */
-    public function buildPublicPaperUrl(int $docId): string
+    public function publicPaperUrl(int $docId): string
     {
-        $paperUrl = $this->view->url(
-            [
-                self::CONTROLLER => self::PUBLIC_PAPER_CONTROLLER,
-                self::ACTION => 'view',
-                'id' => $docId
-            ]);
-
-        return SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $paperUrl;
+        return self::buildPublicPaperUrl($docId);
     }
 
     /**
@@ -546,7 +534,7 @@ class PaperDefaultController extends DefaultController
         $tags = array_merge(
             [Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($docId)
+                Episciences_Mail_Tags::TAG_PAPER_URL => $this->adminPaperUrl($docId)
             ],
             $tags
         );

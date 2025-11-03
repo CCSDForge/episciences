@@ -167,7 +167,7 @@ class PaperController extends PaperDefaultController
 
         $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper);
         $this->updatePaperStats($paper);
-        $paperUrl = $this->buildPublicPaperUrl($paper->getDocid());
+        $paperUrl = $this->publicPaperUrl($paper->getDocid());
 
 
         // INBOX autodiscovery @see https://www.w3.org/TR/ldn/#discovery
@@ -186,13 +186,14 @@ class PaperController extends PaperDefaultController
         if ($paper->isObsolete()) {
             $latestDocId = $paper->getLatestVersionId();
             $this->view->latestDocId = $latestDocId;
-            $this->view->linkToLatestDocId = $this->buildPublicPaperUrl($latestDocId);
+            $this->view->linkToLatestDocId = $this->publicPaperUrl($latestDocId);
         }
 
         // paper *************************************************************
+        $paperMetrics = Episciences_Paper_Visits::getPaperMetricsByPaperId($paper->getPaperid());
         $this->view->paper = $paper;
-        $this->view->page_count = Episciences_Paper_Visits::count($docId);
-        $this->view->file_count = Episciences_Paper_Visits::count($docId, 'file');
+        $this->view->page_count = $paperMetrics[Episciences_Paper_Visits::PAGE_COUNT_METRICS_NAME];
+        $this->view->file_count = $paperMetrics[Episciences_Paper_Visits::FILE_COUNT_METRICS_NAME];
 
         // other versions block
         $versions = [];
@@ -1287,7 +1288,7 @@ class PaperController extends PaperDefaultController
                     Episciences_Mail_Tags::TAG_REQUEST_DATE => $this->view->Date($oComment->getWhen(), $locale),
                     Episciences_Mail_Tags::TAG_REQUEST_MESSAGE => $oComment->getMessage(),
                     Episciences_Mail_Tags::TAG_REQUEST_ANSWER => $oAnswer->getMessage(),
-                    Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($paper->getDocid()) //paper management page url
+                    Episciences_Mail_Tags::TAG_PAPER_URL => $this->adminPaperUrl($paper->getDocid()) //paper management page url
                 ];
 
                 Episciences_Mail_Send::sendMailFromReview(
@@ -1590,7 +1591,7 @@ class PaperController extends PaperDefaultController
         if (null !== $principalRecipient) {
 
             // link to manage article page
-            $paper_url = $this->buildAdminPaperUrl($tmpPaper->getDocid());
+            $paper_url = $this->adminPaperUrl($tmpPaper->getDocid());
 
             $this->answerRevisionNotifyManager(
                 $principalRecipient,
@@ -2613,7 +2614,7 @@ class PaperController extends PaperDefaultController
         } elseif ($paper->isObsolete()) { // paper is obsolete: display a notice
 
             $latestDocId = $paper->getLatestVersionId();
-            $this->view->linkToLatestDocId = $this->buildAdminPaperUrl($latestDocId);
+            $this->view->linkToLatestDocId = $this->adminPaperUrl($latestDocId);
             $result['displayNotice'] = true;
         }
 
@@ -3020,7 +3021,7 @@ class PaperController extends PaperDefaultController
             Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
 
             // url to paper administration page
-            $paper_url = $this->buildAdminPaperUrl((int)$report->getDocid());
+            $paper_url = $this->adminPaperUrl((int)$report->getDocid());
             #git 295 : FYI
             $CC = $paper->extractCCRecipients($recipients);
 
@@ -3476,7 +3477,7 @@ class PaperController extends PaperDefaultController
         $docId = $paper->getDocid();
 
         $tags = [
-            Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($docId),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $this->adminPaperUrl($docId),
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),

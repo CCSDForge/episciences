@@ -305,7 +305,7 @@ function defineSQLTableConstants(): void
  */
 function defineSimpleConstants(): void
 {
-    define('MO', 1048576);
+    safeDef('MO', 1048576);
     $simpleConstants = [
         'KO'=> 1024,
         'DOMAIN' => 'episciences.org',
