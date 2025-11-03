@@ -8,7 +8,7 @@ use Episciences_View_Helper_Url;
 
 trait UrlBuilder
 {
-    final public function buildAdminPaperUrl(int $docId, array $journalOptions = []): string
+    final public static function buildAdminPaperUrl(int $docId, array $journalOptions = []): string
     {
         if (!Ccsd_Tools::isFromCli()) {
 
@@ -19,14 +19,14 @@ trait UrlBuilder
                     'id' => $docId
                 ]);
 
-            return SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $adminPaperUrl;
+            return self::buildBaseUrl() . $adminPaperUrl;
         }
 
-        return $this->processUri($journalOptions) . sprintf('/administratepaper/view/id/%s', $docId);
+        return self::processUri($journalOptions) . sprintf('/administratepaper/view/id/%s', $docId);
 
     }
 
-    final public function buildPublicPaperUrl(int $docId, array $journalOptions = []): string
+    final public static function buildPublicPaperUrl(int $docId, array $journalOptions = []): string
     {
 
 
@@ -39,27 +39,27 @@ trait UrlBuilder
                     'id' => $docId
                 ]);
 
-            return SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $adminPaperUrl;
+            return self::buildBaseUrl() . $adminPaperUrl;
 
         }
 
-        return $this->processUri($journalOptions) . sprintf('/paper/view/id/%s', $docId);
+        return self::processUri($journalOptions) . sprintf('/paper/view/id/%s', $docId);
 
 
     }
 
-    final public function buildLostLoginUrl(array $journalOptions = []): string
+    final public static function buildLostLoginUrl(array $journalOptions = []): string
     {
 
         if (!Ccsd_Tools::isFromCli()) {
             return sprintf('%s://%s%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME'], (new Episciences_View_Helper_Url())->url(['controller' => 'user', 'action' => 'lostlogin']));
         }
 
-        return $this->processUri($journalOptions) . '/user/lostlogin';
+        return self::processUri($journalOptions) . '/user/lostlogin';
 
     }
 
-    private function processUri(array $journalOptions = []): string
+    private static function processUri(array $journalOptions = []): string
     {
 
         if (isset($journalOptions['rvCode'])) {
@@ -84,6 +84,11 @@ trait UrlBuilder
 
         return '';
 
+    }
+
+    public static function buildBaseUrl(): string
+    {
+        return SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
     }
 
 }

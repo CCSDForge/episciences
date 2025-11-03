@@ -127,7 +127,7 @@ class CoiController extends PaperDefaultController
                 $paper->log(Episciences_Paper_Logger::CODE_COI_REPORTED, $loggedUid, $details);
 
                 // When an editor / copy editor is assigned, if he/she declares a COI => un-assign him/her.
-                $url = $this->buildPublicPaperUrl($docId);
+                $url = $this->publicPaperUrl($docId);
 
                 // This unassignment triggers the a notification email to all editors in chief and secretaries
                 $ccRecipients = [];
