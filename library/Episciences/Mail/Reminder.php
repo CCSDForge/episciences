@@ -772,7 +772,7 @@ class Episciences_Mail_Reminder
                 continue;
             }
 
-            $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => $this->buildLostLoginUrl($journalOptions)];
+            $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => self::buildLostLoginUrl($journalOptions)];
 
             // pour chacun des rédacteurs de l'article
             /** @var Episciences_Editor $editor */
@@ -815,7 +815,7 @@ class Episciences_Mail_Reminder
                     Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
                     Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
-                    Episciences_Mail_Tags::TAG_ARTICLE_LINK => $this->buildAdminPaperUrl($paper->getDocid(), $journalOptions),
+                    Episciences_Mail_Tags::TAG_ARTICLE_LINK => self::buildAdminPaperUrl($paper->getDocid(), $journalOptions),
                     Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT => count($invitations),
                     Episciences_Mail_Tags::TAG_REQUIRED_REVIEWERS_COUNT => $required_reviewers,
                 ];
@@ -1090,7 +1090,7 @@ class Episciences_Mail_Reminder
         }
         $tmp = $db->fetchAll($sql);
 
-        $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => $this->buildLostLoginUrl($journalOptions)];
+        $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => self::buildLostLoginUrl($journalOptions)];
 
         if ($this->getRecipient() === 'editor') {
             foreach ($tmp as $data) {
@@ -1114,7 +1114,7 @@ class Episciences_Mail_Reminder
                         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                         Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewer->getScreenName(),
                         Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $reviewer->getEmail(),
-                        Episciences_Mail_Tags::TAG_ARTICLE_LINK => $this->buildAdminPaperUrl($paper->getDocid(), $journalOptions)
+                        Episciences_Mail_Tags::TAG_ARTICLE_LINK => self::buildAdminPaperUrl($paper->getDocid(), $journalOptions)
                     ];
 
                     $recipients[] = [
@@ -1243,7 +1243,7 @@ class Episciences_Mail_Reminder
         }
         $tmp = $db->fetchAll($sql);
 
-        $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => $this->buildLostLoginUrl($journalOptions)];
+        $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => self::buildLostLoginUrl($journalOptions)];
 
         if ($this->getRecipient() === 'editor') {
             foreach ($tmp as $data) {
@@ -1266,7 +1266,7 @@ class Episciences_Mail_Reminder
                         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                         Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $reviewer->getScreenName(),
                         Episciences_Mail_Tags::TAG_REVIEWER_MAIL => $reviewer->getEmail(),
-                        Episciences_Mail_Tags::TAG_ARTICLE_LINK => $this->buildAdminPaperUrl($paper->getDocid(), $journalOptions)
+                        Episciences_Mail_Tags::TAG_ARTICLE_LINK => self::buildAdminPaperUrl($paper->getDocid(), $journalOptions)
                     ];
 
                     $recipients[] = [
@@ -1402,10 +1402,10 @@ class Episciences_Mail_Reminder
             $acceptanceDate = $paper->isAcceptedSubmission() ? $paper->getModification_date() : '';
 
             $tags = [
-                Episciences_Mail_Tags::TAG_ARTICLE_LINK => $this->buildAdminPaperUrl($paper->getDocid(), $journalOptions),
+                Episciences_Mail_Tags::TAG_ARTICLE_LINK => self::buildAdminPaperUrl($paper->getDocid(), $journalOptions),
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                Episciences_Mail_Tags::TAG_LOST_LOGINS => $this->buildLostLoginUrl($journalOptions)
+                Episciences_Mail_Tags::TAG_LOST_LOGINS => self::buildLostLoginUrl($journalOptions)
             ];
 
             /** @var Episciences_Editor $editor */
@@ -1539,7 +1539,7 @@ class Episciences_Mail_Reminder
         $review = Episciences_ReviewsManager::find($this->getRvid());
         $journalOptions = ['rvCode' => $review->getCode(), Episciences_Review::IS_NEW_FRONT_SWITCHED => $review->isNewFrontSwitched()];
 
-        $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => $this->buildLostLoginUrl($journalOptions)];
+        $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => self::buildLostLoginUrl($journalOptions)];
 
 
         foreach ($data as $current) {
@@ -1568,7 +1568,7 @@ class Episciences_Mail_Reminder
                         Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME => $author->getFullName(),
                         Episciences_Mail_Tags::TAG_AUTHOR_EMAIL => $author->getEmail(),
                         Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
-                        Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($paper->getDocid(), $journalOptions),
+                        Episciences_Mail_Tags::TAG_PAPER_URL => self::buildAdminPaperUrl($paper->getDocid(), $journalOptions),
                         Episciences_Mail_Tags::TAG_REVISION_DEADLINE => Episciences_View_Helper_Date::Date($current['DEADLINE'], $editor->getLangueid()),
                     ];
 
@@ -1590,7 +1590,7 @@ class Episciences_Mail_Reminder
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $author->getFullName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $author->getUsername(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($author->getLangueid(), true),
-                    Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildPublicPaperUrl($paper->getDocid(), $journalOptions),
+                    Episciences_Mail_Tags::TAG_PAPER_URL => self::buildPublicPaperUrl($paper->getDocid(), $journalOptions),
                     Episciences_Mail_Tags::TAG_REVISION_DEADLINE => Episciences_View_Helper_Date::Date($current['DEADLINE'], $author->getLangueid()),
                 ];
 

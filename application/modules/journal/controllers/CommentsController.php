@@ -146,9 +146,9 @@ class CommentsController extends PaperController
        $this->checkAccess($paper);
 
         if ($paper->isOwner()) {
-            $url = $this->buildPublicPaperUrl($paper->getDocid());
+            $url = $this->publicPaperUrl($paper->getDocid());
         } elseif (Episciences_Auth::isSecretary()) {
-            $url = $this->buildAdminPaperUrl($paper->getDocid());
+            $url = $this->adminPaperUrl($paper->getDocid());
         }
 
         if (in_array($paper->getStatus(), $paper::$_noEditableStatus, true)) {
@@ -223,9 +223,9 @@ class CommentsController extends PaperController
             $this->checkAccess($paper);
 
             if ($paper->isOwner()) {
-                $url = $this->buildPublicPaperUrl($docId);
+                $url = $this->publicPaperUrl($docId);
             } elseif (Episciences_Auth::isSecretary()) {
-                $url = $this->buildAdminPaperUrl($docId);
+                $url = $this->adminPaperUrl($docId);
             }
 
             if (in_array($paper->getStatus(), $paper::$_noEditableStatus, true)) {

@@ -1,7 +1,10 @@
 <?php
 
+use Episciences\Trait\UrlBuilder;
+
 class Episciences_PapersManager
 {
+    use UrlBuilder;
 
     public const NONE_FILTER = '0';
     public const WITH_FILTER = '-1';
@@ -2353,8 +2356,10 @@ class Episciences_PapersManager
      * @param Episciences_Paper $paper
      * @param Episciences_User $contributor
      * @param $other_editors
+     * @param array $options
      * @return array
      * @throws Zend_Date_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
     public static function getStatusFormsTemplates(Episciences_Paper $paper, Episciences_User $contributor, $other_editors, array $options = []): array
@@ -2455,25 +2460,11 @@ class Episciences_PapersManager
             }
         }
 
-
-        $helperUrl = new Episciences_View_Helper_Url();
-
-        $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
-        $url = sprintf('%s%s', $site, $helperUrl->url([
-                'controller' => 'paper',
-                'action' => 'view',
-                'id' => $paper->getDocid()
-            ]));
-
-        $lostLoginUrl = sprintf('%s%s', $site, $helperUrl->url([
-            'controller' => 'user',
-            'action' => 'lostlogin'
-        ]));
-
         $defaultTags = [
             Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $contributor->getScreenName(),
             Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $contributor->getUsername(),
             Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $contributor->getFullName(),
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => self::buildLostLoginUrl()
         ];
 
         $tags = array_merge($mail->getTags(), [
@@ -2482,16 +2473,20 @@ class Episciences_PapersManager
             Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
             Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
             Episciences_Mail_Tags::TAG_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paper->getSubmission_date(), $locale),
-            Episciences_Mail_Tags::TAG_PAPER_URL => $url,
+            Episciences_Mail_Tags::TAG_PAPER_URL => self::buildPublicPaperUrl($paper->getDocid()),
             Episciences_Mail_Tags::TAG_PAPER_RATINGS => $ratings_string,
-            Episciences_Mail_Tags::TAG_PAPER_REPO_URL => $paper->getDocUrl(),
-            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginUrl
+            Episciences_Mail_Tags::TAG_PAPER_REPO_URL => $paper->getDocUrl()
         ]);
 
 
         foreach ($templates as $name => &$template) {
 
             if ($name === 'waitingAuthorFormatting') {
+
+                $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+                $ceRessourcesUrl = sprintf('%s%spublic/', $site, PREFIX_URL);
+                $ceRessourcesUrl .= sprintf('%s_episciences.zip',RVCODE);
+
                 $paperSubmissionDate = date('Y-m-d', strtotime($paper->getSubmission_date())); // Current version
                 $doi = $paper->getDoi();
 
@@ -2530,8 +2525,6 @@ class Episciences_PapersManager
                 $revisionsDateIso = $paper->buildRevisionDates(); // all versions in ISO format
                 $paperPosition = $paper->getPaperPositionInVolume(); // position of paper in volume
                 $acceptanceDate = $paper->getAcceptanceDate();
-                $ceRessourcesUrl = sprintf('%s%spublic/', $site, PREFIX_URL);
-                $ceRessourcesUrl .= sprintf('%s_episciences.zip',RVCODE);
 
                 $addTags = array_merge($defaultTags, [
                     Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paperSubmissionDate, $locale),
@@ -2559,7 +2552,8 @@ class Episciences_PapersManager
                 $addTags = [
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
-                    Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME
+                    Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+                    Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => self::buildLostLoginUrl()
                 ];
 
             } else {
