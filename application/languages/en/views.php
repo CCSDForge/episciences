@@ -2005,6 +2005,7 @@ return array(
     "Vous essayez d'insérer des données liées déjà existantes" => 'It seems you are trying to insert an already existing relationship',
     'Ajouter une relation' => 'Add a related work',
     'software' => 'Software',
+    'Software' => 'Software',
     'doi' => 'DOI',
     'handle' => 'Handle',
     'hal' => 'HAL',
