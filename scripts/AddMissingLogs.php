@@ -44,11 +44,11 @@ class AddMissingLogs extends JournalScript
                 $this->isDebug = (bool)$this->getParam('debug');
             }
 
-            if ($this->hasParam('ignoreimported')) {
-                $this->withoutImported = (bool)$this->getParam('ignoreimported');
-            }
-
             $this->logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+        }
+
+        if ($this->hasParam('ignoreimported')) {
+            $this->withoutImported = (bool)$this->getParam('ignoreimported');
         }
 
     }
