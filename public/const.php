@@ -392,6 +392,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('INBOX_DB_USER', '');
         define('INBOX_DB_PASSWORD', '');
         define('INBOX_DB_NAME', '');
+        define('INBOX_DB_PORT','');
 
         // Other configuration
         define('EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER', []);
@@ -421,6 +422,8 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('APPLICATION_INI', '');
         define('APPLICATION_PUBLIC_PATH', '');
         define('PATH_TRANSLATION', '');
+        define('PORTAL_PREFIX_URL','');
+        define('PREFIX_ROUTE', '');
 
         // ========================================
         // Journal/Review constants
