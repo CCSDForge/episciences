@@ -451,6 +451,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('INBOX_DB_USER', '');
         define('INBOX_DB_PASSWORD', '');
         define('INBOX_DB_NAME', '');
+        define('INBOX_DB_PORT','');
 
         // Other configuration
         define('EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER', []);
