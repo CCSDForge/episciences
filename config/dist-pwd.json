@@ -132,7 +132,8 @@
     "DB_DRIVER": "pdo_mysql",
     "DB_NAME": "inbox",
     "DB_USER": "inbox",
-    "DB_PASSWORD": "four random common words"
+    "DB_PASSWORD": "four random common words",
+    "DB_PORT": 3306
   },
   "GEO_IP": {
     "DATABASE_PATH": "/fullPathTo/scripts/geoip/",
