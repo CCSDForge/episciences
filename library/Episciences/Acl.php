@@ -18,6 +18,9 @@ class Episciences_Acl extends Ccsd_Acl
     public const ROLE_EDITORIAL_BOARD = 'editorial_board';
     public const ROLE_TECHNICAL_BOARD = 'technical_board';
     public const ROLE_SCIENTIFIC_ADVISORY_BOARD = 'scientific_advisory_board';
+    public const ROLE_ADVISORY_BOARD = 'advisory_board';
+    public const ROLE_MANAGING_EDITOR = 'managing_editor';
+    public const ROLE_HANDLING_EDITOR = 'handling_editor';
     public const ROLE_FORMER_MEMBER = 'former_member';
     public const ROLE_MEMBER = 'member';
     public const ROLE_GUEST = 'guest';
@@ -176,6 +179,18 @@ class Episciences_Acl extends Ccsd_Acl
             'paper-savetmpversion' => self::CONFIGURABLE_RESOURCE,
             'paper-abandon' => self::CONFIGURABLE_RESOURCE
         ],
+        self::ROLE_ADVISORY_BOARD => [
+            'paper-savetmpversion' => self::CONFIGURABLE_RESOURCE,
+            'paper-abandon' => self::CONFIGURABLE_RESOURCE
+        ],
+        self::ROLE_MANAGING_EDITOR => [
+            'paper-savetmpversion' => self::CONFIGURABLE_RESOURCE,
+            'paper-abandon' => self::CONFIGURABLE_RESOURCE
+        ],
+        self::ROLE_HANDLING_EDITOR => [
+            'paper-savetmpversion' => self::CONFIGURABLE_RESOURCE,
+            'paper-abandon' => self::CONFIGURABLE_RESOURCE
+        ],
         self::ROLE_FORMER_MEMBER => [
             'paper-savetmpversion' => self::CONFIGURABLE_RESOURCE,
             'paper-abandon' => self::CONFIGURABLE_RESOURCE
@@ -222,6 +237,9 @@ class Episciences_Acl extends Ccsd_Acl
             self::ROLE_EDITORIAL_BOARD => self::ROLE_MEMBER,
             self::ROLE_TECHNICAL_BOARD => self::ROLE_MEMBER,
             self::ROLE_SCIENTIFIC_ADVISORY_BOARD => self::ROLE_MEMBER,
+            self::ROLE_ADVISORY_BOARD => self::ROLE_MEMBER,
+            self::ROLE_MANAGING_EDITOR => self::ROLE_MEMBER,
+            self::ROLE_HANDLING_EDITOR => self::ROLE_MEMBER,
             self::ROLE_FORMER_MEMBER => self::ROLE_MEMBER,
             self::ROLE_AUTHOR => self::ROLE_MEMBER,
             self::ROLE_REVIEWER => self::ROLE_MEMBER,
