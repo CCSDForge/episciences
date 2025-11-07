@@ -10,7 +10,7 @@ class UserDefaultController extends Episciences_Controller_Action
     public const SUCCESS = 'success';
     public const ERROR = 'error';
 
-    public const DEFAULT_IMG_PATH = '/../public/img/user.png';
+    public const DEFAULT_IMG_PATH = '/../public/img/user.svg';
 
     public function indexAction(): void
     {
@@ -1650,6 +1650,7 @@ class UserDefaultController extends Episciences_Controller_Action
 
 
             } else {
+                $imageMimeType = 'image/svg+xml';
                 $photoPathName = APPLICATION_PATH . self::DEFAULT_IMG_PATH;
             }
         }
