@@ -100,13 +100,13 @@ return array(
     // TO FIX
     'guest' => 'Guest',
     'member' => 'Member',
-    'editorial_board' => 'Editorial board',
-    'technical_board' => 'Technical board',
-    'scientific_advisory_board' => 'Scientific advisory board',
-    'advisory_board' => 'Advisory board',
-    'managing_editor' => 'Managing editor',
-    'handling_editor' => 'Handling editor',
-    'former_member' => 'Former member',
+    'editorial_board' => '🏷️ Editorial board',
+    'technical_board' => '🏷️ Technical board',
+    'scientific_advisory_board' => '🏷️ Scientific advisory board',
+    'advisory_board' => '🏷️ Advisory board',
+    'managing_editor' => '🏷️ Managing editor',
+    'handling_editor' => '🏷️ Handling editor',
+    'former_member' => '🏷️ Former member',
     'coauthor' => 'Coauthor',
     'webmaster' => 'Webmaster',
     'secretary' => 'Editorial secretary',
@@ -1666,7 +1666,6 @@ return array(
     "Le tableau ci-dessous reprend l'ensemble des ressources visibles déposées sur le site. Vous pouvez les visualiser dans un nouvel onglet et repérer leur url sur le site ou les supprimer."
     => "The table below lists all visible resources stored on the website. You can view them in a new tab, locate their url or delete them.",
 
-    "Ajouter un nouveau fichier" => "Add a new file",
     "Ajouter un nouveau fichier" => "Add a new file",
     "Déposer le fichier" => "Upload the file",
     "Fichiers" => "Files",
