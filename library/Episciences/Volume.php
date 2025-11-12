@@ -152,9 +152,9 @@ class Episciences_Volume
     {
         $gaps = [];
         $actualArray = array_keys($sorted_papers);
-        for ($i = 0; $i < max($actualArray); $i++) {
-            if (!in_array($i, $actualArray, true)) {
-                $gaps[] = $i;
+        for ($index = 0; $index < max($actualArray); $index++) {
+            if (!in_array($index, $actualArray, true)) {
+                $gaps[] = $index;
             }
         }
         return $gaps;
