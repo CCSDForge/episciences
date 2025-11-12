@@ -36,10 +36,10 @@ class Episciences_Volume_Paper
 
     public function setVid($vid)
     {
-        $this->_vid = $vid;
+        $this->_vid = (int)$vid;
     }
 
-    public function getVid()
+    public function getVid() : int
     {
         return $this->_vid;
     }

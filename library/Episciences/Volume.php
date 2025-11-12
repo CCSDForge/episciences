@@ -150,9 +150,14 @@ class Episciences_Volume
      */
     public static function findGapsInPaperOrders(array $sorted_papers): array
     {
-        $arrayOfMyDreams = range(0, count($sorted_papers) - 1);
+        $gaps = [];
         $actualArray = array_keys($sorted_papers);
-        return array_diff($arrayOfMyDreams, $actualArray);
+        for ($index = 0; $index < max($actualArray); $index++) {
+            if (!in_array($index, $actualArray, true)) {
+                $gaps[] = $index;
+            }
+        }
+        return $gaps;
     }
 
     /**
@@ -921,7 +926,7 @@ class Episciences_Volume
             }
 
             $position++;
-            
+
             try {
                 $decodedValues = $this->decodeAndValidateMetadata($value);
             } catch (JsonException $e) {
@@ -931,13 +936,13 @@ class Episciences_Volume
 
             // Sanitize user input to prevent XSS
             $sanitizedValues = $this->sanitizeMetadataValues($decodedValues);
-            
+
             // Add required fields
             $sanitizedValues['vid'] = $this->getVid();
             $sanitizedValues['position'] = $position;
 
             $metadata = new Episciences_Volume_Metadata($sanitizedValues);
-            
+
             if (!$metadata->save()) {
                 $errors[] = "Failed to save metadata at position {$position}";
                 continue;
@@ -967,7 +972,7 @@ class Episciences_Volume
     private function decodeAndValidateMetadata(string $value): array
     {
         $decodedValues = json_decode($value, true, 512, JSON_THROW_ON_ERROR);
-        
+
         if (!is_array($decodedValues)) {
             throw new JsonException('Decoded metadata must be an array');
         }
@@ -1004,7 +1009,7 @@ class Episciences_Volume
             }
         }
 
-        // Sanitize content array - HTML escape each language version  
+        // Sanitize content array - HTML escape each language version
         if (isset($values['content']) && is_array($values['content'])) {
             $sanitized['content'] = [];
             foreach ($values['content'] as $lang => $content) {
@@ -1202,6 +1207,7 @@ class Episciences_Volume
             foreach ($papers as $p) {
                 $docId = $p->getDocid();
                 $titles = $p->getAllTitles();
+                $vid = $p->getVid(); // primary volume
 
                 if (array_key_exists($locale, $titles)) {
                     $pTitle = $titles[$locale];
@@ -1213,6 +1219,7 @@ class Episciences_Volume
 
                 $paperList[$docId]['title'] = $pTitle;
                 $paperList[$docId]['docid'] = $docId;
+                $paperList[$docId]['vid'] = $vid;
                 // RT#129760
                 $paperList[$docId]['paperid'] = $p->getPaperid();
                 $paperList[$docId]['status'] = $p->getStatus();
@@ -1333,7 +1340,7 @@ class Episciences_Volume
 
     public function setVol_year($volYear): \Episciences_Volume
     {
-        $this->_vol_year =  (int)$volYear ?: null;
+        $this->_vol_year = (int)$volYear ?: null;
         return $this;
     }
 
@@ -1527,6 +1534,38 @@ class Episciences_Volume
             ->where('VID = ?', $this->getVid())
             ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
         return $db->fetchOne($select);
+    }
+
+    /**
+     *
+     * @param int $paperId
+     * @param int|null $vid [ default ($vid = null]) : returns position in primary volume
+     * @return int|null
+     */
+
+    public function getPositionByPaperId(int $paperId, int $vid = null): ?int
+    {
+
+        try {
+            $sortedPapers = $this->getSortedPapersFromVolume('object');
+        } catch (Zend_Db_Select_Exception|Zend_Exception $e) {
+            $sortedPapers = [];
+        }
+
+
+        /**
+         * @var int $position
+         * @var  Episciences_Paper $paper
+         */
+
+        foreach ( $sortedPapers as $position => $paper) {
+
+            if ($paper->getPaperid() === $paperId && $paper->getVid() === $vid) {
+                return $position;
+            }
+        }
+
+        return $position + 1;
     }
 
 

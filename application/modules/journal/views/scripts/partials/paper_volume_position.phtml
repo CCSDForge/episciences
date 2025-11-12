@@ -1,15 +1,15 @@
-<?php if (null !== $this->position) : ?> <?php // first position in view => position 0 in VOLUME_PAPER_POSITION table?>
-    <span id="position_ <?= $this->docId; ?>"> , # <?= $this->position + 1; ?> &nbsp;
-        <?php if(Episciences_Auth::isSecretary()) : ?>
-        <?php
-        $params = ['controller' => 'volume', 'action' => 'edit', 'id' => $this->vid, 'from' => $this->from];
+<?php // first position in view => position 0 in VOLUME_PAPER_POSITION table?>
+<span id="position_ <?= $this->docId ?>"> , # <?= $this->position + 1 ?> &nbsp;
+        <?php if (Episciences_Auth::isSecretary()) : ?>
+            <?php
+            $params = ['controller' => 'volume', 'action' => 'edit', 'id' => $this->vid, 'from' => $this->from];
             if ($this->from === 'view') {
                 $params ['docid'] = $this->docId;
             }
-        ?>
-            <a href="<?= $this->url($params) ?>" class="btn btn-default btn-xs" title="<?= $this->translate("Modifier") ?>">
+            ?>
+            <a href="<?= $this->url($params) ?>" class="btn btn-default btn-xs"
+               title="<?= $this->translate("Modifier") ?>">
                 <span class="glyphicon glyphicon-pencil"></span>
             </a>
         <?php endif; ?>
     </span>
-<?php endif; ?>

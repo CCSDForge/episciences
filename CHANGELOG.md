@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ajout d'indicateur visuel pour les pages prédéfinies dans le menu
 
 ### Fixed
+- altered secondary volume rendering
 - [RT#259551] it is now possible to modify the Copy Editor at any time
 - [#776](https://github.com/CCSDForge/episciences/issues/776) Action Required: Fix Renovate Configuration
 - [#657](https://github.com/CCSDForge/episciences/issues/657) Conditionally remove the `<hr>` separator in the public and admin views of article metadata
