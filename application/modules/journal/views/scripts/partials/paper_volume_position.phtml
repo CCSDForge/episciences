@@ -1,5 +1,5 @@
 <?php // first position in view => position 0 in VOLUME_PAPER_POSITION table?>
-<span id="position_ <?= $this->docId ?>"> , # <?= $this->position ?> &nbsp;
+<span id="position_ <?= $this->docId ?>"> , # <?= $this->position +1 ?> &nbsp;
         <?php if (Episciences_Auth::isSecretary()) : ?>
             <?php
             $params = ['controller' => 'volume', 'action' => 'edit', 'id' => $this->vid, 'from' => $this->from];

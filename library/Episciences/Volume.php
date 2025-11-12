@@ -1565,7 +1565,7 @@ class Episciences_Volume
             }
         }
 
-        return $position + 1;
+        return $position;
     }
 
 
