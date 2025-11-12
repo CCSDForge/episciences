@@ -36,7 +36,7 @@ $othersVolumes = $article->getOtherVolumes();
                           'docId' => $article->getDocid(),
                           'vid' => $currentVid,
                           'position' => $volume->getPositionByPaperId($clonedArticle->getPaperid(), $currentVid),
-                          'from' => Zend_Controller_Front::getInstance()->getRequest()->getActionName()
+                          'from' => 'view'
                       ])
                       ?>
                 </span>
