@@ -1,9 +1,9 @@
-<?php if (null !== $this->position) : ?> <?php // first position in view => position 0 in VOLUME_PAPER_POSITION table?>
-    <span id="position_ <?= $this->docId; ?>"> , # <?= $this->position + 1; ?> &nbsp;
-        <?php if(Episciences_Auth::isSecretary()) : ?>
-            <a href="/volume/edit?id=<?= $this->vid; ?>&from=<?= $this->from !== 'view' ? $this->from : $this->from . '&docid=' . $this->docId; ?>" class="btn btn-default btn-xs" title="<?= $this->translate("Modifier"); ?>">
+<?php // first position in view => position 0 in VOLUME_PAPER_POSITION table?>
+<span id="position_ <?= $this->docId ?>"><?= sprintf(', #%s', ($this->position + 1)) ?> &nbsp;
+        <?php if (Episciences_Auth::isSecretary()) : ?>
+            <a href="/volume/edit?id=<?= $this->vid ?>&from=<?= $this->from !== 'view' ? $this->from : $this->from . '&docid=' . $this->docId ?>"
+               class="btn btn-default btn-xs" title="<?= $this->translate("Modifier") ?>">
                 <span class="glyphicon glyphicon-pencil"></span>
             </a>
         <?php endif; ?>
     </span>
-<?php endif; ?>

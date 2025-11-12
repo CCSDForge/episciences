@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New option to allow Editors to receive 'Comments for editors' before declaring a conflict of interest (disabled by default)
 
 ### Fixed
+- altered secondary volume rendering
 - [#776](https://github.com/CCSDForge/episciences/issues/776) Action Required: Fix Renovate Configuration
 - [#657](https://github.com/CCSDForge/episciences/issues/657) Conditionally remove the `<hr>` separator in the public and admin views of article metadata
 - [#786](https://github.com/CCSDForge/episciences/issues/786) English translation of 'Télécharger le fichier'
