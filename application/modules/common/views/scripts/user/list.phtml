@@ -22,7 +22,6 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 
 
 <!-- User management guideline -->
-<?php if (APPLICATION_ENV !== 'demo') : ?>
     <div id="guideline" class="panel panel-default collapsable">
         <div class="panel-heading">
             <h2 class="panel-title"><?php echo $this->translate('Bonnes pratiques'); ?></h2>
@@ -36,15 +35,12 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
             </ol>
         </div>
     </div>
-<?php endif; ?>
 
-<?php if (APPLICATION_ENV !== 'demo') : ?>
     <?php if (Episciences_Auth::isChiefEditor() || Episciences_Auth::isAdministrator() || Episciences_Auth::isEditor() || Episciences_Auth::isSecretary()) : ?>
         <div class="form-actions">
             <?php echo $this->autocomplete; ?>
         </div>
     <?php endif; ?>
-<?php endif; ?>
 
 <?php if ($this->localUsers) : ?>
     <table class="table table-striped table-bordered dataTable" id="localUsers">
