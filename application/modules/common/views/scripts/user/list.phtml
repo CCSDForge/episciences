@@ -22,25 +22,25 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 
 
 <!-- User management guideline -->
-    <div id="guideline" class="panel panel-default collapsable">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Bonnes pratiques'); ?></h2>
-        </div>
-        <div class="panel-body in">
-            <p><?php echo $this->translate("Avant de créer un compte pour un nouvel utilisateur, veuillez vérifier qu'il/elle n'existe pas déjà dans la base des utilisateurs."); ?></p>
-            <ol>
-                <li><?php echo $this->translate("Vérifiez que l'utilisateur n'a pas déjà des droits dans la revue. Entrez le nom de la personne dans le champ de recherche situé en haut à droite de la liste des utilisateurs.") ?></li>
-                <li><?php echo $this->translate("Si la recherche ne retourne aucun résultat, vérifiez que l'utilisateur n'a pas déjà un compte sur HAL. Entrez le nom de la personne dans le champ &laquo;Ajouter un utilisateur&raquo;. Vous pourrez ainsi consulter la base d'utilisateurs de HAL.") ?></li>
-                <li><?php echo $this->translate("Si la recherche ne retourne aucun résultat, vous pouvez créer un compte pour l'utilisateur en cliquant sur le bouton &laquo;Créer un nouveau compte&raquo;.") ?></li>
-            </ol>
-        </div>
+<div id="guideline" class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?php echo $this->translate('Bonnes pratiques'); ?></h2>
     </div>
+    <div class="panel-body in">
+        <p><?php echo $this->translate("Avant de créer un compte pour un nouvel utilisateur, veuillez vérifier qu'il/elle n'existe pas déjà dans la base des utilisateurs."); ?></p>
+        <ol>
+            <li><?php echo $this->translate("Vérifiez que l'utilisateur n'a pas déjà des droits dans la revue. Entrez le nom de la personne dans le champ de recherche situé en haut à droite de la liste des utilisateurs.") ?></li>
+            <li><?php echo $this->translate("Si la recherche ne retourne aucun résultat, vérifiez que l'utilisateur n'a pas déjà un compte sur HAL. Entrez le nom de la personne dans le champ &laquo;Ajouter un utilisateur&raquo;. Vous pourrez ainsi consulter la base d'utilisateurs de HAL.") ?></li>
+            <li><?php echo $this->translate("Si la recherche ne retourne aucun résultat, vous pouvez créer un compte pour l'utilisateur en cliquant sur le bouton &laquo;Créer un nouveau compte&raquo;.") ?></li>
+        </ol>
+    </div>
+</div>
 
-    <?php if (Episciences_Auth::isChiefEditor() || Episciences_Auth::isAdministrator() || Episciences_Auth::isEditor() || Episciences_Auth::isSecretary()) : ?>
-        <div class="form-actions">
-            <?php echo $this->autocomplete; ?>
-        </div>
-    <?php endif; ?>
+<?php if (Episciences_Auth::isChiefEditor() || Episciences_Auth::isAdministrator() || Episciences_Auth::isEditor() || Episciences_Auth::isSecretary()) : ?>
+    <div class="form-actions">
+        <?php echo $this->autocomplete; ?>
+    </div>
+<?php endif; ?>
 
 <?php if ($this->localUsers) : ?>
     <table class="table table-striped table-bordered dataTable" id="localUsers">
@@ -65,7 +65,8 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
             <tr id="localUsers_<?php echo $this->escape($user['uid']); ?>">
                 <td>
                     <?php if (!$user['isCasUserValid']) : ?>
-                        <span data-toggle="tooltip" class="label label-danger" title="<?= $this->translate('Compte en attente de validation') ?>" >
+                        <span data-toggle="tooltip" class="label label-danger"
+                              title="<?= $this->translate('Compte en attente de validation') ?>">
                         <?= $user['uid'] ?>
                         </span>
                     <?php else: ?>
@@ -82,22 +83,24 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                     <?php try {
                         $this->log(RVCODE . '_NOTICE_UNDEFINED_CAS_INDEX_IN_ARRAY_USER: ' . json_encode($user, JSON_THROW_ON_ERROR));
                     } catch (JsonException $e) {
-                        $this->log($e->getMessage(),  Psr\Log\LogLevel::CRITICAL);
+                        $this->log($e->getMessage(), Psr\Log\LogLevel::CRITICAL);
                     } ?>
                 <?php endif; ?>
                 <td>
                     <?php if (APPLICATION_ENV != 'demo' && (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor())) : ?>
                         <button onclick="getRoles(this, <?php echo $user['uid'] ?>)"
-                                class="btn btn-sm btn-default popover-link" style="float: right; font-size: 10px; margin-left: 10px;"><span
+                                class="btn btn-sm btn-default popover-link"
+                                style="float: right; font-size: 10px; margin-left: 10px;"><span
                                     class="darkgrey caret"></span></button>
                     <?php endif; ?>
 
-                    <div class="tags" style="overflow: hidden; max-width: calc(100% - 35px); display: flex; flex-wrap: wrap; gap: 3px;">
+                    <div class="tags"
+                         style="overflow: hidden; max-width: calc(100% - 35px); display: flex; flex-wrap: wrap; gap: 3px;">
                         <?php if ($user['ROLES'][RVID]) : ?>
                             <?php
-                            if (count($user['ROLES'][RVID]) > 1){
+                            if (count($user['ROLES'][RVID]) > 1) {
                                 $key = array_search(Episciences_Acl::ROLE_MEMBER, $user['ROLES'][RVID], true);
-                                if($key !== false ){
+                                if ($key !== false) {
                                     unset($user['ROLES'][RVID][$key]);
                                 }
                             }
@@ -122,23 +125,20 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                         <?php endif; ?>
                     <?php endif; ?>
                     <?php if (Episciences_Auth::isSecretary()) : ?>
-                        <a href="/user/edit?userid=<?php echo $user['uid']; ?>">
-                            <span data-toggle="tooltip" title="<?php echo $this->translate("Modifier ce compte."); ?>" class="darkgrey glyphicon glyphicon-edit"></span>
+                        <a href="/user/edit?userid=<?php echo $user['uid']; ?>"> <span data-toggle="tooltip"
+                                                                                       title="<?php echo $this->translate("Modifier ce compte."); ?>"
+                                                                                       class="darkgrey glyphicon glyphicon-edit"></span>
                         </a>&nbsp;
-                        <?php if (APPLICATION_ENV == 'demo') : ?>
-                            <span style="cursor: pointer" data-toggle="tooltip"
-                                  title="<?php echo $this->translate("Sur l'environnement de démo, vous ne pouvez pas supprimer de comptes."); ?>"
-                                  class="lightergrey glyphicon glyphicon-trash">
-                            </span>
-                        <?php elseif (Episciences_Auth::getUid() == $user['uid']) : ?>
+                        <?php if (Episciences_Auth::getUid() == $user['uid']) : ?>
                             <span style="cursor: pointer" data-toggle="tooltip"
                                   title="<?php echo $this->translate('Ce compte vous appartient, vous ne pouvez pas le supprimer.'); ?>"
                                   class="lightergrey glyphicon glyphicon-trash">
 
                             </span>
                         <?php else : ?>
-                            <a id="delete_localUsers_<?php echo $user['uid']; ?>" href="#">
-                                <span data-toggle="tooltip" title="<?php echo $this->translate("Supprimer ce compte."); ?>" class="darkgrey glyphicon glyphicon-trash"></span>
+                            <a id="delete_localUsers_<?php echo $user['uid']; ?>" href="#"> <span data-toggle="tooltip"
+                                                                                                  title="<?php echo $this->translate("Supprimer ce compte."); ?>"
+                                                                                                  class="darkgrey glyphicon glyphicon-trash"></span>
                             </a>
                         <?php endif; ?>
                     <?php else : ?>
