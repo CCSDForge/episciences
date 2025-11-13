@@ -7,6 +7,8 @@ class Episciences_Website_Navigation_Page_Predefined extends Episciences_Website
     protected $_multiple = false;
     protected string $_page = '';
 
+    private static ?array $_cachedPermaliens = null;
+
 
     public function toArray(): array
     {
@@ -81,6 +83,54 @@ class Episciences_Website_Navigation_Page_Predefined extends Episciences_Website
             $res = serialize([self::PERMALIEN => $this->_permalien]);
         }
         return $res;
+    }
+
+    /**
+     * Récupère tous les permaliens des classes prédéfinies (avec cache)
+     *
+     * @return array Tableau associatif [className => permalien]
+     * @throws ReflectionException
+     */
+    public static function getAllPermaliens(): array
+    {
+        if (self::$_cachedPermaliens === null) {
+            $permaliens = [];
+            $pageDir = APPLICATION_PATH . '/../library/Episciences/Website/Navigation/Page/';
+
+            foreach (glob($pageDir . '*.php') as $file) {
+                $className = 'Episciences_Website_Navigation_Page_' . basename($file, '.php');
+
+                if (!class_exists($className)) {
+                    require_once $file;
+                }
+
+                if (is_subclass_of($className, __CLASS__)) {
+                    $reflection = new ReflectionClass($className);
+                    $defaults = $reflection->getDefaultProperties();
+
+                    if (!empty($defaults['_permalien'])) {
+                        $permaliens[$className] = $defaults['_permalien'];
+                    }
+                }
+            }
+
+            self::$_cachedPermaliens = $permaliens;
+        }
+
+        return self::$_cachedPermaliens;
+    }
+
+    /**
+     * Vérifie si un pageCode (permalien) correspond à une page prédéfinie
+     *
+     * @param string $pageCode Le permalien à vérifier
+     * @return bool True si le pageCode correspond à une page prédéfinie
+     * @throws ReflectionException
+     */
+    public static function isPredefinedPage(string $pageCode): bool
+    {
+        $permaliens = self::getAllPermaliens();
+        return in_array($pageCode, $permaliens, true);
     }
 
 }

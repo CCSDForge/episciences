@@ -46,13 +46,10 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     {
         foreach ($options as $option => $value) {
             $option = strtolower($option);
-            switch ($option) {
-                case 'sid'   :
-                    $this->_sid = $value;
-                    break;
-                case 'languages':
-                    $this->_languages = is_array($value) ? $value : [$value];
-                    break;
+            if ($option == 'sid') {
+                $this->_sid = $value;
+            } elseif ($option == 'languages') {
+                $this->_languages = is_array($value) ? $value : [$value];
             }
 
         }

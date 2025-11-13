@@ -77,7 +77,13 @@ class Episciences_Page_Manager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $where = ['code = ?' => $code, 'page_code = ?' => $page_code];
-        $resDelete = $db->delete(T_PAGES, $where);
+        try {
+            $resDelete = $db->delete(T_PAGES, $where);
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            $resDelete = 0;
+        }
+
 
         return $resDelete > 0;
     }
