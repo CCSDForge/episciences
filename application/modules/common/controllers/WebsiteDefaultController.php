@@ -174,7 +174,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
             foreach ($request->getPost() as $id => $options) {
 
-                if (strpos($id, 'pages_') !== 0) {
+                if (!str_starts_with($id, 'pages_')) {
                     continue;
                 }
 
