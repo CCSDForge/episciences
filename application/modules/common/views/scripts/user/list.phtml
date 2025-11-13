@@ -87,7 +87,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                     } ?>
                 <?php endif; ?>
                 <td>
-                    <?php if (APPLICATION_ENV != 'demo' && (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor())) : ?>
+                    <?php if (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor()) : ?>
                         <button onclick="getRoles(this, <?php echo $user['uid'] ?>)"
                                 class="btn btn-sm btn-default popover-link"
                                 style="float: right; font-size: 10px; margin-left: 10px;"><span
