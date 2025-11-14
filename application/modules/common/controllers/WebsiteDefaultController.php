@@ -122,13 +122,13 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
                 $renamedFile = Ccsd_File::renameFile($_FILES['file']['name'], $dir, !$isOverwritten);
 
-                copy($_FILES['file']['tmp_name'], $dir . $renamedFile );
+                copy($_FILES['file']['tmp_name'], $dir . $renamedFile);
 
                 $message = $translator->translate('Le fichier a été déposé.');
 
-                if ($renamedFile !== $_FILES['file']['name'] ) {
-                    $message = $translator->translate( 'Le fichier a été téléchargé et a été renommé');
-                    $message .=' "';
+                if ($renamedFile !== $_FILES['file']['name']) {
+                    $message = $translator->translate('Le fichier a été téléchargé et a été renommé');
+                    $message .= ' "';
                     $message .= $renamedFile;
                     $message .= '"';
                     $message .= ' ';
@@ -174,7 +174,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
             foreach ($request->getPost() as $id => $options) {
 
-                if (strpos($id, 'pages_') !== 0) {
+                if (!str_starts_with($id, 'pages_')) {
                     continue;
                 }
 
@@ -228,6 +228,13 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxformpageAction()
     {
+        if (!Episciences_Auth::isAdministrator()
+            && !Episciences_Auth::isChiefEditor()
+            && !Episciences_Auth::isSecretary()
+            && !Episciences_Auth::isWebmaster()
+            && !Episciences_Auth::isRoot()) {
+            return;
+        }
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
@@ -245,6 +252,13 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxorderAction()
     {
+        if (!Episciences_Auth::isAdministrator()
+            && !Episciences_Auth::isChiefEditor()
+            && !Episciences_Auth::isSecretary()
+            && !Episciences_Auth::isWebmaster()
+            && !Episciences_Auth::isRoot()) {
+            return;
+        }
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
@@ -258,15 +272,29 @@ class WebsiteDefaultController extends Zend_Controller_Action
     /**
      * Suppression d'une page du site
      */
-    public function ajaxrmpageAction()
+    public function ajaxrmpageAction(): void
     {
+        if (!Episciences_Auth::isAdministrator()
+            && !Episciences_Auth::isChiefEditor()
+            && !Episciences_Auth::isSecretary()
+            && !Episciences_Auth::isWebmaster()
+            && !Episciences_Auth::isRoot()) {
+            return;
+        }
+        $pageCodeToRemove = null;
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
         $request = $this->getRequest();
         $params = $request->getPost();
         if ($request->isXmlHttpRequest() && $request->isPost() && isset($params['idx'])) {
-            $this->_session->website->deletePage($params['idx']);
+            $nav = $this->_session->website;
+            /** @var Ccsd_Website_Navigation $nav */
+            if (!empty($params['page_id'])) {
+                $pageCodeToRemove = $params['page_id'];
+            }
+            $nav->deletePage((int)$params['idx'], $pageCodeToRemove);
+
         }
     }
 
