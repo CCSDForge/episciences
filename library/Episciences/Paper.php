@@ -4893,6 +4893,21 @@ class Episciences_Paper
         return $this->_coAuthors = Episciences_PapersManager::getCoAuthors($this->getDocid());
     }
 
+    public function isCoauthor(): bool
+    {
+        try {
+            $coAuthors = $this->getCoAuthors();
+        } catch (Zend_Db_Statement_Exception $e) {
+            $coAuthors = [];
+            Episciences_View_Helper_Log::log($e->getMessage(), Psr\Log\LogLevel::CRITICAL);
+        }
+
+        return
+            isset($coAuthors[Episciences_Auth::getUid()]) ||
+            isset($coAuthors[Episciences_Auth::getOriginalIdentity()]);
+    }
+
+
     public function isEditableVersion(): bool
     {
         return in_array($this->getStatus(), self::EDITABLE_VERSION_STATUS, true);
