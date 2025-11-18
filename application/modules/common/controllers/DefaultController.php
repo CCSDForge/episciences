@@ -115,7 +115,8 @@ class DefaultController extends Zend_Controller_Action
             !$paper->getEditor($loggedUid) &&
             !$paper->getCopyEditor($loggedUid) &&
             !array_key_exists($loggedUid, $paper->getReviewers()) && // nor reviewer
-            !$paper->isOwner();
+            !$paper->isOwner() &&
+            !$paper->isCoauthor();
     }
 
     protected function redirectWithFlashMessageIfPaperIsRemovedOrDeleted(Episciences_Paper $paper, bool $forceRedirection = true): void
