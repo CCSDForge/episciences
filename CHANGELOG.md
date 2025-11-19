@@ -52,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Changed
+- [#528](https://github.com/CCSDForge/episciences/issues/528):
+    - 'upload a new version' on top of the list
+    - "Contact the editors (with an attachment)" instead of "Contact without sending a new version"
 - Paper metrics Refactored; 1 query instead of 2 ; Episciences_Paper_Visits::count is deprecated
 
 ## v1.0.52 - 2025-08-28
