@@ -258,7 +258,7 @@ class AdministratemailController extends Zend_Controller_Action
 
 
         } else {
-            Episciences_Tools::header('HTTP/1.1 404 Not Found');
+            $this->getResponse()?->setHttpResponseCode(404);
             $this->renderScript('index/notfound.phtml');
         }
 
