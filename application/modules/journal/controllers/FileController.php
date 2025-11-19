@@ -123,6 +123,7 @@ class FileController extends DefaultController
         // check if report exists
         $report = Episciences_Rating_Report::findById($id);
         if (!$report) {
+            $this->getResponse()->setHttpResponseCode(404);
             $this->view->message = "Fichier introuvable";
             $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
             $this->renderScript('error/error.phtml');
@@ -131,6 +132,7 @@ class FileController extends DefaultController
 
         $filepath = REVIEW_FILES_PATH . $report->getDocid() . '/reports/' . $report->getUid() . '/' . $file;
         if (!file_exists($filepath)) {
+            $this->getResponse()->setHttpResponseCode(404);
             $this->view->message = "Fichier introuvable";
             $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
             $this->renderScript('error/error.phtml');
@@ -323,7 +325,7 @@ class FileController extends DefaultController
 
         // check if paper exists
         if (!$paper || !$paper->hasHook || ($paper->getRvid() !== RVID) || ($paper->getRepoid() === 0)) {
-            Episciences_Tools::header('HTTP/1.1 404 Not Found');
+            $this->getResponse()?->setHttpResponseCode(404);
             $this->renderScript('index/notfound.phtml');
             return;
         }

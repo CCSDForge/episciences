@@ -24,5 +24,6 @@ class IndexController extends Zend_Controller_Action
 
     public function notfoundAction()
     {
+        $this->getResponse()?->setHttpResponseCode(404);
     }
 }

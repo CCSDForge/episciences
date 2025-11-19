@@ -43,7 +43,7 @@ class StatsController extends Zend_Controller_Action
 
         try {
             if (Zend_Registry::get('hideStatistics')) {
-                Episciences_Tools::header('HTTP/1.0 403 Forbidden');
+                $this->getResponse()?->setHttpResponseCode(403);
                 $this->renderScript('index/notfound.phtml');
                 return;
 
