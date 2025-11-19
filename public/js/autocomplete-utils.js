@@ -297,7 +297,12 @@ class ModernUserAutocomplete {
     }
 
     showError(message) {
-        this.dropdown.innerHTML = `<div class="modern-autocomplete-error">Erreur: ${message}</div>`;
+        // Create DOM elements securely to prevent XSS
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'modern-autocomplete-error';
+        errorDiv.textContent = 'Erreur: ' + message;
+        this.dropdown.innerHTML = '';
+        this.dropdown.appendChild(errorDiv);
         this.openDropdown();
     }
 
@@ -308,27 +313,61 @@ class ModernUserAutocomplete {
             return;
         }
 
-        this.dropdown.innerHTML = results.map((user, index) => {
+        // Create DOM elements securely to prevent XSS
+        this.dropdown.innerHTML = '';
+
+        results.forEach((user) => {
             const name = user.full_name || `${user.firstname || ''} ${user.lastname || ''}`.trim();
             const email = user.email || user.EMAIL || '';
             const uid = user.id || user.UID || '';
 
-            return `
-                <div class="modern-autocomplete-item" data-id="${uid}" data-email="${email}" data-name="${name}">
-                    <div class="modern-autocomplete-name">${this.highlightMatch(name, term)}</div>
-                    <div class="modern-autocomplete-details">${email} (ID: ${uid})</div>
-                </div>
-            `;
-        }).join('');
+            // Create item container
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'modern-autocomplete-item';
+            itemDiv.dataset.id = uid;
+            itemDiv.dataset.email = email;
+            itemDiv.dataset.name = name;
+
+            // Create name element with highlighted match
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'modern-autocomplete-name';
+            this.highlightMatch(nameDiv, name, term);
+
+            // Create details element
+            const detailsDiv = document.createElement('div');
+            detailsDiv.className = 'modern-autocomplete-details';
+            detailsDiv.textContent = `${email} (ID: ${uid})`;
+
+            itemDiv.appendChild(nameDiv);
+            itemDiv.appendChild(detailsDiv);
+            this.dropdown.appendChild(itemDiv);
+        });
+
         this.selectedIndex = -1;
         this.bindItemEvents();
         this.openDropdown();
     }
 
-    highlightMatch(text, term) {
-        if (!term || !text) return text;
+    highlightMatch(element, text, term) {
+        // Create DOM elements securely to prevent XSS
+        if (!term || !text) {
+            element.textContent = text || '';
+            return;
+        }
+
         const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        return text.replace(regex, '<strong>$1</strong>');
+        const parts = text.split(regex);
+
+        parts.forEach((part, index) => {
+            if (regex.test(part)) {
+                const strong = document.createElement('strong');
+                strong.textContent = part;
+                element.appendChild(strong);
+                regex.lastIndex = 0; // Reset regex for next iteration
+            } else if (part) {
+                element.appendChild(document.createTextNode(part));
+            }
+        });
     }
 
     bindItemEvents() {

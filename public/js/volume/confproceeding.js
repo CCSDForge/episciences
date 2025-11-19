@@ -72,15 +72,15 @@ $(function() {
         $('input#btn-cancel-request-proceedings').show();
     });
     function setRequiredInput(confName) {
-        // Use attribute selector for safer DOM querying
-        $("[id='" + confName.replace(/'/g, "\\'") + "']").attr('required',"required");
-        $("label[for='" + confName.replace(/'/g, "\\'") + "']").removeClass('optional').addClass("required");
+        // Use CSS.escape() for safe selector escaping
+        $('#' + CSS.escape(confName)).attr('required',"required");
+        $("label[for='" + CSS.escape(confName) + "']").removeClass('optional').addClass("required");
     }
 
     function unsetRequiredInput(confName){
-        // Use attribute selector for safer DOM querying
-        $("[id='" + confName.replace(/'/g, "\\'") + "']").attr('required',"");
-        $("label[for='" + confName.replace(/'/g, "\\'") + "']").removeClass('required').addClass("optional");
+        // Use CSS.escape() for safe selector escaping
+        $('#' + CSS.escape(confName)).attr('required',"");
+        $("label[for='" + CSS.escape(confName) + "']").removeClass('required').addClass("optional");
     }
 
     function addDoi(){
