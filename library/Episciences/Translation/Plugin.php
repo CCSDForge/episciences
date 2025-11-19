@@ -141,7 +141,7 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
      */
     private function getLocaleByUrl(Zend_Controller_Request_Abstract $request): ?Zend_Translate
     {
-        return $this->checkTranslator($request->getParam('lang', null));
+        return $this->checkTranslator($request->getParam('lang'));
     }
 
     /**
