@@ -34,7 +34,7 @@ class ExportController extends Episciences_Controller_Action
         $docId = $request->getParam('id');
 
         if (!is_numeric($docId)) {
-            Episciences_Tools::header('HTTP/1.1 404 Not Found');
+            $this->getResponse()?->setHttpResponseCode(404);
             $this->renderScript('index/notfound.phtml');
             echo $this->getResponse()->getBody();
             exit;
@@ -44,7 +44,7 @@ class ExportController extends Episciences_Controller_Action
         $paper = Episciences_PapersManager::get($docId, false);
 
         if (!$paper || $paper->getRvid() != RVID || $paper->getRepoid() == 0) {
-            Episciences_Tools::header('HTTP/1.1 404 Not Found');
+            $this->getResponse()?->setHttpResponseCode(404);
             $this->renderScript('index/notfound.phtml');
             echo $this->getResponse()->getBody();
             exit;
