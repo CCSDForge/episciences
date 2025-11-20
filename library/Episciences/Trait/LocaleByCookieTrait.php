@@ -4,24 +4,23 @@ namespace Episciences\Trait;
 
 trait LocaleByCookieTrait
 {
-    public static string $_locale_cookie_name = 'epi_lang';
+    public static string $_locale_cookie_name = 'lang';
 
 
     final public function setLocaleCookie(string $lang = null, int $expire = 3600 * 24 * 30): void
     {
-        $assembledName = sprintf('%s_%s',RVCODE, self::$_locale_cookie_name);
 
         if (
-            !isset($_COOKIE[$assembledName]) ||
-            $_COOKIE[$assembledName] !== $lang
+            !isset($_COOKIE[self::$_locale_cookie_name]) ||
+            $_COOKIE[self::$_locale_cookie_name] !== $lang
         ) {
 
             setcookie(
-                $assembledName,
+                self::$_locale_cookie_name,
                 $lang,
                 time() + $expire,
                 '/',
-                sprintf('.%s', DOMAIN), // domaine et sous domaine
+                '',
                 false,
                 true
             );
@@ -30,8 +29,7 @@ trait LocaleByCookieTrait
 
     final public function getLocaleCookie(): ?string
     {
-        $assembledName = sprintf('%s_%s',RVCODE, self::$_locale_cookie_name);
-        return $_COOKIE[$assembledName] ?? null;
+        return $_COOKIE[self::$_locale_cookie_name] ?? null;
     }
 
 }
