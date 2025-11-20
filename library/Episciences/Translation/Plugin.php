@@ -1,11 +1,15 @@
 <?php
 
+use Episciences\Trait\LocaleByCookieTrait;
+use Psr\Log\LogLevel;
+
 /**
  * Plugin de traduction pour Episciences
  *
  */
 class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
 {
+    use LocaleByCookieTrait;
 
     public const LANG_FR = 'fr';
     public const LANG_EN = 'en';
@@ -34,13 +38,15 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
         try {
             $translator = $this->getLocaleByUrl($request);
         } catch (Zend_Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
         }
 
         // sinon teste session
         if ($translator === null) {
             try {
-                $translator = $this->getLocaleBySession();
+                $translator = $this->getLocalFromCookie();
             } catch (Zend_Exception $e) {
+                Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
             }
         }
 
@@ -54,10 +60,13 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
             try {
                 $translator = $this->checkTranslator(self::LANG_FR);
             } catch (Zend_Exception $e) {
+                Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
             }
         }
 
-        if (!in_array($translator->getLocale(), Zend_Registry::get('languages'), true)) {
+        $locale = $translator->getLocale();
+        if (!in_array($locale, Zend_Registry::get('languages'), true)) {
+            $this->setLocaleCookie($locale);
             $translator->setLocale(Zend_Registry::get('languages')[0]);
         }
 
@@ -79,10 +88,6 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
                 ));
             }
         }*/
-
-
-        $localeSession = new Zend_Session_Namespace('Zend_Translate');
-        $localeSession->lang = $translator->getLocale();
 
         Zend_Registry::set('lang', $translator->getLocale());
         Zend_Registry::set('Zend_Translate', $translator);
@@ -156,6 +161,16 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
         $localeSession = new Zend_Session_Namespace('Zend_Translate');
         $lang = $localeSession->lang ?? null;
         return $this->checkTranslator($lang);
+    }
+
+    /**
+     * @return Zend_Translate|null
+     * @throws Zend_Exception
+     * @throws Zend_Translate_Exception
+     */
+    private function getLocalFromCookie(): ?Zend_Translate
+    {
+        return $this->checkTranslator($this->getLocaleCookie());
     }
 
     /**

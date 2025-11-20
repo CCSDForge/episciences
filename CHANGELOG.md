@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Paper metrics Refactored; 1 query instead of 2 ; Episciences_Paper_Visits::count is deprecated
+- the Locale is now stored in a cookie instead of the session
 
 ## v1.0.52 - 2025-08-28
 

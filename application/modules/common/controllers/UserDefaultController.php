@@ -1,11 +1,13 @@
 <?php
 
+use Episciences\Trait\LocaleByCookieTrait;
 use neverbehave\Hcaptcha;
 use ReCaptcha\ReCaptcha;
 
 
 class UserDefaultController extends Zend_Controller_Action
 {
+    use LocaleByCookieTrait;
 
     public const SUCCESS = 'success';
     public const ERROR = 'error';
@@ -212,8 +214,7 @@ class UserDefaultController extends Zend_Controller_Action
 
                 if ($localUser->getHasAccountData() === true) {
                     $localUser->find(Episciences_Auth::getUid());
-                    $localeSession = new Zend_Session_Namespace('Zend_Translate');
-                    $localeSession->lang = Episciences_Auth::getLangueid();
+                    $this->setLocaleCookie(Episciences_Auth::getLangueid());
                     $this->synchroniseLocalUserFromCasIfNecessary($localUser);
 
                     try {
@@ -823,13 +824,12 @@ class UserDefaultController extends Zend_Controller_Action
                     return;
                 }
 
-                // Si on modifie son propre compte, on met à jour la session
+                // Si on modifie son propre compte, on met à jour le cookie de la locale
                 if (Episciences_Auth::getUid() === $user->getUid()) {
                     $user->find(Episciences_Auth::getUid()); // Modification de l'affiliations: mettre à jour les infos.
                     //$user->setUsername(Episciences_Auth::getUsername()); //sinon le username est supprimé de l'identité : en modification il n'est pas utilisé dans la méthode save()
                     Episciences_Auth::setIdentity($user);
-                    $localeSession = new Zend_Session_Namespace('Zend_Translate');
-                    $localeSession->lang = Episciences_Auth::getLangueid();
+                    $this->setLocaleCookie(Episciences_Auth::getLangueid());
                 }
 
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Les modifications sont sauvegardées.');
