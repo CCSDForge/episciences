@@ -89,6 +89,9 @@ class Episciences_Mail_Tags
 
     //Login oublié ? > /user/lostlogin
     public const TAG_RECIPIENT_USERNAME_LOST_LOGIN = '%%RECIPIENT_FORGOTTEN_USERNAME_LINK%%';
+    // TAG obsolète : remplacé par "%%RECIPIENT_FORGOTTEN_USERNAME_LINK%%" dans des templates par défault;
+    // Présent encore dans ceux déjà personnalisés
+    public const TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN = '%%RECIPIENT_USERNAME_LOST_LOGIN%%';
     public const TAG_VOLUME_NAME = '%%VOLUME_NAME%%';
     public const TAG_SECTION_NAME = '%%SECTION_NAME%%';
     // date d'acceptation d'un article

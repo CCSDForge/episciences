@@ -5,6 +5,7 @@ $lang = "fr";
 
 if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
     $acceptLangs = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
+    // Cela extraira tous les codes de langue et leurs éventuelles valeurs de "qualité" (q)
     preg_match_all('/([a-z-]{2,8})(?:-[a-z]{2})?(?:;q=([0-9.]+))?/i', $acceptLangs, $matches);
 
     if (isset($matches[1])) {
@@ -85,7 +86,7 @@ function translate($key): string
     <title>Episciences</title>
     <link href="//cdn.mathjax.org" rel="dns-prefetch">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png>">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="manifest" href="/site.webmanifest">
     <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">

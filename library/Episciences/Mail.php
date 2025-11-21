@@ -151,11 +151,15 @@ class Episciences_Mail extends Zend_Mail
             return false;
         }
 
+        $lostLoginLink = self::buildLostLoginUrl();
+
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL, $recipient->getEmail());
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME, $recipient->getFullName());
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME, $recipient->getScreenName());
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME, $recipient->getUsername());
-        $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, self::buildLostLoginUrl());
+        $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, $lostLoginLink);
+        $this->addTag(Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN, $lostLoginLink);
+
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_FIRST_NAME, $recipient->getFirstname());
         $this->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_LAST_NAME, $recipient->getLastname());
 
