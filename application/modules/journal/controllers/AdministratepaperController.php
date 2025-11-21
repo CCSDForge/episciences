@@ -1716,6 +1716,7 @@ class AdministratepaperController extends PaperDefaultController
         $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_REPO_URL, $paperRepoUrl);
         $mail->addTag(Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME, $contributor->getFullName());
         $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/user/lostlogin');
+        $mail->addTag(Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN, SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/user/lostlogin');
         $mail->addTo($reviewer['email'], $reviewer['full_name']);
 
         // Other reciptients

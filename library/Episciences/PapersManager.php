@@ -2496,7 +2496,8 @@ class Episciences_PapersManager
             Episciences_Mail_Tags::TAG_PAPER_URL => $url,
             Episciences_Mail_Tags::TAG_PAPER_RATINGS => $ratings_string,
             Episciences_Mail_Tags::TAG_PAPER_REPO_URL => $paper->getDocUrl(),
-            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => $site . '/user/lostlogin'
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => $site . '/user/lostlogin',
+            Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $site . '/user/lostlogin'
         ]);
 
 
