@@ -27,7 +27,7 @@ class PaperController extends PaperDefaultController
 
         // check if paper exists
         if (!$paper || $paper->getRvid() !== RVID || $paper->getRepoid() === 0) {
-            Episciences_Tools::header('HTTP/1.1 404 Not Found');
+            $this->getResponse()?->setHttpResponseCode(404);
             $this->renderScript('index/notfound.phtml');
             return;
         }
@@ -92,7 +92,7 @@ class PaperController extends PaperDefaultController
 
         // check if paper exists
         if (!$paper) {
-            Episciences_Tools::header('HTTP/1.1 404 Not Found');
+            $this->getResponse()?->setHttpResponseCode(404);
             $this->renderScript('index/notfound.phtml');
             return;
         }

@@ -1,0 +1,20 @@
+<form class="form-container" id="linkedInvitationForm" method="POST">
+    <p>
+        <?= $this->translate("Voulez-vous l’associer à votre compte pour continuer ?") ?>
+    </p>
+
+    <input type="hidden" name="hidden" value="">
+
+    <div class="btn-group">
+        <button type="submit" class="btn-accept" name="linkInvitation" value="acceptToLink">
+            <span class="fa-solid fa-check"></span>
+            <?= $this->translate('Accepter') ?>
+        </button>
+        <button type="submit" class="btn-decline" name="linkInvitation" value="declineToLink">
+            <span class="fa-solid fa-xmark"></span>
+            <?= $this->translate('Refuser') ?>
+        </button>
+    </div>
+
+    <p class="status" id="statusMsg"></p>
+</form>

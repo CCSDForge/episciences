@@ -64,6 +64,15 @@ class Episciences_User_Assignment
     protected $_uid;
 
     /**
+     * Pour associer une invitation provenant d'un autre compte.
+     * La valeur par défaut est null,
+     * sinon l'ID du compte auquel l'invitation est envoyée
+     * @var int|null
+     */
+
+    protected ?int $_from_uid = null;
+
+    /**
      * Utilisateur temporaire
      * @var bool
      */
@@ -104,7 +113,7 @@ class Episciences_User_Assignment
         }
     }
 
-    public function setOptions(array $options)
+    public function setOptions(array $options): \Episciences_User_Assignment
     {
         $methods = get_class_methods($this);
         foreach ($options as $key => $value) {
@@ -132,6 +141,7 @@ class Episciences_User_Assignment
             'ITEM' => $this->getItem(),
             'RVID' => !$this->getRvid() ? RVID : $this->getRvid(),
             'UID' => $this->getUid(),
+            'FROM_UID' => $this->getFrom_uid(),
             'TMP_USER' => $this->isTmp_user(),
             'ROLEID' => $this->getRoleid(),
             'STATUS' => $this->getStatus(),
@@ -203,6 +213,19 @@ class Episciences_User_Assignment
     {
         return $this->_uid;
     }
+
+
+    public function getFrom_uid(): ?int
+    {
+        return $this->_from_uid;
+    }
+
+    public function setFrom_uid(?int $linkedUid = null): self
+    {
+        $this->_from_uid = $linkedUid;
+        return $this;
+    }
+
 
     /**
      * @return bool|int $_tmp_user

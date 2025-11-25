@@ -40,8 +40,12 @@ class ReviewerController extends PaperDefaultController
         $assignmentId = $invitation->getAid();
         $assignment = Episciences_User_AssignmentsManager::findById($assignmentId);
 
-        if (Episciences_Auth::isLogged() && (Episciences_Auth::getUid() !== $assignment->getUid())) {
-            $doRating = false;
+        if (
+            Episciences_Auth::isLogged() &&
+            Episciences_Auth::getUid() !== $assignment->getUid()
+        ) {
+
+            $result = $this->checkAndProcessLinkedInvitation($request, $invitation, $assignment, $doRating);
 
         } elseif ($assignment->isTmp_user()) {
 
@@ -54,10 +58,25 @@ class ReviewerController extends PaperDefaultController
         }
 
         if (!$doRating) {
-            $message = $this->view->translate("Cette invitation ne vous est pas destinée.");
-            $this->view->errors = array($message);
-            return;
 
+            $message = "Cette invitation ne vous est pas destinée !";
+
+            if (isset($result['isPreLinked']) && $result['isPreLinked']) {
+
+                if (isset($result['decision']) && $result['decision'] === "declineToLink") {
+                    $this->view->displayLinkedInvitationForm = false;
+                } else {
+                    $message = "Cette invitation n'est pas liée au compte en cours !";
+                    $this->view->displayLinkedInvitationForm = true;
+                }
+
+            }
+
+            $message = $this->view->translate($message);
+
+            $this->view->errors = array($message);
+
+            return;
         }
 
 
@@ -110,7 +129,7 @@ class ReviewerController extends PaperDefaultController
             $error = $this->view->translate("Cet article a été supprimé, il n'est plus nécessaire de le relire.");
         } elseif ($paper->isObsolete()) {
             $error = $this->view->translate("Cet article est obsolète, il n'est plus nécessaire de le relire.");
-        } elseif($paper->isRevisionRequested()){
+        } elseif ($paper->isRevisionRequested()) {
             $error = $this->view->translate("Cet article est en cours de révision, il n'est plus nécessaire de le relire.");
         }
 
@@ -122,7 +141,9 @@ class ReviewerController extends PaperDefaultController
      * @param Episciences_User_Assignment $assignment
      * @param Episciences_Paper $paper
      * @param $data
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
@@ -152,10 +173,11 @@ class ReviewerController extends PaperDefaultController
      * @param Episciences_User_Assignment $assignment
      * @param Episciences_Paper $paper
      * @param $data
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
      */
     private function accept(Episciences_User_Invitation $oInvitation, Episciences_User_Assignment $assignment, Episciences_Paper $paper, $data): void
     {
@@ -302,7 +324,9 @@ class ReviewerController extends PaperDefaultController
      *  create new user (don't have an account yet)
      * @param array $data
      * @return Episciences_Reviewer
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
     private function createNewReviewerWithoutAccountProcessing(array $data): Episciences_Reviewer
@@ -329,6 +353,7 @@ class ReviewerController extends PaperDefaultController
      * Create new reviewer (existing account)
      * @param int $uid
      * @return Episciences_Reviewer
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -478,10 +503,11 @@ class ReviewerController extends PaperDefaultController
      * @param Episciences_User_Invitation $invitation
      * @param Episciences_User_Assignment $assignment
      * @param Episciences_Paper $paper
-     * @param null $tmpUser
+     * @param Episciences_User_Tmp|null $tmpUser
      * @return void
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      * @throws Zend_Mail_Exception
@@ -496,7 +522,10 @@ class ReviewerController extends PaperDefaultController
     ): void
     {
         // answer forms **************************************
-        if (!$invitation->hasExpired() && !$invitation->isAnswered() && !$invitation->isCancelled()) {
+        if (
+            !$invitation->hasExpired() &&
+            !$invitation->isAnswered() &&
+            !$invitation->isCancelled()) {
 
             // empty form created for validation only (real form is in viewscript)
             //$accept_form = new Episciences_User_Form_Create();
@@ -555,5 +584,67 @@ class ReviewerController extends PaperDefaultController
             $this->view->refuse_form = $refuse_form;
             $this->view->metadata = $paper->getDatasetsFromEnrichment();
         }
+    }
+
+    /**
+     * @param Zend_Controller_Request_Http $request
+     * @param Episciences_User_Invitation $invitation
+     * @param Episciences_User_Assignment $assignment
+     * @param bool $doRating
+     * @return array
+     * @throws JsonException
+     * @throws Zend_Controller_Exception
+     * @throws Zend_Controller_Request_Exception
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     * @throws Zend_Mail_Exception
+     * @throws Zend_Session_Exception
+     */
+
+    private function checkAndProcessLinkedInvitation(Zend_Controller_Request_Http $request, Episciences_User_Invitation $invitation, Episciences_User_Assignment $assignment, bool &$doRating): array
+    {
+
+        $invitationId = $invitation->getId();
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+
+        // l'invitation en cours n'est pas encore attachée au compte connecté
+        $isPreLinked = $session->linkedInvitationIds[$invitationId]['isPreLinked'] ?? false;
+        $decision = null;
+        $doRating = false;
+
+        if (!$isPreLinked) { // Add invitation ID
+            $session->linkedInvitationIds[$invitationId] = ['isPreLinked' => true];
+            $isPreLinked = true;
+        } else { // already attached to the logged-in account
+
+            $post = $request->getPost();
+
+            if (isset($post['linkInvitation'])) {
+                if ($post['linkInvitation'] === 'acceptToLink') {
+                    $answerRequest = new Zend_Controller_Request_Http();
+                    // The UID of the account to which the invitation is sent.
+                    $currentUid = $assignment->getUid();
+                    $assignment->setFrom_uid($currentUid);
+                    // link the assignment to the connected account
+                    $assignment->setUid(Episciences_Auth::getUid());
+
+                    if($assignment->isTmp_user()) {
+                        $assignment->setTmp_user(0);
+                    }
+
+                    $assignment->save();
+                    $doRating = true;
+
+                } elseif($post['linkInvitation'] === 'declineToLink'){
+                    $decision = 'declineToLink';
+                }
+                // Il serait alors possible de proposer à nouveau que l'invitation soit liée au compte connecté.
+                unset($session->linkedInvitationIds[$invitationId]);
+            }
+        }
+
+        return ['isPreLinked' => $isPreLinked, 'decision' => $decision];
     }
 }
