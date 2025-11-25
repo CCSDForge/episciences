@@ -45,7 +45,7 @@ class DefaultController extends Episciences_Controller_Action
                 $publishedPaper = Episciences_PapersManager::get($publishedId, false);
 
                 if (!$publishedPaper) {
-                    Episciences_Tools::header('HTTP/1.1 404 Not Found');
+                    $this->getResponse()?->setHttpResponseCode(404);
                     $this->renderScript('index/notfound.phtml');
                     return;
                 }
@@ -114,7 +114,8 @@ class DefaultController extends Episciences_Controller_Action
             !$paper->getEditor($loggedUid) &&
             !$paper->getCopyEditor($loggedUid) &&
             !array_key_exists($loggedUid, $paper->getReviewers()) && // nor reviewer
-            !$paper->isOwner();
+            !$paper->isOwner() &&
+            !$paper->isCoauthor();
     }
 
     protected function redirectWithFlashMessageIfPaperIsRemovedOrDeleted(Episciences_Paper $paper, bool $forceRedirection = true): void

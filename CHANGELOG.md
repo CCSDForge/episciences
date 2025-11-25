@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Added
+- [#658](https://github.com/CCSDForge/episciences/issues/658) It is now possible to link an invitation that is not intended for you to your account
+- allow the co-author to view the publication
 - Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
 - New option to allow Editors to receive 'Comments for editors' before declaring a conflict of interest (disabled by default)
 - Ajout d'indicateur visuel pour les pages prédéfinies dans le menu
@@ -51,7 +53,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Changed
+- [#528](https://github.com/CCSDForge/episciences/issues/528):
+    - 'upload a new version' on top of the list
+    - "Contact the editors (with an attachment)" instead of "Contact without sending a new version"
 - Paper metrics Refactored; 1 query instead of 2 ; Episciences_Paper_Visits::count is deprecated
+- the Locale is now stored in a cookie instead of the session
 
 ## v1.0.52 - 2025-08-28
 

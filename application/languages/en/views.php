@@ -76,6 +76,8 @@ return array(
     'anonyme' => 'anonymous',
     'Archives' => 'Repositories',
     'Année' => 'Year',
+    'Accepter' => 'Accept',
+    'Refuser' => 'Decline',
 
     // Messages d'erreur
     'Fichier introuvable' => 'File not found',
@@ -588,7 +590,7 @@ return array(
     "Répondre sans faire de modifications" => "Answer without any modifications",
     "Envoyer une version temporaire" => "Send a temporary version",
     "Proposer une nouvelle version" => "Upload a new version",
-    'Contacter sans dépôt de version' => 'Contact without sending a new version',
+    'Contacter les éditeurs (avec une pièce jointe)' => 'Contact the editors (with an attachment)',
     "Répondre" => "Reply",
     "Répondre :" => "Answer:",
     "Votre version temporaire a bien été enregistrée." => "Your temporary version has been saved",
@@ -844,6 +846,8 @@ return array(
     "Vous n'êtes pas relecteur pour cet article." => "You're not reviewer for this article.",
     "via" => "via",
     "pour le compte de" => "on behalf of",
+    "Cette invitation n'est pas liée au compte en cours !" => "This invitation is not linked to the current account!",
+    "Voulez-vous l’associer à votre compte pour continuer ?" => "Would you like to link it to your account to continue?",
 
     // Rédacteurs (editors)
     "Liste des articles pour lesquels je suis rédacteur" => "List of articles in editing",
@@ -1523,7 +1527,7 @@ return array(
 
     "Cette invitation a expiré." => "This invitation has expired.",
     "Cette invitation a expiré le " => "This invitation has expired on ",
-    "Cette invitation ne vous est pas destinée." => "This invitation was not intended for you.",
+    "Cette invitation ne vous est pas destinée !" => "This invitation was not intended for you!",
     "Vous avez déjà répondu à cette invitation." => "You've already answered this invitation.",
     "invitation acceptée le " => "invitation accepted on ",
     "invitation refusée le " => "invitation declined on ",
@@ -1545,8 +1549,8 @@ return array(
     "Vous ne souhaitez pas relire cet article" => "You don't want to review this article",
     "Voulez-vous nous suggérer quelqu'un susceptible de vouloir le faire ?" => "Do you want to suggest someone that might be interested by this task?",
     "Suggérez un relecteur" => "Suggest a reviewer",
-    "Si vous le souhaitez, vous pouvez nous suggérer un autre relecteur :" => "If you wish so, you can suggest another reviewer:",
-    "Si vous le souhaitez, vous pouvez nous indiquer la raison de votre refus :" => "If you wish so, you can tell us why you've declined this invitation:",
+    "Si vous le souhaitez, vous pouvez nous suggérer un autre relecteur :" => "If you wish, you can suggest another reviewer:",
+    "Si vous le souhaitez, vous pouvez nous indiquer la raison de votre refus :" => "If you wish, you can tell us why you've declined this invitation:",
     "Motif de votre refus" => "Refusal reason",
     "Confirmer mon refus" => "Confirm my refusal",
 

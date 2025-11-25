@@ -24,5 +24,6 @@ class IndexController extends Episciences_Controller_Action
 
     public function notfoundAction()
     {
+        $this->getResponse()?->setHttpResponseCode(404);
     }
 }
