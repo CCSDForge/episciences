@@ -12,7 +12,9 @@ const functionsJs = fs.readFileSync(
 );
 
 // Extract just the isEmptyData function to avoid jQuery dependencies
-const isEmptyDataFunctionMatch = functionsJs.match(/function isEmptyData\(value, visited = new WeakSet\(\)\) \{[\s\S]*?\n\}/);
+const isEmptyDataFunctionMatch = functionsJs.match(
+    /function isEmptyData\(value, visited = new WeakSet\(\)\) \{[\s\S]*?\n\}/
+);
 if (isEmptyDataFunctionMatch) {
     eval(isEmptyDataFunctionMatch[0]);
 }

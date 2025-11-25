@@ -7,7 +7,9 @@ const functionsJs = fs.readFileSync(
 );
 
 // Extract just the htmlEntities function to avoid jQuery dependencies
-const htmlEntitiesFunctionMatch = functionsJs.match(/function htmlEntities\(str\) \{[\s\S]*?\n\}/);
+const htmlEntitiesFunctionMatch = functionsJs.match(
+    /function htmlEntities\(str\) \{[\s\S]*?\n\}/
+);
 if (htmlEntitiesFunctionMatch) {
     eval(htmlEntitiesFunctionMatch[0]);
 }

@@ -7,7 +7,9 @@ const functionsJs = fs.readFileSync(
 );
 
 // Extract just the readableBytes function to avoid jQuery dependencies
-const readableBytesFunctionMatch = functionsJs.match(/function readableBytes\(bytes, locale\) \{[\s\S]*?\n\}/);
+const readableBytesFunctionMatch = functionsJs.match(
+    /function readableBytes\(bytes, locale\) \{[\s\S]*?\n\}/
+);
 if (readableBytesFunctionMatch) {
     eval(readableBytesFunctionMatch[0]);
 }

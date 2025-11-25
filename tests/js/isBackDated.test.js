@@ -7,7 +7,9 @@ const functionsJs = fs.readFileSync(
 );
 
 // Extract just the isBackDated function to avoid jQuery dependencies
-const isBackDatedFunctionMatch = functionsJs.match(/function isBackDated\(input\) \{[\s\S]*?\n\}/);
+const isBackDatedFunctionMatch = functionsJs.match(
+    /function isBackDated\(input\) \{[\s\S]*?\n\}/
+);
 if (isBackDatedFunctionMatch) {
     eval(isBackDatedFunctionMatch[0]);
 }
