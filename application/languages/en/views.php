@@ -76,6 +76,8 @@ return array(
     'anonyme' => 'anonymous',
     'Archives' => 'Repositories',
     'Année' => 'Year',
+    'Accepter' => 'Accept',
+    'Refuser' => 'Decline',
 
     // Messages d'erreur
     'Fichier introuvable' => 'File not found',
@@ -833,6 +835,8 @@ return array(
     "Vous n'êtes pas relecteur pour cet article." => "You're not reviewer for this article.",
     "via" => "via",
     "pour le compte de" => "on behalf of",
+    "Cette invitation n'est pas liée au compte en cours !" => "This invitation is not linked to the current account!",
+    "Voulez-vous l’associer à votre compte pour continuer ?" => "Would you like to link it to your account to continue?",
 
     // Rédacteurs (editors)
     "Liste des articles pour lesquels je suis rédacteur" => "List of articles in editing",
@@ -1511,7 +1515,7 @@ return array(
 
     "Cette invitation a expiré." => "This invitation has expired.",
     "Cette invitation a expiré le " => "This invitation has expired on ",
-    "Cette invitation ne vous est pas destinée." => "This invitation was not intended for you.",
+    "Cette invitation ne vous est pas destinée !" => "This invitation was not intended for you!",
     "Vous avez déjà répondu à cette invitation." => "You've already answered this invitation.",
     "invitation acceptée le " => "invitation accepted on ",
     "invitation refusée le " => "invitation declined on ",

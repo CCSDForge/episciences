@@ -1,0 +1,5 @@
+<?php if (Episciences_Auth::isLogged()) : ?>
+    <a class="btn btn-default btn-sm pull-right" href="<?= $this->url(['controller' => 'paper', 'action' => 'ratings']) ?>">
+        <span class="glyphicon glyphicon-file pu"></span> <?= $this->translate("Relire les articles") ?>
+    </a>
+<?php endif; ?>
