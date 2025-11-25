@@ -1549,8 +1549,8 @@ return array(
     "Vous ne souhaitez pas relire cet article" => "You don't want to review this article",
     "Voulez-vous nous suggérer quelqu'un susceptible de vouloir le faire ?" => "Do you want to suggest someone that might be interested by this task?",
     "Suggérez un relecteur" => "Suggest a reviewer",
-    "Si vous le souhaitez, vous pouvez nous suggérer un autre relecteur :" => "If you wish so, you can suggest another reviewer:",
-    "Si vous le souhaitez, vous pouvez nous indiquer la raison de votre refus :" => "If you wish so, you can tell us why you've declined this invitation:",
+    "Si vous le souhaitez, vous pouvez nous suggérer un autre relecteur :" => "If you wish, you can suggest another reviewer:",
+    "Si vous le souhaitez, vous pouvez nous indiquer la raison de votre refus :" => "If you wish, you can tell us why you've declined this invitation:",
     "Motif de votre refus" => "Refusal reason",
     "Confirmer mon refus" => "Confirm my refusal",
 
