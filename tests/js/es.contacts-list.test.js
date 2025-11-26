@@ -18,6 +18,9 @@ describe('es.contacts-list', function () {
         );
         global.getLoader = mockGetLoader;
 
+        // Define JS_PREFIX_URL used in the source file
+        global.JS_PREFIX_URL = '/';
+
         // Create mock DOM structure
         document.body.innerHTML = `
             <form id="test-form">
@@ -52,6 +55,7 @@ describe('es.contacts-list', function () {
         jest.clearAllMocks();
         delete global.getLoader;
         delete global.fetch;
+        delete global.JS_PREFIX_URL;
     });
 
     describe('Label click event', function () {
