@@ -12,7 +12,9 @@ const functionsJs = fs.readFileSync(
 );
 
 // Extract just the dateIsBetween function to avoid jQuery dependencies
-const dateIsBetweenFunctionMatch = functionsJs.match(/function dateIsBetween\(input, min, max\) \{[\s\S]*?\n\}/);
+const dateIsBetweenFunctionMatch = functionsJs.match(
+    /function dateIsBetween\(input, min, max\) \{[\s\S]*?\n\}/
+);
 if (dateIsBetweenFunctionMatch) {
     eval(dateIsBetweenFunctionMatch[0]);
 }

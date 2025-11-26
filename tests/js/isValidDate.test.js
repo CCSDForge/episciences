@@ -7,12 +7,16 @@ const functionsJs = fs.readFileSync(
 );
 
 // Extract both isValidDate and isISOdate functions to avoid jQuery dependencies
-const isValidDateFunctionMatch = functionsJs.match(/function isValidDate\(input, separator\) \{[\s\S]*?\n\}/);
+const isValidDateFunctionMatch = functionsJs.match(
+    /function isValidDate\(input, separator\) \{[\s\S]*?\n\}/
+);
 if (isValidDateFunctionMatch) {
     eval(isValidDateFunctionMatch[0]);
 }
 
-const isISOdateFunctionMatch = functionsJs.match(/function isISOdate\(input, pattern, strict = false\) \{[\s\S]*?\n\}/);
+const isISOdateFunctionMatch = functionsJs.match(
+    /function isISOdate\(input, pattern, strict = false\) \{[\s\S]*?\n\}/
+);
 if (isISOdateFunctionMatch) {
     eval(isISOdateFunctionMatch[0]);
 }

@@ -12,16 +12,16 @@ global.console = {
     debug: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
-    error: jest.fn()
+    error: jest.fn(),
 };
 
 // Mock global functions that functions.js expects
-global.translate = function(text, locale) {
+global.translate = function (text, locale) {
     return text; // Simple passthrough for tests
 };
 
 // Mock jQuery-like $ function for functions.js compatibility
-global.$ = function(selector) {
+global.$ = function (selector) {
     // Minimal jQuery mock for tests
     const element = {
         attr: () => element,
@@ -29,13 +29,13 @@ global.$ = function(selector) {
         prepend: () => element,
         find: () => element,
         hasClass: () => false,
-        ready: (callback) => {
+        ready: callback => {
             // For document ready, call immediately in test environment
             if (typeof callback === 'function') {
                 callback();
             }
             return element;
-        }
+        },
     };
     return element;
 };
@@ -45,7 +45,7 @@ afterEach(() => {
     jest.clearAllMocks();
     document.body.innerHTML = '';
     document.head.innerHTML = '';
-    
+
     // Clear any global state
     if (window.AffiliationsAutocomplete) {
         if (window.AffiliationsAutocomplete.cache) {

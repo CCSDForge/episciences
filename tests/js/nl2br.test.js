@@ -7,7 +7,9 @@ const functionsJs = fs.readFileSync(
 );
 
 // Extract just the nl2br function to avoid jQuery dependencies
-const nl2brFunctionMatch = functionsJs.match(/function nl2br\(str\) \{[\s\S]*?\n\}/);
+const nl2brFunctionMatch = functionsJs.match(
+    /function nl2br\(str\) \{[\s\S]*?\n\}/
+);
 if (nl2brFunctionMatch) {
     eval(nl2brFunctionMatch[0]);
 }

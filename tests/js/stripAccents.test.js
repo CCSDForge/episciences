@@ -12,7 +12,9 @@ const functionsJs = fs.readFileSync(
 );
 
 // Extract just the stripAccents function to avoid jQuery dependencies
-const stripAccentsFunctionMatch = functionsJs.match(/function stripAccents\(string\) \{[\s\S]*?\n\}/);
+const stripAccentsFunctionMatch = functionsJs.match(
+    /function stripAccents\(string\) \{[\s\S]*?\n\}/
+);
 if (stripAccentsFunctionMatch) {
     eval(stripAccentsFunctionMatch[0]);
 }

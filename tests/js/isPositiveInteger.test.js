@@ -7,7 +7,9 @@ const functionsJs = fs.readFileSync(
 );
 
 // Extract just the isPositiveInteger function to avoid jQuery dependencies
-const isPositiveIntegerFunctionMatch = functionsJs.match(/function isPositiveInteger\(s\) \{[\s\S]*?\n\}/);
+const isPositiveIntegerFunctionMatch = functionsJs.match(
+    /function isPositiveInteger\(s\) \{[\s\S]*?\n\}/
+);
 if (isPositiveIntegerFunctionMatch) {
     eval(isPositiveIntegerFunctionMatch[0]);
 }

@@ -7,7 +7,9 @@ const functionsJs = fs.readFileSync(
 );
 
 // Extract just the in_array function to avoid jQuery dependencies
-const in_arrayFunctionMatch = functionsJs.match(/function in_array\(needle, haystack, strict = false\) \{[\s\S]*?\n\}/);
+const in_arrayFunctionMatch = functionsJs.match(
+    /function in_array\(needle, haystack, strict = false\) \{[\s\S]*?\n\}/
+);
 if (in_arrayFunctionMatch) {
     eval(in_arrayFunctionMatch[0]);
 }

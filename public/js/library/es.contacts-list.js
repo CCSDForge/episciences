@@ -1,23 +1,44 @@
-$(function () {
+document.addEventListener('DOMContentLoaded', () => {
+    const ccElement = document.getElementById('cc-element');
+    const labels = ccElement?.querySelectorAll('label');
 
-    $('#cc-element').find('label').click(function() {
+    labels?.forEach(label => {
+        label.addEventListener('click', async e => {
+            const form = e.target.closest('form');
+            const contactsContainer = form?.nextElementSibling;
 
+            if (!form || !contactsContainer) {
+                return;
+            }
 
-        let $form = $(this).closest('form');
-        let $contacts_container = $form.next('.contacts_container');
+            form.style.display = 'none';
+            contactsContainer.style.display = 'block';
+            contactsContainer.innerHTML = getLoader();
 
-        $form.hide();
-        $contacts_container.show();
-        $contacts_container.html(getLoader());
+            try {
+                const response = await fetch(
+                    JS_PREFIX_URL + 'administratemail/getcontacts?target=cc',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: 'ajax=true',
+                    }
+                );
 
-        $.ajax({
-            url: JS_PREFIX_URL + 'administratemail/getcontacts?target=cc',
-            type: 'POST',
-            data: {ajax: true},
-            success: function (content) {
-                $contacts_container.html(content);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const content = await response.text();
+                contactsContainer.innerHTML = content;
+            } catch (error) {
+                console.error('Error loading contacts:', error);
+                contactsContainer.innerHTML =
+                    '<p class="text-danger">Erreur lors du chargement des contacts</p>';
             }
         });
     });
-
 });
