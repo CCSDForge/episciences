@@ -613,6 +613,20 @@ class ReviewerController extends PaperDefaultController
         $isPreLinked = $session->linkedInvitationIds[$invitationId]['isPreLinked'] ?? false;
         $decision = null;
         $doRating = false;
+        $fromUid = $assignment->getUid();
+
+        $isAssignedToTmpUser = (bool)$assignment->isTmp_user();
+
+        if ($isAssignedToTmpUser) {
+            // User to which the invitation is sent
+            $fromUser = Episciences_TmpUsersManager::findById($fromUid);
+        } else {
+            $fromUser = new Episciences_User();
+            $fromUser->findWithCAS($fromUid);
+        }
+
+        $this->view->fromScreeName = $fromUser->getScreenName();
+        $this->view->fromEmail = $fromUser->getEmail();
 
         if (!$isPreLinked) { // Add invitation ID
             $session->linkedInvitationIds[$invitationId] = ['isPreLinked' => true];
@@ -623,21 +637,23 @@ class ReviewerController extends PaperDefaultController
 
             if (isset($post['linkInvitation'])) {
                 if ($post['linkInvitation'] === 'acceptToLink') {
-                    $answerRequest = new Zend_Controller_Request_Http();
+
                     // The UID of the account to which the invitation is sent.
-                    $currentUid = $assignment->getUid();
-                    $assignment->setFrom_uid($currentUid);
+                    $assignment->setFrom_uid($fromUid);
                     // link the assignment to the connected account
                     $assignment->setUid(Episciences_Auth::getUid());
 
-                    if($assignment->isTmp_user()) {
+                    if ($isAssignedToTmpUser) {
                         $assignment->setTmp_user(0);
                     }
 
                     $assignment->save();
                     $doRating = true;
 
-                } elseif($post['linkInvitation'] === 'declineToLink'){
+                    $infoMessage = $this->view->translate("L’invitation a été correctement associée à votre compte.");
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_INFO)->addMessage($infoMessage);
+
+                } elseif ($post['linkInvitation'] === 'declineToLink') {
                     $decision = 'declineToLink';
                 }
                 // Il serait alors possible de proposer à nouveau que l'invitation soit liée au compte connecté.

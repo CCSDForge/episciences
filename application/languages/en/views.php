@@ -839,7 +839,10 @@ return array(
     "via" => "via",
     "pour le compte de" => "on behalf of",
     "Cette invitation n'est pas liée au compte en cours !" => "This invitation is not linked to the current account!",
-    "Voulez-vous l’associer à votre compte pour continuer ?" => "Would you like to link it to your account to continue?",
+    //"Voulez-vous l’associer à votre compte pour continuer ?" => "Would you like to link it to your account to continue?",
+    "L’invitation a été correctement associée à votre compte" => "The invitation has been successfully linked to your account",
+    "Elle a été envoyée au compte %s%s < %s >%s" => "It was sent to the account %s%s < %s >%s",
+    "Voulez-vous l’associer à votre compte %s %s < %s > %s pour continuer ?" => "Would you like to link it to your account %s %s< %s >%s to continue?",
 
     // Rédacteurs (editors)
     "Liste des articles pour lesquels je suis rédacteur" => "List of articles in editing",
@@ -1553,6 +1556,7 @@ return array(
     "Cette invitation n'existe pas !" => "This invitation does not exist!",
     "Détails de la réponse" => "Details of the answer",
     "Cette invitation a été annulée, vous n'avez plus besoin d'évaluer cet article." => "This invitation has been cancelled, you don't need to review this article anymore.",
+    "L’invitation a été correctement associée à votre compte." => "The invitation has been successfully linked to your account.",
 
 
     /**
