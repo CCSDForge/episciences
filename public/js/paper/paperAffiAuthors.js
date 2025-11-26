@@ -88,7 +88,7 @@ class PaperAffiAuthorsManager {
     async loadAffiliations(authorId) {
         const paperId = this.paperIdDiv?.textContent || '';
 
-        const response = await fetch(JS_PREFIX_URL + 'paper/getaffiliationsbyauthor/', {
+        const response = await fetch('/paper/getaffiliationsbyauthor/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
