@@ -1,6 +1,13 @@
 <form class="form-container" id="linkedInvitationForm" method="POST">
+    <?php
+    $loggedScreenName = Episciences_Auth::getScreenName();
+    $loggedEmail = Episciences_Auth::getEmail();
+    ?>
     <p>
-        <?= $this->translate("Voulez-vous l’associer à votre compte pour continuer ?") ?>
+        <?= sprintf($this->translate('Elle a été envoyée au compte %s%s < %s >%s'), '<a>', $this->fromScreeName, $this->fromEmail, '</a>') ?>
+    </p>
+    <p>
+        <?= sprintf($this->translate("Voulez-vous l’associer à votre compte %s %s < %s > %s pour continuer ?"), '<a>', $loggedScreenName, $loggedEmail, '</a>') ?>
     </p>
 
     <input type="hidden" name="hidden" value="">
