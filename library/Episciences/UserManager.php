@@ -14,33 +14,33 @@ class Episciences_UserManager
      * @return mixed
      */
 
-    public static function countRatings($uid)
+    public static function countRatings($uid): mixed
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()
+        $select = $db?->select()
             ->from(T_REVIEWER_REPORTS, ['stats_ratings_nbr' => 'COUNT(*)'])
             ->where('UID = ?', $uid)
             ->where('STATUS = ?', Episciences_Rating_Report::STATUS_COMPLETED);
-        return $db->fetchRow($select);
+        return $db?->fetchRow($select);
 
     }
 
     /**
-     * retourne le nombre d'invitation envoyées à un utilisateur
+     * Retourne le nombre d'invitations envoyées à un utilisateur
      * @param $uid
      * @return mixed
      */
 
-    public static function countInvitations($uid)
+    public static function countInvitations($uid): mixed
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()
+        $select = $db?->select()
             ->distinct('UID')
             ->from(['ua' => T_ASSIGNMENTS], ['stats_invitations_nbr' => 'COUNT(UID)'])
-            ->join(['ui' => T_USER_INVITATIONS], 'ua.ID = ui.AID')
+            ->join(['ui' => T_USER_INVITATIONS], 'ua.ID = ui.AID', [])
             ->where('ua.UID = ?', $uid)
             ->where('ua.RVID = ?', RVID);
-        return $db->fetchRow($select);
+        return $db?->fetchRow($select);
     }
 
     /**
@@ -51,7 +51,7 @@ class Episciences_UserManager
     public static function getSubmittedPapersQuery(int $uid): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        return $db->select()
+        return $db?->select()
             ->from(T_PAPERS, 'DOCID')
             ->where('UID = ?', $uid)
             ->where('RVID = ?', RVID);
@@ -70,7 +70,7 @@ class Episciences_UserManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $query = $db->select()
+        $query = $db?->select()
             ->distinct()
             ->from(['u' => T_USERS], 'u.UID')
             ->join(['ur' => T_USER_ROLES], 'u.UID = ur.UID', 'ur.UID')
@@ -80,7 +80,7 @@ class Episciences_UserManager
             $query->where('ur.RVID = ?', $rvId);
         }
 
-        return (int)$db->fetchone($query);
+        return (int)$db?->fetchone($query);
 
     }
 
@@ -99,7 +99,7 @@ class Episciences_UserManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $query = $db->select()
+        $query = $db?->select()
             ->from(['u' => T_USERS], 'u.uuid')
             ->join(['ur' => T_USER_ROLES], 'u.UID = ur.UID', 'ur.UID')
             ->where('u.UID = ?', $uid);
@@ -108,7 +108,7 @@ class Episciences_UserManager
             $query->where('ur.RVID = ?', $rvId);
         }
 
-        return $db->fetchone($query);
+        return $db?->fetchone($query);
 
     }
 }
