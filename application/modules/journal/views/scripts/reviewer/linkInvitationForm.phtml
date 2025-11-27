@@ -12,12 +12,12 @@
 
     <input type="hidden" name="hidden" value="">
 
-    <div class="btn-group">
-        <button type="submit" class="btn-accept" name="linkInvitation" value="acceptToLink">
+    <div class="form-actions text-center">
+        <button type="submit" class="btn btn-success" name="linkInvitation" value="acceptToLink" style="display:inline">
             <span class="fa-solid fa-check"></span>
             <?= $this->translate('Accepter') ?>
         </button>
-        <button type="submit" class="btn-decline" name="linkInvitation" value="declineToLink">
+        <button type="submit" class="btn btn-danger" name="linkInvitation" value="declineToLink">
             <span class="fa-solid fa-xmark"></span>
             <?= $this->translate('Refuser') ?>
         </button>
