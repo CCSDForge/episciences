@@ -157,7 +157,7 @@ class ReviewerController extends PaperDefaultController
 
             // accepted invitation
             $this->accept($oInvitation, $assignment, $paper, $data);
-            $this->_helper->redirector->gotoUrl($this->_helper->url('ratings', 'paper'));
+            $this->_helper->redirector->gotoUrl($this->_helper->url('rating', 'paper', null, ['id' => $paper->getDocid()]));
 
         } elseif (array_key_exists('submitrefuse', $data)) {
 
