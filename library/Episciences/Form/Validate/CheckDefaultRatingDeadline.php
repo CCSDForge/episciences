@@ -40,7 +40,7 @@ class Episciences_Form_Validate_CheckDefaultRatingDeadline extends Zend_Validate
         }
 
         if (strtotime($default_deadline) > strtotime($deadline_max)) {
-            $this->_error(self::DEADLINE_LESS_THAN_MIN);
+            $this->_error(self::DEADLINE_GREATER_THAN_MAX);
             return false;
         }
 
