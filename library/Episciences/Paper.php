@@ -3625,7 +3625,7 @@ class Episciences_Paper
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    public function manageNewVersionErrors(array $options = [])
+    public function manageNewVersionErrors(array $options = []): array|string
     {
         $urlHelper = new Episciences_View_Helper_Url();
         $isEpiNotify = isset($options['isEpiNotify']) && $options['isEpiNotify'];
@@ -3758,13 +3758,13 @@ class Episciences_Paper
                         $translator->translate('Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, ') :
                         "To submit your new version, please use the link in the email you received from the journal, ";
 
-                    if ($isFromCli) {
+                    if (!$isFromCli) {
                         $selfMsg .= '<br>';
 
                         $selfMsg .= $translator ? $translator->translate('ou') : 'or';
                         $selfMsg .= '<span style="margin-right: 3px;"></span>';
                         $selfMsg .= '<a class="' . $style . '" href="' . $url . '">';
-                        $selfMsg .= '<span class="glyphicon glyphicon-chevron-right"></span>';
+                        $selfMsg .= '<span class="fa-solid fa-link" style="margin-right: 3px;"></span>';
                         $selfMsg .= $translator ? $translator->translate("Cliquer ici") : "Click here";
                         $selfMsg .= '</a>';
                         $selfMsg .= '<span style="margin-left: 3px;"></span>';

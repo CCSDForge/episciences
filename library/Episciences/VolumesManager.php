@@ -259,10 +259,6 @@ class Episciences_VolumesManager
      */
     public static function getFormDefaults(Episciences_Volume $volume): array
     {
-        //$defaults = self::volumeTitleToTextArray($volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML));
-        //$defaults['title'] = $volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML);
-        // $defaults['description'] = $volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML);
-        //$defaults = self::volumeDescriptionToTextareaArray($volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML));
         $defaults = array_merge(
             self::volumeTitleToTextArray($volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML)),
             self::volumeDescriptionToTextareaArray($volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML))
@@ -326,6 +322,11 @@ class Episciences_VolumesManager
 
         $form = new Ccsd_Form;
         $form->setAttrib('class', 'form-horizontal');
+        $form->addElementPrefixPath(
+            'Episciences_Form_Validate', // Préfixe de la classe (Episciences_Form_Validate)
+            'Episciences/Form/Validate', // Chemin relatif au répertoire de la librairie
+            'validate'                   // Type (Validateur)
+        );
         $form->setDecorators([
             ['ViewScript', [
                 'viewScript' => '/volume/form.phtml',
@@ -396,8 +397,13 @@ class Episciences_VolumesManager
             'value' => ($volume !== null) ? $volume->getVol_year() : '',
             // 'required' => true,
             'style' => 'width:300px;position: static;',
+            'attribs' => [
+                'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Exemple : 2024 ou 2024-2025')
+            ],
             'validators' => [
-                [new Zend_Validate_Int()],
+                [
+                    'validator' => 'VolumeYear',
+                ],
             ],
         ]);
         // Statut du volume
