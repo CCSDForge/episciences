@@ -1,16 +1,14 @@
 <?php // first position in view => position 0 in VOLUME_PAPER_POSITION table?>
-<<<<<<< Updated upstream
-<span id="position_ <?= $this->docId ?>"><?= sprintf(', #%s', ($this->position + 1)) ?> &nbsp;
-=======
-<<<<<<< Updated upstream
-<span id="position_ <?= $this->docId ?>"><?= sprintf(', #%s', $this->position) ?> &nbsp;
-=======
 <span id="position_ <?= $this->docId ?>"> , # <?= $this->position + 1 ?> &nbsp;
->>>>>>> Stashed changes
->>>>>>> Stashed changes
         <?php if (Episciences_Auth::isSecretary()) : ?>
-            <a href="/volume/edit?id=<?= $this->vid ?>&from=<?= $this->from !== 'view' ? $this->from : $this->from . '&docid=' . $this->docId ?>"
-               class="btn btn-default btn-xs" title="<?= $this->translate("Modifier") ?>">
+            <?php
+            $params = ['controller' => 'volume', 'action' => 'edit', 'id' => $this->vid, 'from' => $this->from];
+            if ($this->from === 'view') {
+                $params ['docid'] = $this->docId;
+            }
+            ?>
+            <a href="<?= $this->url($params) ?>" class="btn btn-default btn-xs"
+               title="<?= $this->translate("Modifier") ?>">
                 <span class="glyphicon glyphicon-pencil"></span>
             </a>
         <?php endif; ?>
