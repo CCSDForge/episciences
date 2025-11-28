@@ -48,9 +48,7 @@ class Episciences_Volume
     private $_bib_reference = null;
 
     private ?string $_vol_type = null;
-    //private ?int $_vol_year = null;
-    private $_vol_year = null;
-    //private ?string $_vol_num = null;
+    private ?string $_vol_year = null;
     private $_vol_num = null;
     private int $nbOfPapersInVolume = 0;
     private ?array $titles;
@@ -1335,17 +1333,14 @@ class Episciences_Volume
         return $this;
     }
 
-    public function getVol_year(): ?int
+    public function getVol_year(): ?string
     {
-        if (!is_int($this->_vol_year)) {
-            return null;
-        }
         return $this->_vol_year;
     }
 
-    public function setVol_year($volYear): \Episciences_Volume
+    public function setVol_year(string $volYear = null): \Episciences_Volume
     {
-        $this->_vol_year = (int)$volYear ?: null;
+        $this->_vol_year = $volYear ?: null;
         return $this;
     }
 

@@ -328,4 +328,9 @@ return [
     'classification_msc2020' => 'Mathematics Subject Classification 2020',
     "File 'file_data_descriptor' was not uploaded" => "Fichier descripteur non téléchargé.",
     'unavailable' => 'Indisponible',
+
+    'T_VOLUME_YEAR_INVALID_FORMAT' => 'Le format d\'année du volume est invalide. Il doit être "AAAA" (ex: 2001) ou "AAAA-AAAA" (ex: 2001-2002).',
+    'T_VOLUME_YEAR_INVALID_RANGE'  => 'La deuxième année du volume doit être strictement supérieure à la première (ex: 2003-2004).',
+    'T_VOLUME_YEAR_OUTSIDE_BOUNDS' => 'L\'année doit être comprise entre %s et %s (Année courante + 5 ans).',
+
 ];
