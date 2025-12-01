@@ -40,6 +40,14 @@ global.$ = function (selector) {
     return element;
 };
 
+// Mock CSS.escape for tests (not available in jsdom)
+global.CSS = {
+    escape: str => {
+        // Simple polyfill for CSS.escape
+        return str.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&');
+    },
+};
+
 // Clean up after each test
 afterEach(() => {
     jest.clearAllMocks();

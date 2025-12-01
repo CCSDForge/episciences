@@ -78,3 +78,5 @@ assets/node_modules/
 /logs/
 /config/translationUpdater-config.yaml
 
+/scripts/stats/stats.conf
+/scripts/stats/sites_config.csv
