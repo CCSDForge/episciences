@@ -855,6 +855,8 @@ return array(
     "L’invitation a été correctement associée à votre compte" => "The invitation has been successfully linked to your account",
     "Elle a été envoyée au compte %s%s < %s >%s" => "It was sent to the account %s%s < %s >%s",
     "Voulez-vous l’associer à votre compte %s %s < %s > %s pour continuer ?" => "Would you like to link it to your account %s %s< %s >%s to continue?",
+    "Une invitation vous a déjà été envoyée via ce compte %s%s < %s >%s" => "An invitation has already been sent to you through this account %s %s< %s >%s",
+    "Finaliser la relecture" => "Complete the reviewing",
 
     // Rédacteurs (editors)
     "Liste des articles pour lesquels je suis rédacteur" => "List of articles in editing",

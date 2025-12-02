@@ -57,8 +57,14 @@ class ReviewerController extends PaperDefaultController
 
         }
 
+        $paper = Episciences_PapersManager::get($assignment->getItemid());
+
         if (!$doRating) {
 
+            $checkedIsAlreadyInvited = $this->checkIsAlreadyInvited($paper);
+
+            $this->view->isAlreadyInvited = $checkedIsAlreadyInvited['isAlreadyInvited'];
+            $this->view->latestInvitationUrl = $checkedIsAlreadyInvited['url'] ?? null;
             $message = "Cette invitation ne vous est pas destinée !";
 
             if (isset($result['isPreLinked']) && $result['isPreLinked']) {
@@ -90,7 +96,7 @@ class ReviewerController extends PaperDefaultController
 
 
         // ARTICLE A RELIRE *******************************************
-        $paper = Episciences_PapersManager::get($assignment->getItemid());
+
         $paper->setXslt($paper->getXml(), 'partial_paper');
         $this->view->paper = $paper;
 
@@ -606,6 +612,7 @@ class ReviewerController extends PaperDefaultController
     private function checkAndProcessLinkedInvitation(Zend_Controller_Request_Http $request, Episciences_User_Invitation $invitation, Episciences_User_Assignment $assignment, bool &$doRating): array
     {
 
+
         $invitationId = $invitation->getId();
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
 
@@ -663,4 +670,64 @@ class ReviewerController extends PaperDefaultController
 
         return ['isPreLinked' => $isPreLinked, 'decision' => $decision];
     }
+
+    /**
+     * check if he has already been invited by this account
+     * @param Episciences_Paper $paper
+     * @return array
+     * @throws JsonException
+     * @throws Zend_Db_Statement_Exception
+     */
+
+
+    private function checkIsAlreadyInvited(Episciences_Paper $paper): array
+    {
+
+        $reviewers = $paper->getReviewers();
+        $isReviewer = isset($reviewers[Episciences_Auth::getUid()]);
+
+        if (!$isReviewer) { // is invitations sent to the logged-in account
+            $pendingInvitation = null;
+            $paperInvitations = $paper->getInvitations([Episciences_User_Assignment::STATUS_PENDING], true)[Episciences_User_Assignment::STATUS_PENDING];
+
+            foreach ($paperInvitations as $arrayInvitation) {
+
+                if ((int)$arrayInvitation['UID'] === Episciences_Auth::getUid()) {
+
+                    /** @var Episciences_User_Invitation $pendingInvitation */
+                    $pendingInvitation = Episciences_User_InvitationsManager::find(['ID' => $arrayInvitation['INVITATION_ID']]);
+                    break;
+                }
+            }
+
+            if ($pendingInvitation && $pendingInvitation->getId()) {
+                $invitationUrl = $this->view->url([
+                    'controller' => 'reviewer',
+                    'action' => 'invitation',
+                    'id' => $pendingInvitation->getId(),
+                    'lang' => Episciences_Auth::getLangueid()
+                ]);
+
+                $result ['isAlreadyInvited'] = true;
+                $result ['invitationUrl'] = $invitationUrl;
+
+                return $result;
+            }
+        }
+
+        $ratingUrlUrl = $this->view->url([
+            'controller' => 'paper',
+            'action' => 'rating',
+            'id' => $paper->getDocid()
+        ]);
+
+        $result ['isReviewer'] = true;
+        $result ['isAlreadyInvited'] = true;
+
+        $result ['url'] = $ratingUrlUrl;
+
+        return $result;
+
+    }
+
 }
