@@ -683,6 +683,8 @@ class ReviewerController extends PaperDefaultController
     private function checkIsAlreadyInvited(Episciences_Paper $paper): array
     {
 
+        $result ['isAlreadyInvited'] = false;
+
         $reviewers = $paper->getReviewers();
         $isReviewer = isset($reviewers[Episciences_Auth::getUid()]);
 
@@ -710,9 +712,9 @@ class ReviewerController extends PaperDefaultController
 
                 $result ['isAlreadyInvited'] = true;
                 $result ['invitationUrl'] = $invitationUrl;
-
-                return $result;
             }
+
+            return $result;
         }
 
         $ratingUrlUrl = $this->view->url([
@@ -721,9 +723,7 @@ class ReviewerController extends PaperDefaultController
             'id' => $paper->getDocid()
         ]);
 
-        $result ['isReviewer'] = true;
         $result ['isAlreadyInvited'] = true;
-
         $result ['url'] = $ratingUrlUrl;
 
         return $result;
