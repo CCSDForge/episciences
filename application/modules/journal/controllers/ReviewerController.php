@@ -65,14 +65,14 @@ class ReviewerController extends PaperDefaultController
 
             $this->view->isAlreadyInvited = $checkedIsAlreadyInvited['isAlreadyInvited'];
             $this->view->latestInvitationUrl = $checkedIsAlreadyInvited['url'] ?? null;
-            $message = "Cette invitation ne vous est pas destinée !";
+            $message = "Cette invitation ne vous est pas destinée";
 
             if (isset($result['isPreLinked']) && $result['isPreLinked']) {
 
                 if (isset($result['decision']) && $result['decision'] === "declineToLink") {
                     $this->view->displayLinkedInvitationForm = false;
                 } else {
-                    $message = "Cette invitation n'est pas liée au compte en cours !";
+                    $message = "Cette invitation n'est pas liée au compte en cours";
                     $this->view->displayLinkedInvitationForm = true;
                 }
 
