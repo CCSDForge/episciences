@@ -843,7 +843,8 @@ return array(
     "via" => "via",
     "pour le compte de" => "on behalf of",
     "Cette invitation n'est pas liée au compte en cours" => "This invitation is not linked to the current account",
-    //"Voulez-vous l’associer à votre compte pour continuer ?" => "Would you like to link it to your account to continue?",
+    "Cette invitation vous était initialement destinée, mais elle a déjà été utilisée par un autre compte. Si vous pensez qu’il s’agit d’une erreur, veuillez contacter notre support." =>
+        "This invitation was originally intended for you, but it has already been used by another account. If you believe this is a mistake, please contact our support team.",
     "L’invitation a été correctement associée à votre compte" => "The invitation has been successfully linked to your account",
     "Elle a été envoyée au compte %s%s < %s >%s" => "It was sent to the account %s%s < %s >%s",
     "Voulez-vous l’associer à votre compte %s %s < %s > %s pour continuer ?" => "Would you like to link it to your account %s %s< %s >%s to continue?",

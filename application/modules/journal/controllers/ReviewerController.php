@@ -65,7 +65,16 @@ class ReviewerController extends PaperDefaultController
 
             $this->view->isAlreadyInvited = $checkedIsAlreadyInvited['isAlreadyInvited'];
             $this->view->latestInvitationUrl = $checkedIsAlreadyInvited['url'] ?? null;
+
             $message = "Cette invitation ne vous est pas destinée";
+
+            if (
+                isset($result['isAlreadyLinked']) &&
+                $result['isAlreadyLinked'] &&
+                $assignment->getFrom_uid() === Episciences_Auth::getUid()
+            ) {
+                $message = "Cette invitation vous était initialement destinée, mais elle a déjà été utilisée par un autre compte. Si vous pensez qu’il s’agit d’une erreur, veuillez contacter notre support.";
+            }
 
             if (isset($result['isPreLinked']) && $result['isPreLinked']) {
 
@@ -611,15 +620,19 @@ class ReviewerController extends PaperDefaultController
 
     private function checkAndProcessLinkedInvitation(Zend_Controller_Request_Http $request, Episciences_User_Invitation $invitation, Episciences_User_Assignment $assignment, bool &$doRating): array
     {
+        $doRating = false;
+        $decision = null;
 
+        if ($assignment->getFrom_uid()){ // linked to
+            return ['isAlreadyLinked' => true];
+        }
 
         $invitationId = $invitation->getId();
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
 
         // l'invitation en cours n'est pas encore attachée au compte connecté
         $isPreLinked = $session->linkedInvitationIds[$invitationId]['isPreLinked'] ?? false;
-        $decision = null;
-        $doRating = false;
+
         $fromUid = $assignment->getUid();
 
         $isAssignedToTmpUser = (bool)$assignment->isTmp_user();
