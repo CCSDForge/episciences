@@ -724,7 +724,7 @@ class ReviewerController extends PaperDefaultController
                 ]);
 
                 $result ['isAlreadyInvited'] = true;
-                $result ['invitationUrl'] = $invitationUrl;
+                $result ['url'] = $invitationUrl;
             }
 
             return $result;
