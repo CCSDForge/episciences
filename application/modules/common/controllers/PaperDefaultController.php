@@ -1,12 +1,14 @@
 <?php
 
 use Episciences\AppRegistry;
+use Episciences\Trait\Tools;
 use Episciences\Trait\UrlBuilder;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
 class PaperDefaultController extends DefaultController
 {
+    use Tools;
     use UrlBuilder;
     public const MSG_PAPER_DOES_NOT_EXIST = "Le document demandé n’existe pas.";
     public const MSG_REVIEWER_DOES_NOT_EXIST = "Le relecteur pour lequel vous souhaitez relire n'existe pas.";
@@ -905,6 +907,13 @@ class PaperDefaultController extends DefaultController
         } catch (Zend_Exception $e) {
             error_log($e->getMessage);
         }
+    }
+
+    protected function indexAndCOARNotify(Episciences_Paper $paper, Episciences_Review | bool $journal = false): void
+    {
+        $this->index($paper);
+        $this->COARNotify($paper, $journal);
+
     }
 
 }

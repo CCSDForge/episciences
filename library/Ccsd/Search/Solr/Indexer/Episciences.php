@@ -240,7 +240,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
     private static function cleanAuthorName($name): string
     {
-        $name = Ccsd_Tools::space_clean($name);
+        $name = Episciences_Tools::spaceCleaner($name);
         $name = preg_replace('/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $name);
         $name = Ccsd_Tools_String::stripCtrlChars($name, '');
         $name = str_replace(' ,', '', $name);
@@ -469,7 +469,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
         $inputString = trim($inputString, chr(173)); // https://en.wikipedia.org/wiki/Soft_hyphen
 
-        $inputString = Ccsd_Tools::space_clean($inputString);
+        $inputString = Episciences_Tools::spaceCleaner($inputString);
 
         // http://stackoverflow.com/questions/4166896/trim-unicode-whitespace-in-php-5-2
         $inputString = preg_replace('/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $inputString);

@@ -1214,7 +1214,7 @@ class Episciences_Paper
                     //insert licence when save paper
                     try {
                         $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), (int)$this->getVersion());
-                        Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
+                        Episciences_Paper_LicenceManager::insertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
 
                     } catch (\GuzzleHttp\Exception\GuzzleException|JsonException $e) {
                         trigger_error($e->getMessage());
@@ -1304,7 +1304,7 @@ class Episciences_Paper
         $serializer = new Serializer([new ObjectNormalizer()], [new XmlEncoder(), new JsonEncoder(new JsonEncode(['json_encode_options' => JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE]))]);
         // from crossref template
         $crossRefXml = Episciences_Paper_XmlExportManager::getXmlCleaned(Episciences_Paper_XmlExportManager::xmlExport($this, Episciences_Paper_XmlExportManager::CROSSREF_FORMAT));
-        $crossRefXml = str_replace(array("jats:p", "jats:"), array("value", ""), Ccsd_Tools::space_clean($crossRefXml));
+        $crossRefXml = str_replace(array("jats:p", "jats:"), array("value", ""), Episciences_Tools::spaceCleaner($crossRefXml));
         $xmlToArray = $serializer->decode($crossRefXml, "xml");
 
         if ($this->isTmp()) {
@@ -1412,11 +1412,7 @@ class Episciences_Paper
                     'cited_by' => $citedBy,
                     'classifications' => $classifications,
                     'graphical_abstract_file' => $graphical_abstract_file,
-
-                    'metrics' => [
-                        'page_count' => !$this->isPublished() ? null : Episciences_Paper_Visits::count($this->getDocid()),
-                        'file_count' => !$this->isPublished() ? null : Episciences_Paper_Visits::count($this->getDocid(), 'file')
-                    ],
+                    'metrics' => Episciences_Paper_Visits::getPaperMetricsByPaperId($this->getPaperid()),
 
                 ],
                 'latest_version_item_number' => (int)$this->getLatestVersionId(),
@@ -1911,9 +1907,9 @@ class Episciences_Paper
             }
         }
         if (is_array($result)) {
-            $result = array_map('Ccsd_Tools::space_clean', $result);
+            $result = array_map('Episciences_Tools::spaceCleaner', $result);
         } else {
-            $result = Ccsd_Tools::space_clean($result);
+            $result = Episciences_Tools::spaceCleaner($result);
         }
         return $result;
 
@@ -3230,16 +3226,6 @@ class Episciences_Paper
             $node->appendChild($dom->createElement('funding', ""));
         }
 
-
-        //$classification = Episciences_Paper_ClassificationsManager::formatClassificationForview($this->_paperId);
-
-//        if (!empty($classification)) {
-//            $node->appendChild($dom->createElement('classification', $classification));
-//        } else {
-//            $node->appendChild($dom->createElement('classification', ""));
-//        }
-
-
         ($this->isAllowedToManageOrcidAuthor(true)) ? $node->appendChild($dom->createElement('rightOrcid', '1'))
             : $node->appendChild($dom->createElement('rightOrcid', "0"));
 
@@ -3639,7 +3625,7 @@ class Episciences_Paper
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    public function manageNewVersionErrors(array $options = [])
+    public function manageNewVersionErrors(array $options = []): array|string
     {
         $urlHelper = new Episciences_View_Helper_Url();
         $isEpiNotify = isset($options['isEpiNotify']) && $options['isEpiNotify'];
@@ -3772,13 +3758,13 @@ class Episciences_Paper
                         $translator->translate('Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, ') :
                         "To submit your new version, please use the link in the email you received from the journal, ";
 
-                    if ($isFromCli) {
+                    if (!$isFromCli) {
                         $selfMsg .= '<br>';
 
                         $selfMsg .= $translator ? $translator->translate('ou') : 'or';
                         $selfMsg .= '<span style="margin-right: 3px;"></span>';
                         $selfMsg .= '<a class="' . $style . '" href="' . $url . '">';
-                        $selfMsg .= '<span class="glyphicon glyphicon-chevron-right"></span>';
+                        $selfMsg .= '<span class="fa-solid fa-link" style="margin-right: 3px;"></span>';
                         $selfMsg .= $translator ? $translator->translate("Cliquer ici") : "Click here";
                         $selfMsg .= '</a>';
                         $selfMsg .= '<span style="margin-left: 3px;"></span>';
@@ -3996,6 +3982,10 @@ class Episciences_Paper
                     }
 
                     $update['code'] = 1;
+                    // Pass the docId to allow redirect to the detail page.
+                    if (isset($result['docId'])) {
+                        $update['docId'] = $result['docId'];
+                    }
                 }
             } else {
                 $message .= ' : ';
@@ -4528,11 +4518,127 @@ class Episciences_Paper
     }
 
     /**
-     * @return bool
+     * Safely parse a date string to DateTime object
+     *
+     * @param string|null $date Date string in 'Y-m-d H:i:s' format
+     * @return DateTime|null DateTime object or null if parsing fails or input is null
+     */
+    private function parseDateSafely(?string $date): ?DateTime
+    {
+        if ($date === null || $date === '') {
+            return null;
+        }
+
+        try {
+            $dateTime = DateTime::createFromFormat('Y-m-d H:i:s', $date);
+            if ($dateTime === false) {
+                // Try alternative format without time
+                $dateTime = DateTime::createFromFormat('Y-m-d', $date);
+            }
+            return $dateTime !== false ? $dateTime : null;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Check if paper is explicitly marked as imported via flag
+     *
+     * @return bool True if flag is 'imported'
+     */
+    private function isExplicitlyImported(): bool
+    {
+        return $this->getFlag() === 'imported';
+    }
+
+    /**
+     * Check if publication date is before or equal to submission date (data inconsistency)
+     *
+     * @return bool True if publication_date <= submission_date
+     */
+    private function isPublicationBeforeSubmission(): bool
+    {
+        $publicationDate = $this->parseDateSafely($this->getPublication_date());
+        $submissionDate = $this->parseDateSafely($this->getSubmission_date());
+
+        if ($publicationDate === null || $submissionDate === null) {
+            return false;
+        }
+
+        return $publicationDate <= $submissionDate;
+    }
+
+    /**
+     * Check if submission or publication year is before 2013 (legacy data)
+     *
+     * @return bool True if either date is before 2013
+     */
+    private function isBeforeYear2013(): bool
+    {
+        $publicationDate = $this->parseDateSafely($this->getPublication_date());
+        $submissionDate = $this->parseDateSafely($this->getSubmission_date());
+
+        if ($submissionDate !== null && (int)$submissionDate->format('Y') < 2013) {
+            return true;
+        }
+
+        if ($publicationDate !== null && (int)$publicationDate->format('Y') < 2013) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check for date inconsistencies with the paper creation date (WHEN) for published papers
+     *
+     * @return bool True if published paper has date inconsistencies
+     */
+    private function hasDateInconsistencies(): bool
+    {
+        if ($this->getStatus() !== self::STATUS_PUBLISHED) {
+            return false;
+        }
+
+        $whenDate = $this->parseDateSafely($this->getWhen());
+        if ($whenDate === null) {
+            return false;
+        }
+
+        $submissionDate = $this->parseDateSafely($this->getSubmission_date());
+        $publicationDate = $this->parseDateSafely($this->getPublication_date());
+
+        // Submission date after creation date (inconsistent)
+        if ($submissionDate !== null && $submissionDate > $whenDate) {
+            return true;
+        }
+
+        // Publication date before creation date (inconsistent)
+        if ($publicationDate !== null && $publicationDate < $whenDate) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Determine if this paper was imported from another system
+     *
+     * A paper is considered imported if:
+     * 1. It has the 'imported' flag explicitly set, OR
+     * 2. It exhibits data inconsistencies characteristic of imported legacy data:
+     *    - Publication date is before or equal to submission date
+     *    - Either date is from before 2013 (legacy data era)
+     *    - For published papers: dates are inconsistent with the paper creation date
+     *
+     * @return bool True if paper is imported
      */
     public function isImported(): bool
     {
-        return ($this->getFlag() === 'imported');
+        return $this->isExplicitlyImported()
+            || $this->isPublicationBeforeSubmission()
+            || $this->isBeforeYear2013()
+            || $this->hasDateInconsistencies();
     }
 
     /**
@@ -4793,6 +4899,21 @@ class Episciences_Paper
     {
         return $this->_coAuthors = Episciences_PapersManager::getCoAuthors($this->getDocid());
     }
+
+    public function isCoauthor(): bool
+    {
+        try {
+            $coAuthors = $this->getCoAuthors();
+        } catch (Zend_Db_Statement_Exception $e) {
+            $coAuthors = [];
+            Episciences_View_Helper_Log::log($e->getMessage(), Psr\Log\LogLevel::CRITICAL);
+        }
+
+        return
+            isset($coAuthors[Episciences_Auth::getUid()]) ||
+            isset($coAuthors[Episciences_Auth::getOriginalIdentity()]);
+    }
+
 
     public function isEditableVersion(): bool
     {

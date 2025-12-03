@@ -43,7 +43,7 @@ class Episciences_VolumesManager
     /**
      * Renvoie le formulaire d'assignation de rédacteurs à un volume
      * @param null $currentEditors
-     * @return bool|Ccsd_Form
+     * @return bool|array ['form' => Ccsd_Form, 'unavailableEditors' => array]
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
@@ -68,12 +68,27 @@ class Episciences_VolumesManager
             ]));
 
             // Checkbox
+            $options = [];
+            $unavailableEditors = [];
             foreach ($editors as $uid => $editor) {
                 $class = ($editor->isGuestEditor()) ? 'grey glyphicon glyphicon-star' : 'lightergrey glyphicon glyphicon-user';
                 $type = ($editor->isGuestEditor()) ? ucfirst($translator->translate(Episciences_Acl::ROLE_GUEST_EDITOR)) : ucfirst($translator->translate(Episciences_Acl::ROLE_EDITOR));
                 $icon = '<span class="' . $class . '" style="margin-right:10px"></span>';
                 $icon = '<span style="cursor: pointer" data-toggle="tooltip" title="' . $type . '">' . $icon . '</span>';
+
+                // Check availability
+                $isAvailable = Episciences_UsersManager::isEditorAvailable($uid, RVID);
+
                 $label = $icon . $editor->getFullname();
+
+                if (!$isAvailable) {
+                    $unavailableEditors[] = $uid;
+                    // Translate to "unavailable" for English, "Indisponible" for French
+                    $unavailableText = $translator->translate('unavailable');
+                    $unavailableLabel = ' <span class="unavailable-badge">' . $unavailableText . '</span>';
+                    $label .= $unavailableLabel;
+                }
+
                 $options[$uid] = $label;
             }
 
@@ -107,7 +122,10 @@ class Episciences_VolumesManager
                 'decorators' => ['ViewHelper', ['HtmlTag', ['tag' => 'div', 'closeOnly' => true]]]
             ]));
 
-            return $form;
+            return [
+                'form' => $form,
+                'unavailableEditors' => $unavailableEditors
+            ];
         }
 
         return false;
@@ -241,10 +259,6 @@ class Episciences_VolumesManager
      */
     public static function getFormDefaults(Episciences_Volume $volume): array
     {
-        //$defaults = self::volumeTitleToTextArray($volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML));
-        //$defaults['title'] = $volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML);
-        // $defaults['description'] = $volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML);
-        //$defaults = self::volumeDescriptionToTextareaArray($volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML));
         $defaults = array_merge(
             self::volumeTitleToTextArray($volume->preProcess($volume->getTitles(), Episciences_Volume::MARKDOWN_TO_HTML)),
             self::volumeDescriptionToTextareaArray($volume->preProcess($volume->getDescriptions(), Episciences_Volume::MARKDOWN_TO_HTML))
@@ -293,13 +307,14 @@ class Episciences_VolumesManager
      * Retourne le formulaire de gestion d'un volume
      * @param string $referer
      * @param Episciences_Volume|null $volume
+     * @param bool $hasPublishedPapers Whether the volume contains published papers (STATUS = 16) - disables title editing if true
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      * @throws Zend_Validate_Exception
      */
     public
-    static function getForm(string $referer = '', Episciences_Volume $volume = null): \Ccsd_Form
+    static function getForm(string $referer = '', Episciences_Volume $volume = null, bool $hasPublishedPapers = false): \Ccsd_Form
     {
         if (empty($referer)) {
             $referer = '/volume/list';
@@ -307,6 +322,11 @@ class Episciences_VolumesManager
 
         $form = new Ccsd_Form;
         $form->setAttrib('class', 'form-horizontal');
+        $form->addElementPrefixPath(
+            'Episciences_Form_Validate', // Préfixe de la classe (Episciences_Form_Validate)
+            'Episciences/Form/Validate', // Chemin relatif au répertoire de la librairie
+            'validate'                   // Type (Validateur)
+        );
         $form->setDecorators([
             ['ViewScript', [
                 'viewScript' => '/volume/form.phtml',
@@ -326,11 +346,20 @@ class Episciences_VolumesManager
         foreach ($languages as $languageCode => $language) {
 
             // Nom du volume
-            $form->addElement('text', Episciences_Volume::VOLUME_PREFIX_TITLE . $languageCode, [
+            $titleElementOptions = [
                 'label' => 'Nom (' . $language . ')',
                 'maxlength' => self::MAX_STRING_LENGTH,
                 'required' => true,
-            ]);
+            ];
+
+            // Disable title field if volume has published papers
+            if ($hasPublishedPapers) {
+                $titleElementOptions['readonly'] = 'readonly';
+                $titleElementOptions['class'] = 'readonly-field';
+                $titleElementOptions['title'] = Zend_Registry::get('Zend_Translate')->translate('Le nom du volume ne peut pas être modifié car des articles publiés sont déjà associés à ce volume');
+            }
+
+            $form->addElement('text', Episciences_Volume::VOLUME_PREFIX_TITLE . $languageCode, $titleElementOptions);
 
             $form->addElement('textarea', Episciences_Volume::VOLUME_PREFIX_DESCRIPTION . $languageCode, [
                 'label' => 'Description (' . $language . ')',
@@ -368,8 +397,13 @@ class Episciences_VolumesManager
             'value' => ($volume !== null) ? $volume->getVol_year() : '',
             // 'required' => true,
             'style' => 'width:300px;position: static;',
+            'attribs' => [
+                'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Exemple : 2024 ou 2024-2025')
+            ],
             'validators' => [
-                [new Zend_Validate_Int()],
+                [
+                    'validator' => 'VolumeYear',
+                ],
             ],
         ]);
         // Statut du volume

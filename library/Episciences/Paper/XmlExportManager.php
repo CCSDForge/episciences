@@ -140,7 +140,7 @@ class Episciences_Paper_XmlExportManager
             return '';
         }
 
-        return Ccsd_Tools::space_clean($xml);
+        return Episciences_Tools::spaceCleaner($xml);
 
     }
 

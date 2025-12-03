@@ -224,10 +224,12 @@ class WebsiteDefaultController extends Episciences_Controller_Action
         }
         $pageTypes = $this->_session->website->getPageTypes(true);
         $groupedPageTypes = $this->processPageTypes($pageTypes);
+        $predefinedPageTypes = $this->getPredefinedPageTypes($pageTypes);
         $this->view->pages = $this->_session->website->getPages();
         $this->view->order = $this->_session->website->getOrder();
         $this->view->pageTypes = $pageTypes;
         $this->view->groupedPageTypes = $groupedPageTypes;
+        $this->view->predefinedPageTypes = $predefinedPageTypes;
 
     }
 
@@ -248,10 +250,32 @@ class WebsiteDefaultController extends Episciences_Controller_Action
     }
 
     /**
+     * Identifie les types de pages prédéfinies
+     * @param array $pageTypes
+     * @return array Tableau avec les types comme clés et true si prédéfini
+     */
+    private function getPredefinedPageTypes(array $pageTypes = []): array
+    {
+        $predefined = [];
+        foreach ($pageTypes as $type => $label) {
+            $className = sprintf('Episciences_Website_Navigation_Page_%s', ucfirst($type));
+            $predefined[$type] = class_exists($className) && is_a($className, 'Episciences_Website_Navigation_Page_Predefined', true);
+        }
+        return $predefined;
+    }
+
+    /**
      * Ajout d'une nouvelle page
      */
     public function ajaxformpageAction()
     {
+        if (!Episciences_Auth::isAdministrator()
+            && !Episciences_Auth::isChiefEditor()
+            && !Episciences_Auth::isSecretary()
+            && !Episciences_Auth::isWebmaster()
+            && !Episciences_Auth::isRoot()) {
+            return;
+        }
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
@@ -269,6 +293,13 @@ class WebsiteDefaultController extends Episciences_Controller_Action
      */
     public function ajaxorderAction()
     {
+        if (!Episciences_Auth::isAdministrator()
+            && !Episciences_Auth::isChiefEditor()
+            && !Episciences_Auth::isSecretary()
+            && !Episciences_Auth::isWebmaster()
+            && !Episciences_Auth::isRoot()) {
+            return;
+        }
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
@@ -282,15 +313,29 @@ class WebsiteDefaultController extends Episciences_Controller_Action
     /**
      * Suppression d'une page du site
      */
-    public function ajaxrmpageAction()
+    public function ajaxrmpageAction(): void
     {
+        if (!Episciences_Auth::isAdministrator()
+            && !Episciences_Auth::isChiefEditor()
+            && !Episciences_Auth::isSecretary()
+            && !Episciences_Auth::isWebmaster()
+            && !Episciences_Auth::isRoot()) {
+            return;
+        }
+        $pageCodeToRemove = null;
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
         $request = $this->getRequest();
         $params = $request->getPost();
         if ($request->isXmlHttpRequest() && $request->isPost() && isset($params['idx'])) {
-            $this->_session->website->deletePage($params['idx']);
+            $nav = $this->_session->website;
+            /** @var Ccsd_Website_Navigation $nav */
+            if (!empty($params['page_id'])) {
+                $pageCodeToRemove = $params['page_id'];
+            }
+            $nav->deletePage((int)$params['idx'], $pageCodeToRemove);
+
         }
     }
 

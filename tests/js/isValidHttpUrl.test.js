@@ -7,7 +7,9 @@ const functionsJs = fs.readFileSync(
 );
 
 // Extract just the isValidHttpUrl function to avoid jQuery dependencies
-const isValidHttpUrlFunctionMatch = functionsJs.match(/function isValidHttpUrl\(string\) \{[\s\S]*?\n\}/);
+const isValidHttpUrlFunctionMatch = functionsJs.match(
+    /function isValidHttpUrl\(string\) \{[\s\S]*?\n\}/
+);
 if (isValidHttpUrlFunctionMatch) {
     eval(isValidHttpUrlFunctionMatch[0]);
 }

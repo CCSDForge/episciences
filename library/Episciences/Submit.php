@@ -239,7 +239,9 @@ class Episciences_Submit
                 /* @var  $user Episciences_User */
                 foreach ($users as $uid => $user) {
                     // Liste des rédacteurs et rédacteurs en chef (on filtre root, ainsi que le compte connecté)
-                    if ($uid !== 1 && $uid !== Episciences_Auth::getUid()) {
+                    // ET on filtre aussi les éditeurs qui ne sont pas disponibles
+                    if ($uid !== 1 && $uid !== Episciences_Auth::getUid()
+                        && Episciences_UsersManager::isEditorAvailable($uid, RVID)) {
                         $options[$uid] = $user->getFullName();
                     }
                 }
@@ -793,7 +795,6 @@ class Episciences_Submit
         try {
 
             $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', ['identifier' => $id, 'repoId' => $repoId, 'version' => $version]);
-
             if (!empty($hookApiRecord)) {
                 $hookVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $id, 'repoId' => $repoId, 'response' => $hookApiRecord]);
             }
@@ -818,32 +819,28 @@ class Episciences_Submit
                 $paper->setVersion(null);
             }
 
-            if ($oai) {
+            // Use enriched record from hookApiRecords if available, otherwise fallback to OAI
+            if (!empty($hookApiRecord['record'])) {
+                $result['record'] = $hookApiRecord['record'];
+            } elseif ($oai) {
                 $result['record'] = $oai->getRecord($identifier);
                 $type = Episciences_Tools::xpath($result['record'], '//dc:type');
 
                 if (!empty($type)) {
                     $result[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT] = $type;
                 }
-
-
             } else {
-
-                $result['record'] = $hookApiRecord ['record'] ?? null;
-
-                if (
-                    isset($hookApiRecord['error']) ||
-                    empty($result['record'])
-                ) {
+                if (isset($hookApiRecord['error'])) {
                     throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
                 }
-
+                $result['record'] = null;
             }
+
+
 
             if (isset($hookApiRecord[Episciences_Repositories_Common::ENRICHMENT])) {
                 $result[Episciences_Repositories_Common::ENRICHMENT] = $hookApiRecord[Episciences_Repositories_Common::ENRICHMENT];
             }
-
             $conceptIdentifier = null;
 
             if (isset($hookApiRecord['conceptrecid'])) {
@@ -955,11 +952,7 @@ class Episciences_Submit
             $result['status'] = 0;
             $parsedError = $e->parseError();
 
-            $mailToStr = '<a href="mailto:';
-            $mailToStr .= EPISCIENCES_SUPPORT;
-            $mailToStr .= '">';
-            $mailToStr .= EPISCIENCES_SUPPORT;
-            $mailToStr .= '</a>';
+            $mailToStr = sprintf('<a href="mailto:%s">%s</a>', EPISCIENCES_SUPPORT, EPISCIENCES_SUPPORT);
 
             $error = $translator ? $translator->translate($parsedError) : $parsedError;
 
@@ -979,7 +972,7 @@ class Episciences_Submit
                 $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $error;
             }
 
-            return ($result);
+            return $result;
 
         } catch (Exception $e) { // other exceptions: generic message
             $result['status'] = 0;
@@ -992,10 +985,10 @@ class Episciences_Submit
 
             }
 
-            return ($result);
+            return $result;
         }
 
-        return ($result);
+        return $result;
     }
 
     /**
@@ -1138,8 +1131,7 @@ class Episciences_Submit
 
             $hookParams = ['repoId' => $paper->getRepoid(), 'identifier' => $paper->getIdentifier(), 'docId' => $paper->getDocid()];
 
-            $response = Episciences_Repositories::callHook('hookFilesProcessing', ($isEnrichment && isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams);
-
+            Episciences_Repositories::callHook('hookFilesProcessing', ($isEnrichment && isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams);
             Episciences_Repositories::callHook('hookLinkedDataProcessing', array_merge($hookParams));
 
 
@@ -1156,11 +1148,9 @@ class Episciences_Submit
             self::enrichmentProcess($paper, $enrichment);
 
             try {
-
                 if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) { // try to enrich with TEI HAL
                     Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($paper->getRepoid(), $paper->getPaperid(), $paper->getIdentifier(), (int)$paper->getVersion());
                 }
-
             } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
                 trigger_error($e->getMessage());
             }
@@ -2032,9 +2022,9 @@ class Episciences_Submit
 
     public static function processDatasets(Episciences_Paper|int $paper, ?array $allDatasets = []): int
     {
-
+        $affectedRows = 0;
         if (!$allDatasets) {
-            $allDatasets = [];
+            return $affectedRows;
         }
 
         $current = $paper;
@@ -2049,20 +2039,32 @@ class Episciences_Submit
             }
 
         }
-        $affectedRows = 0;
+
         $noProcessed = [];
         $docId = $current->getDocid();
         $repoId = $current->getRepoid();
 
         $options = ['sourceId' => $repoId];
 
-        foreach ($allDatasets as $datasets) {
 
+
+
+        foreach ($allDatasets as $datasets) {
+/*
+            ["identifier"] => string(48) "https://hdl.handle.net/21.11115/0000-0016-7FC9-8"
+            ["relation"] => string(7) "HasPart"
+            ["resource_type"] => string(7) "dataset"
+            ["scheme"] => string(3) "url"
+*/
             foreach ($datasets as $key => $value) {
+
+
+                // Skip existing Dataset
                 if (Episciences_Paper_DatasetsManager::findByValue($docId, $value) !== null) {
                     continue;
                 }
-                if ($repoId === (int)Episciences_Repositories::ZENODO_REPO_ID) {
+
+                if ($repoId === (int)Episciences_Repositories::ZENODO_REPO_ID|| $repoId === (int)Episciences_Repositories::ARCHE_ID) {
 
                     if ($key !== 'identifier') {
                         continue;
@@ -2072,8 +2074,12 @@ class Episciences_Submit
                     $datasets = $value;
                 }
 
+
+
                 $value = trim($value);
                 $typeLd = Episciences_Tools::checkValueType($value);
+
+
 
                 if ($typeLd === Episciences_Paper_Dataset::DOI_CODE || Episciences_Tools::isDoiWithUrl($value)) {
                     $result = Episciences_DoiTools::getMetadataFromDoi($value);
@@ -2106,15 +2112,16 @@ class Episciences_Submit
                     }
                 } elseif ($typeLd === Episciences_Paper_Dataset::SOFTWARE_CODE) {
                     $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
+                } elseif ($typeLd === Episciences_Paper_Dataset::HANDLE_CODE) {
+                    $value = Episciences_Tools::cleanHandle($value);
+                    $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);
                 }
-
                 if (!empty($noProcessed)) {
                     $affectedRows += $affectedRows = self::forceAddingDatasets($current, $noProcessed);
                 }
 
             }
         }
-
         return $affectedRows;
 
     }

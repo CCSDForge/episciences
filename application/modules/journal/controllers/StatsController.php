@@ -42,9 +42,9 @@ class StatsController extends Episciences_Controller_Action
         try {
             /** @var Monolog\Logger $logger */
             $logger = Zend_Registry::get('appLogger');
-        } catch (Zend_Exception $e) {
-            $logger = null;
-            trigger_error($e->getMessage());
+        } catch (Throwable $e) {
+             $logger = null;
+             error_log($e->getMessage());
         }
 
 

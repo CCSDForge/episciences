@@ -490,13 +490,13 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             if (!empty($value)) {
                 // Extract xml:lang attribute correctly
                 $nodeLanguage = '';
-                
+
                 // Get all attributes including xml:lang
                 $allAttributes = [];
                 foreach ($descNode->attributes() as $attrName => $attrValue) {
                     $allAttributes[$attrName] = (string)$attrValue;
                 }
-                
+
                 // Check XML namespace attributes
                 $xmlAttributes = $descNode->attributes('xml', true);
                 if ($xmlAttributes) {
@@ -504,12 +504,12 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
                         $allAttributes['xml:' . $attrName] = (string)$attrValue;
                     }
                 }
-                
+
                 // Extract xml:lang from the attributes array we just built
                 if (isset($allAttributes[self::XML_LANG_ATTR])) {
                     $nodeLanguage = $allAttributes[self::XML_LANG_ATTR];
                 }
-                
+
                 // Convert 3-letter language codes to 2-letter codes if needed
                 if (strlen($nodeLanguage) > 2) {
                     try {
@@ -520,12 +520,12 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
                         $nodeLanguage = '';
                     }
                 }
-                
+
                 // Fallback to document language
                 if (empty($nodeLanguage)) {
                     $nodeLanguage = $language;
                 }
-                
+
                 $descriptions[] = [
                     'value' => $value,
                     'language' => $nodeLanguage

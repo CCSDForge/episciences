@@ -190,9 +190,10 @@ class PaperController extends PaperDefaultController
         }
 
         // paper *************************************************************
+        $paperMetrics = Episciences_Paper_Visits::getPaperMetricsByPaperId($paper->getPaperid());
         $this->view->paper = $paper;
-        $this->view->page_count = Episciences_Paper_Visits::count($docId);
-        $this->view->file_count = Episciences_Paper_Visits::count($docId, 'file');
+        $this->view->page_count = $paperMetrics[Episciences_Paper_Visits::PAGE_COUNT_METRICS_NAME];
+        $this->view->file_count = $paperMetrics[Episciences_Paper_Visits::FILE_COUNT_METRICS_NAME];
 
         // other versions block
         $versions = [];
@@ -3772,33 +3773,8 @@ class PaperController extends PaperDefaultController
                     $message = 'Les métadonnées de cet article sont à jour.';
                 }
 
-                // update index even if nothing changed
-
-                if ($paper->isPublished()) {
-                    $resOfIndexing = Episciences_Paper::indexPaper($docId, Ccsd_Search_Solr_Indexer::O_UPDATE);
-                    if (!$resOfIndexing) {
-                        try {
-                            Ccsd_Search_Solr_Indexer::addToIndexQueue([$docId], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
-                        } catch (Exception $e) {
-                            trigger_error($e->getMessage(), E_USER_WARNING);
-                        }
-                    }
-
-                    if (
-                        (APPLICATION_ENV === ENV_PROD || APPLICATION_ENV === ENV_PREPROD) &&
-                        Episciences_Repositories::isFromHalRepository($paper->getRepoid()
-                        )) {
-                        try {
-                            $journal = Episciences_ReviewsManager::find(RVID);
-                            $journal->loadSettings();
-
-                            $notification = new Episciences_Notify_Hal($paper, $journal);
-                            $notification->announceEndorsement(); //send coar notify message
-                        } catch (Exception $exception) {
-                            trigger_error(sprintf("Publication Update Announcement to HAL failed: %s", $exception->getMessage()), E_USER_WARNING);
-                        }
-                    }
-                }
+                // update index and notify even if nothing changed &
+                $this->indexAndCOARNotify($paper);
 
             } catch (Exception $e) {
                 $message = "Une erreur interne s'est produite, veuillez recommencer.";

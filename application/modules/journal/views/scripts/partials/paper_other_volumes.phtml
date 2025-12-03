@@ -1,28 +1,53 @@
 <?php // Liste des volumes secondaires **********************************************
 /** @var Episciences_Paper $article */
+
+use Psr\Log\LogLevel;
+
 $article = $this->article;
+$clonedArticle = clone($article);
 /** @var Episciences_Volume[] $volumes */
 $volumes = $this->volumes;
 /** @var Episciences_Volume_Paper[] $othersVolumes */
 $othersVolumes = $article->getOtherVolumes();
 ?>
 
+
 <?php if (!empty($othersVolumes)) : ?>
-    <?php
-    $i = 0;
-    foreach ($othersVolumes as $paper_volume) {
-        $i++;
-        if ($paper_volume->getVid() == $article->getVid()) {
-            continue;
-        }
-        /** @var Episciences_Volume $volume */
-        $volume = $volumes[$paper_volume->getVid()];
-        echo Episciences_Tools::convertMarkdownToHtml($volume->getNameKey());
-        if ($i < count($othersVolumes)) {
-            echo ', ';
-        }
-    }
-    ?>
+    <ul style="list-style-type:none">
+
+        <?php
+        /** @var Episciences_Volume $secondaryVolume */
+        foreach ($othersVolumes as $secondaryVolume) :
+
+            if ($secondaryVolume->getVid() === $article->getVid()) {
+                continue;
+            }
+
+            $volume = $volumes[$secondaryVolume->getVid()];
+            $currentVid = $volume->getVid();
+            $clonedArticle->setVid($currentVid);
+
+            ?>
+
+            <li style="margin-bottom: 5px;">
+                <span class="sv-<?= $volume->getVid() ?>">
+                      <?= $volume->getNameKey() ?>
+                      <?= $this->partial('partials/paper_volume_position.phtml', [
+                          'docId' => $article->getDocid(),
+                          'vid' => $currentVid,
+                          'position' => $volume->getPositionByPaperId($clonedArticle->getPaperid(), $currentVid),
+                          'from' => 'view'
+                      ])
+                      ?>
+                </span>
+
+            </li>
+        <?php endforeach; ?>
+        <?php unset($clonedArticle); ?>
+    </ul>
+
 <?php else : ?>
-    <?php echo $this->translate('aucun'); ?>
-<?php endif; ?>
+    <?= $this->translate('aucun') ?>
+
+<?php endif ?>
+

@@ -24,37 +24,43 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     public const PAGE_PUBLISHING_POLICIES = 'publishingPolicies';
     public const PAGE_ETHICAL_CHARTER = 'ethicalCharter';
     public const PAGE_EDITORIAL_WORKFLOW = 'EditorialWorkflow';
-    public const PAGE_PREPARE_SUBMISSION= 'PrepareSubmission';
-    public  const PAGE_ABOUT = 'about';
-    public const PAGE_JOURNAL_INDEXING= 'journalIndexing';
+    public const PAGE_PREPARE_SUBMISSION = 'PrepareSubmission';
+    public const PAGE_FOR_REVIEWERS = 'ForReviewers';
+    public const PAGE_FOR_CONFERENCE_ORGANISERS = 'ForConferenceOrganisers';
+    public const PAGE_ABOUT = 'about';
+    public const PAGE_JOURNAL_INDEXING = 'journalIndexing';
+    public const PAGE_JOURNAL_ACKNOWLEDGEMENTS = 'journalAcknowledgements';
     public const PAGE_EDITORIAL_BOARD = 'editorialBoard';
     public const PAGE_TECHNICAL_BOARD = 'technicalBoard';
     public const PAGE_SCIENTIFIC_ADVISORY_BOARD = 'scientificAdvisoryBoard';
     public const PAGE_FORMER_MEMBERS = 'formerMembers';
-
-    protected $_table = 'WEBSITE_NAVIGATION';
-    protected $_primary = 'NAVIGATIONID';
-    protected $_sid = 0;
-
+    public const PAGE_INTRODUCTION_BOARD = 'introductionBoard';
+    public const PAGE_REVIEWERS_BOARD = 'reviewersBoard';
+    public const PAGE_OPERATING_CHARTER_BOARD = 'operatingCharterBoard';
     public static array $groupedPages = [
         'Home (backend)' => [self::PAGE_INDEX],
         'About' => [
             self::PAGE_ABOUT,
-            self::PAGE_JOURNAL_INDEXING
-
+            self::PAGE_JOURNAL_INDEXING,
+            self::PAGE_JOURNAL_ACKNOWLEDGEMENTS,
         ],
 
         'Boards' => [
+            self::PAGE_INTRODUCTION_BOARD,
             self::PAGE_EDITORIAL_BOARD,
             self::PAGE_TECHNICAL_BOARD,
             self::PAGE_SCIENTIFIC_ADVISORY_BOARD,
-            self::PAGE_FORMER_MEMBERS
+            self::PAGE_REVIEWERS_BOARD,
+            self::PAGE_FORMER_MEMBERS,
+            self::PAGE_OPERATING_CHARTER_BOARD
         ],
 
-        'For authors' => [
+        'Publish' => [
             self::PAGE_EDITORIAL_WORKFLOW,
             self::PAGE_ETHICAL_CHARTER,
             self::PAGE_PREPARE_SUBMISSION,
+            self::PAGE_FOR_REVIEWERS,
+            self::PAGE_FOR_CONFERENCE_ORGANISERS,
         ],
 
         'Other' => [
@@ -65,7 +71,6 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             self::PAGE_LINK,
         ],
     ];
-
     /** You can now find them on the new sites */
 
     public static array $ignoredPageTypes = [
@@ -83,24 +88,24 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         self::PAGE_SEARCH,
         self::PAGE_EDITORIAL_STAFF,
     ];
+    protected $_table = 'WEBSITE_NAVIGATION';
+    protected $_primary = 'NAVIGATIONID';
+    protected $_sid = 0;
 
     public function setOptions($options = []): void
     {
         foreach ($options as $option => $value) {
             $option = strtolower($option);
-            switch ($option) {
-                case 'sid'   :
-                    $this->_sid = $value;
-                    break;
-                case 'languages':
-                    $this->_languages = is_array($value) ? $value : [$value];
-                    break;
+            if ($option == 'sid') {
+                $this->_sid = $value;
+            } elseif ($option == 'languages') {
+                $this->_languages = is_array($value) ? $value : [$value];
             }
 
         }
     }
 
-    public function load()
+    public function load(): void
     {
         $sql = $this->_db->select()
             ->from($this->_table)
@@ -121,7 +126,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 
             $currentPageKey = lcfirst(str_replace('Episciences_Website_Navigation_Page_', '', $row['TYPE_PAGE']));
 
-            if(in_array($currentPageKey, self::$ignoredPageTypes, true)){
+            if (in_array($currentPageKey, self::$ignoredPageTypes, true)) {
                 continue;
             }
 
@@ -136,7 +141,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             }
             if ($row['PARENT_PAGEID'] == 0) {
                 $this->_order[$row['PAGEID']] = [];
-            } else if (isset($this->_order[$row['PARENT_PAGEID']])) {
+            } elseif (isset($this->_order[$row['PARENT_PAGEID']])) {
                 $this->_order[$row['PARENT_PAGEID']][$row['PAGEID']] = [];
             } else {
                 foreach ($this->_order as $i => $elem) {
@@ -155,7 +160,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     }
 
 
-    public function save()
+    public function save(): void
     {
         // Suppression de l'ancien menu
         $this->_db->delete($this->_table, 'SID = ' . $this->_sid);
@@ -185,7 +190,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         $writer->write(REVIEW_LANG_PATH, 'menu');
     }
 
-    private function processPage($pageId, $parentId, &$lang, &$pageIdCounter)
+    private function processPage($pageId, $parentId, &$lang, &$pageIdCounter): void
     {
         if (isset($this->_pages[$pageId])) {
             $this->_pages[$pageId]->setPageId($pageIdCounter);
@@ -200,12 +205,12 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         }
     }
 
-    public function savePage($page)
+    public function savePage($page): void
     {
         //Cas particulier des pages personnalisable
         if ($page->isCustom()) {
             $page->setPermalien($this->getUniqPermalien($page));
-        } else if ($page->isFile()) {
+        } elseif ($page->isFile()) {
             $page->saveFile();
         }
 
@@ -254,10 +259,8 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     public function createNavigation($filename)
     {
         $dir = substr($filename, 0, strrpos($filename, '/'));
-        if (!is_dir($dir)) {
-            if (!mkdir($dir, 0777, true) && !is_dir($dir)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
-            }
+        if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
+            throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
         }
         file_put_contents($filename, Zend_Json::encode($this->toArray()));
     }
@@ -312,7 +315,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 
         foreach ($typePage as $pageKey => $page) {
 
-            if(in_array(lcfirst($pageKey), self::$ignoredPageTypes, true)) {
+            if (in_array(lcfirst($pageKey), self::$ignoredPageTypes, true)) {
                 unset($typePage[$pageKey]);
             }
         }

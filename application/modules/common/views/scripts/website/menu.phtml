@@ -93,7 +93,8 @@ $this->jQuery()
 
                             ?>
 
-                            <option value="<?= $type ?>" <?= $disabled ?> type="<?= $label ?>"><?= $this->translate($label) ?></option>
+                            <option value="<?= $type ?>" <?= $disabled ?> type="<?= $label ?>"><?= $this->translate($label) ?><?php if (!empty($this->predefinedPageTypes[$type])): ?> 🛈 <?php endif; ?>
+                            </option>
 
                         <?php endforeach; ?>
                     </optgroup>
@@ -131,7 +132,7 @@ $this->jQuery()
             }
             $this->page = $this->pages[$key];
             ?>
-            <li id="page_<?= $this->i ?>" class="<?= $this->page->isFolder() ? '' : 'no-nest' ?>">
+            <li  data-page-id="<?= $this->escape($this->page->getResource()) ?>" id="page_<?php echo $this->i; ?>" class="<?php echo $this->page->isFolder() ? '' : 'no-nest' ?>">
                 <?php include __DIR__ . "/menu-page.phtml";
                 if (is_array($value) && count($value) > 0) {
                     ?>
@@ -143,8 +144,8 @@ $this->jQuery()
                             }
                             $this->page = $this->pages[$k];
                             ?>
-                            <li id="page_<?= $this->i ?>"
-                                class="<?= $this->page->isFolder() ? '' : 'no-nest' ?>">
+                            <li data-page-id="<?= $this->escape($this->page->getResource()) ?>" id="page_<?php echo $this->i; ?>"
+                                class="<?php echo $this->page->isFolder() ? '' : 'no-nest' ?>">
                                 <?php include __DIR__ . "/menu-page.phtml";
                                 if (is_array($svalue) && count($svalue) > 0) {
                                     ?>
@@ -156,7 +157,7 @@ $this->jQuery()
                                             }
                                             $this->page = $this->pages[$sk];
                                             ?>
-                                            <li id="page_<?= $this->i; ?>" class="no-nest">
+                                            <li data-page-id="<?= $this->escape($this->page->getResource()) ?>" id="page_<?php echo $this->i; ?>" class="no-nest">
                                                 <?php include __DIR__ . "/menu-page.phtml"; ?>
                                             </li>
                                         <?php } ?>
@@ -201,8 +202,9 @@ $this->jQuery()
 
 <?= $this->confirm("Suppression de la page", "Souhaitez-vous supprimer la page ?")
     ->setTrigger('.remove-page')
-    ->setJsInit('$("#confirm-id").val($(this).closest("li").find("input[type=hidden]").val());')
-    ->setJsCallback('deletePage();') ?>
+    ->setJsInit('$("#confirm-id").val($(this).closest("li").find("input[type=hidden]").val());
+                 $("#page-id-input").val($(this).closest("li").attr("data-page-id"));')
+    ->setJsCallback('deletePage();'); ?>
 
 
 <script>
@@ -280,7 +282,10 @@ $this->jQuery()
         $.ajax({
             url: JS_PREFIX_URL + "website/ajaxrmpage",
             type: 'post',
-            data: {'idx': $('#confirm-id').val()},
+            data: {
+                'idx': $('#confirm-id').val(),
+                'page_id': $('#page-id-input').val()
+            },
             success: function (result) {
                 $('#type option[type="' + $('#pages_' + $('#pageDelete').val() + '-type').attr('class') + '"]').removeAttr('disabled');
                 $('#page_' + $('#confirm-id').val()).remove();

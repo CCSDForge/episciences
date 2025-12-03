@@ -139,6 +139,7 @@ class Ccsd_View_Helper_Confirm extends Zend_View_Helper_Abstract
     	$render .= ' <div class="modal-body">';
     	$render .= '  <p>' . $this->view->translate($this->_content) . '</p>';
     	$render .= '  <input type="hidden" id="confirm-id" value="" />';
+    	$render .= '  <input type="hidden" id="page-id-input" value="" />';
     	$render .= ' </div>';
     	$render .= ' <div class="modal-footer">';
     	$render .= '  <button class="btn btn-default btn-sm" type="button" data-dismiss="modal" aria-hidden="true">' . $this->view->translate("Annuler") . '</button>';

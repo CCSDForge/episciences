@@ -2031,16 +2031,6 @@ class AdministratepaperController extends PaperDefaultController
             }
 
             if ($paper->save()) {
-                $resOfIndexing = $paper->indexUpdatePaper();
-
-                if (!$resOfIndexing) {
-                    try {
-                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
-                    } catch (Exception $e) {
-                        trigger_error($e->getMessage());
-                    }
-                }
-
                 // log new status
                 $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
 
@@ -2061,16 +2051,7 @@ class AdministratepaperController extends PaperDefaultController
                     . $this->view->translate('Partager')
                     . '</a>');
 
-                // if HAL, send coar notify message
-                if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) {
-                    $notification = new Episciences_Notify_Hal($paper, $journal);
-                    try {
-                        $idAnnounce = $notification->announceEndorsement();
-                        $this->_helper->FlashMessenger->setNamespace('success')->addMessage(sprintf('Announcing publication to HAL with ID %s succeeded.', $idAnnounce));
-                    } catch (Exception $exception) {
-                        trigger_error(sprintf("Announcing publication to HAL failed: %s", $exception->getMessage()), E_USER_WARNING);
-                    }
-                }
+                $this->indexAndCOARNotify($paper, $journal);
 
             } else {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti !");
@@ -2349,6 +2330,15 @@ class AdministratepaperController extends PaperDefaultController
             try {
                 $this->view->editors = $editors;
                 $this->view->editorsForm = Episciences_PapersManager::getEditorsForm($docId, $editors);
+
+                // Get unavailable editors
+                $unavailableEditors = [];
+                foreach ($editors as $editor) {
+                    if (!Episciences_UsersManager::isEditorAvailable($editor->getUid(), RVID)) {
+                        $unavailableEditors[] = $editor->getUid();
+                    }
+                }
+                $this->view->unavailableEditors = $unavailableEditors;
             } catch (Exception $e) {
                 trigger_error('EDITORS_FORM_ACTION : ' . $e, E_USER_WARNING);
             }
@@ -4285,19 +4275,25 @@ class AdministratepaperController extends PaperDefaultController
                     if ($newPublicationDate !== date('Y-m-d', strtotime($oldDate))) {
                         $paper->setPublication_date($newPublicationDate);
                         $paper->save();
+                        $status = $paper->getStatus();
 
-                        $resOfIndexing = $paper->indexUpdatePaper();
+                        // Update DATE in PAPER_LOGS
 
-                        if (!$resOfIndexing) {
-                            try {
-                                Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
-                            } catch (Exception $e) {
-                                trigger_error($e->getMessage(), E_USER_ERROR);
-                            }
+                        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                        //UPDATE PAPER_LOG pl SET pl.DATE = '2025-10-17' WHERE pl.DOCID = 16543 AND pl.status = 16;
+                        $sql = "UPDATE PAPER_LOG pl SET pl.DATE = '$newPublicationDate' WHERE pl.DOCID = $docId AND pl.status = $status";
+                        $stm = $db?->prepare($sql);
+
+                        try {
+                            $stm->execute();
+                        } catch (Exception $e) {
+                            Episciences_View_Helper_Log::log($e->getMessage(), Psr\Log\LogLevel::CRITICAL);
                         }
 
                         $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'oldDate' => Episciences_View_Helper_Date::Date($oldDate, $local), 'newDate' => $localDate];
                         $paper->log(Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE, Episciences_Auth::getUid(), $details);
+
+                        $this->indexAndCOARNotify($paper);
                     }
 
                     echo $localDate;

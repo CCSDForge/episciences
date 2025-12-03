@@ -1,0 +1,37 @@
+# ==============================================================================
+# CONFIGURATION FILE FOR DAILY LOG IMPORTER
+# ------------------------------------------------------------------------------
+# All global settings for the cron job are defined here.
+# ==============================================================================
+
+# --- Global Settings ---
+# Base path for log files (excluding the Subdomain part, e.g., /logs/httpd/access/)
+BASE_LOG_PATH="/logs/httpd/access"
+URL_PIWIK="https://matomo.example.org/"
+
+# Authentication Token: Can be hardcoded or read from a file if preferred.
+TOKEN_AUTH=""
+
+# Path to the sites parameter file: idSite;Subdomain per line (e.g., 42;oai)
+PARAMETER_FILE="/path/to/sites_config.csv"
+
+# Path to the Python script (Use absolute path)
+PYTHON_SCRIPT="/path/to/import_logs.py"
+
+# Python interpreter version to use
+PYTHON_VERSION="python3"
+
+# Number of recorders/threads
+RECORDERS="8"
+
+# --- Python Command Flags ---
+# LOG_REGEX must be enclosed in single quotes (')
+LOG_REGEX='.* ((?P<ip>\S+) \S+ \S+ \[(?P<date>.*?) (?P<timezone>.*?)\] "\S+ (?P<path>.*?) \S+" (?P<status>\S+) (?P<length>\S+) "(?P<referrer>.*?)" "(?P<user_agent>.*?)").*'
+COMMON_FLAGS="--enable-http-errors"
+
+# ==============================================================================
+# EXAMPLE of PARAMETER_FILE (/path/to/sites_config.csv) content:
+# 666;oai;
+# 13;ajournal;
+# 999;test-site;--enable-http-redirect --enable-bots
+# ==============================================================================

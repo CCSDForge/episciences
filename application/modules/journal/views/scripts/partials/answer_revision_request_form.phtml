@@ -7,8 +7,8 @@ $paper = $this->paper;
 <div>
     <?php
     if ($controller === 'paper' &&
-        !empty($this->current_demand) &&
-        !in_array($paper->getStatus(), Episciences_Paper::$_noEditableStatus, true))  :
+            !empty($this->current_demand) &&
+            !in_array($paper->getStatus(), Episciences_Paper::$_noEditableStatus, true))  :
         ?>
         <div class="btn-group">
             <a id="answer-request" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
@@ -17,13 +17,30 @@ $paper = $this->paper;
             </a>
             <ul class="dropdown-menu">
 
+                <li>
+                    <?php
+
+                    $newVersionHref = $this->url(['controller' => $controller, 'action' => 'newversion', 'id' => $this->current_demand['PCID']]);
+
+                    if ($this->zIdentifier) {  // from z-submission: new version submission
+                        $newVersionHref .= '&z-identifier=' . $this->zIdentifier;
+                    }
+
+                    ?>
+                    <a id="new-version" href="<?= $newVersionHref ?>"
+                       title="<?= $this->translate('Proposer une nouvelle version') ?>"
+                       class="modal-opener"
+                       data-target="#"><?= $this->translate('Proposer une nouvelle version') ?>
+                    </a>
+                </li>
+
                 <?php if (!$this->doNotDisplayContactChoice) : ?>
                     <?php if ($paper->isOwner()): ?>
                         <li>
                             <a href="<?= $this->url(['controller' => $controller, 'action' => 'contactrequest', 'id' => $this->current_demand['PCID']])?>"
                                title="<?= $this->translate('Contacter sans dépôt de version') ?>"
                                class="modal-opener"
-                               data-target="#"><?= $this->translate('Contacter sans dépôt de version') ?>
+                               data-target="#"><?= $this->translate('Contacter les éditeurs (avec une pièce jointe)') ?>
                             </a>
                         </li>
                     <?php endif; ?>
@@ -51,24 +68,6 @@ $paper = $this->paper;
                     <?php endif; ?>
 
                 <?php endif; ?>
-
-
-                <li>
-                    <?php
-
-                    $newVersionHref = $this->url(['controller' => $controller, 'action' => 'newversion', 'id' => $this->current_demand['PCID']]);
-
-                    if ($this->zIdentifier) {  // from z-submission: new version submission
-                        $newVersionHref .= '&z-identifier=' . $this->zIdentifier;
-                    }
-
-                    ?>
-                    <a id="new-version" href="<?= $newVersionHref ?>"
-                       title="<?= $this->translate('Proposer une nouvelle version') ?>"
-                       class="modal-opener"
-                       data-target="#"><?= $this->translate('Proposer une nouvelle version') ?>
-                    </a>
-                </li>
             </ul>
         </div>
     <?php endif; ?>

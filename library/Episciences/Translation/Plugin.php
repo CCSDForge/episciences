@@ -65,8 +65,9 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
         }
 
         $locale = $translator->getLocale();
+        $this->setLocaleCookie($locale);
+
         if (!in_array($locale, Zend_Registry::get('languages'), true)) {
-            $this->setLocaleCookie($locale);
             $translator->setLocale(Zend_Registry::get('languages')[0]);
         }
 

@@ -107,10 +107,13 @@ return array(
     // TO FIX
     'guest' => 'Guest',
     'member' => 'Member',
-    'editorial_board' => 'Editorial board',
-    'technical_board' => 'Technical board',
-    'scientific_advisory_board' => 'Scientific advisory board',
-    'former_member' => 'Former member',
+    'editorial_board' => '<i class="fa-regular fa-user-tag"></i> Editorial board',
+    'technical_board' => '<i class="fa-regular fa-user-tag"></i> Technical board',
+    'scientific_advisory_board' => '<i class="fa-regular fa-user-tag"></i> Scientific advisory board',
+    'advisory_board' => '<i class="fa-regular fa-user-tag"></i> Advisory board',
+    'managing_editor' => '<i class="fa-regular fa-user-tag"></i> Managing editor',
+    'handling_editor' => '<i class="fa-regular fa-user-tag"></i> Handling editor',
+    'former_member' => '<i class="fa-regular fa-user-tag"></i> Former member',
     'coauthor' => 'Coauthor',
     'webmaster' => 'Webmaster',
     'secretary' => 'Editorial secretary',
@@ -142,6 +145,10 @@ return array(
     "Modifications des affiliations bien prise en compte" => "Affiliations are updated",
     "Votre réponse a bien été enregistrée." => "Your answer has been saved.",
     "L'année du volume est incorrecte veuillez saisir entre: " => 'The year of the volume is incorrect, please enter between: ',
+    'T_VOLUME_YEAR_INVALID_FORMAT' => 'The volume year format is invalid. It must be "YYYY" (e.g., 2001) or "YYYY-YYYY" (e.g., 2001-2002).',
+    'T_VOLUME_YEAR_INVALID_RANGE'  => 'The second volume year must be strictly greater than the first (e.g., 2003-2004).',
+    'T_VOLUME_YEAR_OUTSIDE_BOUNDS' => 'The year must be between %s and %s (Current Year + 5 years).',
+    'Exemple : 2024 ou 2024-2025' => 'Example : 2024 or 2024-2025',
     "Fichier" => 'File',
     "Parcourir" => 'Browse',
     "Ajouter" => 'Add',
@@ -443,7 +450,6 @@ return array(
     "nombre uniquement" => "number only",
     "supérieur à " => "greater than ",
     "dernière version soumise à la revue" => "latest version submitted to the journal",
-    'dernière version' => 'latest version',
     "La nouvelle version a bien été mise en ligne dans l'archive ouverte/l'entrepôt" => "The new version is online in the open archive/repository",
 
 
@@ -588,7 +594,7 @@ return array(
     "Répondre sans faire de modifications" => "Answer without any modifications",
     "Envoyer une version temporaire" => "Send a temporary version",
     "Proposer une nouvelle version" => "Upload a new version",
-    'Contacter sans dépôt de version' => 'Contact without sending a new version',
+    'Contacter les éditeurs (avec une pièce jointe)' => 'Contact the editors (with an attachment)',
     "Répondre" => "Reply",
     "Répondre :" => "Answer:",
     "Votre version temporaire a bien été enregistrée." => "Your temporary version has been saved",
@@ -844,8 +850,14 @@ return array(
     "Vous n'êtes pas relecteur pour cet article." => "You're not reviewer for this article.",
     "via" => "via",
     "pour le compte de" => "on behalf of",
-    "Cette invitation n'est pas liée au compte en cours !" => "This invitation is not linked to the current account!",
-    "Voulez-vous l’associer à votre compte pour continuer ?" => "Would you like to link it to your account to continue?",
+    "Cette invitation n'est pas liée au compte en cours" => "This invitation is not linked to the current account",
+    "Cette invitation vous était initialement destinée, mais elle a déjà été utilisée par un autre compte. Si vous pensez qu’il s’agit d’une erreur, veuillez contacter notre support." =>
+        "This invitation was originally intended for you, but it has already been used by another account. If you believe this is a mistake, please contact our support team.",
+    "L’invitation a été correctement associée à votre compte" => "The invitation has been successfully linked to your account",
+    "Elle a été envoyée au compte %s%s < %s >%s" => "It was sent to the account %s%s < %s >%s",
+    "Voulez-vous l’associer à votre compte %s %s < %s > %s pour continuer ?" => "Would you like to link it to your account %s %s< %s >%s to continue?",
+    "Une invitation vous a déjà été envoyée via ce compte %s%s < %s >%s" => "An invitation has already been sent to you through this account %s %s< %s >%s",
+    "Finaliser la relecture" => "Complete the reviewing",
 
     // Rédacteurs (editors)
     "Liste des articles pour lesquels je suis rédacteur" => "List of articles in editing",
@@ -1255,6 +1267,7 @@ return array(
     "browse-specialissues" => "Browse special issues",
     "browse-volumes" => "Browse all volumes",
     'volume-view' => 'View a volume',
+    'Le nom du volume ne peut pas être modifié car des articles publiés sont déjà associés à ce volume' => 'The volume name cannot be modified because there are already published articles associated with this volume',
     'section-view' => 'View a section',
     'user-delete' => 'delete account',
     'coi-delete' => 'Remove a conflict of interest',
@@ -1524,7 +1537,7 @@ return array(
 
     "Cette invitation a expiré." => "This invitation has expired.",
     "Cette invitation a expiré le " => "This invitation has expired on ",
-    "Cette invitation ne vous est pas destinée !" => "This invitation was not intended for you!",
+    "Cette invitation ne vous est pas destinée" => "This invitation was not intended for you",
     "Vous avez déjà répondu à cette invitation." => "You've already answered this invitation.",
     "invitation acceptée le " => "invitation accepted on ",
     "invitation refusée le " => "invitation declined on ",
@@ -1546,8 +1559,8 @@ return array(
     "Vous ne souhaitez pas relire cet article" => "You don't want to review this article",
     "Voulez-vous nous suggérer quelqu'un susceptible de vouloir le faire ?" => "Do you want to suggest someone that might be interested by this task?",
     "Suggérez un relecteur" => "Suggest a reviewer",
-    "Si vous le souhaitez, vous pouvez nous suggérer un autre relecteur :" => "If you wish so, you can suggest another reviewer:",
-    "Si vous le souhaitez, vous pouvez nous indiquer la raison de votre refus :" => "If you wish so, you can tell us why you've declined this invitation:",
+    "Si vous le souhaitez, vous pouvez nous suggérer un autre relecteur :" => "If you wish, you can suggest another reviewer:",
+    "Si vous le souhaitez, vous pouvez nous indiquer la raison de votre refus :" => "If you wish, you can tell us why you've declined this invitation:",
     "Motif de votre refus" => "Refusal reason",
     "Confirmer mon refus" => "Confirm my refusal",
 
@@ -1558,6 +1571,7 @@ return array(
     "Cette invitation n'existe pas !" => "This invitation does not exist!",
     "Détails de la réponse" => "Details of the answer",
     "Cette invitation a été annulée, vous n'avez plus besoin d'évaluer cet article." => "This invitation has been cancelled, you don't need to review this article anymore.",
+    "L’invitation a été correctement associée à votre compte." => "The invitation has been successfully linked to your account.",
 
 
     /**
@@ -1726,13 +1740,21 @@ return array(
     'Episciences_Website_Navigation_Page_TechnicalBoard' => 'Technical board',
     'Episciences_Website_Navigation_Page_ScientificAdvisoryBoard' => 'Scientific advisory board',
     'Episciences_Website_Navigation_Page_FormerMembers' => 'Former members',
+    'Episciences_Website_Navigation_Page_IntroductionBoard' => 'Boards presentation',
+    'Episciences_Website_Navigation_Page_ReviewersBoard' => 'Reviewers',
+    'Episciences_Website_Navigation_Page_OperatingCharterBoard' => 'Operating charter',
 
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Accepted articles to be published",
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Publishing policies",
-    "Episciences_Website_Navigation_Page_EthicalCharter" => "Ethical charter",
-    "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Editorial workflow",
-    "Episciences_Website_Navigation_Page_PrepareSubmission" => "Prepare your submission",
-    "Episciences_Website_Navigation_Page_JournalIndexing" => "Indexed in",
+    "Episciences_Website_Navigation_Page_EthicalCharter" => "For Authors - Ethical charter",
+    "Episciences_Website_Navigation_Page_EditorialWorkflow" => "For Authors - Editorial workflow",
+    "Episciences_Website_Navigation_Page_PrepareSubmission" => "For Authors - Prepare your submission",
+    "Episciences_Website_Navigation_Page_ForReviewers" => "For reviewers",
+    "Episciences_Website_Navigation_Page_ForConferenceOrganisers" => "For conference organisers",
+    "Episciences_Website_Navigation_Page_JournalIndexing" => "Abstracted and indexed in",
+    "Episciences_Website_Navigation_Page_JournalAcknowledgements" => "Acknowledgements",
+    "Page prédéfinie" => "Predefined page",
+    "Publish" => "Publish",
 
 
     "Si aucun rôle n'est sélectionné, la page sera publique" => 'If no role is selected, the page will be public',
@@ -1796,6 +1818,7 @@ return array(
 
     "article refusé" => 'refused article',
     "articles refusés" => 'refused articles',
+    "articles acceptés" => 'accepted articles',
 
     "%s article refusé" => array("%s refused article", "%s refused articles"),
 
@@ -2000,6 +2023,7 @@ return array(
     "Vous essayez d'insérer des données liées déjà existantes" => 'It seems you are trying to insert an already existing relationship',
     'Ajouter une relation' => 'Add a related work',
     'software' => 'Software',
+    'Software' => 'Software',
     'doi' => 'DOI',
     'handle' => 'Handle',
     'hal' => 'HAL',
@@ -2209,6 +2233,7 @@ return array(
     "La version que vous essayez d'envoyer existe déjà." => "The version you are trying to send already exists.",
 
     // Website > menu
-    'Choisissez une page' => 'Select a page'
+    'Choisissez une page' => 'Select a page',
+    'unavailable' => 'Unavailable'
 
 );

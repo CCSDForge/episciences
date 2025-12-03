@@ -16,19 +16,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+
+- Ability to customise application environment variables
+- *Manager only* Website menu:
+    - It is no longer possible to manually add certain public pages to the site.
+    - The list of pages has been reorganised by group.
+    - Hide "Publishing policies" page: included in the "About" page.
+- Updated 'Resources' module to manage public files
+
+
+- Manager: reset password url
+- Manager: account creation token url
+- Manager: Fixed path to reviewer report attachments without prefix
+- Manager: Force predefined pages to be public
+- Manager: Review Report: attached document URL has not been updated for the manager application
+
+
 ### Added
 - [#658](https://github.com/CCSDForge/episciences/issues/658) It is now possible to link an invitation that is not intended for you to your account
+- allow the co-author to view the publication
 - Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
 - New option to allow Editors to receive 'Comments for editors' before declaring a conflict of interest (disabled by default)
+- Ajout d'indicateur visuel pour les pages prédéfinies dans le menu
 
 ### Fixed
+- altered secondary volume rendering
+- [RT#259551] it is now possible to modify the Copy Editor at any time
 - [#776](https://github.com/CCSDForge/episciences/issues/776) Action Required: Fix Renovate Configuration
 - [#657](https://github.com/CCSDForge/episciences/issues/657) Conditionally remove the `<hr>` separator in the public and admin views of article metadata
 - [#786](https://github.com/CCSDForge/episciences/issues/786) English translation of 'Télécharger le fichier'
-- [RT#259551] it is now possible to modify the Copy Editor at any time
-- [#678](https://github.com/CCSDForge/episciences/issues/678) COIs not considered in revision emails
+- [#646](https://github.com/CCSDForge/episciences/issues/646) Rediriger sur la page de l'article qui vient d'être soumis au lieu de la page qui liste toutes les soumissions
+- [#780](https://github.com/CCSDForge/episciences/issues/780) Option to lock volume name when an article in it is published
+- [#147](https://github.com/CCSDForge/episciences/issues/147) Add new pages Acknowledgements (page code journal-acknowledgements)  in menu 'About'
+- Fixed Paper Metrics based on wrong DocId, it gave null metrics
+- Fixed Pre-defined pages deleted from the menu are not deleted from the database
 
-## v1.0.52-manager - 2025-08-28
+
+### Changed
+- [#528](https://github.com/CCSDForge/episciences/issues/528):
+    - 'upload a new version' on top of the list
+    - "Contact the editors (with an attachment)" instead of "Contact without sending a new version"
+- Paper metrics Refactored; 1 query instead of 2 ; Episciences_Paper_Visits::count is deprecated
+- the Locale is now stored in a cookie instead of the session
+- redirect to the article to be reviewed when accepting an invitation
+- Allow volume years to be a string (AAAA or AAAA-AAAA)  
+
+## v1.0.52 - 2025-08-28
+
 ### Fixed
 - DOI metadata: stop overwriting acceptance date with the last modification date
 - [#693](https://github.com/CCSDForge/episciences/issues/693) allow to save comment without attachment
@@ -40,10 +74,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed unescaped identifiers causing invalid XML in OpenAire export format
 - [#600](https://github.com/CCSDForge/episciences/issues/600) Abstract ignores line breaks
 - [#694](https://github.com/CCSDForge/episciences/issues/694) accents via LaTeX macros in abstracts aren't rendered
-- Manager: Fixed path to reviewer report attachments without prefix
-- Manager: Force predefined pages to be public
-- Manager: Review Report: attached document URL has not been updated for the manager application
- 
+- [#541](https://github.com/CCSDForge/episciences/issues/541) remove user assignation (editor) when a user is removed from the journal
+
+
 ### Added
 - DOI management automation: Added shell scripts for batch DOI operations and enhanced getDoi.php with logging and journal fetching capabilities
 - CSV import functionality for sections
@@ -70,24 +103,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v1.0.51 - 2025-04-07
 ### Changed
 - [#650](https://github.com/CCSDForge/episciences/issues/650): send notifications when a cover letter is added or edited
-- Ability to customise application environment variables
-- A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
-- *Manager only* Website menu:
-    - It is no longer possible to manually add certain public pages to the site.
-    - The list of pages has been reorganised by group.
-    - Hide "Publishing policies" page: included in the "About" page.
-- Updated 'Resources' module to manage public files
-
 - published dataset/software: the title of the data/software descriptor is its identifier.
 - Only PDF files are backed up
 - [#649](https://github.com/CCSDForge/episciences/issues/649): Assigned editors are now automatically added as (hidden) copies of messages sent to reviewers
 - A copy of the default grid is proposed if the default grid is not empty, and if the destination grid is not empty either.
 
 ### Fixed
-- Manager: reset password url
-- Manager: account creation token url
 - [#653](https://github.com/CCSDForge/episciences/issues/653): Filtering email history doesn't work
-- Manager File Not Found Error
+- File Not Found Error
 - Wrong link on page "Invitation to review an article" for temporary versions
 
 ## v1.0.50.1 - 2025-03-14

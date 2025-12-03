@@ -1,6 +1,5 @@
 <?php $this->jQuery()->addJavascriptFile("/js/volume/form.js"); ?>
 
-
 <style>
 
 </style>
@@ -14,7 +13,22 @@
 
 
     <form class="<?= $this->element->getAttrib('class') ?>" action="<?= $this->element->getAction() ?>"
-          method="<?= $this->element->getMethod() ?>" data-library="ccsd" role="form">
+          method="<?= $this->element->getMethod() ?>" data-library="ccsd" role="form"
+          data-volume-has-published-articles="<?= isset($this->hasPublishedPapers) && $this->hasPublishedPapers ? 'true' : 'false' ?>"
+          data-readonly-title-message="<?= $this->translate('Le nom du volume ne peut pas être modifié car des articles publiés sont déjà associés à ce volume') ?>">
+
+        <?php if (isset($this->hasPublishedPapers) && $this->hasPublishedPapers): ?>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="alert alert-info" role="alert">
+                    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                    <strong><?= $this->translate('Information') ?> :</strong>
+                    <?= $this->translate('Le nom du volume ne peut pas être modifié car des articles publiés sont déjà associés à ce volume') ?>.
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <?php foreach ($this->element->getElements() as $element) : ?>
             <div id="<?= $element->getName() ?>-element" class="form-group" <?php if ($element->getAttrib('data-none')):?>style="display: none;" <?php endif;?>>
                 <?= $element ?>
@@ -91,7 +105,7 @@
             }
             ?>
             <div id="papers-element" class="form-group row">
-                <label class="col-md-3 control-label optional"><?= $this->translate('Articles') ?></label>
+                <label class="col-md-3 control-label optional"><?= count($this->element->getView()->paperList) . ' ' . $this->translate('articles') ?></label>
                 <div class="col-md-9" style="padding-top: 7px">
                     <div id="papers">
                         <?php foreach ($this->element->getView()->paperList as $paperOrder => $paper) : ?>
@@ -126,3 +140,4 @@
     </form>
 
 </div>
+

@@ -14,7 +14,7 @@ class Episciences_Tools
 {
 
     public const DEFAULT_MKDIR_PERMISSIONS = 0770;
-    
+
     /**
      * Bidirectional mapping between ISO 639-2/T and ISO 639-2/B codes
      */
@@ -920,24 +920,24 @@ class Episciences_Tools
     public static function decodeLatex($string, $preserveLineBreaks = false)
     {
         $result = str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $string);
-        
+
         if ($preserveLineBreaks) {
             // First handle double line breaks (clear paragraph breaks)
             $result = preg_replace('/\n\s*\n/', '<br /><br />', $result);
-            
+
             // Then handle single line breaks more intelligently:
             // Convert single line breaks to <br> EXCEPT when they appear to be text wrapping
-            
+
             // Text wrapping patterns (convert to spaces):
             // 1. Line breaks after short words (articles, prepositions, conjunctions)
             $result = preg_replace('/(\b\w{1,3})\s*\n/', '$1 ', $result);
             // 2. Line breaks in the middle of sentences (not after punctuation)
             $result = preg_replace('/([^.!?:;])\s*\n(?!\s*[-*•])/', '$1 ', $result);
-            
+
             // Convert remaining single line breaks to <br> (intentional paragraph breaks)
             $result = preg_replace('/\n/', '<br />', $result);
         }
-        
+
         return $result;
     }
 
@@ -1920,13 +1920,62 @@ class Episciences_Tools
     }
 
     /**
+     * Validate DOI format and length with proper error handling
+     *
+     * @param string $doi The DOI to validate
+     * @param int $maxLength Maximum allowed length (default 200)
+     * @return string The validated and trimmed DOI
+     * @throws InvalidArgumentException If DOI is invalid or too long
+     */
+    public static function validateDoi(string $doi, int $maxLength = 200): string
+    {
+        $doi = trim($doi);
+
+        if (empty($doi)) {
+            throw new InvalidArgumentException('DOI cannot be empty');
+        }
+
+        if (!self::isDoi($doi)) {
+            throw new InvalidArgumentException('Invalid DOI format: ' . $doi);
+        }
+
+        if (strlen($doi) > $maxLength) {
+            throw new InvalidArgumentException("DOI exceeds maximum length of {$maxLength} characters");
+        }
+
+        return $doi;
+    }
+
+    /**
      * @param string $strDoi
      * @return bool
      */
-    public static function isDoiWithUrl(string $strDoi)
+    public static function isDoiWithUrl(string $strDoi): bool
     {
         $pattern = '~^((https?://)?(dx.)?doi\.org/)?10.\d{4,9}/[-._;()\/:A-Z0-9]+$~i';
         return (bool)preg_match($pattern, $strDoi);
+    }
+
+    /**
+     * Validate ORCID identifier format
+     *
+     * ORCID format: 0000-0002-1825-0097
+     * Four groups of four digits separated by hyphens
+     * Last digit can be 0-9 or X (checksum)
+     *
+     * @param string $orcid The ORCID identifier to validate
+     * @return bool True if valid ORCID format, false otherwise
+     */
+    public static function isValidOrcid(string $orcid): bool
+    {
+        $orcid = trim($orcid);
+
+        if (empty($orcid)) {
+            return false;
+        }
+
+        // ORCID format: 4 groups of 4 digits separated by hyphens, last digit can be X
+        return (bool)preg_match('/^\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/', $orcid);
     }
 
     /**
@@ -1996,13 +2045,52 @@ class Episciences_Tools
         return $matches;
     }
 
+
     /**
-     * @param string $handle
-     * @return bool
+     * Extracts a raw Handle string from a full Handle URL, excluding DOIs.
+     *
+     * @param string $input Input string
+     * @return string Cleaned handle (original string if not a Handle URL or if it’s a DOI)
      */
-    public static function isHandle(string $handle): bool
+    public static function cleanHandle(string $input): string
     {
-        return (bool)preg_match('/(^[\x00-\x7F]+(\.[\x00-\x7F]+)*\/[\S]+[^;,.\s])/', $handle);
+        $input = trim($input);
+
+        // Skip cleaning if it’s a DOI URL
+        if (preg_match('~^https?://doi\.org/~i', $input)) {
+            return $input;
+        }
+
+        // Clean Handle.net URLs (with or without protocol)
+        return preg_replace(
+            '~^(https?:\/\/)?hdl\.handle\.net\/~i',
+            '',
+            $input
+        );
+    }
+
+    /**
+     * Validates whether a string is a Handle (Handle.net) identifier.
+     * DOIs (starting with "10.") are explicitly excluded.
+     *
+     * @param string $handle The handle to validate
+     * @param bool $clean Whether to clean the handle first (removing URL prefixes)
+     * @return bool True if valid handle, false otherwise
+     */
+    public static function isHandle(string $handle, bool $clean = true): bool
+    {
+        if ($clean) {
+            $handle = self::cleanHandle($handle);
+        }
+
+        // Exclude DOIs (common DOI prefix pattern)
+        if (preg_match('/^10\.\d{4,9}\//', $handle)) {
+            return false;
+        }
+
+        // Basic Handle regex
+        $pattern = '/^[0-9]+(\.[0-9]+)*\/[^\s]+$/u';
+        return (bool) preg_match($pattern, $handle);
     }
 
     /**
@@ -2054,7 +2142,7 @@ class Episciences_Tools
             if ($checkFunction($value)) {
                 return $type;
             }
-        }
+            }
 
         return false;
     }
@@ -2151,10 +2239,88 @@ class Episciences_Tools
         if (empty($code) || strlen($code) !== 3) {
             return $code;
         }
-        
+
         $code = strtolower($code);
-        
+
         return self::ISO639_BIDIRECTIONAL_MAP[$code] ?? $code;
     }
+
+    /**
+     * Clean whitespace and control characters from strings or arrays (PHP 8.1+ compatible)
+     *
+     * This method normalizes whitespace in strings or recursively processes arrays.
+     * It removes excessive spaces, tabs, newlines, and optionally BR tags and UTF-8 special characters.
+     *
+     * @param string|array|null $input The input to clean (string, array, or null)
+     * @param bool $stripBr Whether to convert BR tags to spaces before processing (default: true)
+     * @param bool $allUtf8 Whether to remove all UTF-8 special whitespace characters (default: false)
+     * @return string|array Empty string for null string input, empty array for null/empty array input,
+     *                     cleaned string otherwise, or array with cleaned values
+     *
+     * @example
+     * // String cleaning
+     * spaceCleaner("  hello   world  ") // Returns: "hello world"
+     * spaceCleaner(null) // Returns: ""
+     * spaceCleaner("hello<br>world") // Returns: "hello world"
+     * spaceCleaner("hello<br>world", false) // Returns: "hello<br>world"
+     *
+     * // Array cleaning
+     * spaceCleaner(["  test  ", null, "  value  "]) // Returns: ["test", "", "value"]
+     * spaceCleaner(null, true, false) // Returns: ""
+     */
+    public static function spaceCleaner(
+        string|array|null $input,
+        bool $stripBr = true,
+        bool $allUtf8 = false
+    ): string|array {
+        // Handle null input
+        if ($input === null) {
+            return '';
+        }
+
+        // Handle array input recursively
+        if (is_array($input)) {
+            $result = [];
+            foreach ($input as $value) {
+                $cleaned = self::spaceCleaner($value, $stripBr, $allUtf8);
+                if ($cleaned !== null) {
+                    $result[] = $cleaned;
+                }
+            }
+            return array_filter($result, static fn($val) => $val !== null);
+        }
+
+        // Handle empty strings
+        if ($input === '') {
+            return '';
+        }
+
+        // Strip BR tags if requested
+        if ($stripBr) {
+            $input = preg_replace("/<br[[:space:]]*\/?[[:space:]]*>/i", " ", $input);
+        }
+
+        // Normalize regular whitespace (spaces, tabs, newlines, carriage returns)
+        // Keep non-breaking spaces and other UTF-8 spaces intact unless $allUtf8 is true
+        $input = preg_replace('/[\n\t\r ]+/', ' ', $input);
+
+        // Remove control characters (ASCII 1-31, excluding those already handled)
+        $input = preg_replace("/[\x1-\x1f]/", "", $input);
+
+        // Optionally remove all UTF-8 special whitespace characters
+        if ($allUtf8) {
+            // Remove various UTF-8 whitespace and control characters
+            // \x7F-\xA0: DEL and non-breaking space range
+            // \xAD: soft hyphen
+            // \x{2009}: thin space
+            $input = preg_replace('/[\x7F-\xA0\xAD\x{2009}]/u', '', $input);
+        }
+
+        // Remove duplicate spaces that may have been created
+        $input = preg_replace('/\s\s+/u', ' ', $input);
+
+        return trim($input);
+    }
+
 
 }

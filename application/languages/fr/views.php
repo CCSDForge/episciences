@@ -6,10 +6,13 @@ return [
     // TO FIX
     'guest' => 'Invité',
     'member' => 'Membre',
-    'editorial_board' => 'Comité éditorial',
-    'technical_board' => 'Comité technique',
-    'scientific_advisory_board' => 'Comité scientifique',
-    'former_member' => 'Ancien membre',
+    'editorial_board' => '<i class="fa-regular fa-user-tag"></i> Comité éditorial',
+    'technical_board' => '<i class="fa-regular fa-user-tag"></i> Comité technique',
+    'scientific_advisory_board' => '<i class="fa-regular fa-user-tag"></i> Comité scientifique',
+    'advisory_board' => '<i class="fa-regular fa-user-tag"></i> Comité consultatif',
+    'managing_editor' => '<i class="fa-regular fa-user-tag"></i> Comité de direction',
+    'handling_editor' => '<i class="fa-regular fa-user-tag"></i> Rédacteur responsable',
+    'former_member' => '<i class="fa-regular fa-user-tag"></i> Ancien membre',
     'coauthor' => 'Coauteur',
     'webmaster' => 'Webmaster',
     'secretary' => 'Secrétaire de rédaction',
@@ -54,21 +57,29 @@ return [
     "Episciences_Website_Navigation_Page_Search" => "Rechercher un article",
     "Episciences_Website_Navigation_Page_EditorialStaff" => "Membres du comité éditorial",
     "Episciences_Website_Navigation_Page_Credits" => "Crédits",
-    "Episciences_Website_Navigation_Page_About" => "La revue",
+    "Episciences_Website_Navigation_Page_About" => "À propos",
 
     "Episciences_Website_Navigation_Page_EditorialBoard" => "Comité éditorial",
     'Episciences_Website_Navigation_Page_TechnicalBoard' => 'Comité technique',
     'Episciences_Website_Navigation_Page_ScientificAdvisoryBoard' => 'Comité scientifique',
     'Episciences_Website_Navigation_Page_FormerMembers' => 'Anciens membres',
+    'Episciences_Website_Navigation_Page_IntroductionBoard' => 'Présentation des comités',
+    'Episciences_Website_Navigation_Page_ReviewersBoard' => 'Comité de relecture',
+    'Episciences_Website_Navigation_Page_OperatingCharterBoard' => 'Charte de fonctionnement',
 
     "Episciences_Website_Navigation_Page_PublishingPolicies" => "Politiques de publication",
     "Episciences_Website_Navigation_Page_EthicalCharter" => "Charte éthique",
     "Episciences_Website_Navigation_Page_EditorialWorkflow" => "Flux de travail éditorial",
     "Episciences_Website_Navigation_Page_PrepareSubmission" => "Préparer votre soumission",
+    "Episciences_Website_Navigation_Page_ForReviewers" => "Pour les relecteurs",
+    "Episciences_Website_Navigation_Page_ForConferenceOrganisers" => "Pour les organisateurs de conférences",
 
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Articles acceptés à publier",
 
-    "Episciences_Website_Navigation_Page_JournalIndexing" => "Référencement",
+    "C'est une page prédéfinie" => "Page prédéfinie",
+    "Episciences_Website_Navigation_Page_JournalIndexing" => "Indexation de la revue",
+    "Episciences_Website_Navigation_Page_JournalAcknowledgements" => "Remerciements",
+    "Publish" => "Publier",
 
 
     //Recherche : facettes
@@ -196,6 +207,7 @@ return [
     "browse-specialissues" => "Consulter les volumes spéciaux",
     "browse-volumes" => "Consulter tous les volumes",
     'volume-view' => 'Voir un volume',
+    'Le nom du volume ne peut pas être modifié car des articles publiés sont déjà associés à ce volume' => 'Le nom du volume ne peut pas être modifié car des articles publiés sont déjà associés à ce volume',
     'section-view' => 'Voir une rubrique',
     'user-delete' => 'Supprimer un compte',
     'coi-delete' => "Supprimer un conflit d'intérêt",
@@ -326,5 +338,10 @@ return [
 
     // form errors
     "File 'file_data_descriptor' was not uploaded" => "Fichier descripteur non téléchargé.",
+    'unavailable' => 'Indisponible',
+
+    'T_VOLUME_YEAR_INVALID_FORMAT' => 'Le format d\'année du volume est invalide. Il doit être "AAAA" (ex: 2001) ou "AAAA-AAAA" (ex: 2001-2002).',
+    'T_VOLUME_YEAR_INVALID_RANGE'  => 'La deuxième année du volume doit être strictement supérieure à la première (ex: 2003-2004).',
+    'T_VOLUME_YEAR_OUTSIDE_BOUNDS' => 'L\'année doit être comprise entre %s et %s (Année courante + 5 ans).',
 
 ];

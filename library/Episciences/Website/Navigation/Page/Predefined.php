@@ -3,10 +3,58 @@
 class Episciences_Website_Navigation_Page_Predefined extends Episciences_Website_Navigation_Page
 {
     const PERMALIEN = 'permalien';
+    private static ?array $_cachedPermaliens = null;
     protected $_controller = 'page';
     protected $_multiple = false;
     protected string $_page = '';
 
+    /**
+     * Vérifie si un pageCode (permalien) correspond à une page prédéfinie
+     *
+     * @param string $pageCode Le permalien à vérifier
+     * @return bool True si le pageCode correspond à une page prédéfinie
+     * @throws ReflectionException
+     */
+    public static function isPredefinedPage(string $pageCode): bool
+    {
+        $permaliens = self::getAllPermaliens();
+        return in_array($pageCode, $permaliens, true);
+    }
+
+    /**
+     * Récupère tous les permaliens des classes prédéfinies (avec cache)
+     *
+     * @return array Tableau associatif [className => permalien]
+     * @throws ReflectionException
+     */
+    public static function getAllPermaliens(): array
+    {
+        if (self::$_cachedPermaliens === null) {
+            $permaliens = [];
+            $pageDir = APPLICATION_PATH . '/../library/Episciences/Website/Navigation/Page/';
+
+            foreach (glob($pageDir . '*.php') as $file) {
+                $className = 'Episciences_Website_Navigation_Page_' . basename($file, '.php');
+
+                if (!class_exists($className)) {
+                    require_once $file;
+                }
+
+                if (is_subclass_of($className, __CLASS__)) {
+                    $reflection = new ReflectionClass($className);
+                    $defaults = $reflection->getDefaultProperties();
+
+                    if (!empty($defaults['_permalien'])) {
+                        $permaliens[$className] = $defaults['_permalien'];
+                    }
+                }
+            }
+
+            self::$_cachedPermaliens = $permaliens;
+        }
+
+        return self::$_cachedPermaliens;
+    }
 
     public function toArray(): array
     {
@@ -15,24 +63,15 @@ class Episciences_Website_Navigation_Page_Predefined extends Episciences_Website
         return $array;
     }
 
-
     public function getPermalien(): string
     {
         return $this->_permalien;
     }
 
-
-    public function setPermalien($permalien): void
-    {
-        $this->_permalien = $permalien;
-    }
-
-
     public function getAction(): string
     {
         return $this->getPermalien();
     }
-
 
     public function getForm($pageidx)
     {
@@ -58,25 +97,25 @@ class Episciences_Website_Navigation_Page_Predefined extends Episciences_Website
         return $this->_form;
     }
 
-
     public function setOptions($options = []): void
     {
         foreach ($options as $option => $value) {
             $option = strtolower($option);
 
-            switch ($option) {
-                case self::PERMALIEN:
-                    $this->setPermalien($this->_permalien);
-                    break;
-                case 'page':
-                    $this->setPage($value);
-                    break;
+            if ($option == self::PERMALIEN) {
+                $this->setPermalien($this->_permalien);
+            } elseif ($option == 'page') {
+                $this->setPage($value);
             }
         }
 
         parent::setOptions($options);
     }
 
+    public function setPermalien($permalien): void
+    {
+        $this->_permalien = $permalien;
+    }
 
     public function setPage($page): void
     {

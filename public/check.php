@@ -5,6 +5,7 @@ $lang = "fr";
 
 if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
     $acceptLangs = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
+    // Cela extraira tous les codes de langue et leurs éventuelles valeurs de "qualité" (q)
     preg_match_all('/([a-z-]{2,8})(?:-[a-z]{2})?(?:;q=([0-9.]+))?/i', $acceptLangs, $matches);
 
     if (isset($matches[1])) {

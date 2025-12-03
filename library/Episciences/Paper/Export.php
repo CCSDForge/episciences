@@ -103,9 +103,18 @@ class Export
         $volume = '';
         $section = '';
         $proceedingInfo = '';
+
         if ($paper->getVid()) {
-            /* @var $oVolume Episciences_Volume */
-            $oVolume = Episciences_VolumesManager::find($paper->getVid());
+            $volumeCacheKey = 'volume-' . $paper->getVid();
+            try {
+                $oVolume = Zend_Registry::get($volumeCacheKey);
+            } catch (Exception $e) {
+                $oVolume = Episciences_VolumesManager::find($paper->getVid());
+                if ($oVolume) {
+                    Zend_Registry::set($volumeCacheKey, $oVolume);
+                }
+            }
+
             if ($oVolume) {
                 $volume = $oVolume->getName('en', true);
                 if ($oVolume->isProceeding()) {
@@ -116,8 +125,16 @@ class Export
 
 
         if ($paper->getSid()) {
-            /* @var $oSection Episciences_Section */
-            $oSection = Episciences_SectionsManager::find($paper->getSid());
+            $sectionCacheKey = 'section-' . $paper->getSid();
+            try {
+                $oSection = Zend_Registry::get($sectionCacheKey);
+            } catch (Exception $e) {
+                $oSection = Episciences_SectionsManager::find($paper->getSid());
+                if ($oSection) {
+                    Zend_Registry::set($sectionCacheKey, $oSection);
+                }
+            }
+
             if ($oSection) {
                 $section = $oSection->getName('en', true);
             }
@@ -126,16 +143,61 @@ class Export
     }
 
     /**
+     * Parse volume string to extract numeric values for volume and issue
+     *
+     * Supported formats:
+     * - "Volume 13, Issue 2" -> ['volume' => '13', 'issue' => '2']
+     * - "Volume 13" -> ['volume' => '13', 'issue' => null]
+     * - "Vol. 13, Issue 2" -> ['volume' => '13', 'issue' => '2']
+     * - "Tome 13" -> ['volume' => '13', 'issue' => null]
+     * - "13, Issue 2" -> ['volume' => '13', 'issue' => '2']
+     * - "13" -> ['volume' => '13', 'issue' => null]
+     *
+     * If no pattern matches, returns the original value in the 'volume' field.
+     *
+     * @param string $volumeString The volume string to parse
+     * @return array Associative array with 'volume' and 'issue' keys
+     */
+    private static function parseVolumeString(string $volumeString): array
+    {
+        $volume = null;
+        $issue = null;
+
+        // Trim the input
+        $volumeString = trim($volumeString);
+
+        // Pattern 1: Match "Volume/Vol./Tome X, Issue Y" or just "X, Issue Y"
+        // This pattern captures both volume and issue
+        if (preg_match('/(?:volume|vol\.|tome)?\s*(\d+)\s*,\s*issue\s*(\d+)/i', $volumeString, $matches)) {
+            $volume = $matches[1];
+            $issue = $matches[2];
+        }
+        // Pattern 2: Match "Volume/Vol./Tome X" or just "X" (no issue)
+        elseif (preg_match('/^(?:volume|vol\.|tome)?\s*(\d+)$/i', $volumeString, $matches)) {
+            $volume = $matches[1];
+        }
+        // If no pattern matches, return the original value
+        else {
+            $volume = $volumeString;
+        }
+
+        return [
+            'volume' => $volume,
+            'issue' => $issue
+        ];
+    }
+
+    /**
      * @param Episciences_Paper $paper
      * @return bool|Episciences_Review
      */
     private static function getJournalSettings(Episciences_Paper $paper): bool|Episciences_Review
     {
-        $journal = Episciences_ReviewsManager::find($paper->getRvid());
         $loadedSettings = 'reviewSettings-' . $paper->getRvid();
         try {
-            Zend_Registry::get($loadedSettings);
+            $journal = Zend_Registry::get($loadedSettings);
         } catch (Exception $e) {
+            $journal = Episciences_ReviewsManager::find($paper->getRvid());
             $journal->loadSettings();
             Zend_Registry::set($loadedSettings, $journal);
         }
@@ -279,6 +341,10 @@ class Export
         $bibRef = '';
         $previousVersionsUrl = self::getPreviousVersionsUrls($paper);
         list($volume, $section, $proceedingInfo) = self::getPaperVolumeAndSection($paper);
+
+        // Parse volume string to extract numeric values
+        $parsedVolume = self::parseVolumeString($volume);
+
         $journal = self::getJournalSettings($paper);
 
         $paperLanguage = $paper->getMetadata('language');
@@ -304,10 +370,16 @@ class Export
         $view = new Zend_View();
         $view->addScriptPath(APPLICATION_PATH . self::MODULES_JOURNAL_VIEWS_SCRIPTS_EXPORT);
 
+        $licenceUrlString = '';
+        $licenceUrlStringValue = $paper->getLicence();
+        if ($licenceUrlStringValue !== '') {
+            $licenceUrlString = sprintf(' xlink:href="%s"', $licenceUrlStringValue);
+        }
         return self::compactXml($view->partial('zbjats.phtml', [
+            'licenceUrlString' => $licenceUrlString,
             'nbPages' => $nbPages,
             'bibRef' => $bibRef,
-            'volume' => $volume,
+            'volume' => $parsedVolume,
             'proceedingInfo' => $proceedingInfo,
             'section' => $section,
             'journal' => $journal,
@@ -525,7 +597,7 @@ class Export
             }
             $root->appendChild($description);
         }
-        $journal = Episciences_ReviewsManager::find($paper->getRvid());
+        $journal = self::getJournalSettings($paper);
         $publisher = $journal->getSetting(Episciences_Review::SETTING_JOURNAL_PUBLISHER) ?? DOMAIN;
         $root->appendChild($xml->createElement('publisher', ucfirst(trim($publisher))));
 
@@ -553,8 +625,15 @@ class Export
         $sectionMeta = [];
 
         if ($paper->getVid()) {
-            /* @var $oVolume Episciences_Volume */
-            $oVolume = Episciences_VolumesManager::find($paper->getVid());
+            $volumeCacheKey = 'volume-' . $paper->getVid();
+            try {
+                $oVolume = Zend_Registry::get($volumeCacheKey);
+            } catch (Exception $e) {
+                $oVolume = Episciences_VolumesManager::find($paper->getVid());
+                if ($oVolume) {
+                    Zend_Registry::set($volumeCacheKey, $oVolume);
+                }
+            }
             if ($oVolume) {
                 $volumeMeta[] = $oVolume->toPublicArray();
             }
@@ -562,15 +641,22 @@ class Export
 
 
         if ($paper->getSid()) {
-            /* @var $oSection Episciences_Section */
-            $oSection = Episciences_SectionsManager::find($paper->getSid());
+            $sectionCacheKey = 'section-' . $paper->getSid();
+            try {
+                $oSection = Zend_Registry::get($sectionCacheKey);
+            } catch (Exception $e) {
+                $oSection = Episciences_SectionsManager::find($paper->getSid());
+                if ($oSection) {
+                    Zend_Registry::set($sectionCacheKey, $oSection);
+                }
+            }
             if ($oSection) {
                 $sectionMeta[] = $oSection->toPublicArray();
             }
         }
 
 
-        $journal = Episciences_ReviewsManager::find($paper->getRvid());
+        $journal = self::getJournalSettings($paper);
 
         $result = [];
         $result['docId'] = $paper->getDocid();
@@ -671,7 +757,7 @@ class Export
         $jsonCsl['id'] = $isJournal
             ? "https://doi.org/" . $jsonDb['journal']['journal_article']['doi_data']['doi']
             : "https://doi.org/" . $jsonDb['conference']['conference_paper']['doi_data']['doi'];
-        
+
         $publicationYear = $isJournal
             ? ($jsonDb['journal']['journal_article']['publication_date']['year'] ?? null)
             : ($jsonDb['conference']['conference_paper']['conference_paper']['year'] ?? null);

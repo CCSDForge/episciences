@@ -12,7 +12,9 @@ const functionsJs = fs.readFileSync(
 );
 
 // Extract just the getFirstOf function to avoid jQuery dependencies
-const getFirstOfFunctionMatch = functionsJs.match(/function getFirstOf\(data\) \{[\s\S]*?\n\}/);
+const getFirstOfFunctionMatch = functionsJs.match(
+    /function getFirstOf\(data\) \{[\s\S]*?\n\}/
+);
 if (getFirstOfFunctionMatch) {
     eval(getFirstOfFunctionMatch[0]);
 }

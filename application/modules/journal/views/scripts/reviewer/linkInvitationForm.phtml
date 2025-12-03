@@ -1,20 +1,44 @@
 <form class="form-container" id="linkedInvitationForm" method="POST">
+    <?php
+    $loggedScreenName = Episciences_Auth::getScreenName();
+    $loggedEmail = Episciences_Auth::getEmail();
+    ?>
     <p>
-        <?= $this->translate("Voulez-vous l’associer à votre compte pour continuer ?") ?>
+        <?= sprintf($this->translate('Elle a été envoyée au compte %s%s < %s >%s'), '<a>', $this->fromScreeName, $this->fromEmail, '</a>') ?>
     </p>
 
-    <input type="hidden" name="hidden" value="">
 
-    <div class="btn-group">
-        <button type="submit" class="btn-accept" name="linkInvitation" value="acceptToLink">
-            <span class="fa-solid fa-check"></span>
-            <?= $this->translate('Accepter') ?>
-        </button>
-        <button type="submit" class="btn-decline" name="linkInvitation" value="declineToLink">
-            <span class="fa-solid fa-xmark"></span>
-            <?= $this->translate('Refuser') ?>
-        </button>
-    </div>
+    <?php if (!$this->isAlreadyInvited) : ?>
+        <p>
+            <?= sprintf($this->translate("Voulez-vous l’associer à votre compte %s %s < %s > %s pour continuer ?"), '<a>', $loggedScreenName, $loggedEmail, '</a>') ?>
+        </p>
 
-    <p class="status" id="statusMsg"></p>
+        <div class="form-actions text-center">
+            <button type="submit" class="btn btn-success" name="linkInvitation" value="acceptToLink"
+                    style="display:inline">
+                <span class="fa-solid fa-check"></span>
+                <?= $this->translate('Accepter') ?>
+            </button>
+            <button type="submit" class="btn btn-danger" name="linkInvitation" value="declineToLink">
+                <span class="fa-solid fa-xmark"></span>
+                <?= $this->translate('Refuser') ?>
+            </button>
+        </div>
+
+    <?php else:
+        $competeMsg = $this->translate('Finaliser la relecture');
+        ?>
+
+        <p>
+            <?= sprintf($this->translate("Une invitation vous a déjà été envoyée via ce compte %s%s < %s >%s"), '<a>', $loggedScreenName, $loggedEmail, '</a>') ?>
+        </p>
+        <div class="text-center">
+            <a class="btn btn-sm btn-success" href="<?= $this->latestInvitationUrl ?>" class="" aria-label="<?= $competeMsg ?>"><span
+                        class="fa-solid fa-check" style="margin-right: 5px;"></span><?= $competeMsg ?>
+            </a>
+        </div>
+
+    <?php endif; ?>
+
+
 </form>

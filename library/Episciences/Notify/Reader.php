@@ -93,6 +93,7 @@ class Episciences_Notify_Reader
             'user' => INBOX_DB_USER,
             'password' => INBOX_DB_PASSWORD,
             'dbname' => INBOX_DB_NAME,
+            'port' => INBOX_DB_PORT,
         ];
     }
 

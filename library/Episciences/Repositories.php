@@ -24,6 +24,8 @@ class Episciences_Repositories
     public const REPO_DOI_PREFIX = 'doi_prefix';
 
     // IDs in metadata_sources table : Episciences repository => '0'
+
+    public const EPISCIENCES_REPO_ID = '0';
     public const HAL_REPO_ID = '1';
     public const ARXIV_REPO_ID = '2';
     public const CWI_REPO_ID = '3';
@@ -37,6 +39,8 @@ class Episciences_Repositories
 
     public const ZBMATH_OPEN = '17';
 
+    public const ARCHE_ID = '18';
+
     public const EPI_USER_ID = '12';
     public const HAL_LABEL = 'HAL';
 
@@ -48,7 +52,8 @@ class Episciences_Repositories
         self::CWI_REPO_ID => '22211',
         self::ZENODO_REPO_ID => '123456 or 10.5281/zenodo.123456',
         self::BIO_RXIV_ID => '10.1101/339747',
-        self::MED_RXIV_ID => '10.1101/339747'
+        self::MED_RXIV_ID => '10.1101/339747',
+        self::ARCHE_ID => '(Handle) 21.11115/0000-000B-C715-D'
     ];
 
     public static function getRepositories(): array
@@ -204,20 +209,17 @@ class Episciences_Repositories
     public static function getLabels(): array
     {
         $labels = [];
+        $skipId = (int) self::EPISCIENCES_REPO_ID;
 
         foreach (self::getRepositories() as $repoId => $repository) {
-
-            if ($repoId === 0) {
-                // skip Episciences repository
-                continue;
+            if ($repoId !== $skipId) {
+                $labels[$repoId] = $repository[self::REPO_LABEL];
             }
-
-            $labels[$repoId] = $repository[self::REPO_LABEL];
         }
 
         return $labels;
-
     }
+
 
     public static function isDataverse(int $repoId): bool
     {

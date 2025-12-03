@@ -1,5 +1,6 @@
 <?php
 
+use GuzzleHttp\Exception\GuzzleException;
 use Episciences\Trait\UrlBuilder;
 
 class Episciences_PapersManager
@@ -1228,14 +1229,37 @@ class Episciences_PapersManager
 
         // Checkbox
         /** @var Episciences_User $user */
+
+        $translator = Zend_Registry::get('Zend_Translate');
+        $unavailableEditors = [];
         foreach ($users as $user) {
-            $options[$user->getUid()] = $user->getFullname();
+            $userName = '';
+
+            // Add icon for editors (guest editor = star, editor = user icon)
+            if ($name === 'editors') {
+                $class = ($user->isGuestEditor()) ? 'grey glyphicon glyphicon-star' : 'lightergrey glyphicon glyphicon-user';
+                $type = ($user->isGuestEditor()) ? ucfirst($translator->translate(Episciences_Acl::ROLE_GUEST_EDITOR)) : ucfirst($translator->translate(Episciences_Acl::ROLE_EDITOR));
+                $icon = '<span class="' . $class . '" style="margin-right:10px"></span>';
+                $icon = '<span style="cursor: pointer" data-toggle="tooltip" title="' . $type . '">' . $icon . '</span>';
+                $userName .= $icon;
+            }
+
+            $userName .= $user->getFullname();
+
+            // Track unavailable editors for JavaScript handling
+            if ($name === 'editors' && !Episciences_UsersManager::isEditorAvailable($user->getUid(), RVID)) {
+                $unavailableEditors[] = $user->getUid();
+                $userName .= ' <span class="unavailable-badge">' . $translator->translate('unavailable') . '</span>';
+            }
+
+            $options[$user->getUid()] = $userName;
         }
 
         $form->addElement('multiCheckbox', $name, [
             'multiOptions' => $options,
             'separator' => '<br/>',
-            'decorators' => ['ViewHelper', ['HtmlTag', ['tag' => 'div', 'class' => $name . '-list', 'style' => 'margin-left: 15px']]]
+            'escape' => false,
+            'decorators' => ['ViewHelper', ['HtmlTag', ['tag' => 'div', 'class' => $name . '-list', 'style' => 'margin-left: 15px', 'data-unavailable-editors' => json_encode($unavailableEditors)]]]
         ]);
 
         if (is_array($currentUsers)) {
@@ -2672,8 +2696,10 @@ class Episciences_PapersManager
                 'version' => $version
             ]
         );
-
-        if ($oai) {
+        // Use enriched record from hookApiRecords if available, otherwise fallback to OAI
+        if (!empty($response['record'])) {
+            $record = $response['record'];
+        } elseif ($oai) {
             $record = $oai->getRecord($repoIdentifier);
             $type = Episciences_Tools::xpath($record, '//dc:type');
 
@@ -2701,29 +2727,9 @@ class Episciences_PapersManager
             'repoId' => $repoId
         ]);
 
-
         if (array_key_exists('record', $result)) {
-            $record = $result['record'];
-            // delete all paper files
-            Episciences_Paper_FilesManager::deleteByDocId($docId);
-
-            $hookParams = ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId];
-
-            // add all files
-            $hookFiles = Episciences_Repositories::callHook(
-                'hookFilesProcessing',
-                (isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams
-            );
-
-            if (isset($hookFiles['affectedRows'])) {
-                $affectedRows += $hookFiles['affectedRows'];
-
-            }
-
+            list($record, $enrichment, $affectedRows) = self::updateRecordDataProcessFilesHook($result['record'], $docId, $repoId, $identifier, $enrichment, $affectedRows);
         }
-
-        // delete all paper datasets
-        //Episciences_Paper_DatasetsManager::deleteByDocIdAndRepoId($docId, $repoId);
 
         if (Episciences_Repositories::hasHook($repoId)) {
             // add all linked data : Zenodo only
@@ -2748,33 +2754,23 @@ class Episciences_PapersManager
         $affectedRows += Episciences_Submit::enrichmentProcess($paper, $enrichment);
 
         Episciences_Paper_AuthorsManager::verifyExistOrInsert($docId, $paperId);
+
+
+
+
         //insert licence when save paper
-        $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
-        $affectedRows += Episciences_Paper_LicenceManager::InsertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
+        $affectedRows = self::updateRecordDataProcessLicence($repoId, $identifier, $version, $docId, $affectedRows);
+
 
         ////////Creator OA and HAL
         /// Traitement spécial HAL (affiliations, ORCID, financements)
         $strRepoId = (string)$repoId;
         if ($strRepoId === Episciences_Repositories::HAL_REPO_ID) {
-
-            $affectedRows += Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($repoId, $paperId, $identifier, $version);
-            //FUNDING
-            $arrayIdEuAnr = Episciences_Paper_ProjectsManager::CallHAlApiForIdEuAndAnrFunding($identifier, $version);
-            $decodeHalIdsResp = json_decode($arrayIdEuAnr, true, 512, JSON_THROW_ON_ERROR);
-            $globalArrayJson = [];
-            if (!empty($decodeHalIdsResp['response']['docs'])) {
-                $globalArrayJson = Episciences_Paper_ProjectsManager::FormatFundingANREuToArray($decodeHalIdsResp['response']['docs'], $identifier, $globalArrayJson);
+            try {
+                $affectedRows = self::updateRecordDataHal($paperId, $identifier, $version, $affectedRows);
+            } catch (JsonException | \Psr\Cache\InvalidArgumentException $e) {
+                trigger_error($e->getMessage(), E_USER_WARNING);
             }
-            $mergeArrayANREU = [];
-            if (!empty($globalArrayJson)) {
-                foreach ($globalArrayJson as $globalPreJson) {
-                    $mergeArrayANREU[] = $globalPreJson[0];
-                }
-                $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::HAL_REPO_ID);
-                $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
-            }
-
-
         }
         if (
             !empty($doiTrim) &&
@@ -2789,72 +2785,10 @@ class Episciences_PapersManager
             ], true)
             )
         ) {
-            // CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
-            // BUT BEFORE CHECK GLOBAL CACHE
-            Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);
-            ///////////////////////////////////////////////////////////////////////////////////////////////////
-            $setsGlobalOARG = Episciences_OpenAireResearchGraphTools::getsGlobalOARGCache($doiTrim);
-            list($cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator) = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
-
-            if ($setsGlobalOARG->isHit() && !$setsOpenAireCreator->isHit()) {
-                //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
-                // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
-                try {
-                    $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                    Episciences_OpenAireResearchGraphTools::putCreatorInCache($decodeOpenAireResp, $doiTrim);
-                    Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
-                } catch (JsonException $e) {
-
-                    $eMsg = $e->getMessage() . " for PAPER " . $paperId . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json ';
-                    // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
-                    Episciences_OpenAireResearchGraphTools::logErrorMsg($eMsg);
-                    $setsOpenAireCreator->set(json_encode([""]));
-                    $cacheCreator->save($setsOpenAireCreator);
-                }
-            }
-
-            //we need to refresh cache creator to get the new file
-            ////// CACHE CREATOR ONLY
-            [$cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator] = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
-
-            $affectedRows += Episciences_OpenAireResearchGraphTools::insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId);
-
-            ////////Funding OA and HAL
-            list($cacheFundingOA, $pathOpenAireFunding, $setOAFunding) = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
-
-            if ($setsGlobalOARG->isHit() && !$setOAFunding->isHit()) {
-                // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
-                try {
-                    $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                    Episciences_OpenAireResearchGraphTools::putFundingsInCache($decodeOpenAireResp, $doiTrim);
-                    //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
-                    Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
-
-                } catch (JsonException $e) {
-                    // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
-                    Episciences_OpenAireResearchGraphTools::logErrorMsg($e->getMessage() . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json');
-                    $setOAFunding->set(json_encode([""]));
-                    $cacheFundingOA->save($setOAFunding);
-                }
-            }
             try {
-                [$cacheFundingOA, $pathOpenAireFunding, $setOAFunding] = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
-            } catch (\Psr\Cache\InvalidArgumentException $e) {
-                trigger_error($e->getMessage());
-            }
-
-            try {
-                $fileFound = $setOAFunding->get() ? json_decode($setOAFunding->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) : null;
-            } catch (JsonException $jsonException) {
-                Episciences_OpenAireResearchGraphTools::logErrorMsg(sprintf('Error Code %s / Error Message %s', $jsonException->getCode(), $jsonException->getMessage()));
-            }
-
-            $globalfundingArray = [];
-            if (!empty($fileFound[0])) {
-                $fundingArray = [];
-                $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB($fileFound, $fundingArray, $globalfundingArray);
-                $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::GRAPH_OPENAIRE_ID);
-                $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA($globalfundingArray, $rowInDBGraph, $paperId);
+                $affectedRows = self::updateRecordDataCallOpenAireTools($doiTrim, $paperId, $affectedRows);
+            } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
+                trigger_error($e->getMessage(), E_USER_WARNING);
             }
         }
 
@@ -3985,9 +3919,188 @@ class Episciences_PapersManager
         }
     }
 
+    /**
+     * @param mixed $repoId
+     * @param int $paperId
+     * @param array|string $identifier
+     * @param float $version
+     * @param int $affectedRows
+     * @return int
+     * @throws JsonException
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    private static function updateRecordDataHal(int $paperId, array|string $identifier, float $version, int $affectedRows): int
+    {
+        $affectedRows += Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB(Episciences_Repositories::HAL_REPO_ID, $paperId, $identifier, $version);
+        //FUNDING
+        $arrayIdEuAnr = Episciences_Paper_ProjectsManager::CallHAlApiForIdEuAndAnrFunding($identifier, $version);
+        $decodeHalIdsResp = json_decode($arrayIdEuAnr, true, 512, JSON_THROW_ON_ERROR);
+        $globalArrayJson = [];
+        if (!empty($decodeHalIdsResp['response']['docs'])) {
+            $globalArrayJson = Episciences_Paper_ProjectsManager::FormatFundingANREuToArray($decodeHalIdsResp['response']['docs'], $identifier, $globalArrayJson);
+        }
+        $mergeArrayANREU = [];
+        if (!empty($globalArrayJson)) {
+            foreach ($globalArrayJson as $globalPreJson) {
+                $mergeArrayANREU[] = $globalPreJson[0];
+            }
+            $rowInDbHal = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::HAL_REPO_ID);
+            $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateHalFunding($rowInDbHal, $mergeArrayANREU, $paperId);
+        }
+        return $affectedRows;
+    }
 
+    /**
+     * @param array|string $doiTrim
+     * @param int $paperId
+     * @param int $affectedRows
+     * @return int
+     * @throws JsonException
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    private static function updateRecordDataCallOpenAireTools(array|string $doiTrim, int $paperId, int $affectedRows): int
+    {
+// CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
+        // BUT BEFORE CHECK GLOBAL CACHE
+        Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);
+        ///////////////////////////////////////////////////////////////////////////////////////////////////
+        $setsGlobalOARG = Episciences_OpenAireResearchGraphTools::getsGlobalOARGCache($doiTrim);
+        list($cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator) = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
 
+        if ($setsGlobalOARG->isHit() && !$setsOpenAireCreator->isHit()) {
+            //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
+            // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
+            try {
+                $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                Episciences_OpenAireResearchGraphTools::putCreatorInCache($decodeOpenAireResp, $doiTrim);
+                Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
+            } catch (JsonException $e) {
 
+                $eMsg = $e->getMessage() . " for PAPER " . $paperId . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json ';
+                // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
+                Episciences_OpenAireResearchGraphTools::logErrorMsg($eMsg);
+                $setsOpenAireCreator->set(json_encode([""]));
+                $cacheCreator->save($setsOpenAireCreator);
+            }
+        }
 
+        //we need to refresh cache creator to get the new file
+        ////// CACHE CREATOR ONLY
+        [$cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator] = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
 
+        $affectedRows += Episciences_OpenAireResearchGraphTools::insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId);
+
+        ////////Funding OA and HAL
+        list($cacheFundingOA, $pathOpenAireFunding, $setOAFunding) = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
+
+        if ($setsGlobalOARG->isHit() && !$setOAFunding->isHit()) {
+            // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
+            try {
+                $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                Episciences_OpenAireResearchGraphTools::putFundingsInCache($decodeOpenAireResp, $doiTrim);
+                //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
+                Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
+
+            } catch (JsonException $e) {
+                // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
+                Episciences_OpenAireResearchGraphTools::logErrorMsg($e->getMessage() . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json');
+                $setOAFunding->set(json_encode([""]));
+                $cacheFundingOA->save($setOAFunding);
+            }
+        }
+        try {
+            [$cacheFundingOA, $pathOpenAireFunding, $setOAFunding] = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
+        } catch (\Psr\Cache\InvalidArgumentException $e) {
+            trigger_error($e->getMessage());
+        }
+
+        try {
+            $fileFound = $setOAFunding->get() ? json_decode($setOAFunding->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) : null;
+        } catch (JsonException $jsonException) {
+            Episciences_OpenAireResearchGraphTools::logErrorMsg(sprintf('Error Code %s / Error Message %s', $jsonException->getCode(), $jsonException->getMessage()));
+        }
+
+        $globalfundingArray = [];
+        if (!empty($fileFound[0])) {
+            $fundingArray = [];
+            $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB($fileFound, $fundingArray, $globalfundingArray);
+            $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::GRAPH_OPENAIRE_ID);
+            $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA($globalfundingArray, $rowInDBGraph, $paperId);
+        }
+        return $affectedRows;
+    }
+
+    /**
+     * @param $record1
+     * @param mixed $docId
+     * @param mixed $repoId
+     * @param array|string $identifier
+     * @param mixed $enrichment
+     * @param mixed $affectedRows
+     * @return array
+     */
+    private static function updateRecordDataProcessFilesHook($record1, mixed $docId, mixed $repoId, array|string $identifier, mixed $enrichment, mixed $affectedRows): array
+    {
+        $record = $record1;
+        // delete all paper files
+        Episciences_Paper_FilesManager::deleteByDocId($docId);
+
+        $hookParams = ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId];
+
+        // add all files
+        $hookFiles = Episciences_Repositories::callHook(
+            'hookFilesProcessing',
+            (isset($enrichment['files'])) ? array_merge($hookParams, ['files' => $enrichment['files']]) : $hookParams
+        );
+
+        if (isset($hookFiles['affectedRows'])) {
+            $affectedRows += $hookFiles['affectedRows'];
+
+        }
+        return array($record, $enrichment, $affectedRows);
+    }
+
+    /**
+     * @param mixed $repoId
+     * @param string $identifier
+     * @param float $version
+     * @param mixed $docId
+     * @param int $affectedRows
+     * @return int
+     */
+    private static function updateRecordDataProcessLicence(mixed $repoId, string $identifier, float $version, mixed $docId, int $affectedRows): int
+    {
+         try {
+            $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
+            try {
+                $affectedRows += Episciences_Paper_LicenceManager::insertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
+            } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
+                trigger_error($e->getMessage(), E_USER_WARNING);
+            }
+        } catch (GuzzleException|\Psr\Cache\InvalidArgumentException $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+        return $affectedRows;
+    }
+
+    /**
+     * Get All the DocIds associated to a PaperId
+     */
+    public static function getDocIdsFromPaperId(int $paperId): array
+    {
+        $result = [];
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db
+            ->select()
+            ->from(T_PAPERS, ['DOCID'])
+            ->where('PAPERID = ?', $paperId);
+        try {
+            $query = $select->query();
+            $result = $query->fetchAll();
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+        return $result;
+
+    }
 }
