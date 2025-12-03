@@ -20,6 +20,7 @@ usage() {
     echo "Manual Options (Overrides):"
     echo "  --year=YYYY             Year to process (e.g., 2024)."
     echo "  --month=MM              Month to process (e.g., 01). Note: Use two digits."
+    echo "  --day=DD                Day to process (e.g., 31). Note: Use two digits. Requires --year and --month." # NEW: Added --day option
     echo "  --idsite=ID             Single IDSite to process (e.g., 42)."
     echo "  --subdomain=SUBDOMAIN   Subdomain prefix associated with the site (e.g., oai). Must be used with --idsite."
     echo "  --help, -h              Display this help message and exit."
@@ -32,6 +33,7 @@ usage() {
 # --- 0. ARGUMENT PARSING AND OVERRIDES ---
 MANUAL_YEAR=""
 MANUAL_MONTH=""
+MANUAL_DAY="" # NEW: Variable for manual day override
 MANUAL_IDSITE=""
 MANUAL_SUBDOMAIN=""
 CONFIG_FILE=""
@@ -53,6 +55,7 @@ for i in "$@"; do
     case $i in
         --year=*) MANUAL_YEAR="${i#*=}"; shift ;;
         --month=*) MANUAL_MONTH="${i#*=}"; shift ;;
+        --day=*) MANUAL_DAY="${i#*=}"; shift ;; # NEW: Handling the --day option
         --idsite=*) MANUAL_IDSITE="${i#*=}"; shift ;;
         --subdomain=*) MANUAL_SUBDOMAIN="${i#*=}"; shift ;;
         --help|-h) usage ;;
@@ -75,16 +78,29 @@ fi
 # 2. DATE LOGIC (CRON or MANUAL)
 # ------------------------------------------------------------------------------
 if [ -n "$MANUAL_YEAR" ] && [ -n "$MANUAL_MONTH" ]; then
-    # Manual mode: Process the full specified month
+    # Manual mode: Process full specified month OR specific day
     if ! [[ "$MANUAL_YEAR" =~ ^[0-9]{4}$ ]] || ! [[ "$MANUAL_MONTH" =~ ^[0-9]{2}$ ]]; then
         echo "Error: Year (YYYY) and Month (MM) parameters must be in the correct format (e.g., --year=2025 --month=01)."; exit 1
     fi
+
     TARGET_YEAR="$MANUAL_YEAR"
     TARGET_MONTH="$MANUAL_MONTH"
-    TARGET_DAY="*" # Wildcard for full month processing
-    echo "Manual Mode (Date) : Processing ${TARGET_YEAR}/${TARGET_MONTH} (full month)."
-elif [ -n "$MANUAL_YEAR" ] || [ -n "$MANUAL_MONTH" ]; then
-    echo "Error: Both --year and --month must be provided to override the default period."; exit 1
+
+    if [ -n "$MANUAL_DAY" ]; then
+        # Specific day requested
+        if ! [[ "$MANUAL_DAY" =~ ^[0-9]{2}$ ]]; then
+            echo "Error: Day (DD) parameter must be in the correct format (e.g., --day=31)."; exit 1
+        fi
+        TARGET_DAY="$MANUAL_DAY"
+        echo "Manual Mode (Date) : Processing ${TARGET_YEAR}/${TARGET_MONTH}/${TARGET_DAY} (specific day)."
+    else
+        # Default to full month if --day is not specified
+        TARGET_DAY="*"
+        echo "Manual Mode (Date) : Processing ${TARGET_YEAR}/${TARGET_MONTH} (full month)."
+    fi
+
+elif [ -n "$MANUAL_YEAR" ] || [ -n "$MANUAL_MONTH" ] || [ -n "$MANUAL_DAY" ]; then
+    echo "Error: Both --year and --month must be provided (and optionally --day) to override the default period."; exit 1
 else
     # Cron/Default mode: Calculate yesterday's date (robust for year/leap change)
     TARGET_YEAR=$(date -d "yesterday" +%Y)
