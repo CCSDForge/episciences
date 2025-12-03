@@ -18,7 +18,7 @@
     "compass-mixins": "^0.12.12",
     "jest": "^30.0.0",
     "jest-environment-jsdom": "^30.0.5",
-    "jsdom": "^26.1.0",
+    "jsdom": "^27.0.0",
     "prettier": "^3.6.2",
     "resolve-url-loader": "^5.0.0",
     "sass": "^1.78.0",
