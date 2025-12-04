@@ -111,6 +111,10 @@ try {
         $rvId = $review->getRvid();
         $status = $review->getStatus();
 
+        $lostLoginLink = SERVER_PROTOCOL . '://';
+        $lostLoginLink .= $rvCode . '.' . DOMAIN;
+        $lostLoginLink .= '/user/lostlogin';
+
         if (empty($status)) {
             displayMessage($rvCode . ': NOT ACTIVATED ( STATUS = ' . $status . ' )', 'red', true);
             continue;
@@ -207,8 +211,10 @@ try {
                     $mail->addTag($name, $value);
                 }
 
+                $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, $lostLoginLink);
+                $mail->addTag(Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN, $lostLoginLink);
 
-                $mail->setTo($recipient['email'], $recipient['fullname']);
+                $mail->addTo($recipient['email'], $recipient['fullname']);
 
                 displayMessage('Recipient > to ' . $recipient['fullname'] . ' (' . $recipient['email'], 'default', true);
 
