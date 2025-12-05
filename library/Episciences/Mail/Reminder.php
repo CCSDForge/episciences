@@ -772,7 +772,12 @@ class Episciences_Mail_Reminder
                 continue;
             }
 
-            $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => self::buildLostLoginUrl($journalOptions)];
+            $lostLoginLink = self::buildLostLoginUrl($journalOptions);
+
+            $commonTags = [
+                Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN =>  $lostLoginLink,
+                Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink // present in custom templates
+            ];
 
             // pour chacun des rédacteurs de l'article
             /** @var Episciences_Editor $editor */
@@ -860,6 +865,15 @@ class Episciences_Mail_Reminder
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $recipients = [];
         $review = Episciences_ReviewsManager::find($this->getRvid());
+
+        $journalOptions = ['rvCode' => $review->getCode(), Episciences_Review::IS_NEW_FRONT_SWITCHED => $review->isNewFrontSwitched()];
+
+        $lostLoginLink = self::buildLostLoginUrl($journalOptions);
+
+        $commonTags = [...[
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink,
+            Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink // present in custom templates
+        ], ...$commonTags];
 
         /* récupère toutes les invitations (T_USER_INVITATIONS)
         * restées en attente (pending), et non expirées
@@ -1090,7 +1104,13 @@ class Episciences_Mail_Reminder
         }
         $tmp = $db->fetchAll($sql);
 
-        $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => self::buildLostLoginUrl($journalOptions)];
+        $lostLoginLink = self::buildLostLoginUrl($journalOptions);
+
+        $commonTags = [
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN =>  $lostLoginLink,
+            Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink // present in custom templates
+        ];
+
 
         if ($this->getRecipient() === 'editor') {
             foreach ($tmp as $data) {
@@ -1243,7 +1263,13 @@ class Episciences_Mail_Reminder
         }
         $tmp = $db->fetchAll($sql);
 
-        $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => self::buildLostLoginUrl($journalOptions)];
+        $lostLoginLink = self::buildLostLoginUrl($journalOptions);
+
+        $commonTags = [
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN =>  $lostLoginLink,
+            Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink // present in custom templates
+        ];
+
 
         if ($this->getRecipient() === 'editor') {
             foreach ($tmp as $data) {
@@ -1401,12 +1427,18 @@ class Episciences_Mail_Reminder
 
             $acceptanceDate = $paper->isAcceptedSubmission() ? $paper->getModification_date() : '';
 
-            $tags = [
+            $lostLoginLink = self::buildLostLoginUrl($journalOptions);
+
+            $lostLoginTags = [
+                Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN =>  $lostLoginLink,
+                Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink // present in custom templates
+            ];
+
+            $tags = [...$lostLoginTags, ...[
                 Episciences_Mail_Tags::TAG_ARTICLE_LINK => self::buildAdminPaperUrl($paper->getDocid(), $journalOptions),
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                Episciences_Mail_Tags::TAG_LOST_LOGINS => self::buildLostLoginUrl($journalOptions)
-            ];
+            ]];
 
             /** @var Episciences_Editor $editor */
             foreach ($editors as $editor) {
@@ -1539,7 +1571,12 @@ class Episciences_Mail_Reminder
         $review = Episciences_ReviewsManager::find($this->getRvid());
         $journalOptions = ['rvCode' => $review->getCode(), Episciences_Review::IS_NEW_FRONT_SWITCHED => $review->isNewFrontSwitched()];
 
-        $commonTags = [Episciences_Mail_Tags::TAG_LOST_LOGINS => self::buildLostLoginUrl($journalOptions)];
+        $lostLoginLink = self::buildLostLoginUrl($journalOptions);
+
+        $commonTags = [
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN =>  $lostLoginLink,
+            Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink // present in custom templates
+        ];
 
 
         foreach ($data as $current) {

@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Trait\LocaleByCookieTrait;
+use Episciences\Trait\UrlBuilder;
 use neverbehave\Hcaptcha;
 use ReCaptcha\ReCaptcha;
 
@@ -8,6 +9,7 @@ use ReCaptcha\ReCaptcha;
 class UserDefaultController extends Episciences_Controller_Action
 {
     use LocaleByCookieTrait;
+    use UrlBuilder;
 
     public const SUCCESS = 'success';
     public const ERROR = 'error';
@@ -650,7 +652,7 @@ class UserDefaultController extends Episciences_Controller_Action
                     $this->render('create');
                     return;
                 }
-                $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+                $site = self::buildBaseUrl();
                 $url = $site . $this->view->url([
                     'controller' => 'user',
                     'action' => 'activate',
@@ -963,7 +965,7 @@ class UserDefaultController extends Episciences_Controller_Action
             $mail = new Episciences_Mail('UTF-8');
             // prepare retrieve password link
 
-            $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+            $site = self::buildBaseUrl();
             $url = $site . $this->view->url([
                     'controller' => 'user',
                     'action' => 'resetpassword',

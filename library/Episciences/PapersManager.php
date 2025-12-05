@@ -2484,11 +2484,17 @@ class Episciences_PapersManager
             }
         }
 
+        $lostLoginLink = self::buildLostLoginUrl();
+
+        $lostLoginTags = [
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN =>  $lostLoginLink,
+            Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink // present in custom templates
+        ];
+
         $defaultTags = [
             Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $contributor->getScreenName(),
             Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $contributor->getUsername(),
-            Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $contributor->getFullName(),
-            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => self::buildLostLoginUrl()
+            Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $contributor->getFullName()
         ];
 
         $tags = array_merge($mail->getTags(), [
@@ -2507,7 +2513,7 @@ class Episciences_PapersManager
 
             if ($name === 'waitingAuthorFormatting') {
 
-                $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+                $site = self::buildBaseUrl();
                 $ceRessourcesUrl = sprintf('%s%spublic/', $site, PREFIX_URL);
                 $ceRessourcesUrl .= sprintf('%s_episciences.zip',RVCODE);
 
@@ -2576,15 +2582,14 @@ class Episciences_PapersManager
                 $addTags = [
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
-                    Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
-                    Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => self::buildLostLoginUrl()
+                    Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME
                 ];
 
             } else {
                 $addTags = $defaultTags;
             }
 
-            $tags = [...$tags, ...$addTags];
+            $tags = [...$tags, ...$addTags, ...$lostLoginTags];
 
 
             if ($template['subject']){
