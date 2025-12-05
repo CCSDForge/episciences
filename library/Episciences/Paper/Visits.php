@@ -4,34 +4,42 @@ use geertw\IpAnonymizer\IpAnonymizer;
 
 class Episciences_Paper_Visits
 {
-    const CONSULT_TYPE_NOTICE = 'notice';
-    const CONSULT_TYPE_FILE = 'file';
-    const PAGE_COUNT_METRICS_NAME = 'page_count';
-    const FILE_COUNT_METRICS_NAME = 'file_count';
+    public const CONSULT_TYPE_NOTICE = 'notice';
+    public const CONSULT_TYPE_FILE = 'file';
+    public const PAGE_COUNT_METRICS_NAME = 'page_count';
+    public const FILE_COUNT_METRICS_NAME = 'file_count';
 
     /**
      * @param $docId
      * @param string $consult
      * @throws Zend_Db_Adapter_Exception
      */
-    public static function add($docId, $consult = self::CONSULT_TYPE_NOTICE)
+    public static function add($docId, string $consult = self::CONSULT_TYPE_NOTICE): void
     {
+
+        /**
+         * Changer le type de la colonne IP à BIGINT ?
+         * Possibilité de stocker les adresses IPv6 et IPv4 dans la même colonne
+         *
+         */
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-
-        $clientIp = Zend_Controller_Front::getInstance()->getRequest()->getClientIp();
+        $clientIp = Zend_Controller_Front::getInstance()?->getRequest()?->getClientIp();
         $clientIpAnon = self::anonymizeClientIp($clientIp);
+        $clientIpAnon = $db?->quote($clientIpAnon);
+
+        $ipAnonExp = "IFNULL(CASE WHEN IS_IPV4($clientIpAnon) THEN INET_ATON($clientIpAnon) ELSE INET_ATON('127.1') END, INET_ATON('127.1'))";
 
         $data = [
             'DOCID' => (int)$docId,
-            'IP' => new Zend_Db_Expr("IFNULL(INET_ATON(" .
-                $db->quote($clientIpAnon) . "), INET_ATON('127.1'))"),
+            'IP' => new Zend_Db_Expr($ipAnonExp),
             'HTTP_USER_AGENT' => self::getUserAgent(),
             'DHIT' => new Zend_Db_Expr('NOW()'),
             'CONSULT' => $consult
         ];
 
-        $db->insert(VISITS_TEMP, $data);
+
+        $db?->insert(VISITS_TEMP, $data);
 
     }
 
@@ -39,13 +47,13 @@ class Episciences_Paper_Visits
      * @param $clientIp
      * @return string
      */
-    protected static function anonymizeClientIp($clientIp)
+    protected static function anonymizeClientIp($clientIp): string
     {
         $ipAnonymizer = new IpAnonymizer();
         $ipAnonymizer->ipv4NetMask = "255.255.0.0";
 
         $anonymizedIp = $ipAnonymizer->anonymize($clientIp);
-        if ($anonymizedIp == '') {
+        if ($anonymizedIp === '') {
             $anonymizedIp = '127.0.0.1';
         }
         return $anonymizedIp;
@@ -54,7 +62,7 @@ class Episciences_Paper_Visits
     /**
      * @return false|string
      */
-    public static function getUserAgent()
+    public static function getUserAgent(): bool|string
     {
         $userAgent = false;
         if (array_key_exists('HTTP_USER_AGENT', $_SERVER)) {
@@ -68,11 +76,12 @@ class Episciences_Paper_Visits
     }
 
     /**
+     * @param $docId
      * @param string $consult
-     * @return string
+     * @return int|string
      * @deprecated @see self::getPaperMetricsByPaperId())
      */
-    public static function count($docId, $consult = self::CONSULT_TYPE_NOTICE)
+    public static function count($docId, string $consult = self::CONSULT_TYPE_NOTICE): int|string
     {
         trigger_error(
             __METHOD__ . ' is deprecated. ' .
@@ -81,12 +90,12 @@ class Episciences_Paper_Visits
         );
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $db->select()
+        $sql = $db?->select()
             ->from(T_PAPER_VISITS, new Zend_Db_Expr('SUM(COUNTER)'))
             ->where('DOCID = ?', $docId)
             ->where('ROBOT = 0')
             ->where('CONSULT = ?', $consult);
-        return (int)$db->fetchOne($sql);
+        return (int)$db?->fetchOne($sql);
     }
 
     /**
@@ -117,8 +126,7 @@ class Episciences_Paper_Visits
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $sql = $db
-            ->select()
+        $sql = $db?->select()
             ->from(
                 T_PAPER_VISITS,
                 [
@@ -130,7 +138,7 @@ class Episciences_Paper_Visits
             ->where('DOCID IN (?)', $docIds);
 
         try {
-            $result = $db->fetchRow($sql);
+            $result = $db?->fetchRow($sql);
         } catch (Exception $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
         }
