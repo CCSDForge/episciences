@@ -9,7 +9,7 @@
     "replacements:all",
     "workarounds:all"
   ],
-  "baseBranches": ["staging"],
+  "baseBranchPatterns": ["staging"],
   "lockFileMaintenance": {
     "enabled": true
   },
@@ -23,7 +23,7 @@
       "matchDepTypes": ["require", "require-dev"],
       "constraintsFiltering": "strict",
       "ignoreUnstable": false,
-      "composerIgnorePlatformReqs": false,
+      "composerIgnorePlatformReqs": null,
       "constraints": {
         "php": "8.1"
       }
