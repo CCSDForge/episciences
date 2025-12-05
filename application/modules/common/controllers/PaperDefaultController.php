@@ -292,7 +292,7 @@ class PaperDefaultController extends DefaultController
             'action' => 'view',
             'id' => $docId]);
 
-        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        $paperUrl = self::buildBaseUrl() . $paperUrl;
 
         $tags += [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,

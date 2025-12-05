@@ -417,11 +417,13 @@ class ReviewerController extends PaperDefaultController
         $docId = $paper->getDocid();
         $reviewerUid = $user->getUid();
 
+        $baseUrl = self::buildBaseUrl();
+
         $ratingUrl = $this->view->url(['controller' => 'paper', 'action' => 'rating', 'id' => $docId]);
-        $ratingUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $ratingUrl;
+        $ratingUrl = $baseUrl . $ratingUrl;
 
         $adminPaperUrl = $this->view->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $docId]);
-        $adminPaperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $adminPaperUrl;
+        $adminPaperUrl = $baseUrl . $adminPaperUrl;
 
         $reviewerTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY;
         $editorialCommitteeTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY;
