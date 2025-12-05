@@ -53,9 +53,11 @@ class Episciences_Paper_Visits
         $ipAnonymizer->ipv4NetMask = "255.255.0.0";
 
         $anonymizedIp = $ipAnonymizer->anonymize($clientIp);
-        if ($anonymizedIp === '') {
+
+        if ($anonymizedIp === '' || $anonymizedIp === null) {
             $anonymizedIp = '127.0.0.1';
         }
+
         return $anonymizedIp;
     }
 
