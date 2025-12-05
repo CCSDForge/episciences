@@ -351,7 +351,14 @@ class VolumeController extends Zend_Controller_Action
         $sorted_papers = $volume->getSortedPapersFromVolume();
 
         // Check if volume has published papers to restrict title editing
-        $hasPublishedPapers = Episciences_VolumesManager::isPublishedPapersInVolume($vid);
+        // Title editing is blocked only if:
+        // Volume has published papers and Journal setting does not allow editing titles with published papers
+        $volumeHasPublishedPapers = Episciences_VolumesManager::isPublishedPapersInVolume($vid);
+        $journal = Episciences_ReviewsManager::find(Episciences_Review::getCurrentReviewId());
+        $journal->loadSettings();
+        $allowEditWithPublished = (bool)$journal->getSetting(Episciences_Review::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES);
+
+        $hasPublishedPapers = $volumeHasPublishedPapers && !$allowEditWithPublished;
 
         if ($request->getHeader('Accept') === self::JSON_MIMETYPE && $request->getActionName() === 'all') {
             $this->_helper->layout()->disableLayout();
@@ -400,8 +407,6 @@ class VolumeController extends Zend_Controller_Action
         $this->view->gapsInOrderingPapers = $gaps;
 
         $form = Episciences_VolumesManager::getForm($referer, $volume, $hasPublishedPapers);
-        $journal = Episciences_ReviewsManager::find(Episciences_Review::getCurrentReviewId());
-        $journal->loadSettings();
         $journalPrefixDoi = $journal->getDoiSettings()->getDoiPrefix();
         if ($journalPrefixDoi !== '') {
             $form->addElement('hidden', "journalprefixDoi", [
