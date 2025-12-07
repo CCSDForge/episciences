@@ -208,7 +208,7 @@ try {
                 }
 
 
-                $mail->setTo($recipient['email'], $recipient['fullname']);
+                $mail->addTo($recipient['email'], $recipient['fullname']);
 
                 displayMessage('Recipient > to ' . $recipient['fullname'] . ' (' . $recipient['email'], 'default', true);
 

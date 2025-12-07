@@ -5,11 +5,13 @@ use Episciences\Files\File;
 use Episciences\Files\Uploader;
 use Episciences\Paper\DataDescriptor;
 use Episciences\Paper\DataDescriptorManager;
+use Episciences\Trait\UrlBuilder;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
 class Episciences_Submit
 {
+    use UrlBuilder;
     public const SUBMIT_DOCUMENT_LABEL = 'Proposer un document';
 
     public const COVER_LETTER_FILE_ELEMENT_NAME = 'file_comment_author';
@@ -1195,7 +1197,7 @@ class Episciences_Submit
             'action' => 'view',
             'id' => $paper->getDocid()]);
 
-        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        $paperUrl = self::buildBaseUrl() . $paperUrl;
 
         //Author infos
         /** @var Episciences_User $author */
@@ -1496,7 +1498,8 @@ class Episciences_Submit
             'id' => $paper->getDocid()
         ]);
 
-        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        $baseUrl = self::buildBaseUrl();
+        $paperUrl = $baseUrl . $paperUrl;
 
         $adminTags[Episciences_Mail_Tags::TAG_PAPER_URL] = $paperUrl; // Lien de gestion de l'article
 
@@ -1512,7 +1515,7 @@ class Episciences_Submit
 
                 ]);
 
-                $refusedPaperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $refusedPaperUrl;
+                $refusedPaperUrl = $baseUrl . $refusedPaperUrl;
 
                 // Au lieu d'ajouter un template pour ce cas particulier, on ajoute ce  tags dans le template paper_submission_editor_copy
                 $adminTags[Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL] = $refusedPaperUrl;
