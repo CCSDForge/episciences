@@ -1,6 +1,8 @@
 <?php
 
+use Episciences\MonoLog\MonologFactory;
 use geertw\IpAnonymizer\IpAnonymizer;
+use Psr\Log\LogLevel;
 
 class Episciences_Paper_Visits
 {
@@ -24,7 +26,27 @@ class Episciences_Paper_Visits
          */
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $clientIp = Zend_Controller_Front::getInstance()?->getRequest()?->getClientIp();
+        /** @var Zend_Controller_Request_Http $request */
+        $request = Zend_Controller_Front::getInstance()?->getRequest();
+
+        $clientIp = $request?->getClientIp();
+
+        /**
+         * Les adresses IPv6 ne sont généralement pas routées,
+         * mais il arrive parfois d'en rencontrer, ce qui nécessite alors une investigation...
+         *
+         */
+        if (Episciences_Tools::isIPv6($clientIp)) {
+
+            $trace = [
+                'checkProxy' => true,
+                'clientIp' => $clientIp,
+                'server' => $request->getServer()
+            ];
+
+            Episciences_View_Helper_Log::log('Paper visits with IPv6 client: ', LogLevel::INFO, $trace);
+        }
+
         $clientIpAnon = self::anonymizeClientIp($clientIp);
         $clientIpAnon = $db?->quote($clientIpAnon);
 
