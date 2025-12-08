@@ -4904,7 +4904,7 @@ class Episciences_Paper
 
         return
             isset($coAuthors[Episciences_Auth::getUid()]) ||
-            isset($coAuthors[Episciences_Auth::getOriginalIdentity()]);
+            (Episciences_Auth::getOriginalIdentity() && isset($coAuthors[Episciences_Auth::getOriginalIdentity()?->getUid()]));
     }
 
 
