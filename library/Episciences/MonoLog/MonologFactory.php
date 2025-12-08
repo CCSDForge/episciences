@@ -11,9 +11,7 @@ use Monolog\Logger;
 
 class MonologFactory
 {
-    /**
-     * @throws Exception
-     */
+
     public static function createLogger(): Logger
     {
 

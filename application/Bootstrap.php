@@ -116,12 +116,8 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
     protected function _initLog(): void
     {
 
-        try {
-            $mLogger = MonologFactory::createLogger();
-            Zend_Registry::set('appLogger', $mLogger);
-        } catch (Exception $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
-        }
+        $mLogger = MonologFactory::createLogger();
+        Zend_Registry::set('appLogger', $mLogger);
 
         try {
             $writer = new Zend_Log_Writer_Stream(EPISCIENCES_EXCEPTIONS_LOG_PATH . RVCODE . '.exceptions.log');
