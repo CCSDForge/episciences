@@ -14,12 +14,12 @@ include makefiles/testing.mk
 DOCKER := docker
 DOCKER_COMPOSE := docker compose
 NPX := npx
-PROJECT_NAME := episciences-gpl
+PROJECT_NAME := episciences
 
 # Container Configuration
-CNTR_NAME_SOLR := solr
-CNTR_NAME_PHP := php-fpm
-CNTR_NAME_HTTPD := httpd
+CNTR_NAME_SOLR := episciences-solr
+CNTR_NAME_PHP := episciences-php-fpm
+CNTR_NAME_HTTPD := episciences-httpd
 CNTR_APP_DIR := /var/www/htdocs
 CNTR_APP_USER := www-data
 CNTR_USER_ID := 1000:1000

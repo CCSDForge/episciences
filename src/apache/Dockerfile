@@ -1,7 +1,7 @@
-FROM httpd:2.4-bookworm
+FROM httpd:2.4-trixie
 
 # Install Vim and update packages
-RUN apt-get update && apt-get dist-upgrade -y && apt-get -y install vim && apt-get clean
+RUN apt-get update && apt-get dist-upgrade -y && apt-get -y install vim iputils-ping && apt-get clean
 
 # Enable rewrite and headers modules
 RUN sed -i '/LoadModule rewrite_module/s/^#//g' /usr/local/apache2/conf/httpd.conf && \
