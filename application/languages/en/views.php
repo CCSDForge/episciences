@@ -294,6 +294,10 @@ return array(
 
     "Paramètres des volumes spéciaux" => "Special issues settings",
     "Les rédacteurs peuvent réattribuer la gestion de l'article" => "Editors can reassign handled articles to another editor",
+    "Permettre aux auteurs de contacter les rédacteurs responsables" => "Allow authors to contact handling editors",
+    "Si activé, les auteurs peuvent envoyer des messages directement aux rédacteurs assignés à leur article" => "If enabled, authors can send messages directly to the editors assigned to their article",
+    "Afficher les noms des rédacteurs aux auteurs" => "Display editor names to authors",
+    "Si activé, les auteurs peuvent voir les noms des rédacteurs assignés à leur article" => "If enabled, authors can see the names of the editors assigned to their article",
 
 
     // DOI

@@ -61,6 +61,8 @@ class Episciences_Review
     public const SETTING_SPECIAL_ISSUE_ACCESS_CODE = 'specialIssueAccessCode';
     public const SETTING_ENCAPSULATE_REVIEWERS = 'encapsulateReviewers';
     public const SETTING_EDITORS_CAN_REASSIGN_ARTICLES = 'editorsCanReassignArticle';
+    public const SETTING_AUTHORS_CAN_CONTACT_EDITORS = 'authorsCanContactEditors';
+    public const SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS = 'discloseEditorNamesToAuthors';
     //Assignation automatique de rédacteurs
     public const SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT = 'systemAutoEditorsAssignment';
     //Paramétrage avancé
@@ -203,6 +205,8 @@ class Episciences_Review
             self::SETTING_SPECIAL_ISSUE_ACCESS_CODE,
             self::SETTING_ENCAPSULATE_REVIEWERS,
             self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES,
+            self::SETTING_AUTHORS_CAN_CONTACT_EDITORS,
+            self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS,
             self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
             self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
             self::SETTING_SYSTEM_NOTIFICATIONS,
@@ -1069,6 +1073,8 @@ class Episciences_Review
             self::SETTING_EDITORS_CAN_EDIT_TEMPLATES,
             self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
             self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
+            self::SETTING_AUTHORS_CAN_CONTACT_EDITORS,
+            self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS,
         ], 'editors', ["legend" => "Paramètres des rédacteurs"]);
         $form->getDisplayGroup('editors')->removeDecorator('DtDdWrapper');
 
@@ -1445,6 +1451,19 @@ class Episciences_Review
                 'decorators' => $checkboxDecorators]
         );
 
+        $form->addElement('checkbox', self::SETTING_AUTHORS_CAN_CONTACT_EDITORS, [
+                'label' => "Permettre aux auteurs de contacter les rédacteurs responsables",
+                'description' => "Si activé, les auteurs peuvent envoyer des messages directement aux rédacteurs assignés à leur article",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS, [
+                'label' => "Afficher les noms des rédacteurs aux auteurs",
+                'description' => "Si activé, les auteurs peuvent voir les noms des rédacteurs assignés à leur article",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
 
         $form->addElement('checkbox', self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION, [
                 'label' => "Ne pas permettre le choix d'un rédacteur en chef",
@@ -1841,6 +1860,12 @@ class Episciences_Review
 
         // Les rédacteurs peuvent réattribuer la gestion d'un article
         $settingsValues[self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES] = $this->getSetting(self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES);
+
+        // Permettre aux auteurs de contacter les rédacteurs responsables
+        $settingsValues[self::SETTING_AUTHORS_CAN_CONTACT_EDITORS] = $this->getSetting(self::SETTING_AUTHORS_CAN_CONTACT_EDITORS);
+
+        // Divulguer les noms des rédacteurs aux auteurs
+        $settingsValues[self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS] = $this->getSetting(self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
 
         // Encapsulation des préparateurs de copie
         $settingsValues[self::SETTING_ENCAPSULATE_COPY_EDITORS] = $this->getSetting(self::SETTING_ENCAPSULATE_COPY_EDITORS);
