@@ -17,7 +17,7 @@ class Episciences_ZbjatsTools
             $doiInfo = '';
             $dir = CACHE_PATH_METADATA . 'zbjatRefBib/';
             if (!is_dir($dir) && !mkdir($dir, 0776, true) && !is_dir($dir)) {
-                trigger_error('Upload file failed: directory "%s" was not created', $dir);
+                trigger_error(sprintf('Upload file failed: directory "%s" was not created', $dir));
                 continue;
             }
             if (isset($refBib['doi']) && $refBib['doi'] !== '') {
