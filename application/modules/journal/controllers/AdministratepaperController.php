@@ -868,6 +868,50 @@ class AdministratepaperController extends PaperDefaultController
             $enabledBib = true;
         }
         $this->view->enabledBib = $enabledBib;
+
+        // Author to editor communication ******************************************************
+        $authorToEditorForm = null;
+        $authorToEditorComments = [];
+
+        // Check if the feature is enabled
+        $canAuthorContactEditors = $review->getSetting(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS);
+
+        if ($canAuthorContactEditors) {
+            // Load existing author-to-editor comments
+            $authorToEditorComments = Episciences_CommentsManager::getList(
+                $paper->getDocid(),
+                ['types' => [
+                    Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
+                    Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE
+                ]]
+            );
+
+            // Editors can respond to author messages
+            if (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) {
+                // Handle form submission for editor response
+                if ($request->getPost('postEditorResponseToAuthor') !== null) {
+                    $editorResponseForm = Episciences_CommentsManager::getForm('editorResponseToAuthorForm');
+                    if ($editorResponseForm->isValid($request->getPost())) {
+                        if ($this->save_editor_response_to_author($paper)) {
+                            $message = $this->view->translate("Votre réponse a bien été envoyée à l'auteur.");
+                            $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
+                            $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
+                        } else {
+                            $message = $this->view->translate("Une erreur s'est produite lors de l'envoi du formulaire. Veuillez vérifier le formulaire et le soumettre à nouveau.");
+                            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+                        }
+                    }
+                }
+
+                // Only show form if there are existing author messages to respond to
+                if (!empty($authorToEditorComments)) {
+                    $authorToEditorForm = Episciences_CommentsManager::getForm('editorResponseToAuthorForm');
+                }
+            }
+        }
+
+        $this->view->authorToEditorForm = $authorToEditorForm;
+        $this->view->authorToEditorComments = $authorToEditorComments;
     }
 
     /**
@@ -1155,6 +1199,121 @@ class AdministratepaperController extends PaperDefaultController
 
         //Notifications
         return $this->newCommentNotifyManager($paper, $oComment);
+    }
+
+    /**
+     * Save editor response to author message
+     * @param Episciences_Paper $paper
+     * @return bool
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Mail_Exception
+     */
+    private function save_editor_response_to_author(Episciences_Paper $paper): bool
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $post = $request->getPost();
+        $docId = $paper->getDocid();
+
+        // Get the parent comment ID (author's message)
+        $parentCommentId = 0;
+        foreach ($post as $key => $value) {
+            if (strpos($key, 'comment_') === 0) {
+                $parentCommentId = (int)str_replace('comment_', '', $key);
+                break;
+            }
+        }
+
+        if ($parentCommentId === 0) {
+            return false;
+        }
+
+        // Fetch parent comment (author's message)
+        $parentComment = new Episciences_Comment();
+        $parentComment->find($parentCommentId);
+
+        // Save editor response to database
+        $editorResponse = new Episciences_Comment();
+        $editorResponse->setFilePath(Episciences_PapersManager::buildDocumentPath($docId) . '/comments/');
+        $editorResponse->setType(Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE);
+        $editorResponse->setDocid($docId);
+        $editorResponse->setParentid($parentCommentId);
+        $editorResponse->setMessage($post['comment_' . $parentCommentId]);
+
+        // Handle file upload if present
+        if (!empty($_FILES['file_' . $parentCommentId]['name'])) {
+            try {
+                $upload = new Zend_File_Transfer_Adapter_Http();
+                $upload->setDestination($editorResponse->getFilePath());
+
+                if ($upload->receive('file_' . $parentCommentId)) {
+                    $fileInfo = $upload->getFileInfo('file_' . $parentCommentId);
+                    $editorResponse->setFile($fileInfo['file_' . $parentCommentId]['name']);
+                }
+            } catch (Zend_File_Transfer_Exception $e) {
+                trigger_error('Error uploading file: ' . $e->getMessage(), E_USER_WARNING);
+            }
+        }
+
+        if (!$editorResponse->save()) {
+            return false;
+        }
+
+        // Get author info
+        $author = new Episciences_User();
+        $author->findWithCAS($paper->getUid());
+        $locale = $author->getLangueid();
+
+        // Prepare paper URL for author
+        $paperUrl = $this->buildPublicPaperUrl($docId);
+
+        // Prepare email tags
+        $authorTags = [
+            Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
+            Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
+            Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => Episciences_Auth::getScreenName(),
+            Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
+            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
+            Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
+            Episciences_Mail_Tags::TAG_COMMENT => $parentComment->getMessage(),
+            Episciences_Mail_Tags::TAG_COMMENT_DATE => $this->view->Date($parentComment->getWhen(), $locale),
+            Episciences_Mail_Tags::TAG_ANSWER => $editorResponse->getMessage(),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl
+        ];
+
+        // Prepare attachments
+        $attachmentsFiles = [];
+        if ($parentComment->getFile()) {
+            $attachmentsFiles[$parentComment->getFile()] = $parentComment->getFilePath();
+        }
+        if ($editorResponse->getFile()) {
+            $attachmentsFiles[$editorResponse->getFile()] = $editorResponse->getFilePath();
+        }
+
+        // Send email to author
+        $mailSent = Episciences_Mail_Send::sendMailFromReview(
+            $author,
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY, // TODO: Create specific template
+            $authorTags,
+            $paper,
+            Episciences_Auth::getUid(),
+            $attachmentsFiles,
+            true
+        );
+
+        // Notify other editors (managers)
+        $managersNotified = $this->newCommentNotifyManager(
+            $paper,
+            $editorResponse,
+            $authorTags,
+            [$parentComment->getFile() => $parentComment->getFilePath()],
+            ['replayedTo' => $parentComment]
+        );
+
+        return $mailSent && $managersNotified;
     }
 
     /**

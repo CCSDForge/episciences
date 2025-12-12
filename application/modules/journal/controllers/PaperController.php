@@ -302,6 +302,7 @@ class PaperController extends PaperDefaultController
 
         $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
 
+
         // reviewers comments **************************************************
         // fetch reviewers comments
         $settings = [self::TYPES_STR => [
@@ -549,6 +550,75 @@ class PaperController extends PaperDefaultController
         }
         $this->view->enabledBib = $enabledBib;
         $this->view->enabledManageFromPublicPage = $enabledManageFromPublicPage;
+
+        // Author to editor communication
+        $authorToEditorForm = null;
+        $authorToEditorComments = [];
+        $assignedEditors = [];
+
+        if ($paper->isOwner() && Episciences_Auth::isLogged()) {
+            $canContactEditors = $review->getSetting(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS);
+
+            if ($canContactEditors) {
+                // Get assigned editors
+                $assignedEditors = $paper->getEditors(true, true);
+
+                // Handle form submission
+                if ($this->getRequest()->isPost() && array_key_exists('postComment', $_POST)) {
+                    $form = Episciences_CommentsManager::getForm('authorToEditorForm');
+                    $form->setAction('/paper/view?id=' . $paper->getDocid());
+
+                    if ($form->isValid($_POST)) {
+                        try {
+                            // Save comment
+                            $commentId = $this->save_author_to_editor_comment(
+                                $paper,
+                                $form->getValues(),
+                                $assignedEditors
+                            );
+
+                            if ($commentId) {
+                                $this->_helper->FlashMessenger->setNamespace('success')->addMessage(
+                                    $this->view->translate("Votre message a bien été envoyé aux rédacteurs.")
+                                );
+                                $this->_helper->redirector->gotoUrl('/paper/view?id=' . $paper->getDocid());
+                            } else {
+                                $this->_helper->FlashMessenger->setNamespace('error')->addMessage(
+                                    $this->view->translate("Votre message n'a pas pu être envoyé.")
+                                );
+                            }
+                        } catch (Exception $e) {
+                            $this->_helper->FlashMessenger->setNamespace('error')->addMessage(
+                                $this->view->translate("Une erreur s'est produite lors de l'envoi du message.")
+                            );
+                            error_log('Error sending author to editor message: ' . $e->getMessage());
+                        }
+                    }
+                }
+
+                // Load existing comments
+                $authorToEditorComments = Episciences_CommentsManager::getList(
+                    $paper->getDocid(),
+                    [
+                        'types' => [
+                            Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
+                            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE
+                        ]
+                    ]
+                );
+
+                // Generate form (always show it so authors can send multiple messages)
+                if (!array_key_exists('postComment', $_POST)) {
+                    $authorToEditorForm = Episciences_CommentsManager::getForm('authorToEditorForm');
+                    $authorToEditorForm->setAction('/paper/view?id=' . $paper->getDocid());
+                }
+            }
+        }
+
+        // Pass to view
+        $this->view->authorToEditorForm = $authorToEditorForm;
+        $this->view->authorToEditorComments = $authorToEditorComments;
+        $this->view->editors = $assignedEditors;
 
     }
 
@@ -2728,6 +2798,129 @@ class PaperController extends PaperDefaultController
                 ) &&
                 $this->newCommentNotifyManager($paper, $oComment, $contributorTags)
             );
+    }
+
+    /**
+     * Save author comment to assigned editors
+     * @param Episciences_Paper $paper
+     * @param array $data Form data
+     * @param array $editors Assigned editors
+     * @return bool|string Comment ID or false
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Exception
+     * @throws Zend_File_Transfer_Exception
+     * @throws Zend_Mail_Exception
+     */
+    private function save_author_to_editor_comment(Episciences_Paper $paper, array $data, array $editors)
+    {
+        // Save comment to database
+        $commentId = Episciences_CommentsManager::save(
+            $paper->getDocid(),
+            $data,
+            Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR
+        );
+
+        if (!$commentId) {
+            return false;
+        }
+
+        // Get author info
+        $author = new Episciences_User();
+        $author->findWithCAS($paper->getUid());
+
+        // Get review
+        $review = Episciences_ReviewsManager::find($paper->getRvid());
+
+        // Prepare mail data
+        $locale = $review->getSetting('default_lang') ?: 'en';
+
+        // Send email to each assigned editor
+        foreach ($editors as $editor) {
+            try {
+                // $editor is already an Episciences_Editor object
+                $recipient = $editor;
+
+                if ($recipient->getEmail()) {
+                    $recipientLocale = $recipient->getLangueid(true) ?: $locale;
+
+                    // Prepare tags for email template
+                    $tags = [
+                        Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($recipientLocale, true),
+                        Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata(),
+                        Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $recipientLocale),
+                        Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME => $author->getFullName(),
+                        Episciences_Mail_Tags::TAG_COMMENT => $data['comment'],
+                        Episciences_Mail_Tags::TAG_PAPER_URL => $this->view->url([
+                            'controller' => 'administratepaper',
+                            'action' => 'view',
+                            'id' => $paper->getDocid()
+                        ], null, true)
+                    ];
+
+                    // Get comment details for file attachment
+                    $commentDetails = Episciences_CommentsManager::getComment($commentId);
+                    $attachmentFiles = [];
+
+                    if (!empty($commentDetails['FILE'])) {
+                        $filePath = REVIEW_FILES_PATH . $paper->getDocid() . '/comments/' . $commentDetails['FILE'];
+                        if (file_exists($filePath)) {
+                            $attachmentFiles[$commentDetails['FILE']] = REVIEW_FILES_PATH . $paper->getDocid() . '/comments/';
+                        }
+                    }
+
+                    // Send mail
+                    // TODO: Create a proper mail template for this
+                    // For now, use a generic approach
+                    $mail = new Episciences_Mail('UTF-8');
+                    $mail->setDocid($paper->getDocid());
+                    $mail->setRvid($review->getRvid());
+                    $mail->setFrom(RVCODE . '@' . DOMAIN);
+                    $mail->setTo($recipient);
+
+                    $subject = '[' . RVCODE . '] ' . $this->view->translate("Message de l'auteur") . ' - ' . $paper->getTitle($recipientLocale, true);
+                    $mail->setSubject($subject);
+
+                    // Build email body
+                    $body = $this->view->translate("Un auteur vous a envoyé un message concernant l'article") . ' "' . $paper->getTitle($recipientLocale, true) . '" (ID: ' . $paper->getDocid() . ").\n\n";
+                    $body .= $this->view->translate("Message de l'auteur") . " :\n";
+                    $body .= "--------------------\n";
+                    $body .= $data['comment'] . "\n";
+                    $body .= "--------------------\n\n";
+                    $body .= $this->view->translate("Pour consulter l'article, veuillez suivre ce lien") . " :\n";
+                    $body .= $tags[Episciences_Mail_Tags::TAG_PAPER_URL] . "\n\n";
+                    $body .= $this->view->translate("Cordialement") . ",\n";
+                    $body .= $this->view->translate("L'équipe éditoriale");
+
+                    $mail->setBodyText($body);
+
+                    // Add file attachment if present
+                    if (!empty($attachmentFiles)) {
+                        foreach ($attachmentFiles as $fileName => $filePath) {
+                            $fullPath = $filePath . $fileName;
+                            if (file_exists($fullPath)) {
+                                $mail->addAttachment($fullPath);
+                            }
+                        }
+                    }
+
+                    $mail->writeMail();
+                }
+            } catch (Exception $e) {
+                // Log error but continue sending to other editors
+                error_log('Error sending email to editor ' . $editor->getUid() . ': ' . $e->getMessage());
+            }
+        }
+
+        // Log the action
+        $paper->log(
+            Episciences_Paper_Logger::CODE_AUTHOR_COMMENT,
+            Episciences_Auth::getUid(),
+            ['commentId' => $commentId, 'message' => $data['comment'], 'type' => 'author_to_editor']
+        );
+
+        return $commentId;
     }
 
     /**

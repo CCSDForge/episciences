@@ -317,6 +317,14 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
         </div>
     <?php endif; ?>
 
+    <?php // author to editor communication ************************************** ?>
+    <?= $this->partial('partials/paper_author_to_editor_messages.phtml', [
+        'paper' => $paper,
+        'authorToEditorForm' => $this->authorToEditorForm,
+        'authorToEditorComments' => $this->authorToEditorComments,
+        'editors' => $this->editors ?? []
+    ]) ?>
+
     <?php // revision requests ***************************************************** ?>
     <?php if ($isAllowedToAnswerNewVersion && ($this->revision_requests || $this->currentDemand || $this->previousVersionsDemands) && !$paper->isPublished()) : ?>
         <div id="answer" class="panel panel-default collapsable">
