@@ -1,0 +1,8 @@
+name: "CodeQL Configuration"
+
+# Exclure les fichiers de test de l'analyse
+paths-ignore:
+  - '**/*.test.js'
+  - 'tests/**'
+  - 'node_modules/**'
+  - 'vendor/**'
