@@ -5,7 +5,7 @@
 # This custom workflow provides more control over:
 # - Branch targeting (runs on specific branches)
 # - Scheduling (Sundays at 22:00 UTC)
-# - Language selection (JavaScript only)
+# - Language selection (JavaScript/TypeScript and GitHub Actions workflows)
 #
 name: "CodeQL advanced configuration"
 
@@ -20,7 +20,7 @@ on:
 
 jobs:
   analyze:
-    name: Analyze JavaScript/TypeScript
+    name: Analyze (${{ matrix.language }})
     permissions:
       contents: read
       security-events: write
@@ -31,9 +31,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'javascript-typescript' ]
-        # CodeQL supports: 'cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
+        language: [ 'javascript-typescript', 'actions' ]
+        # CodeQL supports: 'cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift', 'actions'
         # Note: PHP is NOT supported by CodeQL
+        # 'actions' analyzes GitHub Actions workflows for security issues
         # Documentation: https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning-with-codeql
 
     steps:
