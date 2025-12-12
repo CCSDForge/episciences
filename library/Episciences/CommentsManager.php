@@ -34,6 +34,10 @@ class Episciences_CommentsManager
     public const TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED = 19;
     public const TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST = 20;
     public const TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION = 21;
+    // Author to assigned editors communication
+    public const TYPE_AUTHOR_TO_EDITOR = 22;
+    // Editor response to author message
+    public const TYPE_EDITOR_TO_AUTHOR_RESPONSE = 23;
 
     public const COPY_EDITING_SOURCES = 'copy_editing_sources';
     public const TYPE_ANSWER_REQUEST = 'answerRequest';
@@ -65,6 +69,8 @@ class Episciences_CommentsManager
         self::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED => 'Préparation de copie : version finale soumise',
         self::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION => "Accepté - en attente de validation par l'auteur",
         self::TYPE_REVISION_CONTACT_COMMENT => "réponse à une demande de modifications (sans dépôt de version)",
+        self::TYPE_AUTHOR_TO_EDITOR => "message de l'auteur aux rédacteurs assignés",
+        self::TYPE_EDITOR_TO_AUTHOR_RESPONSE => "réponse du rédacteur à l'auteur",
     ];
 
     public static array $_copyEditingRequestTypes = [
