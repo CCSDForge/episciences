@@ -1,0 +1,16 @@
+<?php
+/**
+ * Log Detail Partial: Mail
+ * Handles: CODE_MAIL_SENT, CODE_REMINDER_SENT
+ * Display: to recipients : subject
+ */
+?>
+<?php if (!empty($this->recipients)) : ?>
+    <span class="log-mail-recipients" aria-label="<?= $this->translate('Recipients') ?>">
+        <?= $this->translate("à") . ' ' . implode(', ', array_map([$this, 'escape'], $this->recipients)) ?>
+    </span>
+<?php endif; ?>
+<?= $this->translate(' :') ?>
+<span class="log-mail-subject">
+    <?= $this->escape($this->subject) ?>
+</span>

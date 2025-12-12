@@ -1,0 +1,15 @@
+<?php
+/**
+ * Log Detail Partial: Reviewing Deadline
+ * Handles: CODE_NEW_REVIEWING_DEADLINE
+ * Display: formatted date > screenName
+ */
+?>
+<?= $this->translate(' :') ?>
+<span class="log-reviewing-deadline">
+    <time datetime="<?= date('Y-m-d', strtotime($this->newDeadline)) ?>" aria-label="<?= $this->translate('Deadline') ?>">
+        <?= $this->Date($this->newDeadline, Episciences_Tools::getLocale()) ?>
+    </time>
+    <?= ' > ' ?>
+    <span class="log-user-name"><?= $this->screenName ?></span>
+</span>
