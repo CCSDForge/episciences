@@ -799,20 +799,6 @@ function resizeModal(width, height) {
     $modal_body.css({ 'max-height': height });
 }
 
-function resetModalSize() {
-    var default_width = '560px';
-    var default_height = '400px';
-    var default_ml = '-' + default_width / 2 + 'px';
-
-    $modal_box.find('.modal').css({
-        width: default_width,
-        margin: '-250px 0 0 ' + default_ml,
-    });
-
-    $modal_body.css({
-        'max-height': default_height,
-    });
-}
 
 /**
  * Envoie une chaine de caractères correspondant à la date exprimée selon une locale.

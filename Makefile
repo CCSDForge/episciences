@@ -36,6 +36,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
 .PHONY: enter-container-php
+.PHONY: format format-check format-tests format-file
 
 # =============================================================================
 # Help & Information
@@ -61,6 +62,9 @@ help: ## Display this help message
 	@echo ""
 	@echo "Linting Commands:"
 	@grep -h -E '^lint.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No linting commands found"
+	@echo ""
+	@echo "Formatting Commands:"
+	@grep -E '^format.*:.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Deployment Commands:"
 	@grep -h -E '^deploy.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No deployment commands found"
@@ -276,6 +280,30 @@ update-statistics: ## Update statistics for journal logs (rvcode=JOURNAL [date=Y
 		cmd="$$cmd --force"; \
 	fi; \
 	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) $$cmd
+
+# =============================================================================
+# Code Formatting Commands (Prettier)
+# =============================================================================
+format: ## Format all JavaScript files with Prettier
+	@echo "Formatting JavaScript files..."
+	@yarn format
+
+format-check: ## Check JavaScript formatting without modifying files
+	@echo "Checking JavaScript formatting..."
+	@yarn format:check
+
+format-tests: ## Format JavaScript test files
+	@echo "Formatting JavaScript test files..."
+	@yarn format:tests
+
+format-file: ## Format a specific file with Prettier (usage: make format-file FILE=path/to/file.js)
+	@if [ -z "$(FILE)" ]; then \
+		echo "Error: FILE parameter is required"; \
+		echo "Usage: make format-file FILE=path/to/file.js"; \
+		exit 1; \
+	fi
+	@echo "Formatting $(FILE)..."
+	@yarn prettier --write "$(FILE)"
 
 # =============================================================================
 # Default Target
