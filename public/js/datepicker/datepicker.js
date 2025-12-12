@@ -23,6 +23,7 @@ $(function() {
 function datepicker (selector)
 {
     var dateFormat = 'yy-mm-dd'; // Format ISO 8601
+    var lang; // Declare lang at function start
 
     $(selector).each(function(index) {
         var params = {'dateFormat': dateFormat, constrainInput: true};
@@ -74,8 +75,8 @@ function datepicker (selector)
         if ($(this).attr('attr-maxdate')) params.maxDate = $(this).attr('attr-maxdate');
 
         //traduction du datepicker
-        if (undefined == lang) {
-            var lang = 'fr';
+        if (typeof lang === "undefined" || lang === undefined) {
+            lang = 'fr';
         }
         
         $(this).datepicker($.datepicker.regional[lang]);
