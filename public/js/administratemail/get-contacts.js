@@ -6,7 +6,6 @@ let $contact_type_dropdown;
  *
  */
 function initGetContacts() {
-
     console.log('executed initGetContacts');
 
     $contact_list = $('#contact-list');
@@ -20,7 +19,6 @@ function initGetContacts() {
 
     // toggle all contacts
     $('#toggleAll').on('click', function () {
-
         let action = $(this).data('action');
 
         $contacts.each(function () {
@@ -40,11 +38,9 @@ function initGetContacts() {
         } else {
             $(this).data('action', 'select');
         }
-
     });
 
     initList();
-
 
     $('#filter-input').keyup(function () {
         filterTable('#filter-input', '#contact-list tr');
@@ -52,9 +48,8 @@ function initGetContacts() {
     $('#filter-input').on('paste', function () {
         setTimeout(function () {
             filterTable('#filter-input', '#contact-list tr');
-        }, 4)
+        }, 4);
     });
-
 }
 
 function filterTable(input, elements) {
@@ -64,7 +59,11 @@ function filterTable(input, elements) {
     if (query.length) {
         var r = new RegExp(query, 'i');
         $elements.hide();
-        $elements.filter(function(){ return $(this).text().match(r) }).show();
+        $elements
+            .filter(function () {
+                return $(this).text().match(r);
+            })
+            .show();
     } else {
         $elements.show();
     }
@@ -84,13 +83,11 @@ function initList() {
 }
 
 function showList($li) {
-
     $contact_type_dropdown.find('span:first').html($li.find('a').html());
     let contacts = eval($li.data('value'));
 
     let html = '';
     for (let i in contacts) {
-
         let user = contacts[i];
 
         html += '<tr id="contact_' + user['uid'] + '">';
@@ -98,12 +95,18 @@ function showList($li) {
         html += '   <td class="grey">' + user['username'] + '</td>';
         let roleArr = user['role'];
         html += '<td>';
-        if (roleArr.length > 0){
-            roleArr.forEach((el) => {
-                if(el !== "member") html += '   <span class="label label-default role-'+el+'">' + translate(el) + '</span>'
+        if (roleArr.length > 0) {
+            roleArr.forEach(el => {
+                if (el !== 'member')
+                    html +=
+                        '   <span class="label label-default role-' +
+                        el +
+                        '">' +
+                        translate(el) +
+                        '</span>';
             });
         }
-        html += '</td>'
+        html += '</td>';
         html += '   <td>' + user['mail'] + '</td>';
         html += '</tr>';
     }
@@ -113,9 +116,11 @@ function showList($li) {
     initList();
 
     // (re)selection des contacts déjà ajoutés, dans la liste nouvellement chargée
-    $('#added_contacts_tags').find('.recipient-tag').each(function () {
-        $('#contact_' + $(this).data('uid')).addClass('selected');
-    });
+    $('#added_contacts_tags')
+        .find('.recipient-tag')
+        .each(function () {
+            $('#contact_' + $(this).data('uid')).addClass('selected');
+        });
 }
 
 function select(row) {
@@ -127,9 +132,11 @@ function select(row) {
         }
     }
     let tagId = addRecipient('added_contacts', user, 'known');
-    $('#' + tagId).find('.remove-recipient').on('click', function () {
-        $('#contact_' + uid).removeClass('selected');
-    });
+    $('#' + tagId)
+        .find('.remove-recipient')
+        .on('click', function () {
+            $('#contact_' + uid).removeClass('selected');
+        });
 }
 
 function unselect(row) {

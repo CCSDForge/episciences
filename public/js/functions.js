@@ -197,7 +197,6 @@ function getLoader() {
     return loading.trim();
 }
 
-
 function ucfirst(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -362,7 +361,7 @@ function isPositiveInteger(s) {
  * Optimized filterList function with caching and reduced DOM manipulation
  * Performance improvements:
  * - Cache compiled RegExp objects
- * - Cache stripped text content  
+ * - Cache stripped text content
  * - Batch DOM updates using native methods
  * - Minimize jQuery overhead
  * - Use requestAnimationFrame for smooth filtering
@@ -371,19 +370,23 @@ function filterList(input, elements) {
     // Get input value and early return if empty
     const inputEl = input.nodeType ? input : document.querySelector(input);
     const query = inputEl ? stripAccents(inputEl.value).trim() : '';
-    
+
     // Get elements array (convert jQuery/selector to native elements)
-    const elementsArray = elements.nodeType ? [elements] : 
-                         typeof elements === 'string' ? Array.from(document.querySelectorAll(elements)) :
-                         elements.length !== undefined ? Array.from(elements) : [];
-    
+    const elementsArray = elements.nodeType
+        ? [elements]
+        : typeof elements === 'string'
+          ? Array.from(document.querySelectorAll(elements))
+          : elements.length !== undefined
+            ? Array.from(elements)
+            : [];
+
     if (elementsArray.length === 0) return;
-    
+
     // Cache for this filter operation
     const cacheKey = elements.toString ? elements.toString() : elements;
     if (!filterList._cache) filterList._cache = new Map();
     if (!filterList._textCache) filterList._textCache = new Map();
-    
+
     // Use cached compiled regex or create new one
     let regex = null;
     if (query.length > 0) {
@@ -395,7 +398,7 @@ function filterList(input, elements) {
             const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             regex = new RegExp(escapedQuery, 'gi');
             filterList._cache.set(regexKey, regex);
-            
+
             // Limit cache size to prevent memory leaks
             if (filterList._cache.size > 100) {
                 const firstKey = filterList._cache.keys().next().value;
@@ -403,45 +406,48 @@ function filterList(input, elements) {
             }
         }
     }
-    
+
     // Batch DOM updates for better performance
     const showElements = [];
     const hideElements = [];
-    
+
     for (let i = 0; i < elementsArray.length; i++) {
         const element = elementsArray[i];
         const elementKey = `${cacheKey}_${i}`;
-        
+
         // Get cached text content or compute and cache it
         let textContent;
         if (filterList._textCache.has(elementKey)) {
             textContent = filterList._textCache.get(elementKey);
         } else {
-            textContent = stripAccents(element.textContent || element.innerText || '');
+            textContent = stripAccents(
+                element.textContent || element.innerText || ''
+            );
             filterList._textCache.set(elementKey, textContent);
-            
+
             // Limit text cache size
             if (filterList._textCache.size > 500) {
                 const firstKey = filterList._textCache.keys().next().value;
                 filterList._textCache.delete(firstKey);
             }
         }
-        
+
         // Determine visibility
-        const shouldShow = query.length === 0 || (regex && regex.test(textContent));
-        
+        const shouldShow =
+            query.length === 0 || (regex && regex.test(textContent));
+
         if (shouldShow) {
             showElements.push(element);
         } else {
             hideElements.push(element);
         }
-        
+
         // Reset regex lastIndex for global regex
         if (regex && regex.global) {
             regex.lastIndex = 0;
         }
     }
-    
+
     // Batch DOM updates using requestAnimationFrame for smooth performance
     requestAnimationFrame(() => {
         // Hide elements
@@ -452,8 +458,8 @@ function filterList(input, elements) {
                 nextBr.style.display = 'none';
             }
         });
-        
-        // Show elements  
+
+        // Show elements
         showElements.forEach(el => {
             el.style.display = '';
             const nextBr = el.nextElementSibling;
@@ -465,7 +471,7 @@ function filterList(input, elements) {
 }
 
 // Clear caches when needed (useful for memory management)
-filterList.clearCache = function() {
+filterList.clearCache = function () {
     if (filterList._cache) filterList._cache.clear();
     if (filterList._textCache) filterList._textCache.clear();
 };
@@ -522,7 +528,6 @@ function getMessageHtml(text, type) {
         '</div>'
     );
 }
-
 
 /**
  * activate tooltip on each element with data-toggle="tooltip"
@@ -799,7 +804,6 @@ function resizeModal(width, height) {
     $modal_body.css({ 'max-height': height });
 }
 
-
 /**
  * Envoie une chaine de caractères correspondant à la date exprimée selon une locale.
  * Les arguments locales et options permettent de définir le langage utilisé pour
@@ -1071,7 +1075,7 @@ function isEmptyData(value, visited = new WeakSet()) {
     if (value === null || value === undefined) {
         return true;
     }
-    
+
     // Handle arrays
     if (Array.isArray(value)) {
         // Check for circular reference
@@ -1079,12 +1083,14 @@ function isEmptyData(value, visited = new WeakSet()) {
             return false; // Circular arrays are not considered empty
         }
         visited.add(value);
-        
-        const result = value.length === 0 || value.every(item => isEmptyData(item, visited));
+
+        const result =
+            value.length === 0 ||
+            value.every(item => isEmptyData(item, visited));
         visited.delete(value);
         return result;
     }
-    
+
     // Handle objects (but not Date, RegExp, etc.)
     if (typeof value === 'object' && value.constructor === Object) {
         // Check for circular reference
@@ -1092,28 +1098,29 @@ function isEmptyData(value, visited = new WeakSet()) {
             return false; // Circular objects are not considered empty
         }
         visited.add(value);
-        
-        const result = Object.keys(value).length === 0 || 
-               Object.values(value).every(val => isEmptyData(val, visited));
+
+        const result =
+            Object.keys(value).length === 0 ||
+            Object.values(value).every(val => isEmptyData(val, visited));
         visited.delete(value);
         return result;
     }
-    
+
     // Handle strings (including whitespace-only strings)
     if (typeof value === 'string') {
         return value.trim() === '';
     }
-    
+
     // Handle numbers (0 is considered empty for chart data)
     if (typeof value === 'number') {
         return value === 0;
     }
-    
+
     // Handle booleans (false is not considered empty)
     if (typeof value === 'boolean') {
         return false;
     }
-    
+
     // For other types (functions, symbols, etc.), consider them not empty
     return false;
 }

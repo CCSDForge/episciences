@@ -18,80 +18,108 @@ function getMasterVolumeForm(button, docid, oldVid, partial) {
 
     // Récupération du formulaire
     let request = $.ajax({
-        type: "POST",
-        url: "/administratepaper/volumeform",
-        data: {docid: docid}
+        type: 'POST',
+        url: '/administratepaper/volumeform',
+        data: { docid: docid },
     });
 
-    $(button).popover({
-        'placement': placement,
-        'container': 'body',
-        'html': true,
-        'content': getLoader()
-    }).popover('show');
+    $(button)
+        .popover({
+            placement: placement,
+            container: 'body',
+            html: true,
+            content: getLoader(),
+        })
+        .popover('show');
 
     request.done(function (result) {
-
         // Destruction du popup de chargement
         $(button).popover('destroy');
 
         // Affichage du formulaire dans le popover
-        $(button).popover({
-            'placement': placement,
-            'container': 'body',
-            'html': true,
-            'content': result
-        }).popover('show');
+        $(button)
+            .popover({
+                placement: placement,
+                container: 'body',
+                html: true,
+                content: result,
+            })
+            .popover('show');
 
-        $('form[action^="/administratepaper/savemastervolume"]').on('submit', function () {
-            if (!$(this).data('submitted')) { // to fix duplicate ajax request
-                $(this).data('submitted', true);
-                // Traitement AJAX du formulaire
-                $.ajax({
-                    url: '/administratepaper/savemastervolume',
-                    type: 'POST',
-                    datatype: 'json',
-                    data: $(this).serialize() + "&docid=" + docid,
-                    success: function (result) {
-                        if (parseInt(result) === 1) {
-                            let vid = $('#master_volume_select').val();
-                            $(button).popover('destroy');
+        $('form[action^="/administratepaper/savemastervolume"]').on(
+            'submit',
+            function () {
+                if (!$(this).data('submitted')) {
+                    // to fix duplicate ajax request
+                    $(this).data('submitted', true);
+                    // Traitement AJAX du formulaire
+                    $.ajax({
+                        url: '/administratepaper/savemastervolume',
+                        type: 'POST',
+                        datatype: 'json',
+                        data: $(this).serialize() + '&docid=' + docid,
+                        success: function (result) {
+                            if (parseInt(result) === 1) {
+                                let vid = $('#master_volume_select').val();
+                                $(button).popover('destroy');
 
-                            if (!isPartial) {// not partial
+                                if (!isPartial) {
+                                    // not partial
 
-                                // // refresh master volume
-                                // refreshVolumes({vid: vid, docId: docid, from: 'view'}, 'master',  $('#master_volume_name_' + docid) );
-                                //
-                                // // refresh secondary volumes
-                                // refreshVolumes($(this).serialize() + "&docid=" + docid, 'others',  $('#other_volumes_list_' + docid) );
-                                //
-                                // // refresh paper history
-                                // refreshPaperHistory(docid);
+                                    // // refresh master volume
+                                    // refreshVolumes({vid: vid, docId: docid, from: 'view'}, 'master',  $('#master_volume_name_' + docid) );
+                                    //
+                                    // // refresh secondary volumes
+                                    // refreshVolumes($(this).serialize() + "&docid=" + docid, 'others',  $('#other_volumes_list_' + docid) );
+                                    //
+                                    // // refresh paper history
+                                    // refreshPaperHistory(docid);
 
-                                location.replace(location.href);
+                                    location.replace(location.href);
+                                } else {
+                                    // refresh all master volumes display
 
-                            } else { // refresh all master volumes display
+                                    let url =
+                                        '/administratepaper/refreshallmastervolumes';
+                                    let jData = {
+                                        docid: docid,
+                                        vid: vid,
+                                        old_vid: oldVid,
+                                        from: 'list',
+                                    };
+                                    let refreshPositionsRequest = ajaxRequest(
+                                        url,
+                                        jData
+                                    );
 
-                                let url = '/administratepaper/refreshallmastervolumes';
-                                let jData = {docid: docid, vid: vid, old_vid: oldVid, from: 'list'};
-                                let refreshPositionsRequest = ajaxRequest(url, jData);
-
-                                refreshPositionsRequest.done(function (result) {
-                                    let jResult = result !== '' ? JSON.parse(result) : {};
-                                    $.each(jResult, function (index, value) {
-                                        let $container = $('#master_volume_name_' + index);
-                                        $container.hide();
-                                        $container.html(value);
-                                        $container.fadeIn();
-                                    });
-                                });
+                                    refreshPositionsRequest.done(
+                                        function (result) {
+                                            let jResult =
+                                                result !== ''
+                                                    ? JSON.parse(result)
+                                                    : {};
+                                            $.each(
+                                                jResult,
+                                                function (index, value) {
+                                                    let $container = $(
+                                                        '#master_volume_name_' +
+                                                            index
+                                                    );
+                                                    $container.hide();
+                                                    $container.html(value);
+                                                    $container.fadeIn();
+                                                }
+                                            );
+                                        }
+                                    );
+                                }
                             }
-                        }
-                    }
-                });
+                        },
+                    });
+                }
+                return false;
             }
-            return false;
-        });
+        );
     });
 }
 
@@ -113,55 +141,66 @@ function getOtherVolumesForm(button, docid, partial) {
 
     // Récupération du formulaire
     let request = $.ajax({
-        type: "POST",
-        url: "/administratepaper/othervolumesform",
-        data: {docid: docid}
+        type: 'POST',
+        url: '/administratepaper/othervolumesform',
+        data: { docid: docid },
     });
 
-    $(button).popover({
-        'placement': placement,
-        'container': 'body',
-        'html': true,
-        'content': getLoader()
-    }).popover('show');
+    $(button)
+        .popover({
+            placement: placement,
+            container: 'body',
+            html: true,
+            content: getLoader(),
+        })
+        .popover('show');
 
     request.done(function (result) {
-
         // Destruction du popup de chargement
         $(button).popover('destroy');
 
         // Affichage du formulaire dans le popover
-        $(button).popover({
-            'placement': placement,
-            'container': 'body',
-            'html': true,
-            'content': result
-        }).popover('show');
+        $(button)
+            .popover({
+                placement: placement,
+                container: 'body',
+                html: true,
+                content: result,
+            })
+            .popover('show');
 
-        $('form[action^="/administratepaper/saveothervolumes"]').on('submit', function () {
-            if (!$(this).data('submitted')) { // to fix duplicate ajax request
-                $(this).data('submitted', true);
-                // Traitement AJAX du formulaire
-                $.ajax({
-                    url: '/administratepaper/saveothervolumes',
-                    type: 'POST',
-                    datatype: 'json',
-                    data: $(this).serialize() + "&docid=" + docid,
-                    success: function (result) {
-                        if (result === '1') {
-                            // Destruction du popup
-                            $(button).popover('destroy');
+        $('form[action^="/administratepaper/saveothervolumes"]').on(
+            'submit',
+            function () {
+                if (!$(this).data('submitted')) {
+                    // to fix duplicate ajax request
+                    $(this).data('submitted', true);
+                    // Traitement AJAX du formulaire
+                    $.ajax({
+                        url: '/administratepaper/saveothervolumes',
+                        type: 'POST',
+                        datatype: 'json',
+                        data: $(this).serialize() + '&docid=' + docid,
+                        success: function (result) {
+                            if (result === '1') {
+                                // Destruction du popup
+                                $(button).popover('destroy');
 
-                            // refresh secondary volumes display
-                            refreshVolumes($(this).serialize() + "&docid=" + docid, 'others', $('#other_volumes_list_' + docid));
-                            // refresh paper history
-                            refreshPaperHistory(docid);
-                        }
-                    }
-                });
+                                // refresh secondary volumes display
+                                refreshVolumes(
+                                    $(this).serialize() + '&docid=' + docid,
+                                    'others',
+                                    $('#other_volumes_list_' + docid)
+                                );
+                                // refresh paper history
+                                refreshPaperHistory(docid);
+                            }
+                        },
+                    });
+                }
+                return false;
             }
-            return false;
-        });
+        );
     });
 }
 
@@ -177,10 +216,10 @@ function closeResult() {
  * @returns {*}
  */
 function refreshVolumes($jsonData, volumeType = 'master', $container = null) {
-
     let url = '/administratepaper/refreshmastervolume';
 
-    if (volumeType === 'others') { // seconder volumes
+    if (volumeType === 'others') {
+        // seconder volumes
         url = '/administratepaper/refreshothervolumes';
     }
 
@@ -196,5 +235,3 @@ function refreshVolumes($jsonData, volumeType = 'master', $container = null) {
 
     return request;
 }
-
-
