@@ -41,14 +41,14 @@ form.validate = function() {
 	    	// Element TinyMCE
 	    	if ($(element).is("textarea") && tinyMCE.editors[name]) {
 	    		if (tinyMCE.editors[name].getContent()) {
-	    			validated = true;
 	    			continue;
+					
 	    		}
 	    	} 
 	    	// Autres types d'élément
 	    	else if ( $(element).val() ){
-	    		validated = true;
     			continue;
+					
 	    	}
 	    	
 	    	// En cas d'erreur
