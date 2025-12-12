@@ -802,7 +802,7 @@ function resizeModal(width, height) {
 function resetModalSize() {
     var default_width = '560px';
     var default_height = '400px';
-    var default_ml = '-' + default_width / 2 + 'px';
+    var default_ml = '-' + parseInt(default_width, 10) / 2 + 'px';
 
     $modal_box.find('.modal').css({
         width: default_width,
