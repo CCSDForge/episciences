@@ -182,6 +182,7 @@ services:
 
 networks:
   epi-network:
+    name: epi-network
     driver: bridge
 
 volumes:
