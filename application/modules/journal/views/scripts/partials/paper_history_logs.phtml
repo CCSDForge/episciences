@@ -1,4 +1,9 @@
 <?php
+/**
+ * Paper History Logs Display
+ */
+$this->jQuery()->addStylesheet("/css/log-history.css");
+// Define which log actions open a modal with detailed information
 $logs_with_details = [
     Episciences_Paper_Logger::CODE_MAIL_SENT,
     Episciences_Paper_Logger::CODE_REMINDER_SENT,
@@ -35,81 +40,192 @@ $logs_with_details = [
 
 <?php foreach ($this->logs as $log) : ?>
 
-    <?php if (in_array($log['ACTION'], $logs_with_details, false)) : ?>
-        <?php $logHref = $this->url(['controller' => 'administratepaper', 'action' => 'log', 'id' => $log['LOGID']]); ?>
-        <a class="modal-opener" href="<?= $logHref ?>" data-width="50%" data-hidesubmit="true" title="<?= $this->translate($log['ACTION']) ?>">
+    <?php
+    // Decode JSON details once per log entry
+    try {
+        $detail = ($log['DETAIL']) ? Zend_Json::decode($log['DETAIL']) : [];
+    } catch (Zend_Json_Exception $e) {
+        $detail = [];
+        trigger_error($e->getMessage() . ' of docid ' . $log['DOCID'], E_USER_WARNING);
+    }
+
+    // Extract status once (used by multiple cases)
+    $status = isset($detail['status']) && in_array($detail['status'], array_merge(Episciences_Paper::STATUS_CODES, Episciences_Paper::OTHER_STATUS_CODE), false) ?
+        $this->translate(Episciences_Paper::$_statusLabel[$detail['status']]) :
+        $this->translate('undefined status');
+
+    // Extract user fullname once (used by multiple cases)
+    $fullName = 'undefined';
+    if (isset($detail['user']['fullname'])) {
+        $fullName = $detail['user']['fullname'];
+    } elseif (isset($detail['user']['SCREEN_NAME'])) {
+        $fullName = $detail['user']['SCREEN_NAME'];
+    }
+
+    // Extract tag once (used by multiple cases)
+    $tag = (!empty($detail['user']['tag'])) ?
+        (' [ ' . $this->translate($detail['user']['tag']) . ' ]') : '';
+
+    // Check if this log has detailed modal view
+    $hasDetails = in_array($log['ACTION'], $logs_with_details, false);
+    ?>
+
+    <?php if ($hasDetails) : ?>
+        <?php $logHref = PREFIX_URL . 'administratepaper/log?id=' . $log['LOGID']; ?>
+        <a class="modal-opener" href="<?= $logHref ?>"
+           data-width="50%"
+           data-hidesubmit="true"
+           title="<?= $this->translate($log['ACTION']) ?>"
+           aria-label="<?= $this->translate('View details for') . ' ' . $this->translate($log['ACTION']) ?>">
     <?php endif; ?>
 
-    <div
-            style="padding:5px; margin-bottom:5px; margin-right: 5px" role="alert"
-            data-date="<?= $this->Date($log['DATE'], null, 'MM/dd/y') ?>"
-            data-time="<?= $this->Date($log['DATE'], null, Zend_Date::TIME_MEDIUM) ?>"
-            class="log-entry <?= $log['ACTION'] ?> alert alert-<?= Episciences_Paper_Logger::$_css[$log['ACTION']] ?> alert-fixed">
+    <div class="log-entry <?= $log['ACTION'] ?> alert alert-<?= Episciences_Paper_Logger::$_css[$log['ACTION']] ?> alert-fixed"
+         role="alert"
+         data-date="<?= $this->Date($log['DATE'], null, 'MM/dd/y') ?>"
+         data-time="<?= $this->Date($log['DATE'], null, Zend_Date::TIME_MEDIUM) ?>"
+         aria-live="polite">
 
-        <span style="font-size:11px; margin-right: 5px"
-              class="label label-<?= Episciences_Paper_Logger::$_css[$log['ACTION']] ?>">
+        <span class="label label-<?= Episciences_Paper_Logger::$_css[$log['ACTION']] ?> log-timestamp"
+              aria-label="<?= $this->translate('Date') ?>">
             <?= $this->Date($log['DATE'], null, Zend_Date::DATE_MEDIUM . ' ' . Zend_Date::TIME_MEDIUM) ?>
         </span>
 
         <span>
             <strong><?= $this->translate($log['ACTION']) ?></strong>
-            <?php
-            try {
-                $detail = ($log['DETAIL']) ? Zend_Json::decode($log['DETAIL']) : [];
-            } catch (Zend_Json_Exception $e) {
-                $detail = [];
-                trigger_error($e->getMessage() . ' of docid ' . $log['DOCID'], E_USER_WARNING);
-            }
 
-            $status = isset($detail['status']) && in_array($detail['status'], array_merge(Episciences_Paper::STATUS_CODES, Episciences_Paper::OTHER_STATUS_CODE), false) ?
-                $this->translate(Episciences_Paper::$_statusLabel[$detail['status']]) :
-                $this->translate('undefined status');
-            $tag = (isset($detail['user']['tag']) && !empty($detail['user']['tag'])) ? (' [ ' . $this->translate($detail['user']['tag']) . ' ]') : '';
+            <?php switch ($log['ACTION']):
+                // Status changes (2 cases)
+                case Episciences_Paper_Logger::CODE_STATUS:
+                case Episciences_Paper_Logger::CODE_RESTORATION_OF_STATUS:
+                    echo $this->partial('partials/paper_history_logs_status.phtml', ['status' => $status]);
+                    break;
 
-            $fullName = 'undefined';
-
-            if (isset($detail['user']['fullname'])) {
-                $fullName = $detail['user']['fullname'];
-
-            } elseif (isset($detail['user']['SCREEN_NAME'])) {
-                $fullName = $detail['user']['SCREEN_NAME'];
-            }
-
-
-            ?>
-            <?php switch ($log['ACTION']): ?>
-<?php case Episciences_Paper_Logger::CODE_STATUS: ?><?php // Tout affichage entre une structure switch et le premier case va produire une erreur de syntaxe. ?>
-                    <?= $this->translate(' :') ?>
-                    <?php // Il  arrive en DEV. de récupérer des valeurs inattendues ?>
-                    <?= $status ?>
-                    <?php break; ?>
-
-                <?php case Episciences_Paper_Logger::CODE_RESTORATION_OF_STATUS: ?>
-                    <?= $this->translate(' :') ?>
-                    <?= $status ?>
-                    <?php break; ?>
-                <?php case Episciences_Paper_Logger::CODE_ALTER_REPORT_STATUS: ?>
-                    <?= $fullName ?>
-                    <?php break; ?>
-
-                <?php case Episciences_Paper_Logger::CODE_EDITOR_UNASSIGNMENT:
-                case Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT: ?>
-                    <?= $this->translate(' :') ?>
-                    <?= $fullName ?>
-                    <?= $tag ?>
-                    <?php break; ?>
-
-                <?php
+                // Version changes (2 cases)
                 case Episciences_Paper_Logger::CODE_PAPER_UPDATED:
                 case Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED:
-                    ?>
+                    echo $this->partial('partials/paper_history_logs_version_change.phtml', [
+                        'oldVersion' => $detail['version']['old'],
+                        'newVersion' => $detail['version']['new'],
+                        'fullName' => $fullName
+                    ]);
+                    break;
 
-                    <?= '(V' . $detail['version']['old'] . ' > ' . 'V' . $detail['version']['new'] . ')' ?>
-                    <?= $this->translate(' :') ?>
-                    <?= $fullName ?>
-                    <?php break; ?>
-                <?php
+                // Mail sent (2 cases)
+                case Episciences_Paper_Logger::CODE_MAIL_SENT:
+                case Episciences_Paper_Logger::CODE_REMINDER_SENT:
+                    echo $this->partial('partials/paper_history_logs_mail.phtml', [
+                        'recipients' => $detail['mail']['To'] ?? [],
+                        'subject' => $detail['mail']['Subject']
+                    ]);
+                    break;
 
+                // Section selection
+                case Episciences_Paper_Logger::CODE_SECTION_SELECTION:
+                    $selectionLabel = $detail['sid'] !== 0 ?
+                        Episciences_SectionsManager::translateSectionKey('section_' . $detail['sid'] . '_title') :
+                        $this->translate('Hors rubrique');
+                    echo $this->partial('partials/paper_history_logs_selection.phtml', ['selectionLabel' => $selectionLabel]);
+                    break;
+
+                // Volume selection
+                case Episciences_Paper_Logger::CODE_VOLUME_SELECTION:
+                    $selectionLabel = ($detail['vid'] !== 0) ?
+                        Episciences_VolumesManager::translateVolumeKey('volume_' . $detail['vid'] . '_title') :
+                        $this->translate('Hors volume');
+                    echo $this->partial('partials/paper_history_logs_selection.phtml', ['selectionLabel' => $selectionLabel]);
+                    break;
+
+                // Other volumes selection
+                case Episciences_Paper_Logger::CODE_OTHER_VOLUMES_SELECTION:
+                    $volumesLabel = [];
+                    foreach ($detail['vids'] as $sVid) {
+                        $volumesLabel[] = Episciences_VolumesManager::translateVolumeKey('volume_' . $sVid['vid'] . '_title');
+                    }
+                    $selectionLabel = (!empty($volumesLabel)) ? implode(', ', $volumesLabel) : $this->translate('Hors volume (s)');
+                    echo $this->partial('partials/paper_history_logs_selection.phtml', ['selectionLabel' => $selectionLabel]);
+                    break;
+
+                // Copy-editing workflow (4 cases)
+                case Episciences_Paper_Logger::CODE_CE_AUTHOR_FINALE_VERSION_REQUEST:
+                case Episciences_Paper_Logger::CODE_CE_READY_TO_PUBLISH:
+                case Episciences_Paper_Logger::CODE_CE_REVIEW_FORMATTING_DEPOSED:
+                case Episciences_Paper_Logger::CODE_CE_AUTHOR_SOURCES_REQUEST:
+                    echo $this->partial('partials/paper_history_logs_copy_editing.phtml', [
+                        'fullName' => $fullName,
+                        'submitterFullName' => $detail['submitter']['fullname']
+                    ]);
+                    break;
+
+                // Conflict of Interest (2 cases)
+                case Episciences_Paper_Logger::CODE_COI_REPORTED:
+                    echo $this->partial('partials/paper_history_logs_conflict_of_interest.phtml', [
+                        'fullName' => $fullName,
+                        'conflictAnswer' => $detail['conflict']['answer']
+                    ]);
+                    break;
+
+                case Episciences_Paper_Logger::CODE_COI_REVERTED:
+                    echo $this->partial('partials/paper_history_logs_conflict_of_interest.phtml', [
+                        'fullName' => $fullName
+                    ]);
+                    break;
+
+                // Linked Data (3 cases)
+                case Episciences_Paper_Logger::CODE_LD_ADDED:
+                case Episciences_Paper_Logger::CODE_LD_CHANGED:
+                case Episciences_Paper_Logger::CODE_LD_REMOVED:
+                    echo $this->partial('partials/paper_history_logs_linked_data.phtml', [
+                        'username' => $detail['username'],
+                        'typeLd' => $detail['typeLd'],
+                        'valueLd' => $detail['valueLd'],
+                        'relationship' => $detail['relationship'] ?? null
+                    ]);
+                    break;
+
+                // Reviewing deadline
+                case Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE:
+                    echo $this->partial('partials/paper_history_logs_reviewing_deadline.phtml', [
+                        'newDeadline' => $detail['newDeadline'],
+                        'screenName' => $detail['screenName']
+                    ]);
+                    break;
+
+                // Reviewer unassignment (special case with uninvited flag)
+                case Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT:
+                    $uninvitedFlag = array_key_exists(Episciences_Reviewer::STATUS_UNINVITED, $detail) &&
+                                     $detail[Episciences_Reviewer::STATUS_UNINVITED] === Episciences_Reviewer::STATUS_UNINVITED;
+                    echo $this->partial('partials/paper_history_logs_user_action.phtml', [
+                        'fullName' => $fullName,
+                        'tag' => '',
+                        'uninvitedFlag' => $uninvitedFlag
+                    ]);
+                    break;
+
+                // Alter report status (special case without colon prefix)
+                case Episciences_Paper_Logger::CODE_ALTER_REPORT_STATUS:
+                    echo $this->partial('partials/paper_history_logs_user_action.phtml', [
+                        'fullName' => $fullName,
+                        'tag' => '',
+                        'noPrefix' => true
+                    ]);
+                    break;
+
+                // Publication date / Revision deadline alterations
+                case Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE:
+                case Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED:
+                    echo $this->translate(' :');
+                    echo $this->escape($detail['newDate']) . ' > ';
+                    echo $fullName;
+                    break;
+
+                // COAR Notify Review (inbox)
+                case Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW:
+                    if (isset($detail['origin'])) {
+                        echo ' ' . Episciences_Repositories::getLabel($detail['origin']);
+                    }
+                    break;
+
+                // User actions (15+ cases) - all display: fullName + tag
                 case Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION:
                 case Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION:
                 case Episciences_Paper_Logger::CODE_COPY_EDITOR_UNASSIGNMENT:
@@ -132,105 +248,23 @@ $logs_with_details = [
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_NEW_VERSION:
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION:
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_ANSWER:
-                case  Episciences_Paper_Logger::CODE_COI_REVERTED:
                 case Episciences_Paper_Logger::CODE_DD_UPLOADED:
                 case Episciences_Paper_Logger::CODE_SWD_UPLOADED:
-                    ?>
-                    <?= $this->translate(' :') ?>
-                    <?= $fullName ?>
-                    <?php break; ?>
+                case Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT:
+                case Episciences_Paper_Logger::CODE_EDITOR_UNASSIGNMENT:
+                    echo $this->partial('partials/paper_history_logs_user_action.phtml', [
+                        'fullName' => $fullName,
+                        'tag' => $tag
+                    ]);
+                    break;
 
-                <?php case Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT: ?>
-                    <?php if (array_key_exists(Episciences_Reviewer::STATUS_UNINVITED, $detail) && $detail[Episciences_Reviewer::STATUS_UNINVITED] === Episciences_Reviewer::STATUS_UNINVITED): ?>
-                        <?= '[ ' . $this->translate(Episciences_Reviewer::STATUS_UNINVITED) . ' ]' ?>
-                    <?php endif; ?>
-                    <?= $this->translate(' :') ?>
-                    <?= $fullName ?>
-                    <?php break; ?>
+            endswitch ?>
 
-                <?php case Episciences_Paper_Logger::CODE_MAIL_SENT: ?>
-                <?php case Episciences_Paper_Logger::CODE_REMINDER_SENT: ?>
-                    <?php if (array_key_exists('To', $detail['mail'])) : ?>
-                        <?= $this->translate("à") . ' ' . implode(', ', $detail['mail']['To']) ?>
-                    <?php endif; ?>
-                    <?= $this->translate(' :') ?>
-                    <?= $this->escape($detail['mail']['Subject']) ?>
-                    <?php break; ?>
-
-                <?php case Episciences_Paper_Logger::CODE_SECTION_SELECTION: ?>
-                    <?= $this->translate(' :') ?>
-                    <?= $detail['sid'] !== 0 ?  Episciences_SectionsManager::translateSectionKey('section_' . $detail['sid'] . '_title') : $this->translate('Hors rubrique') ?>
-                    <?php break; ?>
-
-                <?php case Episciences_Paper_Logger::CODE_VOLUME_SELECTION: ?>
-                    <?= $this->translate(' :') ?>
-                    <?= ($detail['vid'] !== 0) ? Episciences_VolumesManager::translateVolumeKey('volume_' . $detail['vid'] . '_title') : $this->translate('Hors volume') ?>
-                    <?php break; ?>
-
-                <?php case Episciences_Paper_Logger::CODE_OTHER_VOLUMES_SELECTION: ?>
-                    <?= $this->translate(' :') ?>
-                    <?php
-
-                    $volumesLabel = [];
-
-                    foreach ($detail['vids'] as $sVid) {
-                        $volumesLabel [] = Episciences_VolumesManager::translateVolumeKey('volume_' . $sVid['vid'] . '_title');
-                    }
-                    ?>
-
-                    <?= (!empty($volumesLabel)) ? implode(', ', $volumesLabel) : $this->translate('Hors volume (s)') ?>
-                    <?php break; ?>
-
-                <?php
-                case Episciences_Paper_Logger::CODE_CE_AUTHOR_FINALE_VERSION_REQUEST:
-                case Episciences_Paper_Logger::CODE_CE_READY_TO_PUBLISH:
-                case Episciences_Paper_Logger::CODE_CE_REVIEW_FORMATTING_DEPOSED:
-                case Episciences_Paper_Logger::CODE_CE_AUTHOR_SOURCES_REQUEST:
-                    ?>
-                    <?= $this->translate(' :') ?>
-                    <?= $fullName . ' > ' . $this->escape($detail['submitter']['fullname']) ?>
-                    <?php break; ?>
-
-                <?php case Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE: ?>
-                <?php case Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED: ?>
-                    <?= $this->translate(' :') ?>
-                    <?= $this->escape($detail['newDate']) . ' > ' ?>
-                    <?= $fullName ?>
-                    <?php break; ?>
-
-                <?php case Episciences_Paper_Logger::CODE_COI_REPORTED: ?>
-                    <?= $this->translate(' :') ?>
-                    <?= $this->escape(strtoupper($this->translate($detail['conflict']['answer']))) . ' > ' ?>
-                    <?= $fullName ?>
-                    <?php break; ?>
-
-                <?php case Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE: ?>
-                    <?= $this->translate(' :') ?>
-                    <?= $this->Date($detail['newDeadline'], Episciences_Tools::getLocale()) . ' > ' . $detail['screenName'] ?>
-                    <?php break; ?>
-                <?php case Episciences_Paper_Logger::CODE_LD_ADDED: ?>
-                <?php case Episciences_Paper_Logger::CODE_LD_CHANGED: ?>
-                <?php case Episciences_Paper_Logger::CODE_LD_REMOVED: ?>
-                    <?= $this->translate('par') . ' ' . $detail['username'] ?>
-                    <?= $this->translate(' :') ?>
-                    <?= $this->escape($detail['typeLd']) . " =>" ?>
-                    <?= $this->escape($detail['valueLd']) ?>
-                    <?php if(isset($detail['relationship'])):?>
-                        <?= 'relation => '.$this->escape($detail['relationship']) ?>
-                    <?php endif; ?>
-                    <?php break; ?>
-                <?php case Episciences_Paper_Logger::CODE_INBOX_COAR_NOTIFY_REVIEW: ?>
-                    <?php if (isset($detail['origin'])) : ?>
-                        <?= ' ' . Episciences_Repositories::getLabel($detail['origin']) ?>
-                    <?php endif; ?>
-                    <?php break; ?>
-                <?php endswitch ?>
-
-            <span class="log-detail-icon glyphicon glyphicon-plus"></span>
+            <span class="log-detail-icon glyphicon glyphicon-plus" aria-hidden="true"></span>
         </span>
     </div>
 
-    <?php if (in_array($log['ACTION'], $logs_with_details, false)) : ?>
+    <?php if ($hasDetails) : ?>
         </a>
     <?php endif; ?>
 

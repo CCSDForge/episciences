@@ -58,7 +58,9 @@ return array(
     'Id permanent' => 'Permanent Id',
     'Id document' => 'Document Id',
     'Id : ' => 'Id: ',
-
+    "Date de l'invitation" => "Date of Invitation",
+    "Invité par" => "Invited by",
+    'Adresse e-mail' => 'Email address',
 
     "Historique" => "History",
     "Sujet" => "Subject",
@@ -803,6 +805,7 @@ return array(
     "Membres" => "Members",
     "Votre message n'a pas pu être envoyé :" => "Your mail could not be sent:",
     "Veuillez saisir au moins un destinataire" => "Please select at least one recipient",
+    "Fichiers joint" => "Attachment",
     "Fichiers joints" => "Attachments",
     "Vous n'avez pas les autorisations nécessaires pour modifier ce template" => "You don't have the required permissions to modify the template",
     "Vous n'avez pas les autorisations nécessaires pour supprimer le template personnalisé" => "You don't have the required permissions to delete customized template",
