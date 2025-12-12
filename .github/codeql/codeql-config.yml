@@ -1,8 +1,37 @@
-name: "CodeQL Configuration"
+name: "CodeQL Configuration for Episciences"
 
-# Exclure les fichiers de test de l'analyse
+# Enable advanced security and quality queries
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
+
+# Specify paths to analyze (source code only)
+paths:
+  - 'application/**'
+  - 'library/**'
+  - 'public/**/*.js'
+
+# Exclude files not relevant for security analysis
 paths-ignore:
+  # JavaScript tests
   - '**/*.test.js'
+  - '**/*.spec.js'
   - 'tests/**'
+
+  # Third-party dependencies
   - 'node_modules/**'
   - 'vendor/**'
+  - 'public/js/vendor/**'
+
+  # Generated and temporary files
+  - 'public/js/build/**'
+  - 'public/css/**'
+  - 'data/**'
+  - 'cache/**'
+  - 'tmp/**'
+  - 'log/**'
+  - 'logs/**'
+
+  # Minified/bundled files
+  - '**/*.min.js'
+  - '**/*.bundle.js'
