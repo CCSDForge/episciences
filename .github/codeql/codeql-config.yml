@@ -35,3 +35,6 @@ paths-ignore:
   # Minified/bundled files
   - '**/*.min.js'
   - '**/*.bundle.js'
+
+  # Templates from CCSD library
+  - 'library/public/**'
