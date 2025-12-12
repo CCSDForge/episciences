@@ -1148,6 +1148,7 @@ class Episciences_Paper
      * save paper to database
      * @return bool
      * @throws Zend_Db_Adapter_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function save(): bool
     {
@@ -1162,13 +1163,6 @@ class Episciences_Paper
             } catch (JsonException $e) {
                 trigger_error($e->getMessage());
             }
-        }
-
-        try {
-            $document = $this->toJson();
-        } catch (Zend_Db_Statement_Exception $e) {
-            $document = null;
-            trigger_error($e->getMessage());
         }
 
         if (!$docId) {
@@ -1191,9 +1185,17 @@ class Episciences_Paper
                 'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
                 'FLAG' => $this->getFlag(),
                 'PASSWORD' => $this->getPassword(),
-                'TYPE' => $type,
-                'DOCUMENT' => $document
+                'TYPE' => $type
             ];
+
+            try {
+                $document = $this->toJson();
+            } catch (Zend_Db_Statement_Exception $e) {
+                $document = null;
+                trigger_error($e->getMessage());
+            }
+
+            $data['DOCUMENT'] = $document;
 
             if ($this->getPublication_date()) {
                 $data['PUBLICATION_DATE'] = $this->getPublication_date();
@@ -1205,8 +1207,8 @@ class Episciences_Paper
                 $data['CONCEPT_IDENTIFIER'] = $this->getConcept_identifier();
             }
 
-            if ($db->insert(T_PAPERS, $data)) {
-                $this->setDocid($db->lastInsertId());
+            if ($db?->insert(T_PAPERS, $data)) {
+                $this->setDocid($db?->lastInsertId());
                 if (!$this->getPaperid()) {
                     $this->setPaperid($this->getDocid());
                     $this->save();
@@ -1220,7 +1222,7 @@ class Episciences_Paper
                         trigger_error($e->getMessage());
                     }
                 } else {
-                    // keep datalinked and insert line with the new doc id
+                    // keep linkeddata and insert line with the new doc id
                     Episciences_Paper_DatasetsManager::updateAllByDocId($this);
                     $this->setPosition($this->applyPositioningStrategy());
                 }
@@ -1245,9 +1247,9 @@ class Episciences_Paper
             'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()'),
             'FLAG' => $this->getFlag(),
             'PASSWORD' => $this->getPassword(),
-            'TYPE' => $type,
-            'DOCUMENT' => $document
+            'TYPE' => $type
         ];
+
         if ($this->getIdentifier()) {
             $data['IDENTIFIER'] = $this->getIdentifier();
         }
@@ -1259,11 +1261,21 @@ class Episciences_Paper
             $data['CONCEPT_IDENTIFIER'] = $this->getConcept_identifier();
         }
 
-        if (!$db->update(T_PAPERS, $data, ['DOCID = ?' => $docId])) {
+        $this->setPosition($this->applyPositioningStrategy());
+
+        try {
+            $document = $this->toJson();
+        } catch (Zend_Db_Statement_Exception $e) {
+            $document = null;
+            trigger_error($e->getMessage());
+        }
+
+        $data['DOCUMENT'] = $document;
+
+        if (!$db?->update(T_PAPERS, $data, ['DOCID = ?' => $docId])) {
             return false;
         }
 
-        $this->setPosition($this->applyPositioningStrategy());
         return true;
     }
 
