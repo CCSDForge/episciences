@@ -61,6 +61,8 @@ class Episciences_Review
     public const SETTING_ISSN = 'ISSN';
     public const SETTING_REPOSITORIES = 'repositories';
     public const SETTING_SPECIAL_ISSUE_ACCESS_CODE = 'specialIssueAccessCode';
+    public const SETTING_DISPLAY_EMPTY_VOLUMES = 'displayEmptyVolumes';
+    public const SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES = 'allowEditVolumeTitleWithPublishedArticles';
     public const SETTING_ENCAPSULATE_REVIEWERS = 'encapsulateReviewers';
     public const SETTING_EDITORS_CAN_REASSIGN_ARTICLES = 'editorsCanReassignArticle';
     //Assignation automatique de rédacteurs
@@ -225,6 +227,8 @@ class Episciences_Review
             self::SETTING_START_STATS_AFTER_DATE,
             self::SETTING_JOURNAL_PUBLISHER,
             self::SETTING_JOURNAL_PUBLISHER_LOC,
+            self::SETTING_DISPLAY_EMPTY_VOLUMES,
+            self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
         ];
 
 
@@ -1042,6 +1046,9 @@ class Episciences_Review
         // special issue settings **********************************************
         $form = $this->addSpecialIssueSettingsForm($form);
 
+        // volume settings **********************************************
+        $form = $this->addVolumeSettingsForm($form);
+
         $form = $this->addNotificationSettingsForm($form);
 
         //Copy editing checkBox
@@ -1116,6 +1123,13 @@ class Episciences_Review
             self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES
         ], 'special_issues', ["legend" => "Paramètres des volumes spéciaux"]);
         $form->getDisplayGroup('special_issues')->removeDecorator('DtDdWrapper');
+
+        // display group : volume settings
+        $form->addDisplayGroup([
+            self::SETTING_DISPLAY_EMPTY_VOLUMES,
+            self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES
+        ], 'volumes', ["legend" => "Paramètres des volumes"]);
+        $form->getDisplayGroup('volumes')->removeDecorator('DtDdWrapper');
 
         // display group : copy editors settings
         $form->addDisplayGroup([
@@ -1585,6 +1599,41 @@ class Episciences_Review
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
+    private function addVolumeSettingsForm(Ccsd_Form $form): Ccsd_Form
+    {
+        $translator = Zend_Registry::get('Zend_Translate');
+
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+        $form->addElement('checkbox', self::SETTING_DISPLAY_EMPTY_VOLUMES, [
+                'label' => $translator->translate("Autoriser l'affichage des volumes vides"),
+                'description' => $translator->translate("Si activé, les volumes sans articles seront visibles sur le site"),
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, [
+                'label' => $translator->translate("Autoriser la modification du titre du volume avec des articles publiés"),
+                'description' => $translator->translate("Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés"),
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        return $form;
+    }
+
+    /**
+     * @param Ccsd_Form $form
+     * @return Ccsd_Form
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     */
     private function addNotificationSettingsForm(Ccsd_Form $form): Zend_Form
     {
         $translator = Zend_Registry::get('Zend_Translate');
@@ -1922,6 +1971,10 @@ class Episciences_Review
         $settingsValues[self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS] = $this->getSetting(self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS);
         $settingsValues[self::SETTING_TO_REQUIRE_REVISION_DEADLINE] = $this->getSetting(self::SETTING_TO_REQUIRE_REVISION_DEADLINE);
         $settingsValues[self::SETTING_START_STATS_AFTER_DATE] = $this->getSetting(self::SETTING_START_STATS_AFTER_DATE);
+
+        // Volume settings
+        $settingsValues[self::SETTING_DISPLAY_EMPTY_VOLUMES] = $this->getSetting(self::SETTING_DISPLAY_EMPTY_VOLUMES);
+        $settingsValues[self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES] = $this->getSetting(self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES);
 
 
         $values = [];

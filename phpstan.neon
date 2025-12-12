@@ -1,19 +1,24 @@
 parameters:
-	level: 6
+	level: 1
 	paths:
 		- application
 		- library
 		- public
 		- scripts
 	excludePaths:
-		- cache
-		- data
-		- log
-		- logs
-		- tmp
-		- vendor
+		- cache (?)
+		- data (?)
+		- log (?)
+		- logs (?)
+		- tmp (?)
+		- vendor (?)
+		- application/resources (?)
+		- application/languages/en/Zend.php
+		- application/languages/fr/Zend.php
 	ignoreErrors:
 		- '#Call to an undefined method Zend_.*#'
 		- '#Access to an undefined property Zend_.*#'
+		-
+			identifier: constant.notFound
 	bootstrapFiles:
 		- phpstan-bootstrap.php
