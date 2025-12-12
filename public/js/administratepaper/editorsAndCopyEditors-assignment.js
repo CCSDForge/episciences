@@ -9,7 +9,6 @@ var openedPopover = null;
  * @returns {boolean}
  */
 function getAssignUserForm(button, docid, vid, partial) {
-
     let isPartial = partial !== '' ? JSON.parse(partial) : false;
 
     let buttonId = $(button).attr('id');
@@ -30,39 +29,42 @@ function getAssignUserForm(button, docid, vid, partial) {
 
     // fetch form
     let request = $.ajax({
-        type: "POST",
+        type: 'POST',
         url: formUrl,
-        data: {docid: docid, vid: vid}
+        data: { docid: docid, vid: vid },
     });
 
-    $(button).popover({
-        'container': 'body',
-        'placement': 'bottom',
-        'html': true,
-        'content': getLoader()
-    }).popover('show');
+    $(button)
+        .popover({
+            container: 'body',
+            placement: 'bottom',
+            html: true,
+            content: getLoader(),
+        })
+        .popover('show');
 
     request.done(function (result) {
-
         // destroy loading popup
         $(button).popover('destroy');
 
         // show form in the popover
-        $(button).popover({
-            'container': 'body',
-            'placement': 'bottom',
-            'html': true,
-            'content': result
-        }).popover('show');
+        $(button)
+            .popover({
+                container: 'body',
+                placement: 'bottom',
+                html: true,
+                content: result,
+            })
+            .popover('show');
 
         // editors or copy editors filter handlers
         $('#filter').on('keyup', function () {
-            filterList('#filter', '.' + buttonId + '-list label')
+            filterList('#filter', '.' + buttonId + '-list label');
         });
         $('#filter').on('paste', function () {
             setTimeout(function () {
-                filterList('#filter', '.' + buttonId + '-list label')
-            }, 4)
+                filterList('#filter', '.' + buttonId + '-list label');
+            }, 4);
         });
 
         // Initialize editor availability handling
@@ -73,14 +75,25 @@ function getAssignUserForm(button, docid, vid, partial) {
         let saveAction = JS_PREFIX_URL + 'administratepaper/save' + buttonId;
 
         $('form[id^=assign]').on('submit', function () {
-            if (!$(this).data('submitted')) { // to fix duplicate ajax request
+            if (!$(this).data('submitted')) {
+                // to fix duplicate ajax request
                 $(this).data('submitted', true);
                 // ajax form processing
-                let saveActionRequest = ajaxRequest(saveAction, $(this).serialize(), 'POST', 'json');
+                let saveActionRequest = ajaxRequest(
+                    saveAction,
+                    $(this).serialize(),
+                    'POST',
+                    'json'
+                );
                 saveActionRequest.done(function (response) {
                     if (JSON.parse(response).result) {
-                        let displayAction = JS_PREFIX_URL + 'administratepaper/display' + buttonId;
-                        let container = $(button).closest('.' + buttonId).parent();
+                        let displayAction =
+                            JS_PREFIX_URL +
+                            'administratepaper/display' +
+                            buttonId;
+                        let container = $(button)
+                            .closest('.' + buttonId)
+                            .parent();
 
                         // destroy editor or copy editor sassignment popup
                         $(button).popover('destroy');
@@ -89,7 +102,10 @@ function getAssignUserForm(button, docid, vid, partial) {
                         $(container).fadeIn();
 
                         // refresh section editors or copy editors
-                        let refreshRequest = ajaxRequest(displayAction, {docid: docid, partial: isPartial});
+                        let refreshRequest = ajaxRequest(displayAction, {
+                            docid: docid,
+                            partial: isPartial,
+                        });
                         refreshRequest.done(function (refResponse) {
                             $(container).hide();
                             $(container).html(refResponse);
@@ -97,7 +113,8 @@ function getAssignUserForm(button, docid, vid, partial) {
                         });
 
                         // refresh paper history
-                        if (!isPartial) { // not partial
+                        if (!isPartial) {
+                            // not partial
                             refreshPaperHistory(docid);
                         }
                     }
@@ -105,7 +122,6 @@ function getAssignUserForm(button, docid, vid, partial) {
             }
             return false;
         });
-
     });
 }
 
@@ -116,9 +132,9 @@ function getAssignUserForm(button, docid, vid, partial) {
  */
 function getRefusedMonitoringForm(docId, uid) {
     let refuseManagingFormRequest = $.ajax({
-        type: "POST",
-        url: JS_PREFIX_URL + "administratepaper/refusedmonitoringform",
-        data: {docId: docId, uid: uid}
+        type: 'POST',
+        url: JS_PREFIX_URL + 'administratepaper/refusedmonitoringform',
+        data: { docId: docId, uid: uid },
     });
 
     refuseManagingFormRequest.done(function (form) {

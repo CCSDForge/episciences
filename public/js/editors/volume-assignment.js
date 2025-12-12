@@ -13,48 +13,53 @@ function getEditors(button, vid) {
     }
 
     // Récupération du formulaire
-    let editorFormRequest = ajaxRequest(JS_PREFIX_URL + 'volume/editorsform', {vid: vid});
+    let editorFormRequest = ajaxRequest(JS_PREFIX_URL + 'volume/editorsform', {
+        vid: vid,
+    });
 
-    $(button).popover({
-        'container': 'body',
-        'placement': 'bottom',
-        'html': true,
-        'content': getLoader()
-    }).popover('show');
-
+    $(button)
+        .popover({
+            container: 'body',
+            placement: 'bottom',
+            html: true,
+            content: getLoader(),
+        })
+        .popover('show');
 
     editorFormRequest.done(function (result) {
-
         // Destruction du popup de chargement
         $(button).popover('destroy');
 
         activateTooltips();
 
         // Affichage du formulaire dans le popover
-        $(button).popover({
-            'container': 'body',
-            'placement': 'bottom',
-            'html': true,
-            'content': result
-        }).popover('show');
+        $(button)
+            .popover({
+                container: 'body',
+                placement: 'bottom',
+                html: true,
+                content: result,
+            })
+            .popover('show');
 
         // Handlers du filtre des rédacteurs
         $('#filter').on('keyup', function () {
-            filterList('#filter', '.editors-list label')
+            filterList('#filter', '.editors-list label');
         });
         $('#filter').on('paste', function () {
             setTimeout(function () {
-                filterList('#filter', '.editors-list label')
-            }, 4)
+                filterList('#filter', '.editors-list label');
+            }, 4);
         });
 
         let saveEditorsAction = JS_PREFIX_URL + 'volume/saveeditors';
 
         $('form[action="' + saveEditorsAction + '"]').on('submit', function () {
-            if (!$(this).data('submitted')) { // to fix duplicate ajax request
+            if (!$(this).data('submitted')) {
+                // to fix duplicate ajax request
                 $(this).data('submitted', true);
                 // Traitement AJAX du formulaire
-                let data = $(this).serialize() + "&vid=" + vid;
+                let data = $(this).serialize() + '&vid=' + vid;
                 let saveEditorsRequest = ajaxRequest(saveEditorsAction, data);
                 saveEditorsRequest.done(function (response) {
                     if (response == 1) {
@@ -62,7 +67,10 @@ function getEditors(button, vid) {
                         $(button).popover('destroy');
 
                         // Refresh de l'affichage des rédacteurs pour cette rubrique
-                        let refreshEditorsRequest = ajaxRequest(JS_PREFIX_URL + 'volume/displayeditors', {vid: vid});
+                        let refreshEditorsRequest = ajaxRequest(
+                            JS_PREFIX_URL + 'volume/displayeditors',
+                            { vid: vid }
+                        );
                         refreshEditorsRequest.done(function (editors) {
                             let td = $('#volume_' + vid + ' td:nth-child(4)');
                             let container = $(td).find('.editors');

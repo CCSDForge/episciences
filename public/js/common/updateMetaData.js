@@ -15,9 +15,9 @@ async function updateMetaData(button, docId) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
             },
-            body: formData
+            body: formData,
         });
 
         const result = await response.text();
@@ -29,11 +29,9 @@ async function updateMetaData(button, docId) {
             if (!('error' in obj_result) && obj_result.affectedRows !== 0) {
                 location.reload();
             }
-
         } catch (error) {
             console.log(error);
         }
-
     } catch (error) {
         console.error('Fetch error:', error);
         alert('An error occurred while updating metadata');

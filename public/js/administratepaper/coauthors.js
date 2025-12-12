@@ -1,6 +1,6 @@
 $(function () {
     // Initialize user autocomplete using the utility function
     createUserAutocomplete({
-        appendTo: $('#autocomplete').closest(".modal-body")
+        appendTo: $('#autocomplete').closest('.modal-body'),
     });
-})
+});
