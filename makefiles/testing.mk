@@ -9,7 +9,7 @@ JEST_CONFIG := jest.config.js
 # =============================================================================
 # Test Commands
 # =============================================================================
-.PHONY: test test-all test-php test-js test-php-unit test-js-unit test-js-watch test-js-coverage test-coverage
+.PHONY: test test-all test-php test-js test-php-unit test-js-unit test-js-watch test-js-coverage test-coverage lint-php
 
 test: test-all ## Run all tests (PHP + JavaScript)
 
@@ -133,3 +133,13 @@ test-status: ## Show testing setup status
 	else \
 		echo "  ❌ Jest not installed"; \
 	fi
+
+# =============================================================================
+# Linting Commands
+# =============================================================================
+.PHONY: lint-php
+
+lint-php: ## Run PHPStan static analysis (use LEVEL=X to override default)
+	@echo "Running PHPStan static analysis..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		./vendor/bin/phpstan analyse --memory-limit=1G $(if $(LEVEL),--level $(LEVEL))
