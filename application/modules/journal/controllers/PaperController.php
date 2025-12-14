@@ -2915,7 +2915,7 @@ class PaperController extends PaperDefaultController
 
         // Log the action
         $paper->log(
-            Episciences_Paper_Logger::CODE_AUTHOR_COMMENT,
+            Episciences_Paper_Logger::CODE_NEW_PAPER_COMMENT,
             Episciences_Auth::getUid(),
             ['commentId' => $commentId, 'message' => $data['comment'], 'type' => 'author_to_editor']
         );

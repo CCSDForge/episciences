@@ -320,7 +320,8 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
     <?php // author to editor communication ************************************** ?>
     <?= $this->partial('partials/paper_author_to_editor_messages.phtml', [
         'paper' => $paper,
-        'authorToEditorForm' => $this->authorToEditorForm,
+        'authorToEditorForm' => $this->authorToEditorForm ?? null,
+        'editorReplyForms' => null,
         'authorToEditorComments' => $this->authorToEditorComments,
         'editors' => $this->editors ?? []
     ]) ?>

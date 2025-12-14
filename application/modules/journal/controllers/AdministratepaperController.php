@@ -870,7 +870,7 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->enabledBib = $enabledBib;
 
         // Author to editor communication ******************************************************
-        $authorToEditorForm = null;
+        $editorReplyForms = null;
         $authorToEditorComments = [];
 
         // Check if the feature is enabled
@@ -888,29 +888,37 @@ class AdministratepaperController extends PaperDefaultController
 
             // Editors can respond to author messages
             if (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) {
-                // Handle form submission for editor response
-                if ($request->getPost('postEditorResponseToAuthor') !== null) {
-                    $editorResponseForm = Episciences_CommentsManager::getForm('editorResponseToAuthorForm');
-                    if ($editorResponseForm->isValid($request->getPost())) {
-                        if ($this->save_editor_response_to_author($paper)) {
-                            $message = $this->view->translate("Votre réponse a bien été envoyée à l'auteur.");
-                            $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
-                            $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
-                        } else {
-                            $message = $this->view->translate("Une erreur s'est produite lors de l'envoi du formulaire. Veuillez vérifier le formulaire et le soumettre à nouveau.");
-                            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-                        }
-                    }
+                // Filter to get only author messages (not editor responses)
+                $authorMessages = array_filter($authorToEditorComments, function($comment) {
+                    return $comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR;
+                });
+
+                // Create reply forms for each author message
+                if (!empty($authorMessages)) {
+                    $editorReplyForms = Episciences_CommentsManager::getReplyForms($authorMessages);
                 }
 
-                // Only show form if there are existing author messages to respond to
-                if (!empty($authorToEditorComments)) {
-                    $authorToEditorForm = Episciences_CommentsManager::getForm('editorResponseToAuthorForm');
+                // Handle form submission for editor response
+                if (!empty($editorReplyForms)) {
+                    foreach ($editorReplyForms as $id => $replyForm) {
+                        if ($request->getPost('postReply_' . $id) !== null) {
+                            if ($replyForm->isValid($request->getPost())) {
+                                if ($this->save_editor_response_to_author($paper)) {
+                                    $message = $this->view->translate("Votre réponse a bien été envoyée à l'auteur.");
+                                    $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
+                                    $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
+                                } else {
+                                    $message = $this->view->translate("Une erreur s'est produite lors de l'envoi du formulaire. Veuillez vérifier le formulaire et le soumettre à nouveau.");
+                                    $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        $this->view->authorToEditorForm = $authorToEditorForm;
+        $this->view->editorReplyForms = $editorReplyForms;
         $this->view->authorToEditorComments = $authorToEditorComments;
     }
 
