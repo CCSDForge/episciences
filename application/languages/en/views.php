@@ -61,6 +61,7 @@ return array(
     "Date de l'invitation" => "Date of Invitation",
     "Invité par" => "Invited by",
     'Adresse e-mail' => 'Email address',
+    'De : ' => 'From: ',
 
     "Historique" => "History",
     "Sujet" => "Subject",

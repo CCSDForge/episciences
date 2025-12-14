@@ -1,0 +1,70 @@
+<?php
+// Display a complete demand or reply item (user + message + files)
+// Parameters:
+// - $item: array with SCREEN_NAME, UID, WHEN, MESSAGE, DEADLINE, FILE, TYPE, DOCID
+// - $paperId: paper ID
+// - $isReply: boolean - default false
+// - $cleanMessage: boolean - default true (use cleanBody())
+
+// Extract variables from $this if they're not already set
+if (!isset($item) && isset($this->item)) {
+    $item = $this->item;
+}
+if (!isset($paperId) && isset($this->paperId)) {
+    $paperId = $this->paperId;
+}
+
+// Set defaults for optional parameters
+if (!isset($isReply)) {
+    $isReply = $this->isReply ?? false;
+}
+if (!isset($cleanMessage)) {
+    $cleanMessage = $this->cleanMessage ?? true;
+}
+?>
+<article class="timeline-item <?= $isReply ? 'timeline-item--reply' : 'timeline-item--demand' ?>">
+
+    <!-- Timeline marker with user photo -->
+    <div class="timeline-marker" aria-hidden="true">
+        <?= $this->userAvatar($item, 'initials') ?>
+    </div>
+
+    <!-- Timeline content card -->
+    <div class="timeline-content">
+
+        <!-- Header: user + date + deadline -->
+        <header class="timeline-item-header">
+            <?= $this->partial('partials/demand_header.phtml', [
+                'user' => $item,
+                'date' => $item['WHEN'],
+                'deadline' => $item['DEADLINE'] ?? null,
+                'showDeadline' => !$isReply
+            ]) ?>
+        </header>
+
+        <!-- Message body -->
+        <div class="timeline-item-message">
+            <?php
+            $message = $cleanMessage
+                ? Episciences_Tools::epi_html_decode(Episciences_Tools::cleanBody($item['MESSAGE']))
+                : Episciences_Tools::epi_html_decode($item['MESSAGE']);
+            echo $message;
+            ?>
+        </div>
+
+        <!-- Files (if present) -->
+        <?php if (!empty($item['FILE'])): ?>
+            <div class="timeline-item-files">
+                <?= $this->partial('partials/demand_files.phtml', [
+                    'files' => $item['FILE'],
+                    'type' => $item['TYPE'],
+                    'docId' => $item['DOCID'],
+                    'comment' => $item,
+                    'paperId' => $paperId
+                ]) ?>
+            </div>
+        <?php endif; ?>
+
+    </div>
+
+</article>

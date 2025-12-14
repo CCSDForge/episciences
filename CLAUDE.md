@@ -24,9 +24,10 @@
 - `make test-js` - JavaScript tests (Jest)
 - `yarn format` - Format JS with Prettier
 
-## PhpUnit
-- run php tests inside the container with `make phpunit`
-
+## Code
+- Write comments in English
+- Do not use Jquery for JavaScript
+- 
 ## Key Files
 - `application/configs/application.ini` - Main config
 - `config/pwd.json` - Credentials (not in repo)

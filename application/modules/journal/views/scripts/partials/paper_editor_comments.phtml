@@ -1,31 +1,70 @@
-<?php echo $this->editor_comment_form;
+<?php
+// Display comment form
+echo $this->editor_comment_form;
+
+// Add JavaScript for file deletion
 $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
 ?>
 
 <?php if (!empty($this->editor_comments)) : ?>
-    <?php $first = key($this->editor_comments); ?>
-    <div id="editor_comments" style="max-height: 800px; overflow: auto">
-    <?php foreach ($this->editor_comments as $id=>$comment) : ?>
-        <?php $margin = ($id == $first) ? '0' : '20px'; ?>
-        <div style="margin-top: <?php echo $margin;?>" class="small">
-            <img src="/user/photo/name/<?= urlencode($this->escape($comment['SCREEN_NAME'])) ?>/uid/<?= $comment['UID'] ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
-                 class="user-photo-thumb" alt="avatar">
-            <strong><?php echo $this->Date($comment['WHEN'], null, Zend_Date::DATE_LONG.' - '.Zend_Date::TIME_SHORT); ?> : </strong>
-            (<?php echo ($comment['UID'] == Episciences_Auth::getUid()) ? $this->translate('vous') : $comment['SCREEN_NAME']; ?>)
-            <div><?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($comment['MESSAGE'])) ?></div>
-            <?php if ($comment['FILE']) :?>
-                <div class="col-sm-10">
-                    <a href="/docfiles/comments/<?php echo $comment['DOCID'].'/'.$comment['FILE']?>" target="_blank">
-                        <?php echo $comment['FILE'];?>
-                    </a>
-                </div>
-            <div class="col-sm-2">
-                <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]); ?>
-            </div>
-            <?php endif;?>
-        </div>
-    <?php endforeach; ?>
+    <div id="editor_comments" class="editor-comments-timeline" role="feed"
+         aria-label="<?php echo $this->translate('Commentaires de l\'éditeur'); ?>">
+        <div class="timeline-track">
+            <?php foreach ($this->editor_comments as $id => $comment) : ?>
+
+                <article class="timeline-item"
+                         aria-labelledby="comment-header-<?php echo $id; ?>">
+
+                    <!-- Timeline marker with user photo -->
+                    <div class="timeline-marker" aria-hidden="true">
+                        <?= $this->userAvatar($comment, 'initials') ?>
+                    </div>
+
+                    <!-- Comment content card -->
+                    <div class="timeline-content">
+
+                        <!-- Header: date + author -->
+                        <header class="timeline-comment-header" id="comment-header-<?php echo $id; ?>">
+                            <time class="comment-date" datetime="<?php echo date('c', strtotime($comment['WHEN'])); ?>">
+                                <?php echo $this->Date($comment['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?>
+                            </time>
+                            <i class="fa-solid fa-user" aria-hidden="true"></i>&nbsp;<?= $this->translate('De : ') ?>
+                            <span class="comment-author">
+
+                            <strong>
+                                <?php echo ($comment['UID'] == Episciences_Auth::getUid()) ? $this->translate('Vous') : $this->escape($comment['SCREEN_NAME']); ?>
+                            </strong>
+                            </span>
+                        </header>
+
+                        <!-- Comment message -->
+                        <div class="timeline-comment-message">
+                            <?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($comment['MESSAGE'])) ?>
+                        </div>
+
+                        <!-- Attached file (if present) -->
+                        <?php if ($comment['FILE']) : ?>
+                            <div class="timeline-comment-attachment">
+                                <div>
+                                    <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i> <a
+                                            href="/docfiles/comments/<?php echo $comment['DOCID'] . '/' . $comment['FILE'] ?>"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            aria-label="<?php echo $this->translate('Télécharger le fichier'); ?> <?php echo $this->escape($comment['FILE']); ?>">
+                                        <?php echo $this->escape($comment['FILE']); ?>
+                                    </a>
+                                </div>
+                                <div class="remove-file-btn">
+                                    <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]); ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                    </div>
+
+                </article>
+
+            <?php endforeach; ?>
+        </div><!-- /.timeline-track -->
     </div>
 <?php endif; ?>
-
-

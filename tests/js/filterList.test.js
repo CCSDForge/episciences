@@ -28,7 +28,7 @@ if (filterListFunctionMatch) {
 
 // Also extract the clearCache method
 const clearCacheFunctionMatch = functionsJs.match(
-    /filterList\.clearCache = function\(\) \{[\s\S]*?\};/
+    /filterList\.clearCache = function\s*\(\)\s*\{[\s\S]*?\};/
 );
 if (clearCacheFunctionMatch) {
     eval(clearCacheFunctionMatch[0]);

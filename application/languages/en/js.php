@@ -259,5 +259,6 @@ return [
     // Dashboard paper search error messages
     "Erreur lors du traitement de la réponse du serveur." => "Error processing server response.",
     "Erreur de connexion. Veuillez vérifier votre connexion réseau et réessayer." => "Connection error. Please check your network connection and try again.",
-
+    "Voir plus" => "Show more",
+    "Voir moins" => "Show less",
 ];
