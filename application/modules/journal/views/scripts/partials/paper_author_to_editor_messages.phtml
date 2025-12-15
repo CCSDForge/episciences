@@ -1,0 +1,118 @@
+<?php
+/**
+ * Template for author-to-editor messaging
+ * Allows authors to send messages to assigned editors when the setting is enabled
+ *
+ * Variables passed:
+ * - $this->paper: Episciences_Paper object
+ * - $this->authorToEditorForm: Zend_Form for sending messages
+ * - $this->authorToEditorComments: Array of existing comments
+ * - $this->editors: Array of assigned editors (optional, for display)
+ */
+
+// Check if the author-to-editor communication is enabled
+$review = Episciences_ReviewsManager::find($this->paper->getRvid());
+$canAuthorContactEditors = $review->getSetting(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS);
+$discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
+
+// Determine if the user can see this panel
+// Authors: only the paper owner can send messages
+// Editors: editors and guest editors assigned to the paper can view and respond
+$isAuthor = $this->paper->isOwner();
+$isEditor = Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor();
+$canViewPanel = $isAuthor || $isEditor;
+
+// Only show if setting is enabled AND user has permission to view
+if ($canAuthorContactEditors && $canViewPanel) :
+?>
+
+<?php if ($this->authorToEditorForm || $this->authorToEditorComments || (isset($this->editorReplyForms) && !empty($this->editorReplyForms))) : ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title">
+                <?php
+                // Different title depending on context
+                if ($isEditor) {
+                    echo $this->translate("Répondre à l'auteur");
+                } else {
+                    echo $this->translate("Envoyer un message aux rédacteurs");
+                }
+                ?>
+            </h2>
+        </div>
+        <div class="panel-body<?php if ($this->authorToEditorComments || array_key_exists('postAuthorToEditorComment', $_POST)) { echo ' in'; } ?>">
+
+            <?php // Show editor names if the setting is enabled ?>
+            <?php if ($discloseEditorNames && !empty($this->editors)) : ?>
+                <div class="alert alert-info">
+                    <strong><?php echo $this->translate("Rédacteurs assignés"); ?> :</strong>
+                    <ul style="margin-bottom: 0;">
+                        <?php foreach ($this->editors as $editor) : ?>
+                            <li><?php echo $this->escape($editor->getFullName()); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+
+            <?php // Display the form - different for authors and editors ?>
+            <?php if ($isAuthor && $this->authorToEditorForm) : ?>
+                <p class="help-block">
+                    <?php echo $this->translate("Utilisez ce formulaire pour envoyer un message aux rédacteurs assignés à votre article."); ?>
+                </p>
+                <?php echo $this->authorToEditorForm; ?>
+            <?php endif; ?>
+
+            <?php // Display previous comments ?>
+            <?php if ($this->authorToEditorComments) : ?>
+                <hr/>
+                <h4><?php echo $this->translate("Messages précédents"); ?></h4>
+                <div style="max-height: 400px; margin-top: 20px; overflow: auto;">
+                    <?php
+                    // Comments are already organized by sortComments():
+                    // - Top level = author messages (TYPE_AUTHOR_TO_EDITOR)
+                    // - $comment['replies'] = editor responses (TYPE_EDITOR_TO_AUTHOR_RESPONSE)
+
+                    foreach ($this->authorToEditorComments as $parentId => $parentComment) :
+                        // Only display author-to-editor messages (type 22)
+                        if ($parentComment['TYPE'] != Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+                            continue;
+                        }
+                        ?>
+                        <div style="padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px;">
+                            <?php // Display the author's message ?>
+                            <?php echo $this->partial('partials/paper_author_editor_comments.phtml', [
+                                'comments' => [$parentId => $parentComment],
+                                'paper' => $this->paper,
+                                'discloseEditorNames' => $discloseEditorNames
+                            ]); ?>
+
+                            <?php // Display editor responses if any ?>
+                            <?php if (!empty($parentComment['replies'])) : ?>
+                                <div style="margin-left: 20px; margin-top: 10px; padding-left: 10px; border-left: 3px solid #5bc0de;">
+                                    <?php foreach ($parentComment['replies'] as $replyId => $reply) : ?>
+                                        <?php echo $this->partial('partials/paper_author_editor_comments.phtml', [
+                                            'comments' => [$replyId => $reply],
+                                            'paper' => $this->paper,
+                                            'discloseEditorNames' => $discloseEditorNames
+                                        ]); ?>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <?php // Display reply form for editors if no response yet ?>
+                            <?php if ($isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$parentId]) && empty($parentComment['replies'])) : ?>
+                                <div style="margin-left: 20px; margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 4px;">
+                                    <h5><?php echo $this->translate("Répondre"); ?> :</h5>
+                                    <?php echo $this->editorReplyForms[$parentId]; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php endif; // End of canAuthorContactEditors check ?>

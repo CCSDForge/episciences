@@ -1,0 +1,52 @@
+<?php
+/**
+ * Template for displaying author-to-editor comments
+ *
+ * Variables:
+ * - $this->comments: Array of comments
+ * - $this->paper: Episciences_Paper object
+ * - $this->discloseEditorNames: Boolean - whether to show editor names
+ */
+
+foreach ($this->comments as $id => $comment) : ?>
+    <div class="small" style="padding: 10px; margin-bottom: 10px; border-left: 3px solid #ddd;">
+        <strong><?php echo $this->Date($comment['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?>
+            : </strong>
+        <?php
+        // Determine who sent the comment
+        if ($comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+            // Comment from author
+            if ($comment['UID'] == Episciences_Auth::getUid()) {
+                echo '(' . $this->translate('vous') . ')';
+            } else {
+                echo '(' . $this->translate('l\'auteur') . ')';
+            }
+        } elseif ($comment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+            // Response from editor
+            if ($comment['UID'] == Episciences_Auth::getUid()) {
+                echo '(' . $this->translate('vous') . ')';
+            } else {
+                if ($this->discloseEditorNames && !empty($comment['SCREEN_NAME'])) {
+                    echo '(' . $this->translate('Rédacteur') . ' : ' . $this->escape($comment['SCREEN_NAME']) . ')';
+                } else {
+                    echo '(' . $this->translate('Rédacteur') . ')';
+                }
+            }
+        }
+        ?>
+        <div style="margin-top: 5px;">
+            <?php echo Episciences_Tools::formatText($comment['MESSAGE']); ?>
+        </div>
+
+        <?php if (!empty($comment['FILE'])) : ?>
+            <div style="margin-top: 10px;">
+                <span class="glyphicon glyphicon-paperclip"></span>
+                <a href="/docfiles/comments/<?php echo $comment['DOCID'] . '/' . $comment['FILE'] ?>" target="_blank">
+                    <?php echo $this->escape($comment['FILE']); ?>
+                </a>
+                <?php // Allow deletion by the comment author (permission check is in the partial) ?>
+                <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]); ?>
+            </div>
+        <?php endif; ?>
+    </div>
+<?php endforeach; ?>

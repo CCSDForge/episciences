@@ -609,7 +609,7 @@ class PaperController extends PaperDefaultController
 
                 // Generate form (always show it so authors can send multiple messages)
                 if (!array_key_exists('postComment', $_POST)) {
-                    $authorToEditorForm = Episciences_CommentsManager::getForm('authorToEditorForm');
+                    $authorToEditorForm = Episciences_CommentsManager::getForm('authorToEditorForm', false, true);
                     $authorToEditorForm->setAction('/paper/view?id=' . $paper->getDocid());
                 }
             }
@@ -2900,7 +2900,7 @@ class PaperController extends PaperDefaultController
                         foreach ($attachmentFiles as $fileName => $filePath) {
                             $fullPath = $filePath . $fileName;
                             if (file_exists($fullPath)) {
-                                $mail->addAttachment($fullPath);
+                                $mail->addAttachedFile($fullPath);
                             }
                         }
                     }

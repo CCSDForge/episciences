@@ -349,6 +349,13 @@ class PaperDefaultController extends DefaultController
         $docId = $paper->getDocid();
         $recipients = [];
         $CC = [];
+
+        // For author-editor communication, only notify assigned editors
+        $isAuthorEditorCommunication = in_array($oComment->getType(), [
+            Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
+            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE
+        ], true);
+
         try {
             $recipients = $this->getAllEditors($paper);
             // ne pas notifier le commentateur
@@ -362,12 +369,17 @@ class PaperDefaultController extends DefaultController
             (!in_array($oComment->getType(), [
                 Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
                 Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION,
-                Episciences_CommentsManager::TYPE_SUGGESTION_REFUS
+                Episciences_CommentsManager::TYPE_SUGGESTION_REFUS,
+                Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
+                Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE
             ], true)
             );
 
         try {
-            Episciences_Review::checkReviewNotifications($recipients, $strict);
+            // For author-editor communication, skip checkReviewNotifications to avoid notifying all managers
+            if (!$isAuthorEditorCommunication) {
+                Episciences_Review::checkReviewNotifications($recipients, $strict);
+            }
             // remove users if COI is enabled
             Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
             $journal = Episciences_ReviewsManager::find(RVCODE);

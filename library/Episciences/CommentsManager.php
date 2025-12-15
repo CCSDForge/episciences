@@ -230,7 +230,7 @@ class Episciences_CommentsManager
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getForm($name = '', $modal = false): \Ccsd_Form
+    public static function getForm($name = '', $modal = false, $withCancelButton = false): \Ccsd_Form
     {
         $form = new Ccsd_Form();
 
@@ -264,9 +264,19 @@ class Episciences_CommentsManager
                 'Size' => array(false, MAX_FILE_SIZE))));
 
         if (!$modal) {
+            // For author to editor form, use "Envoyer" button
+            $buttonLabel = ($name === 'authorToEditorForm') ? 'Envoyer' : 'Enregistrer';
+
             $form->setActions(true)->createSubmitButton('postComment', array(
-                'label' => 'Enregistrer',
+                'label' => $buttonLabel,
                 'class' => 'btn btn-primary'));
+
+            //  For author to editor form, use "cancel" button
+            if ($withCancelButton) {
+                $form->setActions(true)->createCancelButton('cancel', array(
+                    'label' => 'Annuler',
+                    'class' => 'btn btn-default'));
+            }
         }
 
         return $form;

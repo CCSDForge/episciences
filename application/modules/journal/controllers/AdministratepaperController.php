@@ -886,8 +886,8 @@ class AdministratepaperController extends PaperDefaultController
                 ]]
             );
 
-            // Editors can respond to author messages
-            if (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) {
+            // Only assigned editors can respond to author messages
+            if ($paper->getEditor(Episciences_Auth::getUid())) {
                 // Filter to get only author messages (not editor responses)
                 $authorMessages = array_filter($authorToEditorComments, function($comment) {
                     return $comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR;
@@ -1268,9 +1268,9 @@ class AdministratepaperController extends PaperDefaultController
             return false;
         }
 
-        // Get author info
+        // Get author info - should be the author of the parent comment, not the paper author
         $author = new Episciences_User();
-        $author->findWithCAS($paper->getUid());
+        $author->findWithCAS($parentComment->getUid());
         $locale = $author->getLangueid();
 
         // Prepare paper URL for author
@@ -1304,7 +1304,7 @@ class AdministratepaperController extends PaperDefaultController
         // Send email to author
         $mailSent = Episciences_Mail_Send::sendMailFromReview(
             $author,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY, // TODO: Create specific template
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_RESPONSE_TO_AUTHOR_AUTHOR_COPY,
             $authorTags,
             $paper,
             Episciences_Auth::getUid(),
