@@ -5410,7 +5410,6 @@ class Episciences_Paper
         return $docUrlLabel;
 
     }
-
 }
 
 
