@@ -5411,6 +5411,20 @@ class Episciences_Paper
 
     }
 
+
+    public function isSecondaryVolume(): bool
+    {
+        $currentVid = $this->getVid();
+
+        foreach ($this->getOtherVolumes() as $secondaryVolume) {
+            if ($currentVid === $secondaryVolume->getVid()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 }
 
 

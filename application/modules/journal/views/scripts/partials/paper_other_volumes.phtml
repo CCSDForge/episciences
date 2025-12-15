@@ -1,10 +1,7 @@
 <?php // Liste des volumes secondaires **********************************************
 /** @var Episciences_Paper $article */
 
-use Psr\Log\LogLevel;
-
 $article = $this->article;
-$clonedArticle = clone($article);
 /** @var Episciences_Volume[] $volumes */
 $volumes = $this->volumes;
 /** @var Episciences_Volume_Paper[] $othersVolumes */
@@ -25,7 +22,6 @@ $othersVolumes = $article->getOtherVolumes();
 
             $volume = $volumes[$secondaryVolume->getVid()];
             $currentVid = $volume->getVid();
-            $clonedArticle->setVid($currentVid);
 
             ?>
 
@@ -35,7 +31,7 @@ $othersVolumes = $article->getOtherVolumes();
                       <?= $this->partial('partials/paper_volume_position.phtml', [
                           'docId' => $article->getDocid(),
                           'vid' => $currentVid,
-                          'position' => $volume->getPositionByPaperId($clonedArticle->getPaperid(), $currentVid),
+                          'position' => $volume->getPositionByPaperId($article->getPaperid()),
                           'from' => 'view'
                       ])
                       ?>
@@ -43,7 +39,6 @@ $othersVolumes = $article->getOtherVolumes();
 
             </li>
         <?php endforeach; ?>
-        <?php unset($clonedArticle); ?>
     </ul>
 
 <?php else : ?>

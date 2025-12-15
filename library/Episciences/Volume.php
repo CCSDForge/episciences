@@ -1,5 +1,7 @@
 <?php
 
+use Psr\Log\LogLevel;
+
 class Episciences_Volume
 {
     public const MARKDOWN_TO_HTML = 'markdownToHtml';
@@ -496,7 +498,7 @@ class Episciences_Volume
     /**
      *
      */
-    public function loadPaperPositions()
+    public function loadPaperPositions(): void
     {
         $positions = [];
         try {
@@ -507,7 +509,7 @@ class Episciences_Volume
 
             $tmp = $this->_db->fetchPairs($select);
             reset($tmp); // Remet le pointeur interne de tableau au début
-            if (key($tmp) == 1) {
+            if (key($tmp) === 1) {
                 foreach ($tmp as $position => $paperId) {
                     $i = $position - 1;
                     $positions[$i] = $paperId;
@@ -516,7 +518,7 @@ class Episciences_Volume
                 $positions = $tmp;
             }
         } catch (Exception $exception) {
-            $positions = [];
+            Episciences_View_Helper_Log::log($exception->getMessage(), LogLevel::CRITICAL);
         }
 
         $this->setPaperPositions($positions);
@@ -1260,7 +1262,7 @@ class Episciences_Volume
 
                 if (array_key_exists($currentOPaper->getPaperId(), $positions)) {
                     $sorted_papers[$positions[$paperId]] = $paper;
-                } else if ($currentOPaper->getPosition() === null) {
+                } else {
                     $maxPosition++;
                     $paperPosition = $maxPosition;
 
@@ -1271,8 +1273,6 @@ class Episciences_Volume
 
                     $sorted_papers[$paperPosition] = $paper;
 
-                } else {
-                    $sorted_papers[$currentOPaper->getPosition()] = $paper;
                 }
             }
             ksort($sorted_papers);
@@ -1539,16 +1539,16 @@ class Episciences_Volume
     /**
      *
      * @param int $paperId
-     * @param int|null $vid [ default ($vid = null]) : returns position in primary volume
      * @return int|null
      */
 
-    public function getPositionByPaperId(int $paperId, int $vid = null): ?int
+    public function getPositionByPaperId(int $paperId): ?int
     {
 
         try {
             $sortedPapers = $this->getSortedPapersFromVolume('object');
         } catch (Zend_Db_Select_Exception|Zend_Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
             $sortedPapers = [];
         }
 
@@ -1560,7 +1560,7 @@ class Episciences_Volume
 
         foreach ( $sortedPapers as $position => $paper) {
 
-            if ($paper->getPaperid() === $paperId && $paper->getVid() === $vid) {
+            if ($paper->getPaperid() === $paperId) {
                 return $position;
             }
         }
