@@ -27,7 +27,7 @@ foreach ($this->comments as $id => $comment) : ?>
         </div>
         <?php if ($comment['FILE']) : ?>
             <div class="col-sm-10">
-                <a href="/docfiles/comments/<?php echo $comment['DOCID'] . '/' . $comment['FILE'] ?>" target="_blank">
+                <a href="<?= sprintf("%sdocfiles/comments/%s/%s", PREFIX_URL, $comment['DOCID'], $comment['FILE']) ?>" target="_blank">
                     <?php echo $comment['FILE']; ?>
                 </a>
             </div>
@@ -69,7 +69,7 @@ foreach ($this->comments as $id => $comment) : ?>
 
                 <?php if ($reply['FILE']) : ?>
                     <div class="col-sm-10">
-                        <a href="/docfiles/comments/<?php echo $reply['DOCID'] . '/' . $reply['FILE'] ?>"
+                        <a href="<?= sprintf("%sdocfiles/comments/%s/%s", PREFIX_URL, $reply['DOCID'], $reply['FILE']) ?>"
                            target="_blank">
                             <?php echo $reply['FILE']; ?>
                         </a>

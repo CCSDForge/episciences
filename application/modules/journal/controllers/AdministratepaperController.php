@@ -689,7 +689,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if (!empty($demands)) {
 
-            $currentDemand = current($demands);
+            $currentDemand = array_shift($demands);
 
             if (
                 !array_key_exists('replies', $currentDemand) ||

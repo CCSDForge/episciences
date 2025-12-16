@@ -399,7 +399,7 @@ class PaperController extends PaperDefaultController
 
         if (!empty($revision_requests)) {
 
-            $currentDemand = current($revision_requests);
+            $currentDemand = array_shift($revision_requests);
 
             if (
                 !array_key_exists('replies', $currentDemand) ||

@@ -545,7 +545,7 @@ class Episciences_CommentsManager
 
         $forms = [];
 
-        if (!$comments || !$paper) {
+        if (!$comments) {
             return false;
         }
 
@@ -570,7 +570,7 @@ class Episciences_CommentsManager
 
             } else {
 
-                $row = !empty($defaultMessage = self::buildAnswerMessage($commentUid, $commentType)) ? 6 : 5;
+                $row = !empty($defaultMessage = self::buildAnswerMessage($commentUid, $commentType)) ? 7 : 5;
                 $strElement = $id . '_element';
                 $form = new Ccsd_Form();
                 $form->setName('copy_editing_form_' . $strElement);
@@ -704,9 +704,9 @@ class Episciences_CommentsManager
         $defaultMessage = '';
         if (in_array($commentType, self::$_UploadFilesRequest)) {
             $translator = Zend_Registry::get('Zend_Translate');
-            $recipient = new Episciences_User();
-            $recipient->find($commentUid);
-            $locale = $recipient->getLangueid(true);
+            // Utiliser la langue de l'utilisateur connecté (celui qui répond) au lieu de celle du destinataire
+            $currentUser = Episciences_Auth::getInstance()->getIdentity();
+            $locale = $currentUser ? $currentUser->getLangueid(true) : $translator->getLocale();
             $defaultMessage .= $translator->translate('Bonjour', $locale);
             $defaultMessage .= ',';
             $defaultMessage .= PHP_EOL;

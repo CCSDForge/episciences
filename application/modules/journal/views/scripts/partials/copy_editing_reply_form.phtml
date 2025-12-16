@@ -1,0 +1,114 @@
+<?php
+/**
+ * Copy-editing reply form component
+ * Displays reply button and form container for copy-editing requests
+ *
+ * Parameters:
+ * - $demand: array - the parent copy-editing request
+ * - $replyForm: string - HTML form content
+ * - $paperStatus: int - current paper status
+ * - $linkToLatestDocId: string - URL to latest document version (optional)
+ * - $isAllowedToReply: boolean - whether user can reply (default: true)
+ */
+
+// Extract variables from $this if they're not already set
+if (!isset($demand) && isset($this->demand)) {
+    $demand = $this->demand;
+}
+if (!isset($replyForm) && isset($this->replyForm)) {
+    $replyForm = $this->replyForm;
+}
+if (!isset($paperStatus) && isset($this->paperStatus)) {
+    $paperStatus = $this->paperStatus;
+}
+if (!isset($linkToLatestDocId) && isset($this->linkToLatestDocId)) {
+    $linkToLatestDocId = $this->linkToLatestDocId;
+}
+
+// Set default for optional parameter
+if (!isset($isAllowedToReply)) {
+    $isAllowedToReply = $this->isAllowedToReply ?? true;
+}
+
+// Only render if user is allowed to reply and form exists
+if (!$isAllowedToReply || empty($replyForm)) {
+    return;
+}
+
+$commentType = (int)$demand['TYPE'];
+$pcId = $demand['PCID'];
+
+// Check if this is a final version request (TYPE 17, 18, 21)
+$isFinalVersionRequest = in_array(
+    $commentType,
+    Episciences_CommentsManager::$_copyEditingFinalVersionRequest,
+    false
+);
+
+// Base disabled state: check if paper status prevents editing
+$isDisabled = in_array($paperStatus, Episciences_Paper::$_noEditableStatus, true);
+
+// Configure button based on comment type
+$replyBtnClass = 'btn-default';
+$btnTitle = '';
+$autoClickable = '';
+
+if ($isFinalVersionRequest) {
+    // TYPE 17/18/21: Submit final version
+    $replyBtnMsg = 'Soumettre la version finale';
+    $replyBtnClass = 'btn-primary';
+    $btnTitle = "Soumettre la version finale de l'archive ouverte";
+    $autoClickable = 'auto-clickable'; // Auto-click for Z-Submit workflow
+
+} elseif ($commentType === Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST) {
+    // TYPE 20: Add source files
+    $replyBtnMsg = 'Ajouter les fichiers sources';
+    // Additional disable condition: review formatting already deposited
+    $isDisabled = $isDisabled || $paperStatus === Episciences_Paper::STATUS_CE_REVIEW_FORMATTING_DEPOSED;
+
+} elseif ($commentType === Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST) {
+    // TYPE 15: Add formatted version
+    $replyBtnMsg = 'Ajouter la version formatée';
+    // Additional disable condition: author formatting already deposited
+    $isDisabled = $isDisabled || $paperStatus === Episciences_Paper::STATUS_CE_AUTHOR_FORMATTING_DEPOSED;
+
+} else {
+    // Default: generic reply
+    $replyBtnMsg = 'Répondre';
+}
+
+// Prepare HTML attributes
+$tooltip = !empty($btnTitle)
+    ? 'data-toggle="tooltip" title="' . $this->translate($btnTitle) . '"'
+    : '';
+$disabled = $isDisabled ? 'disabled' : '';
+?>
+
+<div class="copy-editing-reply-form">
+
+    <!-- Reply button -->
+    <button id="replyFormBtn_<?= $pcId ?>"
+            class="btn <?= $replyBtnClass ?> btn-sm replyButton <?= $autoClickable ?>"
+            <?= $disabled ?>
+            <?= $tooltip ?>>
+        <i class="fa-solid fa-upload" aria-hidden="true"></i>
+        <?= $this->translate($replyBtnMsg) ?>
+    </button>
+
+    <!-- Reply form container (hidden by default, shown on button click) -->
+    <div id="replyForm_<?= $pcId ?>" class="replyForm" style="display: none">
+        <?php if ($isFinalVersionRequest): ?>
+            <!-- Final version request: use special form partial -->
+            <?= $this->partial('paper/new_version_show_result.phtml', [
+                'form' => $replyForm,
+                'isFromZSubmit' => $this->isFromZSubmit ?? false,
+                'zenodoRepoId' => Episciences_Repositories::ZENODO_REPO_ID,
+                'zSubmitUrl' => $this->zSubmitUrl ?? ''
+            ]) ?>
+        <?php else: ?>
+            <!-- Standard form (upload sources, formatted version, or generic reply) -->
+            <?= $replyForm ?>
+        <?php endif; ?>
+    </div>
+
+</div>

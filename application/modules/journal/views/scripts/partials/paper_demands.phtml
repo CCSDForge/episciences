@@ -1,205 +1,140 @@
 <?php
+const PARTIALS_DEMAND_ITEM_PHTML = 'partials/demand_item.phtml';
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
-$tmpUrl = sprintf('%stmp_files/%s', PREFIX_URL, $paper->getPaperId());
+$paperId = $paper->getPaperId();
 ?>
 
-<style>
-
-    .previousRequests {
-        max-height: 300px;
-        overflow: auto;
-    }
-
-</style>
-
+<!-- Current demand section -->
 <?php if ($this->current_demand) : ?>
-    <div style="margin-bottom: 15px;">
-        <strong><?= $this->translate('Dernière demande') . ' : ' ?></strong>
-        <?= $this->partial('partials/icon_user_identity.phtml', [
-                'user' => ['name' => $this->current_demand['SCREEN_NAME'], 'uid' => $this->current_demand['UID']]
-        ]) ?>
-        (<?= $this->Date($this->current_demand['WHEN']) ?>)
-        <?php if ($this->current_demand['DEADLINE']) : ?><br/>
-            <div>
-                <?= $this->translate('Date limite de réponse :') ?>
-                <?= $this->Date($this->current_demand['DEADLINE']) ?>
-            </div>
-        <?php endif; ?>
-    </div>
-    <div class="small"><?= Episciences_Tools::epi_html_decode(Episciences_Tools::cleanBody($this->current_demand['MESSAGE'])) ?></div>
-
-    <?php //TODO Remettre en place après le copy editing, voir (RT 89076 & commit ad1a32223c41eea459f9246a9e195eea4e9a64b4) ?>
-<?php endif; ?>
-
-<?php if ($this->current_demand && $this->previous_demands) : ?>
-    <hr style="margin: 20px 0;"/><?php endif; ?>
-
-<?php if ($this->previous_demands) : ?>
-    <div style="margin-bottom: 15px;"><strong><?= $this->translate('Anciennes demandes :') . ' ' ?></strong>
-    </div>
-    <?php $first = key($this->previous_demands); ?>
-    <?php foreach ($this->previous_demands as $id => $comment) :
-        $commentUrl = sprintf('%sdocfiles/comments/%s', PREFIX_URL, $comment['DOCID']);
-        ?>
-        <?php $margin = ($id == $first) ? '0' : '20px'; ?>
-        <div style="margin-top: <?= $margin ?>;" class="small">
-            <?= $this->partial('partials/icon_user_identity.phtml', [
-                    'user' => ['name' => $comment['SCREEN_NAME'], 'uid' => $comment['UID']]
-            ]) ?>
-            <strong><?= $this->Date($comment['WHEN']) ?> : </strong>
-            <?php if ($comment['DEADLINE']) : ?><br/>
-                <div>
-                    <?= $this->translate('Date limite de réponse :') ?>
-                    <?= $this->Date($comment['DEADLINE']) ?>
-                </div>
-            <?php endif; ?>
-
-            <div><?= Episciences_Tools::epi_html_decode(Episciences_Tools::cleanBody($comment['MESSAGE'])) ?></div>
-
-            <?php if ($comment['FILE']) : ?>
-                <?php $href = (int)$comment['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION ?
-                        $tmpUrl :
-                        $commentUrl; ?>
-                <div class="col-sm-10">
-                    &gt; <a href="<?= $href ?>/<?= $comment['FILE'] ?>" target="_blank">
-                        <?= $this->translate('Fichier') . ' : ' . $comment['FILE'] ?>
-                    </a>
-                </div>
-                <div class="col-sm-2">
-                    <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]) ?>
-                </div>
-            <?php endif; ?>
+    <div class="current-demand-section">
+        <div class="demands-section-header">
+            <?= $this->translate('Dernière demande') ?>
         </div>
-
-        <?php if (isset($comment['replies'])) : ?>
-        <?php foreach ($comment['replies'] as $reply) : ?>
-
-            <div style="margin: 10px 0 10px 30px;" class="small">
-                <?= $this->partial('partials/icon_user_identity.phtml', [
-                        'user' => ['name' => $reply['SCREEN_NAME'], 'uid' => $reply['UID']]
+        <div class="demands-timeline demands-timeline--scrollable">
+            <div class="demands-timeline-track">
+                <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                    'item' => $this->current_demand,
+                    'paperId' => $paperId,
+                    'isReply' => false,
+                    'cleanMessage' => true
                 ]) ?>
 
-                <span><strong><?= $this->Date($reply['WHEN']) ?> : </strong></span>
-                <div><?= $reply['MESSAGE'] ?></div>
-                <?php if ($reply['FILE']) : ?>
-                    <?php $href = (int)$reply['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION ?
-                            $tmpUrl :
-                            $commentUrl; ?>
-                    <?php $files = Episciences_Tools::isJson($reply['FILE']) ? json_decode($reply['FILE'], true) : (array)$reply['FILE']; ?>
-                    <?php foreach ($files as $index => $file): ?>
-                        <div class="col-sm-10">
-                            &gt; <a href="<?= $href ?>/<?= $file ?>" target="_blank">
-                                <?php
-                                $dFile = (count($files) === 1) ? $this->translate('Fichier') : $this->translate('Fichier') . ' ' . ((int)$index + 1);
-                                $dFile .= ' : ' . $file;
-                                echo $dFile;
-                                ?>
-                            </a>
-                        </div>
-                        <div class="col-sm-2">
-                            <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply, 'fileName' => $file]) ?>
-                        </div>
-                    <?php endforeach; ?>
+                <!-- Replies (if any) -->
+                <?php if (isset($this->current_demand['replies'])) : ?>
+                    <div class="timeline-thread">
+                        <?php foreach ($this->current_demand['replies'] as $reply) : ?>
+                            <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                                    'item' => $reply,
+                                    'paperId' => $paperId,
+                                    'isReply' => true,
+                                    'cleanMessage' => false
+                            ]) ?>
+                        <?php endforeach; ?>
+                    </div>
                 <?php endif; ?>
             </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
-
-    <?php endforeach; ?>
+        </div>
+    </div>
 <?php endif; ?>
 
+<!-- Separator -->
+<?php if ($this->current_demand && $this->previous_demands) : ?>
+    <hr style="margin: 20px 0;" />
+<?php endif; ?>
 
-<?php if ($this->previousVersionsDemands) : ?>
-    <?= !empty($this->current_demand) ? '<hr/>' : '' ?>
-    <div style="margin-bottom: 15px;">
-        <strong><?= $this->translate('Demandes des versions précédentes') . ' : ' ?></strong></div>
-    <div class="previousRequests">
-        <?php foreach ($this->previousVersionsDemands as $versionId => $versionComments) : ?>
-            <?php if (!$versionComments) {
-                continue;
-            } ?>
-            <div style="margin-top: 20px;" class="darkgrey">
-                <strong>
-                    <?php if ($this->previousVersions[$versionId]->isTmp()) : ?>
-                        <?= $this->translate('Version temporaire du ') . $this->Date($this->previousVersions[$versionId]->getWhen()) ?>
-                    <?php else : ?>
-                        <?= $this->translate('Version') . ' ' . $this->previousVersions[$versionId]->getVersion() ?>
-                    <?php endif; ?>
-                </strong>
-            </div>
-            <?php $first = key($this->previousVersionsDemands); ?>
-            <?php foreach ($versionComments as $id => $comment) :
-                $commentUrl = sprintf('%sdocfiles/comments/%s', PREFIX_URL, $comment['DOCID']);
-                ?>
-                <div style="background: #f2f2f2; padding: 0 5px; margin-top: 15px;" class="small">
-                    <?= $this->partial('partials/icon_user_identity.phtml', [
-                            'user' => ['name' => $comment['SCREEN_NAME'], 'uid' => $comment['UID']]
+<!-- Previous demands section -->
+<?php if ($this->previous_demands) : ?>
+    <div class="previous-demands-section">
+        <div class="demands-section-header">
+            <?= $this->translate('Anciennes demandes :') ?>
+        </div>
+        <div class="demands-timeline demands-timeline--scrollable">
+            <div class="demands-timeline-track">
+                <?php foreach ($this->previous_demands as $demand) : ?>
+
+                    <!-- Main demand -->
+                    <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                        'item' => $demand,
+                        'paperId' => $paperId,
+                        'isReply' => false,
+                        'cleanMessage' => true
                     ]) ?>
 
-                    <strong><?= $this->Date($comment['WHEN']) ?> : </strong>
+                    <!-- Replies (if any) -->
+                    <?php if (isset($demand['replies'])) : ?>
+                        <div class="timeline-thread">
+                            <?php foreach ($demand['replies'] as $reply) : ?>
+                                <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                                    'item' => $reply,
+                                    'paperId' => $paperId,
+                                    'isReply' => true,
+                                    'cleanMessage' => false
+                                ]) ?>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
 
-                    <div><?= Episciences_Tools::epi_html_decode($comment['MESSAGE']) ?></div>
-                    <?php if ($comment['FILE']) : ?>
-                        <?php $href = (int)$comment['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION ?
-                                $tmpUrl :
-                                $commentUrl; ?>
-                        <div class="col-sm-10">
-                            &gt; <a href="<?= $href ?>/<?= $comment['FILE'] ?>" target="_blank">
-                                <?= $this->translate('Fichier') . ' : ' . $comment['FILE'] ?>
-                            </a>
-                        </div>
-                        <div class="col-sm-2">
-                            <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]) ?>
-                        </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
+<!-- Previous versions section -->
+<?php if ($this->previousVersionsDemands) : ?>
+    <?= !empty($this->current_demand) ? '<hr />' : '' ?>
+    <div class="previous-versions-section">
+        <div class="demands-section-header">
+            <?= $this->translate('Demandes des versions précédentes') ?>
+        </div>
+        <div class="demands-timeline demands-timeline--scrollable">
+            <?php foreach ($this->previousVersionsDemands as $versionId => $versionComments) : ?>
+                <?php if (!$versionComments) {
+                    continue;
+                } ?>
+
+                <!-- Version header -->
+                <div class="version-header">
+                    <?php if ($this->previousVersions[$versionId]->isTmp()) : ?>
+                        <?= $this->translate('Version temporaire du ') .
+                            $this->Date($this->previousVersions[$versionId]->getWhen()) ?>
+                    <?php else : ?>
+                        <?= $this->translate('Version') . ' ' .
+                            $this->previousVersions[$versionId]->getVersion() ?>
                     <?php endif; ?>
                 </div>
 
-                <?php if (isset($comment['replies'])) : ?>
+                <!-- Version demands -->
+                <div class="demands-timeline-track">
+                    <?php foreach ($versionComments as $demand) : ?>
 
-                <?php foreach ($comment['replies'] as $reply) :
+                        <!-- Main demand -->
+                        <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                            'item' => $demand,
+                            'paperId' => $paperId,
+                            'isReply' => false,
+                            'cleanMessage' => true
+                        ]) ?>
 
-                    $href = (int)$reply['TYPE'] === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION ?
-                            $tmpUrl :
-                            $commentUrl;
-
-                    ?>
-
-                    <div style="background: #efeff3; padding: 0 5px; margin: 10px 0 10px 30px;" class="small">
-                        <?php if ($reply['MESSAGE'] || $reply['FILE']) : ?>
-                            <?= $this->partial('partials/icon_user_identity.phtml', [
-                                    'user' => ['name' => $reply['SCREEN_NAME'], 'uid' => $reply['UID']]
-                            ]) ?>
-
-                            <span><strong><?= $this->Date($reply['WHEN']) ?> : </strong></span>
-                            <div><?= Episciences_Tools::epi_html_decode($reply['MESSAGE']) ?></div>
-                            <?php if ($reply['FILE']) : ?>
-                                <?php $files = Episciences_Tools::isJson($reply['FILE']) ? json_decode($reply['FILE'], true) : (array)$reply['FILE']; ?>
-                                <?php foreach ($files as $index => $file): ?>
-                                    <div class="col-sm-10">
-                                        &gt;
-                                        <a href="<?= $href ?>/<?= $file ?>" target="_blank">
-                                            <?php
-                                            $dFile = (count($files) === 1) ? $this->translate('Fichier') : $this->translate('Fichier') . ' ' . ((int)$index + 1);
-                                            $dFile .= ' : ' . $file;
-                                            echo $dFile;
-                                            ?>
-                                        </a>
-                                    </div>
-                                    <div class="col-sm-2">
-                                        <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply, 'fileName' => $file]) ?>
-                                    </div>
+                        <!-- Replies (if any) -->
+                        <?php if (isset($demand['replies'])) : ?>
+                            <div class="timeline-thread">
+                                <?php foreach ($demand['replies'] as $reply) : ?>
+                                    <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                                        'item' => $reply,
+                                        'paperId' => $paperId,
+                                        'isReply' => true,
+                                        'cleanMessage' => false
+                                    ]) ?>
                                 <?php endforeach; ?>
-                            <?php endif; ?>
+                            </div>
                         <?php endif; ?>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
+
+                    <?php endforeach; ?>
+                </div>
 
             <?php endforeach; ?>
-        <?php endforeach; ?>
+        </div>
     </div>
-
 <?php endif; ?>
-
-

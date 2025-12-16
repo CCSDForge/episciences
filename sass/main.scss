@@ -28,6 +28,11 @@
 @import "components/flags";
 @import "components/footer";
 @import "components/badges";
+@import "components/timeline-base";
+@import "components/timeline-editor-comments";
+@import "components/timeline-demands";
+@import "components/timeline-copy-editing";
+@import "components/collapsible-message";
 
 // pages
 @import "pages/userconfirmation";
