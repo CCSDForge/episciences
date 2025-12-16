@@ -11,7 +11,7 @@ $paperId = $paper->getPaperId();
         <div class="demands-section-header">
             <?= $this->translate('Dernière demande') ?>
         </div>
-        <div class="demands-timeline">
+        <div class="demands-timeline demands-timeline--scrollable">
             <div class="demands-timeline-track">
                 <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
                     'item' => $this->current_demand,
@@ -19,6 +19,20 @@ $paperId = $paper->getPaperId();
                     'isReply' => false,
                     'cleanMessage' => true
                 ]) ?>
+
+                <!-- Replies (if any) -->
+                <?php if (isset($this->current_demand['replies'])) : ?>
+                    <div class="timeline-thread">
+                        <?php foreach ($this->current_demand['replies'] as $reply) : ?>
+                            <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                                    'item' => $reply,
+                                    'paperId' => $paperId,
+                                    'isReply' => true,
+                                    'cleanMessage' => false
+                            ]) ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
