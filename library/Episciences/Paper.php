@@ -1476,6 +1476,7 @@ class Episciences_Paper
         $document = $xmlToArray[$keyBody];
         $result = $serializer->serialize($document, 'json');
         $identifier = str_replace('"', '\"', $this->getIdentifier());
+        $xmlToArray = null;
         return str_replace(array('"#"', '%%ID', '%%VERSION'), array('"value"', $identifier, $this->getVersion()), $result);
     }
 
@@ -5409,7 +5410,6 @@ class Episciences_Paper
         return $docUrlLabel;
 
     }
-
 }
 
 

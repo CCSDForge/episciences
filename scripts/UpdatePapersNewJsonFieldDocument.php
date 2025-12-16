@@ -5,6 +5,7 @@ require '../library/Episciences/Trait/Tools.php';
 class UpdatePapersNewJsonFieldDocument extends JournalScript
 {
     use Episciences\Trait\Tools;
+
     public const TABLE = 'PAPERS';
     public const DOCUMENT_COLUMN = 'DOCUMENT';
     public const DEFAULT_SIZE = 500; // Number of documents to update at the same time
@@ -17,6 +18,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                 'sqlwhere-s' => "to specify the SQL condition to be used to find DOCIDs (exp. --sqlwhere 'DOCID > xxxx')",
                 'buffer|b=i' => "Number of documents to update at the same time [default: buffer = 500]",
                 'updateRecord|u' => 'Update record',
+                'notify|sn' => 'send notification',
                 'json|j' => 'Output the result as JSON (for use with jq)',
             ]));
 
@@ -27,6 +29,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
      * @return void
      * @throws Zend_Locale_Exception
      * @throws Zend_Translate_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function run(): void
     {
@@ -58,38 +61,71 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
         $buffer = $params['buffer'] ?? self::DEFAULT_SIZE;
         $docParamMsg = '';
 
-        $dataQuery = $db
-            ->select()
-            ->from(T_PAPERS);
+        $cols = [
+            'DOCID',
+            'PAPERID',
+            'DOI',
+            'RVID',
+            'VID',
+            'SID',
+            'UID',
+            'IDENTIFIER',
+            'STATUS',
+            'VERSION',
+            'REPOID',
+            'TYPE',
+            'CONCEPT_IDENTIFIER',
+            'FLAG',
+            'WHEN',
+            'SUBMISSION_DATE',
+            'MODIFICATION_DATE',
+            'PUBLICATION_DATE'
+        ];
+
+
+        if ($this->hasParam('updateRecord')) { // Column 'RECORD' cannot be null, when RECORD updated
+            $cols[] = 'RECORD';
+        }
+
+        $countQuery = $db?->select()->from(T_PAPERS, [new Zend_Db_Expr("COUNT(*)")]);
+
+        $dataQuery = $db?->select()
+            ->from(T_PAPERS, $cols);
 
         if (
             $this->hasParam('documentId')) {
-            $dataQuery->where('DOCID = ?', $params['documentId']);
             $docParamMsg = sprintf(' for document #%s', $params['documentId']);
+
+            $dataQuery->where('DOCID = ?', $params['documentId']);
+            $countQuery->where('DOCID = ?', $params['documentId']);
+
         } elseif ($this->hasParam('sqlwhere')) {
             $dataQuery->where($params['sqlwhere']);
+            $countQuery->where($params['sqlwhere']);
         }
 
         $dataQuery->order(['RVID ASC']);
 
-        $data = $db?->fetchAssoc($dataQuery);
+        $count = (int)$db?->fetchOne($countQuery);
         $isJsonOutput = $this->hasParam('json');
 
-        if (empty($data)) {
-            if (!$isJsonOutput) {
+        $isVerbose = !$isJsonOutput && $this->isVerbose();
+
+        if ($count === 0) {
+
+            if ($isVerbose) {
                 $this->displayInfo(sprintf('No data to process%s', $docParamMsg), true);
             }
+
             exit(0);
         }
 
-        $count = count($data);
 
         $totalPages = ceil($count / $buffer);
 
         $cpt = 1;
 
-
-        if (!$isJsonOutput && $this->isVerbose()) {
+        if ($isVerbose) {
             $this->displayInfo("*** Updating of the `DOCUMENT` column in the `PAPERS` table ***", true);
             $this->displayTrace('** Preparing the update...', true);
             $this->displayTrace(sprintf('Buffer: %s', $buffer), true);
@@ -98,13 +134,20 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
 
         for ($page = 1; $page <= $totalPages; $page++) {
 
-            if (!$isJsonOutput && $this->isVerbose()) {
+            if ($isVerbose) {
                 $this->displayTrace(sprintf('Page #%s', $page), true);
             }
 
             $toUpdate = '';
-            $offset = ($page - 1) * $buffer;
-            $cData = array_slice($data, $offset, $buffer);
+
+            try {
+                $paginator = Zend_Paginator::factory($dataQuery);
+                $paginator->setItemCountPerPage($buffer)->setCurrentPageNumber($page);
+                $cData = $paginator->getCurrentItems()->getArrayCopy();
+            } catch (Zend_Paginator_Exception $e) {
+                $this->displayCritical($e->getMessage());
+                $cData = [];
+            }
 
             $currentRvId = 0;
             $currentJournal = null;
@@ -123,15 +166,18 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                         continue;
                     }
 
-                    $this->displayInfo('Current Journal: ' . $currentJournal->getCode(), true);
+                    if ($isVerbose) {
+                        $this->displayInfo('Current Journal: ' . $currentJournal->getCode(), true);
+                    }
 
                 }
 
                 $docId = $values['DOCID'];
 
-                if (!$isJsonOutput && $this->isVerbose()) {
+                if ($isVerbose) {
                     $this->displayTrace(sprintf('[DOCID #%s]', $docId), true);
                 }
+
                 $progress = round(($cpt * 100) / $count);
                 try {
                     $currentPaper = new Episciences_Paper($values);
@@ -174,20 +220,19 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
 
                     try {
                         $affectedRows = Episciences_PapersManager::updateRecordData($currentPaper);
-
-                        if($currentJournal->getRvid() === $currentPaper->getRvid()) {
-                            $this->COARNotify($currentPaper, $currentJournal);
-                        }
-
                         if (!$isJsonOutput) {
                             $this->displayTrace(sprintf('Update metadata... > Affected rows: %s', $affectedRows), true);
                         }
-                    } catch (Exception|\GuzzleHttp\Exception\GuzzleException|\Psr\Cache\InvalidArgumentException $e) {
+                    } catch (Exception $e) {
                         if (!$isJsonOutput) {
                             $this->displayCritical('#' . $docId . ' ' . $e->getMessage());
                         }
                     }
 
+                }
+
+                if ($this->hasParam('notify') && $currentJournal->getRvid() === $currentPaper->getRvid()) {
+                    $this->COARNotify($currentPaper, $currentJournal);
                 }
 
                 try {
@@ -198,9 +243,10 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                         echo $toJson . PHP_EOL;
                     }
 
-                    if (!$isJsonOutput && $this->isVerbose()) {
+                    $toUpdate .= sprintf('%sUPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', PHP_EOL, $db?->quote($toJson), $docId);
+
+                    if ($isVerbose) {
                         $this->displaySuccess(sprintf('** [#%s] exported to json format ...', $docId), true);
-                        $toUpdate .= sprintf('%sUPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', PHP_EOL, $db->quote($toJson), $docId);
                     }
 
 
@@ -217,7 +263,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
                 ++$cpt;
             }
 
-            if (!$isJsonOutput && $this->isVerbose()) {
+            if ($isVerbose) {
                 $this->displayTrace(sprintf('Applying Update... %s %s', PHP_EOL, $toUpdate), true);
             }
 
@@ -225,13 +271,13 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
 
             if (!$this->isDebug()) {
                 if (empty(trim($toUpdate))) {
-                    if (!$isJsonOutput) {
+                    if ($isVerbose) {
                         $this->displayCritical('#' . $toUpdate . " Nothing to update! SQL Request is empty");
                     }
                     continue;
                 }
                 try {
-                    $statement = $db->query($toUpdate);
+                    $statement = $db?->query($toUpdate);
                     $result = $statement->rowCount();
                     $statement->closeCursor();
                 } catch (Zend_Db_Statement_Exception|Exception $e) {
@@ -242,7 +288,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
 
             }
 
-            if (!$isJsonOutput && $this->isVerbose()) {
+            if ($isVerbose) {
 
                 if (!$this->isDebug()) {
 
@@ -261,7 +307,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
             }
         }
 
-        if (!$isJsonOutput && $this->isVerbose()) {
+        if ($isVerbose) {
             $this->displaySuccess('Updating complete', true);
         }
 
@@ -272,6 +318,11 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
 }
 
 $script = new UpdatePapersNewJsonFieldDocument();
-$script->run();
+
+try {
+    $script->run();
+} catch (\Psr\Cache\InvalidArgumentException | Zend_Locale_Exception | Zend_Translate_Exception  $e) {
+    $this->displayCritical($e->getMessage());
+}
 
 
