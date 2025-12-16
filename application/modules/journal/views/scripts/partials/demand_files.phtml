@@ -1,0 +1,72 @@
+<?php
+// Display files with multi-file support and removal button
+// Parameters:
+// - $files: string|array (can be JSON)
+// - $type: int TYPE of the comment
+// - $docId: document ID
+// - $comment: complete comment object (for removal)
+// - $paperId: paper ID (for tmp_url)
+
+// Extract variables from $this if they're not already set
+if (!isset($files) && isset($this->files)) {
+    $files = $this->files;
+}
+if (!isset($type) && isset($this->type)) {
+    $type = $this->type;
+}
+if (!isset($docId) && isset($this->docId)) {
+    $docId = $this->docId;
+}
+if (!isset($comment) && isset($this->comment)) {
+    $comment = $this->comment;
+}
+if (!isset($paperId) && isset($this->paperId)) {
+    $paperId = $this->paperId;
+}
+
+// Determine correct URL based on comment type
+$isCopyEditingComment = isset($type) && in_array(
+    (int)$type,
+    array_merge(
+        Episciences_CommentsManager::$_copyEditingRequestTypes,
+        Episciences_CommentsManager::$_copyEditingAnswerTypes
+    ),
+    true
+);
+
+if ($isCopyEditingComment) {
+    // Copy-editing files: /docfiles/ce/{DOCID}/{FILE}/{PCID}
+    $href = '/docfiles/ce/' . $docId;
+    $urlSuffix = isset($comment['PCID']) ? '/' . $comment['PCID'] : '';
+} else {
+    // Regular comment files or tmp files
+    $tmpUrl = '/tmp_files/' . $paperId;
+    $commentUrl = sprintf('/docfiles/comments/%s', $docId);
+    $href = (int)$type === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION
+        ? $tmpUrl : $commentUrl;
+    $urlSuffix = '';
+}
+
+// Handle single file, array of files, or JSON string
+$filesAsJson = Episciences_Tools::isJson($files) ? json_decode($files, true) : [$files];
+$filesList = is_array($files) ? $files :
+        $filesAsJson;
+?>
+<?php foreach ($filesList as $index => $file): ?>
+    <div class="file-attachment">
+        <div class="file-link">
+            <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i>&nbsp;<a href="<?= $href ?>/<?= $file ?><?= $urlSuffix ?>" target="_blank" rel="noopener noreferrer">
+                <?php
+                $label = (count($filesList) === 1)
+                    ? $this->translate('Fichier')
+                    : $this->translate('Fichier') . ' ' . ($index + 1);
+                echo $label . ' : ' . $this->escape($file);
+                ?>
+            </a>
+        </div>
+        <div class="file-remove">
+            <?= $this->partial('partials/remove_file_comment.phtml',
+                ['comment' => $comment, 'fileName' => $file]) ?>
+        </div>
+    </div>
+<?php endforeach; ?>

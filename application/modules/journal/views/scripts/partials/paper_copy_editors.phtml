@@ -16,8 +16,7 @@ $editors = $this->editors;
         foreach ($copyEditors as $copyEditor) : ?>
             <div class="copy-editor" style="margin-bottom: 5px;">
 
-                <img src="/user/photo/name/<?= urlencode($this->escape($copyEditor->getScreenName())); ?>/uid/<?= $copyEditor->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
-                     class="user-photo-small" alt="avatar">
+                <?= $this->userAvatar($copyEditor, 'initials')->addClass('user-photo-small') ?>
 
 
                 <a class="btn btn-default" href="/user/view/userid/<?= $copyEditor->getUid(); ?>" target="_blank">

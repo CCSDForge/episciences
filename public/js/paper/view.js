@@ -20,11 +20,17 @@ $(function () {
 
     $('.replyButton').each(function () {
         $(this).click(function () {
-            var form = $(this).parent().next('.replyForm');
+            var form = $(this).next('.replyForm');
             $(form).parent().find('.replyForm').hide();
             $(form).parent().find('.replyButton').show();
             $(this).hide();
-            $(form).fadeIn();
+            $(form).fadeIn(400, function() {
+                // Scroll automatiquement vers le formulaire après l'animation
+                form[0].scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest'
+                });
+            });
         });
     });
 
