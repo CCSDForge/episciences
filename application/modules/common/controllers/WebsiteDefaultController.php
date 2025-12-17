@@ -218,7 +218,7 @@ class WebsiteDefaultController extends Episciences_Controller_Action
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
                 $this->redirect($this->url(['controller' => 'website', 'action' => 'menu']));
             } else {
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Erreur de saisie");
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Error while saving, please try again, it might be a temporary problem");
             }
             $this->view->pagesDisplay = $pagesDisplay;
         }
