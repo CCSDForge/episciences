@@ -56,6 +56,9 @@ describe('PaperAffiAuthorsManager', () => {
         // Create fresh manager instance
         manager = new PaperAffiAuthorsManager();
 
+        // Mock global variables used by the application
+        global.JS_PREFIX_URL = '/';
+
         // Mock fetch
         global.fetch = jest.fn();
 
@@ -71,6 +74,7 @@ describe('PaperAffiAuthorsManager', () => {
         jest.restoreAllMocks();
         delete window.versionCache;
         delete window.initializeAffiliationsAutocomplete;
+        delete global.JS_PREFIX_URL;
     });
 
     describe('Constructor', () => {
