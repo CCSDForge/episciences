@@ -416,6 +416,10 @@ class PaperDefaultController extends DefaultController
         if ($oComment->isEditorComment() || $oComment->isSuggestion()) {
             $recipientTags[Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME] = $commentator->getScreenName();
             $recipientTags[Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME] = $commentator->getFullName();
+        } elseif ($oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+            // For author-to-editor messages, the commentator is the author
+            $recipientTags[Episciences_Mail_Tags::TAG_AUTHOR_SCREEN_NAME] = $commentator->getScreenName();
+            $recipientTags[Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME] = $commentator->getFullName();
         } elseif($paper->isOwner()){
             $recipientTags[Episciences_Mail_Tags::TAG_AUTHOR_SCREEN_NAME] = Episciences_Auth::getScreenName();
             $recipientTags[Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME] = Episciences_Auth::getFullName();
@@ -452,6 +456,9 @@ class PaperDefaultController extends DefaultController
                 break;
             case Episciences_CommentsManager::TYPE_AUTHOR_COMMENT:
                 $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY;
+                break;
+            case Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR:
+                $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_EDITOR_COPY;
                 break;
             default:
                 $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY;

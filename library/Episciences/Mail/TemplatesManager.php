@@ -28,6 +28,7 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY = 'paper_comment_author_copy';
     public const TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY = 'paper_comment_editor_copy'; // existe mais pas encore exploiter
     public const TYPE_PAPER_EDITOR_RESPONSE_TO_AUTHOR_AUTHOR_COPY = 'paper_editor_response_to_author_author_copy';
+    public const TYPE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_EDITOR_COPY = 'paper_comment_from_author_to_editor_editor_copy';
 
     public const TYPE_PAPER_REVISION_ANSWER = 'paper_revision_answer';
     public const TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION = 'paper_new_version_reviewer_reinvitation';

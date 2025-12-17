@@ -174,7 +174,7 @@
                 <td class="td-label"><?= $this->translate('Sujet') ?></td>
                 <td class="small">
                     <?php if (array_key_exists('Subject', $this->log['detail']['mail']) && $this->log['detail']['mail']['Subject']) : ?>
-                        <?= $this->log['detail']['mail']['Subject'] ?>
+                        <?= htmlspecialchars_decode($this->log['detail']['mail']['Subject']) ?>
                     <?php else : ?>
                         -
                     <?php endif; ?>

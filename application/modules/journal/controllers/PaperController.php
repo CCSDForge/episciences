@@ -2824,101 +2824,17 @@ class PaperController extends PaperDefaultController
             return false;
         }
 
-        // Get author info
-        $author = new Episciences_User();
-        $author->findWithCAS($paper->getUid());
-
-        // Get review
-        $review = Episciences_ReviewsManager::find($paper->getRvid());
-
-        // Prepare mail data
-        $locale = $review->getSetting('default_lang') ?: 'en';
-
-        // Send email to each assigned editor
-        foreach ($editors as $editor) {
-            try {
-                // $editor is already an Episciences_Editor object
-                $recipient = $editor;
-
-                if ($recipient->getEmail()) {
-                    $recipientLocale = $recipient->getLangueid(true) ?: $locale;
-
-                    // Prepare tags for email template
-                    $tags = [
-                        Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($recipientLocale, true),
-                        Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata(),
-                        Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $recipientLocale),
-                        Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME => $author->getFullName(),
-                        Episciences_Mail_Tags::TAG_COMMENT => $data['comment'],
-                        Episciences_Mail_Tags::TAG_PAPER_URL => $this->view->url([
-                            'controller' => 'administratepaper',
-                            'action' => 'view',
-                            'id' => $paper->getDocid()
-                        ], null, true)
-                    ];
-
-                    // Get comment details for file attachment
-                    $commentDetails = Episciences_CommentsManager::getComment($commentId);
-                    $attachmentFiles = [];
-
-                    if (!empty($commentDetails['FILE'])) {
-                        $filePath = REVIEW_FILES_PATH . $paper->getDocid() . '/comments/' . $commentDetails['FILE'];
-                        if (file_exists($filePath)) {
-                            $attachmentFiles[$commentDetails['FILE']] = REVIEW_FILES_PATH . $paper->getDocid() . '/comments/';
-                        }
-                    }
-
-                    // Send mail
-                    // TODO: Create a proper mail template for this
-                    // For now, use a generic approach
-                    $mail = new Episciences_Mail('UTF-8');
-                    $mail->setDocid($paper->getDocid());
-                    $mail->setRvid($review->getRvid());
-                    $mail->setFrom(RVCODE . '@' . DOMAIN);
-                    $mail->setTo($recipient);
-
-                    $subject = '[' . RVCODE . '] ' . $this->view->translate("Message de l'auteur") . ' - ' . $paper->getTitle($recipientLocale, true);
-                    $mail->setSubject($subject);
-
-                    // Build email body
-                    $body = $this->view->translate("Un auteur vous a envoyé un message concernant l'article") . ' "' . $paper->getTitle($recipientLocale, true) . '" (ID: ' . $paper->getDocid() . ").\n\n";
-                    $body .= $this->view->translate("Message de l'auteur") . " :\n";
-                    $body .= "--------------------\n";
-                    $body .= $data['comment'] . "\n";
-                    $body .= "--------------------\n\n";
-                    $body .= $this->view->translate("Pour consulter l'article, veuillez suivre ce lien") . " :\n";
-                    $body .= $tags[Episciences_Mail_Tags::TAG_PAPER_URL] . "\n\n";
-                    $body .= $this->view->translate("Cordialement") . ",\n";
-                    $body .= $this->view->translate("L'équipe éditoriale");
-
-                    $mail->setBodyText($body);
-
-                    // Add file attachment if present
-                    if (!empty($attachmentFiles)) {
-                        foreach ($attachmentFiles as $fileName => $filePath) {
-                            $fullPath = $filePath . $fileName;
-                            if (file_exists($fullPath)) {
-                                $mail->addAttachedFile($fullPath);
-                            }
-                        }
-                    }
-
-                    $mail->writeMail();
-                }
-            } catch (Exception $e) {
-                // Log error but continue sending to other editors
-                error_log('Error sending email to editor ' . $editor->getUid() . ': ' . $e->getMessage());
-            }
+        // Get the saved comment
+        $commentData = Episciences_CommentsManager::getComment($commentId);
+        if (!$commentData) {
+            return false;
         }
 
-        // Log the action
-        $paper->log(
-            Episciences_Paper_Logger::CODE_NEW_PAPER_COMMENT,
-            Episciences_Auth::getUid(),
-            ['commentId' => $commentId, 'message' => $data['comment'], 'type' => 'author_to_editor']
-        );
+        $comment = new Episciences_Comment($commentData);
+
+        // Use newCommentNotifyManager to send emails to assigned editors and log the comment
+        // This will use the proper email template: paper_comment_from_author_to_editor_editor_copy
+        $this->newCommentNotifyManager($paper, $comment);
 
         return $commentId;
     }
