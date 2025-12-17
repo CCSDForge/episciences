@@ -10,60 +10,8 @@ $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
     <div id="editor_comments" class="editor-comments-timeline" role="feed"
          aria-label="<?php echo $this->translate('Commentaires de l\'éditeur'); ?>">
         <div class="timeline-track">
-            <?php foreach ($this->editor_comments as $id => $comment) : ?>
-
-                <article class="timeline-item"
-                         aria-labelledby="comment-header-<?php echo $id; ?>">
-
-                    <!-- Timeline marker with user photo -->
-                    <div class="timeline-marker" aria-hidden="true">
-                        <?= $this->userAvatar($comment, 'initials') ?>
-                    </div>
-
-                    <!-- Comment content card -->
-                    <div class="timeline-content">
-
-                        <!-- Header: date + author -->
-                        <header class="timeline-comment-header" id="comment-header-<?php echo $id; ?>">
-                            <time class="comment-date" datetime="<?php echo date('c', strtotime($comment['WHEN'])); ?>">
-                                <?php echo $this->Date($comment['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?>
-                            </time>
-                            <i class="fa-solid fa-user" aria-hidden="true"></i>&nbsp;<?= $this->translate('De : ') ?>
-                            <span class="comment-author">
-
-                            <strong>
-                                <?php echo ($comment['UID'] == Episciences_Auth::getUid()) ? $this->translate('Vous') : $this->escape($comment['SCREEN_NAME']); ?>
-                            </strong>
-                            </span>
-                        </header>
-
-                        <!-- Comment message -->
-                        <div class="timeline-comment-message">
-                            <?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($comment['MESSAGE'])) ?>
-                        </div>
-
-                        <!-- Attached file (if present) -->
-                        <?php if ($comment['FILE']) : ?>
-                            <div class="timeline-comment-attachment">
-                                <div>
-                                    <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i> <a
-                                            href="/docfiles/comments/<?php echo $comment['DOCID'] . '/' . $comment['FILE'] ?>"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            aria-label="<?php echo $this->translate('Télécharger le fichier'); ?> <?php echo $this->escape($comment['FILE']); ?>">
-                                        <?php echo $this->escape($comment['FILE']); ?>
-                                    </a>
-                                </div>
-                                <div class="remove-file-btn">
-                                    <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]); ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-
-                    </div>
-
-                </article>
-
+            <?php foreach ($this->editor_comments as $comment) : ?>
+                <?= $this->partial('partials/timeline_item.phtml', ['comment' => $comment]) ?>
             <?php endforeach; ?>
         </div><!-- /.timeline-track -->
     </div>
