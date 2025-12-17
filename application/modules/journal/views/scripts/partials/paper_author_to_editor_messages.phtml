@@ -64,51 +64,162 @@ if ($canAuthorContactEditors && $canViewPanel) :
 
             <?php // Display previous comments ?>
             <?php if ($this->authorToEditorComments) : ?>
+                <?php // Add collapsible message JavaScript ?>
+                <?php $this->jQuery()->addJavascriptFile('/js/components/collapsible-message.js'); ?>
+
                 <hr/>
                 <h4><?php echo $this->translate("Messages précédents"); ?></h4>
-                <div style="max-height: 400px; margin-top: 20px; overflow: auto;">
-                    <?php
-                    // Comments are already organized by sortComments():
-                    // - Top level = author messages (TYPE_AUTHOR_TO_EDITOR)
-                    // - $comment['replies'] = editor responses (TYPE_EDITOR_TO_AUTHOR_RESPONSE)
 
-                    foreach ($this->authorToEditorComments as $parentId => $parentComment) :
-                        // Only display author-to-editor messages (type 22)
-                        if ($parentComment['TYPE'] != Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
-                            continue;
-                        }
-                        ?>
-                        <div style="padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px;">
-                            <?php // Display the author's message ?>
-                            <?php echo $this->partial('partials/paper_author_editor_comments.phtml', [
-                                'comments' => [$parentId => $parentComment],
-                                'paper' => $this->paper,
-                                'discloseEditorNames' => $discloseEditorNames
-                            ]); ?>
+                <?php
+                // Comments are already organized by sortComments():
+                // - Top level = author messages (TYPE_AUTHOR_TO_EDITOR)
+                // - $comment['replies'] = editor responses (TYPE_EDITOR_TO_AUTHOR_RESPONSE)
+                ?>
 
-                            <?php // Display editor responses if any ?>
-                            <?php if (!empty($parentComment['replies'])) : ?>
-                                <div style="margin-left: 20px; margin-top: 10px; padding-left: 10px; border-left: 3px solid #5bc0de;">
-                                    <?php foreach ($parentComment['replies'] as $replyId => $reply) : ?>
-                                        <?php echo $this->partial('partials/paper_author_editor_comments.phtml', [
-                                            'comments' => [$replyId => $reply],
-                                            'paper' => $this->paper,
-                                            'discloseEditorNames' => $discloseEditorNames
-                                        ]); ?>
-                                    <?php endforeach; ?>
+                <div class="author-editor-timeline demands-timeline" role="feed"
+                     aria-label="<?php echo $this->translate('Communication auteur-éditeur'); ?>">
+                    <div class="timeline-track demands-timeline-track">
+                        <?php foreach ($this->authorToEditorComments as $parentId => $parentComment) :
+                            // Only display author-to-editor messages (type 22)
+                            if ($parentComment['TYPE'] != Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+                                continue;
+                            }
+
+                            $isCurrentUser = ($parentComment['UID'] == Episciences_Auth::getUid());
+                            $displayName = $isCurrentUser ? $this->translate('Vous') : $this->translate('L\'auteur');
+                            ?>
+
+                            <!-- Author message (main item) -->
+                            <article class="timeline-item timeline-item--demand"
+                                     aria-labelledby="message-header-<?php echo $parentId; ?>">
+
+                                <!-- Timeline marker with user avatar -->
+                                <div class="timeline-marker" aria-hidden="true">
+                                    <?= $this->userAvatar($parentComment, 'initials') ?>
+                                </div>
+
+                                <!-- Message content card -->
+                                <div class="timeline-content">
+
+                                    <!-- Header: date + author -->
+                                    <header class="timeline-item-header" id="message-header-<?php echo $parentId; ?>">
+                                        <time class="message-date" datetime="<?php echo date('c', strtotime($parentComment['WHEN'])); ?>">
+                                            <?php echo $this->Date($parentComment['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?>
+                                        </time>
+                                        <span class="message-author <?php echo $isCurrentUser ? 'is-you' : ''; ?>">
+                                            <i class="fa-solid fa-user" aria-hidden="true"></i>&nbsp;<?= $this->translate('De : ') ?>
+                                            <strong><?php echo $displayName; ?></strong>
+                                        </span>
+                                    </header>
+
+                                    <!-- Message content (collapsible will apply automatically) -->
+                                    <div class="timeline-item-message">
+                                        <?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($parentComment['MESSAGE'])) ?>
+                                    </div>
+
+                                    <!-- Attached file (if present) -->
+                                    <?php if (!empty($parentComment['FILE'])) : ?>
+                                        <div class="timeline-item-files">
+                                            <div class="file-item">
+                                                <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i>
+                                                <a href="/docfiles/comments/<?php echo $parentComment['DOCID'] . '/' . $parentComment['FILE'] ?>"
+                                                   target="_blank"
+                                                   rel="noopener noreferrer"
+                                                   aria-label="<?= $this->translate('Télécharger le fichier') ?> <?php echo $this->escape($parentComment['FILE']); ?>">
+                                                    <?php echo $this->escape($parentComment['FILE']); ?>
+                                                </a>
+                                                <div class="remove-file-btn">
+                                                    <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $parentComment]); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+
+                                </div>
+
+                            </article>
+
+                            <?php // Display editor responses or reply form in a thread ?>
+                            <?php if (!empty($parentComment['replies']) || ($isEditor && isset($this->editorReplyForms[$parentId]) && empty($parentComment['replies']))) : ?>
+                                <div class="timeline-thread">
+
+                                    <?php // Display editor responses if any ?>
+                                    <?php if (!empty($parentComment['replies'])) : ?>
+                                        <?php foreach ($parentComment['replies'] as $replyId => $reply) :
+                                            $isCurrentUserReply = ($reply['UID'] == Episciences_Auth::getUid());
+
+                                            // Determine editor display name
+                                            if ($isCurrentUserReply) {
+                                                $editorDisplayName = $this->translate('Vous');
+                                            } elseif ($discloseEditorNames && !empty($reply['SCREEN_NAME'])) {
+                                                $editorDisplayName = $this->translate('Rédacteur') . ' : ' . $this->escape($reply['SCREEN_NAME']);
+                                            } else {
+                                                $editorDisplayName = $this->translate('Rédacteur');
+                                            }
+                                            ?>
+
+                                            <!-- Editor reply -->
+                                            <article class="timeline-item timeline-item--reply"
+                                                     aria-labelledby="reply-header-<?php echo $replyId; ?>">
+
+                                                <div class="timeline-marker" aria-hidden="true">
+                                                    <?= $this->userAvatar($reply, 'initials') ?>
+                                                </div>
+
+                                                <div class="timeline-content">
+
+                                                    <header class="timeline-item-header" id="reply-header-<?php echo $replyId; ?>">
+                                                        <time class="message-date" datetime="<?php echo date('c', strtotime($reply['WHEN'])); ?>">
+                                                            <?php echo $this->Date($reply['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?>
+                                                        </time>
+                                                        <span class="message-author is-editor <?php echo $isCurrentUserReply ? 'is-you' : ''; ?>">
+                                                            <i class="fa-solid fa-user" aria-hidden="true"></i>&nbsp;<?= $this->translate('De : ') ?>
+                                                            <strong><?php echo $editorDisplayName; ?></strong>
+                                                        </span>
+                                                    </header>
+
+                                                    <div class="timeline-item-message">
+                                                        <?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($reply['MESSAGE'])) ?>
+                                                    </div>
+
+                                                    <?php if (!empty($reply['FILE'])) : ?>
+                                                        <div class="timeline-item-files">
+                                                            <div class="file-item">
+                                                                <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i>
+                                                                <a href="/docfiles/comments/<?php echo $reply['DOCID'] . '/' . $reply['FILE'] ?>"
+                                                                   target="_blank"
+                                                                   rel="noopener noreferrer"
+                                                                   aria-label="<?= $this->translate('Télécharger le fichier') ?> <?php echo $this->escape($reply['FILE']); ?>">
+                                                                    <?php echo $this->escape($reply['FILE']); ?>
+                                                                </a>
+                                                                <div class="remove-file-btn">
+                                                                    <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply]); ?>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    <?php endif; ?>
+
+                                                </div>
+
+                                            </article>
+
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+
+                                    <?php // Display reply form for editors if no response yet ?>
+                                    <?php if ($isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$parentId]) && empty($parentComment['replies'])) : ?>
+                                        <div class="reply-form-container">
+                                            <h5><?php echo $this->translate("Répondre"); ?></h5>
+                                            <?php echo $this->editorReplyForms[$parentId]; ?>
+                                        </div>
+                                    <?php endif; ?>
+
                                 </div>
                             <?php endif; ?>
 
-                            <?php // Display reply form for editors if no response yet ?>
-                            <?php if ($isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$parentId]) && empty($parentComment['replies'])) : ?>
-                                <div style="margin-left: 20px; margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 4px;">
-                                    <h5><?php echo $this->translate("Répondre"); ?> :</h5>
-                                    <?php echo $this->editorReplyForms[$parentId]; ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
+                        <?php endforeach; ?>
+                    </div><!-- /.timeline-track -->
+                </div><!-- /.author-editor-timeline -->
             <?php endif; ?>
 
         </div>
