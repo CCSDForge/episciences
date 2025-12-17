@@ -1,0 +1,59 @@
+<?php
+$comment = $this->comment;
+$id = $comment['PCID'] ?? null;
+if (!$id) {
+    return;
+}
+?>
+
+<article class="timeline-item"
+         aria-labelledby="comment-header-<?= $id ?>">
+
+    <!-- Timeline marker with user photo -->
+    <div class="timeline-marker" aria-hidden="true">
+        <?= $this->userAvatar($comment, 'initials') ?>
+    </div>
+
+    <!-- Comment content card -->
+    <div class="timeline-content">
+
+        <!-- Header: date + author -->
+        <header class="timeline-comment-header" id="comment-header-<?= $id ?>">
+            <time class="comment-date" datetime="<?= date('c', strtotime($comment['WHEN'])) ?>">
+                <?= $this->Date($comment['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?>
+            </time>
+            <i class="fa-solid fa-user" aria-hidden="true"></i>&nbsp;<?= $this->translate('De : ') ?>
+            <span class="comment-author">
+
+                            <strong>
+                                <?= ((int)$comment['UID'] === Episciences_Auth::getUid()) ? $this->translate('Vous') : $this->escape($comment['SCREEN_NAME']) ?>
+                            </strong>
+                            </span>
+        </header>
+
+        <!-- Comment message -->
+        <div class="timeline-comment-message">
+            <?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($comment['MESSAGE'])) ?>
+        </div>
+
+        <!-- Attached file (if present) -->
+        <?php if ($comment['FILE']) : ?>
+            <div class="timeline-comment-attachment">
+                <div>
+                    <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i> <a
+                            href="/docfiles/comments/<?= $comment['DOCID'] . '/' . $comment['FILE'] ?>"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="<?= $this->translate('Télécharger le fichier'); ?> <?= $this->escape($comment['FILE']) ?>">
+                        <?= $this->escape($comment['FILE']) ?>
+                    </a>
+                </div>
+                <div class="remove-file-btn">
+                    <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]) ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+    </div>
+
+</article>

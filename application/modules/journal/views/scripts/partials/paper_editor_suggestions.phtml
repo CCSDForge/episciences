@@ -1,0 +1,38 @@
+<?php if ($this->suggestions) : ?>
+    <h4 class="suggestion-header"><?= $this->translate('Suggestions') ?></h4>
+    <div class="timeline-track">
+        <?php
+        $currentUserId = Episciences_Auth::getUid();
+
+        $typeToTitle = [
+                Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION => "suggère d'accepter l'article",
+                Episciences_CommentsManager::TYPE_SUGGESTION_REFUS => "suggère de refuser l'article",
+                Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION => "suggère de demander des modifications à l'article",
+        ];
+
+        $typeToFlagProperty = [
+                Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION => 'suggestedAccept',
+                Episciences_CommentsManager::TYPE_SUGGESTION_REFUS => 'suggestedRefuse',
+                Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION => 'suggestedRevision',
+        ];
+        ?>
+
+        <?php foreach ($this->suggestions as $suggestion) : ?>
+            <?php
+            $suggestionUserId = (int)$suggestion['UID'];
+            $suggestionType = (int)$suggestion['TYPE'];
+
+            if ($suggestionUserId === $currentUserId) {
+                $flagProperty = $typeToFlagProperty[$suggestionType] ?? null;
+                if ($flagProperty !== null) {
+                    $this->$flagProperty = true;
+                }
+            }
+            $title = $this->translate($typeToTitle[$suggestionType] ?? "suggestion");
+            ?>
+
+            <span class="help-block"><?= ucfirst($title) ?></span>
+            <?= $this->partial('partials/timeline_item.phtml', ['comment' => $suggestion]) ?>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
