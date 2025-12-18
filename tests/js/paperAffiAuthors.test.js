@@ -81,6 +81,9 @@ describe('PaperAffiAuthorsManager', () => {
         // Mock console methods
         jest.spyOn(console, 'error').mockImplementation(() => {});
         jest.spyOn(console, 'log').mockImplementation(() => {});
+
+        // Mock JS_PREFIX_URL
+        global.JS_PREFIX_URL = '/';
     });
 
     afterEach(() => {
