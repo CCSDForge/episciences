@@ -18,6 +18,9 @@ describe('es.contacts-list', function () {
         );
         global.getLoader = mockGetLoader;
 
+        // Mock sanitizeHTML function (for XSS prevention)
+        global.sanitizeHTML = jest.fn(html => html);
+
         // Create mock DOM structure
         document.body.innerHTML = `
             <form id="test-form">
@@ -52,6 +55,7 @@ describe('es.contacts-list', function () {
         jest.clearAllMocks();
         delete global.getLoader;
         delete global.fetch;
+        delete global.sanitizeHTML;
     });
 
     describe('Label click event', function () {

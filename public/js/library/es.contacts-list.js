@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             form.style.display = 'none';
             contactsContainer.style.display = 'block';
-            contactsContainer.innerHTML = getLoader();
+            contactsContainer.innerHTML = getLoader(); // OK: getLoader() returns static HTML
 
             try {
                 const response = await fetch(
@@ -33,11 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const content = await response.text();
-                contactsContainer.innerHTML = content;
+                // SECURITY FIX: Sanitize HTML from server before injection to prevent XSS
+                contactsContainer.innerHTML = sanitizeHTML(content);
             } catch (error) {
                 console.error('Error loading contacts:', error);
                 contactsContainer.innerHTML =
-                    '<p class="text-danger">Erreur lors du chargement des contacts</p>';
+                    '<p class="text-danger">Error loading contacts</p>';
             }
         });
     });
