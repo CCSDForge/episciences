@@ -86,7 +86,14 @@ if ($canAuthorContactEditors && $canViewPanel) :
                             }
 
                             $isCurrentUser = ($parentComment['UID'] == Episciences_Auth::getUid());
-                            $displayName = $isCurrentUser ? $this->translate('Vous') : $this->translate('L\'auteur');
+                            // Display actual author name instead of generic "L'auteur"
+                            if ($isCurrentUser) {
+                                $displayName = $this->translate('Vous');
+                            } elseif (!empty($parentComment['SCREEN_NAME'])) {
+                                $displayName = $this->escape($parentComment['SCREEN_NAME']);
+                            } else {
+                                $displayName = $this->translate('L\'auteur');
+                            }
                             ?>
 
                             <!-- Author message (main item) -->

@@ -1,0 +1,236 @@
+/**
+ * Author-Editor Communication Timeline Styles
+ * Extends demands timeline with specific styling for author/editor messages
+ */
+
+.author-editor-timeline {
+  // Customize max-height for better visibility
+  max-height: 600px;
+
+  // Remove line above first timeline item
+  .timeline-track::before {
+    top: 24px; // Start line at center of first marker (8px top + 16px half of 32px marker)
+  }
+
+  // Align timeline marker with first line of text
+  .timeline-marker {
+    top: 8px;
+
+    .user-photo-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      object-fit: cover;
+    }
+  }
+
+  // Increase content width to prevent name truncation
+  .timeline-content {
+    max-width: 95%;
+  }
+
+  // For reply items, use full width
+  .timeline-item--reply .timeline-content {
+    max-width: 100%;
+  }
+
+  // Timeline item modifiers
+  .timeline-item--demand {
+    // Main messages use base styles
+  }
+
+  .timeline-item--reply {
+    // Replies are indented and have subtle visual distinction
+    margin-left: 40px; // Increased indent from parent (matches timeline-thread padding)
+
+    .timeline-content {
+      border-color: $lighter-grey;
+      max-width: calc(87% - 40px); // Reduce width to account for indent
+    }
+
+    // Smaller marker for replies
+    .timeline-marker {
+      left: -122px; // Adjusted for replies: 20px - 60px padding - 70px indent - 12px half-width
+      width: 24px;
+      height: 24px;
+
+      .user-photo-thumb {
+        width: 20px; // Smaller to fit within the 24px marker
+        height: 20px;
+      }
+    }
+  }
+
+  // Timeline thread (wrapper for nested replies)
+  .timeline-thread {
+    position: relative;
+    margin-top: 15px;
+    margin-bottom: 20px;
+    padding-left: 40px; // Increased indent for replies (more space between vertical lines)
+
+    // Connection line from parent to replies
+    &::before {
+      content: '';
+      position: absolute;
+      left: -40px; // Align with main timeline (20px - 60px padding)
+      top: -15px;
+      width: 2px;
+      height: calc(100% + 15px);
+      background-color: $lighter-grey; // Same color as main timeline
+      z-index: 0;
+    }
+
+    // Horizontal connector to first reply
+    &::after {
+      content: '';
+      position: absolute;
+      left: -40px; // Start from main timeline
+      top: 15px; // Vertical position of first reply marker
+      width: 20px;
+      height: 2px;
+      background-color: $lighter-grey; // Same color as main timeline
+      z-index: 0;
+    }
+  }
+
+  // Header styling (similar to demands timeline)
+  .timeline-item-header {
+    margin-bottom: 10px;
+    font-size: 12px;
+
+    .message-date {
+      font-weight: bold;
+      color: $dark-grey;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .message-author {
+      color: $dark-grey;
+      display: block;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+  }
+
+  // Message content
+  .timeline-item-message {
+    font-size: 12px;
+    color: $darker-grey;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    word-wrap: break-word;
+  }
+
+  // File attachments
+  .timeline-item-files {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid $lighter-grey;
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 11px;
+
+      a {
+        flex: 1;
+        color: $blue;
+        text-decoration: none;
+        word-break: break-all;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+
+      .remove-file-btn {
+        margin-left: 10px;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  // Custom styling for reply form
+  .reply-form-container {
+    margin-left: 40px;
+    margin-top: 16px;
+    padding: 16px;
+    background: $almost-white;
+    border-radius: 8px;
+    border: 1px dashed $lighter-grey;
+
+    h5 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: $dark-grey;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .btn {
+      margin-right: 8px;
+    }
+  }
+
+  // Style for "is-you" messages
+  .message-author.is-you {
+    color: #5bc0de;
+    font-weight: 600;
+  }
+
+  // Style for editor messages
+  .message-author.is-editor {
+    color: #5cb85c;
+  }
+
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    .timeline-item--reply {
+      margin-left: 20px; // Reduce indent on mobile
+
+      .timeline-content {
+        max-width: calc(100% - 70px);
+      }
+
+      .timeline-marker {
+        left: -62px; // Adjusted for mobile replies
+      }
+    }
+
+    .timeline-thread {
+      padding-left: 20px;
+
+      &::before {
+        left: -30px; // Align with main timeline on mobile
+      }
+
+      &::after {
+        left: -30px; // Start from main timeline on mobile
+        width: 10px;
+      }
+    }
+
+    .reply-form-container {
+      margin-left: 20px;
+    }
+  }
+
+  // Print styles
+  @media print {
+    .reply-form-container {
+      display: none;
+    }
+  }
+}
