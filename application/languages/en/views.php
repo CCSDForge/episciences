@@ -717,7 +717,9 @@ return array(
     "pour identifier un utilisateur." => "to identify a user.",
     'Inviter ce relecteur' => 'Invite this reviewer',
     'prenom.nom@example.org' => 'firstname.name@example.org',
-    "Attention, la grille d'évaluation n'est pas encore disponible. Une grille de relecture peut être élaborée <a href='/grid/list'> ici </a> pour guider les relecteurs grâce à une série de points prédéfinis à examiner." => "Before any reviewing can be performed, a review grid has to be defined <a href='/grid/list'> here </a>. It includes a variety of pre-set points to guide your reviewers.",
+    'Créer un grille' => 'Create an evaluation grid',
+    "Attention, la grille d'évaluation n'est pas encore disponible." => 'Warning, the evaluation grid is not yet available.',
+    'Une grille de relecture doit être élaborée pour guider les relecteurs grâce à une série de points prédéfinis à examiner.' => 'The evaluation grid should be developed to guide reviewers through a series of predefined points to be examined.',
     'Date limite antérieure' => 'Previous deadline',
     'Date limite actuelle' => 'Current deadline',
 
