@@ -18,7 +18,7 @@ global.document = dom.window.document;
 global.window = dom.window;
 
 // Mock translate function
-global.translate = jest.fn((key) => {
+global.translate = jest.fn(key => {
     const translations = {
         'Voir plus': 'Show more',
         'Voir moins': 'Show less',
@@ -27,7 +27,7 @@ global.translate = jest.fn((key) => {
 });
 
 // Mock requestAnimationFrame and timers
-global.requestAnimationFrame = jest.fn((cb) => setTimeout(cb, 0));
+global.requestAnimationFrame = jest.fn(cb => setTimeout(cb, 0));
 
 describe('Collapsible Message Component', function () {
     let collapsibleMessageJs;
@@ -35,7 +35,10 @@ describe('Collapsible Message Component', function () {
     beforeAll(function () {
         // Load the collapsible-message.js file
         collapsibleMessageJs = fs.readFileSync(
-            path.join(__dirname, '../../public/js/components/collapsible-message.js'),
+            path.join(
+                __dirname,
+                '../../public/js/components/collapsible-message.js'
+            ),
             'utf8'
         );
     });
@@ -73,7 +76,9 @@ describe('Collapsible Message Component', function () {
 
             // Should not have collapsible structure
             expect(message.querySelector('.collapsible-toggle')).toBeNull();
-            expect(message.hasAttribute('data-collapsible-initialized')).toBe(false);
+            expect(message.hasAttribute('data-collapsible-initialized')).toBe(
+                false
+            );
         });
 
         it('should initialize long messages with collapsible structure', function () {
@@ -95,9 +100,13 @@ describe('Collapsible Message Component', function () {
             document.dispatchEvent(event);
 
             // Should have collapsible structure
-            expect(message.querySelector('.collapsible-content')).not.toBeNull();
+            expect(
+                message.querySelector('.collapsible-content')
+            ).not.toBeNull();
             expect(message.querySelector('.collapsible-toggle')).not.toBeNull();
-            expect(message.hasAttribute('data-collapsible-initialized')).toBe(true);
+            expect(message.hasAttribute('data-collapsible-initialized')).toBe(
+                true
+            );
         });
 
         it('should initialize timeline-comment-message elements', function () {
@@ -172,7 +181,9 @@ describe('Collapsible Message Component', function () {
         it('should preserve original content', function () {
             const content = document.querySelector('.collapsible-content');
 
-            expect(content.innerHTML).toContain('Original content that is very long');
+            expect(content.innerHTML).toContain(
+                'Original content that is very long'
+            );
         });
 
         it('should create toggle button with correct attributes', function () {
@@ -190,8 +201,10 @@ describe('Collapsible Message Component', function () {
                 <div class="timeline-item-message msg2">Content 2</div>
             `;
 
-            const messages = document.querySelectorAll('.timeline-item-message');
-            messages.forEach((msg) => {
+            const messages = document.querySelectorAll(
+                '.timeline-item-message'
+            );
+            messages.forEach(msg => {
                 Object.defineProperty(msg, 'scrollHeight', {
                     value: 300,
                     writable: true,
@@ -203,8 +216,12 @@ describe('Collapsible Message Component', function () {
             const event = new Event('DOMContentLoaded');
             document.dispatchEvent(event);
 
-            const content1 = document.querySelector('.msg1 .collapsible-content');
-            const content2 = document.querySelector('.msg2 .collapsible-content');
+            const content1 = document.querySelector(
+                '.msg1 .collapsible-content'
+            );
+            const content2 = document.querySelector(
+                '.msg2 .collapsible-content'
+            );
 
             expect(content1.id).not.toBe(content2.id);
             expect(content1.id).toMatch(/^message-/);
@@ -213,7 +230,9 @@ describe('Collapsible Message Component', function () {
 
         it('should have both collapsed and expanded text in button', function () {
             const button = document.querySelector('.collapsible-toggle');
-            const collapsedText = button.querySelector('.toggle-text-collapsed');
+            const collapsedText = button.querySelector(
+                '.toggle-text-collapsed'
+            );
             const expandedText = button.querySelector('.toggle-text-expanded');
 
             expect(collapsedText).not.toBeNull();
@@ -270,7 +289,9 @@ describe('Collapsible Message Component', function () {
 
         it('should show/hide correct toggle text when expanding', function () {
             const button = document.querySelector('.collapsible-toggle');
-            const collapsedText = button.querySelector('.toggle-text-collapsed');
+            const collapsedText = button.querySelector(
+                '.toggle-text-collapsed'
+            );
             const expandedText = button.querySelector('.toggle-text-expanded');
 
             // Initially collapsed text should be visible
@@ -319,7 +340,9 @@ describe('Collapsible Message Component', function () {
 
         it('should show/hide correct toggle text when collapsing', function () {
             const button = document.querySelector('.collapsible-toggle');
-            const collapsedText = button.querySelector('.toggle-text-collapsed');
+            const collapsedText = button.querySelector(
+                '.toggle-text-collapsed'
+            );
             const expandedText = button.querySelector('.toggle-text-expanded');
 
             // First expand
@@ -414,7 +437,7 @@ describe('Collapsible Message Component', function () {
             const button = document.querySelector('.collapsible-toggle');
             const icons = button.querySelectorAll('i');
 
-            icons.forEach((icon) => {
+            icons.forEach(icon => {
                 expect(icon.getAttribute('aria-hidden')).toBe('true');
             });
         });
@@ -461,7 +484,9 @@ describe('Collapsible Message Component', function () {
             const contentEvent = new Event('contentLoaded');
             document.dispatchEvent(contentEvent);
 
-            expect(newMessage.querySelector('.collapsible-toggle')).not.toBeNull();
+            expect(
+                newMessage.querySelector('.collapsible-toggle')
+            ).not.toBeNull();
         });
     });
 
@@ -548,9 +573,18 @@ describe('Collapsible Message Component', function () {
             const msg2 = document.getElementById('msg2');
             const msg3 = document.getElementById('msg3');
 
-            Object.defineProperty(msg1, 'scrollHeight', { value: 100, writable: true });
-            Object.defineProperty(msg2, 'scrollHeight', { value: 300, writable: true });
-            Object.defineProperty(msg3, 'scrollHeight', { value: 150, writable: true });
+            Object.defineProperty(msg1, 'scrollHeight', {
+                value: 100,
+                writable: true,
+            });
+            Object.defineProperty(msg2, 'scrollHeight', {
+                value: 300,
+                writable: true,
+            });
+            Object.defineProperty(msg3, 'scrollHeight', {
+                value: 150,
+                writable: true,
+            });
 
             eval(collapsibleMessageJs);
 

@@ -56,14 +56,27 @@ describe('PaperAffiAuthorsManager', () => {
         // Create fresh manager instance
         manager = new PaperAffiAuthorsManager();
 
-        // Mock global variables used by the application
-        global.JS_PREFIX_URL = '/';
-
         // Mock fetch
         global.fetch = jest.fn();
 
         // Mock window.versionCache
         window.versionCache = '1.0.0';
+
+        // Mock sanitizeHTML function (for XSS prevention)
+        global.sanitizeHTML = jest.fn(html => html);
+
+        // Mock jQuery for tooltip initialization
+        global.$ = jest.fn(selector => ({
+            find: jest.fn(() => ({
+                tooltip: jest.fn(),
+            })),
+            fn: {
+                tooltip: jest.fn(),
+            },
+        }));
+        global.$.fn = {
+            tooltip: jest.fn(),
+        };
 
         // Mock console methods
         jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -75,6 +88,8 @@ describe('PaperAffiAuthorsManager', () => {
         delete window.versionCache;
         delete window.initializeAffiliationsAutocomplete;
         delete global.JS_PREFIX_URL;
+        delete global.sanitizeHTML;
+        delete global.$;
     });
 
     describe('Constructor', () => {

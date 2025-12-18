@@ -21,6 +21,9 @@ describe('es.contacts-list', function () {
         // Define JS_PREFIX_URL used in the source file
         global.JS_PREFIX_URL = '/';
 
+        // Mock sanitizeHTML function (for XSS prevention)
+        global.sanitizeHTML = jest.fn(html => html);
+
         // Create mock DOM structure
         document.body.innerHTML = `
             <form id="test-form">
@@ -56,6 +59,7 @@ describe('es.contacts-list', function () {
         delete global.getLoader;
         delete global.fetch;
         delete global.JS_PREFIX_URL;
+        delete global.sanitizeHTML;
     });
 
     describe('Label click event', function () {
@@ -137,7 +141,7 @@ describe('es.contacts-list', function () {
                 expect.any(Error)
             );
             expect(container.innerHTML).toContain('text-danger');
-            expect(container.innerHTML).toContain('Erreur');
+            expect(container.innerHTML).toContain('Error loading contacts');
 
             consoleErrorSpy.mockRestore();
         });
