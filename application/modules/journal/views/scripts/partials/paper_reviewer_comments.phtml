@@ -5,7 +5,7 @@ foreach ($this->comments as $id => $comment) : ?>
             : </strong><?php
         echo '(';
         if ($comment['TYPE'] == Episciences_CommentsManager::TYPE_INFO_REQUEST ||
-            $comment['TYPE'] == Episciences_CommentsManager::TYPE_INFO_ANSWER
+                $comment['TYPE'] == Episciences_CommentsManager::TYPE_INFO_ANSWER
         ) {
             echo $this->translate('relecteur') . ' ' . $comment['ALIAS'];
         } else {
@@ -13,7 +13,7 @@ foreach ($this->comments as $id => $comment) : ?>
         }
         if ($comment['UID'] == Episciences_Auth::getUid()) {
             echo ' : ' . $this->translate('vous');
-        } elseif ( Episciences_Auth::isSecretary() || Episciences_Auth::isEditor()) {
+        } elseif (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor()) {
             // Never show Screen Name for the paper's submitter
             if ($this->paperContributorUid != Episciences_Auth::getUid()) {
                 echo ' : ' . $this->escape($comment['SCREEN_NAME']);
@@ -41,16 +41,17 @@ foreach ($this->comments as $id => $comment) : ?>
             <button style="margin: 10px 0 0 20px" class='btn btn-default btn-sm replyButton pull-right'>
                 <span class="glyphicon glyphicon-edit "></span> <?php echo $this->translate('Répondre') ?>
             </button>
+
+            <?php if (!empty($this->replyForms[$id])) : ?>
+                <div id="replyForm_<?php echo $id ?>" class="replyForm"
+                     style="margin: 20px 20px 10px 20px; display: none"
+                     class="small">
+                    <?php echo $this->replyForms[$id]; ?>
+                </div>
+            <?php endif; ?>
         <?php endif; ?>
 
     </div>
-
-    <?php if (!empty($this->replyForms[$id])) : ?>
-        <div id="replyForm_<?php echo $id ?>" class="replyForm" style="margin: 20px 20px 10px 20px; display: none"
-             class="small">
-            <?php echo $this->replyForms[$id]; ?>
-        </div>
-    <?php endif; ?>
 
     <?php if (isset($comment['replies'])) : ?>
         <?php foreach ($comment['replies'] as $reply) : ?>
