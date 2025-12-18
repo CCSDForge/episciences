@@ -137,7 +137,7 @@ describe('es.contacts-list', function () {
                 expect.any(Error)
             );
             expect(container.innerHTML).toContain('text-danger');
-            expect(container.innerHTML).toContain('Erreur');
+            expect(container.innerHTML).toContain('Error loading contacts');
 
             consoleErrorSpy.mockRestore();
         });
