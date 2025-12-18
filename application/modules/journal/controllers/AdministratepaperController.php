@@ -58,20 +58,12 @@ class AdministratepaperController extends PaperDefaultController
 
             $volumes = $review->getVolumes();
             // load volumes settings
-            /** @var Episciences_Volume $volume */
-            foreach ($volumes as &$volume) {
-                $volume->loadSettings();
-            }
-            unset($volume);
+            Episciences_VolumesManager::loadSettingsForVolumes($volumes);
 
             $sections = $review->getSections();
 
             //load  sections settings
-            /** @var Episciences_Section $section */
-            foreach ($sections as &$section) {
-                $section->loadSettings();
-            }
-            unset($section);
+            Episciences_SectionsManager::loadSettingsForSections($sections);
 
             $post = $request->getParams();
             $draw = isset($post['draw']) ? (int)$post['draw'] : 1;
@@ -333,6 +325,8 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * Do not seem to be called
+     * Seems deprecated
      * @throws Zend_Exception
      */
     public function ajaxcontrolboardAction(): void
@@ -534,11 +528,7 @@ class AdministratepaperController extends PaperDefaultController
 
         // load all volumes
         $volumes = $review->getVolumes();
-        /** @var Episciences_Volume $volume */
-        foreach ($volumes as &$volume) {
-            $volume->loadSettings();
-        }
-        unset($volume);
+        Episciences_VolumesManager::loadSettingsForVolumes($volumes);
         $this->view->volumes = $volumes;
 
         // get paper/volumes relations (secondary volumes)f
@@ -547,11 +537,7 @@ class AdministratepaperController extends PaperDefaultController
         $sections = $review->getSections();
 
         // load sections settings
-        /** @var Episciences_Section $section */
-        foreach ($sections as &$section) {
-            $section->loadSettings();
-        }
-        unset($section);
+        Episciences_SectionsManager::loadSettingsForSections($sections);
         $this->view->sections = $sections;
 
 

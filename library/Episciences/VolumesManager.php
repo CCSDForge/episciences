@@ -41,6 +41,56 @@ class Episciences_VolumesManager
     }
 
     /**
+     * Charge les paramètres pour une liste de volumes en une seule requête
+     * @param Episciences_Volume[] $volumes
+     * @return void
+     */
+    public static function loadSettingsForVolumes(array $volumes): void
+    {
+        if (empty($volumes)) {
+            return;
+        }
+
+        $vids = [];
+        foreach ($volumes as $volume) {
+            if ($volume instanceof Episciences_Volume) {
+                $vids[] = $volume->getVid();
+            }
+        }
+
+        if (empty($vids)) {
+            return;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_VOLUME_SETTINGS, ['VID', 'SETTING', 'VALUE'])
+            ->where('VID IN (?)', $vids);
+
+        try {
+            $results = $db->fetchAll($select);
+
+            $settingsByVid = [];
+            foreach ($results as $row) {
+                $settingsByVid[$row['VID']][$row['SETTING']] = $row['VALUE'];
+            }
+
+            foreach ($volumes as $volume) {
+                if ($volume instanceof Episciences_Volume) {
+                    $vid = $volume->getVid();
+                    if (isset($settingsByVid[$vid])) {
+                        $volume->setSettings($settingsByVid[$vid]);
+                    } else {
+                        $volume->setSettings([]);
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            trigger_error("Error loading volume settings: " . $e->getMessage(), E_USER_WARNING);
+        }
+    }
+
+    /**
      * Renvoie le formulaire d'assignation de rédacteurs à un volume
      * @param null $currentEditors
      * @return bool|array ['form' => Ccsd_Form, 'unavailableEditors' => array]
