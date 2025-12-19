@@ -49,12 +49,7 @@ class Episciences_SectionsManager
             return;
         }
 
-        $sids = [];
-        foreach ($sections as $section) {
-            if ($section instanceof Episciences_Section) {
-                $sids[] = $section->getSid();
-            }
-        }
+        $sids = array_map(fn($section) => $section->getSid(), $sections);
 
         if (empty($sids)) {
             return;
@@ -74,13 +69,11 @@ class Episciences_SectionsManager
             }
 
             foreach ($sections as $section) {
-                if ($section instanceof Episciences_Section) {
-                    $sid = $section->getSid();
-                    if (isset($settingsBySid[$sid])) {
-                        $section->setSettings($settingsBySid[$sid]);
-                    } else {
-                        $section->setSettings([]);
-                    }
+                $sid = $section->getSid();
+                if (isset($settingsBySid[$sid])) {
+                    $section->setSettings($settingsBySid[$sid]);
+                } else {
+                    $section->setSettings([]);
                 }
             }
         } catch (Exception $e) {
