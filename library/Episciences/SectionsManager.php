@@ -38,6 +38,49 @@ class Episciences_SectionsManager
         return $sections;
     }
 
+    /**
+     * Charge les paramètres pour une liste de rubriques en une seule requête
+     * @param Episciences_Section[] $sections
+     * @return void
+     */
+    public static function loadSettingsForSections(array $sections): void
+    {
+        if (empty($sections)) {
+            return;
+        }
+
+        $sids = array_map(fn($section) => $section->getSid(), $sections);
+
+        if (empty($sids)) {
+            return;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_SECTION_SETTINGS, ['SID', 'SETTING', 'VALUE'])
+            ->where('SID IN (?)', $sids);
+
+        try {
+            $results = $db->fetchAll($select);
+
+            $settingsBySid = [];
+            foreach ($results as $row) {
+                $settingsBySid[$row['SID']][$row['SETTING']] = $row['VALUE'];
+            }
+
+            foreach ($sections as $section) {
+                $sid = $section->getSid();
+                if (isset($settingsBySid[$sid])) {
+                    $section->setSettings($settingsBySid[$sid]);
+                } else {
+                    $section->setSettings([]);
+                }
+            }
+        } catch (Exception $e) {
+            trigger_error("Error loading section settings: " . $e->getMessage(), E_USER_WARNING);
+        }
+    }
+
     public static function find($sid, int $rvid = 0): bool|Episciences_Section
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
