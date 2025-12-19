@@ -328,9 +328,13 @@ class AdministratepaperController extends PaperDefaultController
      * Do not seem to be called
      * Seems deprecated
      * @throws Zend_Exception
+     * @deprecated
      */
     public function ajaxcontrolboardAction(): void
     {
+        trigger_error('ajaxcontrolboardAction is deprecated.', E_USER_DEPRECATED);
+        return;
+        
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $params = $request->getParams();
@@ -5038,5 +5042,3 @@ class AdministratepaperController extends PaperDefaultController
         }
     }
 }
-
-
