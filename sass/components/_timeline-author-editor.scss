@@ -30,92 +30,78 @@
     max-width: 95%;
   }
 
-  // For reply items, use full width
-  .timeline-item--reply .timeline-content {
-    max-width: 100%;
-  }
-
-  // Timeline item modifiers
-  .timeline-item--demand {
-    // Main messages use base styles
-  }
-
-  .timeline-item--reply {
-    // Replies are indented and have subtle visual distinction
-    margin-left: 40px; // Increased indent from parent (matches timeline-thread padding)
-
-    .timeline-content {
-      border-color: $lighter-grey;
-      max-width: calc(87% - 40px); // Reduce width to account for indent
-    }
-
-    // Smaller marker for replies
-    .timeline-marker {
-      left: -122px; // Adjusted for replies: 20px - 60px padding - 70px indent - 12px half-width
-      width: 24px;
-      height: 24px;
-
-      .user-photo-thumb {
-        width: 20px; // Smaller to fit within the 24px marker
-        height: 20px;
-      }
-    }
-  }
-
   // Timeline thread (wrapper for nested replies)
   .timeline-thread {
     position: relative;
     margin-top: 15px;
     margin-bottom: 20px;
-    padding-left: 40px; // Increased indent for replies (more space between vertical lines)
+    padding-left: 10px; // Indent for replies
+    overflow: visible; // Allow marker to be visible outside thread bounds
 
     // Connection line from parent to replies
-    &::before {
+    // Only show when there are actual reply items
+    &:has(.timeline-item)::before {
       content: '';
       position: absolute;
       left: -40px; // Align with main timeline (20px - 60px padding)
-      top: -15px;
+      top: 20px; // Start at the center of first reply marker (8px top + 12px half of 24px marker) to hide behind marker
       width: 2px;
-      height: calc(100% + 15px);
+      height: calc(100% - 20px);
       background-color: $lighter-grey; // Same color as main timeline
       z-index: 0;
     }
 
-    // Horizontal connector to first reply
-    &::after {
-      content: '';
-      position: absolute;
-      left: -40px; // Start from main timeline
-      top: 15px; // Vertical position of first reply marker
-      width: 20px;
-      height: 2px;
-      background-color: $lighter-grey; // Same color as main timeline
-      z-index: 0;
+    // Make reply markers smaller (works with timeline_item.phtml)
+    .timeline-item {
+      margin-left: 30px; // More indent for replies to position marker to the right
+
+      .timeline-content {
+        border-color: $lighter-grey;
+        max-width: calc(87% - 30px); // Reduce width to account for indent
+      }
+
+      // Smaller marker for replies
+      .timeline-marker {
+        left: -72px; // Position marker to align with horizontal connector
+        width: 24px;
+        height: 24px;
+
+        .user-photo-thumb {
+          width: 20px; // Smaller to fit within the 24px marker
+          height: 20px;
+        }
+      }
     }
   }
 
   // Header styling (similar to demands timeline)
-  .timeline-item-header {
+  // Support both timeline-item-header and timeline-comment-header for reusability
+  .timeline-item-header,
+  .timeline-comment-header {
     margin-bottom: 10px;
     font-size: 12px;
 
-    .message-date {
+    .message-date,
+    .comment-date {
       font-weight: bold;
       color: $dark-grey;
       display: block;
       margin-bottom: 3px;
     }
 
-    .message-author {
+    .message-author,
+    .comment-author {
       color: $dark-grey;
-      display: block;
+      display: inline; // Changed from block to inline to keep on same line
       word-wrap: break-word;
       overflow-wrap: break-word;
     }
   }
 
   // Message content
-  .timeline-item-message {
+  // Support both timeline-item-message and timeline-comment-message for reusability
+  .timeline-item-message,
+  .timeline-comment-message {
     font-size: 12px;
     color: $darker-grey;
     line-height: 1.5;
@@ -124,12 +110,15 @@
   }
 
   // File attachments
-  .timeline-item-files {
+  // Support both timeline-item-files and timeline-comment-attachment for reusability
+  .timeline-item-files,
+  .timeline-comment-attachment {
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid $lighter-grey;
 
-    .file-item {
+    .file-item,
+    > div {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -154,9 +143,23 @@
     }
   }
 
+  // Author message wrapper (contains message + reply button)
+  .author-message-wrapper {
+    position: relative;
+  }
+
+  // Toggle reply button (positioned inside message)
+  .toggle-reply-form {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    z-index: 10;
+    margin: 0;
+  }
+
   // Custom styling for reply form
   .reply-form-container {
-    margin-left: 40px;
+    margin-left: 20px;
     margin-top: 16px;
     padding: 16px;
     background: $almost-white;
@@ -197,29 +200,31 @@
 
   // Responsive adjustments
   @media (max-width: 768px) {
-    .timeline-item--reply {
-      margin-left: 20px; // Reduce indent on mobile
-
-      .timeline-content {
-        max-width: calc(100% - 70px);
-      }
-
-      .timeline-marker {
-        left: -62px; // Adjusted for mobile replies
-      }
-    }
-
     .timeline-thread {
       padding-left: 20px;
 
-      &::before {
+      &:has(.timeline-item)::before {
         left: -30px; // Align with main timeline on mobile
       }
 
-      &::after {
-        left: -30px; // Start from main timeline on mobile
-        width: 10px;
+      .timeline-item {
+        margin-left: 20px; // Reduce indent on mobile
+
+        .timeline-content {
+          max-width: calc(100% - 70px);
+        }
+
+        .timeline-marker {
+          left: -62px; // Adjusted for mobile replies
+        }
       }
+    }
+
+    .toggle-reply-form {
+      bottom: 5px;
+      right: 5px;
+      font-size: 11px;
+      padding: 4px 8px;
     }
 
     .reply-form-container {

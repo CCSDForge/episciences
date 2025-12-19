@@ -66,15 +66,11 @@ if ($canAuthorContactEditors && $canViewPanel) :
             <?php if ($this->authorToEditorComments) : ?>
                 <?php // Add collapsible message JavaScript ?>
                 <?php $this->jQuery()->addJavascriptFile('/js/components/collapsible-message.js'); ?>
+                <?php // Add toggle reply form JavaScript ?>
+                <?php $this->jQuery()->addJavascriptFile('/js/components/toggle-reply-form.js'); ?>
 
                 <hr/>
                 <h4><?php echo $this->translate("Messages précédents"); ?></h4>
-
-                <?php
-                // Comments are already organized by sortComments():
-                // - Top level = author messages (TYPE_AUTHOR_TO_EDITOR)
-                // - $comment['replies'] = editor responses (TYPE_EDITOR_TO_AUTHOR_RESPONSE)
-                ?>
 
                 <div class="author-editor-timeline demands-timeline" role="feed"
                      aria-label="<?php echo $this->translate('Communication auteur-éditeur'); ?>">
@@ -84,67 +80,22 @@ if ($canAuthorContactEditors && $canViewPanel) :
                             if ($parentComment['TYPE'] != Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
                                 continue;
                             }
-
-                            $isCurrentUser = ($parentComment['UID'] == Episciences_Auth::getUid());
-                            // Display actual author name instead of generic "L'auteur"
-                            if ($isCurrentUser) {
-                                $displayName = $this->translate('Vous');
-                            } elseif (!empty($parentComment['SCREEN_NAME'])) {
-                                $displayName = $this->escape($parentComment['SCREEN_NAME']);
-                            } else {
-                                $displayName = $this->translate('L\'auteur');
-                            }
                             ?>
 
                             <!-- Author message (main item) -->
-                            <article class="timeline-item timeline-item--demand"
-                                     aria-labelledby="message-header-<?php echo $parentId; ?>">
+                            <div class="author-message-wrapper">
+                                <?= $this->partial('partials/timeline_item.phtml', ['comment' => $parentComment]) ?>
 
-                                <!-- Timeline marker with user avatar -->
-                                <div class="timeline-marker" aria-hidden="true">
-                                    <?= $this->userAvatar($parentComment, 'initials') ?>
-                                </div>
-
-                                <!-- Message content card -->
-                                <div class="timeline-content">
-
-                                    <!-- Header: date + author -->
-                                    <header class="timeline-item-header" id="message-header-<?php echo $parentId; ?>">
-                                        <time class="message-date" datetime="<?php echo date('c', strtotime($parentComment['WHEN'])); ?>">
-                                            <?php echo $this->Date($parentComment['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?>
-                                        </time>
-                                        <span class="message-author <?php echo $isCurrentUser ? 'is-you' : ''; ?>">
-                                            <i class="fa-solid fa-user" aria-hidden="true"></i>&nbsp;<?= $this->translate('De : ') ?>
-                                            <strong><?php echo $displayName; ?></strong>
-                                        </span>
-                                    </header>
-
-                                    <!-- Message content (collapsible will apply automatically) -->
-                                    <div class="timeline-item-message">
-                                        <?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($parentComment['MESSAGE'])) ?>
-                                    </div>
-
-                                    <!-- Attached file (if present) -->
-                                    <?php if (!empty($parentComment['FILE'])) : ?>
-                                        <div class="timeline-item-files">
-                                            <div class="file-item">
-                                                <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i>
-                                                <a href="/docfiles/comments/<?php echo $parentComment['DOCID'] . '/' . $parentComment['FILE'] ?>"
-                                                   target="_blank"
-                                                   rel="noopener noreferrer"
-                                                   aria-label="<?= $this->translate('Télécharger le fichier') ?> <?php echo $this->escape($parentComment['FILE']); ?>">
-                                                    <?php echo $this->escape($parentComment['FILE']); ?>
-                                                </a>
-                                                <div class="remove-file-btn">
-                                                    <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $parentComment]); ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-
-                                </div>
-
-                            </article>
+                                <?php // Display reply button for editors if no response yet ?>
+                                <?php if ($isEditor && isset($this->editorReplyForms[$parentId]) && empty($parentComment['replies'])) : ?>
+                                    <!-- Reply button (inside message area) -->
+                                    <button type="button"
+                                            class="btn btn-sm btn-primary toggle-reply-form"
+                                            data-reply-form-id="reply-form-<?php echo $parentId; ?>">
+                                        <i class="fa fa-reply"></i> <?php echo $this->translate("Répondre"); ?>
+                                    </button>
+                                <?php endif; ?>
+                            </div>
 
                             <?php // Display editor responses or reply form in a thread ?>
                             <?php if (!empty($parentComment['replies']) || ($isEditor && isset($this->editorReplyForms[$parentId]) && empty($parentComment['replies']))) : ?>
@@ -152,72 +103,23 @@ if ($canAuthorContactEditors && $canViewPanel) :
 
                                     <?php // Display editor responses if any ?>
                                     <?php if (!empty($parentComment['replies'])) : ?>
-                                        <?php foreach ($parentComment['replies'] as $replyId => $reply) :
-                                            $isCurrentUserReply = ($reply['UID'] == Episciences_Auth::getUid());
-
-                                            // Determine editor display name
-                                            if ($isCurrentUserReply) {
-                                                $editorDisplayName = $this->translate('Vous');
-                                            } elseif ($discloseEditorNames && !empty($reply['SCREEN_NAME'])) {
-                                                $editorDisplayName = $this->translate('Rédacteur') . ' : ' . $this->escape($reply['SCREEN_NAME']);
-                                            } else {
-                                                $editorDisplayName = $this->translate('Rédacteur');
-                                            }
-                                            ?>
-
+                                        <?php foreach ($parentComment['replies'] as $replyId => $reply) : ?>
                                             <!-- Editor reply -->
-                                            <article class="timeline-item timeline-item--reply"
-                                                     aria-labelledby="reply-header-<?php echo $replyId; ?>">
-
-                                                <div class="timeline-marker" aria-hidden="true">
-                                                    <?= $this->userAvatar($reply, 'initials') ?>
-                                                </div>
-
-                                                <div class="timeline-content">
-
-                                                    <header class="timeline-item-header" id="reply-header-<?php echo $replyId; ?>">
-                                                        <time class="message-date" datetime="<?php echo date('c', strtotime($reply['WHEN'])); ?>">
-                                                            <?php echo $this->Date($reply['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?>
-                                                        </time>
-                                                        <span class="message-author is-editor <?php echo $isCurrentUserReply ? 'is-you' : ''; ?>">
-                                                            <i class="fa-solid fa-user" aria-hidden="true"></i>&nbsp;<?= $this->translate('De : ') ?>
-                                                            <strong><?php echo $editorDisplayName; ?></strong>
-                                                        </span>
-                                                    </header>
-
-                                                    <div class="timeline-item-message">
-                                                        <?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($reply['MESSAGE'])) ?>
-                                                    </div>
-
-                                                    <?php if (!empty($reply['FILE'])) : ?>
-                                                        <div class="timeline-item-files">
-                                                            <div class="file-item">
-                                                                <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i>
-                                                                <a href="/docfiles/comments/<?php echo $reply['DOCID'] . '/' . $reply['FILE'] ?>"
-                                                                   target="_blank"
-                                                                   rel="noopener noreferrer"
-                                                                   aria-label="<?= $this->translate('Télécharger le fichier') ?> <?php echo $this->escape($reply['FILE']); ?>">
-                                                                    <?php echo $this->escape($reply['FILE']); ?>
-                                                                </a>
-                                                                <div class="remove-file-btn">
-                                                                    <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply]); ?>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    <?php endif; ?>
-
-                                                </div>
-
-                                            </article>
-
+                                            <?= $this->partial('partials/timeline_item.phtml', ['comment' => $reply]) ?>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
 
                                     <?php // Display reply form for editors if no response yet ?>
                                     <?php if ($isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$parentId]) && empty($parentComment['replies'])) : ?>
-                                        <div class="reply-form-container">
+                                        <!-- Reply form (hidden by default) -->
+                                        <div class="reply-form-container" id="reply-form-<?php echo $parentId; ?>" style="display: none;">
                                             <h5><?php echo $this->translate("Répondre"); ?></h5>
                                             <?php echo $this->editorReplyForms[$parentId]; ?>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-default cancel-reply-form"
+                                                    data-reply-form-id="reply-form-<?php echo $parentId; ?>">
+                                                <?php echo $this->translate("Annuler"); ?>
+                                            </button>
                                         </div>
                                     <?php endif; ?>
 
