@@ -7,6 +7,13 @@
 class Episciences_ReviewsManager
 {
     /**
+     * Intra-request cache for Review objects
+     * Stores both successful finds and false results to avoid redundant DB queries
+     * @var array<string, Episciences_Review|false>
+     */
+    private static array $_cache = [];
+
+    /**
      * @param array|null $settings
      * @param bool $toArray
      * @return Episciences_Review[]
@@ -82,28 +89,42 @@ class Episciences_ReviewsManager
      * @param int $id
      * @return bool|Episciences_Review
      */
-    public static function findByRvid(int $id)
+    public static function findByRvid(int $id): Episciences_Review|bool
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        $select = $db->select()->from(T_REVIEW)->where('RVID = ?', $id);
-
-        $data = $db->fetchRow($select);
-        if (empty($data)) {
-            $review = false;
-        } else {
-            $review = new Episciences_Review($data);
+        // Check cache first
+        $cacheKey = 'rvid_' . $id;
+        if (array_key_exists($cacheKey, self::$_cache)) {
+            return self::$_cache[$cacheKey];
         }
+
+        // Load from database
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()->from(T_REVIEW)->where('RVID = ?', $id);
+        $data = $db->fetchRow($select);
+
+        $review = empty($data) ? false : new Episciences_Review($data);
+
+        // Cache the result
+        self::$_cache[$cacheKey] = $review;
+
         return $review;
     }
 
     /**
      * Find a review by RVCODE (string)
      * @param string $rvcode
+     * @param bool $enabledOnly
      * @return bool|Episciences_Review
      */
-    public static function findByRvcode(string $rvcode, bool $enabledOnly = false)
+    public static function findByRvcode(string $rvcode, bool $enabledOnly = false): Episciences_Review|bool
     {
+        // Cache key includes the enabledOnly flag for proper segregation
+        $cacheKey = 'rvcode_' . $rvcode . ($enabledOnly ? '_enabled' : '');
+        if (array_key_exists($cacheKey, self::$_cache)) {
+            return self::$_cache[$cacheKey];
+        }
+
+        // Load from database
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->from(T_REVIEW)->where('CODE = ?', $rvcode);
 
@@ -112,11 +133,11 @@ class Episciences_ReviewsManager
         }
 
         $data = $db->fetchRow($select);
-        if (empty($data)) {
-            $review = false;
-        } else {
-            $review = new Episciences_Review($data);
-        }
+        $review = empty($data) ? false : new Episciences_Review($data);
+
+        // Cache the result
+        self::$_cache[$cacheKey] = $review;
+
         return $review;
     }
 
@@ -202,6 +223,16 @@ class Episciences_ReviewsManager
 
         return $journalCollection;
 
+    }
+
+    /**
+     * Clear the internal cache
+     * Useful for unit tests or when Review data is modified during request
+     * @return void
+     */
+    public static function clearCache(): void
+    {
+        self::$_cache = [];
     }
 
 }
