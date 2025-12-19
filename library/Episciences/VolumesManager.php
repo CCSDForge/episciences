@@ -51,12 +51,7 @@ class Episciences_VolumesManager
             return;
         }
 
-        $vids = [];
-        foreach ($volumes as $volume) {
-            if ($volume instanceof Episciences_Volume) {
-                $vids[] = $volume->getVid();
-            }
-        }
+        $vids = array_map(fn($volume) => $volume->getVid(), $volumes);
 
         if (empty($vids)) {
             return;
@@ -76,13 +71,11 @@ class Episciences_VolumesManager
             }
 
             foreach ($volumes as $volume) {
-                if ($volume instanceof Episciences_Volume) {
-                    $vid = $volume->getVid();
-                    if (isset($settingsByVid[$vid])) {
-                        $volume->setSettings($settingsByVid[$vid]);
-                    } else {
-                        $volume->setSettings([]);
-                    }
+                $vid = $volume->getVid();
+                if (isset($settingsByVid[$vid])) {
+                    $volume->setSettings($settingsByVid[$vid]);
+                } else {
+                    $volume->setSettings([]);
                 }
             }
         } catch (Exception $e) {
