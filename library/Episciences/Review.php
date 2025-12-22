@@ -1781,153 +1781,66 @@ class Episciences_Review
      */
     public function save(): bool
     {
-        $settingsValues = [];
+        $allSettings = [];
 
-        // Footer information
-        $settingsValues[self::SETTING_ISSN] = $this->getSetting(self::SETTING_ISSN);
-        $settingsValues[self::SETTING_ISSN_PRINT] = $this->getSetting(self::SETTING_ISSN_PRINT);
-        $settingsValues[self::SETTING_JOURNAL_DOI] = $this->getSetting(self::SETTING_JOURNAL_DOI);
-        $settingsValues[self::SETTING_CONTACT_JOURNAL] = $this->getSetting(self::SETTING_CONTACT_JOURNAL);
-        $settingsValues[self::SETTING_JOURNAL_NOTICE] = $this->getSetting(self::SETTING_JOURNAL_NOTICE);
-        $settingsValues[self::SETTING_CONTACT_JOURNAL_EMAIL] = $this->getSetting(self::SETTING_CONTACT_JOURNAL_EMAIL);
-        $settingsValues[self::SETTING_CONTACT_TECH_SUPPORT_EMAIL] = $this->getSetting(self::SETTING_CONTACT_TECH_SUPPORT_EMAIL);
+        $settings = [
+            self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI,
+            self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE,
+            self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL,
+            self::SETTING_REPOSITORIES, self::SETTING_CAN_CHOOSE_VOLUME,
+            self::SETTING_CAN_PICK_SECTION, self::SETTING_CAN_SUGGEST_REVIEWERS,
+            self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS, self::SETTING_CAN_PICK_EDITOR,
+            self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION, self::SETTING_CAN_ANSWER_WITH_TMP_VERSION,
+            self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES, self::SETTING_SHOW_RATINGS,
+            self::SETTING_REQUIRED_REVIEWERS, self::SETTING_ENCAPSULATE_EDITORS,
+            self::SETTING_EDITORS_CAN_ACCEPT_PAPERS, self::SETTING_EDITORS_CAN_PUBLISH_PAPERS,
+            self::SETTING_EDITORS_CAN_REJECT_PAPERS, self::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS,
+            self::SETTING_EDITORS_CAN_EDIT_TEMPLATES, self::SETTING_SPECIAL_ISSUE_ACCESS_CODE,
+            self::SETTING_ENCAPSULATE_REVIEWERS, self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES,
+            self::SETTING_ENCAPSULATE_COPY_EDITORS, self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
+            self::SETTING_SYSTEM_NOTIFICATIONS, self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
+            self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS, self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
+            self::SETTING_SYSTEM_IS_COI_ENABLED, self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED,
+            self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION, self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
+            self::SETTING_ARXIV_PAPER_PASSWORD, self::SETTING_DISPLAY_STATISTICS, self::SETTING_CONTACT_ERROR_MAIL,
+            self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
+            self::SETTING_TO_REQUIRE_REVISION_DEADLINE, self::SETTING_START_STATS_AFTER_DATE
+        ];
 
-        // Repositories
-        $settingsValues[self::SETTING_REPOSITORIES] = $this->getSetting(self::SETTING_REPOSITORIES);
 
-        // contributor can choose volume
-        $settingsValues[self::SETTING_CAN_CHOOSE_VOLUME] = $this->getSetting(self::SETTING_CAN_CHOOSE_VOLUME);
+        foreach ($settings as $setting) {
+            $allSettings[$setting] = $this->getSetting($setting);
+        }
 
-        //choix de sections
-        $settingsValues[self::SETTING_CAN_PICK_SECTION] = $this->getSetting(self::SETTING_CAN_PICK_SECTION);
+        // Deadlines with units
+        $deadlines = [
+            self::SETTING_RATING_DEADLINE => self::SETTING_RATING_DEADLINE_UNIT,
+            self::SETTING_RATING_DEADLINE_MIN => self::SETTING_RATING_DEADLINE_MIN_UNIT,
+            self::SETTING_RATING_DEADLINE_MAX => self::SETTING_RATING_DEADLINE_MAX_UNIT,
+            self::SETTING_INVITATION_DEADLINE => self::SETTING_INVITATION_DEADLINE_UNIT,
+        ];
 
-        // contributor can suggest reviewers
-        $settingsValues[self::SETTING_CAN_SUGGEST_REVIEWERS] = $this->getSetting(self::SETTING_CAN_SUGGEST_REVIEWERS);
+        foreach ($deadlines as $key => $unitKey) {
+            $allSettings[$key] = $this->getSetting($key) . ' ' . $this->getSetting($unitKey);
+        }
 
-        // contributor can specify unwanted reviewers
-        $settingsValues[self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS] = $this->getSetting(self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS);
+        // Publisher information
+        $allSettings[self::SETTING_JOURNAL_PUBLISHER] = trim(strip_tags((string)$this->getSetting(self::SETTING_JOURNAL_PUBLISHER)));
+        $allSettings[self::SETTING_JOURNAL_PUBLISHER_LOC] = trim(strip_tags((string)$this->getSetting(self::SETTING_JOURNAL_PUBLISHER_LOC)));
 
-        // contributor can pick editors
-        $settingsValues[self::SETTING_CAN_PICK_EDITOR] = $this->getSetting(self::SETTING_CAN_PICK_EDITOR);
-
-        // Do not allow the selection of an editor in chief when the author has the option to propose an editor at the time of submission
-        $settingsValues[self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION] = $this->getSetting(self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION);
-
-        // contributor can answer a revision request with a temporary version
-        $settingsValues[self::SETTING_CAN_ANSWER_WITH_TMP_VERSION] = $this->getSetting(self::SETTING_CAN_ANSWER_WITH_TMP_VERSION);
-
-        // rating deadline
-        $settingsValues[self::SETTING_RATING_DEADLINE] = $this->getSetting(self::SETTING_RATING_DEADLINE) . ' ' . $this->getSetting(self::SETTING_RATING_DEADLINE_UNIT);
-
-        // rating deadline minimum
-        $settingsValues[self::SETTING_RATING_DEADLINE_MIN] = $this->getSetting(self::SETTING_RATING_DEADLINE_MIN) . ' ' . $this->getSetting(self::SETTING_RATING_DEADLINE_MIN_UNIT);
-
-        // rating deadline maximum
-        $settingsValues[self::SETTING_RATING_DEADLINE_MAX] = $this->getSetting(self::SETTING_RATING_DEADLINE_MAX) . ' ' . $this->getSetting(self::SETTING_RATING_DEADLINE_MAX_UNIT);
-
-        // invitation deadline
-        $settingsValues[self::SETTING_INVITATION_DEADLINE] = $this->getSetting(self::SETTING_INVITATION_DEADLINE) . ' ' . $this->getSetting(self::SETTING_INVITATION_DEADLINE_UNIT);
-
-        // reviewer can comment paper (send a message to the contributor)
-        $settingsValues[self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES] = $this->getSetting(self::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES);
-
-        // display rating reports on paper public page
-        $settingsValues[self::SETTING_SHOW_RATINGS] = $this->getSetting(self::SETTING_SHOW_RATINGS);
-
-        // Nombre minimum de relectures pour pouvoir accepter un article
-        $settingsValues[self::SETTING_REQUIRED_REVIEWERS] = $this->getSetting(self::SETTING_REQUIRED_REVIEWERS);
-
-        // Encapsulation des rédacteurs
-        $settingsValues[self::SETTING_ENCAPSULATE_EDITORS] = $this->getSetting(self::SETTING_ENCAPSULATE_EDITORS);
-
-        // Permettre aux rédacteurs de changer le statut d'un article
-        //$settingsValues[self::SETTING_EDITORS_CAN_MAKE_DECISIONS] = $this->getSetting(self::SETTING_EDITORS_CAN_MAKE_DECISIONS);
-
-        // Permettre aux rédacteurs d'accepter un article
-        $settingsValues[self::SETTING_EDITORS_CAN_ACCEPT_PAPERS] = $this->getSetting(self::SETTING_EDITORS_CAN_ACCEPT_PAPERS);
-
-        // Permettre aux rédacteurs de publier un article
-        $settingsValues[self::SETTING_EDITORS_CAN_PUBLISH_PAPERS] = $this->getSetting(self::SETTING_EDITORS_CAN_PUBLISH_PAPERS);
-
-        // Permettre aux rédacteurs de refuser un article
-        $settingsValues[self::SETTING_EDITORS_CAN_REJECT_PAPERS] = $this->getSetting(self::SETTING_EDITORS_CAN_REJECT_PAPERS);
-
-        // Permettre aux rédacteurs de demander des modifications sur un article
-        $settingsValues[self::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS] = $this->getSetting(self::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS);
-
-        // Permettre aux rédacteurs de modifier les templates
-        $settingsValues[self::SETTING_EDITORS_CAN_EDIT_TEMPLATES] = $this->getSetting(self::SETTING_EDITORS_CAN_EDIT_TEMPLATES);
-
-        // Permettre aux rédacteurs d'assigner des relecteurs à un article
-        //$settingsValues[self::SETTING_EDITORS_CAN_ASSIGN_REVIEWERS] = $this->getSetting(self::SETTING_EDITORS_CAN_ASSIGN_REVIEWERS);
-
-        // Permettre aux rédacteurs de choisir les rédacteurs d'un article
-        //$settingsValues[self::SETTING_EDITORS_CAN_ASSIGN_EDITORS] = $this->getSetting(self::SETTING_EDITORS_CAN_ASSIGN_EDITORS);
-
-        // Protection des volumes spéciaux par un code d'accès
-        $settingsValues[self::SETTING_SPECIAL_ISSUE_ACCESS_CODE] = $this->getSetting(self::SETTING_SPECIAL_ISSUE_ACCESS_CODE);
-
-        // Encapsulation des relecteurs au sein des volumes
-        $settingsValues[self::SETTING_ENCAPSULATE_REVIEWERS] = $this->getSetting(self::SETTING_ENCAPSULATE_REVIEWERS);
-
-        // Les rédacteurs peuvent réattribuer la gestion d'un article
-        $settingsValues[self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES] = $this->getSetting(self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES);
-
-        // Encapsulation des préparateurs de copie
-        $settingsValues[self::SETTING_ENCAPSULATE_COPY_EDITORS] = $this->getSetting(self::SETTING_ENCAPSULATE_COPY_EDITORS);
-
-        // publisher
-        $settingsValues[self::SETTING_JOURNAL_PUBLISHER] = trim(strip_tags($this->getSetting(self::SETTING_JOURNAL_PUBLISHER)));
-
-        $settingsValues[self::SETTING_JOURNAL_PUBLISHER_LOC] = trim(strip_tags($this->getSetting(self::SETTING_JOURNAL_PUBLISHER_LOC)));
-
-        if ($settingsValues[self::SETTING_JOURNAL_PUBLISHER] === '' && $settingsValues[self::SETTING_JOURNAL_PUBLISHER_LOC] !== '') {
+        if ($allSettings[self::SETTING_JOURNAL_PUBLISHER] === '' && $allSettings[self::SETTING_JOURNAL_PUBLISHER_LOC] !== '') {
             return false;
         }
 
-        // DOIs
+        // DOI settings
 
         $doiSettings = $this->getDoiSettings();
-
-        $settingsValues = array_merge($settingsValues, $doiSettings->__toArray());
-
-        // Assignation auto de relecteurs
-        $settingsValues[self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION] = $this->getSetting(self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION);
-
-        // Assignation auto de rédacteurs
-        $this->initAutoAssignation($settingsValues);
-
-        // Notifications
-        $settingsValues[self::SETTING_SYSTEM_NOTIFICATIONS] = $this->getSetting(self::SETTING_SYSTEM_NOTIFICATIONS);
-
-        // Abondonner (reprendre) le processus de publication
-        // Les auteurs
-        $settingsValues[self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS] = $this->getSetting(self::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS);
-
-        //Les rédacteurs
-        $settingsValues[self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS] = $this->getSetting(self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS);
-
-        // Resoumettre un artcile déjà refusé (nouvelle version)
-        $settingsValues[self::SETTING_CAN_RESUBMIT_REFUSED_PAPER] = $this->getSetting(self::SETTING_CAN_RESUBMIT_REFUSED_PAPER);
-
-        // COI
-        $settingsValues[self::SETTING_SYSTEM_IS_COI_ENABLED] = $this->getSetting(self::SETTING_SYSTEM_IS_COI_ENABLED);
-        $settingsValues[self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED] = $this->getSetting(self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED);
-        // Article - final decision
-        $settingsValues[self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] = $this->getSetting(self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION);
-
-        $settingsValues[self::SETTING_ARXIV_PAPER_PASSWORD] = $this->getSetting(self::SETTING_ARXIV_PAPER_PASSWORD);
-        $settingsValues[self::SETTING_DISPLAY_STATISTICS] = $this->getSetting(self::SETTING_DISPLAY_STATISTICS);
-        $settingsValues[self::SETTING_CONTACT_ERROR_MAIL] = $this->getSetting(self::SETTING_CONTACT_ERROR_MAIL);
-        $settingsValues[self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS] = $this->getSetting(self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS);
-        $settingsValues[self::SETTING_TO_REQUIRE_REVISION_DEADLINE] = $this->getSetting(self::SETTING_TO_REQUIRE_REVISION_DEADLINE);
-        $settingsValues[self::SETTING_START_STATS_AFTER_DATE] = $this->getSetting(self::SETTING_START_STATS_AFTER_DATE);
-
+        $allSettings = array_merge($allSettings, $doiSettings->__toArray());
 
         $values = [];
 
         // Enregistrement des paramètres
-        foreach ($settingsValues as $setting => $value) {
+        foreach ($allSettings as $setting => $value) {
             $setting = $this->_db->quote($setting);
             if (is_array($value) && !empty($value)) {
                 $value = Zend_Json::encode($value);
@@ -1942,31 +1855,9 @@ class Episciences_Review
         $sql .= implode(',', $values);
         $sql .= ' ON DUPLICATE KEY UPDATE VALUE = VALUES(VALUE)';
 
-        if (!$this->_db->getConnection()->query($sql)) {
+        if (!$this->_db->getConnection()?->query($sql)) {
             return false;
         }
-
-        // Préparation des données de traduction
-        $path = REVIEW_LANG_PATH;
-        $file = 'reviews.php';
-        $translations = Episciences_Tools::getOtherTranslations(REVIEW_LANG_PATH, $file, '#review_' . RVID . '_#');
-
-        // Nom de la revue
-        /*
-        $titles = $this->getTitle();
-        foreach ($titles as $lang=>$translated) {
-        $translations[$lang]['review_'.RVID.'_title'] = $translated;
-        }
-        */
-
-        // Description de la rubrique
-        /* $descriptions = $this->getSetting('description');
-         foreach ($descriptions as $lang => $translated) {
-             $translations[$lang]['review_' . RVID . '_description'] = $translated;
-         }*/
-
-        // Enregistrement des traductions
-        Episciences_Tools::writeTranslations($translations, $path, $file); // not necessary for the moment
 
         $this->checkAndCreateIfNotExistsCryptoFile();
 
@@ -1987,37 +1878,6 @@ class Episciences_Review
     public function setDoiSettings(Episciences_Review_DoiSettings $doiSettings): void
     {
         $this->_doiSettings = $doiSettings;
-    }
-
-    /**
-     * @param array $settingsValues
-     * @throws Zend_Db_Statement_Exception
-     */
-    private function initAutoAssignation(array &$settingsValues = []): void
-    {
-        $autoAssignation = $this->getSetting(self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT);
-
-        if (!empty($autoAssignation)) {
-
-            if (empty(self::getChiefEditors()) && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS, $autoAssignation, true)) {
-                unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS, $autoAssignation, true)]);
-            }
-
-            if ((int)$this->getSetting(self::SETTING_CAN_PICK_SECTION) <= 0 && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS, $autoAssignation, true)) {
-                unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_SECTION_EDITORS, $autoAssignation, true)]);
-            }
-
-            if ((int)$this->getSetting(self::SETTING_CAN_CHOOSE_VOLUME) <= 0 && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS, $autoAssignation, true)) {
-                unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_VOLUME_EDITORS, $autoAssignation, true)]);
-            }
-
-            if ((int)$this->getSetting(self::SETTING_CAN_PICK_EDITOR) <= 0 && in_array(self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS, $autoAssignation, true)) {
-                unset($autoAssignation[array_search(self::SETTING_SYSTEM_CAN_ASSIGN_SUGGEST_EDITORS, $autoAssignation, true)]);
-            }
-
-        }
-
-        $settingsValues[self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT] = $autoAssignation;
     }
 
     /**
