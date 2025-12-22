@@ -302,6 +302,7 @@ return array(
 
     "Paramètres des volumes spéciaux" => "Special issues settings",
     "Les rédacteurs peuvent réattribuer la gestion de l'article" => "Editors can reassign handled articles to another editor",
+    "Le lieu de publication est renseigné, veuillez saisir l'éditeur également" => "The publication location is provided, please also enter the publisher",
 
 
     // DOI
