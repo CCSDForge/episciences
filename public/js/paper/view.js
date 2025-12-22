@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
         element.style.display = '';
 
         let start = null;
+
         function animate(timestamp) {
             if (!start) start = timestamp;
             const progress = timestamp - start;
@@ -102,8 +103,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
             hide(replyForm);
             const prevElement = replyForm.previousElementSibling;
+
             if (prevElement) {
-                const replyButton = prevElement.querySelector('.replyButton');
+                const replyButton = prevElement.classList.contains('replyButton')
+                    ? prevElement
+                    : prevElement.querySelector('.replyButton');
+
                 if (replyButton) {
                     fadeIn(replyButton);
                 }
