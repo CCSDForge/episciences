@@ -24,7 +24,6 @@ if (!$id) {
             </time>
             <i class="fa-solid fa-user" aria-hidden="true"></i>&nbsp;<?= $this->translate('De : ') ?>
             <span class="comment-author">
-
                             <strong>
                                 <?= ((int)$comment['UID'] === Episciences_Auth::getUid()) ? $this->translate('Vous') : $this->escape($comment['SCREEN_NAME']) ?>
                             </strong>

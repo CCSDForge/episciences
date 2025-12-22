@@ -146,6 +146,10 @@ class Episciences_View_Helper_UserAvatar extends Ccsd_View_Helper_Abstract
     private function extractScreenName(array|object $user): ?string
     {
         if (is_array($user)) {
+            // Check for AVATAR_NAME first (used for anonymous editors)
+            if (isset($user['AVATAR_NAME'])) {
+                return $user['AVATAR_NAME'];
+            }
             return $user['SCREEN_NAME'] ?? $user['screen_name'] ?? null;
         }
 

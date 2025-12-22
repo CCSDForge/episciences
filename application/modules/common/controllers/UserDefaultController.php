@@ -1620,6 +1620,12 @@ class UserDefaultController extends Zend_Controller_Action
         if ($uid != 0) {
             $user = new Ccsd_User_Models_User(['uid' => $uid]);
             $photoPathName = $user->getPhotoPathName($size);
+
+            // Force regeneration for anonymous editor (UID 666) to ensure different color
+            if ($uid === 666 && $size === Ccsd_User_Models_User::IMG_NAME_INITIALS && $photoPathName && file_exists($photoPathName)) {
+                unlink($photoPathName);
+                $photoPathName = false;
+            }
         } else {
             // nobody or logged user
             $uid = Episciences_Auth::getUid();
@@ -1638,7 +1644,18 @@ class UserDefaultController extends Zend_Controller_Action
                     trigger_error(sprintf('Directory "%s" was not created', $userPhotoPath), E_USER_WARNING);
                 }
                 $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . '.svg';
+
+                // Generate SVG
                 $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
+
+                // For anonymous editor (UID 666), use a distinct color
+                // This visually distinguishes the anonymous editor from authors
+                if ($uid === 666) {
+                    // Replace only the circle fill color (not the text color)
+                    // We target the circle element specifically to keep text white
+                    $data = preg_replace('/<circle([^>]*)fill="#([0-9A-Fa-f]{6})"/', '<circle$1fill="#FF5722"', $data);
+                }
+
                 file_put_contents($photoPathName, $data);
 
 

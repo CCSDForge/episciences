@@ -105,7 +105,21 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                     <?php if (!empty($parentComment['replies'])) : ?>
                                         <?php foreach ($parentComment['replies'] as $replyId => $reply) : ?>
                                             <!-- Editor reply -->
-                                            <?= $this->partial('partials/timeline_item.phtml', ['comment' => $reply]) ?>
+                                            <?php
+                                            // Anonymize editor name if setting is disabled and viewer is not an editor
+                                            $displayComment = $reply;
+
+                                            if (!$discloseEditorNames && !$isEditor &&
+                                                isset($reply['TYPE']) && $reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                                                $displayComment = $reply;
+                                                // Set editor name based on current language
+                                                $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
+                                                $displayComment['SCREEN_NAME'] = ($currentLang === 'en') ? 'Editor' : 'Rédacteur'; // For display text
+                                                $displayComment['AVATAR_NAME'] = 'System Episciences'; // For avatar initials (SE)
+                                                $displayComment['UID'] = 666; // Anonymous editor UID
+                                            }
+                                            ?>
+                                            <?= $this->partial('partials/timeline_item.phtml', ['comment' => $displayComment]) ?>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
 
