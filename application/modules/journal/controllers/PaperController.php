@@ -2829,13 +2829,43 @@ class PaperController extends PaperDefaultController
             return false;
         }
 
-        // Get the saved comment
-        $commentData = Episciences_CommentsManager::getComment($commentId);
-        if (!$commentData) {
+        // Get the saved comment using find() which automatically sets the file path
+        $comment = new Episciences_Comment();
+        if (!$comment->find($commentId)) {
             return false;
         }
 
-        $comment = new Episciences_Comment($commentData);
+        // Debug: log file information
+        if ($comment->getFile()) {
+            $fullPath = $comment->getFilePath() . $comment->getFile();
+            error_log("Author-to-editor comment file: " . $comment->getFile());
+            error_log("Author-to-editor file path: " . $comment->getFilePath());
+            error_log("Full file path: " . $fullPath);
+            error_log("File exists: " . (file_exists($fullPath) ? 'YES' : 'NO'));
+        } else {
+            error_log("No file attached to author-to-editor comment");
+        }
+
+        // Log the comment in paper history
+        $paper->log(
+            Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR,
+            Episciences_Auth::getUid(),
+            [
+                'comment' => [
+                    'pcid' => $commentId,
+                    'type' => $comment->getType(),
+                    'message' => $comment->getMessage(),
+                    'file' => $comment->getFile(),
+                    'docid' => $paper->getDocid(),
+                    'uid' => Episciences_Auth::getUid()
+                ],
+                'user' => [
+                    'fullname' => Episciences_Auth::getFullName(),
+                    'SCREEN_NAME' => Episciences_Auth::getScreenName(),
+                    'email' => Episciences_Auth::getEmail()
+                ]
+            ]
+        );
 
         // Use newCommentNotifyManager to send emails to assigned editors and log the comment
         // This will use the proper email template: paper_comment_from_author_to_editor_editor_copy

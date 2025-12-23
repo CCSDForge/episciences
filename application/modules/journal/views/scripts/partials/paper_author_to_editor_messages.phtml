@@ -40,7 +40,7 @@ if ($canAuthorContactEditors && $canViewPanel) :
                 ?>
             </h2>
         </div>
-        <div class="panel-body<?php if ($this->authorToEditorComments || array_key_exists('postAuthorToEditorComment', $_POST)) { echo ' in'; } ?>">
+        <div class="panel-body">
 
             <?php // Display the form - different for authors and editors ?>
             <?php if ($isAuthor && $this->authorToEditorForm) : ?>
