@@ -359,7 +359,7 @@ return array(
     'Rubrique : ' => 'Section: ',
     'Volumes & rubriques' => 'Volumes & sections',
     'Volume : ' => 'Volume: ',
-    'Volume principal :' => 'Master volume:',
+    'Volume principal :' => 'Main volume:',
     'Volumes secondaires :' => 'Secondary volumes:',
     'aucun' => 'none',
     "Date de publication" => "Publication date",
