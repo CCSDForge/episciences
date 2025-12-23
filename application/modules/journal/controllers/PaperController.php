@@ -558,11 +558,16 @@ class PaperController extends PaperDefaultController
 
         if ($paper->isOwner() && Episciences_Auth::isLogged()) {
             $canContactEditors = $review->getSetting(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS);
+            $discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
 
-            if ($canContactEditors) {
+            // Load editors if either setting is enabled
+            if ($canContactEditors || $discloseEditorNames) {
                 // Get assigned editors
                 $assignedEditors = $paper->getEditors(true, true);
+            }
 
+            // Only process messaging logic if contact is enabled
+            if ($canContactEditors) {
                 // Handle form submission
                 if ($this->getRequest()->isPost() && array_key_exists('postComment', $_POST)) {
                     $form = Episciences_CommentsManager::getForm('authorToEditorForm');

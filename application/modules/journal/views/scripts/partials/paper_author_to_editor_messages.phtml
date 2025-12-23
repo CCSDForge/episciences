@@ -42,18 +42,6 @@ if ($canAuthorContactEditors && $canViewPanel) :
         </div>
         <div class="panel-body<?php if ($this->authorToEditorComments || array_key_exists('postAuthorToEditorComment', $_POST)) { echo ' in'; } ?>">
 
-            <?php // Show editor names if the setting is enabled ?>
-            <?php if ($discloseEditorNames && !empty($this->editors)) : ?>
-                <div class="alert alert-info">
-                    <strong><?php echo $this->translate("Rédacteurs assignés"); ?> :</strong>
-                    <ul style="margin-bottom: 0;">
-                        <?php foreach ($this->editors as $editor) : ?>
-                            <li><?php echo $this->escape($editor->getFullName()); ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-            <?php endif; ?>
-
             <?php // Display the form - different for authors and editors ?>
             <?php if ($isAuthor && $this->authorToEditorForm) : ?>
                 <p class="help-block">
