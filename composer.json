@@ -42,7 +42,7 @@
     "neverbehave/hcaptcha": "~0.0.5",
     "phpmailer/phpmailer": "^6.9",
     "ramsey/uuid": "^4.7",
-    "seboettg/citeproc-php": "^2.6",
+    "seboettg/citeproc-php": "^2.7",
     "shardj/zf1-extras-future": "^1.12",
     "shardj/zf1-future": "1.23.*",
     "smalot/pdfparser": "^2.2",
