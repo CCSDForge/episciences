@@ -1,31 +1,39 @@
-<?php 
-//Profileur db (requetes sur la page)
+<?php
+/**
+ * Database debug information
+ */
 $profileur = Zend_Db_Table_Abstract::getDefaultAdapter()->getProfiler();
 $viewDbProfiler = $profileur->getEnabled();
 ?>
-<?php if ($viewDbProfiler) {?>
-<div class="debug">
-	<p>Query Profiler</p>
-	<div class="tab-content">
-		<?php $dbconfig = Zend_Db_Table_Abstract::getDefaultAdapter()->getConfig(); ?>
-        <blockquote>Hôte : <b><?php echo $dbconfig['host'];?></b><br />Base de données : <b><?php echo $dbconfig['dbname'];?></b><br />Nombre de requêtes : <b><?php echo $profileur->getTotalNumQueries()?></b><br />Temps total : <b><?php echo $profileur->getTotalElapsedSecs()?> (sec)</b>
-        </blockquote>
-        <table class="table table-hover table-striped">
-            <thead>
+<?php if ($viewDbProfiler) { ?>
+    <div class="debug" style="border-top:1px solid #dddddd;padding:0.5em;margin:0.5em">
+        <p>Query Profiler</p>
+        <div class="tab-content">
+            <?php $dbconfig = Zend_Db_Table_Abstract::getDefaultAdapter()->getConfig(); ?>
+            <blockquote>Host: <b><?php echo $dbconfig['host']; ?></b> <br/>Database:
+                <b><?php echo $dbconfig['dbname']; ?></b> <br/>Number of requests:
+                <b><?php echo $profileur->getTotalNumQueries() ?></b> <br/>Total time:
+                <b><?php echo $profileur->getTotalElapsedSecs() ?> (sec)</b>
+            </blockquote>
+            <table class="table table-hover table-striped table-bordered">
+                <thead>
                 <tr>
-                    <th><i class="glyphicon glyphglyphicon glyphicon-tasks active"></i> Requêtes</th>
-                    <th width="40px"><i class="glyphicon glyphglyphicon glyphicon-time active"></i> Temps (sec.)</th>
+                    <th style="width:auto"><i class="glyphicon glyphglyphicon glyphicon-tasks active"></i>&nbsp;Requests
+                    </th>
+                    <th style="width:20px"><i class="glyphicon glyphglyphicon glyphicon-time active"></i>&nbsp;Time
+                        (sec.)
+                    </th
                 </tr>
-            </thead>
-            <tbody>
+                </thead>
+                <tbody>
                 <?php foreach ($profileur->getQueryProfiles() as $query) { ?>
                     <tr>
-                        <td><small><?php echo $query->getQuery();?></small></td>
-                        <td align="right"><?php echo $query->getElapsedSecs();?></td>
+                        <td><small><?php echo $query->getQuery(); ?></small></td>
+                        <td><?php echo $query->getElapsedSecs(); ?></td>
                     </tr>
-                <?php }?>
-            </tbody>
-        </table>
-	</div>
-</div>
+                <?php } ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
 <?php } ?>
