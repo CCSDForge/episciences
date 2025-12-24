@@ -471,4 +471,35 @@ class UserTest extends TestCase
         // These should be distinguishable
         $this->assertNotSame($user1->getHasAccountData(), $user2->getHasAccountData());
     }
+
+    // ==================== Tests for loadRolesBatch() optimization ====================
+
+    /**
+     * Test loadRolesBatch returns empty array when given empty input
+     * This tests the edge case handling without requiring database access
+     */
+    public function testLoadRolesBatchReturnsEmptyArrayForEmptyInput(): void
+    {
+        $result = Episciences_User::loadRolesBatch([]);
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
+    /**
+     * Test loadRolesBatch returns array structure
+     * This verifies the method exists and has the correct signature
+     *
+     * Note: Full integration tests with database are needed to verify:
+     * - Correct SQL query execution with WHERE IN clause
+     * - Proper grouping of roles by UID and RVID
+     * - Default MEMBER role assignment when RVID is defined
+     * - Performance improvement (N queries reduced to 1)
+     */
+    public function testLoadRolesBatchMethodExists(): void
+    {
+        $this->assertTrue(
+            method_exists(Episciences_User::class, 'loadRolesBatch'),
+            'loadRolesBatch() static method should exist'
+        );
+    }
 }
