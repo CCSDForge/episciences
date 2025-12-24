@@ -4,10 +4,22 @@
  */
 $profileur = Zend_Db_Table_Abstract::getDefaultAdapter()->getProfiler();
 $viewDbProfiler = $profileur->getEnabled();
+
+// Also get CAS profiler if available
+$casProfiler = null;
+$casEnabled = false;
+try {
+    $casDb = Ccsd_Db_Adapter_Cas::getAdapter();
+    $casProfiler = $casDb->getProfiler();
+    $casEnabled = $casProfiler->getEnabled();
+} catch (Exception $e) {
+    // CAS not available
+}
 ?>
 <?php if ($viewDbProfiler) { ?>
+    <!-- Main Database Profiler -->
     <div class="debug" style="border-top:1px solid #dddddd;padding:0.5em;margin:0.5em">
-        <p>Query Profiler</p>
+        <p><strong>Query Profiler - Main Database</strong></p>
         <div class="tab-content">
             <?php $dbconfig = Zend_Db_Table_Abstract::getDefaultAdapter()->getConfig(); ?>
             <blockquote>Host: <b><?php echo $dbconfig['host']; ?></b> <br/>Database:
@@ -35,5 +47,57 @@ $viewDbProfiler = $profileur->getEnabled();
                 </tbody>
             </table>
         </div>
+    </div>
+
+    <!-- CAS Database Profiler -->
+    <?php if ($casEnabled && $casProfiler) { ?>
+        <div class="debug" style="border-top:1px solid #dddddd;padding:0.5em;margin:0.5em">
+            <p><strong>Query Profiler - CAS Database</strong></p>
+            <div class="tab-content">
+                <?php $casConfig = Ccsd_Db_Adapter_Cas::getAdapter()->getConfig(); ?>
+                <blockquote>Host: <b><?php echo $casConfig['host']; ?></b> <br/>Database:
+                    <b><?php echo $casConfig['dbname']; ?></b> <br/>Number of requests:
+                    <b><?php echo $casProfiler->getTotalNumQueries() ?></b> <br/>Total time:
+                    <b><?php echo $casProfiler->getTotalElapsedSecs() ?> (sec)</b>
+                </blockquote>
+                <table class="table table-hover table-striped table-bordered">
+                    <thead>
+                    <tr>
+                        <th style="width:auto"><i class="glyphicon glyphglyphicon glyphicon-tasks active"></i>&nbsp;Requests
+                        </th>
+                        <th style="width:20px"><i class="glyphicon glyphglyphicon glyphicon-time active"></i>&nbsp;Time
+                            (sec.)
+                        </th
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($casProfiler->getQueryProfiles() as $query) { ?>
+                        <tr>
+                            <td><small><?php echo $query->getQuery(); ?></small></td>
+                            <td><?php echo $query->getElapsedSecs(); ?></td>
+                        </tr>
+                    <?php } ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <?php } ?>
+
+    <!-- Total Summary -->
+    <div class="debug" style="border-top:2px solid #000;padding:0.5em;margin:0.5em;background-color:#f0f0f0">
+        <p><strong>TOTAL QUERIES (All Databases)</strong></p>
+        <blockquote>
+            <strong>Main DB:</strong> <?php echo $profileur->getTotalNumQueries() ?> queries
+            (<?php echo $profileur->getTotalElapsedSecs() ?> sec)<br/>
+            <?php if ($casEnabled && $casProfiler) { ?>
+                <strong>CAS DB:</strong> <?php echo $casProfiler->getTotalNumQueries() ?> queries
+                (<?php echo $casProfiler->getTotalElapsedSecs() ?> sec)<br/>
+                <strong style="color: #0066cc; font-size: 1.2em;">GRAND TOTAL:
+                    <?php echo $profileur->getTotalNumQueries() + $casProfiler->getTotalNumQueries() ?> queries
+                    (<?php echo round($profileur->getTotalElapsedSecs() + $casProfiler->getTotalElapsedSecs(), 4) ?> sec)</strong>
+            <?php } else { ?>
+                <strong>CAS DB:</strong> Not profiled or unavailable
+            <?php } ?>
+        </blockquote>
     </div>
 <?php } ?>
