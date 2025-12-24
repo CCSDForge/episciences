@@ -436,6 +436,24 @@ class PaperDefaultController extends DefaultController
 
         $attachmentsFiles = !empty($additionalAttachments) ? array_merge($attachmentsFiles, $additionalAttachments) : $attachmentsFiles;
 
+        // Build attachment list for email body with clickable links
+        $attachmentsListHtml = '';
+        if (!empty($attachmentsFiles)) {
+            $attachmentsListHtml = '<p>';
+            foreach ($attachmentsFiles as $filename => $filepath) {
+                // Build the file URL for download
+                // URL pattern: /docfiles/comments/{docId}/{filename}
+                $fileUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+                $fileUrl .= '/docfiles/comments/' . $docId . '/' . $filename;
+
+                $attachmentsListHtml .= '📎 <a href="' . htmlspecialchars($fileUrl) . '">' . htmlspecialchars($filename) . '</a><br>';
+            }
+            $attachmentsListHtml .= '</p>';
+        }
+
+        // Add attachments list to tags
+        $recipientTags[Episciences_Mail_Tags::TAG_ATTACHMENTS] = $attachmentsListHtml;
+
         switch ($oComment->getType()) {
             case Episciences_CommentsManager::TYPE_INFO_REQUEST:
                 $makeCopy = false; // see "save_contributor_answer" function: makeCopy = true
