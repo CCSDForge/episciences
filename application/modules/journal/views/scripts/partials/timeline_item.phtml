@@ -54,6 +54,13 @@ if (!$id) {
             </div>
         <?php endif; ?>
 
+        <!-- Optional actions (edit, reply, etc.) -->
+        <?php if (isset($this->actions) && $this->actions) : ?>
+            <div class="timeline-comment-actions">
+                <?= $this->actions ?>
+            </div>
+        <?php endif; ?>
+
     </div>
 
 </article>

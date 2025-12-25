@@ -148,13 +148,16 @@
     position: relative;
   }
 
-  // Toggle reply button (positioned inside message)
-  .toggle-reply-form {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    z-index: 10;
-    margin: 0;
+  // Comment actions (reply button, etc.)
+  .timeline-comment-actions {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid $lighter-grey;
+    text-align: right;
+
+    .btn {
+      margin-left: 5px;
+    }
   }
 
   // Custom styling for reply form

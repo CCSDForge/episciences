@@ -72,17 +72,16 @@ if ($canAuthorContactEditors && $canViewPanel) :
 
                             <!-- Author message (main item) -->
                             <div class="author-message-wrapper">
-                                <?= $this->partial('partials/timeline_item.phtml', ['comment' => $parentComment]) ?>
-
-                                <?php // Display reply button for editors if no response yet ?>
-                                <?php if ($isEditor && isset($this->editorReplyForms[$parentId]) && empty($parentComment['replies'])) : ?>
-                                    <!-- Reply button (inside message area) -->
-                                    <button type="button"
-                                            class="btn btn-sm btn-primary toggle-reply-form"
-                                            data-reply-form-id="reply-form-<?php echo $parentId; ?>">
-                                        <i class="fa fa-reply"></i> <?php echo $this->translate("Répondre"); ?>
-                                    </button>
-                                <?php endif; ?>
+                                <?php
+                                // Prepare reply button if editor has permission and no response yet
+                                $actions = '';
+                                if ($isEditor && isset($this->editorReplyForms[$parentId]) && empty($parentComment['replies'])) {
+                                    $actions = '<button type="button" class="btn btn-primary btn-xs toggle-reply-form" data-reply-form-id="reply-form-' . $parentId . '">
+                                        <i class="fa fa-reply"></i> ' . $this->translate("Répondre") . '
+                                    </button>';
+                                }
+                                ?>
+                                <?= $this->partial('partials/timeline_item.phtml', ['comment' => $parentComment, 'actions' => $actions]) ?>
                             </div>
 
                             <?php // Display editor responses or reply form in a thread ?>
