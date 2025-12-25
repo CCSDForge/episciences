@@ -600,6 +600,7 @@ return array(
     'Contacter les éditeurs (avec une pièce jointe)' => 'Contact the editors (with an attachment)',
     "Répondre" => "Reply",
     "Répondre :" => "Answer:",
+    "Votre réponse et les fichiers associés seront stockés, envoyés et affichés ici." => "Your answer and associated files will be stored, sent and shown here.",
     "Votre version temporaire a bien été enregistrée." => "Your temporary version has been saved",
     "Demandes des versions précédentes" => "Revision requests from previous versions",
     "La modification a été effectuée avec succès." => "The change has been successfully completed.",

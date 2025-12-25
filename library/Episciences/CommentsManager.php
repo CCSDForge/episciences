@@ -285,6 +285,7 @@ class Episciences_CommentsManager
 
     /**
      * Comment reply form (contributor to reviewer)
+     * Reuses getForm() and clears elements to avoid code duplication (similar to getEditAuthorCommentForm)
      * @param $comments
      * @return array|bool
      * @throws Zend_Exception
@@ -298,26 +299,42 @@ class Episciences_CommentsManager
             return false;
         }
 
+        // Get translator for multilingual support
+        try {
+            $translator = Zend_Registry::isRegistered('Zend_Translate') ? Zend_Registry::get('Zend_Translate') : null;
+        } catch (Exception $e) {
+            $translator = null;
+        }
+
         foreach ($comments as $id => $comment) {
 
+            // Create form directly without using getForm() to avoid auto-population issues
             $form = new Ccsd_Form();
             $form->setName('replyForm_' . $id);
-            $form->setAttrib('enctype', 'multipart/form-data');
+            $form->setMethod('post');
             $form->setAttrib('class', 'form-horizontal');
-            $form->addElementPrefixPath('Episciences_Form_Decorator', 'Episciences/Form/Decorator/', 'decorator');
+            $form->setAttrib('enctype', 'multipart/form-data');
+
+            // Add CSRF protection with unique name
+            $form->addElement('hash', 'csrf_token_' . $id, array('salt' => 'unique_' . $id));
+            $form->getElement('csrf_token_' . $id)->setTimeout(3600);
+
+            // Add comment field with unique name
+            $replyLabel = $translator ? $translator->translate('Répondre :') : 'Répondre :';
+            $replyDescription = $translator ? $translator->translate('Votre réponse et les fichiers associés seront stockés, envoyés et affichés ici.') : 'Votre réponse et les fichiers associés seront stockés, envoyés et affichés ici.';
 
             $form->addElement('textarea', 'comment_' . $id, [
-                'label' => 'Répondre :',
+                'label' => $replyLabel,
+                'description' => $replyDescription,
                 'required' => true,
                 'rows' => 5,
             ]);
 
+            // Add file upload field with unique name
             $descriptions = self::getDescriptions();
-
             $form->addElement('file', 'file_' . $id, [
                 'label' => 'Fichier',
                 'description' => $descriptions['description'],
-                // prevent file to be uploaded when getValues() is called
                 'valueDisabled' => true,
                 'maxFileSize' => MAX_FILE_SIZE,
                 'validators' => [
@@ -327,10 +344,13 @@ class Episciences_CommentsManager
                 ]
             ]);
 
+            // Add submit button with unique name
             $form->setActions(true)->createSubmitButton('postReply_' . $id, [
                 'label' => 'Envoyer',
                 'class' => 'btn btn-primary'
             ]);
+
+            // Add cancel button with unique name
             $form->setActions(true)->createCancelButton('cancel_' . $id, [
                 'label' => 'Annuler',
                 'class' => 'btn btn-default',
