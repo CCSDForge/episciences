@@ -38,6 +38,56 @@ class Episciences_Paper_ConflictsManager
     }
 
     /**
+     * Load conflicts for multiple papers in batch to avoid N+1 queries
+     * This method eliminates the N+1 query problem by loading all conflicts
+     * for all papers in a single batch operation.
+     *
+     * @param array $paperIds Array of paper IDs
+     * @param int|null $rvId Review ID filter (optional)
+     * @return array Keyed by paperId => array of Episciences_Paper_Conflict objects
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function findByPaperIdsBatch(array $paperIds, int $rvId = null): array
+    {
+        if (empty($paperIds)) {
+            return [];
+        }
+
+        $conflictsByPaper = [];
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        // Initialize empty arrays for all papers
+        foreach ($paperIds as $paperId) {
+            $conflictsByPaper[$paperId] = [];
+        }
+
+        // Query all conflicts for all papers at once
+        // This replaces N individual queries with 1 batch query
+        $sql = $db->select()
+            ->from(['c' => self::TABLE])
+            ->join(['u' => T_USERS], 'u.UID = c.by', ['SCREEN_NAME'])
+            ->join(['ur' => T_USER_ROLES], 'ur.UID = u.UID')
+            ->where('paper_id IN (?)', $paperIds);
+
+        if ($rvId) {
+            $sql->where('ur.RVID = ?', $rvId);
+        }
+
+        $sql->order('date DESC');
+
+        $rows = $db->fetchAll($sql);
+
+        // Group conflicts by paper ID
+        foreach ($rows as $row) {
+            $paperId = $row['paper_id'];
+            $conflict = new Episciences_Paper_Conflict($row);
+            $conflictsByPaper[$paperId][] = $conflict;
+        }
+
+        return $conflictsByPaper;
+    }
+
+    /**
      * @param int $uid
      * @param string|null $answer
      * @param string $mode

@@ -1017,6 +1017,325 @@ class Episciences_PapersManager
     }
 
     /**
+     * Generic method to load user assignments (editors, copy editors, reviewers) in batch
+     *
+     * Eliminates N+1 queries by loading all assignments and user data in bulk.
+     * This method consolidates the common logic from loadEditorsBatch(), loadCopyEditorsBatch(),
+     * and loadReviewersBatch() to reduce code duplication.
+     *
+     * Performance impact: Reduces N queries to 1-3 queries total:
+     * - 1 query for all assignments (with JOIN to get latest)
+     * - 1-2 queries for user data (chunked if >500 users)
+     * - Optional: 1-2 queries for CAS data (if requested)
+     * - Optional: 1-2 queries for roles (if requested)
+     *
+     * @param array $papers Array of Episciences_Paper objects
+     * @param string $roleId Role constant (e.g., Episciences_Acl::ROLE_EDITOR, 'reviewer')
+     * @param string $assignmentClass Class name to instantiate (e.g., 'Episciences_Editor')
+     * @param bool|array $statusFilter Status filtering:
+     *                                 - true: only STATUS_ACTIVE
+     *                                 - false: all statuses (excludes STATUS_INACTIVE)
+     *                                 - array: specific statuses (e.g., ['active', 'pending'])
+     * @param bool $getCASdata Whether to load CAS database user data in batch
+     * @param bool $loadRoles Whether to load user roles in batch
+     * @return array Keyed by docid => [uid => AssignmentObject]
+     * @throws InvalidArgumentException If validation fails
+     * @throws Zend_Db_Statement_Exception If database query fails
+     */
+    public static function loadAssignmentsBatch(
+        array $papers,
+        string $roleId,
+        string $assignmentClass,
+        $statusFilter = true,
+        bool $getCASdata = false,
+        bool $loadRoles = false
+    ): array {
+        // Validate inputs
+        if (empty($papers)) {
+            return [];
+        }
+
+        // Limit batch size to prevent abuse
+        if (count($papers) > 10000) {
+            throw new InvalidArgumentException('Batch size exceeds maximum of 10,000 papers');
+        }
+
+        // Validate all items are Paper objects
+        foreach ($papers as $paper) {
+            if (!$paper instanceof Episciences_Paper) {
+                throw new InvalidArgumentException('All items must be Episciences_Paper objects');
+            }
+        }
+
+        // Validate assignment class exists
+        if (!class_exists($assignmentClass)) {
+            throw new InvalidArgumentException("Assignment class does not exist: {$assignmentClass}");
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $assignmentsByPaper = [];
+
+        // Step 1: Extract all paper docids
+        $docIds = [];
+        foreach ($papers as $paper) {
+            $docid = $paper->getDocid();
+            $docIds[] = $docid;
+            $assignmentsByPaper[$docid] = []; // Initialize empty array for each paper
+        }
+
+        // Step 2: Query all assignments for all papers at once
+        // Subquery to get the latest assignment for each user+paper combination
+        $subQuery = $db->select()
+            ->from(T_ASSIGNMENTS, ['UID', 'ITEMID', 'MAX(`WHEN`) AS WHEN'])
+            ->where('ITEM = ?', 'paper')
+            ->where('ITEMID IN (?)', $docIds)
+            ->where('ROLEID = ?', $roleId)
+            ->group(['UID', 'ITEMID']);
+
+        $select = $db->select()
+            ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN', 'ITEMID'])
+            ->joinUsing(T_USERS, 'UID', ['LANGUEID', 'SCREEN_NAME'])
+            ->join(['b' => $subQuery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN` AND a.ITEMID = b.ITEMID')
+            ->where('a.ITEM = ?', 'paper')
+            ->where('a.ITEMID IN (?)', $docIds)
+            ->where('a.STATUS != ?', Episciences_User_Assignment::STATUS_INACTIVE)
+            ->where('a.ROLEID = ?', $roleId);
+
+        $results = $db->fetchAll($select);
+
+        // Group results by paper (ITEMID)
+        $resultsByPaper = [];
+        foreach ($results as $row) {
+            $itemId = $row['ITEMID'];
+            $uid = $row['UID'];
+            $resultsByPaper[$itemId][$uid] = $row;
+        }
+
+        // Step 3: Apply status filtering
+        if ($statusFilter === true) {
+            // Only active assignments
+            foreach ($resultsByPaper as $itemId => $paperResults) {
+                $resultsByPaper[$itemId] = array_filter($paperResults, static function ($user) {
+                    return $user['STATUS'] === Episciences_User_Assignment::STATUS_ACTIVE;
+                });
+            }
+        } elseif (is_array($statusFilter) && !empty($statusFilter)) {
+            // Specific statuses
+            foreach ($resultsByPaper as $itemId => $paperResults) {
+                $resultsByPaper[$itemId] = array_filter($paperResults, static function ($user) use ($statusFilter) {
+                    return in_array($user['STATUS'], $statusFilter, true);
+                });
+            }
+        }
+        // If $statusFilter === false, no additional filtering (already excluded STATUS_INACTIVE)
+
+        // Step 4: Collect all unique user UIDs across all papers
+        $allUserUids = [];
+        foreach ($resultsByPaper as $paperResults) {
+            foreach ($paperResults as $uid => $user) {
+                $allUserUids[$uid] = $uid;
+            }
+        }
+
+        // Step 5: Batch load all user data
+        $userDataById = [];
+        $casDataById = [];
+        $rolesDataById = [];
+
+        if (!empty($allUserUids)) {
+            // Load main USER table data in batch (chunked to avoid PDO limits)
+            $chunks = Episciences_Tools_ArrayHelper::chunkForSql($allUserUids);
+
+            foreach ($chunks as $chunkUids) {
+                $userSelect = $db->select()
+                    ->from(T_USERS)
+                    ->where('UID IN (?)', $chunkUids);
+
+                $userResults = $db->fetchAll($userSelect);
+                foreach ($userResults as $userData) {
+                    $userDataById[(int)$userData['UID']] = $userData;
+                }
+            }
+
+            // Load CAS data if requested
+            if ($getCASdata) {
+                $casDataById = Episciences_UsersManager::getCasUsersBatch($allUserUids);
+            }
+
+            // Load roles if requested
+            if ($loadRoles && defined('RVID')) {
+                $rolesDataById = Episciences_User::loadRolesBatch($allUserUids, RVID);
+            }
+        }
+
+        // Step 6: Build assignment objects for each paper using setters
+        foreach ($resultsByPaper as $itemId => $paperResults) {
+            foreach ($paperResults as $uid => $assignmentData) {
+                /** @var Episciences_User_Assignment $assignment */
+                $assignment = new $assignmentClass();
+
+                // Populate user data using setters
+                if (isset($userDataById[$uid])) {
+                    $userData = $userDataById[$uid];
+                    $assignment->setUid($uid);
+                    $assignment->setScreenName($userData['SCREEN_NAME'] ?? '');
+                    $assignment->setLangueid($userData['LANGUEID'] ?? 'en');
+
+                    // Add CAS data if available
+                    if ($getCASdata && isset($casDataById[$uid])) {
+                        $casData = $casDataById[$uid];
+                        $assignment->setUsername($casData['USERNAME'] ?? '');
+                        $assignment->setEmail($casData['EMAIL'] ?? '');
+                        $assignment->setFirstname($casData['FIRSTNAME'] ?? '');
+                        $assignment->setLastname($casData['LASTNAME'] ?? '');
+                    }
+
+                    // Set pre-loaded roles
+                    if ($loadRoles && isset($rolesDataById[$uid])) {
+                        $assignment->setRoles($rolesDataById[$uid]);
+                    }
+                }
+
+                // Set assignment-specific data
+                $assignment->setWhen($assignmentData['WHEN']);
+                $assignment->setStatus($assignmentData['STATUS']);
+
+                $assignmentsByPaper[$itemId][$uid] = $assignment;
+            }
+        }
+
+        return $assignmentsByPaper;
+    }
+
+    /**
+     * Load reviewers for multiple papers in batch to avoid N+1 queries
+     * This method eliminates the N+1 query problem by loading all reviewers
+     * for all papers in a single batch operation instead of one query per paper.
+     *
+     * @param array $papers Array of Episciences_Paper objects
+     * @param array|null $status Reviewer status filter (e.g., ['active', 'pending'])
+     * @param bool $getCASdata Whether to load CAS data
+     * @return array Keyed by docid => [uid => Episciences_Reviewer]
+     * @throws Zend_Db_Statement_Exception
+     * @throws JsonException
+     */
+    public static function loadReviewersBatch(array $papers, $status = null, bool $getCASdata = false): array
+    {
+        // Default status filter: only active reviewers
+        if ($status === null) {
+            $status = [Episciences_User_Assignment::STATUS_ACTIVE];
+        }
+
+        // Delegate to generic batch loading method
+        // Note: reviewers don't load roles (unlike editors/copy editors)
+        return self::loadAssignmentsBatch(
+            $papers,
+            'reviewer',
+            'Episciences_Reviewer',
+            $status, // array of statuses
+            $getCASdata,
+            false // Don't load roles for reviewers
+        );
+    }
+
+    /**
+     * Load submitters for multiple papers in batch to avoid N+1 queries
+     * This method eliminates the N+1 query problem by loading all submitters
+     * for all papers in a single batch operation.
+     *
+     * @param array $papers Array of Episciences_Paper objects
+     * @param bool $withCAS Whether to load CAS data
+     * @return array Keyed by docid => Episciences_User
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function loadSubmittersBatch(array $papers, bool $withCAS = true): array
+    {
+        if (empty($papers)) {
+            return [];
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $submittersByPaper = [];
+
+        // Step 1: Extract all unique submitter UIDs and create docid => uid mapping
+        $uidToDocids = []; // Maps UID to array of docids (submitter can submit multiple papers)
+        $allUids = [];
+
+        foreach ($papers as $paper) {
+            $uid = $paper->getUid();
+            $docid = $paper->getDocid();
+
+            if ($uid) {
+                $allUids[$uid] = $uid;
+
+                if (!isset($uidToDocids[$uid])) {
+                    $uidToDocids[$uid] = [];
+                }
+                $uidToDocids[$uid][] = $docid;
+            } else {
+                // Paper has no submitter UID
+                $submittersByPaper[$docid] = null;
+            }
+        }
+
+        if (empty($allUids)) {
+            return $submittersByPaper;
+        }
+
+        // Step 2: Batch load all user data (main DB)
+        // This replaces N individual find() calls with 1-2 batch queries
+        $userDataById = [];
+        $chunkSize = 500;
+        $chunks = array_chunk($allUids, $chunkSize);
+
+        foreach ($chunks as $chunkUids) {
+            $userSelect = $db->select()
+                ->from(T_USERS)
+                ->where('UID IN (?)', $chunkUids);
+
+            $userResults = $db->fetchAll($userSelect);
+            foreach ($userResults as $userData) {
+                $userDataById[(int)$userData['UID']] = $userData;
+            }
+        }
+
+        // Step 3: Load CAS data if requested
+        $casDataById = [];
+        if ($withCAS) {
+            $casDataById = Episciences_UsersManager::getCasUsersBatch($allUids);
+        }
+
+        // Step 4: Build Episciences_User objects using setters (no individual find() queries)
+        foreach ($uidToDocids as $uid => $docids) {
+            $submitter = new Episciences_User();
+
+            // Populate user data using setters
+            if (isset($userDataById[$uid])) {
+                $userData = $userDataById[$uid];
+                $submitter->setUid($uid);
+                $submitter->setScreenName($userData['SCREEN_NAME'] ?? '');
+                $submitter->setLangueid($userData['LANGUEID'] ?? 'en');
+
+                // Add CAS data if available
+                if ($withCAS && isset($casDataById[$uid])) {
+                    $casData = $casDataById[$uid];
+                    $submitter->setUsername($casData['USERNAME'] ?? '');
+                    $submitter->setEmail($casData['EMAIL'] ?? '');
+                    $submitter->setFirstname($casData['FIRSTNAME'] ?? '');
+                    $submitter->setLastname($casData['LASTNAME'] ?? '');
+                }
+            }
+
+            // Assign the same submitter object to all papers they submitted
+            foreach ($docids as $docid) {
+                $submittersByPaper[$docid] = $submitter;
+            }
+        }
+
+        return $submittersByPaper;
+    }
+
+    /**
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
@@ -1317,6 +1636,9 @@ class Episciences_PapersManager
         }
 
         if ($result) {
+            // OPTIMIZATION: Batch load roles for all editors in one query (N queries → 1 query)
+            $editorUids = array_keys($result);
+            $rolesData = Episciences_User::loadRolesBatch($editorUids, RVID);
 
             foreach ($result as $uid => $user) {
                 $editor = new Episciences_Editor();
@@ -1325,6 +1647,12 @@ class Episciences_PapersManager
                 } else {
                     $editor->find($uid);
                 }
+
+                // Set pre-loaded roles to avoid redundant loadRoles() call
+                if (isset($rolesData[$uid])) {
+                    $editor->setRoles($rolesData[$uid]);
+                }
+
                 $editor->setWhen($user['WHEN']);
                 $editor->setStatus($user['STATUS']);
                 $editors[$uid] = $editor;
@@ -1393,6 +1721,9 @@ class Episciences_PapersManager
         }
 
         if ($result) {
+            // OPTIMIZATION: Batch load roles for all copy editors in one query (N queries → 1 query)
+            $copyEditorUids = array_keys($result);
+            $rolesData = Episciences_User::loadRolesBatch($copyEditorUids, RVID);
 
             foreach ($result as $uid => $user) {
                 $ce = new Episciences_CopyEditor();
@@ -1401,6 +1732,12 @@ class Episciences_PapersManager
                 } else {
                     $ce->find($uid);
                 }
+
+                // Set pre-loaded roles to avoid redundant loadRoles() call
+                if (isset($rolesData[$uid])) {
+                    $ce->setRoles($rolesData[$uid]);
+                }
+
                 $ce->setWhen($user['WHEN']);
                 $ce->setStatus($user['STATUS']);
                 $copyEditors[$uid] = $ce;
