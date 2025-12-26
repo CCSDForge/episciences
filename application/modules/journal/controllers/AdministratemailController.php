@@ -629,7 +629,8 @@ class AdministratemailController extends Zend_Controller_Action
                 'role' => $user->getRoles(),
             ];
 
-            $user->loadRoles();
+            // OPTIMIZATION: Removed redundant loadRoles() call - roles already loaded by getUsersWithRoles() with batch loading
+            // This eliminates N queries (one per user) as roles are already available in memory
 
             foreach ($roles as $roleName => $roleCode) {
                 // all contacts
@@ -862,8 +863,11 @@ class AdministratemailController extends Zend_Controller_Action
     {
         $compiledUsers = [];
 
-        $review = Episciences_ReviewsManager::find(RVID);
-        $users = $review::getUsers();
+        // OPTIMIZATION: Use eager loading with CAS batch (eliminates N queries USER + N queries CAS)
+        // Before: Review::getUsers() → getUsersWithRoles() → N×findWithCAS() = 2+2N queries
+        // After: getUsersWithRolesEagerCAS() = 2 queries (1 JOIN USER+ROLES + 1 batch CAS)
+        // Performance: 99.5% reduction for 200 users (402 queries → 2 queries)
+        $users = Episciences_UsersManager::getUsersWithRolesEagerCAS();
 
         if ($users) {
             foreach ($users as $user) {
