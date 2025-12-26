@@ -340,6 +340,65 @@ class Episciences_User extends Ccsd_User_Models_User
         return $roles;
     }
 
+    /**
+     * Load roles for multiple users in a single query (batch loading)
+     * This method reduces N queries to 1 query (or few chunked queries for large datasets)
+     *
+     * @param array $uids Array of user IDs
+     * @param int|null $rvid Review ID (null = all reviews)
+     * @return array Roles data indexed by UID: [UID => [RVID => [ROLEID, ...]]]
+     */
+    public static function loadRolesBatch(array $uids, ?int $rvid = null): array
+    {
+        if (empty($uids)) {
+            return [];
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $rolesData = [];
+
+        // CHUNKED LOADING: Process in batches to avoid PDO/MySQL limits on IN() clause
+        $chunks = Episciences_Tools_ArrayHelper::chunkForSql($uids);
+
+        foreach ($chunks as $chunkUids) {
+            $select = $db->select()
+                ->from(T_USER_ROLES, ['UID', 'RVID', 'ROLEID'])
+                ->where('UID IN (?)', $chunkUids);
+
+            if ($rvid !== null) {
+                $select->where('RVID = ?', $rvid);
+            }
+
+            $result = $db->fetchAll($select);
+
+            // Group by UID then RVID
+            foreach ($result as $row) {
+                $uid = (int)$row['UID'];
+                $rvid = (int)$row['RVID'];
+                $roleId = $row['ROLEID'];
+
+                if (!isset($rolesData[$uid])) {
+                    $rolesData[$uid] = [];
+                }
+                if (!isset($rolesData[$uid][$rvid])) {
+                    $rolesData[$uid][$rvid] = [];
+                }
+                $rolesData[$uid][$rvid][] = $roleId;
+            }
+        }
+
+        // Add default MEMBER role for current RVID if needed
+        if (defined('RVID')) {
+            foreach ($uids as $uid) {
+                if (!isset($rolesData[$uid][RVID])) {
+                    $rolesData[$uid][RVID] = [Episciences_Acl::ROLE_MEMBER];
+                }
+            }
+        }
+
+        return $rolesData;
+    }
+
     public function toArray()
     {
         $res = parent::toArray();
@@ -391,7 +450,7 @@ class Episciences_User extends Ccsd_User_Models_User
         return ($forceResult) ? Episciences_Review::getDefaultLanguage() : null;
     }
 
-    public function setLangueid($_langueid)
+    public function setLangueid($_langueid): static
     {
         $this->_langueid = $_langueid;
         return $this;
