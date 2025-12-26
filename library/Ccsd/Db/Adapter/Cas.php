@@ -23,7 +23,8 @@ class Ccsd_Db_Adapter_Cas extends Ccsd_Db_Adapter
 
             // Enable profiler if main DB profiler is enabled (for debugging)
             $mainAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
-            if ($mainAdapter && $mainAdapter->getProfiler()->getEnabled()) {
+            $profiler = $mainAdapter?->getProfiler();
+            if ($profiler && $profiler->getEnabled()) {
                 self::$_params['profiler'] = true;
             }
 
