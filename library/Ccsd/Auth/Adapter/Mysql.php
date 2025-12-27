@@ -1,164 +1,317 @@
 <?php
 
 /**
- * Adapter Zend_Auth pour l'authentification via Mysql
+ * MySQL Authentication Adapter for Episciences
+ * Authenticates users against the CAS database T_UTILISATEURS table
+ * using SHA2-512 password hashing without requiring JASIG CAS server
  *
- * @author ccsd
- *
+ * @author CCSD
  */
-class Ccsd_Auth_Adapter_Mysql  implements Zend_Auth_Adapter_Interface
+
+namespace Ccsd\Auth\Adapter;
+
+/**
+ * Class Mysql
+ * @package Ccsd\Auth\Adapter
+ */
+class Mysql implements AdapterInterface
 {
+    const AdapterName = 'MYSQL';
 
     /**
-     * Structure de l'identité d'un utilisateur
-     *
-     * @var Ccsd_User_Models_User
+     * User identity structure
+     * @var \Ccsd_User_Models_User
      */
     protected $_identity = null;
 
     /**
-     *
+     * User identity structure (compatibility with CAS adapter)
+     * @var \Ccsd_User_Models_User
+     */
+    protected $_identityStructure = null;
+
+    /**
+     * Username for authentication
+     * @var string
+     */
+    protected $_username = null;
+
+    /**
+     * Password for authentication (plain text, will be hashed in SQL)
      * @var string
      */
     protected $_password = null;
 
     /**
+     * Authenticates user against CAS database
      *
-     * @var string
+     * @return \Zend_Auth_Result
      */
-    protected $_username = null;
-
-    public function __construct ($username, $password)
+    public function authenticate()
     {
-        $this->setPassword($password);
-        $this->setUsername($username);
-    }
+        // Get CAS database adapter
+        $casDb = \Ccsd_Db_Adapter_Cas::getAdapter();
 
-    /*
-     * Authentification d'un utilisateur @see
-     * Zend_Auth_Adapter_Interface::authenticate()
-     */
-    public function authenticate ()
-    {
-        $userMapper = new Ccsd_User_Models_UserMapper();
+        // Prepare SQL query with SHA2-512 hashing
+        $select = $casDb->select()
+            ->from('T_UTILISATEURS', [
+                'UID', 'USERNAME', 'EMAIL', 'CIV',
+                'LASTNAME', 'FIRSTNAME', 'MIDDLENAME',
+                'TIME_REGISTERED', 'TIME_MODIFIED', 'VALID'
+            ])
+            ->where('USERNAME = ?', $this->_username)
+            ->where('PASSWORD = SHA2(?, 512)', $this->_password)
+            ->where('VALID = 1');
 
-        $userResult = $userMapper->findByUsernamePassword($this->getUsername(), $this->getPassword());
+        // Execute query
+        $row = $casDb->fetchRow($select);
 
-        if ($userResult == null) {
-            return new Zend_Auth_Result(Zend_Auth_Result::FAILURE, null, ['HTTP/1.1 401 Unauthorized']);
+        // Check result
+        if (!$row) {
+            return new \Zend_Auth_Result(
+                \Zend_Auth_Result::FAILURE_CREDENTIAL_INVALID,
+                null,
+                ['Invalid credentials or account not validated']
+            );
         }
 
-        if ($userResult->UID != '') {
-            if ($this->_identity instanceof Ccsd_User_Models_User) {
-                $user = $this->_identity;
-            } else {
-                $user = new Ccsd_User_Models_User($userResult->toArray());
-                $this->setIdentity($user);
-            }
-            $user->setOptions($userResult->toArray());
-            return new Zend_Auth_Result(Zend_Auth_Result::SUCCESS, $user);
-        } else {
-            return new Zend_Auth_Result(Zend_Auth_Result::FAILURE, null, null);
+        // Create user object with CAS data
+        $user = new \Ccsd_User_Models_User();
+        $user->setUid($row['UID'])
+            ->setUsername($row['USERNAME'])
+            ->setEmail($row['EMAIL'])
+            ->setCiv($row['CIV'])
+            ->setLastname($row['LASTNAME'])
+            ->setFirstname($row['FIRSTNAME'])
+            ->setMiddlename($row['MIDDLENAME'])
+            ->setTime_registered($row['TIME_REGISTERED'])
+            ->setTime_modified($row['TIME_MODIFIED'])
+            ->setValid($row['VALID']);
+
+        // Store identity
+        $this->_identity = $user;
+
+        // Return success with user object
+        return new \Zend_Auth_Result(
+            \Zend_Auth_Result::SUCCESS,
+            $user,
+            []
+        );
+    }
+
+    /**
+     * Pre-authentication processing
+     * Displays login form if credentials are not provided
+     *
+     * @param \Zend_Controller_Action $controller
+     * @return bool
+     */
+    public function pre_auth($controller)
+    {
+        $request = $controller->getRequest();
+        $params = $request->getParams();
+
+        // Check if credentials are provided
+        if (!isset($params['username']) || !isset($params['password'])) {
+            // Display login form
+            $form = new \Ccsd_User_Form_Accountlogin();
+            $form->setAction($controller->view->url());
+            $form->setActions(true)->createSubmitButton("Connexion");
+            $controller->view->form = $form;
+            $controller->renderScript('user/login.phtml');
+            return false;
         }
+
+        // Store credentials for authentication
+        $this->setUsername($params['username']);
+        $this->setCredential($params['password']);
+        return true;
     }
 
     /**
+     * Post-authentication processing
+     * Returns user object from authentication result
      *
-     * @return the $_password
+     * @param \Zend_Controller_Action $controller
+     * @param \Zend_Auth_Result $authinfo
+     * @return \Ccsd_User_Models_User
      */
-    public function getPassword ()
+    public function post_auth($controller, $authinfo)
     {
-        return $this->_password;
+        // Return user object from authentication result
+        // It already contains CAS database data
+        return $authinfo->getIdentity();
     }
 
     /**
+     * Pre-login processing
+     * Prepares user object for session creation
      *
-     * @param field_type $_password
+     * @param \ArrayAccess $array_attr
+     * @return \Ccsd_User_Models_User
      */
-    public function setPassword ($_password)
+    public function pre_login($array_attr)
     {
-        if ($_password == null) {
-            throw new Zend_Auth_Exception("No password", Zend_Auth_Result::FAILURE_CREDENTIAL_INVALID);
-        }
-        $this->_password = $_password;
-        return $this;
+        // $array_attr is the User object returned by post_auth
+        // Return directly to allow session creation
+        return $array_attr;
     }
 
     /**
+     * Post-login processing
+     * Executed after session creation
      *
-     * @return the $_username
+     * @param \Ccsd_User_Models_User $loginUser
+     * @param string[] $array_attr
      */
-    public function getUsername ()
+    public function post_login($loginUser, $array_attr)
     {
-        return $this->_username;
+        // Nothing to do - synchronization is handled by controller
     }
 
     /**
+     * Alternative login processing
+     * For account association
      *
-     * @param field_type $_username
+     * @param \Ccsd_User_Models_User $loginUser
+     * @param string[] $array_attr
+     * @return bool
      */
-    public function setUsername ($_username = null)
+    public function alt_login($loginUser, $array_attr)
     {
-        if ($_username == null) {
-            throw new Zend_Auth_Exception("No username", Zend_Auth_Result::FAILURE_CREDENTIAL_INVALID);
-        }
-        $this->_username = $_username;
-        return $this;
+        return true;
     }
 
     /**
+     * Logout processing
+     * Clears session and identity
      *
-     * @return the $_identity
+     * @param array $params
+     * @return bool
      */
-    public function getIdentity ()
+    public function logout($params)
     {
-        return $this->_identity;
+        \Zend_Auth::getInstance()->clearIdentity();
+        \Zend_Session::destroy();
+        return true;
     }
 
     /**
+     * Set user identity
      *
-     * @param Ccsd_User_Models_User $_identity
+     * @param \Ccsd_User_Models_User $_identity
+     * @return $this
      */
-    public function setIdentity ($_identity)
+    public function setIdentity($_identity)
     {
         $this->_identity = $_identity;
         return $this;
     }
 
-
     /**
-     * fonction héritée de Ccsd_Auth_Adapter
-     * organise le préalable à l'identification et instanciation de l'utilisateur
+     * Get user identity
+     *
+     * @return \Ccsd_User_Models_User
      */
-
-    public function pre_login()
+    public function getIdentity()
     {
-        parent::pre_login();
-    }
-
-
-    /**
-     * fonction héritée de Ccsd_Auth_Adapter
-     * organise le postérieur à l'identification et instanciation de l'utilisateur
-     */
-    public function post_login()
-    {
-        parent::post_login();
+        return $this->_identity;
     }
 
     /**
-     * fonction permettant de forcer la creation d'un compte utilisateur
-     * à partir des informations du fournisseur d'identité
-     * @param array $array_attr tableau d'informations fournies par le fournisseur d'identité
+     * Set identity structure (compatibility with CAS adapter)
+     *
+     * @param \Ccsd_User_Models_User $identity
+     * @return $this
+     */
+    public function setIdentityStructure($identity)
+    {
+        $this->_identity = $identity;
+        $this->_identityStructure = $identity;
+        return $this;
+    }
+
+    /**
+     * Get identity structure
+     *
+     * @return \Ccsd_User_Models_User
+     */
+    public function getIdentityStructure()
+    {
+        return $this->_identityStructure;
+    }
+
+    /**
+     * Set username for authentication
+     *
+     * @param string $username
+     * @return $this
+     * @throws \Zend_Auth_Exception
+     */
+    protected function setUsername($username)
+    {
+        if (empty($username)) {
+            throw new \Zend_Auth_Exception(
+                "No username provided",
+                \Zend_Auth_Result::FAILURE_IDENTITY_NOT_FOUND
+            );
+        }
+        $this->_username = $username;
+        return $this;
+    }
+
+    /**
+     * Set password for authentication
+     *
+     * @param string $password
+     * @return $this
+     * @throws \Zend_Auth_Exception
+     */
+    protected function setCredential($password)
+    {
+        if (empty($password)) {
+            throw new \Zend_Auth_Exception(
+                "No password provided",
+                \Zend_Auth_Result::FAILURE_CREDENTIAL_INVALID
+            );
+        }
+        $this->_password = $password;
+        return $this;
+    }
+
+    /**
+     * Set service URL (compatibility with CAS adapter)
+     *
+     * @param array $params
+     * @return $this
+     */
+    public function setServiceURL($params)
+    {
+        // No-op for MySQL adapter (CAS compatibility)
+        return $this;
+    }
+
+    /**
+     * Create user from adapter
+     * Not implemented for MySQL adapter
+     *
+     * @param array $array_attr
      * @param boolean $forceCreate
      * @return bool
      */
-    public function createUserFromAdapter($array_attr,$forceCreate)
+    public function createUserFromAdapter($array_attr, $forceCreate)
     {
         return false;
     }
 
+    /**
+     * Convert to HTML representation
+     *
+     * @param \ArrayAccess $attr
+     * @return string
+     */
+    public function toHtml($attr)
+    {
+        return self::AdapterName;
+    }
 }
-
-
-
