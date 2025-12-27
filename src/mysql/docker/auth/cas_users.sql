@@ -1,17 +1,12 @@
--- Generation Time: Jun 14, 2024 at 10:03 AM
+-- Generation Time: Dec 27, 2025 at 10:58 AM
+
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
-
 --
--- Database: `CAS_users`
+-- Database: `cas_users`
 --
 
 -- --------------------------------------------------------
@@ -21,7 +16,7 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `T_UTILISATEURS` (
-                                  `UID` int(11) UNSIGNED NOT NULL,
+                                  `UID` int UNSIGNED NOT NULL,
                                   `USERNAME` varchar(100) NOT NULL,
                                   `PASSWORD` varchar(128) NOT NULL,
                                   `EMAIL` varchar(320) NOT NULL COMMENT 'http://tools.ietf.org/html/rfc3696#section-3',
@@ -39,7 +34,7 @@ CREATE TABLE `T_UTILISATEURS` (
                                   `FTP_LAST_AUTH` datetime DEFAULT NULL COMMENT 'Dernière authentification par FTP',
                                   `FTP_LAST_USE` datetime DEFAULT NULL COMMENT 'Dernière utilisation du FTP',
                                   `VALID` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Comptes utilisateurs pour CAS' ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='Comptes utilisateurs pour CAS' ROW_FORMAT=DYNAMIC;
 
 --
 -- Indexes for dumped tables
@@ -50,12 +45,13 @@ CREATE TABLE `T_UTILISATEURS` (
 --
 ALTER TABLE `T_UTILISATEURS`
     ADD PRIMARY KEY (`UID`),
-  ADD UNIQUE KEY `U_USERNAME` (`USERNAME`),
-  ADD KEY `PASSWORD` (`PASSWORD`),
-  ADD KEY `VALID` (`VALID`),
-  ADD KEY `FIRSTNAME` (`FIRSTNAME`),
-  ADD KEY `LASTNAME` (`LASTNAME`),
-  ADD KEY `EMAIL` (`EMAIL`(100));
+    ADD UNIQUE KEY `U_USERNAME` (`USERNAME`),
+    ADD KEY `PASSWORD` (`PASSWORD`),
+    ADD KEY `VALID` (`VALID`),
+    ADD KEY `FIRSTNAME` (`FIRSTNAME`),
+    ADD KEY `LASTNAME` (`LASTNAME`),
+    ADD KEY `EMAIL` (`EMAIL`(100));
+ALTER TABLE `T_UTILISATEURS` ADD FULLTEXT KEY `FULLTEXT_INDEX` (`USERNAME`,`EMAIL`,`LASTNAME`,`FIRSTNAME`) WITH PARSER `ngram`;
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -65,9 +61,5 @@ ALTER TABLE `T_UTILISATEURS`
 -- AUTO_INCREMENT for table `T_UTILISATEURS`
 --
 ALTER TABLE `T_UTILISATEURS`
-    MODIFY `UID` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+    MODIFY `UID` int UNSIGNED NOT NULL AUTO_INCREMENT;
 COMMIT;
-
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
