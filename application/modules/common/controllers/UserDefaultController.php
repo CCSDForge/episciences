@@ -184,10 +184,29 @@ class UserDefaultController extends Zend_Controller_Action
         switch ($result->getCode()) {
 
             case Zend_Auth_Result::FAILURE:
-                // on ne devrait jamais arriver là : c'est géré par CAS
-                $this->view->message = "Erreur d'authentification";
-                $this->view->description = "L'authentification a échoué";
-                $this->renderScript('error/error.phtml');
+            case Zend_Auth_Result::FAILURE_CREDENTIAL_INVALID:
+            case Zend_Auth_Result::FAILURE_IDENTITY_NOT_FOUND:
+                // For MySQL adapter, redisplay login form with error message
+                if ($adapter instanceof \Ccsd\Auth\Adapter\Mysql) {
+                    $form = new \Ccsd_User_Form_Login();
+                    $form->setAction($this->view->url());
+                    $form->setActions(true)->createSubmitButton("Connexion");
+
+                    // Add error message using Zend_Translate
+                    $translate = Zend_Registry::get('Zend_Translate');
+                    $form->getElement('username')->addError(
+                        $translate->translate("Identifiants invalides ou compte non validé")
+                    );
+
+                    $this->view->form = $form;
+                    $this->renderScript('user/login.phtml');
+                    return;
+                } else {
+                    // For other adapters (CAS, etc.), show generic error
+                    $this->view->message = "Erreur d'authentification";
+                    $this->view->description = "L'authentification a échoué";
+                    $this->renderScript('error/error.phtml');
+                }
                 break;
 
             case Zend_Auth_Result::SUCCESS:

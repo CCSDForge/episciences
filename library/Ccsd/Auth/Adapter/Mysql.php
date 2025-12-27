@@ -117,10 +117,11 @@ class Mysql implements AdapterInterface
         $request = $controller->getRequest();
         $params = $request->getParams();
 
-        // Check if credentials are provided
-        if (!isset($params['username']) || !isset($params['password'])) {
-            // Display login form
-            $form = new \Ccsd_User_Form_Accountlogin();
+        // Check if credentials are provided and not empty
+        if (!isset($params['username']) || !isset($params['password']) ||
+            empty(trim($params['username'])) || empty(trim($params['password']))) {
+            // Display login form with user icon (not envelope)
+            $form = new \Ccsd_User_Form_Login();
             $form->setAction($controller->view->url());
             $form->setActions(true)->createSubmitButton("Connexion");
             $controller->view->form = $form;
