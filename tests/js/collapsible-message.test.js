@@ -6,17 +6,6 @@
 const fs = require('fs');
 const path = require('path');
 
-// Fix for JSDOM TextEncoder requirement
-const { TextEncoder, TextDecoder } = require('util');
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
-
-// Setup JSDOM environment
-const { JSDOM } = require('jsdom');
-const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
-global.document = dom.window.document;
-global.window = dom.window;
-
 // Mock translate function
 global.translate = jest.fn(key => {
     const translations = {

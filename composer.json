@@ -61,13 +61,12 @@
     "symfony/intl": "^6.4",
     "symfony/dotenv": "^6.4"
   },
-
   "require-dev": {
     "phpmd/phpmd": "@stable",
-    "squizlabs/php_codesniffer": "3.*",
+    "squizlabs/php_codesniffer": "@stable",
     "roave/security-advisories": "dev-latest",
     "phpmetrics/phpmetrics": "^2.7",
-    "rector/rector": "^2.2",
+    "rector/rector": "^2.3",
     "phpstan/phpstan": "^2.1",
     "symfony/test-pack": "^1.0"
   },
