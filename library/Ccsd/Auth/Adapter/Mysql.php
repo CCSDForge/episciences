@@ -16,7 +16,7 @@ namespace Ccsd\Auth\Adapter;
  */
 class Mysql implements AdapterInterface
 {
-    const AdapterName = 'MYSQL';
+    const ADAPTER_NAME = 'MYSQL';
 
     /**
      * User identity structure
@@ -77,7 +77,12 @@ class Mysql implements AdapterInterface
         }
 
         // Create user object with CAS data
-        $user = new \Ccsd_User_Models_User();
+        // Use identity structure if set (Episciences_User), otherwise create new Episciences_User
+        if ($this->_identityStructure instanceof \Ccsd_User_Models_User) {
+            $user = $this->_identityStructure;
+        } else {
+            $user = new \Episciences_User();
+        }
         $user->setUid($row['UID'])
             ->setUsername($row['USERNAME'])
             ->setEmail($row['EMAIL'])
@@ -313,6 +318,6 @@ class Mysql implements AdapterInterface
      */
     public function toHtml($attr)
     {
-        return self::AdapterName;
+        return self::ADAPTER_NAME;
     }
 }
