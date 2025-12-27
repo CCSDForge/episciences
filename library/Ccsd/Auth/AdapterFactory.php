@@ -16,7 +16,7 @@ class AdapterFactory  {
      *
      * @var array
      */
-    protected $_accepted_auth_list = ['DB' ,'CAS','IDP', 'ORCID' ] ;
+    protected $_accepted_auth_list = ['DB', 'CAS', 'IDP', 'ORCID', 'MYSQL'];
     /**
      * @param $authType
      * @return \Ccsd_Auth_Adapter_Cas|Adapter\Idp|\Ccsd_Auth_Adapter_Orcid|Adapter\DbTable
@@ -32,6 +32,8 @@ class AdapterFactory  {
             case 'IDP':   $authAdapter = new Adapter\Idp();
                 break;
             case 'ORCID': $authAdapter = new \Ccsd_Auth_Adapter_Orcid();
+                break;
+            case 'MYSQL': $authAdapter = new Adapter\Mysql();
                 break;
 
             default : $authAdapter = new \Ccsd_Auth_Adapter_Cas();
