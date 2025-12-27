@@ -157,23 +157,15 @@ class UserDefaultController extends Zend_Controller_Action
     {
         $localUser = new Episciences_User();
 
-        $adapter = new Ccsd_Auth_Adapter_Cas(); // default auth adapter
+        // Determine adapter type from configuration, default to CAS
+        $adapterType = defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS';
 
-        if (defined('EPISCIENCES_AUTH_ADAPTER_NAME')) {
-
-            if (EPISCIENCES_AUTH_ADAPTER_NAME === 'LemonLDAP') {
-
-                $adapter = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
-
-            } elseif (EPISCIENCES_AUTH_ADAPTER_NAME === 'MySQL') {
-                $adapter = null;
-            }
-
-            if (!$adapter) {
-                die(EPISCIENCES_AUTH_ADAPTER_NAME . ' User authentication: the development of this feature is still in process');
-
-            }
-
+        // Special case for LemonLDAP (uses custom class outside Factory)
+        if ($adapterType === 'LemonLDAP') {
+            $adapter = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
+        } else {
+            // Use Factory for standard adapters (CAS, MYSQL, DB, IDP, ORCID)
+            $adapter = \Ccsd\Auth\AdapterFactory::getTypedAdapter($adapterType);
         }
 
         $adapter->setIdentityStructure($localUser);
