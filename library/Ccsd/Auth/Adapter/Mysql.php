@@ -53,6 +53,7 @@ class Mysql implements AdapterInterface
         $casDb = \Ccsd_Db_Adapter_Cas::getAdapter();
 
         // Prepare SQL query with SHA2-512 hashing
+        // Note: Cannot use placeholder inside SHA2() function, must use quote()
         $select = $casDb->select()
             ->from('T_UTILISATEURS', [
                 'UID', 'USERNAME', 'EMAIL', 'CIV',
@@ -60,7 +61,7 @@ class Mysql implements AdapterInterface
                 'TIME_REGISTERED', 'TIME_MODIFIED', 'VALID'
             ])
             ->where('USERNAME = ?', $this->_username)
-            ->where('PASSWORD = SHA2(?, 512)', $this->_password)
+            ->where('PASSWORD = SHA2(' . $casDb->quote($this->_password) . ', 512)')
             ->where('VALID = 1');
 
         // Execute query
