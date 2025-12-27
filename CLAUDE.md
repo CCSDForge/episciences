@@ -33,6 +33,11 @@
 - `config/pwd.json` - Credentials (not in repo)
 - `public/bdd_const.php` - Database constants
 
+# General information
+- writing outside the project directory is forbidden
+- write your plans in the tmp directory
+- when creating files, chmod 644
+
 # Directories to ignore
 - `data/`
 - `cache/`
