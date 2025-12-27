@@ -20,34 +20,34 @@ class Mysql implements AdapterInterface
 
     /**
      * User identity structure
-     * @var \Ccsd_User_Models_User
+     * @var \Ccsd_User_Models_User|null
      */
-    protected $_identity = null;
+    protected ?\Ccsd_User_Models_User $_identity = null;
 
     /**
      * User identity structure (compatibility with CAS adapter)
-     * @var \Ccsd_User_Models_User
+     * @var \Ccsd_User_Models_User|null
      */
-    protected $_identityStructure = null;
+    protected ?\Ccsd_User_Models_User $_identityStructure = null;
 
     /**
      * Username for authentication
-     * @var string
+     * @var string|null
      */
-    protected $_username = null;
+    protected ?string $_username = null;
 
     /**
      * Password for authentication (plain text, will be hashed in SQL)
-     * @var string
+     * @var string|null
      */
-    protected $_password = null;
+    protected ?string $_password = null;
 
     /**
      * Authenticates user against CAS database
      *
      * @return \Zend_Auth_Result
      */
-    public function authenticate()
+    public function authenticate(): \Zend_Auth_Result
     {
         // Get CAS database adapter
         $casDb = \Ccsd_Db_Adapter_Cas::getAdapter();
@@ -112,7 +112,7 @@ class Mysql implements AdapterInterface
      * @param \Zend_Controller_Action $controller
      * @return bool
      */
-    public function pre_auth($controller)
+    public function pre_auth($controller): bool
     {
         $request = $controller->getRequest();
         $params = $request->getParams();
@@ -143,7 +143,7 @@ class Mysql implements AdapterInterface
      * @param \Zend_Auth_Result $authinfo
      * @return \Ccsd_User_Models_User
      */
-    public function post_auth($controller, $authinfo)
+    public function post_auth($controller, $authinfo): \Ccsd_User_Models_User
     {
         // Return user object from authentication result
         // It already contains CAS database data
@@ -157,7 +157,7 @@ class Mysql implements AdapterInterface
      * @param \ArrayAccess $array_attr
      * @return \Ccsd_User_Models_User
      */
-    public function pre_login($array_attr)
+    public function pre_login($array_attr): \Ccsd_User_Models_User
     {
         // $array_attr is the User object returned by post_auth
         // Return directly to allow session creation
@@ -171,7 +171,7 @@ class Mysql implements AdapterInterface
      * @param \Ccsd_User_Models_User $loginUser
      * @param string[] $array_attr
      */
-    public function post_login($loginUser, $array_attr)
+    public function post_login($loginUser, $array_attr): void
     {
         // Nothing to do - synchronization is handled by controller
     }
@@ -184,7 +184,7 @@ class Mysql implements AdapterInterface
      * @param string[] $array_attr
      * @return bool
      */
-    public function alt_login($loginUser, $array_attr)
+    public function alt_login($loginUser, $array_attr): bool
     {
         return true;
     }
@@ -196,7 +196,7 @@ class Mysql implements AdapterInterface
      * @param array $params
      * @return bool
      */
-    public function logout($params)
+    public function  logout($params): bool
     {
         \Zend_Auth::getInstance()->clearIdentity();
         \Zend_Session::destroy();
@@ -209,7 +209,7 @@ class Mysql implements AdapterInterface
      * @param \Ccsd_User_Models_User $_identity
      * @return $this
      */
-    public function setIdentity($_identity)
+    public function setIdentity(\Ccsd_User_Models_User $_identity): self
     {
         $this->_identity = $_identity;
         return $this;
@@ -218,9 +218,9 @@ class Mysql implements AdapterInterface
     /**
      * Get user identity
      *
-     * @return \Ccsd_User_Models_User
+     * @return \Ccsd_User_Models_User|null
      */
-    public function getIdentity()
+    public function getIdentity(): ?\Ccsd_User_Models_User
     {
         return $this->_identity;
     }
@@ -231,7 +231,7 @@ class Mysql implements AdapterInterface
      * @param \Ccsd_User_Models_User $identity
      * @return $this
      */
-    public function setIdentityStructure($identity)
+    public function setIdentityStructure(\Ccsd_User_Models_User $identity): self
     {
         $this->_identity = $identity;
         $this->_identityStructure = $identity;
@@ -241,9 +241,9 @@ class Mysql implements AdapterInterface
     /**
      * Get identity structure
      *
-     * @return \Ccsd_User_Models_User
+     * @return \Ccsd_User_Models_User|null
      */
-    public function getIdentityStructure()
+    public function getIdentityStructure(): ?\Ccsd_User_Models_User
     {
         return $this->_identityStructure;
     }
@@ -255,7 +255,7 @@ class Mysql implements AdapterInterface
      * @return $this
      * @throws \Zend_Auth_Exception
      */
-    protected function setUsername($username)
+    protected function setUsername(string $username): self
     {
         if (empty($username)) {
             throw new \Zend_Auth_Exception(
@@ -274,7 +274,7 @@ class Mysql implements AdapterInterface
      * @return $this
      * @throws \Zend_Auth_Exception
      */
-    protected function setCredential($password)
+    protected function setCredential(string $password): self
     {
         if (empty($password)) {
             throw new \Zend_Auth_Exception(
@@ -292,7 +292,7 @@ class Mysql implements AdapterInterface
      * @param array $params
      * @return $this
      */
-    public function setServiceURL($params)
+    public function setServiceURL(array $params): self
     {
         // No-op for MySQL adapter (CAS compatibility)
         return $this;
@@ -303,21 +303,16 @@ class Mysql implements AdapterInterface
      * Not implemented for MySQL adapter
      *
      * @param array $array_attr
-     * @param boolean $forceCreate
+     * @param bool $forceCreate
      * @return bool
      */
-    public function createUserFromAdapter($array_attr, $forceCreate)
+    public function createUserFromAdapter(array $array_attr, bool $forceCreate): bool
     {
         return false;
     }
 
-    /**
-     * Convert to HTML representation
-     *
-     * @param \ArrayAccess $attr
-     * @return string
-     */
-    public function toHtml($attr)
+
+    public function toHtml(): string
     {
         return self::ADAPTER_NAME;
     }
