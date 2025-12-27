@@ -34,8 +34,8 @@
 - `public/bdd_const.php` - Database constants
 
 # General information
-- writing outside the project directory is forbidden
-- write your plans in the tmp directory
+- writing outside the project directory is forbidden, even in /tmp
+- write your plans in the ./tmp/ directory of the project
 - when creating files, chmod 644
 
 # Directories to ignore
