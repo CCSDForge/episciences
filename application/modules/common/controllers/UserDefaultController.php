@@ -171,6 +171,13 @@ class UserDefaultController extends Zend_Controller_Action
         $adapter->setIdentityStructure($localUser);
         $adapter->setServiceURL($this->_request->getParams());
 
+        // Call pre_auth to handle form display or credential storage
+        // Returns false if form was displayed (stops execution), true or null to continue
+        $preAuthResult = $adapter->pre_auth($this);
+        if ($preAuthResult === false) {
+            return; // Form was displayed, stop here
+        }
+
         $result = Episciences_Auth::getInstance()->authenticate($adapter);
 
 
