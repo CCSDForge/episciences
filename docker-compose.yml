@@ -52,7 +52,7 @@ services:
         - epi-network
 
   solr:
-    image: solr:9.9
+    image: solr:9.10
     container_name: episciences-solr
     ports:
       - "8983:8983"
