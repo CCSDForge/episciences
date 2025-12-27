@@ -29,5 +29,8 @@
     "webpack-notifier": "^1.15.0",
     "yarn-upgrade-all": "^0.7.4"
   },
-  "packageManager": "yarn@4.12.0"
+  "packageManager": "yarn@4.12.0",
+  "resolutions": {
+    "find-up": "5.0.0"
+  }
 }
