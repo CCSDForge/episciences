@@ -3,13 +3,21 @@
     <?php $file = $this->fileName ?? $this->comment['FILE']; ?>
     <?php $file_delete_url = '/comments/removefilecomment/pcid/' .
         $this->comment['PCID'] . '/docid/' . $this->comment['DOCID'] . '/file/' . $file ?>
-    <a class="btn btn-danger btn-xs pull-right" style="margin-bottom:5px;" onclick="confirmDeleteFile('<?php echo $file_delete_url; ?>')">
+    <?php
+    // Different confirmation message for editor-to-author responses (deletes entire reply)
+    $isEditorToAuthorResponse = ($this->comment['TYPE'] ?? null) == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE;
+    $buttonText = $this->translate('Supprimer');
+    $confirmMessage = $isEditorToAuthorResponse
+        ? $this->translate('Voulez-vous supprimer votre réponse (texte et fichier attaché) ?')
+        : $this->translate('Voulez-vous supprimer ce fichier ?');
+    ?>
+    <a class="btn btn-danger btn-xs pull-right" style="margin-bottom:5px; color: white;" onclick="confirmDeleteFile('<?php echo $file_delete_url; ?>', '<?php echo addslashes($confirmMessage); ?>')">
         <span class="glyphicon glyphicon-trash"
-              style="margin-right: 5px;"></span><?php echo $this->translate('Supprimer'); ?>
+              style="margin-right: 5px;"></span><?php echo $buttonText; ?>
     </a>
     <script>
-        function confirmDeleteFile(href) {
-            if (confirm(translate('Voulez-vous supprimer ce fichier ?'))) {
+        function confirmDeleteFile(href, message) {
+            if (confirm(message || translate('Voulez-vous supprimer ce fichier ?'))) {
                 location.href = href;
             }
         }

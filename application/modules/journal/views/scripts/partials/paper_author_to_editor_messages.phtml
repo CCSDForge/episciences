@@ -94,10 +94,12 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                             <!-- Editor reply -->
                                             <?php
                                             // Anonymize editor name if setting is disabled and viewer is not an editor
+                                            // BUT: never anonymize the current user's own replies
                                             $displayComment = $reply;
 
                                             if (!$discloseEditorNames && !$isEditor &&
-                                                isset($reply['TYPE']) && $reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                                                isset($reply['TYPE']) && $reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE &&
+                                                (int)$reply['UID'] !== Episciences_Auth::getUid()) {
                                                 $displayComment = $reply;
                                                 // Set editor name based on current language
                                                 $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
