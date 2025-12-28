@@ -1276,6 +1276,30 @@ class AdministratepaperController extends PaperDefaultController
         // Prepare paper URL for author
         $paperUrl = $this->buildPublicPaperUrl($docId);
 
+        // Prepare attachments
+        $attachmentsFiles = [];
+        if ($parentComment->getFile()) {
+            $attachmentsFiles[$parentComment->getFile()] = $parentComment->getFilePath();
+        }
+        if ($editorResponse->getFile()) {
+            $attachmentsFiles[$editorResponse->getFile()] = $editorResponse->getFilePath();
+        }
+
+        // Build attachment list for email body with clickable links
+        $attachmentsListHtml = '';
+        if (!empty($attachmentsFiles)) {
+            $attachmentsListHtml = '<p>';
+            foreach ($attachmentsFiles as $filename => $filepath) {
+                // Build the file URL for download
+                // URL pattern: /docfiles/comments/{docId}/{filename}
+                $fileUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+                $fileUrl .= '/docfiles/comments/' . $docId . '/' . $filename;
+
+                $attachmentsListHtml .= '📎 <a href="' . htmlspecialchars($fileUrl) . '">' . htmlspecialchars($filename) . '</a><br>';
+            }
+            $attachmentsListHtml .= '</p>';
+        }
+
         // Prepare email tags
         $authorTags = [
             Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
@@ -1289,17 +1313,9 @@ class AdministratepaperController extends PaperDefaultController
             Episciences_Mail_Tags::TAG_COMMENT => $parentComment->getMessage(),
             Episciences_Mail_Tags::TAG_COMMENT_DATE => $this->view->Date($parentComment->getWhen(), $locale),
             Episciences_Mail_Tags::TAG_ANSWER => $editorResponse->getMessage(),
+            Episciences_Mail_Tags::TAG_ATTACHMENTS => $attachmentsListHtml,
             Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl
         ];
-
-        // Prepare attachments
-        $attachmentsFiles = [];
-        if ($parentComment->getFile()) {
-            $attachmentsFiles[$parentComment->getFile()] = $parentComment->getFilePath();
-        }
-        if ($editorResponse->getFile()) {
-            $attachmentsFiles[$editorResponse->getFile()] = $editorResponse->getFilePath();
-        }
 
         // Send email to author
         $mailSent = Episciences_Mail_Send::sendMailFromReview(
