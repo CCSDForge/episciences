@@ -1276,11 +1276,8 @@ class AdministratepaperController extends PaperDefaultController
         // Prepare paper URL for author
         $paperUrl = $this->buildPublicPaperUrl($docId);
 
-        // Prepare attachments
+        // Prepare attachments (only from editor's response, not from author's original message)
         $attachmentsFiles = [];
-        if ($parentComment->getFile()) {
-            $attachmentsFiles[$parentComment->getFile()] = $parentComment->getFilePath();
-        }
         if ($editorResponse->getFile()) {
             $attachmentsFiles[$editorResponse->getFile()] = $editorResponse->getFilePath();
         }
