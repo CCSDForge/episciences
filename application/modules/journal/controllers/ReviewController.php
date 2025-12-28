@@ -44,6 +44,50 @@ class ReviewController extends Zend_Controller_Action
                 $reviewDefaultsDoi = $review->getDoiSettings();
                 $reviewSettingsToSave = array_merge($reviewSettingsToSave, $reviewDefaultsDoi->__toArray());
 
+                // Normalize checkbox values: ensure unchecked checkboxes are '0' instead of empty/null
+                $checkboxSettings = [
+                    Episciences_Review::SETTING_ENCAPSULATE_EDITORS,
+                    Episciences_Review::SETTING_EDITORS_CAN_ACCEPT_PAPERS,
+                    Episciences_Review::SETTING_EDITORS_CAN_PUBLISH_PAPERS,
+                    Episciences_Review::SETTING_EDITORS_CAN_REJECT_PAPERS,
+                    Episciences_Review::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS,
+                    Episciences_Review::SETTING_EDITORS_CAN_EDIT_TEMPLATES,
+                    Episciences_Review::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
+                    Episciences_Review::SETTING_EDITORS_CAN_REASSIGN_ARTICLES,
+                    Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS,
+                    Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS,
+                    Episciences_Review::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
+                    Episciences_Review::SETTING_CAN_CHOOSE_VOLUME,
+                    Episciences_Review::SETTING_CAN_PICK_SECTION,
+                    Episciences_Review::SETTING_CAN_SUGGEST_REVIEWERS,
+                    Episciences_Review::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS,
+                    Episciences_Review::SETTING_CAN_ANSWER_WITH_TMP_VERSION,
+                    Episciences_Review::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
+                    Episciences_Review::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
+                    Episciences_Review::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES,
+                    Episciences_Review::SETTING_SHOW_RATINGS,
+                    Episciences_Review::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
+                    Episciences_Review::SETTING_SPECIAL_ISSUE_ACCESS_CODE,
+                    Episciences_Review::SETTING_ENCAPSULATE_REVIEWERS,
+                    Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS,
+                    Episciences_Review::SETTING_SYSTEM_NOTIFICATIONS,
+                    Episciences_Review::SETTING_ARXIV_PAPER_PASSWORD,
+                    Episciences_Review::SETTING_DISPLAY_STATISTICS,
+                    Episciences_Review::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
+                    Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE,
+                    Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED,
+                    Episciences_Review::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED,
+                    Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
+                    Episciences_Review::SETTING_DISPLAY_EMPTY_VOLUMES,
+                    Episciences_Review::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
+                ];
+
+                foreach ($checkboxSettings as $checkboxSetting) {
+                    // If checkbox is not set, empty, or null, set it to '0'
+                    if (!isset($reviewSettingsToSave[$checkboxSetting]) || $reviewSettingsToSave[$checkboxSetting] === '' || $reviewSettingsToSave[$checkboxSetting] === null) {
+                        $reviewSettingsToSave[$checkboxSetting] = '0';
+                    }
+                }
 
                 $review->setOptions($reviewSettingsToSave);
                 if ($review->save()) {

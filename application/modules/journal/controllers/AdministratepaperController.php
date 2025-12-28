@@ -1297,10 +1297,31 @@ class AdministratepaperController extends PaperDefaultController
             $attachmentsListHtml .= '</p>';
         }
 
+        // Check if editor names should be disclosed to authors
+        $review = Episciences_ReviewsManager::find($paper->getRvid());
+        $discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
+
+        // Convert to boolean - handle empty/null values as false (anonymized)
+        // Explicitly check for '1' or true, everything else (0, '', null, false) is false
+        $discloseEditorNames = ($discloseEditorNames === '1' || $discloseEditorNames === 1 || $discloseEditorNames === true);
+
+        // Use anonymous name if option is disabled
+        $senderFullName = $discloseEditorNames
+            ? Episciences_Auth::getFullName()
+            : ($locale === 'fr' ? 'Un rédacteur' : 'An editor');
+
+        // Debug logging
+        error_log(sprintf(
+            '[Editor Reply] DOCID=%d, discloseEditorNames=%s, senderName=%s',
+            $docId,
+            var_export($discloseEditorNames, true),
+            $senderFullName
+        ));
+
         // Prepare email tags
         $authorTags = [
             Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
-            Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
+            Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => $senderFullName,
             Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => Episciences_Auth::getScreenName(),
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
