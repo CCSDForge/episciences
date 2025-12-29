@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
 - New option to allow Editors to receive 'Comments for editors' before declaring a conflict of interest (disabled by default)
 - Volume Settings: add New configuration section(displayEmptyVolumes and allowEditVolumeTitleWithPublishedArticles)  in journal settings
+- [#350](https://github.com/CCSDForge/episciences/issues/350) Author-Editor Communication Settings:
+  - New option to allow authors to contact assigned editors (`authorsCanContactEditors`)
+  - New option to disclose editor names to authors or keep them anonymized (`discloseEditorNamesToAuthors`)
 
 ### Fixed
 - [#830](https://github.com/CCSDForge/episciences/issues/830)  Paper number messed up for secondary volume
