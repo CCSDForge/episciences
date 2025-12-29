@@ -267,4 +267,18 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
             }
         }
     }
+
+    /**
+     * Register SQL Profiler plugin to add query stats to HTTP headers
+     * This makes profiler data visible in browser DevTools for AJAX requests
+     */
+    protected function _initSqlProfilerPlugin(): void
+    {
+        // Only register plugin if profiler is enabled
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        if ($db && $db->getProfiler()->getEnabled()) {
+            $frontController = Zend_Controller_Front::getInstance();
+            $frontController->registerPlugin(new Episciences_Controller_Plugin_SqlProfiler());
+        }
+    }
 }

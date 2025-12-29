@@ -74,12 +74,12 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                     <?php endif; ?>
                 </td>
                 <td><?php echo $this->escape($user['SCREEN_NAME']); ?></td>
-                <?php if (array_key_exists('CAS', $user)) : ?>
+                <?php if (array_key_exists('CAS', $user) && $user['CAS'] !== null) : ?>
                     <td><?php echo $this->escape($user['CAS']['USERNAME']); ?></td>
                     <td><?php echo $this->escape($user['CAS']['EMAIL']); ?></td>
                 <?php else: ?>
-                    <td><?= $this->escape($user['CAS']['USERNAME']); ?></td>
-                    <td><?= $this->escape($user['CAS']['EMAIL']); ?></td>
+                    <td><?= $this->escape($user['username'] ?? ''); ?></td>
+                    <td><?= $this->escape($user['email'] ?? ''); ?></td>
                     <?php try {
                         $this->log(RVCODE . '_NOTICE_UNDEFINED_CAS_INDEX_IN_ARRAY_USER: ' . json_encode($user, JSON_THROW_ON_ERROR));
                     } catch (JsonException $e) {
@@ -88,7 +88,8 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                 <?php endif; ?>
                 <td>
                     <?php if (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor()) : ?>
-                        <button onclick="getRoles(this, <?php echo $user['uid'] ?>)"
+                        <button data-uid="<?php echo $this->escape($user['uid']); ?>"
+                                onclick="getRoles(this, parseInt(this.dataset.uid))"
                                 class="btn btn-sm btn-default popover-link"
                                 style="float: right; font-size: 10px; margin-left: 10px;"><span
                                     class="darkgrey caret"></span></button>

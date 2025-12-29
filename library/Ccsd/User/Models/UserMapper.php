@@ -170,7 +170,7 @@ class Ccsd_User_Models_UserMapper {
     /**
      * Recherche un utilisateur par son UID
      * @param integer $uid
-     * @param Ccsd_User_Models_User $user
+     * @param Ccsd_User_Models_User|null $user
      * @return Zend_Db_Table_Row_Abstract
      * @throws Exception
      */

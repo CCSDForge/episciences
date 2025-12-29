@@ -418,7 +418,8 @@ class Episciences_Review
     {
         $result = [];
         /** @var Episciences_User[] $users */
-        $users = Episciences_UsersManager::getUsersWithRoles($role);
+        // OPTIMIZATION: Use batch loading with CAS data to avoid N+1 queries
+        $users = Episciences_UsersManager::getUsersWithRolesEagerCAS($role);
 
         if ($users) {
 
