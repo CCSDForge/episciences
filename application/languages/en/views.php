@@ -821,6 +821,7 @@ return array(
     "Envoyer un message à l'auteur" => 'Send a message to the author',
     "Envoyer un message aux rédacteurs" => 'Send a message to the assigned editors',
     "Répondre à l'auteur" => 'Reply to the author',
+    "Communication éditeur-auteur" => 'Editor-author communication',
     "Rédacteurs assignés" => 'Assigned editors',
     "Utilisez ce formulaire pour envoyer un message aux rédacteurs assignés à votre article." => 'Use this form to send a message to the editors assigned to your article.',
     "Messages précédents" => 'Previous messages',

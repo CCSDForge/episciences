@@ -30,14 +30,7 @@ if ($canAuthorContactEditors && $canViewPanel) :
     <div class="panel panel-default collapsable">
         <div class="panel-heading">
             <h2 class="panel-title">
-                <?php
-                // Different title depending on context
-                if ($isEditor) {
-                    echo $this->translate("Répondre à l'auteur");
-                } else {
-                    echo $this->translate("Envoyer un message aux rédacteurs");
-                }
-                ?>
+                <?php echo $this->translate("Communication éditeur-auteur"); ?>
             </h2>
         </div>
         <div class="panel-body">
