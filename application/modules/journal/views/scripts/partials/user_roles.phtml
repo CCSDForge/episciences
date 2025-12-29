@@ -1,6 +1,6 @@
 <?php if ($this->roles) : ?>
     <?php foreach ($this->roles as $role) : ?>
-        <?php $class = 'role-' . $role; ?>
+        <?php $class = 'role-' . $this->escape($role); ?>
         <div style="float: left; margin: 0 1px"><?php echo '<span class="label ' . $class . '">' . $this->translate($role) . '</span>'; ?></div>
     <?php endforeach; ?>
 <?php endif; ?>

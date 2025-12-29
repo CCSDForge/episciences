@@ -421,7 +421,7 @@ class Episciences_Paper
     private $_latestVersionId;
     private $_suggestedEditors;
     /** @var Episciences_Editor[] $_editors */
-    private $_editors = [];
+    private $_editors;
     private $_suggestedReviewers;
     /** @var Episciences_Reviewer[] $_reviewers */
     private $_reviewers;
@@ -435,7 +435,7 @@ class Episciences_Paper
     /** @var Episciences_User[] $_coAuthors */
     private $_coAuthors;
     /** @var Array [Episciences_Paper_Conflict] */
-    private $_conflicts = []; // defines whether the paper has been submitted or imported
+    private $_conflicts; // defines whether the paper has been submitted or imported
     /**
      * Position in volume
      * @var null | int
@@ -772,6 +772,40 @@ class Episciences_Paper
         return $this->_uId;
     }
 
+    /**
+     * Load the paper's contributor/submitter user object with CAS data
+     *
+     * Helper method to avoid repeated code pattern of creating a user
+     * and calling findWithCAS(). This pattern appears 11+ times in controllers.
+     *
+     * Usage example:
+     * ```php
+     * // Before:
+     * $contributor = new Episciences_User();
+     * $contributor->findWithCAS($paper->getUid());
+     *
+     * // After:
+     * $contributor = $paper->loadContributor();
+     * ```
+     *
+     * @param int|null $uid User ID to load (defaults to paper's UID)
+     * @return Episciences_User|null User object or null if not found
+     */
+    public function loadContributor(?int $uid = null): ?Episciences_User
+    {
+        // Use paper's UID if no specific UID provided
+        $uid = $uid ?? $this->getUid();
+
+        // Return null if no UID available
+        if (!$uid) {
+            return null;
+        }
+
+        // Create and load user with CAS data
+        $user = new Episciences_User();
+        return $user->findWithCAS($uid) ? $user : null;
+    }
+
     /*
      * A paper object, as an array, with only public information
      */
@@ -972,7 +1006,7 @@ class Episciences_Paper
      */
     public function getSubmitter(): \Episciences_User
     {
-        if (empty($this->_submitter) && $this->getUid()) {
+        if (!isset($this->_submitter) && $this->getUid()) {
             $this->loadSubmitter();
         }
         if (!$this->_submitter) {
@@ -2430,7 +2464,7 @@ class Episciences_Paper
      */
     public function getEditors($active = true, $getCASdata = false): array
     {
-        if (empty($this->_editors) || $getCASdata) {
+        if (!isset($this->_editors) || $getCASdata) {
             $editors = Episciences_PapersManager::getEditors($this->getDocid(), $active, $getCASdata);
             $this->_editors = $editors;
         }
@@ -3925,7 +3959,7 @@ class Episciences_Paper
      */
     public function getCopyEditors(bool $active = true, bool $getCASdata = false): array
     {
-        if (empty($this->_copyEditors) || $getCASdata) {
+        if (!isset($this->_copyEditors) || $getCASdata) {
             $copyEditors = Episciences_PapersManager::getCopyEditors($this->getDocid(), $active, $getCASdata);
             $this->_copyEditors = $copyEditors;
         }
@@ -4674,7 +4708,7 @@ class Episciences_Paper
     public function getConflicts(bool $onlyConfirmed = false, bool $sortedByAnswer = false): array
     {
 
-        if($this->_conflicts){
+        if(!isset($this->_conflicts)){
             $this->loadConflicts();
         }
 
@@ -4754,11 +4788,22 @@ class Episciences_Paper
     }
 
     /**
+     * Set revision deadline
+     * When called with a parameter (batch loading), sets the deadline directly.
+     * When called without parameters (legacy behavior), queries the database.
+     *
+     * @param string|null $deadline Optional deadline to set directly (used by batch loading)
      * @return void
      */
-    public function setRevisionDeadline(): void
+    public function setRevisionDeadline(?string $deadline = null): void
     {
+        // If called with argument (even if null), use it directly (batch loading optimization)
+        if (func_num_args() > 0) {
+            $this->_revisionDeadline = $deadline;
+            return;
+        }
 
+        // Legacy behavior: query database for revision deadline
         $revisionDeadline = null;
 
         $revision_requests = Episciences_CommentsManager::getRevisionRequests($this->getDocid());
@@ -4769,6 +4814,167 @@ class Episciences_Paper
         }
 
         $this->_revisionDeadline = $revisionDeadline;
+    }
+
+    /**
+     * Set submitter object directly (used by batch loading to avoid N+1 queries)
+     *
+     * @param Episciences_User $submitter
+     * @return void
+     */
+    public function setSubmitter(Episciences_User $submitter): void
+    {
+        $this->_submitter = $submitter;
+    }
+
+    /**
+     * Set editors array directly (used by batch loading to avoid N+1 queries)
+     *
+     * @param array $editors Array of Episciences_Editor objects keyed by UID
+     * @return void
+     */
+    public function setEditors(array $editors): void
+    {
+        $this->_editors = $editors;
+    }
+
+    /**
+     * Set copy editors array directly (used by batch loading to avoid N+1 queries)
+     *
+     * @param array $copyEditors Array of Episciences_CopyEditor objects keyed by UID
+     * @return void
+     */
+    public function setCopyEditors(array $copyEditors): void
+    {
+        $this->_copyEditors = $copyEditors;
+    }
+
+    /**
+     * Set reviewers array directly (used by batch loading to avoid N+1 queries)
+     *
+     * @param array $reviewers Array of Episciences_Reviewer objects keyed by UID
+     * @return void
+     */
+    public function setReviewers(array $reviewers): void
+    {
+        $this->_reviewers = $reviewers;
+    }
+
+    /**
+     * Load editors for multiple papers in batch to avoid N+1 queries
+     * This method eliminates the N+1 query problem by loading all editors
+     * for all papers in a single batch operation.
+     *
+     * @param array $papers Array of Episciences_Paper objects
+     * @param bool $active Only return active editors
+     * @param bool $getCASdata Whether to load CAS data
+     * @return array Keyed by docid => [uid => Episciences_Editor]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function loadEditorsBatch(array $papers, bool $active = true, bool $getCASdata = false): array
+    {
+        // Delegate to generic batch loading method
+        return Episciences_PapersManager::loadAssignmentsBatch(
+            $papers,
+            Episciences_Acl::ROLE_EDITOR,
+            'Episciences_Editor',
+            $active, // true = only active, false = all (except inactive)
+            $getCASdata,
+            true // Load roles for editors
+        );
+    }
+
+    /**
+     * Load copy editors for multiple papers in batch to avoid N+1 queries
+     * This method eliminates the N+1 query problem by loading all copy editors
+     * for all papers in a single batch operation.
+     *
+     * @param array $papers Array of Episciences_Paper objects
+     * @param bool $active Only return active copy editors
+     * @param bool $getCASdata Whether to load CAS data
+     * @return array Keyed by docid => [uid => Episciences_CopyEditor]
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function loadCopyEditorsBatch(array $papers, bool $active = true, bool $getCASdata = false): array
+    {
+        // Delegate to generic batch loading method
+        return Episciences_PapersManager::loadAssignmentsBatch(
+            $papers,
+            Episciences_Acl::ROLE_COPY_EDITOR,
+            'Episciences_CopyEditor',
+            $active, // true = only active, false = all (except inactive)
+            $getCASdata,
+            true // Load roles for copy editors
+        );
+    }
+
+    /**
+     * Load revision deadlines for multiple papers in batch to avoid N+1 queries
+     * This method eliminates the N+1 query problem by loading all revision deadlines
+     * for all papers in a single batch operation.
+     *
+     * @param array $papers Array of Episciences_Paper objects
+     * @return array Keyed by docid => deadline date string (or null if no deadline)
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function loadRevisionDeadlinesBatch(array $papers): array
+    {
+        if (empty($papers)) {
+            return [];
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $deadlinesByPaper = [];
+
+        // Step 1: Extract all paper docids
+        $docIds = [];
+        foreach ($papers as $paper) {
+            $docid = $paper->getDocid();
+            $docIds[] = $docid;
+            $deadlinesByPaper[$docid] = null; // Initialize with null deadline
+        }
+
+        // Step 2: Query all revision requests for all papers at once
+        // This replaces N individual queries with 1 batch query
+        $select = $db->select()
+            ->from(T_PAPER_COMMENTS, ['DOCID', 'DEADLINE', 'PCID', 'PARENTID'])
+            ->where('DOCID IN (?)', $docIds)
+            ->where('TYPE = ?', Episciences_CommentsManager::TYPE_REVISION_REQUEST)
+            ->order('WHEN DESC'); // Most recent first
+
+        $results = $db->fetchAll($select);
+
+        // Step 3: Group results by paper and find the most recent unanswered revision request
+        $revisionRequestsByPaper = [];
+        foreach ($results as $row) {
+            $docid = $row['DOCID'];
+            if (!isset($revisionRequestsByPaper[$docid])) {
+                $revisionRequestsByPaper[$docid] = [];
+            }
+            $revisionRequestsByPaper[$docid][$row['PCID']] = $row;
+        }
+
+        // Step 4: Extract deadline from most recent unanswered revision request
+        foreach ($revisionRequestsByPaper as $docid => $revisionRequests) {
+            // Filter out requests that have replies (PARENTID points to them)
+            $repliedPcids = [];
+            foreach ($revisionRequests as $request) {
+                if ($request['PARENTID'] !== null) {
+                    $repliedPcids[$request['PARENTID']] = true;
+                }
+            }
+
+            // Find the first unanswered request (already sorted by WHEN DESC)
+            foreach ($revisionRequests as $pcid => $request) {
+                if (!isset($repliedPcids[$pcid])) {
+                    // This is an unanswered request - use its deadline
+                    $deadlinesByPaper[$docid] = $request['DEADLINE'];
+                    break; // Take only the most recent one
+                }
+            }
+        }
+
+        return $deadlinesByPaper;
     }
 
     /**

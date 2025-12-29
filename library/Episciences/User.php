@@ -216,9 +216,9 @@ class Episciences_User extends Ccsd_User_Models_User
         $subSelect = $db->select()->from(T_USER_ROLES, ['UID'])->where('RVID = ?', RVID);
         if ($withoutRoles) {
             $subSelect->where('ROLEID != "member');
-            $select->where('UID NOT IN (' . new Zend_db_Expr($subSelect) . ')');
+            $select->where('UID NOT IN (' . new Zend_Db_Expr($subSelect) . ')');
         } else {
-            $select->where('UID IN (' . new Zend_db_Expr($subSelect) . ')');
+            $select->where('UID IN (' . new Zend_Db_Expr($subSelect) . ')');
         }
 
         $users = $db->fetchAssoc($select);
@@ -340,6 +340,65 @@ class Episciences_User extends Ccsd_User_Models_User
         return $roles;
     }
 
+    /**
+     * Load roles for multiple users in a single query (batch loading)
+     * This method reduces N queries to 1 query (or few chunked queries for large datasets)
+     *
+     * @param array $uids Array of user IDs
+     * @param int|null $rvid Review ID (null = all reviews)
+     * @return array Roles data indexed by UID: [UID => [RVID => [ROLEID, ...]]]
+     */
+    public static function loadRolesBatch(array $uids, ?int $rvid = null): array
+    {
+        if (empty($uids)) {
+            return [];
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $rolesData = [];
+
+        // CHUNKED LOADING: Process in batches to avoid PDO/MySQL limits on IN() clause
+        $chunks = Episciences_Tools_ArrayHelper::chunkForSql($uids);
+
+        foreach ($chunks as $chunkUids) {
+            $select = $db->select()
+                ->from(T_USER_ROLES, ['UID', 'RVID', 'ROLEID'])
+                ->where('UID IN (?)', $chunkUids);
+
+            if ($rvid !== null) {
+                $select->where('RVID = ?', $rvid);
+            }
+
+            $result = $db->fetchAll($select);
+
+            // Group by UID then RVID
+            foreach ($result as $row) {
+                $uid = (int)$row['UID'];
+                $rvid = (int)$row['RVID'];
+                $roleId = $row['ROLEID'];
+
+                if (!isset($rolesData[$uid])) {
+                    $rolesData[$uid] = [];
+                }
+                if (!isset($rolesData[$uid][$rvid])) {
+                    $rolesData[$uid][$rvid] = [];
+                }
+                $rolesData[$uid][$rvid][] = $roleId;
+            }
+        }
+
+        // Add default MEMBER role for current RVID if needed
+        if (defined('RVID')) {
+            foreach ($uids as $uid) {
+                if (!isset($rolesData[$uid][RVID])) {
+                    $rolesData[$uid][RVID] = [Episciences_Acl::ROLE_MEMBER];
+                }
+            }
+        }
+
+        return $rolesData;
+    }
+
     public function toArray()
     {
         $res = parent::toArray();
@@ -391,7 +450,7 @@ class Episciences_User extends Ccsd_User_Models_User
         return ($forceResult) ? Episciences_Review::getDefaultLanguage() : null;
     }
 
-    public function setLangueid($_langueid)
+    public function setLangueid($_langueid): static
     {
         $this->_langueid = $_langueid;
         return $this;
@@ -612,6 +671,19 @@ class Episciences_User extends Ccsd_User_Models_User
             $uid = $this->getUid();
         }
 
+        if (!$uid) {
+            $this->setHasAccountData(false);
+            return false;
+        }
+
+        // Check if data was already loaded by find()
+        // If current object UID matches requested UID and _hasAccountData is set
+        if ($this->getUid() === $uid && $this->getHasAccountData() !== null) {
+            // Data already loaded, no need for SQL query
+            return $this->getHasAccountData();
+        }
+
+        // Data not loaded yet - execute SQL query as before
         $select = $this->_db->select()
             ->from(T_USERS, ['uuid','nombre' => 'COUNT(UID)'])
             ->where('UID = ?', $uid)
@@ -667,15 +739,18 @@ class Episciences_User extends Ccsd_User_Models_User
      * @param int $uid
      * @return Zend_Db_Table_Row_Abstract
      * @throws Zend_Db_Statement_Exception
+     * @throws Exception
      */
     public function findWithCAS($uid)
     {
+        // Query 1: Get local data AND set hasAccountData flag automatically
         $this->find($uid);
         $ccsdUserMapper = new Ccsd_User_Models_UserMapper();
 
         $row = $ccsdUserMapper->find($uid, $this);
 
-        if ($row && !$this->hasLocalData()) {
+        // Check hasAccountData flag directly (already set by find())
+        if ($row && !$this->getHasAccountData()) {
             $this->setScreenName();
         }
 
@@ -697,6 +772,8 @@ class Episciences_User extends Ccsd_User_Models_User
         $result = $select->query()->fetch(Zend_Db::FETCH_ASSOC);
 
         if (empty($result)) {
+            // No local data found - set flag to avoid second query
+            $this->setHasAccountData(false);
             return [];
         }
 
@@ -786,10 +863,13 @@ class Episciences_User extends Ccsd_User_Models_User
         $this->setOrcid($result['ORCID']);
         $this->setUuid($result['uuid']);
 
+        // Set hasAccountData flag since we found data
+        $this->setHasAccountData(true);
+
         return $result;
     }
 
-    public function isRoot()
+    public function isRoot(): bool
     {
         return $this->hasRole(Episciences_Acl::ROLE_ROOT);
     }
@@ -799,54 +879,49 @@ class Episciences_User extends Ccsd_User_Models_User
      * @param $rolecode
      * @return bool
      */
-    public function hasRole($rolecode)
+    public function hasRole($rolecode): bool
     {
-        return (is_array($this->getRoles()) && in_array($rolecode, $this->getRoles()));
+        return is_array($this->getRoles()) && in_array($rolecode, $this->getRoles());
     }
 
     // Création des données locales pour un utilisateur CAS
 
-    public function isChiefEditor()
+    public function isChiefEditor(): bool
     {
         return $this->hasRole(Episciences_Acl::ROLE_CHIEF_EDITOR);
     }
 
-    public function isGuestEditor()
+    public function isGuestEditor(): bool
     {
         return $this->hasRole(Episciences_Acl::ROLE_GUEST_EDITOR);
     }
 
-    public function isAdministrator()
+    public function isAdministrator(): bool
     {
         return $this->hasRole(Episciences_Acl::ROLE_ADMIN);
     }
 
-
-
-    // Renvoie la liste des utilisateurs, filtrés par mot clés (sert pour l'autocomplete)
-    // Par défaut, renvoie uniquement les utilisateurs qui n'ont pas de rôle dans la revue.
-
-    public function isEditor()
+    public function isEditor(): bool
     {
         return $this->hasRole(Episciences_Acl::ROLE_EDITOR);
     }
 
-    public function isReviewer()
+    public function isReviewer(): bool
     {
         return $this->hasRole(Episciences_Acl::ROLE_REVIEWER);
     }
 
-    public function isSecretary()
+    public function isSecretary(): bool
     {
         return $this->hasRole(Episciences_Acl::ROLE_SECRETARY);
     }
 
-    public function isWebmaster()
+    public function isWebmaster(): bool
     {
         return $this->hasRole(Episciences_Acl::ROLE_WEBMASTER);
     }
 
-    public function isMember()
+    public function isMember(): bool
     {
         return $this->hasRole(Episciences_Acl::ROLE_MEMBER);
     }
@@ -880,21 +955,15 @@ class Episciences_User extends Ccsd_User_Models_User
         return Episciences_ReviewsManager::getList(['is' => ['rvid' => $reviewIds]]);
     }
 
-    public function getHasAccountData()
+    public function getHasAccountData(): ?bool
     {
         return $this->_hasAccountData;
     }
 
-    public function setHasAccountData($_hasAccountData)
+    public function setHasAccountData(bool $_hasAccountData): static
     {
-        if (!is_bool($_hasAccountData)) {
-            throw new InvalidArgumentException(
-                'hasAccountData : boolean attendu');
-        } else {
-
-            $this->_hasAccountData = $_hasAccountData;
-            return $this;
-        }
+        $this->_hasAccountData = $_hasAccountData;
+        return $this;
     }
 
     public function createLocalData()

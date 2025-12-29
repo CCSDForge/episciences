@@ -27,7 +27,8 @@
 ## Code
 - Write comments in English
 - Do not use Jquery for JavaScript
-- 
+- make sure files are chmod 644
+
 ## Key Files
 - `application/configs/application.ini` - Main config
 - `config/pwd.json` - Credentials (not in repo)

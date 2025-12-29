@@ -20,7 +20,22 @@ class Ccsd_Db_Adapter_Cas extends Ccsd_Db_Adapter
     {
         if (!self::$cas_adapter) {
             self::$_params = ['dbname' => CAS_NAME, 'port' => CAS_PORT, 'username' => CAS_USER, 'host' => CAS_HOST, 'password' => CAS_PWD];
+
+            // Enable profiler if main DB profiler is enabled (for debugging)
+            $mainAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $profiler = $mainAdapter?->getProfiler();
+            if ($profiler && $profiler->getEnabled()) {
+                self::$_params['profiler'] = true;
+            }
+
             self::$cas_adapter = parent::getAdapter();
+
+            // Enable profiler on the adapter if it was set in params
+            if (isset(self::$_params['profiler']) && self::$_params['profiler']) {
+                $profiler = new Zend_Db_Profiler();
+                $profiler->setEnabled(true);
+                self::$cas_adapter->setProfiler($profiler);
+            }
         }
         return self::$cas_adapter;
     }

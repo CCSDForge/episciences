@@ -1,15 +1,9 @@
--- Generation Time: Jun 13, 2024 at 04:01 PM
--- Server version: 8.0.29
+-- Generation Time: Dec 23, 2025 at 03:53 PM
+-- Server version: 8.0.38
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
-
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
 
 --
 -- Database: `episciences`
@@ -27,6 +21,44 @@ CREATE TABLE `authors` (
                            `paperid` int UNSIGNED NOT NULL,
                            `date_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `classification_jel`
+--
+
+CREATE TABLE `classification_jel` (
+                                      `code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+                                      `label` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `classification_msc2020`
+--
+
+CREATE TABLE `classification_msc2020` (
+                                          `code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+                                          `label` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+                                          `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `data_descriptor`
+--
+
+CREATE TABLE `data_descriptor` (
+                                   `id` int UNSIGNED NOT NULL,
+                                   `uid` int UNSIGNED NOT NULL,
+                                   `docid` int UNSIGNED NOT NULL,
+                                   `fileid` int UNSIGNED NOT NULL,
+                                   `version` float UNSIGNED NOT NULL DEFAULT '1',
+                                   `submission_date` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -59,11 +91,30 @@ CREATE TABLE `doi_queue_volumes` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `files`
+--
+
+CREATE TABLE `files` (
+                         `id` int UNSIGNED NOT NULL,
+                         `docid` int UNSIGNED NOT NULL,
+                         `name` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+                         `extension` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+                         `type_mime` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+                         `size` bigint UNSIGNED NOT NULL,
+                         `md5` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+                         `source` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'dd',
+                         `uploaded_date` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `MAIL_LOG`
 --
 
 CREATE TABLE `MAIL_LOG` (
                             `ID` int UNSIGNED NOT NULL,
+                            `UID` int UNSIGNED DEFAULT NULL COMMENT 'Sender identifier (via the mailing module or the article page)',
                             `RVID` int UNSIGNED NOT NULL,
                             `DOCID` int UNSIGNED DEFAULT NULL,
                             `FROM` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
@@ -130,25 +181,63 @@ CREATE TABLE `NEWS` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `news`
+--
+
+CREATE TABLE `news` (
+                        `id` int UNSIGNED NOT NULL,
+                        `legacy_id` int UNSIGNED DEFAULT NULL COMMENT 'Legacy News id',
+                        `code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Journal code rvcode',
+                        `uid` int UNSIGNED NOT NULL,
+                        `date_creation` datetime DEFAULT NULL,
+                        `date_updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        `title` json NOT NULL COMMENT 'Page title',
+                        `content` json DEFAULT NULL,
+                        `link` json DEFAULT NULL,
+                        `visibility` json NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pages`
+--
+
+CREATE TABLE `pages` (
+                         `id` int NOT NULL,
+                         `code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Journal code rvcode',
+                         `uid` int UNSIGNED NOT NULL,
+                         `date_creation` datetime DEFAULT NULL,
+                         `date_updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                         `title` json NOT NULL COMMENT 'Page title',
+                         `content` json NOT NULL,
+                         `visibility` json NOT NULL,
+                         `page_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Page code'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `PAPERS`
 --
 
 CREATE TABLE `PAPERS` (
                           `DOCID` int UNSIGNED NOT NULL COMMENT 'Unique Identifier for each submission',
                           `PAPERID` int UNSIGNED DEFAULT NULL COMMENT 'Common Identifier for several versions of a paper',
-                          `DOI` varchar(250) CHARACTER SET utf8mb3 COLLATE utf8_general_ci DEFAULT NULL COMMENT 'PID of accepted and published papers',
-                          `TYPE` json DEFAULT NULL,
+                          `DOI` varchar(250) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT 'PID of accepted and published papers',
                           `RVID` int UNSIGNED NOT NULL COMMENT 'Link to Journal ID',
                           `VID` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Link to Volume ID',
                           `SID` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Link to Section ID',
                           `UID` int UNSIGNED NOT NULL COMMENT 'Link to User ID',
                           `STATUS` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Status of the submission',
-                          `IDENTIFIER` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8_general_ci NOT NULL COMMENT 'Open Repository Identifier',
+                          `IDENTIFIER` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT 'Open Repository Identifier',
                           `VERSION` float UNSIGNED NOT NULL DEFAULT '1' COMMENT 'Version identifier of a submission',
                           `REPOID` int UNSIGNED NOT NULL COMMENT 'Link to Repository ID',
-                          `RECORD` text CHARACTER SET utf8mb3 COLLATE utf8_general_ci NOT NULL COMMENT 'Text of Metadata Record from Open repository ',
-                          `CONCEPT_IDENTIFIER` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8_general_ci DEFAULT NULL COMMENT 'Zenodo ID This identifier represents all versions',
-                          `FLAG` enum('submitted','imported') CHARACTER SET utf8mb3 COLLATE utf8_general_ci NOT NULL DEFAULT 'submitted' COMMENT 'Submission source',
+                          `TYPE` json DEFAULT NULL,
+                          `RECORD` text CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT 'Text of Metadata Record from Open repository ',
+                          `DOCUMENT` json DEFAULT NULL,
+                          `CONCEPT_IDENTIFIER` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT 'Zenodo ID This identifier represents all versions',
+                          `FLAG` enum('submitted','imported') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT 'submitted' COMMENT 'Submission source',
                           `PASSWORD` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT 'Encrypted temporary password for sharing arXiv submissions',
                           `WHEN` datetime NOT NULL COMMENT 'Timestamp of insertion in database',
                           `SUBMISSION_DATE` datetime NOT NULL COMMENT 'Timestamp of the 1st submission - common to all versions of a Paper',
@@ -178,11 +267,12 @@ CREATE TABLE `paper_citations` (
 
 CREATE TABLE `paper_classifications` (
                                          `id` int UNSIGNED NOT NULL,
-                                         `paperid` int UNSIGNED NOT NULL,
-                                         `classification` varchar(200) NOT NULL,
-                                         `type` varchar(50) NOT NULL,
-                                         `source_id` int UNSIGNED NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+                                         `docid` int UNSIGNED NOT NULL,
+                                         `classification_code` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+                                         `classification_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+                                         `source_id` int UNSIGNED NOT NULL,
+                                         `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -213,7 +303,7 @@ CREATE TABLE `paper_conflicts` (
                                    `cid` int UNSIGNED NOT NULL,
                                    `paper_id` int UNSIGNED NOT NULL,
                                    `by` int UNSIGNED NOT NULL COMMENT 'uid',
-                                   `answer` enum('yes','no') CHARACTER SET utf8mb3 COLLATE utf8_general_ci NOT NULL,
+                                   `answer` enum('yes','no') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
                                    `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
                                    `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='conflicts handling';
@@ -295,9 +385,10 @@ CREATE TABLE `PAPER_LOG` (
                              `UID` int UNSIGNED NOT NULL,
                              `RVID` int UNSIGNED NOT NULL,
                              `ACTION` varchar(50) NOT NULL,
-                             `DETAIL` mediumtext,
                              `FILE` varchar(150) DEFAULT NULL,
-                             `DATE` datetime NOT NULL
+                             `DATE` datetime NOT NULL,
+                             `DETAIL` json DEFAULT NULL,
+                             `status` int UNSIGNED GENERATED ALWAYS AS (json_unquote(json_extract(`DETAIL`,_utf8mb4'$.status'))) STORED
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='Life of papers';
 
 -- --------------------------------------------------------
@@ -389,9 +480,11 @@ CREATE TABLE `REVIEW` (
                           `RVID` int UNSIGNED NOT NULL,
                           `CODE` varchar(50) NOT NULL,
                           `NAME` varchar(2000) NOT NULL,
+                          `subtitle` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
                           `STATUS` smallint UNSIGNED NOT NULL DEFAULT '0',
                           `CREATION` datetime NOT NULL,
-                          `PIWIKID` int UNSIGNED NOT NULL
+                          `PIWIKID` int UNSIGNED NOT NULL,
+                          `is_new_front_switched` enum('yes','no') NOT NULL DEFAULT 'no'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='Basic journal informations';
 
 -- --------------------------------------------------------
@@ -401,6 +494,7 @@ CREATE TABLE `REVIEW` (
 --
 
 CREATE TABLE `REVIEWER_ALIAS` (
+                                  `ID` int UNSIGNED NOT NULL,
                                   `UID` int UNSIGNED NOT NULL,
                                   `DOCID` int UNSIGNED NOT NULL,
                                   `ALIAS` int UNSIGNED NOT NULL
@@ -432,7 +526,7 @@ CREATE TABLE `REVIEWER_REPORT` (
                                    `STATUS` int UNSIGNED NOT NULL,
                                    `CREATION_DATE` datetime NOT NULL,
                                    `UPDATE_DATE` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -442,8 +536,8 @@ CREATE TABLE `REVIEWER_REPORT` (
 
 CREATE TABLE `REVIEW_SETTING` (
                                   `RVID` int UNSIGNED NOT NULL,
-                                  `SETTING` varchar(200) CHARACTER SET utf8mb3 COLLATE utf8_unicode_ci NOT NULL,
-                                  `VALUE` text CHARACTER SET utf8mb3 COLLATE utf8_unicode_ci,
+                                  `SETTING` varchar(200) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
+                                  `VALUE` text CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci,
                                   `TIME` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='Journal configurations';
 
@@ -459,7 +553,7 @@ CREATE TABLE `SECTION` (
                            `POSITION` int UNSIGNED NOT NULL,
                            `titles` json DEFAULT NULL,
                            `descriptions` json DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -469,9 +563,25 @@ CREATE TABLE `SECTION` (
 
 CREATE TABLE `SECTION_SETTING` (
                                    `SID` int UNSIGNED NOT NULL,
-                                   `SETTING` varchar(200) CHARACTER SET utf8mb3 COLLATE utf8_unicode_ci NOT NULL,
-                                   `VALUE` text CHARACTER SET utf8mb3 COLLATE utf8_unicode_ci
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci;
+                                   `SETTING` varchar(200) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
+                                   `VALUE` text CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `STAT_PROCESSING_LOG`
+--
+
+CREATE TABLE `STAT_PROCESSING_LOG` (
+                                       `ID` int UNSIGNED NOT NULL,
+                                       `JOURNAL_CODE` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                                       `PROCESSED_DATE` date NOT NULL,
+                                       `PROCESSED_AT` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                       `FILE_PATH` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                                       `RECORDS_PROCESSED` int UNSIGNED NOT NULL DEFAULT '0',
+                                       `STATUS` enum('success','error','partial') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'success'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tracks processed statistics log files to prevent duplicates';
 
 -- --------------------------------------------------------
 
@@ -483,10 +593,10 @@ CREATE TABLE `STAT_TEMP` (
                              `VISITID` int UNSIGNED NOT NULL,
                              `DOCID` int UNSIGNED NOT NULL,
                              `IP` int UNSIGNED NOT NULL,
-                             `HTTP_USER_AGENT` varchar(2000) CHARACTER SET utf8mb3 COLLATE utf8_unicode_ci NOT NULL,
+                             `HTTP_USER_AGENT` varchar(2000) CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL,
                              `DHIT` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                             `CONSULT` enum('notice','file','oai') CHARACTER SET utf8mb3 COLLATE utf8_unicode_ci NOT NULL DEFAULT 'notice'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci COMMENT='Statistique de consultation journalière temporaire';
+                             `CONSULT` enum('notice','file','oai') CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci NOT NULL DEFAULT 'notice'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci COMMENT='Statistique de consultation journalière temporaire';
 
 -- --------------------------------------------------------
 
@@ -496,7 +606,8 @@ CREATE TABLE `STAT_TEMP` (
 
 CREATE TABLE `USER` (
                         `UID` int UNSIGNED NOT NULL,
-                        `LANGUEID` varchar(2) CHARACTER SET utf8mb3 COLLATE utf8_general_ci NOT NULL DEFAULT 'fr' COMMENT 'Account language code',
+                        `uuid` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'Storing As a String',
+                        `LANGUEID` varchar(2) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT 'fr' COMMENT 'Account language code',
                         `SCREEN_NAME` varchar(250) NOT NULL,
                         `USERNAME` varchar(100) NOT NULL,
                         `API_PASSWORD` varchar(255) NOT NULL,
@@ -525,6 +636,7 @@ CREATE TABLE `USER_ASSIGNMENT` (
                                    `ITEMID` int UNSIGNED NOT NULL,
                                    `ITEM` varchar(50) NOT NULL DEFAULT 'paper',
                                    `UID` int UNSIGNED NOT NULL,
+                                   `FROM_UID` int UNSIGNED DEFAULT NULL COMMENT 'Linked from',
                                    `TMP_USER` tinyint UNSIGNED NOT NULL DEFAULT '0',
                                    `ROLEID` varchar(50) NOT NULL,
                                    `STATUS` varchar(20) NOT NULL,
@@ -555,6 +667,7 @@ CREATE TABLE `USER_INVITATION` (
 --
 
 CREATE TABLE `USER_INVITATION_ANSWER` (
+                                          `ID_UIA` int UNSIGNED NOT NULL,
                                           `ID` int UNSIGNED NOT NULL COMMENT 'Invitation ID',
                                           `ANSWER` varchar(10) NOT NULL,
                                           `ANSWER_DATE` datetime NOT NULL
@@ -567,6 +680,7 @@ CREATE TABLE `USER_INVITATION_ANSWER` (
 --
 
 CREATE TABLE `USER_INVITATION_ANSWER_DETAIL` (
+                                                 `ID_UIAD` int UNSIGNED NOT NULL,
                                                  `ID` int UNSIGNED NOT NULL COMMENT 'Invitation ID',
                                                  `NAME` varchar(30) NOT NULL,
                                                  `VALUE` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
@@ -596,7 +710,8 @@ CREATE TABLE `USER_MERGE` (
 CREATE TABLE `USER_ROLES` (
                               `UID` int UNSIGNED NOT NULL,
                               `RVID` int UNSIGNED NOT NULL DEFAULT '0',
-                              `ROLEID` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8_general_ci NOT NULL
+                              `ROLEID` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
+                              `IS_AVAILABLE` tinyint UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
@@ -625,7 +740,10 @@ CREATE TABLE `VOLUME` (
                           `POSITION` int UNSIGNED NOT NULL,
                           `BIB_REFERENCE` varchar(255) DEFAULT NULL COMMENT 'Volume bibliographical reference',
                           `titles` json DEFAULT NULL,
-                          `descriptions` json DEFAULT NULL
+                          `descriptions` json DEFAULT NULL,
+                          `vol_year` varchar(9) DEFAULT NULL,
+                          `vol_type` set('special_issue','proceedings') CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL,
+                          `vol_num` varchar(6) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='Journal volumes';
 
 -- --------------------------------------------------------
@@ -640,7 +758,9 @@ CREATE TABLE `VOLUME_METADATA` (
                                    `POSITION` int UNSIGNED NOT NULL,
                                    `CONTENT` json DEFAULT NULL COMMENT 'Metadata decsriptions',
                                    `FILE` varchar(250) DEFAULT NULL,
-                                   `titles` json DEFAULT NULL
+                                   `titles` json DEFAULT NULL,
+                                   `date_creation` datetime DEFAULT NULL,
+                                   `date_updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -653,7 +773,7 @@ CREATE TABLE `VOLUME_PAPER` (
                                 `ID` int UNSIGNED NOT NULL,
                                 `VID` int UNSIGNED NOT NULL,
                                 `DOCID` int UNSIGNED NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -662,10 +782,23 @@ CREATE TABLE `VOLUME_PAPER` (
 --
 
 CREATE TABLE `VOLUME_PAPER_POSITION` (
+                                         `ID` int UNSIGNED NOT NULL,
                                          `VID` int UNSIGNED NOT NULL,
                                          `PAPERID` int UNSIGNED NOT NULL,
                                          `POSITION` int UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `volume_proceeding`
+--
+
+CREATE TABLE `volume_proceeding` (
+                                     `VID` int UNSIGNED NOT NULL,
+                                     `SETTING` varchar(200) NOT NULL,
+                                     `VALUE` text CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -676,7 +809,7 @@ CREATE TABLE `VOLUME_PAPER_POSITION` (
 CREATE TABLE `VOLUME_SETTING` (
                                   `VID` int UNSIGNED NOT NULL,
                                   `SETTING` varchar(200) NOT NULL,
-                                  `VALUE` text CHARACTER SET utf8mb3 COLLATE utf8_unicode_ci
+                                  `VALUE` text CHARACTER SET utf8mb3 COLLATE utf8mb3_unicode_ci
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
@@ -751,76 +884,125 @@ CREATE TABLE `WEBSITE_STYLES` (
 --
 ALTER TABLE `authors`
     ADD PRIMARY KEY (`idauthors`),
-  ADD KEY `paperid` (`paperid`);
+    ADD KEY `paperid` (`paperid`);
+
+--
+-- Indexes for table `classification_jel`
+--
+ALTER TABLE `classification_jel`
+    ADD PRIMARY KEY (`code`);
+
+--
+-- Indexes for table `classification_msc2020`
+--
+ALTER TABLE `classification_msc2020`
+    ADD PRIMARY KEY (`code`);
+
+--
+-- Indexes for table `data_descriptor`
+--
+ALTER TABLE `data_descriptor`
+    ADD PRIMARY KEY (`id`),
+    ADD KEY `docid` (`docid`),
+    ADD KEY `fileid` (`fileid`),
+    ADD KEY `version` (`version`),
+    ADD KEY `submission_date` (`submission_date`),
+    ADD KEY `INDEX_UID` (`uid`);
 
 --
 -- Indexes for table `doi_queue`
 --
 ALTER TABLE `doi_queue`
     ADD PRIMARY KEY (`id_doi_queue`),
-  ADD UNIQUE KEY `paperid` (`paperid`),
-  ADD KEY `doi_status` (`doi_status`);
+    ADD UNIQUE KEY `paperid` (`paperid`),
+    ADD KEY `doi_status` (`doi_status`);
 
 --
 -- Indexes for table `doi_queue_volumes`
 --
 ALTER TABLE `doi_queue_volumes`
     ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uniq_vid` (`vid`) USING BTREE,
-  ADD KEY `vid` (`vid`);
+    ADD UNIQUE KEY `uniq_vid` (`vid`) USING BTREE,
+    ADD KEY `vid` (`vid`);
+
+--
+-- Indexes for table `files`
+--
+ALTER TABLE `files`
+    ADD PRIMARY KEY (`id`),
+    ADD KEY `INDEX_DOCID` (`docid`),
+    ADD KEY `INDEX_SOURCE` (`source`);
 
 --
 -- Indexes for table `MAIL_LOG`
 --
 ALTER TABLE `MAIL_LOG`
     ADD PRIMARY KEY (`ID`),
-  ADD KEY `RVID` (`RVID`),
-  ADD KEY `DOCID` (`DOCID`),
-  ADD KEY `WHEN` (`WHEN`);
+    ADD KEY `RVID` (`RVID`),
+    ADD KEY `DOCID` (`DOCID`),
+    ADD KEY `WHEN` (`WHEN`),
+    ADD KEY `UID` (`UID`);
 
 --
 -- Indexes for table `MAIL_TEMPLATE`
 --
 ALTER TABLE `MAIL_TEMPLATE`
     ADD PRIMARY KEY (`ID`),
-  ADD KEY `KEY` (`KEY`),
-  ADD KEY `RVCODE` (`RVCODE`),
-  ADD KEY `RVID` (`RVID`),
-  ADD KEY `PARENTID` (`PARENTID`),
-  ADD KEY `POSITION` (`POSITION`);
+    ADD KEY `KEY` (`KEY`),
+    ADD KEY `RVCODE` (`RVCODE`),
+    ADD KEY `RVID` (`RVID`),
+    ADD KEY `PARENTID` (`PARENTID`),
+    ADD KEY `POSITION` (`POSITION`);
 
 --
 -- Indexes for table `metadata_sources`
 --
 ALTER TABLE `metadata_sources`
     ADD PRIMARY KEY (`id`),
-  ADD KEY `type` (`type`);
+    ADD KEY `type` (`type`);
 
 --
 -- Indexes for table `NEWS`
 --
 ALTER TABLE `NEWS`
     ADD PRIMARY KEY (`NEWSID`),
-  ADD KEY `RVID` (`RVID`),
-  ADD KEY `ONLINE` (`ONLINE`),
-  ADD KEY `DATE_POST` (`DATE_POST`);
+    ADD KEY `RVID` (`RVID`),
+    ADD KEY `ONLINE` (`ONLINE`),
+    ADD KEY `DATE_POST` (`DATE_POST`);
+
+--
+-- Indexes for table `news`
+--
+ALTER TABLE `news`
+    ADD PRIMARY KEY (`id`),
+    ADD KEY `uid` (`uid`),
+    ADD KEY `code` (`code`);
+
+--
+-- Indexes for table `pages`
+--
+ALTER TABLE `pages`
+    ADD PRIMARY KEY (`id`),
+    ADD KEY `uid` (`uid`),
+    ADD KEY `rvcode` (`code`) USING BTREE,
+    ADD KEY `page_code` (`page_code`);
 
 --
 -- Indexes for table `PAPERS`
 --
 ALTER TABLE `PAPERS`
     ADD PRIMARY KEY (`DOCID`),
-  ADD KEY `FK_REPOID_idx` (`REPOID`),
-  ADD KEY `FK_VID_idx` (`VID`),
-  ADD KEY `FK_RVID_idx` (`RVID`),
-  ADD KEY `STATUS` (`STATUS`),
-  ADD KEY `PAPERID` (`PAPERID`),
-  ADD KEY `SID` (`SID`),
-  ADD KEY `UID` (`UID`),
-  ADD KEY `SUBMISSION_DATE` (`SUBMISSION_DATE`),
-  ADD KEY `PUBLICATION_DATE` (`PUBLICATION_DATE`),
-  ADD KEY `FLAG` (`FLAG`),
-  ADD KEY `DOI` (`DOI`);
+    ADD KEY `FK_REPOID_idx` (`REPOID`),
+    ADD KEY `FK_VID_idx` (`VID`),
+    ADD KEY `FK_RVID_idx` (`RVID`),
+    ADD KEY `STATUS` (`STATUS`),
+    ADD KEY `PAPERID` (`PAPERID`),
+    ADD KEY `SID` (`SID`),
+    ADD KEY `UID` (`UID`),
+    ADD KEY `SUBMISSION_DATE` (`SUBMISSION_DATE`),
+    ADD KEY `PUBLICATION_DATE` (`PUBLICATION_DATE`),
+    ADD KEY `FLAG` (`FLAG`),
+    ADD KEY `DOI` (`DOI`);
 ALTER TABLE `PAPERS` ADD FULLTEXT KEY `RECORD` (`RECORD`);
 
 --
@@ -828,52 +1010,54 @@ ALTER TABLE `PAPERS` ADD FULLTEXT KEY `RECORD` (`RECORD`);
 --
 ALTER TABLE `paper_citations`
     ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `source_id_2` (`source_id`,`docid`),
-  ADD KEY `docid` (`docid`),
-  ADD KEY `source_id` (`source_id`);
+    ADD UNIQUE KEY `source_id_2` (`source_id`,`docid`),
+    ADD KEY `docid` (`docid`),
+    ADD KEY `source_id` (`source_id`);
 
 --
 -- Indexes for table `paper_classifications`
 --
 ALTER TABLE `paper_classifications`
     ADD PRIMARY KEY (`id`),
-  ADD KEY `paperid` (`paperid`),
-  ADD KEY `type` (`type`),
-  ADD KEY `source_id` (`source_id`);
+    ADD UNIQUE KEY `uniqClassification` (`docid`,`classification_code`,`classification_name`),
+    ADD KEY `source_id` (`source_id`),
+    ADD KEY `docid` (`docid`),
+    ADD KEY `classification_code` (`classification_code`),
+    ADD KEY `classification_name` (`classification_name`);
 
 --
 -- Indexes for table `PAPER_COMMENTS`
 --
 ALTER TABLE `PAPER_COMMENTS`
     ADD PRIMARY KEY (`PCID`),
-  ADD KEY `DOCID` (`DOCID`),
-  ADD KEY `TYPE` (`TYPE`),
-  ADD KEY `UID` (`UID`),
-  ADD KEY `DEADLINE` (`DEADLINE`),
-  ADD KEY `WHEN` (`WHEN`),
-  ADD KEY `PARENTID` (`PARENTID`);
+    ADD KEY `DOCID` (`DOCID`),
+    ADD KEY `TYPE` (`TYPE`),
+    ADD KEY `UID` (`UID`),
+    ADD KEY `DEADLINE` (`DEADLINE`),
+    ADD KEY `WHEN` (`WHEN`),
+    ADD KEY `PARENTID` (`PARENTID`);
 
 --
 -- Indexes for table `paper_conflicts`
 --
 ALTER TABLE `paper_conflicts`
     ADD PRIMARY KEY (`cid`),
-  ADD UNIQUE KEY `U_PAPERID_BY` (`paper_id`,`by`) USING BTREE,
-  ADD KEY `BY_UID` (`by`),
-  ADD KEY `PAPERID` (`paper_id`),
-  ADD KEY `answer` (`answer`);
+    ADD UNIQUE KEY `U_PAPERID_BY` (`paper_id`,`by`) USING BTREE,
+    ADD KEY `BY_UID` (`by`),
+    ADD KEY `PAPERID` (`paper_id`),
+    ADD KEY `answer` (`answer`);
 
 --
 -- Indexes for table `paper_datasets`
 --
 ALTER TABLE `paper_datasets`
     ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique` (`doc_id`,`code`(15),`name`(35),`value`(47),`source_id`),
-  ADD KEY `doc_id` (`doc_id`),
-  ADD KEY `source_id` (`source_id`),
-  ADD KEY `code` (`code`(15)),
-  ADD KEY `name` (`name`(35)),
-  ADD KEY `id_paper_datasets_meta` (`id_paper_datasets_meta`);
+    ADD UNIQUE KEY `unique` (`doc_id`,`code`(15),`name`(35),`value`(47),`source_id`),
+    ADD KEY `doc_id` (`doc_id`),
+    ADD KEY `source_id` (`source_id`),
+    ADD KEY `code` (`code`(15)),
+    ADD KEY `name` (`name`(35)),
+    ADD KEY `id_paper_datasets_meta` (`id_paper_datasets_meta`);
 
 --
 -- Indexes for table `paper_datasets_meta`
@@ -886,80 +1070,83 @@ ALTER TABLE `paper_datasets_meta`
 --
 ALTER TABLE `paper_files`
     ADD PRIMARY KEY (`id`),
-  ADD KEY `doc_id` (`doc_id`),
-  ADD KEY `source` (`source`);
+    ADD KEY `doc_id` (`doc_id`),
+    ADD KEY `source` (`source`);
 
 --
 -- Indexes for table `paper_licences`
 --
 ALTER TABLE `paper_licences`
     ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `docid` (`docid`),
-  ADD KEY `source_id` (`source_id`);
+    ADD UNIQUE KEY `docid` (`docid`),
+    ADD KEY `source_id` (`source_id`);
 
 --
 -- Indexes for table `PAPER_LOG`
 --
 ALTER TABLE `PAPER_LOG`
     ADD PRIMARY KEY (`LOGID`),
-  ADD KEY `fk_T_PAPER_MODIF_T_PAPERS_idx` (`DOCID`),
-  ADD KEY `fk_T_PAPER_MODIF_T_USER_idx` (`UID`),
-  ADD KEY `PAPERID` (`PAPERID`),
-  ADD KEY `RVID` (`RVID`),
-  ADD KEY `DATE` (`DATE`);
+    ADD KEY `fk_T_PAPER_MODIF_T_PAPERS_idx` (`DOCID`),
+    ADD KEY `fk_T_PAPER_MODIF_T_USER_idx` (`UID`),
+    ADD KEY `PAPERID` (`PAPERID`),
+    ADD KEY `RVID` (`RVID`),
+    ADD KEY `DATE` (`DATE`),
+    ADD KEY `idx_status` (`status`),
+    ADD KEY `ACTION` (`ACTION`);
 
 --
 -- Indexes for table `paper_projects`
 --
 ALTER TABLE `paper_projects`
     ADD PRIMARY KEY (`idproject`),
-  ADD UNIQUE KEY `paperid` (`paperid`),
-  ADD UNIQUE KEY `paperid_src_uniq` (`paperid`,`source_id`) USING BTREE,
-  ADD KEY `idx_source_id` (`source_id`);
+    ADD UNIQUE KEY `paperid` (`paperid`),
+    ADD UNIQUE KEY `paperid_src_uniq` (`paperid`,`source_id`) USING BTREE,
+    ADD KEY `idx_source_id` (`source_id`);
 
 --
 -- Indexes for table `PAPER_SETTINGS`
 --
 ALTER TABLE `PAPER_SETTINGS`
     ADD PRIMARY KEY (`PSID`),
-  ADD KEY `SETTING` (`SETTING`),
-  ADD KEY `DOCID` (`DOCID`);
+    ADD KEY `SETTING` (`SETTING`),
+    ADD KEY `DOCID` (`DOCID`);
 
 --
 -- Indexes for table `PAPER_STAT`
 --
 ALTER TABLE `PAPER_STAT`
     ADD PRIMARY KEY (`DOCID`,`CONSULT`,`IP`,`HIT`),
-  ADD KEY `COUNTER` (`COUNTER`),
-  ADD KEY `CONSULT` (`CONSULT`);
+    ADD KEY `COUNTER` (`COUNTER`),
+    ADD KEY `CONSULT` (`CONSULT`);
 
 --
 -- Indexes for table `refresh_tokens`
 --
 ALTER TABLE `refresh_tokens`
     ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `UNIQ_9BACE7E16973EC66` (`refreshToken`);
+    ADD UNIQUE KEY `UNIQ_9BACE7E16973EC66` (`refreshToken`);
 
 --
 -- Indexes for table `REMINDERS`
 --
 ALTER TABLE `REMINDERS`
     ADD PRIMARY KEY (`ID`),
-  ADD KEY `RVID` (`RVID`),
-  ADD KEY `TYPE` (`TYPE`);
+    ADD KEY `RVID` (`RVID`),
+    ADD KEY `TYPE` (`TYPE`);
 
 --
 -- Indexes for table `REVIEW`
 --
 ALTER TABLE `REVIEW`
     ADD PRIMARY KEY (`RVID`),
-  ADD UNIQUE KEY `U_CODE` (`CODE`),
-  ADD KEY `STATUS` (`STATUS`);
+    ADD UNIQUE KEY `U_CODE` (`CODE`),
+    ADD KEY `STATUS` (`STATUS`);
 
 --
 -- Indexes for table `REVIEWER_ALIAS`
 --
 ALTER TABLE `REVIEWER_ALIAS`
+    ADD PRIMARY KEY (`ID`),
     ADD UNIQUE KEY `UNIQUE` (`UID`,`DOCID`,`ALIAS`) USING BTREE;
 
 --
@@ -973,23 +1160,23 @@ ALTER TABLE `REVIEWER_POOL`
 --
 ALTER TABLE `REVIEWER_REPORT`
     ADD PRIMARY KEY (`ID`),
-  ADD UNIQUE KEY `UID` (`UID`,`DOCID`),
-  ADD KEY `ONBEHALF_UID` (`ONBEHALF_UID`) USING BTREE;
+    ADD UNIQUE KEY `UID` (`UID`,`DOCID`),
+    ADD KEY `ONBEHALF_UID` (`ONBEHALF_UID`) USING BTREE;
 
 --
 -- Indexes for table `REVIEW_SETTING`
 --
 ALTER TABLE `REVIEW_SETTING`
     ADD PRIMARY KEY (`RVID`,`SETTING`),
-  ADD KEY `FK_CONFIG_idx` (`RVID`);
+    ADD KEY `FK_CONFIG_idx` (`RVID`);
 
 --
 -- Indexes for table `SECTION`
 --
 ALTER TABLE `SECTION`
     ADD PRIMARY KEY (`SID`),
-  ADD KEY `RVID` (`RVID`),
-  ADD KEY `POSITION` (`POSITION`);
+    ADD KEY `RVID` (`RVID`),
+    ADD KEY `POSITION` (`POSITION`);
 
 --
 -- Indexes for table `SECTION_SETTING`
@@ -998,60 +1185,74 @@ ALTER TABLE `SECTION_SETTING`
     ADD PRIMARY KEY (`SID`,`SETTING`);
 
 --
+-- Indexes for table `STAT_PROCESSING_LOG`
+--
+ALTER TABLE `STAT_PROCESSING_LOG`
+    ADD PRIMARY KEY (`ID`),
+    ADD UNIQUE KEY `unique_journal_date` (`JOURNAL_CODE`,`PROCESSED_DATE`),
+    ADD KEY `idx_journal_code` (`JOURNAL_CODE`),
+    ADD KEY `idx_processed_date` (`PROCESSED_DATE`),
+    ADD KEY `idx_processed_at` (`PROCESSED_AT`);
+
+--
 -- Indexes for table `STAT_TEMP`
 --
 ALTER TABLE `STAT_TEMP`
     ADD PRIMARY KEY (`VISITID`),
-  ADD KEY `DOCID` (`DOCID`);
+    ADD KEY `DOCID` (`DOCID`);
 
 --
 -- Indexes for table `USER`
 --
 ALTER TABLE `USER`
     ADD PRIMARY KEY (`UID`),
-  ADD UNIQUE KEY `U_USERNAME` (`USERNAME`),
-  ADD KEY `API_PASSWORD` (`API_PASSWORD`),
-  ADD KEY `IS_VALID` (`IS_VALID`),
-  ADD KEY `FIRSTNAME` (`FIRSTNAME`),
-  ADD KEY `LASTNAME` (`LASTNAME`),
-  ADD KEY `SCREEN_NAME` (`SCREEN_NAME`),
-  ADD KEY `EMAIL` (`EMAIL`(255)),
-  ADD KEY `REGISTRATION_DATE` (`REGISTRATION_DATE`);
+    ADD UNIQUE KEY `U_USERNAME` (`USERNAME`),
+    ADD UNIQUE KEY `uuid` (`uuid`),
+    ADD KEY `API_PASSWORD` (`API_PASSWORD`),
+    ADD KEY `IS_VALID` (`IS_VALID`),
+    ADD KEY `FIRSTNAME` (`FIRSTNAME`),
+    ADD KEY `LASTNAME` (`LASTNAME`),
+    ADD KEY `SCREEN_NAME` (`SCREEN_NAME`),
+    ADD KEY `EMAIL` (`EMAIL`(255)),
+    ADD KEY `REGISTRATION_DATE` (`REGISTRATION_DATE`);
 
 --
 -- Indexes for table `USER_ASSIGNMENT`
 --
 ALTER TABLE `USER_ASSIGNMENT`
     ADD PRIMARY KEY (`ID`),
-  ADD KEY `FK_ITEMID_idx` (`ITEMID`),
-  ADD KEY `FK_UID_idx` (`UID`),
-  ADD KEY `ITEM` (`ITEM`),
-  ADD KEY `ROLEID` (`ROLEID`),
-  ADD KEY `RVID` (`RVID`),
-  ADD KEY `STATUS` (`STATUS`),
-  ADD KEY `WHEN` (`WHEN`),
-  ADD KEY `TMP_USER` (`TMP_USER`),
-  ADD KEY `INVITATION_ID` (`INVITATION_ID`);
+    ADD KEY `FK_ITEMID_idx` (`ITEMID`),
+    ADD KEY `FK_UID_idx` (`UID`),
+    ADD KEY `ITEM` (`ITEM`),
+    ADD KEY `ROLEID` (`ROLEID`),
+    ADD KEY `RVID` (`RVID`),
+    ADD KEY `STATUS` (`STATUS`),
+    ADD KEY `WHEN` (`WHEN`),
+    ADD KEY `TMP_USER` (`TMP_USER`),
+    ADD KEY `INVITATION_ID` (`INVITATION_ID`),
+    ADD KEY `LINKED_FROM` (`FROM_UID`);
 
 --
 -- Indexes for table `USER_INVITATION`
 --
 ALTER TABLE `USER_INVITATION`
     ADD PRIMARY KEY (`ID`),
-  ADD KEY `TOKEN` (`TOKEN`),
-  ADD KEY `STATUS` (`STATUS`),
-  ADD KEY `SENDER_UID` (`SENDER_UID`);
+    ADD KEY `TOKEN` (`TOKEN`),
+    ADD KEY `STATUS` (`STATUS`),
+    ADD KEY `SENDER_UID` (`SENDER_UID`);
 
 --
 -- Indexes for table `USER_INVITATION_ANSWER`
 --
 ALTER TABLE `USER_INVITATION_ANSWER`
+    ADD PRIMARY KEY (`ID_UIA`),
     ADD UNIQUE KEY `U_ID` (`ID`);
 
 --
 -- Indexes for table `USER_INVITATION_ANSWER_DETAIL`
 --
 ALTER TABLE `USER_INVITATION_ANSWER_DETAIL`
+    ADD PRIMARY KEY (`ID_UIAD`),
     ADD UNIQUE KEY `U_ID_NAME` (`ID`,`NAME`);
 
 --
@@ -1065,53 +1266,61 @@ ALTER TABLE `USER_MERGE`
 --
 ALTER TABLE `USER_ROLES`
     ADD PRIMARY KEY (`UID`,`RVID`,`ROLEID`),
-  ADD KEY `RVID` (`RVID`),
-  ADD KEY `ROLEID` (`ROLEID`),
-  ADD KEY `UID` (`UID`);
+    ADD KEY `RVID` (`RVID`),
+    ADD KEY `ROLEID` (`ROLEID`),
+    ADD KEY `UID` (`UID`);
 
 --
 -- Indexes for table `USER_TMP`
 --
 ALTER TABLE `USER_TMP`
     ADD PRIMARY KEY (`ID`),
-  ADD KEY `EMAIL` (`EMAIL`(150));
+    ADD KEY `EMAIL` (`EMAIL`(150));
 
 --
 -- Indexes for table `VOLUME`
 --
 ALTER TABLE `VOLUME`
     ADD PRIMARY KEY (`VID`),
-  ADD KEY `FK_CONFID_idx` (`RVID`),
-  ADD KEY `POSITION` (`POSITION`);
+    ADD KEY `FK_CONFID_idx` (`RVID`),
+    ADD KEY `POSITION` (`POSITION`);
 
 --
 -- Indexes for table `VOLUME_METADATA`
 --
 ALTER TABLE `VOLUME_METADATA`
     ADD PRIMARY KEY (`ID`),
-  ADD KEY `VID` (`VID`),
-  ADD KEY `POSITION` (`POSITION`);
+    ADD KEY `VID` (`VID`),
+    ADD KEY `POSITION` (`POSITION`);
 
 --
 -- Indexes for table `VOLUME_PAPER`
 --
 ALTER TABLE `VOLUME_PAPER`
     ADD PRIMARY KEY (`ID`),
-  ADD UNIQUE KEY `UNIQUE` (`VID`,`DOCID`) USING BTREE;
+    ADD UNIQUE KEY `UNIQUE` (`VID`,`DOCID`) USING BTREE;
 
 --
 -- Indexes for table `VOLUME_PAPER_POSITION`
 --
 ALTER TABLE `VOLUME_PAPER_POSITION`
+    ADD PRIMARY KEY (`ID`),
     ADD UNIQUE KEY `VID` (`VID`,`PAPERID`),
     ADD KEY `POSITION` (`POSITION`);
+
+--
+-- Indexes for table `volume_proceeding`
+--
+ALTER TABLE `volume_proceeding`
+    ADD PRIMARY KEY (`VID`,`SETTING`),
+    ADD KEY `FK_RVID0_idx` (`VID`);
 
 --
 -- Indexes for table `VOLUME_SETTING`
 --
 ALTER TABLE `VOLUME_SETTING`
     ADD PRIMARY KEY (`VID`,`SETTING`),
-  ADD KEY `FK_RVID0_idx` (`VID`);
+    ADD KEY `FK_RVID0_idx` (`VID`);
 
 --
 -- Indexes for table `WEBSITE_HEADER`
@@ -1124,9 +1333,9 @@ ALTER TABLE `WEBSITE_HEADER`
 --
 ALTER TABLE `WEBSITE_NAVIGATION`
     ADD PRIMARY KEY (`NAVIGATIONID`),
-  ADD KEY `SID` (`SID`),
-  ADD KEY `TYPE_PAGE` (`TYPE_PAGE`),
-  ADD KEY `PARENT_PAGEID` (`PARENT_PAGEID`);
+    ADD KEY `SID` (`SID`),
+    ADD KEY `TYPE_PAGE` (`TYPE_PAGE`),
+    ADD KEY `PARENT_PAGEID` (`PARENT_PAGEID`);
 
 --
 -- Indexes for table `WEBSITE_SETTINGS`
@@ -1151,6 +1360,12 @@ ALTER TABLE `authors`
     MODIFY `idauthors` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `data_descriptor`
+--
+ALTER TABLE `data_descriptor`
+    MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `doi_queue`
 --
 ALTER TABLE `doi_queue`
@@ -1160,6 +1375,12 @@ ALTER TABLE `doi_queue`
 -- AUTO_INCREMENT for table `doi_queue_volumes`
 --
 ALTER TABLE `doi_queue_volumes`
+    MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `files`
+--
+ALTER TABLE `files`
     MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
@@ -1187,6 +1408,18 @@ ALTER TABLE `NEWS`
     MODIFY `NEWSID` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `news`
+--
+ALTER TABLE `news`
+    MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `pages`
+--
+ALTER TABLE `pages`
+    MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `PAPERS`
 --
 ALTER TABLE `PAPERS`
@@ -1196,6 +1429,12 @@ ALTER TABLE `PAPERS`
 -- AUTO_INCREMENT for table `paper_citations`
 --
 ALTER TABLE `paper_citations`
+    MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `paper_classifications`
+--
+ALTER TABLE `paper_classifications`
     MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
@@ -1271,6 +1510,12 @@ ALTER TABLE `REVIEW`
     MODIFY `RVID` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `REVIEWER_ALIAS`
+--
+ALTER TABLE `REVIEWER_ALIAS`
+    MODIFY `ID` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `REVIEWER_REPORT`
 --
 ALTER TABLE `REVIEWER_REPORT`
@@ -1281,6 +1526,12 @@ ALTER TABLE `REVIEWER_REPORT`
 --
 ALTER TABLE `SECTION`
     MODIFY `SID` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `STAT_PROCESSING_LOG`
+--
+ALTER TABLE `STAT_PROCESSING_LOG`
+    MODIFY `ID` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `STAT_TEMP`
@@ -1305,6 +1556,18 @@ ALTER TABLE `USER_ASSIGNMENT`
 --
 ALTER TABLE `USER_INVITATION`
     MODIFY `ID` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `USER_INVITATION_ANSWER`
+--
+ALTER TABLE `USER_INVITATION_ANSWER`
+    MODIFY `ID_UIA` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `USER_INVITATION_ANSWER_DETAIL`
+--
+ALTER TABLE `USER_INVITATION_ANSWER_DETAIL`
+    MODIFY `ID_UIAD` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `USER_MERGE`
@@ -1337,6 +1600,12 @@ ALTER TABLE `VOLUME_PAPER`
     MODIFY `ID` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `VOLUME_PAPER_POSITION`
+--
+ALTER TABLE `VOLUME_PAPER_POSITION`
+    MODIFY `ID` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `WEBSITE_HEADER`
 --
 ALTER TABLE `WEBSITE_HEADER`
@@ -1353,6 +1622,12 @@ ALTER TABLE `WEBSITE_NAVIGATION`
 --
 
 --
+-- Constraints for table `data_descriptor`
+--
+ALTER TABLE `data_descriptor`
+    ADD CONSTRAINT `FK_DD_FILES` FOREIGN KEY (`fileid`) REFERENCES `files` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `doi_queue_volumes`
 --
 ALTER TABLE `doi_queue_volumes`
@@ -1363,7 +1638,7 @@ ALTER TABLE `doi_queue_volumes`
 --
 ALTER TABLE `paper_citations`
     ADD CONSTRAINT `paper_citations_ibfk_1` FOREIGN KEY (`docid`) REFERENCES `PAPERS` (`DOCID`),
-  ADD CONSTRAINT `paper_citations_ibfk_2` FOREIGN KEY (`source_id`) REFERENCES `metadata_sources` (`id`);
+    ADD CONSTRAINT `paper_citations_ibfk_2` FOREIGN KEY (`source_id`) REFERENCES `metadata_sources` (`id`);
 
 --
 -- Constraints for table `paper_datasets`
@@ -1376,9 +1651,5 @@ ALTER TABLE `paper_datasets`
 --
 ALTER TABLE `paper_projects`
     ADD CONSTRAINT `paper_projects_ibfk_1` FOREIGN KEY (`paperid`) REFERENCES `PAPERS` (`PAPERID`),
-  ADD CONSTRAINT `paper_projects_ibfk_2` FOREIGN KEY (`source_id`) REFERENCES `metadata_sources` (`id`);
+    ADD CONSTRAINT `paper_projects_ibfk_2` FOREIGN KEY (`source_id`) REFERENCES `metadata_sources` (`id`);
 COMMIT;
-
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
