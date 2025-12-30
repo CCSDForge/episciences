@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Extract and execute JavaScript variables before sanitizing
                 // (DOMPurify will remove <script> tags, but contact data variables are needed)
                 // Create actual <script> tags and append them to execute in global scope
-                const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script\s*>/gi;
+                const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script[^>]*>/gi;
                 let match;
                 const scriptsToExecute = [];
                 while ((match = scriptRegex.exec(content)) !== null) {
