@@ -106,14 +106,15 @@ try {
         displayMessage($sql . PHP_EOL);
     }
 
+    $reviews = Episciences_ReviewsManager::getList(['is' => ['code' => $opts->rvcode]]);
+
+    if (empty($reviews)) {
+        die(sprintf('Oops! Journal %s Not Found' . PHP_EOL, $opts->rvcode));
+    }
+
     $remindersData = $db->fetchAll($sql);
 
-    $settings = ['is' => ['code' => $opts->rvcode]];
-
     // loop through each journal
-    $reviews = Episciences_ReviewsManager::getList($settings);
-
-
     foreach ($reviews as $review) {
 
 
@@ -204,7 +205,7 @@ try {
 
                 if (isset($recipient['deadline'])) {
 
-                    displayMessage('Deadline: ' . date('Y-m-d', strtotime($recipient['deadline'])) , 'default', true);
+                    displayMessage('Deadline: ' . date('Y-m-d', strtotime($recipient['deadline'])), 'default', true);
 
                     $target = date_create($recipient['deadline']);
                     $target->setTime(0, 0);
