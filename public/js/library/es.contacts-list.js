@@ -52,9 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const content = await response.text();
 
                 // Extract and execute JavaScript variables before sanitizing
-                // (DOMPurify will remove <script> tags, but we need the contact data)
-                // We create actual <script> tags and append them to execute in global scope
-                const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+                // (DOMPurify will remove <script> tags, but contact data variables are needed)
+                // Create actual <script> tags and append them to execute in global scope
+                const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script\s*>/gi;
                 let match;
                 const scriptsToExecute = [];
                 while ((match = scriptRegex.exec(content)) !== null) {
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 contactsContainer.innerHTML = sanitizeHTML(content);
 
                 // Load the get-contacts.js script to enable filter functionality
-                // Note: DOMPurify removes <script> tags, so we need to load it manually
+                // Note: DOMPurify removes <script> tags, so it must be loaded manually
                 $.ajaxSetup({ cache: true });
                 $.getScript('/js/administratemail/get-contacts.js')
                     .done(function() {

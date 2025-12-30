@@ -116,7 +116,7 @@ function showList($li) {
     initList();
 
     // (re)selection des contacts déjà ajoutés, dans la liste nouvellement chargée
-    $('#added_contacts_tags')
+    $('#' + target + '_tags')
         .find('.recipient-tag')
         .each(function () {
             $('#contact_' + $(this).data('uid')).addClass('selected');
@@ -131,7 +131,7 @@ function select(row) {
             user = all_contacts[i];
         }
     }
-    let tagId = addRecipient('added_contacts', user, 'known');
+    let tagId = addRecipient(target, user, 'known');
     $('#' + tagId)
         .find('.remove-recipient')
         .on('click', function () {
@@ -141,6 +141,6 @@ function select(row) {
 
 function unselect(row) {
     let uid = $(row).attr('id').replace(/[^\d]/g, '');
-    let tag = $('#added_contacts_tags .recipient-tag[data-uid="' + uid + '"]');
+    let tag = $('#' + target + '_tags .recipient-tag[data-uid="' + uid + '"]');
     removeRecipient(tag);
 }
