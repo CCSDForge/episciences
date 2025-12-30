@@ -1857,7 +1857,6 @@ class Episciences_Review
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, self::SETTING_DISPLAY_EMPTY_VOLUMES
         ];
 
-
         foreach ($settings as $setting) {
             $allSettings[$setting] = $this->getSetting($setting);
         }

@@ -149,7 +149,7 @@ return array(
     "Votre réponse a bien été enregistrée." => "Your answer has been saved.",
     "L'année du volume est incorrecte veuillez saisir entre: " => 'The year of the volume is incorrect, please enter between: ',
     'T_VOLUME_YEAR_INVALID_FORMAT' => 'The volume year format is invalid. It must be "YYYY" (e.g., 2001) or "YYYY-YYYY" (e.g., 2001-2002).',
-    'T_VOLUME_YEAR_INVALID_RANGE'  => 'The second volume year must be strictly greater than the first (e.g., 2003-2004).',
+    'T_VOLUME_YEAR_INVALID_RANGE' => 'The second volume year must be strictly greater than the first (e.g., 2003-2004).',
     'T_VOLUME_YEAR_OUTSIDE_BOUNDS' => 'The year must be between %s and %s (Current Year + 5 years).',
     'Exemple : 2024 ou 2024-2025' => 'Example : 2024 or 2024-2025',
     "Fichier" => 'File',
@@ -902,6 +902,8 @@ return array(
     // Sidebar
     "Mon espace" => 'My Account',
     "Administration" => 'Administrate',
+    "Identifiant de connexion" => "Username",
+    "Identifiants invalides ou compte non validé" => "Invalid credentials or account not validated",
 
     "Revue" => 'Journal',
     "Relecteurs" => 'Reviewers',

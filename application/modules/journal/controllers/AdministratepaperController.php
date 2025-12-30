@@ -553,8 +553,6 @@ class AdministratepaperController extends PaperDefaultController
             // already has one DOI but not auto assigned
             $doi_status = Episciences_Paper_DoiQueue::STATUS_MANUAL;
         }
-        $journal = Episciences_ReviewsManager::find(RVID);
-        $journal->loadSettings();
 
         try {
             $journalSetting = Zend_Registry::get('reviewSettingsDoi');
