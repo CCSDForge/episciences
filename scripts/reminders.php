@@ -204,7 +204,7 @@ try {
 
                 if (isset($recipient['deadline'])) {
 
-                    displayMessage('Deadline: ' . date('Y-m-d', strtotime($recipient['deadline'])) . ')', 'default', true);
+                    displayMessage('Deadline: ' . date('Y-m-d', strtotime($recipient['deadline'])) , 'default', true);
 
                     $target = date_create($recipient['deadline']);
                     $target->setTime(0, 0);
@@ -220,7 +220,7 @@ try {
 
                 $mail->addTo($recipient['email'], $recipient['fullname']);
 
-                displayMessage('Recipient > to ' . $recipient['fullname'] . ' (' . $recipient['email'], 'default', true);
+                displayMessage('Recipient > to ' . $recipient['fullname'] . ' (' . $recipient['email'] . ')', 'default', true);
 
                 $mail->setSubject($reminder->getSubject($recipient['lang']));
                 $mail->setRawBody($reminder->getBody($recipient['lang']));
