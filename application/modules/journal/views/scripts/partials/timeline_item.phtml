@@ -11,7 +11,23 @@ if (!$id) {
 
     <!-- Timeline marker with user photo -->
     <div class="timeline-marker" aria-hidden="true">
-        <?= $this->userAvatar($comment, 'initials') ?>
+        <?php
+        // Define avatar colors based on comment type
+        $avatarColor = null;
+        if (isset($comment['TYPE'])) {
+            if ($comment['TYPE'] == 22) { // TYPE_AUTHOR_TO_EDITOR
+                $avatarColor = 'FFC107'; // Yellow for authors
+            } elseif ($comment['TYPE'] == 23) { // TYPE_EDITOR_TO_AUTHOR_RESPONSE
+                $avatarColor = '2196F3'; // Blue for editors
+            }
+        }
+
+        $avatar = $this->userAvatar($comment, 'initials');
+        if ($avatarColor) {
+            $avatar->setBackgroundColor($avatarColor);
+        }
+        echo $avatar;
+        ?>
     </div>
 
     <!-- Comment content card -->

@@ -1593,6 +1593,7 @@ class UserDefaultController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender(true);
         $uid = $this->getParam('uid', 0);
         $size = $this->getParam('size', Ccsd_User_Models_User::IMG_NAME_NORMAL);
+        $backgroundColor = $this->getParam('bgcolor', null);
 
         $photoPathName = false;
         $data = false;
@@ -1619,7 +1620,16 @@ class UserDefaultController extends Zend_Controller_Action
         // photo of a specific user
         if ($uid != 0) {
             $user = new Ccsd_User_Models_User(['uid' => $uid]);
-            $photoPathName = $user->getPhotoPathName($size);
+
+            // If background color is specified for initials, check for colored version
+            if ($backgroundColor && $size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
+                $userPhotoPath = $user->getPhotoPath();
+                $filenameSuffix = '_' . $backgroundColor;
+                $coloredPhotoPath = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . $filenameSuffix . '.svg';
+                $photoPathName = file_exists($coloredPhotoPath) ? $coloredPhotoPath : false;
+            } else {
+                $photoPathName = $user->getPhotoPathName($size);
+            }
 
             // Force regeneration for anonymous editor (UID 666) to ensure different color
             if ($uid === 666 && $size === Ccsd_User_Models_User::IMG_NAME_INITIALS && $photoPathName && file_exists($photoPathName)) {
@@ -1631,7 +1641,16 @@ class UserDefaultController extends Zend_Controller_Action
             $uid = Episciences_Auth::getUid();
             if ($uid != 0) {
                 $user = new Ccsd_User_Models_User(['uid' => $uid]);
-                $photoPathName = $user->getPhotoPathName($size);
+
+                // If background color is specified for initials, check for colored version
+                if ($backgroundColor && $size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
+                    $userPhotoPath = $user->getPhotoPath();
+                    $filenameSuffix = '_' . $backgroundColor;
+                    $coloredPhotoPath = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . $filenameSuffix . '.svg';
+                    $photoPathName = file_exists($coloredPhotoPath) ? $coloredPhotoPath : false;
+                } else {
+                    $photoPathName = $user->getPhotoPathName($size);
+                }
             }
         }
 
@@ -1643,14 +1662,16 @@ class UserDefaultController extends Zend_Controller_Action
                 if (!is_dir($userPhotoPath) && !mkdir($userPhotoPath, 0777, true) && !is_dir($userPhotoPath)) {
                     trigger_error(sprintf('Directory "%s" was not created', $userPhotoPath), E_USER_WARNING);
                 }
-                $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . '.svg';
 
-                // Generate SVG
-                $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
+                // Include background color in filename to avoid cache issues
+                $filenameSuffix = $backgroundColor ? '_' . $backgroundColor : '';
+                $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . $filenameSuffix . '.svg';
 
-                // For anonymous editor (UID 666), use a distinct color
-                // This visually distinguishes the anonymous editor from authors
-                if ($uid === 666) {
+                // Generate SVG with optional background color
+                $data = Episciences_View_Helper_GetAvatar::asSvg($screenName, $backgroundColor);
+
+                // For anonymous editor (UID 666), use a distinct color if no custom color is set
+                if ($uid === 666 && !$backgroundColor) {
                     // Replace only the circle fill color (not the text color)
                     // We target the circle element specifically to keep text white
                     $data = preg_replace('/<circle([^>]*)fill="#([0-9A-Fa-f]{6})"/', '<circle$1fill="#FF5722"', $data);

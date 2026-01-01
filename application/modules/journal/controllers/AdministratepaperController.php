@@ -1346,16 +1346,8 @@ class AdministratepaperController extends PaperDefaultController
             true
         );
 
-        // Notify other editors (managers)
-        $managersNotified = $this->newCommentNotifyManager(
-            $paper,
-            $editorResponse,
-            $authorTags,
-            [$parentComment->getFile() => $parentComment->getFilePath()],
-            ['replayedTo' => $parentComment]
-        );
-
-        return $mailSent && $managersNotified;
+        // Only notify the author, not other editors
+        return $mailSent;
     }
 
     /**
