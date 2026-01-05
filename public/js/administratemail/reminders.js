@@ -261,7 +261,7 @@ function buildReminderMessage(reminderType) {
         type === TYPE_ARTICLES_BLOCKED_IN_REVIEWED_STATE
     ) {
         message += translate(
-            'Si une soumission est restée dans cet état pendant plus de 30 jours, le rappel sera envoyé après un délai de (30 + x jours), où x est le nombre de jours saisi dans le champ « Délai ».'
+            'un rappel sera déclenché lorsqu’une soumission restera dans cet état au-delà de x jours, où x est la valeur entrée dans le champ'
         );
     }
 
