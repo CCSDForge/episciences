@@ -3,6 +3,7 @@
 return array(
 
     // Termes génériques
+    '(optionnel)' => '(optional)',
     'Par exemple' => 'e.g.',
     " :" => ":",
     "Non traduit" => 'Untranslated',

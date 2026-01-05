@@ -2,6 +2,7 @@
 
 return [
     'isEmpty' => 'Ce champ est obligatoire.',
+    '(optional)' => '(optionnel)',
 
     // TO FIX
     'guest' => 'Invité',

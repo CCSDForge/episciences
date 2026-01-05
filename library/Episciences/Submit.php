@@ -295,7 +295,7 @@ class Episciences_Submit
 
 
         $form->addElement('textarea', self::COVER_LETTER_COMMENT_ELEMENT_NAME, [
-            'label' => 'Commentaire', 'rows' => 5,
+            'label' => 'Commentaire<br><em style="font-weight: normal;">' . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>', 'rows' => 5,
             'description' => $descriptionAllowedToSeeCoverLetterTranslated,
             'validators' => [['StringLength', false, ['max' => MAX_INPUT_TEXTAREA]]]
         ]);
@@ -307,7 +307,7 @@ class Episciences_Submit
         $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
 
         $form->addElement('file', self::COVER_LETTER_FILE_ELEMENT_NAME, [
-            'label' => "Lettre d'accompagnement",
+            'label' => "Lettre d'accompagnement<br><em style=\"font-weight: normal;\">" . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>',
             'description' => $description,
             'valueDisabled' => true,
             'maxFileSize' => MAX_FILE_SIZE,
@@ -654,8 +654,8 @@ class Episciences_Submit
             $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
 
             $form->addElement('textarea', self::COVER_LETTER_COMMENT_ELEMENT_NAME, [
-                'label' => 'Commentaire', 'rows' => 5,
-                'decscription' => $descriptionAllowedToSeeCoverLetterTranslated,
+                'label' => 'Commentaire<br><em style="font-weight: normal;">' . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>', 'rows' => 5,
+                'description' => $descriptionAllowedToSeeCoverLetterTranslated,
                 'validators' => [[
                     'StringLength', false, ['max' => MAX_INPUT_TEXTAREA]
                 ]]
@@ -668,7 +668,7 @@ class Episciences_Submit
             $implode_extensions = implode(',', $extensions);
             $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
             $form->addElement('file', self::COVER_LETTER_FILE_ELEMENT_NAME, [
-                'label' => "Lettre d'accompagnement",
+                'label' => "Lettre d'accompagnement<br><em style=\"font-weight: normal;\">" . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>',
                 'description' => $description,
                 'valueDisabled' => true,
                 'maxFileSize' => MAX_FILE_SIZE,
