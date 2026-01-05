@@ -1,15 +1,32 @@
 <?php if ($this->comment['UID'] == Episciences_Auth::getUid()): ?>
 <?php // le champ file de la table paperComments est encoder en JSON si plusieurs fichiers sont attachés à ce commentaire ?>
-    <?php $file = $this->fileName ?? $this->comment['FILE']; ?>
-    <?php $file_delete_url = '/comments/removefilecomment/pcid/' .
-        $this->comment['PCID'] . '/docid/' . $this->comment['DOCID'] . '/file/' . $file ?>
     <?php
+    $file = $this->fileName ?? $this->comment['FILE'] ?? '';
+    $hasFile = !empty($file);
+
+    // Build delete URL
+    if ($hasFile) {
+        $file_delete_url = '/comments/removefilecomment/pcid/' .
+            $this->comment['PCID'] . '/docid/' . $this->comment['DOCID'] . '/file/' . $file;
+    } else {
+        // If no file, just pass empty file parameter
+        $file_delete_url = '/comments/removefilecomment/pcid/' .
+            $this->comment['PCID'] . '/docid/' . $this->comment['DOCID'] . '/file/';
+    }
+
     // Different confirmation message for editor-to-author responses (deletes entire reply)
     $isEditorToAuthorResponse = ($this->comment['TYPE'] ?? null) == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE;
     $buttonText = $this->translate('Supprimer');
-    $confirmMessage = $isEditorToAuthorResponse
-        ? $this->translate('Voulez-vous supprimer votre réponse (texte et fichier attaché) ?')
-        : $this->translate('Voulez-vous supprimer ce fichier ?');
+
+    if ($isEditorToAuthorResponse) {
+        $confirmMessage = $hasFile
+            ? $this->translate('Voulez-vous supprimer votre réponse (texte et fichier attaché) ?')
+            : $this->translate('Voulez-vous supprimer votre réponse ?');
+    } else {
+        $confirmMessage = $hasFile
+            ? $this->translate('Voulez-vous supprimer ce fichier ?')
+            : $this->translate('Voulez-vous supprimer ce message ?');
+    }
     ?>
     <a class="btn btn-danger btn-xs pull-right" style="margin-bottom:5px; color: white;" onclick="confirmDeleteFile('<?php echo $file_delete_url; ?>', '<?php echo addslashes($confirmMessage); ?>')">
         <span class="glyphicon glyphicon-trash"

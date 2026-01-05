@@ -33,7 +33,7 @@ if ($canAuthorContactEditors && $canViewPanel) :
                 <?php echo $this->translate("Communication éditeur-auteur"); ?>
             </h2>
         </div>
-        <div class="panel-body">
+        <div class="panel-body in">
 
             <?php // Display the form - different for authors and editors ?>
             <?php if ($isAuthor && $this->authorToEditorForm) : ?>
@@ -49,9 +49,6 @@ if ($canAuthorContactEditors && $canViewPanel) :
                 <?php $this->jQuery()->addJavascriptFile('/js/components/collapsible-message.js'); ?>
                 <?php // Add toggle reply form JavaScript ?>
                 <?php $this->jQuery()->addJavascriptFile('/js/components/toggle-reply-form.js'); ?>
-
-                <hr/>
-                <h4><?php echo $this->translate("Messages précédents"); ?></h4>
 
                 <div class="author-editor-timeline demands-timeline" role="feed"
                      aria-label="<?php echo $this->translate('Communication auteur-éditeur'); ?>">
@@ -111,11 +108,6 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                         <div class="reply-form-container" id="reply-form-<?php echo $parentId; ?>" style="display: none;">
                                             <h5><?php echo $this->translate("Répondre"); ?></h5>
                                             <?php echo $this->editorReplyForms[$parentId]; ?>
-                                            <button type="button"
-                                                    class="btn btn-sm btn-default cancel-reply-form"
-                                                    data-reply-form-id="reply-form-<?php echo $parentId; ?>">
-                                                <?php echo $this->translate("Annuler"); ?>
-                                            </button>
                                         </div>
                                     <?php endif; ?>
 

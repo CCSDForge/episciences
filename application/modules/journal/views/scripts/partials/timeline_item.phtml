@@ -64,11 +64,13 @@ if (!$id) {
                         <?= $this->escape($comment['FILE']) ?>
                     </a>
                 </div>
-                <div class="remove-file-btn">
-                    <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]) ?>
-                </div>
             </div>
         <?php endif; ?>
+
+        <!-- Delete button (always visible for own comments) -->
+        <div class="remove-file-btn">
+            <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]) ?>
+        </div>
 
         <!-- Optional actions (edit, reply, etc.) -->
         <?php if (isset($this->actions) && $this->actions) : ?>

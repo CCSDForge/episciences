@@ -824,7 +824,6 @@ return array(
     "Communication éditeur-auteur" => 'Editor-author communication',
     "Rédacteurs assignés" => 'Assigned editors',
     "Utilisez ce formulaire pour envoyer un message aux rédacteurs assignés à votre article." => 'Use this form to send a message to the editors assigned to your article.',
-    "Messages précédents" => 'Previous messages',
     "Rédacteur" => 'Editor',
     "Anciens messages" => 'Older messages',
     "Evaluation" => 'Review',

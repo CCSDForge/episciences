@@ -350,10 +350,13 @@ class Episciences_CommentsManager
                 'class' => 'btn btn-primary'
             ]);
 
-            // Add cancel button with unique name
+            // Add cancel button with proper JavaScript to hide the form
             $form->setActions(true)->createCancelButton('cancel_' . $id, [
                 'label' => 'Annuler',
-                'class' => 'btn btn-default',
+                'class' => 'btn btn-default cancel-reply-form',
+                'data-reply-form-id' => 'reply-form-' . $id,
+                'type' => 'button',
+                'onclick' => "var form = document.getElementById('reply-form-{$id}'); var btn = document.querySelector('.toggle-reply-form[data-reply-form-id=\"reply-form-{$id}\"]'); if(form) form.style.display='none'; if(btn) btn.style.display='inline-block'; var textarea = form ? form.querySelector('textarea') : null; if(textarea) textarea.value=''; return false;"
             ]);
 
             $forms[$id] = $form;
