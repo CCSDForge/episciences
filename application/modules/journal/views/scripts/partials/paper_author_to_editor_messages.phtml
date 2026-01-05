@@ -63,9 +63,9 @@ if ($canAuthorContactEditors && $canViewPanel) :
                             <!-- Author message (main item) -->
                             <div class="author-message-wrapper">
                                 <?php
-                                // Prepare reply button if editor has permission and no response yet
+                                // Prepare reply button if editor has permission (multiple responses allowed)
                                 $actions = '';
-                                if ($isEditor && isset($this->editorReplyForms[$parentId]) && empty($parentComment['replies'])) {
+                                if ($isEditor && isset($this->editorReplyForms[$parentId])) {
                                     $actions = '<button type="button" class="btn btn-primary btn-xs toggle-reply-form" data-reply-form-id="reply-form-' . $parentId . '">
                                         <i class="fa fa-reply"></i> ' . $this->translate("Répondre") . '
                                     </button>';
@@ -75,7 +75,7 @@ if ($canAuthorContactEditors && $canViewPanel) :
                             </div>
 
                             <?php // Display editor responses or reply form in a thread ?>
-                            <?php if (!empty($parentComment['replies']) || ($isEditor && isset($this->editorReplyForms[$parentId]) && empty($parentComment['replies']))) : ?>
+                            <?php if (!empty($parentComment['replies']) || ($isEditor && isset($this->editorReplyForms[$parentId]))) : ?>
                                 <div class="timeline-thread">
 
                                     <?php // Display editor responses if any ?>
@@ -102,8 +102,8 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                         <?php endforeach; ?>
                                     <?php endif; ?>
 
-                                    <?php // Display reply form for editors if no response yet ?>
-                                    <?php if ($isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$parentId]) && empty($parentComment['replies'])) : ?>
+                                    <?php // Display reply form for editors (multiple responses allowed) ?>
+                                    <?php if ($isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$parentId])) : ?>
                                         <!-- Reply form (hidden by default) -->
                                         <div class="reply-form-container" id="reply-form-<?php echo $parentId; ?>" style="display: none;">
                                             <h5><?php echo $this->translate("Répondre"); ?></h5>

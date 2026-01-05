@@ -617,12 +617,44 @@ class PaperController extends PaperDefaultController
                     $authorToEditorForm = Episciences_CommentsManager::getForm('authorToEditorForm', false, true);
                     $authorToEditorForm->setAction('/paper/view?id=' . $paper->getDocid());
                 }
+
+                // Create reply forms for author to respond to editor responses
+                $authorReplyForms = [];
+                if (!empty($authorToEditorComments)) {
+                    // Filter to get only TYPE_EDITOR_TO_AUTHOR_RESPONSE messages
+                    $editorResponses = array_filter($authorToEditorComments, function($comment) {
+                        if (isset($comment['replies']) && !empty($comment['replies'])) {
+                            foreach ($comment['replies'] as $reply) {
+                                if ($reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                                    return true;
+                                }
+                            }
+                        }
+                        return false;
+                    });
+
+                    // Create reply forms for each editor response
+                    foreach ($authorToEditorComments as $parentId => $parentComment) {
+                        if (isset($parentComment['replies']) && !empty($parentComment['replies'])) {
+                            foreach ($parentComment['replies'] as $replyId => $reply) {
+                                if ($reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                                    // Create a form for this editor response
+                                    $authorReplyForms[$replyId] = Episciences_CommentsManager::getReplyForms([$replyId => $reply]);
+                                    if (isset($authorReplyForms[$replyId][$replyId])) {
+                                        $authorReplyForms[$replyId] = $authorReplyForms[$replyId][$replyId];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
         // Pass to view
         $this->view->authorToEditorForm = $authorToEditorForm;
         $this->view->authorToEditorComments = $authorToEditorComments;
+        $this->view->authorReplyForms = $authorReplyForms ?? [];
         $this->view->editors = $assignedEditors;
 
     }
