@@ -251,7 +251,8 @@ return [
     "Article bloqué à l'état accepté" => "Article blocked in accepted state",
     "Article bloqué à l'état initial (soumis)" => "Article blocked in initial state (submitted)",
     "Article bloqué à l'état relu" => "Article blocked in reviewed state)",
-    "Si une soumission est restée dans cet état pendant plus de 30 jours, le rappel sera envoyé après un délai de (30 + x jours), où x est le nombre de jours saisi dans le champ « Délai »." => "If an submission has remained in this state for more than 30 days, the reminder will be sent after a period of (30 + x days), where x is the number of days entered in the 'Delay' field.",
+    "un rappel sera déclenché lorsqu’une soumission restera dans cet état au-delà de x jours, où x est la valeur entrée dans le champ" =>"A reminder will be triggered when a submission remains in this state for more than x days, where x is the value entered in the field",
+
     //DD
     'Descripteur de logiciel' => 'Software descriptor',
     'Descripteurs de logiciel' => 'Software descriptors',
