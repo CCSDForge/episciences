@@ -22,7 +22,7 @@ $isAuthor = $this->paper->isOwner();
 $isEditor = Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor();
 $canViewPanel = $isAuthor || $isEditor;
 
-// Only show if setting is enabled AND user has permission to view
+// Only show if setting is enabled and user has permission to view
 if ($canAuthorContactEditors && $canViewPanel) :
 ?>
 
@@ -71,7 +71,7 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                     </button>';
                                 }
                                 ?>
-                                <?= $this->partial('partials/timeline_item.phtml', ['comment' => $parentComment, 'actions' => $actions]) ?>
+                                <?= $this->partial('partials/timeline_item.phtml', ['comment' => $parentComment, 'actions' => $actions, 'isAuthor' => $isAuthor]) ?>
                             </div>
 
                             <?php // Display editor responses or reply form in a thread ?>
@@ -81,10 +81,9 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                     <?php // Display editor responses if any ?>
                                     <?php if (!empty($parentComment['replies'])) : ?>
                                         <?php foreach ($parentComment['replies'] as $replyId => $reply) : ?>
-                                            <!-- Editor reply -->
                                             <?php
                                             // Anonymize editor name if setting is disabled and viewer is not an editor
-                                            // BUT: never anonymize the current user's own replies
+                                            // But never anonymize the current user's own replies
                                             $displayComment = $reply;
 
                                             if (!$discloseEditorNames && !$isEditor &&
@@ -98,7 +97,11 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                                 $displayComment['UID'] = 666; // Anonymous editor UID
                                             }
                                             ?>
-                                            <?= $this->partial('partials/timeline_item.phtml', ['comment' => $displayComment]) ?>
+                                            <?= $this->partial('partials/timeline_item.phtml', [
+                                                'comment' => $displayComment,
+                                                'isAuthor' => $isAuthor,
+                                                'authorReplyForms' => $this->authorReplyForms ?? []
+                                            ]) ?>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
 

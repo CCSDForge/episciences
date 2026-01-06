@@ -337,7 +337,9 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
         'authorToEditorForm' => $this->authorToEditorForm ?? null,
         'editorReplyForms' => null,
         'authorToEditorComments' => $this->authorToEditorComments,
-        'editors' => $this->editors ?? []
+        'editors' => $this->editors ?? [],
+        'isAuthor' => $this->isAuthor ?? false,
+        'authorReplyForms' => $this->authorReplyForms ?? []
     ]) ?>
 
     <?php // revision requests ***************************************************** ?>

@@ -4,6 +4,12 @@ $id = $comment['PCID'] ?? null;
 if (!$id) {
     return;
 }
+
+// Ensure $isAuthor is defined (default to false if not passed to partial)
+$isAuthor = $isAuthor ?? false;
+
+// Ensure $authorReplyForms is available (try passed variable first, then view variable)
+$authorReplyForms = $authorReplyForms ?? ($this->authorReplyForms ?? []);
 ?>
 
 <article class="timeline-item"
@@ -51,6 +57,40 @@ if (!$id) {
         <div class="timeline-comment-message">
             <?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($comment['MESSAGE'])) ?>
         </div>
+
+        <?php
+        // Author can reply to editor responses
+        if (
+                isset($comment['TYPE']) &&
+                (int)$comment['TYPE'] === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE &&
+                $isAuthor &&
+                isset($authorReplyForms[$comment['PCID']])
+        ) :
+            ?>
+            <!-- Author reply action -->
+            <div class="timeline-comment-actions">
+                <button type="button"
+                        class="btn btn-primary btn-xs toggle-reply-form"
+                        data-reply-form-id="author-reply-form-<?= $comment['PCID']; ?>">
+                    <i class="fa fa-reply"></i>
+                    <?= $this->translate('Répondre'); ?>
+                </button>
+            </div>
+
+            <!-- Author reply form -->
+            <div class="reply-form-container"
+                 id="author-reply-form-<?= $comment['PCID']; ?>"
+                 style="display: none; margin-top: 10px;">
+
+                <h5><?= $this->translate('Répondre'); ?></h5>
+
+                <?php
+                $form = $authorReplyForms[$comment['PCID']];
+                $form->setAttrib('class', 'author-reply-form');
+                echo $form;
+                ?>
+            </div>
+        <?php endif; ?>
 
         <!-- Attached file (if present) -->
         <?php if ($comment['FILE']) : ?>

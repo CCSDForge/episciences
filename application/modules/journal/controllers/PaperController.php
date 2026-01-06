@@ -620,28 +620,43 @@ class PaperController extends PaperDefaultController
 
                 // Create reply forms for author to respond to editor responses
                 $authorReplyForms = [];
-                if (!empty($authorToEditorComments)) {
-                    // Filter to get only TYPE_EDITOR_TO_AUTHOR_RESPONSE messages
-                    $editorResponses = array_filter($authorToEditorComments, function($comment) {
-                        if (isset($comment['replies']) && !empty($comment['replies'])) {
-                            foreach ($comment['replies'] as $reply) {
-                                if ($reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
-                                    return true;
-                                }
-                            }
-                        }
-                        return false;
-                    });
-
-                    // Create reply forms for each editor response
+                $isAuthor = $paper->isOwner();
+                if (!empty($authorToEditorComments) && $isAuthor) {
+                    // Collect all editor responses and create forms for each
                     foreach ($authorToEditorComments as $parentId => $parentComment) {
                         if (isset($parentComment['replies']) && !empty($parentComment['replies'])) {
                             foreach ($parentComment['replies'] as $replyId => $reply) {
                                 if ($reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
-                                    // Create a form for this editor response
-                                    $authorReplyForms[$replyId] = Episciences_CommentsManager::getReplyForms([$replyId => $reply]);
-                                    if (isset($authorReplyForms[$replyId][$replyId])) {
-                                        $authorReplyForms[$replyId] = $authorReplyForms[$replyId][$replyId];
+                                    // Create a form for this editor response using getForm()
+                                    $form = Episciences_CommentsManager::getForm('authorReplyForm_' . $replyId, false, true);
+                                    $form->setAction('/paper/view?id=' . $paper->getDocid());
+
+                                    // Rename form elements to include the reply ID
+                                    $form->getElement('comment')->setName('comment_' . $replyId);
+                                    $form->getElement('file')->setName('file_' . $replyId);
+
+                                    // Add the reply ID as the submit button name
+                                    $submitElement = $form->getElement('postComment');
+                                    if ($submitElement) {
+                                        $submitElement->setName('postReply_' . $replyId);
+                                    }
+
+                                    $authorReplyForms[$replyId] = $form;
+
+                                    // Handle form submission for this specific reply
+                                    if ($this->getRequest()->getPost('postReply_' . $replyId) !== null) {
+                                        if ($form->isValid($this->getRequest()->getPost())) {
+                                            if ($this->save_author_response_to_editor($paper)) {
+                                                $this->_helper->FlashMessenger->setNamespace('success')->addMessage(
+                                                    $this->view->translate("Votre réponse a bien été envoyée.")
+                                                );
+                                                $this->_helper->redirector->gotoUrl('/paper/view?id=' . $paper->getDocid());
+                                            } else {
+                                                $this->_helper->FlashMessenger->setNamespace('error')->addMessage(
+                                                    $this->view->translate("Une erreur s'est produite lors de l'envoi de la réponse.")
+                                                );
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -656,6 +671,7 @@ class PaperController extends PaperDefaultController
         $this->view->authorToEditorComments = $authorToEditorComments;
         $this->view->authorReplyForms = $authorReplyForms ?? [];
         $this->view->editors = $assignedEditors;
+        $this->view->isAuthor = $paper->isOwner();
 
     }
 
@@ -3987,6 +4003,139 @@ class PaperController extends PaperDefaultController
         $this->view->form = $form;
         $this->view->comment = $oComment->toArray();
         $this->render('answerrequest');
+    }
+
+    /**
+     * Save author response to editor response
+     * @param Episciences_Paper $paper
+     * @return bool
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Exception
+     * @throws Zend_File_Transfer_Exception
+     * @throws Zend_Mail_Exception
+     */
+    private function save_author_response_to_editor(Episciences_Paper $paper): bool
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $post = $request->getPost();
+        $docId = $paper->getDocid();
+
+        // Get the parent comment ID (editor's response)
+        $parentCommentId = 0;
+        foreach ($post as $key => $value) {
+            if (strpos($key, 'comment_') === 0) {
+                $parentCommentId = (int)str_replace('comment_', '', $key);
+                break;
+            }
+        }
+
+        if ($parentCommentId === 0) {
+            return false;
+        }
+
+        // Fetch parent comment (editor's response)
+        $parentComment = new Episciences_Comment();
+        $parentComment->find($parentCommentId);
+
+        // Save author response to database
+        $authorResponse = new Episciences_Comment();
+        $authorResponse->setFilePath(Episciences_PapersManager::buildDocumentPath($docId) . '/comments/');
+        $authorResponse->setType(Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR);
+        $authorResponse->setDocid($docId);
+        $authorResponse->setParentid($parentCommentId);
+        $authorResponse->setMessage($post['comment_' . $parentCommentId]);
+
+        // Handle file upload if present
+        if (!empty($_FILES['file_' . $parentCommentId]['name'])) {
+            try {
+                $upload = new Zend_File_Transfer_Adapter_Http();
+                $upload->setDestination($authorResponse->getFilePath());
+
+                if ($upload->receive('file_' . $parentCommentId)) {
+                    $fileInfo = $upload->getFileInfo('file_' . $parentCommentId);
+                    $authorResponse->setFile($fileInfo['file_' . $parentCommentId]['name']);
+                }
+            } catch (Zend_File_Transfer_Exception $e) {
+                trigger_error('Error uploading file: ' . $e->getMessage(), E_USER_WARNING);
+            }
+        }
+
+        if (!$authorResponse->save()) {
+            return false;
+        }
+
+        // Get assigned editors
+        $assignedEditors = $paper->getEditors(true, true);
+
+        if (empty($assignedEditors)) {
+            return true; // No editors to notify, but save was successful
+        }
+
+        // Prepare paper URL for editors
+        $paperUrl = $this->buildAdminPaperUrl($docId);
+
+        // Prepare attachments (only from author's response)
+        $attachmentsFiles = [];
+        if ($authorResponse->getFile()) {
+            $attachmentsFiles[$authorResponse->getFile()] = $authorResponse->getFilePath();
+        }
+
+        // Build attachment list for email body with clickable links
+        $attachmentsListHtml = '';
+        if (!empty($attachmentsFiles)) {
+            $attachmentsListHtml = '<p>';
+            foreach ($attachmentsFiles as $filename => $filepath) {
+                // Build the file URL for download
+                // URL pattern: /docfiles/comments/{docId}/{filename}
+                $fileUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+                $fileUrl .= '/docfiles/comments/' . $docId . '/' . $filename;
+
+                $attachmentsListHtml .= '📎 <a href="' . htmlspecialchars($fileUrl) . '">' . htmlspecialchars($filename) . '</a><br>';
+            }
+            $attachmentsListHtml .= '</p>';
+        }
+
+        // Get author info
+        $author = Episciences_Auth::getUser();
+
+        // Send email to each assigned editor
+        $mailSent = true;
+        foreach ($assignedEditors as $editor) {
+            $locale = $editor->getLangueid();
+
+            // Prepare email tags
+            $editorTags = [
+                Episciences_Mail_Tags::TAG_SENDER_EMAIL => $author->getEmail(),
+                Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => $author->getFullName(),
+                Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => $author->getScreenName(),
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
+                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
+                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
+                Episciences_Mail_Tags::TAG_COMMENT => $parentComment->getMessage(),
+                Episciences_Mail_Tags::TAG_COMMENT_DATE => $this->view->Date($parentComment->getWhen(), $locale),
+                Episciences_Mail_Tags::TAG_ANSWER => $authorResponse->getMessage(),
+                Episciences_Mail_Tags::TAG_ATTACHMENTS => $attachmentsListHtml,
+                Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl
+            ];
+
+            // Send email to editor
+            $mailResult = Episciences_Mail_Send::sendMailFromReview(
+                $editor,
+                Episciences_Mail_TemplatesManager::TYPE_PAPER_AUTHOR_RESPONSE_TO_EDITOR_EDITOR_COPY,
+                $editorTags,
+                $paper,
+                Episciences_Auth::getUid(),
+                $attachmentsFiles,
+                true
+            );
+
+            $mailSent = $mailSent && $mailResult;
+        }
+
+        return $mailSent;
     }
 
     public function cslAction()
