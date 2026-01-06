@@ -709,11 +709,11 @@ class AdministratepaperController extends PaperDefaultController
 
         // #37430 Demande d'avis des autres rédacteurs, pas uniquement les redacteurs qui sont assignés a l'article.
         // Include both editors and chief editors
-        $all_editors = Episciences_UsersManager::getUsersWithRoles(Episciences_Acl::ROLE_EDITOR);
-        $chief_editors = Episciences_UsersManager::getUsersWithRoles(Episciences_Acl::ROLE_CHIEF_EDITOR);
-
-        // Merge editors and chief editors
-        $all_editors = $all_editors + $chief_editors;
+        $roles = [
+            Episciences_Acl::ROLE_EDITOR,
+            Episciences_Acl::ROLE_CHIEF_EDITOR
+        ];
+        $all_editors = Episciences_UsersManager::getUsersWithRoles($roles);
 
         // Echapper l'éditeur en cours
         if (array_key_exists($loggedUid, $all_editors)) {
