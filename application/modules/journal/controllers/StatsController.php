@@ -257,9 +257,9 @@ class StatsController extends Zend_Controller_Action
         $this->view->declineRate = $refusedPercentage;
 
 
-        $piChartData = [$acceptedPercentage, $refusedPercentage, $otherPercentage];
+        $piChartData = [$acceptedPercentage, $refusedPercentage];
         $piChartColors = [self::COLORS_CODE[5], self::COLORS_CODE[2], self::COLORS_CODE[0]];
-        $piChartLabels = [$rateLabel2, $rateLabel3, $rateLabel4];
+        $piChartLabels = [$rateLabel2, $rateLabel3];
 
         $seriesJs['allSubmissionsPercentage']['datasets'][] = [
             'data' => $piChartData,

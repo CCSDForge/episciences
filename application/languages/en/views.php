@@ -1973,7 +1973,7 @@ return array(
     "Un utilisateur peut avoir plusieurs rôles." => "A user can have multiple roles.",
     "Cela inclut les versions acceptées (mise en forme ou non)" => "This includes accepted versions (with or without formatting).",
     "Cela inclut seulement les articles soumis cette année." => "This includes only articles submitted this year.",
-    "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année." => "This includes articles that were p reviously submitted and published this year.",
+    "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année." => "This includes articles that were previously submitted and published this year.",
     "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année." => "This includes articles that were previously submitted and refused this year.",
     "Cela inclut les autres statuts." => "This includes other status.",
     "Cela inclut les articles qui ont été soumis antérieurement" => 'This includes articles that were previously submitted',
