@@ -54,6 +54,10 @@ if ($canAuthorContactEditors && $canViewPanel) :
                      aria-label="<?php echo $this->translate('Communication auteur-éditeur'); ?>">
                     <div class="timeline-track demands-timeline-track">
                         <?php foreach ($this->authorToEditorComments as $parentId => $parentComment) :
+                            // Skip invalid entries
+                            if (!isset($parentComment['TYPE'])) {
+                                continue;
+                            }
                             // Only display author-to-editor messages (type 22)
                             if ($parentComment['TYPE'] != Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
                                 continue;

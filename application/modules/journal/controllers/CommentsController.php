@@ -108,7 +108,69 @@ class CommentsController extends PaperController
             return;
         }
 
+        // Special handling for author replies to editor responses: delete the entire reply (text + file)
+        // This is for TYPE_AUTHOR_TO_EDITOR comments that have a PARENTID (replies, not initial messages)
+        $parentId = $comment->getParentId();
+        $commentType = $comment->getType();
+        $isAuthorReply = ($commentType === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) && !empty($parentId);
+        
+        if ($isAuthorReply) {
+            $filesDeleted = true;
+            
+            // Delete attached files if any
+            if ($comment->getFile()) {
+                $isJson = Episciences_Tools::isJson($comment->getFile());
+
+                try {
+                    $jFiles = $isJson ? json_decode($comment->getFile(), true, 512, JSON_THROW_ON_ERROR) : (array)$comment->getFile();
+                    $jFiles = array_filter($jFiles); // Remove empty values
+                } catch (JsonException $e) {
+                    trigger_error($e->getMessage());
+                    $jFiles = [];
+                }
+
+                // Delete all attached files
+                $dir = $docid . '/comments/';
+                foreach ($jFiles as $fileName) {
+                    if ($fileName) {
+                        $filePath = REVIEW_FILES_PATH . $dir . $fileName;
+                        if (is_file($filePath)) {
+                            if (!unlink($filePath)) {
+                                $filesDeleted = false;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Delete the comment itself from database (whether files were deleted successfully or not)
+            if ($comment->delete()) {
+                $message = $this->view->translate("Votre réponse a bien été supprimée.");
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
+            } else {
+                $message = $this->view->translate("Une erreur est survenue lors de la suppression de votre réponse.");
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            }
+
+            $this->_helper->redirector->gotoUrl($url);
+            return;
+        }
+
         // Default behavior: delete only the specified file (for other comment types)
+        // If no file is specified, this might be a delete of the entire comment without file
+        if (empty($file) && !$comment->getFile()) {
+            // Delete comment without file
+            if ($comment->delete()) {
+                $message = $this->view->translate("Votre message a bien été supprimé.");
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
+            } else {
+                $message = $this->view->translate("Une erreur est survenue lors de la suppression.");
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            }
+            $this->_helper->redirector->gotoUrl($url);
+            return;
+        }
+        
         $isJson = Episciences_Tools::isJson($comment->getFile());
 
         try {

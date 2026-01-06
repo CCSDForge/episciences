@@ -6,7 +6,7 @@ if (!$id) {
 }
 
 // Ensure $isAuthor is defined (default to false if not passed to partial)
-$isAuthor = $isAuthor ?? false;
+$isAuthor = $isAuthor ?? ($this->isAuthor ?? false);
 
 // Ensure $authorReplyForms is available (try passed variable first, then view variable)
 $authorReplyForms = $authorReplyForms ?? ($this->authorReplyForms ?? []);
@@ -67,14 +67,35 @@ $authorReplyForms = $authorReplyForms ?? ($this->authorReplyForms ?? []);
                 isset($authorReplyForms[$comment['PCID']])
         ) :
             ?>
-            <!-- Author reply action -->
-            <div class="timeline-comment-actions">
-                <button type="button"
-                        class="btn btn-primary btn-xs toggle-reply-form"
-                        data-reply-form-id="author-reply-form-<?= $comment['PCID']; ?>">
-                    <i class="fa fa-reply"></i>
-                    <?= $this->translate('Répondre'); ?>
-                </button>
+            <!-- Reply button (right-aligned) and attached file (if present) on same line -->
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; border-top: 1px solid #e0e0e0; padding-top: 10px;">
+                <!-- Attached file (if present) - display on left -->
+                <?php if ($comment['FILE']) : ?>
+                    <div class="timeline-comment-attachment">
+                        <div>
+                            <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i> <a
+                                    href="/docfiles/comments/<?= $comment['DOCID'] . '/' . $comment['FILE'] ?>"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label="<?= $this->translate('Télécharger le fichier'); ?> <?= $this->escape($comment['FILE']) ?>">
+                                <?= $this->escape($comment['FILE']) ?>
+                            </a>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <!-- Empty space if no file -->
+                    <div></div>
+                <?php endif; ?>
+
+                <!-- Author reply action - always on the right -->
+                <div class="timeline-comment-actions">
+                    <button type="button"
+                            class="btn btn-primary btn-xs toggle-reply-form"
+                            data-reply-form-id="author-reply-form-<?= $comment['PCID']; ?>">
+                        <i class="fa fa-reply"></i>
+                        <?= $this->translate('Répondre'); ?>
+                    </button>
+                </div>
             </div>
 
             <!-- Author reply form -->
@@ -90,21 +111,21 @@ $authorReplyForms = $authorReplyForms ?? ($this->authorReplyForms ?? []);
                 echo $form;
                 ?>
             </div>
-        <?php endif; ?>
 
-        <!-- Attached file (if present) -->
-        <?php if ($comment['FILE']) : ?>
-            <div class="timeline-comment-attachment">
-                <div>
-                    <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i> <a
-                            href="/docfiles/comments/<?= $comment['DOCID'] . '/' . $comment['FILE'] ?>"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="<?= $this->translate('Télécharger le fichier'); ?> <?= $this->escape($comment['FILE']) ?>">
-                        <?= $this->escape($comment['FILE']) ?>
-                    </a>
+            <!-- Display author replies to this editor message -->
+            <?php if (!empty($comment['replies'])) : ?>
+                <div class="timeline-sub-thread" style="margin-left: 20px; margin-top: 15px; border-left: 2px solid #e0e0e0; padding-left: 15px;">
+                    <?php foreach ($comment['replies'] as $authorReplyId => $authorReply) : ?>
+                        <?php if ($authorReply['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) : ?>
+                            <?= $this->partial('partials/timeline_item.phtml', [
+                                'comment' => $authorReply,
+                                'isAuthor' => $isAuthor ?? false,
+                                'authorReplyForms' => []  // No infinite replies
+                            ]) ?>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
                 </div>
-            </div>
+            <?php endif; ?>
         <?php endif; ?>
 
         <!-- Delete button (always visible for own comments) -->

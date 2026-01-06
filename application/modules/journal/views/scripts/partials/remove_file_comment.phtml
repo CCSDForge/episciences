@@ -14,11 +14,14 @@
             $this->comment['PCID'] . '/docid/' . $this->comment['DOCID'] . '/file/';
     }
 
-    // Different confirmation message for editor-to-author responses (deletes entire reply)
+    // Different confirmation message for replies (deletes entire reply)
     $isEditorToAuthorResponse = ($this->comment['TYPE'] ?? null) == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE;
+    $isAuthorReplyToEditor = ($this->comment['TYPE'] ?? null) == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR && 
+                             !empty($this->comment['PARENTID']);
     $buttonText = $this->translate('Supprimer');
 
-    if ($isEditorToAuthorResponse) {
+    if ($isEditorToAuthorResponse || $isAuthorReplyToEditor) {
+        // For replies (both editor to author and author to editor), delete the entire message
         $confirmMessage = $hasFile
             ? $this->translate('Voulez-vous supprimer votre réponse (texte et fichier attaché) ?')
             : $this->translate('Voulez-vous supprimer votre réponse ?');

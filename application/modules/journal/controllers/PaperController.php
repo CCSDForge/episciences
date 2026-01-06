@@ -575,11 +575,10 @@ class PaperController extends PaperDefaultController
 
                     if ($form->isValid($_POST)) {
                         try {
-                            // Save comment
-                            $commentId = $this->save_author_to_editor_comment(
+                            // Save comment (initial message)
+                            $commentId = $this->save_author_response_to_editor(
                                 $paper,
-                                $form->getValues(),
-                                $assignedEditors
+                                $form->getValues()
                             );
 
                             if ($commentId) {
@@ -612,6 +611,73 @@ class PaperController extends PaperDefaultController
                     ]
                 );
 
+                // Fix: sortComments only handles one level of replies
+                // We need to completely reorganize the comment structure
+                
+                // First, collect ALL comments flat (filtering invalid entries)
+                $allCommentsFlat = [];
+                foreach ($authorToEditorComments as $id => $comment) {
+                    // Verify that this is a valid comment (with at least TYPE and PCID)
+                    if (isset($comment['TYPE']) && isset($comment['PCID'])) {
+                        $allCommentsFlat[$id] = $comment;
+                    }
+                    if (!empty($comment['replies'])) {
+                        foreach ($comment['replies'] as $replyId => $reply) {
+                            // Verify that the reply is valid
+                            if (isset($reply['TYPE']) && isset($reply['PCID'])) {
+                                $allCommentsFlat[$replyId] = $reply;
+                            }
+                        }
+                    }
+                }
+                
+                // Reorganize: separate root messages (without PARENTID)
+                $rootMessages = [];
+                $allReplies = [];
+                
+                foreach ($allCommentsFlat as $id => $comment) {
+                    if (empty($comment['PARENTID'])) {
+                        // Root message - preserve all data
+                        $rootMessages[$id] = $comment;
+                        if (!isset($rootMessages[$id]['replies'])) {
+                            $rootMessages[$id]['replies'] = [];
+                        }
+                    } else {
+                        // This is a reply
+                        $allReplies[$id] = $comment;
+                    }
+                }
+                
+                // Place level 1 replies under root messages
+                foreach ($allReplies as $replyId => $reply) {
+                    $parentId = $reply['PARENTID'];
+                    
+                    if (isset($rootMessages[$parentId])) {
+                        // Parent is a root message - preserve all reply data
+                        $rootMessages[$parentId]['replies'][$replyId] = $reply;
+                        if (!isset($rootMessages[$parentId]['replies'][$replyId]['replies'])) {
+                            $rootMessages[$parentId]['replies'][$replyId]['replies'] = [];
+                        }
+                    }
+                }
+                
+                // Place level 2 replies (author replies to editor)
+                foreach ($allReplies as $replyId => $reply) {
+                    $parentId = $reply['PARENTID'];
+                    
+                    // Search for parent in level 1 replies
+                    foreach ($rootMessages as $rootId => &$rootMessage) {
+                        if (isset($rootMessage['replies'][$parentId])) {
+                            // Parent is a level 1 reply (editor message)
+                            // Preserve all level 2 reply data
+                            $rootMessage['replies'][$parentId]['replies'][$replyId] = $reply;
+                        }
+                    }
+                    unset($rootMessage);
+                }
+                
+                $authorToEditorComments = $rootMessages;
+
                 // Generate form (always show it so authors can send multiple messages)
                 if (!array_key_exists('postComment', $_POST)) {
                     $authorToEditorForm = Episciences_CommentsManager::getForm('authorToEditorForm', false, true);
@@ -622,40 +688,57 @@ class PaperController extends PaperDefaultController
                 $authorReplyForms = [];
                 $isAuthor = $paper->isOwner();
                 if (!empty($authorToEditorComments) && $isAuthor) {
-                    // Collect all editor responses and create forms for each
+                // Collect all editor responses and create forms for each
                     foreach ($authorToEditorComments as $parentId => $parentComment) {
                         if (isset($parentComment['replies']) && !empty($parentComment['replies'])) {
                             foreach ($parentComment['replies'] as $replyId => $reply) {
                                 if ($reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                                    // Use PCID as the key for the form
+                                    $pcid = $reply['PCID'];
+
                                     // Create a form for this editor response using getForm()
-                                    $form = Episciences_CommentsManager::getForm('authorReplyForm_' . $replyId, false, true);
+                                    $form = Episciences_CommentsManager::getForm('authorReplyForm_' . $pcid, false, true);
                                     $form->setAction('/paper/view?id=' . $paper->getDocid());
 
-                                    // Rename form elements to include the reply ID
-                                    $form->getElement('comment')->setName('comment_' . $replyId);
-                                    $form->getElement('file')->setName('file_' . $replyId);
-
-                                    // Add the reply ID as the submit button name
-                                    $submitElement = $form->getElement('postComment');
-                                    if ($submitElement) {
-                                        $submitElement->setName('postReply_' . $replyId);
+                                    // Remove CSRF validation for multiple forms on same page
+                                    $csrfElement = $form->getElement('no_csrf_foo');
+                                    if ($csrfElement) {
+                                        $form->removeElement('no_csrf_foo');
                                     }
 
-                                    $authorReplyForms[$replyId] = $form;
+                                    // Add a hidden field to identify which editor response this is replying to
+                                    $form->addElement('hidden', 'reply_to_pcid', [
+                                        'value' => $pcid,
+                                        'decorators' => ['ViewHelper']
+                                    ]);
+
+                                    // Index by PCID so timeline_item.phtml can find it
+                                    $authorReplyForms[$pcid] = $form;
 
                                     // Handle form submission for this specific reply
-                                    if ($this->getRequest()->getPost('postReply_' . $replyId) !== null) {
-                                        if ($form->isValid($this->getRequest()->getPost())) {
-                                            if ($this->save_author_response_to_editor($paper)) {
+                                    // Check if this form was submitted by looking for the hidden field and submit button
+                                    if ($this->getRequest()->getPost('reply_to_pcid') == $pcid &&
+                                        $this->getRequest()->getPost('postComment') !== null) {
+                                        
+                                        // Validate manually since we removed CSRF
+                                        $comment = $this->getRequest()->getPost('comment');
+                                        
+                                        if (!empty($comment)) {
+                                            if ($this->save_author_response_to_editor($paper, null, $pcid)) {
                                                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage(
-                                                    $this->view->translate("Votre réponse a bien été envoyée.")
+                                                    "Votre réponse a bien été envoyée."
                                                 );
                                                 $this->_helper->redirector->gotoUrl('/paper/view?id=' . $paper->getDocid());
                                             } else {
                                                 $this->_helper->FlashMessenger->setNamespace('error')->addMessage(
-                                                    $this->view->translate("Une erreur s'est produite lors de l'envoi de la réponse.")
+                                                    "Erreur lors de la sauvegarde de votre réponse."
                                                 );
                                             }
+                                        } else {
+                                            // Comment is empty
+                                            $this->_helper->FlashMessenger->setNamespace('error')->addMessage(
+                                                "Le commentaire ne peut pas être vide."
+                                            );
                                         }
                                     }
                                 }
@@ -2864,64 +2947,6 @@ class PaperController extends PaperDefaultController
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Mail_Exception
      */
-    private function save_author_to_editor_comment(Episciences_Paper $paper, array $data, array $editors)
-    {
-        // Save comment to database
-        $commentId = Episciences_CommentsManager::save(
-            $paper->getDocid(),
-            $data,
-            Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR
-        );
-
-        if (!$commentId) {
-            return false;
-        }
-
-        // Get the saved comment using find() which automatically sets the file path
-        $comment = new Episciences_Comment();
-        if (!$comment->find($commentId)) {
-            return false;
-        }
-
-        // Debug: log file information
-        if ($comment->getFile()) {
-            $fullPath = $comment->getFilePath() . $comment->getFile();
-            error_log("Author-to-editor comment file: " . $comment->getFile());
-            error_log("Author-to-editor file path: " . $comment->getFilePath());
-            error_log("Full file path: " . $fullPath);
-            error_log("File exists: " . (file_exists($fullPath) ? 'YES' : 'NO'));
-        } else {
-            error_log("No file attached to author-to-editor comment");
-        }
-
-        // Log the comment in paper history
-        $paper->log(
-            Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR,
-            Episciences_Auth::getUid(),
-            [
-                'comment' => [
-                    'pcid' => $commentId,
-                    'type' => $comment->getType(),
-                    'message' => $comment->getMessage(),
-                    'file' => $comment->getFile(),
-                    'docid' => $paper->getDocid(),
-                    'uid' => Episciences_Auth::getUid()
-                ],
-                'user' => [
-                    'fullname' => Episciences_Auth::getFullName(),
-                    'SCREEN_NAME' => Episciences_Auth::getScreenName(),
-                    'email' => Episciences_Auth::getEmail()
-                ]
-            ]
-        );
-
-        // Use newCommentNotifyManager to send emails to assigned editors and log the comment
-        // This will use the proper email template: paper_comment_from_author_to_editor_editor_copy
-        $this->newCommentNotifyManager($paper, $comment);
-
-        return $commentId;
-    }
-
     /**
      * @param Episciences_Paper $paper
      * @param int $reviewerUid
@@ -4014,128 +4039,109 @@ class PaperController extends PaperDefaultController
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Mail_Exception
      */
-    private function save_author_response_to_editor(Episciences_Paper $paper): bool
+    /**
+     * Save author message/response to editor
+     * Handles both:
+     * - Initial messages from author to editor ($data array from form, $pcid = null)
+     * - Author replies to editor messages ($data from POST, $pcid = parent comment ID)
+     * 
+     * @param Episciences_Paper $paper
+     * @param array|null $data Comment data (for initial messages from form)
+     * @param int|null $pcid Parent comment ID (for replies to editor)
+     * @return int|false Comment ID on success, false on failure
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Exception
+     * @throws Zend_File_Transfer_Exception
+     * @throws Zend_Mail_Exception
+     */
+    private function save_author_response_to_editor(Episciences_Paper $paper, ?array $data = null, ?int $pcid = null)
     {
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
-        $post = $request->getPost();
-        $docId = $paper->getDocid();
-
-        // Get the parent comment ID (editor's response)
-        $parentCommentId = 0;
-        foreach ($post as $key => $value) {
-            if (strpos($key, 'comment_') === 0) {
-                $parentCommentId = (int)str_replace('comment_', '', $key);
-                break;
+        // If data is provided, use it (initial message from form)
+        // Otherwise, get from POST (reply)
+        if ($data === null) {
+            $post = $this->getRequest()->getPost();
+            
+            // Validate PCID for replies
+            if ($pcid === null || $pcid === 0) {
+                return false;
             }
-        }
 
-        if ($parentCommentId === 0) {
-            return false;
-        }
-
-        // Fetch parent comment (editor's response)
-        $parentComment = new Episciences_Comment();
-        $parentComment->find($parentCommentId);
-
-        // Save author response to database
-        $authorResponse = new Episciences_Comment();
-        $authorResponse->setFilePath(Episciences_PapersManager::buildDocumentPath($docId) . '/comments/');
-        $authorResponse->setType(Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR);
-        $authorResponse->setDocid($docId);
-        $authorResponse->setParentid($parentCommentId);
-        $authorResponse->setMessage($post['comment_' . $parentCommentId]);
-
-        // Handle file upload if present
-        if (!empty($_FILES['file_' . $parentCommentId]['name'])) {
-            try {
-                $upload = new Zend_File_Transfer_Adapter_Http();
-                $upload->setDestination($authorResponse->getFilePath());
-
-                if ($upload->receive('file_' . $parentCommentId)) {
-                    $fileInfo = $upload->getFileInfo('file_' . $parentCommentId);
-                    $authorResponse->setFile($fileInfo['file_' . $parentCommentId]['name']);
-                }
-            } catch (Zend_File_Transfer_Exception $e) {
-                trigger_error('Error uploading file: ' . $e->getMessage(), E_USER_WARNING);
+            // Get the comment message
+            $commentMessage = $post['comment'] ?? '';
+            if (empty($commentMessage)) {
+                return false;
             }
-        }
 
-        if (!$authorResponse->save()) {
-            return false;
-        }
-
-        // Get assigned editors
-        $assignedEditors = $paper->getEditors(true, true);
-
-        if (empty($assignedEditors)) {
-            return true; // No editors to notify, but save was successful
-        }
-
-        // Prepare paper URL for editors
-        $paperUrl = $this->buildAdminPaperUrl($docId);
-
-        // Prepare attachments (only from author's response)
-        $attachmentsFiles = [];
-        if ($authorResponse->getFile()) {
-            $attachmentsFiles[$authorResponse->getFile()] = $authorResponse->getFilePath();
-        }
-
-        // Build attachment list for email body with clickable links
-        $attachmentsListHtml = '';
-        if (!empty($attachmentsFiles)) {
-            $attachmentsListHtml = '<p>';
-            foreach ($attachmentsFiles as $filename => $filepath) {
-                // Build the file URL for download
-                // URL pattern: /docfiles/comments/{docId}/{filename}
-                $fileUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
-                $fileUrl .= '/docfiles/comments/' . $docId . '/' . $filename;
-
-                $attachmentsListHtml .= '📎 <a href="' . htmlspecialchars($fileUrl) . '">' . htmlspecialchars($filename) . '</a><br>';
-            }
-            $attachmentsListHtml .= '</p>';
-        }
-
-        // Get author info
-        $author = Episciences_Auth::getUser();
-
-        // Send email to each assigned editor
-        $mailSent = true;
-        foreach ($assignedEditors as $editor) {
-            $locale = $editor->getLangueid();
-
-            // Prepare email tags
-            $editorTags = [
-                Episciences_Mail_Tags::TAG_SENDER_EMAIL => $author->getEmail(),
-                Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => $author->getFullName(),
-                Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => $author->getScreenName(),
-                Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
-                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
-                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
-                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
-                Episciences_Mail_Tags::TAG_COMMENT => $parentComment->getMessage(),
-                Episciences_Mail_Tags::TAG_COMMENT_DATE => $this->view->Date($parentComment->getWhen(), $locale),
-                Episciences_Mail_Tags::TAG_ANSWER => $authorResponse->getMessage(),
-                Episciences_Mail_Tags::TAG_ATTACHMENTS => $attachmentsListHtml,
-                Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl
+            // Prepare data with parentid (this makes it a reply)
+            $data = [
+                'comment' => $commentMessage,
+                'parentid' => $pcid
             ];
 
-            // Send email to editor
-            $mailResult = Episciences_Mail_Send::sendMailFromReview(
-                $editor,
-                Episciences_Mail_TemplatesManager::TYPE_PAPER_AUTHOR_RESPONSE_TO_EDITOR_EDITOR_COPY,
-                $editorTags,
-                $paper,
-                Episciences_Auth::getUid(),
-                $attachmentsFiles,
-                true
-            );
-
-            $mailSent = $mailSent && $mailResult;
+            // Include file if uploaded
+            if (!empty($_FILES['file']['name'])) {
+                $data['file'] = $_FILES['file'];
+            }
+        } else {
+            // For initial messages, add parentid if provided
+            if ($pcid !== null && $pcid > 0) {
+                $data['parentid'] = $pcid;
+            }
         }
 
-        return $mailSent;
+        // Save comment to database
+        // Note: Le 4ème paramètre ($replyTo) contient le PARENTID !
+        $replyTo = $data['parentid'] ?? false;
+        $commentId = Episciences_CommentsManager::save(
+            $paper->getDocid(),
+            $data,
+            Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
+            $replyTo  // ← IMPORTANT: Le PARENTID doit être passé ici !
+        );
+
+        if (!$commentId) {
+            return false;
+        }
+
+        // Get the saved comment
+        $comment = new Episciences_Comment();
+        if (!$comment->find($commentId)) {
+            return false;
+        }
+
+        // Prepare log data
+        $logData = [
+            'comment' => [
+                'pcid' => $commentId,
+                'type' => $comment->getType(),
+                'message' => $comment->getMessage(),
+                'file' => $comment->getFile(),
+                'docid' => $paper->getDocid(),
+                'uid' => Episciences_Auth::getUid()
+            ],
+            'user' => [
+                'fullname' => Episciences_Auth::getFullName(),
+                'SCREEN_NAME' => Episciences_Auth::getScreenName(),
+                'email' => Episciences_Auth::getEmail()
+            ]
+        ];
+
+        // Add parentid to log if this is a reply
+        if (!empty($data['parentid'])) {
+            $logData['comment']['parentid'] = $data['parentid'];
+        }
+
+        // Log the comment in paper history
+        $paper->log(
+            Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR,
+            Episciences_Auth::getUid(),
+            $logData
+        );
+
+        // Send email notifications to assigned editors
+        $this->newCommentNotifyManager($paper, $comment);
+
+        return $commentId;
     }
 
     public function cslAction()
@@ -4154,4 +4160,6 @@ class PaperController extends PaperDefaultController
         exit();
     }
 }
+
+
 
