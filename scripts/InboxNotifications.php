@@ -3,6 +3,7 @@
 
 use cottagelabs\coarNotifications\COARNotificationManager;
 use cottagelabs\coarNotifications\orm\COARNotification;
+use Episciences\Trait\UrlBuilder;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Handler\StreamHandler;
@@ -14,6 +15,7 @@ require_once "Script.php";
 
 class InboxNotifications extends Script
 {
+    use UrlBuilder;
     protected Logger $logger;
     public const COAR_NOTIFY_AT_CONTEXT = [
         'https://www.w3.org/ns/activitystreams',
@@ -303,6 +305,7 @@ class InboxNotifications extends Script
      * @param string $object
      * @param array $notifyPayloads
      * @return bool
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function initSubmission(Episciences_Review $journal, string $actor, string $object, array $notifyPayloads = []): bool
     {
@@ -460,7 +463,7 @@ class InboxNotifications extends Script
      * @param array $data
      * @param array|null $options
      * @return bool
-     *
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function addSubmission(Episciences_Review $journal, array $data, array $options = null): bool
     {
@@ -747,8 +750,6 @@ class InboxNotifications extends Script
             $this->logger->info('Send notifications ...');
         }
 
-        $paperUrl = sprintf(SERVER_PROTOCOL . "://%s.%s/paper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
-
         $aLocale = $author->getLangueid(true);
 
         $commonTags = [
@@ -758,6 +759,8 @@ class InboxNotifications extends Script
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $author->getFullName()
         ];
+
+        $paperUrl = self::buildPublicPaperUrl($paper->getDocid(), $journalOptions);
 
         try {
             $authorTags = $commonTags + [
@@ -840,7 +843,7 @@ class InboxNotifications extends Script
 
         if (!$this->isDebug()) {
 
-            $paperUrl = sprintf(SERVER_PROTOCOL . "://%s.%s/administratepaper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
+            $paperUrl = self::buildAdminPaperUrl($paper->getDocid(), $journalOptions);
 
             if (!$isFirstSubmission) {// new version
 
@@ -858,11 +861,12 @@ class InboxNotifications extends Script
 
             $adminTags[Episciences_Mail_Tags::TAG_PAPER_URL] = $paperUrl;
 
-            if ($isPreviousPaperRefused && $options['oldDocId']) {
+            if (
+                $isPreviousPaperRefused &&
+                isset($options['oldDocId'])
+            ) {
                 $refMessage = 'Cet article a été précédemment refusé dans sa première version, pour le consulter, merci de suivre ce lien : ';
-
-                $adminTags[Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL] = sprintf(SERVER_PROTOCOL . "://%s.%s/administratepaper/view?id=%s", $journal->getCode(), DOMAIN, $options['oldDocId']);
-
+                $adminTags[Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL] = self::buildAdminPaperUrl((int)$options['oldDocId'], $journalOptions);
             }
 
             $unsent = [];
@@ -1341,6 +1345,7 @@ class InboxNotifications extends Script
      * @param array $data
      * @param array $options
      * @return bool
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function getFirstSubmissionResult(
         Episciences_Paper  $paper,
