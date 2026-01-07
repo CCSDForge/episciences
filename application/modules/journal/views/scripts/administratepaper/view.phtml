@@ -233,7 +233,10 @@ if ($this->citations !== '') {
             <h2 class="panel-title"><?php echo $this->translate('Commentaires des relecteurs'); ?></h2>
         </div>
         <div class="panel-body in">
-            <?php echo $this->partial('partials/paper_reviewer_comments.phtml', ['comments' => $this->reviewer_comments, 'paperContributorUid' => $paper->getUid()]) ?>
+            <?= $this->partial('partials/paper_reviewer_comments.phtml', [
+                    'comments' => $this->reviewer_comments,
+                    'paper' => $this->paper
+            ]) ?>
         </div>
     </div>
 <?php endif; ?>

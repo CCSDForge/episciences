@@ -102,7 +102,7 @@ class PaperController extends PaperDefaultController
         $isFromZSubmit = false;
 
         if ($paper->isDataSetOrSoftware()) {
-            $isAllowedToAddDataDescriptor =  ($paper->isOwner() || $isSecretary) && !in_array($paper->getStatus(), Episciences_Paper::$_noEditableStatus, true);
+            $isAllowedToAddDataDescriptor = ($paper->isOwner() || $isSecretary) && !in_array($paper->getStatus(), Episciences_Paper::$_noEditableStatus, true);
             $url = $this->view->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()]);
             $ddForm = Episciences_Submit::getDDNewVersionForm();
             $this->view->ddNewVersionForm = $ddForm;
@@ -121,7 +121,7 @@ class PaperController extends PaperDefaultController
                     $allMd5 = \Episciences\Files\FileManager::findByMd5($paper->getDocid());
                     /** @var \Episciences\Files\File $dFile */
                     $dFile = $uploader->upload(true)->getInfo()[$uploader::UPLOADED_FILES_KEY][Episciences_Submit::DD_FILE_ELEMENT_NAME];
-                    if(in_array($dFile->getMd5(), $allMd5, true)) {
+                    if (in_array($dFile->getMd5(), $allMd5, true)) {
                         $message = $this->view->translate("La version que vous essayez d'envoyer existe déjà.");
                         $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
                         $this->_helper->redirector->gotoUrl($url);
@@ -303,13 +303,8 @@ class PaperController extends PaperDefaultController
         $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
 
         // reviewers comments **************************************************
-        // fetch reviewers comments
-        $settings = [self::TYPES_STR => [
-            Episciences_CommentsManager::TYPE_INFO_REQUEST,
-            Episciences_CommentsManager::TYPE_INFO_ANSWER,
-            Episciences_CommentsManager::TYPE_CONTRIBUTOR_TO_REVIEWER
-        ]];
-        $comments = Episciences_CommentsManager::getList($paper->getDocid(), $settings);
+        $comments = Episciences_CommentsManager::fetchReviewerAuthorCommentsByDocId($paper->getDocid());
+        $this->anonymiseIfNecessaryAndFormatScreeName($comments, $paper->isOwner());
         $this->view->comments = $comments;
 
 
@@ -338,7 +333,7 @@ class PaperController extends PaperDefaultController
 
                     if ($replyForm->isValid($request->getPost())) {
 
-                        if ($this->save_contributor_answer($id, $paper)) {
+                        if ($this->saveReply($id, $paper)) {
                             // success message
                             $message = $this->view->translate("Votre réponse a bien été enregistrée.");
                             $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
@@ -608,27 +603,29 @@ class PaperController extends PaperDefaultController
     }
 
     /**
-     * save contributor answer to a reviewer comment
+     * save reply
      * @param int $id : request comment
      * @param Episciences_Paper $paper
      * @param int $commentType : comment type
      * @return bool
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_File_Transfer_Exception
+     * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
-     * @throws JsonException
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    private function save_contributor_answer(int $id, Episciences_Paper $paper, int $commentType = Episciences_CommentsManager::TYPE_INFO_ANSWER): bool
+    private function saveReply(int $id, Episciences_Paper $paper): bool
     {
+        $commentType = $paper->isOwner() ? Episciences_CommentsManager::TYPE_INFO_ANSWER : Episciences_CommentsManager::TYPE_INFO_REQUEST;
         // fetch comment from database *******************************************
         $oComment = new Episciences_Comment;
         $oComment->find($id);
         // save comment to database ****************************************
         $oAnswer = $this->saveEpisciencesUserComment($paper, $commentType, $id); // response comment
 
-        if (empty($oAnswer)) {
+        if (!$oAnswer) {
             return false;
         }
 
@@ -696,12 +693,9 @@ class PaperController extends PaperDefaultController
      * @param Episciences_Paper $paper
      * @param int $commentType
      * @param int $parentCommentId
-     * @return Episciences_Comment | bool
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_File_Transfer_Exception
-     * @throws Zend_Json_Exception
+     * @return Episciences_Comment|null
      */
-    private function saveEpisciencesUserComment(Episciences_Paper $paper, int $commentType = Episciences_CommentsManager::TYPE_INFO_REQUEST, int $parentCommentId = 0): Episciences_Comment
+    private function saveEpisciencesUserComment(Episciences_Paper $paper, int $commentType = Episciences_CommentsManager::TYPE_INFO_REQUEST, int $parentCommentId = 0): ?Episciences_Comment
     {
 
         /** @var Zend_Controller_Request_Http $request */
@@ -739,7 +733,7 @@ class PaperController extends PaperDefaultController
             $comment->setFilePath($cePath);
         }
 
-        return !$result ? false : $comment;
+        return !$result ? null: $comment;
     }
 
     /**
@@ -748,12 +742,13 @@ class PaperController extends PaperDefaultController
      * @param int $parentCommentId
      * @param bool $sendMail
      * @return bool
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
+     * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception|JsonException
-     * @throws Exception
+     * @throws Zend_Session_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function saveAuthorFormattingAnswer(Episciences_Paper $paper, int $commentType, int $parentCommentId, bool $sendMail = true): bool
     {
@@ -788,7 +783,7 @@ class PaperController extends PaperDefaultController
         // La réponse à la demande de sources
         $cAnswer = $this->saveEpisciencesUserComment($paper, $commentType, $parentCommentId);
 
-        if (empty($cAnswer)) {
+        if (!$cAnswer) {
             return false;
         }
 
@@ -2513,15 +2508,10 @@ class PaperController extends PaperDefaultController
         $this->view->author_comments = $author_comments;
 
         if (!array_key_exists('displayNotice', $paperStatus) && $journal->getSetting(Episciences_Review::SETTING_REVIEWERS_CAN_COMMENT_ARTICLES)) {
-
             // fetch reviewers comments
-            $settings = [self::TYPES_STR => [
-                Episciences_CommentsManager::TYPE_INFO_REQUEST,
-                Episciences_CommentsManager::TYPE_INFO_ANSWER,
-                Episciences_CommentsManager::TYPE_CONTRIBUTOR_TO_REVIEWER
-            ]];
+            $comments = Episciences_CommentsManager::fetchReviewerAuthorCommentsByDocId($paper->getDocid());
+            $this->anonymiseIfNecessaryAndFormatScreeName($comments, $paper->isOwner());
 
-            $comments = Episciences_CommentsManager::getList($paper->getDocid(), $settings);
             $this->view->comments = $comments;
 
             $comment_form = Episciences_CommentsManager::getForm();
@@ -2682,7 +2672,11 @@ class PaperController extends PaperDefaultController
     {
 
         // save comment to database ******************************************
-        $oComment = $this->saveEpisciencesUserComment($paper, Episciences_CommentsManager::TYPE_INFO_REQUEST);
+        $oComment = $this->saveEpisciencesUserComment($paper);
+
+        if(!$oComment) {
+            return false;
+        }
 
         // fetch contributor info ********************************************
         $contributor = new Episciences_User;
@@ -3828,5 +3822,31 @@ class PaperController extends PaperDefaultController
         header('Content-Type: application/json; charset=UTF-8');
         exit();
     }
+
+    private function anonymiseIfNecessaryAndFormatScreeName(array &$comments, $isOwner): void
+    {
+        $formName = $this->view->translate('comité éditorial');
+        foreach ($comments as &$comment) {
+            $type = (int)$comment['TYPE'];
+
+            if ($type === Episciences_CommentsManager::TYPE_INFO_REQUEST ||
+                $type === Episciences_CommentsManager::TYPE_INFO_ANSWER
+            ) {
+                $formName = $this->view->translate('relecteur') . ' ' . $comment['ALIAS'];
+            }
+
+            if ((int)$comment['UID'] === Episciences_Auth::getUid()) {
+                $formName .= ' : ' . $this->view->translate('vous');
+            } elseif (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor()) {
+
+                if (!$isOwner) { // Never show Screen Name for the paper's submitter
+                    $formName .= ' : ' . $this->view->escape($comment['SCREEN_NAME']);
+                }
+            }
+
+            $comment['SCREEN_NAME'] = $formName;
+        }
+    }
+
 }
 
