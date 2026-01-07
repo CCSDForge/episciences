@@ -108,15 +108,15 @@ class CommentsController extends PaperController
             return;
         }
 
-        // Special handling for author replies to editor responses: delete the entire reply (text + file)
-        // This is for TYPE_AUTHOR_TO_EDITOR comments that have a PARENTID (replies, not initial messages)
+        // Special handling for author-to-editor messages: delete the entire message (text + file)
+        // This applies to both initial messages and replies
         $parentId = $comment->getParentId();
         $commentType = $comment->getType();
-        $isAuthorReply = ($commentType === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) && !empty($parentId);
-        
-        if ($isAuthorReply) {
+        $isAuthorToEditor = ($commentType === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR);
+
+        if ($isAuthorToEditor) {
             $filesDeleted = true;
-            
+
             // Delete attached files if any
             if ($comment->getFile()) {
                 $isJson = Episciences_Tools::isJson($comment->getFile());
@@ -145,10 +145,16 @@ class CommentsController extends PaperController
 
             // Delete the comment itself from database (whether files were deleted successfully or not)
             if ($comment->delete()) {
-                $message = $this->view->translate("Votre réponse a bien été supprimée.");
+                // Different success message for replies vs initial messages
+                $message = !empty($parentId)
+                    ? $this->view->translate("Votre réponse a bien été supprimée.")
+                    : $this->view->translate("Votre message a bien été supprimé.");
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
             } else {
-                $message = $this->view->translate("Une erreur est survenue lors de la suppression de votre réponse.");
+                // Different error message for replies vs initial messages
+                $message = !empty($parentId)
+                    ? $this->view->translate("Une erreur est survenue lors de la suppression de votre réponse.")
+                    : $this->view->translate("Une erreur est survenue lors de la suppression de votre message.");
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             }
 

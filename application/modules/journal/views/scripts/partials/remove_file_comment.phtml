@@ -14,18 +14,29 @@
             $this->comment['PCID'] . '/docid/' . $this->comment['DOCID'] . '/file/';
     }
 
-    // Different confirmation message for replies (deletes entire reply)
+    // Different confirmation message for different message types
     $isEditorToAuthorResponse = ($this->comment['TYPE'] ?? null) == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE;
-    $isAuthorReplyToEditor = ($this->comment['TYPE'] ?? null) == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR && 
-                             !empty($this->comment['PARENTID']);
+    $isAuthorToEditor = ($this->comment['TYPE'] ?? null) == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR;
+    $isAuthorReply = $isAuthorToEditor && !empty($this->comment['PARENTID']);
     $buttonText = $this->translate('Supprimer');
 
-    if ($isEditorToAuthorResponse || $isAuthorReplyToEditor) {
-        // For replies (both editor to author and author to editor), delete the entire message
+    if ($isEditorToAuthorResponse) {
+        // For editor responses to author, delete the entire reply
         $confirmMessage = $hasFile
             ? $this->translate('Voulez-vous supprimer votre réponse (texte et fichier attaché) ?')
             : $this->translate('Voulez-vous supprimer votre réponse ?');
+    } elseif ($isAuthorReply) {
+        // For author replies to editor, delete the entire reply
+        $confirmMessage = $hasFile
+            ? $this->translate('Voulez-vous supprimer votre réponse (texte et fichier attaché) ?')
+            : $this->translate('Voulez-vous supprimer votre réponse ?');
+    } elseif ($isAuthorToEditor) {
+        // For initial author-to-editor messages, delete the entire message
+        $confirmMessage = $hasFile
+            ? $this->translate('Voulez-vous supprimer votre message (texte et fichier attaché) ?')
+            : $this->translate('Voulez-vous supprimer votre message ?');
     } else {
+        // Default behavior for other comment types
         $confirmMessage = $hasFile
             ? $this->translate('Voulez-vous supprimer ce fichier ?')
             : $this->translate('Voulez-vous supprimer ce message ?');
