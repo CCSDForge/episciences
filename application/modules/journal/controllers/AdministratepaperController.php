@@ -890,7 +890,7 @@ class AdministratepaperController extends PaperDefaultController
             if ($paper->getEditor(Episciences_Auth::getUid())) {
                 // Filter to get only author messages (not editor responses)
                 $authorMessages = array_filter($authorToEditorComments, function($comment) {
-                    return $comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR;
+                    return isset($comment['TYPE']) && $comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR;
                 });
 
                 // Create reply forms for each author message

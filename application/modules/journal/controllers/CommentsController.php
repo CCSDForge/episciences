@@ -97,6 +97,21 @@ class CommentsController extends PaperController
 
             // Delete the comment itself from database
             if ($filesDeleted && $comment->delete()) {
+                // Log the deletion with details
+                $logAction = Episciences_Paper_Logger::CODE_PAPER_COMMENT_DELETED_BY_EDITOR;
+                $logDetail = json_encode([
+                    'pcid' => $pcid,
+                    'messageType' => 'reply',
+                    'hadFile' => !empty($comment->getFile()),
+                    'files' => $jFiles ?? [],
+                    'message' => $comment->getMessage(),
+                    'user' => [
+                        'fullname' => Episciences_Auth::getFullName(),
+                        'uid' => Episciences_Auth::getUid()
+                    ]
+                ]);
+                Episciences_Paper_Logger::log($paper->getPaperid(), $docid, $logAction, Episciences_Auth::getUid(), $logDetail);
+
                 $message = $this->view->translate("Votre réponse a bien été supprimée.");
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
             } else {
@@ -116,6 +131,7 @@ class CommentsController extends PaperController
 
         if ($isAuthorToEditor) {
             $filesDeleted = true;
+            $jFiles = [];
 
             // Delete attached files if any
             if ($comment->getFile()) {
@@ -145,6 +161,21 @@ class CommentsController extends PaperController
 
             // Delete the comment itself from database (whether files were deleted successfully or not)
             if ($comment->delete()) {
+                // Log the deletion with details
+                $logAction = Episciences_Paper_Logger::CODE_PAPER_COMMENT_DELETED_BY_AUTHOR;
+                $logDetail = json_encode([
+                    'pcid' => $pcid,
+                    'messageType' => !empty($parentId) ? 'reply' : 'initial',
+                    'hadFile' => !empty($comment->getFile()),
+                    'files' => $jFiles,
+                    'message' => $comment->getMessage(),
+                    'user' => [
+                        'fullname' => Episciences_Auth::getFullName(),
+                        'uid' => Episciences_Auth::getUid()
+                    ]
+                ]);
+                Episciences_Paper_Logger::log($paper->getPaperid(), $docid, $logAction, Episciences_Auth::getUid(), $logDetail);
+
                 // Different success message for replies vs initial messages
                 $message = !empty($parentId)
                     ? $this->view->translate("Votre réponse a bien été supprimée.")

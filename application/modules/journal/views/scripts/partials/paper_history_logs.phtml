@@ -38,17 +38,21 @@ $logs_with_details = [
     Episciences_Paper_Logger::CODE_LD_ADDED,
     Episciences_Paper_Logger::CODE_LD_CHANGED,
     Episciences_Paper_Logger::CODE_LD_REMOVED,
+    Episciences_Paper_Logger::CODE_PAPER_COMMENT_DELETED_BY_AUTHOR,
+    Episciences_Paper_Logger::CODE_PAPER_COMMENT_DELETED_BY_EDITOR,
 ]; ?>
 
 <?php foreach ($this->logs as $log) : ?>
 
     <?php
     // Decode JSON details once per log entry
+    // Handle both JSON and plain text (for legacy/simple log entries)
     try {
         $detail = ($log['DETAIL']) ? Zend_Json::decode($log['DETAIL']) : [];
     } catch (Zend_Json_Exception $e) {
+        // If JSON decoding fails, it's likely a plain text detail or legacy data
+        // Just use an empty array - the log action label will still display
         $detail = [];
-        trigger_error($e->getMessage() . ' of docid ' . $log['DOCID'], E_USER_WARNING);
     }
 
     // Extract status once (used by multiple cases)
@@ -259,6 +263,17 @@ $logs_with_details = [
                     echo $this->partial('partials/paper_history_logs_user_action.phtml', [
                         'fullName' => $fullName,
                         'tag' => $tag
+                    ]);
+                    break;
+
+                // Comment deletions (2 cases)
+                case Episciences_Paper_Logger::CODE_PAPER_COMMENT_DELETED_BY_AUTHOR:
+                case Episciences_Paper_Logger::CODE_PAPER_COMMENT_DELETED_BY_EDITOR:
+                    echo $this->partial('partials/paper_history_logs_comment_deletion.phtml', [
+                        'fullName' => $fullName,
+                        'pcid' => $detail['pcid'] ?? 'N/A',
+                        'messageType' => $detail['messageType'] ?? 'unknown',
+                        'hadFile' => $detail['hadFile'] ?? false
                     ]);
                     break;
 
