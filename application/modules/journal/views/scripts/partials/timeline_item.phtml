@@ -54,9 +54,29 @@ $authorReplyForms = $authorReplyForms ?? ($this->authorReplyForms ?? []);
         </header>
 
         <!-- Comment message -->
-        <div class="timeline-comment-message">
+        <div class="timeline-comment-message" <?php
+        // Remove bottom border if there's an attached file
+        if ($comment['FILE']) {
+            echo 'style="border-bottom: none; margin-bottom: 0;"';
+        }
+        ?>>
             <?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($comment['MESSAGE'])) ?>
         </div>
+
+        <!-- Attached file (if present) - display for all message types -->
+        <?php if ($comment['FILE']) : ?>
+            <div class="timeline-comment-attachment" style="margin-top: 5px; border-top: none; padding-top: 5px; border-bottom: none; padding-bottom: 0;">
+                <div>
+                    <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i> <a
+                            href="/docfiles/comments/<?= $comment['DOCID'] . '/' . $comment['FILE'] ?>"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="<?= $this->translate('Télécharger le fichier'); ?> <?= $this->escape($comment['FILE']) ?>">
+                        <?= $this->escape($comment['FILE']) ?>
+                    </a>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <?php
         // Author can reply to editor responses
@@ -67,35 +87,14 @@ $authorReplyForms = $authorReplyForms ?? ($this->authorReplyForms ?? []);
                 isset($authorReplyForms[$comment['PCID']])
         ) :
             ?>
-            <!-- Reply button (right-aligned) and attached file (if present) on same line -->
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; border-top: 1px solid #e0e0e0; padding-top: 10px;">
-                <!-- Attached file (if present) - display on left -->
-                <?php if ($comment['FILE']) : ?>
-                    <div class="timeline-comment-attachment">
-                        <div>
-                            <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i> <a
-                                    href="/docfiles/comments/<?= $comment['DOCID'] . '/' . $comment['FILE'] ?>"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    aria-label="<?= $this->translate('Télécharger le fichier'); ?> <?= $this->escape($comment['FILE']) ?>">
-                                <?= $this->escape($comment['FILE']) ?>
-                            </a>
-                        </div>
-                    </div>
-                <?php else: ?>
-                    <!-- Empty space if no file -->
-                    <div></div>
-                <?php endif; ?>
-
-                <!-- Author reply action - always on the right -->
-                <div class="timeline-comment-actions">
-                    <button type="button"
-                            class="btn btn-primary btn-xs toggle-reply-form"
-                            data-reply-form-id="author-reply-form-<?= $comment['PCID']; ?>">
-                        <i class="fa fa-reply"></i>
-                        <?= $this->translate('Répondre'); ?>
-                    </button>
-                </div>
+            <!-- Author reply action - always on the right, below the line -->
+            <div class="timeline-comment-actions" style="text-align: right;">
+                <button type="button"
+                        class="btn btn-primary btn-xs toggle-reply-form"
+                        data-reply-form-id="author-reply-form-<?= $comment['PCID']; ?>">
+                    <i class="fa fa-reply"></i>
+                    <?= $this->translate('Répondre'); ?>
+                </button>
             </div>
 
             <!-- Author reply form -->
