@@ -1061,13 +1061,14 @@ class InboxNotifications extends Script
      * @param Episciences_Review $journal
      * @param array $logDetails
      * @return bool
+     * @throws DOMException
      * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws DOMException
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function saveNewVersion(Episciences_Paper $context, array $newPaperData, Episciences_Review $journal, array $logDetails = []): bool
     {
@@ -1178,7 +1179,7 @@ class InboxNotifications extends Script
         if ($reviewers && $reassignReviewers) {
             $sender = new Episciences_Editor();
             $sender->findWithCAS($comment->getUid());
-            $this->reinviteReviewers($reviewers, $context, $newPaper, $sender, $journal);
+            $this->reinviteReviewers($reviewers, $context, $newPaper, $journal, $sender);
         }
 
         if ($editors) {
@@ -1204,8 +1205,8 @@ class InboxNotifications extends Script
      * @param array $reviewers
      * @param Episciences_Paper $context
      * @param Episciences_Paper $paper
-     * @param Episciences_User|null $sender
      * @param Episciences_Review $journal
+     * @param Episciences_User|null $sender
      * @return void
      * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
@@ -1213,14 +1214,19 @@ class InboxNotifications extends Script
      * @throws Zend_Mail_Exception
      */
 
-    private function reinviteReviewers(array $reviewers, Episciences_Paper $context, Episciences_Paper $paper, Episciences_User $sender = null, Episciences_Review $journal): void
+    private function reinviteReviewers(array $reviewers, Episciences_Paper $context, Episciences_Paper $paper, Episciences_Review $journal, Episciences_User $sender = null): void
     {
+        $journalOptions = [
+            'rvCode' => $journal->getCode(),
+            'rvId' => $journal->getRvid(),
+            Episciences_Review::IS_NEW_FRONT_SWITCHED => $journal->isNewFrontSwitched()
+        ];
+
         $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION;
-
         // link to previous version page
-        $context_url = sprintf(SERVER_PROTOCOL . "://%s.%s/paper/view?id=%s", $journal->getCode(), DOMAIN, $paper->getDocid());
+        $contextUrl = self::buildPublicPaperUrl($context->getDocid(), $journalOptions);
 
-        // new deadline is today + default deadline interval (journal setting)
+        // the new deadline is today + default deadline interval (journal setting)
         $deadline = Episciences_Tools::addDateInterval(date('Y-m-d'), $journal->getSetting(Episciences_Review::SETTING_RATING_DEADLINE));
 
         $params = [
@@ -1241,10 +1247,8 @@ class InboxNotifications extends Script
                 $oInvitation = Episciences_User_InvitationsManager::findById($oInvitation->getId());
             }
 
-
             // link to rating invitation page
-            $invitation_url = sprintf(SERVER_PROTOCOL . "://%s.%s/reviewer/invitation?id=%s", $journal->getCode(), DOMAIN, $oInvitation->getId());
-
+            $invitationUrl = sprintf("%s/reviewer/invitation/id/%s", $journal->getBackEndUrl(), $oInvitation->getId());
 
             // update assignment with invitation_id
             $oAssignment->setInvitation_id($oInvitation->getId());
@@ -1258,8 +1262,8 @@ class InboxNotifications extends Script
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $context->getTitle($locale, true),
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $context->formatAuthorsMetadata($locale),
                 Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($context->getWhen(), $locale),
-                Episciences_Mail_Tags::TAG_PAPER_URL => $context_url,
-                Episciences_Mail_Tags::TAG_INVITATION_URL => $invitation_url,
+                Episciences_Mail_Tags::TAG_PAPER_URL => $contextUrl,
+                Episciences_Mail_Tags::TAG_INVITATION_URL => $invitationUrl,
                 Episciences_Mail_Tags::TAG_INVITATION_DEADLINE => Episciences_View_Helper_Date::Date($oInvitation->getExpiration_date(), $locale),
                 Episciences_Mail_Tags::TAG_RATING_DEADLINE => Episciences_View_Helper_Date::Date($oAssignment->getDeadline(), $locale)
 
