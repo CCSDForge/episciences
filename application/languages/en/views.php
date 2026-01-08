@@ -570,8 +570,13 @@ return array(
     "Une erreur est survenue lors de l'enregistrement de votre commentaire." => "An error occurred while saving your comment.",
     "Le fichier a bien été supprimé." => "The file has been deleted.",
     "Vos changements ont été enregistrés." => "Your changes have been saved.",
-    "Le commentaire demandé n’existe pas." => "The required comment does not exist.",
+    "Le commentaire demandé n'existe pas." => "The required comment does not exist.",
     'Ce fichier est attaché à la version temporaire, vous ne pouvez donc pas le supprimer.' => 'This file is attached to the temporary version, so you cannot delete it.',
+    "Votre message a bien été supprimé." => "Your message has been successfully deleted.",
+    "Votre réponse a bien été supprimée." => "Your reply has been successfully deleted.",
+    "Une erreur est survenue lors de la suppression de votre message." => "An error occurred while deleting your message.",
+    "Une erreur est survenue lors de la suppression de votre réponse." => "An error occurred while deleting your reply.",
+    "Une erreur est survenue lors de la suppression." => "An error occurred while deleting.",
 
     // Gestion d'un article (déposant)
 
