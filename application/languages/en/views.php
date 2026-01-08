@@ -577,6 +577,9 @@ return array(
     "Une erreur est survenue lors de la suppression de votre message." => "An error occurred while deleting your message.",
     "Une erreur est survenue lors de la suppression de votre réponse." => "An error occurred while deleting your reply.",
     "Une erreur est survenue lors de la suppression." => "An error occurred while deleting.",
+    "Votre message a bien été envoyé aux rédacteurs." => "Your message has been successfully sent to the editors.",
+    "Votre réponse a bien été envoyée à l'auteur." => "Your reply has been successfully sent to the author.",
+    "Votre réponse a bien été envoyée." => "Your reply has been successfully sent.",
 
     // Gestion d'un article (déposant)
 
