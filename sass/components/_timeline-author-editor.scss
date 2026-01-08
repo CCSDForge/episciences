@@ -9,7 +9,7 @@
 
   // Remove line above first timeline item
   .timeline-track::before {
-    top: 24px; // Start line at center of first marker (8px top + 16px half of 32px marker)
+    top: 24px; // Start line after first marker (8px top + 16px marker height)
   }
 
   // Align timeline marker with first line of text
@@ -52,6 +52,11 @@
       z-index: 0;
     }
 
+    // Remove horizontal connector inherited from demands-timeline
+    &::after {
+      display: none;
+    }
+
     // Make reply markers smaller (works with timeline_item.phtml)
     .timeline-item {
       margin-left: 30px; // More indent for replies to position marker to the right
@@ -70,6 +75,19 @@
         .user-photo-thumb {
           width: 20px; // Smaller to fit within the 24px marker
           height: 20px;
+        }
+
+        // Horizontal connector from vertical line to editor reply marker
+        &::before {
+          content: '';
+          position: absolute;
+          right: 100%; // Start from the left edge of the marker
+          top: 50%; // Center vertically on the marker
+          transform: translateY(-50%);
+          width: 9px; // Distance from main timeline to marker
+          height: 2px;
+          background-color: $lighter-grey;
+          z-index: -1;
         }
       }
     }
@@ -152,8 +170,6 @@
   // Comment actions (reply button, etc.)
   .timeline-comment-actions {
     margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid $lighter-grey;
     text-align: right;
 
     .btn {
