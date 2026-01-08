@@ -11,7 +11,7 @@ use Monolog\Logger;
 
 
 require_once "Script.php";
-
+require '../library/Episciences/Trait/UrlBuilder.php';
 
 class InboxNotifications extends Script
 {
