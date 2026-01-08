@@ -417,13 +417,8 @@ class ReviewerController extends PaperDefaultController
         $docId = $paper->getDocid();
         $reviewerUid = $user->getUid();
 
-        $baseUrl = self::buildBaseUrl();
-
         $ratingUrl = $this->view->url(['controller' => 'paper', 'action' => 'rating', 'id' => $docId]);
-        $ratingUrl = $baseUrl . $ratingUrl;
-
-        $adminPaperUrl = $this->view->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $docId]);
-        $adminPaperUrl = $baseUrl . $adminPaperUrl;
+        $ratingUrl = self::buildBaseUrl() . $ratingUrl;
 
         $reviewerTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY;
         $editorialCommitteeTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY;
@@ -438,7 +433,7 @@ class ReviewerController extends PaperDefaultController
         $editorialCommitteeTags = [
             Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $user->getScreenName(),
             Episciences_Mail_Tags::TAG_REVIEWER_SCREEN_NAME => $user->getScreenName(),
-            Episciences_Mail_Tags::TAG_PAPER_URL => $adminPaperUrl
+            Episciences_Mail_Tags::TAG_PAPER_URL => self::buildAdminPaperUrl($docId)
         ];
 
         $reviewerTags = [Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true)];
@@ -516,19 +511,13 @@ class ReviewerController extends PaperDefaultController
     }
 
     /**
-     * @param Zend_Controller_Request_Http $request
-     * @param Episciences_User_Invitation $invitation
-     * @param Episciences_User_Assignment $assignment
-     * @param Episciences_Paper $paper
-     * @param Episciences_User_Tmp|null $tmpUser
-     * @return void
-     * @throws JsonException
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
-     * @throws Zend_Form_Exception
      * @throws Zend_Mail_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Session_Exception
+     * @throws JsonException
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Form_Exception
      */
     private function answerProcess(
         Zend_Controller_Request_Http $request,

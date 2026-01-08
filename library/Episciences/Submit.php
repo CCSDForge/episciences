@@ -8,6 +8,7 @@ use Episciences\Paper\DataDescriptorManager;
 use Episciences\Trait\UrlBuilder;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\Log\LogLevel;
 
 class Episciences_Submit
 {
@@ -1037,9 +1038,9 @@ class Episciences_Submit
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_File_Transfer_Exception
-     * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
 
     public function saveDoc(array $data, ?int $paperId = null, ?int $vid = null, ?int $sid = null): array
@@ -1183,21 +1184,10 @@ class Episciences_Submit
             // Assigner automatiquement des rédacteurs à l'article pour une nouvelle soumission pas pour une mise à jour
             $recipients += $this->assignEditors($paper, $this->getSuggestedEditorsFromPost($data), $values['SID'], $values['VID']);
 
-        } else { // updated version : send mails to editors + admin + secretaries + chief editors
+        } else { // updated version: send mails to editors + admin + secretaries + chief editors
             $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY;
             $recipients += $paper->getEditors(true, true);
         }
-
-        // Mail à l'auteur
-        // Préparation du lien vers l'article
-        $view = Zend_Layout::getMvcInstance()->getView();
-
-        $paperUrl = $view->url([
-            'controller' => 'paper',
-            'action' => 'view',
-            'id' => $paper->getDocid()]);
-
-        $paperUrl = self::buildBaseUrl() . $paperUrl;
 
         //Author infos
         /** @var Episciences_User $author */
@@ -1211,11 +1201,12 @@ class Episciences_Submit
         ];
 
         $authorTags = $commonTags + [
-                Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
+                Episciences_Mail_Tags::TAG_PAPER_URL => self::buildPublicPaperUrl($paper->getDocid()), // lien vers l'article
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($aLocale, true),
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($aLocale)
             ];
 
+        // Mail à l'auteur
         Episciences_Mail_Send::sendMailFromReview($author, $authorTemplateKy, $authorTags, $paper, null, [], false, $paper->getCoAuthors());
 
         //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
@@ -1261,7 +1252,7 @@ class Episciences_Submit
      * @param array $suggestEditors : editeurs suggérés par l'auteur,
      * @param null $sid : l'ID de la rubrique; Null par defaut
      * @param null $vid : l'ID du volume; Null par defaut
-     * @return array : les Editeurs assignés à l'articles
+     * @return array : les Editeurs assignés à l'article
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
@@ -1406,12 +1397,14 @@ class Episciences_Submit
             $value = $this->_db->quote($value);
             $values[] = '(' . $docId . ',' . $option . ',' . $value . ')';
         }
+
         $sql = 'INSERT INTO ' . T_PAPER_SETTINGS . ' (DOCID, SETTING, VALUE) VALUES ' . implode(',', $values);
 
         if (!$this->_db->query($sql)) {
-            error_log('Failed to save ' . $suggestionType . ' for DOCID = ' . $docId);
+            Episciences_View_Helper_Log::log(sprintf('Failed to save %s for DOCID = %s', $suggestionType, $docId), LogLevel::CRITICAL);
             return false;
         }
+
         return true;
     }
 
@@ -1489,36 +1482,14 @@ class Episciences_Submit
         $message = '';
         $adminTags = $tags;
 
-        // Préparation du lien vers l'article
-        $view = Zend_Layout::getMvcInstance()->getView();
-
-        $paperUrl = $view->url([
-            'controller' => 'administratepaper',
-            'action' => 'view',
-            'id' => $paper->getDocid()
-        ]);
-
-        $baseUrl = self::buildBaseUrl();
-        $paperUrl = $baseUrl . $paperUrl;
-
-        $adminTags[Episciences_Mail_Tags::TAG_PAPER_URL] = $paperUrl; // Lien de gestion de l'article
-
+        $adminTags[Episciences_Mail_Tags::TAG_PAPER_URL] = self::buildAdminPaperUrl($paper->getDocid()); // Lien de gestion de l'article
 
         if ($canReplace) {
             if ($oldPaperStatus === Episciences_Paper::STATUS_REFUSED) {// Si l'article a été déjà refusé
                 $message = 'Cet article a été précédemment refusé dans sa première version, pour le consulter, merci de suivre ce lien : ';
-                // Lien vers l'article qui a été déjà refusé
-                $refusedPaperUrl = $view->url([
-                    'controller' => 'administratepaper',
-                    'action' => 'view',
-                    'id' => $oldDocId
 
-                ]);
-
-                $refusedPaperUrl = $baseUrl . $refusedPaperUrl;
-
-                // Au lieu d'ajouter un template pour ce cas particulier, on ajoute ce  tags dans le template paper_submission_editor_copy
-                $adminTags[Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL] = $refusedPaperUrl;
+                // Au lieu d'ajouter un template pour ce cas particulier, on ajoute ces tags dans le template paper_submission_editor_copy
+                $adminTags[Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL] = self::buildAdminPaperUrl($oldDocId); //  Lien vers l'article qui a été déjà refusé
             } else {
                 $defaultTemplateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_UPDATED_EDITOR_COPY;
             }

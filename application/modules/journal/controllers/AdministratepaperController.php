@@ -1,4 +1,7 @@
 <?php
+
+use Psr\Log\LogLevel;
+
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
 /**
@@ -1608,6 +1611,7 @@ class AdministratepaperController extends PaperDefaultController
         $session->hash = null;
 
         $paper = Episciences_PapersManager::get($docId, false);
+
         if (!$paper) {
             return false;
         }
@@ -1618,13 +1622,18 @@ class AdministratepaperController extends PaperDefaultController
         $review->loadSettings();
 
         $reviewer = $request->getPost('reviewer');
-        $reviewer = json_decode($reviewer, true);
+        try {
+            $reviewer = json_decode($reviewer, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
+            return $false;
+        }
 
         if (!isset($reviewer['firstname'])) {
             $reviewer['firstname'] = '';
         }
         // save temporary user in USER_TMP table
-        if (!$reviewer['id'] && $reviewer['invitation_type'] == 3) {
+        if (!$reviewer['id'] && $reviewer['invitation_type'] === 3) {
             $tmp_user = new Episciences_User_Tmp([
                 'email' => $reviewer['email'],
                 'firstname' => $reviewer['firstname'],
@@ -1640,7 +1649,7 @@ class AdministratepaperController extends PaperDefaultController
         $params = [
             'rvid' => RVID,
             'itemid' => $docId,
-            'tmp_user' => ($reviewer['invitation_type'] == 3) ? 1 : 0,
+            'tmp_user' => ($reviewer['invitation_type'] === 3) ? 1 : 0,
             'item' => Episciences_User_Assignment::ITEM_PAPER,
             'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
             'status' => Episciences_User_Assignment::STATUS_PENDING,
@@ -1679,19 +1688,11 @@ class AdministratepaperController extends PaperDefaultController
         if (array_key_exists('locale', $reviewer)) {
             $url_params['lang'] = $reviewer['locale'];
         }
-        if ($reviewer['invitation_type'] == 3) {
+        if ($reviewer['invitation_type'] === 3) {
             $url_params['tmp'] = md5($reviewer['email']);
         }
 
-        $invitation_url = self::buildBaseUrl() . $this->view->url($url_params);
-
-        // La page de l'article sur Episciences
-        $paperUrl = $this->view->url([
-            'controller' => 'paper',
-            'action' => 'view',
-            'id' => $paper->getDocid()]);
-
-        $paper_url = self::buildBaseUrl() . $paperUrl;
+        $invitationUrl = self::buildBaseUrl() . $this->view->url($url_params);
 
         // la page de l'article sur l'archive ouverte
         $paperRepoUrl = $paper->getDocUrl();
@@ -1705,14 +1706,14 @@ class AdministratepaperController extends PaperDefaultController
         $mail->setDocid($docId);
         $mail->setSubject($post['subject']);
         $mail->setRawBody(Ccsd_Tools::clear_nl($post['body']));
-        $mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_URL, $invitation_url);
-        $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, $paper_url);
-        $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_REPO_URL, $paperRepoUrl);
+        $mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_URL, $invitationUrl);
+        $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, self::buildPublicPaperUrl($paper->getDocid()));
+        $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_REPO_URL, $paperRepoUrl); // La page de l'article sur Episciences
         $mail->addTag(Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME, $contributor->getFullName());
         $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, sprintf('%s://%s%s',SERVER_PROTOCOL,$_SERVER['SERVER_NAME'], $this->url(['controller' => 'user', 'action' => 'lostlogin'])));
         $mail->addTo($reviewer['email'], $reviewer['full_name']);
 
-        // Other reciptients
+        // Other recipients
         $cc = (!empty($post['cc'])) ? explode(';', $post['cc']) : [];
         $bcc = (!empty($post['bcc'])) ? explode(';', $post['bcc']) : [];
 
@@ -1738,7 +1739,7 @@ class AdministratepaperController extends PaperDefaultController
                 'invitation_id' => $invitation->getId(),
                 'tmp_user' => $oAssignment->isTmp_user(),
                 'uid' => $uid,
-                'pool' => ($vid) ? $vid : null,
+                'pool' => ($vid) ?: null,
                 'user' => ['fullname' => $reviewer['full_name']]]);
         if (!$log) {
             $errors[] = "Le log de l'invitation de relecteur n'a pas pu être enregistré";
@@ -2698,7 +2699,7 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function savesectionAction(): void
     {
@@ -2738,12 +2739,7 @@ class AdministratepaperController extends PaperDefaultController
 
                 if (!empty($editors)) {
 
-                    // prepare link to article management page
-                    $paper_url = $this->view->url([
-                        'controller' => self::ADMINISTRATE_PAPER_CONTROLLER,
-                        'action' => 'view',
-                        'id' => $paper->getDocid()]);
-                    $paper_url = self::buildBaseUrl() . $paper_url;
+                    $paper_url = self::buildAdminPaperUrl($paper->getDocid());
 
                     foreach ($editors as $uid => $editor) {
 
@@ -2793,7 +2789,11 @@ class AdministratepaperController extends PaperDefaultController
                     }
                 }
             }
-            echo json_encode(true);
+            try {
+                echo json_encode(true, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
+            }
         }
     }
 
@@ -2833,12 +2833,7 @@ class AdministratepaperController extends PaperDefaultController
             $added = array_diff($editors, array_keys($currentEditors));
             $removed = array_diff(array_keys($currentEditors), $editors);
 
-            $paper_url = $this->view->url([
-                'controller' => self::ADMINISTRATE_PAPER_CONTROLLER,
-                'action' => 'view',
-                'id' => $paper->getDocid()]);
-
-            $paper_url = self::buildBaseUrl() . $paper_url;
+            $paper_url = self::buildAdminPaperUrl($paper->getDocid());
 
             if (!empty($added)) {
                 $this->assignUser($paper, $added, $paper_url);
@@ -3570,7 +3565,7 @@ class AdministratepaperController extends PaperDefaultController
         $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_TITLE, $oPaper->getTitle($locale, true));
         $mail->addTag(Episciences_Mail_Tags::TAG_AUTHORS_NAMES, $oPaper->formatAuthorsMetadata());
         $mail->addTag(Episciences_Mail_Tags::TAG_SUBMISSION_DATE, $this->view->Date($oPaper->getSubmission_date(), $locale));
-        $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, self::buildBaseUrl() . $this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $oPaper->getDocid()]));
+        $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, self::buildAdminPaperUrl($oPaper->getDocid()));
         $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_EMAIL, Episciences_Auth::getEmail());
         $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_FULL_NAME, Episciences_Auth::getFullName());
         $mail->setFromReview();

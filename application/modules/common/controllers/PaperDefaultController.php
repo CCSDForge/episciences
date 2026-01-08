@@ -287,17 +287,10 @@ class PaperDefaultController extends DefaultController
 
         $docId = $paper->getDocid();
 
-        $paperUrl = $this->view->url([
-            'controller' => 'paper',
-            'action' => 'view',
-            'id' => $docId]);
-
-        $paperUrl = self::buildBaseUrl() . $paperUrl;
-
         $tags += [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-            Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl
+            Episciences_Mail_Tags::TAG_PAPER_URL => $this->publicPaperUrl($docId),
         ];
 
         /** @var  Episciences_Reviewer $reviewer [] */

@@ -8,9 +8,13 @@ use Episciences_View_Helper_Url;
 
 trait UrlBuilder
 {
+    /**
+     * The method builds the URL to view an admin "paper" page.
+     * It behaves differently depending on whether the code runs from a web request or from the command line (CLI).
+     */
     final public static function buildAdminPaperUrl(int $docId, array $journalOptions = []): string
     {
-        if (!Ccsd_Tools::isFromCli()) {
+        if (!Ccsd_Tools::isFromCli()) { // running in a web request
 
             $adminPaperUrl = (new Episciences_View_Helper_Url())->url(
                 [
@@ -22,15 +26,19 @@ trait UrlBuilder
             return self::buildBaseUrl() . $adminPaperUrl;
         }
 
+        // If running from CLI: construct the URL manually using journal options as base
         return self::processUri($journalOptions) . sprintf('/administratepaper/view/id/%s', $docId);
 
     }
 
+    /**
+     * The method builds the URL to view a public "paper" page.
+     * It behaves differently depending on whether the code runs from a web request or from the command line (CLI).
+     */
     final public static function buildPublicPaperUrl(int $docId, array $journalOptions = []): string
     {
 
-
-        if (!Ccsd_Tools::isFromCli()) {
+        if (!Ccsd_Tools::isFromCli()) { // running in a web request
 
             $adminPaperUrl = (new Episciences_View_Helper_Url())->url(
                 [
@@ -43,6 +51,7 @@ trait UrlBuilder
 
         }
 
+        // If running from CLI: construct the URL manually using journal options as base
         return self::processUri($journalOptions) . sprintf('/paper/view/id/%s', $docId);
 
 

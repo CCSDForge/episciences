@@ -882,7 +882,7 @@ class PaperController extends PaperDefaultController
     {
         $requester = new Episciences_User();
         $requester->find($commentRequest->getUid());
-        $commentFiles = Episciences_Tools::isJson($commentAnswer->getFile()) ? json_decode($commentAnswer->getFile(), true) : (array)$commentAnswer->getFile();
+        $commentFiles = Episciences_Tools::isJson($commentAnswer->getFile()) ? json_decode($commentAnswer->getFile(), true, 512, JSON_THROW_ON_ERROR) : (array)$commentAnswer->getFile();
 
         $attachmentsMail = [];
 
@@ -896,13 +896,11 @@ class PaperController extends PaperDefaultController
         // Notifier les rédacteurs et les préparateurs de copie
         // + autres: selon les paramètres de la revue, notifier aussi les rédacteurs en chefs, administrateurs et secrétaires de rédaction
 
-        $adminPaperUrl = $this->view->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $paper->getDocid()]);
-        $adminPaperUrl = self::buildBaseUrl() . $adminPaperUrl;
+        $adminPaperUrl = self::buildAdminPaperUrl($paper->getDocid());
 
         // Tous les rédacteurs
         $allEditors = $this->getAllEditors($paper);
-
-        // tous les corrceteurs
+        //Tous les copy editors
         $assignedCopyEditors = $this->getAllCopyEditors($paper);
 
         // autres
@@ -963,12 +961,8 @@ class PaperController extends PaperDefaultController
         $locale = $contributor->getLangueid();
         $docId = $paper->getDocid();
 
-        // La page de l'article
-        $paperUrl = $this->url(['controller' => self::CONTROLLER_NAME, 'action' => 'view', 'id' => $docId ]);
-        $paperUrl = self::buildBaseUrl() . $paperUrl;
-
         $tags = [
-            Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
+            Episciences_Mail_Tags::TAG_PAPER_URL => self::buildPublicPaperUrl($docId),
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
@@ -3637,10 +3631,6 @@ class PaperController extends PaperDefaultController
         /** @var $invitationsByStatus [] */
         $invitationsByStatus = $paper->getInvitations($invitationsStatus, true);
 
-        // La page de l'article
-        $paperUrl = $this->view->url([self::CONTROLLER => self::CONTROLLER_NAME, self::ACTION => 'view', 'id' => $paper->getDocid()]);
-        $paperUrl = self::buildBaseUrl() . $paperUrl;
-
         /** @var  $invitations [] */
         foreach ($invitationsByStatus as $invitations) {
             foreach ($invitations as $invitation) {
@@ -3656,7 +3646,7 @@ class PaperController extends PaperDefaultController
                     $locale = $user->getLangueid();
 
                     $tags = [
-                        Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
+                        Episciences_Mail_Tags::TAG_PAPER_URL => self::buildPublicPaperUrl($paper->getDocid()), // La page de l'article
                         Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocId(),
                         Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
                         Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
