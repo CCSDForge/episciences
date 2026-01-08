@@ -16,6 +16,7 @@ require_once "Script.php";
 class InboxNotifications extends Script
 {
     use UrlBuilder;
+
     protected Logger $logger;
     public const COAR_NOTIFY_AT_CONTEXT = [
         'https://www.w3.org/ns/activitystreams',
@@ -28,9 +29,11 @@ class InboxNotifications extends Script
     public const NEW_VERSION = 'newVersion';
     public const VERSION_UPDATE = 'versionUpdate';
     public const PAPER_CONTEXT = 'previousPaperObject';
+    public const URI_SCHEME = 'mailto:';
+    public const AT_DOMAIN = '@ccsd.cnrs.fr';
     private array $coarNotifyOrigin;
     private array $coarNotifyType;
-    private $coarNotifyId;
+    private string $coarNotifyId;
 
     public function __construct(string $id = '', array $type = [], array $origin = [])
     {
@@ -50,6 +53,9 @@ class InboxNotifications extends Script
     }
 
 
+    /**
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
     public function run(): void
     {
 
@@ -118,6 +124,7 @@ class InboxNotifications extends Script
 
 
     /**
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function notificationsProcess(COARNotification $notification): bool
     {
@@ -134,52 +141,72 @@ class InboxNotifications extends Script
                 $this->logger->info(sprintf("Current notification: %s ", $nOriginal));
             }
 
-            if ($this->checkNotifyPayloads($notifyPayloads)) {
-
-                if ($this->isVerbose()) {
-                    $this->logger->info('Check payloads specification: complete');
-                }
-
-                $rvCode = $this->getRvCodeFromUrl($notifyPayloads['target']['id']);
-
-                $journal = ($rvCode !== '') ? Episciences_ReviewsManager::findByRvcode($rvCode, true) : null;
-
-                if ($journal) {
-
-                    if ($this->isVerbose()) {
-                        $this->logger->info(sprintf('Current journal: %s [#%s]', $journal->getCode(), Episciences_Review::$_currentReviewId));
-                    }
-
-
-                    Zend_Registry::set('reviewSettings', $journal->getSettings());
-                    $actor = $notifyPayloads['actor']['id'] ?? null; // uid
-
-                    if (!$actor) {
-                        $this->logger->warning(sprintf('Notification %s ignored: undefined Actor', $notification->getId()));
-                        return false;
-                    }
-
-                    $object = filter_var($notifyPayloads['object'][self::OBJECT_IDENTIFIER_URL], FILTER_VALIDATE_URL, FILTER_FLAG_PATH_REQUIRED); // preprint URL
-
-                    if (!$object) {
-                        $this->logger->warning(sprintf('Notification %s ignored: undefined Object', $notification->getId()));
-                        return false;
-                    }
-
-                    $isProcessed = $this->initSubmission($journal, $actor, $object, $notifyPayloads);
-
-
-                } else {
-                    $this->logger->warning(sprintf('notification %s ignored: undefined journal: %s', $notification->getId(), $rvCode));
-                }
-
+            if (!$this->checkNotifyPayloads($notifyPayloads)) {
+                return false;
             }
+
+            $rvCode = $this->getRvCodeFromUrl($notifyPayloads['target']['id']);
+            $journal = ($rvCode !== '') ? Episciences_ReviewsManager::findByRvcode($rvCode, true) : null;
+
+            if (!$journal) {
+                $this->logger->warning(sprintf('notification %s ignored: undefined journal: %s', $notification->getId(), $rvCode));
+                return false;
+            }
+
+            if ($this->isVerbose()) {
+                $this->logger->info(sprintf('Current journal: %s [#%s]', $journal->getCode(), Episciences_Review::$_currentReviewId));
+            }
+
+            Zend_Registry::set('reviewSettings', $journal->getSettings());
+
+            $actor = $this->extractActorId($notifyPayloads, $notification);
+
+            if ($actor === null) {
+                return false;
+            }
+
+            $url = $this->extractUrlFromEndorsementDescription($notifyPayloads, $notification);
+
+            if ($url === null) {
+                return false;
+            }
+
+            $isProcessed = $this->initSubmission($journal, $actor, $url, $notifyPayloads);
 
         } catch (JsonException $e) {
             $this->logger->critical($e->getMessage());
         }
 
         return $isProcessed;
+    }
+
+
+    private function extractActorId(array $notifyPayloads, COARNotification $notification): ?string
+    {
+        $actor = $notifyPayloads['actor']['id'] ?? null;
+
+        if (!$actor) {
+            $this->logger->warning(sprintf('Notification %s ignored: undefined Actor', $notification->getId()));
+            return null;
+        }
+
+        return $actor;
+    }
+
+    private function extractUrlFromEndorsementDescription(array $notifyPayloads, COARNotification $notification): ?string
+    {
+        $object = filter_var(
+            $notifyPayloads['object'][self::OBJECT_IDENTIFIER_URL] ?? null,
+            FILTER_VALIDATE_URL,
+            FILTER_FLAG_PATH_REQUIRED
+        );
+
+        if (!$object) {
+            $this->logger->warning(sprintf('Notification %s ignored: undefined Object', $notification->getId()));
+            return null;
+        }
+
+        return $object;
     }
 
     public function checkNotifyPayloads(array $notifyPayloads): bool
@@ -302,12 +329,12 @@ class InboxNotifications extends Script
     /**
      * @param Episciences_Review $journal
      * @param string $actor
-     * @param string $object
+     * @param string $url
      * @param array $notifyPayloads
      * @return bool
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    private function initSubmission(Episciences_Review $journal, string $actor, string $object, array $notifyPayloads = []): bool
+    private function initSubmission(Episciences_Review $journal, string $actor, string $url, array $notifyPayloads = []): bool
     {
 
         $repoId = (int)Episciences_Repositories::HAL_REPO_ID;
@@ -324,7 +351,7 @@ class InboxNotifications extends Script
         }
 
         $apply = false;
-        $data = $this->dataFromUrl($object);
+        $data = $this->dataFromUrl($url);
         $data['rvid'] = $journal->getRvid();
         $data['notifyPayloads'] = $notifyPayloads;
         $data['repoid'] = $repoId;
@@ -695,8 +722,8 @@ class InboxNotifications extends Script
 
     private function getUidFromMailString(string $uid): int
     {
-        $uid = ltrim($uid, 'mailto:');
-        $uid = rtrim($uid, '@ccsd.cnrs.fr');
+        $uid = ltrim($uid, self::URI_SCHEME);
+        $uid = rtrim($uid, self::AT_DOMAIN);
         return (int)$uid;
     }
 
@@ -773,11 +800,9 @@ class InboxNotifications extends Script
             $authorTags = $commonTags + [Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl];
         }
 
-
-        try {
-            if (
-                !$this->isDebug() &&
-                Episciences_Mail_Send::sendMailFromReview(
+        if (!$this->isDebug()) {
+            try {
+                $isSent = Episciences_Mail_Send::sendMailFromReview(
                     $author,
                     $authorTemplateKy,
                     $authorTags,
@@ -787,16 +812,16 @@ class InboxNotifications extends Script
                     false,
                     $paper->getCoAuthors(),
                     $journalOptions
-                )
-            ) {
+                );
 
-                if ($isVerbose) {
-                    $this->logger->info('Author: ' . $author->getScreenName() . ' notified.');
-                }
-
+            } catch (Exception $e) {
+                $isSent = false;
+                $this->logger->critical($e->getMessage());
             }
-        } catch (Exception $e) {
-            $this->logger->critical($e->getMessage());
+
+            if ($isSent && $isVerbose) {
+                $this->logger->info('Author: ' . $author->getScreenName() . ' notified.');
+            }
         }
 
         $recipients = [];
