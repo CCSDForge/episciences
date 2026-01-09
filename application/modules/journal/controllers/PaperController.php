@@ -699,7 +699,43 @@ class PaperController extends PaperDefaultController
                 }
                 unset($rootMessage, $reply);
 
-                $authorToEditorComments = $rootMessages;
+                // Flatten level 2 replies: move them to root level
+                $flattenedMessages = [];
+                foreach ($rootMessages as $rootId => $rootMessage) {
+                    // Add root message to flattened array
+                    $flattenedMessages[$rootId] = $rootMessage;
+
+                    // Extract level 2 replies and add them to root level
+                    if (!empty($rootMessage['replies'])) {
+                        foreach ($rootMessage['replies'] as &$level1Reply) {
+                            if (!empty($level1Reply['replies'])) {
+                                foreach ($level1Reply['replies'] as $level2Id => $level2Reply) {
+                                    // Add parent message info to level 2 reply
+                                    $level2Reply['REPLY_TO_INFO'] = [
+                                        'PCID' => $level1Reply['PCID'],
+                                        'SCREEN_NAME' => $level1Reply['SCREEN_NAME'],
+                                        'WHEN' => $level1Reply['WHEN'],
+                                        'MESSAGE_PREVIEW' => mb_substr(strip_tags($level1Reply['MESSAGE']), 0, 100)
+                                    ];
+                                    // Add level 2 reply to root level
+                                    $flattenedMessages[$level2Id] = $level2Reply;
+                                }
+                                // Remove level 2 replies from level 1 (they're now at root)
+                                unset($level1Reply['replies']);
+                            }
+                        }
+                        unset($level1Reply);
+                        // Update the root message with cleaned level 1 replies
+                        $flattenedMessages[$rootId]['replies'] = $rootMessage['replies'];
+                    }
+                }
+
+                // Sort all messages chronologically (oldest first, newest last)
+                uasort($flattenedMessages, function($a, $b) {
+                    return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                });
+
+                $authorToEditorComments = $flattenedMessages;
 
                 // Generate form (always show it so authors can send multiple messages)
                 if (!array_key_exists('postComment', $_POST)) {

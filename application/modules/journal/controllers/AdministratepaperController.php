@@ -886,39 +886,196 @@ class AdministratepaperController extends PaperDefaultController
                 ]]
             );
 
-            // Sort comments chronologically (oldest first, newest last)
+            // Reorganize comments: getList() may not return properly nested structure
+            // We need to completely reorganize the comment structure
             if (!empty($authorToEditorComments)) {
-                uasort($authorToEditorComments, function($a, $b) {
-                    return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
-                });
-
-                // Also sort replies within each comment
-                foreach ($authorToEditorComments as &$comment) {
+                // First, collect ALL comments flat (filtering invalid entries)
+                $allCommentsFlat = [];
+                foreach ($authorToEditorComments as $id => $comment) {
+                    // Verify that this is a valid comment (with at least TYPE and PCID)
+                    if (isset($comment['TYPE']) && isset($comment['PCID'])) {
+                        $allCommentsFlat[$id] = $comment;
+                    }
                     if (!empty($comment['replies'])) {
-                        uasort($comment['replies'], function($a, $b) {
-                            return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
-                        });
-                        // Sort level 2 replies (author replies to editor responses)
-                        foreach ($comment['replies'] as &$reply) {
+                        foreach ($comment['replies'] as $replyId => $reply) {
+                            // Verify that the reply is valid
+                            if (isset($reply['TYPE']) && isset($reply['PCID'])) {
+                                $allCommentsFlat[$replyId] = $reply;
+                            }
+                            // Also collect level 2 replies if they exist
                             if (!empty($reply['replies'])) {
-                                uasort($reply['replies'], function($a, $b) {
-                                    return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
-                                });
+                                foreach ($reply['replies'] as $level2Id => $level2Reply) {
+                                    if (isset($level2Reply['TYPE']) && isset($level2Reply['PCID'])) {
+                                        $allCommentsFlat[$level2Id] = $level2Reply;
+                                    }
+                                }
                             }
                         }
                     }
                 }
-                unset($comment, $reply);
+                
+                // Reorganize: separate root messages (without PARENTID)
+                $rootMessages = [];
+                $allReplies = [];
+                
+                foreach ($allCommentsFlat as $id => $comment) {
+                    if (empty($comment['PARENTID'])) {
+                        // Root message - preserve all data
+                        $rootMessages[$id] = $comment;
+                        if (!isset($rootMessages[$id]['replies'])) {
+                            $rootMessages[$id]['replies'] = [];
+                        }
+                    } else {
+                        // This is a reply
+                        $allReplies[$id] = $comment;
+                    }
+                }
+                
+                // Place level 1 replies under root messages
+                foreach ($allReplies as $replyId => $reply) {
+                    $parentId = $reply['PARENTID'];
+                    
+                    if (isset($rootMessages[$parentId])) {
+                        // Parent is a root message - preserve all reply data
+                        $rootMessages[$parentId]['replies'][$replyId] = $reply;
+                        if (!isset($rootMessages[$parentId]['replies'][$replyId]['replies'])) {
+                            $rootMessages[$parentId]['replies'][$replyId]['replies'] = [];
+                        }
+                    }
+                }
+                
+                // Place level 2 replies (author replies to editor)
+                foreach ($allReplies as $replyId => $reply) {
+                    $parentId = $reply['PARENTID'];
+                    
+                    // Search for parent in level 1 replies
+                    foreach ($rootMessages as $rootId => &$rootMessage) {
+                        if (isset($rootMessage['replies'][$parentId])) {
+                            // Parent is a level 1 reply (editor message)
+                            // Preserve all level 2 reply data
+                            $rootMessage['replies'][$parentId]['replies'][$replyId] = $reply;
+                            // Initialize replies array for level 2 if not exists (for level 3 replies)
+                            if (!isset($rootMessage['replies'][$parentId]['replies'][$replyId]['replies'])) {
+                                $rootMessage['replies'][$parentId]['replies'][$replyId]['replies'] = [];
+                            }
+                        }
+                    }
+                    unset($rootMessage);
+                }
+                
+                // Place level 3 replies (editor replies to author replies - after editor has responded to flattened author reply)
+                foreach ($allReplies as $replyId => $reply) {
+                    $parentId = $reply['PARENTID'];
+                    
+                    // Check if parent is a level 2 reply (author reply to editor)
+                    foreach ($rootMessages as $rootId => &$rootMessage) {
+                        if (!empty($rootMessage['replies'])) {
+                            foreach ($rootMessage['replies'] as &$level1Reply) {
+                                if (!empty($level1Reply['replies']) && isset($level1Reply['replies'][$parentId])) {
+                                    // Parent is a level 2 reply (author reply to editor)
+                                    // This is a level 3 reply (editor reply to author reply)
+                                    $level1Reply['replies'][$parentId]['replies'][$replyId] = $reply;
+                                }
+                            }
+                            unset($level1Reply);
+                        }
+                    }
+                    unset($rootMessage);
+                }
+                
+                // Sort root messages chronologically (oldest first, newest last)
+                uasort($rootMessages, function($a, $b) {
+                    return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                });
+
+                // Also sort replies within each root message
+                foreach ($rootMessages as &$rootMessage) {
+                    if (!empty($rootMessage['replies'])) {
+                        uasort($rootMessage['replies'], function($a, $b) {
+                            return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                        });
+                        // Sort level 2 replies (author replies to editor responses)
+                        foreach ($rootMessage['replies'] as &$level1Reply) {
+                            if (!empty($level1Reply['replies'])) {
+                                uasort($level1Reply['replies'], function($a, $b) {
+                                    return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                                });
+                                // Sort level 3 replies (editor replies to author replies)
+                                foreach ($level1Reply['replies'] as &$level2Reply) {
+                                    if (!empty($level2Reply['replies'])) {
+                                        uasort($level2Reply['replies'], function($a, $b) {
+                                            return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                                        });
+                                    }
+                                }
+                                unset($level2Reply);
+                            }
+                        }
+                        unset($level1Reply);
+                    }
+                }
+                unset($rootMessage);
+
+                // Flatten level 2 replies: move them to root level
+                $flattenedMessages = [];
+                foreach ($rootMessages as $rootId => $rootMessage) {
+                    // Add root message to flattened array
+                    $flattenedMessages[$rootId] = $rootMessage;
+
+                    // Extract level 2 replies and add them to root level
+                    if (!empty($rootMessage['replies'])) {
+                        foreach ($rootMessage['replies'] as &$level1Reply) {
+                            if (!empty($level1Reply['replies'])) {
+                                foreach ($level1Reply['replies'] as $level2Id => $level2Reply) {
+                                    // Add parent message info to level 2 reply
+                                    $level2Reply['REPLY_TO_INFO'] = [
+                                        'PCID' => $level1Reply['PCID'],
+                                        'SCREEN_NAME' => $level1Reply['SCREEN_NAME'],
+                                        'WHEN' => $level1Reply['WHEN'],
+                                        'MESSAGE_PREVIEW' => mb_substr(strip_tags($level1Reply['MESSAGE']), 0, 100)
+                                    ];
+                                    
+                                    // Preserve level 3 replies (editor replies to this author reply) if they exist
+                                    if (!empty($level2Reply['replies'])) {
+                                        // Keep replies structure for level 3 (editor responses to author reply)
+                                        // These will be displayed under the flattened message
+                                    } else {
+                                        // Initialize empty replies array
+                                        $level2Reply['replies'] = [];
+                                    }
+                                    
+                                    // Add level 2 reply to root level
+                                    $flattenedMessages[$level2Id] = $level2Reply;
+                                }
+                                // Remove level 2 replies from level 1 (they're now at root)
+                                unset($level1Reply['replies']);
+                            }
+                        }
+                        unset($level1Reply);
+                        // Update the root message with cleaned level 1 replies
+                        $flattenedMessages[$rootId]['replies'] = $rootMessage['replies'];
+                    }
+                }
+
+                // Sort all messages chronologically (oldest first, newest last)
+                uasort($flattenedMessages, function($a, $b) {
+                    return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                });
+
+                $authorToEditorComments = $flattenedMessages;
             }
 
             // Only assigned editors can respond to author messages
             if ($paper->getEditor(Episciences_Auth::getUid())) {
-                // Filter to get only author messages (not editor responses)
+                // Filter to get all author messages (both root messages and flattened level 2 replies)
+                // This includes:
+                // - Root author messages (TYPE 22, no PARENTID)
+                // - Flattened level 2 author replies (TYPE 22, with REPLY_TO_INFO)
                 $authorMessages = array_filter($authorToEditorComments, function($comment) {
                     return isset($comment['TYPE']) && $comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR;
                 });
 
-                // Create reply forms for each author message
+                // Create reply forms for each author message (including flattened replies)
                 if (!empty($authorMessages)) {
                     $editorReplyForms = Episciences_CommentsManager::getReplyForms($authorMessages);
                 }

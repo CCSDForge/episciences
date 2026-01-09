@@ -62,54 +62,32 @@ if ($canAuthorContactEditors && $canViewPanel) :
                             if ($parentComment['TYPE'] != Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
                                 continue;
                             }
-                            ?>
-
-                            <!-- Author message (main item) -->
-                            <div class="author-message-wrapper">
-                                <?php
-                                // Prepare reply button if editor has permission (multiple responses allowed)
-                                $actions = '';
-                                if ($isEditor && isset($this->editorReplyForms[$parentId])) {
-                                    $actions = '<button type="button" class="btn btn-primary btn-xs toggle-reply-form" data-reply-form-id="reply-form-' . $parentId . '">
-                                        <i class="fa fa-reply"></i> ' . $this->translate("Répondre") . '
-                                    </button>';
-                                }
+                            
+                            // Check if this is a flattened level 2 message (author reply to editor response)
+                            $isFlattenedReply = isset($parentComment['REPLY_TO_INFO']) && !empty($parentComment['REPLY_TO_INFO']);
+                            
+                            if ($isFlattenedReply) :
+                                // Display flattened level 2 message (author reply to editor) as a simple message
+                                // Editors can reply to author replies, so show reply button if editor has permission
                                 ?>
-                                <?= $this->partial('partials/timeline_item.phtml', ['comment' => $parentComment, 'actions' => $actions, 'isAuthor' => $isAuthor]) ?>
-                            </div>
-
-                            <?php // Display editor responses or reply form in a thread ?>
-                            <?php if (!empty($parentComment['replies']) || ($isEditor && isset($this->editorReplyForms[$parentId]))) : ?>
-                                <div class="timeline-thread">
-
-                                    <?php // Display editor responses if any ?>
-                                    <?php if (!empty($parentComment['replies'])) : ?>
-                                        <?php foreach ($parentComment['replies'] as $replyId => $reply) : ?>
-                                            <?php
-                                            // Anonymize editor name if setting is disabled and viewer is not an editor
-                                            // But never anonymize the current user's own replies
-                                            $displayComment = $reply;
-
-                                            if (!$discloseEditorNames && !$isEditor &&
-                                                isset($reply['TYPE']) && $reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE &&
-                                                (int)$reply['UID'] !== Episciences_Auth::getUid()) {
-                                                $displayComment = $reply;
-                                                // Set editor name based on current language
-                                                $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
-                                                $displayComment['SCREEN_NAME'] = ($currentLang === 'en') ? 'Editor' : 'Rédacteur'; // For display text
-                                                $displayComment['AVATAR_NAME'] = 'System Episciences'; // For avatar initials (SE)
-                                                $displayComment['UID'] = 666; // Anonymous editor UID
-                                            }
-                                            ?>
-                                            <?= $this->partial('partials/timeline_item.phtml', [
-                                                'comment' => $displayComment,
-                                                'isAuthor' => $isAuthor,
-                                                'authorReplyForms' => $this->authorReplyForms ?? []
-                                            ]) ?>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-
-                                    <?php // Display reply form for editors (multiple responses allowed) ?>
+                                <div class="author-message-wrapper">
+                                    <?php
+                                    // Prepare reply button if editor has permission
+                                    $actions = '';
+                                    if ($isEditor && isset($this->editorReplyForms[$parentId])) {
+                                        $actions = '<button type="button" class="btn btn-primary btn-xs toggle-reply-form" data-reply-form-id="reply-form-' . $parentId . '">
+                                            <i class="fa fa-reply"></i> ' . $this->translate("Répondre") . '
+                                        </button>';
+                                    }
+                                    ?>
+                                    <?= $this->partial('partials/timeline_item.phtml', [
+                                        'comment' => $parentComment,
+                                        'actions' => $actions,
+                                        'isAuthor' => $isAuthor,
+                                        'authorReplyForms' => []
+                                    ]) ?>
+                                    
+                                    <?php // Display reply form for editors (if available) ?>
                                     <?php if ($isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$parentId])) : ?>
                                         <!-- Reply form (hidden by default) -->
                                         <div class="reply-form-container" id="reply-form-<?php echo $parentId; ?>" style="display: none;">
@@ -117,8 +95,95 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                             <?php echo $this->editorReplyForms[$parentId]; ?>
                                         </div>
                                     <?php endif; ?>
+                                    
+                                    <?php // Display editor replies to this flattened author reply (level 3) ?>
+                                    <?php if (!empty($parentComment['replies'])) : ?>
+                                        <div class="timeline-thread">
+                                            <?php foreach ($parentComment['replies'] as $replyId => $reply) : ?>
+                                                <?php
+                                                // Anonymize editor name if setting is disabled and viewer is not an editor
+                                                // But never anonymize the current user's own replies
+                                                $displayComment = $reply;
 
+                                                if (!$discloseEditorNames && !$isEditor &&
+                                                    isset($reply['TYPE']) && $reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE &&
+                                                    (int)$reply['UID'] !== Episciences_Auth::getUid()) {
+                                                    $displayComment = $reply;
+                                                    // Set editor name based on current language
+                                                    $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
+                                                    $displayComment['SCREEN_NAME'] = ($currentLang === 'en') ? 'Editor' : 'Rédacteur'; // For display text
+                                                    $displayComment['AVATAR_NAME'] = 'System Episciences'; // For avatar initials (SE)
+                                                    $displayComment['UID'] = 666; // Anonymous editor UID
+                                                }
+                                                ?>
+                                                <?= $this->partial('partials/timeline_item.phtml', [
+                                                    'comment' => $displayComment,
+                                                    'isAuthor' => $isAuthor,
+                                                    'authorReplyForms' => []
+                                                ]) ?>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
+                            <?php else :
+                                // Display root message with editor responses in a thread
+                                ?>
+                                <!-- Author message (main item) -->
+                                <div class="author-message-wrapper">
+                                    <?php
+                                    // Prepare reply button if editor has permission (multiple responses allowed)
+                                    $actions = '';
+                                    if ($isEditor && isset($this->editorReplyForms[$parentId])) {
+                                        $actions = '<button type="button" class="btn btn-primary btn-xs toggle-reply-form" data-reply-form-id="reply-form-' . $parentId . '">
+                                            <i class="fa fa-reply"></i> ' . $this->translate("Répondre") . '
+                                        </button>';
+                                    }
+                                    ?>
+                                    <?= $this->partial('partials/timeline_item.phtml', ['comment' => $parentComment, 'actions' => $actions, 'isAuthor' => $isAuthor]) ?>
+                                </div>
+
+                                <?php // Display editor responses or reply form in a thread ?>
+                                <?php if (!empty($parentComment['replies']) || ($isEditor && isset($this->editorReplyForms[$parentId]))) : ?>
+                                    <div class="timeline-thread">
+
+                                        <?php // Display editor responses if any ?>
+                                        <?php if (!empty($parentComment['replies'])) : ?>
+                                            <?php foreach ($parentComment['replies'] as $replyId => $reply) : ?>
+                                                <?php
+                                                // Anonymize editor name if setting is disabled and viewer is not an editor
+                                                // But never anonymize the current user's own replies
+                                                $displayComment = $reply;
+
+                                                if (!$discloseEditorNames && !$isEditor &&
+                                                    isset($reply['TYPE']) && $reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE &&
+                                                    (int)$reply['UID'] !== Episciences_Auth::getUid()) {
+                                                    $displayComment = $reply;
+                                                    // Set editor name based on current language
+                                                    $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
+                                                    $displayComment['SCREEN_NAME'] = ($currentLang === 'en') ? 'Editor' : 'Rédacteur'; // For display text
+                                                    $displayComment['AVATAR_NAME'] = 'System Episciences'; // For avatar initials (SE)
+                                                    $displayComment['UID'] = 666; // Anonymous editor UID
+                                                }
+                                                ?>
+                                                <?= $this->partial('partials/timeline_item.phtml', [
+                                                    'comment' => $displayComment,
+                                                    'isAuthor' => $isAuthor,
+                                                    'authorReplyForms' => $this->authorReplyForms ?? []
+                                                ]) ?>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+
+                                        <?php // Display reply form for editors (multiple responses allowed) ?>
+                                        <?php if ($isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$parentId])) : ?>
+                                            <!-- Reply form (hidden by default) -->
+                                            <div class="reply-form-container" id="reply-form-<?php echo $parentId; ?>" style="display: none;">
+                                                <h5><?php echo $this->translate("Répondre"); ?></h5>
+                                                <?php echo $this->editorReplyForms[$parentId]; ?>
+                                            </div>
+                                        <?php endif; ?>
+
+                                    </div>
+                                <?php endif; ?>
                             <?php endif; ?>
 
                         <?php endforeach; ?>

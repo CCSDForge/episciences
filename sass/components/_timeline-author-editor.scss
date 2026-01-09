@@ -167,6 +167,43 @@
     position: relative;
   }
 
+  // Reply to indicator (for flattened level 2 messages)
+  .reply-to-indicator {
+    margin-top: 8px;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background-color: #f5f5f5;
+    border-left: 3px solid #2196F3;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #666;
+
+    i.fa-reply {
+      margin-right: 5px;
+      color: #2196F3;
+    }
+
+    strong {
+      font-weight: 600;
+    }
+
+    .reply-to-name {
+      color: #2196F3;
+      font-weight: 500;
+    }
+
+    .reply-to-date {
+      color: #999;
+      margin-left: 8px;
+    }
+
+    .reply-to-preview {
+      margin-top: 5px;
+      font-style: italic;
+      color: #888;
+    }
+  }
+
   // Comment actions (reply button, etc.)
   .timeline-comment-actions {
     margin-top: 10px;
