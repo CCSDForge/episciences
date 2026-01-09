@@ -676,6 +676,29 @@ class PaperController extends PaperDefaultController
                     unset($rootMessage);
                 }
                 
+                // Sort root messages chronologically (oldest first, newest last)
+                uasort($rootMessages, function($a, $b) {
+                    return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                });
+
+                // Also sort replies within each root message
+                foreach ($rootMessages as &$rootMessage) {
+                    if (!empty($rootMessage['replies'])) {
+                        uasort($rootMessage['replies'], function($a, $b) {
+                            return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                        });
+                        // Sort level 2 replies (author replies to editor responses)
+                        foreach ($rootMessage['replies'] as &$reply) {
+                            if (!empty($reply['replies'])) {
+                                uasort($reply['replies'], function($a, $b) {
+                                    return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                                });
+                            }
+                        }
+                    }
+                }
+                unset($rootMessage, $reply);
+
                 $authorToEditorComments = $rootMessages;
 
                 // Generate form (always show it so authors can send multiple messages)

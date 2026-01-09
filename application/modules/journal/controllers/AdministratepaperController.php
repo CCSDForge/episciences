@@ -886,6 +886,31 @@ class AdministratepaperController extends PaperDefaultController
                 ]]
             );
 
+            // Sort comments chronologically (oldest first, newest last)
+            if (!empty($authorToEditorComments)) {
+                uasort($authorToEditorComments, function($a, $b) {
+                    return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                });
+
+                // Also sort replies within each comment
+                foreach ($authorToEditorComments as &$comment) {
+                    if (!empty($comment['replies'])) {
+                        uasort($comment['replies'], function($a, $b) {
+                            return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                        });
+                        // Sort level 2 replies (author replies to editor responses)
+                        foreach ($comment['replies'] as &$reply) {
+                            if (!empty($reply['replies'])) {
+                                uasort($reply['replies'], function($a, $b) {
+                                    return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                                });
+                            }
+                        }
+                    }
+                }
+                unset($comment, $reply);
+            }
+
             // Only assigned editors can respond to author messages
             if ($paper->getEditor(Episciences_Auth::getUid())) {
                 // Filter to get only author messages (not editor responses)
