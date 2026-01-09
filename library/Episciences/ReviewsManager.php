@@ -64,6 +64,7 @@ class Episciences_ReviewsManager
                 $reviews[$oReview->getRvid()] = ($toArray) ? $oReview->toArray() : $oReview;
             }
         }
+
         return $reviews;
     }
 
@@ -114,12 +115,14 @@ class Episciences_ReviewsManager
      * Find a review by RVCODE (string)
      * @param string $rvcode
      * @param bool $enabledOnly
+     * @param bool $fetchSettings :to force loading settings
      * @return bool|Episciences_Review
      */
-    public static function findByRvcode(string $rvcode, bool $enabledOnly = false): Episciences_Review|bool
+    public static function findByRvcode(string $rvcode, bool $enabledOnly = false, bool $fetchSettings = false): bool|Episciences_Review
     {
         // Cache key includes the enabledOnly flag for proper segregation
         $cacheKey = 'rvcode_' . $rvcode . ($enabledOnly ? '_enabled' : '');
+
         if (array_key_exists($cacheKey, self::$_cache)) {
             return self::$_cache[$cacheKey];
         }
@@ -133,7 +136,16 @@ class Episciences_ReviewsManager
         }
 
         $data = $db->fetchRow($select);
-        $review = empty($data) ? false : new Episciences_Review($data);
+
+        if (empty($data)) {
+            return false;
+        }
+
+        $review = new Episciences_Review($data);
+
+        if ($fetchSettings) {
+            $review->loadSettings();
+        }
 
         // Cache the result
         self::$_cache[$cacheKey] = $review;
@@ -169,13 +181,10 @@ class Episciences_ReviewsManager
     public static function findActiveJournals(): array
     {
 
+
         $jNumber = 0;
         $journalCollection[$jNumber] = ['Number', 'Code', 'Title', 'ISSN', 'EISSN', 'Address', 'Accepted-repositories'];
-
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_REVIEW)->where('STATUS = 1');
-        $select->order('NAME ASC');
-        $allJournals = $db->fetchAll($select);
+        $allJournals = self::allJournals();
         if (!$allJournals) {
             return $journalCollection;
         }
@@ -233,6 +242,14 @@ class Episciences_ReviewsManager
     public static function clearCache(): void
     {
         self::$_cache = [];
+    }
+
+    public static function allJournals(int|string $status = Episciences_Review::ENABLED): ?array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()->from(T_REVIEW)->where('STATUS = ?', $status);
+        $select->order('NAME ASC');
+        return $db->fetchAll($select);
     }
 
 }
