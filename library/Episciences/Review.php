@@ -1547,7 +1547,7 @@ class Episciences_Review
 
         $form->addElement('checkbox', self::SETTING_ENCAPSULATE_REVIEWERS, [
                 'label' => "Cloisonner les relecteurs",
-                'description' => "S'ils sont cloisonnés, les relecteurs d'un volume ne seront pas visibles ailleurs dans la revue",
+                'description' => "Lorsque les relecteurs sont cloisonnés, et qu’un article appartient à un volume spécial avec cette option activée, seuls les relecteurs attribués à ce volume seront proposés pour l’évaluation dans la section des relecteurs connus de la revue",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
         );
