@@ -130,20 +130,13 @@ $authorReplyForms = $authorReplyForms ?? ($this->authorReplyForms ?? []);
                 ?>
             </div>
 
-            <!-- Display author replies to this editor message -->
-            <?php if (!empty($comment['replies'])) : ?>
-                <div class="timeline-sub-thread" style="margin-left: 20px; margin-top: 15px; border-left: 2px solid #e0e0e0; padding-left: 15px;">
-                    <?php foreach ($comment['replies'] as $authorReplyId => $authorReply) : ?>
-                        <?php if ($authorReply['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) : ?>
-                            <?= $this->partial('partials/timeline_item.phtml', [
-                                'comment' => $authorReply,
-                                'isAuthor' => $isAuthor ?? false,
-                                'authorReplyForms' => []  // No infinite replies
-                            ]) ?>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
+            <?php
+            // Note: Author replies (TYPE 22 with PARENTID) are now flattened to root level
+            // They should not be displayed here as nested replies
+            // They are displayed at root level in paper_author_to_editor_messages.phtml
+            // Only editor replies (TYPE 23) to author replies should be displayed here
+            // But those are handled in paper_author_to_editor_messages.phtml for flattened messages
+            ?>
         <?php endif; ?>
 
         <!-- Delete button (always visible for own comments) -->

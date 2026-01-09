@@ -791,9 +791,14 @@ class PaperController extends PaperDefaultController
                             $flattenedMessages[$rootId] = $rootMessage;
                             
                             // Remove author replies from structure
+                            // Remove both: replies in $authorRepliesToFlatten AND any other TYPE 22 with PARENTID
                             $removeAuthorReplies = function(&$comments) use (&$removeAuthorReplies, &$authorRepliesToFlatten) {
                                 foreach ($comments as $id => &$comment) {
-                                    if (isset($authorRepliesToFlatten[$id])) {
+                                    // Remove if in flatten list OR if it's a TYPE 22 with PARENTID (author reply)
+                                    if (isset($authorRepliesToFlatten[$id]) ||
+                                        (isset($comment['TYPE']) && 
+                                         $comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR &&
+                                         !empty($comment['PARENTID']))) {
                                         unset($comments[$id]);
                                     } elseif (!empty($comment['replies'])) {
                                         $removeAuthorReplies($comment['replies']);
