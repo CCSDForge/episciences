@@ -75,7 +75,8 @@
             })(newButton);
         }
 
-        // Cancel reply form - hide form and show button again
+        // Cancel reply form - hide form (fold) and show button again
+        // For reply forms: clicking Cancel will fold/hide the form and show the Reply button
         var cancelButtons = document.querySelectorAll('.cancel-reply-form');
         for (var j = 0; j < cancelButtons.length; j++) {
             var cancelBtn = cancelButtons[j];
@@ -89,9 +90,41 @@
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     var formId = btn.getAttribute('data-reply-form-id');
-                    hideReplyForm(formId);
+                    hideReplyForm(formId); // This hides the form and shows the Reply button
                 });
             })(newCancelBtn);
+        }
+
+        // Cancel main author form - clear form fields (delete message content)
+        // For the main form: clicking Cancel will clear/delete the message content but keep the form visible
+        var cancelAuthorFormButtons = document.querySelectorAll('.cancel-author-form');
+        for (var k = 0; k < cancelAuthorFormButtons.length; k++) {
+            var cancelAuthorBtn = cancelAuthorFormButtons[k];
+
+            // Remove any existing event listeners
+            var newCancelAuthorBtn = cancelAuthorBtn.cloneNode(true);
+            cancelAuthorBtn.parentNode.replaceChild(newCancelAuthorBtn, cancelAuthorBtn);
+
+            // Add event listener
+            (function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var form = btn.closest('form');
+                    if (form) {
+                        // Clear textarea (delete message content)
+                        var textarea = form.querySelector('textarea[name="comment"]');
+                        if (textarea) {
+                            textarea.value = '';
+                        }
+                        // Clear file input (delete attached file)
+                        var fileInput = form.querySelector('input[type="file"]');
+                        if (fileInput) {
+                            fileInput.value = '';
+                        }
+                    }
+                    return false;
+                });
+            })(newCancelAuthorBtn);
         }
     }
 

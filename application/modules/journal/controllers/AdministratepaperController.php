@@ -1163,6 +1163,16 @@ class AdministratepaperController extends PaperDefaultController
                             'decorators' => ['ViewHelper']
                         ]);
 
+                        // Configure cancel button to work with toggle-reply-form.js
+                        // The cancel button is created by the FormActions decorator
+                        $formActionsDecorator = $form->getDecorator('FormActions');
+                        if ($formActionsDecorator && isset($formActionsDecorator->_cancel)) {
+                            $cancelButton = $formActionsDecorator->_cancel;
+                            $cancelButton->setAttrib('class', 'btn btn-default cancel-reply-form');
+                            $cancelButton->setAttrib('data-reply-form-id', 'reply-form-' . $pcid);
+                            $cancelButton->setAttrib('type', 'button');
+                        }
+
                         // Index by PCID so template can find it
                         $editorReplyForms[$pcid] = $form;
 

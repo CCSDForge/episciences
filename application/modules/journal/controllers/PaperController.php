@@ -859,6 +859,15 @@ class PaperController extends PaperDefaultController
                 if (!array_key_exists('postComment', $_POST)) {
                     $authorToEditorForm = Episciences_CommentsManager::getForm('authorToEditorForm', false, true);
                     $authorToEditorForm->setAction('/paper/view?id=' . $paper->getDocid());
+                    
+                    // Configure cancel button to clear the form fields
+                    // The cancel button is created by the FormActions decorator
+                    $formActionsDecorator = $authorToEditorForm->getDecorator('FormActions');
+                    if ($formActionsDecorator && isset($formActionsDecorator->_cancel)) {
+                        $cancelButton = $formActionsDecorator->_cancel;
+                        $cancelButton->setAttrib('class', 'btn btn-default cancel-author-form');
+                        $cancelButton->setAttrib('type', 'button');
+                    }
                 }
 
                 // Create reply forms for author to respond to editor responses
@@ -890,6 +899,16 @@ class PaperController extends PaperDefaultController
                                         'value' => $pcid,
                                         'decorators' => ['ViewHelper']
                                     ]);
+
+                                    // Configure cancel button to work with toggle-reply-form.js
+                                    // The cancel button is created by the FormActions decorator
+                                    $formActionsDecorator = $form->getDecorator('FormActions');
+                                    if ($formActionsDecorator && isset($formActionsDecorator->_cancel)) {
+                                        $cancelButton = $formActionsDecorator->_cancel;
+                                        $cancelButton->setAttrib('class', 'btn btn-default cancel-reply-form');
+                                        $cancelButton->setAttrib('data-reply-form-id', 'author-reply-form-' . $pcid);
+                                        $cancelButton->setAttrib('type', 'button');
+                                    }
 
                                     // Index by PCID so timeline_item.phtml can find it
                                     $authorReplyForms[$pcid] = $form;
