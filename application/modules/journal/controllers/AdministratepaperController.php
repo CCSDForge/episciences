@@ -1221,7 +1221,7 @@ class AdministratepaperController extends PaperDefaultController
 
             // load journal detail
             $oReview = Episciences_ReviewsManager::find(RVID);
-
+            $oReview->loadSettings();
             // load reviewers array
             $reviewers = [];
             $allJsReviewers = [];

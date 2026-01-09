@@ -295,7 +295,7 @@ return array(
     "Paramètres des volumes" => "Volumes settings",
     "Protéger la soumission dans les volumes spéciaux par un code d'accès" => "Restrict submission in special issues with an access code",
     "Cloisonner les relecteurs" => "Encapsulate reviewers",
-    "S'ils sont cloisonnés, les relecteurs d'un volume ne seront pas visibles ailleurs dans la revue" => "Encapsulated reviewers are not available for volumes other than the one they were invited in",
+    "Lorsque les relecteurs sont cloisonnés, et qu’un article appartient à un volume spécial avec cette option activée, seuls les relecteurs attribués à ce volume seront proposés pour l’évaluation dans la section des relecteurs connus de la revue" => "When reviewers are encapsulated, and an article belongs to a special issue with this option enabled, only reviewers assigned to that issue will be suggested for evaluation in the section listing the reviewers known to the journal",
 
     "Paramètres des volumes spéciaux" => "Special issues settings",
     "Les rédacteurs peuvent réattribuer la gestion de l'article" => "Editors can reassign handled articles to another editor",
