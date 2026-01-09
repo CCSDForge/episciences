@@ -1075,24 +1075,53 @@ class AdministratepaperController extends PaperDefaultController
                     return isset($comment['TYPE']) && $comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR;
                 });
 
-                // Create reply forms for each author message (including flattened replies)
+                // Create reply forms for each author message using getForm() (not getReplyForms)
+                $editorReplyForms = [];
                 if (!empty($authorMessages)) {
-                    $editorReplyForms = Episciences_CommentsManager::getReplyForms($authorMessages);
-                }
+                    foreach ($authorMessages as $id => $authorMessage) {
+                        // Use PCID as the key for the form
+                        $pcid = $authorMessage['PCID'];
 
-                // Handle form submission for editor response
-                if (!empty($editorReplyForms)) {
-                    foreach ($editorReplyForms as $id => $replyForm) {
-                        if ($request->getPost('postReply_' . $id) !== null) {
-                            if ($replyForm->isValid($request->getPost())) {
+                        // Create a form for this author message using getForm()
+                        $form = Episciences_CommentsManager::getForm('editorReplyForm_' . $pcid, false, true);
+                        $form->setAction('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
+
+                        // Remove CSRF validation for multiple forms on same page
+                        $csrfElement = $form->getElement('no_csrf_foo');
+                        if ($csrfElement) {
+                            $form->removeElement('no_csrf_foo');
+                        }
+
+                        // Add a hidden field to identify which author message this is replying to
+                        $form->addElement('hidden', 'reply_to_pcid', [
+                            'value' => $pcid,
+                            'decorators' => ['ViewHelper']
+                        ]);
+
+                        // Index by PCID so template can find it
+                        $editorReplyForms[$pcid] = $form;
+
+                        // Handle form submission for this specific reply
+                        // Check if this form was submitted by looking for the hidden field and submit button
+                        if ($request->getPost('reply_to_pcid') == $pcid &&
+                            $request->getPost('postComment') !== null) {
+                            
+                            // Validate manually since we removed CSRF
+                            $comment = $request->getPost('comment');
+                            
+                            if (!empty(trim($comment))) {
                                 if ($this->save_editor_response_to_author($paper)) {
                                     $message = $this->view->translate("Votre réponse a bien été envoyée à l'auteur.");
                                     $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
                                     $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
                                 } else {
-                                    $message = $this->view->translate("Une erreur s'est produite lors de l'envoi du formulaire. Veuillez vérifier le formulaire et le soumettre à nouveau.");
+                                    $message = $this->view->translate("Erreur lors de la sauvegarde de votre réponse.");
                                     $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
                                 }
+                            } else {
+                                // Comment is empty
+                                $message = $this->view->translate("Le commentaire ne peut pas être vide.");
+                                $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
                             }
                         }
                     }
@@ -1406,14 +1435,8 @@ class AdministratepaperController extends PaperDefaultController
         $post = $request->getPost();
         $docId = $paper->getDocid();
 
-        // Get the parent comment ID (author's message)
-        $parentCommentId = 0;
-        foreach ($post as $key => $value) {
-            if (strpos($key, 'comment_') === 0) {
-                $parentCommentId = (int)str_replace('comment_', '', $key);
-                break;
-            }
-        }
+        // Get the parent comment ID from the hidden field (author's message)
+        $parentCommentId = isset($post['reply_to_pcid']) ? (int)$post['reply_to_pcid'] : 0;
 
         if ($parentCommentId === 0) {
             return false;
@@ -1423,23 +1446,29 @@ class AdministratepaperController extends PaperDefaultController
         $parentComment = new Episciences_Comment();
         $parentComment->find($parentCommentId);
 
+        // Get the comment message (field name is 'comment' with getForm())
+        $commentMessage = isset($post['comment']) ? $post['comment'] : '';
+        if (empty(trim($commentMessage))) {
+            return false;
+        }
+
         // Save editor response to database
         $editorResponse = new Episciences_Comment();
         $editorResponse->setFilePath(Episciences_PapersManager::buildDocumentPath($docId) . '/comments/');
         $editorResponse->setType(Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE);
         $editorResponse->setDocid($docId);
         $editorResponse->setParentid($parentCommentId);
-        $editorResponse->setMessage($post['comment_' . $parentCommentId]);
+        $editorResponse->setMessage($commentMessage);
 
-        // Handle file upload if present
-        if (!empty($_FILES['file_' . $parentCommentId]['name'])) {
+        // Handle file upload if present (field name is 'file' with getForm())
+        if (!empty($_FILES['file']['name'])) {
             try {
                 $upload = new Zend_File_Transfer_Adapter_Http();
                 $upload->setDestination($editorResponse->getFilePath());
 
-                if ($upload->receive('file_' . $parentCommentId)) {
-                    $fileInfo = $upload->getFileInfo('file_' . $parentCommentId);
-                    $editorResponse->setFile($fileInfo['file_' . $parentCommentId]['name']);
+                if ($upload->receive('file')) {
+                    $fileInfo = $upload->getFileInfo('file');
+                    $editorResponse->setFile($fileInfo['file']['name']);
                 }
             } catch (Zend_File_Transfer_Exception $e) {
                 trigger_error('Error uploading file: ' . $e->getMessage(), E_USER_WARNING);
