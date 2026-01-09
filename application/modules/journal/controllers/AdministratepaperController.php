@@ -886,182 +886,247 @@ class AdministratepaperController extends PaperDefaultController
                 ]]
             );
 
-            // Reorganize comments: getList() may not return properly nested structure
-            // We need to completely reorganize the comment structure
+            // Reorganize comments using recursive approach (no explicit levels)
             if (!empty($authorToEditorComments)) {
-                // First, collect ALL comments flat (filtering invalid entries)
-                $allCommentsFlat = [];
-                foreach ($authorToEditorComments as $id => $comment) {
-                    // Verify that this is a valid comment (with at least TYPE and PCID)
-                    if (isset($comment['TYPE']) && isset($comment['PCID'])) {
-                        $allCommentsFlat[$id] = $comment;
+                // Helper function: Recursively collect all comments into a flat array
+                $collectAllComments = function($comments, &$flatArray) use (&$collectAllComments) {
+                    foreach ($comments as $id => $comment) {
+                        if (isset($comment['TYPE']) && isset($comment['PCID'])) {
+                            $flatArray[$id] = $comment;
+                        }
+                        if (!empty($comment['replies'])) {
+                            $collectAllComments($comment['replies'], $flatArray);
+                        }
                     }
-                    if (!empty($comment['replies'])) {
-                        foreach ($comment['replies'] as $replyId => $reply) {
-                            // Verify that the reply is valid
-                            if (isset($reply['TYPE']) && isset($reply['PCID'])) {
-                                $allCommentsFlat[$replyId] = $reply;
-                            }
-                            // Also collect level 2 replies if they exist
-                            if (!empty($reply['replies'])) {
-                                foreach ($reply['replies'] as $level2Id => $level2Reply) {
-                                    if (isset($level2Reply['TYPE']) && isset($level2Reply['PCID'])) {
-                                        $allCommentsFlat[$level2Id] = $level2Reply;
-                                    }
-                                }
+                };
+                
+                // Helper function: Recursively find a comment by ID in the structure
+                $findCommentById = function($comments, $id) use (&$findCommentById) {
+                    if (isset($comments[$id])) {
+                        return $comments[$id];
+                    }
+                    foreach ($comments as $comment) {
+                        if (!empty($comment['replies'])) {
+                            $found = $findCommentById($comment['replies'], $id);
+                            if ($found !== null) {
+                                return $found;
                             }
                         }
                     }
-                }
+                    return null;
+                };
                 
-                // Reorganize: separate root messages (without PARENTID)
-                $rootMessages = [];
-                $allReplies = [];
-                
-                foreach ($allCommentsFlat as $id => $comment) {
-                    if (empty($comment['PARENTID'])) {
-                        // Root message - preserve all data
-                        $rootMessages[$id] = $comment;
-                        if (!isset($rootMessages[$id]['replies'])) {
+                // Helper function: Recursively build hierarchy based on PARENTID
+                $buildHierarchy = function($allComments) use (&$buildHierarchy, &$findCommentById) {
+                    $rootMessages = [];
+                    $allReplies = [];
+                    
+                    // Separate root messages from replies
+                    foreach ($allComments as $id => $comment) {
+                        if (empty($comment['PARENTID'])) {
+                            $rootMessages[$id] = $comment;
                             $rootMessages[$id]['replies'] = [];
+                        } else {
+                            $allReplies[$id] = $comment;
                         }
-                    } else {
-                        // This is a reply
-                        $allReplies[$id] = $comment;
                     }
-                }
-                
-                // Place level 1 replies under root messages
-                foreach ($allReplies as $replyId => $reply) {
-                    $parentId = $reply['PARENTID'];
                     
-                    if (isset($rootMessages[$parentId])) {
-                        // Parent is a root message - preserve all reply data
-                        $rootMessages[$parentId]['replies'][$replyId] = $reply;
-                        if (!isset($rootMessages[$parentId]['replies'][$replyId]['replies'])) {
-                            $rootMessages[$parentId]['replies'][$replyId]['replies'] = [];
-                        }
-                    }
-                }
-                
-                // Place level 2 replies (author replies to editor)
-                foreach ($allReplies as $replyId => $reply) {
-                    $parentId = $reply['PARENTID'];
-                    
-                    // Search for parent in level 1 replies
-                    foreach ($rootMessages as $rootId => &$rootMessage) {
-                        if (isset($rootMessage['replies'][$parentId])) {
-                            // Parent is a level 1 reply (editor message)
-                            // Preserve all level 2 reply data
-                            $rootMessage['replies'][$parentId]['replies'][$replyId] = $reply;
-                            // Initialize replies array for level 2 if not exists (for level 3 replies)
-                            if (!isset($rootMessage['replies'][$parentId]['replies'][$replyId]['replies'])) {
-                                $rootMessage['replies'][$parentId]['replies'][$replyId]['replies'] = [];
-                            }
-                        }
-                    }
-                    unset($rootMessage);
-                }
-                
-                // Place level 3 replies (editor replies to author replies - after editor has responded to flattened author reply)
-                foreach ($allReplies as $replyId => $reply) {
-                    $parentId = $reply['PARENTID'];
-                    
-                    // Check if parent is a level 2 reply (author reply to editor)
-                    foreach ($rootMessages as $rootId => &$rootMessage) {
-                        if (!empty($rootMessage['replies'])) {
-                            foreach ($rootMessage['replies'] as &$level1Reply) {
-                                if (!empty($level1Reply['replies']) && isset($level1Reply['replies'][$parentId])) {
-                                    // Parent is a level 2 reply (author reply to editor)
-                                    // This is a level 3 reply (editor reply to author reply)
-                                    $level1Reply['replies'][$parentId]['replies'][$replyId] = $reply;
-                                }
-                            }
-                            unset($level1Reply);
-                        }
-                    }
-                    unset($rootMessage);
-                }
-                
-                // Sort root messages chronologically (oldest first, newest last)
-                uasort($rootMessages, function($a, $b) {
-                    return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
-                });
-
-                // Also sort replies within each root message
-                foreach ($rootMessages as &$rootMessage) {
-                    if (!empty($rootMessage['replies'])) {
-                        uasort($rootMessage['replies'], function($a, $b) {
-                            return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
-                        });
-                        // Sort level 2 replies (author replies to editor responses)
-                        foreach ($rootMessage['replies'] as &$level1Reply) {
-                            if (!empty($level1Reply['replies'])) {
-                                uasort($level1Reply['replies'], function($a, $b) {
-                                    return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
-                                });
-                                // Sort level 3 replies (editor replies to author replies)
-                                foreach ($level1Reply['replies'] as &$level2Reply) {
-                                    if (!empty($level2Reply['replies'])) {
-                                        uasort($level2Reply['replies'], function($a, $b) {
-                                            return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
-                                        });
+                    // Recursively place replies under their parents
+                    // Use multiple passes to ensure all replies are placed (some replies may have parents that are also replies)
+                    $placeReplies = function(&$structure, $replies) use (&$placeReplies) {
+                        $placed = [];
+                        $remaining = $replies;
+                        
+                        // Keep trying until no more replies can be placed
+                        while (!empty($remaining)) {
+                            $beforeCount = count($remaining);
+                            
+                            foreach ($remaining as $replyId => $reply) {
+                                $parentId = $reply['PARENTID'];
+                                
+                                // Try to find parent in structure
+                                $found = false;
+                                $findAndPlace = function(&$items, $parentId, $replyId, $reply) use (&$findAndPlace, &$found) {
+                                    foreach ($items as $key => &$item) {
+                                        if (isset($item['PCID']) && $item['PCID'] == $parentId) {
+                                            if (!isset($item['replies'])) {
+                                                $item['replies'] = [];
+                                            }
+                                            $item['replies'][$replyId] = $reply;
+                                            $found = true;
+                                            return;
+                                        }
+                                        if (!empty($item['replies'])) {
+                                            $findAndPlace($item['replies'], $parentId, $replyId, $reply);
+                                            if ($found) return;
+                                        }
                                     }
+                                    unset($item);
+                                };
+                                
+                                $findAndPlace($structure, $parentId, $replyId, $reply);
+                                
+                                if ($found) {
+                                    $placed[$replyId] = $reply;
+                                    unset($remaining[$replyId]);
                                 }
-                                unset($level2Reply);
+                            }
+                            
+                            // If no replies were placed in this pass, break to avoid infinite loop
+                            if (count($remaining) == $beforeCount) {
+                                break;
                             }
                         }
-                        unset($level1Reply);
+                    };
+                    
+                    // Place all replies (multiple passes if needed)
+                    $placeReplies($rootMessages, $allReplies);
+                    
+                    return $rootMessages;
+                };
+                
+                // Helper function: Recursively sort comments by date
+                $sortCommentsRecursive = function(&$comments) use (&$sortCommentsRecursive) {
+                    uasort($comments, function($a, $b) {
+                        return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                    });
+                    foreach ($comments as &$comment) {
+                        if (!empty($comment['replies'])) {
+                            $sortCommentsRecursive($comment['replies']);
+                        }
                     }
-                }
-                unset($rootMessage);
-
-                // Flatten level 2 replies: move them to root level
-                $flattenedMessages = [];
-                foreach ($rootMessages as $rootId => $rootMessage) {
-                    // Add root message to flattened array
-                    $flattenedMessages[$rootId] = $rootMessage;
-
-                    // Extract level 2 replies and add them to root level
-                    if (!empty($rootMessage['replies'])) {
-                        foreach ($rootMessage['replies'] as &$level1Reply) {
-                            if (!empty($level1Reply['replies'])) {
-                                foreach ($level1Reply['replies'] as $level2Id => $level2Reply) {
-                                    // Add parent message info to level 2 reply
-                                    $level2Reply['REPLY_TO_INFO'] = [
-                                        'PCID' => $level1Reply['PCID'],
-                                        'SCREEN_NAME' => $level1Reply['SCREEN_NAME'],
-                                        'WHEN' => $level1Reply['WHEN'],
-                                        'MESSAGE_PREVIEW' => mb_substr(strip_tags($level1Reply['MESSAGE']), 0, 100)
+                    unset($comment);
+                };
+                
+                // Helper function: Flatten author replies (TYPE 22 with PARENTID) recursively
+                $flattenAuthorReplies = function($rootMessages) use (&$findCommentById) {
+                    $flattenedMessages = [];
+                    $authorRepliesToFlatten = [];
+                    
+                    // First pass: collect all author replies (TYPE 22 with PARENTID) and their parent info
+                    // Use the full structure to ensure we get all replies (including editor replies to author replies)
+                    $collectAuthorReplies = function($comments, $parentComment = null) use (&$collectAuthorReplies, &$authorRepliesToFlatten, &$findCommentById, &$rootMessages) {
+                        foreach ($comments as $id => $comment) {
+                            // Check if this is an author reply to flatten (TYPE 22 with PARENTID)
+                            if (isset($comment['TYPE']) && 
+                                $comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR &&
+                                !empty($comment['PARENTID'])) {
+                                
+                                // Find parent in structure
+                                $parent = $findCommentById($rootMessages, $comment['PARENTID']);
+                                if ($parent !== null) {
+                                    // Get the full comment with all its replies from the structure
+                                    // This ensures we preserve editor replies to this author reply
+                                    $fullComment = $findCommentById($rootMessages, $comment['PCID']);
+                                    if ($fullComment === null) {
+                                        // Try to find in nested structure
+                                        $findInNested = function($items, $pcid) use (&$findInNested) {
+                                            foreach ($items as $item) {
+                                                if (isset($item['PCID']) && $item['PCID'] == $pcid) {
+                                                    return $item;
+                                                }
+                                                if (!empty($item['replies'])) {
+                                                    $found = $findInNested($item['replies'], $pcid);
+                                                    if ($found !== null) {
+                                                        return $found;
+                                                    }
+                                                }
+                                            }
+                                            return null;
+                                        };
+                                        $fullComment = $findInNested($rootMessages, $comment['PCID']);
+                                    }
+                                    
+                                    // Use full comment if found, otherwise use the comment from parameter
+                                    $commentToFlatten = $fullComment !== null ? $fullComment : $comment;
+                                    
+                                    $authorRepliesToFlatten[$id] = [
+                                        'comment' => $commentToFlatten, // Use full comment with all replies
+                                        'parent' => $parent
                                     ];
-                                    
-                                    // Preserve level 3 replies (editor replies to this author reply) if they exist
-                                    if (!empty($level2Reply['replies'])) {
-                                        // Keep replies structure for level 3 (editor responses to author reply)
-                                        // These will be displayed under the flattened message
-                                    } else {
-                                        // Initialize empty replies array
-                                        $level2Reply['replies'] = [];
-                                    }
-                                    
-                                    // Add level 2 reply to root level
-                                    $flattenedMessages[$level2Id] = $level2Reply;
                                 }
-                                // Remove level 2 replies from level 1 (they're now at root)
-                                unset($level1Reply['replies']);
+                            }
+                            
+                            // Continue recursively
+                            if (!empty($comment['replies'])) {
+                                $collectAuthorReplies($comment['replies'], $comment);
                             }
                         }
-                        unset($level1Reply);
-                        // Update the root message with cleaned level 1 replies
-                        $flattenedMessages[$rootId]['replies'] = $rootMessage['replies'];
+                    };
+                    
+                    // Collect all author replies to flatten
+                    foreach ($rootMessages as $rootMessage) {
+                        if (!empty($rootMessage['replies'])) {
+                            $collectAuthorReplies($rootMessage['replies']);
+                        }
                     }
-                }
-
-                // Sort all messages chronologically (oldest first, newest last)
+                    
+                    // Build flattened structure
+                    foreach ($rootMessages as $rootId => $rootMessage) {
+                        $flattenedMessages[$rootId] = $rootMessage;
+                        
+                        // Remove author replies from structure
+                        $removeAuthorReplies = function(&$comments) use (&$removeAuthorReplies, &$authorRepliesToFlatten) {
+                            foreach ($comments as $id => &$comment) {
+                                if (isset($authorRepliesToFlatten[$id])) {
+                                    unset($comments[$id]);
+                                } elseif (!empty($comment['replies'])) {
+                                    $removeAuthorReplies($comment['replies']);
+                                }
+                            }
+                            unset($comment);
+                        };
+                        
+                        if (!empty($rootMessage['replies'])) {
+                            $removeAuthorReplies($rootMessage['replies']);
+                            $flattenedMessages[$rootId]['replies'] = $rootMessage['replies'];
+                        }
+                    }
+                    
+                    // Add flattened author replies with parent info
+                    foreach ($authorRepliesToFlatten as $id => $data) {
+                        $comment = $data['comment'];
+                        $parent = $data['parent'];
+                        
+                        $comment['REPLY_TO_INFO'] = [
+                            'PCID' => $parent['PCID'],
+                            'SCREEN_NAME' => $parent['SCREEN_NAME'],
+                            'WHEN' => $parent['WHEN'],
+                            'MESSAGE_PREVIEW' => mb_substr(strip_tags($parent['MESSAGE']), 0, 100)
+                        ];
+                        
+                        // Preserve all existing replies (editor replies to this author reply)
+                        // The replies are already in $comment['replies'] from the original structure
+                        if (empty($comment['replies'])) {
+                            $comment['replies'] = [];
+                        }
+                        // Note: $comment['replies'] already contains any editor replies to this author reply
+                        // They were preserved when we collected the comment from the structure
+                        
+                        $flattenedMessages[$id] = $comment;
+                    }
+                    
+                    return $flattenedMessages;
+                };
+                
+                // Step 1: Collect all comments recursively
+                $allCommentsFlat = [];
+                $collectAllComments($authorToEditorComments, $allCommentsFlat);
+                
+                // Step 2: Build hierarchy recursively
+                $rootMessages = $buildHierarchy($allCommentsFlat);
+                
+                // Step 3: Sort recursively
+                $sortCommentsRecursive($rootMessages);
+                
+                // Step 4: Flatten author replies (TYPE 22 with PARENTID)
+                $flattenedMessages = $flattenAuthorReplies($rootMessages);
+                
+                // Step 5: Sort final result
                 uasort($flattenedMessages, function($a, $b) {
                     return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
                 });
-
+                
                 $authorToEditorComments = $flattenedMessages;
             }
 

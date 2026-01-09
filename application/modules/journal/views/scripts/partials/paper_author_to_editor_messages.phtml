@@ -98,31 +98,42 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                     
                                     <?php // Display editor replies to this flattened author reply (level 3) ?>
                                     <?php if (!empty($parentComment['replies'])) : ?>
-                                        <div class="timeline-thread">
-                                            <?php foreach ($parentComment['replies'] as $replyId => $reply) : ?>
-                                                <?php
-                                                // Anonymize editor name if setting is disabled and viewer is not an editor
-                                                // But never anonymize the current user's own replies
-                                                $displayComment = $reply;
-
-                                                if (!$discloseEditorNames && !$isEditor &&
-                                                    isset($reply['TYPE']) && $reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE &&
-                                                    (int)$reply['UID'] !== Episciences_Auth::getUid()) {
+                                        <?php
+                                        // Filter only editor responses (TYPE 23) for level 3
+                                        $level3EditorReplies = [];
+                                        foreach ($parentComment['replies'] as $replyId => $reply) {
+                                            if (isset($reply['TYPE']) && $reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                                                $level3EditorReplies[$replyId] = $reply;
+                                            }
+                                        }
+                                        ?>
+                                        <?php if (!empty($level3EditorReplies)) : ?>
+                                            <div class="timeline-thread">
+                                                <?php foreach ($level3EditorReplies as $replyId => $reply) : ?>
+                                                    <?php
+                                                    // Anonymize editor name if setting is disabled and viewer is not an editor
+                                                    // But never anonymize the current user's own replies
                                                     $displayComment = $reply;
-                                                    // Set editor name based on current language
-                                                    $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
-                                                    $displayComment['SCREEN_NAME'] = ($currentLang === 'en') ? 'Editor' : 'Rédacteur'; // For display text
-                                                    $displayComment['AVATAR_NAME'] = 'System Episciences'; // For avatar initials (SE)
-                                                    $displayComment['UID'] = 666; // Anonymous editor UID
-                                                }
-                                                ?>
-                                                <?= $this->partial('partials/timeline_item.phtml', [
-                                                    'comment' => $displayComment,
-                                                    'isAuthor' => $isAuthor,
-                                                    'authorReplyForms' => []
-                                                ]) ?>
-                                            <?php endforeach; ?>
-                                        </div>
+
+                                                    if (!$discloseEditorNames && !$isEditor &&
+                                                        isset($reply['TYPE']) && $reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE &&
+                                                        (int)$reply['UID'] !== Episciences_Auth::getUid()) {
+                                                        $displayComment = $reply;
+                                                        // Set editor name based on current language
+                                                        $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
+                                                        $displayComment['SCREEN_NAME'] = ($currentLang === 'en') ? 'Editor' : 'Rédacteur'; // For display text
+                                                        $displayComment['AVATAR_NAME'] = 'System Episciences'; // For avatar initials (SE)
+                                                        $displayComment['UID'] = 666; // Anonymous editor UID
+                                                    }
+                                                    ?>
+                                                    <?= $this->partial('partials/timeline_item.phtml', [
+                                                        'comment' => $displayComment,
+                                                        'isAuthor' => $isAuthor,
+                                                        'authorReplyForms' => $this->authorReplyForms ?? []
+                                                    ]) ?>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             <?php else :
