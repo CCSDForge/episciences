@@ -80,8 +80,20 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                         </button>';
                                     }
                                     ?>
+                                    <?php
+                                    // Anonymize editor name in REPLY_TO_INFO if setting is disabled and viewer is not an editor
+                                    $displayComment = $parentComment;
+                                    if (isset($parentComment['REPLY_TO_INFO']) && !empty($parentComment['REPLY_TO_INFO'])) {
+                                        $displayComment['REPLY_TO_INFO'] = $parentComment['REPLY_TO_INFO'];
+                                        if (!$discloseEditorNames && !$isEditor) {
+                                            // Set editor name based on current language
+                                            $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
+                                            $displayComment['REPLY_TO_INFO']['SCREEN_NAME'] = ($currentLang === 'en') ? 'Editor' : 'Rédacteur';
+                                        }
+                                    }
+                                    ?>
                                     <?= $this->partial('partials/timeline_item.phtml', [
-                                        'comment' => $parentComment,
+                                        'comment' => $displayComment,
                                         'actions' => $actions,
                                         'isAuthor' => $isAuthor,
                                         'authorReplyForms' => []

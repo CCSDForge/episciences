@@ -1059,6 +1059,7 @@ return array(
     // Module de mailing
     "De" => "From",
     "Répondre à" => "Reply to",
+    "Répond à :" => "Reply to:",
     "À" => "To",
     "Recevoir une copie de ce message" => "Receive a copy of this message",
 
