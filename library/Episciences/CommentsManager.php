@@ -5,14 +5,12 @@ use Episciences\AppRegistry;
 class Episciences_CommentsManager
 {
     // possible comment types
-    // comment from chief editors
-    public const TYPE_INFO_REQUEST = 0;
+    public const TYPE_INFO_REQUEST = 0; // Request for clarification (Reviewer to author)
     // comment from contributor
-    public const TYPE_INFO_ANSWER = 1;
+    public const TYPE_INFO_ANSWER = 1; // Response for clarification (From author to reviewer)
     public const TYPE_REVISION_REQUEST = 2;
     public const TYPE_REVISION_ANSWER_COMMENT = 3;
-    // Comment from author
-    public const TYPE_AUTHOR_COMMENT = 4;
+    public const TYPE_AUTHOR_COMMENT = 4; // From Author (Cover letter)
     #git #320
     public const TYPE_REVISION_CONTACT_COMMENT = 5;
     public const TYPE_REVISION_ANSWER_TMP_VERSION = 6;
@@ -794,6 +792,20 @@ class Episciences_CommentsManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         return ($db->delete(T_PAPER_COMMENTS, ['PCID = ?' => $identifier]) > 0);
+    }
+
+
+    public static function fetchReviewerAuthorCommentsByDocId(int $docId): array
+    {
+
+        $settings = ['types' => [
+            self::TYPE_INFO_REQUEST,
+            self::TYPE_INFO_ANSWER,
+            self::TYPE_CONTRIBUTOR_TO_REVIEWER
+        ]];
+
+        return self::getList($docId, $settings);
+
     }
 
 }

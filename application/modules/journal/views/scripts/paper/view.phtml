@@ -312,7 +312,11 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
                 <h2 class="panel-title"><?= $this->translate('Commentaires des relecteurs') ?></h2>
             </div>
             <div class="panel-body in" style="max-height: 350px; overflow: auto;">
-                <?= $this->partial('partials/paper_reviewer_comments.phtml', ['comments' => $this->comments, 'replyForms' => $this->replyForms, 'paperContributorUid' => $this->paper->getUid()]) ?>
+                <?= $this->partial('partials/paper_reviewer_comments.phtml', [
+                        'comments' => $this->comments,
+                        'replyForms' => $this->replyForms,
+                        'paper' => $this->paper
+                ]) ?>
             </div>
         </div>
     <?php endif; ?>

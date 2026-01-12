@@ -1,87 +1,60 @@
 <?php
-foreach ($this->comments as $id => $comment) : ?>
-    <div class="small">
-        <strong><?php echo $this->Date($comment['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?>
-            : </strong><?php
-        echo '(';
-        if ($comment['TYPE'] == Episciences_CommentsManager::TYPE_INFO_REQUEST ||
-                $comment['TYPE'] == Episciences_CommentsManager::TYPE_INFO_ANSWER
-        ) {
-            echo $this->translate('relecteur') . ' ' . $comment['ALIAS'];
-        } else {
-            echo $this->translate('comité éditorial');
-        }
-        if ($comment['UID'] == Episciences_Auth::getUid()) {
-            echo ' : ' . $this->translate('vous');
-        } elseif (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor()) {
-            // Never show Screen Name for the paper's submitter
-            if ($this->paperContributorUid != Episciences_Auth::getUid()) {
-                echo ' : ' . $this->escape($comment['SCREEN_NAME']);
-            }
-        }
+const PARTIALS_DEMAND_ITEM_PHTML = 'partials/demand_item.phtml';
 
-        echo ')'; ?>
-        <div>
-            <?php // htmlspecialchars in Episciences_Comment::setMessage ?>
-            <?php echo Episciences_Tools::formatText($comment['MESSAGE']); ?>
+// Extract data from view
+$comments = $this->comments;
+$replyForms = $this->replyForms ?? [];
+$isAllowedToReply = !empty($replyForms);
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$paperId = $this->paper->getPaperId();
+?>
+
+<?php if (!empty($comments)): ?>
+
+    <!-- Timeline -->
+    <div class="demands-timeline demands-timeline--scrollable">
+        <div class="demands-timeline-track">
+
+            <?php foreach ($comments as $pcId => $comment): ?>
+
+                <?php
+                $isAllowedToReply = ($paper->getReviewer(Episciences_Auth::getUid()) || $paper->isOwner());
+                $hasReply = isset($comment['replies']);
+                $showReplyButtonAndForm = $isAllowedToReply && !$this->hasReply && Episciences_Auth::getUid() !== (int)$comment['UID']
+                ?>
+
+                <?php $replyForm = $replyForms[$pcId] ?? null; ?>
+
+                <!-- Main demand -->
+                <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                        'item' => $comment,
+                        'paperId' => $paperId,
+                        'isReply' => false,
+                        'cleanMessage' => true,
+                        'replyForm' => $replyForm,
+                        'showReplyButtonAndForm' => $showReplyButtonAndForm
+                ]) ?>
+
+
+                <!-- Replies (if any) -->
+                <?php if (isset($comment['replies'])) : ?>
+                    <div class="timeline-thread">
+                        <?php foreach ($comment['replies'] as $reply) : ?>
+                            <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                                    'item' => $reply,
+                                    'paperId' => $paperId,
+                                    'isReply' => true,
+                                    'cleanMessage' => false,
+                                    'replyForm' => $replyForm,
+                                    'showReplyButtonAndForm' => $showReplyButtonAndForm
+                            ]) ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+            <?php endforeach; ?>
+
         </div>
-        <?php if ($comment['FILE']) : ?>
-            <div class="col-sm-10">
-                <a href="<?= sprintf("%sdocfiles/comments/%s/%s", PREFIX_URL, $comment['DOCID'], $comment['FILE']) ?>" target="_blank">
-                    <?php echo $comment['FILE']; ?>
-                </a>
-            </div>
-            <div class="col-sm-2">
-                <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]); ?>
-            </div>
-
-        <?php endif; ?>
-
-        <?php if ($this->replyForms) : ?>
-            <button style="margin: 10px 0 0 20px" class='btn btn-default btn-sm replyButton pull-right'>
-                <span class="glyphicon glyphicon-edit "></span> <?php echo $this->translate('Répondre') ?>
-            </button>
-
-            <?php if (!empty($this->replyForms[$id])) : ?>
-                <div id="replyForm_<?php echo $id ?>" class="replyForm"
-                     style="margin: 20px 20px 10px 20px; display: none"
-                     class="small">
-                    <?php echo $this->replyForms[$id]; ?>
-                </div>
-            <?php endif; ?>
-        <?php endif; ?>
-
     </div>
-
-    <?php if (isset($comment['replies'])) : ?>
-        <?php foreach ($comment['replies'] as $reply) : ?>
-            <br>
-            <div style="margin: 10px 0 10px 20px" class="small">
-
-                <span><strong><?php echo $this->Date($reply['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?>
-                        : </strong></span>
-                <?php if ($reply['UID'] == Episciences_Auth::getUid()) : ?>
-                    (<?php echo $this->translate('vous'); ?>)
-                <?php else: ?>
-                    (<?php echo $this->translate('l\'auteur') . ' : ' . $reply['SCREEN_NAME'];; ?>)
-                <?php endif; ?>
-
-                <div><?php echo Episciences_Tools::formatText($this->escape($reply['MESSAGE'])); ?></div>
-
-                <?php if ($reply['FILE']) : ?>
-                    <div class="col-sm-10">
-                        <a href="<?= sprintf("%sdocfiles/comments/%s/%s", PREFIX_URL, $reply['DOCID'], $reply['FILE']) ?>"
-                           target="_blank">
-                            <?php echo $reply['FILE']; ?>
-                        </a>
-                    </div>
-                    <div class="col-sm-2">
-                        <?php echo $this->partial('partials/remove_file_comment.phtml', ['comment' => $reply]); ?>
-                    </div>
-                <?php endif; ?>
-
-            </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
-
-<?php endforeach; ?>
+<?php endif; ?>
