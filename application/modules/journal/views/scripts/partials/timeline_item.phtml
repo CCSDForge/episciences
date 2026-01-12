@@ -53,8 +53,9 @@ $authorReplyForms = $authorReplyForms ?? ($this->authorReplyForms ?? []);
                             </span>
         </header>
 
-        <!-- Reply to indicator (for flattened level 2 messages) -->
-        <?php if (isset($comment['REPLY_TO_INFO']) && !empty($comment['REPLY_TO_INFO'])) : ?>
+        <!-- Reply to indicator (only for author replies, not editor replies) -->
+        <?php if (isset($comment['REPLY_TO_INFO']) && !empty($comment['REPLY_TO_INFO']) &&
+                  isset($comment['TYPE']) && $comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) : ?>
             <div class="reply-to-indicator">
                 <i class="fa fa-reply" aria-hidden="true"></i>
                 <strong><?= $this->translate('Répond à :') ?></strong>

@@ -723,25 +723,25 @@ class PaperController extends PaperDefaultController
                         unset($comment);
                     };
                     
-                    // Helper function: Flatten author replies (TYPE 22 with PARENTID) recursively
-                    $flattenAuthorReplies = function($rootMessages) use (&$findCommentById) {
+                    // Helper function: Flatten ALL replies (both editor and author) to same level as root message
+                    $flattenAllReplies = function($rootMessages) use (&$findCommentById) {
                         $flattenedMessages = [];
-                        $authorRepliesToFlatten = [];
+                        $allRepliesToFlatten = [];
                         
-                        // First pass: collect all author replies (TYPE 22 with PARENTID) and their parent info
-                        // Use the full structure to ensure we get all replies (including editor replies to author replies)
-                        $collectAuthorReplies = function($comments, $parentComment = null) use (&$collectAuthorReplies, &$authorRepliesToFlatten, &$findCommentById, &$rootMessages) {
+                        // First pass: collect ALL replies (any type with PARENTID) and their parent info
+                        // Use the full structure to ensure we get all replies recursively
+                        $collectAllReplies = function($comments, $parentComment = null) use (&$collectAllReplies, &$allRepliesToFlatten, &$findCommentById, &$rootMessages) {
                             foreach ($comments as $id => $comment) {
-                                // Check if this is an author reply to flatten (TYPE 22 with PARENTID)
+                                // Check if this is a reply to flatten (any type with PARENTID, except root messages)
                                 if (isset($comment['TYPE']) && 
-                                    $comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR &&
+                                    isset($comment['PCID']) &&
                                     !empty($comment['PARENTID'])) {
                                     
                                     // Find parent in structure
                                     $parent = $findCommentById($rootMessages, $comment['PARENTID']);
                                     if ($parent !== null) {
                                         // Get the full comment with all its replies from the structure
-                                        // This ensures we preserve editor replies to this author reply
+                                        // This ensures we preserve any nested replies
                                         $fullComment = $findCommentById($rootMessages, $comment['PCID']);
                                         if ($fullComment === null) {
                                             // Try to find in nested structure
@@ -765,59 +765,41 @@ class PaperController extends PaperDefaultController
                                         // Use full comment if found, otherwise use the comment from parameter
                                         $commentToFlatten = $fullComment !== null ? $fullComment : $comment;
                                         
-                                        $authorRepliesToFlatten[$id] = [
+                                        $allRepliesToFlatten[$id] = [
                                             'comment' => $commentToFlatten, // Use full comment with all replies
                                             'parent' => $parent
                                         ];
                                     }
                                 }
                                 
-                                // Continue recursively
+                                // Continue recursively to collect all nested replies
                                 if (!empty($comment['replies'])) {
-                                    $collectAuthorReplies($comment['replies'], $comment);
+                                    $collectAllReplies($comment['replies'], $comment);
                                 }
                             }
                         };
                         
-                        // Collect all author replies to flatten
+                        // Collect all replies to flatten (recursively from all root messages)
                         foreach ($rootMessages as $rootMessage) {
                             if (!empty($rootMessage['replies'])) {
-                                $collectAuthorReplies($rootMessage['replies']);
+                                $collectAllReplies($rootMessage['replies']);
                             }
                         }
                         
                         // Build flattened structure
                         foreach ($rootMessages as $rootId => $rootMessage) {
-                            $flattenedMessages[$rootId] = $rootMessage;
-                            
-                            // Remove author replies from structure
-                            // Remove both: replies in $authorRepliesToFlatten AND any other TYPE 22 with PARENTID
-                            $removeAuthorReplies = function(&$comments) use (&$removeAuthorReplies, &$authorRepliesToFlatten) {
-                                foreach ($comments as $id => &$comment) {
-                                    // Remove if in flatten list OR if it's a TYPE 22 with PARENTID (author reply)
-                                    if (isset($authorRepliesToFlatten[$id]) ||
-                                        (isset($comment['TYPE']) && 
-                                         $comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR &&
-                                         !empty($comment['PARENTID']))) {
-                                        unset($comments[$id]);
-                                    } elseif (!empty($comment['replies'])) {
-                                        $removeAuthorReplies($comment['replies']);
-                                    }
-                                }
-                                unset($comment);
-                            };
-                            
-                            if (!empty($rootMessage['replies'])) {
-                                $removeAuthorReplies($rootMessage['replies']);
-                                $flattenedMessages[$rootId]['replies'] = $rootMessage['replies'];
-                            }
+                            // Add root message without replies (we'll add all replies at the same level)
+                            $flattenedRoot = $rootMessage;
+                            $flattenedRoot['replies'] = []; // Clear replies, they'll be flattened
+                            $flattenedMessages[$rootId] = $flattenedRoot;
                         }
                         
-                        // Add flattened author replies with parent info
-                        foreach ($authorRepliesToFlatten as $id => $data) {
+                        // Add all flattened replies with parent info (all at the same level as root messages)
+                        foreach ($allRepliesToFlatten as $id => $data) {
                             $comment = $data['comment'];
                             $parent = $data['parent'];
                             
+                            // Add REPLY_TO_INFO to indicate which message this is replying to
                             $comment['REPLY_TO_INFO'] = [
                                 'PCID' => $parent['PCID'],
                                 'SCREEN_NAME' => $parent['SCREEN_NAME'],
@@ -825,13 +807,18 @@ class PaperController extends PaperDefaultController
                                 'MESSAGE_PREVIEW' => mb_substr(strip_tags($parent['MESSAGE']), 0, 100)
                             ];
                             
-                            // Preserve all existing replies (editor replies to this author reply)
-                            // The replies are already in $comment['replies'] from the original structure
-                            if (empty($comment['replies'])) {
+                            // Clear nested replies - they will also be flattened if they exist
+                            // (This prevents double-nesting, but nested replies will be collected in next iteration)
+                            // Actually, we should preserve them temporarily and let them be collected recursively
+                            // But for now, clear them to avoid confusion - they'll be added separately
+                            if (!empty($comment['replies'])) {
+                                // Keep replies temporarily - they'll be processed in the next recursive pass
+                                // But for now, we'll clear them and let them be collected separately
+                                // Actually, we need to recursively flatten nested replies too
+                                // So we'll keep the structure but mark that this is already flattened
+                                // For simplicity, clear nested replies - they should be collected separately
                                 $comment['replies'] = [];
                             }
-                            // Note: $comment['replies'] already contains any editor replies to this author reply
-                            // They were preserved when we collected the comment from the structure
                             
                             $flattenedMessages[$id] = $comment;
                         }
@@ -849,8 +836,8 @@ class PaperController extends PaperDefaultController
                     // Step 3: Sort recursively
                     $sortCommentsRecursive($rootMessages);
                     
-                    // Step 4: Flatten author replies (TYPE 22 with PARENTID)
-                    $flattenedMessages = $flattenAuthorReplies($rootMessages);
+                    // Step 4: Flatten ALL replies (both editor and author) to same level
+                    $flattenedMessages = $flattenAllReplies($rootMessages);
                     
                     // Step 5: Sort final result
                     uasort($flattenedMessages, function($a, $b) {
@@ -876,59 +863,49 @@ class PaperController extends PaperDefaultController
                 }
 
                 // Create reply forms for author to respond to editor responses
-                // Collect ALL editor responses recursively (including those under flattened messages)
+                // Collect ALL editor responses from flattened structure (all at same level now)
                 $authorReplyForms = [];
                 $isAuthor = $paper->isOwner();
                 if (!empty($authorToEditorComments) && $isAuthor) {
-                    // Recursively collect all editor responses (TYPE 23) and create forms
-                    $collectEditorResponses = function($comments) use (&$collectEditorResponses, &$authorReplyForms, $paper) {
-                        foreach ($comments as $commentId => $comment) {
-                            // Check if this comment itself is an editor response
-                            if (isset($comment['TYPE']) && $comment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
-                                $pcid = $comment['PCID'];
-                                
-                                // Skip if form already exists (avoid duplicates)
-                                if (!isset($authorReplyForms[$pcid])) {
-                                    // Create a form for this editor response using getForm()
-                                    $form = Episciences_CommentsManager::getForm('authorReplyForm_' . $pcid, false, true);
-                                    $form->setAction('/paper/view?id=' . $paper->getDocid());
-
-                                    // Remove CSRF validation for multiple forms on same page
-                                    $csrfElement = $form->getElement('no_csrf_foo');
-                                    if ($csrfElement) {
-                                        $form->removeElement('no_csrf_foo');
-                                    }
-
-                                    // Add a hidden field to identify which editor response this is replying to
-                                    $form->addElement('hidden', 'reply_to_pcid', [
-                                        'value' => $pcid,
-                                        'decorators' => ['ViewHelper']
-                                    ]);
-
-                                    // Configure cancel button to work with toggle-reply-form.js
-                                    // The cancel button is created by the FormActions decorator
-                                    $formActionsDecorator = $form->getDecorator('FormActions');
-                                    if ($formActionsDecorator && isset($formActionsDecorator->_cancel)) {
-                                        $cancelButton = $formActionsDecorator->_cancel;
-                                        $cancelButton->setAttrib('class', 'btn btn-default cancel-reply-form');
-                                        $cancelButton->setAttrib('data-reply-form-id', 'author-reply-form-' . $pcid);
-                                        $cancelButton->setAttrib('type', 'button');
-                                    }
-
-                                    // Index by PCID so timeline_item.phtml can find it
-                                    $authorReplyForms[$pcid] = $form;
-                                }
-                            }
+                    // Since all replies are now flattened to the same level, we can simply iterate through all comments
+                    foreach ($authorToEditorComments as $commentId => $comment) {
+                        // Check if this comment is an editor response (TYPE 23)
+                        if (isset($comment['TYPE']) && $comment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                            $pcid = $comment['PCID'];
                             
-                            // Continue recursively to find editor responses in nested replies
-                            if (!empty($comment['replies'])) {
-                                $collectEditorResponses($comment['replies']);
+                            // Skip if form already exists (avoid duplicates)
+                            if (!isset($authorReplyForms[$pcid])) {
+                                // Create a form for this editor response using getForm()
+                                $form = Episciences_CommentsManager::getForm('authorReplyForm_' . $pcid, false, true);
+                                $form->setAction('/paper/view?id=' . $paper->getDocid());
+
+                                // Remove CSRF validation for multiple forms on same page
+                                $csrfElement = $form->getElement('no_csrf_foo');
+                                if ($csrfElement) {
+                                    $form->removeElement('no_csrf_foo');
+                                }
+
+                                // Add a hidden field to identify which editor response this is replying to
+                                $form->addElement('hidden', 'reply_to_pcid', [
+                                    'value' => $pcid,
+                                    'decorators' => ['ViewHelper']
+                                ]);
+
+                                // Configure cancel button to work with toggle-reply-form.js
+                                // The cancel button is created by the FormActions decorator
+                                $formActionsDecorator = $form->getDecorator('FormActions');
+                                if ($formActionsDecorator && isset($formActionsDecorator->_cancel)) {
+                                    $cancelButton = $formActionsDecorator->_cancel;
+                                    $cancelButton->setAttrib('class', 'btn btn-default cancel-reply-form');
+                                    $cancelButton->setAttrib('data-reply-form-id', 'author-reply-form-' . $pcid);
+                                    $cancelButton->setAttrib('type', 'button');
+                                }
+
+                                // Index by PCID so timeline_item.phtml can find it
+                                $authorReplyForms[$pcid] = $form;
                             }
                         }
-                    };
-                    
-                    // Collect all editor responses recursively from all messages
-                    $collectEditorResponses($authorToEditorComments);
+                    }
                     
                     // Handle form submissions for all forms
                     foreach ($authorReplyForms as $pcid => $form) {

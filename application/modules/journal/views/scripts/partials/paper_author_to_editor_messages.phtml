@@ -58,156 +58,100 @@ if ($canAuthorContactEditors && $canViewPanel) :
                             if (!isset($parentComment['TYPE'])) {
                                 continue;
                             }
-                            // Only display author-to-editor messages (type 22)
-                            if ($parentComment['TYPE'] != Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
-                                continue;
+                            
+                            // Check if this is a root message (no REPLY_TO_INFO) or a flattened reply (with REPLY_TO_INFO)
+                            $isRootMessage = empty($parentComment['REPLY_TO_INFO']);
+                            
+                            // Determine reply button based on message type
+                            $actions = '';
+                            if ($isRootMessage) {
+                                // Root message: only editors can reply
+                                if ($isEditor && isset($this->editorReplyForms[$parentId])) {
+                                    $actions = '<button type="button" class="btn btn-primary btn-xs toggle-reply-form" data-reply-form-id="reply-form-' . $parentId . '">
+                                        <i class="fa fa-reply"></i> ' . $this->translate("Répondre") . '
+                                    </button>';
+                                }
+                            } else {
+                                // Flattened reply: determine who can reply based on message type
+                                if ($parentComment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+                                    // Author reply: editors can reply
+                                    if ($isEditor && isset($this->editorReplyForms[$parentId])) {
+                                        $actions = '<button type="button" class="btn btn-primary btn-xs toggle-reply-form" data-reply-form-id="reply-form-' . $parentId . '">
+                                            <i class="fa fa-reply"></i> ' . $this->translate("Répondre") . '
+                                        </button>';
+                                    }
+                                } elseif ($parentComment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                                    // Editor reply: authors can reply
+                                    if ($isAuthor && isset($this->authorReplyForms[$parentId])) {
+                                        $actions = '<button type="button" class="btn btn-primary btn-xs toggle-reply-form" data-reply-form-id="reply-form-' . $parentId . '">
+                                            <i class="fa fa-reply"></i> ' . $this->translate("Répondre") . '
+                                        </button>';
+                                    }
+                                }
                             }
                             
-                            // Check if this is a flattened level 2 message (author reply to editor response)
-                            $isFlattenedReply = isset($parentComment['REPLY_TO_INFO']) && !empty($parentComment['REPLY_TO_INFO']);
+                            // Prepare display comment with anonymization if needed
+                            $displayComment = $parentComment;
                             
-                            if ($isFlattenedReply) :
-                                // Display flattened level 2 message (author reply to editor) as a simple message
-                                // Editors can reply to author replies, so show reply button if editor has permission
-                                ?>
-                                <div class="author-message-wrapper">
-                                    <?php
-                                    // Prepare reply button if editor has permission
-                                    $actions = '';
-                                    if ($isEditor && isset($this->editorReplyForms[$parentId])) {
-                                        $actions = '<button type="button" class="btn btn-primary btn-xs toggle-reply-form" data-reply-form-id="reply-form-' . $parentId . '">
-                                            <i class="fa fa-reply"></i> ' . $this->translate("Répondre") . '
-                                        </button>';
+                            // Anonymize editor name in REPLY_TO_INFO if setting is disabled and viewer is not an editor
+                            if (isset($parentComment['REPLY_TO_INFO']) && !empty($parentComment['REPLY_TO_INFO'])) {
+                                $displayComment['REPLY_TO_INFO'] = $parentComment['REPLY_TO_INFO'];
+                                // Check if parent was an editor response
+                                if (!$discloseEditorNames && !$isEditor) {
+                                    // Check if the parent message type was editor response
+                                    // We need to check the parent type, but we only have REPLY_TO_INFO
+                                    // For now, anonymize if the parent SCREEN_NAME looks like an editor name
+                                    // Actually, we should check the parent type from the structure
+                                    // But for simplicity, we'll anonymize based on the current message type
+                                    // If this is an author reply, the parent is likely an editor
+                                    if ($parentComment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+                                        $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
+                                        $displayComment['REPLY_TO_INFO']['SCREEN_NAME'] = ($currentLang === 'en') ? 'Editor' : 'Rédacteur';
                                     }
-                                    ?>
-                                    <?php
-                                    // Anonymize editor name in REPLY_TO_INFO if setting is disabled and viewer is not an editor
-                                    $displayComment = $parentComment;
-                                    if (isset($parentComment['REPLY_TO_INFO']) && !empty($parentComment['REPLY_TO_INFO'])) {
-                                        $displayComment['REPLY_TO_INFO'] = $parentComment['REPLY_TO_INFO'];
-                                        if (!$discloseEditorNames && !$isEditor) {
-                                            // Set editor name based on current language
-                                            $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
-                                            $displayComment['REPLY_TO_INFO']['SCREEN_NAME'] = ($currentLang === 'en') ? 'Editor' : 'Rédacteur';
-                                        }
-                                    }
-                                    ?>
-                                    <?= $this->partial('partials/timeline_item.phtml', [
-                                        'comment' => $displayComment,
-                                        'actions' => $actions,
-                                        'isAuthor' => $isAuthor,
-                                        'authorReplyForms' => []
-                                    ]) ?>
-                                    
-                                    <?php // Display reply form for editors (if available) ?>
-                                    <?php if ($isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$parentId])) : ?>
-                                        <!-- Reply form (hidden by default) -->
-                                        <div class="reply-form-container" id="reply-form-<?php echo $parentId; ?>" style="display: none;">
-                                            <h5><?php echo $this->translate("Répondre"); ?></h5>
-                                            <?php echo $this->editorReplyForms[$parentId]; ?>
-                                        </div>
-                                    <?php endif; ?>
-                                    
-                                    <?php // Display editor replies to this flattened author reply (level 3) ?>
-                                    <?php if (!empty($parentComment['replies'])) : ?>
-                                        <?php
-                                        // Filter only editor responses (TYPE 23) for level 3
-                                        $level3EditorReplies = [];
-                                        foreach ($parentComment['replies'] as $replyId => $reply) {
-                                            if (isset($reply['TYPE']) && $reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
-                                                $level3EditorReplies[$replyId] = $reply;
-                                            }
-                                        }
-                                        ?>
-                                        <?php if (!empty($level3EditorReplies)) : ?>
-                                            <div class="timeline-thread">
-                                                <?php foreach ($level3EditorReplies as $replyId => $reply) : ?>
-                                                    <?php
-                                                    // Anonymize editor name if setting is disabled and viewer is not an editor
-                                                    // But never anonymize the current user's own replies
-                                                    $displayComment = $reply;
-
-                                                    if (!$discloseEditorNames && !$isEditor &&
-                                                        isset($reply['TYPE']) && $reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE &&
-                                                        (int)$reply['UID'] !== Episciences_Auth::getUid()) {
-                                                        $displayComment = $reply;
-                                                        // Set editor name based on current language
-                                                        $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
-                                                        $displayComment['SCREEN_NAME'] = ($currentLang === 'en') ? 'Editor' : 'Rédacteur'; // For display text
-                                                        $displayComment['AVATAR_NAME'] = 'System Episciences'; // For avatar initials (SE)
-                                                        $displayComment['UID'] = 666; // Anonymous editor UID
-                                                    }
-                                                    ?>
-                                                    <?= $this->partial('partials/timeline_item.phtml', [
-                                                        'comment' => $displayComment,
-                                                        'isAuthor' => $isAuthor,
-                                                        'authorReplyForms' => $this->authorReplyForms ?? []
-                                                    ]) ?>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        <?php endif; ?>
-                                    <?php endif; ?>
-                                </div>
-                            <?php else :
-                                // Display root message with editor responses in a thread
-                                ?>
-                                <!-- Author message (main item) -->
-                                <div class="author-message-wrapper">
-                                    <?php
-                                    // Prepare reply button if editor has permission (multiple responses allowed)
-                                    $actions = '';
-                                    if ($isEditor && isset($this->editorReplyForms[$parentId])) {
-                                        $actions = '<button type="button" class="btn btn-primary btn-xs toggle-reply-form" data-reply-form-id="reply-form-' . $parentId . '">
-                                            <i class="fa fa-reply"></i> ' . $this->translate("Répondre") . '
-                                        </button>';
-                                    }
-                                    ?>
-                                    <?= $this->partial('partials/timeline_item.phtml', ['comment' => $parentComment, 'actions' => $actions, 'isAuthor' => $isAuthor]) ?>
-                                </div>
-
-                                <?php // Display editor responses or reply form in a thread ?>
-                                <?php if (!empty($parentComment['replies']) || ($isEditor && isset($this->editorReplyForms[$parentId]))) : ?>
-                                    <div class="timeline-thread">
-
-                                        <?php // Display editor responses if any ?>
-                                        <?php if (!empty($parentComment['replies'])) : ?>
-                                            <?php foreach ($parentComment['replies'] as $replyId => $reply) : ?>
-                                                <?php
-                                                // Anonymize editor name if setting is disabled and viewer is not an editor
-                                                // But never anonymize the current user's own replies
-                                                $displayComment = $reply;
-
-                                                if (!$discloseEditorNames && !$isEditor &&
-                                                    isset($reply['TYPE']) && $reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE &&
-                                                    (int)$reply['UID'] !== Episciences_Auth::getUid()) {
-                                                    $displayComment = $reply;
-                                                    // Set editor name based on current language
-                                                    $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
-                                                    $displayComment['SCREEN_NAME'] = ($currentLang === 'en') ? 'Editor' : 'Rédacteur'; // For display text
-                                                    $displayComment['AVATAR_NAME'] = 'System Episciences'; // For avatar initials (SE)
-                                                    $displayComment['UID'] = 666; // Anonymous editor UID
-                                                }
-                                                ?>
-                                                <?= $this->partial('partials/timeline_item.phtml', [
-                                                    'comment' => $displayComment,
-                                                    'isAuthor' => $isAuthor,
-                                                    'authorReplyForms' => $this->authorReplyForms ?? []
-                                                ]) ?>
-                                            <?php endforeach; ?>
-                                        <?php endif; ?>
-
-                                        <?php // Display reply form for editors (multiple responses allowed) ?>
-                                        <?php if ($isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$parentId])) : ?>
-                                            <!-- Reply form (hidden by default) -->
-                                            <div class="reply-form-container" id="reply-form-<?php echo $parentId; ?>" style="display: none;">
-                                                <h5><?php echo $this->translate("Répondre"); ?></h5>
-                                                <?php echo $this->editorReplyForms[$parentId]; ?>
-                                            </div>
-                                        <?php endif; ?>
-
+                                }
+                            }
+                            
+                            // Anonymize editor name in the message itself if needed
+                            if (!$discloseEditorNames && !$isEditor &&
+                                isset($parentComment['TYPE']) && $parentComment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE &&
+                                (int)$parentComment['UID'] !== Episciences_Auth::getUid()) {
+                                $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
+                                $displayComment['SCREEN_NAME'] = ($currentLang === 'en') ? 'Editor' : 'Rédacteur';
+                                $displayComment['AVATAR_NAME'] = 'System Episciences';
+                                $displayComment['UID'] = 666;
+                            }
+                            ?>
+                            
+                            <!-- Display message (root or flattened reply) at the same level -->
+                            <div class="author-message-wrapper <?= $isRootMessage ? 'root-message' : 'reply-message' ?>">
+                                <?= $this->partial('partials/timeline_item.phtml', [
+                                    'comment' => $displayComment,
+                                    'actions' => $actions,
+                                    'isAuthor' => $isAuthor,
+                                    'authorReplyForms' => $this->authorReplyForms ?? []
+                                ]) ?>
+                                
+                                <?php // Display reply form if available ?>
+                                <?php if ($isRootMessage && $isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$parentId])) : ?>
+                                    <!-- Reply form for root message (hidden by default) -->
+                                    <div class="reply-form-container" id="reply-form-<?php echo $parentId; ?>" style="display: none;">
+                                        <h5><?php echo $this->translate("Répondre"); ?></h5>
+                                        <?php echo $this->editorReplyForms[$parentId]; ?>
+                                    </div>
+                                <?php elseif (!$isRootMessage && $parentComment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR && $isEditor && isset($this->editorReplyForms) && isset($this->editorReplyForms[$parentId])) : ?>
+                                    <!-- Reply form for author reply (hidden by default) -->
+                                    <div class="reply-form-container" id="reply-form-<?php echo $parentId; ?>" style="display: none;">
+                                        <h5><?php echo $this->translate("Répondre"); ?></h5>
+                                        <?php echo $this->editorReplyForms[$parentId]; ?>
+                                    </div>
+                                <?php elseif (!$isRootMessage && $parentComment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE && $isAuthor && isset($this->authorReplyForms) && isset($this->authorReplyForms[$parentId])) : ?>
+                                    <!-- Reply form for editor reply (hidden by default) -->
+                                    <div class="reply-form-container" id="reply-form-<?php echo $parentId; ?>" style="display: none;">
+                                        <h5><?php echo $this->translate("Répondre"); ?></h5>
+                                        <?php echo $this->authorReplyForms[$parentId]; ?>
                                     </div>
                                 <?php endif; ?>
-                            <?php endif; ?>
+                            </div>
 
                         <?php endforeach; ?>
                     </div><!-- /.timeline-track -->

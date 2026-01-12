@@ -79,15 +79,9 @@
 
         // Horizontal connector from vertical line to editor reply marker
         &::before {
-          content: '';
-          position: absolute;
-          right: 100%; // Start from the left edge of the marker
-          top: 50%; // Center vertically on the marker
-          transform: translateY(-50%);
-          width: 9px; // Distance from main timeline to marker
-          height: 2px;
-          background-color: $lighter-grey;
-          z-index: -1;
+          right:100%;
+          width:9px;
+          height:2px;
         }
       }
     }
@@ -165,6 +159,51 @@
   // Author message wrapper (contains message + reply button)
   .author-message-wrapper {
     position: relative;
+
+    // Root message: aligned normally (no offset)
+    &.root-message {
+      // Keep normal alignment for root messages
+    }
+
+    // Reply messages: offset to the right to distinguish from root
+    &.reply-message {
+      margin-left: 30px; // Offset reply messages to the right
+      
+      .timeline-item {
+        .timeline-content {
+          border-left: 2px solid #2196F3; // Blue border to indicate reply message
+          padding: 12px 14px; // Smaller padding for reply messages (vs 15px for root)
+          max-width: 85%; // Smaller width for reply messages (vs 95% for root)
+          font-size: 11px; // Slightly smaller font for reply messages
+        }
+
+        // Smaller marker and avatar for reply messages
+        .timeline-marker {
+          left: -28px; // Position marker closer to timeline to reduce gap
+          width: 24px; // Smaller marker for replies
+          height: 24px;
+          position: relative;
+
+          .user-photo-thumb {
+            width: 20px; // Smaller avatar for replies (vs 28px for root)
+            height: 20px;
+          }
+
+          // Horizontal connector (tiret) from main timeline to reply marker
+          &::before {
+            content: '';
+            position: absolute;
+            left: -40px; // Start exactly at the main timeline (20px from edge - 60px padding = -40px)
+            top: 50%; // Center vertically on the marker
+            transform: translateY(-50%);
+            width: 16px; // Extended to touch marker - from timeline (-40px) to marker (-28px) + 4px overlap = 16px
+            height: 2px;
+            background-color: $lighter-grey;
+            z-index: -1;
+          }
+        }
+      }
+    }
   }
 
   // Reply to indicator (for flattened level 2 messages)
