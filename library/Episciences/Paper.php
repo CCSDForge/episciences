@@ -3,6 +3,7 @@
 use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
+use Psr\Log\LogLevel;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Intl\Exception\MissingResourceException;
 use Symfony\Component\Intl\Languages;
@@ -2755,7 +2756,7 @@ class Episciences_Paper
         if ($this->getPaperid()) {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-            $sql = $this->loadHistoryQuery($db)
+            $sql = $this->loadHistoryQuery()
                 ->order('DOCID DESC')
                 ->order('DATE DESC')
                 ->order('LOGID DESC');
@@ -2779,20 +2780,39 @@ class Episciences_Paper
 
     /**
      * Load history query
-     * @param Zend_Db_Adapter_Abstract $db
-     * @param array $actions
+     * @param string|array $cols
      * @return Zend_Db_Select
      */
-    private function loadHistoryQuery(Zend_Db_Adapter_Abstract $db, array $actions = []): \Zend_Db_Select
+    private function loadHistoryQuery(string|array $cols = '*'): Zend_Db_Select
     {
-        $query = $db->select()
-            ->from(T_LOGS)
-            //->where('DOCID = ?', $this->getDocid())
-            ->where('PAPERID = ?', $this->getPaperid());
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        if (!empty($actions)) {
-            $query->where('ACTION in (?)', $actions);
+        return $db?->select()
+            ->from(T_LOGS, $cols)
+            ->where('PAPERID = ?', $this->getPaperid());
+    }
+
+    /**
+     * @param int|array $statues
+     * @param string|array $cols
+     * @return Zend_Db_Select
+     */
+
+    private function loadHistoryByStatuesQuery(int|array $statues , string|array $cols = '*'): Zend_Db_Select
+    {
+        $query = $this->loadHistoryQuery($cols);
+
+        if (is_int($statues)) {
+            $query->where('status = ?', $statues);
+        } else {
+            $query->where('status in (?)', $statues);
         }
+
+        //in some situations, an article may be accepted several times:
+        // the objective is to know when the article was first accepted
+        $query->order('DOCID ASC')
+            ->order('DATE ASC')
+            ->order('LOGID ASC');
 
         return $query;
     }
@@ -4169,39 +4189,36 @@ class Episciences_Paper
     }
 
     /**
-     * Retourne le détail de la dernière action de l'arrêt du processus de publication
-     * @return stdClass|null
+     * Returns the last known paper's status  of the last action to stop the publishing process
      * @throws Zend_Exception
+     *
+     * //loadLastAbandonActionDetail // getLastStatusAtTimeOfAbandon
      */
-    public function loadLastAbandonActionDetail()
+    public function loadLastAbandonActionDetail() : int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        /** @var  Zend_Db_Select $sql */
-        $sql = $this->loadHistoryQuery($db)
+        $sql = $this->loadHistoryQuery('DETAIL')
+            ->where('ACTION = ?', Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS)
             ->order('DOCID DESC')
             ->order('DATE DESC')
-            ->order('LOGID DESC');
+            ->order('LOGID DESC')
+            ->limit(1);
 
-        $detail = null;
+        $jsonDetail = $db?->fetchOne($sql);
 
-        $logs = $db->fetchAll($sql);
-        foreach ($logs as $value) {
-            if ($value['ACTION'] == Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS) {
-                /** @var stdClass $detail */
-                $detail = json_decode($value['DETAIL']);
-                break;
-            }
+        // Lors de la reprise de la publication d'un article, une exception est levée si aucune trace de l'abandon du processus de publication précédemment effectué n'est trouvée
+        if (!$jsonDetail){
+            throw new Zend_Exception(sprintf('no sign of abandonment of the publication process [%s]', Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS));
         }
 
-        //A la reprise de la publication d’un article une exception est lancée si on trouve pas de traces de l’abandon du processus de publication
-        // précédemment effectué .
-
-        if (null == $detail) {
-            throw new Zend_Exception('Pas de trace de l\'action : ' . Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS);
+        try {
+            $detail = json_decode($jsonDetail, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
         }
 
-        return $detail;
+        return isset($detail['lastStatus']) ? (int) $detail['lastStatus'] : self::STATUS_SUBMITTED;
     }
 
     /**
@@ -5101,43 +5118,11 @@ class Episciences_Paper
      */
     public function getAcceptanceDate(): ?string
     {
-        $date = null;
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $this->loadHistoryQuery($db, [Episciences_Paper_Logger::CODE_STATUS]);
-        //in some situations, an article may be accepted several times:
-        // the objective is to know when the article was first accepted
-        $sql->order('DOCID ASC')
-            ->order('DATE ASC')
-            ->order('LOGID ASC');
-
-        $logs = $db->fetchAll($sql);
-
-        foreach ($logs as $value) {
-            try {
-                $detail = json_decode($value['DETAIL'], true, 512, JSON_THROW_ON_ERROR);
-
-                $isAccepted = isset($detail['status']) &&
-                    (
-                        (int)$detail['status'] === self::STATUS_ACCEPTED ||
-                        (int)$detail['status'] === self::STATUS_TMP_VERSION_ACCEPTED
-
-                    );
-
-
-                if ($isAccepted) {
-                    $date = $value['DATE'];
-                    break;
-                }
-
-
-            } catch (JsonException $e) {
-                trigger_error($e->getMessage(), E_USER_NOTICE);
-
-            }
-
-        }
-
-        return $date;
+        $sql = $this->loadHistoryByStatuesQuery([self::STATUS_TMP_VERSION_ACCEPTED, self::STATUS_ACCEPTED], 'date');
+        $sql->limit(1);
+        $result = $db?->fetchOne($sql);
+        return $result ?: null;
     }
 
     /**
