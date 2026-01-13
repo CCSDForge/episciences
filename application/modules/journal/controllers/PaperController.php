@@ -908,7 +908,8 @@ class PaperController extends PaperDefaultController
                                 if (!isset($authorReplyForms[$pcid])) {
                                     // Create a form for this editor response using getForm()
                                     // Use 'author_reply_form_' prefix to be consistent with 'editor_reply_form_'
-                                    $form = Episciences_CommentsManager::getForm('author_reply_form_' . $pcid, false, true);
+                                    // Pass $pcid as fileFieldSuffix to ensure unique file input IDs
+                                    $form = Episciences_CommentsManager::getForm('author_reply_form_' . $pcid, false, true, $pcid);
                                     $form->setAction('/paper/view?id=' . $paper->getDocid());
 
                                 // Remove CSRF validation for multiple forms on same page

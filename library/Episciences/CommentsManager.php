@@ -226,11 +226,13 @@ class Episciences_CommentsManager
      * Comment form
      * @param string $name
      * @param bool $modal
+     * @param bool $withCancelButton
+     * @param string|null $fileFieldSuffix Optional suffix for file field to ensure unique IDs (e.g., pcid for reply forms)
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getForm($name = '', $modal = false, $withCancelButton = false): \Ccsd_Form
+    public static function getForm($name = '', $modal = false, $withCancelButton = false, $fileFieldSuffix = null): \Ccsd_Form
     {
         $form = new Ccsd_Form();
 
@@ -253,7 +255,10 @@ class Episciences_CommentsManager
 
         $descriptions = self::getDescriptions();
 
-        $form->addElement('file', 'file', array(
+        // Use unique file field name if suffix is provided (for reply forms)
+        $fileFieldName = ($fileFieldSuffix !== null) ? 'file_' . $fileFieldSuffix : 'file';
+
+        $form->addElement('file', $fileFieldName, array(
             'label' => 'Fichier',
             'description' => $descriptions['description'],
             'valueDisabled' => true,
