@@ -246,7 +246,7 @@
   // Actions wrapper: contains attached file, reply button and delete button on same line
   .timeline-comment-actions-wrapper {
     display: flex;
-    justify-content: flex-start; // Align to left
+    justify-content: space-between; // File on left, buttons on right
     align-items: center;
     margin-top: 10px;
     gap: 10px; // Space between elements
@@ -276,6 +276,7 @@
   // Comment actions (reply button, etc.)
   .timeline-comment-actions {
     text-align: right;
+    margin-left: auto; // Push to the right in flex container
 
     .btn {
       margin-left: 5px;

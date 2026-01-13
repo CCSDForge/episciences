@@ -723,104 +723,131 @@ class PaperController extends PaperDefaultController
                         unset($comment);
                     };
                     
-                    // Helper function: Flatten ALL replies (both editor and author) to same level as root message
+                    // Helper function: Flatten ALL replies (both editor and author) to same level UNDER their root message
                     $flattenAllReplies = function($rootMessages) use (&$findCommentById) {
-                        $flattenedMessages = [];
-                        $allRepliesToFlatten = [];
+                        // Function to find the root message for a given comment (by traversing PARENTID chain)
+                        $findRootMessage = function($comment, $rootMessages) use (&$findRootMessage, &$findCommentById) {
+                            // If no PARENTID, this is a root message
+                            if (empty($comment['PARENTID'])) {
+                                return $comment;
+                            }
+                            
+                            // Find parent
+                            $parent = $findCommentById($rootMessages, $comment['PARENTID']);
+                            if ($parent === null) {
+                                return null;
+                            }
+                            
+                            // If parent has no PARENTID, it's the root
+                            if (empty($parent['PARENTID'])) {
+                                return $parent;
+                            }
+                            
+                            // Recursively find root
+                            return $findRootMessage($parent, $rootMessages);
+                        };
                         
-                        // First pass: collect ALL replies (any type with PARENTID) and their parent info
-                        // Use the full structure to ensure we get all replies recursively
-                        $collectAllReplies = function($comments, $parentComment = null) use (&$collectAllReplies, &$allRepliesToFlatten, &$findCommentById, &$rootMessages) {
+                        // Collect ALL replies (any type with PARENTID) and group them by root message
+                        $repliesByRoot = [];
+                        
+                        $collectAllReplies = function($comments) use (&$collectAllReplies, &$findCommentById, &$rootMessages, &$findRootMessage, &$repliesByRoot) {
                             foreach ($comments as $id => $comment) {
-                                // Check if this is a reply to flatten (any type with PARENTID, except root messages)
+                                // Check if this is a reply (any type with PARENTID)
                                 if (isset($comment['TYPE']) && 
                                     isset($comment['PCID']) &&
                                     !empty($comment['PARENTID'])) {
                                     
-                                    // Find parent in structure
-                                    $parent = $findCommentById($rootMessages, $comment['PARENTID']);
-                                    if ($parent !== null) {
-                                        // Get the full comment with all its replies from the structure
-                                        // This ensures we preserve any nested replies
-                                        $fullComment = $findCommentById($rootMessages, $comment['PCID']);
-                                        if ($fullComment === null) {
-                                            // Try to find in nested structure
-                                            $findInNested = function($items, $pcid) use (&$findInNested) {
-                                                foreach ($items as $item) {
-                                                    if (isset($item['PCID']) && $item['PCID'] == $pcid) {
-                                                        return $item;
-                                                    }
-                                                    if (!empty($item['replies'])) {
-                                                        $found = $findInNested($item['replies'], $pcid);
-                                                        if ($found !== null) {
-                                                            return $found;
-                                                        }
+                                    // Get the full comment with all its replies from the structure
+                                    $fullComment = $findCommentById($rootMessages, $comment['PCID']);
+                                    if ($fullComment === null) {
+                                        // Try to find in nested structure
+                                        $findInNested = function($items, $pcid) use (&$findInNested) {
+                                            foreach ($items as $item) {
+                                                if (isset($item['PCID']) && $item['PCID'] == $pcid) {
+                                                    return $item;
+                                                }
+                                                if (!empty($item['replies'])) {
+                                                    $found = $findInNested($item['replies'], $pcid);
+                                                    if ($found !== null) {
+                                                        return $found;
                                                     }
                                                 }
-                                                return null;
-                                            };
-                                            $fullComment = $findInNested($rootMessages, $comment['PCID']);
+                                            }
+                                            return null;
+                                        };
+                                        $fullComment = $findInNested($rootMessages, $comment['PCID']);
+                                    }
+                                    
+                                    $commentToFlatten = $fullComment !== null ? $fullComment : $comment;
+                                    
+                                    // Find the root message for this reply
+                                    $rootMessage = $findRootMessage($commentToFlatten, $rootMessages);
+                                    if ($rootMessage !== null) {
+                                        $rootId = $rootMessage['PCID'];
+                                        
+                                        // Find parent for REPLY_TO_INFO
+                                        $parent = $findCommentById($rootMessages, $commentToFlatten['PARENTID']);
+                                        
+                                        if ($parent !== null) {
+                                            // Group by root message
+                                            if (!isset($repliesByRoot[$rootId])) {
+                                                $repliesByRoot[$rootId] = [];
+                                            }
+                                            $repliesByRoot[$rootId][$id] = [
+                                                'comment' => $commentToFlatten,
+                                                'parent' => $parent
+                                            ];
                                         }
-                                        
-                                        // Use full comment if found, otherwise use the comment from parameter
-                                        $commentToFlatten = $fullComment !== null ? $fullComment : $comment;
-                                        
-                                        $allRepliesToFlatten[$id] = [
-                                            'comment' => $commentToFlatten, // Use full comment with all replies
-                                            'parent' => $parent
-                                        ];
                                     }
                                 }
                                 
                                 // Continue recursively to collect all nested replies
                                 if (!empty($comment['replies'])) {
-                                    $collectAllReplies($comment['replies'], $comment);
+                                    $collectAllReplies($comment['replies']);
                                 }
                             }
                         };
                         
-                        // Collect all replies to flatten (recursively from all root messages)
+                        // Collect all replies (recursively from all root messages)
                         foreach ($rootMessages as $rootMessage) {
                             if (!empty($rootMessage['replies'])) {
                                 $collectAllReplies($rootMessage['replies']);
                             }
                         }
                         
-                        // Build flattened structure
+                        // Build flattened structure: keep root messages, add all replies under their root
+                        $flattenedMessages = [];
                         foreach ($rootMessages as $rootId => $rootMessage) {
-                            // Add root message without replies (we'll add all replies at the same level)
                             $flattenedRoot = $rootMessage;
-                            $flattenedRoot['replies'] = []; // Clear replies, they'll be flattened
-                            $flattenedMessages[$rootId] = $flattenedRoot;
-                        }
-                        
-                        // Add all flattened replies with parent info (all at the same level as root messages)
-                        foreach ($allRepliesToFlatten as $id => $data) {
-                            $comment = $data['comment'];
-                            $parent = $data['parent'];
+                            $flattenedRoot['replies'] = [];
                             
-                            // Add REPLY_TO_INFO to indicate which message this is replying to
-                            $comment['REPLY_TO_INFO'] = [
-                                'PCID' => $parent['PCID'],
-                                'SCREEN_NAME' => $parent['SCREEN_NAME'],
-                                'WHEN' => $parent['WHEN'],
-                                'MESSAGE_PREVIEW' => mb_substr(strip_tags($parent['MESSAGE']), 0, 100)
-                            ];
-                            
-                            // Clear nested replies - they will also be flattened if they exist
-                            // (This prevents double-nesting, but nested replies will be collected in next iteration)
-                            // Actually, we should preserve them temporarily and let them be collected recursively
-                            // But for now, clear them to avoid confusion - they'll be added separately
-                            if (!empty($comment['replies'])) {
-                                // Keep replies temporarily - they'll be processed in the next recursive pass
-                                // But for now, we'll clear them and let them be collected separately
-                                // Actually, we need to recursively flatten nested replies too
-                                // So we'll keep the structure but mark that this is already flattened
-                                // For simplicity, clear nested replies - they should be collected separately
-                                $comment['replies'] = [];
+                            // Add all replies that belong to this root (flattened to same level)
+                            if (isset($repliesByRoot[$rootId])) {
+                                foreach ($repliesByRoot[$rootId] as $replyId => $data) {
+                                    $reply = $data['comment'];
+                                    $parent = $data['parent'];
+                                    
+                                    // Add REPLY_TO_INFO to indicate which message this is replying to
+                                    $reply['REPLY_TO_INFO'] = [
+                                        'PCID' => $parent['PCID'],
+                                        'SCREEN_NAME' => $parent['SCREEN_NAME'],
+                                        'WHEN' => $parent['WHEN'],
+                                        'MESSAGE_PREVIEW' => mb_substr(strip_tags($parent['MESSAGE']), 0, 100)
+                                    ];
+                                    
+                                    // Clear nested replies (they will be collected separately if they exist)
+                                    $reply['replies'] = [];
+                                    
+                                    $flattenedRoot['replies'][$replyId] = $reply;
+                                }
+                                
+                                // Sort replies by date under this root
+                                uasort($flattenedRoot['replies'], function($a, $b) {
+                                    return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
+                                });
                             }
                             
-                            $flattenedMessages[$id] = $comment;
+                            $flattenedMessages[$rootId] = $flattenedRoot;
                         }
                         
                         return $flattenedMessages;
@@ -836,10 +863,10 @@ class PaperController extends PaperDefaultController
                     // Step 3: Sort recursively
                     $sortCommentsRecursive($rootMessages);
                     
-                    // Step 4: Flatten ALL replies (both editor and author) to same level
+                    // Step 4: Flatten ALL replies (both editor and author) to same level UNDER their root message
                     $flattenedMessages = $flattenAllReplies($rootMessages);
                     
-                    // Step 5: Sort final result
+                    // Step 5: Sort root messages by date (replies are already sorted under each root)
                     uasort($flattenedMessages, function($a, $b) {
                         return strtotime($a['WHEN']) <=> strtotime($b['WHEN']);
                     });
@@ -863,21 +890,22 @@ class PaperController extends PaperDefaultController
                 }
 
                 // Create reply forms for author to respond to editor responses
-                // Collect ALL editor responses from flattened structure (all at same level now)
+                // Recursively collect ALL editor responses from structure (including those in replies)
                 $authorReplyForms = [];
                 $isAuthor = $paper->isOwner();
                 if (!empty($authorToEditorComments) && $isAuthor) {
-                    // Since all replies are now flattened to the same level, we can simply iterate through all comments
-                    foreach ($authorToEditorComments as $commentId => $comment) {
-                        // Check if this comment is an editor response (TYPE 23)
-                        if (isset($comment['TYPE']) && $comment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
-                            $pcid = $comment['PCID'];
-                            
-                            // Skip if form already exists (avoid duplicates)
-                            if (!isset($authorReplyForms[$pcid])) {
-                                // Create a form for this editor response using getForm()
-                                $form = Episciences_CommentsManager::getForm('authorReplyForm_' . $pcid, false, true);
-                                $form->setAction('/paper/view?id=' . $paper->getDocid());
+                    // Recursively collect all editor responses
+                    $collectEditorResponses = function($comments) use (&$collectEditorResponses, &$authorReplyForms, $paper) {
+                        foreach ($comments as $commentId => $comment) {
+                            // Check if this comment is an editor response (TYPE 23)
+                            if (isset($comment['TYPE']) && $comment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                                $pcid = $comment['PCID'];
+                                
+                                // Skip if form already exists (avoid duplicates)
+                                if (!isset($authorReplyForms[$pcid])) {
+                                    // Create a form for this editor response using getForm()
+                                    $form = Episciences_CommentsManager::getForm('authorReplyForm_' . $pcid, false, true);
+                                    $form->setAction('/paper/view?id=' . $paper->getDocid());
 
                                 // Remove CSRF validation for multiple forms on same page
                                 $csrfElement = $form->getElement('no_csrf_foo');
@@ -903,9 +931,17 @@ class PaperController extends PaperDefaultController
 
                                 // Index by PCID so timeline_item.phtml can find it
                                 $authorReplyForms[$pcid] = $form;
+                                }
+                            }
+                            // Continue recursively to find editor responses in nested replies
+                            if (!empty($comment['replies'])) {
+                                $collectEditorResponses($comment['replies']);
                             }
                         }
-                    }
+                    };
+                    
+                    // Collect all editor responses recursively from all messages
+                    $collectEditorResponses($authorToEditorComments);
                     
                     // Handle form submissions for all forms
                     foreach ($authorReplyForms as $pcid => $form) {
