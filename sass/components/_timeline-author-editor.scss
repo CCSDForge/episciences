@@ -15,6 +15,7 @@
   // Align timeline marker with first line of text
   .timeline-marker {
     top: 8px;
+    left: -55px; // Center on vertical line
 
     .user-photo-thumb {
       width: 28px;
@@ -29,62 +30,6 @@
   // Increase content width to prevent name truncation
   .timeline-content {
     max-width: 95%;
-  }
-
-  // Timeline thread (wrapper for nested replies)
-  .timeline-thread {
-    position: relative;
-    margin-top: 15px;
-    margin-bottom: 20px;
-    padding-left: 10px; // Indent for replies
-    overflow: visible; // Allow marker to be visible outside thread bounds
-
-    // Connection line from parent to replies
-    // Only show when there are actual reply items
-    &:has(.timeline-item)::before {
-      content: '';
-      position: absolute;
-      left: -40px; // Align with main timeline (20px - 60px padding)
-      top: 20px; // Start at the center of first reply marker (8px top + 12px half of 24px marker) to hide behind marker
-      width: 2px;
-      height: calc(100% - 20px);
-      background-color: $lighter-grey; // Same color as main timeline
-      z-index: 0;
-    }
-
-    // Remove horizontal connector inherited from demands-timeline
-    &::after {
-      display: none;
-    }
-
-    // Make reply markers smaller (works with timeline_item.phtml)
-    .timeline-item {
-      margin-left: 30px; // More indent for replies to position marker to the right
-
-      .timeline-content {
-        border-color: $lighter-grey;
-        max-width: calc(87% - 30px); // Reduce width to account for indent
-      }
-
-      // Smaller marker for replies
-      .timeline-marker {
-        left: -72px; // Position marker to align with horizontal connector
-        width: 24px;
-        height: 24px;
-
-        .user-photo-thumb {
-          width: 20px; // Smaller to fit within the 24px marker
-          height: 20px;
-        }
-
-        // Horizontal connector from vertical line to editor reply marker
-        &::before {
-          right:100%;
-          width:9px;
-          height:2px;
-        }
-      }
-    }
   }
 
   // Header styling (similar to demands timeline)
@@ -167,8 +112,8 @@
 
     // Reply messages: offset to the right to distinguish from root
     &.reply-message {
-      margin-left: 30px; // Offset reply messages to the right
-      
+      margin-left: 20px; // Offset reply messages to the right
+
       .timeline-item {
         .timeline-content {
           border-left: 2px solid #2196F3; // Blue border to indicate reply message
@@ -179,7 +124,7 @@
 
         // Smaller marker and avatar for reply messages
         .timeline-marker {
-          left: -28px; // Position marker closer to timeline to reduce gap
+          left: -52px; // Position to the right with offset
           width: 24px; // Smaller marker for replies
           height: 24px;
           position: relative;
@@ -193,10 +138,10 @@
           &::before {
             content: '';
             position: absolute;
-            left: -40px; // Start exactly at the main timeline (20px from edge - 60px padding = -40px)
+            right: 100%; // Start from left edge of marker
             top: 50%; // Center vertically on the marker
             transform: translateY(-50%);
-            width: 16px; // Extended to touch marker - from timeline (-40px) to marker (-28px) + 4px overlap = 16px
+            width: 20px; // Short connector to reach vertical line
             height: 2px;
             background-color: $lighter-grey;
             z-index: -1;
@@ -331,22 +276,16 @@
 
   // Responsive adjustments
   @media (max-width: 768px) {
-    .timeline-thread {
-      padding-left: 20px;
-
-      &:has(.timeline-item)::before {
-        left: -30px; // Align with main timeline on mobile
-      }
+    .author-message-wrapper.reply-message {
+      margin-left: 15px; // Reduce indent on mobile
 
       .timeline-item {
-        margin-left: 20px; // Reduce indent on mobile
-
         .timeline-content {
-          max-width: calc(100% - 70px);
+          max-width: calc(90% - 15px);
         }
 
         .timeline-marker {
-          left: -62px; // Adjusted for mobile replies
+          left: -70px; // Adjusted for mobile replies
         }
       }
     }
