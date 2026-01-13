@@ -97,8 +97,22 @@ class CommentsController extends PaperController
                     }
                     !empty($jFiles) ? $comment->setFile(json_encode($jFiles)) : $comment->setFile(null);
                     unlink($comment_path);
-                    $comment->save(true); // This will log the modification, not a new message
-                    $message = $this->view->translate("Le fichier a bien été supprimé.");
+                    
+                    // Save the comment (this updates the file field)
+                    $comment->save(true);
+                    
+                    // Send notification as if it's a new message (without attached file)
+                    // This will notify the recipient like a new message, but without the file
+                    $this->newCommentNotifyManager($paper, $comment);
+                    
+                    // Determine message based on whether it's a reply or root message
+                    if (!empty($comment->getParentId())) {
+                        // It's a reply
+                        $message = $this->view->translate("Votre réponse a bien été envoyée.");
+                    } else {
+                        // It's a root message
+                        $message = $this->view->translate("Votre message a bien été envoyé.");
+                    }
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
                 } else {
                     $message = $this->view->translate("Impossible de supprimer le fichier : élément introuvable.");
@@ -190,8 +204,22 @@ class CommentsController extends PaperController
                     }
                     !empty($jFiles) ? $comment->setFile(json_encode($jFiles)) : $comment->setFile(null);
                     unlink($comment_path);
-                    $comment->save(true); // This will log the modification, not a new message
-                    $message = $this->view->translate("Le fichier a bien été supprimé.");
+                    
+                    // Save the comment (this updates the file field)
+                    $comment->save(true);
+                    
+                    // Send notification as if it's a new message (without attached file)
+                    // This will notify the recipient like a new message, but without the file
+                    $this->newCommentNotifyManager($paper, $comment);
+                    
+                    // Determine message based on whether it's a reply or root message
+                    if (!empty($comment->getParentId())) {
+                        // It's a reply
+                        $message = $this->view->translate("Votre réponse a bien été envoyée.");
+                    } else {
+                        // It's a root message
+                        $message = $this->view->translate("Votre message a bien été envoyé.");
+                    }
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
                 } else {
                     $message = $this->view->translate("Impossible de supprimer le fichier : élément introuvable.");
