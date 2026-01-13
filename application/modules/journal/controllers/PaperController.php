@@ -569,7 +569,10 @@ class PaperController extends PaperDefaultController
             // Only process messaging logic if contact is enabled
             if ($canContactEditors) {
                 // Handle form submission
-                if ($this->getRequest()->isPost() && array_key_exists('postComment', $_POST)) {
+                // Only process main author form if it's NOT a reply form (reply forms have reply_to_pcid)
+                if ($this->getRequest()->isPost() && 
+                    array_key_exists('postComment', $_POST) &&
+                    empty($this->getRequest()->getPost('reply_to_pcid'))) {
                     $form = Episciences_CommentsManager::getForm('authorToEditorForm');
                     $form->setAction('/paper/view?id=' . $paper->getDocid());
 
@@ -904,7 +907,8 @@ class PaperController extends PaperDefaultController
                                 // Skip if form already exists (avoid duplicates)
                                 if (!isset($authorReplyForms[$pcid])) {
                                     // Create a form for this editor response using getForm()
-                                    $form = Episciences_CommentsManager::getForm('authorReplyForm_' . $pcid, false, true);
+                                    // Use 'author_reply_form_' prefix to be consistent with 'editor_reply_form_'
+                                    $form = Episciences_CommentsManager::getForm('author_reply_form_' . $pcid, false, true);
                                     $form->setAction('/paper/view?id=' . $paper->getDocid());
 
                                 // Remove CSRF validation for multiple forms on same page

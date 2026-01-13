@@ -118,7 +118,20 @@ if ($canAuthorContactEditors && $canViewPanel) :
                                             if (isset($reply['REPLY_TO_INFO']) && !empty($reply['REPLY_TO_INFO'])) {
                                                 if (!$discloseEditorNames && !$isEditor) {
                                                     // If this is an author reply, the parent is likely an editor
+                                                    // If this is an editor reply, check if parent is also an editor (nested editor replies)
+                                                    $shouldAnonymize = false;
                                                     if ($reply['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+                                                        // Author reply: parent is always an editor
+                                                        $shouldAnonymize = true;
+                                                    } elseif ($reply['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                                                        // Editor reply: check if parent is also an editor (nested editor reply)
+                                                        // In flattened structure, if editor replies to another editor reply, parent type would be TYPE_EDITOR_TO_AUTHOR_RESPONSE
+                                                        // For now, we'll anonymize if the parent name looks like an editor name
+                                                        // Actually, we should check the parent type, but we only have REPLY_TO_INFO
+                                                        // For safety, we'll anonymize editor replies too if they have REPLY_TO_INFO
+                                                        $shouldAnonymize = true;
+                                                    }
+                                                    if ($shouldAnonymize) {
                                                         $currentLang = Zend_Registry::isRegistered('lang') ? Zend_Registry::get('lang') : 'fr';
                                                         $displayReply['REPLY_TO_INFO']['SCREEN_NAME'] = ($currentLang === 'en') ? 'Editor' : 'Rédacteur';
                                                     }

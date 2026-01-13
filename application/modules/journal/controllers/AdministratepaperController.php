@@ -598,7 +598,10 @@ class AdministratepaperController extends PaperDefaultController
             $editor_comment_form = Episciences_CommentsManager::getForm('editor_comment_form');
             $this->view->editor_comment_form = $editor_comment_form;
 
-            if (($request->getPost('postComment') !== null) && $editor_comment_form->isValid($request->getPost())) {
+            // Only process editor comment form if it's NOT a reply form (reply forms have reply_to_pcid)
+            if (($request->getPost('postComment') !== null) && 
+                empty($request->getPost('reply_to_pcid')) && 
+                $editor_comment_form->isValid($request->getPost())) {
                 if ($this->save_editor_comment($paper)) {
                     $message = $this->view->translate("Votre commentaire a bien été envoyé.");
                     $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
@@ -1158,7 +1161,8 @@ class AdministratepaperController extends PaperDefaultController
                             $pcid = $comment['PCID'];
                             if (!isset($editorReplyForms[$pcid])) {
                                 // Create a form for this author message using getForm()
-                                $form = Episciences_CommentsManager::getForm('editorReplyForm_' . $pcid, false, true);
+                                // Use 'editor_reply_form_' prefix to distinguish from 'editor_comment_form'
+                                $form = Episciences_CommentsManager::getForm('editor_reply_form_' . $pcid, false, true);
                                 $form->setAction('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
 
                                 // Remove CSRF validation for multiple forms on same page
@@ -1197,6 +1201,36 @@ class AdministratepaperController extends PaperDefaultController
                 $editorReplyForms = [];
                 if (!empty($authorToEditorComments)) {
                     $collectAuthorMessagesForForms($authorToEditorComments);
+                    
+                    // Handle form submissions for reply forms (BEFORE editor comment form to avoid conflicts)
+                    if (!empty($editorReplyForms)) {
+                        foreach ($editorReplyForms as $pcid => $form) {
+                            // Check if this form was submitted by looking for the hidden field and submit button
+                            if ($request->getPost('reply_to_pcid') == $pcid &&
+                                $request->getPost('postComment') !== null) {
+                                
+                                // Validate manually since we removed CSRF
+                                $comment = $request->getPost('comment');
+                                
+                                if (!empty(trim($comment))) {
+                                    if ($this->save_editor_response_to_author($paper)) {
+                                        $message = $this->view->translate("Votre réponse a bien été envoyée à l'auteur.");
+                                        $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
+                                        $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
+                                    } else {
+                                        $message = $this->view->translate("Erreur lors de la sauvegarde de votre réponse.");
+                                        $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+                                    }
+                                } else {
+                                    // Comment is empty
+                                    $message = $this->view->translate("Le commentaire ne peut pas être vide.");
+                                    $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+                                }
+                                // Only process one form submission
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }

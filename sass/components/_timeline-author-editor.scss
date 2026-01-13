@@ -32,6 +32,11 @@
     max-width: 95%;
   }
 
+  // Remove horizontal connector to first reply inherited from demands-timeline
+  .timeline-thread::after {
+    display: none;
+  }
+
   // Header styling (similar to demands timeline)
   // Support both timeline-item-header and timeline-comment-header for reusability
   .timeline-item-header,
@@ -133,7 +138,6 @@
             width: 20px; // Smaller avatar for replies (vs 28px for root)
             height: 20px;
           }
-
           // Horizontal connector (tiret) from main timeline to reply marker
           &::before {
             content: '';

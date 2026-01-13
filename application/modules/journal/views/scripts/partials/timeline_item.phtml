@@ -47,9 +47,11 @@ if (!$id) {
                             </span>
         </header>
 
-        <!-- Reply to indicator (only for author replies, not editor replies) -->
+        <!-- Reply to indicator (for both author and editor replies) -->
         <?php if (isset($comment['REPLY_TO_INFO']) && !empty($comment['REPLY_TO_INFO']) &&
-                  isset($comment['TYPE']) && $comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) : ?>
+                  isset($comment['TYPE']) && 
+                  ($comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR ||
+                   $comment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE)) : ?>
             <div class="reply-to-indicator">
                 <i class="fa fa-reply" aria-hidden="true"></i>
                 <strong><?= $this->translate('Répond à :') ?></strong>
