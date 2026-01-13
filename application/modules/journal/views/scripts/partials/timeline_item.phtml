@@ -4,12 +4,6 @@ $id = $comment['PCID'] ?? null;
 if (!$id) {
     return;
 }
-
-// Ensure $isAuthor is defined (default to false if not passed to partial)
-$isAuthor = $isAuthor ?? ($this->isAuthor ?? false);
-
-// Ensure $authorReplyForms is available (try passed variable first, then view variable)
-$authorReplyForms = $authorReplyForms ?? ($this->authorReplyForms ?? []);
 ?>
 
 <article class="timeline-item"
@@ -83,10 +77,11 @@ $authorReplyForms = $authorReplyForms ?? ($this->authorReplyForms ?? []);
             <?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($comment['MESSAGE'])) ?>
         </div>
 
-        <!-- Attached file (if present) - display for all message types -->
-        <?php if ($comment['FILE']) : ?>
-            <div class="timeline-comment-attachment" style="margin-top: 5px; border-top: none; padding-top: 5px; border-bottom: none; padding-bottom: 0;">
-                <div>
+        <!-- Actions container: attached file, reply button and delete button on same line -->
+        <div class="timeline-comment-actions-wrapper">
+            <!-- Attached file (if present) - on same line as buttons -->
+            <?php if ($comment['FILE']) : ?>
+                <div class="timeline-comment-attachment-inline">
                     <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i> <a
                             href="/docfiles/comments/<?= $comment['DOCID'] . '/' . $comment['FILE'] ?>"
                             target="_blank"
@@ -95,62 +90,20 @@ $authorReplyForms = $authorReplyForms ?? ($this->authorReplyForms ?? []);
                         <?= $this->escape($comment['FILE']) ?>
                     </a>
                 </div>
+            <?php endif; ?>
+            
+            <!-- Optional actions (edit, reply, etc.) -->
+            <?php if (isset($this->actions) && $this->actions) : ?>
+                <div class="timeline-comment-actions">
+                    <?= $this->actions ?>
+                </div>
+            <?php endif; ?>
+            
+            <!-- Delete button (only shown if file attached) -->
+            <div class="remove-file-btn">
+                <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]) ?>
             </div>
-        <?php endif; ?>
-
-        <?php
-        // Author can reply to editor responses
-        if (
-                isset($comment['TYPE']) &&
-                (int)$comment['TYPE'] === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE &&
-                $isAuthor &&
-                isset($authorReplyForms[$comment['PCID']])
-        ) :
-            ?>
-            <!-- Author reply action - always on the right, below the line -->
-            <div class="timeline-comment-actions" style="text-align: right;">
-                <button type="button"
-                        class="btn btn-primary btn-xs toggle-reply-form"
-                        data-reply-form-id="author-reply-form-<?= $comment['PCID']; ?>">
-                    <i class="fa fa-reply"></i>
-                    <?= $this->translate('Répondre'); ?>
-                </button>
-            </div>
-
-            <!-- Author reply form -->
-            <div class="reply-form-container"
-                 id="author-reply-form-<?= $comment['PCID']; ?>"
-                 style="display: none; margin-top: 10px;">
-
-                <h5><?= $this->translate('Répondre'); ?></h5>
-
-                <?php
-                $form = $authorReplyForms[$comment['PCID']];
-                $form->setAttrib('class', 'author-reply-form');
-                echo $form;
-                ?>
-            </div>
-
-            <?php
-            // Note: Author replies (TYPE 22 with PARENTID) are now flattened to root level
-            // They should not be displayed here as nested replies
-            // They are displayed at root level in paper_author_to_editor_messages.phtml
-            // Only editor replies (TYPE 23) to author replies should be displayed here
-            // But those are handled in paper_author_to_editor_messages.phtml for flattened messages
-            ?>
-        <?php endif; ?>
-
-        <!-- Delete button (always visible for own comments) -->
-        <div class="remove-file-btn">
-            <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]) ?>
         </div>
-
-        <!-- Optional actions (edit, reply, etc.) -->
-        <?php if (isset($this->actions) && $this->actions) : ?>
-            <div class="timeline-comment-actions">
-                <?= $this->actions ?>
-            </div>
-        <?php endif; ?>
 
     </div>
 

@@ -243,14 +243,48 @@
     }
   }
 
+  // Actions wrapper: contains attached file, reply button and delete button on same line
+  .timeline-comment-actions-wrapper {
+    display: flex;
+    justify-content: flex-start; // Align to left
+    align-items: center;
+    margin-top: 10px;
+    gap: 10px; // Space between elements
+    flex-wrap: wrap; // Allow wrapping on small screens
+  }
+
+  // Inline attachment display (on same line as buttons)
+  .timeline-comment-attachment-inline {
+    font-size: 11px;
+    color: $blue;
+    
+    a {
+      color: $blue;
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    
+    .glyphicon-paperclip {
+      margin-right: 5px;
+      color: $dark-grey;
+    }
+  }
+
   // Comment actions (reply button, etc.)
   .timeline-comment-actions {
-    margin-top: 10px;
     text-align: right;
 
     .btn {
       margin-left: 5px;
     }
+  }
+
+  // Delete button container
+  .remove-file-btn {
+    flex-shrink: 0; // Prevent button from shrinking
   }
 
   // Custom styling for reply form

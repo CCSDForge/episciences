@@ -72,8 +72,44 @@ class CommentsController extends PaperController
             return;
         }
 
-        // Special handling for editor-to-author responses: delete the entire reply (text + file)
+        // Special handling for editor-to-author responses
         if ($comment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+            // If a specific file is provided, delete only that file (not the entire comment)
+            if (!empty($file)) {
+                // Delete only the specified file
+                $isJson = Episciences_Tools::isJson($comment->getFile());
+
+                try {
+                    $jFiles = $isJson ? json_decode($comment->getFile(), true, 512, JSON_THROW_ON_ERROR) : (array)$comment->getFile();
+                } catch (JsonException $e) {
+                    trigger_error($e->getMessage());
+                    $jFiles = [];
+                }
+
+                $dir = $docid . '/comments/';
+                $comment_path = REVIEW_FILES_PATH . $dir . $file;
+                $is_file = is_file($comment_path);
+
+                if ($is_file) {
+                    $key = array_search($file, $jFiles, true);
+                    if ($key !== false) {
+                        unset($jFiles[$key]);
+                    }
+                    !empty($jFiles) ? $comment->setFile(json_encode($jFiles)) : $comment->setFile(null);
+                    unlink($comment_path);
+                    $comment->save(true); // This will log the modification, not a new message
+                    $message = $this->view->translate("Le fichier a bien été supprimé.");
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
+                } else {
+                    $message = $this->view->translate("Impossible de supprimer le fichier : élément introuvable.");
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                }
+
+                $this->_helper->redirector->gotoUrl($url);
+                return;
+            }
+
+            // If no file specified, delete the entire reply (text + file)
             $isJson = Episciences_Tools::isJson($comment->getFile());
 
             try {
@@ -123,13 +159,50 @@ class CommentsController extends PaperController
             return;
         }
 
-        // Special handling for author-to-editor messages: delete the entire message (text + file)
+        // Special handling for author-to-editor messages
         // This applies to both initial messages and replies
         $parentId = $comment->getParentId();
         $commentType = $comment->getType();
         $isAuthorToEditor = ($commentType === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR);
 
         if ($isAuthorToEditor) {
+            // If a specific file is provided, delete only that file (not the entire comment)
+            if (!empty($file)) {
+                // Delete only the specified file
+                $isJson = Episciences_Tools::isJson($comment->getFile());
+
+                try {
+                    $jFiles = $isJson ? json_decode($comment->getFile(), true, 512, JSON_THROW_ON_ERROR) : (array)$comment->getFile();
+                    $jFiles = array_filter($jFiles); // Remove empty values
+                } catch (JsonException $e) {
+                    trigger_error($e->getMessage());
+                    $jFiles = [];
+                }
+
+                $dir = $docid . '/comments/';
+                $comment_path = REVIEW_FILES_PATH . $dir . $file;
+                $is_file = is_file($comment_path);
+
+                if ($is_file) {
+                    $key = array_search($file, $jFiles, true);
+                    if ($key !== false) {
+                        unset($jFiles[$key]);
+                    }
+                    !empty($jFiles) ? $comment->setFile(json_encode($jFiles)) : $comment->setFile(null);
+                    unlink($comment_path);
+                    $comment->save(true); // This will log the modification, not a new message
+                    $message = $this->view->translate("Le fichier a bien été supprimé.");
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
+                } else {
+                    $message = $this->view->translate("Impossible de supprimer le fichier : élément introuvable.");
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                }
+
+                $this->_helper->redirector->gotoUrl($url);
+                return;
+            }
+
+            // If no file specified, delete the entire message (text + file)
             $filesDeleted = true;
             $jFiles = [];
 

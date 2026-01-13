@@ -20,32 +20,28 @@
     $isAuthorReply = $isAuthorToEditor && !empty($this->comment['PARENTID']);
     $buttonText = $this->translate('Supprimer');
 
+    // Since button only shows when there's a file, all messages are about deleting the file only
     if ($isEditorToAuthorResponse) {
-        // For editor responses to author, delete the entire reply
-        $confirmMessage = $hasFile
-            ? $this->translate('Voulez-vous supprimer votre réponse (texte et fichier attaché) ?')
-            : $this->translate('Voulez-vous supprimer votre réponse ?');
+        // For editor responses to author, delete only the file
+        $confirmMessage = $this->translate('Voulez-vous supprimer votre fichier attaché ?');
     } elseif ($isAuthorReply) {
-        // For author replies to editor, delete the entire reply
-        $confirmMessage = $hasFile
-            ? $this->translate('Voulez-vous supprimer votre réponse (texte et fichier attaché) ?')
-            : $this->translate('Voulez-vous supprimer votre réponse ?');
+        // For author replies to editor, delete only the file
+        $confirmMessage = $this->translate('Voulez-vous supprimer votre fichier attaché ?');
     } elseif ($isAuthorToEditor) {
-        // For initial author-to-editor messages, delete the entire message
-        $confirmMessage = $hasFile
-            ? $this->translate('Voulez-vous supprimer votre message (texte et fichier attaché) ?')
-            : $this->translate('Voulez-vous supprimer votre message ?');
+        // For initial author-to-editor messages, delete only the file
+        $confirmMessage = $this->translate('Voulez-vous supprimer votre fichier attaché ?');
     } else {
         // Default behavior for other comment types
-        $confirmMessage = $hasFile
-            ? $this->translate('Voulez-vous supprimer ce fichier ?')
-            : $this->translate('Voulez-vous supprimer ce message ?');
+        $confirmMessage = $this->translate('Voulez-vous supprimer ce fichier ?');
     }
     ?>
-    <a class="btn btn-danger btn-xs pull-right" style="margin-bottom:5px; color: white;" onclick="confirmDeleteFile('<?php echo $file_delete_url; ?>', '<?php echo addslashes($confirmMessage); ?>')">
-        <span class="glyphicon glyphicon-trash"
-              style="margin-right: 5px;"></span><?php echo $buttonText; ?>
-    </a>
+    <?php // Only show delete button if there is a file attached ?>
+    <?php if ($hasFile) : ?>
+        <a class="btn btn-danger btn-xs pull-right" style="margin-bottom:5px; color: white;" onclick="confirmDeleteFile('<?php echo $file_delete_url; ?>', '<?php echo addslashes($confirmMessage); ?>')">
+            <span class="glyphicon glyphicon-trash"
+                  style="margin-right: 5px;"></span><?php echo $buttonText; ?>
+        </a>
+    <?php endif; ?>
     <script>
         function confirmDeleteFile(href, message) {
             if (confirm(message || translate('Voulez-vous supprimer ce fichier ?'))) {
