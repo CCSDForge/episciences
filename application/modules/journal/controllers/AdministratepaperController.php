@@ -1309,21 +1309,8 @@ class AdministratepaperController extends PaperDefaultController
         $editorResponse->setParentid($parentCommentId);
         $editorResponse->setMessage($commentMessage);
 
-        // Handle file upload if present (field name is 'file' with getForm())
-        if (!empty($_FILES['file']['name'])) {
-            try {
-                $upload = new Zend_File_Transfer_Adapter_Http();
-                $upload->setDestination($editorResponse->getFilePath());
-
-                if ($upload->receive('file')) {
-                    $fileInfo = $upload->getFileInfo('file');
-                    $editorResponse->setFile($fileInfo['file']['name']);
-                }
-            } catch (Zend_File_Transfer_Exception $e) {
-                trigger_error('Error uploading file: ' . $e->getMessage(), E_USER_WARNING);
-            }
-        }
-
+        // File upload is handled automatically by save() method via uploadFileComment()
+        // No need to manually handle $_FILES - just ensure FilePath is set above
         if (!$editorResponse->save()) {
             return false;
         }
