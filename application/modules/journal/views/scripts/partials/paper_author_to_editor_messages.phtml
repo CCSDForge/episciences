@@ -18,7 +18,7 @@ $discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_
 // Determine if the user can see this panel
 // Authors: only the paper owner can send messages
 // Editors: editors and guest editors assigned to the paper can view and respond
-$isAuthor = $this->paper->isOwner();
+$isAuthor = $this->paper->isOwnerOrCoAuthor();
 $isEditor = Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor();
 $canViewPanel = $isAuthor || $isEditor;
 

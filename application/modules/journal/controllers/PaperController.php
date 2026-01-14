@@ -556,7 +556,7 @@ class PaperController extends PaperDefaultController
         $authorToEditorComments = [];
         $assignedEditors = [];
 
-        if ($paper->isOwner() && Episciences_Auth::isLogged()) {
+        if ($paper->isOwnerOrCoAuthor() && Episciences_Auth::isLogged()) {
             $canContactEditors = $review->getSetting(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS);
             $discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
 
@@ -637,7 +637,7 @@ class PaperController extends PaperDefaultController
                 // Create reply forms for author to respond to editor responses
                 // Recursively collect ALL editor responses from structure (including those in replies)
                 $authorReplyForms = [];
-                $isAuthor = $paper->isOwner();
+                $isAuthor = $paper->isOwnerOrCoAuthor();
                 if (!empty($authorToEditorComments) && $isAuthor) {
                     // Recursively collect all editor responses
                     $collectEditorResponses = function($comments) use (&$collectEditorResponses, &$authorReplyForms, $paper) {

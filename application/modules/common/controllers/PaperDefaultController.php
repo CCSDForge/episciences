@@ -507,6 +507,84 @@ class PaperDefaultController extends DefaultController
             // reset $CC
             $CC = [];
         }
+
+        // For editor responses to authors, also notify the author (main author + co-authors)
+        if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+            try {
+                // Get the parent comment (author's message) to identify the recipient author
+                $parentCommentId = $oComment->getParentId();
+                if ($parentCommentId) {
+                    $parentComment = new Episciences_Comment();
+                    if ($parentComment->find($parentCommentId)) {
+                        // Get author info - should be the author of the parent comment
+                        $author = new Episciences_User();
+                        $author->findWithCAS($parentComment->getUid());
+                        $authorLocale = $author->getLangueid();
+
+                        // Build paper URL for author (public URL, not admin URL)
+                        $paperUrl = $this->buildPublicPaperUrl($docId);
+
+                        // Check if editor names should be disclosed to authors
+                        $review = Episciences_ReviewsManager::find($paper->getRvid());
+                        $discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
+                        $discloseEditorNames = ($discloseEditorNames === '1' || $discloseEditorNames === 1 || $discloseEditorNames === true);
+
+                        // Use anonymous name if option is disabled
+                        $senderFullName = $discloseEditorNames
+                            ? Episciences_Auth::getFullName()
+                            : ($authorLocale === 'fr' ? 'Un rédacteur' : 'An editor');
+
+                        // Prepare email tags for author
+                        $authorTags = [
+                            Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
+                            Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => $senderFullName,
+                            Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => Episciences_Auth::getScreenName(),
+                            Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+                            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($authorLocale, true),
+                            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($authorLocale),
+                            Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $authorLocale),
+                            Episciences_Mail_Tags::TAG_COMMENT => $parentComment->getMessage(),
+                            Episciences_Mail_Tags::TAG_COMMENT_DATE => $this->view->Date($parentComment->getWhen(), $authorLocale),
+                            Episciences_Mail_Tags::TAG_ANSWER => $oComment->getMessage(),
+                            Episciences_Mail_Tags::TAG_ATTACHMENTS => $attachmentsListHtml,
+                            Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl
+                        ];
+
+                        // Merge with additional tags if provided
+                        if (!empty($tags)) {
+                            $authorTags = array_merge($tags, $authorTags);
+                        }
+
+                        // Get co-authors to CC them on the email
+                        $coAuthors = [];
+                        try {
+                            $coAuthors = $paper->getCoAuthors();
+                            // Remove the main recipient from CC to avoid duplicate email
+                            unset($coAuthors[$author->getUid()]);
+                        } catch (Zend_Db_Statement_Exception $e) {
+                            $logger?->warning('Error fetching co-authors for CC: ' . $e->getMessage());
+                        }
+
+                        // Send email to author with co-authors in CC
+                        Episciences_Mail_Send::sendMailFromReview(
+                            $author,
+                            Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_RESPONSE_TO_AUTHOR_AUTHOR_COPY,
+                            $authorTags,
+                            $paper,
+                            Episciences_Auth::getUid(),
+                            $attachmentsFiles,
+                            true,
+                            $coAuthors
+                        );
+                        ++$nbNotifications;
+                    }
+                }
+            } catch (Exception $e) {
+                $logger?->warning('FAILED_TO_SEND_EDITOR_RESPONSE_NOTIFICATION_TO_AUTHOR: ' . $e->getMessage());
+            }
+        }
+
         return count($recipients) === $nbNotifications;
     }
 

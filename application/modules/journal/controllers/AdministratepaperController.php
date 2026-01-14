@@ -1382,6 +1382,16 @@ class AdministratepaperController extends PaperDefaultController
             Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl
         ];
 
+        // Get co-authors to CC them on the email
+        $coAuthors = [];
+        try {
+            $coAuthors = $paper->getCoAuthors();
+            // Remove the main recipient from CC to avoid duplicate email
+            unset($coAuthors[$author->getUid()]);
+        } catch (Zend_Db_Statement_Exception $e) {
+            error_log('Error fetching co-authors for CC: ' . $e->getMessage());
+        }
+
         // Send email to author
         $mailSent = Episciences_Mail_Send::sendMailFromReview(
             $author,
@@ -1390,10 +1400,49 @@ class AdministratepaperController extends PaperDefaultController
             $paper,
             Episciences_Auth::getUid(),
             $attachmentsFiles,
-            true
+            true,
+            $coAuthors
         );
 
-        // Only notify the author, not other editors
+        // Log the editor response with co-authors notification info
+        $coAuthorsNotified = [];
+        foreach ($coAuthors as $coAuthor) {
+            $coAuthorsNotified[] = [
+                'uid' => $coAuthor->getUid(),
+                'email' => $coAuthor->getEmail(),
+                'fullname' => $coAuthor->getFullName()
+            ];
+        }
+
+        $logData = [
+            'comment' => [
+                'pcid' => $editorResponse->getPcid(),
+                'type' => $editorResponse->getType(),
+                'message' => $editorResponse->getMessage(),
+                'file' => $editorResponse->getFile(),
+                'docid' => $docId,
+                'uid' => Episciences_Auth::getUid(),
+                'parentid' => $parentCommentId
+            ],
+            'user' => [
+                'fullname' => Episciences_Auth::getFullName(),
+                'SCREEN_NAME' => Episciences_Auth::getScreenName(),
+                'email' => Episciences_Auth::getEmail()
+            ],
+            'recipient' => [
+                'uid' => $author->getUid(),
+                'email' => $author->getEmail(),
+                'fullname' => $author->getFullName()
+            ],
+            'co_authors_notified' => $coAuthorsNotified
+        ];
+
+        $paper->log(
+            Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR,
+            Episciences_Auth::getUid(),
+            $logData
+        );
+
         return $mailSent;
     }
 
