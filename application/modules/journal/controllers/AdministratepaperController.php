@@ -1225,14 +1225,9 @@ class AdministratepaperController extends PaperDefaultController
             $reviewers = [];
             $allJsReviewers = [];
 
-            if ($special_issue && $oReview->getSetting(Episciences_Review::SETTING_ENCAPSULATE_REVIEWERS)) {
-                $oVolume = Episciences_VolumesManager::find($oPaper->getVid());
-                $oReviewers = $oVolume->getReviewers();
-                $allReviewers = Episciences_PapersManager::getReviewers($docId, ['pending'], true, $oPaper->getVid());
-            } else {
-                $oReviewers = Episciences_Review::getReviewers();
-                $allReviewers = Episciences_PapersManager::getReviewers($docId, ['pending'], true);
-            }
+            $oReviewers = Episciences_Review::getReviewers();
+            $allReviewers = Episciences_PapersManager::getReviewers($docId, ['pending'], true);
+
 
             if ($oReviewers) {
                 // On ne peut pas inviter un relecteur à relire son article.
