@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Changed
+- The "Encapsulate reviewers" parameter is now hidden
 - [#528](https://github.com/CCSDForge/episciences/issues/528):
     - 'upload a new version' on top of the list
     - "Contact the editors (with an attachment)" instead of "Contact without sending a new version"
