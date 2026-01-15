@@ -3345,9 +3345,8 @@ class PaperController extends PaperDefaultController
             $lastStatus = $paper->getStatus();
 
             try {
-                /** @var stdClass $actionDetail */
-                $actionDetail = $paper->loadLastAbandonActionDetail();
-                $lastStatus = $actionDetail->lastStatus;
+
+                $lastStatus = $paper->loadLastAbandonActionDetail();
 
                 /* Pour des raisons de cohérence,
                  *l’abandon du processus de publication entraînera la suppression de toutes

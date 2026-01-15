@@ -1576,12 +1576,19 @@ class Episciences_Review
                 'decorators' => $checkboxDecorators]
         );
 
-        $form->addElement('checkbox', self::SETTING_ENCAPSULATE_REVIEWERS, [
-                'label' => "Cloisonner les relecteurs",
-                'description' => "Lorsque les relecteurs sont cloisonnés, et qu’un article appartient à un volume spécial avec cette option activée, seuls les relecteurs attribués à ce volume seront proposés pour l’évaluation dans la section des relecteurs connus de la revue",
-                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-                'decorators' => $checkboxDecorators]
-        );
+        /**
+         * Réunion Epi. du 14/01/2025 :
+         * Nous ne voyons pas l'intérêt de ce paramètre ;
+         * désactivez-le pour l'instant et voyons si nous pouvons le supprimer définitivement si personne ne le demande
+         * De plus, ce paramètre n'a plus aucun effet depuis un certain temps en raison d'un bug (@see commit 76909f4a1c254dcc69372d90b5f0372aa1a050ec)
+         */
+
+//        $form->addElement('checkbox', self::SETTING_ENCAPSULATE_REVIEWERS, [
+//                'label' => "Cloisonner les relecteurs",
+//                'description' => "Lorsque les relecteurs sont cloisonnés, et qu’un article appartient à un volume spécial avec cette option activée, seuls les relecteurs attribués à ce volume seront proposés pour l’évaluation dans la section des relecteurs connus de la revue",
+//                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+//                'decorators' => $checkboxDecorators]
+//        );
 
         $form->addElement('checkbox', self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS, [
             'label' => "Activer la fonctionnalité",
