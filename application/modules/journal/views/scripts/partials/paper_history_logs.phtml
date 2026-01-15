@@ -38,8 +38,6 @@ $logs_with_details = [
     Episciences_Paper_Logger::CODE_LD_ADDED,
     Episciences_Paper_Logger::CODE_LD_CHANGED,
     Episciences_Paper_Logger::CODE_LD_REMOVED,
-    Episciences_Paper_Logger::CODE_PAPER_COMMENT_DELETED_BY_AUTHOR,
-    Episciences_Paper_Logger::CODE_PAPER_COMMENT_DELETED_BY_EDITOR,
 ]; ?>
 
 <?php foreach ($this->logs as $log) : ?>
@@ -263,17 +261,6 @@ $logs_with_details = [
                     echo $this->partial('partials/paper_history_logs_user_action.phtml', [
                         'fullName' => $fullName,
                         'tag' => $tag
-                    ]);
-                    break;
-
-                // Comment deletions (2 cases)
-                case Episciences_Paper_Logger::CODE_PAPER_COMMENT_DELETED_BY_AUTHOR:
-                case Episciences_Paper_Logger::CODE_PAPER_COMMENT_DELETED_BY_EDITOR:
-                    echo $this->partial('partials/paper_history_logs_comment_deletion.phtml', [
-                        'fullName' => $fullName,
-                        'pcid' => $detail['pcid'] ?? 'N/A',
-                        'messageType' => $detail['messageType'] ?? 'unknown',
-                        'hadFile' => $detail['hadFile'] ?? false
                     ]);
                     break;
 
