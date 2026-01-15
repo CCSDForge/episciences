@@ -1593,7 +1593,7 @@ class UserDefaultController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender(true);
         $uid = $this->getParam('uid', 0);
         $size = $this->getParam('size', Ccsd_User_Models_User::IMG_NAME_NORMAL);
-        $backgroundColor = $this->getParam('bgcolor', null);
+        $backgroundColor = $this->getParam('bgcolor');
 
         $photoPathName = false;
         $data = false;
@@ -1620,42 +1620,39 @@ class UserDefaultController extends Zend_Controller_Action
         // photo of a specific user
         if ($uid != 0) {
             $user = new Ccsd_User_Models_User(['uid' => $uid]);
-
-            // If background color is specified for initials, check for colored version
-            if ($backgroundColor && $size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
-                $userPhotoPath = $user->getPhotoPath();
-                $filenameSuffix = '_' . $backgroundColor;
-                $coloredPhotoPath = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . $filenameSuffix . '.svg';
-                $photoPathName = file_exists($coloredPhotoPath) ? $coloredPhotoPath : false;
-            } else {
-                $photoPathName = $user->getPhotoPathName($size);
-            }
-
-            // Force regeneration for anonymous editor (UID 666) to ensure different color
-            if ($uid === 666 && $size === Ccsd_User_Models_User::IMG_NAME_INITIALS && $photoPathName && file_exists($photoPathName)) {
-                unlink($photoPathName);
-                $photoPathName = false;
-            }
+            $photoPathName = $user->getPhotoPathName($size);
         } else {
             // nobody or logged user
             $uid = Episciences_Auth::getUid();
             if ($uid != 0) {
                 $user = new Ccsd_User_Models_User(['uid' => $uid]);
-
-                // If background color is specified for initials, check for colored version
-                if ($backgroundColor && $size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
-                    $userPhotoPath = $user->getPhotoPath();
-                    $filenameSuffix = '_' . $backgroundColor;
-                    $coloredPhotoPath = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . $filenameSuffix . '.svg';
-                    $photoPathName = file_exists($coloredPhotoPath) ? $coloredPhotoPath : false;
-                } else {
-                    $photoPathName = $user->getPhotoPathName($size);
-                }
+                $photoPathName = $user->getPhotoPathName($size);
             }
+        }
+
+        // If custom background color is provided for initials, generate SVG dynamically (skip cache)
+        if ($backgroundColor && $size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
+            $data = Episciences_View_Helper_GetAvatar::asSvg($screenName, $backgroundColor);
+            $contentSize = strlen($data);
+            $maxAge = 300; // Shorter cache for dynamic content
+            $expires = gmdate('D, d M Y H:i:s \G\M\T', time() + $maxAge);
+
+            $this->getResponse()
+                ->setHeader('ETag', md5($data), true)
+                ->setHeader('Expires', $expires, true)
+                ->setHeader('Pragma', '', true)
+                ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
+                ->setHeader('Content-Type', 'image/svg+xml', true)
+                ->setHeader('Content-Length', $contentSize, true)
+                ->setBody($data);
+            return;
         }
 
         if (!$photoPathName) {
             if ($size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
+
+                // Generate SVG
+                $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
 
                 $userPhotoPath = $user->getPhotoPath();
 
@@ -1663,22 +1660,8 @@ class UserDefaultController extends Zend_Controller_Action
                     trigger_error(sprintf('Directory "%s" was not created', $userPhotoPath), E_USER_WARNING);
                 }
 
-                // Include background color in filename to avoid cache issues
-                $filenameSuffix = $backgroundColor ? '_' . $backgroundColor : '';
-                $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . $filenameSuffix . '.svg';
-
-                // Generate SVG with optional background color
-                $data = Episciences_View_Helper_GetAvatar::asSvg($screenName, $backgroundColor);
-
-                // For anonymous editor (UID 666), use a distinct color if no custom color is set
-                if ($uid === 666 && !$backgroundColor) {
-                    // Replace only the circle fill color (not the text color)
-                    // We target the circle element specifically to keep text white
-                    $data = preg_replace('/<circle([^>]*)fill="#([0-9A-Fa-f]{6})"/', '<circle$1fill="#FF5722"', $data);
-                }
-
+                $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . '.svg';
                 file_put_contents($photoPathName, $data);
-
 
             } else {
                 $imageMimeType = 'image/svg+xml';
