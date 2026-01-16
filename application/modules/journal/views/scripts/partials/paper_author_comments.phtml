@@ -23,18 +23,16 @@ $isAllowedToEditComment = !in_array($paper->getStatus(), $paper::$_noEditableSta
     <?php else : ?>
         <div class="timeline-track">
             <?php foreach ($comments as $comment) : ?>
-                <?php
-                // Prepare edit button if user has permission
-                $actions = '';
-                if ($isAllowedToEditComment) {
-                    $editCommentUrl = $this->url(['controller' => $controllerName, 'action' => 'editcomment', 'pcid' => $comment['PCID']]);
-                    $actions = '<button class="btn btn-primary btn-xs" onclick="location.href=\'' . $editCommentUrl . '\'">
-                        <i class="fa fa-pencil"></i> ' .
-                        $this->translate('Modifier') .
-                        '</button>';
-                }
-                ?>
-                <?= $this->partial('partials/timeline_item.phtml', ['comment' => $comment, 'actions' => $actions]) ?>
+                <?= $this->partial('partials/timeline_item.phtml', ['comment' => $comment]) ?>
+
+                <?php if ($isAllowedToEditComment): ?>
+                    <?php $editCommentUrl = $this->url(['controller' => $controllerName, 'action' => 'editcomment', 'pcid' => $comment['PCID']]) ?>
+                    <button class="btn btn-default btn-xs pull-right" style="margin-right:9px;"
+                            onclick="location.href='<?= $editCommentUrl ?>'">
+                        <span class="glyphicon glyphicon-pencil" style="margin-right: 5px;"></span>
+                        <?= $this->translate('Modifier') ?>
+                    </button>
+                <?php endif; ?>
             <?php endforeach; ?>
         </div>
     <?php endif ?>
