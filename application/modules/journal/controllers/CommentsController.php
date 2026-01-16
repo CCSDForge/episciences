@@ -72,67 +72,15 @@ class CommentsController extends PaperController
             return;
         }
 
-        // Special handling for editor-to-author responses
-        if ($comment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+        // Special handling for author-editor communication (both directions)
+        $isAuthorEditorCommunication = in_array($comment->getType(), [
+            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+            Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR
+        ], true);
+
+        if ($isAuthorEditorCommunication) {
             // If a specific file is provided, delete only that file (not the entire comment)
             if (!empty($file)) {
-                // Delete only the specified file
-                $isJson = Episciences_Tools::isJson($comment->getFile());
-
-                try {
-                    $jFiles = $isJson ? json_decode($comment->getFile(), true, 512, JSON_THROW_ON_ERROR) : (array)$comment->getFile();
-                } catch (JsonException $e) {
-                    trigger_error($e->getMessage());
-                    $jFiles = [];
-                }
-
-                $dir = $docid . '/comments/';
-                $comment_path = REVIEW_FILES_PATH . $dir . $file;
-                $is_file = is_file($comment_path);
-
-                if ($is_file) {
-                    $key = array_search($file, $jFiles, true);
-                    if ($key !== false) {
-                        unset($jFiles[$key]);
-                    }
-                    !empty($jFiles) ? $comment->setFile(json_encode($jFiles)) : $comment->setFile(null);
-                    unlink($comment_path);
-                    
-                    // Save the comment (this updates the file field)
-                    $comment->save(true);
-                    
-                    // Send notification as if it's a new message (without attached file)
-                    // This will notify the recipient like a new message, but without the file
-                    $this->newCommentNotifyManager($paper, $comment);
-                    
-                    // Determine message based on whether it's a reply or root message
-                    if (!empty($comment->getParentId())) {
-                        // It's a reply
-                        $message = $this->view->translate("Votre réponse a bien été envoyée.");
-                    } else {
-                        // It's a root message
-                        $message = $this->view->translate("Votre message a bien été envoyé.");
-                    }
-                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
-                } else {
-                    $message = $this->view->translate("Impossible de supprimer le fichier : élément introuvable.");
-                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-                }
-
-                $this->_helper->redirector->gotoUrl($url);
-                return;
-            }
-
-            // No file specified - nothing to delete, redirect back
-            $this->_helper->redirector->gotoUrl($url);
-            return;
-        }
-
-        // Special handling for author-to-editor messages
-        if ($comment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
-            // If a specific file is provided, delete only that file (not the entire comment)
-            if (!empty($file)) {
-                // Delete only the specified file
                 $isJson = Episciences_Tools::isJson($comment->getFile());
 
                 try {
@@ -154,20 +102,17 @@ class CommentsController extends PaperController
                     }
                     !empty($jFiles) ? $comment->setFile(json_encode($jFiles)) : $comment->setFile(null);
                     unlink($comment_path);
-                    
+
                     // Save the comment (this updates the file field)
                     $comment->save(true);
-                    
-                    // Send notification as if it's a new message (without attached file)
-                    // This will notify the recipient like a new message, but without the file
+
+                    // Send notification about the file removal
                     $this->newCommentNotifyManager($paper, $comment);
-                    
+
                     // Determine message based on whether it's a reply or root message
                     if (!empty($comment->getParentId())) {
-                        // It's a reply
                         $message = $this->view->translate("Votre réponse a bien été envoyée.");
                     } else {
-                        // It's a root message
                         $message = $this->view->translate("Votre message a bien été envoyé.");
                     }
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
