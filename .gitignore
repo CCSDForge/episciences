@@ -81,3 +81,4 @@ assets/node_modules/
 /scripts/stats/stats.conf
 /scripts/stats/sites_config.csv
 /tools/
+/.gemini/

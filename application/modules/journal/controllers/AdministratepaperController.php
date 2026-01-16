@@ -58,20 +58,12 @@ class AdministratepaperController extends PaperDefaultController
 
             $volumes = $review->getVolumes();
             // load volumes settings
-            /** @var Episciences_Volume $volume */
-            foreach ($volumes as &$volume) {
-                $volume->loadSettings();
-            }
-            unset($volume);
+            Episciences_VolumesManager::loadSettingsForVolumes($volumes);
 
             $sections = $review->getSections();
 
             //load  sections settings
-            /** @var Episciences_Section $section */
-            foreach ($sections as &$section) {
-                $section->loadSettings();
-            }
-            unset($section);
+            Episciences_SectionsManager::loadSettingsForSections($sections);
 
             $post = $request->getParams();
             $draw = isset($post['draw']) ? (int)$post['draw'] : 1;
@@ -333,10 +325,16 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * Do not seem to be called
+     * Seems deprecated
      * @throws Zend_Exception
+     * @deprecated
      */
     public function ajaxcontrolboardAction(): void
     {
+        trigger_error('ajaxcontrolboardAction is deprecated.', E_USER_DEPRECATED);
+        return;
+        
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $params = $request->getParams();
@@ -534,11 +532,7 @@ class AdministratepaperController extends PaperDefaultController
 
         // load all volumes
         $volumes = $review->getVolumes();
-        /** @var Episciences_Volume $volume */
-        foreach ($volumes as &$volume) {
-            $volume->loadSettings();
-        }
-        unset($volume);
+        Episciences_VolumesManager::loadSettingsForVolumes($volumes);
         $this->view->volumes = $volumes;
 
         // get paper/volumes relations (secondary volumes)f
@@ -547,11 +541,7 @@ class AdministratepaperController extends PaperDefaultController
         $sections = $review->getSections();
 
         // load sections settings
-        /** @var Episciences_Section $section */
-        foreach ($sections as &$section) {
-            $section->loadSettings();
-        }
-        unset($section);
+        Episciences_SectionsManager::loadSettingsForSections($sections);
         $this->view->sections = $sections;
 
 
@@ -563,8 +553,6 @@ class AdministratepaperController extends PaperDefaultController
             // already has one DOI but not auto assigned
             $doi_status = Episciences_Paper_DoiQueue::STATUS_MANUAL;
         }
-        $journal = Episciences_ReviewsManager::find(RVID);
-        $journal->loadSettings();
 
         try {
             $journalSetting = Zend_Registry::get('reviewSettingsDoi');
@@ -723,7 +711,12 @@ class AdministratepaperController extends PaperDefaultController
             );
 
         // #37430 Demande d'avis des autres rédacteurs, pas uniquement les redacteurs qui sont assignés a l'article.
-        $all_editors = Episciences_UsersManager::getUsersWithRoles(Episciences_Acl::ROLE_EDITOR);
+        // Include both editors and chief editors
+        $roles = [
+            Episciences_Acl::ROLE_EDITOR,
+            Episciences_Acl::ROLE_CHIEF_EDITOR
+        ];
+        $all_editors = Episciences_UsersManager::getUsersWithRoles($roles);
 
         // Echapper l'éditeur en cours
         if (array_key_exists($loggedUid, $all_editors)) {
@@ -1440,19 +1433,14 @@ class AdministratepaperController extends PaperDefaultController
 
             // load journal detail
             $oReview = Episciences_ReviewsManager::find(RVID);
-
+            $oReview->loadSettings();
             // load reviewers array
             $reviewers = [];
             $allJsReviewers = [];
 
-            if ($special_issue && $oReview->getSetting(Episciences_Review::SETTING_ENCAPSULATE_REVIEWERS)) {
-                $oVolume = Episciences_VolumesManager::find($oPaper->getVid());
-                $oReviewers = $oVolume->getReviewers();
-                $allReviewers = Episciences_PapersManager::getReviewers($docId, ['pending'], true, $oPaper->getVid());
-            } else {
-                $oReviewers = Episciences_Review::getReviewers();
-                $allReviewers = Episciences_PapersManager::getReviewers($docId, ['pending'], true);
-            }
+            $oReviewers = Episciences_Review::getReviewers();
+            $allReviewers = Episciences_PapersManager::getReviewers($docId, ['pending'], true);
+
 
             if ($oReviewers) {
                 // On ne peut pas inviter un relecteur à relire son article.
@@ -5272,5 +5260,3 @@ class AdministratepaperController extends PaperDefaultController
         }
     }
 }
-
-

@@ -233,7 +233,10 @@ if ($this->citations !== '') {
             <h2 class="panel-title"><?php echo $this->translate('Commentaires des relecteurs'); ?></h2>
         </div>
         <div class="panel-body in">
-            <?php echo $this->partial('partials/paper_reviewer_comments.phtml', ['comments' => $this->reviewer_comments, 'paperContributorUid' => $paper->getUid()]) ?>
+            <?= $this->partial('partials/paper_reviewer_comments.phtml', [
+                    'comments' => $this->reviewer_comments,
+                    'paper' => $this->paper
+            ]) ?>
         </div>
     </div>
 <?php endif; ?>
@@ -348,6 +351,9 @@ $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
 
 $this->jQuery()->addJavascriptFile('/js/library/es.mail.js');
+// Security: DOMPurify for XSS prevention (needed by es.contacts-list.js)
+$this->jQuery()->addJavascriptFile("https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js");
+$this->jQuery()->addJavascriptFile("/js/utils/sanitizer.js");
 $this->jQuery()->addJavascriptFile("/js/library/es.contacts-list.js");
 $this->jQuery()->addJavascriptFile('/js/administratepaper/view.js');
 $this->jQuery()->addJavascriptFile('/js/components/collapsible-message.js');

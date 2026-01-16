@@ -140,7 +140,7 @@ class InboxNotifications extends Script
 
                 $rvCode = $this->getRvCodeFromUrl($notifyPayloads['target']['id']);
 
-                $journal = ($rvCode !== '') ? Episciences_ReviewsManager::findByRvcode($rvCode, true) : null;
+                $journal = ($rvCode !== '') ? Episciences_ReviewsManager::findByRvcode($rvCode, true, true) : null;
 
                 if ($journal) {
 

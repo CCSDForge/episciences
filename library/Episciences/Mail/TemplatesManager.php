@@ -318,7 +318,7 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_PAPER_RATING
     ];
 
-    public const paper_comment_by_edditor_copy_tags = [
+    public const paper_comment_by_editor_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME,
@@ -1779,12 +1779,12 @@ class Episciences_Mail_TemplatesManager
 
     /**
      * @param Episciences_Mail_Template $template
-     * @param null $langs
+     * @param array|null $langs
      * @return Zend_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getTemplateForm(Episciences_Mail_Template $template, $langs = null): Zend_Form
+    public static function getTemplateForm(Episciences_Mail_Template $template, array $langs = null): Zend_Form
     {
         $id = $template->getId();
         $form = new Zend_Form();
@@ -1809,7 +1809,11 @@ class Episciences_Mail_TemplatesManager
             $subform = new Zend_Form_SubForm();
 
             $class = 'tab-pane fade';
-            if (count($langs) == 1 || $code == $defaultLang) {
+
+            if (
+                $code === $defaultLang ||
+                count($langs) === 1
+            ) {
                 $class .= ' in active';
             }
 
@@ -1839,15 +1843,16 @@ class Episciences_Mail_TemplatesManager
             $form->addSubForm($subform, $code);
         }
 
-        if ($template) {
-            $defaults = self::getTemplateFormDefaults($template, $langs);
-            $form->setDefaults($defaults);
-        }
-
+        $defaults = self::getTemplateFormDefaults($template, $langs);
+        $form->setDefaults($defaults);
         return $form;
     }
 
-    private static function getTemplateFormDefaults(Episciences_Mail_Template $template, $langs)
+
+    /**
+     * @throws Zend_Exception
+     */
+    private static function getTemplateFormDefaults(Episciences_Mail_Template $template, $langs): array
     {
         $defaults = array();
         $template->loadTranslations();
@@ -1917,7 +1922,7 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY => self::paper_comment_answer_reviewer_copy_tags,
             self::TYPE_PAPER_EDITOR_RESPONSE_TO_AUTHOR_AUTHOR_COPY => self::paper_editor_response_to_author_author_copy_tags,
             self::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY => self::paper_comment_answer_reviewer_copy_tags,
-            self::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY => self::paper_comment_by_edditor_copy_tags,
+            self::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY => self::paper_comment_by_editor_copy_tags,
             self::TYPE_PAPER_DELETED_AUTHOR_COPY => self::paper_deleted_author_copy_tags,
             self::TYPE_PAPER_DELETED_EDITOR_COPY => self::paper_deleted_editor_copy_tags,
             self::TYPE_PAPER_DELETED_REVIEWER_COPY => self::paper_deleted_reviewer_copy_tags,

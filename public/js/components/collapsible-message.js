@@ -9,12 +9,11 @@
  * - Keyboard accessible
  */
 
-(function() {
+(function () {
     'use strict';
 
     const MAX_HEIGHT = 200; // Maximum height in pixels before collapse
     const TRANSITION_DURATION = 300; // Animation duration in ms
-
 
     /**
      * Generate unique ID for message
@@ -43,43 +42,67 @@
 
     /**
      * Setup collapsible behavior for a message element
+     * SECURITY FIX: Uses DOM manipulation instead of innerHTML concatenation to prevent XSS
      * @param {Element} message - Message element to make collapsible
      * @param {number} actualHeight - Actual content height
      */
     function setupCollapsible(message, actualHeight) {
         var messageId = generateId();
-        var content = message.innerHTML;
 
-        // Build HTML structure
-        var html =
-            '<div class="collapsible-content is-collapsed" id="' +
-            messageId +
-            '" data-full-height="' +
-            actualHeight +
-            '">' +
-            content +
-            '</div>' +
-            '<button class="btn btn-default collapsible-toggle" ' +
-            'aria-expanded="false" ' +
-            'aria-controls="' +
-            messageId +
-            '" ' +
-            'type="button">' +
-            '<span class="toggle-text-collapsed">' +
-            '<i class="fas fa-chevron-down" aria-hidden="true"></i>&nbsp;' +
-            translate('Voir plus') +
-            '</span>' +
-            '<span class="toggle-text-expanded" style="display: none;">' +
-            '<i class="fas fa-chevron-up" aria-hidden="true"></i>&nbsp;' +
-            translate('Voir moins') +
-            '</span>' +
-            '</button>';
+        // SECURITY FIX: Use DOM manipulation instead of innerHTML concatenation
+        // This prevents XSS by avoiding HTML string concatenation with untrusted content
 
-        message.innerHTML = html;
+        // Create content wrapper
+        var contentDiv = document.createElement('div');
+        contentDiv.className = 'collapsible-content is-collapsed';
+        contentDiv.id = messageId;
+        contentDiv.setAttribute('data-full-height', String(actualHeight));
 
-        // Add event listener to button
-        var button = message.querySelector('.collapsible-toggle');
-        button.addEventListener('click', function(e) {
+        // Move existing content into the wrapper (preserves existing DOM)
+        while (message.firstChild) {
+            contentDiv.appendChild(message.firstChild);
+        }
+
+        // Create toggle button
+        var button = document.createElement('button');
+        button.className = 'btn btn-default collapsible-toggle';
+        button.setAttribute('aria-expanded', 'false');
+        button.setAttribute('aria-controls', messageId);
+        button.type = 'button';
+
+        // Create "Show more" text span
+        var textCollapsed = document.createElement('span');
+        textCollapsed.className = 'toggle-text-collapsed';
+        var iconDown = document.createElement('i');
+        iconDown.className = 'fas fa-chevron-down';
+        iconDown.setAttribute('aria-hidden', 'true');
+        textCollapsed.appendChild(iconDown);
+        textCollapsed.appendChild(
+            document.createTextNode('\u00A0' + translate('Voir plus'))
+        );
+
+        // Create "Show less" text span
+        var textExpanded = document.createElement('span');
+        textExpanded.className = 'toggle-text-expanded';
+        textExpanded.style.display = 'none';
+        var iconUp = document.createElement('i');
+        iconUp.className = 'fas fa-chevron-up';
+        iconUp.setAttribute('aria-hidden', 'true');
+        textExpanded.appendChild(iconUp);
+        textExpanded.appendChild(
+            document.createTextNode('\u00A0' + translate('Voir moins'))
+        );
+
+        // Assemble button
+        button.appendChild(textCollapsed);
+        button.appendChild(textExpanded);
+
+        // Assemble final structure
+        message.appendChild(contentDiv);
+        message.appendChild(button);
+
+        // Add event listener
+        button.addEventListener('click', function (e) {
             e.preventDefault();
             handleToggle(messageId, button);
         });
@@ -120,11 +143,10 @@
             textExpanded.style.display = '';
 
             // After transition, remove expanding class
-            setTimeout(function() {
+            setTimeout(function () {
                 content.classList.remove('is-expanding');
                 content.classList.add('is-expanded');
             }, TRANSITION_DURATION);
-
         } else {
             // Collapse
             content.classList.remove('is-expanded');
@@ -136,14 +158,17 @@
             textCollapsed.style.display = '';
 
             // After transition, set collapsed state
-            setTimeout(function() {
+            setTimeout(function () {
                 content.classList.remove('is-collapsing');
                 content.classList.add('is-collapsed');
 
                 // Scroll button into view if needed
                 var rect = button.getBoundingClientRect();
                 if (rect.top < 0) {
-                    button.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    button.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                    });
                 }
             }, TRANSITION_DURATION);
         }
@@ -153,7 +178,9 @@
      * Initialize collapsible message behavior
      */
     function initCollapsibleMessages() {
-        var messages = document.querySelectorAll('.timeline-item-message, .timeline-comment-message');
+        var messages = document.querySelectorAll(
+            '.timeline-item-message, .timeline-comment-message'
+        );
 
         for (var i = 0; i < messages.length; i++) {
             var message = messages[i];
@@ -177,7 +204,10 @@
      */
     function init() {
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initCollapsibleMessages);
+            document.addEventListener(
+                'DOMContentLoaded',
+                initCollapsibleMessages
+            );
         } else {
             // DOM is already loaded
             initCollapsibleMessages();
@@ -189,5 +219,4 @@
 
     // Start initialization
     init();
-
 })();

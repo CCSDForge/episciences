@@ -30,7 +30,7 @@ html, body {
 }
 
 .overlay {
-  @include opacity(0.7);
+  opacity: 0.7;
   background: $white;
 }
 
@@ -58,14 +58,14 @@ table hr {
 .es-block {
   background-color: $white;
   border: 1px solid $lighter-grey;
-  @include border-radius(4px, 4px);
+  border-radius: 4px;
   margin: 15px 0;
   padding: 14px 19px 14px 19px;
   position: relative;
 }
 
 .es-block-focus {
-  @include border-radius(3px, 3px);
+  border-radius: 3px;
   border: 1px solid $almost-white;
   margin: 20px 0;
   padding: 20px;
@@ -82,19 +82,19 @@ table hr {
 .collapseButton {
   float: right;
   cursor: pointer;
-  @include opacity(0.7);
+  opacity: 0.7;
 
   &:hover {
-    @include opacity(0.7);
+    opacity: 0.7;
   }
 }
 
 .rotation-90 {
-  @include transform(rotate(90deg));
+  transform: rotate(90deg);
 }
 
 .rotation-180 {
-  @include transform(rotate(180deg));
+  transform: rotate(180deg);
 }
 
 

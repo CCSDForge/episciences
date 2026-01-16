@@ -1,20 +1,3 @@
-<style>
-	#reminders .delete {
-		margin-right: 5px;
-		-moz-opacity: 0.50;
-		-khtml-opacity: 0.50;
-		opacity: 0.50;
-		filter: progid:DXImageTransform.Microsoft.Alpha(opacity=50);
-	}
-	#reminders .delete:hover {
-		margin-right: 5px;
-		
-		-moz-opacity: 1;
-		-khtml-opacity: 1;
-		opacity: 1;
-		filter: progid:DXImageTransform.Microsoft.Alpha(opacity=100);
-	}  
-</style>
 <script>
 	$(document).ready(function() {
 		$('a.delete').on('click', function() { deleteReminder($(this)); return false;});
@@ -28,8 +11,10 @@
  * @var  Episciences_Mail_Reminder $reminder
  */
     foreach ($this->reminders as $i => $reminder) : ?>
-    <?php if(!($reminderName = $reminder->getName())) continue; ?>
-	<?php if ($i > 0 && $this->reminders[($i-1)]->getType() != $reminder->getType()) : ?><hr/><?php endif;?>
+    <?php if(!($reminderName = $reminder->getName())) {
+            continue;
+        } ?>
+	<?php if ($i > 0 && $this->reminders[($i-1)]->getType() !== $reminder->getType()) : ?><hr/><?php endif;?>
 	<div class="reminder">
 		<a class="delete" href="/administratemail/deletereminder?id=<?=  $reminder->getId() ?>" title="<?=  $this->translate('Supprimer')?>"><span class="darkgrey glyphicon glyphicon-remove-sign"></span></a>
 		<a 	class="modal-opener"

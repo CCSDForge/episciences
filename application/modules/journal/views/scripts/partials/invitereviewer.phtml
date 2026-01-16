@@ -27,7 +27,17 @@ $invitation_panel_title = '';
 
     <?php if (!$this->isExistingCriterionGrid) : ?>
         <div class="alert alert-danger" style="margin-top: 20px">
-            <strong><?php echo $this->translate("Attention, la grille d'évaluation n'est pas encore disponible. Une grille de relecture peut être élaborée <a href='/grid/list'> ici </a> pour guider les relecteurs grâce à une série de points prédéfinis à examiner."); ?></strong><br/>
+            <strong>
+                <?php
+                echo $this->translate("Attention, la grille d'évaluation n'est pas encore disponible.");
+                echo ' ';
+                echo $this->translate('Une grille de relecture doit être élaborée pour guider les relecteurs grâce à une série de points prédéfinis à examiner.');
+                $url =  $this->url(['controller'=> 'grid', 'action'=> 'list']);
+                echo ' ';
+                echo sprintf('<a class="btn btn-primary" href="%s" >%s</a>', $url, $this->translate('Créer un grille'));
+                 ?>
+            </strong>
+            <br/>
         </div>
     <?php endif; ?>
 

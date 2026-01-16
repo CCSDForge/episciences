@@ -3,6 +3,7 @@
 return array(
 
     // Termes génériques
+    '(optionnel)' => '(optional)',
     'Par exemple' => 'e.g.',
     " :" => ":",
     "Non traduit" => 'Untranslated',
@@ -144,7 +145,7 @@ return array(
     "Votre réponse a bien été enregistrée." => "Your answer has been saved.",
     "L'année du volume est incorrecte veuillez saisir entre: " => 'The year of the volume is incorrect, please enter between: ',
     'T_VOLUME_YEAR_INVALID_FORMAT' => 'The volume year format is invalid. It must be "YYYY" (e.g., 2001) or "YYYY-YYYY" (e.g., 2001-2002).',
-    'T_VOLUME_YEAR_INVALID_RANGE'  => 'The second volume year must be strictly greater than the first (e.g., 2003-2004).',
+    'T_VOLUME_YEAR_INVALID_RANGE' => 'The second volume year must be strictly greater than the first (e.g., 2003-2004).',
     'T_VOLUME_YEAR_OUTSIDE_BOUNDS' => 'The year must be between %s and %s (Current Year + 5 years).',
     'Exemple : 2024 ou 2024-2025' => 'Example : 2024 or 2024-2025',
     "Fichier" => 'File',
@@ -293,7 +294,7 @@ return array(
     "Paramètres des volumes" => "Volumes settings",
     "Protéger la soumission dans les volumes spéciaux par un code d'accès" => "Restrict submission in special issues with an access code",
     "Cloisonner les relecteurs" => "Encapsulate reviewers",
-    "S'ils sont cloisonnés, les relecteurs d'un volume ne seront pas visibles ailleurs dans la revue" => "Encapsulated reviewers are not available for volumes other than the one they were invited in",
+    "Lorsque les relecteurs sont cloisonnés, et qu’un article appartient à un volume spécial avec cette option activée, seuls les relecteurs attribués à ce volume seront proposés pour l’évaluation dans la section des relecteurs connus de la revue" => "When reviewers are encapsulated, and an article belongs to a special issue with this option enabled, only reviewers assigned to that issue will be suggested for evaluation in the section listing the reviewers known to the journal",
 
     "Paramètres des volumes spéciaux" => "Special issues settings",
     "Les rédacteurs peuvent réattribuer la gestion de l'article" => "Editors can reassign handled articles to another editor",
@@ -301,6 +302,7 @@ return array(
     "Si activé, les auteurs peuvent envoyer des messages directement aux rédacteurs assignés à leur article" => "If enabled, authors can send messages directly to the editors assigned to their article",
     "Afficher les noms des rédacteurs aux auteurs" => "Display editor names to authors",
     "Si activé, les auteurs peuvent voir les noms des rédacteurs assignés à leur article" => "If enabled, authors can see the names of the editors assigned to their article",
+    "Le lieu de publication est renseigné, veuillez saisir l'éditeur également" => "The publication location is provided, please also enter the publisher",
 
 
     // DOI
@@ -722,7 +724,9 @@ return array(
     "pour identifier un utilisateur." => "to identify a user.",
     'Inviter ce relecteur' => 'Invite this reviewer',
     'prenom.nom@example.org' => 'firstname.name@example.org',
-    "Attention, la grille d'évaluation n'est pas encore disponible. Une grille de relecture peut être élaborée <a href='/grid/list'> ici </a> pour guider les relecteurs grâce à une série de points prédéfinis à examiner." => "Before any reviewing can be performed, a review grid has to be defined <a href='/grid/list'> here </a>. It includes a variety of pre-set points to guide your reviewers.",
+    'Créer un grille' => 'Create an evaluation grid',
+    "Attention, la grille d'évaluation n'est pas encore disponible." => 'Warning, the evaluation grid is not yet available.',
+    'Une grille de relecture doit être élaborée pour guider les relecteurs grâce à une série de points prédéfinis à examiner.' => 'The evaluation grid should be developed to guide reviewers through a series of predefined points to be examined.',
     'Date limite antérieure' => 'Previous deadline',
     'Date limite actuelle' => 'Current deadline',
 
@@ -910,6 +914,8 @@ return array(
     // Sidebar
     "Mon espace" => 'My Account',
     "Administration" => 'Administrate',
+    "Identifiant de connexion" => "Username",
+    "Identifiants invalides ou compte non validé" => "Invalid credentials or account not validated",
 
     "Revue" => 'Journal',
     "Relecteurs" => 'Reviewers',
@@ -1987,7 +1993,7 @@ return array(
     "Un utilisateur peut avoir plusieurs rôles." => "A user can have multiple roles.",
     "Cela inclut les versions acceptées (mise en forme ou non)" => "This includes accepted versions (with or without formatting).",
     "Cela inclut seulement les articles soumis cette année." => "This includes only articles submitted this year.",
-    "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année." => "This includes articles that were p reviously submitted and published this year.",
+    "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année." => "This includes articles that were previously submitted and published this year.",
     "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année." => "This includes articles that were previously submitted and refused this year.",
     "Cela inclut les autres statuts." => "This includes other status.",
     "Cela inclut les articles qui ont été soumis antérieurement" => 'This includes articles that were previously submitted',
