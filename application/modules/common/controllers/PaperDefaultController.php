@@ -364,20 +364,20 @@ class PaperDefaultController extends DefaultController
         } catch (JsonException|Zend_Db_Statement_Exception$e) {
             $logger?->warning($e);
         }
-        //false : si aucun rédacteur n'est affecté à l'article ou si le commentaire est une suggestion
-        $strict = !empty($recipients) &&
-            (!in_array($oComment->getType(), [
-                Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
-                Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION,
-                Episciences_CommentsManager::TYPE_SUGGESTION_REFUS,
-                Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
-                Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE
-            ], true)
-            );
-
         try {
             // For author-editor communication, skip checkReviewNotifications to avoid notifying all managers
             if (!$isAuthorEditorCommunication) {
+                // Calculate $strict only if needed (not for author-editor communication)
+                // false : si aucun rédacteur n'est affecté à l'article ou si le commentaire est une suggestion
+                $strict = !empty($recipients) &&
+                    (!in_array($oComment->getType(), [
+                        Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
+                        Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION,
+                        Episciences_CommentsManager::TYPE_SUGGESTION_REFUS,
+                        Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
+                        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE
+                    ], true)
+                    );
                 Episciences_Review::checkReviewNotifications($recipients, $strict);
             }
             // remove users if COI is enabled
@@ -413,7 +413,7 @@ class PaperDefaultController extends DefaultController
             Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
         ];
 
-        if ($oComment->isEditorComment() || $oComment->isSuggestion()) {
+        if ($oComment->isEditorComment() || $oComment->isSuggestion() || $oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
             $recipientTags[Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME] = $commentator->getScreenName();
             $recipientTags[Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME] = $commentator->getFullName();
         } elseif ($oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
@@ -437,19 +437,7 @@ class PaperDefaultController extends DefaultController
         $attachmentsFiles = !empty($additionalAttachments) ? array_merge($attachmentsFiles, $additionalAttachments) : $attachmentsFiles;
 
         // Build attachment list for email body with clickable links
-        $attachmentsListHtml = '';
-        if (!empty($attachmentsFiles)) {
-            $attachmentsListHtml = '<p>';
-            foreach ($attachmentsFiles as $filename => $filepath) {
-                // Build the file URL for download
-                // URL pattern: /docfiles/comments/{docId}/{filename}
-                $fileUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
-                $fileUrl .= '/docfiles/comments/' . $docId . '/' . $filename;
-
-                $attachmentsListHtml .= '📎 <a href="' . htmlspecialchars($fileUrl) . '">' . htmlspecialchars($filename) . '</a><br>';
-            }
-            $attachmentsListHtml .= '</p>';
-        }
+        $attachmentsListHtml = $this->buildAttachmentsListHtml($attachmentsFiles, $docId);
 
         // Add attachments list to tags
         $recipientTags[Episciences_Mail_Tags::TAG_ATTACHMENTS] = $attachmentsListHtml;
@@ -477,6 +465,11 @@ class PaperDefaultController extends DefaultController
                 break;
             case Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR:
                 $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_EDITOR_COPY;
+                break;
+            case Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE:
+                // Use generic template for editors (no specific template exists for this case)
+                // The author receives TYPE_PAPER_EDITOR_RESPONSE_TO_AUTHOR_AUTHOR_COPY (handled separately below)
+                $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY;
                 break;
             default:
                 $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY;
@@ -509,13 +502,21 @@ class PaperDefaultController extends DefaultController
         }
 
         // For editor responses to authors, also notify the author (main author + co-authors)
+        $authorNotificationSent = false;
         if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
             try {
                 // Get the parent comment (author's message) to identify the recipient author
+                // Use pre-fetched parent comment from options if available to avoid duplicate DB query
+                $parentComment = $options['parentComment'] ?? null;
                 $parentCommentId = $oComment->getParentId();
                 if ($parentCommentId) {
-                    $parentComment = new Episciences_Comment();
-                    if ($parentComment->find($parentCommentId)) {
+                    if (!$parentComment) {
+                        $parentComment = new Episciences_Comment();
+                        if (!$parentComment->find($parentCommentId)) {
+                            $parentComment = null;
+                        }
+                    }
+                    if ($parentComment) {
                         // Get author info - should be the author of the parent comment
                         $author = new Episciences_User();
                         $author->findWithCAS($parentComment->getUid());
@@ -557,13 +558,19 @@ class PaperDefaultController extends DefaultController
                         }
 
                         // Get co-authors to CC them on the email
-                        $coAuthors = [];
-                        try {
-                            $coAuthors = $paper->getCoAuthors();
+                        // Use pre-fetched co-authors from options if available to avoid duplicate DB query
+                        $coAuthors = $options['coAuthors'] ?? [];
+                        if (empty($coAuthors)) {
+                            try {
+                                $coAuthors = $paper->getCoAuthors();
+                                // Remove the main recipient from CC to avoid duplicate email
+                                unset($coAuthors[$author->getUid()]);
+                            } catch (Zend_Db_Statement_Exception $e) {
+                                $logger?->warning('Error fetching co-authors for CC: ' . $e->getMessage());
+                            }
+                        } else {
                             // Remove the main recipient from CC to avoid duplicate email
                             unset($coAuthors[$author->getUid()]);
-                        } catch (Zend_Db_Statement_Exception $e) {
-                            $logger?->warning('Error fetching co-authors for CC: ' . $e->getMessage());
                         }
 
                         // Send email to author with co-authors in CC
@@ -578,6 +585,7 @@ class PaperDefaultController extends DefaultController
                             $coAuthors
                         );
                         ++$nbNotifications;
+                        $authorNotificationSent = true;
                     }
                 }
             } catch (Exception $e) {
@@ -585,7 +593,41 @@ class PaperDefaultController extends DefaultController
             }
         }
 
+        // For TYPE_EDITOR_TO_AUTHOR_RESPONSE, success if:
+        // - All editors in $recipients were notified (if any), AND
+        // - The author was notified (if parent comment exists)
+        // This handles the case where $recipients is empty (editor responding is the only assigned editor)
+        if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+            // Expected notifications: editors (if any) + author (if parent exists)
+            $expectedNotifications = count($recipients) + ($authorNotificationSent ? 1 : 0);
+            return $nbNotifications === $expectedNotifications;
+        }
+
         return count($recipients) === $nbNotifications;
+    }
+
+    /**
+     * Build HTML list of attachments with clickable links for email body
+     * @param array $attachmentsFiles Array of filename => filepath
+     * @param int $docId Document ID
+     * @return string HTML string with attachment links
+     */
+    protected function buildAttachmentsListHtml(array $attachmentsFiles, int $docId): string
+    {
+        $attachmentsListHtml = '';
+        if (!empty($attachmentsFiles)) {
+            $attachmentsListHtml = '<p>';
+            foreach ($attachmentsFiles as $filename => $filepath) {
+                // Build the file URL for download
+                // URL pattern: /docfiles/comments/{docId}/{filename}
+                $fileUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+                $fileUrl .= '/docfiles/comments/' . $docId . '/' . $filename;
+
+                $attachmentsListHtml .= '📎 <a href="' . htmlspecialchars($fileUrl) . '">' . htmlspecialchars($filename) . '</a><br>';
+            }
+            $attachmentsListHtml .= '</p>';
+        }
+        return $attachmentsListHtml;
     }
 
     /**

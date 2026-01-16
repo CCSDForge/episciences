@@ -598,7 +598,7 @@ class AdministratepaperController extends PaperDefaultController
             $editor_comment_form = Episciences_CommentsManager::getForm('editor_comment_form');
             $this->view->editor_comment_form = $editor_comment_form;
 
-            // Only process editor comment form if it's NOT a reply form (reply forms have reply_to_pcid)
+            // Only process editor comment form if it's not a reply form (reply forms have reply_to_pcid)
             if (($request->getPost('postComment') !== null) && 
                 empty($request->getPost('reply_to_pcid')) && 
                 $editor_comment_form->isValid($request->getPost())) {
@@ -945,7 +945,7 @@ class AdministratepaperController extends PaperDefaultController
                 if (!empty($authorToEditorComments)) {
                     $collectAuthorMessagesForForms($authorToEditorComments);
                     
-                    // Handle form submissions for reply forms (BEFORE editor comment form to avoid conflicts)
+                    // Handle form submissions for reply forms (before editor comment form to avoid conflicts)
                     if (!empty($editorReplyForms)) {
                         foreach ($editorReplyForms as $pcid => $form) {
                             // Check if this form was submitted by looking for the hidden field and submit button
@@ -1315,94 +1315,25 @@ class AdministratepaperController extends PaperDefaultController
             return false;
         }
 
-        // Get author info - should be the author of the parent comment, not the paper author
+        // Get author info and co-authors once (will be reused for logging and notifications)
         $author = new Episciences_User();
         $author->findWithCAS($parentComment->getUid());
-        $locale = $author->getLangueid();
 
-        // Prepare paper URL for author
-        $paperUrl = $this->buildPublicPaperUrl($docId);
-
-        // Prepare attachments (only from editor's response, not from author's original message)
-        $attachmentsFiles = [];
-        if ($editorResponse->getFile()) {
-            $attachmentsFiles[$editorResponse->getFile()] = $editorResponse->getFilePath();
-        }
-
-        // Build attachment list for email body with clickable links
-        $attachmentsListHtml = '';
-        if (!empty($attachmentsFiles)) {
-            $attachmentsListHtml = '<p>';
-            foreach ($attachmentsFiles as $filename => $filepath) {
-                // Build the file URL for download
-                // URL pattern: /docfiles/comments/{docId}/{filename}
-                $fileUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
-                $fileUrl .= '/docfiles/comments/' . $docId . '/' . $filename;
-
-                $attachmentsListHtml .= '📎 <a href="' . htmlspecialchars($fileUrl) . '">' . htmlspecialchars($filename) . '</a><br>';
-            }
-            $attachmentsListHtml .= '</p>';
-        }
-
-        // Check if editor names should be disclosed to authors
-        $review = Episciences_ReviewsManager::find($paper->getRvid());
-        $discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
-
-        // Convert to boolean - handle empty/null values as false (anonymized)
-        // Explicitly check for '1' or true, everything else (0, '', null, false) is false
-        $discloseEditorNames = ($discloseEditorNames === '1' || $discloseEditorNames === 1 || $discloseEditorNames === true);
-
-        // Use anonymous name if option is disabled
-        $senderFullName = $discloseEditorNames
-            ? Episciences_Auth::getFullName()
-            : ($locale === 'fr' ? 'Un rédacteur' : 'An editor');
-
-        // Debug logging
-        error_log(sprintf(
-            '[Editor Reply] DOCID=%d, discloseEditorNames=%s, senderName=%s',
-            $docId,
-            var_export($discloseEditorNames, true),
-            $senderFullName
-        ));
-
-        // Prepare email tags
-        $authorTags = [
-            Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
-            Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => $senderFullName,
-            Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => Episciences_Auth::getScreenName(),
-            Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
-            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
-            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
-            Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
-            Episciences_Mail_Tags::TAG_COMMENT => $parentComment->getMessage(),
-            Episciences_Mail_Tags::TAG_COMMENT_DATE => $this->view->Date($parentComment->getWhen(), $locale),
-            Episciences_Mail_Tags::TAG_ANSWER => $editorResponse->getMessage(),
-            Episciences_Mail_Tags::TAG_ATTACHMENTS => $attachmentsListHtml,
-            Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl
-        ];
-
-        // Get co-authors to CC them on the email
+        // Get co-authors once (will be reused for logging and notifications)
         $coAuthors = [];
         try {
             $coAuthors = $paper->getCoAuthors();
-            // Remove the main recipient from CC to avoid duplicate email
             unset($coAuthors[$author->getUid()]);
         } catch (Zend_Db_Statement_Exception $e) {
-            error_log('Error fetching co-authors for CC: ' . $e->getMessage());
+            // Ignore error, will be handled in newCommentNotifyManager if needed
         }
 
-        // Send email to author
-        $mailSent = Episciences_Mail_Send::sendMailFromReview(
-            $author,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_RESPONSE_TO_AUTHOR_AUTHOR_COPY,
-            $authorTags,
-            $paper,
-            Episciences_Auth::getUid(),
-            $attachmentsFiles,
-            true,
-            $coAuthors
-        );
+        // Use newCommentNotifyManager() to handle notifications (like save_editor_comment does)
+        // Pass parentComment and coAuthors to avoid duplicate DB queries
+        $notificationsSent = $this->newCommentNotifyManager($paper, $editorResponse, [], [], [
+            'parentComment' => $parentComment,
+            'coAuthors' => $coAuthors
+        ]);
 
         // Log the editor response with co-authors notification info
         $coAuthorsNotified = [];
@@ -1443,7 +1374,7 @@ class AdministratepaperController extends PaperDefaultController
             $logData
         );
 
-        return $mailSent;
+        return $notificationsSent;
     }
 
     /**
