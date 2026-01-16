@@ -28,7 +28,6 @@ if (!$id) {
         }
         echo $avatar;
         ?>
-        <?= $this->userAvatar($comment, 'initials') ?>
     </div>
 
     <!-- Comment content card -->
@@ -41,11 +40,10 @@ if (!$id) {
             </time>
             <i class="fa-solid fa-user" aria-hidden="true"></i>&nbsp;<?= $this->translate('De : ') ?>
             <span class="comment-author">
-
-                            <strong>
-                                <?= ((int)$comment['UID'] === Episciences_Auth::getUid()) ? $this->translate('Vous') : $this->escape($comment['SCREEN_NAME']) ?>
-                            </strong>
-                            </span>
+                <strong>
+                    <?= ((int)$comment['UID'] === Episciences_Auth::getUid()) ? $this->translate('Vous') : $this->escape($comment['SCREEN_NAME']) ?>
+                </strong>
+            </span>
         </header>
 
         <!-- Reply to indicator (for both author and editor replies) -->
@@ -77,7 +75,6 @@ if (!$id) {
             echo 'style="border-bottom: none; margin-bottom: 0;"';
         }
         ?>>
-        <div class="timeline-comment-message">
             <?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($comment['MESSAGE'])) ?>
         </div>
 
@@ -86,10 +83,6 @@ if (!$id) {
             <!-- Attached file (if present) - on same line as buttons -->
             <?php if ($comment['FILE']) : ?>
                 <div class="timeline-comment-attachment-inline">
-        <!-- Attached file (if present) -->
-        <?php if ($comment['FILE']) : ?>
-            <div class="timeline-comment-attachment">
-                <div>
                     <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i> <a
                             href="/docfiles/comments/<?= $comment['DOCID'] . '/' . $comment['FILE'] ?>"
                             target="_blank"
@@ -112,7 +105,6 @@ if (!$id) {
                 <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]) ?>
             </div>
         </div>
-        <?php endif; ?>
 
     </div>
 
