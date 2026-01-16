@@ -4057,6 +4057,17 @@ class PaperController extends PaperDefaultController
             return false;
         }
 
+        // Get co-authors once to pass to notification manager (avoids duplicate DB query)
+        $coAuthors = [];
+        try {
+            $coAuthors = $paper->getCoAuthors();
+            // Remove the sender from co-authors list (they don't need to be notified)
+            unset($coAuthors[Episciences_Auth::getUid()]);
+        } catch (Zend_Db_Statement_Exception $e) {
+            // Log warning but continue - notification manager will fetch if needed
+            error_log('Error fetching co-authors in save_author_response_to_editor: ' . $e->getMessage());
+        }
+
         // Prepare log data
         $logData = [
             'comment' => [
@@ -4079,6 +4090,19 @@ class PaperController extends PaperDefaultController
             $logData['comment']['parentid'] = $data['parentid'];
         }
 
+        // Add co-authors notification info to log
+        if (!empty($coAuthors)) {
+            $coAuthorsNotified = [];
+            foreach ($coAuthors as $coAuthor) {
+                $coAuthorsNotified[] = [
+                    'uid' => $coAuthor->getUid(),
+                    'email' => $coAuthor->getEmail(),
+                    'fullname' => $coAuthor->getFullName()
+                ];
+            }
+            $logData['co_authors_notified'] = $coAuthorsNotified;
+        }
+
         // Log the comment in paper history
         $paper->log(
             Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR,
@@ -4086,8 +4110,8 @@ class PaperController extends PaperDefaultController
             $logData
         );
 
-        // Send email notifications to assigned editors
-        $this->newCommentNotifyManager($paper, $comment);
+        // Send email notifications to assigned editors and co-authors
+        $this->newCommentNotifyManager($paper, $comment, [], [], ['coAuthors' => $coAuthors]);
 
         return $commentId;
     }

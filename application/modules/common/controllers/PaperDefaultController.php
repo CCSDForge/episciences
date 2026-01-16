@@ -501,6 +501,79 @@ class PaperDefaultController extends DefaultController
             $CC = [];
         }
 
+        // For author-to-editor messages, also notify co-authors
+        $coAuthorsNotified = false;
+        if ($oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+            try {
+                // Get co-authors to notify them
+                // Use pre-fetched co-authors from options if available to avoid duplicate DB query
+                $coAuthors = $options['coAuthors'] ?? [];
+                if (empty($coAuthors)) {
+                    try {
+                        $coAuthors = $paper->getCoAuthors();
+                    } catch (Zend_Db_Statement_Exception $e) {
+                        $logger?->warning('Error fetching co-authors for notification: ' . $e->getMessage());
+                        $coAuthors = [];
+                    }
+                }
+                
+                // Remove the author who sent the message from co-authors list to avoid duplicate email
+                unset($coAuthors[$commentatorUid]);
+                
+                // Send notification to each co-author
+                if (!empty($coAuthors)) {
+                    $paperUrl = $this->buildPublicPaperUrl($docId);
+                    
+                    foreach ($coAuthors as $coAuthorUid => $coAuthor) {
+                        try {
+                            $coAuthorLocale = $coAuthor->getLangueid();
+                            
+                            // Prepare email tags for co-author (similar to editor tags)
+                            $coAuthorTags = [
+                                Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+                                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($coAuthorLocale, true),
+                                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($coAuthorLocale),
+                                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $coAuthorLocale),
+                                Episciences_Mail_Tags::TAG_COMMENT => $oComment->getMessage(),
+                                Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
+                                Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => $commentator->getScreenName(),
+                                Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => $commentator->getFullName(),
+                                Episciences_Mail_Tags::TAG_SENDER_EMAIL => $commentator->getEmail(),
+                                Episciences_Mail_Tags::TAG_AUTHOR_SCREEN_NAME => $commentator->getScreenName(),
+                                Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME => $commentator->getFullName(),
+                                Episciences_Mail_Tags::TAG_ATTACHMENTS => $attachmentsListHtml
+                            ];
+                            
+                            // Merge with additional tags if provided
+                            if (!empty($tags)) {
+                                $coAuthorTags = array_merge($tags, $coAuthorTags);
+                            }
+                            
+                            // Send email to co-author using the same template as editors
+                            Episciences_Mail_Send::sendMailFromReview(
+                                $coAuthor,
+                                Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_EDITOR_COPY,
+                                $coAuthorTags,
+                                $paper,
+                                $commentatorUid,
+                                $attachmentsFiles,
+                                true,
+                                []
+                            );
+                            ++$nbNotifications;
+                            $coAuthorsNotified = true;
+                        } catch (Exception $e) {
+                            $logger?->warning('FAILED_TO_SEND_AUTHOR_MESSAGE_NOTIFICATION_TO_COAUTHOR_' . $coAuthorUid . ': ' . $e->getMessage());
+                            continue;
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                $logger?->warning('FAILED_TO_SEND_AUTHOR_MESSAGE_NOTIFICATION_TO_COAUTHORS: ' . $e->getMessage());
+            }
+        }
+
         // For editor responses to authors, also notify the author (main author + co-authors)
         $authorNotificationSent = false;
         if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
@@ -591,6 +664,27 @@ class PaperDefaultController extends DefaultController
             } catch (Exception $e) {
                 $logger?->warning('FAILED_TO_SEND_EDITOR_RESPONSE_NOTIFICATION_TO_AUTHOR: ' . $e->getMessage());
             }
+        }
+
+        // For TYPE_AUTHOR_TO_EDITOR, success if:
+        // - All editors in $recipients were notified (if any), AND
+        // - All co-authors were notified (if any)
+        if ($oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+            // Count co-authors that should be notified (excluding the sender)
+            $coAuthors = $options['coAuthors'] ?? [];
+            if (empty($coAuthors)) {
+                try {
+                    $coAuthors = $paper->getCoAuthors();
+                } catch (Zend_Db_Statement_Exception $e) {
+                    $coAuthors = [];
+                }
+            }
+            unset($coAuthors[$commentatorUid]);
+            $expectedCoAuthorNotifications = count($coAuthors);
+            
+            // Expected notifications: editors (if any) + co-authors (if any)
+            $expectedNotifications = count($recipients) + $expectedCoAuthorNotifications;
+            return $nbNotifications === $expectedNotifications;
         }
 
         // For TYPE_EDITOR_TO_AUTHOR_RESPONSE, success if:
