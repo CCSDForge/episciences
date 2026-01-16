@@ -1,5 +1,5 @@
 function createChart(context, data, type = null, title = '') {
-    let isPieChart = type === 'pie';
+    let isPieChart = (type === 'pie' || type === 'doughnut');
 
     for (let i = 0; i < data.datasets.length; i++) {
         Object.assign(data.datasets[i], { maxBarThickness: 50 }); // number (pixels)

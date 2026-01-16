@@ -1,0 +1,33 @@
+<?php
+$itemLabel = $this->itemLabel ?? null;
+$itemValue = $this->itemValue ?? null;
+$isRate = $this->isRate ?? false;
+$help = $this->help ?? null;
+
+if (!$itemLabel && !$itemValue) {
+    return;
+}
+?>
+<li class="stat-item">
+    <span class="stat-label">
+        <?= ucfirst($this->translate($itemLabel)) ?>
+        <?php if (isset($itemLabel['clarification'])): ?>
+            <span class="small">(<?= $this->translate($itemLabel['clarification']) ?>)</span>
+        <?php endif; ?>
+    </span>
+    <span class="stat-value"><?= $itemValue ?></span>
+    <?php if ($isRate): ?>
+        <span class="fas fa-percent fa-sm stat-icon"></span>
+    <?php endif; ?>
+    <?php if (isset($help['message'])): ?>
+        <?php if (!isset($help['isTooltip'])): ?>
+            <p class="help-block" style="display: inline;">
+                (<?= sprintf($this->translate($help['message']), '<span class="stat-value">' . ($help['value'] ?? '') . '</span>') ?>
+                )
+            </p>
+        <?php else: ?>
+            <span class="fas fa-info-circle fa-sm" data-toggle="tooltip"
+                  title="<?= $this->translate($help['message']) ?>"></span>
+        <?php endif; ?>
+    <?php endif; ?>
+</li>

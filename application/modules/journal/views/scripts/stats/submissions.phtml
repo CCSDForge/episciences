@@ -4,13 +4,16 @@ $acceptedNoYetPublishedTooltipInfo = "Cela inclut les versions acceptées (mise 
 $acceptedTooltipInfo = "Cela inclut les articles qui ont déjà été publiés";
 $refusedTooltipInfo = "La revue peut rejeter plusieurs fois le même article. Dans ce cas, un seul rejet est comptabilisé par article.";
 $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
+$baseMessage = "La somme du nombre total d’articles acceptés et du nombre total d’articles refusés";
+$rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :'), $this->translate("le total des articles concernés par le taux X"), $this->translate(' :'), $this->translate($baseMessage));
+
 ?>
 <div class="panel panel-default collapsable">
     <div class="panel-heading"><h2
-                class="panel-title"><?= $this->chart1Title ?><?= $this->year ? ' - <code>' . $this->year . '</code>' : '' ?></h2>
+                class="panel-title"><?= $this->chart1Title ?><?= $this->year ? ' - <span class="stat-code">' . $this->year . '</span>' : '' ?></h2>
     </div>
     <div class="panel-body in">
-        <div class="col-sm-6">
+        <div class="col-sm-10">
             <div style="padding-top: 10px; ">
 
                 <div>
@@ -25,26 +28,20 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
                                 <p class="help-block"><?= $this->translate("À l'exception des statistiques sur les utilisateurs, les indicateurs ci-dessous ne comprennent que des données postérieures au ") ?><?= Episciences_View_Helper_Date::Date($this->startStatsAfterDate); ?></p>
                             </aside>
 
-
                             <?php if ($isYear): ?>
-
                                 <?= $this->render('stats/total-submissions.phtml') ?>
                             <?php else: ?>
 
-                                <li>
-                                    <?= $this->translate('Soumissions') ?>
-                                    <code><?= $this->allSubmissions ?></code>
-                                    <?php if ($this->imported): ?>
-                                        <?php $importedMsg = $this->imported > 1 ? 'dont %s importés' : 'dont %s importé'; ?>
-                                        <p class="help-block" style="display: inline;">
-                                            (<?= sprintf($this->translate($importedMsg), '<code>' . $this->imported . '</code>') ?>
-                                            )
-                                        </p>
-                                    <?php endif; ?>
+                                <?= $this->partial('stats/stat-item.phtml', [
+                                        'itemLabel' => "Soumissions",
+                                        'itemValue' => $this->allSubmissions,
+                                        'help' => [
+                                                'message' => $this->imported > 1 ? 'dont %s importés' : 'dont %s importé',
+                                                'value' => $this->imported
+                                        ]
+                                ]) ?>
 
-                                </li>
                             <?php endif; ?>
-
 
                         <?php endif ?>
 
@@ -57,167 +54,156 @@ $otherStatusTooltipInfo = "Cela inclut les autres statuts.";
 
                         <?php if ($this->allPublications && ($this->totalPublishedArticles !== $this->allPublications)) : ?>
 
-                            <li>
-                                <?= ucfirst($this->translate('articles publiés')) ?>
-                                <code><?= $this->allPublications ?></code>
-
-                            </li>
+                            <?= $this->partial('stats/stat-item.phtml', [
+                                    'itemLabel' => 'articles publiés',
+                                    'itemValue' => $this->allPublications,
+                            ]) ?>
 
                         <?php endif; ?>
 
 
                         <?php if ($this->allAcceptations) : ?>
 
-                            <li>
-                                <?= ucfirst($this->translate('articles acceptés')) ?>
-                                <code><?= $this->allAcceptations ?></code>
-
-                                <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                                    title="<?= $this->translate($acceptedTooltipInfo) ?>"></em>
-
-                            </li>
+                            <?= $this->partial('stats/stat-item.phtml', [
+                                    'itemLabel' => 'articles acceptés',
+                                    'itemValue' => $this->allAcceptations,
+                                    'help' => [
+                                            'message' => $acceptedTooltipInfo,
+                                            'isTooltip' => true
+                                    ]
+                            ]) ?>
 
                         <?php endif; ?>
 
                         <?php if ($this->allRefusals) : ?>
 
-                            <li>
-                                <?= ucfirst($this->translate('articles refusés')) ?>
-                                <code><?= $this->allRefusals ?></code>
-                                <?php if ($isYear):
+                            <?php if ($isYear):
 
-                                    $refusedTooltipInfo = $this->translate("Cela inclut les articles qui ont été soumis antérieurement et refusés cette année.")
-                                            . ' ' .
-                                            $this->translate($refusedTooltipInfo);
-                                    ?>
-                                <?php endif; ?>
-                                <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                                    title="<?= $this->translate($refusedTooltipInfo) ?>"></em>
+                                $refusedTooltipInfo = $this->translate("Cela inclut les articles qui ont été soumis antérieurement et refusés cette année.")
+                                        . ' ' .
+                                        $this->translate($refusedTooltipInfo);
+                                ?>
+                            <?php endif; ?>
 
 
-                            </li>
+
+                            <?= $this->partial('stats/stat-item.phtml', [
+                                    'itemLabel' => 'articles refusés',
+                                    'itemValue' => $this->allRefusals,
+                                    'help' => [
+                                            'message' => $refusedTooltipInfo,
+                                            'isTooltip' => true
+                                    ]
+                            ]) ?>
+
 
                         <?php endif; ?>
 
                         <?php if ($this->allOtherStatus) : ?>
 
-                            <li>
-                                <?= ucfirst($this->translate('autres statuts')) ?>
-                                <code><?= $this->allOtherStatus ?></code>
-                                <?php if ($isYear): ?>
-                                    <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                                        title="<?= $this->translate($otherStatusTooltipInfo) ?>"></em>
-                                <?php endif; ?>
-                            </li>
+                            <?= $this->partial('stats/stat-item.phtml', [
+                                    'itemLabel' => 'autres statuts',
+                                    'itemValue' => $this->allOtherStatus,
+                                    'help' => [
+                                            'message' => $otherStatusTooltipInfo,
+                                            'isTooltip' => true
+                                    ]
+                            ]) ?>
 
                         <?php endif; ?>
 
-
-
-                        <?php if (!$isYear) : ?>
-
-                            <?php
-                            $acceptanceRateTooltipInfo = '(A/S)x100 <em>[ A' . $this->translate(' :') . ' ' . $this->translate("le nombre d'articles acceptés") . ', S' . $this->translate(' :') . ' ' . $this->translate('toutes les soumissions') . ' ]</em>';
-                            $publicationRateTooltipInfo = '(A/S)x100 <em>[ A' . $this->translate(' :') . ' ' . $this->translate("le nombre d'articles publiés") . ', S' . $this->translate(' :') . ' ' . $this->translate('toutes les soumissions') . ' ]</em>';
-                            $declineRateRateTooltipInfo = '(A/S)x100 <em>[ A' . $this->translate(' :') . ' ' . $this->translate("le nombre d'articles refusés") . ', S' . $this->translate(' :') . ' ' . $this->translate('toutes les soumissions') . ' ]</em>';
-
-
-                            ?>
-
-                        <?php else :
-                            $acceptanceRateTooltipInfo = $this->translate('(A/S)x100 <em>[ A' . $this->translate(' :') . ' ' . $this->translate("articles acceptés (soumis la même année)") . ', S' . $this->translate(' :') . ' ' . $this->translate("le nombre de soumissions sur l'ensemble de l'année"));
-                            $publicationRateTooltipInfo = $this->translate('(A/S)x100 <em>[ A' . $this->translate(' :') . ' ' . $this->translate("articles publiés (soumis la même année)") . ', S' . $this->translate(' :') . ' ' . $this->translate("le nombre de soumissions sur l'ensemble de l'année"));
-                            $declineRateRateTooltipInfo = '(A/S)x100 <em>[ A' . $this->translate(' :') . ' ' . $this->translate("articles refusés (soumis la même année)") . ', S' . $this->translate(' :') . ' ' . $this->translate("le nombre de soumissions sur l'ensemble de l'année") . ' ]</em>';
-
-                            ?>
-
+                        <?php if ($isYear) : ?>
 
                             <h1 class="help-block" style="margin-top: 10px;"></h1>
+                            <div class="submisions-same-year">
+                                <?= $this->partial('stats/stat-item.phtml', [
+                                        'itemLabel' => [
+                                                'articles acceptés',
+                                                'clarification' => 'soumis la même année'
+                                        ],
+                                        'itemValue' => $this->acceptedSubmittedSameYear
+                                ]) ?>
 
-                            <li>
-                                <?= ucfirst($this->translate('articles acceptés')) ?>
-                                <span class="small">(<?= $this->translate('soumis la même année') ?>)</span>
-                                <code><?= $this->acceptedSubmittedSameYear ?></code>
+                                <?= $this->partial('stats/stat-item.phtml', [
+                                        'itemLabel' => [
+                                                'articles publiés',
+                                                'clarification' => 'soumis la même année'
+                                        ],
+                                        'itemValue' => $this->publishedSubmittedSameYear
+                                ]) ?>
 
-                            </li>
+                                <?= $this->partial('stats/stat-item.phtml', [
+                                        'itemLabel' => [
+                                                'articles refusés',
+                                                'clarification' => 'soumis la même année'
+                                        ],
+                                        'itemValue' => $this->refusedSubmittedSameYear
+                                ]) ?>
 
-
-                            <li>
-                                <?= ucfirst($this->translate('articles publiés')) ?>
-                                <span class="small">(<?= $this->translate('soumis la même année') ?>)</span>
-                                <code><?= $this->publishedSubmittedSameYear ?></code>
-
-                            </li>
-
-
-                            <li>
-                                <?= ucfirst($this->translate('articles refusés')) ?>
-                                <span class="small">(<?= $this->translate('soumis la même année') ?>)</span>
-                                <code><?= $this->refusedSubmittedSameYear ?></code>
-
-                            </li>
+                            </div>
 
 
                         <?php endif; ?>
 
-                        <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Taux') ?></h1>
+                        <div class="rate">
 
+                            <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Taux') ?></h1>
+                            <div class="rate-formula"><?= $this->translate($rateFormulaInfo) ?></div>
 
-                        <li>
-                            <?= ucfirst($this->translate("taux d'acceptation")) ?>
-                            <code style="font-size: 105%;"><?= $this->acceptanceRate ?></code><em
-                                    class="fas fa-percent fa-sm" style="margin-left: 5px;"></em>
-                            <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                                title="<?= $this->translate($acceptanceRateTooltipInfo) ?>"></em>
-                        </li>
+                            <div class="row">
 
+                                <div class="col-sm-6">
 
-                        <li>
-                            <?= ucfirst($this->translate("taux de publication")) ?>
-                            <code style="font-size: 105%;"><?= $this->publicationRate ?></code><em
-                                    class="fas fa-percent fa-sm" style="margin-left: 5px;"></em>
-                            <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                                title="<?= $this->translate($publicationRateTooltipInfo) ?>"></em>
-                        </li>
+                                    <?= $this->partial('stats/stat-item.phtml', [
+                                            'itemLabel' => "taux d'acceptation",
+                                            'itemValue' => $this->acceptanceRate,
+                                            'isRate' => true
+                                    ]) ?>
 
-                        <li>
-                            <?= ucfirst($this->translate("taux de refus")) ?>
-                            <code style="font-size: 105%;"><?= $this->declineRate ?></code><em
-                                    class="fas fa-percent fa-sm" style="margin-left: 5px;"></em>
-                            <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                                title="<?= $this->translate($declineRateRateTooltipInfo) ?>"></em>
-                        </li>
+                                    <?= $this->partial('stats/stat-item.phtml', [
+                                            'itemLabel' => 'taux de publication',
+                                            'itemValue' => $this->publicationRate,
+                                            'isRate' => true
+                                    ]) ?>
 
+                                    <?= $this->partial('stats/stat-item.phtml', [
+                                            'itemLabel' => 'taux de refus',
+                                            'itemValue' => $this->declineRate,
+                                            'isRate' => true
+                                    ]) ?>
 
-                        <li>
+                                </div>
+                                <div class="col-sm-6">
+                                    <canvas id="all-submissions-percentage" style="height: auto; width: auto;"></canvas>
+                                </div>
+                            </div>
+                        </div>
 
-                            <?= $this->render('stats/submission-delay.phtml') ?>
+                        <?= $this->render('stats/submission-delay.phtml') ?>
 
-                            <?php if ($this->acceptedNotYetPublished) : ?>
+                        <?php if ($this->acceptedNotYetPublished) : ?>
 
                             <h1 class="help-block"
                                 style="margin-top: 10px;"><?= $this->translate('En cours de publication') ?></h1>
-                        <li>
-                            <?= ucfirst($this->translate('articles acceptés')) ?>
-                            <span class="small">(<?= $this->translate('non encore publiés') ?>)</span>
-                            <code><?= $this->acceptedNotYetPublished ?></code>
 
-                            <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                                title="<?= $this->translate($acceptedNoYetPublishedTooltipInfo) ?>"></em>
+                            <?= $this->partial('stats/stat-item.phtml', [
+                                    'itemLabel' => [
+                                            'articles acceptés',
+                                            'clarification' => 'non encore publiés'
+                                    ],
+                                    'itemValue' => $this->acceptedNotYetPublished,
+                                    'help' => [
+                                            'message' => $acceptedNoYetPublishedTooltipInfo,
+                                            'isTooltip' => true
+                                    ]
+                            ]) ?>
 
-                        </li>
-                    <?php endif; ?>
-
+                        <?php endif; ?>
 
                     </ul>
-
                 </div>
             </div>
             <?= $this->render('stats/evaluations.phtml') ?>
-        </div>
-
-        <div class="col-sm-6" style="margin-top: 40px; ">
-            <canvas id="all-submissions-percentage" style="height: auto; width: auto;"></canvas>
         </div>
     </div>
 </div>
