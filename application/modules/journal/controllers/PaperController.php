@@ -564,7 +564,7 @@ class PaperController extends PaperDefaultController
             // Only process messaging logic if contact is enabled
             if ($canContactEditors) {
                 // Handle form submission
-                // Only process main author form if it's NOT a reply form (reply forms have reply_to_pcid)
+                // Only process main author form if it's not a reply form (reply forms have reply_to_pcid)
                 if ($this->getRequest()->isPost() && 
                     array_key_exists('postComment', $_POST) &&
                     empty($this->getRequest()->getPost('reply_to_pcid'))) {
@@ -2906,17 +2906,6 @@ class PaperController extends PaperDefaultController
     }
 
     /**
-     * Save author comment to assigned editors
-     * @param Episciences_Paper $paper
-     * @param array $data Form data
-     * @param array $editors Assigned editors
-     * @return bool|string Comment ID or false
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
-     * @throws Zend_Mail_Exception
-     */
-    /**
      * @param Episciences_Paper $paper
      * @param int $reviewerUid
      * @return bool|Episciences_Rating_Report|null
@@ -3999,20 +3988,11 @@ class PaperController extends PaperDefaultController
     }
 
     /**
-     * Save author response to editor response
-     * @param Episciences_Paper $paper
-     * @return bool
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
-     * @throws Zend_Mail_Exception
-     */
-    /**
      * Save author message/response to editor
      * Handles both:
      * - Initial messages from author to editor ($data array from form, $pcid = null)
      * - Author replies to editor messages ($data from POST, $pcid = parent comment ID)
-     * 
+     *
      * @param Episciences_Paper $paper
      * @param array|null $data Comment data (for initial messages from form)
      * @param int|null $pcid Parent comment ID (for replies to editor)
@@ -4154,6 +4134,3 @@ class PaperController extends PaperDefaultController
     }
 
 }
-
-
-

@@ -274,6 +274,8 @@
     case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER:
     case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR:
     case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR:
+    case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_REPLY:
+    case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR_REPLY:
 
     ?>
         <?= $this->partial('administratepaper/new_comment_log_details.phtml', ['log' => $this->log, 'user' => $this->user]) ?>

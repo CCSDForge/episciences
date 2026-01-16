@@ -34,6 +34,5 @@ return [
 
     // Delete confirmations
     "Voulez-vous supprimer ce fichier ?" => "Voulez-vous supprimer ce fichier ?",
-    "Voulez-vous supprimer votre réponse (texte et fichier attaché) ?" => "Voulez-vous supprimer votre réponse (texte et fichier attaché) ?",
     "Voulez-vous supprimer votre fichier attaché ?" => "Voulez-vous supprimer votre fichier attaché ?",
 ];

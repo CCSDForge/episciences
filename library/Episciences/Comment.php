@@ -553,6 +553,24 @@ class Episciences_Comment
                     $action = Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION;
                     break;
 
+                case Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR:
+                    // Differentiate between root message and reply
+                    if (!empty($this->getParentid())) {
+                        $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_REPLY;
+                    } else {
+                        $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR;
+                    }
+                    break;
+
+                case Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE:
+                    // Differentiate between root message and reply
+                    if (!empty($this->getParentid())) {
+                        $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR_REPLY;
+                    } else {
+                        $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR;
+                    }
+                    break;
+
                 default: // todo vérifier les anciennes actions et les logs dans les controlleurs pour eviter la duplication de ces dernier ; aussi les autres actions à personaliser
                     $action = Episciences_Paper_Logger::CODE_NEW_PAPER_COMMENT; // default action log
             }
