@@ -157,12 +157,12 @@ clean-mysql: down ## Remove all MySQL volumes (WARNING: This will delete all dat
 collection: up ## Create Solr collection after starting containers
 	@echo "Setting up Solr collection..."
 	@echo "Waiting for Solr container to be ready..."
-	@until $(DOCKER) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
+	@until $(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
 		echo "Waiting for Solr..."; \
 		sleep 2; \
 	done
 	@echo "Solr is ready. Creating 'episciences' collection..."
-	@$(DOCKER) exec $(CNTR_NAME_SOLR) solr create_collection -c episciences -d $(SOLR_COLLECTION_CONFIG) || \
+	@$(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) solr create_collection -c episciences -d $(SOLR_COLLECTION_CONFIG) || \
 		echo "Collection may already exist, continuing..."
 	@echo "Solr collection setup complete!"
 
@@ -211,7 +211,7 @@ yarn-encore-production: ## Build frontend assets for production
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn encore production
 
 enter-container-php: ## Open shell in PHP container
-	@$(DOCKER) exec -it $(CNTR_NAME_PHP) sh -c "cd $(CNTR_APP_DIR) && /bin/bash"
+	@$(DOCKER_COMPOSE) exec $(CNTR_NAME_PHP) sh -c "cd $(CNTR_APP_DIR) && /bin/bash"
 
 # =============================================================================
 # Service Management Commands
