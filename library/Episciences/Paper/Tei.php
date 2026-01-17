@@ -128,12 +128,12 @@ class Episciences_Paper_Tei
 
         $fd = $xml->createElement('fileDesc');
         $ts = $xml->createElement('titleStmt');
-        $title = $xml->createElement('title', 'Episciences.org TEI export of ' . $this->getPaper()->getIdentifier() . ' - ' . $this->getPaper()->getCitation());
+        $title = $xml->createElement('title', 'Episciences.org TEI export of ' . $this->getPaper()->getCitation());
         $ts->appendChild($title);
         $fd->appendChild($ts);
 
         $ps = $xml->createElement('publicationStmt');
-        $ps->appendChild($xml->createElement('distributor', 'CCSD'));
+        $ps->appendChild($xml->createElement('distributor', 'CCSD - Episciences'));
         $headeravailability = $xml->createElement('availability');
         $headeravailability->setAttribute('status', 'restricted');
         $enrichmentLicence = $this->getPaper()->getLicence();
@@ -206,7 +206,7 @@ class Episciences_Paper_Tei
         return trim(preg_replace("/\r|\n/", " ", $comment));
     }
 
-    private function isComment(string $comment)
+    private function isComment(string $comment): bool
     {
         if (stripos($comment, 'comment:') === 0) {
             return true;
@@ -218,6 +218,7 @@ class Episciences_Paper_Tei
      * generate text section of XML TEI
      * @param DOMDocument $xml
      * @return DOMElement
+     * @throws DOMException
      */
     private function generateXmlText(DOMDocument $xml)
     {
