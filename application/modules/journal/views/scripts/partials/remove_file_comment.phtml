@@ -1,15 +1,50 @@
 <?php if ($this->comment['UID'] == Episciences_Auth::getUid()): ?>
 <?php // le champ file de la table paperComments est encoder en JSON si plusieurs fichiers sont attachés à ce commentaire ?>
-    <?php $file = $this->fileName ?? $this->comment['FILE']; ?>
-    <?php $file_delete_url = '/comments/removefilecomment/pcid/' .
-        $this->comment['PCID'] . '/docid/' . $this->comment['DOCID'] . '/file/' . $file ?>
-    <a class="btn btn-danger btn-xs pull-right" style="margin-bottom:5px;" onclick="confirmDeleteFile('<?php echo $file_delete_url; ?>')">
-        <span class="glyphicon glyphicon-trash"
-              style="margin-right: 5px;"></span><?php echo $this->translate('Supprimer'); ?>
-    </a>
+    <?php
+    $file = $this->fileName ?? $this->comment['FILE'] ?? '';
+    $hasFile = !empty($file);
+
+    // Build delete URL
+    if ($hasFile) {
+        $file_delete_url = '/comments/removefilecomment/pcid/' .
+            $this->comment['PCID'] . '/docid/' . $this->comment['DOCID'] . '/file/' . $file;
+    } else {
+        // If no file, just pass empty file parameter
+        $file_delete_url = '/comments/removefilecomment/pcid/' .
+            $this->comment['PCID'] . '/docid/' . $this->comment['DOCID'] . '/file/';
+    }
+
+    // Different confirmation message for different message types
+    $isEditorToAuthorResponse = ($this->comment['TYPE'] ?? null) == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE;
+    $isAuthorToEditor = ($this->comment['TYPE'] ?? null) == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR;
+    $isAuthorReply = $isAuthorToEditor && !empty($this->comment['PARENTID']);
+    $buttonText = $this->translate('Supprimer');
+
+    // Since button only shows when there's a file, all messages are about deleting the file only
+    if ($isEditorToAuthorResponse) {
+        // For editor responses to author, delete only the file
+        $confirmMessage = $this->translate('Voulez-vous supprimer votre fichier attaché ?');
+    } elseif ($isAuthorReply) {
+        // For author replies to editor, delete only the file
+        $confirmMessage = $this->translate('Voulez-vous supprimer votre fichier attaché ?');
+    } elseif ($isAuthorToEditor) {
+        // For initial author-to-editor messages, delete only the file
+        $confirmMessage = $this->translate('Voulez-vous supprimer votre fichier attaché ?');
+    } else {
+        // Default behavior for other comment types
+        $confirmMessage = $this->translate('Voulez-vous supprimer ce fichier ?');
+    }
+    ?>
+    <?php // Only show delete button if there is a file attached ?>
+    <?php if ($hasFile) : ?>
+        <a class="btn btn-danger btn-xs pull-right" style="margin-bottom:5px; color: white;" onclick="confirmDeleteFile('<?php echo $file_delete_url; ?>', '<?php echo addslashes($confirmMessage); ?>')">
+            <span class="glyphicon glyphicon-trash"
+                  style="margin-right: 5px;"></span><?php echo $buttonText; ?>
+        </a>
+    <?php endif; ?>
     <script>
-        function confirmDeleteFile(href) {
-            if (confirm(translate('Voulez-vous supprimer ce fichier ?'))) {
+        function confirmDeleteFile(href, message) {
+            if (confirm(message || translate('Voulez-vous supprimer ce fichier ?'))) {
                 location.href = href;
             }
         }

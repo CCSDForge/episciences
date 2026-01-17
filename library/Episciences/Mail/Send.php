@@ -243,7 +243,8 @@ class Episciences_Mail_Send
         }
 
         foreach ($tags as $tag => $value) {
-            if (!array_key_exists($tag, $mail->getTags())) {
+            // Allow overriding TAG_SENDER_FULL_NAME for anonymization purposes
+            if (!array_key_exists($tag, $mail->getTags()) || $tag === Episciences_Mail_Tags::TAG_SENDER_FULL_NAME) {
                 $mail->addTag($tag, $value);
             }
         }

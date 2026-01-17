@@ -298,6 +298,10 @@ return array(
 
     "Paramètres des volumes spéciaux" => "Special issues settings",
     "Les rédacteurs peuvent réattribuer la gestion de l'article" => "Editors can reassign handled articles to another editor",
+    "Permettre aux auteurs de contacter les rédacteurs responsables" => "Allow authors to contact assigned editors",
+    "Si activé, les auteurs peuvent envoyer des messages directement aux rédacteurs assignés à leur article" => "If enabled, authors can send messages directly to the editors assigned to their article",
+    "Afficher les noms des rédacteurs aux auteurs" => "Display editor names to authors",
+    "Si activé, les auteurs peuvent voir les noms des rédacteurs assignés à leur article" => "If enabled, authors can see the names of the editors assigned to their article",
     "Le lieu de publication est renseigné, veuillez saisir l'éditeur également" => "The publication location is provided, please also enter the publisher",
 
 
@@ -568,8 +572,16 @@ return array(
     "Une erreur est survenue lors de l'enregistrement de votre commentaire." => "An error occurred while saving your comment.",
     "Le fichier a bien été supprimé." => "The file has been deleted.",
     "Vos changements ont été enregistrés." => "Your changes have been saved.",
-    "Le commentaire demandé n’existe pas." => "The required comment does not exist.",
+    "Le commentaire demandé n'existe pas." => "The required comment does not exist.",
     'Ce fichier est attaché à la version temporaire, vous ne pouvez donc pas le supprimer.' => 'This file is attached to the temporary version, so you cannot delete it.',
+    "Votre message a bien été supprimé." => "Your message has been successfully deleted.",
+    "Votre réponse a bien été supprimée." => "Your reply has been successfully deleted.",
+    "Une erreur est survenue lors de la suppression de votre message." => "An error occurred while deleting your message.",
+    "Une erreur est survenue lors de la suppression de votre réponse." => "An error occurred while deleting your reply.",
+    "Une erreur est survenue lors de la suppression." => "An error occurred while deleting.",
+    "Votre message a bien été envoyé aux rédacteurs." => "Your message has been successfully sent to the editors.",
+    "Votre réponse a bien été envoyée à l'auteur." => "Your reply has been successfully sent to the author.",
+    "Votre réponse a bien été envoyée." => "Your reply has been successfully sent.",
 
     // Gestion d'un article (déposant)
 
@@ -598,6 +610,7 @@ return array(
     'Contacter les éditeurs (avec une pièce jointe)' => 'Contact the editors (with an attachment)',
     "Répondre" => "Reply",
     "Répondre :" => "Answer:",
+    "Votre réponse et les fichiers associés seront stockés, envoyés et affichés ici." => "Your answer and associated files will be stored, sent and shown here.",
     "Votre version temporaire a bien été enregistrée." => "Your temporary version has been saved",
     "Demandes des versions précédentes" => "Revision requests from previous versions",
     "La modification a été effectuée avec succès." => "The change has been successfully completed.",
@@ -818,6 +831,12 @@ return array(
     "Vous avez été redirigé, car une invitation vous a été envoyé." => "You have been redirected because an invitation has been sent to you.",
     "Relire un article" => 'Review a submission',
     "Envoyer un message à l'auteur" => 'Send a message to the author',
+    "Envoyer un message aux rédacteurs" => 'Send a message to the assigned editors',
+    "Répondre à l'auteur" => 'Reply to the author',
+    "Communication éditeur-auteur" => 'Editor-author communication',
+    "Rédacteurs assignés" => 'Assigned editors',
+    "Utilisez ce formulaire pour envoyer un message aux rédacteurs assignés à votre article." => 'Use this form to send a message to the editors assigned to your article.',
+    "Rédacteur" => 'Editor',
     "Anciens messages" => 'Older messages',
     "Evaluation" => 'Review',
     "Grille de relecture" => 'Review Grid',
@@ -1046,6 +1065,7 @@ return array(
     // Module de mailing
     "De" => "From",
     "Répondre à" => "Reply to",
+    "Répond à :" => "Reply to:",
     "À" => "To",
     "Recevoir une copie de ce message" => "Receive a copy of this message",
 

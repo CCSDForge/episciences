@@ -53,6 +53,7 @@ class Episciences_Mail_Tags
     // Renvoie vers la page de l'article sur l'archive ouverte
     public const TAG_PAPER_REPO_URL = '%%PAPER_REPO_URL%%';
     public const TAG_COMMENT = '%%COMMENT%%';
+    public const TAG_ATTACHMENTS = '%%ATTACHMENTS%%';
     public const TAG_REQUESTER_SCREEN_NAME = '%%REQUESTER_SCREEN_NAME%%';
     public const TAG_COMMENT_DATE = '%%COMMENT_DATE%%';
     public const TAG_ANSWER = '%%ANSWER%%';
@@ -146,6 +147,7 @@ class Episciences_Mail_Tags
         self::TAG_ARTICLE_RATING_LINK => "lien vers le formulaire à renseigner pour l’évaluation de l'article",
         self::TAG_ARTICLE_TITLE => 'titre de l’article',
         self::TAG_AUTHORS_NAMES => "les auteurs de l'article (e.g. : Rodney, Hartman ;  Bryan, Daniel et John, Walls)",
+        self::TAG_ATTACHMENTS => "liste des pièces jointes au message",
         self::TAG_COMMENT => 'commentaire du relecteur',
         self::TAG_COMMENT_DATE => 'date du commentaire du relecteur',
         self::TAG_CONTRIBUTOR_FULL_NAME => 'nom complet du déposant',

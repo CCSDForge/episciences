@@ -72,7 +72,65 @@ class CommentsController extends PaperController
             return;
         }
 
+        // Special handling for author-editor communication (both directions)
+        $isAuthorEditorCommunication = in_array($comment->getType(), [
+            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+            Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR
+        ], true);
 
+        if ($isAuthorEditorCommunication) {
+            // If a specific file is provided, delete only that file (not the entire comment)
+            if (!empty($file)) {
+                $isJson = Episciences_Tools::isJson($comment->getFile());
+
+                try {
+                    $jFiles = $isJson ? json_decode($comment->getFile(), true, 512, JSON_THROW_ON_ERROR) : (array)$comment->getFile();
+                    $jFiles = array_filter($jFiles); // Remove empty values
+                } catch (JsonException $e) {
+                    trigger_error($e->getMessage());
+                    $jFiles = [];
+                }
+
+                $dir = $docid . '/comments/';
+                $comment_path = REVIEW_FILES_PATH . $dir . $file;
+                $is_file = is_file($comment_path);
+
+                if ($is_file) {
+                    $key = array_search($file, $jFiles, true);
+                    if ($key !== false) {
+                        unset($jFiles[$key]);
+                    }
+                    !empty($jFiles) ? $comment->setFile(json_encode($jFiles)) : $comment->setFile(null);
+                    unlink($comment_path);
+
+                    // Save the comment (this updates the file field)
+                    $comment->save(true);
+
+                    // Send notification about the file removal
+                    $this->newCommentNotifyManager($paper, $comment);
+
+                    // Determine message based on whether it's a reply or root message
+                    if (!empty($comment->getParentId())) {
+                        $message = $this->view->translate("Votre réponse a bien été envoyée.");
+                    } else {
+                        $message = $this->view->translate("Votre message a bien été envoyé.");
+                    }
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
+                } else {
+                    $message = $this->view->translate("Impossible de supprimer le fichier : élément introuvable.");
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                }
+
+                $this->_helper->redirector->gotoUrl($url);
+                return;
+            }
+
+            // No file specified - nothing to delete, redirect back
+            $this->_helper->redirector->gotoUrl($url);
+            return;
+        }
+
+        // Default behavior: delete only the specified file (for other comment types)
         $isJson = Episciences_Tools::isJson($comment->getFile());
 
         try {
