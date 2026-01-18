@@ -436,12 +436,6 @@ class PaperDefaultController extends DefaultController
 
         $attachmentsFiles = !empty($additionalAttachments) ? array_merge($attachmentsFiles, $additionalAttachments) : $attachmentsFiles;
 
-        // Build attachment list for email body with clickable links
-        $attachmentsListHtml = $this->buildAttachmentsListHtml($attachmentsFiles, $docId);
-
-        // Add attachments list to tags
-        $recipientTags[Episciences_Mail_Tags::TAG_ATTACHMENTS] = $attachmentsListHtml;
-
         switch ($oComment->getType()) {
             case Episciences_CommentsManager::TYPE_INFO_REQUEST:
                 $makeCopy = false; // see "save_contributor_answer" function: makeCopy = true
@@ -509,7 +503,7 @@ class PaperDefaultController extends DefaultController
         }
 
         // For author-to-editor messages, also notify co-authors
-        $coAuthorsNotified = false;
+        $coAuthorsNotifiedCount = 0;
         if ($oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
             try {
                 // Get co-authors to notify them
@@ -549,7 +543,6 @@ class PaperDefaultController extends DefaultController
                                 Episciences_Mail_Tags::TAG_SENDER_EMAIL => $commentator->getEmail(),
                                 Episciences_Mail_Tags::TAG_AUTHOR_SCREEN_NAME => $commentator->getScreenName(),
                                 Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME => $commentator->getFullName(),
-                                Episciences_Mail_Tags::TAG_ATTACHMENTS => $attachmentsListHtml,
                                 // Personalized message for co-authors
                                 Episciences_Mail_Tags::TAG_ARTICLE_RELATIONSHIP => ($coAuthorLocale === 'fr')
                                     ? "un article que vous avez co-signé"
@@ -573,7 +566,7 @@ class PaperDefaultController extends DefaultController
                                 []
                             );
                             ++$nbNotifications;
-                            $coAuthorsNotified = true;
+                            ++$coAuthorsNotifiedCount;
                         } catch (Exception $e) {
                             $logger?->warning('FAILED_TO_SEND_AUTHOR_MESSAGE_NOTIFICATION_TO_COAUTHOR_' . $coAuthorUid . ': ' . $e->getMessage());
                             continue;
@@ -632,7 +625,6 @@ class PaperDefaultController extends DefaultController
                             Episciences_Mail_Tags::TAG_COMMENT => $parentComment->getMessage(),
                             Episciences_Mail_Tags::TAG_COMMENT_DATE => $this->view->Date($parentComment->getWhen(), $authorLocale),
                             Episciences_Mail_Tags::TAG_ANSWER => $oComment->getMessage(),
-                            Episciences_Mail_Tags::TAG_ATTACHMENTS => $attachmentsListHtml,
                             Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl
                         ];
 
@@ -681,20 +673,8 @@ class PaperDefaultController extends DefaultController
         // - All editors in $recipients were notified (if any), AND
         // - All co-authors were notified (if any)
         if ($oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
-            // Count co-authors that should be notified (excluding the sender)
-            $coAuthors = $options['coAuthors'] ?? [];
-            if (empty($coAuthors)) {
-                try {
-                    $coAuthors = $paper->getCoAuthors();
-                } catch (Zend_Db_Statement_Exception $e) {
-                    $coAuthors = [];
-                }
-            }
-            unset($coAuthors[$commentatorUid]);
-            $expectedCoAuthorNotifications = count($coAuthors);
-            
-            // Expected notifications: editors (if any) + co-authors (if any)
-            $expectedNotifications = count($recipients) + $expectedCoAuthorNotifications;
+            // Expected notifications: editors (if any) + co-authors actually notified
+            $expectedNotifications = count($recipients) + $coAuthorsNotifiedCount;
             return $nbNotifications === $expectedNotifications;
         }
 
@@ -709,30 +689,6 @@ class PaperDefaultController extends DefaultController
         }
 
         return count($recipients) === $nbNotifications;
-    }
-
-    /**
-     * Build HTML list of attachments with clickable links for email body
-     * @param array $attachmentsFiles Array of filename => filepath
-     * @param int $docId Document ID
-     * @return string HTML string with attachment links
-     */
-    protected function buildAttachmentsListHtml(array $attachmentsFiles, int $docId): string
-    {
-        $attachmentsListHtml = '';
-        if (!empty($attachmentsFiles)) {
-            $attachmentsListHtml = '<p>';
-            foreach ($attachmentsFiles as $filename => $filepath) {
-                // Build the file URL for download
-                // URL pattern: /docfiles/comments/{docId}/{filename}
-                $fileUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
-                $fileUrl .= '/docfiles/comments/' . $docId . '/' . $filename;
-
-                $attachmentsListHtml .= '📎 <a href="' . htmlspecialchars($fileUrl) . '">' . htmlspecialchars($filename) . '</a><br>';
-            }
-            $attachmentsListHtml .= '</p>';
-        }
-        return $attachmentsListHtml;
     }
 
     /**
