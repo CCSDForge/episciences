@@ -222,7 +222,7 @@ return [
 
     // Communication auteur vers éditeurs assignés
     "paper_comment_from_author_to_editor_editor_copy_tpl_name" => "Message de l'auteur aux rédacteurs assignés (copie destinée aux rédacteurs)",
-    "paper_comment_from_author_to_editor_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - L'auteur vous a envoyé un message concernant un article dont vous êtes responsable",
+    "paper_comment_from_author_to_editor_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - nouveau message concernant %%ARTICLE_RELATIONSHIP%%",
 
     // Réponse d'un éditeur à un message de l'auteur
     "paper_editor_response_to_author_author_copy_tpl_name" => "Réponse d'un rédacteur à votre message (copie destinée à l'auteur)",

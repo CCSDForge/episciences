@@ -486,6 +486,13 @@ class PaperDefaultController extends DefaultController
             $locale = $recipient->getLangueid();
             $recipientTags[Episciences_Mail_Tags::TAG_SUBMISSION_DATE] = $this->view->Date($paper->getSubmission_date(), $locale);
 
+            // Add article relationship tag for author-to-editor messages (for editors)
+            if ($isAuthorEditorCommunication && $oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+                $recipientTags[Episciences_Mail_Tags::TAG_ARTICLE_RELATIONSHIP] = ($locale === 'fr')
+                    ? "un article dont vous êtes responsable"
+                    : "an article you're managing";
+            }
+
             try {
                 $recipientTags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
                 $recipientTags[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($locale);
@@ -528,7 +535,7 @@ class PaperDefaultController extends DefaultController
                         try {
                             $coAuthorLocale = $coAuthor->getLangueid();
                             
-                            // Prepare email tags for co-author (similar to editor tags)
+                            // Prepare email tags for co-author with personalized article relationship
                             $coAuthorTags = [
                                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
                                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
@@ -542,14 +549,18 @@ class PaperDefaultController extends DefaultController
                                 Episciences_Mail_Tags::TAG_SENDER_EMAIL => $commentator->getEmail(),
                                 Episciences_Mail_Tags::TAG_AUTHOR_SCREEN_NAME => $commentator->getScreenName(),
                                 Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME => $commentator->getFullName(),
-                                Episciences_Mail_Tags::TAG_ATTACHMENTS => $attachmentsListHtml
+                                Episciences_Mail_Tags::TAG_ATTACHMENTS => $attachmentsListHtml,
+                                // Personalized message for co-authors
+                                Episciences_Mail_Tags::TAG_ARTICLE_RELATIONSHIP => ($coAuthorLocale === 'fr')
+                                    ? "un article que vous avez co-signé"
+                                    : "an article you co-authored"
                             ];
-                            
+
                             // Merge with additional tags if provided
                             if (!empty($tags)) {
                                 $coAuthorTags = array_merge($tags, $coAuthorTags);
                             }
-                            
+
                             // Send email to co-author using the same template as editors
                             Episciences_Mail_Send::sendMailFromReview(
                                 $coAuthor,

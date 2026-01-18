@@ -15,20 +15,16 @@
     }
 
     // Different confirmation message for different message types
-    $isEditorToAuthorResponse = ($this->comment['TYPE'] ?? null) == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE;
-    $isAuthorToEditor = ($this->comment['TYPE'] ?? null) == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR;
-    $isAuthorReply = $isAuthorToEditor && !empty($this->comment['PARENTID']);
+    $commentType = $this->comment['TYPE'] ?? null;
+    $isAuthorEditorCommunication = in_array($commentType, [
+        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+        Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR
+    ], true);
     $buttonText = $this->translate('Supprimer');
 
     // Since button only shows when there's a file, all messages are about deleting the file only
-    if ($isEditorToAuthorResponse) {
-        // For editor responses to author, delete only the file
-        $confirmMessage = $this->translate('Voulez-vous supprimer votre fichier attaché ?');
-    } elseif ($isAuthorReply) {
-        // For author replies to editor, delete only the file
-        $confirmMessage = $this->translate('Voulez-vous supprimer votre fichier attaché ?');
-    } elseif ($isAuthorToEditor) {
-        // For initial author-to-editor messages, delete only the file
+    if ($isAuthorEditorCommunication) {
+        // For author-editor communication messages, delete only the file
         $confirmMessage = $this->translate('Voulez-vous supprimer votre fichier attaché ?');
     } else {
         // Default behavior for other comment types
@@ -43,12 +39,12 @@
         </a>
     <?php endif; ?>
     <script>
-        function confirmDeleteFile(href, message) {
-            if (confirm(message || translate('Voulez-vous supprimer ce fichier ?'))) {
-                location.href = href;
+        if (typeof confirmDeleteFile === 'undefined') {
+            function confirmDeleteFile(href, message) {
+                if (confirm(message)) {
+                    location.href = href;
+                }
             }
         }
     </script>
-<?php else:?>
-<br>
 <?php endif; ?>

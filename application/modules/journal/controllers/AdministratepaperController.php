@@ -868,6 +868,7 @@ class AdministratepaperController extends PaperDefaultController
         // Author to editor communication ******************************************************
         $editorReplyForms = null;
         $authorToEditorComments = [];
+        $editorReplyForms = [];
 
         // Check if the feature is enabled
         $canAuthorContactEditors = $review->getSetting(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS);
@@ -932,9 +933,8 @@ class AdministratepaperController extends PaperDefaultController
                         }
                     }
                 };
-                
+
                 // Create reply forms for each author message using getForm() (not getReplyForms)
-                $editorReplyForms = [];
                 if (!empty($authorToEditorComments)) {
                     $collectAuthorMessagesForForms($authorToEditorComments);
                     

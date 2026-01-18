@@ -54,6 +54,7 @@ class Episciences_Mail_Tags
     public const TAG_PAPER_REPO_URL = '%%PAPER_REPO_URL%%';
     public const TAG_COMMENT = '%%COMMENT%%';
     public const TAG_ATTACHMENTS = '%%ATTACHMENTS%%';
+    public const TAG_ARTICLE_RELATIONSHIP = '%%ARTICLE_RELATIONSHIP%%';
     public const TAG_REQUESTER_SCREEN_NAME = '%%REQUESTER_SCREEN_NAME%%';
     public const TAG_COMMENT_DATE = '%%COMMENT_DATE%%';
     public const TAG_ANSWER = '%%ANSWER%%';

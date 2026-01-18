@@ -68,20 +68,32 @@ class Episciences_CommentHierarchyProcessor
     }
 
     /**
-     * Recursively find a comment by ID in the structure
+     * Recursively find a comment by PCID in the structure
+     *
+     * Searches in two ways:
+     * 1. First by array key (fast path when key matches PCID)
+     * 2. Then by PCID property value (handles cases where key != PCID)
      *
      * @param array $comments Comment array to search
-     * @param int|string $id PCID to find
+     * @param int|string $pcid PCID to find
      * @return array|null Found comment or null
      */
-    private static function findCommentById(array $comments, $id): ?array
+    private static function findCommentById(array $comments, $pcid): ?array
     {
-        if (isset($comments[$id])) {
-            return $comments[$id];
+        // Fast path: check if array key matches PCID
+        if (isset($comments[$pcid])) {
+            return $comments[$pcid];
         }
+
+        // Search by PCID property value
         foreach ($comments as $comment) {
+            // Check if this comment matches by PCID property
+            if (isset($comment['PCID']) && $comment['PCID'] == $pcid) {
+                return $comment;
+            }
+            // Recursively search in replies
             if (!empty($comment['replies'])) {
-                $found = self::findCommentById($comment['replies'], $id);
+                $found = self::findCommentById($comment['replies'], $pcid);
                 if ($found !== null) {
                     return $found;
                 }
@@ -282,11 +294,6 @@ class Episciences_CommentHierarchyProcessor
 
                 // Get the full comment with all its replies from the structure
                 $fullComment = self::findCommentById($rootMessages, $comment['PCID']);
-                if ($fullComment === null) {
-                    // Try to find in nested structure
-                    $fullComment = self::findInNested($rootMessages, $comment['PCID']);
-                }
-
                 $commentToFlatten = $fullComment !== null ? $fullComment : $comment;
 
                 // Find the root message for this reply
@@ -344,28 +351,5 @@ class Episciences_CommentHierarchyProcessor
 
         // Recursively find root
         return self::findRootMessage($parent, $rootMessages);
-    }
-
-    /**
-     * Find a comment in nested structure
-     *
-     * @param array $items Items to search
-     * @param int|string $pcid PCID to find
-     * @return array|null Found comment or null
-     */
-    private static function findInNested(array $items, $pcid): ?array
-    {
-        foreach ($items as $item) {
-            if (isset($item['PCID']) && $item['PCID'] == $pcid) {
-                return $item;
-            }
-            if (!empty($item['replies'])) {
-                $found = self::findInNested($item['replies'], $pcid);
-                if ($found !== null) {
-                    return $found;
-                }
-            }
-        }
-        return null;
     }
 }

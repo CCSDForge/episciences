@@ -222,7 +222,7 @@ return [
 
     // Communication from author to assigned editors
     "paper_comment_from_author_to_editor_editor_copy_tpl_name" => "Message from author to assigned editors (editors copy)",
-    "paper_comment_from_author_to_editor_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - the author sent you a message about an article you're managing",
+    "paper_comment_from_author_to_editor_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - new message about %%ARTICLE_RELATIONSHIP%%",
 
     // Editor response to author message
     "paper_editor_response_to_author_author_copy_tpl_name" => "Editor response to your message (author copy)",

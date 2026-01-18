@@ -71,7 +71,7 @@ if (!$id) {
         <!-- Comment message -->
         <div class="timeline-comment-message" <?php
         // Remove bottom border if there's an attached file
-        if ($comment['FILE']) {
+        if (!empty($comment['FILE'])) {
             echo 'style="border-bottom: none; margin-bottom: 0;"';
         }
         ?>>
@@ -81,7 +81,7 @@ if (!$id) {
         <!-- Actions container: attached file, reply button and delete button on same line -->
         <div class="timeline-comment-actions-wrapper">
             <!-- Attached file (if present) - on same line as buttons -->
-            <?php if ($comment['FILE']) : ?>
+            <?php if (!empty($comment['FILE'])) : ?>
                 <div class="timeline-comment-attachment-inline">
                     <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i> <a
                             href="/docfiles/comments/<?= $comment['DOCID'] . '/' . $comment['FILE'] ?>"
