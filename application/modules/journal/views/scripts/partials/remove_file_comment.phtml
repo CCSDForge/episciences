@@ -15,7 +15,7 @@
     }
 
     // Different confirmation message for different message types
-    $commentType = $this->comment['TYPE'] ?? null;
+    $commentType = isset($this->comment['TYPE']) ? (int)$this->comment['TYPE'] : null;
     $isAuthorEditorCommunication = in_array($commentType, [
         Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
         Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR
