@@ -571,6 +571,7 @@ return array(
     "Ces modifications seront prises en compte une fois le formulaire est validé." => "These changes will be taken into account once the form is validated.",
     "Une erreur est survenue lors de l'enregistrement de votre commentaire." => "An error occurred while saving your comment.",
     "Le fichier a bien été supprimé." => "The file has been deleted.",
+    "Le fichier attaché a bien été supprimé." => "The attached file has been deleted.",
     "Vos changements ont été enregistrés." => "Your changes have been saved.",
     "Le commentaire demandé n'existe pas." => "The required comment does not exist.",
     'Ce fichier est attaché à la version temporaire, vous ne pouvez donc pas le supprimer.' => 'This file is attached to the temporary version, so you cannot delete it.',

@@ -104,17 +104,23 @@ class CommentsController extends PaperController
                     unlink($comment_path);
 
                     // Save the comment (this updates the file field)
+                    // For TYPE_AUTHOR_TO_EDITOR, save() automatically creates a log
+                    // For TYPE_EDITOR_TO_AUTHOR_RESPONSE, we need to create the log manually (excluded in Comment._excludedCommentsTypes)
                     $comment->save(true);
 
-                    // Send notification about the file removal
-                    $this->newCommentNotifyManager($paper, $comment);
-
-                    // Determine message based on whether it's a reply or root message
-                    if (!empty($comment->getParentId())) {
-                        $message = $this->view->translate("Votre réponse a bien été envoyée.");
-                    } else {
-                        $message = $this->view->translate("Votre message a bien été envoyé.");
+                    if ($comment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                        $paper->log(
+                            Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR,
+                            Episciences_Auth::getUid(),
+                            [
+                                'user' => Episciences_Auth::getUser()->toArray(),
+                                'comment' => $comment->toArray(),
+                                'file_removed' => $file
+                            ]
+                        );
                     }
+
+                    $message = $this->view->translate("Le fichier attaché a bien été supprimé.");
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
                 } else {
                     $message = $this->view->translate("Impossible de supprimer le fichier : élément introuvable.");
@@ -163,7 +169,7 @@ class CommentsController extends PaperController
             !empty($jFiles) ? $comment->setFile(json_encode($jFiles)) : $comment->setFile(null);
             unlink($comment_path);
             $comment->save(true);
-            $message = $this->view->translate("Le fichier a bien été supprimé.");
+            $message = $this->view->translate("Le fichier attaché a bien été supprimé.");
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
 
         } else {

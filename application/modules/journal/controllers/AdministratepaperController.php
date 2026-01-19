@@ -866,7 +866,6 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->enabledBib = $enabledBib;
 
         // Author to editor communication ******************************************************
-        $editorReplyForms = null;
         $authorToEditorComments = [];
         $editorReplyForms = [];
 
@@ -1318,7 +1317,7 @@ class AdministratepaperController extends PaperDefaultController
             $coAuthors = $paper->getCoAuthors();
             unset($coAuthors[$author->getUid()]);
         } catch (Zend_Db_Statement_Exception $e) {
-            // Ignore error, will be handled in newCommentNotifyManager if needed
+            trigger_error('Error fetching co-authors in save_editor_response_to_author: ' . $e->getMessage());
         }
 
         // Use newCommentNotifyManager() to handle notifications (like save_editor_comment does)

@@ -513,7 +513,7 @@ class PaperDefaultController extends DefaultController
                     try {
                         $coAuthors = $paper->getCoAuthors();
                     } catch (Zend_Db_Statement_Exception $e) {
-                        $logger?->warning('Error fetching co-authors for notification: ' . $e->getMessage());
+                        trigger_error('Error fetching co-authors for notification: ' . $e->getMessage());
                         $coAuthors = [];
                     }
                 }
@@ -585,7 +585,7 @@ class PaperDefaultController extends DefaultController
                 // Get the parent comment (author's message) to identify the recipient author
                 // Use pre-fetched parent comment from options if available to avoid duplicate DB query
                 $parentComment = $options['parentComment'] ?? null;
-                $parentCommentId = $oComment->getParentId();
+                $parentCommentId = $oComment->getParentid();
                 if ($parentCommentId) {
                     if (!$parentComment) {
                         $parentComment = new Episciences_Comment();
@@ -642,7 +642,8 @@ class PaperDefaultController extends DefaultController
                                 // Remove the main recipient from CC to avoid duplicate email
                                 unset($coAuthors[$author->getUid()]);
                             } catch (Zend_Db_Statement_Exception $e) {
-                                $logger?->warning('Error fetching co-authors for CC: ' . $e->getMessage());
+                                trigger_error('Error fetching co-authors for CC: ' . $e->getMessage());
+                                $coAuthors = [];
                             }
                         } else {
                             // Remove the main recipient from CC to avoid duplicate email

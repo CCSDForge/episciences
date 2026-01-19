@@ -593,7 +593,7 @@ class PaperController extends PaperDefaultController
                             $this->_helper->FlashMessenger->setNamespace('error')->addMessage(
                                 $this->view->translate("Une erreur s'est produite lors de l'envoi du message.")
                             );
-                            error_log('Error sending author to editor message: ' . $e->getMessage());
+                            trigger_error('Error sending author to editor message: ' . $e->getMessage());
                         }
                     }
                 }
@@ -4065,7 +4065,7 @@ class PaperController extends PaperDefaultController
             unset($coAuthors[Episciences_Auth::getUid()]);
         } catch (Zend_Db_Statement_Exception $e) {
             // Log warning but continue - notification manager will fetch if needed
-            error_log('Error fetching co-authors in save_author_response_to_editor: ' . $e->getMessage());
+            trigger_error('Error fetching co-authors in save_author_response_to_editor: ' . $e->getMessage());
         }
 
         // Prepare log data
