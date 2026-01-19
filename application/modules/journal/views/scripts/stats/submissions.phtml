@@ -31,13 +31,21 @@ $rateFormulaInfo = sprintf('(A/S)x100 [ A%s%s , S%s%s ]', $this->translate(' :')
                             <?php if ($isYear): ?>
                                 <?= $this->render('stats/total-submissions.phtml') ?>
                             <?php else: ?>
+                                <?php
+                                $importedHelpMessage = '';
+
+                                if ($this->imported) {
+                                    $importedHelpMessage = $this->imported > 1 ? 'dont %s importés' : 'dont %s importé';
+                            }
+
+                                ?>
 
                                 <?= $this->partial('stats/stat-item.phtml', [
                                         'itemLabel' => "Soumissions",
                                         'itemValue' => $this->allSubmissions,
                                         'help' => [
-                                                'message' => $this->imported > 1 ? 'dont %s importés' : 'dont %s importé',
-                                                'value' => $this->imported
+                                                'message' => $importedHelpMessage,
+                                                'value' => $this->imported,
                                         ]
                                 ]) ?>
 
