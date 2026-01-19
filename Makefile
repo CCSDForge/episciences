@@ -129,6 +129,8 @@ restart: down up ## Restart all containers
 clean: down ## Clean up unused docker resources
 	@echo "Cleaning up Docker resources..."
 	@$(DOCKER) system prune -f
+	@echo "Removing episciences network..."
+	@$(DOCKER) network rm epi-network 2>/dev/null || true
 
 clean-mysql: down ## Remove all MySQL volumes (WARNING: This will delete all database data!)
 	@echo "WARNING: This will permanently delete all MySQL database data!"
