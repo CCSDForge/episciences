@@ -59,7 +59,8 @@ class Episciences_Comment
     protected $_isCopyEditingComment = false;
 
     protected $_excludedCommentsTypes = [
-        Episciences_CommentsManager::TYPE_REVISION_REQUEST
+        Episciences_CommentsManager::TYPE_REVISION_REQUEST,
+        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE
     ];
 
     /**
@@ -554,21 +555,11 @@ class Episciences_Comment
                     break;
 
                 case Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR:
-                    // Differentiate between root message and reply
-                    if (!empty($this->getParentid())) {
-                        $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_REPLY;
-                    } else {
-                        $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR;
-                    }
+                    $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR;
                     break;
 
                 case Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE:
-                    // Differentiate between root message and reply
-                    if (!empty($this->getParentid())) {
-                        $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR_REPLY;
-                    } else {
-                        $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR;
-                    }
+                    $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR;
                     break;
 
                 default: // todo vérifier les anciennes actions et les logs dans les controlleurs pour eviter la duplication de ces dernier ; aussi les autres actions à personaliser

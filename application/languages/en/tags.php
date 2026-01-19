@@ -372,8 +372,6 @@ return array(
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Clarification answer (contributor to reviewer)",
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR => "Message from author to assigned editors",
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR => "Editor response to author",
-    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_REPLY => "New reply from author",
-    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR_REPLY => "New reply from editor",
     Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assignment',
     Episciences_Paper_Logger::CODE_DOI_UPDATED => 'DOI Updated',
     Episciences_Paper_Logger::CODE_DOI_CANCELED => 'DOI canceled',
