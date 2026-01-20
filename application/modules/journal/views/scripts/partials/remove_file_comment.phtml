@@ -22,9 +22,9 @@
     ], true);
     $buttonText = $this->translate('Supprimer');
 
-    // Since button only shows when there's a file, all messages are about deleting the file only
+    // Since button only shows when there's an attached file, all messages are about deleting the file only
     if ($isAuthorEditorCommunication) {
-        // For author-editor communication messages, delete only the file
+        // For author-editor communication messages, delete only the attached file
         $confirmMessage = $this->translate('Voulez-vous supprimer votre fichier attaché ?');
     } else {
         // Default behavior for other comment types
