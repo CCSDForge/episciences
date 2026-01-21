@@ -29,7 +29,6 @@ class PaperDefaultController extends DefaultController
     public const PAPER_URL_STR = 'paper/view?id=';
     public const ADMINPAPER_URL_STR = 'administratepaper/view?id=';
     public const STATUS = 'status';
-    public const SERVER_NAME_STR = 'SERVER_NAME';
     public const DOC_ID_STR = 'docid';
     public const VERSION_STR = 'version';
     public const COMMENT_STR = 'comment';
@@ -291,7 +290,8 @@ class PaperDefaultController extends DefaultController
             'action' => 'view',
             'id' => $docId]);
 
-        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        // SECURITY FIX: Use trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME'] to prevent Host Header Injection
+        $paperUrl = APPLICATION_URL . $paperUrl;
 
         $tags += [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
@@ -725,7 +725,8 @@ class PaperDefaultController extends DefaultController
                 'id' => $docId
             ]);
 
-        return SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $adminPaperUrl;
+        // SECURITY FIX: Use trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME']
+        return APPLICATION_URL . $adminPaperUrl;
     }
 
     /**
@@ -741,7 +742,8 @@ class PaperDefaultController extends DefaultController
                 'id' => $docId
             ]);
 
-        return SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $paperUrl;
+        // SECURITY FIX: Use trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME']
+        return APPLICATION_URL . $paperUrl;
     }
 
     /**

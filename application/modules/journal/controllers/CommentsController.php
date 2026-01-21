@@ -11,15 +11,54 @@ class CommentsController extends PaperController
 {
     /**
      * Remove a file comment
+     * Security: Requires POST method with CSRF token
      */
     public function removefilecommentAction(): void
     {
 
         $this->_helper->getHelper('layout')->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
+
+        // SECURITY FIX: Require POST method with CSRF token
+        if (!$this->getRequest()->isPost()) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Invalid request method."));
+            $this->_helper->redirector->gotoUrl('/');
+            return;
+        }
+
+        // Verify CSRF token
+        $csrfToken = $this->getRequest()->getPost('csrf_token');
+        $csrfTokenKey = $this->getRequest()->getPost('csrf_token_key');
+        $session = new Zend_Session_Namespace('csrf_remove_file_comment');
+
+        // Support both single token (legacy) and multiple tokens (per file)
+        $isValidToken = false;
+        if (!empty($csrfToken) && !empty($csrfTokenKey) && isset($session->tokens[$csrfTokenKey])) {
+            $isValidToken = hash_equals($session->tokens[$csrfTokenKey], $csrfToken);
+            if ($isValidToken) {
+                unset($session->tokens[$csrfTokenKey]); // Clear used token
+            }
+        }
+
+        if (!$isValidToken) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Invalid or expired security token. Please try again."));
+            $this->_helper->redirector->gotoUrl('/');
+            return;
+        }
+
         $docid = (int)$this->getRequest()->getParam('docid');
         $pcid = (int)$this->getRequest()->getParam('pcid');
         $file = $this->getRequest()->getParam('file');
+
+        // SECURITY FIX: Validate filename format (alphanumeric, dots, dashes, underscores only)
+        if (!is_string($file) || $file === '' || !preg_match('/^[a-zA-Z0-9._-]+$/', $file)) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Invalid filename."));
+            $this->_helper->redirector->gotoUrl('/');
+            return;
+        }
 
         try {
             $paper = Episciences_PapersManager::get($docid, false, RVID);
@@ -93,6 +132,11 @@ class CommentsController extends PaperController
 
                 $dir = $docid . '/comments/';
                 $comment_path = REVIEW_FILES_PATH . $dir . $file;
+
+                if (!$this->validateFileDeletePermission($file, $jFiles, $comment_path, $url)) {
+                    return;
+                }
+
                 $is_file = is_file($comment_path);
 
                 if ($is_file) {
@@ -158,6 +202,10 @@ class CommentsController extends PaperController
         }
 
         $comment_path = REVIEW_FILES_PATH . $dir . $file;
+
+        if (!$this->validateFileDeletePermission($file, $jFiles, $comment_path, $url)) {
+            return;
+        }
 
         $is_file = is_file($comment_path);
         if ($file && $is_file) {//note that is_file() returns false if the parent directory doesn't have +x set for you
@@ -352,6 +400,41 @@ class CommentsController extends PaperController
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
             $this->_helper->redirector->gotoUrl('/paper/submitted');
         }
+    }
+
+    /**
+     * Validate file deletion permission
+     * SECURITY FIX: Verify file belongs to comment and path is within allowed directory
+     *
+     * @param string $file The filename to delete
+     * @param array $jFiles The list of files attached to the comment
+     * @param string $commentPath The full path to the file
+     * @param string $redirectUrl The URL to redirect to on failure
+     * @return bool True if validation passes, false otherwise
+     */
+    private function validateFileDeletePermission(string $file, array $jFiles, string $commentPath, string $redirectUrl): bool
+    {
+        // SECURITY FIX: Verify file belongs to this comment
+        if (!in_array($file, $jFiles, true)) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("File not found in comment."));
+            $this->_helper->redirector->gotoUrl($redirectUrl);
+            return false;
+        }
+
+        // SECURITY FIX: Verify the resolved path is within allowed directory
+        $realPath = realpath($commentPath);
+        $allowedBasePath = realpath(REVIEW_FILES_PATH);
+
+        if ($realPath === false || $allowedBasePath === false ||
+            strpos($realPath, $allowedBasePath . DIRECTORY_SEPARATOR) !== 0) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Access denied."));
+            $this->_helper->redirector->gotoUrl($redirectUrl);
+            return false;
+        }
+
+        return true;
     }
 
 }
