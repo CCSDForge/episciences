@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added visual indicator for pre-defined pages
 
 ### Fixed
+- Incorrecte URL in the mail template when submitting via preprint server
 - [#695](https://github.com/CCSDForge/episciences/issues/695) Fixed CC/BCC fields not clickable in paper status change forms. Clicking CC/BCC now opens contact selection dialog.
 - [#830](https://github.com/CCSDForge/episciences/issues/830)  Paper number messed up for secondary volume
 - altered secondary volume rendering

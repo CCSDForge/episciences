@@ -263,12 +263,13 @@ class Episciences_Review
 
         foreach ($options as $key => $value) {
 
-            $method = 'set';
             if ($key === self::IS_NEW_FRONT_SWITCHED) {
-                $method .= sprintf('%s', Episciences_Tools::convertToCamelCase($key, '_', true));
-            } else {
-                $method .= ucfirst(strtolower($key));
+                $this->setIsNewFrontSwitched($value);
+                continue;
             }
+
+            $method = 'set';
+            $method .= ucfirst(strtolower($key));
 
             if (in_array($method, $methods, true)) {
                 $this->$method($value);
@@ -2287,9 +2288,15 @@ class Episciences_Review
         return $this->isNewFrontSwitched;
     }
 
-    public function setIsNewFrontSwitched(bool $isNewFrontSwitched ): self
+    public function setIsNewFrontSwitched(string $value = 'no'): self
     {
-        $this->isNewFrontSwitched = $isNewFrontSwitched;
+
+        $this->isNewFrontSwitched = false;
+
+        if ($value === 'yes') {
+            $this->isNewFrontSwitched = true;
+        }
+
         return $this;
     }
 
