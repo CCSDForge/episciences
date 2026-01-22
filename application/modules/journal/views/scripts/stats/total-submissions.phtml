@@ -2,7 +2,7 @@
     <div class="submissions-totals">
     <li class="stats-item">
         <span class="stat-label"><?= $this->translate('Total :') ?></span>
-        <span class="stat-value"><?= $this->totalArticles ?></span><span class="stat-label"><?= $this->translate($this->totalArticles > 1 ? 'articles' : 'article') ?></span>
+        <span class="stat-value"><?= $this->totalArticles ?></span>&nbsp;<span class="stat-label"><?= $this->translate($this->totalArticles > 1 ? 'articles' : 'article') ?></span>
         <?php if ($this->totalImportedArticles): ?>
             <?php $importedMsg = $this->totalImportedArticles > 1 ? 'dont %s importés' : 'dont %s importé'; ?>
             <p class="help-block" style="display: inline;">

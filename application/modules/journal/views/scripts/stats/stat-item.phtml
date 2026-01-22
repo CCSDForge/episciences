@@ -19,7 +19,7 @@ if (!$itemLabel && !$itemValue) {
     <?php if ($isRate): ?>
         <span class="fas fa-percent fa-sm stat-icon"></span>
     <?php endif; ?>
-    <?php if (isset($help['message'])): ?>
+    <?php if (isset($help['message']) && $help['message'] !== ''): ?>
         <?php if (!isset($help['isTooltip'])): ?>
             <p class="help-block" style="display: inline;">
                 (<?= sprintf($this->translate($help['message']), '<span class="stat-value">' . ($help['value'] ?? '') . '</span>') ?>
