@@ -60,6 +60,7 @@ services:
       - epi-network
     environment:
       ZK_HOST: "episciences-zoo:2181"
+      SOLR_MODULES: "analysis-extras"
     depends_on:
       - zoo
     volumes:
