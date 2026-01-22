@@ -207,8 +207,8 @@ composer-update: ## Update composer dependencies
 
 yarn-encore-production: ## Build frontend assets for production
 	@echo "Building frontend assets..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) -e HOME=/tmp $(CNTR_NAME_PHP) yarn install
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) -e HOME=/tmp $(CNTR_NAME_PHP) yarn encore production
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn install
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn encore production
 
 enter-container-php: ## Open shell in PHP container
 	@$(DOCKER) exec -it $(CNTR_NAME_PHP) sh -c "cd $(CNTR_APP_DIR) && /bin/bash"

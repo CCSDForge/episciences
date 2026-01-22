@@ -31,7 +31,7 @@ services:
       context: .
       dockerfile: src/php-fpm/Dockerfile
     ports:
-      - "9004:9003" # Xdebug
+      - "9003:9003" # Xdebug
     restart: always
     volumes:
         - .:/var/www/htdocs
