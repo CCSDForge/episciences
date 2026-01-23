@@ -807,12 +807,6 @@ class Episciences_Submit
             $identifier = Episciences_Repositories::getIdentifier($repoId, $id, $version);
             $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
 
-            $oai = null;
-
-            if ($baseUrl) {
-                $oai = new Episciences_Oai_Client($baseUrl, 'xml');
-            }
-
             $paper = new Episciences_Paper(['rvid' => $rvId, 'version' => $version, 'repoid' => $repoId, 'identifier' => $id]);
             //The version of the article is not taken into account when checking its existence locally.
             if (!$isNewVersionOf) { // re-submit an article via "Submit an article". (submit/index)
@@ -822,7 +816,8 @@ class Episciences_Submit
             // Use enriched record from hookApiRecords if available, otherwise fallback to OAI
             if (!empty($hookApiRecord['record'])) {
                 $result['record'] = $hookApiRecord['record'];
-            } elseif ($oai) {
+            } elseif ($baseUrl) {
+                $oai = new Episciences_Oai_Client($baseUrl, 'xml');
                 $result['record'] = $oai->getRecord($identifier);
                 $type = Episciences_Tools::xpath($result['record'], '//dc:type');
 
@@ -835,7 +830,6 @@ class Episciences_Submit
                 }
                 $result['record'] = null;
             }
-
 
 
             if (isset($hookApiRecord[Episciences_Repositories_Common::ENRICHMENT])) {
@@ -1903,7 +1897,7 @@ class Episciences_Submit
                         ]
                     ]);
 
-                } elseif ($paper->getRepoid() !== (int)Episciences_Repositories::ARXIV_REPO_ID){
+                } elseif ($paper->getRepoid() !== (int)Episciences_Repositories::ARXIV_REPO_ID) {
                     $authors = new Episciences_Paper_Authors([
                         'authors' => $jsonVals,
                         'paperId' => $paperId
@@ -2047,15 +2041,13 @@ class Episciences_Submit
         $options = ['sourceId' => $repoId];
 
 
-
-
         foreach ($allDatasets as $datasets) {
-/*
-            ["identifier"] => string(48) "https://hdl.handle.net/21.11115/0000-0016-7FC9-8"
-            ["relation"] => string(7) "HasPart"
-            ["resource_type"] => string(7) "dataset"
-            ["scheme"] => string(3) "url"
-*/
+            /*
+                        ["identifier"] => string(48) "https://hdl.handle.net/21.11115/0000-0016-7FC9-8"
+                        ["relation"] => string(7) "HasPart"
+                        ["resource_type"] => string(7) "dataset"
+                        ["scheme"] => string(3) "url"
+            */
             foreach ($datasets as $key => $value) {
 
 
@@ -2064,7 +2056,7 @@ class Episciences_Submit
                     continue;
                 }
 
-                if ($repoId === (int)Episciences_Repositories::ZENODO_REPO_ID|| $repoId === (int)Episciences_Repositories::ARCHE_ID) {
+                if ($repoId === (int)Episciences_Repositories::ZENODO_REPO_ID || $repoId === (int)Episciences_Repositories::ARCHE_ID) {
 
                     if ($key !== 'identifier') {
                         continue;
@@ -2075,10 +2067,8 @@ class Episciences_Submit
                 }
 
 
-
                 $value = trim($value);
                 $typeLd = Episciences_Tools::checkValueType($value);
-
 
 
                 if ($typeLd === Episciences_Paper_Dataset::DOI_CODE || Episciences_Tools::isDoiWithUrl($value)) {
@@ -2178,7 +2168,7 @@ class Episciences_Submit
      * @return Zend_Form
      * @throws Zend_Form_Exception
      */
-    private static function addDdElement(Zend_Form $form, array &$group , string $type = Episciences_Paper::DATASET_TYPE_TITLE, bool $withRequiredHiddenElement = true): Zend_Form
+    private static function addDdElement(Zend_Form $form, array &$group, string $type = Episciences_Paper::DATASET_TYPE_TITLE, bool $withRequiredHiddenElement = true): Zend_Form
     {
 
         $availableExtensions = ['pdf'];
@@ -2213,7 +2203,7 @@ class Episciences_Submit
 
         if ($group) {
             $group[] = self::DD_FILE_ELEMENT_NAME;
-            if(isset($hiddenElementName)){
+            if (isset($hiddenElementName)) {
                 $group[] = $hiddenElementName;
             }
         }
@@ -2241,7 +2231,7 @@ class Episciences_Submit
             $form->addElement('hash', 'no_csrf_foo', array('salt' => 'unique'));
             $form->getElement('no_csrf_foo')->setTimeout(3600);
 
-            self::addDdElement($form, $group, '', false );
+            self::addDdElement($form, $group, '', false);
 
         } catch (Zend_Form_Exception $e) {
             trigger_error($e->getMessage());
