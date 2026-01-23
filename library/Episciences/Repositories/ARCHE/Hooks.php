@@ -21,6 +21,12 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
         return [];
     }
 
+    /**
+     * @param array $hookParams
+     * @return array
+     * @throws Ccsd_Error
+     */
+
     public static function hookApiRecords(array $hookParams): array
     {
         $xmlString = self::getArcheOaiDatacite($hookParams['identifier']);
@@ -51,27 +57,24 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
         $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-3');
 
         // Extract persons (creators and contributors)
-        $authors = self::extractPersons($metadata, $creatorsDc);
+        $authors = Episciences_Repositories_Common::extractPersons($metadata, $creatorsDc);
         $data['authors'] = $authors;
         $data['creatorsDc'] = $creatorsDc;
 
         // Extract language from XML
         $languageNodes = $metadata->xpath('//datacite:language');
         $language = !empty($languageNodes) ? (string)$languageNodes[0] : 'en';
+
         // Convert to 2-letter code if needed
         if (strlen($language) > 2) {
             $language = Translations::findLanguageCodeByLanguageName($language, ['en', 'fr', 'de']);
         }
 
-
-
-
-
         // Extract titles
-        $titles = self::extractMultilingualContent($metadata, '//datacite:titles/datacite:title', $language);
+        $titles = Episciences_Repositories_Common::extractMultilingualContent($metadata, '//datacite:titles/datacite:title', $language);
 
         // Extract subjects
-        $subjects = self::extractMultilingualContent($metadata, '//datacite:subjects/datacite:subject', $language);
+        $subjects = Episciences_Repositories_Common::extractMultilingualContent($metadata, '//datacite:subjects/datacite:subject', $language);
 
         // Extract descriptions
         $descriptions = self::extractDescriptions($metadata, $language);
@@ -98,7 +101,7 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
         }
 
         // Extract related identifiers
-        $relatedIdentifiers = self::extractRelatedIdentifiersFromMetadata($metadata);
+        $relatedIdentifiers = Episciences_Repositories_Common::extractRelatedIdentifiersFromMetadata($metadata);
 
         // Extract license information
         $rightsNodes = $metadata->xpath('//datacite:rightsList/datacite:rights');
@@ -146,170 +149,13 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
         unset($body['language']);
         $body['language'] = (string)$language; // Force as single-element array
 
+        $enrichment = [
+            Episciences_Repositories_Common::CONTRIB_ENRICHMENT => $authors,
+            Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT => $dcType,
+        ];
 
-        $xmlElements = [];
-        $xmlElements['headers'] = $headers;
-        $xmlElements['body'] = $body;
-
-
-
-        $data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC] = $xmlElements;
-
-        if (!empty($authors)) {
-            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::CONTRIB_ENRICHMENT] = $authors;
-        }
-
-        if (!empty($dcType)) {
-            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT] = $dcType;
-        }
-
+        Episciences_Repositories_Common::assembleData(['headers' => $headers, 'body' => $body], $enrichment, $data);
         return $data;
-    }
-
-    private static function extractPersons($metadata, &$creatorsDc): array
-    {
-        $authors = [];
-        $seenNames = [];
-
-        // Find creators first (primary authors)
-        $creators = $metadata->xpath('//datacite:creators/datacite:creator');
-        foreach ($creators as $creator) {
-            $person = self::processPerson($creator, 'creatorName', $creatorsDc, $seenNames);
-            if (!empty($person)) {
-                $authors[] = $person;
-            }
-        }
-
-        // Find contributors (additional contributors) - only include individual contributors, not institutions
-        $contributors = $metadata->xpath('//datacite:contributors/datacite:contributor');
-        foreach ($contributors as $contributor) {
-            $contributorType = (string)$contributor['contributorType'];
-
-            // Only process individual contributors, skip institutional ones
-            $individualContributorTypes = [
-                'ContactPerson',
-                'DataCurator',
-                'Editor',
-                'ProjectLeader',
-                'Other'
-            ];
-
-            if (in_array($contributorType, $individualContributorTypes)) {
-                $person = self::processPerson($contributor, 'contributorName', $creatorsDc, $seenNames);
-                if (!empty($person)) {
-                    $authors[] = $person;
-                }
-            }
-        }
-
-        return $authors;
-    }
-
-    private static function processPerson($person, $nameField, &$creatorsDc, &$seenNames): array
-    {
-        $affiliations = [];
-        $tmp = [];
-
-        $personName = (string)$person->$nameField;
-        if (empty($personName)) {
-            return [];
-        }
-
-        $name = $personName;
-
-        // Check for duplicates
-        if (in_array($name, $seenNames)) {
-            return [];
-        }
-
-        $seenNames[] = $name;
-        $creatorsDc[] = $name;
-
-        // Parse name assuming "First Last" format (not "Last, First")
-        $nameParts = explode(' ', $name);
-        $tmp['fullname'] = $name;
-
-        if (count($nameParts) >= 2) {
-            // Last word is family name, rest is given name
-            $tmp['family'] = array_pop($nameParts);
-            $tmp['given'] = implode(' ', $nameParts);
-        } else {
-            // Single name - put it in family field
-            $tmp['family'] = $name;
-            $tmp['given'] = '';
-        }
-
-        // Extract ORCID and ARCHE identifiers
-        foreach ($person->nameIdentifier as $identifier) {
-            $scheme = (string)$identifier['nameIdentifierScheme'];
-            $value = (string)$identifier;
-
-            if ($scheme === 'ORCID' && !empty($value)) {
-                $tmp['orcid'] = Episciences_Paper_AuthorsManager::normalizeOrcid($value);
-            } // $scheme === 'ARCHE' is ignored for now
-        }
-
-        // Extract affiliation (if present)
-        if (isset($person->affiliation)) {
-            $affiliation = (string)$person->affiliation;
-            if (!empty($affiliation)) {
-                $affiliations[] = ['name' => $affiliation];
-                $tmp['affiliation'] = $affiliations;
-            }
-        }
-
-        return $tmp;
-    }
-
-    private static function extractMultilingualContent($metadata, $xpath, $language): array
-    {
-        $result = [];
-        $seenValues = [];
-        $nodes = $metadata->xpath($xpath);
-
-        foreach ($nodes as $node) {
-            $value = (string)$node;
-
-            // Skip empty values
-            if (empty($value)) {
-                continue;
-            }
-
-            // Skip duplicate values
-            if (in_array($value, $seenValues)) {
-                continue;
-            }
-            $seenValues[] = $value;
-
-            // Try different ways to get xml:lang attribute
-            $nodeLanguage = '';
-
-            // Method 1: Direct attribute access
-            $attributes = $node->attributes('xml', true);
-            if (isset($attributes['lang'])) {
-                $nodeLanguage = (string)$attributes['lang'];
-            }
-
-            // Method 2: Fallback using xpath on the current node
-            if (empty($nodeLanguage)) {
-                $langAttr = $node->xpath('@xml:lang');
-                if (!empty($langAttr)) {
-                    $nodeLanguage = (string)$langAttr[0];
-                }
-            }
-
-            // Method 3: Fallback to document language, it should have been converted to 2 chars lang code
-            if (empty($nodeLanguage)) {
-                $nodeLanguage = $language;
-            }
-
-            $result[] = [
-                'value' => $value,
-                'language' => $nodeLanguage
-            ];
-        }
-
-        return $result;
     }
 
     private static function extractDescriptions($metadata, $language): array
@@ -329,29 +175,6 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
         }
 
         return $descriptions;
-    }
-
-    private static function extractRelatedIdentifiersFromMetadata($metadata): array
-    {
-        $relatedIdentifiers = [];
-        $relatedIdentifierNodes = $metadata->xpath('//datacite:relatedIdentifiers/datacite:relatedIdentifier');
-
-        foreach ($relatedIdentifierNodes as $relatedId) {
-            $identifier = (string)$relatedId;
-            $relationType = (string)$relatedId['relationType'];
-            $relatedIdentifierType = (string)$relatedId['relatedIdentifierType'];
-
-            if (!empty($identifier)) {
-                $relatedIdentifiers[] = [
-                    'identifier' => $identifier,
-                    'relation' => $relationType,
-                    'resource_type' => 'dataset', // Default to dataset as shown in example
-                    'scheme' => strtolower($relatedIdentifierType) === 'handle' ? 'url' : strtolower($relatedIdentifierType)
-                ];
-            }
-        }
-
-        return $relatedIdentifiers;
     }
 
     public static function hookCleanIdentifiers(array $hookParams): array
@@ -403,7 +226,7 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
             if ($metadata !== false) {
                 // Register namespaces for DataCite
                 $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-3');
-                $relatedIdentifiers = self::extractRelatedIdentifiersFromMetadata($metadata);
+                $relatedIdentifiers = Episciences_Repositories_Common::extractRelatedIdentifiersFromMetadata($metadata);
             }
         }
 

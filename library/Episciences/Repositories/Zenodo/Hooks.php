@@ -1,4 +1,5 @@
 <?php
+
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\Intl\Languages;
@@ -30,6 +31,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      *  Extract the "files" metadata and save it in the database
      * @param array $hookParams
      * @return array
+     * @throws Exception
      */
     public static function hookFilesProcessing(array $hookParams): array
     {
@@ -101,22 +103,33 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             return [];
         }
 
+        $identifier = $hookParams[self::META_IDENTIFIER];
+
         try {
-            $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $hookParams[self::META_IDENTIFIER]);
-
-            if (false === $response) {
-                throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
-            }
-
+            $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $identifier);
         } catch (GuzzleException $e) {
-            throw new Ccsd_Error($e->getMessage());
+            throw new Ccsd_Error($e->getMessage(), (int)$e->getCode());
+        }
+
+        if ($response === false || $response === null) {
+            throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
+        }
+
+        if (!is_array($response)) {
+            throw new Ccsd_Error('Unexpected API response format');
         }
 
         if ($response) {
             self::enrichmentProcess($response);
         }
 
-        $oaiData = self::getZenodoOaiDatacite($hookParams[self::META_IDENTIFIER]);
+        // Ensure the structure exists before enrichment from OAI
+        if (!isset($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'])
+            || !is_array($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'])) {
+            $response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'] = [];
+        }
+
+        $oaiData = self::getZenodoOaiDatacite($identifier);
         if ($oaiData) {
             $responseFromOai = self::enrichmentProcessFromOAI($oaiData);
             if (!empty($responseFromOai[self::META_DESCRIPTION])) {
@@ -133,7 +146,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         return $response ?: [];
     }
-
     /**
      * @param array $hookParams ['identifier' => '1234', 'response' => []]
      * @return array
@@ -402,23 +414,15 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             $body['rights'][] = 'info:eu-repo/semantics/openAccess';
         }
 
-        $xmlElements['headers'] = $headers;
-        $xmlElements['body'] = $body;
+        $enrichment = [
+            Episciences_Repositories_Common::CONTRIB_ENRICHMENT => $authors,
+            Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT=> $dcType,
+            Episciences_Repositories_Common::FILES =>  $data[Episciences_Repositories_Common::FILES]
 
-        $data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC] = $xmlElements;
+        ];
 
-        if (!empty($authors)) {
-            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::CONTRIB_ENRICHMENT] = $authors;
-        }
+        Episciences_Repositories_Common::assembleData(['headers' => $headers, 'body' => $body], $enrichment, $data);
 
-        if (!empty($type)) {
-            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT] = $type;
-        }
-
-
-        if (isset($data[Episciences_Repositories_Common::FILES])) {
-            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::FILES] = $data[Episciences_Repositories_Common::FILES];
-        }
     }
 
     /**
@@ -540,7 +544,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     {
         $data = [];
 
-
         $metadata = simplexml_load_string($xmlString);
         if ($metadata === false) {
             throw new \http\Exception\InvalidArgumentException('Invalid XML');
@@ -549,7 +552,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         // Register namespaces for OAI-PMH and DataCite
         $metadata->registerXPathNamespace('oai', 'http://www.openarchives.org/OAI/2.0/');
         $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
-
 
 
         // Extract language from XML
@@ -566,7 +568,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         }
 
         // Extract titles
-        $titles = self::extractMultilingualContent($metadata, '//datacite:titles/datacite:title', $language);
+        $titles = Episciences_Repositories_Common::extractMultilingualContent($metadata, '//datacite:titles/datacite:title', $language);
 
         // Extract descriptions
         $descriptions = self::extractDescriptions($metadata, $language);
@@ -581,53 +583,8 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $xmlElements = [];
         $xmlElements['body'] = $data;
 
-
-
         $data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC] = $xmlElements;
 
         return $data;
     }
-
-
-
-    private static function extractMultilingualContent($metadata, $xpath, $language): array
-    {
-        $result = [];
-        $nodes = $metadata->xpath($xpath);
-
-        foreach ($nodes as $node) {
-            // Try different ways to get xml:lang attribute
-            $nodeLanguage = '';
-
-            // Method 1: Direct attribute access
-            $attributes = $node->attributes('xml', true);
-            if (isset($attributes['lang'])) {
-                $nodeLanguage = (string)$attributes['lang'];
-            }
-
-            // Method 2: Fallback using xpath on the current node
-            if (empty($nodeLanguage)) {
-                $langAttr = $node->xpath('@xml:lang');
-                if (!empty($langAttr)) {
-                    $nodeLanguage = (string)$langAttr[0];
-                }
-            }
-
-            // Method 3: Fallback to document language, it should have been converted to 2 chars lang code
-            if (empty($nodeLanguage)) {
-                $nodeLanguage = $language;
-            }
-
-            $result[] = [
-                'value' => (string)$node,
-                'language' => $nodeLanguage
-            ];
-        }
-
-        return $result;
-    }
-
-
-
-
 }

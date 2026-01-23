@@ -314,8 +314,7 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
                                             isset($val['authorIdentifierScheme']['value']) &&
                                             $val['authorIdentifierScheme']['value'] === 'ORCID'
                                         ) {
-                                            $tmp['orcid'] = $val['authorIdentifier']['value'];
-
+                                            $tmp['orcid'] = Episciences_Paper_AuthorsManager::normalizeOrcid($val['authorIdentifier']['value']);
                                         }
 
                                     } else {

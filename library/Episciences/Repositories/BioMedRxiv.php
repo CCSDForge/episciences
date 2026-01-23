@@ -474,7 +474,7 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Ho
                     ];
 
                     if ($orcid !== '') {
-                        $tmp['orcid'] = $orcid;
+                        $tmp['orcid'] = Episciences_Paper_AuthorsManager::normalizeOrcid($orcid);
                     }
 
                     foreach ($contribLabelAffiliation as $label) {

@@ -2805,6 +2805,7 @@ class Episciences_PapersManager
         // Use enriched record from hookApiRecords if available, otherwise fallback to OAI
         if (!empty($response['record'])) {
             $record = $response['record'];
+            $enrichment = $response['enrichment'] ?? [];
         } elseif ($oai) {
             $record = $oai->getRecord($repoIdentifier);
             $type = Episciences_Tools::xpath($record, '//dc:type');
@@ -2815,8 +2816,6 @@ class Episciences_PapersManager
 
         } else {
             $record = $response['record'] ?? '';
-            $enrichment = $response['enrichment'] ?? [];
-
         }
 
         if($record !== ''){
@@ -2834,7 +2833,7 @@ class Episciences_PapersManager
         ]);
 
         if (array_key_exists('record', $result)) {
-            list($record, $enrichment, $affectedRows) = self::updateRecordDataProcessFilesHook($result['record'], $docId, $repoId, $identifier, $enrichment, $affectedRows);
+            [$record, $enrichment, $affectedRows] = self::updateRecordDataProcessFilesHook($result['record'], $docId, $repoId, $identifier, $enrichment, $affectedRows);
         }
 
         if (Episciences_Repositories::hasHook($repoId)) {
