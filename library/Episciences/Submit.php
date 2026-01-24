@@ -7,6 +7,7 @@ use Episciences\Paper\DataDescriptor;
 use Episciences\Paper\DataDescriptorManager;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
 class Episciences_Submit
 {
@@ -1025,11 +1026,11 @@ class Episciences_Submit
      * @param int|null $vid
      * @param int|null $sid
      * @return array
+     * @throws InvalidArgumentExceptionAlias
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_File_Transfer_Exception
-     * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
      */
@@ -1145,7 +1146,7 @@ class Episciences_Submit
                 if (Episciences_Repositories::isFromHalRepository($paper->getRepoid())) { // try to enrich with TEI HAL
                     Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($paper->getRepoid(), $paper->getPaperid(), $paper->getIdentifier(), (int)$paper->getVersion());
                 }
-            } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
+            } catch (JsonException|InvalidArgumentExceptionAlias $e) {
                 trigger_error($e->getMessage());
             }
 
@@ -1944,9 +1945,11 @@ class Episciences_Submit
                     if ($paper->save()) {
                         ++$insertedRows;
                     }
-                } catch (Zend_Db_Adapter_Exception $e) {
+                } catch (Zend_Db_Adapter_Exception | InvalidArgumentExceptionAlias $e) {
                     trigger_error($e->getMessage());
                 }
+            } elseif($key === Episciences_Repositories_Common::RELATED_IDENTIFIERS ){
+                $insertedRows += self::processDatasets($paper->getDocid(), $enrichment[Episciences_Repositories_Common::RELATED_IDENTIFIERS]);
             }
         }
         return $insertedRows;

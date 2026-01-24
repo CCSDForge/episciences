@@ -88,7 +88,7 @@ class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_
     public static function hookCleanIdentifiers(array $hookParams): array
     {
         str_replace(Episciences_Repositories_Common::URL_HDL, '', $hookParams['id']);
-        return [];
+        return $hookParams;
     }
 
     public static function hookVersion(array $hookParams): array
@@ -211,7 +211,7 @@ class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_
         $authors = Episciences_Repositories_Common::extractPersons($xml, $creatorsDc, 'datacite:creatorName'); // for enrichment
 
         // Extract publisher
-        $publisher = self::firstXPathValue($xml, '//dc:publiasher');
+        $publisher = self::firstXPathValue($xml, '//dc:publisher');
         // DataCite: dates
         $dates = array_map(static function ($date) {
             return [
@@ -247,29 +247,41 @@ class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_
             $datestamp,
             $identifiers,
             $license,
-            $relatedIdentifiers
+            $publisher
         );
 
         $enrichment = [
             Episciences_Repositories_Common::CONTRIB_ENRICHMENT => $authors,
             Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT => $dcType,
-            Episciences_Repositories_Common::FILES => [$file]
         ];
+
+        if ($file) {
+            $enrichment[Episciences_Repositories_Common::FILES] = [$file];
+        }
+
+        if (!empty($relatedIdentifiers)) {
+            $enrichment[Episciences_Repositories_Common::RELATED_IDENTIFIERS] = $relatedIdentifiers;
+        }
 
         Episciences_Repositories_Common::assembleData(['headers' => $header, 'body' => $body], $enrichment, $data);
         return $data;
     }
 
-    private static function registerDefaultNamespaces(\SimpleXMLElement $xml): void
+    private static function registerDefaultNamespaces(SimpleXMLElement $xml): void
     {
         $xml->registerXPathNamespace('oaire', 'http://namespace.openaire.eu/schema/oaire/');
         $xml->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
         $xml->registerXPathNamespace('dc', 'http://purl.org/dc/elements/1.1/');
     }
 
-    private static function firstXPathValue(\SimpleXMLElement $xml, string $xpath): string
+    private static function getXPathValues(SimpleXMLElement $xml, string $xpath): array
     {
-        $nodes = $xml->xpath($xpath);
+        return $xml->xpath($xpath);
+    }
+
+    private static function firstXPathValue(SimpleXMLElement $xml, string $xpath): string
+    {
+        $nodes = self::getXPathValues($xml, $xpath);
         return !empty($nodes) ? (string)$nodes[0] : '';
     }
 
@@ -279,7 +291,7 @@ class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_
      * @return string
      */
 
-    private static function extractLanguage(\SimpleXMLElement $xml): string
+    private static function extractLanguage(SimpleXMLElement $xml): string
     {
         $languageNodes = $xml->xpath('//dc:language');
         $language = !empty($languageNodes) ? (string)$languageNodes[0] : 'en';
@@ -287,7 +299,7 @@ class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_
         return Episciences_Repositories_Common::convertTo2LetterCode($language) ?? 'en';
     }
 
-    private static function extractLicense(\SimpleXMLElement $xml): string
+    private static function extractLicense(SimpleXMLElement $xml): string
     {
         $rightsNodes = $xml->xpath('//' . Episciences_Repositories_Common::XML_OPENAIRE_RIGHTS_NODE);
         if (empty($rightsNodes)) {
@@ -308,7 +320,7 @@ class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_
         string $datestamp,
         array  $identifiers,
         string $license,
-        array  $relatedIdentifiers
+        string | array $publisher
     ): array
     {
         return [
@@ -322,7 +334,7 @@ class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_
             'date' => $datestamp,
             'identifier' => $identifiers,
             'rights' => $license,
-            'relation' => $relatedIdentifiers,
+            'publisher' => $publisher
         ];
     }
 

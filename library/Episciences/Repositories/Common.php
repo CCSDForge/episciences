@@ -21,6 +21,7 @@ class Episciences_Repositories_Common
     public const CONTRIB_ENRICHMENT = 'authors';
     public const LICENSE_ENRICHMENT = 'license';
     public const RESOURCE_TYPE_ENRICHMENT = 'type';
+    public const RELATED_IDENTIFIERS = 'relatedIdentifiers';
     public const TO_COMPILE_OAI_DC = 'toCompileOaiDc';
     public const FILES = 'files';
 
@@ -28,7 +29,8 @@ class Episciences_Repositories_Common
         self::CONTRIB_ENRICHMENT,
         self::CITATIONS,
         self::PROJECTS,
-        self::RESOURCE_TYPE_ENRICHMENT
+        self::RESOURCE_TYPE_ENRICHMENT,
+        self::RELATED_IDENTIFIERS
     ];
 
 
@@ -452,6 +454,10 @@ class Episciences_Repositories_Common
 
         if (isset($enrichment[self::FILES])) {
             $assembled[self::ENRICHMENT][self::FILES] = $enrichment[self::FILES];
+        }
+
+        if(isset($enrichment[self::RELATED_IDENTIFIERS])) {
+            $assembled[self::ENRICHMENT][self::RELATED_IDENTIFIERS] = $enrichment[self::RELATED_IDENTIFIERS];
         }
     }
 
