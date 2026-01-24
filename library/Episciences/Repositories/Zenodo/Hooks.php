@@ -10,10 +10,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     public const CONCEPT_IDENTIFIER = 'conceptrecid';
     const ZENODO_OAI_PMH_API = 'https://zenodo.org/oai2d?verb=GetRecord&metadataPrefix=datacite&identifier=oai:zenodo.org:';
 
-    const XML_LANG_ATTR = 'xml:lang';
-    const META_DESCRIPTION = 'description';
-    const META_IDENTIFIER = 'identifier';
-
 
     public static function hookCleanXMLRecordInput(array $input): array
     {
@@ -89,7 +85,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         $identifier = str_replace($search, '', $identifier);
 
-        return [self::META_IDENTIFIER => $identifier];
+        return [Episciences_Repositories_Common::META_IDENTIFIER => $identifier];
     }
 
     /**
@@ -99,11 +95,11 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      */
     public static function hookApiRecords(array $hookParams): array
     {
-        if (!isset($hookParams[self::META_IDENTIFIER])) {
+        if (!isset($hookParams[Episciences_Repositories_Common::META_IDENTIFIER])) {
             return [];
         }
 
-        $identifier = $hookParams[self::META_IDENTIFIER];
+        $identifier = $hookParams[Episciences_Repositories_Common::META_IDENTIFIER];
 
         try {
             $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $identifier);
@@ -132,8 +128,8 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $oaiData = self::getZenodoOaiDatacite($identifier);
         if ($oaiData) {
             $responseFromOai = self::enrichmentProcessFromOAI($oaiData);
-            if (!empty($responseFromOai[self::META_DESCRIPTION])) {
-                $response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'][self::META_DESCRIPTION] = $responseFromOai[self::META_DESCRIPTION];
+            if (!empty($responseFromOai[Episciences_Repositories_Common::META_DESCRIPTION])) {
+                $response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'][Episciences_Repositories_Common::META_DESCRIPTION] = $responseFromOai[Episciences_Repositories_Common::META_DESCRIPTION];
             }
             if (!empty($responseFromOai['title'])) {
                 $response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body']['title'] = $responseFromOai['title'];
@@ -209,7 +205,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
                 $found[0] = str_replace('</dc:relation>', '', $found[0]);
                 /** array */
                 $found[0] = self::hookCleanIdentifiers(array_merge(['id' => $found[0]], $hookParams));
-                $conceptIdentifier = $found[0][self::META_IDENTIFIER];
+                $conceptIdentifier = $found[0][Episciences_Repositories_Common::META_IDENTIFIER];
             }
         }
 
@@ -245,8 +241,8 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     private static function checkResponse(array $hookParams): array
     {
         $response = [];
-        if (isset($hookParams[self::META_IDENTIFIER]) && empty($hookParams['response'])) {
-            $response = self::hookApiRecords([self::META_IDENTIFIER => $hookParams[self::META_IDENTIFIER]]);
+        if (isset($hookParams[Episciences_Repositories_Common::META_IDENTIFIER]) && empty($hookParams['response'])) {
+            $response = self::hookApiRecords([Episciences_Repositories_Common::META_IDENTIFIER => $hookParams[Episciences_Repositories_Common::META_IDENTIFIER]]);
         } elseif (isset($hookParams['response'])) {
             $response = $hookParams['response'];
         }
@@ -311,7 +307,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         if (isset($data['doi_url'])) {
             $urlIdentifier = $data['doi_url'];
-            $headers[self::META_IDENTIFIER] = $urlIdentifier;
+            $headers[Episciences_Repositories_Common::META_IDENTIFIER] = $urlIdentifier;
             $identifiers[] = $urlIdentifier;
         }
 
@@ -364,8 +360,8 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         $language = isset($metadata['language']) ? lcfirst(mb_substr($metadata['language'], 0, 2)) : 'en';
 
-        if (isset($metadata[self::META_DESCRIPTION])) {
-            $desValue = Episciences_Tools::epi_html_decode($metadata[self::META_DESCRIPTION], ['HTML.AllowedElements' => 'p']);
+        if (isset($metadata[Episciences_Repositories_Common::META_DESCRIPTION])) {
+            $desValue = Episciences_Tools::epi_html_decode($metadata[Episciences_Repositories_Common::META_DESCRIPTION], ['HTML.AllowedElements' => 'p']);
             $value = trim(str_replace(['<p>', '</p>'], '', $desValue));
         } else {
             $value = '';
@@ -379,7 +375,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $body['title'] = $metadata['title'] ?? '';
         $body['creator'] = $creatorsDc;
         $body['subject'] = $metadata['keywords'] ?? [];
-        $body[self::META_DESCRIPTION] = $description;
+        $body[Episciences_Repositories_Common::META_DESCRIPTION] = $description;
         $body['language'] = $language;
 
         if ($dcType) {
@@ -387,7 +383,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         }
 
         $body['date'] = $datestamp;
-        $body[self::META_IDENTIFIER] = $identifiers;
+        $body[Episciences_Repositories_Common::META_IDENTIFIER] = $identifiers;
 
         $license = $metadata['license']['id'] ?? '';
 
@@ -510,8 +506,8 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
                 }
 
                 // Extract xml:lang from the attributes array we just built
-                if (isset($allAttributes[self::XML_LANG_ATTR])) {
-                    $nodeLanguage = $allAttributes[self::XML_LANG_ATTR];
+                if (isset($allAttributes[Episciences_Repositories_Common::XML_LANG_ATTR])) {
+                    $nodeLanguage = $allAttributes[Episciences_Repositories_Common::XML_LANG_ATTR];
                 }
 
                 // Convert 3-letter language codes to 2-letter codes if needed
@@ -576,7 +572,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         // Build additional data
         $data['title'] = $titles;
         $data['titles'] = $titles;
-        $data[self::META_DESCRIPTION] = $descriptions;
+        $data[Episciences_Repositories_Common::META_DESCRIPTION] = $descriptions;
         $data['language'] = $language;
 
         // Prepare body data for Dublin Core conversion

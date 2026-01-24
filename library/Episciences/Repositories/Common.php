@@ -32,6 +32,9 @@ class Episciences_Repositories_Common
         self::RESOURCE_TYPE_ENRICHMENT,
         self::RELATED_IDENTIFIERS
     ];
+    public const META_IDENTIFIER = 'identifier';
+    public const XML_LANG_ATTR = 'xml:lang';
+    public const META_DESCRIPTION = 'description';
 
 
     public static function isOpenAccessRight(array $hookParams): array

@@ -87,8 +87,8 @@ class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_
 
     public static function hookCleanIdentifiers(array $hookParams): array
     {
-        str_replace(Episciences_Repositories_Common::URL_HDL, '', $hookParams['id']);
-        return $hookParams;
+        $identifier = str_replace(Episciences_Repositories_Common::URL_HDL, '', $hookParams['id']);
+        return [Episciences_Repositories_Common::META_IDENTIFIER => $identifier];
     }
 
     public static function hookVersion(array $hookParams): array
