@@ -2059,7 +2059,10 @@ class Episciences_Submit
                     continue;
                 }
 
-                if ($repoId === (int)Episciences_Repositories::ZENODO_REPO_ID || $repoId === (int)Episciences_Repositories::ARCHE_ID) {
+                if (
+                    $repoId === (int)Episciences_Repositories::ZENODO_REPO_ID ||
+                    $repoId === (int)Episciences_Repositories::ARCHE_ID ||
+                    Episciences_Repositories::isDspace($repoId)) {
 
                     if ($key !== 'identifier') {
                         continue;
