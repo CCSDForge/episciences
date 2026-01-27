@@ -1122,19 +1122,22 @@ class Episciences_Tools
     }
 
     /**
-     * @param string $text
-     * @return mixed|string|string[]|null
+     * Normalize text for HTML display by converting tabs and 4+ spaces to non‑breaking spaces and preserving line breaks.
      */
-    public static function formatText(string $text = '')
+    public static function formatText(?string $text = null): string
     {
-        $tab = '&nbsp;&nbsp;&nbsp;&nbsp;';
-        if (!empty($text)) {
-            $text = str_replace('\t', $tab, $text);
-            $text = preg_replace("/ {4,}/", $tab, $text);
-            $text = nl2br($text);
+        if ($text === null || $text === '') {
+            return '';
         }
-        return $text;
+
+        $htmlTab = '&nbsp;&nbsp;&nbsp;&nbsp;';
+
+        $formatted = str_replace("\t", $htmlTab, $text);
+        $formatted = preg_replace('/ {4,}/', $htmlTab, $formatted);
+
+        return nl2br($formatted);
     }
+
 
     /**
      * Compare les deux tableaux + Calcule l'intersection et la différence entre eux
