@@ -5402,6 +5402,11 @@ class Episciences_Paper
         return $docUrlLabel;
 
     }
+
+    public function getStatusLabelFromDictionary(): string
+    {
+        return self::STATUS_DICTIONARY[$this->getStatus()] ?? 'unknown';
+    }
 }
 
 

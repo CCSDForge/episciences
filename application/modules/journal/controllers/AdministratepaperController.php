@@ -1799,10 +1799,10 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function acceptAction(): void
     {
@@ -4087,9 +4087,7 @@ class AdministratepaperController extends PaperDefaultController
         ];
 
         $uidS = $this->unssignUser($paper, [Episciences_Auth::getUid()], $this->buildPublicPaperUrl($docId));
-
-        // Ici le statut de l'article n'a pas été changé, mais les notifs sont identiques.
-        $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_REFUSED_MONITORING, null, $tags, [], false, $uidS);
+        $this->notifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_REFUSED_MONITORING, null, $tags, [], false, $uidS);
 
         return true;
     }

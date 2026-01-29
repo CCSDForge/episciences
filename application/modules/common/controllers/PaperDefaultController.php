@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\AppRegistry;
+use Episciences\QueueMessage;
 use Episciences\Trait\Tools;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
@@ -202,7 +203,6 @@ class PaperDefaultController extends DefaultController
      * @param array $tags
      * @param array $CC
      * @return bool
-     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -540,7 +540,7 @@ class PaperDefaultController extends DefaultController
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      */
-    protected function paperStatusChangedNotifyManagers(Episciences_Paper $paper, string $templateType, Episciences_User $principalRecipient = null, array $tags = [], array $attachments = [], bool $strict = true, array $ignoredRecipients = []): void
+    public function notifyManagers(Episciences_Paper $paper, string $templateType, Episciences_User $principalRecipient = null, array $tags = [], array $attachments = [], bool $strict = true, array $ignoredRecipients = []): void
     {
         $docId = (int)$paper->getDocid();
 
@@ -584,6 +584,22 @@ class PaperDefaultController extends DefaultController
             //reset $CC
             $CC = [];
         }
+    }
+
+    /**
+     * @param Episciences_User|null $principalRecipient : action initiator
+     * @param boolean $strict = true : prendre en compte le module de notifications
+     * @throws JsonException
+     * @throws Zend_Date_Exception
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Mail_Exception
+     */
+    protected function paperStatusChangedNotifyManagers(Episciences_Paper $paper, string $templateType, Episciences_User $principalRecipient = null, array $tags = [], array $attachments = [], bool $strict = true, array $ignoredRecipients = []): void
+    {
+        $this->notifyManagers($paper, $templateType, $principalRecipient, $tags, $attachments, $strict, $ignoredRecipients);
+        $this->postPaperStatus($paper);
     }
 
     /**
@@ -926,6 +942,37 @@ class PaperDefaultController extends DefaultController
     {
         $this->index($paper);
         $this->COARNotify($paper, $journal);
+
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @return void
+     */
+
+    protected function postPaperStatus(Episciences_Paper $paper): void
+    {
+
+        $journal = Episciences_ReviewsManager::find($paper->getRvid());
+
+        $isPostStatusEnabled = $journal->getSetting(Episciences_Review::SETTING_POST_PAPER_STATUS) === '1';
+
+        if (!$isPostStatusEnabled){
+            return;
+        }
+
+        $statusLabel = $paper->getStatusLabelFromDictionary();
+
+        $queue = new QueueMessage(QueueMessage::TYPE_STATUS_CHANGED);
+
+        $data = [
+            'docId' => $paper->getDocid(),
+            'permanentId' => $paper->getPaperid(),
+            'status' => $paper->getStatus(),
+            'statusLabel' => $statusLabel
+        ];
+
+       $queue->send($data, $journal->getCode());
 
     }
 

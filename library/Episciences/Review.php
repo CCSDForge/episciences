@@ -92,6 +92,9 @@ class Episciences_Review
     public const SETTING_SYSTEM_NOTIFICATIONS = 'systemNotifications';
     public const SETTING_SYSTEM_IS_COI_ENABLED = 'isCoiEnabled'; //Conflict Of Interest (COI) is Disabled by default
     public const SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED = 'coiCommentsToEditorsEnabled';
+    // send the document status to an external API (currently configurable in the database)
+    // INSERT INTO `REVIEW_SETTING` (`RVID`, `SETTING`, `VALUE`, `TIME`) VALUES (?, 'postPaperStatus', '1', CURRENT_TIMESTAMP);
+    public const SETTING_POST_PAPER_STATUS = 'postPaperStatus'; // Valeurs possibles [0,1]
 
     public const ASSIGNMENT_EDITORS_DETAIL = [
         self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS => '0',

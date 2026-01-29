@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+- It is now possible to report status changes to an external entry point
 - [#658](https://github.com/CCSDForge/episciences/issues/658) It is now possible to link an invitation that is not intended for you to your account
 - allow the co-author to view the publication
 - Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
