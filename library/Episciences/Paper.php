@@ -3,6 +3,8 @@
 use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
+use Episciences\QueueMessage;
+use Episciences\QueueMessageManager;
 use Psr\Log\LogLevel;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Intl\Exception\MissingResourceException;
@@ -635,6 +637,11 @@ class Episciences_Paper
         if ($this->getPaperid() && $this->getDocid()) {
             $detail = (is_array($detail)) ? Zend_Json::encode($detail) : $detail;
             Episciences_Paper_Logger::log($this->getPaperid(), $this->getDocid(), $action, $uid, $detail, $date, $this->getRvid());
+
+            if ($action === Episciences_Paper_Logger::CODE_STATUS) {
+                $this->postPaperStatus();
+            }
+
             return true;
         }
 
@@ -5401,6 +5408,38 @@ class Episciences_Paper
         $docUrlLabel .= Episciences_Repositories::getLabel($this->getRepoid());
         return $docUrlLabel;
 
+    }
+
+    public function getStatusLabelFromDictionary(): string
+    {
+        return self::STATUS_DICTIONARY[$this->getStatus()] ?? 'unknown';
+    }
+
+    private function postPaperStatus(): void
+    {
+
+        $journal = Episciences_ReviewsManager::find($this->getRvid());
+        // This parameter must be activated directly in the database
+        $isPostStatusEnabled = $journal->getSetting(Episciences_Review::SETTING_POST_PAPER_STATUS) === '1';
+
+        if (!$isPostStatusEnabled){
+            return;
+        }
+
+        $data = [
+            'docId' => $this->getDocid(),
+            'permanentId' => $this->getPaperid(),
+            'status' => $this->getStatus(),
+            'statusLabel' => $this->getStatusLabelFromDictionary()
+        ];
+
+        $queue = new QueueMessage([
+            'rvcode' => $journal->getCode(),
+            'message' => $data,
+            'type' => QueueMessageManager::TYPE_STATUS_CHANGED
+        ]);
+
+        $queue->send();
     }
 }
 

@@ -1,9 +1,11 @@
 <?php
+namespace scripts;
 
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use Script;
 
 require_once "Script.php";
 
