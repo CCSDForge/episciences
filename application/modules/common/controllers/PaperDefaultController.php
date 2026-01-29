@@ -963,8 +963,6 @@ class PaperDefaultController extends DefaultController
 
         $statusLabel = $paper->getStatusLabelFromDictionary();
 
-        $queue = new QueueMessage(QueueMessage::TYPE_STATUS_CHANGED);
-
         $data = [
             'docId' => $paper->getDocid(),
             'permanentId' => $paper->getPaperid(),
@@ -972,8 +970,12 @@ class PaperDefaultController extends DefaultController
             'statusLabel' => $statusLabel
         ];
 
-       $queue->send($data, $journal->getCode());
+        $queue = new QueueMessage([
+            'rvcode' => $journal->getCode(),
+            'message' => $data,
+            'type' =>QueueMessage::TYPE_STATUS_CHANGED
+        ]);
 
+        $queue->send();
     }
-
 }

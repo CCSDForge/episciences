@@ -129,9 +129,15 @@ class QueueMessage
         $this->rvcode = $rvcode;
     }
 
-    private function setMessage(?string $message): void
+    private function setMessage(array $message): void
     {
-        $this->message = $message;
+        $json = $this->dataToJson($message);
+
+        if ($json === '') {
+            throw new InvalidArgumentException("Message cannot be empty");
+        }
+
+        $this->message = $json;
     }
 
     private function setTimeout(?int $timeout): void
@@ -162,14 +168,13 @@ class QueueMessage
         ];
     }
 
-    public function send(array $data, string $rvCode): int
+    public function send(): int
     {
-        $message = $this->dataToJson($data);
-        $unprocessed = self::UNPROCESSED;
-
-        if ($message === '') {
-            throw new InvalidArgumentException("Message cannot be empty");
+        if(empty($this->getRvcode())){
+            throw new InvalidArgumentException("rvcode cannot be empty");
         }
+
+        $unprocessed = self::UNPROCESSED;
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -179,9 +184,9 @@ class QueueMessage
         $stmt = $db?->prepare($sql);
 
         $stmt->execute([
-            'rvcode' => $rvCode,
+            'rvcode' => $this->getRvcode(),
             ':type' => $this->getType(),
-            ':message' => $message
+            ':message' =>$this->getMessage()
         ]);
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -189,21 +194,17 @@ class QueueMessage
         return (int)$db?->lastInsertId();
     }
 
-    public function delete(int $id, bool $forceDelete = false): int
+    public function delete(bool $forceDelete = false): int
     {
-
-        if ($id < 1) {
-            throw new InvalidArgumentException("Invalid ID: $id");
-        }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         if ($forceDelete) {
-            return $db?->delete($this->getTable(), ['id = ?' => $id]);
+            return $db?->delete($this->getTable(), ['id = ?' => $this->getId()]);
         }
 
         try {
-            return $db?->update($this->getTable(), ['processed' => self::PROCESSED], ['id = ?' => $id]);
+            return $db?->update($this->getTable(), ['processed' => self::PROCESSED], ['id = ?' => $this->getId()]);
         } catch (Zend_Db_Adapter_Exception $e) {
             return 0;
         }
@@ -240,9 +241,14 @@ class QueueMessage
             return $result;
         }
 
-        return array_map(static function ($values) {
-            return new self($values);
-        }, $result);
+        $array_map = [];
+        foreach ($result as $key => $values) {
+            if(isset($values['message'])){
+                $values['message'] = $this->jsonToArray($values['message']);
+            }
+            $array_map[$key] = new self($values);
+        }
+        return $array_map;
 
     }
 
@@ -260,6 +266,18 @@ class QueueMessage
         }
 
         return $message;
+
+    }
+
+    private function jsonToArray(string $message): ?array
+    {
+
+        try {
+            return json_decode($message, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
+            return null;
+        }
 
     }
 

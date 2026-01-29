@@ -46,7 +46,7 @@ class StatusQueue extends Queue
             try {
                 $response = $this->handleJob($client, $currentEndPoint, $token, $queueMsg->getMessage());
                 if ($response) {
-                    $queueMsg->delete($queueMsg->getId(), $this->getParam('delProcessed'));
+                    $queueMsg->delete($this->getParam('delProcessed'));
                 }
             } catch (GuzzleException $e) {
                 $this->logger->critical($e->getMessage());
