@@ -18,18 +18,18 @@ class StatusQueue extends Queue
 
     public function processQueue(): void
     {
-
-        $currentRvCode = null;
-        $currentPath = null;
-        $currentEndPoint = null;
-        $token = null;
-
         $queueMessages = $this->getQueueMessages();
 
         if (count($queueMessages) === 0) {
             $this->logger->info('No data to process');
             return;
         }
+
+        $client = $this->getClient();
+        $currentRvCode = null;
+        $currentPath = null;
+        $currentEndPoint = null;
+        $token = null;
 
         /**
          * @var QueueMessage $queueMsg
@@ -44,13 +44,12 @@ class StatusQueue extends Queue
             $this->initCurrentJournalParametersFromData($queueMsg, $currentRvCode, $currentPath, $currentEndPoint, $token);
 
             try {
-                $response = $this->handleJob($currentEndPoint, $token, $queueMsg->getMessage());
+                $response = $this->handleJob($client, $currentEndPoint, $token, $queueMsg->getMessage());
                 if ($response) {
-                    $queueMsg->delete($queueMsg->getId(), true);
+                    $queueMsg->delete($queueMsg->getId(), $this->getParam('delProcessed'));
                 }
             } catch (GuzzleException $e) {
                 $this->logger->critical($e->getMessage());
-
             }
         }
     }
@@ -60,6 +59,7 @@ class StatusQueue extends Queue
      * 200 OK
      * 201 Created
      * 202 Accepted
+     * @param Client $client
      * @param string $endPoint
      * @param string $token
      * @param string $data
@@ -67,9 +67,8 @@ class StatusQueue extends Queue
      * @throws GuzzleException
      */
 
-    private function handleJob(string $endPoint, string $token, string $data): bool
+    private function handleJob(Client $client, string $endPoint, string $token, string $data): bool
     {
-        $client = $this->getClient();
         $response = $client->post($endPoint, [
             'headers' => [
                 'Authorization' => 'Bearer ' . $token,

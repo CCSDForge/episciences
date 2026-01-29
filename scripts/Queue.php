@@ -1,4 +1,5 @@
 <?php
+
 namespace scripts;
 
 use Episciences\QueueMessage;
@@ -9,6 +10,7 @@ abstract class Queue extends AbstractScript
 {
     public const CLIENT_TIMEOUT = 30;
     protected string $type;
+
     public function __construct()
     {
         $this->setRequiredParams([]);
@@ -44,80 +46,3 @@ abstract class Queue extends AbstractScript
         $this->initDb();
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
