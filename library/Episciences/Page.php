@@ -5,14 +5,14 @@ use League\HTMLToMarkdown\HtmlConverter;
 class Episciences_Page
 {
     private int $id = 0;
-    private string $code;
-    private int $uid;
+    private string $code = '';
+    private int $uid = 0;
     private string $date_creation = '';
-    private string $date_updated;
-    private string|array $title;
-    private string|array $content;
-    private string|array $visibility;
-    private string $page_code;
+    private string $date_updated = '';
+    private string|array $title = '';
+    private string|array $content = '';
+    private string|array $visibility = '';
+    private string $page_code = '';
 
     public function __construct(array $options = [])
     {
@@ -22,7 +22,9 @@ class Episciences_Page
     public function setOptions(array $options): void
     {
         foreach ($options as $key => $value) {
-            $method = 'set' . ucfirst(strtolower($key));
+            // Convert snake_case to camelCase (e.g., page_code -> PageCode)
+            $camelKey = str_replace('_', '', ucwords($key, '_'));
+            $method = 'set' . $camelKey;
             if (method_exists($this, $method)) {
                 $this->$method($value);
             }
