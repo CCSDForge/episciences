@@ -106,8 +106,6 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 
     public function save()
     {
-        file_put_contents(REVIEW_PATH . 'tmp/sync_debug.log', date('Y-m-d H:i:s') . " - save() called\n", FILE_APPEND);
-
         // Suppression de l'ancien menu
         $this->_db->delete($this->_table, 'SID = ' . $this->_sid);
 
@@ -163,83 +161,61 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
      */
     private function syncPageTitleToDatabase(Episciences_Website_Navigation_Page $page): void
     {
-        $logFile = REVIEW_PATH . 'tmp/sync_debug.log';
-
-        $log = function($msg) use ($logFile) {
-            file_put_contents($logFile, date('Y-m-d H:i:s') . ' - ' . $msg . PHP_EOL, FILE_APPEND);
-        };
-
-        $log('Class: ' . get_class($page));
-
         if (!($page instanceof Episciences_Website_Navigation_Page_Predefined)) {
-            $log('Not a predefined page, skipping');
             return;
         }
 
-        // Get the real review code from the database instead of using RVCODE
-        $realReviewCode = RVCODE; // fallback to RVCODE
+        // Get the review code from database using SID (RVID) → REVIEW table → code
+        // This ensures we use the same code as in T_PAGES table
+        $reviewCode = null;
         try {
-            $review = Episciences_ReviewsManager::find(RVID);
+            $review = Episciences_ReviewsManager::find($this->_sid);
             if ($review) {
-                $realReviewCode = $review->getCode();
-                $log('Using real review code from database: ' . $realReviewCode);
-                
-                // Special case: if we're in dev environment but working on epijinfo data
-                // Map 'dev' to 'epijinfo' for the pages table
-                if ($realReviewCode === 'dev') {
-                    $realReviewCode = 'epijinfo';
-                    $log('Dev environment detected, using epijinfo for pages table');
+                $reviewCode = $review->getCode();
+
+                // Development environment only: REVIEW.code is 'dev' but T_PAGES uses 'epijinfo'
+                // In preprod/production, the codes are consistent so no mapping is needed
+                if ($reviewCode === 'dev') {
+                    $reviewCode = 'epijinfo';
                 }
-            } else {
-                $log('Could not find review with RVID=' . RVID . ', using RVCODE=' . RVCODE);
             }
         } catch (Exception $e) {
-            $log('Error getting real review code: ' . $e->getMessage() . ', using RVCODE=' . RVCODE);
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+
+        if (empty($reviewCode)) {
+            return;
         }
 
         $pageCode = $page->getPermalien();
-        $log('pageCode = ' . $pageCode . ', RVCODE = ' . RVCODE . ', realReviewCode = ' . $realReviewCode);
-
         if (empty($pageCode)) {
-            $log('pageCode is empty');
             return;
         }
 
         $labels = $page->getLabels();
-        $log('labels = ' . json_encode($labels));
-
         if (empty($labels)) {
-            $log('labels is empty');
             return;
         }
 
-        $existingPage = Episciences_Page_Manager::findByCodeAndPageCode($realReviewCode, $pageCode);
-        $log('existingPage ID = ' . $existingPage->getId());
-        $log('existingPage code = ' . $existingPage->getCode());
-        $log('existingPage page_code = ' . $existingPage->getPageCode());
+        $existingPage = Episciences_Page_Manager::findByCodeAndPageCode($reviewCode, $pageCode);
 
         if ($existingPage->getId() > 0) {
-            // Update existing page - set code and page_code explicitly
-            $log('existingPage title BEFORE = ' . $existingPage->getTitle());
-            $log('T_PAGES constant = ' . T_PAGES);
-            $existingPage->setCode($realReviewCode);
+            // Update existing page
+            $existingPage->setCode($reviewCode);
             $existingPage->setPageCode($pageCode);
             $existingPage->setTitle($labels);
-            $log('existingPage title AFTER setTitle = ' . $existingPage->getTitle());
             $existingPage->setUid(Episciences_Auth::getUid());
-            $result = Episciences_Page_Manager::update($existingPage);
-            $log('update result = ' . $result);
+            Episciences_Page_Manager::update($existingPage);
         } else {
             // Create new entry in T_PAGES
             $newPage = new Episciences_Page();
-            $newPage->setCode($realReviewCode);
+            $newPage->setCode($reviewCode);
             $newPage->setPageCode($pageCode);
             $newPage->setTitle($labels);
             $newPage->setUid(Episciences_Auth::getUid());
             $newPage->setContent([]);
             $newPage->setVisibility(['public']);
-            $result = Episciences_Page_Manager::add($newPage);
-            $log('insert result = ' . $result);
+            Episciences_Page_Manager::add($newPage);
         }
     }
 

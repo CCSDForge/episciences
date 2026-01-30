@@ -59,17 +59,10 @@ class Episciences_Page_Manager
             'page_code' => $page->getPageCode()
         ];
 
-        // Debug log
-        $logFile = REVIEW_PATH . 'tmp/sync_debug.log';
-        file_put_contents($logFile, date('Y-m-d H:i:s') . " - UPDATE T_PAGES=" . T_PAGES . "\n", FILE_APPEND);
-        file_put_contents($logFile, date('Y-m-d H:i:s') . " - UPDATE values title=" . $values['title'] . "\n", FILE_APPEND);
-        file_put_contents($logFile, date('Y-m-d H:i:s') . " - UPDATE where=" . json_encode($where) . "\n", FILE_APPEND);
-
         try {
             $resUpdate = $db->update(T_PAGES, $values, $where);
-            file_put_contents($logFile, date('Y-m-d H:i:s') . " - UPDATE affected rows=" . $resUpdate . "\n", FILE_APPEND);
         } catch (Zend_Db_Adapter_Exception $exception) {
-            file_put_contents($logFile, date('Y-m-d H:i:s') . " - UPDATE ERROR=" . $exception->getMessage() . "\n", FILE_APPEND);
+            error_log($exception->getMessage());
             $resUpdate = 0;
         }
 
