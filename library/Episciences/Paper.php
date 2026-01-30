@@ -5427,8 +5427,9 @@ class Episciences_Paper
         }
 
         $data = [
-            'docId' => $this->getDocid(),
-            'permanentId' => $this->getPaperid(),
+            'docid' => $this->getDocid(),
+            'paperid' => $this->getPaperid(),
+            'version' => $this->getVersion(),
             'status' => $this->getStatus(),
             'statusLabel' => $this->getStatusLabelFromDictionary()
         ];
