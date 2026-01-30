@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Volume Settings: add New configuration section(displayEmptyVolumes and allowEditVolumeTitleWithPublishedArticles)  in journal settings
 - [#679](https://github.com/CCSDForge/episciences/issues/679) "Ask other editors for their opinion" form now includes chief editors (ROLE_CHIEF_EDITOR) in addition to regular editors (ROLE_EDITOR)
 - [#691](http://github.com/CCSDForge/episciences/issues/691) Display "(optional)" label below comment and cover letter fields in submission forms to clarify these fields are not required
+- feat(navigation): sync predefined page titles with T_PAGES table on menu save
 
 ### Fixed
 - [#695](https://github.com/CCSDForge/episciences/issues/695) Fixed CC/BCC fields not clickable in paper status change forms. Clicking CC/BCC now opens contact selection dialog.
@@ -36,8 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#780](https://github.com/CCSDForge/episciences/issues/780) Option to lock volume name when an article in it is published
 - [#147](https://github.com/CCSDForge/episciences/issues/147) Add new pages Acknowledgements (page code journal-acknowledgements)  in menu 'About'
 - Fixed Paper Metrics based on wrong DocId, it gave null metrics
-- Fixed Pre-defined pages deleted from the menu are not deleted from the database
-
+- Synchronization of predefined page titles between navigation menu and T_PAGES table when saving menu configuration
 
 ### Changed
 - The "Encapsulate reviewers" parameter is now hidden
