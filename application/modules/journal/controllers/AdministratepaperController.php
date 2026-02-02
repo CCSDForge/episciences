@@ -337,7 +337,7 @@ class AdministratepaperController extends PaperDefaultController
     {
         trigger_error('ajaxcontrolboardAction is deprecated.', E_USER_DEPRECATED);
         return;
-        
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $params = $request->getParams();
@@ -705,10 +705,10 @@ class AdministratepaperController extends PaperDefaultController
         $isRequiredReviewersOk = (int)$review->getSetting('requiredReviewers') <= count($paper->getRatings(null, Episciences_Rating_Report::STATUS_COMPLETED));
         $this->view->isRequiredReviewersOk = $isRequiredReviewersOk;
         $this->view->isAllowedToSeeReportDetails = !$paper->isOwner() && (
-            Episciences_Auth::isSecretary() ||
-            Episciences_Auth::isEditor() ||
-            Episciences_Auth::isGuestEditor() ||
-            Episciences_Auth::isCopyEditor()
+                Episciences_Auth::isSecretary() ||
+                Episciences_Auth::isEditor() ||
+                Episciences_Auth::isGuestEditor() ||
+                Episciences_Auth::isCopyEditor()
             );
 
         // #37430 Demande d'avis des autres rédacteurs, pas uniquement les redacteurs qui sont assignés a l'article.
@@ -1800,10 +1800,10 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function acceptAction(): void
     {
@@ -1984,6 +1984,7 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function publishAction(): void
     {
@@ -2060,6 +2061,7 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function refuseAction(): void
     {
@@ -2575,6 +2577,7 @@ class AdministratepaperController extends PaperDefaultController
      * save paper master volume
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function savemastervolumeAction(): void
     {
@@ -3728,13 +3731,14 @@ class AdministratepaperController extends PaperDefaultController
 
     /**
      * Demande de la mise en forme par la revue
+     * @throws JsonException
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
-     * @throws JsonException
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function waitingforauthorsourcesAction(): void
     {
@@ -3749,9 +3753,9 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function checkAction(bool $isCopyEditingAction = true): void
     {
@@ -3791,9 +3795,9 @@ class AdministratepaperController extends PaperDefaultController
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      * @throws Exception
      */
     private function applyAction(Zend_Controller_Request_Http $request, Episciences_Paper $paper, bool $isCopyEditingComment = true): bool
@@ -3928,9 +3932,6 @@ class AdministratepaperController extends PaperDefaultController
 
                 Episciences_Tools::cpFiles($attachments, $source, $path);
 
-                // Envoi de mails aux rédacteurs + préparateurs de copie de l'article + notifier les rédacteurs en chef, secrétaires de rédaction et administrateurs, si le bon paramétrage a été choisi.
-                $this->paperStatusChangedNotifyManagers($paper, $managerTemplateType, Episciences_Auth::getUser(), $tags, $authorAttachments);
-
             }
 
         }
@@ -3941,6 +3942,9 @@ class AdministratepaperController extends PaperDefaultController
             $paper->save();
             // log status change
             $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
+
+            // Envoi de mails aux rédacteurs + préparateurs de copie de l'article + notifier les rédacteurs en chef, secrétaires de rédaction et administrateurs, si le bon paramétrage a été choisi.
+            $this->paperStatusChangedNotifyManagers($paper, $managerTemplateType, Episciences_Auth::getUser(), $tags, $authorAttachments);
         }
 
         return true;
@@ -4082,9 +4086,7 @@ class AdministratepaperController extends PaperDefaultController
         ];
 
         $uidS = $this->unssignUser($paper, [Episciences_Auth::getUid()], $this->publicPaperUrl($docId));
-
-        // Ici le statut de l'article n'a pas été changé, mais les notifs sont identiques.
-        $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_REFUSED_MONITORING, null, $tags, [], false, $uidS);
+        $this->notifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_EDITOR_REFUSED_MONITORING, null, $tags, [], false, $uidS);
 
         return true;
     }

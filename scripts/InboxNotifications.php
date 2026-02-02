@@ -8,12 +8,12 @@ use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use scripts\AbstractScript;
 
-
-require_once "Script.php";
+require_once "AbstractScript.php";
 require '../library/Episciences/Trait/UrlBuilder.php';
 
-class InboxNotifications extends Script
+class InboxNotifications extends AbstractScript
 {
     use UrlBuilder;
 
@@ -1420,38 +1420,6 @@ class InboxNotifications extends Script
         }
 
         return false;
-    }
-
-    public function getLogger(): Logger
-    {
-        return $this->logger;
-    }
-
-    public function setLogger(Logger $logger): self
-    {
-        $this->logger = $logger;
-        return $this;
-    }
-
-
-    private function initLogging(): void
-    {
-
-        $loggerName = sprintf('%s', strtolower(get_class($this)));
-        $logger = new Logger($loggerName);
-
-        $handler = new RotatingFileHandler(
-            sprintf('%s%s.log', EPISCIENCES_LOG_PATH, $loggerName),
-            0, // unlimited
-            Logger::DEBUG,
-            true,
-            0664
-        );
-        $formatter = new LineFormatter(null, null, false, true);
-        $handler->setFormatter($formatter);
-        $logger->pushHandler($handler);
-        $logger->pushHandler(new StreamHandler('php://stdout', Logger::CRITICAL));
-        $this->setLogger($logger);
     }
 
     public function setParam($name, $value, bool $force = false): bool
