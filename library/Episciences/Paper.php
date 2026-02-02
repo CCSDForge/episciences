@@ -1921,8 +1921,12 @@ class Episciences_Paper
         }
         if (is_array($result)) {
             $result = array_map('Episciences_Tools::spaceCleaner', $result);
+            $result = array_map('Episciences_Tools::decodeAmpersand', $result);
         } else {
             $result = Episciences_Tools::spaceCleaner($result);
+            // On reçois des chaînes avec des entités HTML (&amp;)
+            // Pour revenir au texte logique (un seul &).
+            $result = Episciences_Tools::decodeAmpersand($result);
         }
         return $result;
 

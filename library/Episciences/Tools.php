@@ -917,7 +917,7 @@ class Episciences_Tools
         return trim($name);
     }
 
-    public static function decodeLatex($string, $preserveLineBreaks = false)
+    public static function decodeLatex($string, $preserveLineBreaks = false): string
     {
         $result = str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $string);
 
@@ -938,7 +938,7 @@ class Episciences_Tools
             $result = preg_replace('/\n/', '<br />', $result);
         }
 
-        return $result;
+        return self::decodeAmpersand($result);
     }
 
     /**
@@ -2330,5 +2330,15 @@ class Episciences_Tools
         return filter_var($ipv6, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
     }
 
+    /**
+     * To decode only &amp; to & (without affecting other HTML entities)
+     * @param string $string
+     * @return string
+     */
+
+    public static function decodeAmpersand(string $string): string
+    {
+        return str_replace('&amp;', '&', $string);
+    }
 
 }
