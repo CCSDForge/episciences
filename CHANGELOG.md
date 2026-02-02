@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#691](http://github.com/CCSDForge/episciences/issues/691) Display "(optional)" label below comment and cover letter fields in submission forms to clarify these fields are not required
 
 ### Fixed
+- [#236](https://github.com/CCSDForge/episciences-front/issues/236): HTML entities (&amp;) displayed in the title
 - [#695](https://github.com/CCSDForge/episciences/issues/695) Fixed CC/BCC fields not clickable in paper status change forms. Clicking CC/BCC now opens contact selection dialog.
 - [#830](https://github.com/CCSDForge/episciences/issues/830)  Paper number messed up for secondary volume
 - altered secondary volume rendering
