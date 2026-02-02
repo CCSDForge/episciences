@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+- [#883](https://github.com/CCSDForge/episciences/issues/883) Allow json files as attachments
 - It is now possible to report status changes to an external entry point (can be configured by review)
   
 - [#658](https://github.com/CCSDForge/episciences/issues/658) It is now possible to link an invitation that is not intended for you to your account
