@@ -263,7 +263,6 @@ class Export
 
         $collection = [];
         $items = $paper->$method();
-        $docid = (string)$paper->getDocid();
         foreach ($items as $language => $content) {
 
             // Validate or set default language
