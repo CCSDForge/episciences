@@ -2332,11 +2332,11 @@ class Episciences_Tools
 
     /**
      * To decode only &amp; to & (without affecting other HTML entities)
-     * @param string $string
-     * @return string
+     * @param string|array $string
+     * @return string|array
      */
 
-    public static function decodeAmpersand(string $string): string
+    public static function decodeAmpersand(string|array $string): string|array
     {
         return str_replace('&amp;', '&', $string);
     }
