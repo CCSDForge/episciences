@@ -17,4 +17,4 @@ ALTER TABLE `queue_messages` ADD KEY `idx_status`(`processed`),
 
 
     ALTER TABLE `queue_messages` CHANGE `created_date` `rvcode` VARCHAR(50) NOT NULL AFTER `id`;
-    ALTER TABLE `episciences`.`queue_messages` ADD INDEX `idx_rvcode` (`rvcode`);
+    ALTER TABLE `queue_messages` ADD INDEX `idx_rvcode` (`rvcode`);
