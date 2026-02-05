@@ -48,6 +48,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added visual indicator for pre-defined pages
 
 ### Fixed
+- `convertToBytes()`: fixed handling of pure numeric strings (`'0'`, `'100'`) which were incorrectly treated as having a unit suffix; added validation for empty strings and negative values; replaced switch fall-through with a unit map for readability
+- `isHal()`: fixed regex missing end-of-string anchor, which allowed partial matches
+- `isHalUrl()`: fixed regex to properly match HAL domain instead of matching any URL containing "hal" anywhere
+- `isArxiv()`: fixed regex grouping so the end-of-string anchor applies to both identifier formats
+- Added comprehensive test coverage for `Episciences_Tools`: `decodeLatex`, `decodeAmpersand`, `isSha1`, `isJson`, `isUuid`, `getCleanedUuid`, `isIPv6`, `isRorIdentifier`, `isDoiWithUrl`, `isHal`, `isHalUrl`, `isDoi`, `isArxiv`, `isSoftwareHeritageId`, `isHandle`, `cleanHandle`, `getHalIdAndVer`, `getHalIdInString`, `checkIsArxivUrl`, `checkIsDoiFromArxiv`, `getSoftwareHeritageDirId`, `addDateInterval`, `isValidDate`, `isValidSQLDate`, `isValidSQLDateTime`, `getValidSQLDate`, `getValidSQLDateTime`, `toHumanReadable`, `convertToBytes`, `formatUser`, `checkUrl`, `startsWithNumber`, `formatText`
 - [#236](https://github.com/CCSDForge/episciences-front/issues/236): HTML entities (&amp;) displayed in the title
 - Incorrecte URL in the mail template when submitting via preprint server
 - [#695](https://github.com/CCSDForge/episciences/issues/695) Fixed CC/BCC fields not clickable in paper status change forms. Clicking CC/BCC now opens contact selection dialog.
