@@ -142,7 +142,7 @@ class QueueMessage
         return QueueMessageManager::add($this);
     }
 
-    public function delete(bool $forceDelete = false): int
+    public function delete(bool|null $forceDelete = null): int
     {
         return QueueMessageManager::deleteById($this->getId(), $forceDelete);
     }
