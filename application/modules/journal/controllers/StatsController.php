@@ -342,7 +342,7 @@ class StatsController extends Episciences_Controller_Action
             }
 
             foreach ($roles as $role) {
-                $rolesJs[] = $this->view->translate($role);
+                $rolesJs[] = strip_tags($this->view->translate($role)); // to fix [#875] caused by @ see commit Replaced emoji with FA CSS
                 $data[] = $usersDetails[$role][self::NB_USERS];
             }
 
