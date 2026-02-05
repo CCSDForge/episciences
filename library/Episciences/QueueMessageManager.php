@@ -50,7 +50,7 @@ class QueueMessageManager
         return (int)$db?->lastInsertId();
     }
 
-    public static function deleteById(int $id, bool $forceDelete = false): int
+    public static function deleteById(int $id, bool|null $forceDelete = null): int
     {
         if ($id < 1) {
             throw new InvalidArgumentException("Invalid ID: $id");
