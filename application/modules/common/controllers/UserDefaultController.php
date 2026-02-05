@@ -760,8 +760,7 @@ class UserDefaultController extends Episciences_Controller_Action
             'class' => 'btn btn-primary'
         ]);
 
-
-        $userDefaults['AFFILIATIONS'] = $this->processAffiliations($userDefaults['AFFILIATIONS'], 'assemble');
+        $userDefaults['AFFILIATIONS'] = $this->processAffiliations($userDefaults['AFFILIATIONS'] ?? [], 'assemble');
 
         $form->setDefaults($userDefaults);
 
@@ -784,7 +783,7 @@ class UserDefaultController extends Episciences_Controller_Action
                 }
                 try {
                     $values['episciences']['ADDITIONAL_PROFILE_INFORMATION'] = json_encode([
-                        Episciences_User::STR_AFFILIATIONS => $this->processAffiliations($values['episciences']['AFFILIATIONS']),
+                        Episciences_User::STR_AFFILIATIONS => $this->processAffiliations($values['episciences']['AFFILIATIONS'] ?? []),
                         Episciences_User::STR_SOCIAL_MEDIAS => $values['episciences']['SOCIAL_MEDIAS'],
                         Episciences_User::STR_WEB_SITES => $values['episciences']['WEB_SITES'],
                         Episciences_User::STR_BIOGRAPHY => $values['episciences']['BIOGRAPHY']
@@ -1904,67 +1903,68 @@ class UserDefaultController extends Episciences_Controller_Action
         }
     }
 
-
     /**
-     * @param array|null $input
+     * Process affiliations by assembling or disassembling them based on the operation type
+     * @param $input
      * @param string|null $operationType
      * @return array
      */
+
     private function processAffiliations($input, ?string $operationType = 'disassemble'): array
     {
-        $output = [];
-        $separator = '#';
-
-        if (!is_array($input)) {
-            $input = $input ? [$input] : [];
-        }
 
         if (empty($input)) {
-            return $output;
+            return [];
         }
 
+        $input = is_array($input) ? $input : [$input];
+        $output = [];
+
         foreach ($input as $index => $value) {
-            if(empty($value)){
+            if (empty($value)) {
                 continue;
             }
 
-            if ($operationType === 'disassemble') {
-                    if (is_array($value) && array_key_exists('label', $value) && array_key_exists('rorId', $value)) {
-                        $output[$index] = $value;
-                        continue;
-                    }
-
-                    if (is_string($value)) {
-                    $explodedValue = explode($separator, $value);
-
-                    $label = isset($explodedValue[0]) ? trim($explodedValue[0]): '';
-                    $rorId = isset($explodedValue[1]) ? trim($explodedValue[1]):'';
-
-                    $rorId = Episciences_Tools::isRorIdentifier($rorId) ? $rorId : '';
-
-                    $output[$index] = ['label' => $label, 'rorId' => $rorId];
-                    continue;
-
-                }
-                    $output[$index] = ['label' => '', 'rorId' => ''];
-            } elseif ($operationType === 'assemble') {
-
-                    if (is_array($value)) {
-                        $label = array_key_exists('label', $value) ? $value['label'] : '';
-                        $rorId = array_key_exists('rorId', $value) ? $value['rorId'] : '';
-
-                        if (!empty($rorId)) {
-                            $output[$index] = $label . $separator . $rorId;
-                        } else {
-                            $output[$index] = $label;
-                        }
-                        continue;
-                    }
-
-                    $output[$index] = is_string($value) ? $value : '';
-                }
+            $output[$index] = match ($operationType) {
+                'disassemble' => $this->disassembleAffiliation($value),
+                'assemble' => $this->assembleAffiliation($value),
+                default => ['label' => '', 'rorId' => ''],
+            };
         }
 
         return $output;
     }
+
+    private function disassembleAffiliation($value, string $separator = '#'): array
+    {
+        if (is_array($value) && isset($value['label'], $value['rorId'])) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            [$label, $rorId] = array_pad(explode($separator, $value), 2, '');
+            $label = trim($label);
+            $rorId = trim($rorId);
+
+            if (!Episciences_Tools::isRorIdentifier($rorId)) {
+                $rorId = '';
+            }
+
+            return ['label' => $label, 'rorId' => $rorId];
+        }
+
+        return ['label' => '', 'rorId' => ''];
+    }
+
+    private function assembleAffiliation($value, string $separator = '#'): string
+    {
+        if (is_array($value)) {
+            $label = $value['label'] ?? '';
+            $rorId = $value['rorId'] ?? '';
+            return $rorId ? "{$label}{$separator}{$rorId}" : $label;
+        }
+
+        return is_string($value) ? $value : '';
+    }
+
 }
