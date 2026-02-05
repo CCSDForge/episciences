@@ -78,6 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the Locale is now stored in a cookie instead of the session
 - redirect to the article to be reviewed when accepting an invitation
 - Allow volume years to be a string (AAAA or AAAA-AAAA)  
+- ### Fixed
+- [#875](https://github.com/CCSDForge/episciences/issues/875): caused by the presence of HTML (emoji replaced with FA CSS) in the translation
 
 ## v1.0.52 - 2025-08-28
 
