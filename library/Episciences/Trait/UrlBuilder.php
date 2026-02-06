@@ -40,14 +40,14 @@ trait UrlBuilder
 
         if (!Ccsd_Tools::isFromCli()) { // running in a web request
 
-            $adminPaperUrl = (new Episciences_View_Helper_Url())->url(
+            $publicPaperUrl = (new Episciences_View_Helper_Url())->url(
                 [
                     'controller' => 'paper',
                     'action' => 'view',
                     'id' => $docId
                 ]);
 
-            return self::buildBaseUrl() . $adminPaperUrl;
+            return self::buildBaseUrl() . $publicPaperUrl;
 
         }
 
