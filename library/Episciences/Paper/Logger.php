@@ -53,6 +53,8 @@ class Episciences_Paper_Logger
     public const CODE_EDITOR_COMMENT=  "editor_comment";
     public const CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR = "paper_comment_form_reviewer_to_contributor";
     public const CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER = "paper_comment_form_contributor_to_reviewer";
+    public const CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR = "paper_comment_from_author_to_editor";
+    public const CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR = "paper_comment_from_editor_to_author";
     public const CODE_PAPER_UPDATED = "paper_updated";
     // https://github.com/CCSDForge/episciences/issues/50
     public const CODE_ALTER_PUBLICATION_DATE = "paper_alter_publication_date";
@@ -132,6 +134,8 @@ class Episciences_Paper_Logger
         self::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => self::VIOLET,
         self::CODE_PAPER_UPDATED => self::WARNING,
         self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => self::VIOLET,
+        self::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR => self::VIOLET,
+        self::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR => self::VIOLET,
         self::CODE_DOI_ASSIGNED => self::INFO,
         self::CODE_DOI_UPDATED => self::INFO,
         self::CODE_DOI_CANCELED => self::INFO,
@@ -179,6 +183,8 @@ class Episciences_Paper_Logger
         self::CODE_NEW_PAPER_COMMENT => 'Nouveau commentaire',
         self::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => "Demande d'éclaircissements (relecteur au contributeur)",
         self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Réponse à une demande d'éclaircissement (contributeur au relecteur)",
+        self::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR => "Message de l'auteur aux rédacteurs assignés",
+        self::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR => "Réponse du rédacteur à l'auteur",
         self::CODE_DOI_ASSIGNED => 'DOI assigné',
         self::CODE_DOI_CANCELED => 'DOI Annulé',
         self::CODE_COI_REPORTED => "Conflit d'intérêts (CI)",

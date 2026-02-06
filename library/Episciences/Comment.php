@@ -59,7 +59,8 @@ class Episciences_Comment
     protected $_isCopyEditingComment = false;
 
     protected $_excludedCommentsTypes = [
-        Episciences_CommentsManager::TYPE_REVISION_REQUEST
+        Episciences_CommentsManager::TYPE_REVISION_REQUEST,
+        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE
     ];
 
     /**
@@ -551,6 +552,14 @@ class Episciences_Comment
 
                 case Episciences_CommentsManager::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION:
                     $action = Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION;
+                    break;
+
+                case Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR:
+                    $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR;
+                    break;
+
+                case Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE:
+                    $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR;
                     break;
 
                 default: // todo vérifier les anciennes actions et les logs dans les controlleurs pour eviter la duplication de ces dernier ; aussi les autres actions à personaliser

@@ -1,0 +1,60 @@
+<?php
+/**
+ * Partial template to display assigned editors to authors
+ * Shows editor name, avatar, and profile link - No administrative actions
+ *
+ * Variables:
+ * - $this->editors: Array of Episciences_Editor objects
+ * - $this->paper: Episciences_Paper object (optional, for context)
+ */
+
+$editors = $this->editors ?? [];
+
+if (empty($editors)) {
+    return; // Don't show anything if no editors assigned
+}
+?>
+
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h2 class="panel-title">
+            <?= $this->translate("Rédacteurs assignés") ?>
+        </h2>
+    </div>
+    <div class="panel-body">
+        <?php /** @var Episciences_Editor $editor */
+        foreach ($editors as $editor) : ?>
+            <div class="editor" style="margin-bottom: 5px;">
+
+                <a class="btn btn-default" href="/user/view/userid/<?= $editor->getUid() ?>" target="_blank">
+                    <span data-toggle="tooltip"
+                          class="fas fa-address-card"
+                          style="margin: 0.2rem"
+                          title="<?= $this->translate("Voir le profil") ?>">
+                    </span>
+                </a>&nbsp;
+
+                <img src="/user/photo/name/<?= urlencode($this->escape($editor->getScreenName())) ?>/uid/<?= $editor->getUid() ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
+                     class="user-photo-small" alt="avatar">
+                <span style="margin-left: 0.5em;"><strong><?= $editor->getScreenName() ?></strong></span>
+
+                <?php
+                $sections = $editor->getAssignedSections();
+                if ($sections) {
+                    $msg = $this->translate(array("Rédacteur de la rubrique : ", "Rédacteur des rubriques : ", count($sections)));
+                    $sectionNames = [];
+                    /** @var Episciences_Section $section */
+                    foreach ($sections as $section) {
+                        $sectionNames[] = '"' . $section->getNameKey() . '"';
+                    }
+                    $msg .= implode(', ', $sectionNames);
+                } else {
+                    $msg = '';
+                }
+                ?>
+                <?php if ($msg) : ?><span class="lightgrey text-info" style="margin-left: 5px;">
+                    (<?= $msg ?>)</span><?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
