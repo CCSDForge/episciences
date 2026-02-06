@@ -2428,7 +2428,9 @@ class PaperController extends PaperDefaultController
 
     /**
      * reviewer rating report
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Form_Exception
@@ -2573,6 +2575,7 @@ class PaperController extends PaperDefaultController
     }
 
     /**
+     * Check paper status and set response message and URL accordingly
      * @param Episciences_Paper $paper
      * @param array $option
      * @return array
@@ -2585,7 +2588,6 @@ class PaperController extends PaperDefaultController
         $translator = Zend_Registry::get('Zend_Translate');
         $result = [];
         $url = '/' . $paper->getDocid();
-
         $fromRating = isset($option['fromAction']) && $option['fromAction'] === 'rating';
 
         if ($fromRating) {
@@ -2597,27 +2599,40 @@ class PaperController extends PaperDefaultController
             }
         }
 
-        // paper has been deleted
-        if ($paper->isDeleted() || $paper->isRemoved()) {
-            $result['message'] = $paper->isDeleted() ? $translator->translate("Le document demandé a été supprimé par son auteur.") : $translator->translate("Le document demandé a été supprimé par la revue.");
-            $result['url'] = '/';
-        } elseif ($paper->isAccepted() || $paper->isCopyEditingProcessStarted() || $paper->isReadyToPublish()) { // paper has been accepted or copy editing process has been started
-            $result['message'] = $translator->translate("Cet article a déjà été accepté, il n'est plus nécessaire de le relire.");
-            $result['url'] = $url;
-        } elseif ($paper->isPublished()) {  // paper has been published
-            $result['message'] = $translator->translate("Cet article a déjà été publié, il n'est plus nécessaire de le relire.");
-            $result['url'] = $url;
-        } elseif ($paper->isRefused()) {  // paper has been refused
-            $result['message'] = $translator->translate("Cet article a été refusé, il n'est plus nécessaire de le relire.");
-            $result['url'] = $url;
-        } elseif ($paper->isObsolete()) { // paper is obsolete: display a notice
+        switch (true) {
+            case $paper->isDeleted() || $paper->isRemoved():
+                $authorDeleted = $paper->isDeleted();
+                $msgKey = $authorDeleted
+                    ? "Le document demandé a été supprimé par son auteur."
+                    : "Le document demandé a été supprimé par la revue.";
+                $result['message'] = $translator->translate($msgKey);
+                $result['url'] = '/';
+                break;
 
-            $latestDocId = $paper->getLatestVersionId();
-            $this->view->linkToLatestDocId = $this->buildAdminPaperUrl($latestDocId);
-            $result['displayNotice'] = true;
+            case $paper->isAccepted() || $paper->isCopyEditingProcessStarted() || $paper->isReadyToPublish():
+                $result['message'] = $translator->translate("Cet article a déjà été accepté, il n'est plus nécessaire de le relire.");
+                $result['url'] = $url;
+                break;
+
+            case $paper->isPublished():
+                $result['message'] = $translator->translate("Cet article a déjà été publié, il n'est plus nécessaire de le relire.");
+                $result['url'] = $url;
+                break;
+
+            case $paper->isRefused():
+                $result['message'] = $translator->translate("Cet article a été refusé, il n'est plus nécessaire de le relire.");
+                $result['url'] = $url;
+                break;
+
+            case $paper->isObsolete():
+                $latestDocId = $paper->getLatestVersionId();
+                $this->view->linkToLatestDocId = $this->buildPublicPaperUrl($latestDocId);
+                $result['displayNotice'] = true;
+                break;
         }
 
         return $result;
+
     }
 
     /**
