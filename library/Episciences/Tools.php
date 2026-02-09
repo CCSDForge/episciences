@@ -1369,32 +1369,34 @@ class Episciences_Tools
      */
     public static function convertToBytes(string $humanReadableVal): int
     {
-        $availableUnits = ['b', 'k', 'm', 'g', 't', 'p', 'e'];
-
         $humanReadableVal = trim($humanReadableVal);
-        $unit = ($humanReadableVal !== '') ? strtolower($humanReadableVal[strlen($humanReadableVal) - 1]) : 'b';
+
+        if ($humanReadableVal === '') {
+            throw new InvalidArgumentException('Empty value');
+        }
+
+        $unitMap = [
+            'b' => 0, 'k' => 1, 'm' => 2,
+            'g' => 3, 't' => 4, 'p' => 5, 'e' => 6,
+        ];
+
+        $lastChar = strtolower($humanReadableVal[strlen($humanReadableVal) - 1]);
+
+        if (ctype_digit($lastChar)) {
+            return (int)$humanReadableVal;
+        }
+
         $val = (int)$humanReadableVal;
 
-        if (!in_array($unit, $availableUnits, true)) {
-            throw new Exception('Conversion from { ' . $unit . ' } to { bytes } is not available.');
+        if ($val < 0) {
+            throw new InvalidArgumentException('Negative value');
         }
 
-        switch ($unit) {
-            case 'e' :
-                $val *= 1024;
-            case 'p' :
-                $val *= 1024;
-            case 't' :
-                $val *= 1024;
-            case 'g':
-                $val *= 1024;
-            case 'm':
-                $val *= 1024;
-            case 'k':
-                $val *= 1024;
-            case 'b':
+        if (!isset($unitMap[$lastChar])) {
+            throw new Exception('Conversion from { ' . $lastChar . ' } to { bytes } is not available.');
         }
-        return $val;
+
+        return $val * (1024 ** $unitMap[$lastChar]);
     }
 
     public static function convertToCamelCase(string $string, string $separator = '_', bool $capitalizeFirstCharacter = false, string $stringToRemove = '')
@@ -1987,7 +1989,7 @@ class Episciences_Tools
      */
     public static function isHal(string $halId): bool
     {
-        return (bool)preg_match("/^[a-z]+[_-][0-9]{8}(v[0-9]*)?/", $halId);
+        return (bool)preg_match("/^[a-z]+[_-][0-9]{8}(v[0-9]*)?$/", $halId);
     }
 
     /**
@@ -2021,7 +2023,7 @@ class Episciences_Tools
     public static function isHalUrl(string $url): bool
     {
         // Check if it's a URL that contains a HAL identifier
-        if (preg_match('~^https?://.*hal~', $url)) {
+        if (preg_match('~^https?://[^/]*hal[^/]*/~', $url)) {
             $matches = self::getHalIdInString($url);
             return !empty($matches) && self::isHal($matches[0]);
         }
@@ -2102,7 +2104,7 @@ class Episciences_Tools
      */
     public static function isArxiv(string $arxiv): bool
     {
-        return (bool)preg_match("/^([0-9]{4}\.[0-9]{4,5})|([a-zA-Z\.-]+\/[0-9]{7})$/", $arxiv);
+        return (bool)preg_match("/^(([0-9]{4}\.[0-9]{4,5})|([a-zA-Z\.-]+\/[0-9]{7}))$/", $arxiv);
     }
 
     public static function checkIsArxivUrl(string $url)

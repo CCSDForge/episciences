@@ -119,7 +119,7 @@
                             <?php if ($fundingInfo['code'] !== "unidentified") : ?>
                                 <oaire:awardNumber><?= $this->escape($fundingInfo['code']) ?></oaire:awardNumber>
                             <?php endif; ?>
-                            <?php if ($fundingInfo['projectTitle'] !== "unidentified") : ?>
+                            <?php if (isset($fundingInfo['projectTitle']) && $fundingInfo['projectTitle'] !== "unidentified") : ?>
                                 <oaire:awardTitle><?= $this->escape($fundingInfo['projectTitle']) ?></oaire:awardTitle>
                             <?php endif; ?>
                         </oaire:fundingReference>
