@@ -26,8 +26,14 @@ class Episciences_Paper_Authors_HalTeiParser
         $parsedAuthors = [];
 
         foreach ($authorNodes as $authorNode) {
+            $initialCount = count($parsedAuthors);
+
             foreach ($authorNode->persName as $personName) {
                 $parsedAuthors = self::getAuthorInfoFromXmlTei($personName, $parsedAuthors);
+            }
+
+            if (count($parsedAuthors) === $initialCount) {
+                continue;
             }
 
             if (isset($authorNode->affiliation)) {

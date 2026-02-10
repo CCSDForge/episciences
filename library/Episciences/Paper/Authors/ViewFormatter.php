@@ -39,6 +39,17 @@ class Episciences_Paper_Authors_ViewFormatter
             $decodedAuthors = json_decode($row['authors'], true);
         }
 
+        return self::formatAuthors($decodedAuthors);
+    }
+
+    /**
+     * Format decoded authors array into HTML view components
+     *
+     * @param array $decodedAuthors
+     * @return array{template: string, orcid: string, listAffi: string, authorsList: string}
+     */
+    public static function formatAuthors(array $decodedAuthors): array
+    {
         $templateHtml = '';
         $orcidText = '';
         $authorsList = '';
@@ -208,7 +219,7 @@ class Episciences_Paper_Authors_ViewFormatter
                     . '<a href="' . $affiliationUrl . '" target="_blank">' . $affiliationName;
 
                 if (isset($affiliation[self::KEY_ACRONYM])) {
-                    $html .= ' [' . $affiliation[self::KEY_ACRONYM] . ']';
+                    $html .= ' [' . htmlspecialchars($affiliation[self::KEY_ACRONYM], ENT_QUOTES, 'UTF-8') . ']';
                 }
 
                 $html .= '</a></li>';
