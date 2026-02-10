@@ -16,6 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Changed
+- Refactored `Episciences_Paper_AuthorsManager` (879-line God Class) into 6 single-responsibility classes:
+  - `Episciences_Hal_TeiCacheManager` — HAL TEI cache and HTTP
+  - `Episciences_Paper_Authors_HalTeiParser` — TEI XML parsing
+  - `Episciences_Paper_Authors_Repository` — Database CRUD
+  - `Episciences_Paper_Authors_EnrichmentService` — DB/TEI author data merging
+  - `Episciences_Paper_Authors_AffiliationHelper` — Affiliation/ROR/acronym utilities
+  - `Episciences_Paper_Authors_ViewFormatter` — HTML display formatting
+- `AuthorsManager` kept as orchestrator with backward-compatible `@deprecated` proxies
+
+### Fixed
+- ORCID normalization: `cleanLowerCaseOrcid()` did not strip `https://orcid.org/` URL prefix; new `normalizeOrcid()` method handles URL stripping, trimming, and lowercase `x` → `X` fix
+- Applied `normalizeOrcid()` in Zenodo and ARCHE hooks where raw ORCID values were stored without normalization
+- `findAffiliationsOneAuthorByPaperId()`: fixed potential undefined variable when author rows are empty
+- `hasAcronym()`: fixed iteration over nested `id` array (was comparing top-level keys instead of inspecting each identifier sub-array, consistent with `hasRor()`)
+
 ### Added
 - [#883](https://github.com/CCSDForge/episciences/issues/883) Allow json files as attachments
 - It is now possible to report status changes to an external entry point (can be configured by review)
