@@ -2,7 +2,7 @@
 
 class Episciences_Paper_Authors_Repository
 {
-    private const JSON_DECODE_FLAGS = JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE;
+    private const JSON_DECODE_FLAGS = JSON_THROW_ON_ERROR;
     private const JSON_ENCODE_FLAGS = JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
     private const JSON_MAX_DEPTH = 512;
 
@@ -28,6 +28,7 @@ class Episciences_Paper_Authors_Repository
     {
         $decodedAuthors = [];
 
+        // One row per paper expected; loop processes the single row
         foreach (self::getAuthorByPaperId($paperId) as $row) {
             $decodedAuthors = json_decode($row['authors'], true, self::JSON_MAX_DEPTH, self::JSON_DECODE_FLAGS);
         }
@@ -52,6 +53,7 @@ class Episciences_Paper_Authors_Repository
         }
 
         $decodedAuthors = [];
+        // One row per paper expected; loop processes the single row
         foreach ($authorRows as $row) {
             $decodedAuthors = json_decode($row['authors'], true, self::JSON_MAX_DEPTH, self::JSON_DECODE_FLAGS);
         }

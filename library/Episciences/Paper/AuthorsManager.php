@@ -2,7 +2,8 @@
 
 class Episciences_Paper_AuthorsManager
 {
-    public const ONE_MONTH = 3600 * 24 * 31;
+    /** @deprecated Use Episciences_Hal_TeiCacheManager::ONE_MONTH */
+    public const ONE_MONTH = Episciences_Hal_TeiCacheManager::ONE_MONTH;
 
     // ────────────────────────────────────────────
     // ORCID normalization (stays here, used cross-module)
@@ -10,18 +11,14 @@ class Episciences_Paper_AuthorsManager
 
     /**
      * Normalize an ORCID identifier: strip URL prefix and fix lowercase checksum digit
+     *
      * @param string $orcid
      * @return string
+     * @deprecated Use Episciences_Paper_Authors_HalTeiParser::normalizeOrcid()
      */
     public static function normalizeOrcid(string $orcid): string
     {
-        // Strip URL prefix (https://orcid.org/, http://orcid.org/)
-        $orcid = preg_replace('#^https?://orcid\.org/#', '', trim($orcid));
-        // Fix lowercase 'x' checksum digit
-        if (preg_match('/\d{4}-\d{4}-\d{4}-\d{3}x$/', $orcid)) {
-            $orcid = substr($orcid, 0, -1) . 'X';
-        }
-        return $orcid;
+        return Episciences_Paper_Authors_HalTeiParser::normalizeOrcid($orcid);
     }
 
     /**
@@ -83,8 +80,7 @@ class Episciences_Paper_AuthorsManager
      */
     public static function getTeiHalByIdentifier(string $identifier, int $version = 0): string
     {
-        Episciences_Hal_TeiCacheManager::fetchAndCache($identifier, $version);
-        return Episciences_Hal_TeiCacheManager::getFromCache($identifier, $version);
+        return Episciences_Hal_TeiCacheManager::fetchAndGet($identifier, $version);
     }
 
     /**

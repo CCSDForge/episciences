@@ -87,8 +87,7 @@ class Episciences_Paper_LicenceManager
      */
     public static function getLicenceFromTeiHal(string $identifier, int $version): string
     {
-        Episciences_Hal_TeiCacheManager::fetchAndCache($identifier, $version);
-        $cacheTeiHal = Episciences_Hal_TeiCacheManager::getFromCache($identifier, $version);
+        $cacheTeiHal = Episciences_Hal_TeiCacheManager::fetchAndGet($identifier, $version);
         $xmlString = simplexml_load_string($cacheTeiHal);
         $licence = '';
         if (isset($xmlString->text->body->listBibl->biblFull->publicationStmt->availability->licence, $xmlString->text->body->listBibl->biblFull->publicationStmt->availability->licence->attributes()->target)) {

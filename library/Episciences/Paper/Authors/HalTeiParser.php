@@ -92,11 +92,28 @@ class Episciences_Paper_Authors_HalTeiParser
 
         foreach ($authorNode->idno as $idnoNode) {
             if ((string)$idnoNode->attributes()->type === self::IDNO_TYPE_ORCID) {
-                $parsedAuthors[$lastAuthorIndex][self::KEY_ORCID] = Episciences_Paper_AuthorsManager::normalizeOrcid((string)$idnoNode);
+                $parsedAuthors[$lastAuthorIndex][self::KEY_ORCID] = self::normalizeOrcid((string)$idnoNode);
             }
         }
 
         return $parsedAuthors;
+    }
+
+    /**
+     * Normalize an ORCID identifier: strip URL prefix and fix lowercase checksum digit
+     *
+     * @param string $orcid
+     * @return string
+     */
+    public static function normalizeOrcid(string $orcid): string
+    {
+        $orcid = preg_replace('#^https?://orcid\.org/#', '', trim($orcid));
+
+        if (preg_match('/\d{4}-\d{4}-\d{4}-\d{3}x$/', $orcid)) {
+            $orcid = substr($orcid, 0, -1) . 'X';
+        }
+
+        return $orcid;
     }
 
     /**

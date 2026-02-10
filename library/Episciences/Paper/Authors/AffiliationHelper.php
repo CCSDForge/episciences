@@ -117,8 +117,13 @@ class Episciences_Paper_Authors_AffiliationHelper
      */
     public static function isAcronymDuplicate(array $affiliationIdentifiers, string $acronym): bool
     {
-        return isset($affiliationIdentifiers[0][self::KEY_ACRONYM])
-            && $affiliationIdentifiers[0][self::KEY_ACRONYM] === $acronym;
+        foreach ($affiliationIdentifiers as $identifier) {
+            if (isset($identifier[self::KEY_ACRONYM]) && $identifier[self::KEY_ACRONYM] === $acronym) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -178,6 +183,7 @@ class Episciences_Paper_Authors_AffiliationHelper
         foreach ($acronyms as $acronym) {
             if ($acronym !== '' && str_contains($haystack, $acronym)) {
                 $matchedAcronym = $acronym;
+                break;
             }
         }
 

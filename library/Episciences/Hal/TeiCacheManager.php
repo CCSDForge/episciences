@@ -54,13 +54,26 @@ class Episciences_Hal_TeiCacheManager
         $cacheKey = self::buildCacheKey($identifier, $version);
         $cache = self::createCacheAdapter();
         $cacheItem = $cache->getItem($cacheKey);
-        $cacheItem->expiresAfter(self::ONE_MONTH);
 
         if (!$cacheItem->isHit()) {
             return '';
         }
 
         return $cacheItem->get();
+    }
+
+    /**
+     * Fetch TEI from HAL API if not cached, then return the cached content
+     *
+     * @param string $identifier HAL document identifier
+     * @param int $version HAL document version (0 = latest)
+     * @return string TEI XML content, or empty string on failure
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public static function fetchAndGet(string $identifier, int $version = 0): string
+    {
+        self::fetchAndCache($identifier, $version);
+        return self::getFromCache($identifier, $version);
     }
 
     private static function createCacheAdapter(): FilesystemAdapter
@@ -106,9 +119,13 @@ class Episciences_Hal_TeiCacheManager
         return '';
     }
 
+    /**
+     * @todo Solr query escaping is also missing in 5+ other files across the codebase
+     */
     private static function buildApiUrl(string $identifier, int $version): string
     {
-        $halIdQuery = '(halId_s:' . $identifier . ' OR halIdSameAs_s:' . $identifier . ')';
+        $safeIdentifier = urlencode($identifier);
+        $halIdQuery = '(halId_s:' . $safeIdentifier . ' OR halIdSameAs_s:' . $safeIdentifier . ')';
 
         if ($version === 0) {
             return self::HAL_API_BASE_URL . '?q=(' . $halIdQuery . ')&wt=xml-tei';

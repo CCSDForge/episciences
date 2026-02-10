@@ -38,8 +38,7 @@ class Episciences_Paper_Authors_EnrichmentService
 
         $decodedAuthors = Episciences_Paper_Authors_Repository::getDecodedAuthors($paperId);
 
-        Episciences_Hal_TeiCacheManager::fetchAndCache($identifier, $version);
-        $cachedTeiXml = Episciences_Hal_TeiCacheManager::getFromCache($identifier, $version);
+        $cachedTeiXml = Episciences_Hal_TeiCacheManager::fetchAndGet($identifier, $version);
 
         if ($cachedTeiXml === '') {
             return 0;
@@ -168,15 +167,15 @@ class Episciences_Paper_Authors_EnrichmentService
                 continue;
             }
 
-            $currentAffiliationKey = key($dbAuthors[$authorIndex][self::KEY_AFFILIATION]);
+            $matchingKey = array_search($affiliationName, $existingNames, true);
             $hasRor = array_key_exists(self::KEY_ROR, $teiAffiliation);
             $dbAffiliationHasRor = Episciences_Paper_Authors_AffiliationHelper::hasRor(
-                $dbAuthor[self::KEY_AFFILIATION][$currentAffiliationKey]
+                $dbAuthor[self::KEY_AFFILIATION][$matchingKey]
             );
 
             if ($hasRor && !$dbAffiliationHasRor) {
                 $acronym = $teiAffiliation[self::KEY_ACRONYM] ?? '';
-                $dbAuthors[$authorIndex][self::KEY_AFFILIATION][$currentAffiliationKey]['id'] =
+                $dbAuthors[$authorIndex][self::KEY_AFFILIATION][$matchingKey]['id'] =
                     Episciences_Paper_Authors_AffiliationHelper::buildRorOnly($teiAffiliation[self::KEY_ROR], $acronym);
 
                 if (PHP_SAPI === 'cli') {

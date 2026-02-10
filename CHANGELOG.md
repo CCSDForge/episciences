@@ -25,12 +25,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Episciences_Paper_Authors_AffiliationHelper` — Affiliation/ROR/acronym utilities
   - `Episciences_Paper_Authors_ViewFormatter` — HTML display formatting
 - `AuthorsManager` kept as orchestrator with backward-compatible `@deprecated` proxies
+- Moved `normalizeOrcid()` implementation from `AuthorsManager` to `HalTeiParser` to break circular dependency; `AuthorsManager::normalizeOrcid()` is now a deprecated proxy
+- `AuthorsManager::ONE_MONTH` now references `TeiCacheManager::ONE_MONTH` (deduplicated constant)
+- Added `TeiCacheManager::fetchAndGet()` to combine fetch-if-needed + read in a single call; callers updated (`EnrichmentService`, `LicenceManager`, `AuthorsManager`)
 
 ### Fixed
 - ORCID normalization: `cleanLowerCaseOrcid()` did not strip `https://orcid.org/` URL prefix; new `normalizeOrcid()` method handles URL stripping, trimming, and lowercase `x` → `X` fix
 - Applied `normalizeOrcid()` in Zenodo and ARCHE hooks where raw ORCID values were stored without normalization
 - `findAffiliationsOneAuthorByPaperId()`: fixed potential undefined variable when author rows are empty
 - `hasAcronym()`: fixed iteration over nested `id` array (was comparing top-level keys instead of inspecting each identifier sub-array, consistent with `hasRor()`)
+- `ViewFormatter`: fixed XSS via unquoted HTML attributes (`href`, `data-original-title`); values are now properly quoted and escaped with `htmlspecialchars()`
+- `ViewFormatter`: fixed `html_entity_decode(htmlspecialchars())` no-op; plain-text author list now uses raw name, HTML template uses escaped name
+- `EnrichmentService::mergeExistingAffiliations()`: fixed `key()` always returning 0 instead of the actual matching DB affiliation key; now uses `array_search()`
+- `AffiliationHelper::isAcronymDuplicate()`: fixed hardcoded `[0]` index; now iterates all identifiers (consistent with `hasRor()`/`hasAcronym()`)
+- `AffiliationHelper::setOrUpdateRorAcronym()`: returns first match deterministically instead of last
+- `TeiCacheManager::buildApiUrl()`: applied `urlencode()` on identifier to prevent Solr query injection
+- `TeiCacheManager::getFromCache()`: removed dead `expiresAfter()` call on the read path
+- `Repository`: `JSON_DECODE_FLAGS` no longer includes encode-only flags (`JSON_UNESCAPED_SLASHES`, `JSON_UNESCAPED_UNICODE`)
+
+### Security
+- Fixed XSS vulnerability in `ViewFormatter::buildAuthorHtml()` and `buildAffiliationListHtml()` where user-controlled values were interpolated into unquoted HTML attributes
+- Fixed potential Solr query injection in `TeiCacheManager::buildApiUrl()`
 
 ### Added
 - [#883](https://github.com/CCSDForge/episciences/issues/883) Allow json files as attachments

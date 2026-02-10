@@ -34,6 +34,7 @@ class Episciences_Paper_Authors_ViewFormatter
     public static function formatAuthorEnrichmentForViewByPaper(int|string $paperId): array
     {
         $decodedAuthors = [];
+        // One row per paper expected; loop processes the single row
         foreach (Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId) as $row) {
             $decodedAuthors = json_decode($row['authors'], true);
         }
@@ -51,10 +52,11 @@ class Episciences_Paper_Authors_ViewFormatter
         $authorCount = count($decodedAuthors);
 
         foreach ($decodedAuthors as $authorIndex => $author) {
-            $fullname = html_entity_decode(htmlspecialchars($author[self::KEY_FULLNAME]));
-            $authorsList .= $fullname;
+            $rawFullname = $author[self::KEY_FULLNAME];
+            $escapedFullname = htmlspecialchars($rawFullname, ENT_QUOTES, 'UTF-8');
+            $authorsList .= $rawFullname;
 
-            $templateHtml .= self::buildAuthorHtml($author, $fullname);
+            $templateHtml .= self::buildAuthorHtml($author, $escapedFullname);
             $orcidText .= self::buildOrcidText($author);
 
             if (array_key_exists(self::KEY_AFFILIATION, $author)) {
@@ -121,13 +123,13 @@ class Episciences_Paper_Authors_ViewFormatter
             return ' ' . $fullname . ' ';
         }
 
-        $orcid = htmlspecialchars($author[self::KEY_ORCID]);
-        $orcidUrl = self::ORCID_BASE_URL . $orcid;
+        $orcid = htmlspecialchars($author[self::KEY_ORCID], ENT_QUOTES, 'UTF-8');
+        $orcidUrl = htmlspecialchars(self::ORCID_BASE_URL . $author[self::KEY_ORCID], ENT_QUOTES, 'UTF-8');
 
         return $fullname
-            . ' <a rel="noopener" href=' . $orcidUrl
-            . ' data-toggle="tooltip" data-placement="bottom" data-original-title=' . $orcid
-            . ' target="_blank">'
+            . ' <a rel="noopener" href="' . $orcidUrl
+            . '" data-toggle="tooltip" data-placement="bottom" data-original-title="' . $orcid
+            . '" target="_blank">'
             . '<img srcset="/img/orcid_id.svg" src="/img/ORCID-iD.png" height="16px" alt="ORCID"/></a>';
     }
 
@@ -201,8 +203,9 @@ class Episciences_Paper_Authors_ViewFormatter
             $affiliationName = htmlspecialchars($affiliation[self::KEY_AFFILIATION]);
 
             if (isset($affiliation[self::KEY_URL])) {
+                $affiliationUrl = htmlspecialchars($affiliation[self::KEY_URL], ENT_QUOTES, 'UTF-8');
                 $html .= '<li class="affiliation"><span class="label label-default">' . $displayNumber . '</span> '
-                    . '<a href=' . $affiliation[self::KEY_URL] . ' target="_blank">' . $affiliationName;
+                    . '<a href="' . $affiliationUrl . '" target="_blank">' . $affiliationName;
 
                 if (isset($affiliation[self::KEY_ACRONYM])) {
                     $html .= ' [' . $affiliation[self::KEY_ACRONYM] . ']';
