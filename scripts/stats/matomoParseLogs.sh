@@ -134,8 +134,8 @@ process_site() {
     echo "-> Processing IDSite: ${IDSITE} (SUBDOMAIN: ${SUBDOMAIN})"
     echo "   Extra Flags: ${OPTIONS_FLAGS:-None}" # Display flags, 'None' if empty
 
-    # 3. Test both suffixes (.gz and no suffix)
-    local LOG_SUFFIXES=(".gz" "")
+    # 3. Try suffixes in order: .access_log, .access_log.gz, .access_log_anonym.gz (fallback chain)
+    local LOG_SUFFIXES=("" ".gz" "_anonym.gz")
 
     for SUFFIX in "${LOG_SUFFIXES[@]}"; do
         LOG_FILE_PATTERN="${LOG_BASE_PATTERN}${SUFFIX}"
@@ -154,11 +154,12 @@ process_site() {
                 ${COMMON_FLAGS} \
                 ${OPTIONS_FLAGS} \
                 "${LOG_FILE_PATTERN}"
+            break
         fi
     done
 
     if [ "$LOGS_FOUND" -eq 0 ]; then
-        echo "   Warning: No log files found matching pattern ${DAY}-${SUBDOMAIN}.${DOMAIN_NAME}.access_log(.gz) in ${YEAR}/${MONTH}."
+        echo "   Warning: No log files found matching pattern ${DAY}-${SUBDOMAIN}.${DOMAIN_NAME}.access_log[.gz|_anonym.gz] in ${YEAR}/${MONTH}."
     fi
 }
 

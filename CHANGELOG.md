@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Changed
+- Statistics: log import script now supports anonymized log files (.access_log_anonym.gz) as a fallback, with priority order: .access_log, .access_log.gz, .access_log_anonym.gz
+
 ### Added
 - [#883](https://github.com/CCSDForge/episciences/issues/883) Allow json files as attachments
 - [#658](https://github.com/CCSDForge/episciences/issues/658) It is now possible to link an invitation that is not intended for you to your account
