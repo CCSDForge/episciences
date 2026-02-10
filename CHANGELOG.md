@@ -62,6 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Volume Settings: add New configuration section(displayEmptyVolumes and allowEditVolumeTitleWithPublishedArticles)  in journal settings
 - [#679](https://github.com/CCSDForge/episciences/issues/679) "Ask other editors for their opinion" form now includes chief editors (ROLE_CHIEF_EDITOR) in addition to regular editors (ROLE_EDITOR)
 - [#691](http://github.com/CCSDForge/episciences/issues/691) Display "(optional)" label below comment and cover letter fields in submission forms to clarify these fields are not required
+- [#350](https://github.com/CCSDForge/episciences/issues/350) Author-Editor Communication Settings:
+  - New option to allow authors to contact assigned editors (`authorsCanContactEditors`)
+  - New option to disclose editor names to authors or keep them anonymized (`discloseEditorNamesToAuthors`)
 
 ### Fixed
 - [#886](https://github.com/CCSDForge/episciences/issues/886): the reminder about the lack of reviewers is sent as long as the minimum required number of reviewers has not been reached compared to the accepted invitations
@@ -85,7 +88,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Changed
-- The "Encapsulate reviewers" parameter is now hidden
 - [#528](https://github.com/CCSDForge/episciences/issues/528):
     - 'upload a new version' on top of the list
     - "Contact the editors (with an attachment)" instead of "Contact without sending a new version"

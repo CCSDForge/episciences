@@ -32,6 +32,10 @@ class Episciences_CommentsManager
     public const TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED = 19;
     public const TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST = 20;
     public const TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION = 21;
+    // Author to assigned editors communication
+    public const TYPE_AUTHOR_TO_EDITOR = 22;
+    // Editor response to author message
+    public const TYPE_EDITOR_TO_AUTHOR_RESPONSE = 23;
 
     public const COPY_EDITING_SOURCES = 'copy_editing_sources';
     public const TYPE_ANSWER_REQUEST = 'answerRequest';
@@ -63,6 +67,8 @@ class Episciences_CommentsManager
         self::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED => 'Préparation de copie : version finale soumise',
         self::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION => "Accepté - en attente de validation par l'auteur",
         self::TYPE_REVISION_CONTACT_COMMENT => "réponse à une demande de modifications (sans dépôt de version)",
+        self::TYPE_AUTHOR_TO_EDITOR => "message de l'auteur aux rédacteurs assignés",
+        self::TYPE_EDITOR_TO_AUTHOR_RESPONSE => "réponse du rédacteur à l'auteur",
     ];
 
     public static array $_copyEditingRequestTypes = [
@@ -218,11 +224,13 @@ class Episciences_CommentsManager
      * Comment form
      * @param string $name
      * @param bool $modal
+     * @param bool $withCancelButton
+     * @param string|null $fileFieldSuffix Optional suffix for file field to ensure unique IDs (e.g., pcid for reply forms)
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getForm($name = '', $modal = false): \Ccsd_Form
+    public static function getForm($name = '', $modal = false, $withCancelButton = false, $fileFieldSuffix = null): \Ccsd_Form
     {
         $form = new Ccsd_Form();
 
@@ -245,7 +253,10 @@ class Episciences_CommentsManager
 
         $descriptions = self::getDescriptions();
 
-        $form->addElement('file', 'file', array(
+        // Use unique file field name if suffix is provided (for reply forms)
+        $fileFieldName = ($fileFieldSuffix !== null) ? 'file_' . $fileFieldSuffix : 'file';
+
+        $form->addElement('file', $fileFieldName, array(
             'label' => 'Fichier',
             'description' => $descriptions['description'],
             'valueDisabled' => true,
@@ -256,9 +267,19 @@ class Episciences_CommentsManager
                 'Size' => array(false, MAX_FILE_SIZE))));
 
         if (!$modal) {
+            // For author to editor form, use "Envoyer" button
+            $buttonLabel = ($name === 'authorToEditorForm') ? 'Envoyer' : 'Enregistrer';
+
             $form->setActions(true)->createSubmitButton('postComment', array(
-                'label' => 'Enregistrer',
+                'label' => $buttonLabel,
                 'class' => 'btn btn-primary'));
+
+            //  For author to editor form, use "cancel" button
+            if ($withCancelButton) {
+                $form->setActions(true)->createCancelButton('cancel', array(
+                    'label' => 'Annuler',
+                    'class' => 'btn btn-default'));
+            }
         }
 
         return $form;
@@ -267,6 +288,7 @@ class Episciences_CommentsManager
 
     /**
      * Comment reply form (contributor to reviewer)
+     * Reuses getForm() and clears elements to avoid code duplication (similar to getEditAuthorCommentForm)
      * @param $comments
      * @return array|bool
      * @throws Zend_Exception
@@ -280,26 +302,42 @@ class Episciences_CommentsManager
             return false;
         }
 
+        // Get translator for multilingual support
+        try {
+            $translator = Zend_Registry::isRegistered('Zend_Translate') ? Zend_Registry::get('Zend_Translate') : null;
+        } catch (Exception $e) {
+            $translator = null;
+        }
+
         foreach ($comments as $id => $comment) {
 
+            // Create form directly without using getForm() to avoid auto-population issues
             $form = new Ccsd_Form();
             $form->setName('replyForm_' . $id);
-            $form->setAttrib('enctype', 'multipart/form-data');
+            $form->setMethod('post');
             $form->setAttrib('class', 'form-horizontal');
-            $form->addElementPrefixPath('Episciences_Form_Decorator', 'Episciences/Form/Decorator/', 'decorator');
+            $form->setAttrib('enctype', 'multipart/form-data');
+
+            // Add CSRF protection with unique name
+            $form->addElement('hash', 'csrf_token_' . $id, array('salt' => 'unique_' . $id));
+            $form->getElement('csrf_token_' . $id)->setTimeout(3600);
+
+            // Add comment field with unique name
+            $replyLabel = $translator ? $translator->translate('Répondre :') : 'Répondre :';
+            $replyDescription = $translator ? $translator->translate('Votre réponse et les fichiers associés seront stockés, envoyés et affichés ici.') : 'Votre réponse et les fichiers associés seront stockés, envoyés et affichés ici.';
 
             $form->addElement('textarea', 'comment_' . $id, [
-                'label' => 'Répondre :',
+                'label' => $replyLabel,
+                'description' => $replyDescription,
                 'required' => true,
                 'rows' => 5,
             ]);
 
+            // Add file upload field with unique name
             $descriptions = self::getDescriptions();
-
             $form->addElement('file', 'file_' . $id, [
                 'label' => 'Fichier',
                 'description' => $descriptions['description'],
-                // prevent file to be uploaded when getValues() is called
                 'valueDisabled' => true,
                 'maxFileSize' => MAX_FILE_SIZE,
                 'validators' => [
@@ -309,13 +347,19 @@ class Episciences_CommentsManager
                 ]
             ]);
 
+            // Add submit button with unique name
             $form->setActions(true)->createSubmitButton('postReply_' . $id, [
                 'label' => 'Envoyer',
                 'class' => 'btn btn-primary'
             ]);
+
+            // Add cancel button with proper JavaScript to hide the form
             $form->setActions(true)->createCancelButton('cancel_' . $id, [
                 'label' => 'Annuler',
-                'class' => 'btn btn-default',
+                'class' => 'btn btn-default cancel-reply-form',
+                'data-reply-form-id' => 'reply-form-' . $id,
+                'type' => 'button',
+                'onclick' => "var form = document.getElementById('reply-form-{$id}'); var btn = document.querySelector('.toggle-reply-form[data-reply-form-id=\"reply-form-{$id}\"]'); if(form) form.style.display='none'; if(btn) btn.style.display='inline-block'; var textarea = form ? form.querySelector('textarea') : null; if(textarea) textarea.value=''; return false;"
             ]);
 
             $forms[$id] = $form;
