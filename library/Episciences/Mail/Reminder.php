@@ -732,25 +732,26 @@ class Episciences_Mail_Reminder
     }
 
     /**
-     * fetch recipients for "not enough reviewers" reminder
+     * Retrieves a list of recipients who need to be notified due to an insufficient
+     * number of reviewers for assigned papers based on the specified conditions
      * @param $debug
      * @param $date
      * @param $filters
      * @return array
-     * TODO: use $debug & $date parameters
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
+
     private function getNotEnoughReviewersRecipients($debug, $date, $filters): array
     {
         $recipients = [];
         $review = Episciences_ReviewsManager::find($this->getRvid());
         $journalOptions = ['rvCode' => $review->getCode(), Episciences_Review::IS_NEW_FRONT_SWITCHED => $review->isNewFrontSwitched()];
 
-        // si on n'a pas spécifié de nombre minimum de relecteurs, on n'envoie pas de relances
-        $required_reviewers = $review->getSetting('requiredReviewers');
-        if (!$required_reviewers) {
+        $requiredReviewers = (int)$review->getSetting('requiredReviewers');
+
+        if ($requiredReviewers <= 0) {
             return $recipients;
         }
 
@@ -759,16 +760,20 @@ class Episciences_Mail_Reminder
             'isNot' => ['STATUS' => $filters]];
         $papers = Episciences_PapersManager::getList($settings);
 
-        $today = new DateTime();
-        $today = new DateTime($today->format('Y-m-d')); // strips time from today date
 
+        $today = new DateTimeImmutable('today');
 
         /** @var Episciences_Paper $paper */
         foreach ($papers as $paper) {
-            // recuperation des invitations (acceptées ou en attente) pour chaque article
-            $invitations = $paper->getInvitations(array(Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING), false, $review->getRvid());
-            // si il y a suffisamment d'invitations, on n'envoie pas de relance
-            if (count($invitations) >= $required_reviewers) {
+            $acceptedInvitations = $paper->getInvitations(
+                [Episciences_User_Assignment::STATUS_ACTIVE],
+                true,
+                $review->getRvid()
+            )[Episciences_User_Assignment::STATUS_ACTIVE] ?? [];
+
+            $nbAcceptedInvitations = count($acceptedInvitations);
+
+            if ($nbAcceptedInvitations >= $requiredReviewers) {
                 continue;
             }
 
@@ -782,36 +787,14 @@ class Episciences_Mail_Reminder
             // pour chacun des rédacteurs de l'article
             /** @var Episciences_Editor $editor */
             foreach ($paper->getEditors() as $editor) {
-
-                // calcul de la date d'origine
-                // si des invitations ont été envoyées: date de la dernière invitation
-                // sinon: date d'assignation de l'article au rédacteur
-                $last_action_date = '';
-                $origin_date = '';
-                if ($invitations) {
-                    // on vérifie à quand remonte la dernière invitation
-                    foreach ($invitations as $status) {
-                        foreach ($status as $invitation) {
-                            if (strtotime($invitation['ASSIGNMENT_DATE']) > strtotime($last_action_date)) {
-                                $last_action_date = $invitation['ASSIGNMENT_DATE'];
-                            }
-                        }
-                    }
-                    // date de dernière invitation
-                    $origin_date = $last_action_date;
+                $originDate = $this->resolveOriginDate($acceptedInvitations, $editor);
+                if (!$originDate) {
+                    continue;
                 }
-                if (!$invitations || ($last_action_date && strtotime($last_action_date) < strtotime($editor->getWhen()))) {
-                    // date d'assignation du rédacteur à l'article
-                    $origin_date = $editor->getWhen();
-                }
-
-                // calcul de la deadline
-                $origin_date = new DateTime($origin_date);
-                $origin_date = new DateTime($origin_date->format('Y-m-d')); // strips time from datetime
-                $deadline = date_add($origin_date, date_interval_create_from_date_string($this->getDelay() . ' days'));
 
                 // intervalle entre la deadline et aujourd'hui ( en nombre de jours)
-                $interval = (int)date_diff($today, $deadline)->format('%a');
+                $deadline = $originDate->modify(sprintf('+%d days', $this->getDelay()));
+                $intervalDays = (int)$today->diff($deadline)->format('%a');
 
                 $editorTags = [
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
@@ -821,15 +804,11 @@ class Episciences_Mail_Reminder
                     Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
                     Episciences_Mail_Tags::TAG_ARTICLE_LINK => self::buildAdminPaperUrl($paper->getDocid(), $journalOptions),
-                    Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT => count($invitations),
-                    Episciences_Mail_Tags::TAG_REQUIRED_REVIEWERS_COUNT => $required_reviewers,
+                    Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT => $nbAcceptedInvitations,
+                    Episciences_Mail_Tags::TAG_REQUIRED_REVIEWERS_COUNT => $requiredReviewers,
                 ];
 
-                if (
-                    $interval === 0 || // faut-il envoyer la relance aujourd'hui ?
-                    ($this->getRepetition() && ($interval % $this->getRepetition()) === 0)
-
-                ) {
+                if ($this->shouldSendReminder($intervalDays)) {
                     $recipients[] = [
                         'uid' => $editor->getUid(),
                         'fullname' => $editor->getFullName(),
@@ -838,13 +817,8 @@ class Episciences_Mail_Reminder
                         'tags' => array_merge($commonTags, $editorTags)
                     ];
                 }
-
-            } // endforeach $editors
-
-        } // endforeach $papers
-
-        // regarder pb de titre sur relance envoyée par revue-test (avant date de livraison de relecture - fr)
-        // rajouter tags manquants sur l'envoi des nouvelles relances
+            }
+        }
 
         return $recipients;
     }
@@ -1645,6 +1619,54 @@ class Episciences_Mail_Reminder
 
         return $recipients;
 
+    }
+
+    private function resolveOriginDate(array $acceptedInvitations, Episciences_Editor $editor): ?DateTimeImmutable
+    {
+        $latestInvitationDate = $this->getLatestInvitationDate($acceptedInvitations);
+        $editorAssignmentDate = $this->createDateWithoutTime($editor->getWhen());
+
+        if (!$editorAssignmentDate) {
+            return null;
+        }
+
+        if (!$latestInvitationDate || $latestInvitationDate < $editorAssignmentDate) {
+            return $editorAssignmentDate;
+        }
+
+        return $latestInvitationDate;
+    }
+
+    private function getLatestInvitationDate(array $acceptedInvitations): ?DateTimeImmutable
+    {
+        $dates = array_filter(array_column($acceptedInvitations, 'ASSIGNMENT_DATE'));
+        if (empty($dates)) {
+            return null;
+        }
+
+        rsort($dates); // latest first
+        return $this->createDateWithoutTime($dates[0]);
+    }
+
+    private function createDateWithoutTime(string $date): ?DateTimeImmutable
+    {
+        try {
+            $dt = new DateTimeImmutable($date);
+            return new DateTimeImmutable($dt->format('Y-m-d'));
+        } catch (Exception) {
+            return null;
+        }
+    }
+
+
+    private function shouldSendReminder(int $intervalDays): bool
+    {
+        if ($intervalDays === 0) {
+            return true;
+        }
+
+        $repetition = (int)$this->getRepetition();
+        return $repetition > 0 && ($intervalDays % $repetition) === 0;
     }
 
 }

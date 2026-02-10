@@ -808,9 +808,11 @@ class Episciences_PapersManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         // fetch assignments (invitations don't have a docid, and are linked to an assignment)
-        $select = self::getInvitationQuery($docId);
+        $select = self::getLatestInvitationByDocIdQuery($docId);
 
-        $data = $db->fetchAll($select);
+        //$debugQuery = $select->__toString();
+
+        $data = $db?->fetchAll($select);
 
         //reviewers array
         $reviewers = ['tmp' => []];
@@ -890,6 +892,7 @@ class Episciences_PapersManager
     }
 
     /**
+     * @deprecated to use getLatestInvitationByDocIdQuery(), see https://github.com/CCSDForge/episciences/issues/886
      * @param $docId
      * @return Zend_Db_Select
      */
@@ -910,6 +913,70 @@ class Episciences_PapersManager
             ->where('ROLEID = ?', Episciences_User_Assignment::ROLE_REVIEWER)
             //->where('TMP_USER != 1')
             ->order(['ASSIGNMENT_DATE DESC', 'ASSIGNMENT_STATUS ASC']);
+    }
+
+
+    /**
+     * Generates a query to retrieve the latest invitation associated with a specific docId
+     * @param $docId
+     * @return Zend_Db_Select
+     */
+    public static function getLatestInvitationByDocIdQuery($docId): Zend_Db_Select
+    {
+        $db = Zend_Db_Table::getDefaultAdapter();
+
+        $subMaxDate = $db?->select()
+            ->from(
+                T_USER_INVITATIONS,
+                [
+                    'AID',
+                    'max_date' => 'MAX(SENDING_DATE)'
+                ]
+            )
+            ->group('AID');
+
+        $subInvitations = $db?->select()
+            ->from(
+                ['t1' => 'USER_INVITATION'],
+                ['ID', 'AID', 'STATUS', 'SENDING_DATE', 'SENDER_UID', 'EXPIRATION_DATE']
+            )
+            ->join(
+                ['t2' => $subMaxDate],
+                't1.AID = t2.AID AND t1.SENDING_DATE = t2.max_date',
+                []
+            );
+
+        return $db?->select()
+            ->from(
+                ['a' => 'USER_ASSIGNMENT'],
+                [
+                    'ASSIGNMENT_ID' => 'a.ID',
+                    'INVITATION_ID' => 'a.INVITATION_ID',
+                    'RVID' => 'a.RVID',
+                    'DOCID' => 'a.ITEMID',
+                    'TMP_USER' => 'a.TMP_USER',
+                    'UID' => 'a.UID',
+                    'ASSIGNMENT_STATUS' => 'a.STATUS',
+                    'ASSIGNMENT_DATE' => 'a.WHEN',
+                    'ASSIGNMENT_DEADLINE' => 'a.DEADLINE'
+                ]
+            )
+            ->join(
+                ['i' => $subInvitations],
+                'a.INVITATION_ID = i.ID',
+                [
+                    'INVITATION_AID' => 'i.AID',
+                    'INVITATION_STATUS' => 'i.STATUS',
+                    'SENDER_UID' => 'i.SENDER_UID',
+                    'INVITATION_DATE' => 'i.SENDING_DATE',
+                    'EXPIRATION_DATE' => 'i.EXPIRATION_DATE'
+                ]
+            )
+            ->where('a.ITEM = ?', 'paper')
+            ->where('a.ITEMID = ?', $docId)
+            ->where('a.ROLEID = ?', 'reviewer')
+            ->order('ASSIGNMENT_DATE DESC')
+        ;
     }
 
     /**
