@@ -332,10 +332,16 @@ $paperLanguageRaw = $this->paperLanguage;
                                     }
                                 } elseif ($identifierType === 'swhid') {
                                     $identifierType = 'other';
+                                } elseif ($identifierType === 'hal') {
+                                    $identifierType = 'uri';
+                                    $linkedData['value'] = 'https://hal.science/' . $linkedData['value'];
+                                } elseif ($identifierType === 'doi') {
+                                    $linkedData['value'] = Episciences_DoiTools::cleanDoi( $linkedData['value']);
                                 }
                                 ?>
-                                <inter_work_relation identifier-type="<?= $this->escape($identifierType) ?>"
-                                                     relationship-type="<?= $this->escape(lcfirst($linkedData['relationship'])) ?>"><?php echo ($identifierType === 'doi') ? $this->escape(Episciences_DoiTools::cleanDoi( $linkedData['value'])) : $this->escape($linkedData['value']) ?></inter_work_relation>
+                                <inter_work_relation
+                                        identifier-type="<?= $this->escape($identifierType) ?>"
+                                        relationship-type="<?= $this->escape(lcfirst($linkedData['relationship'])) ?>"><?php echo $this->escape($linkedData['value']) ?></inter_work_relation>
                             </related_item>
                         <?php endif; ?>
                     <?php } ?>

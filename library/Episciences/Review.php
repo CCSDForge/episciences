@@ -680,19 +680,14 @@ class Episciences_Review
      */
     public function getBackEndUrl(): string
     {
+        $managerUrl = $_ENV['MANAGER_APPLICATION_URL'] ?? null;
 
-        if (!isset($_ENV['MANAGER_APPLICATION_URL']) || !Ccsd_Tools::isFromCli() || !$this->isNewFrontSwitched()) {
-            return sprintf('%s://%s', SERVER_PROTOCOL, $_SERVER['SERVER_NAME']);
+        if ($managerUrl && $this->isNewFrontSwitched()) {
+            return rtrim($managerUrl, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $this->getCode();
         }
 
-        $url = rtrim($_ENV['MANAGER_APPLICATION_URL'], DIRECTORY_SEPARATOR);
-        $url .= DIRECTORY_SEPARATOR;
-        $url .= $this->getCode();
-
-        return $url;
+        return $this->getUrl();
     }
-
-
 
 
     /**

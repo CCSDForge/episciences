@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added visual indicator for pre-defined pages
 
 ### Fixed
+- [#886](https://github.com/CCSDForge/episciences/issues/886): the reminder about the lack of reviewers is sent as long as the minimum required number of reviewers has not been reached compared to the accepted invitations
 - `convertToBytes()`: fixed handling of pure numeric strings (`'0'`, `'100'`) which were incorrectly treated as having a unit suffix; added validation for empty strings and negative values; replaced switch fall-through with a unit map for readability
 - `isHal()`: fixed regex missing end-of-string anchor, which allowed partial matches
 - `isHalUrl()`: fixed regex to properly match HAL domain instead of matching any URL containing "hal" anywhere
