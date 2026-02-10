@@ -8,10 +8,10 @@ class Episciences_Page
     private string $code = '';
     private int $uid = 0;
     private string $date_creation = '';
-    private string $date_updated = '';
-    private string|array $title = '';
-    private string|array $content = '';
-    private string|array $visibility = '';
+    private string $date_updated;
+    private string|array $title;
+    private string|array $content;
+    private string|array $visibility;
     private string $page_code = '';
 
     public function __construct(array $options = [])
@@ -23,8 +23,8 @@ class Episciences_Page
     {
         foreach ($options as $key => $value) {
             // Convert snake_case to camelCase (e.g., page_code -> PageCode)
-            $camelKey = str_replace('_', '', ucwords($key, '_'));
-            $method = 'set' . $camelKey;
+            $key = Episciences_Tools::convertToCamelCase($key, '_', true);
+            $method = 'set' . $key;
             if (method_exists($this, $method)) {
                 $this->$method($value);
             }

@@ -161,7 +161,8 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
      */
     private function syncPageTitleToDatabase(Episciences_Website_Navigation_Page $page): void
     {
-        if (!($page instanceof Episciences_Website_Navigation_Page_Predefined)) {
+        // Only pages with a permalien need title synchronization with T_PAGES
+        if (!method_exists($page, 'getPermalien') || empty($page->getPermalien())) {
             return;
         }
 
@@ -172,12 +173,6 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             $review = Episciences_ReviewsManager::find($this->_sid);
             if ($review) {
                 $reviewCode = $review->getCode();
-
-                // Development environment only: REVIEW.code is 'dev' but T_PAGES uses 'epijinfo'
-                // In preprod/production, the codes are consistent so no mapping is needed
-                if ($reviewCode === 'dev') {
-                    $reviewCode = 'epijinfo';
-                }
             }
         } catch (Exception $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
@@ -188,9 +183,6 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         }
 
         $pageCode = $page->getPermalien();
-        if (empty($pageCode)) {
-            return;
-        }
 
         $labels = $page->getLabels();
         if (empty($labels)) {
