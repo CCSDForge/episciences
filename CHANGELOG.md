@@ -82,6 +82,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#780](https://github.com/CCSDForge/episciences/issues/780) Option to lock volume name when an article in it is published
 - [#147](https://github.com/CCSDForge/episciences/issues/147) Add new pages Acknowledgements (page code journal-acknowledgements)  in menu 'About'
 - Fixed Paper Metrics based on wrong DocId, it gave null metrics
+- Fixed Pre-defined pages deleted from the menu are not deleted from the database
+- [#77](https://github.com/CCSDForge/episciences-front/issues/77) Fix orphan assignments when deleting sections or volumes
+
 - Synchronization of predefined page titles between navigation menu and T_PAGES table when saving menu configuration
 
 ### Changed
