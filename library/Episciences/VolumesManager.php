@@ -267,40 +267,41 @@ class Episciences_VolumesManager
             // 4. Suppression des paramètres du volume
             $db->delete(T_VOLUME_SETTINGS, 'VID = ' . $id);
 
-            // 5. Suppression de la grille de notation liée au volume (si elle existe)
-            $file = 'grid_' . $id . '.xml';
-            if (Episciences_GridsManager::gridExists($file)) {
-                Episciences_GridsManager::delete($file);
-            }
-
-            // 6. Suppression des metadatas du volume
-            if ($db->delete(T_VOLUME_METADATAS, 'VID = ' . $id)) {
-                try {
-                    self::deleteVolumeMetadataFiles($id);
-                } catch (InvalidArgumentException|RuntimeException $e) {
-                    $db->rollBack();
-                    trigger_error($e->getMessage(), E_USER_WARNING);
-                    return false;
-                }
-
-            }
 
 
-            // 7. Suppression de la file pour le volume
+            // 5. Suppression des metadatas du volume (SQL)
+            $hasDeletedMetadatas = $db->delete(T_VOLUME_METADATAS, 'VID = ' . $id);
 
+            // 6. Suppression de la file pour le volume
             $db->delete(T_DOI_QUEUE_VOLUMES, 'VID = ' . $id);
             Episciences_VolumeProceeding::deleteByVid($id);
 
             // Valider transaction
             $db->commit();
-            return true;
 
         } catch (Exception $e) {
-            //Annuler la transaction en cas d’erreur
+            //Annuler la transaction en cas d'erreur
             $db->rollBack();
             trigger_error("Error deleting volume: " . $e->getMessage(), E_USER_WARNING);
             return false;
         }
+
+        // 7. Suppression des fichiers de metadatas du volume
+        if ($hasDeletedMetadatas) {
+            try {
+                self::deleteVolumeMetadataFiles($id);
+            } catch (InvalidArgumentException|RuntimeException $e) {
+                trigger_error($e->getMessage(), E_USER_WARNING);
+            }
+        }
+
+        // 8. Suppression de la grille de notation liée au volume (si elle existe)
+        $file = 'grid_' . $id . '.xml';
+        if (Episciences_GridsManager::gridExists($file)) {
+            Episciences_GridsManager::delete($file);
+        }
+
+        return true;
     }
 
     private static function getAssignedPapers(int $vid): array
