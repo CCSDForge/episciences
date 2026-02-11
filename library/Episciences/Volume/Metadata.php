@@ -48,7 +48,8 @@ class Episciences_Volume_Metadata
         // Executer les setters
         foreach ($execution_list as $key => $value) {
             $key = Episciences_Tools::convertToCamelCase($key, '_', true);
-            $method = 'set' . ucfirst($key);
+        //ucfirst is redundant
+            $method = 'set' . $key;
             if (in_array($method, $methods)) {
                 $this->$method($value);
             }

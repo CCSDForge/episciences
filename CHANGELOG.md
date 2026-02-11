@@ -16,7 +16,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Changed
+- Refactored `Episciences_Paper_AuthorsManager` (879-line God Class) into 6 single-responsibility classes:
+  - `Episciences_Hal_TeiCacheManager` — HAL TEI cache and HTTP
+  - `Episciences_Paper_Authors_HalTeiParser` — TEI XML parsing
+  - `Episciences_Paper_Authors_Repository` — Database CRUD
+  - `Episciences_Paper_Authors_EnrichmentService` — DB/TEI author data merging
+  - `Episciences_Paper_Authors_AffiliationHelper` — Affiliation/ROR/acronym utilities
+  - `Episciences_Paper_Authors_ViewFormatter` — HTML display formatting
+- Refactored `Episciences_Paper_Authors_ViewFormatter` to separate data fetching from formatting logic, improving testability
+- `AuthorsManager` kept as orchestrator with backward-compatible `@deprecated` proxies
+- Moved `normalizeOrcid()` implementation from `AuthorsManager` to `HalTeiParser` to break circular dependency; `AuthorsManager::normalizeOrcid()` is now a deprecated proxy
+- `AuthorsManager::ONE_MONTH` now references `TeiCacheManager::ONE_MONTH` (deduplicated constant)
+- Added `TeiCacheManager::fetchAndGet()` to combine fetch-if-needed + read in a single call; callers updated (`EnrichmentService`, `LicenceManager`, `AuthorsManager`)
+
+### Fixed
+- ORCID normalization: `cleanLowerCaseOrcid()` did not strip `https://orcid.org/` URL prefix; new `normalizeOrcid()` method handles URL stripping, trimming, and lowercase `x` → `X` fix
+- Applied `normalizeOrcid()` in Zenodo and ARCHE hooks where raw ORCID values were stored without normalization
+- `findAffiliationsOneAuthorByPaperId()`: fixed potential undefined variable when author rows are empty
+- `hasAcronym()`: fixed iteration over nested `id` array (was comparing top-level keys instead of inspecting each identifier sub-array, consistent with `hasRor()`)
+- `HalTeiParser::getAuthorsFromHalTei()`: fixed logic to prevent enriching the wrong author when `persName` is missing in TEI XML
+- `ViewFormatter`: fixed XSS via unquoted HTML attributes (`href`, `data-original-title`); values are now properly quoted and escaped with `htmlspecialchars()`
+- `ViewFormatter::buildAffiliationListHtml()`: fixed Stored XSS by escaping the affiliation acronym
+- `ViewFormatter`: fixed `html_entity_decode(htmlspecialchars())` no-op; plain-text author list now uses raw name, HTML template uses escaped name
+- `EnrichmentService::mergeExistingAffiliations()`: fixed `key()` always returning 0 instead of the actual matching DB affiliation key; now uses `array_search()`
+- `AffiliationHelper::isAcronymDuplicate()`: fixed hardcoded `[0]` index; now iterates all identifiers (consistent with `hasRor()`/`hasAcronym()`)
+- `AffiliationHelper::setOrUpdateRorAcronym()`: returns first match deterministically instead of last
+- `TeiCacheManager::buildApiUrl()`: applied `urlencode()` on identifier to prevent Solr query injection
+- `TeiCacheManager::getFromCache()`: removed dead `expiresAfter()` call on the read path
+- `Repository`: `JSON_DECODE_FLAGS` no longer includes encode-only flags (`JSON_UNESCAPED_SLASHES`, `JSON_UNESCAPED_UNICODE`)
+
+### Security
+- Fixed XSS vulnerability in `ViewFormatter::buildAuthorHtml()` and `buildAffiliationListHtml()` where user-controlled values were interpolated into unquoted or improperly escaped HTML attributes (ORCID URL, data-title, and affiliation acronym)
+- Fixed potential Solr query injection in `TeiCacheManager::buildApiUrl()`
+
 ### Added
+- Comprehensive unit tests for `Episciences_Paper_Authors_ViewFormatter` covering HTML display logic and XSS prevention
+- [#883](https://github.com/CCSDForge/episciences/issues/883) Allow json files as attachments
+- It is now possible to report status changes to an external entry point (can be configured by review)
+  
 - [#658](https://github.com/CCSDForge/episciences/issues/658) It is now possible to link an invitation that is not intended for you to your account
 - allow the co-author to view the publication
 - Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
@@ -24,8 +62,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Volume Settings: add New configuration section(displayEmptyVolumes and allowEditVolumeTitleWithPublishedArticles)  in journal settings
 - [#679](https://github.com/CCSDForge/episciences/issues/679) "Ask other editors for their opinion" form now includes chief editors (ROLE_CHIEF_EDITOR) in addition to regular editors (ROLE_EDITOR)
 - [#691](http://github.com/CCSDForge/episciences/issues/691) Display "(optional)" label below comment and cover letter fields in submission forms to clarify these fields are not required
+- feat(navigation): sync predefined page titles with T_PAGES table on menu save
 
 ### Fixed
+- [#886](https://github.com/CCSDForge/episciences/issues/886): the reminder about the lack of reviewers is sent as long as the minimum required number of reviewers has not been reached compared to the accepted invitations
+- `convertToBytes()`: fixed handling of pure numeric strings (`'0'`, `'100'`) which were incorrectly treated as having a unit suffix; added validation for empty strings and negative values; replaced switch fall-through with a unit map for readability
+- `isHal()`: fixed regex missing end-of-string anchor, which allowed partial matches
+- `isHalUrl()`: fixed regex to properly match HAL domain instead of matching any URL containing "hal" anywhere
+- `isArxiv()`: fixed regex grouping so the end-of-string anchor applies to both identifier formats
+- Added comprehensive test coverage for `Episciences_Tools`: `decodeLatex`, `decodeAmpersand`, `isSha1`, `isJson`, `isUuid`, `getCleanedUuid`, `isIPv6`, `isRorIdentifier`, `isDoiWithUrl`, `isHal`, `isHalUrl`, `isDoi`, `isArxiv`, `isSoftwareHeritageId`, `isHandle`, `cleanHandle`, `getHalIdAndVer`, `getHalIdInString`, `checkIsArxivUrl`, `checkIsDoiFromArxiv`, `getSoftwareHeritageDirId`, `addDateInterval`, `isValidDate`, `isValidSQLDate`, `isValidSQLDateTime`, `getValidSQLDate`, `getValidSQLDateTime`, `toHumanReadable`, `convertToBytes`, `formatUser`, `checkUrl`, `startsWithNumber`, `formatText`
+- [#236](https://github.com/CCSDForge/episciences-front/issues/236): HTML entities (&amp;) displayed in the title
 - [#695](https://github.com/CCSDForge/episciences/issues/695) Fixed CC/BCC fields not clickable in paper status change forms. Clicking CC/BCC now opens contact selection dialog.
 - [#830](https://github.com/CCSDForge/episciences/issues/830)  Paper number messed up for secondary volume
 - altered secondary volume rendering
@@ -39,6 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed Pre-defined pages deleted from the menu are not deleted from the database
 - [#77](https://github.com/CCSDForge/episciences-front/issues/77) Fix orphan assignments when deleting sections or volumes
 
+- Synchronization of predefined page titles between navigation menu and T_PAGES table when saving menu configuration
 
 ### Changed
 - The "Encapsulate reviewers" parameter is now hidden
@@ -49,6 +96,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the Locale is now stored in a cookie instead of the session
 - redirect to the article to be reviewed when accepting an invitation
 - Allow volume years to be a string (AAAA or AAAA-AAAA)  
+- ### Fixed
+- [#875](https://github.com/CCSDForge/episciences/issues/875): caused by the presence of HTML (emoji replaced with FA CSS) in the translation
 
 ## v1.0.52 - 2025-08-28
 
