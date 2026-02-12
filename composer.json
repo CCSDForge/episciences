@@ -40,7 +40,7 @@
     "league/html-to-markdown": "^5.1",
     "monolog/monolog": "^1.27",
     "neverbehave/hcaptcha": "~0.0.5",
-    "phpmailer/phpmailer": "^6.9",
+    "phpmailer/phpmailer": "^7.0",
     "ramsey/uuid": "^4.7",
     "seboettg/citeproc-php": "^2.6",
     "shardj/zf1-extras-future": "^1.12",
