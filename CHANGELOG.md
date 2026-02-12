@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - allow the co-author to view the publication
 - Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
 - New option to allow Editors to receive 'Comments for editors' before declaring a conflict of interest (disabled by default)
+- Added MSC2020 Classification in ZBJATS export
 
 ### Fixed
 - [#886](https://github.com/CCSDForge/episciences/issues/886): the reminder about the lack of reviewers is sent as long as the minimum required number of reviewers has not been reached compared to the accepted invitations
