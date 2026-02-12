@@ -201,11 +201,8 @@ class FileController extends DefaultController
         $result = [];
 
         if ($this->isPostMaxSizeReached()) {
-            $message = $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limitée à');
-            $message .= ' ';
-            $message .= '<code>' . Episciences_Tools::toHumanReadable(MAX_FILE_SIZE) . '</code>';
             $result ['status'] = 'error';
-            $result ['messages'][] = $message;
+            $result ['messages'][] = $this->buildReachedMessage();
         } else {
             /** @var Zend_Controller_Request_Http $request */
             $request = $this->getRequest();
@@ -418,6 +415,15 @@ class FileController extends DefaultController
             $fileUrl .= $fileName;
         }
         return $fileUrl;
+    }
+
+    private function buildReachedMessage() : string{
+
+        $message = $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limitée à');
+        $message .= ' ';
+        $message .= '<code>' . Episciences_Tools::toHumanReadable(MAX_FILE_SIZE) . '</code>';
+        return $message;
+
     }
 
 }

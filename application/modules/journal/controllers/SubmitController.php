@@ -4,15 +4,14 @@ require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.p
 class SubmitController extends DefaultController
 {
     /**
-     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Form_Exception
-     * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function indexAction(): void
     {
@@ -31,13 +30,7 @@ class SubmitController extends DefaultController
             $post = $request->getPost();
 
             if ($this->isPostMaxSizeReached()) {
-                $message = $this->view->translate('Ce formulaire comporte des erreurs.');
-                $message .= ' ';
-                $message .= $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limitée à');
-                $message .= ' ';
-                $message .= '<code>' . Episciences_Tools::toHumanReadable(MAX_FILE_SIZE) . '</code>. ';
-                $message .= $this->view->translate('Merci de les corriger.');
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($this->buildReachedMessage());
                 $this->_helper->redirector('index', 'submit');
                 return;
             }
@@ -387,6 +380,19 @@ class SubmitController extends DefaultController
         } catch (JsonException $e) {
             trigger_error($e->getMessage());
         }
+
+    }
+
+    private function buildReachedMessage(): string
+    {
+        $message = $this->view->translate('Ce formulaire comporte des erreurs.');
+        $message .= ' ';
+        $message .= $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limitée à');
+        $message .= ' ';
+        $message .= '<code>' . Episciences_Tools::toHumanReadable(MAX_FILE_SIZE) . '</code>. ';
+        $message .= $this->view->translate('Merci de les corriger.');
+        return $message;
+
 
     }
 }
