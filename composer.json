@@ -46,7 +46,7 @@
     "shardj/zf1-extras-future": "^1.12",
     "shardj/zf1-future": "1.23.*",
     "smalot/pdfparser": "^2.2",
-    "solarium/solarium": "^6.3.1",
+    "solarium/solarium": "^7.0.0-alpha",
     "symfony/cache": "^5.4",
     "symfony/console": "^6.4",
     "symfony/event-dispatcher": "^6.4",
