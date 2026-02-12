@@ -501,5 +501,28 @@ class Episciences_Repositories_Common
         return ctype_digit((string)$length) ? (int)$length : null;
     }
 
+    /**
+     * @param string $baseUrl
+     * @param string $oaiIdentifier
+     * @param string $metadataPrefix
+     * @return array|string
+     * @throws Ccsd_Error
+     */
+
+    public static function getRecord(string $baseUrl, string $oaiIdentifier, string $metadataPrefix ='oai_dc'): array|string
+    {
+
+        $oai = new Episciences_Oai_Client($baseUrl, 'xml');
+
+        try {
+            $result = $oai->getRecord($oaiIdentifier, $metadataPrefix);
+        } catch (Exception $e) {
+            throw new Ccsd_Error($e->getMessage());
+        }
+
+        return $result;
+
+    }
+
 
 }

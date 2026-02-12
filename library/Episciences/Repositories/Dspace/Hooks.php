@@ -75,7 +75,7 @@ class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_
         //$oaiUrl = $baseUrl;
         //$oaiUrl .= sprintf('?verb=GetRecord&metadataPrefix=oai_openaire&identifier=%s', $oaiIdentifier);
 
-        $record = self::getRecord($baseUrl, $oaiIdentifier);
+        $record = Episciences_Repositories_Common::getRecord($baseUrl, $oaiIdentifier, self::METADATA_PREFIX);
         $data = self::extractMetadata($record);
 
         if (isset($data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC])) {
