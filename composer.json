@@ -27,7 +27,7 @@
     "apereo/phpcas": "1.6.1",
     "cottagelabs/coar-notifications": "^0.9.70",
     "defuse/php-encryption": "^2.3",
-    "doctrine/annotations": "^1.13",
+    "doctrine/annotations": "^2.0",
     "ezyang/htmlpurifier": "^4.14",
     "geoip2/geoip2": "~3.0",
     "geertw/ip-anonymizer": "^1.1",
