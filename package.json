@@ -31,6 +31,6 @@
   },
   "packageManager": "yarn@4.12.0",
   "resolutions": {
-    "find-up": "5.0.0"
+    "find-up": "8.0.0"
   }
 }
