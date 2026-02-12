@@ -87,10 +87,8 @@ $timestamp = time();
                         pub-id-type="hal"><?php echo htmlentities($paper->getIdentifier(), ENT_XML1); ?></article-id>
             <?php endif; ?>
 
-            <article-id pub-id-type="publisher-id">
-                <?php $applicationUrl = SERVER_PROTOCOL . '://' . $this->journal->getCode() . '.' . DOMAIN;
-                echo $applicationUrl . '/' . $paper->getPaperid(); ?>
-            </article-id>
+            <?php $applicationUrl = sprintf("%s://%s.%s", SERVER_PROTOCOL, $this->journal->getCode(), DOMAIN); ?>
+            <article-id pub-id-type="publisher-id"><?= $applicationUrl . '/' . $paper->getPaperid(); ?></article-id>
 
 
             <?php if ($this->section !== '') : ?>
