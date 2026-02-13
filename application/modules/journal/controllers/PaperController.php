@@ -2,6 +2,7 @@
 
 use Episciences\Files\Uploader;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
@@ -61,12 +62,18 @@ class PaperController extends PaperDefaultController
 
     /**
      * display paper public page
+     * @throws JsonException
+     * @throws Zend_Controller_Exception
+     * @throws Zend_Controller_Response_Exception
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Form_Exception
+     * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception|JsonException
+     * @throws Zend_Session_Exception
+     * @throws InvalidArgumentExceptionAlias
      */
     public function viewAction(): void
     {
@@ -554,6 +561,7 @@ class PaperController extends PaperDefaultController
      * @return void
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
+     * @throws InvalidArgumentExceptionAlias
      */
     private function savePaperPassword(Zend_Controller_Request_Http $request, Episciences_Paper $paper, bool $displayPaperPasswordBloc = false): void
     {
@@ -606,15 +614,13 @@ class PaperController extends PaperDefaultController
      * save reply
      * @param int $id : request comment
      * @param Episciences_Paper $paper
-     * @param int $commentType : comment type
      * @return bool
+     * @throws InvalidArgumentExceptionAlias
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function saveReply(int $id, Episciences_Paper $paper): bool
     {
@@ -748,7 +754,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      */
     private function saveAuthorFormattingAnswer(Episciences_Paper $paper, int $commentType, int $parentCommentId, bool $sendMail = true): bool
     {
@@ -980,7 +986,7 @@ class PaperController extends PaperDefaultController
         return Episciences_Mail_Send::sendMailFromReview($contributor, $templateType, $tags, $paper, $senderUid, $attachments);
     }
 
-    public function postorcidauthorAction()
+    public function postorcidauthorAction(): void
     {
 
         $this->_helper->layout()->disableLayout();
@@ -1065,7 +1071,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Form_Exception
      */
 
-    public function getaffiliationsbyauthorAction()
+    public function getaffiliationsbyauthorAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
@@ -1095,7 +1101,7 @@ class PaperController extends PaperDefaultController
         }
     }
 
-    public function addaffiliationsauthorAction()
+    public function addaffiliationsauthorAction(): void
     {
 
         $this->_helper->layout()->disableLayout();
@@ -1205,13 +1211,12 @@ class PaperController extends PaperDefaultController
 
     /**
      * save author's answer to a revision request (comment only)
+     * @throws InvalidArgumentExceptionAlias
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
-     * @throws JsonException
      */
     public function saveanswerAction(): void
     {
@@ -1398,13 +1403,12 @@ class PaperController extends PaperDefaultController
      * update previous version status
      * reassign editors to new version
      * optional: reassign reviewers to new version
-     * @throws JsonException
+     * @throws InvalidArgumentExceptionAlias
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
      */
     public function savetmpversionAction(): void
     {
@@ -1832,14 +1836,14 @@ class PaperController extends PaperDefaultController
 
     /**
      * save new version (revision request answer)
-     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_File_Transfer_Exception
+     * @throws Zend_Form_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
+     * @throws InvalidArgumentExceptionAlias
      */
     public function savenewversionAction(): void
     {
@@ -2098,7 +2102,6 @@ class PaperController extends PaperDefaultController
 
             // unassign Copy editors from previous version
             if (!empty($copyEditors)) {
-                /** @var Episciences_CopyEditor $copyEditor */
                 foreach ($copyEditors as $copyEditor) {
                     $aid = $paper->unassign($copyEditor->getUid(), Episciences_User_Assignment::ROLE_COPY_EDITOR);
                     $paper->log(Episciences_Paper_Logger::CODE_COPY_EDITOR_UNASSIGNMENT, null, ["aid" => $aid, "user" => $copyEditor->toArray()]);
@@ -2746,7 +2749,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception|Zend_Exception|JsonException
      */
-    private function checkRatingProcess(Episciences_Paper $paper, int $reviewerUid = 0)
+    private function checkRatingProcess(Episciences_Paper $paper, int $reviewerUid = 0): Episciences_Rating_Report|bool|null
     {
         $report = null;
         if ($reviewerUid < 0) {
@@ -2770,7 +2773,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception|JsonException
      */
-    private function reviewFromEditor(Episciences_Paper $paper, int $reviewerUid)
+    private function reviewFromEditor(Episciences_Paper $paper, int $reviewerUid): ?Episciences_Rating_Report
     {
         $user = new Episciences_User();
         if (!$user->find($reviewerUid)) {
@@ -2815,9 +2818,10 @@ class PaperController extends PaperDefaultController
      * @param Episciences_Paper $paper
      * @param int $reviewerUid
      * @return Episciences_Rating_Report|null
+     * @throws InvalidArgumentExceptionAlias
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception|JsonException
+     * @throws Zend_Exception
      */
     private function applyRating(Episciences_Paper $paper, int $reviewerUid): ?Episciences_Rating_Report
     {
@@ -3155,6 +3159,7 @@ class PaperController extends PaperDefaultController
 
     /**
      * remove contributor paper (done by the contributor himself)
+     * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
@@ -3419,7 +3424,11 @@ class PaperController extends PaperDefaultController
     /**
      * @param Episciences_Paper $paper
      * @param int $lastStatus
+     * @throws InvalidArgumentExceptionAlias
+     * @throws JsonException
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
@@ -3578,7 +3587,11 @@ class PaperController extends PaperDefaultController
     /**
      * @param Episciences_Paper $paper
      * @param int $lastStatus
+     * @throws InvalidArgumentExceptionAlias
+     * @throws JsonException
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
@@ -3821,7 +3834,7 @@ class PaperController extends PaperDefaultController
         $this->render('answerrequest');
     }
 
-    public function cslAction()
+    public function cslAction(): void
     {
 
         $this->_helper->layout()->disableLayout();
