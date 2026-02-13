@@ -1,7 +1,7 @@
 <?php
 
 
-class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_HooksInterface
+class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_CommonHooksInterface, Episciences_Repositories_HooksInterface
 {
     public const SUCCESS_CODE = 'ok';
     public const AVAILABLE_SERVERS = [

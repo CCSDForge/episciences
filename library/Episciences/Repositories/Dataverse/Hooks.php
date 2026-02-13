@@ -1,7 +1,7 @@
 <?php
 
 
-class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositories_HooksInterface
+class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositories_CommonHooksInterface, Episciences_Repositories_HooksInterface
 {
     public const IDENTIFIER_PREFIX = 'doi:';
     public const DATAVERSE_IDENTIFIER_EXEMPLE = '(DOI) 10.15454/GXXVJW / doi:10.15454/GXXVJW';

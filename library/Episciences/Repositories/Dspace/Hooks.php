@@ -1,6 +1,6 @@
 <?php
 
-class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_HooksInterface
+class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_CommonHooksInterface, Episciences_Repositories_HooksInterface
 {
     /**
      * Le paramétrage se fait en base de données, table "metadata_sources"

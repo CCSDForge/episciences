@@ -4,7 +4,7 @@ use Episciences\Tools\Translations;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
-class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_HooksInterface
+class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_CommonHooksInterface, Episciences_Repositories_HooksInterface
 {
 
 

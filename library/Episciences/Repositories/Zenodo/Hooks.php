@@ -4,7 +4,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\Intl\Languages;
 
-class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_HooksInterface
+class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_CommonHooksInterface, Episciences_Repositories_HooksInterface
 {
     public const API_RECORDS_URL = 'https://zenodo.org/api/records';
     public const CONCEPT_IDENTIFIER = 'conceptrecid';
