@@ -430,6 +430,7 @@ class ModernUserAutocomplete {
         const email = item.dataset.email;
 
         this.inputElement.value = name;
+        this.lastValue = name;
 
         if (this.selectedUserIdElement) {
             this.selectedUserIdElement.value = id;
@@ -437,6 +438,8 @@ class ModernUserAutocomplete {
 
         if (this.selectButton) {
             this.selectButton.removeAttribute('disabled');
+            this.selectButton.classList.remove('btn-default');
+            this.selectButton.classList.add('btn-primary');
         }
 
         this.closeDropdown();
@@ -458,6 +461,8 @@ class ModernUserAutocomplete {
         }
         if (this.selectButton) {
             this.selectButton.setAttribute('disabled', 'disabled');
+            this.selectButton.classList.remove('btn-primary');
+            this.selectButton.classList.add('btn-default');
         }
     }
 

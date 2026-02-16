@@ -445,7 +445,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
                 $tmp['family'] = isset($explodedName[0]) ? trim($explodedName[0]) : '';
 
                 if (isset($author['orcid']) && $author['orcid'] !== '') {
-                    $tmp['orcid'] = $author['orcid'];
+                    $tmp['orcid'] = Episciences_Paper_AuthorsManager::normalizeOrcid($author['orcid']);
                 }
 
                 if (isset($author['affiliation'])) {

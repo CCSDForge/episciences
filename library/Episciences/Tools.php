@@ -917,7 +917,7 @@ class Episciences_Tools
         return trim($name);
     }
 
-    public static function decodeLatex($string, $preserveLineBreaks = false)
+    public static function decodeLatex($string, $preserveLineBreaks = false): string
     {
         $result = str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $string);
 
@@ -938,7 +938,7 @@ class Episciences_Tools
             $result = preg_replace('/\n/', '<br />', $result);
         }
 
-        return $result;
+        return self::decodeAmpersand($result);
     }
 
     /**
@@ -1122,19 +1122,22 @@ class Episciences_Tools
     }
 
     /**
-     * @param string $text
-     * @return mixed|string|string[]|null
+     * Normalize text for HTML display by converting tabs and 4+ spaces to non‑breaking spaces and preserving line breaks.
      */
-    public static function formatText(string $text = '')
+    public static function formatText(?string $text = null): string
     {
-        $tab = '&nbsp;&nbsp;&nbsp;&nbsp;';
-        if (!empty($text)) {
-            $text = str_replace('\t', $tab, $text);
-            $text = preg_replace("/ {4,}/", $tab, $text);
-            $text = nl2br($text);
+        if ($text === null || $text === '') {
+            return '';
         }
-        return $text;
+
+        $htmlTab = '&nbsp;&nbsp;&nbsp;&nbsp;';
+
+        $formatted = str_replace("\t", $htmlTab, $text);
+        $formatted = preg_replace('/ {4,}/', $htmlTab, $formatted);
+
+        return nl2br($formatted);
     }
+
 
     /**
      * Compare les deux tableaux + Calcule l'intersection et la différence entre eux
@@ -1366,32 +1369,34 @@ class Episciences_Tools
      */
     public static function convertToBytes(string $humanReadableVal): int
     {
-        $availableUnits = ['b', 'k', 'm', 'g', 't', 'p', 'e'];
-
         $humanReadableVal = trim($humanReadableVal);
-        $unit = ($humanReadableVal !== '') ? strtolower($humanReadableVal[strlen($humanReadableVal) - 1]) : 'b';
+
+        if ($humanReadableVal === '') {
+            throw new InvalidArgumentException('Empty value');
+        }
+
+        $unitMap = [
+            'b' => 0, 'k' => 1, 'm' => 2,
+            'g' => 3, 't' => 4, 'p' => 5, 'e' => 6,
+        ];
+
+        $lastChar = strtolower($humanReadableVal[strlen($humanReadableVal) - 1]);
+
+        if (ctype_digit($lastChar)) {
+            return (int)$humanReadableVal;
+        }
+
         $val = (int)$humanReadableVal;
 
-        if (!in_array($unit, $availableUnits, true)) {
-            throw new Exception('Conversion from { ' . $unit . ' } to { bytes } is not available.');
+        if ($val < 0) {
+            throw new InvalidArgumentException('Negative value');
         }
 
-        switch ($unit) {
-            case 'e' :
-                $val *= 1024;
-            case 'p' :
-                $val *= 1024;
-            case 't' :
-                $val *= 1024;
-            case 'g':
-                $val *= 1024;
-            case 'm':
-                $val *= 1024;
-            case 'k':
-                $val *= 1024;
-            case 'b':
+        if (!isset($unitMap[$lastChar])) {
+            throw new Exception('Conversion from { ' . $lastChar . ' } to { bytes } is not available.');
         }
-        return $val;
+
+        return $val * (1024 ** $unitMap[$lastChar]);
     }
 
     public static function convertToCamelCase(string $string, string $separator = '_', bool $capitalizeFirstCharacter = false, string $stringToRemove = '')
@@ -1984,7 +1989,7 @@ class Episciences_Tools
      */
     public static function isHal(string $halId): bool
     {
-        return (bool)preg_match("/^[a-z]+[_-][0-9]{8}(v[0-9]*)?/", $halId);
+        return (bool)preg_match("/^[a-z]+[_-][0-9]{8}(v[0-9]*)?$/", $halId);
     }
 
     /**
@@ -2018,7 +2023,7 @@ class Episciences_Tools
     public static function isHalUrl(string $url): bool
     {
         // Check if it's a URL that contains a HAL identifier
-        if (preg_match('~^https?://.*hal~', $url)) {
+        if (preg_match('~^https?://[^/]*hal[^/]*/~', $url)) {
             $matches = self::getHalIdInString($url);
             return !empty($matches) && self::isHal($matches[0]);
         }
@@ -2099,7 +2104,7 @@ class Episciences_Tools
      */
     public static function isArxiv(string $arxiv): bool
     {
-        return (bool)preg_match("/^([0-9]{4}\.[0-9]{4,5})|([a-zA-Z\.-]+\/[0-9]{7})$/", $arxiv);
+        return (bool)preg_match("/^(([0-9]{4}\.[0-9]{4,5})|([a-zA-Z\.-]+\/[0-9]{7}))$/", $arxiv);
     }
 
     public static function checkIsArxivUrl(string $url)
@@ -2327,5 +2332,15 @@ class Episciences_Tools
         return filter_var($ipv6, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
     }
 
+    /**
+     * To decode only &amp; to & (without affecting other HTML entities)
+     * @param string|array $string
+     * @return string|array
+     */
+
+    public static function decodeAmpersand(string|array $string): string|array
+    {
+        return str_replace('&amp;', '&', $string);
+    }
 
 }
