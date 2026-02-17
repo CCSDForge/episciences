@@ -1582,6 +1582,15 @@ class Episciences_Submit
 
     private function sendNotifications(Episciences_Paper|DataSet $paper, array $recipients, array $data): void
     {
+
+        // Message de confirmation
+        // Avant l'envoi des mails, pour éviter conflit avec les traductions du template
+        // ?? je ne comprends pas où est le Pb de conflit ??
+        // Envoi des mails (soumission d'un nouvel article) OU sa mise à jour //
+
+        $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_AUTHOR_COPY;
+
+        Episciences_Review::checkReviewNotifications($recipients, !empty($recipients));
         $recipients = $this->filterConflictRecipients($recipients, $paper);
         unset($recipients[$paper->getUid()]);
 
@@ -1593,14 +1602,39 @@ class Episciences_Submit
         $oldStatus = (int)Ccsd_Tools::ifsetor($data['old_paper_status'], 0);
         $canReplace = (bool)Ccsd_Tools::ifsetor($data['can_replace'], false);
 
+        if($canReplace){
+            $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY;
+        }
+
         $commonTags = [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocId(),
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
             Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => Episciences_Auth::getUser()->getFullName()
         ];
 
+        $author = Episciences_Auth::getUser();
+        $aLocale = $author->getLangueid();
+
+        $view = Zend_Layout::getMvcInstance()->getView();
+
+        $paperUrl = $view->url([
+            'controller' => 'paper',
+            'action' => 'view',
+            'id' => $paper->getDocid()]);
+
+        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+
+        $authorTags = $commonTags + [
+                Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl, // lien vers l'article
+                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($aLocale, true),
+                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($aLocale)
+            ];
+
+
+        // Mail à l'auteur
+        Episciences_Mail_Send::sendMailFromReview($author, $authorTemplateKy, $authorTags, $paper, null, [], false, $paper->getCoAuthors());
+
         self::notifyManagers($paper, $recipients, $oldDocId, $oldStatus, $commonTags, $canReplace);
-        Episciences_Review::checkReviewNotifications($recipients, !empty($recipients));
     }
 
     /**
