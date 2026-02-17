@@ -4655,11 +4655,27 @@ class AdministratepaperController extends PaperDefaultController
             $identifier = Episciences_Repositories::getIdentifier($paper->getRepoid(), $paper->getIdentifier());
             $baseUrl = Episciences_Repositories::getBaseUrl($paper->getRepoid());
             $oai = new Episciences_Oai_Client($baseUrl, 'xml');
+
             if ((int)Episciences_Repositories::ARXIV_REPO_ID === $repoId) {
                 try {
                     $versions = Episciences_Submit::extractVersionsFromArXivRaw($oai->getArXivRawRecord($identifier));
                 } catch (Exception $e) {
                     trigger_error($e->getMessage());
+                }
+            } else {
+
+                $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', [
+                    'identifier' => $paper->getConcept_identifier(),
+                    'repoId' => $paper->getRepoid()
+                ]);
+
+                if ((int)Episciences_Repositories::CRYPTOLOGY_EPRINT === $repoId) {
+                    $latestVersionDateTime = $hookApiRecord[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
+                    $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($paper->getIdentifier());
+                    $latestIdentifier = sprintf('%s/%s', $paper->getConcept_identifier(), $latestVersionDateTime);
+                    if ($latestVersionDateTime > $previousPaperVersionDateTime) {
+                        $versions[] = $latestIdentifier;
+                    }
                 }
             }
 
@@ -4672,7 +4688,9 @@ class AdministratepaperController extends PaperDefaultController
     /**
      * Update paper version
      * @return false|void
-     * @throws Exception
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
 
     public function savenewpostedversionAction()
@@ -4683,15 +4701,25 @@ class AdministratepaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $post = $request->getPost();
+        $hasDateTime = false;
 
-        $latestPostedVersion = isset($post['latest-repository-version']) ? (float)$post['latest-repository-version'] : 0; // version or identifier
+        if (isset($post['latest-repository-version'])) {
+            $latestPostedVersion = $post['latest-repository-version'];
+            $hasDateTime = Episciences_Repositories_Common::getDateTimePattern($latestPostedVersion) !== '';
+
+            if (!$hasDateTime) {
+                $latestPostedVersion = (float)$latestPostedVersion;
+            }
+
+        } else {
+            $latestPostedVersion = 0;
+        } // version or identifier
 
         if (!$latestPostedVersion) {
             return false;
         }
 
         $isReadyToPublish = isset($post['ready-to-publish']) && $post['ready-to-publish'] === 'on';
-
 
         $docId = (int)$request->getPost('docid');
 
@@ -4718,9 +4746,15 @@ class AdministratepaperController extends PaperDefaultController
 
         $hookedVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $latestPostedVersion, 'repoId' => $paper->getRepoid()]);
 
-        if (isset($hookedVersion['version'])) {
+        if (isset($hookedVersion['version']) || $hasDateTime) {
             $paper->setIdentifier($latestPostedVersion); // posted identifier
-            $latestPostedVersion = (float)$hookedVersion['version'];
+
+            if ($hasDateTime) {
+                $latestPostedVersion = $paper->getVersion() + 1;
+
+            } else {
+                $latestPostedVersion = (float)$hookedVersion['version'];
+            }
         }
 
         $currentVersion = $paper->getVersion();
@@ -4757,6 +4791,8 @@ class AdministratepaperController extends PaperDefaultController
 
     /**
      * @return void
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
      */
     public function ajaxrequestremovedoiAction(): void
     {

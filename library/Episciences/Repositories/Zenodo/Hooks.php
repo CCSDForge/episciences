@@ -1,17 +1,20 @@
 <?php
+
+use Episciences\Repositories\CommonHooksInterface;
+use Episciences\Repositories\DataSanitizerInterface;
+use Episciences\Repositories\FilesEnrichmentInterface;
+use Episciences\Repositories\InputSanitizerInterface;
+use Episciences\Repositories\LinkedDataEnrichmentInterface;
+use Episciences\Repositories\Zenodo\HooksInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\Intl\Languages;
 
-class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_HooksInterface
+class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, InputSanitizerInterface, FilesEnrichmentInterface, LinkedDataEnrichmentInterface, DataSanitizerInterface, HooksInterface
 {
     public const API_RECORDS_URL = 'https://zenodo.org/api/records';
     public const CONCEPT_IDENTIFIER = 'conceptrecid';
     const ZENODO_OAI_PMH_API = 'https://zenodo.org/oai2d?verb=GetRecord&metadataPrefix=datacite&identifier=oai:zenodo.org:';
-
-    const XML_LANG_ATTR = 'xml:lang';
-    const META_DESCRIPTION = 'description';
-    const META_IDENTIFIER = 'identifier';
 
 
     public static function hookCleanXMLRecordInput(array $input): array
@@ -30,6 +33,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      *  Extract the "files" metadata and save it in the database
      * @param array $hookParams
      * @return array
+     * @throws Exception
      */
     public static function hookFilesProcessing(array $hookParams): array
     {
@@ -85,9 +89,9 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         $search = Episciences_Repositories::getRepoDoiPrefix($hookParams['repoId']) . '/' . mb_strtolower(Episciences_Repositories::getLabel($hookParams['repoId'])) . '.';
 
-        $identifier = str_replace($search, '', $identifier);
+        $identifier = str_replace(array($search, 'records/'), '', $identifier);
 
-        return [self::META_IDENTIFIER => $identifier];
+        return [Episciences_Repositories_Common::META_IDENTIFIER => $identifier];
     }
 
     /**
@@ -97,30 +101,41 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      */
     public static function hookApiRecords(array $hookParams): array
     {
-        if (!isset($hookParams[self::META_IDENTIFIER])) {
+        if (!isset($hookParams[Episciences_Repositories_Common::META_IDENTIFIER])) {
             return [];
         }
 
+        $identifier = $hookParams[Episciences_Repositories_Common::META_IDENTIFIER];
+
         try {
-            $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $hookParams[self::META_IDENTIFIER]);
-
-            if (false === $response) {
-                throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
-            }
-
+            $response = Episciences_Tools::callApi(self::API_RECORDS_URL . '/' . $identifier);
         } catch (GuzzleException $e) {
-            throw new Ccsd_Error($e->getMessage());
+            throw new Ccsd_Error($e->getMessage(), (int)$e->getCode());
+        }
+
+        if ($response === false || $response === null) {
+            throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
+        }
+
+        if (!is_array($response)) {
+            throw new Ccsd_Error('Unexpected API response format');
         }
 
         if ($response) {
             self::enrichmentProcess($response);
         }
 
-        $oaiData = self::getZenodoOaiDatacite($hookParams[self::META_IDENTIFIER]);
+        // Ensure the structure exists before enrichment from OAI
+        if (!isset($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'])
+            || !is_array($response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'])) {
+            $response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'] = [];
+        }
+
+        $oaiData = self::getZenodoOaiDatacite($identifier);
         if ($oaiData) {
             $responseFromOai = self::enrichmentProcessFromOAI($oaiData);
-            if (!empty($responseFromOai[self::META_DESCRIPTION])) {
-                $response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'][self::META_DESCRIPTION] = $responseFromOai[self::META_DESCRIPTION];
+            if (!empty($responseFromOai[Episciences_Repositories_Common::META_DESCRIPTION])) {
+                $response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'][Episciences_Repositories_Common::META_DESCRIPTION] = $responseFromOai[Episciences_Repositories_Common::META_DESCRIPTION];
             }
             if (!empty($responseFromOai['title'])) {
                 $response[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body']['title'] = $responseFromOai['title'];
@@ -141,12 +156,8 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      */
     public static function hookVersion(array $hookParams): array
     {
-        $version = 1;
         $response = self::checkResponse($hookParams);
-        if (!empty($response) && isset($response['metadata']['relations'])) {
-            $version = $response['metadata']['relations']['version'][array_key_first($response['metadata']['relations']['version'])]['index'] + 1;
-        }
-
+        $version = $response['metadata']['version'] ?? 1;
         return ['version' => $version];
     }
 
@@ -197,7 +208,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
                 $found[0] = str_replace('</dc:relation>', '', $found[0]);
                 /** array */
                 $found[0] = self::hookCleanIdentifiers(array_merge(['id' => $found[0]], $hookParams));
-                $conceptIdentifier = $found[0][self::META_IDENTIFIER];
+                $conceptIdentifier = $found[0][Episciences_Repositories_Common::META_IDENTIFIER];
             }
         }
 
@@ -233,8 +244,8 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     private static function checkResponse(array $hookParams): array
     {
         $response = [];
-        if (isset($hookParams[self::META_IDENTIFIER]) && empty($hookParams['response'])) {
-            $response = self::hookApiRecords([self::META_IDENTIFIER => $hookParams[self::META_IDENTIFIER]]);
+        if (isset($hookParams[Episciences_Repositories_Common::META_IDENTIFIER]) && empty($hookParams['response'])) {
+            $response = self::hookApiRecords([Episciences_Repositories_Common::META_IDENTIFIER => $hookParams[Episciences_Repositories_Common::META_IDENTIFIER]]);
         } elseif (isset($hookParams['response'])) {
             $response = $hookParams['response'];
         }
@@ -299,7 +310,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         if (isset($data['doi_url'])) {
             $urlIdentifier = $data['doi_url'];
-            $headers[self::META_IDENTIFIER] = $urlIdentifier;
+            $headers[Episciences_Repositories_Common::META_IDENTIFIER] = $urlIdentifier;
             $identifiers[] = $urlIdentifier;
         }
 
@@ -352,8 +363,8 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         $language = isset($metadata['language']) ? lcfirst(mb_substr($metadata['language'], 0, 2)) : 'en';
 
-        if (isset($metadata[self::META_DESCRIPTION])) {
-            $desValue = Episciences_Tools::epi_html_decode($metadata[self::META_DESCRIPTION], ['HTML.AllowedElements' => 'p']);
+        if (isset($metadata[Episciences_Repositories_Common::META_DESCRIPTION])) {
+            $desValue = Episciences_Tools::epi_html_decode($metadata[Episciences_Repositories_Common::META_DESCRIPTION], ['HTML.AllowedElements' => 'p']);
             $value = trim(str_replace(['<p>', '</p>'], '', $desValue));
         } else {
             $value = '';
@@ -367,7 +378,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $body['title'] = $metadata['title'] ?? '';
         $body['creator'] = $creatorsDc;
         $body['subject'] = $metadata['keywords'] ?? [];
-        $body[self::META_DESCRIPTION] = $description;
+        $body[Episciences_Repositories_Common::META_DESCRIPTION] = $description;
         $body['language'] = $language;
 
         if ($dcType) {
@@ -375,7 +386,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         }
 
         $body['date'] = $datestamp;
-        $body[self::META_IDENTIFIER] = $identifiers;
+        $body[Episciences_Repositories_Common::META_IDENTIFIER] = $identifiers;
 
         $license = $metadata['license']['id'] ?? '';
 
@@ -402,23 +413,15 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
             $body['rights'][] = 'info:eu-repo/semantics/openAccess';
         }
 
-        $xmlElements['headers'] = $headers;
-        $xmlElements['body'] = $body;
+        $enrichment = [
+            Episciences_Repositories_Common::CONTRIB_ENRICHMENT => $authors,
+            Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT => $dcType,
+            Episciences_Repositories_Common::FILES => $data[Episciences_Repositories_Common::FILES]
 
-        $data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC] = $xmlElements;
+        ];
 
-        if (!empty($authors)) {
-            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::CONTRIB_ENRICHMENT] = $authors;
-        }
+        Episciences_Repositories_Common::assembleData(['headers' => $headers, 'body' => $body], $enrichment, $data);
 
-        if (!empty($type)) {
-            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT] = $type;
-        }
-
-
-        if (isset($data[Episciences_Repositories_Common::FILES])) {
-            $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::FILES] = $data[Episciences_Repositories_Common::FILES];
-        }
     }
 
     /**
@@ -445,7 +448,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
                 $tmp['family'] = isset($explodedName[0]) ? trim($explodedName[0]) : '';
 
                 if (isset($author['orcid']) && $author['orcid'] !== '') {
-                    $tmp['orcid'] = $author['orcid'];
+                    $tmp['orcid'] = Episciences_Paper_AuthorsManager::normalizeOrcid($author['orcid']);
                 }
 
                 if (isset($author['affiliation'])) {
@@ -506,8 +509,8 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
                 }
 
                 // Extract xml:lang from the attributes array we just built
-                if (isset($allAttributes[self::XML_LANG_ATTR])) {
-                    $nodeLanguage = $allAttributes[self::XML_LANG_ATTR];
+                if (isset($allAttributes[Episciences_Repositories_Common::XML_LANG_ATTR])) {
+                    $nodeLanguage = $allAttributes[Episciences_Repositories_Common::XML_LANG_ATTR];
                 }
 
                 // Convert 3-letter language codes to 2-letter codes if needed
@@ -540,7 +543,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
     {
         $data = [];
 
-
         $metadata = simplexml_load_string($xmlString);
         if ($metadata === false) {
             throw new \http\Exception\InvalidArgumentException('Invalid XML');
@@ -549,7 +551,6 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         // Register namespaces for OAI-PMH and DataCite
         $metadata->registerXPathNamespace('oai', 'http://www.openarchives.org/OAI/2.0/');
         $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
-
 
 
         // Extract language from XML
@@ -566,7 +567,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         }
 
         // Extract titles
-        $titles = self::extractMultilingualContent($metadata, '//datacite:titles/datacite:title', $language);
+        $titles = Episciences_Repositories_Common::extractMultilingualContent($metadata, '//datacite:titles/datacite:title', $language);
 
         // Extract descriptions
         $descriptions = self::extractDescriptions($metadata, $language);
@@ -574,60 +575,20 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         // Build additional data
         $data['title'] = $titles;
         $data['titles'] = $titles;
-        $data[self::META_DESCRIPTION] = $descriptions;
+        $data[Episciences_Repositories_Common::META_DESCRIPTION] = $descriptions;
         $data['language'] = $language;
 
         // Prepare body data for Dublin Core conversion
         $xmlElements = [];
         $xmlElements['body'] = $data;
 
-
-
         $data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC] = $xmlElements;
 
         return $data;
     }
 
-
-
-    private static function extractMultilingualContent($metadata, $xpath, $language): array
+    public static function hookIsIdentifierCommonToAllVersions(): array
     {
-        $result = [];
-        $nodes = $metadata->xpath($xpath);
-
-        foreach ($nodes as $node) {
-            // Try different ways to get xml:lang attribute
-            $nodeLanguage = '';
-
-            // Method 1: Direct attribute access
-            $attributes = $node->attributes('xml', true);
-            if (isset($attributes['lang'])) {
-                $nodeLanguage = (string)$attributes['lang'];
-            }
-
-            // Method 2: Fallback using xpath on the current node
-            if (empty($nodeLanguage)) {
-                $langAttr = $node->xpath('@xml:lang');
-                if (!empty($langAttr)) {
-                    $nodeLanguage = (string)$langAttr[0];
-                }
-            }
-
-            // Method 3: Fallback to document language, it should have been converted to 2 chars lang code
-            if (empty($nodeLanguage)) {
-                $nodeLanguage = $language;
-            }
-
-            $result[] = [
-                'value' => (string)$node,
-                'language' => $nodeLanguage
-            ];
-        }
-
-        return $result;
+        return ['result' => false];
     }
-
-
-
-
 }

@@ -24,6 +24,27 @@ final class Episciences_Paper_AuthorsManagerTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testNormalizeOrcid(): void
+    {
+        // Lowercase x → X
+        self::assertEquals('0000-2222-5555-444X', Episciences_Paper_AuthorsManager::normalizeOrcid('0000-2222-5555-444x'));
+        // Already uppercase X
+        self::assertEquals('0000-2222-5555-444X', Episciences_Paper_AuthorsManager::normalizeOrcid('0000-2222-5555-444X'));
+        // No X digit
+        self::assertEquals('0000-0002-9193-9560', Episciences_Paper_AuthorsManager::normalizeOrcid('0000-0002-9193-9560'));
+        // Strip https URL prefix
+        self::assertEquals('0000-0002-9193-9560', Episciences_Paper_AuthorsManager::normalizeOrcid('https://orcid.org/0000-0002-9193-9560'));
+        // Strip http URL prefix
+        self::assertEquals('0000-0002-9193-9560', Episciences_Paper_AuthorsManager::normalizeOrcid('http://orcid.org/0000-0002-9193-9560'));
+        // Strip URL prefix + fix lowercase x
+        self::assertEquals('0000-2222-5555-444X', Episciences_Paper_AuthorsManager::normalizeOrcid('https://orcid.org/0000-2222-5555-444x'));
+        // Whitespace trimming
+        self::assertEquals('0000-0002-9193-9560', Episciences_Paper_AuthorsManager::normalizeOrcid('  0000-0002-9193-9560  '));
+    }
+
+    /**
      * @dataProvider sampleTeiAuthor
      */
     public function testFormatNameAuthorFromTei(iterable $sampleTeiAuthor): void

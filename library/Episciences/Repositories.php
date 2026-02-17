@@ -1,7 +1,5 @@
 <?php
 
-use GuzzleHttp\Exception\GuzzleException;
-
 /**
  * Class Episciences_Repositories
  * List repositories available as submit sources
@@ -11,6 +9,7 @@ class Episciences_Repositories
 
     public const TYPE_DATAVERSE = 'dataverse';
     public const TYPE_PAPERS_REPOSITORY = 'repository';
+    public const TYPE_DSPACE = 'dspace';
 
     public const  REPO_LABEL = 'name';
     public const  REPO_IDENTIFIER = 'identifier';
@@ -40,6 +39,8 @@ class Episciences_Repositories
     public const ZBMATH_OPEN = '17';
 
     public const ARCHE_ID = '18';
+    public const  CRYPTOLOGY_EPRINT = '19';
+
 
     public const EPI_USER_ID = '12';
     public const HAL_LABEL = 'HAL';
@@ -53,7 +54,8 @@ class Episciences_Repositories
         self::ZENODO_REPO_ID => '123456 or 10.5281/zenodo.123456',
         self::BIO_RXIV_ID => '10.1101/339747',
         self::MED_RXIV_ID => '10.1101/339747',
-        self::ARCHE_ID => '(Handle) 21.11115/0000-000B-C715-D'
+        self::ARCHE_ID => '(Handle) 21.11115/0000-000B-C715-D',
+        self::CRYPTOLOGY_EPRINT => '2026/1234'
     ];
 
     public static function getRepositories(): array
@@ -64,9 +66,13 @@ class Episciences_Repositories
             try {
                 self::$_repositories = array_filter(Zend_Registry::get('metadataSources'), static function ($source) {
                     return $source[self::REPO_LABEL] !== 'Software Heritage' &&
-                        ($source[self::REPO_TYPE] === self::TYPE_DATAVERSE ||
-                            $source[self::REPO_TYPE] === self::TYPE_PAPERS_REPOSITORY);
+                        (
+                            $source[self::REPO_TYPE] === self::TYPE_DSPACE ||
+                            $source[self::REPO_TYPE] === self::TYPE_DATAVERSE ||
+                            $source[self::REPO_TYPE] === self::TYPE_PAPERS_REPOSITORY
+                        );
                 });
+
             } catch (Zend_Exception $e) {
                 trigger_error($e->getMessage(), E_USER_ERROR);
             }
@@ -88,34 +94,50 @@ class Episciences_Repositories
         return isset (self::getRepositories()[$repoId]) ? self::getRepositories()[$repoId][self::REPO_LABEL] : '';
     }
 
-    public static function getBaseUrl($repoId)
+    public static function getBaseUrl($repoId): ?string
     {
         $repositories = self::getRepositories();
-        return isset($repositories[$repoId]) ? $repositories[$repoId][self::REPO_BASEURL] : null;
-    }
 
-    public static function getIdentifier($repoId, $identifier, $version = null)
-    {
-        $repoIdentifier = self::getRepositories()[$repoId][self::REPO_IDENTIFIER];
-
-        if (!empty($repoIdentifier)) {
-
-            if ($version) {
-                return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::getRepositories()[$repoId][self::REPO_IDENTIFIER]);
-            }
-
-            return str_replace(['%%ID', 'v%%VERSION'], [$identifier, ''], self::getRepositories()[$repoId][self::REPO_IDENTIFIER]);
-
+        if (isset($repositories[$repoId])) {
+            $baseUrl = $repositories[$repoId][self::REPO_BASEURL];
+            return rtrim($baseUrl, DIRECTORY_SEPARATOR);
         }
 
-        return $repoIdentifier;
-
+        return null;
     }
+
+    public static function getIdentifier(
+        $repoId,
+        string $identifier,
+        $version = null,
+    ): ?string {
+        $repositories = self::getRepositories();
+        $template = $repositories[$repoId][self::REPO_IDENTIFIER] ?? null;
+
+        if (empty($template)) {
+            return $template; // the OAI identifier is set to null in the database. an API call will be made instead of an OAI call
+        }
+
+        if ($version !== null) {
+            return str_replace(
+                ['%%ID', '%%VERSION'],
+                [$identifier, $version],
+                $template
+            );
+        }
+
+        return str_replace(
+            ['%%ID', 'v%%VERSION'],
+            [$identifier, ''],
+            $template
+        );
+    }
+
 
     public static function getDocUrl($repoId, $identifier, $version = null, $versionMinorNumber = Episciences_Repositories_Dataverse_Hooks::VERSION_MINOR_NUMBER)
 
     {
-        if($version && self::isDataverse($repoId) ){
+        if ($version && self::isDataverse($repoId)) {
             $exploded = explode('.', (string)$version);
             $version = (int)($exploded[0] ?? 1);
             $versionMinorNumber = (int)($exploded[1] ?? Episciences_Repositories_Dataverse_Hooks::VERSION_MINOR_NUMBER);
@@ -146,6 +168,7 @@ class Episciences_Repositories
         $repoPaperUrl = self::getRepositories()[$repoId][self::REPO_PAPERURL];
 
         if (!empty($repoPaperUrl)) {
+            $identifier  = Episciences_Repositories_Common::replaceYMDHMSWithTimestamp($identifier);
             return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::getRepositories()[$repoId][self::REPO_PAPERURL]);
         }
 
@@ -178,7 +201,15 @@ class Episciences_Repositories
      */
     private static function makeHookClassNameByRepoId(int $repoId): string
     {
-        $label = !self::isDataverse($repoId) ? self::getLabel($repoId) : self::TYPE_DATAVERSE;
+        if (!self::isDataverse($repoId) && !self::isDspace($repoId)) {
+            $label = self::getLabel($repoId);
+        } elseif (self::isDataverse($repoId)) {
+            $label = self::TYPE_DATAVERSE;
+
+        } else {
+            $label = self::TYPE_DSPACE;
+        }
+        $label = str_replace(' ', '', $label);
         return __CLASS__ . '_' . ucfirst($label) . '_Hooks';
     }
 
@@ -196,7 +227,7 @@ class Episciences_Repositories
         }
 
         if ($className !== '') {
-            return $className::$hookName($hookParams);
+            return method_exists($className, $hookName) ? $className::$hookName($hookParams) : [];
         }
 
         return [];
@@ -239,6 +270,10 @@ class Episciences_Repositories
             return Episciences_Repositories_Dataverse_Hooks::DATAVERSE_IDENTIFIER_EXEMPLE;
         }
 
+        if (self::isDspace($repoId)) {
+            return Episciences_Repositories_Dspace_Hooks::IDENTIFIER_EXEMPLE;
+        }
+
         if (isset(self::IDENTIFIER_EXEMPLES[(string)$repoId])) {
             return self::IDENTIFIER_EXEMPLES[(string)$repoId];
         }
@@ -269,6 +304,16 @@ class Episciences_Repositories
 
         return $repositoriesByLabel;
 
+    }
+
+    public static function isDspace(int $repoId): bool
+    {
+        return self::getTypeByIdentifier($repoId) === self::TYPE_DSPACE;
+    }
+
+    public static function getTypeByIdentifier(int $repoId): string
+    {
+        return self::getRepositories()[$repoId][self::REPO_TYPE];
     }
 }
 

@@ -17,26 +17,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-- [#679](https://github.com/CCSDForge/episciences/issues/679) "Ask other editors for their opinion" form now includes chief editors (ROLE_CHIEF_EDITOR) in addition to regular editors (ROLE_EDITOR)
-- [#691](http://github.com/CCSDForge/episciences/issues/691) Display "(optional)" label below comment and cover letter fields in submission forms to clarify these fields are not required
-
-
+- Added visual indicator for pre-defined pages
 - Ability to customise application environment variables
 - *Manager only* Website menu:
     - It is no longer possible to manually add certain public pages to the site.
     - The list of pages has been reorganised by group.
     - Hide "Publishing policies" page: included in the "About" page.
 - Updated 'Resources' module to manage public files
-
-
 - Manager: reset password url
 - Manager: account creation token url
 - Manager: Fixed path to reviewer report attachments without prefix
 - Manager: Force predefined pages to be public
 - Manager: Review Report: attached document URL has not been updated for the manager application
+- [RT#259551] it is now possible to modify the Copy Editor at any time
+- Incorrecte URL in the mail template when submitting via preprint server
 
+### Changed
+- Refactored `Episciences_Paper_AuthorsManager` (879-line God Class) into 6 single-responsibility classes:
+  - `Episciences_Hal_TeiCacheManager` — HAL TEI cache and HTTP
+  - `Episciences_Paper_Authors_HalTeiParser` — TEI XML parsing
+  - `Episciences_Paper_Authors_Repository` — Database CRUD
+  - `Episciences_Paper_Authors_EnrichmentService` — DB/TEI author data merging
+  - `Episciences_Paper_Authors_AffiliationHelper` — Affiliation/ROR/acronym utilities
+  - `Episciences_Paper_Authors_ViewFormatter` — HTML display formatting
+- Refactored `Episciences_Paper_Authors_ViewFormatter` to separate data fetching from formatting logic, improving testability
+- `AuthorsManager` kept as orchestrator with backward-compatible `@deprecated` proxies
+- Moved `normalizeOrcid()` implementation from `AuthorsManager` to `HalTeiParser` to break circular dependency; `AuthorsManager::normalizeOrcid()` is now a deprecated proxy
+- `AuthorsManager::ONE_MONTH` now references `TeiCacheManager::ONE_MONTH` (deduplicated constant)
+- Added `TeiCacheManager::fetchAndGet()` to combine fetch-if-needed + read in a single call; callers updated (`EnrichmentService`, `LicenceManager`, `AuthorsManager`)
+
+### Fixed
+- ORCID normalization: `cleanLowerCaseOrcid()` did not strip `https://orcid.org/` URL prefix; new `normalizeOrcid()` method handles URL stripping, trimming, and lowercase `x` → `X` fix
+- Applied `normalizeOrcid()` in Zenodo and ARCHE hooks where raw ORCID values were stored without normalization
+- `findAffiliationsOneAuthorByPaperId()`: fixed potential undefined variable when author rows are empty
+- `hasAcronym()`: fixed iteration over nested `id` array (was comparing top-level keys instead of inspecting each identifier sub-array, consistent with `hasRor()`)
+- `HalTeiParser::getAuthorsFromHalTei()`: fixed logic to prevent enriching the wrong author when `persName` is missing in TEI XML
+- `ViewFormatter`: fixed XSS via unquoted HTML attributes (`href`, `data-original-title`); values are now properly quoted and escaped with `htmlspecialchars()`
+- `ViewFormatter::buildAffiliationListHtml()`: fixed Stored XSS by escaping the affiliation acronym
+- `ViewFormatter`: fixed `html_entity_decode(htmlspecialchars())` no-op; plain-text author list now uses raw name, HTML template uses escaped name
+- `EnrichmentService::mergeExistingAffiliations()`: fixed `key()` always returning 0 instead of the actual matching DB affiliation key; now uses `array_search()`
+- `AffiliationHelper::isAcronymDuplicate()`: fixed hardcoded `[0]` index; now iterates all identifiers (consistent with `hasRor()`/`hasAcronym()`)
+- `AffiliationHelper::setOrUpdateRorAcronym()`: returns first match deterministically instead of last
+- `TeiCacheManager::buildApiUrl()`: applied `urlencode()` on identifier to prevent Solr query injection
+- `TeiCacheManager::getFromCache()`: removed dead `expiresAfter()` call on the read path
+- `Repository`: `JSON_DECODE_FLAGS` no longer includes encode-only flags (`JSON_UNESCAPED_SLASHES`, `JSON_UNESCAPED_UNICODE`)
+
+### Security
+- Fixed XSS vulnerability in `ViewFormatter::buildAuthorHtml()` and `buildAffiliationListHtml()` where user-controlled values were interpolated into unquoted or improperly escaped HTML attributes (ORCID URL, data-title, and affiliation acronym)
+- Fixed potential Solr query injection in `TeiCacheManager::buildApiUrl()`
 
 ### Added
+- New supported Cryptology ePrint Archive
+- New supported servers: Support for any data repositories powered by Dspace (eg. [repositorium.uminho(University of Minho)](https://repositorium.uminho.pt))
+- Comprehensive unit tests for `Episciences_Paper_Authors_ViewFormatter` covering HTML display logic and XSS prevention
 - [#883](https://github.com/CCSDForge/episciences/issues/883) Allow json files as attachments
 - It is now possible to report status changes to an external entry point (can be configured by review)
   
@@ -45,7 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
 - New option to allow Editors to receive 'Comments for editors' before declaring a conflict of interest (disabled by default)
 - Volume Settings: add New configuration section(displayEmptyVolumes and allowEditVolumeTitleWithPublishedArticles)  in journal settings
-- Added visual indicator for pre-defined pages
+- [#679](https://github.com/CCSDForge/episciences/issues/679) "Ask other editors for their opinion" form now includes chief editors (ROLE_CHIEF_EDITOR) in addition to regular editors (ROLE_EDITOR)
+- [#691](http://github.com/CCSDForge/episciences/issues/691) Display "(optional)" label below comment and cover letter fields in submission forms to clarify these fields are not required
+- feat(navigation): sync predefined page titles with T_PAGES table on menu save
 
 ### Fixed
 - [#886](https://github.com/CCSDForge/episciences/issues/886): the reminder about the lack of reviewers is sent as long as the minimum required number of reviewers has not been reached compared to the accepted invitations
@@ -55,11 +90,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `isArxiv()`: fixed regex grouping so the end-of-string anchor applies to both identifier formats
 - Added comprehensive test coverage for `Episciences_Tools`: `decodeLatex`, `decodeAmpersand`, `isSha1`, `isJson`, `isUuid`, `getCleanedUuid`, `isIPv6`, `isRorIdentifier`, `isDoiWithUrl`, `isHal`, `isHalUrl`, `isDoi`, `isArxiv`, `isSoftwareHeritageId`, `isHandle`, `cleanHandle`, `getHalIdAndVer`, `getHalIdInString`, `checkIsArxivUrl`, `checkIsDoiFromArxiv`, `getSoftwareHeritageDirId`, `addDateInterval`, `isValidDate`, `isValidSQLDate`, `isValidSQLDateTime`, `getValidSQLDate`, `getValidSQLDateTime`, `toHumanReadable`, `convertToBytes`, `formatUser`, `checkUrl`, `startsWithNumber`, `formatText`
 - [#236](https://github.com/CCSDForge/episciences-front/issues/236): HTML entities (&amp;) displayed in the title
-- Incorrecte URL in the mail template when submitting via preprint server
 - [#695](https://github.com/CCSDForge/episciences/issues/695) Fixed CC/BCC fields not clickable in paper status change forms. Clicking CC/BCC now opens contact selection dialog.
 - [#830](https://github.com/CCSDForge/episciences/issues/830)  Paper number messed up for secondary volume
 - altered secondary volume rendering
-- [RT#259551] it is now possible to modify the Copy Editor at any time
 - [#776](https://github.com/CCSDForge/episciences/issues/776) Action Required: Fix Renovate Configuration
 - [#657](https://github.com/CCSDForge/episciences/issues/657) Conditionally remove the `<hr>` separator in the public and admin views of article metadata
 - [#786](https://github.com/CCSDForge/episciences/issues/786) English translation of 'Télécharger le fichier'
@@ -68,7 +101,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#147](https://github.com/CCSDForge/episciences/issues/147) Add new pages Acknowledgements (page code journal-acknowledgements)  in menu 'About'
 - Fixed Paper Metrics based on wrong DocId, it gave null metrics
 - Fixed Pre-defined pages deleted from the menu are not deleted from the database
+- [#77](https://github.com/CCSDForge/episciences-front/issues/77) Fix orphan assignments when deleting sections or volumes
 
+- Synchronization of predefined page titles between navigation menu and T_PAGES table when saving menu configuration
 
 ### Changed
 - The "Encapsulate reviewers" parameter is now hidden

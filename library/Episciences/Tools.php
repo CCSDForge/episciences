@@ -1031,26 +1031,34 @@ class Episciences_Tools
         header($str, $replace, $responseCode);
     }
 
-    /***
-     * Analyse variable pour trouver l'expression regEx et met les résultats dans matches
-     * Pour preg_mach_all : http://php.net/manual/fr/function.preg-match-all.php
-     * @param string $regEx
-     * @param string $variable
-     * @return array
+
+    /**
+     * see preg_mach_all : http://php.net/manual/fr/function.preg-match-all.php
+     * Extract all matches for a given regex pattern within a string.
+     *
+     * @param string $pattern  A valid regular expression (including delimiters).
+     * @param string $subject  The string to search in.
+     * @return array           An array of matched substrings; empty if none found or invalid regex.
      */
-    public static function extractPattern(string $regEx, string $variable): array
+    public static function extractPattern(string $pattern, string $subject): array
     {
-
-        if (!isset($regEx, $variable) || !is_string($regEx) || !is_string($variable)) {
+        if ($pattern === '' || $subject === '') {
             return [];
         }
 
-        if (!preg_match_all($regEx, $variable, $matches)) {
-            return [];
+        $matches = [];
+        try {
+            // Run the regex and capture matches
+            if (@preg_match_all($pattern, $subject, $matches)) {
+                return $matches[0] ?? [];
+            }
+        } catch (Throwable $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
         }
 
-        return $matches[0];
+        return [];
     }
+
 
     /**
      * Retourne les données pour un Datatable :
