@@ -1,6 +1,9 @@
 <?php
 
-class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_CommonHooksInterface, Episciences_Repositories_HooksInterface
+use Episciences\Repositories\CommonHooksInterface;
+use Episciences\Repositories\FilesEnrichmentInterface;
+
+class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, FilesEnrichmentInterface
 {
     /**
      * Le paramétrage se fait en base de données, table "metadata_sources"
@@ -11,10 +14,6 @@ class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_
     public const METADATA_PREFIX = 'oai_openaire';
     public const IDENTIFIER_EXEMPLE = '(Handle) 1822/79894';
 
-    public static function hookCleanXMLRecordInput(array $input): array
-    {
-        return $input;
-    }
 
     public static function hookFilesProcessing(array $hookParams): array
     {
@@ -91,62 +90,9 @@ class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_
         return [Episciences_Repositories_Common::META_IDENTIFIER => $identifier];
     }
 
-    public static function hookVersion(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookIsOpenAccessRight(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookHasDoiInfoRepresentsAllVersions(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookGetConceptIdentifierFromRecord(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookConceptIdentifier(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookLinkedDataProcessing(array $hookParams): array
-    {
-        return [];
-    }
-
     public static function hookIsRequiredVersion(): array
     {
         return ['result' => false];
-    }
-
-    /**
-     * @param string $baseUrl
-     * @param string $oaiIdentifier
-     * @return array|string
-     *
-     * @throws Ccsd_Error
-     */
-
-    private static function getRecord(string $baseUrl, string $oaiIdentifier): array|string
-    {
-
-        $oai = new Episciences_Oai_Client($baseUrl, 'xml');
-
-        try {
-            $result = $oai->getRecord($oaiIdentifier, self::METADATA_PREFIX);
-        } catch (Exception $e) {
-            throw new Ccsd_Error($e->getMessage());
-        }
-
-        return $result;
-
     }
 
     private static function extractMetadata($xmlString): array
@@ -311,16 +257,16 @@ class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_
     }
 
     private static function buildDataForOaiDc(
-        array  $titles,
-        array  $creatorsDc,
-        array  $subjects,
-        array  $descriptions,
-        string $language,
-        string $dcType,
-        string $datestamp,
-        array  $identifiers,
-        string $license,
-        string | array $publisher
+        array        $titles,
+        array        $creatorsDc,
+        array        $subjects,
+        array        $descriptions,
+        string       $language,
+        string       $dcType,
+        string       $datestamp,
+        array        $identifiers,
+        string       $license,
+        string|array $publisher
     ): array
     {
         return [
@@ -338,5 +284,9 @@ class Episciences_Repositories_Dspace_Hooks implements Episciences_Repositories_
         ];
     }
 
+    public static function hookIsIdentifierCommonToAllVersions(): array
+    {
+        return ['result' => false];
+    }
 }
 

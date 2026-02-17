@@ -1,10 +1,16 @@
 <?php
 
+use Episciences\Repositories\CommonHooksInterface;
+use Episciences\Repositories\DataSanitizerInterface;
+use Episciences\Repositories\FilesEnrichmentInterface;
+use Episciences\Repositories\InputSanitizerInterface;
+use Episciences\Repositories\LinkedDataEnrichmentInterface;
+use Episciences\Repositories\Zenodo\HooksInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\Intl\Languages;
 
-class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_CommonHooksInterface, Episciences_Repositories_HooksInterface
+class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, InputSanitizerInterface, FilesEnrichmentInterface, LinkedDataEnrichmentInterface, DataSanitizerInterface, HooksInterface
 {
     public const API_RECORDS_URL = 'https://zenodo.org/api/records';
     public const CONCEPT_IDENTIFIER = 'conceptrecid';
@@ -83,7 +89,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         $search = Episciences_Repositories::getRepoDoiPrefix($hookParams['repoId']) . '/' . mb_strtolower(Episciences_Repositories::getLabel($hookParams['repoId'])) . '.';
 
-        $identifier = str_replace($search, '', $identifier);
+        $identifier = str_replace(array($search, 'records/'), '', $identifier);
 
         return [Episciences_Repositories_Common::META_IDENTIFIER => $identifier];
     }
@@ -142,6 +148,7 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         return $response ?: [];
     }
+
     /**
      * @param array $hookParams ['identifier' => '1234', 'response' => []]
      * @return array
@@ -149,12 +156,8 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
      */
     public static function hookVersion(array $hookParams): array
     {
-        $version = 1;
         $response = self::checkResponse($hookParams);
-        if (!empty($response) && isset($response['metadata']['relations'])) {
-            $version = $response['metadata']['relations']['version'][array_key_first($response['metadata']['relations']['version'])]['index'] + 1;
-        }
-
+        $version = $response['metadata']['version'] ?? 1;
         return ['version' => $version];
     }
 
@@ -412,8 +415,8 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
 
         $enrichment = [
             Episciences_Repositories_Common::CONTRIB_ENRICHMENT => $authors,
-            Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT=> $dcType,
-            Episciences_Repositories_Common::FILES =>  $data[Episciences_Repositories_Common::FILES]
+            Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT => $dcType,
+            Episciences_Repositories_Common::FILES => $data[Episciences_Repositories_Common::FILES]
 
         ];
 
@@ -582,5 +585,10 @@ class Episciences_Repositories_Zenodo_Hooks implements Episciences_Repositories_
         $data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC] = $xmlElements;
 
         return $data;
+    }
+
+    public static function hookIsIdentifierCommonToAllVersions(): array
+    {
+        return ['result' => false];
     }
 }

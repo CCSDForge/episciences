@@ -194,6 +194,7 @@ $(function () {
 
     // display the document if it has been found
     function showResult(result) {
+
         let message = '';
 
         if (result['status'] === 0) {
@@ -213,8 +214,21 @@ $(function () {
                 );
             }
 
-            if ('hookVersion' in result) {
-                $searchDocVersion.val(result.hookVersion);
+            if ('update' in result) {
+                $submit_form.append(
+                    '<input id = "update" type="hidden" name="update" value="' +
+                    result.update +
+                    '">'
+                );
+            }
+
+            if ('hookVersion' in result || $searchDocVersion.length > 0) {
+
+                let version = ('hookVersion' in result) ? result.hookVersion : $searchDocVersion.val();
+                $submit_form.append(
+                    '<input id = "h_version" type="hidden" name="h_version" value="' + version + '">'
+                );
+
             }
 
             // document found: hide search form

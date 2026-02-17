@@ -2753,155 +2753,213 @@ class Episciences_PapersManager
     }
 
     /**
-     * Update paper metadata
      * @param Episciences_Paper $paper
      * @return int
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Exception
      */
+
     public static function updateRecordData(Episciences_Paper $paper): int
     {
-
         $docId = $paper->getDocId();
-
         if (!$docId) {
             return 0;
         }
 
-        $enrichment = [];
-
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $affectedRows = 0;
 
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $params = self::getPaperParams($docId);
+        $params['docId'] = $docId;
+        $context = self::initializeContext($params);
 
-        $result = self::getPaperParams($docId);
+        $recordData = self::fetchRecordData($context);
+        [$record, $enrichment] = [$recordData['record'], $recordData['enrichment']];
 
-        $identifier = str_replace('-REFUSED', '',$result['IDENTIFIER']);
-        $repoId = (int)$result['REPOID'];
-        $version = (float)$result['VERSION'];
-        $paperId = (int)$result['PAPERID'];
-        $doiTrim = [];
-        if (!empty($result['DOI'])) {
-            $doiTrim = trim($result['DOI']);
+        $record = self::cleanRecord($record, $context['repoId']);
+        [$record, $enrichment, $affectedRows] = self::processFilesHook($record, $context, $enrichment, $affectedRows);
+
+        $affectedRows += self::processLinkedDataOrDatasets($paper, $context, $affectedRows);
+        $affectedRows += Episciences_Submit::enrichmentProcess($paper, $enrichment);
+        Episciences_Paper_AuthorsManager::verifyExistOrInsert($context['docId'], $context['paperId']);
+
+        $affectedRows = self::processLicence($context, $affectedRows);
+        $affectedRows = self::processHalOpenAireData($context, $affectedRows);
+
+        $affectedRows += $db?->update(T_PAPERS, ['RECORD' => $record], ['DOCID = ?' => $context['docId']]);
+        return $affectedRows;
+    }
+
+    private static function initializeContext(array $params): array
+    {
+        return [
+            'docId' => $params['docId'],
+            'identifier' => str_replace('-REFUSED', '', $params['IDENTIFIER']),
+            'repoId' => (int)$params['REPOID'],
+            'version' => (float)$params['VERSION'],
+            'paperId' => (int)$params['PAPERID'],
+            'doi' => trim($params['DOI'] ?? ''),
+            'status' => (int)$params['STATUS'],
+        ];
+    }
+
+    /**
+     * @param array $context
+     * @return array
+     * @throws Exception
+     */
+
+    private static function fetchRecordData(array $context): array
+    {
+        $repoIdentifier = Episciences_Repositories::getIdentifier(
+            $context['repoId'], $context['identifier'], $context['version']
+        );
+
+        $response = Episciences_Repositories::callHook('hookApiRecords', [
+            'identifier' => $context['identifier'],
+            'repoId' => $context['repoId'],
+            'version' => $context['version']
+        ]);
+
+        if (!empty($response['record'])) {
+            return ['record' => $response['record'], 'enrichment' => $response['enrichment'] ?? []];
         }
 
-        $status = (int)$result['STATUS'];
-
-        $repoIdentifier = Episciences_Repositories::getIdentifier($repoId, $identifier, $version);
-
-        $oai = null;
-        $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
-
+        $baseUrl = Episciences_Repositories::getBaseUrl($context['repoId']);
         if ($baseUrl) {
             $oai = new Ccsd_Oai_Client($baseUrl, 'xml');
-        }
-
-        $response = Episciences_Repositories::callHook(
-            'hookApiRecords', [
-                'identifier' => $identifier,
-                'repoId' => $repoId,
-                'version' => $version
-            ]
-        );
-        // Use enriched record from hookApiRecords if available, otherwise fallback to OAI
-        if (!empty($response['record'])) {
-            $record = $response['record'];
-            $enrichment = $response['enrichment'] ?? [];
-        } elseif ($oai) {
             $record = $oai->getRecord($repoIdentifier);
             $type = Episciences_Tools::xpath($record, '//dc:type');
 
+            $enrichment = [];
             if (!empty($type)) {
                 $enrichment[Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT] = $type;
             }
 
-        } else {
-            $record = $response['record'] ?? '';
+            return ['record' => $record, 'enrichment' => $enrichment];
         }
 
-        if($record !== ''){
-            $record = preg_replace('#xmlns="(.*)"#', '', $record);
+        return ['record' => '', 'enrichment' => []];
+    }
+
+    /**
+     * @param string $record
+     * @param int $repoId
+     * @return string
+     */
+
+    private static function cleanRecord(string $record, int $repoId): string
+    {
+        if ($record === '') {
+            return $record;
         }
+
+        $record = preg_replace('#xmlns="(.*)"#', '', $record);
 
         if ($repoId === (int)Episciences_Repositories::CWI_REPO_ID) {
             $record = Episciences_Repositories_Common::checkAndCleanRecord($record);
         }
 
-        $result = Episciences_Repositories::callHook(
-            'hookCleanXMLRecordInput', [
+        $result = Episciences_Repositories::callHook('hookCleanXMLRecordInput', [
             'record' => $record,
             'repoId' => $repoId
         ]);
 
-        if (array_key_exists('record', $result)) {
-            [$record, $enrichment, $affectedRows] = self::updateRecordDataProcessFilesHook($result['record'], $docId, $repoId, $identifier, $enrichment, $affectedRows);
-        }
+        return $result['record'] ?? $record;
+    }
 
-        if (Episciences_Repositories::hasHook($repoId)) {
-            // add all linked data : Zenodo only
-            $hookLikedData = Episciences_Repositories::callHook(
-                'hookLinkedDataProcessing', [
-                'repoId' => $repoId,
-                'identifier' => $identifier,
-                'docId' => $docId
+    /**
+     * @param string $record
+     * @param array $context
+     * @param array $enrichment
+     * @param int $affectedRows
+     * @return array
+     */
+
+    private static function processFilesHook(
+        string $record, array $context, array $enrichment, int $affectedRows
+    ): array {
+        return self::updateRecordDataProcessFilesHook(
+            $record, $context['docId'], $context['repoId'], $context['identifier'], $enrichment, $affectedRows
+        );
+    }
+
+    /**
+     * @param Episciences_Paper $paper
+     * @param array $context
+     * @param int $affectedRows
+     * @return int
+     */
+
+    private static function processLinkedDataOrDatasets(
+        Episciences_Paper $paper, array $context, int $affectedRows
+    ): int {
+        if (Episciences_Repositories::hasHook($context['repoId'])) {
+            $hookData = Episciences_Repositories::callHook('hookLinkedDataProcessing', [
+                'repoId' => $context['repoId'],
+                'identifier' => $context['identifier'],
+                'docId' => $context['docId']
             ]);
-
-            if (isset($hookLikedData['affectedRows'])) {
-                $affectedRows += $hookLikedData['affectedRows'];
-            }
-
-
-        } else {
-            // add all datasets for Hal repository
-            $affectedRows += Episciences_Submit::datasetsProcessing($paper);
-
+            return $affectedRows + ($hookData['affectedRows'] ?? 0);
         }
 
-        $affectedRows += Episciences_Submit::enrichmentProcess($paper, $enrichment);
+        return $affectedRows + Episciences_Submit::datasetsProcessing($paper);
+    }
 
-        Episciences_Paper_AuthorsManager::verifyExistOrInsert($docId, $paperId);
+    /**
+     * @param array $context
+     * @param int $affectedRows
+     * @return int
+     */
 
+    private static function processLicence(array $context, int $affectedRows): int
+    {
+        return self::updateRecordDataProcessLicence(
+            $context['repoId'], $context['identifier'], $context['version'], $context['docId'], $affectedRows
+        );
+    }
 
+    /**
+     * @param array $context
+     * @param int $affectedRows
+     * @return int
+     */
 
+    private static function processHalOpenAireData(array $context, int $affectedRows): int
+    {
+        $strRepoId = (string)$context['repoId'];
 
-        //insert licence when save paper
-        $affectedRows = self::updateRecordDataProcessLicence($repoId, $identifier, $version, $docId, $affectedRows);
-
-
-        ////////Creator OA and HAL
-        /// Traitement spécial HAL (affiliations, ORCID, financements)
-        $strRepoId = (string)$repoId;
         if ($strRepoId === Episciences_Repositories::HAL_REPO_ID) {
             try {
-                $affectedRows = self::updateRecordDataHal($paperId, $identifier, $version, $affectedRows);
+                $affectedRows = self::updateRecordDataHal(
+                    $context['paperId'], $context['identifier'], $context['version'], $affectedRows
+                );
             } catch (JsonException | \Psr\Cache\InvalidArgumentException $e) {
                 trigger_error($e->getMessage(), E_USER_WARNING);
             }
         }
-        if (
-            !empty($doiTrim) &&
-            $status === Episciences_Paper::STATUS_PUBLISHED &&
-            (
-            in_array($strRepoId, [
-                Episciences_Repositories::ARXIV_REPO_ID,
-                Episciences_Repositories::ZENODO_REPO_ID,
-                Episciences_Repositories::HAL_REPO_ID,
-                Episciences_Repositories::BIO_RXIV_ID,
-                Episciences_Repositories::MED_RXIV_ID
-            ], true)
-            )
+
+        $isEligibleRepo = in_array($strRepoId, [
+            Episciences_Repositories::ARXIV_REPO_ID,
+            Episciences_Repositories::ZENODO_REPO_ID,
+            Episciences_Repositories::HAL_REPO_ID,
+            Episciences_Repositories::BIO_RXIV_ID,
+            Episciences_Repositories::MED_RXIV_ID,
+        ], true);
+
+        if (!empty($context['doi']) &&
+            $context['status'] === Episciences_Paper::STATUS_PUBLISHED &&
+            $isEligibleRepo
         ) {
             try {
-                $affectedRows = self::updateRecordDataCallOpenAireTools($doiTrim, $paperId, $affectedRows);
-            } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
+                $affectedRows = self::updateRecordDataCallOpenAireTools(
+                    $context['doi'], $context['paperId'], $affectedRows
+                );
+            } catch (JsonException | \Psr\Cache\InvalidArgumentException $e) {
                 trigger_error($e->getMessage(), E_USER_WARNING);
             }
         }
-
-        // Mise à jour des données
-        $data['RECORD'] = $record;
-        $where['DOCID = ?'] = $docId;
-
-        $affectedRows += $db->update(T_PAPERS, $data, $where);
 
         return $affectedRows;
     }

@@ -524,5 +524,64 @@ class Episciences_Repositories_Common
 
     }
 
+    /**
+     * If parsing fails, return the original match unchanged
+     * @param string $text
+     * @return string
+     *
+     */
+    public static function replaceYMDHMSWithTimestamp(string $text): string
+    {
+        return preg_replace_callback(
+            '/\b(\d{8}):(\d{6})\b/',  // matches YYYYMMDD:HHMMSS
+            static function ($m) {
+                $originalMatch = $m[0];
+                $dateStr = $m[1] . $m[2]; // YYYYMMDDHHMMSS
 
+                if (empty($dateStr)) {
+                    return '';
+                }
+
+                try {
+                    $dt = DateTime::createFromFormat('YmdHis', $dateStr, new DateTimeZone('UTC'));
+
+                } catch (DateInvalidTimeZoneException $e) {
+                    Episciences_View_Helper_Log::log($e->getMessage());
+                    return $originalMatch;
+                }
+
+                if ($dt === false) {
+                    return $originalMatch;
+                }
+
+                return $dt->getTimestamp();
+            },
+            $text
+        );
+    }
+
+    /**
+     * @param string $input
+     * @return string
+     */
+
+    public static function removeDateTimePattern(string $input): string
+    {
+        // Remove any occurrence of YYYYMMDD:HHMMSS
+        return preg_replace('#\b\d{8}:\d{6}\b#', '', $input);
+    }
+
+    /**
+     * return the first matched pattern (YYYYMMDD:HHMMSS) or empty string
+     * @param string $input
+     * @return string
+     */
+
+    public static function getDateTimePattern(string $input): string
+    {
+        if (!preg_match('#\b\d{8}:\d{6}\b#', $input, $matches)) {
+            return '';
+        }
+        return $matches[array_key_first($matches)];
+    }
 }

@@ -1,7 +1,11 @@
 <?php
 
 
-class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_CommonHooksInterface, Episciences_Repositories_HooksInterface
+use Episciences\Repositories\CommonHooksInterface;
+use Episciences\Repositories\InputSanitizerInterface;
+use GuzzleHttp\Exception\GuzzleException;
+
+class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, InputSanitizerInterface
 {
     public const SUCCESS_CODE = 'ok';
     public const AVAILABLE_SERVERS = [
@@ -38,12 +42,6 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Co
         $this->server = $server;
     }
 
-
-    public static function hookCleanXMLRecordInput(array $input): array
-    {
-        return $input;
-    }
-
     /**
      * @param array $hookParams
      * @return array
@@ -73,10 +71,10 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Co
         try {
             $response = Episciences_Tools::callApi($url, $options);
 
-            if (!array_key_exists(self::COLLECTION, $response) || empty($response[self::COLLECTION])){
+            if (!is_array($response) || empty($response[self::COLLECTION] ?? null)){
                 throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
             }
-        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+        } catch (GuzzleException $e) {
             throw new Ccsd_Error($e->getMessage());
         }
 
@@ -130,37 +128,6 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Co
     {
         return [];
     }
-
-    public static function hookIsOpenAccessRight(array $hookParams): array
-    {
-        return ['isOpenAccessRight' => true];
-    }
-
-    public static function hookHasDoiInfoRepresentsAllVersions(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookGetConceptIdentifierFromRecord(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookConceptIdentifier(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookLinkedDataProcessing(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookFilesProcessing(array $hookParams): array
-    {
-        return [];
-    }
-
     /**
      * @return string
      */
@@ -238,14 +205,9 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Co
         ) ? strtolower($currentVersion[self::LICENSE]) : 'cc_no';
 
 
-        if (
-            str_contains($license, 'cc_') &&
-            $license !== 'cc_no' // todo Should we block this type of submission?
-
-        ) {
+        if ($license !== 'cc_no' && str_contains($license, 'cc_')) { //todo Should we block this type of submission [$license !== 'cc_no]?
             $xmlElements['rights'][] = 'info:eu-repo/semantics/openAccess';
         }
-
 
         $elements = [
             'headers' => [
@@ -258,62 +220,6 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Co
         ];
 
         return Episciences_Repositories_Common::toDublinCore($elements);
-
-    }
-
-    /**
-     * @param DOMDocument $xml
-     * @param DOMElement $root
-     * @param array $xmlElements
-     * @param string $prefix
-     * @return DOMElement
-     * @throws DOMException
-     */
-    private static function addXmlElements(
-        DOMDocument $xml,
-        DOMElement  $root,
-        array       $xmlElements,
-        string      $prefix = ''
-    )
-    {
-        $defaultLanguage = 'en';
-
-        foreach ($xmlElements as $key => $values) {
-
-            if (is_array($values)) {
-
-                foreach ($values as $value) {
-
-                    $xmlElement = $xml->createElement(
-                        $prefix . $key,
-                        ($key === 'identifier' && Episciences_Tools::isDoi($value)) ? 'info:doi:' . $value : $value
-                    );
-
-                    if ($key === 'description') {
-
-                        $xmlElement->setAttribute('xml:lang', $defaultLanguage);
-                    }
-
-                    $root->appendChild($xmlElement);
-
-                }
-
-            } else {
-
-                $xmlElement = $xml->createElement($prefix . $key, $values);
-
-                if ($key === 'description') {
-
-                    $xmlElement->setAttribute('xml:lang', $defaultLanguage);
-                }
-
-                $root->appendChild($xmlElement);
-
-            }
-
-        }
-
-        return $root;
 
     }
 
@@ -610,7 +516,7 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Co
     }
 
     /**
-     * @param array $rawRypes
+     * @param array $rawTypes
      * @param array $type
      * @return void
      */
@@ -633,4 +539,8 @@ class Episciences_Repositories_BioMedRxiv implements Episciences_Repositories_Co
 
     }
 
+    public static function hookIsIdentifierCommonToAllVersions(): array
+    {
+        return ['result' => false];
+    }
 }

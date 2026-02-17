@@ -51,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed potential Solr query injection in `TeiCacheManager::buildApiUrl()`
 
 ### Added
+- New supported Cryptology ePrint Archive
 - New supported servers: Support for any data repositories powered by Dspace (eg. [repositorium.uminho(University of Minho)](https://repositorium.uminho.pt))
 - Comprehensive unit tests for `Episciences_Paper_Authors_ViewFormatter` covering HTML display logic and XSS prevention
 - [#883](https://github.com/CCSDForge/episciences/issues/883) Allow json files as attachments

@@ -1,4 +1,7 @@
 <?php
+
+use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
+
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
 
 class SubmitController extends DefaultController
@@ -9,243 +12,480 @@ class SubmitController extends DefaultController
      * @throws Zend_Exception
      * @throws Zend_File_Transfer_Exception
      * @throws Zend_Form_Exception
-     * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      */
+
     public function indexAction(): void
     {
-        $isFromZSubmit = false;
-        $default = [];
         $settings = Zend_Registry::get('reviewSettings');
-        $post = [];
-
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-
         $isPost = $request->isPost();
+        $post = $isPost ? $request->getPost() : [];
+        $default = [];
+        $isFromZSubmit = false;
 
-        if ($isPost) {
-
-            $post = $request->getPost();
-
-            if ($this->isPostMaxSizeReached()) {
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($this->buildReachedMessage());
-                $this->_helper->redirector('index', 'submit');
-                return;
-            }
+        if ($isPost && $this->isPostMaxSizeReached()) {
+            $this->handlePostMaxSizeReached();
+            return;
         }
 
-        if (array_key_exists('episciences_form', $post)) { // posted from z-submit application
-
-            $zPost = $request->getPost()['episciences_form'] ?? null;
-
-            $zConceptIdentifier = $zPost['ci'] ?? null;
-            $repoId = $zPost['repoid'] ?? null;
-            $zIdentifier = null;
-
-            if ($zPost) {
-                $zIdentifier = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $zPost['doi_show'], 'repoId' => $repoId])['identifier'];
-                $isFromZSubmit = EPISCIENCES_Z_SUBMIT['STATUS'] && $zIdentifier && $zConceptIdentifier && in_array($repoId, $settings['repositories'], true);
-            }
-
-            if ($isFromZSubmit) {
-
-                if (!Episciences_Auth::hasRealIdentity()) {
-
-                    $message = $this->view->translate("Vous avez été redirigé vers cette page, votre compte sur cette application ne semble pas être le bon !");
-
-                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-
-                }
-
-                $paper = Episciences_PapersManager::findByIdentifier($zConceptIdentifier); // latest version
-
-                $isFirstSubmission = !$paper || (
-                        $paper->getConcept_identifier() === $zConceptIdentifier &&
-                        in_array($paper->getStatus(), [Episciences_Paper::STATUS_SUBMITTED, Episciences_Paper::STATUS_OK_FOR_REVIEWING, Episciences_Paper::STATUS_REFUSED], true)
-                    );
-
-                if (!$isFirstSubmission && ($paper->isRevisionRequested() || $paper->isFormattingCompleted())) {
-                    $rOptions = ['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid(), 'z-identifier' => $zIdentifier];
-                    $this->redirect($this->view->url($rOptions, null, true));
-                    return;
-                }
-
-                $default ['repoId'] = Episciences_Repositories::ZENODO_REPO_ID;
-                $default ['docId'] = $zIdentifier;
-
-            }
-
+        if (array_key_exists('episciences_form', $post)) {
+            $this->handleZSubmit($request, $settings, $default, $isFromZSubmit);
         }
 
         $submit = new Episciences_Submit();
-
         $form = $submit::getForm($settings, $default, $isFromZSubmit);
 
-        if ($isPost && array_key_exists('submitPaper', $post)) { // form EPI
-
-            $canReplace = (boolean)$request->getPost('can_replace');  // On force le remplacement d'une ancienne version dans certains cas
-
-            if (isset($post['search_doc']['repoId'])) {
-                $repoId = (int)$post['search_doc']['repoId'];
-                $hookCleanIdentifiers = Episciences_Repositories::callHook('hookCleanIdentifiers', ['id' => $post['search_doc']['docId'], 'repoId' => $repoId]);
-                if (!empty($hookCleanIdentifiers)) {
-                    $post['search_doc']['docId'] = $hookCleanIdentifiers['identifier'];
-                }
-            }
-
-            if($canReplace) { // validation not required
-                $form->removeElement('suggestEditors');
-                $form->removeElement('sections');
-
-            } elseif ($request->getPost('suggestEditors') && $form->getElement('suggestEditors')) {
-                /** @var Zend_Form_Element_Multi | Zend_Form_Element_Select $suggestionsElement */
-                $suggestionsElement = $form->getElement('suggestEditors');
-                $suggestionsElement->setRegisterInArrayValidator(false);
-            }
-
-            $requiredDdKey = sprintf('%s_is_required', Episciences_Submit::DD_FILE_ELEMENT_NAME);
-
-            if (isset($post[$requiredDdKey])) {
-                $form->getElement(Episciences_Submit::DD_FILE_ELEMENT_NAME)?->setRequired($post[$requiredDdKey] === 'true');
-            }
-
-            if ($form->isValid($post)) {
-                $form_values = $form->getValues();
-
-                foreach ($post as $input => $value) {
-                    if (!array_key_exists($input, $form_values)) {
-                        $form_values[$input] = $value;
-                    }
-                }
-
-                if ($canReplace) { // Possibility to replace a paper
-
-                    $selfPaper = new Episciences_Paper([
-                        'identifier' => $form_values['old_identifier'],
-                        'version' => (int)$form_values['old_version'],
-                        'repoId' => (int)$form_values['old_repoid'],
-                        'status' => (int)$form_values['old_paper_status']
-                    ]);
-
-
-                    // Deletion of unused variables
-                    unset(
-                        $form_values['old_identifier'],
-                        $form_values['old_repoid']
-                    );
-
-                    $result = $selfPaper->updatePaper($form_values);
-                    $message = '<strong>' . $result['message'] . '</strong>';
-
-                } else {
-                    $result = $submit->saveDoc($form_values);
-                    $message = $result['message'];
-                }
-
-                if ($result['code'] === 0) {
-                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
-                    $this->_helper->redirector('submitted', 'paper');
-                } else {
-                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
-                    // Redirect to paper detail page for possible edits
-                    $docId = $result['docId'] ?? null;
-                    if ($docId) {
-                        $this->_helper->redirector('view', 'paper', null, ['id' => $docId]);
-                    } else {
-                        $this->_helper->redirector('submitted', 'paper');
-                    }
-                }
-                return;
-            } // End isValid
-
-            $this->renderFormErrors($form);
-
+        if ($isPost && array_key_exists('submitPaper', $post)) {
+            $this->handleSubmitPaper($request, $form, $submit, $post);
+            return;
         }
 
-        $this->view->form = $form;
+        $this->prepareViewData($settings, $isFromZSubmit, $form);
+    }
 
+    /**
+     * Handle case when POST max size is reached.
+     */
+    private function handlePostMaxSizeReached(): void
+    {
+        $this->_helper
+            ->FlashMessenger
+            ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+            ->addMessage($this->buildReachedMessage());
+
+        $this->_helper->redirector('index', 'submit');
+    }
+
+    /**
+     * Handle requests coming from Z-Submit application.
+     */
+    private function handleZSubmit(
+        Zend_Controller_Request_Http $request,
+        array                        $settings,
+        array                        &$default,
+        bool                         &$isFromZSubmit
+    ): void
+    {
+        $zPost = $request->getPost()['episciences_form'] ?? null;
+
+        if (!$zPost) {
+            return;
+        }
+
+        $zConceptIdentifier = $zPost['ci'] ?? null;
+        $repoId = $zPost['repoid'] ?? null;
+
+        $cleanedIdentifier = Episciences_Repositories::callHook(
+            'hookCleanIdentifiers',
+            ['id' => $zPost['doi_show'] ?? null, 'repoId' => $repoId]
+        );
+
+        $zIdentifier = $cleanedIdentifier['identifier'] ?? null;
+
+        $isFromZSubmit = EPISCIENCES_Z_SUBMIT['STATUS']
+            && $zIdentifier
+            && $zConceptIdentifier
+            && in_array($repoId, $settings['repositories'], true);
+
+        if (!$isFromZSubmit) {
+            return;
+        }
+
+        if (!Episciences_Auth::hasRealIdentity()) {
+            $message = $this->view->translate(
+                "Vous avez été redirigé vers cette page, votre compte sur cette application ne semble pas être le bon !"
+            );
+            $this->_helper
+                ->FlashMessenger
+                ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($message);
+        }
+
+        $paper = Episciences_PapersManager::findByIdentifier($zConceptIdentifier);
+
+        $isFirstSubmission = !$paper || (
+                $paper->getConcept_identifier() === $zConceptIdentifier
+                && in_array(
+                    $paper->getStatus(),
+                    [
+                        Episciences_Paper::STATUS_SUBMITTED,
+                        Episciences_Paper::STATUS_OK_FOR_REVIEWING,
+                        Episciences_Paper::STATUS_REFUSED,
+                    ],
+                    true
+                )
+            );
+
+        if (!$isFirstSubmission && ($paper->isRevisionRequested() || $paper->isFormattingCompleted())) {
+            $rOptions = [
+                'controller' => 'paper',
+                'action' => 'view',
+                'id' => $paper->getDocid(),
+                'z-identifier' => $zIdentifier,
+            ];
+
+            $this->redirect($this->view->url($rOptions, null, true));
+            return;
+        }
+
+        $default['repoId'] = Episciences_Repositories::ZENODO_REPO_ID;
+        $default['docId'] = $zIdentifier;
+    }
+
+    /**
+     * Handle the EPI form submission (submitPaper).
+     * @param Zend_Controller_Request_Http $request
+     * @param Zend_Form $form
+     * @param Episciences_Submit $submit
+     * @param array $post
+     * @return void
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_File_Transfer_Exception
+     * @throws Zend_Form_Exception
+     * @throws InvalidArgumentExceptionAlias
+     */
+    private function handleSubmitPaper(
+        Zend_Controller_Request_Http $request,
+        Zend_Form                    $form,
+        Episciences_Submit           $submit,
+        array                        $post
+    ): void
+    {
+        $canReplace = (bool)$request->getPost('can_replace');
+
+        $post = $this->normalizeSearchDocIdentifiers($post);
+
+        $this->adjustFormForReplacementOrSuggestions($request, $form, $canReplace);
+        $this->setDdFileRequiredFlag($form, $post);
+
+        if (!$form->isValid($post)) {
+            $this->renderFormErrors($form);
+            return;
+        }
+
+        $formValues = $this->mergeFormValuesWithPost($form->getValues(), $post);
+
+        if ($canReplace) {
+            [$result, $message] = $this->handlePaperReplacement($formValues);
+        } else {
+            [$result, $message] = $this->handleNewSubmission($submit, $formValues);
+        }
+
+        $this->handleSubmissionResult($result, $message);
+    }
+
+    /**
+     * Normalize repository identifiers coming from search_doc.
+     */
+    private function normalizeSearchDocIdentifiers(array $post): array
+    {
+        if (isset($post['search_doc']['repoId'])) {
+            $repoId = (int)$post['search_doc']['repoId'];
+
+            $hookCleanIdentifiers = Episciences_Repositories::callHook(
+                'hookCleanIdentifiers',
+                [
+                    'id' => $post['search_doc']['docId'] ?? null,
+                    'repoId' => $repoId,
+                ]
+            );
+
+            if (!empty($hookCleanIdentifiers)) {
+                $post['search_doc']['docId'] = $hookCleanIdentifiers['identifier'];
+            }
+        }
+
+        return $post;
+    }
+
+    /**
+     * Adjust the form depending on replacement mode or suggested editors.
+     */
+    private function adjustFormForReplacementOrSuggestions(
+        Zend_Controller_Request_Http $request,
+        Zend_Form                    $form,
+        bool                         $canReplace
+    ): void
+    {
+        if ($canReplace) {
+            $form->removeElement('suggestEditors');
+            $form->removeElement('sections');
+            return;
+        }
+
+        if ($request->getPost('suggestEditors') && $form->getElement('suggestEditors')) {
+            /** @var Zend_Form_Element_Multi|Zend_Form_Element_Select $suggestionsElement */
+            $suggestionsElement = $form->getElement('suggestEditors');
+            $suggestionsElement->setRegisterInArrayValidator(false);
+        }
+    }
+
+    /**
+     * Set Dataverse file element required flag based on POST.
+     */
+    private function setDdFileRequiredFlag(Zend_Form $form, array $post): void
+    {
+        $requiredDdKey = sprintf('%s_is_required', Episciences_Submit::DD_FILE_ELEMENT_NAME);
+
+        if (!isset($post[$requiredDdKey])) {
+            return;
+        }
+
+        $form->getElement(Episciences_Submit::DD_FILE_ELEMENT_NAME)
+            ?->setRequired($post[$requiredDdKey] === 'true');
+    }
+
+    /**
+     * Merge Zend_Form values with raw POST (keep unmapped inputs).
+     */
+    private function mergeFormValuesWithPost(array $formValues, array $post): array
+    {
+        foreach ($post as $input => $value) {
+            if (!array_key_exists($input, $formValues)) {
+                $formValues[$input] = $value;
+            }
+        }
+
+        return $formValues;
+    }
+
+    /**
+     * Handle the case where a paper is replaced by a new version.
+     *
+     * @param array $formValues
+     * @return array{0: array, 1: string} [result, message]
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     */
+    private function handlePaperReplacement(array &$formValues): array
+    {
+        $selfPaper = new Episciences_Paper([
+            'identifier' => $formValues['old_identifier'],
+            'version' => (int)$formValues['old_version'],
+            'repoId' => (int)$formValues['old_repoid'],
+            'status' => (int)$formValues['old_paper_status'],
+        ]);
+
+        unset(
+            $formValues['old_identifier'],
+            $formValues['old_repoid']
+        );
+
+        $result = $selfPaper->updatePaper($formValues);
+        $message = '<strong>' . $result['message'] . '</strong>';
+
+        return [$result, $message];
+    }
+
+    /**
+     * Handle the case of a brand-new submission.
+     *
+     * @param Episciences_Submit $submit
+     * @param array $formValues
+     * @return array{0: array, 1: string} [result, message]
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_File_Transfer_Exception
+     * @throws InvalidArgumentExceptionAlias
+     */
+    private function handleNewSubmission(Episciences_Submit $submit, array $formValues): array
+    {
+        $result = $submit->saveDoc($formValues);
+        $message = $result['message'];
+
+        return [$result, $message];
+    }
+
+    /**
+     * Process the result of the submission and redirect accordingly.
+     */
+    private function handleSubmissionResult(array $result, string $message): void
+    {
+        if ($result['code'] === 0) {
+            $this->_helper
+                ->FlashMessenger
+                ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($message);
+
+            $this->_helper->redirector('submitted', 'paper');
+            return;
+        }
+
+        $this->_helper
+            ->FlashMessenger
+            ->setNamespace('success')
+            ->addMessage($message);
+
+        $docId = $result['docId'] ?? null;
+
+        if ($docId) {
+            $this->_helper->redirector('view', 'paper', null, ['id' => $docId]);
+        } else {
+            $this->_helper->redirector('submitted', 'paper');
+        }
+    }
+
+    /**
+     * Prepare all data needed by the view.
+     */
+    private function prepareViewData(array $settings, bool $isFromZSubmit, Zend_Form $form): void
+    {
+        $this->view->form = $form;
         $examples = [];
 
-        // available repositories (string)
         foreach (Episciences_Repositories::getRepositories() as $id => $repository) {
             if ((int)$id === 0) {
-                //remove episciences from repositories list
-                continue;
+                continue; // skip Episciences itself
             }
 
             $examples[$id] = Episciences_Repositories::getIdentifierExemple($repository['id']);
         }
 
         $allowedRepositories = Episciences_Submit::getRepositoriesLabels($settings);
-
         $this->view->repositories = implode(', ', $allowedRepositories);
         $this->view->examples = Zend_Json::encode($examples);
         $this->view->isFromZSubmit = $isFromZSubmit;
         $this->view->zSubmitUrl = !$isFromZSubmit ? $this->getZSubmitUrl($allowedRepositories) : null;
         $this->view->zenodoRepoId = Episciences_Repositories::ZENODO_REPO_ID;
-
     }
 
 
     /**
      * @return void
      * @throws Zend_Exception
-     * @throws Exception
      */
+
     public function getdocAction(): void
     {
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
-        $params = $request->getPost();
-        $version = (isset($params['version']) && is_numeric($params['version'])) ? (int)$params['version'] : 1;
-        $latestObsoleteDocId = $params['latestObsoleteDocId']; //répondre à une demande de modif. par la soumission d'une nouvelle version
-        $respond = Episciences_Submit::getDoc($params['repoId'], $params['docId'], $version, $latestObsoleteDocId);
-        $this->_helper->viewRenderer->setNoRender();
-        $this->_helper->getHelper('layout')->disableLayout();
+        $this->disableViewAndLayout();
 
-        if (!array_key_exists('error', $respond) && array_key_exists('record', $respond)) {
-            // transform xml record for display, using xslt
-            $respond['record'] = preg_replace('#xmlns="(.*)"#', '', $respond['record']);
+        $params = $this->getRequest()->getPost();
+        $version = $this->extractVersion($params);
+        $response = $this->fetchDocument($params, $version);
 
-            if($params['repoId'] === Episciences_Repositories::CWI_REPO_ID){
-                $respond['record'] = Episciences_Repositories_Common::checkAndCleanRecord($respond['record']);
-            }
-
-            $input = array_merge($respond, ['repoId' => $params['repoId']]);
-
-            $result = Episciences_Repositories::callHook('hookCleanXMLRecordInput', $input);
-            unset ($result['repoId']);
-
-            $respond = !empty($result) ? $result : $respond;
-            $respond['ddOptions'] = ['displayDDForm' => Episciences_Repositories::isDataverse($params['repoId']) , 'isSoftware' => false];
-
-            // form repository
-            $type = null;
-
-            if (isset($respond[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT])) {
-
-                $types = $respond[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT];
-
-                if (!is_array($types)) {
-                    $types = (array)$types;
-                }
-
-                $type = $types[array_key_last($types)] ?? null;
-            }
-
-            if ($type) {
-                $isSoftware = strtolower($type) === Episciences_Paper::SOFTWARE_TYPE_TITLE;
-                $isSoftwareOrDataset = $isSoftware || (strtolower($type) === Episciences_Paper::DATASET_TYPE_TITLE);
-                $respond['ddOptions']['displayDDForm'] = $isSoftwareOrDataset || $respond['ddOptions']['displayDDForm'];
-                $respond['ddOptions']['isSoftware'] = $isSoftware;
-            }
-
-            $respond['xslt'] = Ccsd_Tools::xslt($respond['record'], APPLICATION_PUBLIC_PATH . '/xsl/full_paper.xsl');
+        if ($this->isValidResponse($response)) {
+            $response = $this->prepareRecord($response, $params);
         }
 
-        $this->_helper->json($respond);
+        $this->_helper->json($response);
+    }
+
+    /**
+     * Disable view rendering and layout.
+     */
+    private function disableViewAndLayout(): void
+    {
+        $this->_helper->viewRenderer->setNoRender();
+        $this->_helper->getHelper('layout')->disableLayout();
+    }
+
+    /**
+     * Extract version number or default to 1.
+     */
+    private function extractVersion(array $params): int
+    {
+        return (isset($params['version']) && is_numeric($params['version']))
+            ? (int)$params['version']
+            : 1;
+    }
+
+    /**
+     * Retrieve document data from repository.
+     * @throws Zend_Exception
+     */
+    private function fetchDocument(array $params, int $version): array
+    {
+        $latestObsoleteDocId = $params['latestObsoleteDocId'] ?? null;
+
+        return Episciences_Submit::getDoc(
+            $params['repoId'],
+            $params['docId'],
+            $version,
+            $latestObsoleteDocId
+        );
+    }
+
+    /**
+     * Check if response is valid and ready for processing.
+     */
+    private function isValidResponse(array $response): bool
+    {
+        return !array_key_exists('error', $response)
+            && array_key_exists('record', $response);
+    }
+
+    /**
+     * Transform and clean the XML record for display.
+     */
+    private function prepareRecord(array $response, array $params): array
+    {
+        $response['record'] = preg_replace('#xmlns="(.*)"#', '', $response['record']);
+
+        if ($params['repoId'] === Episciences_Repositories::CWI_REPO_ID) {
+            $response['record'] = Episciences_Repositories_Common::checkAndCleanRecord($response['record']);
+        }
+
+        // Apply repository hook
+        $hookData = array_merge($response, ['repoId' => $params['repoId']]);
+        $hookResult = Episciences_Repositories::callHook('hookCleanXMLRecordInput', $hookData);
+        unset($hookResult['repoId']);
+
+        $response = !empty($hookResult) ? $hookResult : $response;
+
+        // Determine data display options
+        $response['ddOptions'] = [
+            'displayDDForm' => Episciences_Repositories::isDataverse($params['repoId']),
+            'isSoftware' => false
+        ];
+
+        $type = $this->extractType($response);
+        if ($type) {
+            $this->updateDdOptions($response['ddOptions'], strtolower($type));
+        }
+
+        // Apply XSLT transformation
+        $response['xslt'] = Ccsd_Tools::xslt(
+            $response['record'],
+            APPLICATION_PUBLIC_PATH . '/xsl/full_paper.xsl'
+        );
+
+        return $response;
+    }
+
+    /**
+     * Extract latest type from enrichment data.
+     */
+    private function extractType(array $response): ?string
+    {
+        $enrichment = Episciences_Repositories_Common::ENRICHMENT;
+        $typeKey = Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT;
+
+        if (!isset($response[$enrichment][$typeKey])) {
+            return null;
+        }
+
+        $types = (array)$response[$enrichment][$typeKey];
+        return $types[array_key_last($types)] ?? null;
+    }
+
+    /**
+     * Update DD options based on resource type.
+     */
+    private function updateDdOptions(array &$options, string $type): void
+    {
+        $isSoftware = $type === Episciences_Paper::SOFTWARE_TYPE_TITLE;
+        $isDataset = $type === Episciences_Paper::DATASET_TYPE_TITLE;
+
+        if ($isSoftware || $isDataset) {
+            $options['displayDDForm'] = true;
+        }
+
+        $options['isSoftware'] = $isSoftware;
     }
 
     /**
@@ -351,7 +591,7 @@ class SubmitController extends DefaultController
 
         }
 
-        $response = ['hasHook' => $hasHook, 'isRequiredVersion' =>$isRequiredVersion];
+        $response = ['hasHook' => $hasHook, 'isRequiredVersion' => $isRequiredVersion];
 
         try {
             echo json_encode($response, JSON_THROW_ON_ERROR);

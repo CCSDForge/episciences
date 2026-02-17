@@ -1,7 +1,12 @@
 <?php
 
 
-class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositories_CommonHooksInterface, Episciences_Repositories_HooksInterface
+use Episciences\Repositories\CommonHooksInterface;
+use Episciences\Repositories\FilesEnrichmentInterface;
+use Episciences\Repositories\InputSanitizerInterface;
+use GuzzleHttp\Exception\GuzzleException;
+
+class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, InputSanitizerInterface, FilesEnrichmentInterface
 {
     public const IDENTIFIER_PREFIX = 'doi:';
     public const DATAVERSE_IDENTIFIER_EXEMPLE = '(DOI) 10.15454/GXXVJW / doi:10.15454/GXXVJW';
@@ -9,12 +14,6 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
     public const ERROR_CODE = 'error';
     public const TO_COMPILE_OAI_DC = 'toCompileOaiDc';
     public const VERSION_MINOR_NUMBER = 0;
-
-    public static function hookCleanXMLRecordInput(array $input): array
-    {
-        return $input;
-
-    }
 
     public static function hookFilesProcessing(array $hookParams): array
     {
@@ -64,7 +63,7 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
             }
 
 
-        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+        } catch (GuzzleException $e) {
             throw new Ccsd_Error($e->getMessage());
         }
 
@@ -125,32 +124,8 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
 
     public static function hookVersion(array $hookParams): array
     {
-        return [];
-    }
-
-    public static function hookIsOpenAccessRight(array $hookParams): array
-    {
-        return ['isOpenAccessRight' => true];
-    }
-
-    public static function hookHasDoiInfoRepresentsAllVersions(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookGetConceptIdentifierFromRecord(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookConceptIdentifier(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookLinkedDataProcessing(array $hookParams): array
-    {
-        return [];
+        $version = $hookParams['response'][Episciences_Repositories_Common::ENRICHMENT]['version'] ?? $hookParams['version'] ?? 1;
+        return ['version' => $version];
     }
 
     public static function hookIsRequiredVersion(): array
@@ -165,6 +140,14 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
         $urlIdentifier = '';
         $license = '';
         $creators = [];
+
+        $version = $data['versionNumber'] ?? 1;
+
+        if (isset($data['versionMinorNumber'])) {
+            $version = sprintf('%s.%s', $version, $data['versionMinorNumber']);
+        }
+
+        $result[Episciences_Repositories_Common::ENRICHMENT]['version'] = $version; // version form reposository
 
         $fieldsToBeProcessed = [
             'title',
@@ -481,17 +464,18 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
 
     }
 
-    private static function getAssembledLink(array $values, ?int $repoId = null) : string{
+    private static function getAssembledLink(array $values, ?int $repoId = null): string
+    {
 
-        if (isset($values['dataFile']['pidURL'])){
+        if (isset($values['dataFile']['pidURL'])) {
             return $values['dataFile']['pidURL'];
         }
 
-        if($repoId && isset($values['dataFile']['id'])){
-            $assembledLink = preg_replace('#api/v\d/#', '',Episciences_Repositories::getApiUrl($repoId));
+        if ($repoId && isset($values['dataFile']['id'])) {
+            $assembledLink = preg_replace('#api/v\d/#', '', Episciences_Repositories::getApiUrl($repoId));
             $assembledLink .= 'file.xhtml?fileId=';
             $assembledLink .= $values['dataFile']['id'];
-            if(isset($values['version'])){
+            if (isset($values['version'])) {
                 $assembledLink .= sprintf('&version=%s', $values['version']);
             }
 
@@ -503,4 +487,8 @@ class Episciences_Repositories_Dataverse_Hooks implements Episciences_Repositori
 
     }
 
+    public static function hookIsIdentifierCommonToAllVersions(): array
+    {
+        return ['result' => false];
+    }
 }

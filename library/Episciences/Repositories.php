@@ -1,7 +1,5 @@
 <?php
 
-use GuzzleHttp\Exception\GuzzleException;
-
 /**
  * Class Episciences_Repositories
  * List repositories available as submit sources
@@ -41,6 +39,8 @@ class Episciences_Repositories
     public const ZBMATH_OPEN = '17';
 
     public const ARCHE_ID = '18';
+    public const  CRYPTOLOGY_EPRINT = '19';
+
 
     public const EPI_USER_ID = '12';
     public const HAL_LABEL = 'HAL';
@@ -54,7 +54,8 @@ class Episciences_Repositories
         self::ZENODO_REPO_ID => '123456 or 10.5281/zenodo.123456',
         self::BIO_RXIV_ID => '10.1101/339747',
         self::MED_RXIV_ID => '10.1101/339747',
-        self::ARCHE_ID => '(Handle) 21.11115/0000-000B-C715-D'
+        self::ARCHE_ID => '(Handle) 21.11115/0000-000B-C715-D',
+        self::CRYPTOLOGY_EPRINT => '2026/1234'
     ];
 
     public static function getRepositories(): array
@@ -93,29 +94,45 @@ class Episciences_Repositories
         return isset (self::getRepositories()[$repoId]) ? self::getRepositories()[$repoId][self::REPO_LABEL] : '';
     }
 
-    public static function getBaseUrl($repoId)
+    public static function getBaseUrl($repoId): ?string
     {
         $repositories = self::getRepositories();
-        return isset($repositories[$repoId]) ? $repositories[$repoId][self::REPO_BASEURL] : null;
-    }
 
-    public static function getIdentifier($repoId, $identifier, $version = null)
-    {
-        $repoIdentifier = self::getRepositories()[$repoId][self::REPO_IDENTIFIER];
-
-        if (!empty($repoIdentifier)) {
-
-            if ($version) {
-                return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::getRepositories()[$repoId][self::REPO_IDENTIFIER]);
-            }
-
-            return str_replace(['%%ID', 'v%%VERSION'], [$identifier, ''], self::getRepositories()[$repoId][self::REPO_IDENTIFIER]);
-
+        if (isset($repositories[$repoId])) {
+            $baseUrl = $repositories[$repoId][self::REPO_BASEURL];
+            return rtrim($baseUrl, DIRECTORY_SEPARATOR);
         }
 
-        return $repoIdentifier;
-
+        return null;
     }
+
+    public static function getIdentifier(
+        $repoId,
+        string $identifier,
+        $version = null,
+    ): ?string {
+        $repositories = self::getRepositories();
+        $template = $repositories[$repoId][self::REPO_IDENTIFIER] ?? null;
+
+        if (empty($template)) {
+            return $template; // the OAI identifier is set to null in the database. an API call will be made instead of an OAI call
+        }
+
+        if ($version !== null) {
+            return str_replace(
+                ['%%ID', '%%VERSION'],
+                [$identifier, $version],
+                $template
+            );
+        }
+
+        return str_replace(
+            ['%%ID', 'v%%VERSION'],
+            [$identifier, ''],
+            $template
+        );
+    }
+
 
     public static function getDocUrl($repoId, $identifier, $version = null, $versionMinorNumber = Episciences_Repositories_Dataverse_Hooks::VERSION_MINOR_NUMBER)
 
@@ -151,6 +168,7 @@ class Episciences_Repositories
         $repoPaperUrl = self::getRepositories()[$repoId][self::REPO_PAPERURL];
 
         if (!empty($repoPaperUrl)) {
+            $identifier  = Episciences_Repositories_Common::replaceYMDHMSWithTimestamp($identifier);
             return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::getRepositories()[$repoId][self::REPO_PAPERURL]);
         }
 
@@ -191,6 +209,7 @@ class Episciences_Repositories
         } else {
             $label = self::TYPE_DSPACE;
         }
+        $label = str_replace(' ', '', $label);
         return __CLASS__ . '_' . ucfirst($label) . '_Hooks';
     }
 
@@ -208,7 +227,7 @@ class Episciences_Repositories
         }
 
         if ($className !== '') {
-            return $className::$hookName($hookParams);
+            return method_exists($className, $hookName) ? $className::$hookName($hookParams) : [];
         }
 
         return [];

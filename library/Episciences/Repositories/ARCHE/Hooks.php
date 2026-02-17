@@ -1,25 +1,17 @@
 <?php
 
+use Episciences\Repositories\CommonHooksInterface;
+use Episciences\Repositories\LinkedDataEnrichmentInterface;
 use Episciences\Tools\Translations;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
-class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_CommonHooksInterface, Episciences_Repositories_HooksInterface
+class Episciences_Repositories_ARCHE_Hooks implements CommonHooksInterface, LinkedDataEnrichmentInterface
 {
 
 
     const ARCHE_OAI_PMH_API = 'https://arche.acdh.oeaw.ac.at/oaipmh/?verb=GetRecord&metadataPrefix=oai_datacite&identifier=https://hdl.handle.net/';
     private const XML_LANG_ATTR = 'xml:lang';
-
-    public static function hookCleanXMLRecordInput(array $input): array
-    {
-        return $input;
-    }
-
-    public static function hookFilesProcessing(array $hookParams): array
-    {
-        return [];
-    }
 
     /**
      * @param array $hookParams
@@ -29,15 +21,18 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_C
 
     public static function hookApiRecords(array $hookParams): array
     {
-        $xmlString = self::getArcheOaiDatacite($hookParams['identifier']);
-        $data = self::enrichmentProcess($xmlString);
+        if (!isset($hookParams['identifier'], $hookParams['repoId'])) {
+            return [];
+        }
 
+        $oaiIdentifier = Episciences_Repositories::getIdentifier($hookParams['repoId'], $hookParams['identifier']);
+
+        $xmlString = Episciences_Repositories_Common::getRecord(Episciences_Repositories::getBaseUrl($hookParams['repoId']), $oaiIdentifier, 'oai_datacite');
+        $data = self::enrichmentProcess($xmlString);
 
         if (isset($data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC])) {
             $data['record'] = Episciences_Repositories_Common::toDublinCore($data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]);
         }
-
-
 
         return $data;
     }
@@ -177,41 +172,14 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_C
         return $descriptions;
     }
 
-    public static function hookCleanIdentifiers(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookVersion(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookIsOpenAccessRight(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookHasDoiInfoRepresentsAllVersions(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookGetConceptIdentifierFromRecord(array $hookParams): array
-    {
-        return [];
-    }
-
-    public static function hookConceptIdentifier(array $hookParams): array
-    {
-        return [];
-    }
-
     public static function hookIsRequiredVersion(): array
     {
         return ['result' => false];
     }
 
+    /**
+     * @throws Ccsd_Error
+     */
     public static function hookLinkedDataProcessing(array $hookParams): array
     {
         $relatedIdentifiers = [];
@@ -264,5 +232,9 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_C
     }
 
 
+    public static function hookIsIdentifierCommonToAllVersions(): array
+    {
+        return ['result' => false];
+    }
 }
 
