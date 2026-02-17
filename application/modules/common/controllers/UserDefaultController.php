@@ -323,24 +323,21 @@ class UserDefaultController extends Zend_Controller_Action
 
         $url = $scheme . $_SERVER['HTTP_HOST'] . $this->view->url($urlParams);
 
-        $auth = new Ccsd_Auth_Adapter_Cas();
+        $auth = null;
+        $adapterName = strtoupper(defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? (string)EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS');
 
-        if (defined('EPISCIENCES_AUTH_ADAPTER_NAME')) {
+        if ($adapterName === 'LEMONLDAP') {
+            $auth = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
+        } elseif ($adapterName === 'MYSQL') {
+            Episciences_Auth::getInstance()->clearIdentity();
+            $this->_redirect($url);
+            return;
+        } else {
+            $auth = new Ccsd_Auth_Adapter_Cas();
+        }
 
-            if (EPISCIENCES_AUTH_ADAPTER_NAME === 'LemonLDAP') {
-
-                $auth = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
-
-
-            } elseif (EPISCIENCES_AUTH_ADAPTER_NAME === 'MySQL') {
-                $auth = null;
-            }
-
-            if (!$auth) {
-                die(EPISCIENCES_AUTH_ADAPTER_NAME . ' User authentication: the development of this feature is still in process');
-
-            }
-
+        if (!$auth) {
+            die($adapterName . ' User authentication: the development of this feature is still in process');
         }
 
         $auth->logout($url);
