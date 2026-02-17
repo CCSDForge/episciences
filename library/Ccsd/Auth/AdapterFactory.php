@@ -23,7 +23,7 @@ class AdapterFactory  {
      */
 
     static public function getTypedAdapter($authType) {
-        switch ($authType)
+        switch (strtoupper((string)$authType))
         {
             case 'DB':    $authAdapter = new Adapter\DbTable();
                 break;

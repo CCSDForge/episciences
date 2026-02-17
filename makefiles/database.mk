@@ -26,10 +26,14 @@ VOLUME_MYSQL_EPISCIENCES := episciences-mysql-db-episciences
 VOLUME_MYSQL_INDEXING := episciences-mysql-db-indexing
 VOLUME_MYSQL_AUTH := episciences-mysql-db-auth
 
+# Development Datasets
+DEV_SQL_EPISCIENCES := src/mysql/docker/episciences/dev-episciences.sql
+DEV_SQL_AUTH := src/mysql/docker/auth/dev-cas_users.sql
+
 # =============================================================================
 # Database Commands
 # =============================================================================
-.PHONY: wait-for-db load-db-episciences load-db-auth backup-db
+.PHONY: wait-for-db load-db-episciences load-db-auth load-dev-db backup-db
 .PHONY: shell-mysql-episciences shell-mysql-auth shell-mysql-indexing
 
 wait-for-db: ## Wait for all database containers to be ready
@@ -50,6 +54,23 @@ wait-for-db: ## Wait for all database containers to be ready
 		sleep 2; \
 	done
 	@echo "All databases are ready!"
+
+load-dev-db: wait-for-db ## Load development SQL datasets (src/mysql/docker/...) into databases (with confirmation)
+	@echo "This will DROP existing 'episciences' and 'cas_users' databases!"
+	@printf "Are you sure you want to proceed and re-import development datasets? (y/N): "; \
+	read -r answer; \
+	if [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
+		echo "Resetting databases..."; \
+		$(DOCKER) exec episciences-db-episciences mysql -u root -p$(DB_PASS) -h localhost -e "DROP DATABASE IF EXISTS episciences; CREATE DATABASE episciences;"; \
+		$(DOCKER) exec episciences-db-auth mysql -u root -p$(DB_PASS) -h localhost -e "DROP DATABASE IF EXISTS cas_users; CREATE DATABASE cas_users;"; \
+		echo "Loading $(DEV_SQL_EPISCIENCES)..."; \
+		$(DOCKER) exec -i episciences-db-episciences mysql -u root -p$(DB_PASS) -h localhost episciences < $(DEV_SQL_EPISCIENCES); \
+		echo "Loading $(DEV_SQL_AUTH)..."; \
+		$(DOCKER) exec -i episciences-db-auth mysql -u root -p$(DB_PASS) -h localhost cas_users < $(DEV_SQL_AUTH); \
+		echo "Development databases reset and loaded successfully!"; \
+	else \
+		echo "Skipping database re-import."; \
+	fi
 
 load-db-episciences: ## Load SQL dump from ~/tmp/episciences.sql into episciences database
 	@echo "Loading episciences database..."
