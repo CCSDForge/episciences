@@ -63,6 +63,7 @@
     "symfony/dotenv": "^6.4"
   },
   "require-dev": {
+    "fakerphp/faker": "^1.23",
     "phpmd/phpmd": "@stable",
     "squizlabs/php_codesniffer": "@stable",
     "roave/security-advisories": "dev-latest",
