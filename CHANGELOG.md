@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Ajout d'indicateur visuel pour les pages prédéfinies dans le menu
+- Incorrecte URL in the mail template when submitting via preprint server
+- [RT#259551] it is now possible to modify the Copy Editor at any time
 - Ability to customise application environment variables
 - *Manager only* Website menu:
     - It is no longer possible to manually add certain public pages to the site.
@@ -31,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Manager: Force predefined pages to be public
 - Manager: Review Report: attached document URL has not been updated for the manager application
 
+### Changed
+- Statistics: log import script now supports anonymized log files (.access_log_anonym.gz) as a fallback, with priority order: .access_log, .access_log.gz, .access_log_anonym.gz
 
 ### Added
 - [#883](https://github.com/CCSDForge/episciences/issues/883) Allow json files as attachments
@@ -38,15 +43,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - allow the co-author to view the publication
 - Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
 - New option to allow Editors to receive 'Comments for editors' before declaring a conflict of interest (disabled by default)
-- Ajout d'indicateur visuel pour les pages prédéfinies dans le menu
+- Added MSC2020 Classification in ZBJATS export
 
 ### Fixed
 - [#886](https://github.com/CCSDForge/episciences/issues/886): the reminder about the lack of reviewers is sent as long as the minimum required number of reviewers has not been reached compared to the accepted invitations
 - [#236](https://github.com/CCSDForge/episciences-front/issues/236): HTML entities (&amp;) displayed in the title
-- Incorrecte URL in the mail template when submitting via preprint server
 - [#830](https://github.com/CCSDForge/episciences/issues/830)  Paper number messed up for secondary volume
 - altered secondary volume rendering
-- [RT#259551] it is now possible to modify the Copy Editor at any time
 - [#776](https://github.com/CCSDForge/episciences/issues/776) Action Required: Fix Renovate Configuration
 - [#657](https://github.com/CCSDForge/episciences/issues/657) Conditionally remove the `<hr>` separator in the public and admin views of article metadata
 - [#786](https://github.com/CCSDForge/episciences/issues/786) English translation of 'Télécharger le fichier'

@@ -127,8 +127,6 @@ class Episciences_Paper_Authors
     }
 
     /**
-     * @param DateTime $dateUpdated
-     * @return Episciences_Paper_Dataset
      * @throws Exception
      */
     public function setDateUpdated(string $dateUpdated): self
