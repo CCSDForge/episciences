@@ -24,5 +24,33 @@ Episciences has received funding from:
 ### Changelog
 All notable changes to this project will be documented in the [CHANGELOG.md](./CHANGELOG.md)
 
+### Development Setup
+
+To set up a local development environment using Docker, run:
+
+```bash
+make dev-setup
+```
+
+This command will:
+1. **Initialize Configuration**: It will copy `config/dist-dev.pwd.json` to `config/pwd.json` (asking for confirmation if it already exists).
+2. Start the Docker containers.
+3. Install PHP dependencies via Composer.
+4. **Generate Sample Data**: It will automatically generate **30 random test users** using Faker for the 'dev' journal (RVID 1). These users are distributed as follows: 1 Chief Editor, 2 Administrators, 5 Editors, and 22 Members.
+5. **Create Bot User**: A fixed `episciences-bot` user will be created (login: `episciences-bot`, password: `botPassword123`, role: `member`).
+6. Set up the Solr search engine and index the sample content.
+
+#### Test User Credentials
+The generated users all have the default password: `password123`.
+You can check the logs during `make dev-setup` to see the generated usernames.
+The `episciences-bot` user has a fixed login (`episciences-bot`) and password (`botPassword123`).
+
+#### Database Operations
+You can also manually load or backup databases:
+- `make load-dev-db`: Load the development datasets with sample data.
+- `make load-db-episciences`: Load a dump from `~/tmp/episciences.sql`.
+- `make load-db-auth`: Load a dump from `~/tmp/cas_users.sql`.
+- `make backup-db`: Create backups of current databases in `~/tmp/`.
+
 ### License
 Episciences is free software licensed under the terms of the GPL Version 3. See [LICENSE](./LICENSE).
