@@ -30,6 +30,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 # =============================================================================
 # PHONY Targets
 # =============================================================================
+.PHONY: help build up down status logs restart clean clean-mysql
 .PHONY: collection index dev-setup copy-config generate-users init-dev-users create-bot-user
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
@@ -184,6 +185,22 @@ dev-setup: copy-config up wait-for-db ## Complete development environment setup 
 	@echo "Default password for all: password123"
 	@echo "Available roles: 1 Chief Editor, 2 Administrators, 5 Editors, 22 Members"
 	@echo "====================================================================="
+
+copy-config: ## Copy dist-dev.pwd.json to config/pwd.json if it doesn't exist
+	@if [ -f config/pwd.json ]; then \
+		echo "config/pwd.json already exists."; \
+		printf "Overwrite with dist-dev.pwd.json? (y/N): "; \
+		read -r answer; \
+		if [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
+			cp config/dist-dev.pwd.json config/pwd.json; \
+			echo "config/pwd.json overwritten."; \
+		else \
+			echo "Keeping existing config/pwd.json."; \
+		fi; \
+	else \
+		cp config/dist-dev.pwd.json config/pwd.json; \
+		echo "config/pwd.json created from dist-dev.pwd.json."; \
+	fi
 
 generate-users: ## Generate random test users (usage: make generate-users COUNT=10 ROLE=editor)
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:generate-users --count=$(or $(COUNT),5) --role=$(or $(ROLE),member) --rvcode=dev
