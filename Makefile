@@ -22,6 +22,8 @@ CNTR_NAME_PHP := php-fpm
 CNTR_NAME_HTTPD := httpd
 CNTR_APP_DIR := /var/www/htdocs
 CNTR_APP_USER := www-data
+# Override with 0:0 if composer-install fails (rootless Docker or uid mismatch):
+#   make dev-setup CNTR_USER_ID=0:0
 CNTR_USER_ID := 1000:1000
 
 # Paths Configuration  
@@ -31,7 +33,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 # PHONY Targets
 # =============================================================================
 .PHONY: help build up down status logs restart clean clean-mysql
-.PHONY: collection index dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user
+.PHONY: collection index dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
@@ -168,7 +170,7 @@ index: ## Index content into Solr
 # =============================================================================
 # Development Setup Commands
 # =============================================================================
-dev-setup: copy-config setup-logs up wait-for-db ## Complete development environment setup with 30 generated users
+dev-setup: build copy-config setup-logs up wait-for-db init-data-dir ## Complete development environment setup with 30 generated users
 	@echo "Setting up complete development environment..."
 	@$(MAKE) composer-install
 	@$(MAKE) load-dev-db
@@ -205,6 +207,14 @@ copy-config: ## Copy dist-dev.pwd.json to config/pwd.json if it doesn't exist
 		cp config/dist-dev.pwd.json config/pwd.json; \
 		echo "config/pwd.json created from dist-dev.pwd.json."; \
 	fi
+
+init-data-dir: ## Create data/dev directory with correct permissions for the journal
+	@echo "Initializing data/dev directory..."
+	@$(DOCKER_COMPOSE) exec -u 0:0 -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		sh -c "mkdir -p data/dev/config data/dev/files data/dev/languages data/dev/layout data/dev/public data/dev/tmp \
+		       && cp -n data/default/config/navigation.json data/dev/config/navigation.json 2>/dev/null || true \
+		       && chown -R $(CNTR_APP_USER):$(CNTR_APP_USER) data/dev"
+	@echo "data/dev directory ready."
 
 generate-users: ## Generate random test users (usage: make generate-users COUNT=10 ROLE=editor)
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:generate-users --count=$(or $(COUNT),5) --role=$(or $(ROLE),member) --rvcode=dev
