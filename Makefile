@@ -31,7 +31,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 # PHONY Targets
 # =============================================================================
 .PHONY: help build up down status logs restart clean clean-mysql
-.PHONY: collection index dev-setup copy-config generate-users init-dev-users create-bot-user
+.PHONY: collection index dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
@@ -168,7 +168,7 @@ index: ## Index content into Solr
 # =============================================================================
 # Development Setup Commands
 # =============================================================================
-dev-setup: copy-config up wait-for-db ## Complete development environment setup with 30 generated users
+dev-setup: copy-config setup-logs up wait-for-db ## Complete development environment setup with 30 generated users
 	@echo "Setting up complete development environment..."
 	@$(MAKE) composer-install
 	@$(MAKE) load-dev-db
@@ -185,6 +185,10 @@ dev-setup: copy-config up wait-for-db ## Complete development environment setup 
 	@echo "Default password for all: password123"
 	@echo "Available roles: 1 Chief Editor, 2 Administrators, 5 Editors, 22 Members"
 	@echo "====================================================================="
+
+setup-logs: ## Setup log directory and files with correct permissions
+	@echo "Setting up logs..."
+	@./scripts/setup-logs.sh
 
 copy-config: ## Copy dist-dev.pwd.json to config/pwd.json if it doesn't exist
 	@if [ -f config/pwd.json ]; then \
