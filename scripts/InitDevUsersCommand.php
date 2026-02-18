@@ -60,6 +60,7 @@ class InitDevUsersCommand extends Command
         $faker = Factory::create();
         $password = 'password123';
         $totalCreated = 0;
+        $createdUsers = [];
 
         foreach ($distribution as $role => $count) {
             $io->section("Creating $count users with role: $role");
@@ -81,14 +82,19 @@ class InitDevUsersCommand extends Command
                     $user->setValid(1);
                     $user->setIs_valid(1);
 
-                    // Save creates user in BOTH cas_users and episciences DBs
-                    $uid = $user->save(false, true, RVID);
+                    // Save creates user in BOTH cas_users and episciences DBs.
+                    // When using the MySQL CAS adapter (dev only), save() may return 0 because
+                    // lastInsertId() is not updated for explicit-UID inserts. The UID was correctly
+                    // set on the object via setUid() inside save(); fall back to it.
+                    $user->save(false, true, RVID);
+                    $uid = $user->getUid();
 
                     if ($uid) {
                         if ($role !== Episciences_Acl::ROLE_MEMBER) {
                             $user->addRole($role, RVID);
                         }
                         $totalCreated++;
+                        $createdUsers[] = [$username, $role, $email];
                     }
                 } catch (\Exception $e) {
                     $io->error("Error creating user: " . $e->getMessage());
@@ -98,6 +104,7 @@ class InitDevUsersCommand extends Command
             $io->progressFinish();
         }
 
+        $io->table(['Username', 'Role', 'Email'], $createdUsers);
         $io->success("Successfully initialized $totalCreated users for journal 'dev'. All passwords are: $password");
 
         return Command::SUCCESS;
