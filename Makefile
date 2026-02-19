@@ -219,13 +219,13 @@ init-data-dir: ## Create data/dev directory with correct permissions for the jou
 	@echo "data/dev directory ready."
 
 generate-users: ## Generate random test users (usage: make generate-users COUNT=10 ROLE=editor)
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:generate-users --count=$(or $(COUNT),5) --role=$(or $(ROLE),member) --rvcode=dev
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:generate-users --count=$(or $(COUNT),5) --role=$(or $(ROLE),member) --rvcode=dev
 
 init-dev-users: ## Initialize journal 'dev' with 30 users (1 chief, 2 admins, 5 editors, 22 members)
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:init-dev-users
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:init-dev-users
 
 create-bot-user: ## Create the fixed episciences-bot user
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:create-bot-user
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:create-bot-user
 
 
 # =============================================================================
