@@ -64,3 +64,15 @@
     flex-shrink: 0;
   }
 }
+
+// Comment actions (edit, reply buttons, etc.)
+.timeline-comment-actions {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid $almost-white;
+  text-align: right;
+
+  .btn {
+    margin-left: 5px;
+  }
+}
