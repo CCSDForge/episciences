@@ -216,7 +216,7 @@ init-data-dir: ## Create data/dev directory with correct permissions for the jou
 		       && cp -n data/default/config/navigation.json data/dev/config/navigation.json 2>/dev/null || true \
 		       && chown -R $(CNTR_APP_USER):$(CNTR_APP_USER) data/dev \
 		       && chmod -R 775 data/dev \
-		       && find /tmp -maxdepth 1 -name 'zend_cache---epi*' ! -user $(CNTR_APP_USER) -delete 2>/dev/null || true"
+		       && find /tmp -maxdepth 1 -name 'zend_cache---*' ! -user $(CNTR_APP_USER) -delete 2>/dev/null || true"
 	@echo "data/dev directory ready."
 
 generate-users: ## Generate random test users (usage: make generate-users COUNT=10 ROLE=editor)

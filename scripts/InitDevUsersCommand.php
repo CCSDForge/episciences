@@ -85,14 +85,14 @@ class InitDevUsersCommand extends Command
                     // Save creates user in BOTH cas_users and episciences DBs.
                     // When using the MySQL CAS adapter (dev only), save() may return 0 because
                     // lastInsertId() is not updated for explicit-UID inserts. The UID was correctly
-                    // set on the object via setUid() inside save(); fall back to it.
+                    // set on the object via setUid() inside save(); fall back to getUid().
+                    // We use saveNewRoles() instead of addRole() because addRole() calls
+                    // multipleRolesUnsetMemberRole() which strips the 'member' role before saving.
                     $user->save(false, true, RVID);
                     $uid = $user->getUid();
 
                     if ($uid) {
-                        if ($role !== Episciences_Acl::ROLE_MEMBER) {
-                            $user->addRole($role, RVID);
-                        }
+                        $user->saveNewRoles($uid, $role, RVID);
                         $totalCreated++;
                         $createdUsers[] = [$username, $role, $email];
                     }
