@@ -101,7 +101,7 @@ make logs CONTAINER=php-fpm
 
 | Account | Login | Password | Role |
 |---------|-------|----------|------|
-| Bot user | `episciences-bot` | `botPassword123` | member |
+| Bot user | `episciences-bot` | `botPassword123` | administrator |
 | Generated users (×30) | see terminal table after setup | `password123` | various |
 
 The terminal prints a table of all generated usernames after `make init-dev-users` completes.

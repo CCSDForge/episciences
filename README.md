@@ -53,7 +53,7 @@ This command will:
 4. **Initialize `data/dev`**: Create the required journal data directory and seed it with `navigation.json` so the application bootstraps correctly.
 5. Install PHP dependencies via Composer.
 6. **Generate Sample Data**: Automatically generate **30 random test users** for the 'dev' journal (RVID 1): 1 Chief Editor, 2 Administrators, 5 Editors, and 22 Members.
-7. **Create Bot User**: A fixed `episciences-bot` user (login: `episciences-bot`, password: `botPassword123`, role: `member`).
+7. **Create Bot User**: A fixed `episciences-bot` user (login: `episciences-bot`, password: `botPassword123`, role: `administrator`).
 8. Set up the Solr search engine and index the sample content.
 
 #### Accessing the Journal
@@ -66,10 +66,10 @@ After setup, open: **http://dev.episciences.org/**
 
 After `make dev-setup`, a summary table of all generated usernames, roles, and email addresses is printed in the terminal.
 
-| Account | Login | Password |
-|---------|-------|----------|
-| Generated users (×30) | see terminal table | `password123` |
-| Bot user | `episciences-bot` | `botPassword123` |
+| Account | Login | Password | Role |
+|---------|-------|----------|------|
+| Generated users (×30) | see terminal table | `password123` | various |
+| Bot user | `episciences-bot` | `botPassword123` | administrator |
 
 #### Rootless Docker / Permission Issues
 
