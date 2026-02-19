@@ -211,9 +211,11 @@ copy-config: ## Copy dist-dev.pwd.json to config/pwd.json if it doesn't exist
 init-data-dir: ## Create data/dev directory with correct permissions for the journal
 	@echo "Initializing data/dev directory..."
 	@$(DOCKER_COMPOSE) exec -u 0:0 -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
-		sh -c "mkdir -p data/dev/config data/dev/files data/dev/languages data/dev/layout data/dev/public data/dev/tmp \
+		sh -c "chown $(CNTR_APP_USER):$(CNTR_APP_USER) data && chmod 775 data \
+		       && mkdir -p data/dev/config data/dev/files data/dev/languages data/dev/layout data/dev/public data/dev/tmp \
 		       && cp -n data/default/config/navigation.json data/dev/config/navigation.json 2>/dev/null || true \
-		       && chown -R $(CNTR_APP_USER):$(CNTR_APP_USER) data/dev"
+		       && chown -R $(CNTR_APP_USER):$(CNTR_APP_USER) data/dev \
+		       && chmod -R 775 data/dev"
 	@echo "data/dev directory ready."
 
 generate-users: ## Generate random test users (usage: make generate-users COUNT=10 ROLE=editor)
