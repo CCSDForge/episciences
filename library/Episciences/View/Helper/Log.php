@@ -15,7 +15,13 @@ class Episciences_View_Helper_Log extends Zend_View_Helper_Abstract
             return false;
         }
 
-        $logger->log($level, $message, $context);
+        try {
+            $logger->log($level, $message, $context);
+        } catch (Throwable $e) {
+            error_log($e->getMessage());
+            return false;
+        }
+
         return true;
     }
 }
