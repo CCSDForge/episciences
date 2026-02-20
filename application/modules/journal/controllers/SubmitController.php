@@ -157,7 +157,7 @@ class SubmitController extends DefaultController
     {
         $canReplace = (bool)$request->getPost('can_replace');
 
-        $post = $this->normalizeSearchDocIdentifiers($post);
+        Episciences_Submit::normalizeSubmissionParameters($post);
 
         $this->adjustFormForReplacementOrSuggestions($request, $form, $canReplace);
         $this->setDdFileRequiredFlag($form, $post);
@@ -176,30 +176,6 @@ class SubmitController extends DefaultController
         }
 
         $this->handleSubmissionResult($result, $message);
-    }
-
-    /**
-     * Normalize repository identifiers coming from search_doc.
-     */
-    private function normalizeSearchDocIdentifiers(array $post): array
-    {
-        if (isset($post['search_doc']['repoId'])) {
-            $repoId = (int)$post['search_doc']['repoId'];
-
-            $hookCleanIdentifiers = Episciences_Repositories::callHook(
-                'hookCleanIdentifiers',
-                [
-                    'id' => $post['search_doc']['docId'] ?? null,
-                    'repoId' => $repoId,
-                ]
-            );
-
-            if (!empty($hookCleanIdentifiers)) {
-                $post['search_doc']['docId'] = $hookCleanIdentifiers['identifier'];
-            }
-        }
-
-        return $post;
     }
 
     /**
@@ -364,9 +340,9 @@ class SubmitController extends DefaultController
     {
         $this->disableViewAndLayout();
 
-        $params = $this->getRequest()->getPost();
-        $version = $this->extractVersion($params);
-        $response = $this->fetchDocument($params, $version);
+        $params = $this->getRequest()?->getPost();
+        $this->extractVersion($params);
+        $response = $this->fetchDocument($params);
 
         if ($this->isValidResponse($response)) {
             $response = $this->prepareRecord($response, $params);
@@ -387,9 +363,9 @@ class SubmitController extends DefaultController
     /**
      * Extract version number or default to 1.
      */
-    private function extractVersion(array $params): int
+    private function extractVersion(array &$params): void
     {
-        return (isset($params['version']) && is_numeric($params['version']))
+        $params['version'] = (isset($params['version']) && is_numeric($params['version']))
             ? (int)$params['version']
             : 1;
     }
@@ -398,16 +374,15 @@ class SubmitController extends DefaultController
      * Retrieve document data from repository.
      * @throws Zend_Exception
      */
-    private function fetchDocument(array $params, int $version): array
+    private function fetchDocument(array &$params): array
     {
-        $latestObsoleteDocId = $params['latestObsoleteDocId'] ?? null;
-
         return Episciences_Submit::getDoc(
             $params['repoId'],
             $params['docId'],
-            $version,
-            $latestObsoleteDocId
+            $params['version'],
+            $params['latestObsoleteDocId'] ?? null
         );
+
     }
 
     /**

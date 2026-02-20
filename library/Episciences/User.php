@@ -482,10 +482,10 @@ class Episciences_User extends Ccsd_User_Models_User
 
 
         // Création des données locales (compte ES + rôle)
+        $uid = $this->getUid();
 
-        $hasLocalData = $this->hasLocalData($this->getUid());
-        $hasRolesCurrentUser = $this->hasRoles($this->getUid(), $rvId);
-
+        $hasLocalData = $uid ? $this->hasLocalData((int)$uid) : false;
+        $hasRolesCurrentUser = $uid ? $this->hasRoles((int)$uid, $rvId) : false;
 
         if (!$hasLocalData || !$hasRolesCurrentUser) {
 
@@ -517,7 +517,7 @@ class Episciences_User extends Ccsd_User_Models_User
             // L'utilisateur n'a pas de rôles pour cette revue : on lui en crée un
             $rData = ['RVID' => $rvId, 'UID' => $uid, 'ROLEID' => 'member'];
 
-            if (!$this->hasRoles($uid, $rvId) && !$this->_db->insert(T_USER_ROLES, $rData)) {
+            if ($uid && !$this->hasRoles((int)$uid, $rvId) && !$this->_db->insert(T_USER_ROLES, $rData)) {
                 return false;
             }
 
@@ -613,8 +613,8 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         $select = $this->_db->select()
-            ->from(T_USERS, ['uuid','nombre' => 'COUNT(UID)'])
-            ->where('UID = ?', $uid)
+            ->from(T_USERS, ['uuid','nombre' => new Zend_Db_Expr('COUNT(*)')])
+            ->where('`UID` = ?', (int)$uid)
             ->group('uuid');
 
 

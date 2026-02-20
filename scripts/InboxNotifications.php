@@ -9,6 +9,7 @@ use Monolog\Handler\RotatingFileHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use scripts\AbstractScript;
+use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
 require_once "AbstractScript.php";
 require '../library/Episciences/Trait/UrlBuilder.php';
@@ -490,7 +491,7 @@ class InboxNotifications extends AbstractScript
      * @param array $data
      * @param array|null $options
      * @return bool
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      */
     public function addSubmission(Episciences_Review $journal, array $data, array $options = null): bool
     {
@@ -1093,7 +1094,7 @@ class InboxNotifications extends AbstractScript
      * @throws Zend_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      */
     private function saveNewVersion(Episciences_Paper $context, array $newPaperData, Episciences_Review $journal, array $logDetails = []): bool
     {
@@ -1362,7 +1363,7 @@ class InboxNotifications extends AbstractScript
                 Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($paper->getRepoid(), $paper->getPaperid(), $paper->getIdentifier(), (int)$paper->getVersion());
             }
 
-        } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
+        } catch (JsonException|InvalidArgumentExceptionAlias $e) {
             $this->logger->critical($e->getMessage());
         }
 
@@ -1374,7 +1375,6 @@ class InboxNotifications extends AbstractScript
      * @param array $data
      * @param array $options
      * @return bool
-     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function getFirstSubmissionResult(
         Episciences_Paper  $paper,

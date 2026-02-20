@@ -2351,4 +2351,15 @@ class Episciences_Tools
         return str_replace('&amp;', '&', $string);
     }
 
+    public static function parseGuidFromText(string $string): ?string
+    {
+        $pattern = '/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/';
+
+        if (preg_match($pattern, $string, $matches)) {
+            return $matches[0];
+        }
+
+        return null;
+    }
+
 }

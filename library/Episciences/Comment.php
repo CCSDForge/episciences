@@ -19,13 +19,13 @@ class Episciences_Comment
     /**
      * @var int
      */
-    protected $_type;
+    protected int $_type = 0;
 
 
     /**
      * @var int
      */
-    protected $_docId;
+    protected int $_docId = 0;
     /**
      * @var int
      */
@@ -329,7 +329,7 @@ class Episciences_Comment
      */
     public function getMessage(): ?string
     {
-        if ($this->_message){
+        if ($this->_message !== null) {
             return Episciences_Tools::epi_html_decode(html_entity_decode($this->_message));
         }
 
@@ -381,7 +381,7 @@ class Episciences_Comment
      * @param string $deadline
      * @return Episciences_Comment
      */
-    public function setDeadline(string $deadline = null)
+    public function setDeadline(?string $deadline = null): Episciences_Comment
     {
         $this->_deadline = $deadline;
         return $this;
@@ -456,9 +456,9 @@ class Episciences_Comment
      * @param string|null $message
      * @return Episciences_Comment
      */
-    public function setMessage(string $message = null): Episciences_Comment
+    public function setMessage(?string $message = null): Episciences_Comment
     {
-        if ($message){
+        if ($message !== null) {
             $this->_message = htmlspecialchars(Episciences_Tools::epi_html_decode(trim($message)));
         }
 

@@ -2,14 +2,15 @@
 
 use Episciences\Repositories\CommonHooksInterface;
 use Episciences\Repositories\FilesEnrichmentInterface;
+use GuzzleHttp\Exception\GuzzleException;
 
-class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, FilesEnrichmentInterface
+class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, FilesEnrichmentInterface, \Episciences\Repositories\InputSanitizerInterface
 {
     /**
      * Le paramétrage se fait en base de données, table "metadata_sources"
      * Exemple
-     * INSERT INTO `metadata_sources` (`id`, `name`, `type`, `status`, `identifier`, `base_url`, `doi_prefix`, `api_url`, `doc_url`, `paper_url`) VALUES
-     * (null, 'rep-dspace.uminho.pt', 'dspace', 1, 'oai:rep-dspace.uminho.pt:%%ID', 'https://rep-dspace.uminho.pt/server/oai/openaire4', '', '', 'https://hdl.handle.net/%%ID', '');
+     * see src/mysql/2026-01-19-alter-metadata-sources.sql
+     *
      */
     public const METADATA_PREFIX = 'oai_openaire';
     public const IDENTIFIER_EXEMPLE = '(Handle) 1822/79894';
@@ -19,32 +20,55 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
     {
 
         $data = [];
+
         $files = $hookParams['files'] ?? [];
 
         foreach ($files as $file) {
+
             $name = $file['url'] ?? '';
 
-            if ($name === '') {
+            if (empty($name)) {
                 continue;
             }
 
-            $name = str_replace('/download', '', $file['url']);
-            $explodedName = explode('/', $name);
-            $name = end($explodedName);
+            $infoFromApi = self::getFileInfoFromApi($name);
+
+            if (!$infoFromApi) {
+                continue;
+            }
+
+            $checksumInfo = $infoFromApi['checkSum'] ?? [];
+            $checksum = $checksumInfo['value'] ?? null;
+            $checkSumAlgorithm = $checksumInfo['checkSumAlgorithm'] ?? 'MD5';
+            $contentLink = $infoFromApi['_links']['content']['href'] ?? $file['url'];
+            $size = $infoFromApi['sizeBytes'] ?? 0;
+
+            $name = $infoFromApi['name'] ?? null;
+
+            if (!$name) {
+
+                if (!$checksum) {
+                    $checksum = md5_file($name);
+                }
+
+                $name = str_replace('/download', '', $file['url']);
+                $explodedName = explode('/', $name);
+                $name = end($explodedName);
+
+            }
+
             $tmpData = [];
             $tmpData['doc_id'] = $hookParams['docId'];
             $tmpData['source'] = $hookParams['repoId'];
             $tmpData['file_name'] = $name;
-            $tmpData['file_type'] = Episciences_Repositories_Common::getType($file['mimeType']) ?? 'not_valid_type';
-            $tmpData['self_link'] = $file['url']; // L'URL est cassée ; le bug doit être corrigé côté archive
-            $tmpData['checksum'] = md5($name);
-            $tmpData['file_size'] = 0;
-            // todo :
-            // Une fois l'URL corrigée
-            //$tmpData['file_size'] = Episciences_Repositories_Common::remoteFilesizeHeaders($file['url']);
-            //$tmpData['checksum'] = hash_file('md5', $file['url']);
-            $tmpData['checksum_type'] = 'MD5';
+            $tmpData['file_type'] = $infoFromApi['type'] ?? (Episciences_Repositories_Common::getType($file['mimeType']) ?? 'not_valid_type');
+            $tmpData['self_link'] = $contentLink;
+            $tmpData['checksum'] = $checksum;
+            $tmpData['file_size'] = $size;
+            $tmpData['checksum_type'] = $checkSumAlgorithm;
             $data[] = $tmpData;
+
+            usleep(200000);
         }
 
         $hookParams['affectedRows'] = Episciences_Paper_FilesManager::insert($data);
@@ -71,15 +95,17 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
         $baseUrl = Episciences_Repositories::getRepositories()[$hookParams['repoId']][Episciences_Repositories::REPO_BASEURL];
         $baseUrl = rtrim($baseUrl, DIRECTORY_SEPARATOR);
 
-        //$oaiUrl = $baseUrl;
-        //$oaiUrl .= sprintf('?verb=GetRecord&metadataPrefix=oai_openaire&identifier=%s', $oaiIdentifier);
-
         $record = Episciences_Repositories_Common::getRecord($baseUrl, $oaiIdentifier, self::METADATA_PREFIX);
         $data = self::extractMetadata($record);
 
         if (isset($data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC])) {
             $data['record'] = Episciences_Repositories_Common::toDublinCore($data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]);
         }
+
+        // Pour RepositóriUM, le conceptId correspondra à la première version ; à vérifier donc lors d'ajout des autres repos compatible Dspace
+        // Original version (v1) of record: https://hdl.handle.net/1822/92528
+        // Version 4 of the same record: https://hdl.handle.net/1822/92528.4
+        //$data['conceptrecid'] = Episciences_Repositories_Common::getConceptIdentifierFromString($hookParams['identifier']); // Identique pour toutes les versions
 
         return $data;
     }
@@ -168,19 +194,26 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
 
 
         // DataCite: sizes
-        $sizes = array_map('strval', $xml->xpath('//datacite:sizes/datacite:size'));
+        //$sizes = array_map('strval', $xml->xpath('//datacite:sizes/datacite:size'));
         // DataCite: identifiers
-        $identifier = self::firstXPathValue($xml, '//datacite:identifier');
-        $format = self::firstXPathValue($xml, '//dc:format');
+        //$identifier = self::firstXPathValue($xml, '//datacite:identifier');
+        //$format = self::firstXPathValue($xml, '//dc:format');
 
         // OpenAIRE file
-        $fileNode = $xml->xpath('//oaire:file')[0] ?? null;
-        $file = $fileNode ? [
-            'url' => (string)$fileNode[0],
-            'mimeType' => (string)$fileNode['mimeType'],
-            'accessRights' => (string)$fileNode[0]['accessRightsURI'],
-            'objectType' => (string)$fileNode['objectType']
-        ] : null;
+        $fileNodes = $xml->xpath('//oaire:file') ?? [];
+        $files = [];
+        foreach ($fileNodes as $currentNode) {
+
+            $tmpFile = [
+                'url' => (string)$currentNode[0],
+                'mimeType' => (string)$currentNode['mimeType'],
+                'accessRights' => (string)$currentNode[0]['accessRightsURI'],
+                'objectType' => (string)$currentNode['objectType']
+            ];
+
+            $files[] = $tmpFile;
+
+        }
 
         // Build additional data for oai dc
         $body = self::buildDataForOaiDc(
@@ -201,8 +234,8 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
             Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT => $dcType,
         ];
 
-        if ($file) {
-            $enrichment[Episciences_Repositories_Common::FILES] = [$file];
+        if (count($files) > 0) {
+            $enrichment[Episciences_Repositories_Common::FILES] = $files;
         }
 
         if (!empty($relatedIdentifiers)) {
@@ -288,5 +321,44 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
     {
         return ['result' => false];
     }
+
+    /**
+     * @param string|null $fileUrl
+     * @return string|array|bool|null
+     */
+
+    private static function getFileInfoFromApi(?string $fileUrl = null): string|array|bool|null
+    {
+
+        if (!$fileUrl) {
+            return null;
+        }
+
+        $guid = Episciences_Tools::parseGuidFromText($fileUrl);
+        $host = parse_url($fileUrl, PHP_URL_HOST);
+
+        try {
+            $bitstreamsUrl = sprintf('https://%s/server/api/core/bitstreams/%s', $host, $guid);
+            return Episciences_Tools::callApi($bitstreamsUrl);
+        } catch (GuzzleException $e) {
+            // exp. de réponse : Client error: `GET https://repositorium.uminho.pt/server/api/core/bitstreams/61ba5e92-bab4-4901-aa31-9c68d2560510` resulted in a `401 Unauthorized` response:
+            //{"timestamp":"2026-02-19T08:17:17.606+00:00","status":401,"error":"Unauthorized","message":"Authentication is required", (truncated...)
+            Episciences_View_Helper_Log::log($e->getMessage());
+            return null;
+        }
+    }
+
+    public static function hookVersion(array $hookParams): array
+    {
+        $identifier = $hookParams[Episciences_Repositories_Common::META_IDENTIFIER] ?? null;
+
+        if (!$identifier) {
+            return [];
+        }
+
+        return ['version' => Episciences_Repositories_Common::getVersionFromIdentifier($identifier)];
+
+    }
+
 }
 

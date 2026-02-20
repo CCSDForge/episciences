@@ -771,7 +771,7 @@ class Episciences_Submit
     /**
      * @param $repoId
      * @param $id
-     * @param int|null $version
+     * @param float|null $version
      * @param null $latestObsoleteDocId
      * @param bool $manageNewVersionErrors Allow to ignore new version errors for imports
      * @param int|null $rvId
@@ -781,8 +781,8 @@ class Episciences_Submit
      */
     public static function getDoc(
         $repoId,
-        $id,
-        ?int $version = null,
+        &$id,
+        ?float &$version = null,
         $latestObsoleteDocId = null,
         bool $manageNewVersionErrors = true,
         ?int $rvId = null,
@@ -795,11 +795,9 @@ class Episciences_Submit
 
         $isRequiredVersion = true;
 
-        $id = trim($id);
         $isNewVersionOf = !empty($latestObsoleteDocId);
 
         $id = self::cleanIdentifier($id, $repoId);
-
         $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
         $result = [];
         $oai = null;
@@ -822,7 +820,7 @@ class Episciences_Submit
             }
 
             if (isset($hookVersion['version'])) {
-                $version = $hookVersion['version'];
+                $version = (float)$hookVersion['version'];
                 $result['hookVersion'] = $version;
             }
 
@@ -830,6 +828,9 @@ class Episciences_Submit
             $identifier = Episciences_Repositories::getIdentifier($repoId, $id, $version);
 
             $result['record'] = self::loadRecord($hookApiRecord, $repoId, $identifier, $result, $oai);
+            $result['hookVersion'] = $version;
+            $result['hookId'] = $id;
+            $result['hookRepoId'] = $repoId;
 
             self::mergeEnrichmentsFromHook($hookApiRecord, $result);
 
@@ -855,7 +856,7 @@ class Episciences_Submit
 
             $docId = $paper->alreadyExists();
 
-            self::assertDateTimeVersion($docId, $paper,$result);
+            self::assertDateTimeVersion($docId, $paper, $result);
 
             $result['status'] = $docId ? 2 : 1;
 
@@ -904,7 +905,7 @@ class Episciences_Submit
 
     private static function assertDateTimeVersion(&$docId, Episciences_paper $paper, array &$result): void
     {
-            $currentVersionDateTime = $result[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
+        $currentVersionDateTime = $result[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
         if (
             !$docId ||
             empty($currentVersionDateTime)
@@ -928,6 +929,7 @@ class Episciences_Submit
      */
     private static function cleanIdentifier(string $id, $repoId): string
     {
+        $id = trim($id);
         $hookCleanIdentifiers = Episciences_Repositories::callHook('hookCleanIdentifiers', [
             'id' => $id,
             'repoId' => $repoId,
@@ -1565,7 +1567,7 @@ class Episciences_Submit
 
         if (!$canReplace) {
             $suggestedEditors = $this->getSuggestedEditorsFromPost($data);
-            return $this->assignEditors($paper, $suggestedEditors, $data['SID'], $data['VID']);
+            return $this->assignEditors($paper, $suggestedEditors, $data['SID'] ?? null, $data['VID'] ?? null);
         }
 
         return $paper->getEditors(true, true);
@@ -1604,7 +1606,7 @@ class Episciences_Submit
         $oldStatus = (int)Ccsd_Tools::ifsetor($data['old_paper_status'], 0);
         $canReplace = (bool)Ccsd_Tools::ifsetor($data['can_replace'], false);
 
-        if($canReplace){
+        if ($canReplace) {
             $authorTemplateKy = Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_UPDATED_AUTHOR_COPY;
         }
 
@@ -2758,7 +2760,7 @@ class Episciences_Submit
 
     }
 
-    public static function  processBasicIdentifier(string &$identifier, $data): void
+    public static function processBasicIdentifier(string &$identifier, $data): void
     {
 
         $identifier = trim($identifier);
@@ -2770,6 +2772,40 @@ class Episciences_Submit
             $identifier .= '/' . $data[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME];
         }
 
+    }
+
+    /**
+     * @param array $post
+     * @return void
+     * to prevent possible data corruption
+     */
+
+    public static function normalizeSubmissionParameters(array &$post): void
+    {
+        // todo Check both forms for the initial submission and new version
+        // In some cases, the hidden field is used; in other cases, it is not.
+
+        $key = 'search_doc';
+
+        $post['h_repoId'] = (int)$post['h_repoId'];
+        $post['h_version'] = (float)$post['h_version'];
+
+        if (isset($post[$key]['docId'])) {
+            $post[$key]['docId'] = $post['h_doc'];
+        }
+
+        if (isset($post[$key]['repoId'])) {
+            $post[$key]['repoId'] = $post['h_repoId'];
+        }
+
+        if (isset($post[$key]['version'])) {
+            $post[$key]['version'] = $post['h_version'];
+        }
+
+        // données vérifiées (nettoyées si nécessaire) lors de la recherche du document
+        $post[$key]['h_docId'] = $post['h_doc'];
+        $post[$key]['h_version'] = $post['h_version'];
+        $post[$key]['h_repoId'] = $post['h_repoId'];
     }
 
 }

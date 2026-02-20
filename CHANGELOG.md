@@ -61,15 +61,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TeiCacheManager::buildApiUrl()`: applied `urlencode()` on identifier to prevent Solr query injection
 - `TeiCacheManager::getFromCache()`: removed dead `expiresAfter()` call on the read path
 - `Repository`: `JSON_DECODE_FLAGS` no longer includes encode-only flags (`JSON_UNESCAPED_SLASHES`, `JSON_UNESCAPED_UNICODE`)
+- `CommentsManager::$_typeLabel`: added missing entry for `TYPE_CONTRIBUTOR_TO_REVIEWER` (type 11); lookups on that type silently returned `null`
+- `CommentsManager::updateUid()`: negative UIDs were not rejected by the guard; changed `== 0` to `<= 0`
+- `FormatIssn::FormatIssn()`: second `substr()` call used length `8` instead of `4`; worked by PHP leniency on short strings but was semantically wrong
+- `Log::log()`: exception thrown by `$logger->log()` was not caught; only `Zend_Registry::get()` was inside the `try/catch` block
+- `DoiAsLink::DoiAsLink()`: when no `$text` was provided, the link label displayed the bare DOI instead of the full `https://doi.org/…` URL
+- `Ccsd\Auth\Adapter\Idp::filterEmail()`: unescaped dot in regex allowed partial-match bypass (e.g. `user@inraXfr`); fixed with `preg_quote()` and a trailing `$` anchor to also prevent subdomain injection (e.g. `attacker@inra.fr.evil.com`)
 
 ### Security
 - Fixed XSS vulnerability in `ViewFormatter::buildAuthorHtml()` and `buildAffiliationListHtml()` where user-controlled values were interpolated into unquoted or improperly escaped HTML attributes (ORCID URL, data-title, and affiliation acronym)
 - Fixed potential Solr query injection in `TeiCacheManager::buildApiUrl()`
+- `GetAvatar::asPaperStatusSvg()`: fixed two path traversal vectors — `$lang` is now sanitized to `[a-z]+` before being interpolated into a filesystem path, and `$paperStatus` is cast to `int`
+- `DoiAsLink::DoiAsLink()`: added `rel="noopener noreferrer"` to prevent tab-napping on external DOI links
+- `Ccsd\Auth\Adapter\Idp::filterEmail()`: regex bypass allowed authentication from unauthorized email domains (see Fixed)
 
 ### Added
+- It is now possible to submit a new version from RepositóriUM
 - New supported Cryptology ePrint Archive
 - New supported servers: Support for any data repositories powered by Dspace (eg. [repositorium.uminho(University of Minho)](https://repositorium.uminho.pt))
 - Comprehensive unit tests for `Episciences_Paper_Authors_ViewFormatter` covering HTML display logic and XSS prevention
+- Unit tests for `Episciences_View_Helper_DoiAsLink`, `Episciences_View_Helper_FormatIssn`, `Episciences_View_Helper_Log`, `Episciences_View_Helper_Tag`, `Episciences_View_Helper_UserAvatar`, `Episciences_View_Helper_GetAvatar` and `Episciences_CommentsManager`
+- 89+ unit tests for `Ccsd\Auth` adapters (`CasAbstract`, `Idp`, `Orcid`, `AdapterFactory`, `Asso`), `Ccsd\User` models (`User`, `UserTokens`, `UserFtpQuota`) and `Episciences\User` entities covering pure logic without DB or network access
+- Updated `tests/README.md` with accurate Docker-based testing instructions, `make` target reference, subset-run examples, and contributor guidelines
 - [#883](https://github.com/CCSDForge/episciences/issues/883) Allow json files as attachments
 - It is now possible to report status changes to an external entry point (can be configured by review)
   

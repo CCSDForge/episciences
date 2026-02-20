@@ -384,6 +384,20 @@ class UserAvatarTest extends TestCase
     }
 
     /**
+     * Test that UID=0 is treated as absent (falsy) and excluded from the generated URL.
+     * Documents the known behavior: callers should not pass UID=0 expecting it in the URL.
+     */
+    public function testUserWithUidZeroExcludedFromUrl(): void
+    {
+        $user = ['SCREEN_NAME' => 'Test', 'UID' => 0];
+
+        $html = $this->helper->userAvatar($user, 'thumb')->render();
+
+        // UID=0 is falsy: it is NOT added to the URL
+        $this->assertStringNotContainsString('/uid/', $html);
+    }
+
+    /**
      * Test state reset between invocations
      */
     public function testStateResetBetweenInvocations(): void
