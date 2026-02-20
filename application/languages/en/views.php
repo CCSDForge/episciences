@@ -1420,7 +1420,7 @@ return array(
     "Progression : " => "Progression:",
     "Dernière modification" => "Last modified",
 
-    "Vous n'êtes pas l'auteur de cet article." => "You are not the author of this article.",
+    "Vous êtes connecté avec un compte différent de celui ayant été utilisé pour soumettre ce document. Veuillez vous déconnecter et vous reconnecter avec le bon compte pour continuer." => "You’re signed in with a different account than the one used to submit this document. Please sign out and log in with the correct account to continue.",
     "Souhaitez-vous remplacer la version précédente ?" => "Do you want to replace the previous version?",
     "ou" => 'or',
     "Attention : " => "Warning: ",
