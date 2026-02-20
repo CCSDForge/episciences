@@ -63,6 +63,7 @@ class Episciences_CommentsManager
         self::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED => 'Préparation de copie : version finale soumise',
         self::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION => "Accepté - en attente de validation par l'auteur",
         self::TYPE_REVISION_CONTACT_COMMENT => "réponse à une demande de modifications (sans dépôt de version)",
+        self::TYPE_CONTRIBUTOR_TO_REVIEWER => "commentaire du contributeur au relecteur",
     ];
 
     public static array $_copyEditingRequestTypes = [
@@ -419,7 +420,7 @@ class Episciences_CommentsManager
     public static function updateUid(int $oldUid = 0, int $newUid = 0): int
     {
 
-        if ($oldUid == 0 || $newUid == 0) {
+        if ($oldUid <= 0 || $newUid <= 0) {
             return 0;
         }
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();

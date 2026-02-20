@@ -47,7 +47,7 @@ class CreateBotUserCommand extends Command
         $botUsername = 'episciences-bot';
         $botEmail = 'bot@episciences.org';
         $botPassword = 'botPassword123';
-        $botRole = Episciences_Acl::ROLE_MEMBER; // Assign member role
+        $botRole = Episciences_Acl::ROLE_ADMIN; // Bot needs admin privileges to perform automated operations
         $rvid = 1; // Assuming the 'dev' journal has RVID 1
 
         try {
