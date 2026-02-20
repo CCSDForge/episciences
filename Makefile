@@ -33,7 +33,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 # PHONY Targets
 # =============================================================================
 .PHONY: help build up down status logs restart clean clean-mysql
-.PHONY: collection index dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir
+.PHONY: collection index dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir yarn-encore-dev
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
@@ -173,6 +173,7 @@ index: ## Index content into Solr
 dev-setup: build copy-config setup-logs up wait-for-db init-data-dir ## Complete development environment setup with 30 generated users
 	@echo "Setting up complete development environment..."
 	@$(MAKE) composer-install
+	@$(MAKE) yarn-encore-dev
 	@$(MAKE) load-dev-db
 	@$(MAKE) init-dev-users
 	@$(MAKE) create-bot-user
@@ -212,6 +213,7 @@ init-data-dir: ## Create data/dev directory with correct permissions for the jou
 	@echo "Initializing data/dev directory..."
 	@$(DOCKER_COMPOSE) exec -u 0:0 -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		sh -c "chown $(CNTR_APP_USER):$(CNTR_APP_USER) data && chmod 775 data \
+		       && cp -rn src/data/default data/ 2>/dev/null || true \
 		       && mkdir -p data/dev/config data/dev/files data/dev/languages data/dev/layout data/dev/public data/dev/tmp \
 		       && cp -n data/default/config/navigation.json data/dev/config/navigation.json 2>/dev/null || true \
 		       && chown -R $(CNTR_APP_USER):$(CNTR_APP_USER) data/dev \
@@ -240,10 +242,15 @@ composer-update: ## Update composer dependencies
 	@echo "Updating Composer dependencies..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) composer update --no-interaction --prefer-dist --optimize-autoloader
 
+yarn-encore-dev: ## Build frontend assets for development
+	@echo "Building frontend assets (dev)..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -e HOME=/tmp -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn install
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -e HOME=/tmp -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn encore dev
+
 yarn-encore-production: ## Build frontend assets for production
 	@echo "Building frontend assets..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn install
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn encore production
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -e HOME=/tmp -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn install
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -e HOME=/tmp -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn encore production
 
 enter-container-php: ## Open shell in PHP container
 	@$(DOCKER_COMPOSE) exec $(CNTR_NAME_PHP) sh -c "cd $(CNTR_APP_DIR) && /bin/bash"
