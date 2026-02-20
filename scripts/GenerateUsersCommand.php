@@ -82,8 +82,13 @@ class GenerateUsersCommand extends Command
                 $user->setValid(1);
                 $user->setIs_valid(1);
 
-                // Save creates user in BOTH cas_users and episciences DBs
-                $uid = $user->save(false, true, RVID);
+                // Save creates user in BOTH cas_users and episciences DBs.
+                // When using the MySQL CAS adapter (dev only), save() may return 0 because
+                // lastInsertId() is not updated for explicit-UID inserts. Fall back to getUid().
+                // We use saveNewRoles() instead of addRole() because addRole() calls
+                // multipleRolesUnsetMemberRole() which strips the 'member' role before saving.
+                $user->save(false, true, RVID);
+                $uid = $user->getUid();
 
                 if ($uid) {
                     // Map role string to Acl constant
@@ -94,9 +99,7 @@ class GenerateUsersCommand extends Command
                         default => Episciences_Acl::ROLE_MEMBER,
                     };
 
-                    if ($role !== Episciences_Acl::ROLE_MEMBER) {
-                        $user->addRole($role, RVID);
-                    }
+                    $user->saveNewRoles($uid, $role, RVID);
                     $successCount++;
                 }
             } catch (\Exception $e) {
