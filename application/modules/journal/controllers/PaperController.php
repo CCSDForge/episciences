@@ -1858,6 +1858,8 @@ class PaperController extends PaperDefaultController
             return;
         }
 
+        Episciences_Submit::normalizeSubmissionParameters($post);
+
         $currentVersion = $this->resolveCurrentVersion($post, $paper);
 
         if ($currentVersion < $paper->getVersion()) {
@@ -2030,18 +2032,9 @@ class PaperController extends PaperDefaultController
     }
 
 
-    private function resolveCurrentVersion(array &$post, Episciences_Paper $paper)
+    private function resolveCurrentVersion(array $post, Episciences_Paper $paper)
     {
-
-        if (isset($post['h_version'])) {
-            $currentVersion = (float)$post['h_version'];
-        } else {
-            $currentVersion = $paper->getVersion() + 1;
-        }
-
-        $post[self::SEARCH_DOC_STR]['version'] = $currentVersion;
-
-        return $currentVersion;
+        return $post['h_version'] ?? $paper->getVersion() + 1;
     }
 
     private function resolveConceptIdentifier(array &$post)
@@ -2069,7 +2062,7 @@ class PaperController extends PaperDefaultController
         array             $post,
         float             $currentVersion,
         ?bool             $reassignReviewers,
-        ?bool              $isAlreadyAccepted
+        ?bool             $isAlreadyAccepted
     ): Episciences_Paper
     {
         $paperId = $paper->getPaperid() ?: $paper->getDocid();
@@ -2084,7 +2077,6 @@ class PaperController extends PaperDefaultController
         $identifier = $post[self::SEARCH_DOC_STR]['h_docId'];
         Episciences_Submit::processBasicIdentifier($identifier, $post);
         $newPaper->setIdentifier($identifier);
-
         $newPaper->setVersion($currentVersion);
         $newPaper->setRepoid($post[self::SEARCH_DOC_STR]['h_repoId']);
 
@@ -3588,7 +3580,7 @@ class PaperController extends PaperDefaultController
                 if ($paper && $paper->getRvid() === RVID) {
 
                     if ($from === 'my_submissions' && $paper->getUid() !== Episciences_Auth::getUid()) {
-                        $message = "Vous n'êtes pas l'auteur de cet article";
+                        $message = "Vous êtes connecté avec un compte différent de celui ayant été utilisé pour soumettre ce document. Veuillez vous déconnecter et vous reconnecter avec le bon compte pour continuer.";
 
                     } else if ($from === 'assigned_articles' && !$paper->getEditor(Episciences_Auth::getUid())) {
                         $message = "Vous n'êtes pas assigné à cet article";
@@ -4154,6 +4146,5 @@ class PaperController extends PaperDefaultController
             $comment['SCREEN_NAME'] = $formName;
         }
     }
-
 }
 

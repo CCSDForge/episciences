@@ -194,6 +194,7 @@ $(function () {
 
     // display the document if it has been found
     function showResult(result) {
+        console.log(result);
 
         let message = '';
 
@@ -222,14 +223,24 @@ $(function () {
                 );
             }
 
-            if ('hookVersion' in result || $searchDocVersion.length > 0) {
-
-                let version = ('hookVersion' in result) ? result.hookVersion : $searchDocVersion.val();
+            if ('hookVersion' in result) {
                 $submit_form.append(
-                    '<input id = "h_version" type="hidden" name="h_version" value="' + version + '">'
+                    '<input id = "h_version" type="hidden" name="h_version" value="' + result.hookVersion + '">'
                 );
-
             }
+
+            if ('hookId' in result) {
+                $submit_form.append(
+                    '<input id = "h_doc" type="hidden" name="h_doc" value="' + result.hookId + '">'
+                );
+            }
+
+            if ('hookRepoId' in result) {
+                $submit_form.append(
+                    '<input id = "h_repoId" type="hidden" name="h_repoId" value="' + result.hookRepoId + '">'
+                );
+            }
+
 
             // document found: hide search form
             $search_form.hide();

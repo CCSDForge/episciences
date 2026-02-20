@@ -4,9 +4,10 @@ class Episciences_Paper_FilesManager
 {
     /**
      * @param int $docId
+     * @param string $fetch
      * @return array [Episciences_Paper_File]
      */
-    public static function findByDocId(int $docId): array
+    public static function findByDocId(int $docId, string $fetch = 'object'): array
     {
 
         $oResult = [];
@@ -66,7 +67,32 @@ class Episciences_Paper_FilesManager
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        return ($db->delete(T_PAPER_FILES, ['doc_id = ?' => $docId]) > 0);
+        $sql = self::findByDocIdQuery($docId, ['id'], null);
+        $hasFiles = $db?->fetchOne($sql) > 0;
+
+        if (!$hasFiles) {
+            return true;
+        }
+
+        $db?->beginTransaction();
+
+        try {
+
+            $deletedRows = $db?->delete(T_PAPER_FILES, ['doc_id = ?' => $docId]);
+
+            if ($deletedRows < 1) {
+                throw new RuntimeException (sprintf("Failure to delete paper's files[DOCID = #%s]", $docId));
+            }
+
+            $db?->commit();
+
+        } catch (Exception $e) {
+            $deletedRows = 0;
+            Episciences_View_Helper_Log::log($e->getMessage());
+            $db?->rollBack();
+        }
+
+        return ($deletedRows > 0);
 
     }
 
@@ -150,5 +176,23 @@ class Episciences_Paper_FilesManager
         }
         return $resUpdate;
     }
+
+
+    public static function findByDocIdQuery(int $docId, $cols = '*', $spec = 'file_size DESC'): ?Zend_Db_Select
+    {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $sql = $db?->select()
+            ->from(T_PAPER_FILES, $cols)
+            ->where('doc_id = ?', $docId);
+
+        if ($spec) {
+            $sql->order($spec);
+        }
+
+        return $sql;
+    }
+
 
 }

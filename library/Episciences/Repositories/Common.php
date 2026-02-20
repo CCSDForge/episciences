@@ -476,31 +476,6 @@ class Episciences_Repositories_Common
         return end($exploded);
     }
 
-    public static function remoteFilesizeHeaders(string $url): ?int
-    {
-        $headers = @get_headers($url, 1);
-
-        if ($headers === false) {
-            return null;
-        }
-
-        // Normaliser les clés (certaines versions renvoient un tableau)
-        $headers = array_change_key_case($headers, CASE_LOWER);
-
-        if (!isset($headers['content-length'])) {
-            return null;
-        }
-
-        $length = $headers['content-length'];
-
-        // Peut-être un tableau si redirections
-        if (is_array($length)) {
-            $length = end($length);
-        }
-
-        return ctype_digit((string)$length) ? (int)$length : null;
-    }
-
     /**
      * @param string $baseUrl
      * @param string $oaiIdentifier
@@ -583,5 +558,31 @@ class Episciences_Repositories_Common
             return '';
         }
         return $matches[array_key_first($matches)];
+    }
+
+    public static function getConceptIdentifierFromString(string $string): string
+    {
+        $isMatched = preg_match('#(\d+)/(\d+)\.?#', $string, $matches);
+
+        if ($isMatched) {
+            return sprintf('%s/%s', $matches[1], $matches[2]);
+        }
+
+        return $string;
+    }
+
+    /**
+     * @param string $identifier
+     * @return string
+     * If the version has multiple parts (1.1), keep it intact.
+     * Otherwise (just "1"), return it as is.
+     */
+
+    public static function getVersionFromIdentifier(string $identifier): string
+    {
+        if (preg_match('/\d+\.([0-9.]+)/', $identifier, $matches)) {
+            return $matches[1];
+        }
+        return 1;
     }
 }

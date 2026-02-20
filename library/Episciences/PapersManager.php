@@ -2763,17 +2763,21 @@ class Episciences_PapersManager
     public static function updateRecordData(Episciences_Paper $paper): int
     {
         $docId = $paper->getDocId();
+
         if (!$docId) {
             return 0;
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $params = self::getPaperParams($docId);
+
+        if(!$params){
+            return 0;
+        }
+
         $affectedRows = 0;
 
-        $params = self::getPaperParams($docId);
-        $params['docId'] = $docId;
         $context = self::initializeContext($params);
-
         $recordData = self::fetchRecordData($context);
         [$record, $enrichment] = [$recordData['record'], $recordData['enrichment']];
 
@@ -2794,7 +2798,7 @@ class Episciences_PapersManager
     private static function initializeContext(array $params): array
     {
         return [
-            'docId' => $params['docId'],
+            'docId' => $params['DOCID'],
             'identifier' => str_replace('-REFUSED', '', $params['IDENTIFIER']),
             'repoId' => (int)$params['REPOID'],
             'version' => (float)$params['VERSION'],
@@ -2965,19 +2969,18 @@ class Episciences_PapersManager
     }
 
     /**
-     *
-     * @param $docId
-     * @return bool|mixed
+     * @param int $docId
+     * @return mixed
      */
-    private static function getPaperParams($docId)
+    private static function getPaperParams(int $docId): mixed
     {
-        if ((int)$docId <= 0) {
-            return false;
+        if (!$docId) {
+            return null;
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
-            ->from(T_PAPERS, ['IDENTIFIER', 'REPOID', 'VERSION', 'PAPERID', 'STATUS', 'DOI'])
+            ->from(T_PAPERS, ['DOCID','IDENTIFIER', 'REPOID', 'VERSION', 'PAPERID', 'STATUS', 'DOI'])
             ->where('DOCID = ?', $docId);
         return $db->fetchRow($select);
     }
