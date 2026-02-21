@@ -118,12 +118,17 @@ class Episciences_Paper_Log
 
     public function getDetail()
     {
-        return (Episciences_Tools::isJson($this->_detail)) ? Zend_Json::decode($this->_detail) : $this->_detail;
+        return $this->_detail;
     }
 
     public function setDetail($detail): static
     {
-        $this->_detail = (Episciences_Tools::isJson($detail)) ? Zend_Json::decode($detail) : $detail;
+        if (is_string($detail)) {
+            $decoded = json_decode($detail, true, 512, JSON_BIGINT_AS_STRING);
+            $this->_detail = json_last_error() === JSON_ERROR_NONE ? $decoded : $detail;
+        } else {
+            $this->_detail = $detail;
+        }
         return $this;
     }
 
@@ -169,7 +174,7 @@ class Episciences_Paper_Log
             'RVID' => $this->getRvid(),
             'ACTION' => $this->getAction(),
             // setDetail() already decodes JSON, so $detail is either an array/object (re-encode) or a plain scalar
-            'DETAIL' => (is_array($detail) || is_object($detail)) ? Zend_Json::encode($detail) : $detail,
+            'DETAIL' => (is_array($detail) || is_object($detail)) ? json_encode($detail) : $detail,
             'DATE' => $this->getDate() ?: new Zend_Db_Expr('NOW()')
         ];
         return (bool)$db->insert(T_LOGS, $data);

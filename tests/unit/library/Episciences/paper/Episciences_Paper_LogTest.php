@@ -4,7 +4,6 @@ namespace unit\library\Episciences;
 
 use Episciences_Paper_Log;
 use PHPUnit\Framework\TestCase;
-use ReflectionProperty;
 
 final class Episciences_Paper_LogTest extends TestCase
 {
@@ -276,31 +275,21 @@ final class Episciences_Paper_LogTest extends TestCase
         self::assertNull($log->getDetail());
     }
 
-    public function testGetDetailOnJsonStringStoredInternallyDecodesIt(): void
+    public function testSetDetailWithMalformedJsonStringStoresItAsIs(): void
     {
-        // If $this->_detail contains a raw JSON string (e.g. loaded from DB via setOptions
-        // without going through setDetail), getDetail() should decode it.
         $log = new Episciences_Paper_Log();
+        $log->setDetail('{not valid json}');
 
-        $prop = new ReflectionProperty(Episciences_Paper_Log::class, '_detail');
-        $prop->setAccessible(true);
-        $prop->setValue($log, '{"raw":"json"}');
-
-        $result = $log->getDetail();
-
-        self::assertIsArray($result);
-        self::assertSame('json', $result['raw']);
+        self::assertSame('{not valid json}', $log->getDetail());
     }
 
-    public function testGetDetailOnPlainStringStoredInternallyReturnsItAsIs(): void
+    public function testSetDetailWithJsonNullLiteralDecodesToNull(): void
     {
+        // "null" is valid JSON; json_decode returns null without error → stored as null.
         $log = new Episciences_Paper_Log();
+        $log->setDetail('null');
 
-        $prop = new ReflectionProperty(Episciences_Paper_Log::class, '_detail');
-        $prop->setAccessible(true);
-        $prop->setValue($log, 'plain internal');
-
-        self::assertSame('plain internal', $log->getDetail());
+        self::assertNull($log->getDetail());
     }
 
     // -------------------------------------------------------------------------
@@ -357,7 +346,7 @@ final class Episciences_Paper_LogTest extends TestCase
         $log = new Episciences_Paper_Log();
 
         $log->setDetail(['key' => 'value']);
-        self::assertIsArray($log->getDetail()); // save() would call Zend_Json::encode()
+        self::assertIsArray($log->getDetail()); // save() would call json_encode()
 
         $log->setDetail('plain scalar');
         self::assertIsString($log->getDetail()); // save() would store as-is
