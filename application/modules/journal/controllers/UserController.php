@@ -36,7 +36,7 @@ class UserController extends UserDefaultController
                     ]
             ];
 
-            $this->view->allPapers = $review->getPapers($settings, false, false, ['DOCID','STATUS']);
+            $this->view->allPapers = $review->getPapers($settings, false, ['DOCID','STATUS']);
 
             if (Episciences_Auth::isSecretary()) { // Alert on the existence of papers without assigned editors
 
@@ -45,7 +45,7 @@ class UserController extends UserDefaultController
                 if (!empty($settings['is']['status'])) {
                     $settings['is']['editors'] = [Episciences_View_Helper_PaperFilter::NONE_KEY];
 
-                    $this->view->onlyEditablePapersWithoutEditors = $review->getPapers($settings, false, false, ['DOCID','STATUS']);
+                    $this->view->onlyEditablePapersWithoutEditors = $review->getPapers($settings, false, ['DOCID','STATUS']);
                 }
             }
         }

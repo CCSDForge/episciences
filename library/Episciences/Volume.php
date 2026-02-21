@@ -1311,7 +1311,7 @@ class Episciences_Volume
         $status = empty($excludedStatus) ? Episciences_Paper::DO_NOT_SORT_THIS_KIND_OF_PAPERS : array_merge($excludedStatus, Episciences_Paper::DO_NOT_SORT_THIS_KIND_OF_PAPERS);
         $options['isNot'] = ['status' => $status];
 
-        return Episciences_PapersManager::getList($options, false, $includeSecondaryVolume);
+        return Episciences_PapersManager::getList($options, $includeSecondaryVolume);
 
     }
 

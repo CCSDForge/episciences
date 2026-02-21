@@ -20,7 +20,6 @@ class Episciences_PapersManager
 
     /**
      * @param array $settings
-     * @param bool $cached
      * @param bool $isFilterInfos
      * @param bool $isLimit
      * @param string|array|Zend_Db_Expr $cols // The columns to select
@@ -28,7 +27,7 @@ class Episciences_PapersManager
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
      */
-    public static function getList(array $settings = [], bool $cached = false, bool $isFilterInfos = false, bool $isLimit = true, string|array|Zend_Db_Expr $cols = '*'): array
+    public static function getList(array $settings = [], bool $isFilterInfos = false, bool $isLimit = true, string|array|Zend_Db_Expr $cols = '*'): array
     {
         $rvId = $settings['is']['RVID'] ?? RVID;
 
@@ -36,36 +35,19 @@ class Episciences_PapersManager
 
         $select = self::getListQuery($settings, $isFilterInfos, $isLimit, $cols);
 
-        $list = $db->fetchAssoc($select, $cached);
+        $list = $db->fetchAssoc($select);
 
         $result = [];
 
         $allConflicts = Episciences_Paper_ConflictsManager::all($rvId);
 
         foreach ($list as $id => $item) {
-
-            // fetch papers from cache rather than populating them
-            if ($cached) {
-                $cachename = 'paper-' . $id . '.txt';
-                if (Episciences_Cache::exist($cachename)) {
-                    $result[$id] = unserialize(Episciences_Cache::get($cachename), ['allowed_classes' => false]);
-                } else {
-                    $item['withxsl'] = false;
-                    $paper = new Episciences_Paper($item);
-                    if (array_key_exists($paper->getPaperid(), $allConflicts)) {
-                        $paper->setConflicts($allConflicts[$paper->getPaperid()]);
-                    }
-                    $result[$id] = $paper;
-                    Episciences_Cache::save($cachename, serialize($paper));
-                }
-            } else {
-                $item['withxsl'] = false;
-                $paper = new Episciences_Paper($item);
-                if (array_key_exists($paper->getPaperid(), $allConflicts)) {
-                    $paper->setConflicts($allConflicts[$paper->getPaperid()]);
-                }
-                $result[$id] = $paper;
+            $item['withxsl'] = false;
+            $paper = new Episciences_Paper($item);
+            if (array_key_exists($paper->getPaperid(), $allConflicts)) {
+                $paper->setConflicts($allConflicts[$paper->getPaperid()]);
             }
+            $result[$id] = $paper;
         }
 
         return $result;

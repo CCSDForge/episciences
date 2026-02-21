@@ -308,7 +308,7 @@ class Episciences_Reviewer extends Episciences_User
 
         if (count($docIds)) {
             $settings['is']['docid'] = array_keys($docIds);
-            $papers = Episciences_PapersManager::getList($settings, false, $isFilterInfos, $isLimit);
+            $papers = Episciences_PapersManager::getList($settings, $isFilterInfos, $isLimit);
         } else {
             $papers = [];
         }
