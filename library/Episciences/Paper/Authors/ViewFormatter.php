@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 class Episciences_Paper_Authors_ViewFormatter
 {
     private const KEY_AFFILIATION = 'affiliation';
@@ -28,7 +28,6 @@ class Episciences_Paper_Authors_ViewFormatter
     /**
      * Build HTML template for author enrichment display (ORCID icons, affiliation superscripts, affiliation list)
      *
-     * @param int|string $paperId
      * @return array{template: string, orcid: string, listAffi: string, authorsList: string}
      */
     public static function formatAuthorEnrichmentForViewByPaper(int|string $paperId): array
@@ -36,7 +35,7 @@ class Episciences_Paper_Authors_ViewFormatter
         $decodedAuthors = [];
         // One row per paper expected; loop processes the single row
         foreach (Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId) as $row) {
-            $decodedAuthors = json_decode($row['authors'], true);
+            $decodedAuthors = json_decode((string) $row['authors'], true);
         }
 
         return self::formatAuthors($decodedAuthors);
@@ -45,7 +44,6 @@ class Episciences_Paper_Authors_ViewFormatter
     /**
      * Format decoded authors array into HTML view components
      *
-     * @param array $decodedAuthors
      * @return array{template: string, orcid: string, listAffi: string, authorsList: string}
      */
     public static function formatAuthors(array $decodedAuthors): array
@@ -55,7 +53,7 @@ class Episciences_Paper_Authors_ViewFormatter
         $authorsList = '';
         $affiliationListHtml = '';
 
-        if (empty($decodedAuthors)) {
+        if ($decodedAuthors === []) {
             return self::buildResult($templateHtml, $orcidText, $affiliationListHtml, $authorsList);
         }
 
@@ -64,7 +62,7 @@ class Episciences_Paper_Authors_ViewFormatter
 
         foreach ($decodedAuthors as $authorIndex => $author) {
             $rawFullname = $author[self::KEY_FULLNAME];
-            $escapedFullname = htmlspecialchars($rawFullname, ENT_QUOTES, 'UTF-8');
+            $escapedFullname = htmlspecialchars((string) $rawFullname, ENT_QUOTES, 'UTF-8');
             $authorsList .= $rawFullname;
 
             $templateHtml .= self::buildAuthorHtml($author, $escapedFullname);
@@ -115,10 +113,10 @@ class Episciences_Paper_Authors_ViewFormatter
             }
         }
 
-        $serialized = array_map('serialize', $allAffiliations);
+        $serialized = array_map(serialize(...), $allAffiliations);
         $uniqueSerialized = array_unique($serialized);
 
-        return array_values(array_map('unserialize', $uniqueSerialized));
+        return array_values(array_map(unserialize(...), $uniqueSerialized));
     }
 
     /**
@@ -134,7 +132,7 @@ class Episciences_Paper_Authors_ViewFormatter
             return ' ' . $fullname . ' ';
         }
 
-        $orcid = htmlspecialchars($author[self::KEY_ORCID], ENT_QUOTES, 'UTF-8');
+        $orcid = htmlspecialchars((string) $author[self::KEY_ORCID], ENT_QUOTES, 'UTF-8');
         $orcidUrl = htmlspecialchars(self::ORCID_BASE_URL . $author[self::KEY_ORCID], ENT_QUOTES, 'UTF-8');
 
         return $fullname
@@ -153,7 +151,7 @@ class Episciences_Paper_Authors_ViewFormatter
     private static function buildOrcidText(array $author): string
     {
         if (array_key_exists(self::KEY_ORCID, $author)) {
-            return htmlspecialchars($author[self::KEY_ORCID]);
+            return htmlspecialchars((string) $author[self::KEY_ORCID]);
         }
 
         return self::ORCID_PLACEHOLDER;
@@ -203,7 +201,7 @@ class Episciences_Paper_Authors_ViewFormatter
      */
     private static function buildAffiliationListHtml(array $uniqueAffiliations): string
     {
-        if (empty($uniqueAffiliations)) {
+        if ($uniqueAffiliations === []) {
             return '';
         }
 
@@ -211,7 +209,7 @@ class Episciences_Paper_Authors_ViewFormatter
 
         foreach ($uniqueAffiliations as $index => $affiliation) {
             $displayNumber = $index + 1;
-            $affiliationName = htmlspecialchars($affiliation[self::KEY_AFFILIATION]);
+            $affiliationName = htmlspecialchars((string) $affiliation[self::KEY_AFFILIATION]);
 
             if (isset($affiliation[self::KEY_URL])) {
                 $affiliationUrl = htmlspecialchars($affiliation[self::KEY_URL], ENT_QUOTES, 'UTF-8');
@@ -229,9 +227,7 @@ class Episciences_Paper_Authors_ViewFormatter
             }
         }
 
-        $html .= '</ul>';
-
-        return $html;
+        return $html . '</ul>';
     }
 
     /**
@@ -256,7 +252,6 @@ class Episciences_Paper_Authors_ViewFormatter
     /**
      * Build a numbered affiliation index for all authors, using MD5 keys for deduplication
      *
-     * @param int $paperId
      * @return array{affiliationNumeric: array, authors: array}
      * @throws JsonException
      */
@@ -277,7 +272,7 @@ class Episciences_Paper_Authors_ViewFormatter
                     $hashSource .= $affiliation[self::KEY_ID][0][self::KEY_ID] . $affiliation[self::KEY_ID][0][self::KEY_ID_TYPE];
                 }
 
-                $affiliationHash = md5($hashSource);
+                $affiliationHash = md5((string) $hashSource);
 
                 if (array_key_exists($affiliationHash, $affiliationIndex)) {
                     $allAuthors[$authorKey]['idAffi'][$affiliationHash] = $affiliationIndex[$affiliationHash];

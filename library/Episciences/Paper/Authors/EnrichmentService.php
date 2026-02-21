@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 
@@ -238,12 +238,11 @@ class Episciences_Paper_Authors_EnrichmentService
     }
 
     /**
-     * @return Logger
      * @throws Exception
      */
     private static function getLogger(): Logger
     {
-        if (self::$logger === null) {
+        if (!self::$logger instanceof \Monolog\Logger) {
             $logFile = EPISCIENCES_LOG_PATH . self::LOG_FILE_PREFIX . date('Y-m-d') . '.log';
             self::$logger = new Logger(self::LOGGER_CHANNEL);
             self::$logger->pushHandler(new StreamHandler($logFile, Logger::INFO));

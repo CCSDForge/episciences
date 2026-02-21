@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 class Episciences_Paper_AuthorsManager
 {
     /** @deprecated Use Episciences_Hal_TeiCacheManager::ONE_MONTH */
@@ -8,12 +8,9 @@ class Episciences_Paper_AuthorsManager
     // ────────────────────────────────────────────
     // ORCID normalization (stays here, used cross-module)
     // ────────────────────────────────────────────
-
     /**
      * Normalize an ORCID identifier: strip URL prefix and fix lowercase checksum digit
      *
-     * @param string $orcid
-     * @return string
      * @deprecated Use Episciences_Paper_Authors_HalTeiParser::normalizeOrcid()
      */
     public static function normalizeOrcid(string $orcid): string
@@ -22,8 +19,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param string $orcid
-     * @return string
      * @deprecated Use normalizeOrcid() instead
      */
     public static function cleanLowerCaseOrcid(string $orcid): string
@@ -34,9 +29,7 @@ class Episciences_Paper_AuthorsManager
     // ────────────────────────────────────────────
     // Orchestration methods (delegate to new classes)
     // ────────────────────────────────────────────
-
     /**
-     * @param int $paperId
      * @return array|mixed
      * @throws JsonException
      */
@@ -46,8 +39,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param int $paperId
-     * @param int $idAuthorInJson
      * @return mixed|string
      * @throws JsonException
      */
@@ -59,11 +50,7 @@ class Episciences_Paper_AuthorsManager
     // ────────────────────────────────────────────
     // Backward-compatible proxies — HAL TEI cache
     // ────────────────────────────────────────────
-
     /**
-     * @param string $identifier
-     * @param int $version
-     * @return bool
      * @throws \Psr\Cache\InvalidArgumentException
      * @deprecated Use Episciences_Hal_TeiCacheManager::fetchAndCache()
      */
@@ -73,9 +60,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param string $identifier
-     * @param int $version
-     * @return string
      * @deprecated Use Episciences_Hal_TeiCacheManager
      */
     public static function getTeiHalByIdentifier(string $identifier, int $version = 0): string
@@ -84,9 +68,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param string $identifier
-     * @param int $version
-     * @return string
      * @throws \Psr\Cache\InvalidArgumentException
      * @deprecated Use Episciences_Hal_TeiCacheManager::getFromCache()
      */
@@ -98,10 +79,7 @@ class Episciences_Paper_AuthorsManager
     // ────────────────────────────────────────────
     // Backward-compatible proxies — HAL TEI parser
     // ────────────────────────────────────────────
-
     /**
-     * @param SimpleXMLElement $xmlString
-     * @return array
      * @deprecated Use Episciences_Paper_Authors_HalTeiParser::getAuthorsFromHalTei()
      */
     public static function getAuthorsFromHalTei(SimpleXMLElement $xmlString): array
@@ -110,9 +88,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param SimpleXMLElement|null $infoName
-     * @param array $globalAuthorArray
-     * @return array
      * @deprecated Use Episciences_Paper_Authors_HalTeiParser::getAuthorInfoFromXmlTei()
      */
     public static function getAuthorInfoFromXmlTei(?SimpleXMLElement $infoName, array $globalAuthorArray): array
@@ -121,9 +96,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param SimpleXMLElement|null $author
-     * @param array $globalAuthorArray
-     * @return array
      * @deprecated Use Episciences_Paper_Authors_HalTeiParser::getAuthorStructureFromXmlTei()
      */
     public static function getAuthorStructureFromXmlTei(?SimpleXMLElement $author, array $globalAuthorArray): array
@@ -132,9 +104,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param SimpleXMLElement|null $author
-     * @param array $globalAuthorArray
-     * @return array
      * @deprecated Use Episciences_Paper_Authors_HalTeiParser::getOrcidAuthorFromXmlTei()
      */
     public static function getOrcidAuthorFromXmlTei(?SimpleXMLElement $author, array $globalAuthorArray): array
@@ -143,8 +112,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param SimpleXMLElement $xmlString
-     * @return array
      * @deprecated Use Episciences_Paper_Authors_HalTeiParser::getAffiFromHalTei()
      */
     public static function getAffiFromHalTei(SimpleXMLElement $xmlString): array
@@ -153,9 +120,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param array $authorTei
-     * @param array $affiliationTei
-     * @return array
      * @deprecated Use Episciences_Paper_Authors_HalTeiParser::mergeAuthorInfoAndAffiTei()
      */
     public static function mergeAuthorInfoAndAffiTei(array $authorTei, array $affiliationTei): array
@@ -166,10 +130,8 @@ class Episciences_Paper_AuthorsManager
     // ────────────────────────────────────────────
     // Backward-compatible proxies — Repository
     // ────────────────────────────────────────────
-
     /**
      * @param int|string $paperId
-     * @return array
      * @deprecated Use Episciences_Paper_Authors_Repository::getAuthorByPaperId()
      */
     public static function getAuthorByPaperId($paperId): array
@@ -178,8 +140,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param array $authors
-     * @return int
      * @deprecated Use Episciences_Paper_Authors_Repository::insert()
      */
     public static function insert(array $authors): int
@@ -188,8 +148,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param Episciences_Paper_Authors $authors
-     * @return int
      * @deprecated Use Episciences_Paper_Authors_Repository::update()
      */
     public static function update(Episciences_Paper_Authors $authors): int
@@ -198,7 +156,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param int $paperId
      * @return bool
      * @deprecated Use Episciences_Paper_Authors_Repository::deleteAuthorsByPaperId()
      */
@@ -208,8 +165,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param Episciences_Paper $paper
-     * @return int
      * @deprecated Use Episciences_Paper_Authors_Repository::insertFromPaper()
      */
     public static function InsertAuthorsFromPapers(Episciences_Paper $paper): int
@@ -218,9 +173,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param int $docId
-     * @param int $paperId
-     * @return void
      * @throws Zend_Db_Statement_Exception
      * @deprecated Use Episciences_Paper_Authors_Repository::verifyExistOrInsert()
      */
@@ -232,13 +184,7 @@ class Episciences_Paper_AuthorsManager
     // ────────────────────────────────────────────
     // Backward-compatible proxies — Enrichment
     // ────────────────────────────────────────────
-
     /**
-     * @param int $repoId
-     * @param int $paperId
-     * @param string $identifier
-     * @param int $version
-     * @return int
      * @throws JsonException
      * @throws \Psr\Cache\InvalidArgumentException
      * @deprecated Use Episciences_Paper_Authors_EnrichmentService::enrichAffiOrcidFromTeiHalInDB()
@@ -249,9 +195,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param array $authorDb
-     * @param array $authorTei
-     * @return array
      * @deprecated Use Episciences_Paper_Authors_EnrichmentService::mergeInfoDbAndInfoTei()
      */
     public static function mergeInfoDbAndInfoTei(array $authorDb, array $authorTei): array
@@ -260,8 +203,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param string $msg
-     * @return void
      * @throws Exception
      * @deprecated Use Episciences_Paper_Authors_EnrichmentService::logInfoMessage()
      */
@@ -273,10 +214,8 @@ class Episciences_Paper_AuthorsManager
     // ────────────────────────────────────────────
     // Backward-compatible proxies — View formatter
     // ────────────────────────────────────────────
-
     /**
      * @param int|string $paperId
-     * @return array
      * @deprecated Use Episciences_Paper_Authors_ViewFormatter::formatAuthorEnrichmentForViewByPaper()
      */
     public static function formatAuthorEnrichmentForViewByPaper($paperId): array
@@ -285,7 +224,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param int $paperId
      * @return array
      * @throws JsonException
      * @deprecated Use Episciences_Paper_Authors_ViewFormatter::filterAuthorsAndAffiNumeric()
@@ -298,10 +236,7 @@ class Episciences_Paper_AuthorsManager
     // ────────────────────────────────────────────
     // Backward-compatible proxies — Affiliation helper
     // ────────────────────────────────────────────
-
     /**
-     * @param array $affiliation
-     * @return array
      * @deprecated Use Episciences_Paper_Authors_AffiliationHelper::buildWithRor()
      */
     public static function putAffiliationWithRORinArray(array $affiliation): array
@@ -310,8 +245,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param string $name
-     * @return array
      * @deprecated Use Episciences_Paper_Authors_AffiliationHelper::buildNameOnly()
      */
     public static function putOnlyNameAffiliation(string $name): array
@@ -320,8 +253,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param string $ror
-     * @param string|null $acronym
      * @return array[]
      * @deprecated Use Episciences_Paper_Authors_AffiliationHelper::buildRorOnly()
      */
@@ -331,9 +262,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param array $arrayAffi
-     * @param string $acronym
-     * @return bool
      * @deprecated Use Episciences_Paper_Authors_AffiliationHelper::isAcronymDuplicate()
      */
     public static function acronymAlreadyExist(array $arrayAffi, string $acronym): bool
@@ -343,7 +271,6 @@ class Episciences_Paper_AuthorsManager
 
     /**
      * Format for the ROR input in paper View
-     * @param array $affiliation
      * @return array
      * @deprecated Use Episciences_Paper_Authors_AffiliationHelper::formatAffiliationForInputRor()
      */
@@ -353,9 +280,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param array $acronyms
-     * @param string $haystack
-     * @return string
      * @deprecated Use Episciences_Paper_Authors_AffiliationHelper::setOrUpdateRorAcronym()
      */
     public static function setOrUpdateRorAcronym(array $acronyms, string $haystack): string
@@ -364,9 +288,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param string $name
-     * @param string $acronym
-     * @return string
      * @deprecated Use Episciences_Paper_Authors_AffiliationHelper::eraseAcronymInName()
      */
     public static function eraseAcronymInName(string $name, string $acronym): string
@@ -375,8 +296,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param string $acronym
-     * @return string
      * @deprecated Use Episciences_Paper_Authors_AffiliationHelper::cleanAcronym()
      */
     public static function cleanAcronym(string $acronym): string
@@ -385,8 +304,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param array $affiliationOfAuthor
-     * @return bool
      * @deprecated Use Episciences_Paper_Authors_AffiliationHelper::hasAcronym()
      */
     public static function AcronymExist(array $affiliationOfAuthor): bool
@@ -395,8 +312,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param array $affiliationDb
-     * @return string
      * @deprecated Use Episciences_Paper_Authors_AffiliationHelper::getExistingAcronyms()
      */
     public static function getAcronymExisting(array $affiliationDb): string
@@ -405,8 +320,6 @@ class Episciences_Paper_AuthorsManager
     }
 
     /**
-     * @param array $acronymList
-     * @return string
      * @deprecated Use Episciences_Paper_Authors_AffiliationHelper::formatAcronymList()
      */
     public static function formatAcronymList(array $acronymList): string

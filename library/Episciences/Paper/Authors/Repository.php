@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 class Episciences_Paper_Authors_Repository
 {
     private const JSON_DECODE_FLAGS = JSON_THROW_ON_ERROR;
@@ -20,7 +20,6 @@ class Episciences_Paper_Authors_Repository
     /**
      * Decode the authors JSON for a given paper
      *
-     * @param int $paperId
      * @return array decoded authors data
      * @throws JsonException
      */
@@ -30,7 +29,7 @@ class Episciences_Paper_Authors_Repository
 
         // One row per paper expected; loop processes the single row
         foreach (self::getAuthorByPaperId($paperId) as $row) {
-            $decodedAuthors = json_decode($row['authors'], true, self::JSON_MAX_DEPTH, self::JSON_DECODE_FLAGS);
+            $decodedAuthors = json_decode((string) $row['authors'], true, self::JSON_MAX_DEPTH, self::JSON_DECODE_FLAGS);
         }
 
         return $decodedAuthors;
@@ -39,7 +38,6 @@ class Episciences_Paper_Authors_Repository
     /**
      * Find the affiliations of a specific author within a paper
      *
-     * @param int $paperId
      * @param int $authorIndex 0-based index of the author in the JSON array
      * @return array|string affiliations array, or empty string if not found
      * @throws JsonException
@@ -48,21 +46,17 @@ class Episciences_Paper_Authors_Repository
     {
         $authorRows = self::getAuthorByPaperId($paperId);
 
-        if (empty($authorRows)) {
+        if ($authorRows === []) {
             return '';
         }
 
         $decodedAuthors = [];
         // One row per paper expected; loop processes the single row
         foreach ($authorRows as $row) {
-            $decodedAuthors = json_decode($row['authors'], true, self::JSON_MAX_DEPTH, self::JSON_DECODE_FLAGS);
+            $decodedAuthors = json_decode((string) $row['authors'], true, self::JSON_MAX_DEPTH, self::JSON_DECODE_FLAGS);
         }
 
-        if (isset($decodedAuthors[$authorIndex]['affiliation'])) {
-            return $decodedAuthors[$authorIndex]['affiliation'];
-        }
-
-        return '';
+        return $decodedAuthors[$authorIndex]['affiliation'] ?? '';
     }
 
     /**
@@ -86,7 +80,7 @@ class Episciences_Paper_Authors_Repository
 
         $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_PAPER_AUTHORS) . ' (`authors`,`paperId`) VALUES ';
 
-        if (!empty($quotedValues)) {
+        if ($quotedValues !== []) {
             try {
                 /** @var Zend_Db_Statement_Interface $result */
                 $result = $db->query($sql . implode(', ', $quotedValues));
@@ -102,7 +96,6 @@ class Episciences_Paper_Authors_Repository
     /**
      * Update an existing author record
      *
-     * @param Episciences_Paper_Authors $authorEntity
      * @return int number of affected rows
      */
     public static function update(Episciences_Paper_Authors $authorEntity): int
@@ -133,7 +126,6 @@ class Episciences_Paper_Authors_Repository
     /**
      * Delete all author records for a given paper
      *
-     * @param int $paperId
      * @return bool true if at least one row was deleted
      */
     public static function deleteAuthorsByPaperId(int $paperId): bool
@@ -149,14 +141,13 @@ class Episciences_Paper_Authors_Repository
     /**
      * Copy authors from paper metadata into the authors table
      *
-     * @param Episciences_Paper $paper
      * @return int number of inserted rows
      */
     public static function insertFromPaper(Episciences_Paper $paper): int
     {
         $paperId = $paper->getPaperid();
 
-        if (!empty(self::getAuthorByPaperId($paperId))) {
+        if (self::getAuthorByPaperId($paperId) !== []) {
             return 0;
         }
 
@@ -185,14 +176,11 @@ class Episciences_Paper_Authors_Repository
     /**
      * Ensure an author record exists for a paper; insert from metadata if missing
      *
-     * @param int $docId
-     * @param int $paperId
-     * @return void
      * @throws Zend_Db_Statement_Exception
      */
     public static function verifyExistOrInsert(int $docId, int $paperId): void
     {
-        if (!empty(self::getAuthorByPaperId($paperId))) {
+        if (self::getAuthorByPaperId($paperId) !== []) {
             return;
         }
 

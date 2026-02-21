@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 class Episciences_Paper_Authors_AffiliationHelper
 {
     public const ID_TYPE_ROR = 'ROR';
@@ -70,7 +70,6 @@ class Episciences_Paper_Authors_AffiliationHelper
      * Check whether an affiliation already has a ROR identifier
      *
      * @param array $authorAffiliation single affiliation entry from the DB
-     * @return bool
      */
     public static function hasRor(array $authorAffiliation): bool
     {
@@ -91,7 +90,6 @@ class Episciences_Paper_Authors_AffiliationHelper
      * Check whether an affiliation has an acronym attached
      *
      * @param array $authorAffiliation single affiliation entry from the DB
-     * @return bool
      */
     public static function hasAcronym(array $authorAffiliation): bool
     {
@@ -113,7 +111,6 @@ class Episciences_Paper_Authors_AffiliationHelper
      *
      * @param array $affiliationIdentifiers identifier array (e.g. from $affiliation['id'])
      * @param string $acronym acronym to check
-     * @return bool
      */
     public static function isAcronymDuplicate(array $affiliationIdentifiers, string $acronym): bool
     {
@@ -148,7 +145,7 @@ class Episciences_Paper_Authors_AffiliationHelper
             }
         }
 
-        if (empty($uniqueAcronyms)) {
+        if ($uniqueAcronyms === []) {
             return '';
         }
 
@@ -162,7 +159,6 @@ class Episciences_Paper_Authors_AffiliationHelper
      * Join acronym entries with the "||" separator
      *
      * @param array $acronymList list of formatted acronym strings
-     * @return string
      */
     public static function formatAcronymList(array $acronymList): string
     {
@@ -181,7 +177,7 @@ class Episciences_Paper_Authors_AffiliationHelper
         $matchedAcronym = '';
 
         foreach ($acronyms as $acronym) {
-            if ($acronym !== '' && str_contains($haystack, $acronym)) {
+            if ($acronym !== '' && str_contains($haystack, (string) $acronym)) {
                 $matchedAcronym = $acronym;
                 break;
             }
