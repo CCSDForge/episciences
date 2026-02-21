@@ -135,11 +135,22 @@ test-status: ## Show testing setup status
 	fi
 
 # =============================================================================
-# Linting Commands
+# Linting & Refactoring Commands
 # =============================================================================
-.PHONY: lint-php
+.PHONY: phpstan rector
 
-lint-php: ## Run PHPStan static analysis (use LEVEL=X to override default)
+phpstan: ## Run PHPStan static analysis (usage: make phpstan [TARGET=path/to/file] [LEVEL=X])
+	@echo "Ensuring PHPStan cache directory exists and is writable..."
+	@$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p /tmp/phpstan
+	@$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod -R 777 /tmp/phpstan
 	@echo "Running PHPStan static analysis..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
-		./vendor/bin/phpstan analyse --memory-limit=1G $(if $(LEVEL),--level $(LEVEL))
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		./vendor/bin/phpstan analyse --memory-limit=1G $(if $(LEVEL),--level $(LEVEL)) $(TARGET)
+
+rector: ## Run Rector refactoring tool (usage: make rector [TARGET=path/to/file] [DRY_RUN=1])
+	@echo "Ensuring Rector cache directories exist and are writable..."
+	@$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p $(CNTR_APP_DIR)/cache/rector /tmp/cache
+	@$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod -R 777 $(CNTR_APP_DIR)/cache/rector /tmp/cache
+	@echo "Running Rector..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		./vendor/bin/rector process $(TARGET) $(if $(DRY_RUN),--dry-run)

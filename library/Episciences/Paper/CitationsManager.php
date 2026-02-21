@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 /**
  * Backward-compatible facade for the citations pipeline.
  *

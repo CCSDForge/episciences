@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 /**
  * Database layer for paper citations.
  * All SQL operations related to T_PAPER_CITATIONS are centralized here.

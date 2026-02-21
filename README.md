@@ -87,5 +87,14 @@ You can also manually load or backup databases:
 - `make load-db-auth`: Load a dump from `~/tmp/cas_users.sql`.
 - `make backup-db`: Create backups of current databases in `~/tmp/`.
 
+#### Linting & Code Quality
+
+Maintain code quality using these commands:
+- `make phpstan`: Run PHPStan static analysis on the whole project.
+- `make phpstan TARGET=path/to/file.php`: Run PHPStan on a specific file or directory.
+- `make phpstan LEVEL=5`: Run PHPStan with a specific analysis level (from 0 to 9, where 9 is the strictest).
+- `make rector DRY_RUN=1`: Run Rector in dry-run mode to see proposed changes.
+- `make rector TARGET=path/to/file.php`: Run Rector and apply changes to a specific file.
+
 ### License
 Episciences is free software licensed under the terms of the GPL Version 3. See [LICENSE](./LICENSE).

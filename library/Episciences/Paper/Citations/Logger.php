@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 
@@ -39,7 +39,7 @@ class Episciences_Paper_Citations_Logger
      */
     private static function getLogger(): Logger
     {
-        if (!self::$logger instanceof \Monolog\Logger) {
+        if (!self::$logger instanceof Logger) {
             self::$logger = new Logger(self::LOGGER_CHANNEL);
             self::$logger->pushHandler(
                 new StreamHandler(

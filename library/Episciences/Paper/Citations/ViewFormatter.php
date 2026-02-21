@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 /**
  * HTML rendering layer for paper citations.
  * Builds the HTML fragments displayed in journal paper pages.
@@ -35,7 +35,7 @@ class Episciences_Paper_Citations_ViewFormatter
         foreach ($allCitation as $value) {
             /** @var array $decodeCitations */
             $decodeCitations = json_decode(
-                $value['citation'],
+                (string) $value['citation'],
                 true,
                 512,
                 self::JSON_DECODE_FLAGS
@@ -46,7 +46,7 @@ class Episciences_Paper_Citations_ViewFormatter
             foreach ($decodeCitations as $citationMetadataArray) {
                 $templateCitation .= "<ul class='list-unstyled'>";
                 $templateCitation .= '<li>';
-                $citationMetadataArray = array_map('strip_tags', $citationMetadataArray);
+                $citationMetadataArray = array_map(strip_tags(...), $citationMetadataArray);
 
                 $citationType = $citationMetadataArray['type'] ?? null;
 
@@ -166,7 +166,7 @@ class Episciences_Paper_Citations_ViewFormatter
      */
     public static function formatAuthors(string $author): string
     {
-        $authorRows = array_map('trim', explode(';', $author));
+        $authorRows = array_map(trim(...), explode(';', $author));
 
         foreach ($authorRows as $value) {
             preg_match(self::ORCID_REGEX_WITH_COMMA, $value, $matches);
@@ -192,7 +192,7 @@ class Episciences_Paper_Citations_ViewFormatter
      */
     public static function reduceAuthorsView(string $author): string
     {
-        $authorRows = array_map('trim', explode(';', $author));
+        $authorRows = array_map(trim(...), explode(';', $author));
 
         if (count($authorRows) > self::NUMBER_OF_AUTHORS_WANTED_VIEWS) {
             $authorRows = array_slice($authorRows, 0, self::NUMBER_OF_AUTHORS_WANTED_VIEWS, true);

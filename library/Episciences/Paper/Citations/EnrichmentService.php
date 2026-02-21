@@ -1,4 +1,7 @@
 <?php
+declare(strict_types=1);
+
+use Psr\Cache\CacheItemInterface;
 
 /**
  * Orchestrates the citation data enrichment pipeline.
@@ -49,14 +52,14 @@ class Episciences_Paper_Citations_EnrichmentService
      */
     public static function processCitationsByDoiCited(string $doiWhoCite, array $globalInfoMetadata, int $i): array
     {
-        /** @var \Psr\Cache\CacheItemInterface $setsMetadata */
+        /** @var CacheItemInterface $setsMetadata */
         $setsMetadata = Episciences_OpenalexTools::getMetadataOpenAlexByDoi($doiWhoCite);
 
         Episciences_Paper_Citations_Logger::log('METADATA FOUND IN CACHE ' . $doiWhoCite);
 
         /** @var array $metadataInfoCitation */
         $metadataInfoCitation = json_decode(
-            $setsMetadata->get(),
+            (string) $setsMetadata->get(),
             true,
             self::JSON_MAX_DEPTH,
             self::JSON_DECODE_FLAGS
