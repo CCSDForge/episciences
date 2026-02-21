@@ -1,38 +1,14 @@
 <?php
-
+declare(strict_types=1);
 
 class Episciences_Paper_Citations
 {
-
-    /**
-     * @var int
-     */
     protected int $_id;
-
-    /**
-     * @var string
-     */
     protected string $_citation;
-
-    /**
-     * @var int
-     */
     protected int $_docId;
-
-    /**
-     * @var int
-     */
     protected int $_sourceId;
+    protected ?DateTime $_updatedAt = null;
 
-    /**
-     * @var datetime
-     */
-    protected $_updatedAt = 'CURRENT_TIMESTAMP';
-
-    /**
-     * Episciences_Paper_Licence constructor.
-     * @param array|null $options
-     */
     public function __construct(array $options = null)
     {
         if (is_array($options)) {
@@ -40,10 +16,6 @@ class Episciences_Paper_Citations
         }
     }
 
-    /**
-     * set paper options
-     * @param array $options
-     */
     public function setOptions(array $options): void
     {
         $classMethods = get_class_methods($this);
@@ -56,50 +28,33 @@ class Episciences_Paper_Citations
         }
     }
 
-
-    /**
-     * @return array
-     */
     public function toArray(): array
     {
         return [
             'id' => $this->getId(),
-            'licence' => $this->getCitation(),
+            'citation' => $this->getCitation(),
             'docId' => $this->getDocId(),
             'sourceId' => $this->getSourceId(),
             'updatedAt' => $this->getUpdatedAt(),
         ];
     }
 
-    /**
-     * @return int
-     */
     public function getId(): int
     {
         return $this->_id;
     }
 
-    /**
-     * @param int $id
-     * @return $this
-     */
     public function setId(int $id): self
     {
         $this->_id = $id;
         return $this;
     }
 
-    /**
-     * @return int
-     */
     public function getDocId(): ?int
     {
         return $this->_docId;
     }
 
-    /**
-     * @param int $docId
-     */
     public function setDocId(int $docId): self
     {
         $this->_docId = $docId;
@@ -108,15 +63,8 @@ class Episciences_Paper_Citations
 
     public function getSourceId(): ?int
     {
-
         return $this->_sourceId;
-
     }
-
-    /**
-     * @param int $sourceId
-     * @return $this
-     */
 
     public function setSourceId(int $sourceId): self
     {
@@ -124,18 +72,12 @@ class Episciences_Paper_Citations
         return $this;
     }
 
-
-    /**
-     * @return DateTime
-     */
-    public function getUpdatedAt(): DateTime
+    public function getUpdatedAt(): ?DateTime
     {
         return $this->_updatedAt;
     }
 
     /**
-     * @param string $updatedAt
-     * @return Episciences_Paper_Citations
      * @throws Exception
      */
     public function setUpdatedAt(string $updatedAt): self
@@ -144,24 +86,14 @@ class Episciences_Paper_Citations
         return $this;
     }
 
-    /**
-     * @return string
-     */
-
     public function getCitation(): ?string
     {
         return $this->_citation;
     }
 
-    /**
-     * @param string $licence
-     * @return Episciences_Paper_Citations
-     */
     public function setCitation(string $citation): self
     {
         $this->_citation = $citation;
         return $this;
     }
-
-
 }

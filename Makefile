@@ -62,8 +62,8 @@ help: ## Display this help message
 	@echo "Testing Commands:"
 	@grep -h -E '^test.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No testing commands found"
 	@echo ""
-	@echo "Linting Commands:"
-	@grep -h -E '^lint.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No linting commands found"
+	@echo "Linting & Quality Commands:"
+	@grep -h -E '^(phpstan|rector).*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No quality commands found"
 	@echo ""
 	@echo "Formatting Commands:"
 	@grep -E '^format.*:.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
