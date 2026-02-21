@@ -5,7 +5,10 @@ namespace unit\library\Episciences;
 use Episciences_Paper_ProjectsManager;
 use PHPUnit\Framework\TestCase;
 
-
+/**
+ * @covers Episciences_Paper_ProjectsManager
+ * @covers Episciences_Paper_Projects_EnrichmentService
+ */
 final class Episciences_Paper_ProjectsManagerTest extends TestCase {
 
     /**
