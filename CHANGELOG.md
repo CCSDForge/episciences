@@ -17,6 +17,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Changed
+- Replaced `Episciences_Cache` (file-based, backed by `Ccsd_Cache`) with `symfony/cache` 5.4 (PSR-6 `FilesystemAdapter`) across all internal usages
+- `PapersManager::getList()`: removed `$cached` parameter; paper list is now always fetched fresh from the database
+- `Review::getPapers()`, `CopyEditor::loadAssignedPapers()`, `Editor::loadAssignedPapers()`, `Reviewer::loadAssignedPapers()`, `Volume::getPaperListFromVolume()`: updated signatures and call sites following the removal of `$cached`
+- `Oai/Server::getIds()`: OAI resumption token cache migrated to PSR-6 (`getItem` / `isHit` / `set` / `expiresAfter` / `save`); token conf is now stored natively by the adapter without manual `serialize()`/`unserialize()`
+
+### Deprecated
+- `Episciences_Cache` and its parent `Ccsd_Cache` are now marked `@deprecated`; use `Symfony\Component\Cache\Adapter\FilesystemAdapter` instead
+
+### Security
+- Removed implicit `unserialize()` on filesystem-cached paper data in `PapersManager::getList()`, eliminating a potential PHP object injection vector
+- OAI resumption token cache keys are now MD5-hashed before use, preventing cache-key injection via crafted token values
+
+### Changed
 - Refactored `Episciences_Paper_AuthorsManager` (879-line God Class) into 6 single-responsibility classes:
   - `Episciences_Hal_TeiCacheManager` — HAL TEI cache and HTTP
   - `Episciences_Paper_Authors_HalTeiParser` — TEI XML parsing
