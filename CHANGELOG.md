@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Changed
+- Refactored `scripts/zbjatZipper.php`: renamed class to PascalCase (`ZbjatZipper`), replaced `echo` with Monolog logger, extracted `run()` God method into focused methods (`processJournal`, `processVolume`, `downloadPaperFiles`, `buildPaperUrl`, `createZipArchive`), switched URLs from hardcoded `http://episciences.org` to HTTPS + `DOMAIN` constant, replaced `fopen`/`fwrite`/`fclose` with `file_put_contents`, replaced `opendir`/`readdir` with `DirectoryIterator`, replaced `exit` with `return`
 - Refactored `Episciences_Paper_AuthorsManager` (879-line God Class) into 6 single-responsibility classes:
   - `Episciences_Hal_TeiCacheManager` — HAL TEI cache and HTTP
   - `Episciences_Paper_Authors_HalTeiParser` — TEI XML parsing
