@@ -2299,7 +2299,7 @@ class PaperController extends PaperDefaultController
             // Le nombre total d'eregistrements, après filtrage
             $papersFiltredCount = $review->getPapersCount($settings, true);
             // La liste des articles, après filtrage
-            $papers = $review->getPapers($settings, false, true);
+            $papers = $review->getPapers($settings, true);
 
             $tbody = ($papersFiltredCount > 0) ?
                 $this->view->partial('partials/datatable_author_papers_list.phtml', [

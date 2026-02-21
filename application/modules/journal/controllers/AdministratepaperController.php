@@ -112,7 +112,7 @@ class AdministratepaperController extends PaperDefaultController
             // Le nombre total d'eregistrements, après filtrage
             $papersFiltredCount = $review->getPapersCount($settings, true);
             // La liste des articles, après filtrage
-            $papers = $review->getPapers($settings, false, true);
+            $papers = $review->getPapers($settings, true);
 
             $isCoiEnabled = $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
 
