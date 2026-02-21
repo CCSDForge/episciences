@@ -10,17 +10,13 @@ $localopts = [
     'zo=s' => 'Zip Output'
 ];
 
-if (file_exists(__DIR__ . "/loadHeader.php")) {
-    require_once __DIR__ . '/loadHeader.php';
-} else {
-    require_once 'loadHeader.php';
-}
-require_once "JournalScript.php";
+require_once __DIR__ . '/loadHeader.php';
+require_once __DIR__ . "/JournalScript.php";
 
 class ZbjatZipper extends JournalScript
 {
-    private Logger $logger;
-    private Client $httpClient;
+    private readonly Logger $logger;
+    private readonly Client $httpClient;
     private Episciences_Review $review;
 
     public function __construct($localopts)
