@@ -39,13 +39,13 @@ class Episciences_Paper_Projects_EnrichmentService
         array $rowInDbGraph,
         int   $paperId
     ): int {
-        if (empty($globalFundingArray)) {
+        if ($globalFundingArray === []) {
             return 0;
         }
 
         $fundingJson = json_encode($globalFundingArray, self::JSON_ENCODE_FLAGS);
 
-        if (empty($rowInDbGraph)) {
+        if ($rowInDbGraph === []) {
             self::logInfo('Project Found ' . $fundingJson);
             $project = self::buildProject($fundingJson, $paperId, Episciences_Repositories::GRAPH_OPENAIRE_ID);
             return Episciences_Paper_Projects_Repository::insert($project);
@@ -66,14 +66,14 @@ class Episciences_Paper_Projects_EnrichmentService
         array $mergeArrayAnrEu,
         int   $paperId
     ): int {
-        if (empty($mergeArrayAnrEu)) {
+        if ($mergeArrayAnrEu === []) {
             return 0;
         }
 
         $fundingJson = json_encode($mergeArrayAnrEu, self::JSON_ENCODE_FLAGS);
         $project     = self::buildProject($fundingJson, $paperId, Episciences_Repositories::HAL_REPO_ID);
 
-        if (!empty($rowInDbHal)) {
+        if ($rowInDbHal !== []) {
             self::logInfo('HAL PROJECT UPDATED');
             return Episciences_Paper_Projects_Repository::update($project);
         }
@@ -113,7 +113,7 @@ class Episciences_Paper_Projects_EnrichmentService
                         $resp = $cacheItem->get();
                     }
                     $accumulator[] = self::formatEuHalResp(
-                        json_decode($resp, true, self::JSON_MAX_DEPTH, self::JSON_DECODE_FLAGS)
+                        json_decode((string) $resp, true, self::JSON_MAX_DEPTH, self::JSON_DECODE_FLAGS)
                     );
                 }
             }
@@ -133,7 +133,7 @@ class Episciences_Paper_Projects_EnrichmentService
                         $resp = $cacheItem->get();
                     }
                     $accumulator[] = self::formatAnrHalResp(
-                        json_decode($resp, true, self::JSON_MAX_DEPTH, self::JSON_DECODE_FLAGS)
+                        json_decode((string) $resp, true, self::JSON_MAX_DEPTH, self::JSON_DECODE_FLAGS)
                     );
                 }
             }
@@ -260,7 +260,7 @@ class Episciences_Paper_Projects_EnrichmentService
      */
     private static function getLogger(): Logger
     {
-        if (self::$logger === null) {
+        if (!self::$logger instanceof \Monolog\Logger) {
             $logFile      = dirname(APPLICATION_PATH) . '/log/' . self::LOG_FILE_PREFIX . date('Y-m-d') . '.log';
             self::$logger = new Logger(self::LOGGER_CHANNEL);
             self::$logger->pushHandler(new StreamHandler($logFile, Logger::INFO));

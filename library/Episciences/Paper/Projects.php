@@ -26,7 +26,7 @@ class Episciences_Paper_Projects
     public function setOptions(array $options): void
     {
         $classMethods      = get_class_methods($this);
-        $classMethodsLower = array_map('strtolower', $classMethods);
+        $classMethodsLower = array_map(strtolower(...), $classMethods);
         foreach ($options as $key => $value) {
             $method = 'set' . Episciences_Tools::convertToCamelCase($key, '_', true);
             if (in_array(strtolower($method), $classMethodsLower, true)) {

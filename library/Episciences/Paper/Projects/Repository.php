@@ -9,7 +9,6 @@ declare(strict_types=1);
 class Episciences_Paper_Projects_Repository
 {
     private const JSON_DECODE_FLAGS = JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
-    private const JSON_ENCODE_FLAGS = JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR;
     private const JSON_MAX_DEPTH    = 512;
 
     /**
@@ -53,7 +52,7 @@ class Episciences_Paper_Projects_Repository
         $rawFunding = [];
         foreach ($allProjects as $project) {
             $rawFunding[] = json_decode(
-                $project['funding'],
+                (string) $project['funding'],
                 true,
                 self::JSON_MAX_DEPTH,
                 self::JSON_DECODE_FLAGS
@@ -69,7 +68,7 @@ class Episciences_Paper_Projects_Repository
             }
         }
 
-        return array_map('unserialize', array_unique(array_map('serialize', $finalFundingArray)));
+        return array_map(unserialize(...), array_unique(array_map(serialize(...), $finalFundingArray)));
     }
 
     /**

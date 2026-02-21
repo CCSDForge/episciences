@@ -28,7 +28,7 @@ class Episciences_Paper_Projects_ViewFormatter
     public static function formatForView(int $paperId): array
     {
         $rawInfo = Episciences_Paper_Projects_Repository::getByPaperId($paperId);
-        if (empty($rawInfo)) {
+        if ($rawInfo === []) {
             return [];
         }
 
@@ -38,7 +38,7 @@ class Episciences_Paper_Projects_ViewFormatter
         $rawFunding = [];
         foreach ($rawInfo as $value) {
             $rawFunding[$value['source_id_name']][] = json_decode(
-                $value['funding'],
+                (string) $value['funding'],
                 true,
                 self::JSON_MAX_DEPTH,
                 self::JSON_DECODE_FLAGS
@@ -70,9 +70,7 @@ class Episciences_Paper_Projects_ViewFormatter
                 $html .= self::renderFundingEntry($vfunding, $tr);
             }
         }
-
-        $html .= "</ul>";
-        return $html;
+        return $html . "</ul>";
     }
 
     private static function renderFundingEntry(array $vfunding, Zend_Translate $tr): string
@@ -84,14 +82,14 @@ class Episciences_Paper_Projects_ViewFormatter
 
         // Opening <li> with optional projectTitle / funderName
         if ($hasTitle) {
-            $html .= '<li><em>' . htmlspecialchars($vfunding[self::KEY_PROJECT_TITLE], ENT_QUOTES, 'UTF-8') . "</em>";
+            $html .= '<li><em>' . htmlspecialchars((string) $vfunding[self::KEY_PROJECT_TITLE], ENT_QUOTES, 'UTF-8') . "</em>";
             if ($hasFunder) {
                 $html .= "; " . $tr->translate("Funder") . ": "
-                    . htmlspecialchars($vfunding[self::KEY_FUNDER_NAME], ENT_QUOTES, 'UTF-8');
+                    . htmlspecialchars((string) $vfunding[self::KEY_FUNDER_NAME], ENT_QUOTES, 'UTF-8');
             }
         } elseif ($hasFunder) {
             $html .= "<li>" . $tr->translate("Funder") . ": "
-                . htmlspecialchars($vfunding[self::KEY_FUNDER_NAME], ENT_QUOTES, 'UTF-8');
+                . htmlspecialchars((string) $vfunding[self::KEY_FUNDER_NAME], ENT_QUOTES, 'UTF-8');
         } else {
             return '';
         }
@@ -101,28 +99,26 @@ class Episciences_Paper_Projects_ViewFormatter
             isset($vfunding[self::KEY_CODE]) && $vfunding[self::KEY_CODE] !== $unidentified
             && ($hasFunder || $hasTitle)
         ) {
-            $html .= "; Code: " . htmlspecialchars($vfunding[self::KEY_CODE], ENT_QUOTES, 'UTF-8');
+            $html .= "; Code: " . htmlspecialchars((string) $vfunding[self::KEY_CODE], ENT_QUOTES, 'UTF-8');
         }
 
         // callId
         if (isset($vfunding[self::KEY_CALL_ID]) && $vfunding[self::KEY_CALL_ID] !== $unidentified) {
             $html .= "; " . $tr->translate("callId") . ": "
-                . htmlspecialchars($vfunding[self::KEY_CALL_ID], ENT_QUOTES, 'UTF-8');
+                . htmlspecialchars((string) $vfunding[self::KEY_CALL_ID], ENT_QUOTES, 'UTF-8');
         }
 
         // projectFinancing
         if (isset($vfunding[self::KEY_PROJECT_FINANCING]) && $vfunding[self::KEY_PROJECT_FINANCING] !== $unidentified) {
             $html .= "; " . $tr->translate("projectFinancing") . ": "
-                . htmlspecialchars($vfunding[self::KEY_PROJECT_FINANCING], ENT_QUOTES, 'UTF-8');
+                . htmlspecialchars((string) $vfunding[self::KEY_PROJECT_FINANCING], ENT_QUOTES, 'UTF-8');
         }
 
         // URL
         if (isset($vfunding[self::KEY_URL]) && $vfunding[self::KEY_URL] !== '') {
-            $safeUrl = htmlspecialchars($vfunding[self::KEY_URL], ENT_QUOTES, 'UTF-8');
+            $safeUrl = htmlspecialchars((string) $vfunding[self::KEY_URL], ENT_QUOTES, 'UTF-8');
             $html .= '; <a href="' . $safeUrl . '">' . $safeUrl . '</a>';
         }
-
-        $html .= "</li>";
-        return $html;
+        return $html . "</li>";
     }
 }
