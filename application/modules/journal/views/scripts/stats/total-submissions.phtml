@@ -1,55 +1,53 @@
 <?php if ($this->totalArticles) : ?>
-    <div class="submissions-totals row">
-
-    <li>
-        <?= $this->translate('Total :') ?>
-        <code><?= $this->totalArticles ?></code><?= $this->translate($this->totalArticles > 1 ? 'articles' : 'article') ?>
+    <div class="submissions-totals">
+    <li class="stats-item">
+        <span class="stat-label"><?= $this->translate('Total :') ?></span>
+        <span class="stat-value"><?= $this->totalArticles ?></span>&nbsp;<span class="stat-label"><?= $this->translate($this->totalArticles > 1 ? 'articles' : 'article') ?></span>
         <?php if ($this->totalImportedArticles): ?>
             <?php $importedMsg = $this->totalImportedArticles > 1 ? 'dont %s importés' : 'dont %s importé'; ?>
             <p class="help-block" style="display: inline;">
-                (<?= sprintf($this->translate($importedMsg), '<code>' . $this->totalImportedArticles . '</code>') ?>
-                )
+                (<?= sprintf($this->translate($importedMsg), '<span class="stat-value">' . $this->totalImportedArticles . '</span>') ?>)
             </p>
         <?php endif; ?>
         <?php if (isset($this->year)): ?>
-            <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                title="<?= $this->translate('Cela inclut seulement les articles soumis cette année.') ?>"></em>
+            <span class="fas fa-info-circle fa-sm" data-toggle="tooltip"
+                  title="<?= $this->translate('Cela inclut seulement les articles soumis cette année.') ?>"></span>
         <?php endif; ?>
 
         <?php if (isset($this->totalPublishedArticles)): ?>
             |
-            <code><?= $this->totalPublishedArticles ?></code> <?= $this->translate($this->totalPublishedArticles > 1 ? 'publiés' : 'publié') ?>
+            <span class="stat-value"><?= $this->totalPublishedArticles ?></span>
+            <span class="stat-label"><?= $this->translate($this->totalPublishedArticles > 1 ? 'publiés' : 'publié') ?></span>
             <?php if ($this->totalImportedPublished) : ?>
                 <?php $importedMsg = $this->totalImportedPublished > 1 ? 'dont %s importés' : 'dont %s importé'; ?>
                 <p class="help-block" style="display: inline;">
-                    (<?= sprintf($this->translate($importedMsg), '<code>' . $this->totalImportedPublished . '</code>') ?>
+                    (<?= sprintf($this->translate($importedMsg), '<span class="stat-value">' . $this->totalImportedPublished . '</span>') ?>
                     )
                 </p>
             <?php endif; ?>
             <?php if (isset($this->year)): ?>
-                <em class="fas fa-info-circle fa-sm" data-toggle="tooltip"
-                    title="<?= $this->translate('Cela inclut les articles qui ont été soumis antérieurement et publiés cette année.') ?>"></em>
+                <span class="fas fa-info-circle fa-sm" data-toggle="tooltip"
+                      title="<?= $this->translate('Cela inclut les articles qui ont été soumis antérieurement et publiés cette année.') ?>"></span>
             <?php endif; ?>
 
         <?php endif; ?>
     </li>
 
-
 <?php else: ?>
-    <li>
-        <?= $this->translate('Soumissions') ?>
-        <code><?= $this->allSubmissions ?></code>
-        <?php if ($this->imported): ?>
-            <?php $importedMsg = $this->imported > 1 ? 'dont %s importés' : 'dont %s importé'; ?>
-            <p class="help-block" style="display: inline;">
-                (<?= sprintf($this->translate($importedMsg), '<code>' . $this->imported . '</code>') ?>
-                )
-            </p>
-        <?php endif; ?>
 
-    </li>
+    <?php $options = [
+            'itemLabel' => 'Soumissions',
+            'itemValue' => $this->allSubmissions,
+    ];
 
+    if ($this->imported) {
+        $importedMsg = $this->imported > 1 ? 'dont %s importés' : 'dont %s importé';
+        $options['help'] = [
+                'message' => $importedMsg,
+                'value' => $this->imported
+        ];
+    }
+    ?>
+    <?= $this->partial('stats/stat-item.phtml', $options) ?>
     </div>
-
-
 <?php endif; ?>

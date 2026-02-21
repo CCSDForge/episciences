@@ -22,7 +22,7 @@ class BiblioRefService {
 
         let url = `${apiUrl}/visualize-citations?url=${encodeURIComponent(paperUrl)}`;
         if (showAll) {
-            url += `&all=${showAll ? 1 : 0}`;
+            url += '&all=1';
         }
 
         const response = await fetch(url);

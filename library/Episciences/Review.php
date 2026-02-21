@@ -59,6 +59,8 @@ class Episciences_Review
     public const SETTING_ISSN = 'ISSN';
     public const SETTING_REPOSITORIES = 'repositories';
     public const SETTING_SPECIAL_ISSUE_ACCESS_CODE = 'specialIssueAccessCode';
+    public const SETTING_DISPLAY_EMPTY_VOLUMES = 'displayEmptyVolumes';
+    public const SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES = 'allowEditVolumeTitleWithPublishedArticles';
     public const SETTING_ENCAPSULATE_REVIEWERS = 'encapsulateReviewers';
     public const SETTING_EDITORS_CAN_REASSIGN_ARTICLES = 'editorsCanReassignArticle';
     //Assignation automatique de rédacteurs
@@ -90,6 +92,9 @@ class Episciences_Review
     public const SETTING_SYSTEM_NOTIFICATIONS = 'systemNotifications';
     public const SETTING_SYSTEM_IS_COI_ENABLED = 'isCoiEnabled'; //Conflict Of Interest (COI) is Disabled by default
     public const SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED = 'coiCommentsToEditorsEnabled';
+    // send the document status to an external API (currently configurable in the database: must be activated directly in the database)
+    // INSERT INTO `REVIEW_SETTING` (`RVID`, `SETTING`, `VALUE`) VALUES (?, 'postPaperStatus', '1');
+    public const SETTING_POST_PAPER_STATUS = 'postPaperStatus'; // Valeurs possibles [0,1]
 
     public const ASSIGNMENT_EDITORS_DETAIL = [
         self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS => '0',
@@ -222,6 +227,8 @@ class Episciences_Review
             self::SETTING_START_STATS_AFTER_DATE,
             self::SETTING_JOURNAL_PUBLISHER,
             self::SETTING_JOURNAL_PUBLISHER_LOC,
+            self::SETTING_DISPLAY_EMPTY_VOLUMES,
+            self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
         ];
 
 
@@ -1011,6 +1018,9 @@ class Episciences_Review
         // special issue settings **********************************************
         $form = $this->addSpecialIssueSettingsForm($form);
 
+        // volume settings **********************************************
+        $form = $this->addVolumeSettingsForm($form);
+
         $form = $this->addNotificationSettingsForm($form);
 
         //Copy editing checkBox
@@ -1085,6 +1095,13 @@ class Episciences_Review
             self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES
         ], 'special_issues', ["legend" => "Paramètres des volumes spéciaux"]);
         $form->getDisplayGroup('special_issues')->removeDecorator('DtDdWrapper');
+
+        // display group : volume settings
+        $form->addDisplayGroup([
+            self::SETTING_DISPLAY_EMPTY_VOLUMES,
+            self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES
+        ], 'volumes', ["legend" => "Paramètres des volumes"]);
+        $form->getDisplayGroup('volumes')->removeDecorator('DtDdWrapper');
 
         // display group : copy editors settings
         $form->addDisplayGroup([
@@ -1561,6 +1578,41 @@ class Episciences_Review
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
+    private function addVolumeSettingsForm(Ccsd_Form $form): Ccsd_Form
+    {
+        $translator = Zend_Registry::get('Zend_Translate');
+
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+        $form->addElement('checkbox', self::SETTING_DISPLAY_EMPTY_VOLUMES, [
+                'label' => $translator->translate("Autoriser l'affichage des volumes vides"),
+                'description' => $translator->translate("Si activé, les volumes sans articles seront visibles sur le site"),
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, [
+                'label' => $translator->translate("Autoriser la modification du titre du volume avec des articles publiés"),
+                'description' => $translator->translate("Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés"),
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        return $form;
+    }
+
+    /**
+     * @param Ccsd_Form $form
+     * @return Ccsd_Form
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     */
     private function addNotificationSettingsForm(Ccsd_Form $form): Zend_Form
     {
         $translator = Zend_Registry::get('Zend_Translate');
@@ -1780,9 +1832,9 @@ class Episciences_Review
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION, self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
             self::SETTING_ARXIV_PAPER_PASSWORD, self::SETTING_DISPLAY_STATISTICS, self::SETTING_CONTACT_ERROR_MAIL,
             self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
-            self::SETTING_TO_REQUIRE_REVISION_DEADLINE, self::SETTING_START_STATS_AFTER_DATE
+            self::SETTING_TO_REQUIRE_REVISION_DEADLINE, self::SETTING_START_STATS_AFTER_DATE,
+            self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, self::SETTING_DISPLAY_EMPTY_VOLUMES
         ];
-
 
         foreach ($settings as $setting) {
             $allSettings[$setting] = $this->getSetting($setting);

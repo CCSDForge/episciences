@@ -18,14 +18,51 @@ describe('es.contacts-list', function () {
         );
         global.getLoader = mockGetLoader;
 
-        // Create mock DOM structure
+        // Mock sanitizeHTML function (for XSS prevention)
+        global.sanitizeHTML = jest.fn(html => html);
+
+        // Mock jQuery and $.getScript
+        global.$ = jest.fn((selector) => {
+            if (selector === '#' || typeof selector === 'function') {
+                return; // Handle jQuery ready
+            }
+            return {
+                ajaxSetup: jest.fn(),
+            };
+        });
+        global.$.ajaxSetup = jest.fn();
+        global.$.getScript = jest.fn(() => ({
+            done: jest.fn(function(callback) {
+                // Simulate successful script load
+                if (typeof callback === 'function') {
+                    global.initGetContacts = jest.fn();
+                    callback();
+                }
+                return this;
+            }),
+            fail: jest.fn(function() { return this; })
+        }));
+
+        // Create mock DOM structure matching the new modal structure
         document.body.innerHTML = `
-            <form id="test-form">
-                <div id="cc-element">
-                    <label>Cliquer pour charger les contacts</label>
-                </div>
-            </form>
-            <div class="contacts_container" style="display: none;"></div>
+            <div class="modal-body">
+                <form id="test-form">
+                    <label>
+                        <a class="show_contacts_button"
+                           href="/administratemail/getcontacts?target=cc">
+                            CC
+                        </a>
+                    </label>
+                    <label>
+                        <a class="show_contacts_button"
+                           href="/administratemail/getcontacts?target=bcc">
+                            BCC
+                        </a>
+                    </label>
+                </form>
+                <span class="ccsd_form_required">* Required fields</span>
+                <div class="contacts-container" style="display: none;"></div>
+            </div>
         `;
 
         // Mock fetch API
@@ -35,7 +72,9 @@ describe('es.contacts-list', function () {
                 status: 200,
                 text: () =>
                     Promise.resolve(
-                        '<div class="contact">Contact 1</div><div class="contact">Contact 2</div>'
+                        '<script>var target="cc"; var all_contacts={};</script>' +
+                        '<div class="contact">Contact 1</div>' +
+                        '<div class="contact">Contact 2</div>'
                     ),
             })
         );
@@ -52,34 +91,49 @@ describe('es.contacts-list', function () {
         jest.clearAllMocks();
         delete global.getLoader;
         delete global.fetch;
+        delete global.sanitizeHTML;
+        delete global.$;
+        delete global.initGetContacts;
     });
 
     describe('Label click event', function () {
-        it('should hide form and show contacts container on label click', function () {
-            const label = document.querySelector('#cc-element label');
+        it('should hide form and show contacts container on CC button click', function () {
+            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
             const form = document.getElementById('test-form');
-            const container = document.querySelector('.contacts_container');
+            const container = document.querySelector('.contacts-container');
 
-            label.click();
+            button.click();
 
             expect(form.style.display).toBe('none');
             expect(container.style.display).toBe('block');
         });
 
-        it('should display loader while loading contacts', function () {
-            const label = document.querySelector('#cc-element label');
-            const container = document.querySelector('.contacts_container');
+        it('should hide required fields indicator', function () {
+            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
+            const requiredFields = document.querySelector('.ccsd_form_required');
 
-            label.click();
+            button.click();
+
+            expect(requiredFields.style.display).toBe('none');
+        });
+
+        it('should display loader while loading contacts', function () {
+            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
+            const container = document.querySelector('.contacts-container');
+
+            button.click();
 
             expect(mockGetLoader).toHaveBeenCalled();
             expect(container.innerHTML).toContain('loader');
         });
 
-        it('should make POST request to correct endpoint', function () {
-            const label = document.querySelector('#cc-element label');
+        it('should make POST request to correct endpoint for CC', async function () {
+            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
 
-            label.click();
+            button.click();
+
+            // Wait a bit for async operation
+            await new Promise(resolve => setTimeout(resolve, 10));
 
             expect(global.fetch).toHaveBeenCalledWith(
                 '/administratemail/getcontacts?target=cc',
@@ -94,17 +148,43 @@ describe('es.contacts-list', function () {
             );
         });
 
-        it('should populate container with fetched content', async function () {
-            const label = document.querySelector('#cc-element label');
-            const container = document.querySelector('.contacts_container');
+        it('should make POST request to correct endpoint for BCC', async function () {
+            const button = document.querySelector('.show_contacts_button[href*="target=bcc"]');
 
-            label.click();
+            button.click();
+
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            expect(global.fetch).toHaveBeenCalledWith(
+                '/administratemail/getcontacts?target=bcc',
+                expect.objectContaining({
+                    method: 'POST',
+                })
+            );
+        });
+
+        it('should populate container with fetched content', async function () {
+            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
+            const container = document.querySelector('.contacts-container');
+
+            button.click();
 
             // Wait for async fetch to complete
             await new Promise(resolve => setTimeout(resolve, 50));
 
             expect(container.innerHTML).toContain('Contact 1');
             expect(container.innerHTML).toContain('Contact 2');
+        });
+
+        it('should load get-contacts.js script', async function () {
+            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
+
+            button.click();
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(global.$.getScript).toHaveBeenCalledWith('/js/administratemail/get-contacts.js');
+            expect(global.initGetContacts).toHaveBeenCalled();
         });
     });
 
@@ -115,15 +195,15 @@ describe('es.contacts-list', function () {
                 Promise.reject(new Error('Network error'))
             );
 
-            const label = document.querySelector('#cc-element label');
-            const container = document.querySelector('.contacts_container');
+            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
+            const container = document.querySelector('.contacts-container');
 
             // Mock console.error to avoid test output noise
             const consoleErrorSpy = jest
                 .spyOn(console, 'error')
                 .mockImplementation(() => {});
 
-            label.click();
+            button.click();
 
             // Wait for async operation and error handling
             await new Promise(resolve => setTimeout(resolve, 50));
@@ -133,7 +213,7 @@ describe('es.contacts-list', function () {
                 expect.any(Error)
             );
             expect(container.innerHTML).toContain('text-danger');
-            expect(container.innerHTML).toContain('Erreur');
+            expect(container.innerHTML).toContain('Error loading contacts');
 
             consoleErrorSpy.mockRestore();
         });
@@ -148,14 +228,14 @@ describe('es.contacts-list', function () {
                 })
             );
 
-            const label = document.querySelector('#cc-element label');
-            const container = document.querySelector('.contacts_container');
+            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
+            const container = document.querySelector('.contacts-container');
 
             const consoleErrorSpy = jest
                 .spyOn(console, 'error')
                 .mockImplementation(() => {});
 
-            label.click();
+            button.click();
 
             await new Promise(resolve => setTimeout(resolve, 50));
 
@@ -167,7 +247,7 @@ describe('es.contacts-list', function () {
     });
 
     describe('Edge cases', function () {
-        it('should do nothing if cc-element is not found', function () {
+        it('should do nothing if modal-body is not found', function () {
             document.body.innerHTML = '<div></div>';
 
             // Re-execute script with missing element
@@ -178,20 +258,46 @@ describe('es.contacts-list', function () {
             expect(global.fetch).not.toHaveBeenCalled();
         });
 
-        it('should do nothing if form is not found', function () {
+        it('should not proceed if form is not found in modal body', function () {
             document.body.innerHTML = `
-                <div id="cc-element">
-                    <label>Label without form parent</label>
+                <div class="modal-body">
+                    <a class="show_contacts_button"
+                       href="/administratemail/getcontacts?target=cc">
+                        CC
+                    </a>
+                    <div class="contacts-container"></div>
                 </div>
             `;
 
             const event = new Event('DOMContentLoaded');
             document.dispatchEvent(event);
 
-            const label = document.querySelector('#cc-element label');
-            label.click();
+            const button = document.querySelector('.show_contacts_button');
+            button.click();
 
-            // Should not throw error and not call fetch
+            // Should not call fetch when form is missing
+            expect(global.fetch).not.toHaveBeenCalled();
+        });
+
+        it('should not proceed if contacts-container is not found', function () {
+            document.body.innerHTML = `
+                <div class="modal-body">
+                    <form>
+                        <a class="show_contacts_button"
+                           href="/administratemail/getcontacts?target=cc">
+                            CC
+                        </a>
+                    </form>
+                </div>
+            `;
+
+            const event = new Event('DOMContentLoaded');
+            document.dispatchEvent(event);
+
+            const button = document.querySelector('.show_contacts_button');
+            button.click();
+
+            // Should not call fetch when container is missing
             expect(global.fetch).not.toHaveBeenCalled();
         });
     });

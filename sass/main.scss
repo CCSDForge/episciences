@@ -1,6 +1,4 @@
-// compass
-//@import "compass/reset";
-@import "../node_modules/compass-mixins/lib/compass/css3";
+// compass-mixins has been removed - modern CSS properties are used directly instead
 
 // variables (available colors)
 @import "abstracts/variables";
@@ -28,6 +26,12 @@
 @import "components/flags";
 @import "components/footer";
 @import "components/badges";
+@import "components/timeline-base";
+@import "components/timeline-editor-comments";
+@import "components/timeline-demands";
+@import "components/timeline-copy-editing";
+@import "components/collapsible-message";
+@import "components/stats";
 
 // pages
 @import "pages/userconfirmation";
@@ -37,6 +41,7 @@
 @import "pages/volumes-and-sections";
 @import "pages/rating-grids";
 @import "pages/editorial-staff";
+@import "pages/reminders-list";
 
 
 

@@ -312,7 +312,11 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
                 <h2 class="panel-title"><?= $this->translate('Commentaires des relecteurs') ?></h2>
             </div>
             <div class="panel-body in" style="max-height: 350px; overflow: auto;">
-                <?= $this->partial('partials/paper_reviewer_comments.phtml', ['comments' => $this->comments, 'replyForms' => $this->replyForms, 'paperContributorUid' => $this->paper->getUid()]) ?>
+                <?= $this->partial('partials/paper_reviewer_comments.phtml', [
+                        'comments' => $this->comments,
+                        'replyForms' => $this->replyForms,
+                        'paper' => $this->paper
+                ]) ?>
             </div>
         </div>
     <?php endif; ?>
@@ -421,6 +425,7 @@ $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
 $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
 $this->jQuery()->addJavascriptFile('/js/paper/copy_editing_form.js');
+$this->jQuery()->addJavascriptFile('/js/components/collapsible-message.js');
 $this->jQuery()->addJavascriptFile('/js/paper/updateOrcidAuthors.js');
 $this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');
 $this->jQuery()->addJavascriptFile('/js/user/affiliations.js');

@@ -12,7 +12,7 @@ class Episciences_Mail_Reminder
     public const TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE = 6; // article accepté : si rien n’est fait et qu’un article reste “bloqué” à ce stade.
     public const TYPE_ARTICLE_BLOCKED_IN_SUBMITTED_STATE = 7;
     public const TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE = 8;
-    public const DEFAULT_WAITING_TIME = 30; // days
+    public const DEFAULT_WAITING_TIME = 0; // days
 
     // reminder types labels
     public static array $_typeLabel = [
@@ -169,7 +169,7 @@ class Episciences_Mail_Reminder
                 $name = self::$_typeLabel[$this->getType()];
             }
             $name .= ' - ' . $translator->translate('copie destinée au ' . mb_strtolower($translator->translate($this->getRecipient(), 'fr'), 'utf-8'), $code);
-            $name .= sprintf(' (%s %s | %s%s %s)', $delay, $translator->translate(array('jour', 'jours', $this->getDelay()), $code), lcfirst($translator->translate('Répétition', $code)), $translator->translate(' :', $code), lcfirst($translator->translate(Episciences_Mail_RemindersManager::REPETITION_MAP[(int)$this->getRepetition()], $code)));
+            $name .= sprintf(' (%s %s | %s%s %s)', $delay, $translator->translate(array('jour', 'jours', $this->getDelay()), $code),lcfirst($translator->translate('Répétition', $code)),$translator->translate(' :', $code), lcfirst($translator->translate(Episciences_Mail_RemindersManager::REPETITION_MAP[(int)$this->getRepetition()], $code)));
             $translations['name'][$code] = $name;
 
             // Reminder Subject & Body
@@ -178,7 +178,7 @@ class Episciences_Mail_Reminder
             if (file_exists($filepath)) {
                 $translations['custom'][$code] = 1;
                 $translations['body'][$code] = file_get_contents($filepath);
-                $translations['subject'][$code] = $translator->translate('reminder_' . $this->getId() . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT, $code);
+                $translations['subject'][$code] = $translator->translate('reminder_' . $this->getId() . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT , $code);
             } else {
                 // else use default template
                 $translations['custom'][$code] = 0;
@@ -229,21 +229,20 @@ class Episciences_Mail_Reminder
         $translations = Episciences_Tools::getOtherTranslations(REVIEW_LANG_PATH, Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME, '#^' . $key . '#');
 
         foreach ($this->getCustom() as $lang => $custom) {
+            $custom = (int)$custom;
             $path = REVIEW_LANG_PATH . $lang . '/emails/';
-            if (!file_exists($path)) {
-                mkdir($path);
+            if (!file_exists($path) && !mkdir($path) && !is_dir($path)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
             }
             $filename = $key . '.phtml';
-            if ($custom == 1) {
+            if ($custom === 1) {
                 // write file (body)
                 file_put_contents($path . $filename, $this->getBody($lang));
 
                 // subject translations
                 $translations[$lang][$key . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT] = $this->getSubject($lang);
-            } else {
-                if ($edit && file_exists($path . $filename)) {
-                    unlink($path . $filename);
-                }
+            } elseif ($edit && file_exists($path . $filename)) {
+                unlink($path . $filename);
             }
         }
 
@@ -391,7 +390,7 @@ class Episciences_Mail_Reminder
      */
     public function setType($type): self
     {
-        $this->_type = $type;
+        $this->_type = (int)$type;
         return $this;
     }
 
@@ -694,6 +693,7 @@ class Episciences_Mail_Reminder
      * @param $date
      * @param $filters
      * @return array
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
@@ -1455,6 +1455,7 @@ class Episciences_Mail_Reminder
 
     /**
      * La relance n'est envoyée que si rien n'est fait pendant une période > (reminder delay + $time) = x (jours).
+     * Désormais basé uniquement sur le champ delay (DEFAULT_WAITING_TIME = 0). todo $time à supprimer par conséquent
      * @param int $status
      * @param $debug
      * @param $date
@@ -1473,7 +1474,7 @@ class Episciences_Mail_Reminder
         $rRecipient = $this->getRecipient();
         $editors = [];
 
-        $delay = (int)$this->getDelay();
+        $delay = (int)$this->getDelay() + $waitingTime;
         $repetition = $this->getRepetition();
 
         $review = Episciences_ReviewsManager::find($this->getRvid());
@@ -1490,9 +1491,10 @@ class Episciences_Mail_Reminder
         $paperQuery = $db
             ->select()
             ->from(['p' => $pq])
-            ->join(['pl' => T_LOGS], 'pl.DOCID = p.DOCID', ['ACTION', 'max(DATE) as  date'])
-            ->where('ACTION = ?', 'status')
+            ->join(['pl' => T_LOGS], 'pl.DOCID = p.DOCID', ['status', 'max(DATE) as  date'])
+            ->where('pl.status = ?', $status)
             ->group('pl.DOCID');
+
 
         $refDate = 'date'; // not based on the "MODIFICATION_DATE" column, which is not immutable: (e.g. modified when metadata is updated)
         $deadline = new Zend_Db_Expr("DATE_ADD(DATE_FORMAT(`$refDate`,'%Y-%m-%d'), INTERVAL $waitingTime DAY)");

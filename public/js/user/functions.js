@@ -3,14 +3,13 @@ var openedPopover = null;
 $(function () {
     // Initialize user autocomplete using the utility function
     createUserAutocomplete({
-        appendTo: $('#autocomplete').closest(".modal-body")
+        appendTo: $('#autocomplete').closest('.modal-body'),
     });
-})
-
+});
 
 function subForm() {
-    $("#selectedUserId").val('0');
-    $("#fuser").submit();
+    $('#selectedUserId').val('0');
+    $('#fuser').submit();
 }
 
 function getRoles(button, uid) {
@@ -27,34 +26,36 @@ function getRoles(button, uid) {
 
     // Récupération du formulaire
     var request = $.ajax({
-        type: "POST",
-        url: "/user/rolesform",
-        data: {uid: uid}
+        type: 'POST',
+        url: '/user/rolesform',
+        data: { uid: uid },
     });
 
-    $(button).popover({
-        'delay': 0,
-        'container': 'body',
-        'placement': 'bottom',
-        'html': true,
-        'content': getLoader()
-    }).popover('show');
+    $(button)
+        .popover({
+            delay: 0,
+            container: 'body',
+            placement: 'bottom',
+            html: true,
+            content: getLoader(),
+        })
+        .popover('show');
 
     request.done(function (result) {
-
         // Destruction du popup de chargement
         $(button).popover('destroy');
 
         // Affichage du formulaire dans le popover
-        $(button).popover({
-            'container': 'body',
-            'placement': 'bottom',
-            'html': true,
-            'content': result
-        }).popover('show');
+        $(button)
+            .popover({
+                container: 'body',
+                placement: 'bottom',
+                html: true,
+                content: result,
+            })
+            .popover('show');
 
         $('form[action="/user/saveroles"]').on('submit', function () {
-
             $(this).parent().html(getLoader());
 
             // Traitement AJAX du formulaire
@@ -63,7 +64,7 @@ function getRoles(button, uid) {
                 type: 'POST',
                 datatype: 'json',
                 // data: {uid:uid, data: $(this).serialize()},
-                data: $(this).serialize() + "&uid=" + uid,
+                data: $(this).serialize() + '&uid=' + uid,
                 success: function (result) {
                     if (result == 1) {
                         // Destruction du popup des roles
@@ -75,23 +76,21 @@ function getRoles(button, uid) {
 
                         // Refresh de l'affichage des rôles pour cet utilisateur
                         $.ajax({
-                            url: "/user/displaytags",
-                            type: "POST",
-                            data: {uid: uid},
+                            url: '/user/displaytags',
+                            type: 'POST',
+                            data: { uid: uid },
                             success: function (tags) {
                                 $(container).hide();
                                 $(container).html(tags);
                                 $(container).fadeIn();
-
-                            }
+                            },
                         });
                     }
-                }
+                },
             });
 
             return false;
         });
-
     });
 }
 

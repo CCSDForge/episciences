@@ -1,0 +1,197 @@
+/**
+ * Demands Timeline Component
+ * Extends base timeline with demands-specific styling and nested reply support
+ * Requires: _timeline-base.scss
+ */
+
+// Demands section wrapper
+.demands-section-header {
+  font-size: 14px;
+  font-weight: bold;
+  color: $darker-grey;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid $lighter-grey;
+}
+
+// Demands timeline container
+.demands-timeline {
+  @extend .timeline-container;
+
+  // Scrollable variant for previous demands
+  &.demands-timeline--scrollable {
+    max-height: 600px;
+    border-radius: 8px;
+    padding: 15px;
+  }
+}
+
+// Demands timeline track
+.demands-timeline-track {
+  @extend .timeline-track;
+}
+
+// Version header (for previous versions section)
+.version-header, .suggestion-header {
+  font-size: 13px;
+  font-weight: bold;
+  color: $dark-grey;
+  margin: 20px 0 15px 20px; // Align with timeline content
+  padding: 8px 12px;
+  background-color: $almost-white;
+  border-left: 3px solid $black;
+  border-radius: 4px;
+}
+
+// Timeline item modifiers
+.timeline-item--demand {
+  // Main demands use base styles
+  // No additional styling needed
+}
+
+.timeline-item--reply {
+  // Replies are indented and have subtle visual distinction
+  margin-left: 10px; // Indent from parent
+
+  .timeline-content {
+    border-color: $lighter-grey;
+    max-width: calc(87% - 10px); // Reduce width to account for indent
+  }
+
+  // Smaller marker for replies
+  .timeline-marker {
+    left: -92px; // Adjusted for replies: 20px - 60px padding - 40px indent - 12px half-width
+    width: 24px;
+    height: 24px;
+
+    .user-photo-thumb {
+      width: 20px; // Smaller to fit within the 24px marker
+      height: 20px;
+    }
+  }
+}
+
+// Timeline thread (wrapper for nested replies)
+.timeline-thread {
+  position: relative;
+  margin-top: 15px;
+  margin-bottom: 20px;
+  padding-left: 10px; // Indent for replies
+
+  // Connection line from parent to replies
+  &::before {
+    content: '';
+    position: absolute;
+    left: -40px; // Align with main timeline (20px - 60px padding)
+    top: -15px;
+    width: 2px;
+    height: calc(100% + 15px);
+    background-color: $lighter-grey; // Same color as main timeline
+    z-index: 0;
+  }
+
+  // Horizontal connector to first reply
+  &::after {
+    content: '';
+    position: absolute;
+    left: -40px; // Start from main timeline
+    top: 15px; // Vertical position of first reply marker
+    width: 20px;
+    height: 2px;
+    background-color: $lighter-grey; // Same color as main timeline
+    z-index: 0;
+  }
+}
+
+// Demand item header (user + date + deadline)
+.timeline-item-header {
+  margin-bottom: 10px;
+  font-size: 12px;
+
+  .comment-date {
+    font-weight: bold;
+    color: $dark-grey;
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .comment-author {
+    color: $dark-grey;
+    font-style: italic;
+  }
+}
+
+// Demand item message
+.timeline-item-message {
+  font-size: 12px;
+  color: $darker-grey;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  word-wrap: break-word;
+}
+
+// Demand item files
+.timeline-item-files {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid $lighter-grey;
+
+  .file-attachment {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 11px;
+
+    .file-link {
+      flex: 1;
+
+      a {
+        color: $blue;
+        text-decoration: none;
+        word-break: break-all;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+
+    .file-remove {
+      margin-left: 10px;
+      flex-shrink: 0;
+    }
+  }
+}
+
+// Responsive adjustments for nested replies
+@media (max-width: 768px) {
+  .timeline-item--reply {
+    margin-left: 20px; // Reduce indent on mobile
+
+    .timeline-content {
+      max-width: calc(100% - 70px);
+    }
+
+    .timeline-marker {
+      left: -62px; // Adjusted for mobile replies: 20px - 50px padding - 20px indent - 12px half-width
+    }
+  }
+
+  .timeline-thread {
+    padding-left: 20px;
+
+    &::before {
+      left: -30px; // Align with main timeline on mobile (20px - 50px padding)
+    }
+
+    &::after {
+      left: -30px; // Start from main timeline on mobile
+      width: 10px;
+    }
+  }
+
+  .version-header {
+    margin-left: 50px;
+  }
+}

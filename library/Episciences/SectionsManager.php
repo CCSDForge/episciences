@@ -38,6 +38,49 @@ class Episciences_SectionsManager
         return $sections;
     }
 
+    /**
+     * Charge les paramètres pour une liste de rubriques en une seule requête
+     * @param Episciences_Section[] $sections
+     * @return void
+     */
+    public static function loadSettingsForSections(array $sections): void
+    {
+        if (empty($sections)) {
+            return;
+        }
+
+        $sids = array_map(fn($section) => $section->getSid(), $sections);
+
+        if (empty($sids)) {
+            return;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_SECTION_SETTINGS, ['SID', 'SETTING', 'VALUE'])
+            ->where('SID IN (?)', $sids);
+
+        try {
+            $results = $db->fetchAll($select);
+
+            $settingsBySid = [];
+            foreach ($results as $row) {
+                $settingsBySid[$row['SID']][$row['SETTING']] = $row['VALUE'];
+            }
+
+            foreach ($sections as $section) {
+                $sid = $section->getSid();
+                if (isset($settingsBySid[$sid])) {
+                    $section->setSettings($settingsBySid[$sid]);
+                } else {
+                    $section->setSettings([]);
+                }
+            }
+        } catch (Exception $e) {
+            trigger_error("Error loading section settings: " . $e->getMessage(), E_USER_WARNING);
+        }
+    }
+
     public static function find($sid, int $rvid = 0): bool|Episciences_Section
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -69,7 +112,7 @@ class Episciences_SectionsManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        if(!$db){
+        if (!$db) {
             return false;
         }
 
@@ -87,25 +130,47 @@ class Episciences_SectionsManager
         // Récupération de l'id de position pour MAJ des autres rubriques
         $select = $db->select()->from(self::TABLE)->where('SID = ?', $id);
         $data = $select->query()->fetch();
+
+        if (!$data) {
+            return false;
+        }
+
         $position = $data['POSITION'];
         $rvId = $data['RVID'];
 
-        if ($db->delete(self::TABLE, 'SID = ' . $id)) {
+        $db->beginTransaction();
 
-            // Mise à jour de l'id de position des autres rubriques
+        try {
+            // 1. Suppression des assignations liées à la rubrique
+            Episciences_User_AssignmentsManager::removeAssignment([
+                'ITEM = ?' => Episciences_User_Assignment::ITEM_SECTION,
+                'ITEMID = ?' => $id,
+                'RVID = ?' => $rvId
+            ]);
+
+            // 2. Suppression de la rubrique
+            $deleted = $db->delete(self::TABLE, 'SID = ' . $id);
+            if (!$deleted) {
+                throw new Exception("Unable to delete section " . $id);
+            }
+
+            // 3. Mise à jour de l'id de position des autres rubriques
             $db->update(
                 self::TABLE,
                 ['POSITION' => new Zend_DB_Expr('POSITION-1')],
                 ['RVID = ?' => $rvId, 'POSITION > ?' => $position]
             );
 
-            // Suppression des paramètres de la rubrique
+            // 4. Suppression des paramètres de la rubrique
             $db->delete(self::SETTINGS_TABLE, 'SID = ' . $id);
-
+            $db->commit();
             return true;
-        }
 
-        return false;
+        } catch (Exception $e) {
+            $db->rollBack();
+            trigger_error("Error deleting section: " . $e->getMessage(), E_USER_WARNING);
+            return false;
+        }
     }
 
     /**

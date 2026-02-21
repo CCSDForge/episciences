@@ -157,27 +157,26 @@ class UserDefaultController extends Zend_Controller_Action
     {
         $localUser = new Episciences_User();
 
-        $adapter = new Ccsd_Auth_Adapter_Cas(); // default auth adapter
+        // Determine adapter type from configuration, default to CAS
+        $adapterType = defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS';
 
-        if (defined('EPISCIENCES_AUTH_ADAPTER_NAME')) {
-
-            if (EPISCIENCES_AUTH_ADAPTER_NAME === 'LemonLDAP') {
-
-                $adapter = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
-
-            } elseif (EPISCIENCES_AUTH_ADAPTER_NAME === 'MySQL') {
-                $adapter = null;
-            }
-
-            if (!$adapter) {
-                die(EPISCIENCES_AUTH_ADAPTER_NAME . ' User authentication: the development of this feature is still in process');
-
-            }
-
+        // Special case for LemonLDAP (uses custom class outside Factory)
+        if ($adapterType === 'LemonLDAP') {
+            $adapter = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
+        } else {
+            // Use Factory for standard adapters (CAS, MYSQL, DB, IDP, ORCID)
+            $adapter = \Ccsd\Auth\AdapterFactory::getTypedAdapter($adapterType);
         }
 
         $adapter->setIdentityStructure($localUser);
         $adapter->setServiceURL($this->_request->getParams());
+
+        // Call pre_auth to handle form display or credential storage
+        // Returns false if form was displayed (stops execution), true or null to continue
+        $preAuthResult = $adapter->pre_auth($this);
+        if ($preAuthResult === false) {
+            return; // Form was displayed, stop here
+        }
 
         $result = Episciences_Auth::getInstance()->authenticate($adapter);
 
@@ -185,10 +184,29 @@ class UserDefaultController extends Zend_Controller_Action
         switch ($result->getCode()) {
 
             case Zend_Auth_Result::FAILURE:
-                // on ne devrait jamais arriver là : c'est géré par CAS
-                $this->view->message = "Erreur d'authentification";
-                $this->view->description = "L'authentification a échoué";
-                $this->renderScript('error/error.phtml');
+            case Zend_Auth_Result::FAILURE_CREDENTIAL_INVALID:
+            case Zend_Auth_Result::FAILURE_IDENTITY_NOT_FOUND:
+                // For MySQL adapter, redisplay login form with error message
+                if ($adapter instanceof \Ccsd\Auth\Adapter\Mysql) {
+                    $form = new \Ccsd_User_Form_Login();
+                    $form->setAction($this->view->url());
+                    $form->setActions(true)->createSubmitButton("Connexion");
+
+                    // Add error message using Zend_Translate
+                    $translate = Zend_Registry::get('Zend_Translate');
+                    $form->getElement('username')->addError(
+                        $translate->translate("Identifiants invalides ou compte non validé")
+                    );
+
+                    $this->view->form = $form;
+                    $this->renderScript('user/login.phtml');
+                    return;
+                } else {
+                    // For other adapters (CAS, etc.), show generic error
+                    $this->view->message = "Erreur d'authentification";
+                    $this->view->description = "L'authentification a échoué";
+                    $this->renderScript('error/error.phtml');
+                }
                 break;
 
             case Zend_Auth_Result::SUCCESS:
@@ -305,24 +323,21 @@ class UserDefaultController extends Zend_Controller_Action
 
         $url = $scheme . $_SERVER['HTTP_HOST'] . $this->view->url($urlParams);
 
-        $auth = new Ccsd_Auth_Adapter_Cas();
+        $auth = null;
+        $adapterName = strtoupper(defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? (string)EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS');
 
-        if (defined('EPISCIENCES_AUTH_ADAPTER_NAME')) {
+        if ($adapterName === 'LEMONLDAP') {
+            $auth = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
+        } elseif ($adapterName === 'MYSQL') {
+            Episciences_Auth::getInstance()->clearIdentity();
+            $this->_redirect($url);
+            return;
+        } else {
+            $auth = new Ccsd_Auth_Adapter_Cas();
+        }
 
-            if (EPISCIENCES_AUTH_ADAPTER_NAME === 'LemonLDAP') {
-
-                $auth = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
-
-
-            } elseif (EPISCIENCES_AUTH_ADAPTER_NAME === 'MySQL') {
-                $auth = null;
-            }
-
-            if (!$auth) {
-                die(EPISCIENCES_AUTH_ADAPTER_NAME . ' User authentication: the development of this feature is still in process');
-
-            }
-
+        if (!$auth) {
+            die($adapterName . ' User authentication: the development of this feature is still in process');
         }
 
         $auth->logout($url);

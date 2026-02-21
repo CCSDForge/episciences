@@ -28,7 +28,7 @@ if (filterListFunctionMatch) {
 
 // Also extract the clearCache method
 const clearCacheFunctionMatch = functionsJs.match(
-    /filterList\.clearCache = function\(\) \{[\s\S]*?\};/
+    /filterList\.clearCache = function\s*\(\)\s*\{[\s\S]*?\};/
 );
 if (clearCacheFunctionMatch) {
     eval(clearCacheFunctionMatch[0]);
@@ -36,17 +36,6 @@ if (clearCacheFunctionMatch) {
 
 // Mock requestAnimationFrame for testing
 global.requestAnimationFrame = jest.fn(cb => setTimeout(cb, 0));
-
-// Fix for JSDOM TextEncoder requirement
-const { TextEncoder, TextDecoder } = require('util');
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
-
-// Setup JSDOM-like environment for DOM testing
-const { JSDOM } = require('jsdom');
-const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
-global.document = dom.window.document;
-global.window = dom.window;
 
 describe('filterList function', function () {
     let input, elements;

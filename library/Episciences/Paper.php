@@ -3,6 +3,9 @@
 use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
+use Episciences\QueueMessage;
+use Episciences\QueueMessageManager;
+use Psr\Log\LogLevel;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Intl\Exception\MissingResourceException;
 use Symfony\Component\Intl\Languages;
@@ -634,6 +637,11 @@ class Episciences_Paper
         if ($this->getPaperid() && $this->getDocid()) {
             $detail = (is_array($detail)) ? Zend_Json::encode($detail) : $detail;
             Episciences_Paper_Logger::log($this->getPaperid(), $this->getDocid(), $action, $uid, $detail, $date, $this->getRvid());
+
+            if ($action === Episciences_Paper_Logger::CODE_STATUS) {
+                $this->postPaperStatus();
+            }
+
             return true;
         }
 
@@ -2759,7 +2767,7 @@ class Episciences_Paper
         if ($this->getPaperid()) {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-            $sql = $this->loadHistoryQuery($db)
+            $sql = $this->loadHistoryQuery()
                 ->order('DOCID DESC')
                 ->order('DATE DESC')
                 ->order('LOGID DESC');
@@ -2783,20 +2791,39 @@ class Episciences_Paper
 
     /**
      * Load history query
-     * @param Zend_Db_Adapter_Abstract $db
-     * @param array $actions
+     * @param string|array $cols
      * @return Zend_Db_Select
      */
-    private function loadHistoryQuery(Zend_Db_Adapter_Abstract $db, array $actions = []): \Zend_Db_Select
+    private function loadHistoryQuery(string|array $cols = '*'): Zend_Db_Select
     {
-        $query = $db->select()
-            ->from(T_LOGS)
-            //->where('DOCID = ?', $this->getDocid())
-            ->where('PAPERID = ?', $this->getPaperid());
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        if (!empty($actions)) {
-            $query->where('ACTION in (?)', $actions);
+        return $db?->select()
+            ->from(T_LOGS, $cols)
+            ->where('PAPERID = ?', $this->getPaperid());
+    }
+
+    /**
+     * @param int|array $statues
+     * @param string|array $cols
+     * @return Zend_Db_Select
+     */
+
+    private function loadHistoryByStatuesQuery(int|array $statues , string|array $cols = '*'): Zend_Db_Select
+    {
+        $query = $this->loadHistoryQuery($cols);
+
+        if (is_int($statues)) {
+            $query->where('status = ?', $statues);
+        } else {
+            $query->where('status in (?)', $statues);
         }
+
+        //in some situations, an article may be accepted several times:
+        // the objective is to know when the article was first accepted
+        $query->order('DOCID ASC')
+            ->order('DATE ASC')
+            ->order('LOGID ASC');
 
         return $query;
     }
@@ -3638,6 +3665,7 @@ class Episciences_Paper
      */
     public function manageNewVersionErrors(array $options = []): array|string
     {
+        $viewHelper = new  Zend_View_Helper_Url();
         $isEpiNotify = isset($options['isEpiNotify']) && $options['isEpiNotify'];
         $rvId = $options['rvId'] ?? RVID;
 
@@ -3651,13 +3679,11 @@ class Episciences_Paper
             $id = $versionIds[array_key_last($versionIds)];
         }
 
-
         $canReplace = false;
         $docId = $this->getDocid();
         $translator = Zend_Registry::get('Zend_Translate');
-        $span = '<span class="fas fa-exclamation-circle"></span>';
+        $span = !$isFromCli ? '<span class="fas fa-exclamation-circle"></span>' : '';
         $warning = $span;
-        $warning .= ' ';
         $submitted = $translator ? $translator->translate("Vous n'êtes pas l'auteur de cet article.") : 'You are not the author of this article.';
         $canNotChangeIt = $translator ? $translator->translate('Vous ne pouvez pas le modifier.') : 'You can not change it.';
         $status = $this->getStatus();
@@ -3665,22 +3691,27 @@ class Episciences_Paper
         $version = $this->getVersion();
         $repoId = $this->getRepoid();
         $isNewSubmission = array_key_exists('isNewVersionOf', $options) && !$options['isNewVersionOf'];
-        $link = $isNewSubmission ? '/submit/index' : '/paper/view?id=' . $id;
-        $style = 'btn btn-default btn-xs';
+        $confirm = '';
+        $link = '';
 
-        $exitLink = '&nbsp;&nbsp;&nbsp;';
-        $exitLink .= '<a class="' . $style . '" href="' . $link . '">';
-        $exitLink .= '<span class="glyphicon glyphicon-remove-circle" ></span>&nbsp;';
-        $exitLink .= $translator ? $translator->translate('Annuler') : 'Cancel';
-        $exitLink .= '</a>';
+        if (!$isFromCli) {
+            $warning .= ' ';
+            $link = $isNewSubmission ? $viewHelper->url(['controller' => 'submit']) : $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $id]);
+            $style = 'btn btn-default btn-xs';
+            $exitLink = '&nbsp;&nbsp;&nbsp;';
+            $exitLink .= '<a class="' . $style . '" href="' . $link . '">';
+            $exitLink .= '<span class="glyphicon glyphicon-remove-circle" ></span>&nbsp;';
+            $exitLink .= $translator ? $translator->translate('Annuler') : 'Cancel';
+            $exitLink .= '</a>';
+            $confirm .= '<p style="margin:1em;">';
+            $confirm .= '<button class="' . $style . '" onclick="hideResultMessage();">';
+            $confirm .= '<span class="glyphicon glyphicon-ok-circle"></span>&nbsp;';
+            $confirm .= $translator ? $translator->translate('Remplacer') : 'Replace';
+            $confirm .= '</button>';
+            $confirm .= $exitLink;
+            $confirm .= '</p>';
+        }
 
-        $confirm = '<p style="margin:1em;">';
-        $confirm .= '<button class="' . $style . '" onclick="hideResultMessage();">';
-        $confirm .= '<span class="glyphicon glyphicon-ok-circle"></span>&nbsp;';
-        $confirm .= $translator ? $translator->translate('Remplacer') : 'Replace';
-        $confirm .= '</button>';
-        $confirm .= $exitLink;
-        $confirm .= '</p>';
 
         if (
             $isFromCli ||
@@ -3703,7 +3734,9 @@ class Episciences_Paper
 
             $review = Episciences_ReviewsManager::find($rvId);
             $question = $translator ? $translator->translate('Souhaitez-vous remplacer la version précédente ?') : 'Do you want to replace the previous version?';
-            $result['message'] = !$isFromCli ? $warning : '';
+
+            $result['message'] = $warning;
+
             // Arrêt du processus de publication
             if ($status === self::STATUS_ABANDONED) {
 
@@ -3716,7 +3749,7 @@ class Episciences_Paper
             } elseif ($this->canBeReplaced()) {  // submitted | waiting for review | ready to publish | approved by author, waiting for publication
                 $selfMsg = $result['message'];
                 $selfMsg .= !$isEpiNotify ? $question : ' *** The previous version will be replaced ***';
-                $selfMsg .= !$isFromCli ? $confirm : '';
+                $selfMsg .= $confirm;
                 $result['message'] = $selfMsg;
                 $result['oldPaperId'] = $this->getPaperid();
                 $result['submissionDate'] = $this->getSubmission_date();
@@ -3761,8 +3794,7 @@ class Episciences_Paper
                     $result['message'] = '*** New version ***';
                 } else {
 
-
-                    $url = '/paper/view/id/' . $this->getDocid();
+                    $url = $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $this->getDocid()]);
                     $selfMsg = $result['message'];
                     $selfMsg .= $translator ?
                         $translator->translate('Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, ') :
@@ -3770,7 +3802,6 @@ class Episciences_Paper
 
                     if (!$isFromCli) {
                         $selfMsg .= '<br>';
-
                         $selfMsg .= $translator ? $translator->translate('ou') : 'or';
                         $selfMsg .= '<span style="margin-right: 3px;"></span>';
                         $selfMsg .= '<a class="' . $style . '" href="' . $url . '">';
@@ -3778,14 +3809,10 @@ class Episciences_Paper
                         $selfMsg .= $translator ? $translator->translate("Cliquer ici") : "Click here";
                         $selfMsg .= '</a>';
                         $selfMsg .= '<span style="margin-left: 3px;"></span>';
-
                         $selfMsg .= $translator ?
                             $translator->translate('pour répondre à la demande de modification.') :
                             "to meet the demand of requested changes.";
-
-
                     }
-
 
                     $result['message'] = $selfMsg;
 
@@ -3846,15 +3873,19 @@ class Episciences_Paper
 
 
                 $selfMsg = $translator ? $translator->translate('Cette version') : 'This version';
-                $selfMsg .= ' [<strong>v' . $this->getVersion() . '</strong>] ';
+                $selfMsg .= sprintf(' [%sv%s%s] ', !$isFromCli ? '<strong>' : '', $this->getVersion(), !$isFromCli ? '</strong>' : '');
                 $selfMsg .= $translator ?
                     $translator->translate('du document existe déjà dans la revue.') :
                     "of the document already exists in journal.";
-                $selfMsg .= '&nbsp;';
-                $selfMsg .= '<a class="btn btn-default btn-sm" href="' . $link . '">';
-                $selfMsg .= '<span class="fas fa-redo" style="margin-right: 5px;"></span>';
-                $selfMsg .= $translator ? $translator->translate('Retour') : "Back";
-                $selfMsg .= '</a>';
+
+                if (!$isFromCli) {
+                    $selfMsg .= '&nbsp;';
+                    $selfMsg .= '<a class="btn btn-default btn-sm" href="' . $link . '">';
+                    $selfMsg .= '<span class="fas fa-redo" style="margin-right: 5px;"></span>';
+                    $selfMsg .= $translator ? $translator->translate('Retour') : "Back";
+                    $selfMsg .= '</a>';
+                }
+
                 $result['message'] = $warning . ' ' . ($translator ? $translator->translate($selfMsg) : $selfMsg);
 
             } else { // others status
@@ -4068,7 +4099,7 @@ class Episciences_Paper
         return $this->_solrData;
     }
 
-    public function getDataDescriptors(): array | null
+    public function getDataDescriptors(): array|null
     {
         return $this->_data_descriptors;
     }
@@ -4169,39 +4200,36 @@ class Episciences_Paper
     }
 
     /**
-     * Retourne le détail de la dernière action de l'arrêt du processus de publication
-     * @return stdClass|null
+     * Returns the last known paper's status  of the last action to stop the publishing process
      * @throws Zend_Exception
+     *
+     * //loadLastAbandonActionDetail // getLastStatusAtTimeOfAbandon
      */
-    public function loadLastAbandonActionDetail()
+    public function loadLastAbandonActionDetail() : int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        /** @var  Zend_Db_Select $sql */
-        $sql = $this->loadHistoryQuery($db)
+        $sql = $this->loadHistoryQuery('DETAIL')
+            ->where('ACTION = ?', Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS)
             ->order('DOCID DESC')
             ->order('DATE DESC')
-            ->order('LOGID DESC');
+            ->order('LOGID DESC')
+            ->limit(1);
 
-        $detail = null;
+        $jsonDetail = $db?->fetchOne($sql);
 
-        $logs = $db->fetchAll($sql);
-        foreach ($logs as $value) {
-            if ($value['ACTION'] == Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS) {
-                /** @var stdClass $detail */
-                $detail = json_decode($value['DETAIL']);
-                break;
-            }
+        // Lors de la reprise de la publication d'un article, une exception est levée si aucune trace de l'abandon du processus de publication précédemment effectué n'est trouvée
+        if (!$jsonDetail){
+            throw new Zend_Exception(sprintf('no sign of abandonment of the publication process [%s]', Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS));
         }
 
-        //A la reprise de la publication d’un article une exception est lancée si on trouve pas de traces de l’abandon du processus de publication
-        // précédemment effectué .
-
-        if (null == $detail) {
-            throw new Zend_Exception('Pas de trace de l\'action : ' . Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS);
+        try {
+            $detail = json_decode($jsonDetail, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
         }
 
-        return $detail;
+        return isset($detail['lastStatus']) ? (int) $detail['lastStatus'] : self::STATUS_SUBMITTED;
     }
 
     /**
@@ -4678,7 +4706,7 @@ class Episciences_Paper
     public function getConflicts(bool $onlyConfirmed = false, bool $sortedByAnswer = false): array
     {
 
-        if($this->_conflicts){
+        if ($this->_conflicts) {
             $this->loadConflicts();
         }
 
@@ -4849,7 +4877,7 @@ class Episciences_Paper
     }
 
 
-    public function getLinkedDataByRelation(string $relation = 'isDocumentedBy' ): ?\Episciences_Paper_Dataset
+    public function getLinkedDataByRelation(string $relation = 'isDocumentedBy'): ?\Episciences_Paper_Dataset
     {
         return Episciences_Paper_DatasetsManager::findByrelation($this->getDocid(), $relation);
     }
@@ -5101,43 +5129,11 @@ class Episciences_Paper
      */
     public function getAcceptanceDate(): ?string
     {
-        $date = null;
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $this->loadHistoryQuery($db, [Episciences_Paper_Logger::CODE_STATUS]);
-        //in some situations, an article may be accepted several times:
-        // the objective is to know when the article was first accepted
-        $sql->order('DOCID ASC')
-            ->order('DATE ASC')
-            ->order('LOGID ASC');
-
-        $logs = $db->fetchAll($sql);
-
-        foreach ($logs as $value) {
-            try {
-                $detail = json_decode($value['DETAIL'], true, 512, JSON_THROW_ON_ERROR);
-
-                $isAccepted = isset($detail['status']) &&
-                    (
-                        (int)$detail['status'] === self::STATUS_ACCEPTED ||
-                        (int)$detail['status'] === self::STATUS_TMP_VERSION_ACCEPTED
-
-                    );
-
-
-                if ($isAccepted) {
-                    $date = $value['DATE'];
-                    break;
-                }
-
-
-            } catch (JsonException $e) {
-                trigger_error($e->getMessage(), E_USER_NOTICE);
-
-            }
-
-        }
-
-        return $date;
+        $sql = $this->loadHistoryByStatuesQuery([self::STATUS_TMP_VERSION_ACCEPTED, self::STATUS_ACCEPTED], 'date');
+        $sql->limit(1);
+        $result = $db?->fetchOne($sql);
+        return $result ?: null;
     }
 
     /**
@@ -5279,7 +5275,8 @@ class Episciences_Paper
     }
 
 
-    private function loadConflicts() : void{
+    private function loadConflicts(): void
+    {
 
         $allConflicts = Episciences_Paper_ConflictsManager::findByPaperId($this->getPaperid(), $this->getRvid());
         $this->_conflicts = $allConflicts;
@@ -5290,7 +5287,7 @@ class Episciences_Paper
     {
         if ($this->isDataSetOrSoftware()) {
 
-            if($force || !$this->_data_descriptors){
+            if ($force || !$this->_data_descriptors) {
                 $this->setDataDescriptors(DataDescriptorManager::getByDocId($this->getDocid()));
             }
         }
@@ -5306,7 +5303,8 @@ class Episciences_Paper
         return $this->getType()[self::TITLE_TYPE] === self::SOFTWARE_TYPE_TITLE;
     }
 
-    public function isDataset(): bool{
+    public function isDataset(): bool
+    {
         return
             Episciences_Repositories::isDataverse($this->getRepoid()) ||
             $this->getType()[self::TITLE_TYPE] === self::DATASET_TYPE_TITLE;
@@ -5328,7 +5326,7 @@ class Episciences_Paper
             trigger_error($e->getMessage());
         }
 
-        if(!$owner->getUid()){
+        if (!$owner->getUid()) {
             return null;
         }
 
@@ -5343,7 +5341,7 @@ class Episciences_Paper
 
     public function getMainPaperUrl(): ?string
     {
-        if($this->isTmp()){
+        if ($this->isTmp()) {
             return null;
         }
 
@@ -5393,10 +5391,11 @@ class Episciences_Paper
 
     public function canBeReplaced(): bool
     {
-        return in_array($this->getStatus(),  [self::STATUS_SUBMITTED, self::STATUS_OK_FOR_REVIEWING, self::STATUS_CE_READY_TO_PUBLISH, self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION], true);
+        return in_array($this->getStatus(), [self::STATUS_SUBMITTED, self::STATUS_OK_FOR_REVIEWING, self::STATUS_CE_READY_TO_PUBLISH, self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION], true);
     }
 
-    private function combineDocUrlLabel() : string{
+    private function combineDocUrlLabel(): string
+    {
 
         $docUrlLabel = 'Voir la page du document sur';
 
@@ -5413,6 +5412,39 @@ class Episciences_Paper
         $docUrlLabel .= Episciences_Repositories::getLabel($this->getRepoid());
         return $docUrlLabel;
 
+    }
+
+    public function getStatusLabelFromDictionary(): string
+    {
+        return self::STATUS_DICTIONARY[$this->getStatus()] ?? 'unknown';
+    }
+
+    private function postPaperStatus(): void
+    {
+
+        $journal = Episciences_ReviewsManager::find($this->getRvid());
+        // This parameter must be activated directly in the database
+        $isPostStatusEnabled = $journal->getSetting(Episciences_Review::SETTING_POST_PAPER_STATUS) === '1';
+
+        if (!$isPostStatusEnabled){
+            return;
+        }
+
+        $data = [
+            'docid' => $this->getDocid(),
+            'paperid' => $this->getPaperid(),
+            'version' => $this->getVersion(),
+            'status' => $this->getStatus(),
+            'statusLabel' => $this->getStatusLabelFromDictionary()
+        ];
+
+        $queue = new QueueMessage([
+            'rvcode' => $journal->getCode(),
+            'message' => $data,
+            'type' => QueueMessageManager::TYPE_STATUS_CHANGED
+        ]);
+
+        $queue->send();
     }
 }
 

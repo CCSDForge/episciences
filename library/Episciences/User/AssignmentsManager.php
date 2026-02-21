@@ -153,16 +153,39 @@ class Episciences_User_AssignmentsManager
     }
 
     /**
-     * @param int $id
-     * @return bool
+     * Delete assignments by ID or by criteria
+     *
+     * Usage examples:
+     *   - By ID: removeAssignment(123)
+     *   - By criteria: removeAssignment([
+     *       'ITEM = ?' => Episciences_User_Assignment::ITEM_SECTION,
+     *       'ITEMID = ?' => 5,
+     *       'RVID = ?' => 3
+     *     ])
+     *
+     * @param int|array $criteria Assignment ID (int) or WHERE conditions (array)
+     * @return bool true if at least one row was deleted, false otherwise
      */
-    public static function removeAssignment(int $id) {
-        if ($id < 1) {
-            return false;
-        }
+    public static function removeAssignment(int|array $criteria): bool
+    {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $resDelete = $db->delete(T_ASSIGNMENTS, ['id = ?' => $id]);
-        return $resDelete > 0;
+
+        // Delete by assignment ID
+        if (is_int($criteria)) {
+            if ($criteria < 1) {
+                return false;
+            }
+            $where = ['ID = ?' => $criteria];
+        } else {
+            // Delete by criteria (e.g., item type, item ID, review ID)
+            if (empty($criteria)) {
+                return false;
+            }
+            $where = $criteria;
+        }
+
+        // Returns true if at least one row was deleted
+        return $db->delete(T_ASSIGNMENTS, $where) > 0;
     }
 
     public static function reassignPaperCoAuthors(array $coAuthors, $newPaper) {
@@ -181,4 +204,5 @@ class Episciences_User_AssignmentsManager
             }
         }
     }
+
 }

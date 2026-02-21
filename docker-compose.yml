@@ -1,7 +1,7 @@
 services:
   httpd:
-      image: httpd:2.4-bookworm
-      container_name: httpd
+      image: httpd:2.4-trixie
+      container_name: episciences-httpd
       build:
         context: .
         dockerfile: src/apache/Dockerfile
@@ -26,7 +26,7 @@ services:
 
 
   php-fpm:
-    container_name: php-fpm
+    container_name: episciences-php-fpm
     build:
       context: .
       dockerfile: src/php-fpm/Dockerfile
@@ -44,22 +44,27 @@ services:
         - PHP_FPM_LISTEN_PORT=9000
         - XDEBUG_MODE=debug
         - XDEBUG_CONFIG=client_host=host.docker.internal client_port=9003
+        - COMPOSER_HOME=/tmp/composer
     extra_hosts:
         - "api-dev.episciences.org:172.19.0.11"
     expose:
         - "9000"  # Expose internal port 9000
     networks:
         - epi-network
+    dns:
+        - 8.8.8.8
+        - 1.1.1.1
 
   solr:
     image: solr:9.9
-    container_name: solr
+    container_name: episciences-solr
     ports:
       - "8983:8983"
     networks:
       - epi-network
     environment:
-      ZK_HOST: "zoo:2181"
+      ZK_HOST: "episciences-zoo:2181"
+      SOLR_MODULES: "analysis-extras"
     depends_on:
       - zoo
     volumes:
@@ -71,7 +76,7 @@ services:
 
   zoo:
     image: zookeeper:3.9
-    container_name: zoo
+    container_name: episciences-zoo
     networks:
       - epi-network
     environment:
@@ -82,7 +87,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-    container_name: 'db-episciences'
+    container_name: 'episciences-db-episciences'
     expose:
       - "3306"
     ports:
@@ -106,7 +111,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-    container_name: 'db-indexing'
+    container_name: 'episciences-db-indexing'
     expose:
       - "3306"
     ports:
@@ -130,7 +135,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-    container_name: 'db-auth'
+    container_name: 'episciences-db-auth'
     expose:
       - "3306"
     ports:
@@ -150,7 +155,7 @@ services:
       retries: 10
 
   pma:
-    container_name: 'db-phpmyadmin'
+    container_name: 'episciences-db-phpmyadmin'
     image: "phpmyadmin:latest"
     environment:
       - "PMA_PMADB=pma"
@@ -160,7 +165,7 @@ services:
       - "PMA_USER=root"
       - "PMA_PASSWORD=root"
       - "PMA_ARBITRARY=1"
-      - "PMA_HOSTS=db-episciences,db-indexing,db-auth"
+      - "PMA_HOSTS=episciences-db-episciences,episciences-db-indexing,episciences-db-auth"
       - "PMA_VERBOSES=episciences,indexing,auth"
       - "UPLOAD_LIMIT=2G"
       - "MEMORY_LIMIT=1G"

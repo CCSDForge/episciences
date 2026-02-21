@@ -172,7 +172,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
      */
     public function setLogFilename(): void
     {
-        $logFilename = $this->getCore() . '_' . APPLICATION_ENV . '.log';
+        $logFilename = $this->getCore() . '_' . APPLICATION_ENV;
         $logPath = EPISCIENCES_SOLR_LOG_PATH;
         $this->logFilename = $logPath . $logFilename;
     }

@@ -1,0 +1,36 @@
+<?php
+
+if (
+        !$this->showReplyButtonAndForm ||
+        (!isset($this->demand) && !$this->demand['PCID'])
+) {
+    return;
+}
+
+$pcId = $this->demand['PCID'];
+$btnTitle = $this->translate('Répondre');
+$tooltip = sprintf('data-toggle="tooltip" title=%s', $btnTitle);
+$replyForm = $this->replyForm ?? null;
+
+?>
+
+
+<div class="demand-reply-form">
+    <!-- Reply button -->
+    <button id="replyFormBtn_<?= $pcId ?>"
+            class="btn btn-primary btn-sm replyButton pull-right" <?= $tooltip ?>>
+        <i class="fa-solid fa-reply" aria-hidden="true"></i>
+    </button>
+
+
+    <?php if ($replyForm) : ?>
+
+        <!-- Reply form container (hidden by default, shown on button click) -->
+        <div id="replyForm_<?= $pcId ?>" class="replyForm" style="display: none">
+            <?= $replyForm ?>
+        </div>
+
+    <?php endif ?>
+
+
+</div>

@@ -8,8 +8,6 @@ $subjects = $paper->getMetadata('subjects');
 $titles = $paper->getAllTitles();
 
 $abstracts = $paper->getAllAbstracts();
-$classifications = $paper->getClassifications();
-
 
 $dateSubmitted = new DateTime($paper->getSubmission_date());
 $dateUpdated = new DateTime($paper->getModification_date());
@@ -87,8 +85,10 @@ $timestamp = time();
                         pub-id-type="hal"><?php echo htmlentities($paper->getIdentifier(), ENT_XML1); ?></article-id>
             <?php endif; ?>
 
-            <?php $applicationUrl = sprintf("%s://%s.%s", SERVER_PROTOCOL, $this->journal->getCode(), DOMAIN); ?>
-            <article-id pub-id-type="publisher-id"><?= $applicationUrl . '/' . $paper->getPaperid(); ?></article-id>
+            <article-id pub-id-type="publisher-id">
+                <?php $applicationUrl = SERVER_PROTOCOL . '://' . $this->journal->getCode() . '.' . DOMAIN;
+                echo $applicationUrl . '/' . $paper->getPaperid(); ?>
+            </article-id>
 
 
             <?php if ($this->section !== '') : ?>
@@ -256,18 +256,6 @@ $timestamp = time();
                 ?>
             <?php endif; ?>
 
-            <?php if(!empty($classifications)): ?>
-            <?php foreach ($classifications as $classificationType => $classification): ?>
-                <?php if($classificationType ===  'msc2020'): ?>
-                    <kwd-group kwd-group-type="MSC2020">
-                    <?php foreach ($classification as $msc): ?>
-                        <kwd><?= $this->escape($msc->getCode()) ?></kwd>
-                    <?php endforeach; ?>
-                    </kwd-group>
-                    <?php endif; ?>
-            <?php endforeach; ?>
-
-            <?php endif; ?>
             <permissions>
                 <copyright-year><?php echo $publicationYear->format('Y'); ?></copyright-year>
                 <copyright-holder>The Author(s)</copyright-holder>

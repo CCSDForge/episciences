@@ -1,0 +1,5 @@
+Failed to connect to DatabasePHP Fatal error:  SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for a_db_host failed: Name or service not known in /app/application/Bootstrap.php on line 39
+
+Fatal error: SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo for a_db_host failed: Name or service not known in /app/application/Bootstrap.php on line 39
+
+THE ERROR HANDLER HAS CHANGED!

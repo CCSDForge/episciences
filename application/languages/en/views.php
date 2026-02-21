@@ -3,6 +3,7 @@
 return array(
 
     // Termes génériques
+    '(optionnel)' => '(optional)',
     'Par exemple' => 'e.g.',
     " :" => ":",
     "Non traduit" => 'Untranslated',
@@ -58,7 +59,10 @@ return array(
     'Id permanent' => 'Permanent Id',
     'Id document' => 'Document Id',
     'Id : ' => 'Id: ',
-
+    "Date de l'invitation" => "Date of Invitation",
+    "Invité par" => "Invited by",
+    'Adresse e-mail' => 'Email address',
+    'De : ' => 'From: ',
 
     "Historique" => "History",
     "Sujet" => "Subject",
@@ -141,7 +145,7 @@ return array(
     "Votre réponse a bien été enregistrée." => "Your answer has been saved.",
     "L'année du volume est incorrecte veuillez saisir entre: " => 'The year of the volume is incorrect, please enter between: ',
     'T_VOLUME_YEAR_INVALID_FORMAT' => 'The volume year format is invalid. It must be "YYYY" (e.g., 2001) or "YYYY-YYYY" (e.g., 2001-2002).',
-    'T_VOLUME_YEAR_INVALID_RANGE'  => 'The second volume year must be strictly greater than the first (e.g., 2003-2004).',
+    'T_VOLUME_YEAR_INVALID_RANGE' => 'The second volume year must be strictly greater than the first (e.g., 2003-2004).',
     'T_VOLUME_YEAR_OUTSIDE_BOUNDS' => 'The year must be between %s and %s (Current Year + 5 years).',
     'Exemple : 2024 ou 2024-2025' => 'Example : 2024 or 2024-2025',
     "Fichier" => 'File',
@@ -707,7 +711,9 @@ return array(
     "pour identifier un utilisateur." => "to identify a user.",
     'Inviter ce relecteur' => 'Invite this reviewer',
     'prenom.nom@example.org' => 'firstname.name@example.org',
-    "Attention, la grille d'évaluation n'est pas encore disponible. Une grille de relecture peut être élaborée <a href='/grid/list'> ici </a> pour guider les relecteurs grâce à une série de points prédéfinis à examiner." => "Before any reviewing can be performed, a review grid has to be defined <a href='/grid/list'> here </a>. It includes a variety of pre-set points to guide your reviewers.",
+    'Créer un grille' => 'Create an evaluation grid',
+    "Attention, la grille d'évaluation n'est pas encore disponible." => 'Warning, the evaluation grid is not yet available.',
+    'Une grille de relecture doit être élaborée pour guider les relecteurs grâce à une série de points prédéfinis à examiner.' => 'The evaluation grid should be developed to guide reviewers through a series of predefined points to be examined.',
     'Date limite antérieure' => 'Previous deadline',
     'Date limite actuelle' => 'Current deadline',
 
@@ -796,6 +802,7 @@ return array(
     "Membres" => "Members",
     "Votre message n'a pas pu être envoyé :" => "Your mail could not be sent:",
     "Veuillez saisir au moins un destinataire" => "Please select at least one recipient",
+    "Fichiers joint" => "Attachment",
     "Fichiers joints" => "Attachments",
     "Vous n'avez pas les autorisations nécessaires pour modifier ce template" => "You don't have the required permissions to modify the template",
     "Vous n'avez pas les autorisations nécessaires pour supprimer le template personnalisé" => "You don't have the required permissions to delete customized template",
@@ -888,6 +895,8 @@ return array(
     // Sidebar
     "Mon espace" => 'My Account',
     "Administration" => 'Administrate',
+    "Identifiant de connexion" => "Username",
+    "Identifiants invalides ou compte non validé" => "Invalid credentials or account not validated",
 
     "Revue" => 'Journal',
     "Relecteurs" => 'Reviewers',
@@ -1923,11 +1932,14 @@ return array(
     'Réservée aux administrateurs' => 'Administrators only',
 
     //stats
+    'le total des articles concernés par le taux X' => 'The total number of articles affected by rate X',
+    'La somme du nombre total d’articles acceptés et du nombre total d’articles refusés' => 'The sum of the total number of accepted articles and the total number of rejected articles',
     'Moyenne [en %s]' => 'Average [in %s]',
     'Médiane [en %s]' => 'Median [in %s]',
     'autre' => 'other',
     "Les articles importés ne sont pas inclus" => "Imported articles are not included",
     "Évaluation" => "Review",
+    "Évaluations" => "Reviews",
     "articles acceptés (non encore publiés)" => "accepted articles (not yet published)",
     'non encore publiés' => 'not yet published',
     "Évaluations reçues" => "Reviews received",
@@ -1950,21 +1962,21 @@ return array(
     'Soumissions' => 'Submissions',
     'soumissions' => 'submissions',
     'autres statuts' => 'other status',
-    'Délai moyen en <code>jours</code> entre <code>dépôt et acceptation</code> (<code>dépôt et publication</code>)' => 'Average time in <code>days</code> between <code>submission and acceptance</code> (<code>submission and publication</code>)',
-    'La répartition des <code>soumissions</code>par <code>année</code> et par <code>statut</code>' => 'Breakdown of <code>submissions</code> by <code>year</code> and <code>status</code>',
-    'Répartition des soumissions par <code>année</code> et par <code>archive</code>' => 'Breakdown of submissions by <code>year</code> and <code>repository</code>',
+    'Délai moyen en jours entre dépôt et acceptation | dépôt et publication' => 'Average time in days between submission and acceptance | submission and publication',
+    'La répartition des soumissions par année et par statut' => 'Breakdown of submissions by year and status',
+    'Répartition des soumissions par année et par archive' => 'Breakdown of submissions by year and repository',
     'Indicateurs de statistiques pour la revue' => 'Statistical indicators for the journal',
-    'La répartition des <code>soumissions</code> par <code>statut</code>' => 'The breakdown of <code>submissions</code> by <code>status</code>',
-    'Répartition des soumissions par <code>archive</code>' => 'The breakdown of submissions by <code>repository</code>',
+    'La répartition des soumissions par statut' => 'The breakdown of submissions by status',
+    'Répartition des soumissions par archive' => 'The breakdown of submissions by repository',
     "Une erreur s'est produite lors de la récupération des statistiques. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue." => "An error occurred when retrieving the statistics. We suggest you try again in a few moments. If doesn't work after a few minutes please contact the support . ",
     "Cette fonctionnalité est en cours de développement et n'est pas encore disponible. Veuillez réessayer plus tard ou contacter le support technique pour plus d'informations . " => "This feature is a work is progress and not yet available, please retry later or contact support for more information . ",
-    "Le nombre d'utilisateurs par <code>rôles</code>" => "Number of users by <code>roles</code>",
+    "Le nombre d'utilisateurs par rôles" => "Number of users by roles",
     "Nombre total d'utilisateurs : " => "Total number of users: ",
     "Nombre d'utilisateurs" => "Users number",
     "Un utilisateur peut avoir plusieurs rôles." => "A user can have multiple roles.",
     "Cela inclut les versions acceptées (mise en forme ou non)" => "This includes accepted versions (with or without formatting).",
     "Cela inclut seulement les articles soumis cette année." => "This includes only articles submitted this year.",
-    "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année." => "This includes articles that were p reviously submitted and published this year.",
+    "Cela inclut les articles qui ont été soumis antérieurement et publiés cette année." => "This includes articles that were previously submitted and published this year.",
     "Cela inclut les articles qui ont été soumis antérieurement et refusés cette année." => "This includes articles that were previously submitted and refused this year.",
     "Cela inclut les autres statuts." => "This includes other status.",
     "Cela inclut les articles qui ont été soumis antérieurement" => 'This includes articles that were previously submitted',
@@ -2216,6 +2228,12 @@ return array(
     'Descripteurs de logiciel' => 'Software descriptors',
     "File 'file_data_descriptor' was not uploaded" => "Descriptor file not downloaded.",
     "La version que vous essayez d'envoyer existe déjà." => "The version you are trying to send already exists.",
-    'unavailable' => 'Unavailable'
+    'unavailable' => 'Unavailable',
+
+    // Volume settings
+    "Autoriser l'affichage des volumes vides" => "Allow displaying empty volumes",
+    "Si activé, les volumes sans articles seront visibles sur le site" => "If enabled, volumes without articles will be visible on the site",
+    "Autoriser la modification du titre du volume avec des articles publiés" => "Allow editing volume title with published articles",
+    "Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés" => "If enabled, a volume's title can be modified even if it contains published articles"
 
 );

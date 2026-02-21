@@ -1,0 +1,40 @@
+.rate-formula {
+  font-style: italic;
+  text-align: center;
+  color: $dark-grey;
+  background-color: $almost-white;
+  font-size: 1.1rem;
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
+}
+
+.stat-item {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.3rem;
+  line-height: 1.4;
+}
+
+.stat-label {
+  font-weight: 500;
+  color: #333;
+}
+
+.stat-value, .stat-code {
+  font-size: 1.05rem; /* équivalent à 105% */
+  font-weight: 600;
+  color: #1a1a1a;
+  background: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.stat-icon {
+  color: #666;
+  margin-left: 0; /* remplace le inline style */
+}
+.stat-code{
+  font-size: 1.2rem;
+}

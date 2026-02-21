@@ -12,22 +12,22 @@
             <thead>
             <tr>
                 <th scope="col"></th>
-                <th scope="col"><?= sprintf($this->translate('Moyenne [en %s]'), $this->translate(strtolower($this->submissionAcceptanceTimeUnit))) ?></th>
-                <th scope="col"><?= sprintf($this->translate('Médiane [en %s]'), $this->translate(strtolower($this->submissionAcceptanceTimeMedianUnit))) ?></th>
+                <th scope="col" class="stat-label"><?= sprintf($this->translate('Moyenne [en %s]'), $this->translate(strtolower($this->submissionAcceptanceTimeUnit))) ?></th>
+                <th scope="col" class="stat-label"><?= sprintf($this->translate('Médiane [en %s]'), $this->translate(strtolower($this->submissionAcceptanceTimeMedianUnit))) ?></th>
             </tr>
             </thead>
             <tbody>
 
             <tr>
-                <th><?= ucfirst($this->translate('délai soumission-publication')) ?></th>
-                <td><?= $this->submissionPublicationTime ?></td>
-                <td><?= $this->submissionPublicationTimeMedian ?></td>
+                <th class="stat-label"><?= ucfirst($this->translate('délai soumission-publication')) ?></th>
+                <td class="stat-value"><?= $this->submissionPublicationTime ?></td>
+                <td class="stat-value"><?= $this->submissionPublicationTimeMedian ?></td>
             </tr>
 
             <tr>
-                <th><?= ucfirst($this->translate('délai soumission-acceptation')) ?></th>
-                <td><?= $this->submissionAcceptanceTime ?></td>
-                <td><?= $this->submissionAcceptanceTimeMedian ?></td>
+                <th class="stat-label"><?= ucfirst($this->translate('délai soumission-acceptation')) ?></th>
+                <td class="stat-value"><?= $this->submissionAcceptanceTime ?></td>
+                <td class="stat-value"><?= $this->submissionAcceptanceTimeMedian ?></td>
             </tr>
             </tbody>
         </table>

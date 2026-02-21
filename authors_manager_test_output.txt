@@ -1,0 +1,8 @@
+PHPUnit 9.6.34 by Sebastian Bergmann and contributors.
+
+Testing unit\library\Episciences\Episciences_Paper_AuthorsManagerTest
+............                                                      12 / 12 (100%)
+
+Time: 00:00.013, Memory: 8.00 MB
+
+OK (12 tests, 61 assertions)

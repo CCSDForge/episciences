@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Helper for formatting an 8 chars ISSN Number
+ * Helper for formatting 8 chars ISSN Number
  */
 class Episciences_View_Helper_FormatIssn extends Zend_View_Helper_Abstract
 {
@@ -17,7 +17,7 @@ class Episciences_View_Helper_FormatIssn extends Zend_View_Helper_Abstract
             return $issn;
         }
 
-        return substr($issn, 0, 4) . self::ISSN_NUMBER_SEPARATOR . substr($issn, 4, 8);
+        return substr($issn, 0, 4) . self::ISSN_NUMBER_SEPARATOR . substr($issn, 4, 4);
 
     }
 }

@@ -245,7 +245,7 @@ class Episciences_Repositories_ARCHE_Hooks implements Episciences_Repositories_H
             $value = (string)$identifier;
 
             if ($scheme === 'ORCID' && !empty($value)) {
-                $tmp['orcid'] = $value;
+                $tmp['orcid'] = Episciences_Paper_AuthorsManager::normalizeOrcid($value);
             } // $scheme === 'ARCHE' is ignored for now
         }
 

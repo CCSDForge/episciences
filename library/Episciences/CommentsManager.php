@@ -5,14 +5,12 @@ use Episciences\AppRegistry;
 class Episciences_CommentsManager
 {
     // possible comment types
-    // comment from chief editors
-    public const TYPE_INFO_REQUEST = 0;
+    public const TYPE_INFO_REQUEST = 0; // Request for clarification (Reviewer to author)
     // comment from contributor
-    public const TYPE_INFO_ANSWER = 1;
+    public const TYPE_INFO_ANSWER = 1; // Response for clarification (From author to reviewer)
     public const TYPE_REVISION_REQUEST = 2;
     public const TYPE_REVISION_ANSWER_COMMENT = 3;
-    // Comment from author
-    public const TYPE_AUTHOR_COMMENT = 4;
+    public const TYPE_AUTHOR_COMMENT = 4; // From Author (Cover letter)
     #git #320
     public const TYPE_REVISION_CONTACT_COMMENT = 5;
     public const TYPE_REVISION_ANSWER_TMP_VERSION = 6;
@@ -65,6 +63,7 @@ class Episciences_CommentsManager
         self::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED => 'Préparation de copie : version finale soumise',
         self::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION => "Accepté - en attente de validation par l'auteur",
         self::TYPE_REVISION_CONTACT_COMMENT => "réponse à une demande de modifications (sans dépôt de version)",
+        self::TYPE_CONTRIBUTOR_TO_REVIEWER => "commentaire du contributeur au relecteur",
     ];
 
     public static array $_copyEditingRequestTypes = [
@@ -421,7 +420,7 @@ class Episciences_CommentsManager
     public static function updateUid(int $oldUid = 0, int $newUid = 0): int
     {
 
-        if ($oldUid == 0 || $newUid == 0) {
+        if ($oldUid <= 0 || $newUid <= 0) {
             return 0;
         }
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -546,7 +545,7 @@ class Episciences_CommentsManager
 
         $forms = [];
 
-        if (!$comments || !$paper) {
+        if (!$comments) {
             return false;
         }
 
@@ -571,7 +570,7 @@ class Episciences_CommentsManager
 
             } else {
 
-                $row = !empty($defaultMessage = self::buildAnswerMessage($commentUid, $commentType)) ? 6 : 5;
+                $row = !empty($defaultMessage = self::buildAnswerMessage($commentUid, $commentType)) ? 7 : 5;
                 $strElement = $id . '_element';
                 $form = new Ccsd_Form();
                 $form->setName('copy_editing_form_' . $strElement);
@@ -705,9 +704,9 @@ class Episciences_CommentsManager
         $defaultMessage = '';
         if (in_array($commentType, self::$_UploadFilesRequest)) {
             $translator = Zend_Registry::get('Zend_Translate');
-            $recipient = new Episciences_User();
-            $recipient->find($commentUid);
-            $locale = $recipient->getLangueid(true);
+            // Utiliser la langue de l'utilisateur connecté (celui qui répond) au lieu de celle du destinataire
+            $currentUser = Episciences_Auth::getInstance()->getIdentity();
+            $locale = $currentUser ? $currentUser->getLangueid(true) : $translator->getLocale();
             $defaultMessage .= $translator->translate('Bonjour', $locale);
             $defaultMessage .= ',';
             $defaultMessage .= PHP_EOL;
@@ -795,6 +794,20 @@ class Episciences_CommentsManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         return ($db->delete(T_PAPER_COMMENTS, ['PCID = ?' => $identifier]) > 0);
+    }
+
+
+    public static function fetchReviewerAuthorCommentsByDocId(int $docId): array
+    {
+
+        $settings = ['types' => [
+            self::TYPE_INFO_REQUEST,
+            self::TYPE_INFO_ANSWER,
+            self::TYPE_CONTRIBUTOR_TO_REVIEWER
+        ]];
+
+        return self::getList($docId, $settings);
+
     }
 
 }

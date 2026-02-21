@@ -1,0 +1,133 @@
+/**
+ * Collapsible Message Component Styles
+ * Provides smooth expand/collapse transitions with accessible design
+ */
+
+// Configuration
+$collapsible-max-height: 200px;
+$collapsible-transition-duration: 300ms;
+$collapsible-gradient-height: 123px;
+
+// Collapsible content container
+.collapsible-content {
+  position: relative;
+  overflow: hidden;
+  transition: max-height $collapsible-transition-duration ease-in-out;
+
+  // Collapsed state: limit height and show fade gradient
+  &.is-collapsed {
+    max-height: $collapsible-max-height;
+
+    // Fade-out gradient at bottom to indicate more content
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: $collapsible-gradient-height;
+      background: linear-gradient(
+                      to bottom,
+                      rgba(255, 255, 255, 0) 0%,
+                      rgba(255, 255, 255, 0.8) 50%,
+                      rgba(255, 255, 255, 1) 100%
+      );
+      pointer-events: none; // Allow clicking through the gradient
+    }
+  }
+
+  // Expanding state: animate to full height
+  &.is-expanding {
+    max-height: var(--full-height, 2000px); // Use data attribute or large fallback
+  }
+
+  // Expanded state: no height limit, no gradient
+  &.is-expanded {
+    max-height: none;
+  }
+
+  // Collapsing state: animate back to collapsed height
+  &.is-collapsing {
+    max-height: $collapsible-max-height;
+  }
+}
+
+// Toggle button
+.collapsible-toggle {
+
+
+  // Icon
+  .fas {
+    font-size: 11px;
+    transition: transform 0.2s ease;
+  }
+
+
+
+
+  // Active state
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  // When expanded, rotate icon
+  &[aria-expanded="true"] .fas.fa-chevron-down {
+    transform: rotate(180deg);
+  }
+}
+
+// Responsive: Mobile adjustments
+@media (max-width: 768px) {
+  .collapsible-content {
+    &.is-collapsed {
+      max-height: 150px; // Smaller on mobile
+    }
+  }
+
+  .collapsible-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .collapsible-content {
+    transition: none;
+  }
+
+  .collapsible-toggle .fas {
+    transition: none;
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: more) {
+  .collapsible-toggle {
+    border-width: 2px;
+  }
+
+  .collapsible-content.is-collapsed::after {
+    background: linear-gradient(
+                    to bottom,
+                    transparent 0%,
+                    currentColor 100%
+    );
+  }
+}
+
+// Print: Always show full content
+@media print {
+  .collapsible-content {
+    max-height: none !important;
+
+    &::after {
+      display: none !important;
+    }
+  }
+
+  .collapsible-toggle {
+    display: none !important;
+  }
+}

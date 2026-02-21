@@ -1,0 +1,216 @@
+PHPUnit 9.6.34 by Sebastian Bergmann and contributors.
+
+Testing unit\library\Episciences\Episciences_Paper_Authors_AffiliationHelperTest
+........................                                          24 / 24 (100%)
+
+Time: 00:00.004, Memory: 6.00 MB
+
+OK (24 tests, 40 assertions)
+PHPUnit 9.6.34 by Sebastian Bergmann and contributors.
+
+Testing unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest
+E.EE.E.E..EE                                                      12 / 12 (100%)
+
+Time: 00:00.008, Memory: 8.00 MB
+
+There were 7 errors:
+
+1) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeAddsOrcidWhenMissing
+Error: Undefined constant "EPISCIENCES_LOG_PATH"
+
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:247
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:122
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:81
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:23
+
+2) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeAddsNewAffiliationWithRor
+Error: Undefined constant "EPISCIENCES_LOG_PATH"
+
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:247
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:203
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:143
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:82
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:67
+
+3) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeAddsNewAffiliationWithoutRor
+Error: Undefined constant "EPISCIENCES_LOG_PATH"
+
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:247
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:203
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:143
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:82
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:97
+
+4) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeMatchesAccentInsensitiveNames
+Error: Undefined constant "EPISCIENCES_LOG_PATH"
+
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:247
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:122
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:81
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:136
+
+5) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeAppendsNewAffiliationToExisting
+Error: Undefined constant "EPISCIENCES_LOG_PATH"
+
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:247
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:165
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:141
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:82
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:201
+
+6) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeAddsRorToExistingAffiliationWithoutRor
+Error: Undefined constant "EPISCIENCES_LOG_PATH"
+
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:247
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:182
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:141
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:82
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:263
+
+7) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeEnrichesMultipleAuthorsIndependently
+Error: Undefined constant "EPISCIENCES_LOG_PATH"
+
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:247
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:122
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:81
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:285
+
+ERRORS!
+Tests: 12, Assertions: 6, Errors: 7.
+PHPUnit 9.6.34 by Sebastian Bergmann and contributors.
+
+Testing unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest
+E.EE.E.E..EE                                                      12 / 12 (100%)
+
+Time: 00:00.011, Memory: 8.00 MB
+
+There were 7 errors:
+
+1) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeAddsOrcidWhenMissing
+UnexpectedValueException: There is no existing directory at "/logs/file/path" and its not buildable: Permission denied
+
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:189
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:104
+/app/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php:39
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:344
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:642
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:122
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:81
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:23
+
+2) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeAddsNewAffiliationWithRor
+UnexpectedValueException: There is no existing directory at "/logs/file/path" and its not buildable: Permission denied
+
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:189
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:104
+/app/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php:39
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:344
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:642
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:203
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:143
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:82
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:67
+
+3) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeAddsNewAffiliationWithoutRor
+UnexpectedValueException: There is no existing directory at "/logs/file/path" and its not buildable: Permission denied
+
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:189
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:104
+/app/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php:39
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:344
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:642
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:203
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:143
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:82
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:97
+
+4) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeMatchesAccentInsensitiveNames
+UnexpectedValueException: There is no existing directory at "/logs/file/path" and its not buildable: Permission denied
+
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:189
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:104
+/app/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php:39
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:344
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:642
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:122
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:81
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:136
+
+5) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeAppendsNewAffiliationToExisting
+UnexpectedValueException: There is no existing directory at "/logs/file/path" and its not buildable: Permission denied
+
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:189
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:104
+/app/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php:39
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:344
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:642
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:165
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:141
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:82
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:201
+
+6) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeAddsRorToExistingAffiliationWithoutRor
+UnexpectedValueException: There is no existing directory at "/logs/file/path" and its not buildable: Permission denied
+
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:189
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:104
+/app/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php:39
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:344
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:642
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:182
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:141
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:82
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:263
+
+7) unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest::testMergeEnrichesMultipleAuthorsIndependently
+UnexpectedValueException: There is no existing directory at "/logs/file/path" and its not buildable: Permission denied
+
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:189
+/app/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:104
+/app/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php:39
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:344
+/app/vendor/monolog/monolog/src/Monolog/Logger.php:642
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:237
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:122
+/app/library/Episciences/Paper/Authors/EnrichmentService.php:81
+/app/tests/unit/library/Episciences/paper/Episciences_Paper_Authors_EnrichmentServiceTest.php:285
+
+ERRORS!
+Tests: 12, Assertions: 6, Errors: 7.
+PHPUnit 9.6.34 by Sebastian Bergmann and contributors.
+
+Testing unit\library\Episciences\Episciences_Paper_Authors_EnrichmentServiceTest
+............                                                      12 / 12 (100%)
+
+Time: 00:00.010, Memory: 8.00 MB
+
+OK (12 tests, 27 assertions)
+PHPUnit 9.6.34 by Sebastian Bergmann and contributors.
+
+Testing unit\library\Episciences\Episciences_Paper_Authors_HalTeiParserTest
+..........                                                        10 / 10 (100%)
+
+Time: 00:00.006, Memory: 6.00 MB
+
+OK (10 tests, 36 assertions)
+PHPUnit 9.6.34 by Sebastian Bergmann and contributors.
+
+Testing unit\library\Episciences\Episciences_Paper_Authors_ViewFormatterTest
+....                                                                4 / 4 (100%)
+
+Time: 00:00.003, Memory: 6.00 MB
+
+OK (4 tests, 13 assertions)

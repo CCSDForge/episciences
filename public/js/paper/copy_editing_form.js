@@ -21,21 +21,22 @@ $(function () {
         let params = [
             {
                 name: $(this).attr('id'),
-                value: true
-            }
+                value: true,
+            },
         ];
 
         //adding post parameters
         $('#' + parentFormId).submit(function () {
-            $(this).append($.map(params, function (param) {
-                return $('<input>', {
-                    type: 'hidden',
-                    name: param.name,
-                    value: param.value
+            $(this).append(
+                $.map(params, function (param) {
+                    return $('<input>', {
+                        type: 'hidden',
+                        name: param.name,
+                        value: param.value,
+                    });
                 })
-            }))
+            );
         });
-
     });
 
     function deleteAllAttachedFiles() {
@@ -45,7 +46,8 @@ $(function () {
 
         formData.pcId = paperCommentId;
         formData.path = $ceHiddenPath.length > 0 ? $ceHiddenPath.val() : '';
-        formData.docId = $ceHiddenPath.length > 0 ? $ceHiddenPath.attr('docId') : 0;
+        formData.docId =
+            $ceHiddenPath.length > 0 ? $ceHiddenPath.attr('docId') : 0;
 
         files.each(function (index, value) {
             formData.file = $(value).val();
@@ -55,14 +57,11 @@ $(function () {
         });
     }
 
-    $(window).on("unload", function(){
+    $(window).on('unload', function () {
         deleteAllAttachedFiles();
     });
 
     if (isFromZSubmit) {
         $('.auto-clickable').click();
     }
-
 });
-
-

@@ -1,0 +1,19 @@
+<?php
+/**
+ * Log Detail Partial: User Action
+ * Handles: 15+ cases with simple user display (assignments, invitations, comments, etc.)
+ * Display: fullName + optional tag + optional uninvited flag
+ */
+?>
+<?php if (!empty($this->uninvitedFlag)) : ?>
+    <span class="label label-default" aria-label="<?= $this->translate('Status') ?>">
+        <?= '[ ' . $this->translate(Episciences_Reviewer::STATUS_UNINVITED) . ' ]' ?>
+    </span>
+<?php endif; ?>
+<?php if (empty($this->noPrefix)) : ?>
+    <?= $this->translate(' :') ?>
+<?php endif; ?>
+<span class="log-user-name">
+    <?= $this->fullName ?>
+</span>
+<?= $this->tag ?>

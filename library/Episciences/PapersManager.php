@@ -1660,10 +1660,21 @@ class Episciences_PapersManager
         if (!empty($default['coAuthor'])) {
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc', 'value' => $existingMails]);
+        $translator = Zend_Registry::get('Zend_Translate');
+        $title = $translator->translate('Ajouter des destinataires');
+        $form->addElement('text', 'cc', [
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'id' => $formId . '-cc',
+            'value' => $existingMails,
+            'class' => 'autocomplete'
+        ]);
 
         // bcc
-        $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
+        $form->addElement('text', 'bcc', [
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'id' => $formId . '-bcc',
+            'class' => 'autocomplete'
+        ]);
 
         // from
         $form->addElement('text', 'from', [
@@ -1742,11 +1753,21 @@ class Episciences_PapersManager
         if (!empty($default['coAuthor'])) {
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
-
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc', 'value' => $existingMails]);
+        $translator = Zend_Registry::get('Zend_Translate');
+        $title = $translator->translate('Ajouter des destinataires');
+        $form->addElement('text', 'cc', [
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'id' => $formId . '-cc',
+            'value' => $existingMails,
+            'class' => 'autocomplete'
+        ]);
 
         // bcc
-        $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
+        $form->addElement('text', 'bcc', [
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'id' => $formId . '-bcc',
+            'class' => 'autocomplete'
+        ]);
 
         // from
         $form->addElement('text', 'from', [
@@ -1825,7 +1846,14 @@ class Episciences_PapersManager
         if (!empty($default['coAuthor'])) {
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc', 'value' => $existingMails]);
+        $translator = Zend_Registry::get('Zend_Translate');
+        $title = $translator->translate('Ajouter des destinataires');
+        $form->addElement('text', 'cc', [
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'id' => $formId . '-cc',
+            'value' => $existingMails,
+            'class' => 'autocomplete'
+        ]);
 
         $bccVal = '';
 
@@ -1838,9 +1866,10 @@ class Episciences_PapersManager
 
         // bcc
         $form->addElement('text', 'bcc', [
-            'label' => 'BCC',
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
             'id' => $formId . '-bcc',
-            'value' => $bccVal
+            'value' => $bccVal,
+            'class' => 'autocomplete'
         ]);
 
         // from
@@ -1927,10 +1956,20 @@ class Episciences_PapersManager
         ]);
 
         // cc
-        $askeditors_subform->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc']);
+        $translator = Zend_Registry::get('Zend_Translate');
+        $title = $translator->translate('Ajouter des destinataires');
+        $askeditors_subform->addElement('text', 'cc', [
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'id' => $formId . '-cc',
+            'class' => 'autocomplete'
+        ]);
 
         // bcc
-        $askeditors_subform->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $formId . '-bcc']);
+        $askeditors_subform->addElement('text', 'bcc', [
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'id' => $formId . '-bcc',
+            'class' => 'autocomplete'
+        ]);
 
         // from
         $askeditors_subform->addElement('text', 'from', [
@@ -2029,13 +2068,21 @@ class Episciences_PapersManager
         if (!empty($default['coAuthor'])) {
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $formId . '-cc', 'value' => $existingMails]);
+        $translator = Zend_Registry::get('Zend_Translate');
+        $title = $translator->translate('Ajouter des destinataires');
+        $form->addElement('text', 'cc', [
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'id' => $formId . '-cc',
+            'value' => $existingMails,
+            'class' => 'autocomplete'
+        ]);
 
         // bcc
         $form->addElement('text', 'bcc', [
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
             'id' => $formId . '-bcc',
-            'label' => 'BCC',
-            'value' => Episciences_Review::forYourInformation($docId)
+            'value' => Episciences_Review::forYourInformation($docId),
+            'class' => 'autocomplete'
         ]);
 
         // from

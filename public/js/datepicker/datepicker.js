@@ -1,5 +1,4 @@
-
-$(function() {
+$(function () {
     //Initialisation des elements datepicker
     datepicker('.datepicker');
 });
@@ -20,36 +19,49 @@ $(function() {
  *
  * @param selector
  */
-function datepicker (selector)
-{
+function datepicker(selector) {
     var dateFormat = 'yy-mm-dd'; // Format ISO 8601
     var lang; // Declare lang at function start
 
-    $(selector).each(function(index) {
-        var params = {'dateFormat': dateFormat, constrainInput: true};
+    $(selector).each(function (index) {
+        var params = { dateFormat: dateFormat, constrainInput: true };
         var id = $(this).attr('id');
 
         //Cas des intervalles
-        if (id != undefined ) {
+        if (id != undefined) {
             if (id.match(/_start/i)) {
-                params.onSelect = function(dateText, inst){
+                params.onSelect = function (dateText, inst) {
                     var end = id.replace('_start', '_end');
 
-                    if(! $('#' + end).val()) {
+                    if (!$('#' + end).val()) {
                         $('#' + end).val(dateText);
                     } else {
-                        if ($("#" + id).datepicker("getDate") > $("#" + end).datepicker("getDate")) {
+                        if (
+                            $('#' + id).datepicker('getDate') >
+                            $('#' + end).datepicker('getDate')
+                        ) {
                             $('#' + end).val('');
                         }
                     }
-                    $('#' + end).datepicker('option', 'defaultDate', $.datepicker.parseDate(dateFormat, dateText));
-                    $('#' + end).datepicker('option', 'minDate', $.datepicker.parseDate(dateFormat, dateText));
+                    $('#' + end).datepicker(
+                        'option',
+                        'defaultDate',
+                        $.datepicker.parseDate(dateFormat, dateText)
+                    );
+                    $('#' + end).datepicker(
+                        'option',
+                        'minDate',
+                        $.datepicker.parseDate(dateFormat, dateText)
+                    );
                 };
             }
             if (id.match(/_end/i)) {
-                params.onSelect = function(dateText, inst){
+                params.onSelect = function (dateText, inst) {
                     var start = id.replace('_end', '_start');
-                    if ($("#" + id).datepicker("getDate") < $("#" + start).datepicker("getDate")) {
+                    if (
+                        $('#' + id).datepicker('getDate') <
+                        $('#' + start).datepicker('getDate')
+                    ) {
                         $('#' + start).val('');
                     }
                 };
@@ -59,9 +71,9 @@ function datepicker (selector)
         //Trigger pour ouvrir le calendrier sur le click d'un bouton
         if ($(this).attr('attr-trigger')) {
             params.buttonImageOnly = true;
-            params.showOn = "button";
+            params.showOn = 'button';
         }
-        
+
         // Accès rapide pour le changement de mois
         if ($(this).attr('attr-changemonth')) params.changeMonth = true;
 
@@ -69,22 +81,24 @@ function datepicker (selector)
         if ($(this).attr('attr-changeyear')) params.changeYear = true;
 
         // limite de date inférieure
-        if ($(this).attr('attr-mindate')) params.minDate = $(this).attr('attr-mindate');
+        if ($(this).attr('attr-mindate'))
+            params.minDate = $(this).attr('attr-mindate');
 
         //Limite de date supérieure
-        if ($(this).attr('attr-maxdate')) params.maxDate = $(this).attr('attr-maxdate');
+        if ($(this).attr('attr-maxdate'))
+            params.maxDate = $(this).attr('attr-maxdate');
 
         //traduction du datepicker
-        if (typeof lang === "undefined" || lang === undefined) {
+        if (typeof lang === 'undefined' || lang === undefined) {
             lang = 'fr';
         }
-        
+
         $(this).datepicker($.datepicker.regional[lang]);
-        
+
         var value = $(this).val();
-        
+
         $(this).datepicker('option', params);
-        
+
         $(this).val(value);
     });
-};
+}

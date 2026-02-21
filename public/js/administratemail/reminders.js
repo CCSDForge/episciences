@@ -9,10 +9,9 @@ const TYPE_ARTICLES_BLOCKED_IN_SUBMITTED_STATE = 7;
 const TYPE_ARTICLES_BLOCKED_IN_REVIEWED_STATE = 8;
 
 function deleteReminder(btn) {
-    bootbox.setDefaults({locale: locale});
-    bootbox.confirm(translate("Êtes-vous sûr ?"), function (result) {
+    bootbox.setDefaults({ locale: locale });
+    bootbox.confirm(translate('Êtes-vous sûr ?'), function (result) {
         if (result) {
-
             let container = $(btn).parent('.reminder');
             $(container).html(getLoader());
 
@@ -29,15 +28,21 @@ function deleteReminder(btn) {
                         $(container).prev('hr').remove();
                     }
                     // Suppression du séparateur précédent si le reminder était directement entouré de 2 séparateurs
-                    if ($(container).prev('hr').length && $(btn).parent('.reminder').next('hr').length) {
+                    if (
+                        $(container).prev('hr').length &&
+                        $(btn).parent('.reminder').next('hr').length
+                    ) {
                         $(container).prev('hr').remove();
                     }
                     // Suppression du reminder
                     $(container).remove();
                 },
                 error: function (response) {
-                    bootbox.alert(translate("La suppression a échoué : ") + translate(response));
-                }
+                    bootbox.alert(
+                        translate('La suppression a échoué : ') +
+                            translate(response)
+                    );
+                },
             });
         }
     });
@@ -59,8 +64,8 @@ function submit() {
                 $(container).fadeIn();
 
                 let request = $.ajax({
-                    url: "/administratemail/refreshreminders",
-                    type: "POST",
+                    url: '/administratemail/refreshreminders',
+                    type: 'POST',
                 });
                 request.done(function (result) {
                     $(container).hide();
@@ -70,8 +75,8 @@ function submit() {
 
                 request.fail(function (jqXHR, textStatus) {
                     console.log('REFRESH_REMINDERS_FAILED: ' + textStatus);
-                })
-            }
+                });
+            },
         });
     } else {
         return false;
@@ -82,18 +87,23 @@ function validate() {
     let errors = [];
 
     if (!$('#delay').val()) {
-        errors.push(translate("Le champ Délai est obligatoire"));
+        errors.push(translate('Le champ Délai est obligatoire'));
     } else if (!$.isNumeric($('#delay').val())) {
-        errors.push(translate("Le délai doit être une valeur numérique"));
+        errors.push(translate('Le délai doit être une valeur numérique'));
     } else if (!isPositiveInteger($('#delay').val())) {
-        errors.push(translate("Le délai doit être un entier positif"));
+        errors.push(translate('Le délai doit être un entier positif'));
     }
 
-    let type = $('#type').val()
+    let type = $('#type').val();
     let recipient = $('#recipient').val();
 
-    if (in_array(recipient, Object.keys(templates[type])) === -1) { // not found
-        errors.push(translate("Le champ Destinataire n'est pas valable pour ce type de rappel"));
+    if (in_array(recipient, Object.keys(templates[type])) === -1) {
+        // not found
+        errors.push(
+            translate(
+                "Le champ Destinataire n'est pas valable pour ce type de rappel"
+            )
+        );
     }
 
     /*
@@ -107,9 +117,15 @@ function validate() {
 
     if (errors.length) {
         let html = '<div class="col-md-offset-3" style="padding-left: 15px">';
-        html += '<div style="margin-bottom: 5px; color: red"><strong>' + translate('Erreurs :') + '</strong></div>';
+        html +=
+            '<div style="margin-bottom: 5px; color: red"><strong>' +
+            translate('Erreurs :') +
+            '</strong></div>';
         for (let i in errors) {
-            html += '<div style="margin-left: 10px; color: red"> * ' + errors[i] + '</div>';
+            html +=
+                '<div style="margin-left: 10px; color: red"> * ' +
+                errors[i] +
+                '</div>';
         }
         html += '</div>';
 
@@ -213,29 +229,42 @@ function buildReminderMessage(reminderType) {
     message += ' (';
 
     if (type === TYPE_UNANSWERED_INVITATION) {
-        message += translate("un rappel automatique pour une absence de réponse à une invitation de relecture peut être envoyé x jours après l’invitation (définie dans Gérer la revue/Revue/Paramètres)");
+        message += translate(
+            'un rappel automatique pour une absence de réponse à une invitation de relecture peut être envoyé x jours après l’invitation (définie dans Gérer la revue/Revue/Paramètres)'
+        );
     } else if (type === TYPE_BEFORE_REVIEWING_DEADLINE) {
-        message += translate("un rappel automatique de la date limite pour une relecture peut être envoyé x jours avant cette date (définie dans Gérer la revue/Revue/Paramètres)");
-
+        message += translate(
+            'un rappel automatique de la date limite pour une relecture peut être envoyé x jours avant cette date (définie dans Gérer la revue/Revue/Paramètres)'
+        );
     } else if (type === TYPE_AFTER_REVIEWING_DEADLINE) {
-        message += translate("un rappel automatique de la date limite pour une relecture peut être envoyé x jours après cette date (définie dans Gérer la revue/Revue/Paramètres)");
-
+        message += translate(
+            'un rappel automatique de la date limite pour une relecture peut être envoyé x jours après cette date (définie dans Gérer la revue/Revue/Paramètres)'
+        );
     } else if (type === TYPE_BEFORE_REVISION_DEADLINE) {
-        message += translate("un rappel automatique de la date limite de modification peut être envoyé x jours avant cette date (définie dans la demande de modification)");
-
+        message += translate(
+            'un rappel automatique de la date limite de modification peut être envoyé x jours avant cette date (définie dans la demande de modification)'
+        );
     } else if (type === TYPE_AFTER_REVISION_DEADLINE) {
-        message += translate("un rappel automatique de la date limite de modification peut être envoyé x jours après cette date (définie dans la demande de modification)");
-
+        message += translate(
+            'un rappel automatique de la date limite de modification peut être envoyé x jours après cette date (définie dans la demande de modification)'
+        );
     } else if (type === TYPE_NOT_ENOUGH_REVIEWERS) {
-        message += translate("si il y a pas suffisamment d'invitations, un rappel automatique peut être envoyé x jours après la date de la dernière invitation, si des invitations ont été envoyées. Sinon, après la date d'assignation de l'article au rédacteur. On n'envoie pas de relances, si on n'a pas spécifié de nombre minimum de relecteurs (définie dans Gérer la revue/Revue/Paramètres)");
-
+        message += translate(
+            "si il y a pas suffisamment d'invitations, un rappel automatique peut être envoyé x jours après la date de la dernière invitation, si des invitations ont été envoyées. Sinon, après la date d'assignation de l'article au rédacteur. On n'envoie pas de relances, si on n'a pas spécifié de nombre minimum de relecteurs (définie dans Gérer la revue/Revue/Paramètres)"
+        );
     } else if (type === TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE) {
-        message += translate("la relance sera envoyée x jours après la date d'acceptation de l'article");
-    } else if (type === TYPE_ARTICLES_BLOCKED_IN_SUBMITTED_STATE || type === TYPE_ARTICLES_BLOCKED_IN_REVIEWED_STATE  ){
-        message += translate("Si une soumission est restée dans cet état pendant plus de 30 jours, le rappel sera envoyé après un délai de (30 + x jours), où x est le nombre de jours saisi dans le champ « Délai ».");
+        message += translate(
+            "la relance sera envoyée x jours après la date d'acceptation de l'article"
+        );
+    } else if (
+        type === TYPE_ARTICLES_BLOCKED_IN_SUBMITTED_STATE ||
+        type === TYPE_ARTICLES_BLOCKED_IN_REVIEWED_STATE
+    ) {
+        message += translate(
+            'un rappel sera déclenché lorsqu’une soumission restera dans cet état au-delà de x jours, où x est la valeur entrée dans le champ'
+        );
     }
 
-    message += ').'
+    message += ').';
     return message;
-
 }
