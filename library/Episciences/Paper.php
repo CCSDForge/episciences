@@ -176,9 +176,9 @@ class Episciences_Paper
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION =>
             'acceptedTemporaryVersionWaitingForMinorRevision',
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION =>
-            'acceptedTemporaryVersionWaitingForMajorRevision"',
+            'acceptedTemporaryVersionWaitingForMajorRevision',
         self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION => "AcceptedWaitingForAuthorsValidation",
-        self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION => "'AcceptedWaitingForFinalPublication'",
+        self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION => 'AcceptedWaitingForFinalPublication',
         self::STATUS_REMOVED => 'deletedByTheJournal',
     ];
 
@@ -1878,6 +1878,7 @@ class Episciences_Paper
                 $document = json_decode($document, true, 512, JSON_THROW_ON_ERROR);
             } catch (JsonException $e) {
                 trigger_error($e->getMessage());
+                $document = null;
             }
         }
 
@@ -2162,9 +2163,9 @@ class Episciences_Paper
     }
 
     /**
-     * @return string
+     * @return string|false|null
      */
-    public function getLatestVersionId(): string
+    public function getLatestVersionId(): string|false|null
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
