@@ -1,8 +1,7 @@
 <?php
 
 
-use cottagelabs\coarNotifications\COARNotificationManager;
-use cottagelabs\coarNotifications\orm\COARNotification;
+use Episciences\Notify\Notification;
 use scripts\AbstractScript;
 
 require_once "AbstractScript.php";
@@ -88,10 +87,10 @@ class InboxNotifications extends AbstractScript
 
         foreach ($notificationsCollection as $index => $notification) {
 
-            /** @var COARNotification $notification */
-            if (($notification instanceof COARNotification) && $this->notificationsProcess($notification) &&
+            /** @var Notification $notification */
+            if (($notification instanceof Notification) && $this->notificationsProcess($notification) &&
                 $this->getParam('delNotifs')) {
-                $this->removeNotificationById($reader->getCoarNotificationManager(), $notification->getId());
+                $reader->getRepository()->deleteById($notification->getId());
             }
 
             if (($index < ($count - 1)) && $this->isVerbose()) {
@@ -110,7 +109,7 @@ class InboxNotifications extends AbstractScript
 
     /**
      */
-    public function notificationsProcess(COARNotification $notification): bool
+    public function notificationsProcess(Notification $notification): bool
     {
 
         $isProcessed = false;
@@ -993,11 +992,6 @@ class InboxNotifications extends AbstractScript
                 $this->logger->debug($debugMsg);
             }
         }
-    }
-
-    private function removeNotificationById(COARNotificationManager $cManger, string $notificationId): void
-    {
-        $cManger->removeNotificationById($notificationId);
     }
 
     /**
