@@ -41,19 +41,24 @@ class buildDoajVolumeExport extends JournalScript
 
     public function run(): void
     {
-
         $this->initApp();
         $this->initLoggerForJournal('main');
-        $rvCode = $this->getParam('rvcode');
-        $allJournals = $this->retrieveJournalCodes();
 
-        if ($rvCode !== 'allJournals') {
+        $rvCode = $this->getParam('rvcode');
+        if ($rvCode === 'allJournals') {
+            $allJournals = $this->retrieveJournalCodes();
+        } else {
             $allJournals = [$rvCode];
         }
 
         foreach ($allJournals as $journal) {
             $this->initLoggerForJournal($journal);
             try {
+                // For 'allJournals' mode, we need to make sure constants like RVCODE are correctly set for each journal
+                // However, since constants can only be defined once, we might need to rely on parameters
+                // or ensure defineJournalConstants() handles it if called.
+                // In this script, RVCODE is defined in JournalScript::setParam.
+
                 if ($this->getParam('removecache') === '1') {
                     $cache = new FilesystemAdapter("doaj-volume-export-" . $journal, 0, CACHE_PATH_METADATA);
                     $cache->clear();
