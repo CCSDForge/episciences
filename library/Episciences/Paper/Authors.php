@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 
 class Episciences_Paper_Authors
 {
@@ -37,7 +37,6 @@ class Episciences_Paper_Authors
 
     /**
      * set paper options
-     * @param array $options
      */
     public function setOptions(array $options): void
     {
@@ -52,9 +51,6 @@ class Episciences_Paper_Authors
     }
 
 
-    /**
-     * @return array
-     */
     public function toArray(): array
     {
         return [
@@ -74,7 +70,6 @@ class Episciences_Paper_Authors
     }
 
     /**
-     * @param int $idAuthors
      * @return $this
      */
     public function setAuthorsId(int $idAuthors): self
@@ -91,9 +86,6 @@ class Episciences_Paper_Authors
         return $this->_authors;
     }
 
-    /**
-     * @param string $authors
-     */
     public function setAuthors(string $authors): void
     {
         $this->_authors = $authors;
@@ -107,10 +99,8 @@ class Episciences_Paper_Authors
     }
 
     /**
-     * @param int $paperId
      * @return $this
      */
-
     public function setPaperId(int $paperId): self
     {
         $this->_paperId = $paperId;
@@ -118,9 +108,6 @@ class Episciences_Paper_Authors
     }
 
 
-    /**
-     * @return DateTime
-     */
     public function getDateUpdated(): DateTime
     {
         return $this->_dateUpdated;
