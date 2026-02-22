@@ -1,5 +1,10 @@
 <?php
+declare(strict_types=1);
 
+/**
+ * Warning: rector will mess with this file converting isset to !property_exists
+ * Run tests immediately after if you apply Rector changes
+ */
 class Episciences_Paper_Authors_HalTeiParser
 {
     private const IDNO_TYPE_ORCID = 'ORCID';
@@ -78,7 +83,7 @@ class Episciences_Paper_Authors_HalTeiParser
         $lastAuthorIndex = array_key_last($parsedAuthors);
 
         foreach ($authorNode->affiliation as $affiliationNode) {
-            $structRef = (string)str_replace('#', '', $affiliationNode->attributes()->ref);
+            $structRef = str_replace('#', '', (string)$affiliationNode->attributes()->ref);
             $parsedAuthors[$lastAuthorIndex][self::KEY_AFFILIATIONS][] = $structRef;
         }
 
@@ -107,16 +112,13 @@ class Episciences_Paper_Authors_HalTeiParser
 
     /**
      * Normalize an ORCID identifier: strip URL prefix and fix lowercase checksum digit
-     *
-     * @param string $orcid
-     * @return string
      */
     public static function normalizeOrcid(string $orcid): string
     {
         $orcid = preg_replace('#^https?://orcid\.org/#', '', trim($orcid));
 
-        if (preg_match('/\d{4}-\d{4}-\d{4}-\d{3}x$/', $orcid)) {
-            $orcid = substr($orcid, 0, -1) . 'X';
+        if (preg_match('/\d{4}-\d{4}-\d{4}-\d{3}x$/', (string) $orcid)) {
+            $orcid = substr((string) $orcid, 0, -1) . 'X';
         }
 
         return $orcid;
@@ -151,9 +153,6 @@ class Episciences_Paper_Authors_HalTeiParser
     }
 
     /**
-     * @param SimpleXMLElement $orgNode
-     * @param array &$organizationsByStructId
-     * @param string $structId
      * @return bool true if ROR was found
      */
     private static function extractRorFromOrg(SimpleXMLElement $orgNode, array &$organizationsByStructId, string $structId): bool
@@ -173,11 +172,6 @@ class Episciences_Paper_Authors_HalTeiParser
         return false;
     }
 
-    /**
-     * @param SimpleXMLElement $orgNode
-     * @param array &$organizationsByStructId
-     * @param string $structId
-     */
     private static function extractAcronymFromOrg(SimpleXMLElement $orgNode, array &$organizationsByStructId, string $structId): void
     {
         foreach ($orgNode->orgName as $orgNameNode) {

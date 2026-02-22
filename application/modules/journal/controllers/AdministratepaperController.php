@@ -168,6 +168,7 @@ class AdministratepaperController extends PaperDefaultController
             $resBack['error_message'] = 'Unauthorized access';
             trigger_error('Unauthorized access to requestNewDoi by ' . Episciences_Auth::getUid(), E_USER_WARNING);
             echo json_encode($resBack);
+            return;
         }
 
         if (!$request->isXmlHttpRequest() && !$request->isPost()) {
@@ -1614,6 +1615,13 @@ class AdministratepaperController extends PaperDefaultController
         $reviewer = $request->getPost('reviewer');
         $reviewer = json_decode($reviewer, true);
 
+        if (!is_array($reviewer)) {
+            $message = $translator->translate('Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.');
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+            $this->_helper->redirector->gotoUrl($referer);
+            return false;
+        }
+
         if (!isset($reviewer['firstname'])) {
             $reviewer['firstname'] = '';
         }
@@ -1677,7 +1685,8 @@ class AdministratepaperController extends PaperDefaultController
             $url_params['tmp'] = md5($reviewer['email']);
         }
 
-        $invitation_url = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $this->view->url($url_params);
+        $httpHost = $this->getRequest()->getHttpHost();
+        $invitation_url = SERVER_PROTOCOL . '://' . $httpHost . $this->view->url($url_params);
 
         // La page de l'article sur Episciences
         $paperUrl = $this->view->url([
@@ -1685,7 +1694,7 @@ class AdministratepaperController extends PaperDefaultController
             'action' => 'view',
             'id' => $paper->getDocid()]);
 
-        $paper_url = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        $paper_url = SERVER_PROTOCOL . '://' . $httpHost . $paperUrl;
 
         // la page de l'article sur l'archive ouverte
         $paperRepoUrl = $paper->getDocUrl();
@@ -1703,8 +1712,8 @@ class AdministratepaperController extends PaperDefaultController
         $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, $paper_url);
         $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_REPO_URL, $paperRepoUrl);
         $mail->addTag(Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME, $contributor->getFullName());
-        $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/user/lostlogin');
-        $mail->addTag(Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN, SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/user/lostlogin');
+        $mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN, SERVER_PROTOCOL . '://' . $httpHost . '/user/lostlogin');
+        $mail->addTag(Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN, SERVER_PROTOCOL . '://' . $httpHost . '/user/lostlogin');
         $mail->addTo($reviewer['email'], $reviewer['full_name']);
 
         // Other reciptients
@@ -1819,6 +1828,16 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($request->isPost()) {
 
+            $csrfName = 'csrf_accept_' . (int)$docId;
+            $csrfSession = new Zend_Session_Namespace('Zend_Form_Element_Hash_unique_' . $csrfName);
+            $post = $request->getPost();
+            if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
+                $csrfSession->hash = null;
+                $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                return;
+            }
+            $csrfSession->hash = null;
+
             $doneByUid = Episciences_Auth::getUid();
 
             $data = $request->getPost();
@@ -1896,7 +1915,7 @@ class AdministratepaperController extends PaperDefaultController
 
                     $additionalTags = [
                         Episciences_Mail_Tags::TAG_REVIEW_CE_RESOURCES_NAME => RVCODE . '_' . CE_RESOURCES_NAME,
-                        Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK => SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/website/public',
+                        Episciences_Mail_Tags::TAG_ALL_REVIEW_RESOURCES_LINK => SERVER_PROTOCOL . '://' . $this->getRequest()->getHttpHost() . '/website/public',
                     ];
 
                     if ($journal->getDoiSettings()->getDoiAssignMode() === Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_AUTO) {
@@ -1999,6 +2018,16 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($request->isPost()) {
 
+            $csrfName = 'csrf_publish_' . (int)$docId;
+            $csrfSession = new Zend_Session_Namespace('Zend_Form_Element_Hash_unique_' . $csrfName);
+            $post = $request->getPost();
+            if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
+                $csrfSession->hash = null;
+                $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                return;
+            }
+            $csrfSession->hash = null;
+
             $data = $request->getPost();
 
             // get contributor detail
@@ -2076,6 +2105,16 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($request->isPost()) {
 
+            $csrfName = 'csrf_refuse_' . (int)$docId;
+            $csrfSession = new Zend_Session_Namespace('Zend_Form_Element_Hash_unique_' . $csrfName);
+            $post = $request->getPost();
+            if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
+                $csrfSession->hash = null;
+                $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                return;
+            }
+            $csrfSession->hash = null;
+
             $data = $request->getPost();
 
             // get contributor detail
@@ -2132,7 +2171,7 @@ class AdministratepaperController extends PaperDefaultController
         $papersManager = new Episciences_PapersManager;
         $paper = $papersManager::get($docId);
 
-        if (!$this->getRequest()->isPost() && !$form->isValid($this->getRequest()->getPost())) {
+        if ($this->getRequest()->isPost() && !$form->isValid($this->getRequest()->getPost())) {
             $message = $this->view->translate('Pour des raisons de sécurité le formulaire a expiré. Merci de soumettre à nouveau  le formulaire.');
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
             $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid());
@@ -2742,7 +2781,7 @@ class AdministratepaperController extends PaperDefaultController
                         'controller' => self::ADMINISTRATE_PAPER_CONTROLLER,
                         'action' => 'view',
                         'id' => $paper->getDocid()]);
-                    $paper_url = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paper_url;
+                    $paper_url = SERVER_PROTOCOL . '://' . $this->getRequest()->getHttpHost() . $paper_url;
 
                     foreach ($editors as $uid => $editor) {
 
@@ -2836,7 +2875,7 @@ class AdministratepaperController extends PaperDefaultController
                 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER,
                 'action' => 'view',
                 'id' => $paper->getDocid()]);
-            $paper_url = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paper_url;
+            $paper_url = SERVER_PROTOCOL . '://' . $this->getRequest()->getHttpHost() . $paper_url;
 
             if (!empty($added)) {
                 $this->assignUser($paper, $added, $paper_url);
@@ -3511,7 +3550,7 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->form = $form;
         $this->view->available_languages = Zend_Json::encode(Episciences_Tools::getLanguages());
         $this->view->template = $oTemplate;
-        $paper_url = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view/id/' . $oPaper->getDocid();
+        $paper_url = SERVER_PROTOCOL . '://' . $this->getRequest()->getHttpHost() . '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view/id/' . $oPaper->getDocid();
         $this->view->js_paper = Zend_Json::encode(array_merge($oPaper->getAllMetadata(), ['url' => $paper_url]));
         $this->view->js_review = Zend_Json::encode($review);
         $this->view->js_template = Zend_Json::encode($template);
@@ -3568,7 +3607,7 @@ class AdministratepaperController extends PaperDefaultController
         $mail->addTag(Episciences_Mail_Tags::TAG_ARTICLE_TITLE, $oPaper->getTitle($locale, true));
         $mail->addTag(Episciences_Mail_Tags::TAG_AUTHORS_NAMES, $oPaper->formatAuthorsMetadata());
         $mail->addTag(Episciences_Mail_Tags::TAG_SUBMISSION_DATE, $this->view->Date($oPaper->getSubmission_date(), $locale));
-        $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . '/' . self::ADMINISTRATE_PAPER_CONTROLLER . 'view/id/' . $oPaper->getDocid());
+        $mail->addTag(Episciences_Mail_Tags::TAG_PAPER_URL, SERVER_PROTOCOL . '://' . $this->getRequest()->getHttpHost() . '/' . self::ADMINISTRATE_PAPER_CONTROLLER . 'view/id/' . $oPaper->getDocid());
         $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_EMAIL, Episciences_Auth::getEmail());
         $mail->addTag(Episciences_Mail_Tags::TAG_SENDER_FULL_NAME, Episciences_Auth::getFullName());
         $mail->setFromReview();
@@ -4239,7 +4278,7 @@ class AdministratepaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        $docId = ($request->getPost('docid')) ?: $request->getParam('docid');
+        $docId = (int)(($request->getPost('docid')) ?: $request->getParam('docid'));
 
         $paper = Episciences_PapersManager::get($docId);
 
@@ -4271,12 +4310,11 @@ class AdministratepaperController extends PaperDefaultController
                         // Update DATE in PAPER_LOGS
 
                         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-                        //UPDATE PAPER_LOG pl SET pl.DATE = '2025-10-17' WHERE pl.DOCID = 16543 AND pl.status = 16;
-                        $sql = "UPDATE PAPER_LOG pl SET pl.DATE = '$newPublicationDate' WHERE pl.DOCID = $docId AND pl.status = $status";
+                        $sql = 'UPDATE PAPER_LOG pl SET pl.DATE = ? WHERE pl.DOCID = ? AND pl.status = ?';
                         $stm = $db?->prepare($sql);
 
                         try {
-                            $stm->execute();
+                            $stm->execute([$newPublicationDate, $docId, $status]);
                         } catch (Exception $e) {
                             Episciences_View_Helper_Log::log($e->getMessage(), Psr\Log\LogLevel::CRITICAL);
                         }
@@ -4327,22 +4365,17 @@ class AdministratepaperController extends PaperDefaultController
         $docId = $request->getParam('id');
         $type = $request->getParam('type');
 
-        $isMinorRevision = ($type === 'minor');
+        $allowedTypes = ['minor', 'major', 'acceptedAskAuthorsFinalVersion'];
 
-        $isTypeFound = $isMinorRevision; // check revision type
-
-        if ($isMajorRevision = (!$isTypeFound && $type === 'major')) { // not executed if type is found
-            $isTypeFound = true;
-        }
-
-        if ($isAcceptedAskAuthorsFinalVersion = (!$isTypeFound && $type === 'acceptedAskAuthorsFinalVersion')) { // not executed if type is found
-            $isTypeFound = true;
-        }
-
-        if (!$isTypeFound) { // type is not found
+        if (!in_array($type, $allowedTypes, true)) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : type incorrect !");
             $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+            return;
         }
+
+        $isMinorRevision = ($type === 'minor');
+        $isMajorRevision = ($type === 'major');
+        $isAcceptedAskAuthorsFinalVersion = ($type === 'acceptedAskAuthorsFinalVersion');
 
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
@@ -4358,6 +4391,16 @@ class AdministratepaperController extends PaperDefaultController
         $this->checkPermissions($review, $paper);
 
         if ($request->isPost()) {
+
+            $csrfName = 'csrf_revision_' . $type . '_' . (int)$docId;
+            $csrfSession = new Zend_Session_Namespace('Zend_Form_Element_Hash_unique_' . $csrfName);
+            $post = $request->getPost();
+            if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
+                $csrfSession->hash = null;
+                $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                return;
+            }
+            $csrfSession->hash = null;
 
             $data = $request->getPost();
 
@@ -4793,6 +4836,9 @@ class AdministratepaperController extends PaperDefaultController
 
     public function addcoauthorAction()
     {
+        if (!Episciences_Auth::isAdministrator() && !Episciences_Auth::isSecretary() && !Episciences_Auth::isEditor()) {
+            return;
+        }
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -4812,7 +4858,7 @@ class AdministratepaperController extends PaperDefaultController
                 } else {
                     $message = Zend_Registry::get('Zend_Translate')->translate("L'utilisateur est déjà co-auteur de ce document");
                 }
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage($message);
+                $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
             } else {
                 // Récupération des données CAS
                 $casUserMapper = new Ccsd_User_Models_UserMapper();

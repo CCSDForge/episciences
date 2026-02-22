@@ -1618,6 +1618,10 @@ class Episciences_PapersManager
             'id' => $formId
         ]);
 
+        $csrfName = 'csrf_accept_' . (int)$default['id'];
+        $form->addElement('hash', $csrfName, ['salt' => 'unique']);
+        $form->getElement($csrfName)->setTimeout(3600);
+
         $form->setDecorators([[
             'ViewScript', [
                 'viewScript' => '/administratemail/form.phtml'
@@ -1712,6 +1716,10 @@ class Episciences_PapersManager
             'id' => $formId
         ]);
 
+        $csrfName = 'csrf_publish_' . (int)$default['id'];
+        $form->addElement('hash', $csrfName, ['salt' => 'unique']);
+        $form->getElement($csrfName)->setTimeout(3600);
+
         $form->setDecorators([[
             'ViewScript', [
                 'viewScript' => '/administratemail/form.phtml'
@@ -1804,6 +1812,10 @@ class Episciences_PapersManager
             'action' => '/administratepaper/refuse/id/' . $default['id'],
             'id' => $formId
         ]);
+
+        $csrfName = 'csrf_refuse_' . (int)$default['id'];
+        $form->addElement('hash', $csrfName, ['salt' => 'unique']);
+        $form->getElement($csrfName)->setTimeout(3600);
 
         $form->setDecorators([[
             'ViewScript', [
@@ -2025,6 +2037,10 @@ class Episciences_PapersManager
             'action' => '/administratepaper/revision/id/' . $default['id'] . '/type/' . $type,
             'id' => $formId
         ]);
+
+        $csrfName = 'csrf_revision_' . $type . '_' . (int)$default['id'];
+        $form->addElement('hash', $csrfName, ['salt' => 'unique']);
+        $form->getElement($csrfName)->setTimeout(3600);
 
         $form->setDecorators([[
             'ViewScript', [
