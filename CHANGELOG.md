@@ -25,6 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 - `Episciences_Cache` and its parent `Ccsd_Cache` are now marked `@deprecated`; use `Symfony\Component\Cache\Adapter\FilesystemAdapter` instead
 
+### Changed (UI)
+- `administratepaper/view.phtml`: reordered panels — paper files, article status, contributor, co-authors, affiliations, and graphical abstract are now grouped at the top of the page; "Volumes & Rubriques" moved earlier; `paper_versions` moved to the bottom (before history); removed redundant "Statut actuel :" label prefix from the article status panel
+- `paper/paper_datasets.phtml`: "Liens publications – données – logiciels" panel is now collapsed by default
+- `paper/paper_graphical_abstract.phtml`: graphical abstract panel is now collapsed by default when no image has been uploaded
+- `partials/coauthors.phtml`: "Ajouter un co-auteur" panel is now collapsed by default; minor HTML cleanup
+- `partials/paper_affiliation_authors.phtml`: "Ajouter une affiliation" panel is now collapsed by default; removed stray `<br>`, inlined `versionCache` script tag
+
 ### Security
 - Removed implicit `unserialize()` on filesystem-cached paper data in `PapersManager::getList()`, eliminating a potential PHP object injection vector
 - OAI resumption token cache keys are now MD5-hashed before use, preventing cache-key injection via crafted token values
