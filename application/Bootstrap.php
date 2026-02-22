@@ -243,6 +243,10 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
     protected function _initcheckApplicationDirectories(): void
     {
+        if (empty(REVIEW_PATH)) {
+            return;
+        }
+
         // Verification de l'existence des dossiers de stockage, creation si necessaire
         $folders = [
             REVIEW_PATH . 'config',
