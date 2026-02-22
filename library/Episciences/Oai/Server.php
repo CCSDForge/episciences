@@ -209,7 +209,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
             if ($until !== null || $from !== null) {
                 $query .= "&fq=publication_date_tdate:" . urlencode('[' . (($from == null) ? "*" : '"' . $from . 'T00:00:00Z"') . " TO " . (($until == null) ? "*" : '"' . $until . 'T23:59:59Z"') . "]");
             }
-            if ((($set !== null) || ($set !== self::SET_DRIVER) || ($set !== self::SET_OPENAIRE)) && strpos($set, self::SET_JOURNAL_PREFIX) === 0) {
+            if ($set !== null && str_starts_with($set, self::SET_JOURNAL_PREFIX)) {
                 $query .= "&fq=revue_code_t:" . urlencode(substr($set, 8));
             }
             $conf['query'] = $query;
