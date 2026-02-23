@@ -147,8 +147,10 @@ class Import extends Episciences_Paper
      * @throws Exception
      */
     public function load(){
+        $id = $this->getIdentifier();
+        $version = $this->getVersion();
 
-        $metadata = Episciences_Submit::getDoc($this->getRepoid(), $this->getId(), $this->getVersion());
+        $metadata = Episciences_Submit::getDoc($this->getRepoid(), $id, $version);
 
         if (!$metadata || $metadata['status'] == 0) {
             throw new Exception("L'article (".$this->getRepoid().' - '.$this->getId().' - v'.$this->getVersion().") n'existe pas");
