@@ -24,6 +24,11 @@ Episciences has received funding from:
 ### Changelog
 All notable changes to this project will be documented in the [CHANGELOG.md](./CHANGELOG.md)
 
+### Documentation
+
+- [Paper Statuses](./docs/paper-statuses.md) — List of paper statuses (codes, descriptions, and constants).
+- [Log Event Types](./docs/log-event-types.md) — List of log action codes, descriptions, and UI styles.
+
 ### Development Setup
 
 For a detailed guide including troubleshooting, see [docs/dev-setup.md](./docs/dev-setup.md).
