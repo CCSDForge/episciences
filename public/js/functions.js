@@ -42,6 +42,15 @@ $(document).ready(function () {
         applyCollapse(this);
     });
 
+    // Auto-expand the panel targeted by the URL hash
+    if (window.location.hash) {
+        var $targetPanel = $(window.location.hash + '.collapsable');
+        if ($targetPanel.length && !$targetPanel.find('.panel-body:first').is(':visible')) {
+            $targetPanel.find('.panel-heading:first').trigger('click');
+            $('html, body').animate({ scrollTop: $targetPanel.offset().top }, 300);
+        }
+    }
+
     $('.collapse').on({
         shown: function () {
             $(this).css('overflow', 'visible');
