@@ -790,14 +790,17 @@ class Episciences_Submit
             $rvId = RVID;
         }
 
-        $isRequiredVersion = true;
-
         $isNewVersionOf = !empty($latestObsoleteDocId);
-
-        $id = self::cleanIdentifier($id, $repoId);
-        $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
+        $oldPaper = null;
         $result = [];
         $oai = null;
+        $hookVersion = [];
+
+        if ($isNewVersionOf) {
+            $oldPaper = Episciences_PapersManager::partialGet((int)$latestObsoleteDocId, $rvId);
+        }
+
+        $id = self::cleanIdentifier($id, $repoId);
 
         try {
             // Load hooks, version, identifier, paper
@@ -807,7 +810,6 @@ class Episciences_Submit
                 'version' => $version
             ]);
 
-            $hookVersion = [];
             if (!empty($hookApiRecord)) {
                 $hookVersion = Episciences_Repositories::callHook('hookVersion', [
                     'identifier' => $id,
@@ -827,80 +829,81 @@ class Episciences_Submit
             $result['record'] = self::loadRecord($hookApiRecord, $repoId, $identifier, $result, $oai);
             $result['hookVersion'] = $version;
             $result['hookId'] = $id;
-            $result['hookRepoId'] = $repoId;
+            $result['hookRepoId'] = (int)$repoId;
 
             self::mergeEnrichmentsFromHook($hookApiRecord, $result);
 
-            $paper = new Episciences_Paper([
+            $paper = new Episciences_Paper([ // submission in progress
                 'rvid' => $rvId,
                 'version' => $version,
                 'repoid' => $repoId,
                 'identifier' => $id,
             ]);
 
+
             self::fillConceptAndUpdateInfo($paper, $hookApiRecord, $result);
-
-            $isRequiredVersionHook = Episciences_Repositories::callHook('hookIsRequiredVersion', ['repoId' => $repoId]);
-
-            if (isset($isRequiredVersionHook['result'])) {
-                $isRequiredVersion = $isRequiredVersionHook['result'];
-            }
+            self::assertOpenAccessRight($repoId, $result['record']);
 
             // When you resubmit via "Submit an article", the verification of the existence of a paper will be done without the version number
-            if (!$isNewVersionOf || !$isRequiredVersion) {
+            // In some cases, it will be possible to replace a previous version via the initial submission form
+
+            if (!$isNewVersionOf) {
                 $paper->setVersion(null);
             }
 
             $docId = $paper->alreadyExists();
 
-            self::assertDateTimeVersion($docId, $paper, $result);
+            if ($docId) {
+                $oldPaper = Episciences_PapersManager::partialGet((int)$docId, $rvId);
+            }
+
+            //the order in which functions are called is important
+            self::assertDateTimeVersion($docId, $oldPaper, $result);
+            $paper->setVersion($result['hookVersion']);
+
+            self::assertNewVersionConsistency($oldPaper, $paper, $result);
+            self::assertVersion($docId, $oldPaper, $result);
 
             $result['status'] = $docId ? 2 : 1;
 
-            if ($result['status'] === 2) {
-                $previousPaper = Episciences_PapersManager::get($docId, false, $rvId);
+            if (($result['status'] === 2) && $manageNewVersionErrors) {
 
-                if ($manageNewVersionErrors) {
+                $options = [
+                    'version' => $result['hookVersion'],
+                    'isNewVersionOf' => $isNewVersionOf,
+                    'rvId' => $rvId,
+                    'isEpiNotify' => $isEpiNotify,
+                ];
 
-                    $options = [
-                        'version' => $version,
-                        'isNewVersionOf' => $isNewVersionOf,
-                        'rvId' => $rvId,
-                        'isEpiNotify' => $isEpiNotify,
-                    ];
-
-                    $result['newVerErrors'] = $previousPaper->manageNewVersionErrors($options);
-                }
+                $result['newVerErrors'] = $oldPaper->manageNewVersionErrors($options);
             }
+
 
             // Repository-specific checks
             if (Episciences_Repositories::isFromHalRepository($repoId)) {
-                self::assertHalSubmissionAllowed($result['record'], $id, $identifier, $oai, $translator);
+                self::assertHalSubmissionAllowed($result['record'], $id, $identifier, $oai);
             } elseif (Episciences_Repositories::getLabel($repoId) === 'arXiv') {
                 self::assertArxivVersionExists($oai, $identifier, $version);
-            } else {
-                self::assertNewVersionConsistency($isNewVersionOf, $latestObsoleteDocId, $rvId, $repoId, $result['record'], $translator);
-                self::assertOpenAccessRight($repoId, $result['record'], $translator);
             }
 
         } catch (Ccsd_Error $e) {
-            return self::buildCcsdErrorResult($e, $repoId, $translator);
+            return self::buildCcsdErrorResult($e, $repoId);
         } catch (Exception $e) {
-            return self::buildGenericErrorResult($e, $translator);
+            return self::buildGenericErrorResult($e);
         }
 
         return $result;
     }
 
     /**
+     * Define the version based on the date/time and validation of the new submission
      * @param $docId
-     * @param Episciences_paper $paper
+     * @param Episciences_Paper|null $previousPaper
      * @param array $result
      * @return void
-     * @throws Zend_Db_Statement_Exception
      */
 
-    private static function assertDateTimeVersion(&$docId, Episciences_paper $paper, array &$result): void
+    private static function assertDateTimeVersion(&$docId, ?Episciences_Paper $previousPaper, array &$result): void
     {
         $currentVersionDateTime = $result[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
         if (
@@ -910,15 +913,36 @@ class Episciences_Submit
             return;
         }
 
-        $previousPaper = Episciences_PapersManager::get($docId, false, $paper->getRvid());
-        $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($previousPaper->getIdentifier());
+        $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($previousPaper?->getIdentifier());
 
         if ($previousPaperVersionDateTime < $currentVersionDateTime) {
-            $version = $previousPaper->getVersion() + 1;
-            $paper->setVersion($version);
-            $docId = null;
+            $version = $previousPaper?->getVersion() + 1;
+            $docId = null; // validation
             $result['hookVersion'] = $version;
         }
+    }
+
+    /**
+     * @param $docId
+     * @param Episciences_Paper|null $previousPaper
+     * @param array $result
+     * @return void
+     * @throws Ccsd_Error
+     */
+
+    private static function assertVersion(&$docId, ?Episciences_Paper $previousPaper, array $result): void
+    {
+
+        if (!$previousPaper) {
+            return;
+        }
+
+        if ($previousPaper->getVersion() < $result['hookVersion']) {
+            $docId = null;
+            return;
+        }
+
+        self::handleError();
     }
 
     /**
@@ -1007,7 +1031,8 @@ class Episciences_Submit
             return;
         }
 
-        $conceptIdentifier = $hookApiRecord['conceptrecid'] ?? null;
+        $conceptIdentifier = $hookApiRecord[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY] ?? null;
+        //The version of the document is inferred from datetime
         $update = $hookApiRecord[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
 
         if (!$conceptIdentifier) { // Extraction depuis la réponse
@@ -1016,13 +1041,13 @@ class Episciences_Submit
                 'response' => $hookApiRecord,
             ]);
 
-            if (isset($hookConceptIdentifier['conceptIdentifier'])) {
-                $conceptIdentifier = $hookConceptIdentifier['conceptIdentifier'];
+            if (isset($hookConceptIdentifier[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY])) {
+                $conceptIdentifier = $hookConceptIdentifier[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY];
             }
         }
 
         if ($conceptIdentifier) {
-            $result['conceptIdentifier'] = $paper->setConcept_identifier($conceptIdentifier)->getConcept_identifier();
+            $result[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY] = $paper->setConcept_identifier($conceptIdentifier)->getConcept_identifier();
         }
 
         if ($update) {
@@ -1036,7 +1061,6 @@ class Episciences_Submit
      * @param string $id
      * @param string $identifier
      * @param Episciences_Oai_Client|null $oai
-     * @param Zend_Translate|null $translator
      * @return void
      * @throws Ccsd_Error
      * @throws Zend_Date_Exception
@@ -1047,8 +1071,7 @@ class Episciences_Submit
         $record,
         string $id,
         string $identifier,
-        ?Episciences_Oai_Client $oai,
-        ?Zend_Translate $translator
+        ?Episciences_Oai_Client $oai
     ): void
     {
         $isNotice = self::isHalNotice($record, $id, 'dc');
@@ -1065,11 +1088,19 @@ class Episciences_Submit
             return;
         }
 
+        try {
+            $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
+        } catch (Zend_Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
+            $translator = null;
+        }
+
         if ('9999-12-31' === $embargoDate) {
             $displayDate = $translator ? $translator->translate('Jamais') : 'Never';
         } else {
             $displayDate = Episciences_View_Helper_Date::Date($embargoDate, Episciences_Tools::getLocale());
         }
+
 
         if (!$translator) {
             $error = "You can not submit this document; the file is not available; the end date of the embargo: {$displayDate}";
@@ -1105,50 +1136,43 @@ class Episciences_Submit
     }
 
     /**
-     * For new versions, check DOI binding consistency.
-     * @throws Zend_Db_Statement_Exception
+     *
+     * @param Episciences_Paper|null $oldPaper
+     * @param Episciences_Paper $submissionInProgress
+     * @param array $result
      * @throws Ccsd_Error
      */
     private static function assertNewVersionConsistency(
-        bool            $isNewVersionOf,
-                        $latestObsoleteDocId,
-        ?int            $rvId,
-                        $repoId,
-                        $record,
-        ?Zend_Translate $translator
+        ?Episciences_Paper $oldPaper,
+        Episciences_Paper  $submissionInProgress,
+        array              $result
     ): void
     {
-        if (!$isNewVersionOf || !$latestObsoleteDocId) {
+        if (!$oldPaper) {
             return;
         }
 
-        $oldPaper = Episciences_PapersManager::get($latestObsoleteDocId, false, $rvId);
+        $repoId = $oldPaper->getRepoid();
 
-        $hookHasDoiInfoRepresentsAllVersions = Episciences_Repositories::callHook(
+        $hookHasDoiInfoRepresentsAllVersions = Episciences_Repositories::callHook( // For new versions, check DOI binding consistency.
             'hookHasDoiInfoRepresentsAllVersions',
             [
                 'repoId' => $repoId,
-                'record' => $record,
-                'conceptIdentifier' => $oldPaper->getConcept_identifier(),
+                'record' => $result['record'] ?? '',
+                Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY => $oldPaper->getConcept_identifier(),
             ]
         );
 
-        if (!array_key_exists('hasDoiInfoRepresentsAllVersions', $hookHasDoiInfoRepresentsAllVersions)) {
-            return;
+
+        if (
+            (isset($hookHasDoiInfoRepresentsAllVersions['hasDoiInfoRepresentsAllVersions']) && !$hookHasDoiInfoRepresentsAllVersions['hasDoiInfoRepresentsAllVersions']) ||
+            $submissionInProgress->getConcept_identifier() !== $oldPaper->getConcept_identifier()||
+            (!$oldPaper->getConcept_identifier() && $oldPaper->getIdentifier() !== $submissionInProgress->getIdentifier())
+        ) {
+
+            self::handleError();
         }
 
-        if ($hookHasDoiInfoRepresentsAllVersions['hasDoiInfoRepresentsAllVersions']) {
-            return;
-        }
-
-        if (!$translator) {
-            $error = 'You can not submit this document, please check that this is a new version.';
-        } else {
-            $error = 'hookUnboundVersions: ' .
-                $translator->translate("Vous ne pouvez pas soumettre ce document, veuillez vérifier qu'il s'agit bien d'une nouvelle version.");
-        }
-
-        throw new Ccsd_Error($error);
     }
 
     /**
@@ -1157,8 +1181,7 @@ class Episciences_Submit
      */
     private static function assertOpenAccessRight(
         $repoId,
-        $record,
-        ?Zend_Translate $translator
+        $record
     ): void
     {
         $hookIsOpenAccessRight = Episciences_Repositories::callHook('hookIsOpenAccessRight', [
@@ -1174,6 +1197,13 @@ class Episciences_Submit
             return;
         }
 
+        try {
+            $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
+        } catch (Zend_Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
+            $translator = null;
+        }
+
         if (!$translator) {
             $error = 'You can not submit this document as the files will not be made publicly available and sharing will be made possible only by the approval of depositor of the original file.';
         } else {
@@ -1187,12 +1217,19 @@ class Episciences_Submit
     /**
      * Build result for Ccsd_Error (user facing).
      */
-    private static function buildCcsdErrorResult(Ccsd_Error $e, $repoId, ?Zend_Translate $translator): array
+    private static function buildCcsdErrorResult(Ccsd_Error $e, $repoId): array
     {
         $result = ['status' => 0];
 
         $parsedError = $e->parseError();
         $mailToStr = sprintf('<a href="mailto:%s">%s</a>', EPISCIENCES_SUPPORT, EPISCIENCES_SUPPORT);
+
+        try {
+            $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
+        } catch (Zend_Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
+            $translator = null;
+        }
 
         $error = $translator ? $translator->translate($parsedError) : $parsedError;
 
@@ -1228,9 +1265,16 @@ class Episciences_Submit
     /**
      * Build result for generic Exception.
      */
-    private static function buildGenericErrorResult(Exception $e, ?Zend_Translate $translator): array
+    private static function buildGenericErrorResult(Exception $e): array
     {
         $result = ['status' => 0];
+
+        try {
+            $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
+        } catch (Zend_Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
+            $translator = null;
+        }
 
         if ($translator) {
             $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $e->getMessage();
@@ -2828,6 +2872,31 @@ class Episciences_Submit
         $post[$key]['h_docId'] = $post['h_doc'];
         $post[$key]['h_version'] = $post['h_version'];
         $post[$key]['h_repoId'] = $post['h_repoId'];
+    }
+
+
+    /**
+     * @throws Ccsd_Error
+     *
+     */
+    private static function handleError(): void
+    {
+
+        try {
+            $translator = Ccsd_Tools::isFromCli() ? null : Zend_Registry::get('Zend_Translate');
+        } catch (Zend_Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
+            $translator = null;
+        }
+
+        if (!$translator) {
+            $error = 'You can not submit this document, please check that this is a new version.';
+        } else {
+            $error = 'hookUnboundVersions: ' .
+                $translator->translate("Vous ne pouvez pas soumettre ce document, veuillez vérifier qu'il s'agit bien d'une nouvelle version.");
+        }
+        throw new Ccsd_Error($error);
+
     }
 
 }

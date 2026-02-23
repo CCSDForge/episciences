@@ -377,7 +377,7 @@ class SubmitController extends DefaultController
     private function fetchDocument(array &$params): array
     {
         return Episciences_Submit::getDoc(
-            $params['repoId'],
+            (int)$params['repoId'],
             $params['docId'],
             $params['version'],
             $params['latestObsoleteDocId'] ?? null

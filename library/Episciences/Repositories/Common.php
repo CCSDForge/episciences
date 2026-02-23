@@ -35,6 +35,7 @@ class Episciences_Repositories_Common
     public const META_IDENTIFIER = 'identifier';
     public const XML_LANG_ATTR = 'xml:lang';
     public const META_DESCRIPTION = 'description';
+    public const CONCEPT_IDENTIFIER_KEY = 'conceptIdentifier';
 
 
     public static function isOpenAccessRight(array $hookParams): array

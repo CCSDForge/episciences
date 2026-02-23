@@ -105,7 +105,7 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
         // Pour RepositóriUM, le conceptId correspondra à la première version ; à vérifier donc lors d'ajout des autres repos compatible Dspace
         // Original version (v1) of record: https://hdl.handle.net/1822/92528
         // Version 4 of the same record: https://hdl.handle.net/1822/92528.4
-        //$data['conceptrecid'] = Episciences_Repositories_Common::getConceptIdentifierFromString($hookParams['identifier']); // Identique pour toutes les versions
+        $data[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY] = Episciences_Repositories_Common::getConceptIdentifierFromString($hookParams['identifier']); // Identique pour toutes les versions
 
         return $data;
     }

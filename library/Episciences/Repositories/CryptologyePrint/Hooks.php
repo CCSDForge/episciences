@@ -61,7 +61,7 @@ class Episciences_Repositories_CryptologyePrint_Hooks implements CommonHooksInte
             $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT] = $type;
         }
 
-        $data['conceptrecid'] = $identifier; // identique pour toutes les versions ; renvoie à la dernière version
+        $data[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY] = $identifier; // identique pour toutes les versions ; renvoie à la dernière version
 
         return $data;
     }

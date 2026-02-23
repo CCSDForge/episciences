@@ -13,7 +13,6 @@ use Symfony\Component\Intl\Languages;
 class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, InputSanitizerInterface, FilesEnrichmentInterface, LinkedDataEnrichmentInterface, DataSanitizerInterface, HooksInterface
 {
     public const API_RECORDS_URL = 'https://zenodo.org/api/records';
-    public const CONCEPT_IDENTIFIER = 'conceptrecid';
     const ZENODO_OAI_PMH_API = 'https://zenodo.org/oai2d?verb=GetRecord&metadataPrefix=datacite&identifier=oai:zenodo.org:';
 
 
@@ -175,11 +174,11 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
 
         $hasDoiInfoRepresentsAllVersions = false;
 
-        if (isset($hookParams['repoId'], $hookParams['record'], $hookParams['conceptIdentifier'])) {
+        if (isset($hookParams['repoId'], $hookParams['record'], $hookParams[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY])) {
 
             $pattern = '<dc:relation>';
             $pattern .= Episciences_DoiTools::DOI_ORG_PREFIX . Episciences_Repositories::getRepoDoiPrefix($hookParams['repoId']) . '/' . mb_strtolower(Episciences_Repositories::getLabel($hookParams['repoId'])) . '.';
-            $pattern .= $hookParams['conceptIdentifier'];
+            $pattern .= $hookParams[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY];
             $pattern .= '</dc:relation>';
 
             $found = Episciences_Tools::extractPattern('#' . $pattern . '#', $hookParams['record']);
@@ -212,7 +211,7 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
             }
         }
 
-        return ['conceptIdentifier' => $conceptIdentifier];
+        return [Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY => $conceptIdentifier];
     }
 
     /**
@@ -229,11 +228,11 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
 
         $response = self::checkResponse($hookParams);
 
-        if (array_key_exists(self::CONCEPT_IDENTIFIER, $response)) {
-            $conceptIdentifier = $response[self::CONCEPT_IDENTIFIER];
+        if (array_key_exists(Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY, $response)) {
+            $conceptIdentifier = $response[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY];
         }
 
-        return ['conceptIdentifier' => $conceptIdentifier];
+        return [Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY => $conceptIdentifier];
     }
 
     /**
@@ -390,7 +389,7 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
 
         $license = $metadata['license']['id'] ?? '';
 
-        $conceptId = $data['conceptrecid'] ?? null;
+        $conceptId = $data[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY] ?? null;
 
         if ($conceptId) {
             $conceptIdentifierUrlDoi = sprintf('%s/%s.%s', Episciences_DoiTools::DOI_ORG_PREFIX . Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ZENODO_REPO_ID), mb_strtolower(Episciences_Repositories::getLabel(Episciences_Repositories::ZENODO_REPO_ID)), $conceptId);
