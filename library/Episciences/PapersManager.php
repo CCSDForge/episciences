@@ -973,8 +973,7 @@ class Episciences_PapersManager
             ->where('a.ITEM = ?', 'paper')
             ->where('a.ITEMID = ?', $docId)
             ->where('a.ROLEID = ?', 'reviewer')
-            ->order('ASSIGNMENT_DATE DESC')
-        ;
+            ->order('ASSIGNMENT_DATE DESC');
     }
 
     /**
@@ -2261,6 +2260,45 @@ class Episciences_PapersManager
     }
 
     /**
+     * without field DOCUMENT and RECORD
+     * @param int $docId
+     * @param mixed $cols
+     * @return Zend_Db_Select|null
+     */
+
+
+    public static function partialGetQuery(int $docId, mixed $cols = [
+        'DOCID',
+        'PAPERID',
+        'DOI',
+        'RVID',
+        'VID',
+        'SID',
+        'UID',
+        'STATUS',
+        'IDENTIFIER',
+        'VERSION',
+        'REPOID',
+        'TYPE',
+        'CONCEPT_IDENTIFIER',
+        'FLAG',
+        'WHEN',
+        'PASSWORD',
+        'SUBMISSION_DATE',
+        'MODIFICATION_DATE',
+        'PUBLICATION_DATE',
+    ]): ?Zend_Db_Select
+    {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        return $db?->select()
+            ->from(['papers' => T_PAPERS], $cols)
+            ->where('DOCID = ?', $docId);
+    }
+
+
+    /**
      * fetch a paper object (or false if not found)
      * @param $docId
      * @param bool $withxsl
@@ -2268,24 +2306,20 @@ class Episciences_PapersManager
      * @return bool|Episciences_Paper
      * @throws Zend_Db_Statement_Exception
      */
-    public static function get($docId, bool $withxsl = true, int $rvId = null)
+    public static function get($docId, bool $withxsl = true, int $rvId = null): Episciences_Paper|bool
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $select = $db->select()
-            ->from(['papers' => T_PAPERS])
-            ->where('DOCID = ?', $docId);
-
+        $select = self::partialGetQuery((int)$docId, '*');
 
         if (defined('RVID') && !Ccsd_Tools::isFromCli()) {
             $rvId = RVID;
         }
 
         if ($rvId) {
-            $select->where('RVID = ?', $rvId);
+            $select?->where('RVID = ?', $rvId);
         }
 
-        $data = $select->query()->fetch();
+        $data = $select?->query()->fetch();
 
         if (!$data) {
             return false;
@@ -2296,6 +2330,29 @@ class Episciences_PapersManager
         $paper->setRevisionDeadline();
         $paper->setConflicts(Episciences_Paper_ConflictsManager::findByPaperId($paper->getPaperid(), $rvId));
         return $paper;
+    }
+
+    /**
+     * @param int $docId
+     * @param int|null $rvId
+     * @return Episciences_Paper|null
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function partialGet(int $docId, int $rvId = null): ?Episciences_Paper
+    {
+        $sql = self::partialGetQuery($docId);
+
+        if (defined('RVID') && !Ccsd_Tools::isFromCli()) {
+            $rvId = RVID;
+        }
+
+        if ($rvId) {
+            $sql?->where('RVID = ?', $rvId);
+        }
+
+        $data = $sql?->query()->fetch();
+        return !empty($data) ? new Episciences_Paper($data) : null;
+
     }
 
     /**
@@ -2641,7 +2698,6 @@ class Episciences_PapersManager
                 }
 
 
-
                 if ($sectionId) {
                     $section = Episciences_SectionsManager::find($sectionId);
                     if ($section) {
@@ -2693,12 +2749,12 @@ class Episciences_PapersManager
             $tags = [...$tags, ...$addTags];
 
 
-            if ($template['subject']){
+            if ($template['subject']) {
                 $template['subject'] = str_replace(array_keys($tags), array_values($tags), $template['subject']);
                 $template['subject'] = Ccsd_Tools::clear_nl($template['subject']);
             }
 
-            if($template['body']) {
+            if ($template['body']) {
                 $template['body'] = str_replace(array_keys($tags), array_values($tags), $template['body']);
                 $template['body'] = nl2br($template['body']);
                 $template['body'] = Ccsd_Tools::clear_nl($template['body']);
@@ -2771,7 +2827,7 @@ class Episciences_PapersManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $params = self::getPaperParams($docId);
 
-        if(!$params){
+        if (!$params) {
             return 0;
         }
 
@@ -2883,7 +2939,8 @@ class Episciences_PapersManager
 
     private static function processFilesHook(
         string $record, array $context, array $enrichment, int $affectedRows
-    ): array {
+    ): array
+    {
         return self::updateRecordDataProcessFilesHook(
             $record, $context['docId'], $context['repoId'], $context['identifier'], $enrichment, $affectedRows
         );
@@ -2898,7 +2955,8 @@ class Episciences_PapersManager
 
     private static function processLinkedDataOrDatasets(
         Episciences_Paper $paper, array $context, int $affectedRows
-    ): int {
+    ): int
+    {
         if (Episciences_Repositories::hasHook($context['repoId'])) {
             $hookData = Episciences_Repositories::callHook('hookLinkedDataProcessing', [
                 'repoId' => $context['repoId'],
@@ -2939,7 +2997,7 @@ class Episciences_PapersManager
                 $affectedRows = self::updateRecordDataHal(
                     $context['paperId'], $context['identifier'], $context['version'], $affectedRows
                 );
-            } catch (JsonException | \Psr\Cache\InvalidArgumentException $e) {
+            } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
                 trigger_error($e->getMessage(), E_USER_WARNING);
             }
         }
@@ -2960,7 +3018,7 @@ class Episciences_PapersManager
                 $affectedRows = self::updateRecordDataCallOpenAireTools(
                     $context['doi'], $context['paperId'], $affectedRows
                 );
-            } catch (JsonException | \Psr\Cache\InvalidArgumentException $e) {
+            } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
                 trigger_error($e->getMessage(), E_USER_WARNING);
             }
         }
@@ -2980,7 +3038,7 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
-            ->from(T_PAPERS, ['DOCID','IDENTIFIER', 'REPOID', 'VERSION', 'PAPERID', 'STATUS', 'DOI'])
+            ->from(T_PAPERS, ['DOCID', 'IDENTIFIER', 'REPOID', 'VERSION', 'PAPERID', 'STATUS', 'DOI'])
             ->where('DOCID = ?', $docId);
         return $db->fetchRow($select);
     }
@@ -4236,7 +4294,7 @@ class Episciences_PapersManager
      */
     private static function updateRecordDataProcessLicence(mixed $repoId, string $identifier, float $version, mixed $docId, int $affectedRows): int
     {
-         try {
+        try {
             $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);
             try {
                 $affectedRows += Episciences_Paper_LicenceManager::insertLicenceFromApiByRepoId($repoId, $callArrayResp, $docId, $identifier);
