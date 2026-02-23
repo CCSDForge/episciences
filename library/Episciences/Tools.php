@@ -4,6 +4,7 @@ use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
 use Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException;
 use Defuse\Crypto\Key;
+use Episciences\Tools\Http\Exceptions\FileGetContentsException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use League\CommonMark\CommonMarkConverter;
@@ -2362,4 +2363,22 @@ class Episciences_Tools
         return null;
     }
 
+
+    /**
+     * @throws FileGetContentsException
+     */
+    public static function safeFileGetContents(string $url): string
+    {
+        set_error_handler(static function ($code, $message) use ($url) {
+            throw new FileGetContentsException($url, $message, $code);
+        });
+
+        try {
+            $content = file_get_contents($url);
+        } finally {
+            restore_error_handler();
+        }
+
+        return $content;
+    }
 }

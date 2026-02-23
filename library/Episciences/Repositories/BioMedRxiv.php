@@ -3,6 +3,7 @@
 
 use Episciences\Repositories\CommonHooksInterface;
 use Episciences\Repositories\InputSanitizerInterface;
+use Episciences\Tools\Http\Exceptions\FileGetContentsException;
 use GuzzleHttp\Exception\GuzzleException;
 
 class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, InputSanitizerInterface
@@ -71,7 +72,7 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
         try {
             $response = Episciences_Tools::callApi($url, $options);
 
-            if (!is_array($response) || empty($response[self::COLLECTION] ?? null)){
+            if (!is_array($response) || empty($response[self::COLLECTION] ?? null)) {
                 throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
             }
         } catch (GuzzleException $e) {
@@ -128,6 +129,7 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
     {
         return [];
     }
+
     /**
      * @return string
      */
@@ -254,10 +256,17 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
             return;
         }
 
+        try {
+            $content = Episciences_Tools::safeFileGetContents($values['jatsxml']);
+        } catch (FileGetContentsException $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
+            return;
+        }
+
 
         libxml_use_internal_errors(true);
         /** @var SimpleXMLElement $simpleXlmDoc */
-        $simpleXlmDoc = simplexml_load_string(file_get_contents($values['jatsxml']));
+        $simpleXlmDoc = simplexml_load_string($content);
         libxml_clear_errors();
 
         if (!$simpleXlmDoc) {
