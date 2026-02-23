@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Changed
+Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 single-responsibility classes:
+- `Episciences_Paper_Citations_Repository` — Database I/O (upsert + fetch)
+- `Episciences_Paper_Citations_ViewFormatter` — HTML rendering of citation lists
+- `Episciences_Paper_Citations_EnrichmentService` — OpenCitations → OpenAlex → Crossref enrichment pipeline
+- `Episciences_Paper_Citations_Logger` — Singleton Monolog logger (avoids Logger recreation on every call)
+- `CitationsManager` kept as backward-compatible facade with `@deprecated` proxies
+- Redundant PHPDoc (types duplicating signatures) removed from all new citations classes via Rector
 - Replaced `Episciences_Cache` (file-based, backed by `Ccsd_Cache`) with `symfony/cache` 5.4 (PSR-6 `FilesystemAdapter`) across all internal usages
 - `PapersManager::getList()`: removed `$cached` parameter; paper list is now always fetched fresh from the database
 - `Review::getPapers()`, `CopyEditor::loadAssignedPapers()`, `Editor::loadAssignedPapers()`, `Reviewer::loadAssignedPapers()`, `Volume::getPaperListFromVolume()`: updated signatures and call sites following the removal of `$cached`
@@ -52,6 +59,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `TeiCacheManager::fetchAndGet()` to combine fetch-if-needed + read in a single call; callers updated (`EnrichmentService`, `LicenceManager`, `AuthorsManager`)
 
 ### Fixed
+- `Citations_ViewFormatter`: double `htmlspecialchars()` on author metadata — values were escaped twice (once before `reduceAuthorsView`, then again before `formatAuthors`); now escaped exactly once
+- `Citations_ViewFormatter`: unstable compound sort — two sequential `usort()` calls (author then year) caused the year sort to discard author ordering; replaced with a single comparator (year desc, author asc)
+- `Citations_ViewFormatter`: `createOrcidStringForView()` did not validate the ORCID format before building the URL; invalid values now return an empty string
+- `Citations_Repository`: deprecated MySQL `VALUES()` function in `ON DUPLICATE KEY UPDATE` replaced with alias syntax (MySQL 8.0.20+)
+- `Citations_Repository`: `findByDocId()` now rejects `$docId <= 0` instead of issuing a useless query
+- `Citations` entity: `toArray()` returned key `'licence'` instead of `'citation'`
+- `Citations` entity: `$_updatedAt` was typed as `string` with default `'CURRENT_TIMESTAMP'`; changed to `?DateTime = null` to match the declared return type of `getUpdatedAt()`
 - ORCID normalization: `cleanLowerCaseOrcid()` did not strip `https://orcid.org/` URL prefix; new `normalizeOrcid()` method handles URL stripping, trimming, and lowercase `x` → `X` fix
 - Applied `normalizeOrcid()` in Zenodo and ARCHE hooks where raw ORCID values were stored without normalization
 - `findAffiliationsOneAuthorByPaperId()`: fixed potential undefined variable when author rows are empty
@@ -74,6 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Ccsd\Auth\Adapter\Idp::filterEmail()`: unescaped dot in regex allowed partial-match bypass (e.g. `user@inraXfr`); fixed with `preg_quote()` and a trailing `$` anchor to also prevent subdomain injection (e.g. `attacker@inra.fr.evil.com`)
 
 ### Security
+- Fixed XSS in `Citations_ViewFormatter`: `href=` attributes for DOI and OA links were unquoted, allowing attribute injection when values contained spaces or special characters; now wrapped in double quotes with `ENT_QUOTES`
 - Fixed XSS vulnerability in `ViewFormatter::buildAuthorHtml()` and `buildAffiliationListHtml()` where user-controlled values were interpolated into unquoted or improperly escaped HTML attributes (ORCID URL, data-title, and affiliation acronym)
 - Fixed potential Solr query injection in `TeiCacheManager::buildApiUrl()`
 - `GetAvatar::asPaperStatusSvg()`: fixed two path traversal vectors — `$lang` is now sanitized to `[a-z]+` before being interpolated into a filesystem path, and `$paperStatus` is cast to `int`
@@ -81,6 +96,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Ccsd\Auth\Adapter\Idp::filterEmail()`: regex bypass allowed authentication from unauthorized email domains (see Fixed)
 
 ### Added
+- Unit tests for `Episciences_Paper_Citations_ViewFormatter` (20 tests: sort, author formatting, ORCID links, XSS prevention, book-chapter/proceedings-article reordering)
+- Unit tests for `Episciences_Paper_Citations` entity (8 tests: `toArray()` key, fluent setters, nullable `updatedAt`, constructor)
 - Comprehensive unit tests for `Episciences_Paper_Authors_ViewFormatter` covering HTML display logic and XSS prevention
 - Unit tests for `Episciences_View_Helper_DoiAsLink`, `Episciences_View_Helper_FormatIssn`, `Episciences_View_Helper_Log`, `Episciences_View_Helper_Tag`, `Episciences_View_Helper_UserAvatar`, `Episciences_View_Helper_GetAvatar` and `Episciences_CommentsManager`
 - 89+ unit tests for `Ccsd\Auth` adapters (`CasAbstract`, `Idp`, `Orcid`, `AdapterFactory`, `Asso`), `Ccsd\User` models (`User`, `UserTokens`, `UserFtpQuota`) and `Episciences\User` entities covering pure logic without DB or network access
