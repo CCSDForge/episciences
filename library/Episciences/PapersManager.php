@@ -303,9 +303,11 @@ class Episciences_PapersManager
             } elseif ($roleId === 'reviewer') {
                 $noneSelect = self::getPapersWithoutAssignedReviewersQuery();
             }
-            $select = $db
-                ->select()
-                ->union([$select, $noneSelect]);
+            if ($noneSelect !== null) {
+                $select = $db
+                    ->select()
+                    ->union([$select, $noneSelect]);
+            }
         }
 
         return $select;
@@ -651,6 +653,7 @@ class Episciences_PapersManager
             return false;
         }
 
+        $result = [];
         foreach ($list as $id => $item) {
             $method = 'get' . ucfirst(strtolower($key));
             $itemKey = 0;
@@ -2773,7 +2776,11 @@ class Episciences_PapersManager
 
         $result = self::getPaperParams($docId);
 
-        $identifier = str_replace('-REFUSED', '',$result['IDENTIFIER']);
+        if ($result === false) {
+            return 0;
+        }
+
+        $identifier = str_replace('-REFUSED', '', $result['IDENTIFIER']);
         $repoId = (int)$result['REPOID'];
         $version = (float)$result['VERSION'];
         $paperId = (int)$result['PAPERID'];
