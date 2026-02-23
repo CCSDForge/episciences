@@ -6,6 +6,7 @@ use Episciences\Repositories\InputSanitizerInterface;
 class Episciences_Repositories_CryptologyePrint_Hooks implements CommonHooksInterface, InputSanitizerInterface
 {
     public const SELF_URL = 'https://eprint.iacr.org/';
+    public const SHORT_URL = 'https://ia.cr/';
     public const UPDATE_DATETIME = 'update'; // to point a specific version (not managed by the OAI) of paper
 
     /**
@@ -67,7 +68,7 @@ class Episciences_Repositories_CryptologyePrint_Hooks implements CommonHooksInte
 
     public static function hookCleanIdentifiers(array $hookParams): array
     {
-        $identifier = rtrim(str_replace(array(self::SELF_URL, 'archive/'), '', $hookParams['id']), '/');
+        $identifier = rtrim(str_replace(array(self::SELF_URL, self::SHORT_URL), '', $hookParams['id']), '/');
 
         return [
             Episciences_Repositories_Common::META_IDENTIFIER => $identifier
