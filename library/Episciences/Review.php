@@ -715,17 +715,16 @@ class Episciences_Review
      * $options['isNot']['key'] = value : WHERE key != value
      * $options['limit'] = limit    : LIMIT limit
      * $options['offset'] = offset     : LIMIT limit, offset
-     * @param bool $cached
      * @param bool $isFilterInfos
      * @param string|array|Zend_Db_Expr $cols //The columns to select
      * @return Episciences_Paper[]
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
      */
-    public function getPapers(array $options = null, bool $cached = false, bool $isFilterInfos = false, string|array|Zend_Db_Expr $cols = '*'): array
+    public function getPapers(array $options = null, bool $isFilterInfos = false, string|array|Zend_Db_Expr $cols = '*'): array
     {
         $options['is']['rvid'] = $this->getRvid();
-        return Episciences_PapersManager::getList($options, $cached, $isFilterInfos, true,  $cols);
+        return Episciences_PapersManager::getList($options, $isFilterInfos, true, $cols);
     }
 
     /**

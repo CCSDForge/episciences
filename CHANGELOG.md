@@ -33,6 +33,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Manager: Review Report: attached document URL has not been updated for the manager application
 
 ### Changed
+- Replaced `Episciences_Cache` (file-based, backed by `Ccsd_Cache`) with `symfony/cache` 5.4 (PSR-6 `FilesystemAdapter`) across all internal usages
+- `PapersManager::getList()`: removed `$cached` parameter; paper list is now always fetched fresh from the database
+- `Review::getPapers()`, `CopyEditor::loadAssignedPapers()`, `Editor::loadAssignedPapers()`, `Reviewer::loadAssignedPapers()`, `Volume::getPaperListFromVolume()`: updated signatures and call sites following the removal of `$cached`
+- `Oai/Server::getIds()`: OAI resumption token cache migrated to PSR-6 (`getItem` / `isHit` / `set` / `expiresAfter` / `save`); token conf is now stored natively by the adapter without manual `serialize()`/`unserialize()`
+
+### Deprecated
+- `Episciences_Cache` and its parent `Ccsd_Cache` are now marked `@deprecated`; use `Symfony\Component\Cache\Adapter\FilesystemAdapter` instead
+
+### Changed (UI)
+- `administratepaper/view.phtml`: reordered panels — paper files, article status, contributor, co-authors, affiliations, and graphical abstract are now grouped at the top of the page; "Volumes & Rubriques" moved earlier; `paper_versions` moved to the bottom (before history); removed redundant "Statut actuel :" label prefix from the article status panel
+- `paper/paper_datasets.phtml`: "Liens publications – données – logiciels" panel is now collapsed by default
+- `paper/paper_graphical_abstract.phtml`: graphical abstract panel is now collapsed by default when no image has been uploaded
+- `partials/coauthors.phtml`: "Ajouter un co-auteur" panel is now collapsed by default; minor HTML cleanup
+- `partials/paper_affiliation_authors.phtml`: "Ajouter une affiliation" panel is now collapsed by default; removed stray `<br>`, inlined `versionCache` script tag
+
+### Security
+- Removed implicit `unserialize()` on filesystem-cached paper data in `PapersManager::getList()`, eliminating a potential PHP object injection vector
+- OAI resumption token cache keys are now MD5-hashed before use, preventing cache-key injection via crafted token values
+
+### Changed
+- Refactored `scripts/zbjatZipper.php`: renamed class to PascalCase (`ZbjatZipper`), replaced `echo` with Monolog logger, extracted `run()` God method into focused methods (`processJournal`, `processVolume`, `downloadPaperFiles`, `buildPaperUrl`, `createZipArchive`), switched URLs from hardcoded `http://episciences.org` to HTTPS + `DOMAIN` constant, replaced `fopen`/`fwrite`/`fclose` with `file_put_contents`, replaced `opendir`/`readdir` with `DirectoryIterator`, replaced `exit` with `return`
 - Refactored `Episciences_Paper_AuthorsManager` (879-line God Class) into 6 single-responsibility classes:
   - `Episciences_Hal_TeiCacheManager` — HAL TEI cache and HTTP
   - `Episciences_Paper_Authors_HalTeiParser` — TEI XML parsing
