@@ -2,6 +2,9 @@
 
 /**
  * Class Ccsd_Cache : Gestion de l'enregistrement des fichiers de cache
+ *
+ * @deprecated Use Symfony\Component\Cache\Adapter\FilesystemAdapter (PSR-6) instead.
+ *             All internal usages have been migrated. This class will be removed in a future release.
  */
 class Ccsd_Cache
 {

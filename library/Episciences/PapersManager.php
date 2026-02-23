@@ -20,7 +20,6 @@ class Episciences_PapersManager
 
     /**
      * @param array $settings
-     * @param bool $cached
      * @param bool $isFilterInfos
      * @param bool $isLimit
      * @param string|array|Zend_Db_Expr $cols // The columns to select
@@ -28,7 +27,7 @@ class Episciences_PapersManager
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
      */
-    public static function getList(array $settings = [], bool $cached = false, bool $isFilterInfos = false, bool $isLimit = true, string|array|Zend_Db_Expr $cols = '*'): array
+    public static function getList(array $settings = [], bool $isFilterInfos = false, bool $isLimit = true, string|array|Zend_Db_Expr $cols = '*'): array
     {
         $rvId = $settings['is']['RVID'] ?? RVID;
 
@@ -36,36 +35,19 @@ class Episciences_PapersManager
 
         $select = self::getListQuery($settings, $isFilterInfos, $isLimit, $cols);
 
-        $list = $db->fetchAssoc($select, $cached);
+        $list = $db->fetchAssoc($select);
 
         $result = [];
 
         $allConflicts = Episciences_Paper_ConflictsManager::all($rvId);
 
         foreach ($list as $id => $item) {
-
-            // fetch papers from cache rather than populating them
-            if ($cached) {
-                $cachename = 'paper-' . $id . '.txt';
-                if (Episciences_Cache::exist($cachename)) {
-                    $result[$id] = unserialize(Episciences_Cache::get($cachename), ['allowed_classes' => false]);
-                } else {
-                    $item['withxsl'] = false;
-                    $paper = new Episciences_Paper($item);
-                    if (array_key_exists($paper->getPaperid(), $allConflicts)) {
-                        $paper->setConflicts($allConflicts[$paper->getPaperid()]);
-                    }
-                    $result[$id] = $paper;
-                    Episciences_Cache::save($cachename, serialize($paper));
-                }
-            } else {
-                $item['withxsl'] = false;
-                $paper = new Episciences_Paper($item);
-                if (array_key_exists($paper->getPaperid(), $allConflicts)) {
-                    $paper->setConflicts($allConflicts[$paper->getPaperid()]);
-                }
-                $result[$id] = $paper;
+            $item['withxsl'] = false;
+            $paper = new Episciences_Paper($item);
+            if (array_key_exists($paper->getPaperid(), $allConflicts)) {
+                $paper->setConflicts($allConflicts[$paper->getPaperid()]);
             }
+            $result[$id] = $paper;
         }
 
         return $result;
@@ -321,9 +303,11 @@ class Episciences_PapersManager
             } elseif ($roleId === 'reviewer') {
                 $noneSelect = self::getPapersWithoutAssignedReviewersQuery();
             }
-            $select = $db
-                ->select()
-                ->union([$select, $noneSelect]);
+            if ($noneSelect !== null) {
+                $select = $db
+                    ->select()
+                    ->union([$select, $noneSelect]);
+            }
         }
 
         return $select;
@@ -669,6 +653,7 @@ class Episciences_PapersManager
             return false;
         }
 
+        $result = [];
         foreach ($list as $id => $item) {
             $method = 'get' . ucfirst(strtolower($key));
             $itemKey = 0;
@@ -1636,6 +1621,10 @@ class Episciences_PapersManager
             'id' => $formId
         ]);
 
+        $csrfName = 'csrf_accept_' . (int)$default['id'];
+        $form->addElement('hash', $csrfName, ['salt' => 'unique']);
+        $form->getElement($csrfName)->setTimeout(3600);
+
         $form->setDecorators([[
             'ViewScript', [
                 'viewScript' => '/administratemail/form.phtml'
@@ -1730,6 +1719,10 @@ class Episciences_PapersManager
             'id' => $formId
         ]);
 
+        $csrfName = 'csrf_publish_' . (int)$default['id'];
+        $form->addElement('hash', $csrfName, ['salt' => 'unique']);
+        $form->getElement($csrfName)->setTimeout(3600);
+
         $form->setDecorators([[
             'ViewScript', [
                 'viewScript' => '/administratemail/form.phtml'
@@ -1822,6 +1815,10 @@ class Episciences_PapersManager
             'action' => '/administratepaper/refuse/id/' . $default['id'],
             'id' => $formId
         ]);
+
+        $csrfName = 'csrf_refuse_' . (int)$default['id'];
+        $form->addElement('hash', $csrfName, ['salt' => 'unique']);
+        $form->getElement($csrfName)->setTimeout(3600);
 
         $form->setDecorators([[
             'ViewScript', [
@@ -2043,6 +2040,10 @@ class Episciences_PapersManager
             'action' => '/administratepaper/revision/id/' . $default['id'] . '/type/' . $type,
             'id' => $formId
         ]);
+
+        $csrfName = 'csrf_revision_' . $type . '_' . (int)$default['id'];
+        $form->addElement('hash', $csrfName, ['salt' => 'unique']);
+        $form->getElement($csrfName)->setTimeout(3600);
 
         $form->setDecorators([[
             'ViewScript', [
@@ -2775,7 +2776,11 @@ class Episciences_PapersManager
 
         $result = self::getPaperParams($docId);
 
-        $identifier = str_replace('-REFUSED', '',$result['IDENTIFIER']);
+        if ($result === false) {
+            return 0;
+        }
+
+        $identifier = str_replace('-REFUSED', '', $result['IDENTIFIER']);
         $repoId = (int)$result['REPOID'];
         $version = (float)$result['VERSION'];
         $paperId = (int)$result['PAPERID'];

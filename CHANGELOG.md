@@ -18,11 +18,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Changed
 - Refactored `Episciences_Paper_ProjectsManager` God Class into 4 single-responsibility classes:
-  - `Episciences_Paper_Projects_Repository` — database CRUD for `paper_projects`
-  - `Episciences_Paper_Projects_HalApiClient` — HTTP calls to the HAL API
-  - `Episciences_Paper_Projects_EnrichmentService` — funding enrichment orchestration, cache and logging
-  - `Episciences_Paper_Projects_ViewFormatter` — HTML rendering of funding metadata
+- `Episciences_Paper_Projects_Repository` — database CRUD for `paper_projects`
+- `Episciences_Paper_Projects_HalApiClient` — HTTP calls to the HAL API
+- `Episciences_Paper_Projects_EnrichmentService` — funding enrichment orchestration, cache and logging
+- `Episciences_Paper_Projects_ViewFormatter` — HTML rendering of funding metadata
 - `ProjectsManager` kept as a thin backward-compatible facade; all public method signatures preserved
+Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 single-responsibility classes:
+- `Episciences_Paper_Citations_Repository` — Database I/O (upsert + fetch)
+- `Episciences_Paper_Citations_ViewFormatter` — HTML rendering of citation lists
+- `Episciences_Paper_Citations_EnrichmentService` — OpenCitations → OpenAlex → Crossref enrichment pipeline
+- `Episciences_Paper_Citations_Logger` — Singleton Monolog logger (avoids Logger recreation on every call)
+- `CitationsManager` kept as backward-compatible facade with `@deprecated` proxies
+- Redundant PHPDoc (types duplicating signatures) removed from all new citations classes via Rector
+- Replaced `Episciences_Cache` (file-based, backed by `Ccsd_Cache`) with `symfony/cache` 5.4 (PSR-6 `FilesystemAdapter`) across all internal usages
+- `PapersManager::getList()`: removed `$cached` parameter; paper list is now always fetched fresh from the database
+- `Review::getPapers()`, `CopyEditor::loadAssignedPapers()`, `Editor::loadAssignedPapers()`, `Reviewer::loadAssignedPapers()`, `Volume::getPaperListFromVolume()`: updated signatures and call sites following the removal of `$cached`
+- `Oai/Server::getIds()`: OAI resumption token cache migrated to PSR-6 (`getItem` / `isHit` / `set` / `expiresAfter` / `save`); token conf is now stored natively by the adapter without manual `serialize()`/`unserialize()`
+
+### Deprecated
+- `Episciences_Cache` and its parent `Ccsd_Cache` are now marked `@deprecated`; use `Symfony\Component\Cache\Adapter\FilesystemAdapter` instead
+
+### Changed (UI)
+- `administratepaper/view.phtml`: reordered panels — paper files, article status, contributor, co-authors, affiliations, and graphical abstract are now grouped at the top of the page; "Volumes & Rubriques" moved earlier; `paper_versions` moved to the bottom (before history); removed redundant "Statut actuel :" label prefix from the article status panel
+- `paper/paper_datasets.phtml`: "Liens publications – données – logiciels" panel is now collapsed by default
+- `paper/paper_graphical_abstract.phtml`: graphical abstract panel is now collapsed by default when no image has been uploaded
+- `partials/coauthors.phtml`: "Ajouter un co-auteur" panel is now collapsed by default; minor HTML cleanup
+- `partials/paper_affiliation_authors.phtml`: "Ajouter une affiliation" panel is now collapsed by default; removed stray `<br>`, inlined `versionCache` script tag
+
+### Security
+- Removed implicit `unserialize()` on filesystem-cached paper data in `PapersManager::getList()`, eliminating a potential PHP object injection vector
+- OAI resumption token cache keys are now MD5-hashed before use, preventing cache-key injection via crafted token values
+
+### Changed
+- Refactored `scripts/zbjatZipper.php`: renamed class to PascalCase (`ZbjatZipper`), replaced `echo` with Monolog logger, extracted `run()` God method into focused methods (`processJournal`, `processVolume`, `downloadPaperFiles`, `buildPaperUrl`, `createZipArchive`), switched URLs from hardcoded `http://episciences.org` to HTTPS + `DOMAIN` constant, replaced `fopen`/`fwrite`/`fclose` with `file_put_contents`, replaced `opendir`/`readdir` with `DirectoryIterator`, replaced `exit` with `return`
 - Refactored `Episciences_Paper_AuthorsManager` (879-line God Class) into 6 single-responsibility classes:
   - `Episciences_Hal_TeiCacheManager` — HAL TEI cache and HTTP
   - `Episciences_Paper_Authors_HalTeiParser` — TEI XML parsing
@@ -47,6 +75,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `HalApiClient::doGet()`: `trigger_error()` was called without a severity level; now uses `E_USER_WARNING`
 - `EnrichmentService::resolveHalProjectIds()`: ANR project discovery message was echoed twice; duplicate removed
 - `EnrichmentService::resolveHalProjectIds()`: cache key used raw `$identifier` which could contain filesystem-unsafe characters; sanitized with `preg_replace('/[^a-zA-Z0-9_\-]/', '_', …)`
+- `Citations_ViewFormatter`: double `htmlspecialchars()` on author metadata — values were escaped twice (once before `reduceAuthorsView`, then again before `formatAuthors`); now escaped exactly once
+- `Citations_ViewFormatter`: unstable compound sort — two sequential `usort()` calls (author then year) caused the year sort to discard author ordering; replaced with a single comparator (year desc, author asc)
+- `Citations_ViewFormatter`: `createOrcidStringForView()` did not validate the ORCID format before building the URL; invalid values now return an empty string
+- `Citations_Repository`: deprecated MySQL `VALUES()` function in `ON DUPLICATE KEY UPDATE` replaced with alias syntax (MySQL 8.0.20+)
+- `Citations_Repository`: `findByDocId()` now rejects `$docId <= 0` instead of issuing a useless query
+- `Citations` entity: `toArray()` returned key `'licence'` instead of `'citation'`
+- `Citations` entity: `$_updatedAt` was typed as `string` with default `'CURRENT_TIMESTAMP'`; changed to `?DateTime = null` to match the declared return type of `getUpdatedAt()`
 - ORCID normalization: `cleanLowerCaseOrcid()` did not strip `https://orcid.org/` URL prefix; new `normalizeOrcid()` method handles URL stripping, trimming, and lowercase `x` → `X` fix
 - Applied `normalizeOrcid()` in Zenodo and ARCHE hooks where raw ORCID values were stored without normalization
 - `findAffiliationsOneAuthorByPaperId()`: fixed potential undefined variable when author rows are empty
@@ -70,6 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Fixed XSS vulnerability in `Projects/ViewFormatter`: funding URL was interpolated unescaped into `href` attribute and link text, allowing HTML injection via malicious project metadata
+- Fixed XSS in `Citations_ViewFormatter`: `href=` attributes for DOI and OA links were unquoted, allowing attribute injection when values contained spaces or special characters; now wrapped in double quotes with `ENT_QUOTES`
 - Fixed XSS vulnerability in `ViewFormatter::buildAuthorHtml()` and `buildAffiliationListHtml()` where user-controlled values were interpolated into unquoted or improperly escaped HTML attributes (ORCID URL, data-title, and affiliation acronym)
 - Fixed potential Solr query injection in `TeiCacheManager::buildApiUrl()`
 - `GetAvatar::asPaperStatusSvg()`: fixed two path traversal vectors — `$lang` is now sanitized to `[a-z]+` before being interpolated into a filesystem path, and `$paperStatus` is cast to `int`
@@ -80,6 +116,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unit tests for `Episciences_Paper_Projects` entity (setOptions aliases, DateTime handling, toArray serialization, fluent setters)
 - Unit tests for `Episciences_Paper_Projects_EnrichmentService` pure functions (EU/ANR response normalization, OpenAIRE relation filtering)
 - Unit tests for `Episciences_Paper_Projects_ViewFormatter` (empty-array return, URL HTML-escaping, unidentified title suppression)
+- Unit tests for `Episciences_Paper_Citations_ViewFormatter` (20 tests: sort, author formatting, ORCID links, XSS prevention, book-chapter/proceedings-article reordering)
+- Unit tests for `Episciences_Paper_Citations` entity (8 tests: `toArray()` key, fluent setters, nullable `updatedAt`, constructor)
 - Comprehensive unit tests for `Episciences_Paper_Authors_ViewFormatter` covering HTML display logic and XSS prevention
 - Unit tests for `Episciences_View_Helper_DoiAsLink`, `Episciences_View_Helper_FormatIssn`, `Episciences_View_Helper_Log`, `Episciences_View_Helper_Tag`, `Episciences_View_Helper_UserAvatar`, `Episciences_View_Helper_GetAvatar` and `Episciences_CommentsManager`
 - 89+ unit tests for `Ccsd\Auth` adapters (`CasAbstract`, `Idp`, `Orcid`, `AdapterFactory`, `Asso`), `Ccsd\User` models (`User`, `UserTokens`, `UserFtpQuota`) and `Episciences\User` entities covering pure logic without DB or network access

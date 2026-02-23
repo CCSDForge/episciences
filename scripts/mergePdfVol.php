@@ -61,72 +61,88 @@ class MergePdfVol extends JournalScript
             $this->initApp();
             $this->initDb();
             $this->initTranslator();
-            defineJournalConstants();
 
-            $rvCode = $this->getParam('rvcode');
-            if ($rvCode === null) {
+            $rvCodeParam = $this->getParam('rvcode');
+            if ($rvCodeParam === null) {
                 $this->logger->error('ERROR: MISSING RVCODE');
                 die('ERROR: MISSING RVCODE' . PHP_EOL);
             }
 
-            $this->logger->info('Script parameters', [
-                'rvcode' => $rvCode,
-                'ignorecache' => $this->getParam('ignorecache'),
-                'removecache' => $this->getParam('removecache')
-            ]);
-
-            if ($this->getParam('removecache') === '1') {
-                $cache = new FilesystemAdapter("volume-pdf-" . $rvCode, 0, CACHE_PATH_METADATA);
-                $cache->clear();
-                $this->logger->info("Cache cleared for RV code", ['rvCode' => $rvCode]);
-            }
-
-            $volumeList = $this->getVolumeList($rvCode);
-
             $guzzleOptions = [
                 'headers' => ['User-Agent' => EPISCIENCES_USER_AGENT,]
             ];
-
             $client = new Client($guzzleOptions);
 
-            foreach ($volumeList as $index => $oneVolume) {
-                $volumeStartTime = microtime(true);
-                $this->logger->info("Processing volume", [
-                    'index' => ($index + 1) . '/' . count($volumeList),
-                    'volumeId' => $oneVolume['vid'] ?? 'unknown'
-                ]);
+            if ($rvCodeParam === 'allJournals') {
+                $allJournals = $this->retrieveJournalCodes($client);
+            } else {
+                $allJournals = [$rvCodeParam];
+            }
 
-                try {
-                    $result = $this->mergePdfFromVolume($oneVolume, $client, $rvCode);
-                    if ($result === 'skipped') {
-                        $stats['skipped']++;
-                    } else {
-                        $stats['processed']++;
-                    }
-                } catch (Exception $e) {
-                    $stats['failed']++;
-                    $this->logger->error("Failed to process volume", [
-                        'volumeId' => $oneVolume['vid'] ?? 'unknown',
-                        'error' => $e->getMessage()
-                    ]);
+            foreach ($allJournals as $rvCode) {
+                $this->logger->info("Processing journal: $rvCode");
+                
+                if (!defined('RVCODE')) {
+                    define('RVCODE', $rvCode);
                 }
 
-                $volumeElapsed = microtime(true) - $volumeStartTime;
-                $this->logger->info("Volume processing completed", [
-                    'volumeId' => $oneVolume['vid'] ?? 'unknown',
-                    'duration' => round($volumeElapsed, 2) . 's'
+                $this->logger->info('Script parameters', [
+                    'rvcode' => $rvCode,
+                    'ignorecache' => $this->getParam('ignorecache'),
+                    'removecache' => $this->getParam('removecache')
                 ]);
+
+                if ($this->getParam('removecache') === '1') {
+                    $cache = new FilesystemAdapter("volume-pdf-" . $rvCode, 0, CACHE_PATH_METADATA);
+                    $cache->clear();
+                    $this->logger->info("Cache cleared for RV code", ['rvCode' => $rvCode]);
+                }
+
+                try {
+                    $volumeList = $this->getVolumeList($rvCode);
+                } catch (Exception $e) {
+                    $this->logger->error("Failed to retrieve volume list for $rvCode", ['error' => $e->getMessage()]);
+                    continue;
+                }
+
+                foreach ($volumeList as $index => $oneVolume) {
+                    $volumeStartTime = microtime(true);
+                    $this->logger->info("Processing volume", [
+                        'index' => ($index + 1) . '/' . count($volumeList),
+                        'volumeId' => $oneVolume['vid'] ?? 'unknown',
+                        'rvCode' => $rvCode
+                    ]);
+
+                    try {
+                        $result = $this->mergePdfFromVolume($oneVolume, $client, $rvCode);
+                        if ($result === 'skipped') {
+                            $stats['skipped']++;
+                        } else {
+                            $stats['processed']++;
+                        }
+                    } catch (Exception $e) {
+                        $stats['failed']++;
+                        $this->logger->error("Failed to process volume", [
+                            'volumeId' => $oneVolume['vid'] ?? 'unknown',
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+
+                    $volumeElapsed = microtime(true) - $volumeStartTime;
+                    $this->logger->info("Volume processing completed", [
+                        'volumeId' => $oneVolume['vid'] ?? 'unknown',
+                        'duration' => round($volumeElapsed, 2) . 's'
+                    ]);
+                }
             }
 
             $totalElapsed = microtime(true) - $startTime;
 
             $this->logger->info('=== Volume PDF fusion completed ===', [
-                'totalVolumes' => count($volumeList),
                 'processed' => $stats['processed'],
                 'skipped' => $stats['skipped'],
                 'failed' => $stats['failed'],
-                'totalDuration' => round($totalElapsed, 2) . 's',
-                'averageDuration' => count($volumeList) > 0 ? round($totalElapsed / count($volumeList), 2) . 's' : 'N/A'
+                'totalDuration' => round($totalElapsed, 2) . 's'
             ]);
 
         } catch (Exception $e) {
@@ -149,6 +165,35 @@ class MergePdfVol extends JournalScript
             fwrite(STDERR, "Stack trace:" . PHP_EOL . $e->getTraceAsString() . PHP_EOL);
 
             die(PHP_EOL . "FATAL ERROR: " . $e->getMessage() . PHP_EOL . "Check log file: " . $logFilePath . PHP_EOL);
+        }
+    }
+
+    public function retrieveJournalCodes(Client $client, int $itemsPerPage = 30): array
+    {
+        $page = 1;
+        $allCodes = [];
+        try {
+            do {
+                $response = $client->request('GET', EPISCIENCES_API_URL . 'journals/', [
+                    'query' => [
+                        'page' => $page,
+                        'itemsPerPage' => $itemsPerPage,
+                        'pagination' => 'false'
+                    ]
+                ]);
+
+                $journals = json_decode($response->getBody(), true);
+
+                $codes = array_column($journals, 'code');
+                $allCodes = array_merge($allCodes, $codes);
+
+                $page++;
+            } while (count($journals) === $itemsPerPage);
+
+            return $allCodes;
+        } catch (Exception $e) {
+            $this->logger->error("Failed to retrieve journal codes: " . $e->getMessage());
+            return [];
         }
     }
 
