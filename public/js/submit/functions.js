@@ -194,7 +194,6 @@ $(function () {
 
     // display the document if it has been found
     function showResult(result) {
-        console.log(result);
 
         let message = '';
 
