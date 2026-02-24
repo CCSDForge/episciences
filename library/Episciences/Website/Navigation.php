@@ -386,5 +386,4 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     }
 
 
-
 }

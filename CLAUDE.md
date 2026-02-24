@@ -18,10 +18,11 @@
 - `*Manager` classes - Business logic layer
 - `*Controller` classes - MVC controllers
 
-## Testing Commands
+## Testing & Linting Commands
 - `make test-php` - PHP tests
-- `phpstan` - Static analysis
 - `make test-js` - JavaScript tests (Jest)
+- `make phpstan [TARGET=path] [LEVEL=X]` - PHPStan static analysis (level 0-9)
+- `make rector [TARGET=path] [DRY_RUN=1]` - Rector refactoring
 - `yarn format` - Format JS with Prettier
 
 ## Code

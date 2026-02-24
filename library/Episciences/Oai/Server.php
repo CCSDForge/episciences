@@ -1,5 +1,6 @@
 <?php
 
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Episciences_Oai_Server extends Ccsd_Oai_Server
@@ -164,6 +165,27 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
     }
 
     /**
+     * Returns the cache pool used to store OAI resumption tokens.
+     *
+     * Extracted as a protected method to allow injection of a test double (e.g. ArrayAdapter)
+     * in unit tests without touching the filesystem.
+     */
+    protected function getTokenCachePool(): CacheItemPoolInterface
+    {
+        return new FilesystemAdapter('oai-token', 0, CACHE_PATH_METADATA);
+    }
+
+    /**
+     * Executes a Solr query and returns the raw serialized response.
+     *
+     * Extracted as a protected method to allow mocking in unit tests.
+     */
+    protected function executeSolrQuery(string $queryString): string|false
+    {
+        return Episciences_Tools::solrCurl($queryString);
+    }
+
+    /**
      * @param string $method
      * @param string $format
      * @param string $until
@@ -187,17 +209,19 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
             if ($until !== null || $from !== null) {
                 $query .= "&fq=publication_date_tdate:" . urlencode('[' . (($from == null) ? "*" : '"' . $from . 'T00:00:00Z"') . " TO " . (($until == null) ? "*" : '"' . $until . 'T23:59:59Z"') . "]");
             }
-            if ((($set !== null) || ($set !== self::SET_DRIVER) || ($set !== self::SET_OPENAIRE)) && strpos($set, self::SET_JOURNAL_PREFIX) === 0) {
+            if ($set !== null && str_starts_with($set, self::SET_JOURNAL_PREFIX)) {
                 $query .= "&fq=revue_code_t:" . urlencode(substr($set, 8));
             }
             $conf['query'] = $query;
             $queryString .= $query;
             $queryString .= "&cursorMark=*";
         } else {
-            if (!Episciences_Cache::exist('oai-token-' . md5($token) . '.phps', self::OAI_TOKEN_EXPIRATION_TIME)) {
+            $tokenPool = $this->getTokenCachePool();
+            $cacheItem = $tokenPool->getItem('oai-token-' . md5($token));
+            if (!$cacheItem->isHit()) {
                 return 'token';
             }
-            $conf = unserialize(Episciences_Cache::get('oai-token-' . md5($token) . '.phps'), ['allowed_classes' => false]);
+            $conf = $cacheItem->get();
             $format = $conf['format'];
             $queryString .= $conf['query'] . "&cursorMark=" . urlencode($token);
         }
@@ -211,7 +235,8 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
         $queryString .= "&sort=docid+desc";
         $queryString .= "&fl=docid&wt=phps";
 
-        $result = unserialize(Episciences_Tools::solrCurl($queryString), ['allowed_classes' => false]);
+        $solrResponse = $this->executeSolrQuery($queryString);
+        $result = $solrResponse !== false ? unserialize($solrResponse, ['allowed_classes' => false]) : false;
         if (isset($result['response'], $result['response']['numFound']) && is_array($result['response'])) {
             if ($result['response']['numFound'] == 0) {
                 return 0;
@@ -245,7 +270,10 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
                         $conf['cursor'] += (($method === self::OAI_VERB_LISTIDS) ? self::LIMIT_IDENTIFIERS : self::LIMIT_RECORDS);
                         $conf['solr'] = $queryString;
 
-                        Episciences_Cache::save('oai-token-' . md5($result['nextCursorMark']) . '.phps', serialize($conf));
+                        $tokenPool = $this->getTokenCachePool();
+                        $newTokenItem = $tokenPool->getItem('oai-token-' . md5($result['nextCursorMark']));
+                        $newTokenItem->set($conf)->expiresAfter(self::OAI_TOKEN_EXPIRATION_TIME);
+                        $tokenPool->save($newTokenItem);
                     } else {
                         $out[] = '<resumptionToken completeListSize="' . $result['response']['numFound'] . '" />';
                     }

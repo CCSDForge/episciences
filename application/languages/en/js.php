@@ -204,7 +204,7 @@ return [
     "Cette adresse est inconnue et n'est peut-être pas valide." => 'This address is unknown by the journal and might not be valid.',
 
     // edit publication date
-    'Veuillez indiquer une date valide !' => 'Please enter a valid date!',
+    'Veuillez indiquer une date valide' => 'Please enter a valid date',
 
     //COI
     'Aucun conflit pour le moment.' => 'No conflict yet.',

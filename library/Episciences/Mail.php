@@ -117,7 +117,7 @@ class Episciences_Mail extends Zend_Mail
         ];
 
         foreach ($folders as $folder) {
-            if (!is_dir($folder) && !mkdir($folder) && !is_dir($folder)) {
+            if (!is_dir($folder) && !mkdir($folder, 0755, true) && !is_dir($folder)) {
                 throw new Exception('Storage folder creation failed in: ' . $folder, self::STATUS_FAILED_MAIL_STORAGE_CREATION);
             }
         }

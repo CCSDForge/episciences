@@ -1,39 +1,16 @@
 <?php
 
+declare(strict_types=1);
 
 class Episciences_Paper_Projects
 {
+    protected ?int      $_idproject   = null;
+    protected ?string   $_funding     = null;
+    protected ?int      $_paperId     = null;
+    protected int       $_sourceId;
+    protected ?DateTime $_dateUpdated = null;
 
-    /**
-     * @var int
-     */
-    protected $_idproject;
-
-    /**
-     * @var string
-     */
-    protected $_funding;
-
-    /**
-     * @var int
-     */
-    protected $_paperId;
-
-    /**
-     * @var int
-     */
-    protected int $_sourceId;
-
-    /**
-     * @var datetime
-     */
-    protected $_dateUpdated = 'CURRENT_TIMESTAMP';
-
-    /**
-     * Episciences_Paper_Projects constructor.
-     * @param array|null $options
-     */
-    public function __construct(array $options = null)
+    public function __construct(?array $options = null)
     {
         if (is_array($options)) {
             $this->setOptions($options);
@@ -41,80 +18,65 @@ class Episciences_Paper_Projects
     }
 
     /**
-     * set paper options
-     * @param array $options
+     * Case-insensitive method matching so that DB column names like 'paperid'
+     * resolve to the correctly-cased setter 'setPaperId' without aliases.
+     * PHP method calls are already case-insensitive at runtime; only the
+     * in_array check needed to be relaxed.
      */
     public function setOptions(array $options): void
     {
-        $classMethods = get_class_methods($this);
+        $classMethods      = get_class_methods($this);
+        $classMethodsLower = array_map(strtolower(...), $classMethods);
         foreach ($options as $key => $value) {
-            $key = Episciences_Tools::convertToCamelCase($key, '_', true);
-            $method = 'set' . $key;
-            if (in_array($method, $classMethods, true)) {
+            $method = 'set' . Episciences_Tools::convertToCamelCase($key, '_', true);
+            if (in_array(strtolower($method), $classMethodsLower, true)) {
                 $this->$method($value);
             }
         }
     }
 
-
-    /**
-     * @return array
-     */
     public function toArray(): array
     {
         return [
-            'idproject' => $this->getProjectId(),
-            'funding'=> $this->getFunding(),
-            'paperId' => $this->getPaperId(),
-            'dateUpdated' => $this->getDateUpdated(),
+            'idproject'   => $this->getProjectId(),
+            'funding'     => $this->getFunding(),
+            'paperId'     => $this->getPaperId(),
+            'dateUpdated' => $this->_dateUpdated?->format('Y-m-d H:i:s'),
         ];
     }
 
-    /**
-     * @return int
-     */
     public function getProjectId(): ?int
     {
         return $this->_idproject;
     }
 
-    /**
-     * @param int $idProject
-     * @return $this
-     */
     public function setProjectId(int $idProject): self
     {
         $this->_idproject = $idProject;
         return $this;
     }
 
-    /**
-     * @return string
-     */
+    /** Maps DB column 'idproject' → setProjectId() */
+    public function setIdproject(int $id): self
+    {
+        return $this->setProjectId($id);
+    }
+
     public function getFunding(): ?string
     {
         return $this->_funding;
     }
 
-    /**
-     * @param string $funding
-     */
-    public function setFunding(string $funding): void
+    public function setFunding(string $funding): self
     {
         $this->_funding = $funding;
+        return $this;
     }
 
     public function getPaperId(): ?int
     {
-
         return $this->_paperId;
-
     }
-
-    /**
-     * @param int $paperId
-     * @return $this
-     */
 
     public function setPaperId(int $paperId): self
     {
@@ -124,11 +86,8 @@ class Episciences_Paper_Projects
 
     public function getSourceId(): ?int
     {
-
         return $this->_sourceId;
-
     }
-
 
     public function setSourceId(int $sourceId): self
     {
@@ -136,19 +95,12 @@ class Episciences_Paper_Projects
         return $this;
     }
 
-
-
-    /**
-     * @return DateTime
-     */
-    public function getDateUpdated(): DateTime
+    public function getDateUpdated(): ?DateTime
     {
         return $this->_dateUpdated;
     }
 
     /**
-     * @param DateTime $dateUpdated
-     * @return Episciences_Paper_Projects
      * @throws Exception
      */
     public function setDateUpdated(string $dateUpdated): self
@@ -156,5 +108,4 @@ class Episciences_Paper_Projects
         $this->_dateUpdated = new DateTime($dateUpdated);
         return $this;
     }
-
 }
