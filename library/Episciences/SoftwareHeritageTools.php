@@ -1,84 +1,96 @@
 <?php
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
+declare(strict_types=1);
 
+use Episciences\Api\SoftwareHeritageApiClient;
+use GuzzleHttp\Client;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+
+/**
+ * Facade for Software Heritage + HAL API access.
+ *
+ * Wraps SoftwareHeritageApiClient with lazy-init singleton.
+ * Constants preserved for backward compatibility.
+ */
 class Episciences_SoftwareHeritageTools
 {
-    public const SH_DOMAIN_API = "https://archive.softwareheritage.org/api/1";
-    public const API_HAL_URL = "https://hal.science/";
-
+    public const SH_DOMAIN_API    = 'https://archive.softwareheritage.org/api/1';
+    public const API_HAL_URL      = 'https://hal.science/';
     public const PREFIX_SWHID_DIR = 'swh:1:dir:';
 
+    private static ?SoftwareHeritageApiClient $client = null;
+
     /**
-     * @param $url
-     * @return string
-     * @throws JsonException
+     * For tests: inject a preconfigured client.
      */
-    public static function getCodeMetaFromHal($url) : string {
-        $client = new Client();
-        try {
-            $res = $client->request('GET', self::API_HAL_URL.$url.'/codemeta')->getBody()->getContents();
-            $resJson = json_decode($res);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                return $res;
-            }
-        } catch (GuzzleException $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
+    public static function setClient(?SoftwareHeritageApiClient $client): void
+    {
+        self::$client = $client;
+    }
+
+    private static function getClient(): SoftwareHeritageApiClient
+    {
+        if (self::$client === null) {
+            $cache = new FilesystemAdapter('softwareHeritage', SoftwareHeritageApiClient::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+            $logger = new Logger('softwareHeritage');
+            $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'softwareHeritage_' . date('Y-m-d') . '.log', Logger::INFO));
+            self::$client = new SoftwareHeritageApiClient(new Client(), $cache, $logger);
         }
-        return '';
+        return self::$client;
     }
-    public static function getCitationsFullFromHal($halId,int $version = 0) : string {
-        $client = new Client();
-        try {
 
-            $strQuery = '((halId_s:'.$halId.' OR halIdSameAs_s:'.$halId.')';
-
-            if ($version !== 0){
-                $strQuery.=' AND version_i:'.$version;
-            }
-            $strQuery.= ')&fl=docType_s,citationFull_s,swhidId_s';
-            $res = $client->request('GET',  Episciences_Repositories::getApiUrl(
-                    Episciences_Repositories::HAL_REPO_ID).'/search?q='.$strQuery)
-                ->getBody()->getContents();
-            $resJson = json_decode($res);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                return $res;
-            }
-        } catch (GuzzleException $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
+    /**
+     * Fetch codemeta JSON from a HAL URL.
+     *
+     * @param string $url HAL identifier/path
+     * @return string JSON body, or empty string on failure
+     */
+    public static function getCodeMetaFromHal(string $url): string
+    {
+        $result = self::getClient()->fetchCodeMetaFromHal($url);
+        if ($result === null) {
+            return '';
         }
-        return '';
+        return json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
     }
 
-    public static function getCodeMetaFromDirSwh(string $swhidDir) {
-
-        $client = new Client();
-        $cleanSwhid = str_replace(self::PREFIX_SWHID_DIR,'',$swhidDir);
-        try {
-            $res = $client->request('GET', self::SH_DOMAIN_API."/directory/".$cleanSwhid.'/codemeta.json')->getBody()->getContents();
-            $res = json_decode($res, true, 512, JSON_THROW_ON_ERROR);
-            if (array_key_exists("target_url",$res)){
-                try {
-                    $res = $client->request('GET', $res['target_url'].'raw')->getBody()->getContents();
-                    if ($res !== ""){
-                        return $res;
-                    }
-
-                } catch (GuzzleException $e){
-                    trigger_error($e->getMessage(), E_USER_WARNING);
-                }
-
-            }
-        } catch (GuzzleException $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
+    /**
+     * Fetch citation metadata from HAL Solr.
+     *
+     * @param string $halId HAL identifier
+     * @param int $version version number (0 = any)
+     * @return string JSON body, or empty string on failure
+     */
+    public static function getCitationsFullFromHal(string $halId, int $version = 0): string
+    {
+        $result = self::getClient()->fetchCitationFromHalSolr($halId, $version);
+        if ($result === null) {
+            return '';
         }
-        return '';
-
+        return json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
     }
 
-    public static function replaceByBadgeHalCitation(string $swhid, string $citation){
-        $regex = "~&#x27E8;".$swhid."&#x27E9;~";
-        return preg_replace($regex,'<img src="https://archive.softwareheritage.org/badge/'.$swhid.'" alt="Archived | '.$swhid.' "/>',$citation);
+    /**
+     * Fetch codemeta.json from a SWH directory SWHID.
+     *
+     * @param string $swhidDir full SWHID string, e.g. "swh:1:dir:abc123..."
+     * @return string codemeta content, or empty string on failure
+     */
+    public static function getCodeMetaFromDirSwh(string $swhidDir): string
+    {
+        return self::getClient()->fetchCodeMetaFromDirectory($swhidDir) ?? '';
     }
 
+    /**
+     * Replace a SWHID placeholder in a citation string with a badge img tag.
+     *
+     * @param string $swhid SWHID identifier
+     * @param string $citation citation HTML string containing &#x27E8;swhid&#x27E9;
+     * @return string citation with placeholder replaced by badge img
+     */
+    public static function replaceByBadgeHalCitation(string $swhid, string $citation): string
+    {
+        return self::getClient()->generateBadgeHtml($swhid, $citation);
+    }
 }

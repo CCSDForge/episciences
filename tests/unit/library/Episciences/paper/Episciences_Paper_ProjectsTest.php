@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 final class Episciences_Paper_ProjectsTest extends TestCase
 {
     // -------------------------------------------------------------------------
-    // Bug #6: KEY_ALIASES in setOptions()
+    // KEY_ALIASES in setOptions()
     // -------------------------------------------------------------------------
 
     public function testSetOptionsWithIdprojectKeyMapsToSetProjectId(): void
@@ -34,7 +34,7 @@ final class Episciences_Paper_ProjectsTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Bug #1 + #2: $_dateUpdated default and return type
+    // $_dateUpdated default and return type
     // -------------------------------------------------------------------------
 
     public function testDateUpdatedIsNullByDefault(): void
@@ -53,7 +53,7 @@ final class Episciences_Paper_ProjectsTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Bug #5: toArray() must serialize DateTime as string
+    // toArray() must serialize DateTime as string
     // -------------------------------------------------------------------------
 
     public function testToArraySerializesDateAsString(): void
@@ -73,7 +73,7 @@ final class Episciences_Paper_ProjectsTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Bug #3: setFunding() must be fluent
+    // setFunding() must be fluent
     // -------------------------------------------------------------------------
 
     public function testSetFundingReturnsSelf(): void

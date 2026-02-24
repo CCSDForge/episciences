@@ -159,7 +159,7 @@ class Episciences_Paper_ProjectsManager
     // -------------------------------------------------------------------------
 
     /**
-     * Bug #14 backward compat: original method returned '' when empty.
+     * Backward compat: original method returned '' when empty.
      * ViewFormatter::formatForView() always returns array; restore '' here.
      *
      * @throws JsonException

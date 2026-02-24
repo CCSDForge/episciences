@@ -19,6 +19,10 @@ class Episciences_User_TmpTest extends TestCase
 
     protected function setUp(): void
     {
+        // toArray() → getLangueid(true) → Episciences_Review::getDefaultLanguage() → Zend_Registry::get('Zend_Locale')
+        if (!\Zend_Registry::isRegistered('Zend_Locale')) {
+            \Zend_Registry::set('Zend_Locale', new \Zend_Locale('en'));
+        }
         $this->user = new Episciences_User_Tmp();
     }
 
