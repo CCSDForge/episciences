@@ -58,7 +58,7 @@ class getCitationsData extends JournalScript
             $sets = Episciences_OpencitationsTools::getOpenCitationCitedByDoi($value['DOI']);
             $apiCallCitationCache = json_decode($sets->get(), true, 512, JSON_THROW_ON_ERROR);
             if (!empty($apiCallCitationCache) && reset($apiCallCitationCache) !== "") {
-                Episciences_Paper_CitationsManager::extractCitationsAndInsertInDb($apiCallCitationCache, $value['DOCID']);
+                Episciences_Paper_Citations_EnrichmentService::extractAndStore($apiCallCitationCache, $value['DOCID']);
             } else {
                 $this->displayInfo('NO VALUE IN CACHE FOR ' . $value['DOCID'], true);
             }

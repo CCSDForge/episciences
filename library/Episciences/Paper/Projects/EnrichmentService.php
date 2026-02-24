@@ -46,12 +46,12 @@ class Episciences_Paper_Projects_EnrichmentService
         $fundingJson = json_encode($globalFundingArray, self::JSON_ENCODE_FLAGS);
 
         if ($rowInDbGraph === []) {
-            self::logInfo('Project Found ' . $fundingJson);
-            $project = self::buildProject($fundingJson, $paperId, Episciences_Repositories::GRAPH_OPENAIRE_ID);
+            self::logInfo('OpenAIRE funding project found, saving');
+            $project = self::buildProject($fundingJson, $paperId, (int) Episciences_Repositories::GRAPH_OPENAIRE_ID);
             return Episciences_Paper_Projects_Repository::insert($project);
         }
 
-        $project = self::buildProject($fundingJson, $paperId, Episciences_Repositories::GRAPH_OPENAIRE_ID);
+        $project = self::buildProject($fundingJson, $paperId, (int) Episciences_Repositories::GRAPH_OPENAIRE_ID);
         return Episciences_Paper_Projects_Repository::update($project);
     }
 
@@ -71,22 +71,20 @@ class Episciences_Paper_Projects_EnrichmentService
         }
 
         $fundingJson = json_encode($mergeArrayAnrEu, self::JSON_ENCODE_FLAGS);
-        $project     = self::buildProject($fundingJson, $paperId, Episciences_Repositories::HAL_REPO_ID);
+        $project     = self::buildProject($fundingJson, $paperId, (int) Episciences_Repositories::HAL_REPO_ID);
 
         if ($rowInDbHal !== []) {
-            self::logInfo('HAL PROJECT UPDATED');
+            self::logInfo('HAL funding project updated');
             return Episciences_Paper_Projects_Repository::update($project);
         }
 
-        self::logInfo('NEW HAL PROJECT INSERTED');
+        self::logInfo('HAL funding project saved');
         return Episciences_Paper_Projects_Repository::insert($project);
     }
 
     /**
      * Build the globalArrayJson of EU/ANR project metadata from raw HAL docs.
      * Replaces FormatFundingANREuToArray().
-     * Bug #13 fix: removed duplicate echo for ANR.
-     * Bug #15 fix: cache key sanitized to filesystem-safe chars.
      *
      * @throws JsonException
      */
@@ -101,7 +99,7 @@ class Episciences_Paper_Projects_EnrichmentService
         foreach ($halDocs as $halValue) {
             if (isset($halValue['europeanProjectId_i'])) {
                 foreach ($halValue['europeanProjectId_i'] as $idEuro) {
-                    self::logInfo('European Project found on HAL ' . $idEuro);
+                    self::logInfo('European project found on HAL: ' . $idEuro);
                     $cacheKey  = $safeIdentifier . '_' . $idEuro . '_EU_funding.json';
                     $cacheItem = $cache->getItem($cacheKey);
                     $cacheItem->expiresAfter(self::ONE_MONTH);
@@ -120,7 +118,7 @@ class Episciences_Paper_Projects_EnrichmentService
 
             if (isset($halValue['anrProjectId_i'])) {
                 foreach ($halValue['anrProjectId_i'] as $idAnr) {
-                    self::logInfo('ANR Project found on HAL ' . $idAnr);
+                    self::logInfo('ANR project found on HAL: ' . $idAnr);
                     $cacheKey  = $safeIdentifier . '_' . $idAnr . '_ANR_funding.json';
                     $cacheItem = $cache->getItem($cacheKey);
                     $cacheItem->expiresAfter(self::ONE_MONTH);
@@ -129,7 +127,7 @@ class Episciences_Paper_Projects_EnrichmentService
                         $cacheItem->set($resp);
                         $cache->save($cacheItem);
                     } else {
-                        self::logInfo('ANR Project found in CACHE');
+                        self::logInfo('ANR project retrieved from cache');
                         $resp = $cacheItem->get();
                     }
                     $accumulator[] = self::formatAnrHalResp(
@@ -261,7 +259,7 @@ class Episciences_Paper_Projects_EnrichmentService
     private static function getLogger(): Logger
     {
         if (!self::$logger instanceof \Monolog\Logger) {
-            $logFile      = dirname(APPLICATION_PATH) . '/log/' . self::LOG_FILE_PREFIX . date('Y-m-d') . '.log';
+            $logFile      = EPISCIENCES_LOG_PATH . self::LOG_FILE_PREFIX . date('Y-m-d') . '.log';
             self::$logger = new Logger(self::LOGGER_CHANNEL);
             self::$logger->pushHandler(new StreamHandler($logFile, Logger::INFO));
         }

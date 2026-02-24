@@ -70,12 +70,11 @@ class getLicenceDataEnrichment extends JournalScript
             $repoId = $value['REPOID'];
             $docId = $value['DOCID'];
             $version = (int) $value['VERSION'];
-            $cleanID = str_replace('/', '', $identifier); // ARXIV CAN HAVE "/" in ID
             $identifier = $this->cleanOldArxivId($identifier);
-            $fileName = $cleanID . "_licence.json";
+            $cacheKey = md5($identifier) . "_licence.json";
             echo PHP_EOL . $identifier;
             $cache = new FilesystemAdapter('enrichmentLicences', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-            $sets = $cache->getItem($fileName);
+            $sets = $cache->getItem($cacheKey);
             $sets->expiresAfter(self::ONE_MONTH);
             if (!$sets->isHit()) {
                 $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($repoId, $identifier, $version);

@@ -13,7 +13,7 @@ use ReflectionMethod;
 final class Episciences_Paper_Projects_ViewFormatterTest extends TestCase
 {
     // -------------------------------------------------------------------------
-    // Bug #14: formatForView() should always return array (never '')
+    // formatForView() should always return array (never '')
     // -------------------------------------------------------------------------
 
     /**
@@ -27,7 +27,7 @@ final class Episciences_Paper_Projects_ViewFormatterTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Bug #7: URL must be HTML-escaped in href attribute
+    // URL must be HTML-escaped in href attribute
     // -------------------------------------------------------------------------
 
     /**
@@ -57,7 +57,7 @@ final class Episciences_Paper_Projects_ViewFormatterTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Bug #7: display text of URL must also be HTML-escaped
+    // Display text of URL must also be HTML-escaped
     // -------------------------------------------------------------------------
 
     public function testUrlDisplayTextIsHtmlEscaped(): void
