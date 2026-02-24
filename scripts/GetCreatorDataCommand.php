@@ -26,7 +26,8 @@ class GetCreatorDataCommand extends Command
             ->addOption('doi', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by DOI')
             ->addOption('paperid', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by paper ID')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
-            ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Bypass cache and fetch fresh data');
+            ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Bypass cache and fetch fresh data')
+            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code); ignored when --doi or --paperid is used');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -34,6 +35,7 @@ class GetCreatorDataCommand extends Command
         $io      = new SymfonyStyle($input, $output);
         $dryRun  = (bool) $input->getOption('dry-run');
         $noCache = (bool) $input->getOption('no-cache');
+        $rvcode  = $input->getOption('rvcode');
 
         $io->title('Author data enrichment');
 
@@ -47,6 +49,17 @@ class GetCreatorDataCommand extends Command
 
         if ($dryRun) {
             $io->note('Dry-run mode enabled — no data will be written.');
+        }
+
+        $rvid = null;
+        if ($rvcode !== null) {
+            $review = Episciences_ReviewsManager::findByRvcode((string) $rvcode);
+            if (!$review instanceof Episciences_Review) {
+                $io->error("No journal found for RV code '{$rvcode}'.");
+                return Command::FAILURE;
+            }
+            $rvid = $review->getRvid();
+            $logger->info("Filtering on journal: {$rvcode} (RVID {$rvid})");
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -73,6 +86,9 @@ class GetCreatorDataCommand extends Command
                 ->where("DOI != ''")
                 ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
                 ->order('DOCID DESC');
+            if ($rvid !== null) {
+                $select->where('RVID = ?', $rvid);
+            }
             $rows = $db->fetchAll($select);
         }
 

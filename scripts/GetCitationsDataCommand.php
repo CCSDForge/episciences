@@ -22,13 +22,15 @@ class GetCitationsDataCommand extends Command
     {
         $this
             ->setDescription('Enrich citation metadata for all published papers via OpenCitations, OpenAlex and Crossref')
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database');
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
+            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $io     = new SymfonyStyle($input, $output);
         $dryRun = (bool) $input->getOption('dry-run');
+        $rvcode = $input->getOption('rvcode');
 
         $io->title('Citation data enrichment');
 
@@ -45,12 +47,26 @@ class GetCitationsDataCommand extends Command
             $io->note('Dry-run mode enabled — no data will be written.');
         }
 
+        $rvid = null;
+        if ($rvcode !== null) {
+            $review = Episciences_ReviewsManager::findByRvcode((string) $rvcode);
+            if (!$review instanceof Episciences_Review) {
+                $io->error("No journal found for RV code '{$rvcode}'.");
+                return Command::FAILURE;
+            }
+            $rvid = $review->getRvid();
+            $logger->info("Filtering on journal: {$rvcode} (RVID {$rvid})");
+        }
+
         $db     = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
             ->from(T_PAPERS, ['DOI', 'DOCID'])
             ->where('DOI != ""')
             ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
             ->order('DOCID DESC');
+        if ($rvid !== null) {
+            $select->where('RVID = ?', $rvid);
+        }
 
         $rows  = $db->fetchAll($select);
         $total = count($rows);

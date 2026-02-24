@@ -30,13 +30,15 @@ class GetLinkDataCommand extends Command
     {
         $this
             ->setDescription('Enrich dataset link data from Scholexplorer (OpenAIRE)')
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database');
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
+            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io     = new SymfonyStyle($input, $output);
         $dryRun = (bool) $input->getOption('dry-run');
+        $rvcode = $input->getOption('rvcode');
 
         $io->title('Link data enrichment (Scholexplorer)');
 
@@ -52,6 +54,17 @@ class GetLinkDataCommand extends Command
             $io->note('Dry-run mode enabled — no data will be written.');
         }
 
+        $rvid = null;
+        if ($rvcode !== null) {
+            $review = Episciences_ReviewsManager::findByRvcode((string) $rvcode);
+            if (!$review instanceof Episciences_Review) {
+                $io->error("No journal found for RV code '{$rvcode}'.");
+                return Command::FAILURE;
+            }
+            $rvid = $review->getRvid();
+            $logger->info("Filtering on journal: {$rvcode} (RVID {$rvid})");
+        }
+
         $client = new Client();
         $cache  = new FilesystemAdapter('scholexplorerLinkData', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
 
@@ -62,6 +75,9 @@ class GetLinkDataCommand extends Command
             ->where('DOI IS NOT NULL')
             ->where('DOI != ""')
             ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+        if ($rvid !== null) {
+            $select->where('RVID = ?', $rvid);
+        }
 
         $rows = $db->fetchAll($select);
         $io->progressStart(count($rows));

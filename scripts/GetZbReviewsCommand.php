@@ -27,13 +27,15 @@ class GetZbReviewsCommand extends Command
     {
         $this
             ->setDescription('Discover and store zbMATH Open reviews for published papers')
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database');
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
+            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io     = new SymfonyStyle($input, $output);
-        $dryRun = (bool) $input->getOption('dry-run');
+        $io      = new SymfonyStyle($input, $output);
+        $dryRun  = (bool) $input->getOption('dry-run');
+        $rvcode  = $input->getOption('rvcode');
         $io->title('zbMATH Open reviews discovery');
         $this->bootstrap();
 
@@ -48,18 +50,31 @@ class GetZbReviewsCommand extends Command
             $io->note('Dry-run mode enabled — no data will be written.');
         }
 
+        $rvid = null;
+        if ($rvcode !== null) {
+            $review = Episciences_ReviewsManager::findByRvcode((string) $rvcode);
+            if (!$review instanceof Episciences_Review) {
+                $io->error("No journal found for RV code '{$rvcode}'.");
+                return Command::FAILURE;
+            }
+            $rvid = $review->getRvid();
+            $logger->info("Filtering on journal: {$rvcode} (RVID {$rvid})");
+        }
+
         $cacheDir = dirname(APPLICATION_PATH) . '/cache/';
         // Shares the zbmathApiDocument cache with enrichment:classifications-msc
         $cache = new FilesystemAdapter('zbmathApiDocument', self::ONE_MONTH, $cacheDir);
 
         $db     = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $papers = $db->fetchAll(
-            $db->select()
-                ->from(T_PAPERS, ['DOI', 'DOCID', 'PAPERID'])
-                ->where('DOI != ""')
-                ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
-                ->order('DOCID ASC')
-        );
+        $select = $db->select()
+            ->from(T_PAPERS, ['DOI', 'DOCID', 'PAPERID'])
+            ->where('DOI != ""')
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
+            ->order('DOCID ASC');
+        if ($rvid !== null) {
+            $select->where('RVID = ?', $rvid);
+        }
+        $papers = $db->fetchAll($select);
 
         $logger->info('Starting zbMATH reviews discovery for ' . count($papers) . ' papers');
         $io->progressStart(count($papers));
@@ -68,7 +83,7 @@ class GetZbReviewsCommand extends Command
             $doi   = $row['DOI'];
             $docId = (int) $row['DOCID'];
             try {
-                $apiResponse = $this->queryZbMath($doi, $cache, $logger);
+                $apiResponse = $this->queryZbMath($doi, $cache, $logger, $output);
                 $reviews     = $this->extractZbMathReviews($apiResponse);
 
                 if (!empty($reviews)) {
@@ -104,7 +119,7 @@ class GetZbReviewsCommand extends Command
     /**
      * @return array<string, mixed>
      */
-    private function queryZbMath(string $doi, FilesystemAdapter $cache, Logger $logger): array
+    private function queryZbMath(string $doi, FilesystemAdapter $cache, Logger $logger, OutputInterface $output): array
     {
         $key  = 'zbmath_api_' . md5($doi);
         $item = $cache->getItem($key);
@@ -113,8 +128,8 @@ class GetZbReviewsCommand extends Command
             return $item->get();
         }
 
-        $url = 'https://api.zbmath.org/v1/document/_structured_search?page=0&results_per_page=1&'
-             . urlencode('external id') . '=' . urlencode($doi);
+        $url = 'https://api.zbmath.org/v1/document/_structured_search?page=0&results_per_page=1&DOI=' . rawurlencode($doi);
+        $output->writeln("zbMath API call: {$url}", OutputInterface::VERBOSITY_VERY_VERBOSE);
         try {
             $body = (new Client(['headers' => ['User-Agent' => 'Episciences', 'Accept' => 'application/json']]))
                         ->get($url)->getBody()->getContents();

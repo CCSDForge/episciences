@@ -25,13 +25,15 @@ class GetLicenceDataCommand extends Command
     {
         $this
             ->setDescription('Enrich licence data for all papers from repository APIs')
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database');
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
+            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io     = new SymfonyStyle($input, $output);
         $dryRun = (bool) $input->getOption('dry-run');
+        $rvcode = $input->getOption('rvcode');
 
         $io->title('Licence data enrichment');
 
@@ -47,12 +49,26 @@ class GetLicenceDataCommand extends Command
             $io->note('Dry-run mode enabled — no data will be written.');
         }
 
+        $rvid = null;
+        if ($rvcode !== null) {
+            $review = Episciences_ReviewsManager::findByRvcode((string) $rvcode);
+            if (!$review instanceof Episciences_Review) {
+                $io->error("No journal found for RV code '{$rvcode}'.");
+                return Command::FAILURE;
+            }
+            $rvid = $review->getRvid();
+            $logger->info("Filtering on journal: {$rvcode} (RVID {$rvid})");
+        }
+
         $db     = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
             ->from(T_PAPERS, ['IDENTIFIER', 'DOCID', 'REPOID', 'VERSION'])
             ->where('REPOID != ?', 0)
             ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
             ->order('REPOID DESC');
+        if ($rvid !== null) {
+            $select->where('RVID = ?', $rvid);
+        }
 
         $rows = $db->fetchAll($select);
         $io->progressStart(count($rows));

@@ -84,6 +84,71 @@ make logs CONTAINER=php-fpm
 
 ---
 
+## Application CLI Commands
+
+Episciences ships a Symfony Console application at `scripts/console.php`. All commands run inside
+the PHP container. Use `make <target>` as a shortcut during development, or invoke the script
+directly in production.
+
+```bash
+# List all available commands
+docker compose exec -u www-data php php scripts/console.php list
+
+# Get help for a specific command
+docker compose exec -u www-data php php scripts/console.php enrichment:creators --help
+```
+
+### Command reference
+
+| Namespace | Command | Description |
+|-----------|---------|-------------|
+| **user** | `user:generate` | Generate test user accounts |
+| | `user:init-dev` | Seed development users (called by `make init-dev-users`) |
+| | `user:create-bot` | Create the `episciences-bot` account |
+| **enrichment** | `enrichment:citations` | Enrich citation metadata (OpenCitations / OpenAlex / Crossref) |
+| | `enrichment:creators` | Enrich author ORCID data (OpenAIRE / HAL TEI) |
+| | `enrichment:licences` | Enrich licence data from repository APIs |
+| | `enrichment:links` | Enrich dataset links (Scholexplorer) |
+| | `enrichment:funding` | Enrich funding data (OpenAIRE / HAL) |
+| | `enrichment:classifications-jel` | Enrich JEL classification codes (OpenAIRE) |
+| | `enrichment:classifications-msc` | Enrich MSC 2020 classification codes (zbMATH) |
+| | `enrichment:zb-reviews` | Discover zbMATH Open reviews |
+| **sitemap** | `sitemap:generate` | Generate XML sitemaps |
+| **volume** | `volume:merge-pdf` | Merge per-volume PDFs into a single file |
+| **doaj** | `doaj:export-volumes` | Create DOAJ XML exports per volume |
+| **zbjats** | `zbjats:zip` | Package PDF + zbJATS XML files into a ZIP archive |
+| **import** | `import:sections` | Import journal sections from a CSV file |
+| | `import:volumes` | Import journal volumes from a CSV file |
+
+### Common options
+
+| Option | Applies to | Description |
+|--------|-----------|-------------|
+| `--dry-run` | all commands | Simulate without writing to the database or filesystem |
+| `--rvcode=<code>` | all `enrichment:*` commands | Restrict processing to one journal |
+| `-q` / `--quiet` | all commands | Suppress console output (log file only) |
+| `-vv` | `enrichment:zb-reviews`, `enrichment:classifications-msc` | Print each zbMATH API URL as it is called |
+
+### Makefile shortcuts (development)
+
+Each command has a corresponding `make` target that runs it inside the container as `www-data`.
+Run `make help` or inspect the `Makefile` for the full list. Example:
+
+```bash
+make enrich-creators
+make enrich-zb-reviews ARGS="--rvcode=jdmdh --dry-run"
+```
+
+### Production usage
+
+In production there is no Make or Docker. Commands are run directly on the server:
+
+```bash
+sudo -u www-data php /var/www/htdocs/scripts/console.php enrichment:creators --rvcode=jdmdh
+```
+
+---
+
 ## Available Services
 
 | Service | URL |

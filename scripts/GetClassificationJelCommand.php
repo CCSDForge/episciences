@@ -26,13 +26,15 @@ class GetClassificationJelCommand extends Command
     {
         $this
             ->setDescription('Enrich JEL classification data from the OpenAIRE Research Graph')
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database');
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
+            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io     = new SymfonyStyle($input, $output);
-        $dryRun = (bool) $input->getOption('dry-run');
+        $io      = new SymfonyStyle($input, $output);
+        $dryRun  = (bool) $input->getOption('dry-run');
+        $rvcode  = $input->getOption('rvcode');
         $io->title('JEL classification enrichment');
         $this->bootstrap();
 
@@ -47,6 +49,17 @@ class GetClassificationJelCommand extends Command
             $io->note('Dry-run mode enabled — no data will be written.');
         }
 
+        $rvid = null;
+        if ($rvcode !== null) {
+            $review = Episciences_ReviewsManager::findByRvcode((string) $rvcode);
+            if (!$review instanceof Episciences_Review) {
+                $io->error("No journal found for RV code '{$rvcode}'.");
+                return Command::FAILURE;
+            }
+            $rvid = $review->getRvid();
+            $logger->info("Filtering on journal: {$rvcode} (RVID {$rvid})");
+        }
+
         $cacheDir  = dirname(APPLICATION_PATH) . '/cache/';
         $apiClient = new OpenAireApiClient(
             new Client(),
@@ -58,13 +71,15 @@ class GetClassificationJelCommand extends Command
 
         $db       = Zend_Db_Table_Abstract::getDefaultAdapter();
         $allCodes = $db->fetchCol($db->select()->from(T_PAPER_CLASSIFICATION_JEL, ['code']));
-        $papers   = $db->fetchAll(
-            $db->select()
-                ->from(T_PAPERS, ['DOI', 'DOCID'])
-                ->where('DOI != ""')
-                ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
-                ->order('DOCID ASC')
-        );
+        $select   = $db->select()
+            ->from(T_PAPERS, ['DOI', 'DOCID'])
+            ->where('DOI != ""')
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
+            ->order('DOCID ASC');
+        if ($rvid !== null) {
+            $select->where('RVID = ?', $rvid);
+        }
+        $papers = $db->fetchAll($select);
 
         $logger->info('Starting JEL enrichment for ' . count($papers) . ' papers');
         $io->progressStart(count($papers));

@@ -26,13 +26,15 @@ class GetClassificationMscCommand extends Command
     {
         $this
             ->setDescription('Enrich MSC 2020 classification data from zbMath Open API')
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database');
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
+            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io     = new SymfonyStyle($input, $output);
-        $dryRun = (bool) $input->getOption('dry-run');
+        $io      = new SymfonyStyle($input, $output);
+        $dryRun  = (bool) $input->getOption('dry-run');
+        $rvcode  = $input->getOption('rvcode');
         $io->title('MSC 2020 classification enrichment');
         $this->bootstrap();
 
@@ -47,18 +49,31 @@ class GetClassificationMscCommand extends Command
             $io->note('Dry-run mode enabled — no data will be written.');
         }
 
+        $rvid = null;
+        if ($rvcode !== null) {
+            $review = Episciences_ReviewsManager::findByRvcode((string) $rvcode);
+            if (!$review instanceof Episciences_Review) {
+                $io->error("No journal found for RV code '{$rvcode}'.");
+                return Command::FAILURE;
+            }
+            $rvid = $review->getRvid();
+            $logger->info("Filtering on journal: {$rvcode} (RVID {$rvid})");
+        }
+
         $cacheDir = dirname(APPLICATION_PATH) . '/cache/';
         $cache    = new FilesystemAdapter('zbmathApiDocument', self::ONE_MONTH, $cacheDir);
 
         $db       = Zend_Db_Table_Abstract::getDefaultAdapter();
         $allCodes = $db->fetchCol($db->select()->from(T_PAPER_CLASSIFICATION_MSC2020, ['code']));
-        $papers   = $db->fetchAll(
-            $db->select()
-                ->from(T_PAPERS, ['DOI', 'DOCID'])
-                ->where('DOI != ""')
-                ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
-                ->order('DOCID ASC')
-        );
+        $select   = $db->select()
+            ->from(T_PAPERS, ['DOI', 'DOCID'])
+            ->where('DOI != ""')
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
+            ->order('DOCID ASC');
+        if ($rvid !== null) {
+            $select->where('RVID = ?', $rvid);
+        }
+        $papers = $db->fetchAll($select);
 
         $logger->info('Starting MSC 2020 enrichment for ' . count($papers) . ' papers');
         $io->progressStart(count($papers));
@@ -67,7 +82,7 @@ class GetClassificationMscCommand extends Command
             $doi   = $row['DOI'];
             $docId = (int) $row['DOCID'];
             try {
-                $apiResponse = $this->queryZbMath($doi, $cache, $logger);
+                $apiResponse = $this->queryZbMath($doi, $cache, $logger, $output);
                 $codes       = $this->extractMscCodes($apiResponse);
 
                 if (!empty($codes)) {
@@ -96,7 +111,7 @@ class GetClassificationMscCommand extends Command
     /**
      * @return array<string, mixed>
      */
-    private function queryZbMath(string $doi, FilesystemAdapter $cache, Logger $logger): array
+    private function queryZbMath(string $doi, FilesystemAdapter $cache, Logger $logger, OutputInterface $output): array
     {
         $key  = 'zbmath_api_' . md5($doi);
         $item = $cache->getItem($key);
@@ -105,8 +120,8 @@ class GetClassificationMscCommand extends Command
             return $item->get();
         }
 
-        $url = 'https://api.zbmath.org/v1/document/_structured_search?page=0&results_per_page=1&'
-             . urlencode('external id') . '=' . urlencode($doi);
+        $url = 'https://api.zbmath.org/v1/document/_structured_search?page=0&results_per_page=1&DOI=' . rawurlencode($doi);
+        $output->writeln("zbMath API call: {$url}", OutputInterface::VERBOSITY_VERY_VERBOSE);
         try {
             $body = (new Client(['headers' => ['User-Agent' => 'Episciences', 'Accept' => 'application/json']]))
                         ->get($url)->getBody()->getContents();
