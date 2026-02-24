@@ -2215,6 +2215,7 @@ return array(
     "Ajout de l'abstract graphique réussi" => "Added graphical abstract",
     "Ajouter un abstract graphique" => "Add a graphical abstract",
     "Modifier l'abstract graphique" => "Change the graphical abstract",
+    "Suppression de l'abstract graphique réussi"=> "Graphical abstract deleted successfully",
     "Poids maximum du fichier : 100 ko, Hauteur maximale : 880px" => "Max size file: 100 ko, Max height: 880px",
 
     'classification_jel' => 'JEL Classification System',

@@ -44,20 +44,69 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
         <?= $paper->getXslt() ?>
         <?php // Data Descriptor ?>
         <?= $this->render('partials/paper_data_descriptor_bloc.phtml') ?>
+        <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
+        <?php // paper status ***************************************************** ?>
+        <div id="article-status-panel" class="panel panel-default collapsable">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?php echo $this->translate('Statut de l\'article'); ?></h2>
+            </div>
+            <div class="panel-body in">
+                <?php
+                $isWaitingForAuthorValidation = (Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION === $status);
+                ?>
+
+                <?php if ($isWaitingForAuthorValidation): ?>
+                    <?php $info = "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via Episciences"; ?>
+                    <div class="alert alert-info alert-fixed">
+                        <i class="fas fa-exclamation-triangle" style="color:chocolate"></i>
+                        <?= $this->translate($info) ?>
+                        <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>
+                    </div>
+                <?php endif; ?>
+
+                <p>
+                    <span style="font-size:1em" class="label label-status-<?= $status ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
+                    <?= $this->partial('partials/paper-revision-deadline.phtml', [
+                            'paper' => $paper,
+                            'currentDemand' => $this->currentDemand
+                    ]) ?>
+                </p>
+
+
+                <?= $this->render('partials/paper_editor_suggestions.phtml') ?>
+
+                <?php if ($paper->isEditable()) : ?>
+                    <?php echo $this->render('partials/paper_status_button.phtml'); ?>
+                <?php endif; ?>
+
+            </div>
+        </div>
+        <?php // end of paper status ***************************************************** ?>
+
+        <?php // contributor section  ?>
+        <?php if ($paper->getUid()): ?>
+            <?php echo $this->partial('partials/paper_contributor.phtml', ['article' => $paper, 'id' => 'contributor', 'socialMedia' => $this->contributorSocialMedia, "coAuthorsList" => $coAuthorsList]) ?>
+        <?php endif; ?>
+
         <?php // Cover letter?>
         <?= $this->render('partials/paper_author_comments_bloc.phtml') ?>
+
+        <?php if (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()): ///********************* coauthor section ?>
+            <?= $this->partial('partials/coauthors.phtml', ['paper' => $paper]) ?>
+        <?php endif; ?>
+        <?php // affiliations *****************************************************
+        echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' => $this->affiliationsForm]);
+        ?>
         <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor()) : ?>
             <?= $this->partial('paper/paper_graphical_abstract.phtml', ['paper' => $paper]) ?>
         <?php endif; ?>
-        <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
+
         <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper, 'metadata' => $this->metadata]) ?>
         <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
 
     </div>
 
-<?php // affiliations *****************************************************
-echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' => $this->affiliationsForm]);
-?>
+
 <?php if ($paper->isPublished() && $paper->hasDoi()) : // Share ************************************ ?>
     <div id="share" class="col-12 panel panel-default collapsable">
         <div class="panel-heading">
@@ -66,6 +115,17 @@ echo $this->partial('partials/paper_affiliation_authors.phtml', ['affiliations' 
         <?php echo $this->partial('partials/paper_share.phtml', ['paper' => $paper, 'contributorSocialMedia' => $this->contributorSocialMedia, "coAuthorsList" => $coAuthorsList]); ?>
     </div>
 <?php endif; ?>
+
+<?php // Bloc "Volumes & Rubriques" ***************************************************** ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate('Volumes & rubriques'); ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php echo $this->partial('partials/paper_volumes_and_sections.phtml', ['article' => $paper, 'volumes' => $this->volumes, 'sections' => $this->sections, 'isPartial' => false]); ?>
+        </div>
+    </div>
+
 <?php // citations *****************************************************
 if ($this->citations !== '') {
     echo $this->partial('partials/paper_citations.phtml', ['citations' => $this->citations, 'counterCitations' => $this->counterCitations]);
@@ -75,15 +135,8 @@ if ($this->citations !== '') {
 <?php // conflict management section ?>
 <?= $this->render('partials/paper_conflicts.phtml') ?>
 
-<?php // contributor section  ?>
-<?php if ($paper->getUid()): ?>
-    <?php echo $this->partial('partials/paper_contributor.phtml', ['article' => $paper, 'id' => 'contributor', 'socialMedia' => $this->contributorSocialMedia, "coAuthorsList" => $coAuthorsList]) ?>
-<?php endif; ?>
 
 
-<?php if (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()): ///********************* coauthor section ?>
-    <?= $this->partial('partials/coauthors.phtml', ['paper' => $paper]) ?>
-<?php endif; ?>
 <?php if ($this->enabledBib): ?>
     <div id="biblio-refs" class="panel panel-default collapsable">
         <div class="panel-heading">
@@ -98,51 +151,8 @@ if ($this->citations !== '') {
     </div>
 <?php endif; ?>
 
-<?= $this->partial('partials/paper_versions.phtml', [
-        'paper' => $paper,
-        'versions' => $this->versions,
-        'isEditableVersion' => $this->isEditableVersion
-]) ?>
+
 <?php echo $this->partial('partials/paper_doi.phtml', ['doiAssignMode' => $this->doiAssignMode, 'canBeAssignedDOI' => $this->canBeAssignedDOI, 'paperid' => $paper->getPaperid(), 'docid' => $paper->getDocid(), 'paperDoi' => $paper->getDoi(), 'doiQueueStatus' => $this->doiQueueStatus, 'doiQueueStatusHtml' => $this->doiQueueStatusHtml]) ?>
-
-<?php // paper status ***************************************************** ?>
-    <div class="panel panel-default collapsable">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Statut de l\'article'); ?></h2>
-        </div>
-        <div class="panel-body in">
-            <?php
-            $statusMsg = $this->translate('Statut actuel') . $this->translate(' :') . ' ';
-            $isWaitingForAuthorValidation = (Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION === $status);
-            ?>
-
-            <?php if ($isWaitingForAuthorValidation): ?>
-                <?php $info = "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via Episciences"; ?>
-                <div class="alert alert-info alert-fixed">
-                    <i class="fas fa-exclamation-triangle" style="color:chocolate"></i>
-                    <?= $this->translate($info) ?>
-                    <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>
-                </div>
-            <?php endif; ?>
-
-            <p>
-                <strong><?= $statusMsg ?></strong>
-                <span class="label label-status-<?= $status ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
-                <?= $this->partial('partials/paper-revision-deadline.phtml', [
-                        'paper' => $paper,
-                        'currentDemand' => $this->currentDemand
-                ]) ?>
-            </p>
-
-
-            <?= $this->render('partials/paper_editor_suggestions.phtml') ?>
-
-            <?php if ($paper->isEditable()) : ?>
-                <?php echo $this->render('partials/paper_status_button.phtml'); ?>
-            <?php endif; ?>
-
-        </div>
-    </div>
 
 <?php // bloc "Préparateurs de copie" ?>
 
@@ -177,15 +187,7 @@ if ($this->citations !== '') {
 <?php endif; ?>
 
 
-<?php // Bloc "Volumes & Rubriques" ***************************************************** ?>
-    <div class="panel panel-default collapsable">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Volumes & rubriques'); ?></h2>
-        </div>
-        <div class="panel-body in">
-            <?php echo $this->partial('partials/paper_volumes_and_sections.phtml', ['article' => $paper, 'volumes' => $this->volumes, 'sections' => $this->sections, 'isPartial' => false]); ?>
-        </div>
-    </div>
+
 
 <?php // Bloc "Relecteurs" ***************************************************** ?>
 <?php if (
@@ -302,6 +304,12 @@ if ($this->citations !== '') {
         </div>
     </div>
 <?php endif; ?>
+
+<?= $this->partial('partials/paper_versions.phtml', [
+        'paper' => $paper,
+        'versions' => $this->versions,
+        'isEditableVersion' => $this->isEditableVersion
+]) ?>
 
 <?php // history ***************************************************** ?>
     <div id="history" class="panel panel-default collapsable">

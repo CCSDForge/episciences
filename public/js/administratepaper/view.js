@@ -676,7 +676,7 @@ function getPublicationDateForm(button, docId) {
                         $publicationDate.html(response);
                         refreshPaperHistory(docId);
                     } else {
-                        alert(translate('Veuillez indiquer une date valide !'));
+                        alert(translate('Veuillez indiquer une date valide'));
                     }
                 });
                 return false;
@@ -967,7 +967,7 @@ function getRevisionDeadlineForm(button, docId, commentId = null) {
                         $revisionDeadline.html(response);
                         refreshPaperHistory(docId);
                     } else {
-                        alert(translate('Veuillez indiquer une date valide !'));
+                        alert(translate('Veuillez indiquer une date valide'));
                     }
                 });
                 return false;
