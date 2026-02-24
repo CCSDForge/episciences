@@ -7,8 +7,8 @@
  */
 
 /**
- * @deprecated 
- * Class Ccsd_FlashMessenger
+ * @deprecated Use Ccsd_View_Helper_DisplayFlashMessages instead
+ *
  */
 class Ccsd_FlashMessenger {
 

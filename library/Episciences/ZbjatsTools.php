@@ -1,12 +1,15 @@
 <?php
+declare(strict_types=1);
 
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Episciences_ZbjatsTools
 {
     /**
-     * @param array $jsonRefBib
-     * @return array
+     * Convert an array of bibliographic references to JATS format.
+     *
+     * @param array<int, array<string, mixed>> $jsonRefBib
+     * @return array<mixed>
      * @throws JsonException
      * @throws \Psr\Cache\InvalidArgumentException
      */
@@ -14,56 +17,65 @@ class Episciences_ZbjatsTools
     {
         $refsInfo = [];
         foreach ($jsonRefBib as $refBib) {
-            $doiInfo = '';
             $dir = CACHE_PATH_METADATA . 'zbjatRefBib/';
-            if (!is_dir($dir) && !mkdir($dir, 0776, true) && !is_dir($dir)) {
+
+            if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
                 trigger_error(sprintf('Upload file failed: directory "%s" was not created', $dir));
                 continue;
             }
+
             if (isset($refBib['doi']) && $refBib['doi'] !== '') {
+                $isHal = Episciences_Tools::isHal($refBib['doi'])
+                    || !empty(Episciences_Tools::getHalIdAndVer($refBib['doi']));
+
+                if ($isHal) {
+                    $teiData = self::getTeiHalForZbjatExport($refBib['doi']);
+                    if ($teiData !== []) {
+                        $refsInfo[] = $teiData;
+                    }
+                    continue;
+                }
+
+                // Non-HAL DOIs: use DOI API with cache (TTL=0 → permanent)
                 $cacheZbjatJsonRefBib = new FilesystemAdapter('zbjatRefBib', 0, CACHE_PATH_METADATA);
                 $file = $cacheZbjatJsonRefBib->getItem(md5($refBib['doi']) . '.json');
+
                 if (!$file->isHit()) {
-                    if (PHP_SAPI === "cli") {
+                    if (PHP_SAPI === 'cli') {
                         echo 'CALL API TO GET BIBLIOGRAPHICAL REFERENCES ' . $refBib['doi'] . PHP_EOL;
                     }
-                    if (Episciences_tools::isDoi($refBib['doi'])) {
+                    $doiInfo = '';
+                    if (Episciences_Tools::isDoi($refBib['doi'])) {
                         $doiInfo = Episciences_DoiTools::getMetadataFromDoi($refBib['doi']);
                     } elseif (Episciences_Tools::isArxiv($refBib['doi'])) {
-                        $doiInfo = Episciences_DoiTools::getMetadataFromDoi(Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ARXIV_REPO_ID) . '/' . "arXiv." . $refBib['doi']);
+                        $doiInfo = Episciences_DoiTools::getMetadataFromDoi(
+                            Episciences_Repositories::getRepoDoiPrefix(Episciences_Repositories::ARXIV_REPO_ID) . '/' . 'arXiv.' . $refBib['doi']
+                        );
                     }
-                    if ($doiInfo !== "") {
+                    if ($doiInfo !== '') {
                         $file->set($doiInfo);
                         $cacheZbjatJsonRefBib->save($file);
                     }
                 } else {
-                    if (PHP_SAPI === "cli") {
+                    if (PHP_SAPI === 'cli') {
                         echo 'GET BIBLIOGRAPHICAL REFERENCES FROM CACHE ' . $refBib['doi'] . PHP_EOL;
                     }
                     $doiInfo = $file->get();
                 }
-                // get tei hal
-                if (Episciences_Tools::isHal($refBib['doi'])
-                    || !empty(Episciences_Tools::getHalIdAndVer($refBib['doi']))) {
-                    $doiInfo = self::getTeiHalForZbjatExport($refBib['doi']);
+
+                if (isset($doiInfo) && $doiInfo !== '') {
+                    $refsInfo[] = self::cslToJats($doiInfo);
                 }
-                if ($doiInfo !== '') {
-                    if (Episciences_Tools::isHal($refBib['doi'])
-                        || !empty(Episciences_Tools::getHalIdAndVer($refBib['doi']))) {
-                        $refsInfo[] = $doiInfo;
-                    } else {
-                        $refsInfo[] = self::cslToJats($doiInfo);
-                    }
-                }
-            } elseif (array_key_exists('csl',$refBib) && !isset($refBib['doi'])){
-                $csl = json_decode($refBib['csl'],true)['csl'];
+            } elseif (array_key_exists('csl', $refBib) && !isset($refBib['doi'])) {
+                $csl = json_decode($refBib['csl'], true, 512, JSON_THROW_ON_ERROR)['csl'];
                 $csl['published'] = $csl['issued'];
                 unset($csl['issued']);
-                $removeLayer = json_encode($csl);
+                $removeLayer = json_encode($csl, JSON_THROW_ON_ERROR);
                 $refsInfo[] = self::cslToJats($removeLayer);
-            } elseif (!array_key_exists('doi',$refBib) &&
-                !array_key_exists('csl',$refBib) &&
-                array_key_exists('unstructured_citation',$refBib)){
+            } elseif (!array_key_exists('doi', $refBib)
+                && !array_key_exists('csl', $refBib)
+                && array_key_exists('unstructured_citation', $refBib)
+            ) {
                 $refsInfo[]['mixed-citation'] = $refBib['unstructured_citation'];
             }
         }
@@ -71,17 +83,21 @@ class Episciences_ZbjatsTools
     }
 
     /**
-     * @param string $cslJsonRefBib
-     * @return array
+     * Convert a CSL JSON string to JATS array format.
+     *
+     * @param string $cslJsonRefBib CSL JSON string
+     * @return array<string, mixed> JATS-formatted array
      * @throws JsonException
      */
     public static function cslToJats(string $cslJsonRefBib): array
     {
         $refToJatsFormat = [];
         $cslJsonRefBib = json_decode($cslJsonRefBib, true, 512, JSON_THROW_ON_ERROR);
+
         if (isset($cslJsonRefBib['type'])) {
             $refToJatsFormat['publication-type'] = $cslJsonRefBib['type'];
         }
+
         $refAuthors = [];
         if (isset($cslJsonRefBib['author'])) {
             $indexAuthors = 0;
@@ -96,40 +112,44 @@ class Episciences_ZbjatsTools
             }
             $refToJatsFormat['authors'] = $refAuthors;
         }
-        if ($cslJsonRefBib['type'] !== "article-journal" && $cslJsonRefBib['type'] !== "journal-article") {
-            if (isset($cslJsonRefBib["container-title"])
-                && !is_array($cslJsonRefBib["container-title"])
-                && $cslJsonRefBib["container-title"] !== "") {
-                $refToJatsFormat['source'] = $cslJsonRefBib["container-title"];
+
+        $type = $cslJsonRefBib['type'] ?? '';
+        if ($type !== 'article-journal' && $type !== 'journal-article') {
+            if (isset($cslJsonRefBib['container-title'])
+                && !is_array($cslJsonRefBib['container-title'])
+                && $cslJsonRefBib['container-title'] !== ''
+            ) {
+                $refToJatsFormat['source'] = $cslJsonRefBib['container-title'];
             }
-            if (isset($cslJsonRefBib["title"])){
-                $refToJatsFormat['source'] = $cslJsonRefBib["title"];
+            if (isset($cslJsonRefBib['title'])) {
+                $refToJatsFormat['source'] = $cslJsonRefBib['title'];
             }
-//            elseif(isset($cslJsonRefBib["publisher"])) {
-//                $refToJatsFormat['source'] = $cslJsonRefBib["publisher"];
-//            }
         } else {
-            if (isset($cslJsonRefBib["container-title"])){
-                $refToJatsFormat['source'] = $cslJsonRefBib["container-title"];
+            if (isset($cslJsonRefBib['container-title'])) {
+                $refToJatsFormat['source'] = $cslJsonRefBib['container-title'];
             }
-            if (!is_array($cslJsonRefBib["title"])) {
-                $refToJatsFormat['article-title'] = $cslJsonRefBib["title"];
+            if (isset($cslJsonRefBib['title']) && !is_array($cslJsonRefBib['title'])) {
+                $refToJatsFormat['article-title'] = $cslJsonRefBib['title'];
             }
         }
+
         if (isset($cslJsonRefBib['DOI'])) {
             $refToJatsFormat['doi'] = $cslJsonRefBib['DOI'];
         }
-        if (isset($cslJsonRefBib['ISSN'])) {
+
+        if (isset($cslJsonRefBib['ISSN'][0])) {
             $refToJatsFormat['issn'] = $cslJsonRefBib['ISSN'][0];
         }
-        if (isset($cslJsonRefBib['published'])) {
+
+        if (isset($cslJsonRefBib['published']['date-parts'][0][0])) {
             $refToJatsFormat['year'] = $cslJsonRefBib['published']['date-parts'][0][0];
         }
+
         if (isset($cslJsonRefBib['volume'])) {
-            $refToJatsFormat['volume'] = $cslJsonRefBib["volume"];
+            $refToJatsFormat['volume'] = $cslJsonRefBib['volume'];
         }
         if (isset($cslJsonRefBib['issue'])) {
-            $refToJatsFormat['issue'] = $cslJsonRefBib["issue"];
+            $refToJatsFormat['issue'] = $cslJsonRefBib['issue'];
         }
         if (isset($cslJsonRefBib['page'])) {
             $getFirstAndLast = explode('-', $cslJsonRefBib['page']);
@@ -138,12 +158,13 @@ class Episciences_ZbjatsTools
                 $refToJatsFormat['lpage'] = $getFirstAndLast[1];
             }
         }
+
         return $refToJatsFormat;
     }
 
     /**
      * @param string $halId
-     * @return array
+     * @return array<string, mixed>
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public static function getTeiHalForZbjatExport(string $halId): array
@@ -173,7 +194,7 @@ class Episciences_ZbjatsTools
                     }
                 }
                 $docType = self::getDocTypeFromTeiHal($xmlString);
-                if ($docType !== "") {
+                if ($docType !== '') {
                     $refToJatsFormat['publication-type'] = $docType;
                     $refToJatsFormat = self::getTitleAndSource($docType, $xmlString, $refToJatsFormat);
                     $refToJatsFormat = self::getDoiIfExist($xmlString, $refToJatsFormat);
@@ -191,12 +212,12 @@ class Episciences_ZbjatsTools
     }
 
     /**
-     * @param $xmlString
+     * @param SimpleXMLElement $xmlString
      * @return string
      */
-    public static function getDocTypeFromTeiHal($xmlString): string
+    public static function getDocTypeFromTeiHal(SimpleXMLElement $xmlString): string
     {
-        $docType = "";
+        $docType = '';
         if (isset($xmlString->text->body->listBibl->biblFull->profileDesc)) {
             $classCode = $xmlString->text->body->listBibl->biblFull->profileDesc->textClass->classCode;
             foreach ($classCode as $domain) {
@@ -209,20 +230,18 @@ class Episciences_ZbjatsTools
     }
 
     /**
-     * @param $xmlString
-     * @param array $refToJatsFormat
-     * @return array
+     * @param SimpleXMLElement $xmlString
+     * @param array<string, mixed> $refToJatsFormat
+     * @return array<string, mixed>
      */
-    public static function getDoiIfExist($xmlString, array $refToJatsFormat): array
+    public static function getDoiIfExist(SimpleXMLElement $xmlString, array $refToJatsFormat): array
     {
         if (isset($xmlString->text->body->listBibl->biblFull->sourceDesc->biblStruct->idno)) {
             $idno = $xmlString->text->body->listBibl->biblFull->sourceDesc->biblStruct->idno;
-            if ($idno !== null) {
-                foreach ($idno as $info) {
-                    if ((string)$info->attributes()->type === 'doi') {
-                        $refToJatsFormat['doi'] = (string)$info;
-                        break;
-                    }
+            foreach ($idno as $info) {
+                if ((string)$info->attributes()->type === 'doi') {
+                    $refToJatsFormat['doi'] = (string)$info;
+                    break;
                 }
             }
         }
@@ -231,8 +250,8 @@ class Episciences_ZbjatsTools
 
     /**
      * @param SimpleXMLElement $imprint
-     * @param array $refToJatsFormat
-     * @return array
+     * @param array<string, mixed> $refToJatsFormat
+     * @return array<string, mixed>
      */
     public static function getVolumesInfos(SimpleXMLElement $imprint, array $refToJatsFormat): array
     {
@@ -257,16 +276,16 @@ class Episciences_ZbjatsTools
     }
 
     /**
-     * @param $xmlString
-     * @param array $refToJatsFormat
-     * @return array
+     * @param SimpleXMLElement $xmlString
+     * @param array<string, mixed> $refToJatsFormat
+     * @return array<string, mixed>
      */
-    public static function getYear($xmlString, array $refToJatsFormat): array
+    public static function getYear(SimpleXMLElement $xmlString, array $refToJatsFormat): array
     {
         if (isset($xmlString->text->body->listBibl->biblFull->editionStmt->edition->date)) {
             foreach ($xmlString->text->body->listBibl->biblFull->editionStmt->edition->date as $date) {
                 if (((string)$date->attributes()->type === 'whenProduced')
-                    && preg_match("~\d{4}~", $date, $matches)) {
+                    && preg_match('~\d{4}~', (string)$date, $matches)) {
                     $refToJatsFormat['year'] = $matches[0];
                     break;
                 }
@@ -276,11 +295,11 @@ class Episciences_ZbjatsTools
     }
 
     /**
-     * @param $xmlString
-     * @param array $refToJatsFormat
-     * @return array
+     * @param SimpleXMLElement $xmlString
+     * @param array<string, mixed> $refToJatsFormat
+     * @return array<string, mixed>
      */
-    public static function getIssnsIfExists($xmlString, array $refToJatsFormat): array
+    public static function getIssnsIfExists(SimpleXMLElement $xmlString, array $refToJatsFormat): array
     {
         if (isset($xmlString->text->body->listBibl->biblFull->sourceDesc->biblStruct->monogr,
             $xmlString->text->body->listBibl->biblFull->sourceDesc->biblStruct->monogr->idno)) {
@@ -292,13 +311,17 @@ class Episciences_ZbjatsTools
                 if ((string)$infoId->attributes()->type === 'eissn') {
                     $refToJatsFormat['eissn'] = (string)$infoId;
                 }
-
             }
         }
         return $refToJatsFormat;
     }
 
-    public static function getIsbnIfExists($xmlString, array $refToJatsFormat): array
+    /**
+     * @param SimpleXMLElement $xmlString
+     * @param array<string, mixed> $refToJatsFormat
+     * @return array<string, mixed>
+     */
+    public static function getIsbnIfExists(SimpleXMLElement $xmlString, array $refToJatsFormat): array
     {
         if (isset($xmlString->text->body->listBibl->biblFull->sourceDesc->biblStruct->monogr,
             $xmlString->text->body->listBibl->biblFull->sourceDesc->biblStruct->monogr->idno)) {
@@ -307,7 +330,6 @@ class Episciences_ZbjatsTools
                 if ((string)$infoId->attributes()->type === 'isbn') {
                     $refToJatsFormat['isbn'] = (string)$infoId;
                 }
-
             }
         }
         return $refToJatsFormat;
@@ -315,13 +337,12 @@ class Episciences_ZbjatsTools
 
     /**
      * @param string $docType
-     * @param $xmlString
-     * @param array $refToJatsFormat
-     * @return array
+     * @param SimpleXMLElement $xmlString
+     * @param array<string, mixed> $refToJatsFormat
+     * @return array<string, mixed>
      */
-    public static function getTitleAndSource(string $docType, $xmlString, array $refToJatsFormat): array
+    public static function getTitleAndSource(string $docType, SimpleXMLElement $xmlString, array $refToJatsFormat): array
     {
-
         if ($docType === 'ART') {
             if (isset($xmlString->text->body->listBibl->biblFull->titleStmt->title)) {
                 $refToJatsFormat['article-title'] =
@@ -333,7 +354,7 @@ class Episciences_ZbjatsTools
                 $refToJatsFormat['source'] = (string)$xmlString->text->body->listBibl->biblFull->titleStmt->title[0];
             }
         }
-        $refToJatsFormat['lang-article'] = (string) $xmlString->text->body->listBibl->biblFull->titleStmt->title[0]->attributes('xml', TRUE)['lang'];
+        $refToJatsFormat['lang-article'] = (string)$xmlString->text->body->listBibl->biblFull->titleStmt->title[0]->attributes('xml', true)['lang'];
         return $refToJatsFormat;
     }
 }
