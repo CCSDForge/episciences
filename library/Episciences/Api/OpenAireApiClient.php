@@ -164,6 +164,47 @@ class OpenAireApiClient extends AbstractApiClient
     }
 
     // -------------------------------------------------------------------------
+    // JEL classification extraction
+    // -------------------------------------------------------------------------
+
+    /**
+     * Extract JEL classification codes from an OpenAire publication response.
+     *
+     * @param array<string, mixed> $response
+     * @return array<string> unique JEL codes (e.g. "A10", "B23")
+     */
+    public function extractJelCodes(array $response): array
+    {
+        $codes = [];
+        if (!isset($response['response']['results']['result'])) {
+            return $codes;
+        }
+        foreach ($response['response']['results']['result'] as $result) {
+            $subjects = $result['metadata']['oaf:entity']['oaf:result']['subject'] ?? null;
+            if ($subjects === null) {
+                continue;
+            }
+            // subject may be a single object or an array of objects
+            if (!is_array($subjects) || isset($subjects['@classid'])) {
+                $subjects = [$subjects];
+            }
+            foreach ($subjects as $subject) {
+                if (($subject['@classid'] ?? '') !== 'jel' || !isset($subject['$'])) {
+                    continue;
+                }
+                $value = $subject['$'];
+                if (str_starts_with($value, 'jel:')) {
+                    $code = substr($value, 4); // fix: ltrim('jel:') strips chars, not the prefix string
+                    if ($code !== '') {
+                        $codes[] = $code;
+                    }
+                }
+            }
+        }
+        return array_unique($codes);
+    }
+
+    // -------------------------------------------------------------------------
     // Cache helpers (author / funding pools)
     // -------------------------------------------------------------------------
 
