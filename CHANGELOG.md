@@ -67,6 +67,7 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
 - Added `TeiCacheManager::fetchAndGet()` to combine fetch-if-needed + read in a single call; callers updated (`EnrichmentService`, `LicenceManager`, `AuthorsManager`)
 
 ### Fixed
+- Fixed Solr search engine indexation of Authors with a middle name
 -  consider an additional review when sending reminders for an insufficient number of reviewers
 - `Projects`: `$_dateUpdated` default was the string `'CURRENT_TIMESTAMP'` instead of `null`; `getDateUpdated()` declared `DateTime` return type but could return a string
 - `Projects::setFunding()`: method was not fluent (`void` return), inconsistent with all other setters
