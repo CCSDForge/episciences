@@ -740,6 +740,7 @@ class Episciences_Mail_Reminder
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
+     * @throws JsonException
      */
 
     private function getNotEnoughReviewersRecipients($debug, $date, $filters): array
@@ -764,12 +765,20 @@ class Episciences_Mail_Reminder
 
         /** @var Episciences_Paper $paper */
         foreach ($papers as $paper) {
-            $acceptedInvitations = $paper->getInvitations(
-                [Episciences_User_Assignment::STATUS_ACTIVE],
+            // L'ajout d'une relecture supplémentaire ne passe pas par les invitations, on doit donc d'abord vérifier cela.
+            $nbReports = count($paper->getReports());
+
+            if ($nbReports >= $requiredReviewers){
+                continue;
+            }
+
+            $pendingAndAcceptedInvitations = $paper->getInvitations(
+                [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING],
                 true,
                 $review->getRvid()
-            )[Episciences_User_Assignment::STATUS_ACTIVE] ?? [];
+            );
 
+            $acceptedInvitations = $pendingAndAcceptedInvitations[Episciences_User_Assignment::STATUS_ACTIVE] ?? [];
             $nbAcceptedInvitations = count($acceptedInvitations);
 
             if ($nbAcceptedInvitations >= $requiredReviewers) {
@@ -780,13 +789,20 @@ class Episciences_Mail_Reminder
 
             $commonTags = [
                 Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN =>  $lostLoginLink,
-                Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink // present in custom templates
+                Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink, // present in custom templates
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                Episciences_Mail_Tags::TAG_ARTICLE_LINK => self::buildAdminPaperUrl($paper->getDocid(), $journalOptions),
+                Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT => $nbAcceptedInvitations,
+                Episciences_Mail_Tags::TAG_REQUIRED_REVIEWERS_COUNT => $requiredReviewers,
             ];
+
+            $pendingInvitations = $pendingAndAcceptedInvitations[Episciences_User_Assignment::STATUS_PENDING] ?? [];
 
             // pour chacun des rédacteurs de l'article
             /** @var Episciences_Editor $editor */
             foreach ($paper->getEditors() as $editor) {
-                $originDate = $this->resolveOriginDate($acceptedInvitations, $editor);
+                $originDate = $this->resolveOriginDate([...$acceptedInvitations, ...$pendingInvitations], $editor);
                 if (!$originDate) {
                     continue;
                 }
@@ -799,12 +815,7 @@ class Episciences_Mail_Reminder
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
-                    Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
-                    Episciences_Mail_Tags::TAG_ARTICLE_LINK => self::buildAdminPaperUrl($paper->getDocid(), $journalOptions),
-                    Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT => $nbAcceptedInvitations,
-                    Episciences_Mail_Tags::TAG_REQUIRED_REVIEWERS_COUNT => $requiredReviewers,
                 ];
 
                 if ($this->shouldSendReminder($intervalDays)) {
@@ -1621,20 +1632,21 @@ class Episciences_Mail_Reminder
 
     }
 
-    private function resolveOriginDate(array $acceptedInvitations, Episciences_Editor $editor): ?DateTimeImmutable
+    private function resolveOriginDate(array $invitations, Episciences_Editor $editor): ?DateTimeImmutable
     {
-        $latestInvitationDate = $this->getLatestInvitationDate($acceptedInvitations);
+        $latestInvitationDate = $this->getLatestInvitationDate($invitations);
+
+        if ($latestInvitationDate) {
+            return $latestInvitationDate;
+        }
+
         $editorAssignmentDate = $this->createDateWithoutTime($editor->getWhen());
 
         if (!$editorAssignmentDate) {
             return null;
         }
 
-        if (!$latestInvitationDate || $latestInvitationDate < $editorAssignmentDate) {
-            return $editorAssignmentDate;
-        }
-
-        return $latestInvitationDate;
+        return $editorAssignmentDate;
     }
 
     private function getLatestInvitationDate(array $acceptedInvitations): ?DateTimeImmutable

@@ -268,32 +268,165 @@ restart-php: ## Restart PHP-FPM container
 
 # =============================================================================
 # Application Specific Commands
+#
+# These targets are development shortcuts that run Episciences CLI commands
+# inside the PHP container as $(CNTR_APP_USER).
+#
+# In production, commands are run directly on the server (no Make, no Docker):
+#   sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php <command> [options]
+#
+# All console commands accept --dry-run (simulate without writing) and -q (quiet/cron mode).
+# Run `php scripts/console.php list` for the full list of available commands.
 # =============================================================================
-send-mails: ## Send queued emails using the mail queue system
-	@echo "Sending queued emails..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/send_mails.php
 
-merge-pdf-volume: ## Merge all PDFs from a volume into one PDF (requires rvcode parameter)
+# --- Mail -----------------------------------------------------------------------
+
+send-mails: ## Send queued emails using the mail queue system
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/send_mails.php
+	@echo "Sending queued emails..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/send_mails.php
+
+# --- Enrichment -----------------------------------------------------------------
+
+enrich-citations: ## Enrich citation data from the Episciences API
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:citations [-q] [--dry-run]
+	@echo "Enriching citation data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:citations
+
+enrich-creators: ## Enrich author ORCID data from OpenAIRE Research Graph and HAL TEI
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:creators [-q] [--dry-run]
+	@echo "Enriching author (creator) data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:creators
+
+enrich-licences: ## Enrich licence data from the Episciences API
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:licences [-q] [--dry-run]
+	@echo "Enriching licence data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:licences
+
+enrich-links: ## Enrich link data from the Episciences API
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:links [-q] [--dry-run]
+	@echo "Enriching link data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:links
+
+enrich-funding: ## Enrich funding data from OpenAIRE Research Graph
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:funding [-q] [--dry-run]
+	@echo "Enriching funding data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:funding
+
+get-classification-jel: ## Enrich JEL classification data from OpenAIRE Research Graph
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:classifications-jel [-q] [--dry-run]
+	@echo "Enriching JEL classification data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:classifications-jel
+
+get-classification-msc: ## Enrich MSC 2020 classification data from zbMATH Open
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:classifications-msc [-q] [--dry-run]
+	@echo "Enriching MSC 2020 classification data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:classifications-msc
+
+enrich-zb-reviews: ## Enrich zbMATH review data
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:zb-reviews [-q] [--dry-run]
+	@echo "Enriching zbMATH review data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:zb-reviews
+
+# --- Sitemap --------------------------------------------------------------------
+
+generate-sitemap: ## Generate XML sitemap for a journal (requires rvcode=JOURNAL_CODE; optional: pretty=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate RVCODE [--pretty] [-q]
 	@if [ -z "$(rvcode)" ]; then \
 		echo "Error: rvcode parameter is required"; \
-		echo "Usage: make merge-pdf-volume rvcode=JOURNAL_CODE"; \
-		echo "Optional: ignorecache=1 removecache=1"; \
+		echo "Usage: make generate-sitemap rvcode=JOURNAL_CODE [pretty=1]"; \
 		exit 1; \
 	fi
-	@echo "Merging PDFs for volume $(rvcode)..."
+	@echo "Generating sitemap for journal '$(rvcode)'..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
-		php scripts/mergePdfVol.php \
+		php scripts/console.php sitemap:generate $(rvcode) \
+		$(if $(filter 1,$(pretty)),--pretty)
+
+# --- Volume / DOAJ --------------------------------------------------------------
+
+merge-pdf-volume: ## Merge PDFs for all articles in a journal volume into one file (requires rvcode=JOURNAL_CODE; optional: ignore-cache=1 remove-cache=1 dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php volume:merge-pdf --rvcode=RVCODE [--ignore-cache] [--remove-cache] [--dry-run] [-q]
+	@if [ -z "$(rvcode)" ]; then \
+		echo "Error: rvcode parameter is required"; \
+		echo "Usage: make merge-pdf-volume rvcode=JOURNAL_CODE [ignore-cache=1] [remove-cache=1] [dry-run=1]"; \
+		exit 1; \
+	fi
+	@echo "Merging PDFs for journal '$(rvcode)'..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php volume:merge-pdf \
 		--rvcode=$(rvcode) \
-		--ignorecache=$(or $(ignorecache),0) \
-		--removecache=$(or $(removecache),0)
+		$(if $(filter 1,$(ignore-cache)),--ignore-cache) \
+		$(if $(filter 1,$(remove-cache)),--remove-cache) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
 
-get-classification-msc: ## Get MSC 2020 Classifications from zbMATH Open
-	@echo "Fetching MSC 2020 classifications..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/getClassificationMsc.php
+doaj-export-volumes: ## Create DOAJ XML volume exports (requires rvcode=JOURNAL_CODE or rvcode=allJournals; optional: ignore-cache=1 remove-cache=1 dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php doaj:export-volumes --rvcode=RVCODE|allJournals [--ignore-cache] [--remove-cache] [--dry-run] [-q]
+	@if [ -z "$(rvcode)" ]; then \
+		echo "Error: rvcode parameter is required"; \
+		echo "Usage: make doaj-export-volumes rvcode=JOURNAL_CODE|allJournals [ignore-cache=1] [remove-cache=1] [dry-run=1]"; \
+		exit 1; \
+	fi
+	@echo "Creating DOAJ volume exports for '$(rvcode)'..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php doaj:export-volumes \
+		--rvcode=$(rvcode) \
+		$(if $(filter 1,$(ignore-cache)),--ignore-cache) \
+		$(if $(filter 1,$(remove-cache)),--remove-cache) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
 
-get-classification-jel: ## Get JEL Classifications from OpenAIRE Research Graph
-	@echo "Fetching JEL classifications..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/getClassificationJEL.php
+# --- Import ---------------------------------------------------------------------
+
+import-sections: ## Import journal sections from a CSV file (requires csv-file=PATH; optional: dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php import:sections --csv-file=PATH [--dry-run] [-q]
+	@if [ -z "$(csv-file)" ]; then \
+		echo "Error: csv-file parameter is required"; \
+		echo "Usage: make import-sections csv-file=PATH/TO/FILE.csv [dry-run=1]"; \
+		exit 1; \
+	fi
+	@echo "Importing sections from '$(csv-file)'..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php import:sections \
+		--csv-file=$(csv-file) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
+
+import-volumes: ## Import journal volumes from a CSV file (requires rvid=JOURNAL_RVID csv-file=PATH; optional: dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php import:volumes --rvid=RVID --csv-file=PATH [--dry-run] [-q]
+	@if [ -z "$(rvid)" ] || [ -z "$(csv-file)" ]; then \
+		echo "Error: rvid and csv-file parameters are required"; \
+		echo "Usage: make import-volumes rvid=JOURNAL_RVID csv-file=PATH/TO/FILE.csv [dry-run=1]"; \
+		exit 1; \
+	fi
+	@echo "Importing volumes for RVID $(rvid) from '$(csv-file)'..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php import:volumes \
+		--rvid=$(rvid) \
+		--csv-file=$(csv-file) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
+
+# --- zbJATS ---------------------------------------------------------------------
+
+zbjats-zip: ## Download PDF + zbJATS XML per volume and create a ZIP archive (requires rvid=JOURNAL_RVID; optional: zip-prefix=PREFIX dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php zbjats:zip --rvid=RVID [--zip-prefix=PREFIX] [--dry-run] [-q]
+	@if [ -z "$(rvid)" ]; then \
+		echo "Error: rvid parameter is required"; \
+		echo "Usage: make zbjats-zip rvid=JOURNAL_RVID [zip-prefix=PREFIX] [dry-run=1]"; \
+		exit 1; \
+	fi
+	@echo "Creating zbJATS ZIP for RVID $(rvid)..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php zbjats:zip \
+		--rvid=$(rvid) \
+		$(if $(zip-prefix),--zip-prefix=$(zip-prefix)) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
 
 can-i-use-update: ## Update browserslist database when caniuse-lite is outdated
 	@echo "Updating browserslist database..."

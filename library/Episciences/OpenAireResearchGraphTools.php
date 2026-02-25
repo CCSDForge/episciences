@@ -555,8 +555,8 @@ class Episciences_OpenAireResearchGraphTools
             $isMatch = false;
 
             // Check if the author name appears anywhere in the API data
-            if (array_search($needleFullName, $authorInfoFromApi, false) !== false ||
-                array_search(Episciences_Tools::replaceAccents($needleFullName), $authorInfoFromApi, false)) {
+            if (array_search($needleFullName, $authorInfoFromApi, true) !== false ||
+                array_search(Episciences_Tools::replaceAccents($needleFullName), $authorInfoFromApi, true) !== false) {
                 $isMatch = true;
             } elseif (isset($authorInfoFromApi[self::ARRAY_KEY_API_NAME]) &&
                 Episciences_Tools::replaceAccents($needleFullName) === Episciences_Tools::replaceAccents($authorInfoFromApi[self::ARRAY_KEY_API_NAME])) {
@@ -662,8 +662,8 @@ class Episciences_OpenAireResearchGraphTools
          */
         $msgLogAuthorFound = "Author Found \n Searching :\n" . print_r($needleFullName, true) . "\n API: \n" . print_r($authorInfoFromApi, true) . " DB DATA:\n " . print_r($decodeAuthor, true);
 
-        if (array_search($needleFullName, $authorInfoFromApi, false) !== false ||
-            array_search(Episciences_Tools::replaceAccents($needleFullName), $authorInfoFromApi, false)) {
+        if (array_search($needleFullName, $authorInfoFromApi, true) !== false ||
+            array_search(Episciences_Tools::replaceAccents($needleFullName), $authorInfoFromApi, true) !== false) {
 
             self::logErrorMsg($msgLogAuthorFound);
 

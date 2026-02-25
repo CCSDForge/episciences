@@ -15,14 +15,11 @@ class Episciences_Paper_Citations_Logger
     private static ?Logger $logger = null;
 
     /**
-     * Log a message at INFO level, and echo it to stdout when running from CLI.
+     * Log a message at INFO level.
+     * In CLI mode, output goes to stdout via the Monolog stdout handler (see getLogger()).
      */
     public static function log(string $msg): void
     {
-        if (PHP_SAPI === 'cli') {
-            echo PHP_EOL . $msg . PHP_EOL;
-        }
-
         self::getLogger()->info($msg);
     }
 
@@ -32,6 +29,14 @@ class Episciences_Paper_Citations_Logger
     public static function info(string $msg): void
     {
         self::log($msg);
+    }
+
+    /**
+     * Expose the Monolog Logger instance for injection into API clients.
+     */
+    public static function getMonologInstance(): Logger
+    {
+        return self::getLogger();
     }
 
     /**

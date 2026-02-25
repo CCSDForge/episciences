@@ -2441,6 +2441,7 @@ class Episciences_Paper
      * @param bool $active
      * @param bool $getCASdata
      * @return array
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function getEditors($active = true, $getCASdata = false): array
@@ -3056,12 +3057,12 @@ class Episciences_Paper
     }
 
     /**
-     * @param null $status
+     * @param int|null $status
      * @param bool $forceFiltering
      * @return array
      * @throws Zend_Db_Statement_Exception
      */
-    public function getReports($status = null, $forceFiltering = false)
+    public function getReports(int | null $status = null, bool $forceFiltering = false): array
     {
         if (!is_array($this->_reports)) {
             $this->loadReports();
@@ -3073,7 +3074,7 @@ class Episciences_Paper
         if ($status && $reports) {
             /** @var Episciences_Rating_Report $report */
             foreach ($reports as $id => $report) {
-                if ($report->getStatus() != $status) {
+                if ($report->getStatus() !== $status) {
                     unset($reports[$id]);
                 }
             }
@@ -3096,13 +3097,13 @@ class Episciences_Paper
      */
     public function loadReports(): array
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        $sql = $db->select()->from(T_REVIEWER_REPORTS)->where('DOCID = ?', $this->getDocid());
-        // WHERE DOCID IN (SELECT DOCID FROM `PAPERS` WHERE PAPERID = (SELECT PAPERID FROM PAPERS WHERE DOCID = 2443))
-
         $reports = [];
-        foreach ($db->fetchAll($sql) as $row) {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $sql = $db->select()->from(T_REVIEWER_REPORTS)->where('DOCID = ?', $this->getDocid());
+
+        $result = $db->fetchAll($sql);
+
+        foreach ($result as $row) {
             $report = new Episciences_Rating_Report($row);
             $reports[$report->getUid()] = $report;
         }
@@ -3148,6 +3149,7 @@ class Episciences_Paper
      * @param bool $getCASdata
      * @param bool $vid
      * @return array
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function getReviewers($status = null, $getCASdata = false, $vid = false): array
