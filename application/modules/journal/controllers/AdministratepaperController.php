@@ -156,65 +156,123 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * AJAX endpoint to request a new DOI assignment for a paper.
+     *
+     * Returns a JSON object:
+     *   - doi:           DOI link HTML, or the string 'Error'
+     *   - doi_status:    Status badge HTML, or the string 'Error'
+     *   - feedback:      Success message (trimmed, may be empty)
+     *   - error_message: Error detail  (trimmed, may be empty)
      *
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
     public function ajaxrequestnewdoiAction(): void
     {
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
-
-        if (!Episciences_Auth::isLogged() || !Episciences_Auth::isAllowedToManageDoi()) {
-            $resBack['doi'] = 'Error';
-            $resBack['doi_status'] = 'Error';
-            $resBack['error_message'] = 'Unauthorized access';
-            trigger_error('Unauthorized access to requestNewDoi by ' . Episciences_Auth::getUid(), E_USER_WARNING);
-            echo json_encode($resBack);
-            return;
-        }
-
-        if (!$request->isXmlHttpRequest() && !$request->isPost()) {
-            return;
-        }
-
+        // Disable layout and view rendering unconditionally so that every
+        // early-return path (auth failure, bad input…) sends clean JSON only.
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
 
-        $docId = $request->getParam('docid');
-        $paper = Episciences_PapersManager::get($docId);
-
-        if (!$paper->canBeAssignedDOI()) {
-            $resBack['doi'] = 'Error';
-            $resBack['doi_status'] = 'Error';
-            $resBack['error_message'] = 'Le statut du document ne permet pas de lui assigner un DOI';
-            echo json_encode($resBack);
+        // Require both an XHR and a POST to prevent cross-site form submissions
+        // and direct browser navigation to this endpoint.
+        if (!$request->isPost() || !$request->isXmlHttpRequest()) {
             return;
         }
+
+        if (!Episciences_Auth::isLogged() || !Episciences_Auth::isAllowedToManageDoi()) {
+            trigger_error(
+                sprintf('Unauthorized access to requestNewDoi by uid=%s', Episciences_Auth::getUid()),
+                E_USER_WARNING
+            );
+            echo json_encode([
+                'doi'           => 'Error',
+                'doi_status'    => 'Error',
+                'feedback'      => '',
+                'error_message' => 'Unauthorized access',
+            ]);
+            return;
+        }
+
+        // Validate and sanitize the document identifier.
+        $docId = (int) $request->getPost('docid');
+        if ($docId <= 0) {
+            echo json_encode([
+                'doi'           => 'Error',
+                'doi_status'    => 'Error',
+                'feedback'      => '',
+                'error_message' => $this->view->translate('Invalid document identifier.'),
+            ]);
+            return;
+        }
+
+        // PapersManager::get() returns false when no matching paper is found;
+        // calling methods on false would cause a fatal error.
+        $paper = Episciences_PapersManager::get($docId);
+        if (!$paper instanceof Episciences_Paper) {
+            echo json_encode([
+                'doi'           => 'Error',
+                'doi_status'    => 'Error',
+                'feedback'      => '',
+                'error_message' => $this->view->translate('Document not found.'),
+            ]);
+            return;
+        }
+
+        if (!$paper->canBeAssignedDOI()) {
+            echo json_encode([
+                'doi'           => 'Error',
+                'doi_status'    => 'Error',
+                'feedback'      => '',
+                'error_message' => $this->view->translate('Le statut du document ne permet pas de lui assigner un DOI'),
+            ]);
+            return;
+        }
+
         $resCreateDoi = Episciences_Paper::createPaperDoi(RVID, $paper);
-        $resBack['feedback'] = '';
-        $resBack['error_message'] = '';
+
+        $doi          = 'Error';
+        $doiStatus    = 'Error';
+        $feedback     = '';
+        $errorMessage = '';
+        $doiStr       = '';
+
         if ($resCreateDoi['resUpdateDoi'] > 0) {
-            $resBack['doi'] = Episciences_View_Helper_DoiAsLink::DoiAsLink($resCreateDoi['doi']);
-            $resBack['feedback'] .= '&nbsp;' . $this->view->translate('DOI créé.');
+            $doiStr    = trim($resCreateDoi['doi'] ?? '');
+            $doi       = Episciences_View_Helper_DoiAsLink::DoiAsLink($resCreateDoi['doi']);
+            $feedback .= ' ' . $this->view->translate('DOI créé.');
         } else {
-            $resBack['doi'] = 'Error';
-            $resBack['error_message'] .= '&nbsp;' . $this->view->translate('Erreur lors de la creation du DOI.');
-            trigger_error('Error updating DOI ' . $resCreateDoi['doi'] . ' for paperId ' . $paper->getPaperid(), E_USER_WARNING);
-
+            $errorMessage .= ' ' . $this->view->translate('Erreur lors de la creation du DOI.');
+            trigger_error(
+                sprintf('Error updating DOI "%s" for paperId=%d', $resCreateDoi['doi'], $paper->getPaperid()),
+                E_USER_WARNING
+            );
         }
+
         if ($resCreateDoi['resUpdateDoiQueue'] > 0) {
-            $resBack['doi_status'] = sprintf(Episciences_Paper_DoiQueue::getStatusHtmlTemplate(Episciences_Paper_DoiQueue::STATUS_ASSIGNED), $this->view->translate(Episciences_Paper_DoiQueue::STATUS_ASSIGNED));
-            $resBack['feedback'] .= '&nbsp;' . $this->view->translate('Statut du DOI modifié.');
+            $doiStatus = sprintf(
+                Episciences_Paper_DoiQueue::getStatusHtmlTemplate(Episciences_Paper_DoiQueue::STATUS_ASSIGNED),
+                $this->view->translate(Episciences_Paper_DoiQueue::STATUS_ASSIGNED)
+            );
+            $feedback .= ' ' . $this->view->translate('Statut du DOI modifié.');
         } else {
-            $resBack['doi_status'] = 'Error';
-            $resBack['error_message'] .= '&nbsp;' . $this->view->translate('Erreur lors de la sauvegarde du statut du DOI.');
-            trigger_error('Error updating Queue ' . $resCreateDoi['doi'] . ' for paperId ' . $paper->getPaperid(), E_USER_WARNING);
+            $errorMessage .= ' ' . $this->view->translate('Erreur lors de la sauvegarde du statut du DOI.');
+            trigger_error(
+                sprintf('Error updating Queue "%s" for paperId=%d', $resCreateDoi['doi'], $paper->getPaperid()),
+                E_USER_WARNING
+            );
         }
-        $resBack = array_map('trim', $resBack);
-        echo json_encode($resBack);
 
+        echo json_encode([
+            'doi'           => trim($doi),
+            'doiStr'        => $doiStr,
+            'doi_status'    => trim($doiStatus),
+            'feedback'      => trim($feedback),
+            'error_message' => trim($errorMessage),
+        ]);
     }
 
 
@@ -3087,42 +3145,65 @@ class AdministratepaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        if (!$request->isXmlHttpRequest() && !$request->isPost()) {
+        if (!$request->isPost() || !$request->isXmlHttpRequest()) {
             return;
         }
 
         if (!Episciences_Auth::isLogged() || !Episciences_Auth::isAllowedToManageDoi()) {
-            echo 'Unauthorized access';
-            trigger_error(sprintf('Unauthorized access to savedoi by %s', Episciences_Auth::getUid()), E_USER_WARNING);
+            echo json_encode(['success' => false, 'doi' => '', 'error' => 'Unauthorized access']);
+            trigger_error(sprintf('Unauthorized access to savedoi by uid=%s', Episciences_Auth::getUid()), E_USER_WARNING);
             return;
         }
 
+        $docId   = (int) $request->getPost('docid');
+        $paperId = (int) $request->getPost('paperid');
+        $doi     = trim((string) $request->getPost('doi'));
 
-        $docid = ($request->getPost('docid')) ?: $request->getParam('docid');
-        $paperId = ($request->getPost('paperid')) ?: $request->getParam('paperid');
-        $doi = $request->getPost('doi');
-
-        $doiPattern = "/^10.\d{4,9}\/[-._;()\/:A-Z0-9]+$/i";
-
-        if (($doi !== '') && !preg_match($doiPattern, $doi)) {
-            printf('<div class="alert alert-danger" role="alert">%s - (<code>%s</code>)</div>', $this->view->translate('Motif de DOI incorrect'), $doiPattern);
+        if ($docId <= 0 || $paperId <= 0) {
+            echo json_encode(['success' => false, 'doi' => '', 'error' => 'Invalid document ID']);
             return;
         }
 
-        if (!Episciences_PapersManager::paperExists($docid, RVID)) {
-            printf('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Document non trouvé'));
-            trigger_error(sprintf('Docid %s not found in RVID %s', $docid, RVID), E_USER_WARNING);
+        if ($doi === '') {
+            echo json_encode(['success' => false, 'doi' => '', 'error' => $this->view->translate('DOI cannot be empty')]);
             return;
         }
 
-        if (0 === Episciences_PapersManager::updateDoi($doi, $paperId)) {
-            printf('<div class="alert alert-danger" role="alert">%s</div>', $this->view->translate('Échec de la mise à jour'));
-            trigger_error(sprintf('Failed to update paperid %s with DOI %s', $paperId, $doi), E_USER_WARNING);
+        $doiPattern = '/^10\.\d{4,9}\/[-._;()\/:A-Z0-9]+$/i';
+
+        if (!preg_match($doiPattern, $doi)) {
+            echo json_encode(['success' => false, 'doi' => '', 'error' => $this->view->translate('Motif de DOI incorrect')]);
             return;
         }
 
-        Episciences_Paper_Logger::log($paperId, $docid, Episciences_Paper_Logger::CODE_DOI_UPDATED, Episciences_Auth::getUid(), json_encode(['DOI' => $doi]), null, RVID);
-        echo $doi;
+        if (!Episciences_PapersManager::paperExists($docId, RVID)) {
+            echo json_encode(['success' => false, 'doi' => '', 'error' => $this->view->translate('Document non trouvé')]);
+            trigger_error(sprintf('Docid %d not found in RVID %s', $docId, RVID), E_USER_WARNING);
+            return;
+        }
+
+        // updateDoi() returns the number of rows affected by the UPDATE.
+        // 0 rows affected is not an error: it means the DOI was already set to this
+        // value (MySQL does not update unchanged rows). Treat as an idempotent success.
+        Episciences_PapersManager::updateDoi($doi, $paperId);
+
+        // Add or update the DOI queue entry with STATUS_ASSIGNED so the badge
+        // and "Cancel the DOI" button are shown in the UI after a manual save.
+        $doiQueueEntry = new Episciences_Paper_DoiQueue([
+            'paperid'    => $paperId,
+            'doi_status' => Episciences_Paper_DoiQueue::STATUS_ASSIGNED,
+        ]);
+        $existingQueue = Episciences_Paper_DoiQueueManager::findByPaperId($paperId);
+        if ($existingQueue->getId_doi_queue() > 0) {
+            $doiQueueEntry->setId_doi_queue($existingQueue->getId_doi_queue());
+            Episciences_Paper_DoiQueueManager::update($doiQueueEntry);
+        } else {
+            Episciences_Paper_DoiQueueManager::add($doiQueueEntry);
+        }
+
+        Episciences_Paper_Logger::log($paperId, $docId, Episciences_Paper_Logger::CODE_DOI_UPDATED, Episciences_Auth::getUid(), json_encode(['DOI' => $doi]), null, RVID);
+
+        echo json_encode(['success' => true, 'doi' => $doi, 'error' => '']);
     }
 
     /**
@@ -4799,34 +4880,72 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * Cancel a pending DOI assignment request.
+     *
+     * Deletes the DOI queue entry for the paper, clears its DOI field,
+     * and logs the cancellation.
+     *
      * @return void
      */
     public function ajaxrequestremovedoiAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
+
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $post = $request->getPost();
-        if ($request->isXmlHttpRequest() && isset($post['paperId'])) {
-            $paperId = (int)$post['paperId'];
-            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-            $getPapers = $db->select()->from(T_PAPERS)->where('paperId = ?', $paperId);
-            $papers = $db->fetchAll($getPapers);
-            if (count($papers) > 0) {
-                $getDoiQueue = Episciences_Paper_DoiQueueManager::findByPaperId($paperId);
-                if (!is_null($getDoiQueue->getId_doi_queue())) {
-                    $deleteDoiQueue = Episciences_Paper_DoiQueueManager::delete($paperId);
-                    if ($deleteDoiQueue === true) {
-                        $update = Episciences_PapersManager::updateDoi("", $paperId);
-                        if ($update > 0) {
-                            Episciences_Paper_Logger::log($paperId, $post['docId'], Episciences_Paper_Logger::CODE_DOI_CANCELED, Episciences_Auth::getUid(), json_encode(['DOI' => $post['doi'] . " canceled"]), null, RVID);
-                            echo json_encode($update, JSON_THROW_ON_ERROR);
-                        }
-                    }
-                }
-            }
+
+        if (!$request->isPost() || !$request->isXmlHttpRequest()) {
+            return;
         }
+
+        if (!Episciences_Auth::isLogged() || !Episciences_Auth::isAllowedToManageDoi()) {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized access']);
+            trigger_error(sprintf('Unauthorized access to ajaxrequestremovedoi by uid=%s', Episciences_Auth::getUid()), E_USER_WARNING);
+            return;
+        }
+
+        $paperId = (int) $request->getPost('paperId');
+        $docId   = (int) $request->getPost('docId');
+
+        if ($paperId <= 0 || $docId <= 0) {
+            echo json_encode(['success' => false, 'error' => 'Invalid document ID']);
+            return;
+        }
+
+        if (!Episciences_PapersManager::paperExists($docId, RVID)) {
+            echo json_encode(['success' => false, 'error' => $this->view->translate('Document non trouvé')]);
+            trigger_error(sprintf('Docid %d not found in RVID %s', $docId, RVID), E_USER_WARNING);
+            return;
+        }
+
+        $doiQueue = Episciences_Paper_DoiQueueManager::findByPaperId($paperId);
+        if ($doiQueue->getId_doi_queue() <= 0) {
+            echo json_encode(['success' => false, 'error' => 'No pending DOI request found']);
+            return;
+        }
+
+        if (!Episciences_Paper_DoiQueueManager::delete($paperId)) {
+            echo json_encode(['success' => false, 'error' => 'Failed to cancel DOI request']);
+            return;
+        }
+
+        // Clear the DOI on the paper. updateDoi returning 0 is not an error here:
+        // it means the DOI field was already empty (idempotent operation).
+        Episciences_PapersManager::updateDoi('', $paperId);
+
+        $doi = trim((string) $request->getPost('doi'));
+        Episciences_Paper_Logger::log(
+            $paperId,
+            $docId,
+            Episciences_Paper_Logger::CODE_DOI_CANCELED,
+            Episciences_Auth::getUid(),
+            json_encode(['DOI' => $doi . ' canceled']),
+            null,
+            RVID
+        );
+
+        echo json_encode(['success' => true, 'error' => '']);
     }
 
     public function addcoauthorAction()
