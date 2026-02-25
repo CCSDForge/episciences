@@ -3186,8 +3186,8 @@ class Episciences_PapersManager
         try {
             $resUpdate = $db->update(T_PAPERS, $values, $where);
         } catch (Zend_Db_Adapter_Exception $exception) {
-            trigger_error($exception->getMessage(), E_USER_WARNING);
-            trigger_error('Error updating DOI ' . $doi . ' for paperId ' . $paperId, E_USER_WARNING);
+            error_log($exception->getMessage());
+            error_log('Error updating DOI ' . $doi . ' for paperId ' . $paperId);
             $resUpdate = 0;
         }
         return $resUpdate;

@@ -262,4 +262,7 @@ return [
     "Erreur de connexion. Veuillez vérifier votre connexion réseau et réessayer." => "Connection error. Please check your network connection and try again.",
     "Voir plus" => "Show more",
     "Voir moins" => "Show less",
+    'Demander un DOI'=> 'Request a DOI',
+    'Annuler le DOI'=> 'Cancel theDOI',
+    'not-assigned' => 'Not assigned'
 ];

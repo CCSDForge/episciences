@@ -1,7 +1,10 @@
 <script src="/js/administratepaper/request-doi.js"></script>
 
 
-<div id="doi-panel" class="panel panel-default collapsable">
+<div id="doi-panel" class="panel panel-default collapsable"
+     data-doi-assign-mode="<?= $this->doiAssignMode ?>"
+     data-paperid="<?= $this->paperid ?>"
+     data-docid="<?= $this->docid ?>">
     <div class="panel-heading">
         <h2 class="panel-title"><?php echo $this->translate('DOI'); ?></h2>
     </div>
@@ -63,14 +66,13 @@
 
         <?php endif; ?>
         <?php if ($this->doiQueueStatus === Episciences_Paper_DoiQueue::STATUS_ASSIGNED
-            && $this->doiAssignMode === Episciences_Paper_DoiQueue::STATUS_MANUAL
             && Episciences_Auth::isAllowedToManageDoi()) : ?>
             <button id="removeDoi" data-paperid="<?php echo $this->paperid ?>"
                     data-docid="<?php echo $this->docid ?>"
                     class="btn btn-default btn-sm popover-link"
                     style="margin-left: 5px"
                     onclick="removeDoi(this,<?= $this->paperid ?>,<?= $this->docid ?>,'<?= $this->paperDoi ?>')">
-                <span class="fa-solid fa-circle-minus"
+                <span class="fa-solid fa-rotate-left"
                       style="margin-right: 5px"></span><?php echo $this->translate('Annuler le DOI'); ?>
             </button>
         <?php endif; ?>
