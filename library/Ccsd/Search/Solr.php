@@ -85,6 +85,7 @@ class Ccsd_Search_Solr
                     self::ENDPOINT_SEARCH => [
                         'host' => ENDPOINTS_SEARCH_HOST,
                         'port' => ENDPOINTS_SEARCH_PORT,
+                        'path' => ENDPOINTS_SEARCH_PATH,
                         'timeout' => ENDPOINTS_SEARCH_TIMEOUT,
                         'username' => ENDPOINTS_SEARCH_USERNAME,
                         'password' => ENDPOINTS_SEARCH_PASSWORD,
