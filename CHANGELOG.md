@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Manager: Review Report: attached document URL has not been updated for the manager application
 
 ### Changed
+- Increased Volume Description length to 1014 chars
 - DOI panel (`paper_doi.phtml`, `request-doi.js`, `view.js`): requesting, saving, and cancelling a DOI no longer triggers a full page reload — the DOM is updated in place; the success feedback message after "Request a DOI" is suppressed since the newly rendered DOI link is sufficient.
 - Refactored `Episciences_Paper_ProjectsManager` God Class into 4 single-responsibility classes:
 - `Episciences_Paper_Projects_Repository` — database CRUD for `paper_projects`

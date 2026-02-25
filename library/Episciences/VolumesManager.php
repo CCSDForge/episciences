@@ -2,7 +2,7 @@
 
 class Episciences_VolumesManager
 {
-    public const MAX_STRING_LENGTH = 255;
+    public const MAX_STRING_LENGTH = 1024;
     public const MAX_STRING_LENGTH_VOL_NUM = 6;
 
     /**
