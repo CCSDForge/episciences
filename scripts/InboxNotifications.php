@@ -11,7 +11,7 @@ use Monolog\Logger;
 use scripts\AbstractScript;
 
 require_once "AbstractScript.php";
-require '../library/Episciences/Trait/UrlBuilder.php';
+require_once __DIR__ . '/../library/Episciences/Trait/UrlBuilder.php';
 
 class InboxNotifications extends AbstractScript
 {

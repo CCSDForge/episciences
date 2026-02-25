@@ -164,8 +164,8 @@ abstract class Script {
         set_include_path(implode(PATH_SEPARATOR, array_merge($libraries, array(get_include_path()))));
 
         /** Zend_Application */
-        if (file_exists('../vendor/autoload.php')) {
-            require_once '../vendor/autoload.php';
+        if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+            require_once __DIR__ . '/../vendor/autoload.php';
         } else {
             /** Zend_Application */
             require_once 'Zend/Application.php';
