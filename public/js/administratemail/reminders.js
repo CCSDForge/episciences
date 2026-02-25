@@ -250,7 +250,7 @@ function buildReminderMessage(reminderType) {
         );
     } else if (type === TYPE_NOT_ENOUGH_REVIEWERS) {
         message += translate(
-            "si il y a pas suffisamment d'invitations, un rappel automatique peut être envoyé x jours après la date de la dernière invitation, si des invitations ont été envoyées. Sinon, après la date d'assignation de l'article au rédacteur. On n'envoie pas de relances, si on n'a pas spécifié de nombre minimum de relecteurs (définie dans Gérer la revue/Revue/Paramètres)"
+            "si il y a pas suffisamment d'invitations acceptées, un rappel automatique peut être envoyé x jours après la date de la dernière invitation, si des invitations ont été envoyées. Sinon, après la date d'assignation de l'article au rédacteur. On n'envoie pas de relances, si on n'a pas spécifié de nombre minimum de relecteurs (définie dans Gérer la revue/Revue/Paramètres)"
         );
     } else if (type === TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE) {
         message += translate(

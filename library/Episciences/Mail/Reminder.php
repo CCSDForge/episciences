@@ -169,7 +169,7 @@ class Episciences_Mail_Reminder
                 $name = self::$_typeLabel[$this->getType()];
             }
             $name .= ' - ' . $translator->translate('copie destinée au ' . mb_strtolower($translator->translate($this->getRecipient(), 'fr'), 'utf-8'), $code);
-            $name .= sprintf(' (%s %s | %s%s %s)', $delay, $translator->translate(array('jour', 'jours', $this->getDelay()), $code),lcfirst($translator->translate('Répétition', $code)),$translator->translate(' :', $code), lcfirst($translator->translate(Episciences_Mail_RemindersManager::REPETITION_MAP[(int)$this->getRepetition()], $code)));
+            $name .= sprintf(' (%s %s | %s%s %s)', $delay, $translator->translate(array('jour', 'jours', $this->getDelay()), $code), lcfirst($translator->translate('Répétition', $code)), $translator->translate(' :', $code), lcfirst($translator->translate(Episciences_Mail_RemindersManager::REPETITION_MAP[(int)$this->getRepetition()], $code)));
             $translations['name'][$code] = $name;
 
             // Reminder Subject & Body
@@ -178,7 +178,7 @@ class Episciences_Mail_Reminder
             if (file_exists($filepath)) {
                 $translations['custom'][$code] = 1;
                 $translations['body'][$code] = file_get_contents($filepath);
-                $translations['subject'][$code] = $translator->translate('reminder_' . $this->getId() . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT , $code);
+                $translations['subject'][$code] = $translator->translate('reminder_' . $this->getId() . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT, $code);
             } else {
                 // else use default template
                 $translations['custom'][$code] = 0;
@@ -905,6 +905,7 @@ class Episciences_Mail_Reminder
      * @param $date
      * @param $filters
      * @return array
+     * @throws JsonException
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -930,21 +931,31 @@ class Episciences_Mail_Reminder
 
         /** @var Episciences_Paper $paper */
         foreach ($papers as $paper) {
-            $acceptedInvitations = $paper->getInvitations(
-                [Episciences_User_Assignment::STATUS_ACTIVE],
+            // L'ajout d'une relecture supplémentaire ne passe pas par les invitations, on doit donc d'abord vérifier cela :
+            $nbReports = count($paper->getReports());
+
+            if ($nbReports >= $requiredReviewers) {
+                continue;
+            }
+
+            $pendingAndAcceptedInvitations = $paper->getInvitations(
+                [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING],
                 true,
                 $review->getRvid()
-            )[Episciences_User_Assignment::STATUS_ACTIVE] ?? [];
+            );
 
+            $acceptedInvitations = $pendingAndAcceptedInvitations[Episciences_User_Assignment::STATUS_ACTIVE] ?? [];
             $nbAcceptedInvitations = count($acceptedInvitations);
 
             if ($nbAcceptedInvitations >= $requiredReviewers) {
                 continue;
             }
 
+            $pendingInvitations = $pendingAndAcceptedInvitations[Episciences_User_Assignment::STATUS_PENDING] ?? [];
+
             /** @var Episciences_Editor $editor */
             foreach ($paper->getEditors() as $editor) {
-                $originDate = $this->resolveOriginDate($acceptedInvitations, $editor);
+                $originDate = $this->resolveOriginDate([...$acceptedInvitations, ...$pendingInvitations], $editor);
                 if (!$originDate) {
                     continue;
                 }
@@ -1561,20 +1572,21 @@ class Episciences_Mail_Reminder
 
     }
 
-    private function resolveOriginDate(array $acceptedInvitations, Episciences_Editor $editor): ?DateTimeImmutable
+    private function resolveOriginDate(array $invitations, Episciences_Editor $editor): ?DateTimeImmutable
     {
-        $latestInvitationDate = $this->getLatestInvitationDate($acceptedInvitations);
+        $latestInvitationDate = $this->getLatestInvitationDate($invitations);
+
+        if ($latestInvitationDate) {
+            return $latestInvitationDate;
+        }
+
         $editorAssignmentDate = $this->createDateWithoutTime($editor->getWhen());
 
         if (!$editorAssignmentDate) {
             return null;
         }
 
-        if (!$latestInvitationDate || $latestInvitationDate < $editorAssignmentDate) {
-            return $editorAssignmentDate;
-        }
-
-        return $latestInvitationDate;
+        return $editorAssignmentDate;
     }
 
     private function getLatestInvitationDate(array $acceptedInvitations): ?DateTimeImmutable
