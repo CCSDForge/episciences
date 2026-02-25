@@ -1,5 +1,7 @@
 <?php
+declare(strict_types=1);
 
+use Episciences\AppRegistry;
 use Episciences\Paper\Export;
 use Solarium\QueryType\Update\Query\Document;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -17,6 +19,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
     private ArrayAdapter $cache;
 
 
+    /** @param array<string, mixed> $options */
     public function __construct(array $options)
     {
         $options['core'] = self::$coreName;
@@ -30,14 +33,14 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
     private function initCache(): void
     {
-        $this->setCache(new ArrayAdapter(60, true, 60 * 5, 10));
+        $this->setCache(new ArrayAdapter(3600, true, 7200, 2000));
     }
 
     /**
      * Set the select request to get the list of Id to index
      * @param Zend_Db_Select $select
      */
-    protected function selectIds(Zend_Db_Select $select)
+    protected function selectIds(Zend_Db_Select $select): void
     {
         $select->from('PAPERS', 'DOCID')->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
     }
@@ -50,7 +53,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
      * @return false|Document The indexed document.
      * @throws Zend_Db_Statement_Exception
      */
-    protected function addMetadataToDoc(int $docId, Document $docToIndex)
+    protected function addMetadataToDoc(int $docId, Document $docToIndex): Document|false
     {
 
         // Suffixes (conventions)
@@ -60,7 +63,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $paperData = Episciences_PapersManager::get($docId, false);
 
         if (!$paperData) {
-            Ccsd_Log::message('Update doc ' . $docId . ' No content found for this article.', true, 'WARN');
+            AppRegistry::getMonoLogger()?->warning('Update doc ' . $docId . ' No content found for this article.');
             return false;
         }
 
@@ -82,11 +85,6 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $docToIndex->setField('doc_bibtex', $bibtex);
         $docToIndex->setField('doc_csl', $csl);
         $docToIndex->setField('doc_type_fs', $paperData->getTypeWithKey());
-
-        if ($paperData === null) {
-            Ccsd_Log::message('Update doc ' . $docId . ' : cet article n\'existe pas/plus.', true, 'WARN');
-            return false;
-        }
 
         // Récupération des infos de la revue
         $journal = $this->getJournalMetadata($paperData->getRvid());
@@ -151,7 +149,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $this->indexSecondaryVolumes($paperData, $docToIndex);
         $this->indexSection($paperData->getSid(), $docToIndex);
 
-        $docToIndex->addField('indexing_date_tdate', date("Y-m-d\Th:i:s\Z"));
+        $docToIndex->addField('indexing_date_tdate', date("Y-m-d\TH:i:s\Z"));
 
         return $docToIndex;
     }
@@ -192,6 +190,9 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         try {
             $authors = $paperData->getAuthors();
         } catch (\Throwable $e) {
+            AppRegistry::getMonoLogger()?->warning(
+                sprintf('indexAuthors docid=%d: %s', $paperData->getDocid(), $e->getMessage())
+            );
             return;
         }
 
@@ -219,7 +220,13 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         $family = trim($author['family'] ?? '');
         $given  = trim($author['given'] ?? '');
 
-        return sprintf('%s, %s', $family, $given);
+        if ($given === '') {
+            return $family;
+        }
+        if ($family === '') {
+            return $given;
+        }
+        return $family . ', ' . $given;
     }
 
     /**
@@ -282,12 +289,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         return trim($name);
     }
 
-    /**
-     * @param $paperData
-     * @param Document $ndx
-     * @return void
-     */
-    private function indexKeywords($paperData, Document $ndx): void
+    private function indexKeywords(Episciences_Paper $paperData, Document $ndx): void
     {
         $subjects = $paperData->getMetadata('subjects');
         if (is_array($subjects)) {
@@ -303,14 +305,16 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         }
     }
 
-    private function getFormattedDate(string $dateToFormat, string $format = 'Y-m-d\TH:i:s\Z')
+    private function getFormattedDate(string $dateToFormat, string $format = 'Y-m-d\TH:i:s\Z'): string
     {
         try {
-            $revue_date_creation = date_format(new DateTime($dateToFormat), $format);
+            return date_format(new DateTime($dateToFormat), $format);
         } catch (Exception $e) {
-            $revue_date_creation = '1970-01-01T00:00:00Z';
+            AppRegistry::getMonoLogger()?->warning(
+                sprintf('getFormattedDate: invalid date "%s": %s', $dateToFormat, $e->getMessage())
+            );
+            return '1970-01-01T00:00:00Z';
         }
-        return $revue_date_creation;
     }
 
     /**
@@ -326,9 +330,10 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         return trim($outputString);
     }
 
-    private function indexTitles($titles, $docToIndex)
+    /** @param array<array-key, mixed> $titles */
+    private function indexTitles(array $titles, Document $docToIndex): Document
     {
-
+        $titlesToIndex = [];
         foreach ($titles as $locale => $title) {
             if (Zend_Locale::isLocale($locale)) {
                 $titlesToIndex[$locale . '_paper_title_t'] = $title;
@@ -340,9 +345,10 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         return $this->addArrayOfMetaToDoc($titlesToIndex, null, $docToIndex);
     }
 
-    private function indexAbstracts($abstracts, Document $docToIndex): Document
+    /** @param array<array-key, mixed> $abstracts */
+    private function indexAbstracts(array $abstracts, Document $docToIndex): Document
     {
-
+        $abstractsToIndex = [];
         foreach ($abstracts as $locale => $abstract) {
             if (Zend_Locale::isLocale($locale)) {
                 $abstractsToIndex[$locale . '_abstract_t'] = $abstract;
@@ -354,7 +360,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         return $this->addArrayOfMetaToDoc($abstractsToIndex, null, $docToIndex);
     }
 
-    private function indexVolume($vid, Document $docToIndex): void
+    private function indexVolume(int $vid, Document $docToIndex): void
     {
         if ($vid === 0) {
             return;
@@ -370,7 +376,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
             if (is_array($volumeTranslationsTitles)) {
 
                 // We take the first language found because the field is not multivalued
-                $firstLanguageFound = array_key_first($volumeTranslationsTitles);
+                $firstLanguageFound = array_key_exists('en', $volumeTranslationsTitles) ? 'en' : array_key_first($volumeTranslationsTitles);
                 $docToIndex->addField('volume_fs', $vid . parent::SOLR_FACET_SEPARATOR . $volumeTranslationsTitles[$firstLanguageFound]);
 
                 foreach ($volumeTranslationsTitles as $lang => $translations) {
@@ -380,22 +386,19 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
                 }
             }
         } else {
-            $message = sprintf("Update doc : le volume (%s) de cet article n'existe pas/plus.", $vid);
-            Ccsd_Log::message($message, true, 'WARN');
+            AppRegistry::getMonoLogger()?->warning(
+                sprintf("Update doc : le volume (%s) de cet article n'existe pas/plus.", $vid)
+            );
         }
     }
 
-    /**
-     * @param $vid
-     * @return bool|Episciences_Volume|mixed
-     * @throws \Psr\Cache\InvalidArgumentException
-     */
-    private function getVolumeFromDbOrCache($vid)
+    private function getVolumeFromDbOrCache(int $vid): Episciences_Volume|false
     {
         $cache = $this->getCache();
         $cacheName = 'volume.' . $vid;
         $volumeCacheItem = $cache->getItem($cacheName);
 
+        $volume = false;
         if (!$volumeCacheItem->isHit()) {
             $volume = Episciences_VolumesManager::find($vid);
             if ($volume) {
@@ -407,7 +410,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         return $volume;
     }
 
-    private function indexSecondaryVolumes($paperData, Document $docToIndex): void
+    private function indexSecondaryVolumes(Episciences_Paper $paperData, Document $docToIndex): void
     {
 
         $secondaryVolumes = Episciences_Volume_PapersManager::findPaperVolumes($paperData->getDocid());
@@ -427,13 +430,14 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
                     }
                 }
             } else {
-                $message = sprintf("Update doc %s : le volume secondaire (%s) de cet article n'existe pas/plus.", $paperData->getDocid(), $vid);
-                Ccsd_Log::message($message, true, 'WARN');
+                AppRegistry::getMonoLogger()?->warning(
+                    sprintf("Update doc %s : le volume secondaire (%s) de cet article n'existe pas/plus.", $paperData->getDocid(), $vid)
+                );
             }
         }
     }
 
-    private function indexSection($sectionId, Document $docToIndex): void
+    private function indexSection(int $sectionId, Document $docToIndex): void
     {
 
         if ($sectionId === 0) {
@@ -455,8 +459,9 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
 
         if (!$section) {
-            $message = sprintf("Update doc : la section (%s) de cet article n'existe pas/plus.", $sectionId);
-            Ccsd_Log::message($message, true, 'WARN');
+            AppRegistry::getMonoLogger()?->warning(
+                sprintf("Update doc : la section (%s) de cet article n'existe pas/plus.", $sectionId)
+            );
             return;
         }
 
@@ -466,7 +471,7 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
         if (is_array($sectionTranslations)) {
 
             // We take the first language found because the field is not multivalued
-            $firstLanguageFound = array_key_first($sectionTranslations);
+            $firstLanguageFound = array_key_exists('en', $sectionTranslations) ? 'en' : array_key_first($sectionTranslations);
             $docToIndex->addField('section_fs', $sectionId . parent::SOLR_FACET_SEPARATOR . $sectionTranslations[$firstLanguageFound]);
 
             foreach ($sectionTranslations as $lang => $translations) {
@@ -480,9 +485,10 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
     }
 
     /**
+     * @param mixed $docId
      * @throws Zend_Db_Statement_Exception
      */
-    protected function getDocidData($docId)
+    protected function getDocidData($docId): ?Episciences_Paper
     {
 
         $papersManager = new Episciences_PapersManager();
@@ -496,53 +502,5 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
     }
 
-    private function cleanString($inputString): string
-    {
-        $inputString = trim($inputString);
-        $inputString = trim($inputString, '"');
-        $inputString = trim($inputString, "'");
-
-        $inputString = trim($inputString, chr(173)); // https://en.wikipedia.org/wiki/Soft_hyphen
-
-        $inputString = Episciences_Tools::spaceCleaner($inputString);
-
-        // http://stackoverflow.com/questions/4166896/trim-unicode-whitespace-in-php-5-2
-        $inputString = preg_replace('/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $inputString);
-
-        $utf8NeedleArray = [
-            '“',
-            '”',
-            '„',
-            '«',
-            '»',
-            '‘',
-            '¿',
-            '§',
-            '—',
-            '_',
-            '|',
-            '(',
-            '[',
-            '{',
-            '}',
-            ']',
-            ')',
-            '#',
-            '<',
-            '>',
-            ',',
-            ';',
-            ':',
-            '*',
-            '.'
-        ];
-
-        $inputString = trim($inputString, '-');
-
-        $inputString = str_replace($utf8NeedleArray, '', $inputString);
-        $inputString = Ccsd_Tools_String::stripCtrlChars($inputString, '');
-
-        return trim($inputString);
-    }
-
 }
+
