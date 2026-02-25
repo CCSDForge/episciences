@@ -44,7 +44,7 @@
     "ramsey/uuid": "^4.7",
     "seboettg/citeproc-php": "^2.6",
     "shardj/zf1-extras-future": "^1.12",
-    "shardj/zf1-future": "1.23.*",
+    "shardj/zf1-future": "1.25.*",
     "smalot/pdfparser": "^2.2",
     "solarium/solarium": "^6.3.1",
     "symfony/cache": "^5.4",
