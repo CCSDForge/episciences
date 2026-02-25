@@ -107,7 +107,7 @@ class Episciences_Paper_DoiQueue
      */
     public function getId_doi_queue(): int
     {
-        return $this->_id_doi_queue;
+        return (int) $this->_id_doi_queue;
     }
 
     /**
@@ -123,7 +123,7 @@ class Episciences_Paper_DoiQueue
      */
     public function getPaperid(): int
     {
-        return $this->_paperid;
+        return (int) $this->_paperid;
     }
 
     /**
