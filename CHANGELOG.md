@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Changed
+- DOI panel (`paper_doi.phtml`, `request-doi.js`, `view.js`): requesting, saving, and cancelling a DOI no longer triggers a full page reload — the DOM is updated in place; the success feedback message after "Request a DOI" is suppressed since the newly rendered DOI link is sufficient.
 - Refactored `Episciences_Paper_ProjectsManager` God Class into 4 single-responsibility classes:
 - `Episciences_Paper_Projects_Repository` — database CRUD for `paper_projects`
 - `Episciences_Paper_Projects_HalApiClient` — HTTP calls to the HAL API
@@ -65,6 +66,7 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
 - Added `TeiCacheManager::fetchAndGet()` to combine fetch-if-needed + read in a single call; callers updated (`EnrichmentService`, `LicenceManager`, `AuthorsManager`)
 
 ### Fixed
+-  consider an additional review when sending reminders for an insufficient number of reviewers
 - `Projects`: `$_dateUpdated` default was the string `'CURRENT_TIMESTAMP'` instead of `null`; `getDateUpdated()` declared `DateTime` return type but could return a string
 - `Projects::setFunding()`: method was not fluent (`void` return), inconsistent with all other setters
 - `Projects::setOptions()`: key `'idproject'` produced `setIdproject()` which does not exist; fixed with a method alias `setIdproject()` → `setProjectId()` and case-insensitive method lookup so `'paperid'` resolves to `setPaperId()`
@@ -136,6 +138,18 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
 - [#679](https://github.com/CCSDForge/episciences/issues/679) "Ask other editors for their opinion" form now includes chief editors (ROLE_CHIEF_EDITOR) in addition to regular editors (ROLE_EDITOR)
 - [#691](http://github.com/CCSDForge/episciences/issues/691) Display "(optional)" label below comment and cover letter fields in submission forms to clarify these fields are not required
 - feat(navigation): sync predefined page titles with T_PAGES table on menu save
+- New `library/Episciences/Api/` namespace with 5 injectable, independently-testable API clients:
+  - `AbstractApiClient` — shared HTTP, PSR-6 cache, and Monolog primitives
+  - `CrossrefApiClient` — Crossref REST API (namespace `enrichmentCitations`)
+  - `OpenAlexApiClient` — OpenAlex REST API (namespace `enrichmentCitations`)
+  - `OpenCitationsApiClient` — OpenCitations REST API (namespace `enrichmentCitations`)
+  - `OpenAireApiClient` — OpenAire Research Graph REST API (3 separate cache pools: `openAireResearchGraph`, `enrichmentAuthors`, `enrichmentFunding`)
+- Five Symfony Console commands replacing the legacy JournalScript enrichment scripts; all commands process published papers only and support `-q`/`--quiet` for cron usage:
+  - `enrichment:citations` (`GetCitationsDataCommand`) — downloads citing-paper metadata via OpenCitations → OpenAlex → Crossref and upserts into `paper_citations`
+  - `enrichment:creators` (`GetCreatorDataCommand`) — enriches author ORCID data via the OpenAire Research Graph
+  - `enrichment:funding` (`GetFundingDataCommand`) — enriches funding metadata via OpenAire and HAL (European + ANR projects)
+  - `enrichment:licences` (`GetLicenceDataCommand`) — enriches licence data via HAL TEI metadata
+  - `enrichment:links` (`GetLinkDataCommand`) — enriches dataset/software links via the Scholexplorer API
 
 ### Fixed
 - [#886](https://github.com/CCSDForge/episciences/issues/886): the reminder about the lack of reviewers is sent as long as the minimum required number of reviewers has not been reached compared to the accepted invitations
@@ -157,6 +171,19 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
 - Fixed Paper Metrics based on wrong DocId, it gave null metrics
 - Fixed Pre-defined pages deleted from the menu are not deleted from the database
 - [#77](https://github.com/CCSDForge/episciences-front/issues/77) Fix orphan assignments when deleting sections or volumes
+- `CrossrefTools`: `defined(CROSSREF_PLUS_API_TOKEN)` (constant name without quotes) caused a fatal PHP error; corrected to `defined('CROSSREF_PLUS_API_TOKEN')`
+- `CrossrefTools`: `getMetadatasCrossref()` returned the raw PSR-6 `CacheItem` object instead of the decoded array
+- `OpenalexTools`: `getPages()` returned `"fp-"` instead of `"fp"` when `$lp` is `null`
+- `OpenalexTools`: `getAuthors()` appended a trailing `; ` separator when `array_key_last()` returned `null` on an empty array
+- `OpencitationsTools`: empty citation response `'[]'` (0 citations) was incorrectly rejected and never cached, causing repeated redundant API calls on subsequent runs
+- `OpencitationsTools`: DOI extraction used the wrong column and a broken regex; replaced with `str_replace()` for the `coci => ` prefix and `preg_replace('/;.*$/', '', …)` for multi-DOI trimming; added support for the current OpenCitations API format where citing DOIs are returned as plain strings (e.g. `10.xxx/yyy`) without a `doi:` prefix
+- `getLinkData`: Scholexplorer API was called over HTTP instead of HTTPS
+- `getLinkData`: array access on `$valuesResult["target"]['objectType']` without `isset()` caused notices/errors on missing keys
+- `getLicenceDataEnrichment`: `$cache->save($item)` was never called after setting the licence item value, making the cache ineffective and causing repeated API calls
+- `OpenAireResearchGraphTools`: `array_search()` was called without strict mode, causing false positives on ORCID matching
+- `Projects/EnrichmentService`: log file was written to `log/` instead of `logs/`; now uses `EPISCIENCES_LOG_PATH` constant
+- `Projects/EnrichmentService`: `Episciences_Repositories::GRAPH_OPENAIRE_ID` and `HAL_REPO_ID` are string constants; missing `(int)` cast caused a `TypeError` when passed to the `int $sourceId` parameter of `buildProject()`
+- `Citations/EnrichmentService`: `biblio`, `authorships`, `locations`, `primary_location`, and `best_oa_location` fields from the OpenAlex API can be `null`; missing null guards caused `TypeError` exceptions when processing citation metadata
 
 - Synchronization of predefined page titles between navigation menu and T_PAGES table when saving menu configuration
 

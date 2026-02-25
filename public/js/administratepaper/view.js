@@ -685,47 +685,213 @@ function getPublicationDateForm(button, docId) {
     });
 }
 
+/** DOI regex pattern — must match the pattern used in savedoiAction PHP. */
+const DOI_PATTERN = /^10\.\d{4,9}\/[-._;()/:A-Z0-9]+$/i;
+
 /**
+ * Validate a DOI string: non-empty and matching the expected format.
  *
- * @param button
- * @param docId
- * @param url
+ * Pure function — no DOM access, easy to unit-test.
+ *
+ * @param {string} value
+ * @returns {{ valid: boolean, error: string }}
+ */
+function validateDoiInput(value) {
+    if (!value) {
+        return { valid: false, error: 'DOI cannot be empty.' };
+    }
+    if (!DOI_PATTERN.test(value)) {
+        return { valid: false, error: 'Invalid DOI format. Expected: 10.XXXX/suffix' };
+    }
+    return { valid: true, error: '' };
+}
+
+/**
+ * Update the DOI text displayed on the page after a successful save.
+ *
+ * Pure DOM function — no network access, easy to unit-test.
+ *
+ * @param {string} doi
+ */
+function updateDoiDisplay(doi) {
+    const doiLink = document.getElementById('doi-link');
+    if (doiLink) {
+        // Use textContent to prevent any HTML injection from a server-provided DOI.
+        doiLink.textContent = '\u00A0' + doi;
+    }
+
+    const paperDoiAnchor = document.querySelector('div.paper-doi a');
+    if (paperDoiAnchor) {
+        paperDoiAnchor.textContent = doi;
+    }
+}
+
+/**
+ * Load and display the DOI edit form in a popover, then handle submission.
+ *
+ * Fixes over the original implementation:
+ *  - The `url` parameter is now forwarded to getCommunForm.
+ *  - Empty DOI and format validation before sending the request.
+ *  - Native fetch() replaces the jQuery ajaxRequest wrapper.
+ *  - Event handler is attached to a fresh form element on every popover open,
+ *    preventing duplicate handler stacking.
+ *  - All server-provided HTML is sanitized before insertion.
+ *  - Errors are surfaced to the user inside the popover.
+ *
+ * @param {HTMLElement} button
+ * @param {string|number} docId
+ * @param {string} [url]
  */
 function getDoiForm(button, docId, url = '/administratepaper/doiform') {
-    let request = getCommunForm(button, docId);
+    const jqxhr = getCommunForm(button, docId, url);
+    if (jqxhr === false) {
+        return;
+    }
 
-    let popoverParams = {
-        placement: 'bottom',
-        container: 'body',
-        html: true,
-        content: getLoader(),
-    };
-    request.done(function (result) {
-        // Destruction du popup de chargement
+    // Wrap the jQuery JQXHR in a native Promise so the handler below is
+    // jQuery-free and straightforward to reason about.
+    Promise.resolve(jqxhr).then(function (formHtml) {
+        // Replace the loading popover with the actual form.
         $(button).popover('destroy');
         openedPopover = null;
-        // Affichage du formulaire dans le popover
-        popoverParams.content = result;
+
+        const popoverParams = {
+            placement: 'bottom',
+            container: 'body',
+            html: true,
+            content: typeof sanitizeHTML === 'function' ? sanitizeHTML(formHtml) : formHtml,
+        };
         $(button).popover(popoverParams).popover('show');
 
-        $('form[action^="/administratepaper/savedoi"]').on(
-            'submit',
-            function () {
-                let sRequest = ajaxRequest(
-                    '/administratepaper/savedoi',
-                    $(this).serialize() + '&paperid=' + docId,
-                    'POST',
-                    'json'
-                );
-                sRequest.done(function (response) {
-                    $(button).popover('destroy');
-                    $('#doi-link').html(response);
-                    $('div.paper-doi a ').text(response);
+        // Bootstrap 3 popover('show') is synchronous — the form is in the DOM now.
+        const form = document.querySelector('form[action^="/administratepaper/savedoi"]');
+        if (!form) {
+            return;
+        }
+
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            // Clear any previous inline error message.
+            const existingError = form.querySelector('.doi-form-error');
+            if (existingError) {
+                existingError.remove();
+            }
+
+            const doiInput = form.querySelector('input[name="doi"]');
+            const doiValue = doiInput ? doiInput.value.trim() : '';
+
+            const validation = validateDoiInput(doiValue);
+            if (!validation.valid) {
+                const errEl = document.createElement('p');
+                errEl.className = 'doi-form-error text-danger';
+                errEl.textContent = validation.error;
+                form.prepend(errEl);
+                return;
+            }
+
+            const submitBtn = form.querySelector('[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+            }
+
+            try {
+                const body = new URLSearchParams(new FormData(form));
+                body.set('paperid', String(docId));
+
+                const response = await fetch('/administratepaper/savedoi', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body,
                 });
 
-                return false;
+                if (!response.ok) {
+                    throw new Error('Server error ' + response.status);
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    const errEl = document.createElement('p');
+                    errEl.className = 'doi-form-error text-danger';
+                    errEl.textContent = data.error || 'An error occurred.';
+                    form.prepend(errEl);
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                    }
+                    return;
+                }
+
+                // Extract the real DOCID from the hidden form field. The form element
+                // remains accessible in JS memory even after popover('destroy') removes
+                // it from the DOM.
+                const docidHidden = form.querySelector('input[name="docid"]');
+                const actualDocId = docidHidden ? String(docidHidden.value) : String(docId);
+
+                $(button).popover('destroy');
+
+                // 1. Update the DOI link — build an <a> element via DOM API (XSS-safe).
+                const doiLinkEl = document.getElementById('doi-link');
+                if (doiLinkEl) {
+                    const doiUrl = 'https://doi.org/' + data.doi;
+                    const anchor = document.createElement('a');
+                    anchor.rel = 'noopener noreferrer';
+                    anchor.href = doiUrl;
+                    anchor.textContent = doiUrl;
+                    doiLinkEl.replaceChildren(anchor);
+                }
+
+                // 2. Replace the status badge with "Assigned" — built via DOM API.
+                const doiStatusEl = document.getElementById('doi-status');
+                if (doiStatusEl) {
+                    const badgeLabel = typeof translate === 'function' ? translate('Assigned') : 'Assigned';
+                    const badge = document.createElement('span');
+                    badge.className = 'label label-primary';
+                    badge.textContent = badgeLabel;
+                    doiStatusEl.replaceChildren(badge, document.createTextNode('\u00A0'));
+                }
+
+                // 3. Build the "Cancel DOI" button and replace the trigger button.
+                const cancelLabelText = typeof translate === 'function' ? translate('Annuler le DOI') : 'Cancel DOI';
+                const cancelBtn = document.createElement('button');
+                cancelBtn.id = 'removeDoi';
+                cancelBtn.className = 'btn btn-default btn-sm popover-link';
+                cancelBtn.style.marginLeft = '5px';
+                cancelBtn.dataset.paperid = String(docId);
+                cancelBtn.dataset.docid = actualDocId;
+
+                const icon = document.createElement('span');
+                icon.className = 'fa-solid fa-rotate-left';
+                icon.style.marginRight = '5px';
+                cancelBtn.appendChild(icon);
+                cancelBtn.appendChild(document.createTextNode(cancelLabelText));
+                cancelBtn.addEventListener('click', function () {
+                    removeDoi(cancelBtn, docId, actualDocId, data.doi);
+                });
+                button.replaceWith(cancelBtn);
+
+                // 4. Update other DOI references on the page (e.g. paper header).
+                const paperDoiAnchor = document.querySelector('div.paper-doi a');
+                if (paperDoiAnchor) {
+                    paperDoiAnchor.textContent = data.doi;
+                }
+            } catch (err) {
+                const errEl = document.createElement('p');
+                errEl.className = 'doi-form-error text-danger';
+                errEl.textContent = 'Network error. Please try again.';
+                form.prepend(errEl);
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                }
+                console.error('[getDoiForm] Fetch error:', err);
             }
-        );
+        });
+    }).catch(function () {
+        $(button).popover('destroy');
+        openedPopover = null;
     });
 }
 
@@ -890,22 +1056,134 @@ function getVersionEditingForm(button, docId) {
     });
 }
 
+/**
+ * Request the cancellation of a pending DOI assignment.
+ *
+ * Sends a POST request to remove the paper from the DOI queue and clear its
+ * DOI field, then reloads the page on success or displays an error on failure.
+ *
+ * @param {HTMLElement} button
+ * @param {string|number} paperId
+ * @param {string|number} docId
+ * @param {string} doi
+ */
 function removeDoi(button, paperId, docId, doi) {
-    let removeDoi = ajaxRequest('/administratepaper/ajaxrequestremovedoi', {
-        paperId: paperId,
-        docId: docId,
-        doi: doi,
-    });
-    let $doiStatusLoader = $('#doi-status-loader');
-    $doiStatusLoader.html(getLoader());
-    $doiStatusLoader.show();
-    removeDoi.done(function (response) {
-        let result = JSON.parse(response);
-        console.log(result);
-        if (result > 0) {
-            location.reload();
-        }
-    });
+    const loader = document.getElementById('doi-status-loader');
+    if (loader) {
+        loader.innerHTML = typeof getLoader === 'function' ? getLoader() : '';
+        loader.hidden = false;
+    }
+
+    fetch('/administratepaper/ajaxrequestremovedoi', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: new URLSearchParams({ paperId: String(paperId), docId: String(docId), doi }),
+    })
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error('Server error ' + response.status);
+            }
+            return response.json();
+        })
+        .then(function (data) {
+            if (data.success) {
+                if (loader) {
+                    loader.hidden = true;
+                }
+
+                // 1. Clear the DOI link.
+                const doiLinkEl = document.getElementById('doi-link');
+                if (doiLinkEl) {
+                    doiLinkEl.replaceChildren();
+                }
+
+                // 2. Reset the status badge to "not-assigned".
+                const doiStatusEl = document.getElementById('doi-status');
+                if (doiStatusEl) {
+                    const badgeLabel = typeof translate === 'function' ? translate('not-assigned') : 'Not Assigned';
+                    const badge = document.createElement('span');
+                    badge.className = 'label label-default';
+                    badge.textContent = badgeLabel;
+                    doiStatusEl.replaceChildren(badge, document.createTextNode('\u00A0'));
+                }
+
+                // 3. Replace the "Cancel DOI" button with the appropriate action button.
+                const panel = document.getElementById('doi-panel');
+                const assignMode = panel ? panel.dataset.doiAssignMode : '';
+                const cancelBtn = document.getElementById('removeDoi');
+                if (cancelBtn) {
+                    if (assignMode !== 'disabled') {
+                        // Auto / manual mode: rebuild "Demander un DOI".
+                        // The click handler is wired via event delegation in request-doi.js.
+                        const requestBtn = document.createElement('button');
+                        requestBtn.id = 'requestNewDoi';
+                        requestBtn.dataset.docid = String(docId);
+                        requestBtn.className = 'btn btn-default btn-sm popover-link';
+                        requestBtn.style.marginLeft = '5px';
+                        const reqIcon = document.createElement('span');
+                        reqIcon.className = 'fas fa-robot';
+                        reqIcon.style.marginRight = '5px';
+                        requestBtn.appendChild(reqIcon);
+                        requestBtn.appendChild(document.createTextNode(
+                            typeof translate === 'function' ? translate('Demander un DOI') : 'Request a DOI'
+                        ));
+                        cancelBtn.replaceWith(requestBtn);
+                    } else {
+                        // Disabled mode: rebuild "Add a DOI".
+                        const addBtn = document.createElement('button');
+                        addBtn.className = 'btn btn-default btn-sm popover-link edit-doi';
+                        addBtn.style.marginLeft = '5px';
+                        const addIcon = document.createElement('span');
+                        addIcon.className = 'glyphicon glyphicon-cog';
+                        addIcon.style.marginRight = '5px';
+                        addBtn.appendChild(addIcon);
+                        addBtn.appendChild(document.createTextNode(
+                            typeof translate === 'function' ? translate('Ajouter un DOI') : 'Ajouter un DOI'
+                        ));
+                        addBtn.addEventListener('click', function () {
+                            getDoiForm(addBtn, paperId);
+                        });
+                        cancelBtn.replaceWith(addBtn);
+                    }
+                }
+
+                // 4. Clear the paper-doi anchor in the page header (if present).
+                const paperDoiAnchor = document.querySelector('div.paper-doi a');
+                if (paperDoiAnchor) {
+                    paperDoiAnchor.textContent = '';
+                }
+
+                return;
+            }
+            if (loader) {
+                loader.hidden = true;
+            }
+            const doiStatus = document.getElementById('doi-status');
+            if (doiStatus) {
+                const errEl = document.createElement('div');
+                errEl.className = 'alert alert-danger alert-dismissible';
+                errEl.setAttribute('role', 'alert');
+                errEl.textContent = data.error || 'An error occurred.';
+                doiStatus.prepend(errEl);
+            }
+        })
+        .catch(function (err) {
+            if (loader) {
+                loader.hidden = true;
+            }
+            const doiStatus = document.getElementById('doi-status');
+            if (doiStatus) {
+                const errEl = document.createElement('div');
+                errEl.className = 'alert alert-danger alert-dismissible';
+                errEl.setAttribute('role', 'alert');
+                errEl.textContent = 'Network error. Please try again.';
+                doiStatus.prepend(errEl);
+            }
+            console.error('[removeDoi] Fetch error:', err);
+        });
 }
 
 function removeCoAuthor(docId, uid, rvid) {
@@ -985,4 +1263,9 @@ function valide($target) {
     } else {
         $('#submit-modal-' + id).prop('disabled', false);
     }
+}
+
+// Expose pure helpers for unit testing only.
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { validateDoiInput, updateDoiDisplay, DOI_PATTERN };
 }
