@@ -127,7 +127,7 @@ function __initAction(context) {
             .each(function (i) {
                 let fct = __removeAttrOnclick(this);
                 $(this).click(function (event) {
-                    tinyMCE.activeEditor.setContent(textarea[0].value);
+                    tinyMCE.activeEditor.insertContent(textarea[0].value);
                     eval(fct);
                     $(
                         '.glyphicon-ok',
@@ -140,7 +140,7 @@ function __initAction(context) {
                                 __pasteContentMCE();
                                 eval(fct);
                                 if (!$.isEmptyObject(tinyMCE.activeEditor)) {
-                                    tinyMCE.activeEditor.setContent('');
+                                    tinyMCE.activeEditor.insertContent('');
                                 }
                             });
                         });
@@ -148,7 +148,7 @@ function __initAction(context) {
             });
 
         if (!$.isEmptyObject(tinyMCE.activeEditor)) {
-            tinyMCE.activeEditor.setContent('');
+            tinyMCE.activeEditor.insertContent('');
         }
     }
 }
