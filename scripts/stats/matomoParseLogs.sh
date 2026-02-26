@@ -134,17 +134,19 @@ process_site() {
     echo "-> Processing IDSite: ${IDSITE} (SUBDOMAIN: ${SUBDOMAIN})"
     echo "   Extra Flags: ${OPTIONS_FLAGS:-None}" # Display flags, 'None' if empty
 
-    # 3. Test both suffixes (.gz and no suffix)
-    local LOG_SUFFIXES=(".gz" "")
+    # 3. Try suffixes in order: .access_log, .access_log.gz, .access_log_anonym.gz (fallback chain)
+    local LOG_SUFFIXES=("" ".gz" "_anonym.gz")
 
     for SUFFIX in "${LOG_SUFFIXES[@]}"; do
         LOG_FILE_PATTERN="${LOG_BASE_PATTERN}${SUFFIX}"
 
-        if ls "${LOG_FILE_PATTERN}" 1> /dev/null 2>&1; then
+        # shellcheck disable=SC2086
+        if ls ${LOG_FILE_PATTERN} 1> /dev/null 2>&1; then
             echo "   Target log path: ${LOG_FILE_PATTERN}"
             LOGS_FOUND=1
 
             # Execute the Python command, inserting OPTIONS_FLAGS before the log file path
+            # shellcheck disable=SC2086
             /usr/bin/${PYTHON_VERSION} "${PYTHON_SCRIPT}" \
                 --log-format-regex="${LOG_REGEX}" \
                 --token-auth "${TOKEN_AUTH}" \
@@ -153,12 +155,13 @@ process_site() {
                 --recorders "${RECORDERS}" \
                 ${COMMON_FLAGS} \
                 ${OPTIONS_FLAGS} \
-                "${LOG_FILE_PATTERN}"
+                ${LOG_FILE_PATTERN}
+            break
         fi
     done
 
     if [ "$LOGS_FOUND" -eq 0 ]; then
-        echo "   Warning: No log files found matching pattern ${DAY}-${SUBDOMAIN}.${DOMAIN_NAME}.access_log(.gz) in ${YEAR}/${MONTH}."
+        echo "   Warning: No log files found matching pattern ${DAY}-${SUBDOMAIN}.${DOMAIN_NAME}.access_log[.gz|_anonym.gz] in ${YEAR}/${MONTH}."
     fi
 }
 

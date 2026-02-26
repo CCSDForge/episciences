@@ -16,8 +16,33 @@ function __initMCE(selectorName, context, options) {
 }
 
 function __initEditor(selectorName, context, options) {
+// see https://www.tiny.cloud/docs-4x/configure/url-handling/#domainabsoluteurls
+    const domainAbsoluteURLsOptions = {
+        convert_urls: false,
+        relative_urls: false,
+        remove_script_host: false,
+        document_base_url: window.location.origin,
+    };
+
+    const licenceKey = {license_key: 'gpl'}; //https://www.tiny.cloud/license-key/
+    //To correct the printing of extra lines
+    const newLineOptions = {
+        newline_behavior: 'linebreak', //inserting a <br> instead of <p>
+        remove_trailing_brs: true      //removing extra <br> at the end of a block
+    };
+    const defaultOptions = $.extend({}, domainAbsoluteURLsOptions, newLineOptions);
+    const baseTinyMceOptions = {
+        theme: 'silver',
+        plugins: 'link image code fullscreen table',
+        toolbar1:
+            'bold italic underline | forecolor backcolor | styleselect | undo redo | ' +
+            'alignleft aligncenter alignright alignjustify | bullist numlist | link image | fullscreen',
+        menubar: false,
+        height: 200,
+        resize: true,
+    };
+
     let languageOptions = {};
-    let licenceKey = { license_key: 'gpl' }; //https://www.tiny.cloud/license-key/
 
     if (navigator.language === 'fr') {
         languageOptions = {
@@ -25,37 +50,29 @@ function __initEditor(selectorName, context, options) {
             language: 'fr_FR',
         };
     }
-    // see https://www.tiny.cloud/docs-4x/configure/url-handling/#domainabsoluteurls
-    let domainAbsoluteURLsOptions = {
-        convert_urls: false,
-        relative_urls: false,
-        remove_script_host: false,
-        document_base_url: window.location.origin,
-    };
+
+    let finalOptions;
 
     if (options === undefined) {
-        options = $.extend(domainAbsoluteURLsOptions, {
-            theme: 'silver',
-            plugins: 'link image code fullscreen table',
-            toolbar1:
-                'bold italic underline | forecolor backcolor | styleselect | undo redo | alignleft aligncenter alignright alignjustify | bullist numlist | link image  | fullscreen',
-            menubar: false,
-            height: 200,
-            resize: true,
-        });
+        // No options provided → we start with the defaults + baseTinyMceOptions
+        finalOptions = $.extend({}, defaultOptions, baseTinyMceOptions);
     } else {
-        options = $.extend(options, domainAbsoluteURLsOptions);
+        // Options provided → defaults are applied on top (to guarantee certain settings)
+        finalOptions = $.extend({}, options, defaultOptions);
     }
 
-    options = $.extend(options, languageOptions, licenceKey);
+    // Add language + license
+    finalOptions = $.extend({}, finalOptions, languageOptions, licenceKey);
 
+    // Init TinyMCE
     if (context) {
-        $(selectorName, $(context)).tinymce(options);
+        $(selectorName, $(context)).tinymce(finalOptions);
     } else {
-        options = $.extend(options, { selector: selectorName });
-        tinymce.init(options);
+        finalOptions = $.extend({}, finalOptions, {selector: selectorName});
+        tinymce.init(finalOptions);
     }
 
+    // Height adjustment
     tinyMCE.DOM.setStyle(tinyMCE.DOM.get('content'), 'height', '500px');
 
     return $(selectorName).closest('.form-group');
