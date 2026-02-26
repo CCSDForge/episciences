@@ -52,6 +52,8 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
 - `PapersManager::getList()`: removed `$cached` parameter; paper list is now always fetched fresh from the database
 - `Review::getPapers()`, `CopyEditor::loadAssignedPapers()`, `Editor::loadAssignedPapers()`, `Reviewer::loadAssignedPapers()`, `Volume::getPaperListFromVolume()`: updated signatures and call sites following the removal of `$cached`
 - `Oai/Server::getIds()`: OAI resumption token cache migrated to PSR-6 (`getItem` / `isHit` / `set` / `expiresAfter` / `save`); token conf is now stored natively by the adapter without manual `serialize()`/`unserialize()`
+- Statistics: log import script now supports anonymized log files (.access_log_anonym.gz) as a fallback, with priority order: .access_log, .access_log.gz, .access_log_anonym.gz
+
 
 ### Deprecated
 - `Episciences_Cache` and its parent `Ccsd_Cache` are now marked `@deprecated`; use `Symfony\Component\Cache\Adapter\FilesystemAdapter` instead
@@ -83,6 +85,7 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
 - Added `TeiCacheManager::fetchAndGet()` to combine fetch-if-needed + read in a single call; callers updated (`EnrichmentService`, `LicenceManager`, `AuthorsManager`)
 
 ### Fixed
+- Fixed Solr search engine indexation of Authors with a middle name
 -  consider an additional review when sending reminders for an insufficient number of reviewers
 - `Projects`: `$_dateUpdated` default was the string `'CURRENT_TIMESTAMP'` instead of `null`; `getDateUpdated()` declared `DateTime` return type but could return a string
 - `Projects::setFunding()`: method was not fluent (`void` return), inconsistent with all other setters
@@ -164,8 +167,10 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
   - `enrichment:funding` (`GetFundingDataCommand`) — enriches funding metadata via OpenAire and HAL (European + ANR projects)
   - `enrichment:licences` (`GetLicenceDataCommand`) — enriches licence data via HAL TEI metadata
   - `enrichment:links` (`GetLinkDataCommand`) — enriches dataset/software links via the Scholexplorer API
+  - Added MSC2020 Classification in ZBJATS export
 
 ### Fixed
+- Fixed RT#277365: in order to correct the printing of extra lines, two options have been added to the TinyMCE configuration to insert a <br> instead of a <p> and another option to remove extra <br>s at the end of a block
 - [#886](https://github.com/CCSDForge/episciences/issues/886): the reminder about the lack of reviewers is sent as long as the minimum required number of reviewers has not been reached compared to the accepted invitations
 - `convertToBytes()`: fixed handling of pure numeric strings (`'0'`, `'100'`) which were incorrectly treated as having a unit suffix; added validation for empty strings and negative values; replaced switch fall-through with a unit map for readability
 - `isHal()`: fixed regex missing end-of-string anchor, which allowed partial matches

@@ -124,12 +124,6 @@ class SearchController extends Episciences_Controller_Action
         } catch (Solarium\Exception\HttpException $e) {
             echo '<div class="alert alert-block alert-error fade in">';
             echo 'Le serveur est indisponible, merci de réssayer dans quelques instants';
-            if (APPLICATION_ENV === ENV_DEV) {
-                echo '<pre>Code :' . $e->getCode();
-                echo '<br>Message : ';
-                echo htmlspecialchars($e->getMessage());
-                echo '</pre>';
-            }
             echo '</div>';
             return;
 
@@ -167,13 +161,6 @@ class SearchController extends Episciences_Controller_Action
             $message .= '</ul>';
 
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-
-            if (APPLICATION_ENV === ENV_DEV) {
-                echo '<pre>Code :' . $e->getCode();
-                echo '<br>Message : ';
-                echo htmlspecialchars($e->getMessage());
-                echo '</pre>';
-            }
 
             return;
         }
