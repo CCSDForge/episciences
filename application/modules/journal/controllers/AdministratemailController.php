@@ -295,7 +295,11 @@ class AdministratemailController extends Zend_Controller_Action
         $form = Episciences_Mail_Send::getForm(null, $button_enabled, $to_enabled, $docId);
 
         // process form (send mail)
-        if ($post && !array_key_exists('ajax', $post)) {
+        if (
+            $post &&
+            !array_key_exists('ajax', $post)
+            && (isset($post['submit']) || isset($post['docid'])) // Le changement de langue du site Web entraînera la resoumission du formulaire.
+        ) {
 
             $post['sender'] = Episciences_Auth::getUid();
 
