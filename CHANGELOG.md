@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Changed
+- Update TinyMCE form 7.3.0 to 8.1.2
 - Increased Volume Description length to 1014 chars
 - DOI panel (`paper_doi.phtml`, `request-doi.js`, `view.js`): requesting, saving, and cancelling a DOI no longer triggers a full page reload — the DOM is updated in place; the success feedback message after "Request a DOI" is suppressed since the newly rendered DOI link is sufficient.
 - Refactored `Episciences_Paper_ProjectsManager` God Class into 4 single-responsibility classes:
