@@ -33,7 +33,11 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
 
     private function initCache(): void
     {
-        $this->setCache(new ArrayAdapter(3600, true, 7200, 2000));
+        // $storeSerialized=false: store object references directly, no serialize()/unserialize().
+        // Serializing complex objects (Episciences_Volume, Episciences_Review with their full
+        // object graphs) during a 7000-paper bulk run caused OOM in ArrayAdapter::freeze().
+        // We only read from cached objects (titles, status…), so reference sharing is safe.
+        $this->setCache(new ArrayAdapter(0, false));
     }
 
     /**
