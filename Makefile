@@ -162,9 +162,9 @@ collection: up ## Create Solr collection after starting containers
 		echo "Collection may already exist, continuing..."
 	@echo "Solr collection setup complete!"
 
-index: ## Index content into Solr
+index: ## Index content into Solr  [V=1 verbose] [D=1 debug]
 	@echo "Indexing content into Solr..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/solr/solrJob.php -D % -v
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/solr/solrJob.php -D % $(if $(V),-v) $(if $(D),-d)
 	@echo "Indexing complete!"
 
 # =============================================================================
