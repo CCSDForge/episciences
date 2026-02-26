@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added MSC2020 Classification in ZBJATS export
 
 ### Fixed
+- Fixed RT#277365: in order to correct the printing of extra lines, two options have been added to the TinyMCE configuration to insert a <br> instead of a <p> and another option to remove extra <br>s at the end of a block
 - [#886](https://github.com/CCSDForge/episciences/issues/886): the reminder about the lack of reviewers is sent as long as the minimum required number of reviewers has not been reached compared to the accepted invitations
 - [#236](https://github.com/CCSDForge/episciences-front/issues/236): HTML entities (&amp;) displayed in the title
 - [#830](https://github.com/CCSDForge/episciences/issues/830)  Paper number messed up for secondary volume
