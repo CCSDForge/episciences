@@ -1,6 +1,6 @@
 <?php
 require_once "JournalScript.php";
-require '../library/Episciences/Trait/Tools.php';
+require_once __DIR__ . '/../library/Episciences/Trait/Tools.php';
 
 class UpdatePapersNewJsonFieldDocument extends JournalScript
 {

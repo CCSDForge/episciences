@@ -19,7 +19,7 @@ describe('es.contacts-list', function () {
         global.getLoader = mockGetLoader;
 
         // Define JS_PREFIX_URL used in the source file
-        global.JS_PREFIX_URL = '/';
+        global.JS_PREFIX_URL = '';
 
         // Mock sanitizeHTML function (for XSS prevention)
         global.sanitizeHTML = jest.fn(html => html);

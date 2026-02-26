@@ -10,6 +10,8 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
     const OTHERS_STRING_PREFIX = 'Others';
     public static string $coreName = 'episciences';
 
+    private const AUTHOR_FIRST_LETTER_PATTERN = '/^[A-Z]$/';
+
     public static int $maxDocsInBuffer = 25;
 
     private ArrayAdapter $cache;
@@ -182,68 +184,101 @@ class Ccsd_Search_Solr_Indexer_Episciences extends Ccsd_Search_Solr_Indexer
     }
 
     /**
-     * @param $paperData
-     * @param Document $ndx
-     * @return void
+     * Indexes all authors of a paper into the Solr document.
+     * Silently skips on any error from getAuthors() (e.g. bad JSON, invalid data).
      */
-    private function indexAuthors($paperData, Document $ndx): void
+    private function indexAuthors(Episciences_Paper $paperData, Document $ndx): void
     {
-        /** @var string[] $authors */
-        $authors = $paperData->getMetadata('authors');
-
-        if (is_array($authors)) {
-            $author_sort = [];
-            foreach ($authors as $author) {
-                $this->indexOneAuthor($author, $ndx);
-                $author_sort[] = $author;
-            }
-            $author_fullname_sort = mb_substr(implode(' ', $author_sort), 0, 30);
-            $author_fullname_sort = str_replace([' ', ','], '', $author_fullname_sort);
-            $ndx->addField('author_fullname_sort', $author_fullname_sort);
-
-        } elseif (is_string($authors)) {
-            $this->indexOneAuthor($authors, $ndx);
-            $author_fullname_sort = self::cleanAuthorName($authors);
-            $ndx->addField('author_fullname_sort', $author_fullname_sort);
+        try {
+            $authors = $paperData->getAuthors();
+        } catch (\Throwable $e) {
+            return;
         }
+
+        if ($authors === []) {
+            return;
+        }
+
+        $authorNames = [];
+        foreach ($authors as $author) {
+            $formattedName = self::formatAuthorName($author);
+            $this->indexOneAuthor($formattedName, $ndx);
+            $authorNames[] = $formattedName;
+        }
+
+        $ndx->addField('author_fullname_sort', self::buildAuthorSortKey($authorNames));
     }
 
-    // Renvoie les données d'une revue ainsi que ses fichiers de traduction
+    /**
+     * Formats a raw author array into a "Family, Given" string.
+     *
+     * @param array{family?: string, given?: string} $author
+     */
+    protected static function formatAuthorName(array $author): string
+    {
+        $family = trim($author['family'] ?? '');
+        $given  = trim($author['given'] ?? '');
+
+        return sprintf('%s, %s', $family, $given);
+    }
 
     /**
-     * @param string $author
-     * @param Document $ndx
+     * Computes the sort key from a list of formatted author names.
+     * Truncates the joined string to 30 characters, then strips spaces and commas.
+     *
+     * @param string[] $authorNames
+     */
+    protected static function buildAuthorSortKey(array $authorNames): string
+    {
+        $key = mb_substr(implode(' ', $authorNames), 0, 30);
+
+        return str_replace([' ', ','], '', $key);
+    }
+
+    /**
+     * Returns the uppercase first letter of the author's cleaned name,
+     * or OTHERS_STRING_PREFIX when the first character is not an ASCII letter (A–Z).
+     */
+    protected static function classifyAuthorFirstLetter(string $authorCleaned): string
+    {
+        $firstLetter = mb_strtoupper(mb_substr($authorCleaned, 0, 1));
+
+        return preg_match(self::AUTHOR_FIRST_LETTER_PATTERN, $firstLetter) === 1
+            ? $firstLetter
+            : self::OTHERS_STRING_PREFIX;
+    }
+
+    /**
+     * Indexes a single author name into the four dedicated Solr fields.
      */
     protected function indexOneAuthor(string $author, Document $ndx): void
     {
         $authorCleaned = self::cleanAuthorName($author);
         $ndx->addField('author_fullname_fs', $authorCleaned);
 
-        $authorFirstLetters = mb_strtoupper(mb_substr($authorCleaned, 0, 1));
-        $firstLetterRange = range('A', 'Z');
-        $authorFirstLetters = in_array($authorFirstLetters, $firstLetterRange)
-            ? $authorFirstLetters
-            : self::OTHERS_STRING_PREFIX;
+        $firstLetter = self::classifyAuthorFirstLetter($authorCleaned);
+        $ndx->addField('authorFirstLetters_s', $firstLetter);
 
-        $ndx->addField('authorFirstLetters_s', $authorFirstLetters);
-
-        $authorLastNameFirstNamePrefixed_fs = $authorFirstLetters == self::OTHERS_STRING_PREFIX
+        $prefixedName = $firstLetter === self::OTHERS_STRING_PREFIX
             ? self::OTHERS_STRING_PREFIX . self::SOLR_FACET_SEPARATOR . $authorCleaned
             : $authorCleaned;
+        $ndx->addField('authorLastNameFirstNamePrefixed_fs', $prefixedName);
 
-        $ndx->addField('authorLastNameFirstNamePrefixed_fs', $authorLastNameFirstNamePrefixed_fs);
-
-        $authorsFormatted = Episciences_Tools::reformatOaiDcAuthor($author);
-        $authorsFormattedCleaned = self::cleanAuthorName($authorsFormatted);
-        $ndx->addField('author_fullname_s', $authorsFormattedCleaned);
+        $ndx->addField('author_fullname_s', $authorCleaned);
     }
 
-    private static function cleanAuthorName($name): string
+    /**
+     * Cleans and normalises an author name string before Solr indexing.
+     * Strips control characters, trailing commas, and redundant whitespace.
+     */
+    protected static function cleanAuthorName(string $name): string
     {
         $name = Episciences_Tools::spaceCleaner($name);
         $name = preg_replace('/^[\pZ\pC]+|[\pZ\pC]+$/u', '', $name);
         $name = Ccsd_Tools_String::stripCtrlChars($name, '');
         $name = str_replace(' ,', '', $name);
+        $name = rtrim($name, ',');
+
         return trim($name);
     }
 

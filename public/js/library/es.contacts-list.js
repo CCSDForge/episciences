@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const response = await fetch(
-                    JS_PREFIX_URL + '/administratemail/getcontacts?target=${target}',
+                    `${JS_PREFIX_URL}/administratemail/getcontacts?target=${target}`,
                     {
                         method: 'POST',
                         headers: {

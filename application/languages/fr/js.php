@@ -31,4 +31,5 @@ return [
     'guest_editor' => 'Rédacteur invité',
     'epiadmin' => 'Root',
     'other' => 'autre',
+    'not-assigned' => 'Non assigné'
 ];
