@@ -53,6 +53,8 @@ class Episciences_Mail_Tags
     // Renvoie vers la page de l'article sur l'archive ouverte
     public const TAG_PAPER_REPO_URL = '%%PAPER_REPO_URL%%';
     public const TAG_COMMENT = '%%COMMENT%%';
+    public const TAG_ATTACHMENTS = '%%ATTACHMENTS%%';
+    public const TAG_ARTICLE_RELATIONSHIP = '%%ARTICLE_RELATIONSHIP%%';
     public const TAG_REQUESTER_SCREEN_NAME = '%%REQUESTER_SCREEN_NAME%%';
     public const TAG_COMMENT_DATE = '%%COMMENT_DATE%%';
     public const TAG_ANSWER = '%%ANSWER%%';
@@ -134,6 +136,24 @@ class Episciences_Mail_Tags
         Episciences_Mail_Tags::TAG_SENDER_LAST_NAME,
     ];
 
+    /**
+     * Tags that can be overridden even if already set (e.g., for anonymization purposes)
+     */
+    public const OVERRIDABLE_TAGS = [
+        self::TAG_SENDER_FULL_NAME,
+    ];
+
+    /**
+     * Check if a tag can be overridden when already set
+     *
+     * @param string $tag
+     * @return bool
+     */
+    public static function isOverridable(string $tag): bool
+    {
+        return in_array($tag, self::OVERRIDABLE_TAGS, true);
+    }
+
     public const TAG_DESCRIPTION = [
         self::TAG_ACCEPTANCE_DATE => "date d'acceptation d'un article",
         self::TAG_ACCEPTANCE_DATE_ISO  => "date d'acceptation d'un article au format ISO",
@@ -146,6 +166,7 @@ class Episciences_Mail_Tags
         self::TAG_ARTICLE_RATING_LINK => "lien vers le formulaire à renseigner pour l’évaluation de l'article",
         self::TAG_ARTICLE_TITLE => 'titre de l’article',
         self::TAG_AUTHORS_NAMES => "les auteurs de l'article (e.g. : Rodney, Hartman ;  Bryan, Daniel et John, Walls)",
+        self::TAG_ATTACHMENTS => "liste des pièces jointes au message",
         self::TAG_COMMENT => 'commentaire du relecteur',
         self::TAG_COMMENT_DATE => 'date du commentaire du relecteur',
         self::TAG_CONTRIBUTOR_FULL_NAME => 'nom complet du déposant',

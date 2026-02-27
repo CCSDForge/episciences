@@ -68,15 +68,24 @@ function getElements(element, attr) {
 }
 
 $(document).ready(function () {
-    let object_inputs = getElements('input', 'file');
-    $.each(object_inputs, function (index, value) {
-        let element = '#' + value.id;
-        $(element).change(function () {
+    // Use event delegation to handle both existing and dynamically added file inputs
+    $(document).off('change', 'input[id^=file]').on('change', 'input[id^=file]', function () {
+        // Get all file inputs to determine the correct index for this input
+        let object_inputs = getElements('input', 'file');
+        let index = -1;
+        for (let i = 0; i < object_inputs.length; i++) {
+            if (object_inputs[i].id === this.id) {
+                index = i;
+                break;
+            }
+        }
+
+        if (index !== -1) {
             let container = getContainer($(this), index);
             let filename = $(this)[0].files.length
                 ? $(this)[0].files[0].name
                 : '';
             $(container).html(formatFileLabel(filename, index));
-        });
+        }
     });
 });

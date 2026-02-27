@@ -1,19 +1,53 @@
 <?php if ($this->comment['UID'] == Episciences_Auth::getUid()): ?>
 <?php // le champ file de la table paperComments est encoder en JSON si plusieurs fichiers sont attachés à ce commentaire ?>
-    <?php $file = $this->fileName ?? $this->comment['FILE']; ?>
-    <?php $file_delete_url = '/comments/removefilecomment/pcid/' .
-        $this->comment['PCID'] . '/docid/' . $this->comment['DOCID'] . '/file/' . $file ?>
-    <a class="btn btn-danger btn-xs pull-right" style="margin-bottom:5px;" onclick="confirmDeleteFile('<?php echo $file_delete_url; ?>')">
-        <span class="glyphicon glyphicon-trash"
-              style="margin-right: 5px;"></span><?php echo $this->translate('Supprimer'); ?>
-    </a>
+    <?php
+    $file = $this->fileName ?? $this->comment['FILE'] ?? '';
+    $hasFile = !empty($file);
+
+    // Generate unique CSRF token name for this file
+    $csrfTokenName = 'csrf_remove_file_' . $this->comment['PCID'] . '_' . md5($file);
+
+    // Different confirmation message for different message types
+    $commentType = isset($this->comment['TYPE']) ? (int)$this->comment['TYPE'] : null;
+    $isAuthorEditorCommunication = in_array($commentType, [
+        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+        Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR
+    ], true);
+    $buttonText = $this->translate('Supprimer');
+
+    // Since button only shows when there's an attached file, all messages are about deleting the file only
+    if ($isAuthorEditorCommunication) {
+        // For author-editor communication messages, delete only the attached file
+        $confirmMessage = $this->translate('Voulez-vous supprimer votre fichier attaché ?');
+    } else {
+        // Default behavior for other comment types
+        $confirmMessage = $this->translate('Voulez-vous supprimer ce fichier ?');
+    }
+
+    // Unique form ID based on comment
+    $formId = 'delete_file_form_' . $this->comment['PCID'] . '_' . preg_replace('/[^a-zA-Z0-9]/', '', $file);
+    ?>
+    <?php // Only show delete button if there is a file attached ?>
+    <?php if ($hasFile) : ?>
+        <form id="<?php echo $formId; ?>" method="post" action="/comments/removefilecomment" style="display: inline;">
+            <?php echo Episciences_Csrf_Helper::getHiddenInput($csrfTokenName); ?>
+            <input type="hidden" name="csrf_token_name" value="<?php echo htmlspecialchars($csrfTokenName, ENT_QUOTES, 'UTF-8'); ?>">
+            <input type="hidden" name="pcid" value="<?php echo (int)$this->comment['PCID']; ?>">
+            <input type="hidden" name="docid" value="<?php echo (int)$this->comment['DOCID']; ?>">
+            <input type="hidden" name="file" value="<?php echo htmlspecialchars($file, ENT_QUOTES, 'UTF-8'); ?>">
+            <button type="button" class="btn btn-danger btn-xs pull-right" style="margin-bottom:5px; color: white;"
+                    onclick="confirmDeleteFile('<?php echo $formId; ?>', '<?php echo addslashes($confirmMessage); ?>')">
+                <span class="glyphicon glyphicon-trash" style="margin-right: 5px;"></span><?php echo $buttonText; ?>
+            </button>
+        </form>
+    <?php endif; ?>
     <script>
-        function confirmDeleteFile(href) {
-            if (confirm(translate('Voulez-vous supprimer ce fichier ?'))) {
-                location.href = href;
+        if (typeof confirmDeleteFile === 'undefined') {
+            function confirmDeleteFile(formId, message) {
+                if (confirm(message)) {
+                    document.getElementById(formId).submit();
+                }
             }
         }
     </script>
-<?php else:?>
-<br>
 <?php endif; ?>

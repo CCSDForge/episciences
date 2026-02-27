@@ -220,6 +220,14 @@ return [
     "paper_comment_by_editor_editor_copy_tpl_name" => "Commentaire d'un rédacteur sur un article (copie destinée aux rédacteurs)",
     "paper_comment_by_editor_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Un rédacteur a posté un commentaire concernant un article dont vous êtes responsable",
 
+    // Communication auteur vers éditeurs assignés
+    "paper_comment_from_author_to_editor_editor_copy_tpl_name" => "Message de l'auteur aux rédacteurs assignés (copie destinée aux rédacteurs)",
+    "paper_comment_from_author_to_editor_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - nouveau message concernant %%ARTICLE_RELATIONSHIP%%",
+
+    // Réponse d'un éditeur à un message de l'auteur
+    "paper_editor_response_to_author_author_copy_tpl_name" => "Réponse d'un rédacteur à votre message (copie destinée à l'auteur)",
+    "paper_editor_response_to_author_author_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Un rédacteur a répondu à votre message",
+
     // Commentaire de l'auteur / lettre d'accompagnement
     'paper_author_comment_editor_copy_tpl_name' => "Commentaire de l'auteur / lettre d'accompagnement",
     'paper_author_comment_editor_copy_mail_subject' => "Commentaire de l'auteur / lettre d'accompagnement",

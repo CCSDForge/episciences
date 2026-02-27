@@ -286,6 +286,14 @@ if ($this->citations !== '') {
         </div>
     </div>
 
+<?php // author to editor communication ************************************** ?>
+<?= $this->partial('partials/paper_author_to_editor_messages.phtml', [
+    'paper' => $paper,
+    'authorToEditorForm' => null,
+    'editorReplyForms' => $this->editorReplyForms ?? null,
+    'authorToEditorComments' => $this->authorToEditorComments,
+    'editors' => $this->editors ?? []
+]) ?>
 
 <?php // revision requests ***************************************************** ?>
 <?php if ($this->demands || $this->currentDemand || $this->previousVersionsDemands) : ?>

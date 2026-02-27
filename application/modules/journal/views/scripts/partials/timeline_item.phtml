@@ -11,7 +11,23 @@ if (!$id) {
 
     <!-- Timeline marker with user photo -->
     <div class="timeline-marker" aria-hidden="true">
-        <?= $this->userAvatar($comment, 'initials') ?>
+        <?php
+        // Define avatar colors based on comment type
+        $avatarColor = null;
+        if (isset($comment['TYPE'])) {
+            if ($comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+                $avatarColor = 'FFC107'; // Yellow for authors
+            } elseif ($comment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                $avatarColor = '2196F3'; // Blue for editors
+            }
+        }
+
+        $avatar = $this->userAvatar($comment, 'initials');
+        if ($avatarColor) {
+            $avatar->setBackgroundColor($avatarColor);
+        }
+        echo $avatar;
+        ?>
     </div>
 
     <!-- Comment content card -->
@@ -24,22 +40,49 @@ if (!$id) {
             </time>
             <i class="fa-solid fa-user" aria-hidden="true"></i>&nbsp;<?= $this->translate('De : ') ?>
             <span class="comment-author">
-
-                            <strong>
-                                <?= ((int)$comment['UID'] === Episciences_Auth::getUid()) ? $this->translate('Vous') : $this->escape($comment['SCREEN_NAME']) ?>
-                            </strong>
-                            </span>
+                <strong>
+                    <?= ((int)$comment['UID'] === Episciences_Auth::getUid()) ? $this->translate('Vous') : $this->escape($comment['SCREEN_NAME']) ?>
+                </strong>
+            </span>
         </header>
 
+        <!-- Reply to indicator (for both author and editor replies) -->
+        <?php if (isset($comment['REPLY_TO_INFO']) && !empty($comment['REPLY_TO_INFO']) &&
+                  isset($comment['TYPE']) &&
+                  ($comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR ||
+                   $comment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE)) : ?>
+            <div class="reply-to-indicator">
+                <i class="fa fa-reply" aria-hidden="true"></i>
+                <strong><?= $this->translate('Répond à :') ?></strong>
+                <span class="reply-to-name">
+                    <?= $this->escape($comment['REPLY_TO_INFO']['SCREEN_NAME']) ?>
+                </span>
+                <span class="reply-to-date">
+                    (<?= $this->Date($comment['REPLY_TO_INFO']['WHEN'], null, Zend_Date::DATE_SHORT . ' - ' . Zend_Date::TIME_SHORT) ?>)
+                </span>
+                <?php if (!empty($comment['REPLY_TO_INFO']['MESSAGE_PREVIEW'])) : ?>
+                    <div class="reply-to-preview">
+                        "<?= $this->escape($comment['REPLY_TO_INFO']['MESSAGE_PREVIEW']) ?><?= mb_strlen(strip_tags($comment['REPLY_TO_INFO']['MESSAGE_PREVIEW'])) >= 100 ? '...' : '' ?>"
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
         <!-- Comment message -->
-        <div class="timeline-comment-message">
+        <div class="timeline-comment-message" <?php
+        // Remove bottom border if there's an attached file
+        if (!empty($comment['FILE'])) {
+            echo 'style="border-bottom: none; margin-bottom: 0;"';
+        }
+        ?>>
             <?= Episciences_Tools::formatText(Episciences_Tools::epi_html_decode($comment['MESSAGE'])) ?>
         </div>
 
-        <!-- Attached file (if present) -->
-        <?php if ($comment['FILE']) : ?>
-            <div class="timeline-comment-attachment">
-                <div>
+        <!-- Actions container: attached file, reply button and delete button on same line -->
+        <div class="timeline-comment-actions-wrapper">
+            <!-- Attached file (if present) - on same line as buttons -->
+            <?php if (!empty($comment['FILE'])) : ?>
+                <div class="timeline-comment-attachment-inline">
                     <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i> <a
                             href="/docfiles/comments/<?= $comment['DOCID'] . '/' . $comment['FILE'] ?>"
                             target="_blank"
@@ -48,11 +91,20 @@ if (!$id) {
                         <?= $this->escape($comment['FILE']) ?>
                     </a>
                 </div>
-                <div class="remove-file-btn">
-                    <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]) ?>
+            <?php endif; ?>
+
+            <!-- Optional actions (edit, reply, etc.) -->
+            <?php if (isset($this->actions) && $this->actions) : ?>
+                <div class="timeline-comment-actions">
+                    <?= $this->actions ?>
                 </div>
+            <?php endif; ?>
+
+            <!-- Delete button (only shown if file attached) -->
+            <div class="remove-file-btn">
+                <?= $this->partial('partials/remove_file_comment.phtml', ['comment' => $comment]) ?>
             </div>
-        <?php endif; ?>
+        </div>
 
     </div>
 

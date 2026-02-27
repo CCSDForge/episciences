@@ -321,6 +321,31 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
         </div>
     <?php endif; ?>
 
+    <?php // assigned editors section (visible if names disclosed) **************** ?>
+    <?php if ($paper->isOwner() && Episciences_Auth::isLogged()) : ?>
+        <?php
+        $review = Episciences_ReviewsManager::find($paper->getRvid());
+        $discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
+        if ($discloseEditorNames && !empty($this->editors)) :
+        ?>
+            <?= $this->partial('partials/paper_editors_for_authors.phtml', [
+                'editors' => $this->editors,
+                'paper' => $paper
+            ]) ?>
+        <?php endif; ?>
+    <?php endif; ?>
+
+    <?php // author to editor communication ************************************** ?>
+    <?= $this->partial('partials/paper_author_to_editor_messages.phtml', [
+        'paper' => $paper,
+        'authorToEditorForm' => $this->authorToEditorForm ?? null,
+        'editorReplyForms' => null,
+        'authorToEditorComments' => $this->authorToEditorComments,
+        'editors' => $this->editors ?? [],
+        'isAuthor' => $this->isAuthor ?? false,
+        'authorReplyForms' => $this->authorReplyForms ?? []
+    ]) ?>
+
     <?php // revision requests ***************************************************** ?>
     <?php if ($isAllowedToAnswerNewVersion && ($this->revision_requests || $this->currentDemand || $this->previousVersionsDemands) && !$paper->isPublished()) : ?>
         <div id="answer" class="panel panel-default collapsable">

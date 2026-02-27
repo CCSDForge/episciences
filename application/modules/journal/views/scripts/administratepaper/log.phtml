@@ -174,7 +174,7 @@
                 <td class="td-label"><?= $this->translate('Sujet') ?></td>
                 <td class="small">
                     <?php if (array_key_exists('Subject', $this->log['detail']['mail']) && $this->log['detail']['mail']['Subject']) : ?>
-                        <?= $this->log['detail']['mail']['Subject'] ?>
+                        <?= htmlspecialchars_decode($this->log['detail']['mail']['Subject']) ?>
                     <?php else : ?>
                         -
                     <?php endif; ?>
@@ -272,6 +272,8 @@
     case Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION:
     case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR:
     case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER:
+    case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR:
+    case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR:
 
     ?>
         <?= $this->partial('administratepaper/new_comment_log_details.phtml', ['log' => $this->log, 'user' => $this->user]) ?>
@@ -290,7 +292,7 @@
         <?= $this->partial('administratepaper/new-deadline-log-details.phtml', ['log' => $this->log, 'user' => $this->user]) ?>
         <?php break; ?>
 
-    <?php 
+    <?php
     case Episciences_Paper_Logger::CODE_LD_ADDED:
     case Episciences_Paper_Logger::CODE_LD_CHANGED:
     case Episciences_Paper_Logger::CODE_LD_REMOVED: ?>

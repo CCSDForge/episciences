@@ -1607,6 +1607,7 @@ class UserDefaultController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender(true);
         $uid = $this->getParam('uid', 0);
         $size = $this->getParam('size', Ccsd_User_Models_User::IMG_NAME_NORMAL);
+        $backgroundColor = $this->getParam('bgcolor');
 
         $photoPathName = false;
         $data = false;
@@ -1643,18 +1644,38 @@ class UserDefaultController extends Zend_Controller_Action
             }
         }
 
+        // If custom background color is provided for initials, generate SVG dynamically (skip cache)
+        if ($backgroundColor && $size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
+            $data = Episciences_View_Helper_GetAvatar::asSvg($screenName, $backgroundColor);
+            $contentSize = strlen($data);
+            $maxAge = 300; // Shorter cache for dynamic content
+            $expires = gmdate('D, d M Y H:i:s \G\M\T', time() + $maxAge);
+
+            $this->getResponse()
+                ->setHeader('ETag', md5($data), true)
+                ->setHeader('Expires', $expires, true)
+                ->setHeader('Pragma', '', true)
+                ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
+                ->setHeader('Content-Type', 'image/svg+xml', true)
+                ->setHeader('Content-Length', $contentSize, true)
+                ->setBody($data);
+            return;
+        }
+
         if (!$photoPathName) {
             if ($size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
+
+                // Generate SVG
+                $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
 
                 $userPhotoPath = $user->getPhotoPath();
 
                 if (!is_dir($userPhotoPath) && !mkdir($userPhotoPath, 0777, true) && !is_dir($userPhotoPath)) {
                     trigger_error(sprintf('Directory "%s" was not created', $userPhotoPath), E_USER_WARNING);
                 }
-                $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . '.svg';
-                $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
-                file_put_contents($photoPathName, $data);
 
+                $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . '.svg';
+                file_put_contents($photoPathName, $data);
 
             } else {
                 $imageMimeType = 'image/svg+xml';

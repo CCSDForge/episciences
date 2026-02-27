@@ -242,8 +242,11 @@ class Episciences_Mail_Send
             $mail->setDocid($paper->getDocid());
         }
 
+        $existingTags = $mail->getTags();
+
         foreach ($tags as $tag => $value) {
-            if (!array_key_exists($tag, $mail->getTags())) {
+            if (!array_key_exists($tag, $existingTags)
+                || Episciences_Mail_Tags::isOverridable($tag)) {
                 $mail->addTag($tag, $value);
             }
         }

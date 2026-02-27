@@ -4955,6 +4955,17 @@ class Episciences_Paper
             (Episciences_Auth::getOriginalIdentity() && isset($coAuthors[Episciences_Auth::getOriginalIdentity()?->getUid()]));
     }
 
+    /**
+     * Check if the current user is the paper owner or a co-author
+     * Used for access control in author-editor communication feature
+     *
+     * @return bool
+     */
+    public function isOwnerOrCoAuthor(): bool
+    {
+        return $this->isOwner() || $this->isCoauthor();
+    }
+
 
     public function isEditableVersion(): bool
     {

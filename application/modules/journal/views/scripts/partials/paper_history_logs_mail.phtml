@@ -12,5 +12,5 @@
 <?php endif; ?>
 <?= $this->translate(' :') ?>
 <span class="log-mail-subject">
-    <?= $this->escape($this->subject) ?>
+    <?= $this->escape(htmlspecialchars_decode($this->subject, ENT_QUOTES)) ?>
 </span>
