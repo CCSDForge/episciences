@@ -1,176 +1,152 @@
-# ✨ Welcome to your team’s GitHub repository! ✨
+# LMCS Pipeline Integration for Episciences
 
-This repository will be the home of your project.
-You will use it throughout the course to design, implement, test, and document your software.
-The text below is intended to help you get started.
-Feel free to modify or remove it once you are familiar with the workflow.
-More information about this can also be found within the course's content.
+## Project Overview
 
-Good luck, and work professionally.
+This project extends the workflow capabilities of Episciences to support the publication pipeline used by Logical Methods in Computer Science (LMCS).
 
-## Project organization
+Episciences is a diamond open-access overlay journal platform operated by CCSD (Centre pour la Communication Scientifique Directe). It integrates with arXiv, meaning that research papers are hosted on arXiv while Episciences manages peer review, editorial workflow, and publication metadata.
 
-A GitHub **Project** has been prepared to help you organize your work by acting as a Scrum board:
-- Use **Milestones** to represent sprints.
-- Associate **Issues** with milestones.
-- Use the board to track progress.
-
-## Repository usage
-
-- Commit **only source code** written by your team; do not commit binaries or similar.
-- Do **not** copy the source code of external dependencies into this repository.
-  - Use package managers or **git submodules** (see the *Learn more* section below) where appropriate.
-
-## Licensing
-
-This repository currently uses the **MIT License**, but you may choose a different license if needed.
-
-> [!IMPORTANT]
-> If a client intends to distribute a **closed-source or commercial** version of the software, special care must be taken when selecting:
-> - Your project license
-> - Licenses of all dependencies (frameworks, libraries, tools, SDKs, etc.)
->
-> Always verify license compatibility before integrating dependencies.  
-> Helpful resource: https://choosealicense.com
-
-## Extended GitHub features
-
-You can also use:
-- **GitHub Wiki** for design notes and documentation
-- **GitHub Actions** for CI/CD (testing, linting, formatting, deployment, …)
-- **GitHub Pages** for static demo hosting
-- **Releases** and **tags** for versioning
-
-## Learn more
-
-If this is your first time using GitHub, the following resources are strongly recommended:
-
-- Git and GitHub basics:  
-  https://docs.github.com/en/get-started
-
-- Issues and Projects:  
-  https://docs.github.com/en/issues  
-  https://docs.github.com/en/issues/planning-and-tracking-with-projects
-
-- Pull requests and code reviews:  
-  https://docs.github.com/en/pull-requests
-
-- GitHub Actions (CI/CD):  
-  https://docs.github.com/en/actions
-
-- GitHub Wiki:  
-  https://docs.github.com/en/communities/documenting-your-project-with-wikis
-
-- GitHub Pages:  
-  https://docs.github.com/en/pages
-
-- Git submodules:  
-  https://git-scm.com/book/en/v2/Git-Tools-Submodules
-
-## Common full-stack web development stacks
-
-If you have been matched to a project involving web development and are starting from scratch, selecting an appropriate set of tools can seem daunting.
-
-The following **full-stack setups** are widely used, well-documented, and suitable for most projects.
-Each example includes a typical runtime and package manager.
-You are, of course, free to choose a different stack if it better fits your project requirements or your group's experience!
-
-> [!TIP]
-> Most modern IDEs provide plugins that extend their support for specific frameworks. These can add features such as syntax highlighting for templating languages, framework-aware code completion, and inline documentation.
-
-### JavaScript / TypeScript
-
-**Frontend frameworks**
-
-- React — https://react.dev  
-- Vue — https://vuejs.org/guide  
-- Angular — https://angular.io/docs  
-- Svelte — https://svelte.dev  
-
-**Full-stack frameworks**
-
-- Next.js (React-based)  
-  https://nextjs.org/docs  
-
-- SvelteKit (Svelte-based)  
-  https://kit.svelte.dev/docs  
-
-- Nuxt (Vue-based)  
-  https://nuxt.com/docs  
-
-**API backends**
-
-- Express — https://expressjs.com  
-- NestJS — https://docs.nestjs.com  
-- Fastify — https://www.fastify.io/docs/latest  
-- Hono — https://hono.dev  
-
-**Runtime and package management**
-
-- Node.js with npm (default)  
-  https://nodejs.org/en/docs  
-  https://docs.npmjs.com  
-
-- Bun (runtime and package manager)  
-  https://bun.sh/docs  
+Currently, the default Episciences publication pipeline does not align with the LMCS editorial workflow. This mismatch causes inefficiencies, including paper queue resets, workflow confusion, and increased manual work. The goal of this project is to implement an LMCS-compatible pipeline within Episciences without affecting other journals.
 
 ---
 
-### Python
+## Problem Description
 
-**Web frameworks**
+### Current Episciences Workflow
 
-- Django (full-stack: ORM, templates, authentication included)  
-  https://docs.djangoproject.com  
+The default Episciences post-review workflow consists of a multi-step process in which:
 
-- FastAPI (API-first, commonly paired with a separate frontend)  
-  https://fastapi.tiangolo.com  
+1. Layout editors send changes to authors.
+2. Authors upload revised versions through Episciences.
+3. The process repeats until a final version is accepted.
 
-**Runtime and package management**
+This assumes authors upload the final versions themselves.
 
-- Python with pip  
-  https://pip.pypa.io  
+### LMCS Workflow
 
-- uv (fast package and environment manager)  
-  https://docs.astral.sh/uv  
+LMCS instead:
 
----
+1. Requests a final version and arXiv password from the author.
+2. Layout editors perform edits internally.
+3. After author confirmation, LMCS uploads the final version to arXiv directly.
 
-### PHP
+### Core Issue
 
-**Full-stack frameworks**
+Authors frequently ignore LMCS instructions and follow the default Episciences upload process. This results in:
 
-- Laravel  
-  https://laravel.com/docs  
-
-- Symfony  
-  https://symfony.com/doc  
-
-*Both Laravel and Symfony can also be used as API backends in combination with modern frontend frameworks.*
-
-**Runtime and package management**
-
-- PHP with Composer  
-  https://getcomposer.org/doc  
+* Papers being reset in the processing queue.
+* Loss of waiting-time ordering.
+* Increased manual tracking effort.
+* Reduced clarity on deadlines and stalled tasks.
 
 ---
 
-### Java
+## Project Goals
 
-**Web frameworks**
+### Minimum Viable Product (MVP)
 
-- Spring Boot (backend or full-stack)  
-  https://spring.io/projects/spring-boot  
+* Implement the LMCS publication pipeline inside Episciences.
+* Add a configurable admin setting allowing journals to switch between:
 
-  - Commonly used as an API backend with modern frontend frameworks  
-  - Can also be used with server-side rendering (e.g., Thymeleaf)  
-    https://www.thymeleaf.org/documentation.html  
+  * Default Episciences pipeline
+  * LMCS pipeline
 
-**Runtime and package management**
+This ensures backward compatibility for other journals.
 
-- Java (JDK)  
-  https://docs.oracle.com/en/java  
+### Post-MVP Goals
 
-- Maven or Gradle  
-  https://maven.apache.org/guides  
-  https://docs.gradle.org  
+* Extend the Episciences API with new endpoints useful for LMCS.
+* Improve visibility of pending tasks and deadlines.
+* Reduce reliance on external tools currently used by LMCS.
+
+---
+
+## Scrum Setup
+
+### Roles
+
+* Scrum Master: Raoul Rutgers
+* Product Owner: LMCS, CCSD
+* Development Team: Guus de Groot, Hamzeh Akkad, Jelle Prosperi, Kim Trinh, Willem Scholten
+
+### Sprint Length
+
+2 weeks
+
+### Tools
+
+* GitHub Issues
+* GitHub Projects (Scrum board)
+* Milestones (Sprints)
+* Pull Requests and Code Reviews
+* Docker for local development
+
+---
+
+## Technical Setup
+
+### Requirements
+
+* Linux-based system or virtual machine
+* Docker and Docker Compose
+
+### Setup Instructions
+
+```bash
+git clone git@github.com:CCSDForge/episciences.git
+cd episciences
+git checkout staging
+make dev-setup
+```
+
+The platform should then be accessible locally via the configured port.
+
+To access the urls, the domain names should be added to the local `etc/hosts` file.
+
+```txt
+127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org manager-dev.episciences.org
+```
+
+---
+
+## External Tools Currently Used by LMCS
+
+Before this integration, LMCS currently relies on:
+
+* **epirc**: A command-line tool that scrapes Episciences to track paper progress.
+* **LMCSBot**: A Python web application that automates email reminders, requests final versions and passwords, and uploads papers to arXiv.
+
+This project aims to integrate necessary functionality directly into Episciences to reduce dependency on these tools.
+
+---
+
+## Confidentiality
+
+Reviewers may choose to remain anonymous. Reviewer identities must never be exposed to authors or unauthorized users. All implementations must preserve this confidentiality requirement.
+
+---
+
+## Contribution Workflow
+
+1. Create a feature branch from `staging`.
+2. Reference the related issue in commit messages.
+3. Open a pull request.
+4. Request peer review.
+5. Merge after approval.
+
+No external dependencies should be copied directly into this repository.
+
+---
+
+## Project Management
+
+* Milestones represent sprints.
+* Issues represent backlog items.
+* GitHub Projects is used as the Scrum board.
+* Labels are used to categorize tasks.
+
+---
+
+## License
+
+This repository uses the MIT License unless otherwise specified. All dependencies must be license-compatible.
