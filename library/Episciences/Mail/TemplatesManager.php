@@ -1677,6 +1677,130 @@ class Episciences_Mail_TemplatesManager
     ];
 
     /**
+     * @param Episciences_Mail_Template $template
+     * @param array|null $langs
+     * @return Zend_Form
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     */
+    public static function getTemplateForm(Episciences_Mail_Template $template, array $langs = null): Zend_Form
+    {
+        $id = (int) $template->getId();
+        $form = new Zend_Form();
+        $form->setAttrib('id', 'template-' . $id);
+        $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'administratemail', 'action' => 'savetemplate', 'id' => $id]));
+        $form->setDecorators(array(
+            'FormElements',
+            array('HtmlTag', array('tag' => 'div', 'class' => 'tab-content')),
+            'Form',
+        ));
+
+        if (!$langs) {
+            $langs = Episciences_Tools::getLanguages();
+        }
+        $translator = Zend_Registry::get("Zend_Translate");
+        $locale = $translator->getLocale();
+        $defaultLang = (array_key_exists($locale, $langs)) ? $locale : 'fr';
+        $tags = $template->getTags();
+        $tagList = '<div style="width:auto">';
+        foreach ($tags as $tag) {
+            $tagList .= sprintf('<span style="display: inline-block" class="label label-dark">%s</span>&nbsp;', $tag);
+        }
+        $tagList.= '</div>';
+        $description = $translator->translate('Tags disponibles : ', $locale) . $tagList;
+
+        foreach ($langs as $code => $lang) {
+
+            $subform = new Zend_Form_SubForm();
+
+            $class = 'tab-pane fade';
+
+            if (
+                $code === $defaultLang ||
+                count($langs) === 1
+            ) {
+                $class .= ' in active';
+            }
+
+            $subform->setDecorators(array(
+                'FormElements',
+                array('HtmlTag', array('tag' => 'div', 'class' => $class, 'id' => $code . '_form')),
+            ));
+
+            // Template name
+            $name = new Zend_Form_Element_Text('name');
+            $name->setLabel(Zend_Registry::get("Zend_Translate")->translate('Nom du template'));
+            $name->setAttribs(array('style' => 'width:538px'));
+            $subform->addElement($name);
+
+            // Mail subject
+            $subject = new Zend_Form_Element_Text('subject');
+            $subject->setLabel(Zend_Registry::get("Zend_Translate")->translate('Sujet du mail'));
+            $subject->setAttribs(array('style' => 'width:538px'));
+            $subform->addElement($subject);
+
+            $body = new Zend_Form_Element_Textarea('body');
+            $body->setLabel(Zend_Registry::get("Zend_Translate")->translate('Corps du message'));
+            $body->setDescription($description);
+            $body->getDecorator('Description')->setOption('escape', false);
+            $body->setAttribs(array('rows' => 10, 'style' => 'width:auto'));
+            $subform->addElement($body);
+
+            $form->addSubForm($subform, $code);
+        }
+
+        $defaults = self::getTemplateFormDefaults($template, $langs);
+        $form->setDefaults($defaults);
+        return $form;
+    }
+
+    /**
+     * @throws Zend_Exception
+     */
+    private static function getTemplateFormDefaults(Episciences_Mail_Template $template, $langs): array
+    {
+        $defaults = array();
+        $template->loadTranslations();
+
+        foreach ($langs as $code => $lang) {
+            $defaults[$code]['name'] = $template->getName($code);
+            $defaults[$code]['subject'] = $template->getSubject($code);
+            // if template is default, nltobr
+            $defaults[$code]['body'] = ($template->getParentid()) ? $template->getBody($code) : nl2br($template->getBody($code));
+        }
+
+        return $defaults;
+    }
+
+    public static function getTemplatePath($key, $locale = null)
+    {
+        if (!$locale) {
+            $locale = Zend_Registry::get('Zend_Translate')->getLocale();
+        }
+        $applicationPath = APPLICATION_PATH . '/languages/' . $locale . '/emails';
+        $localPath = REVIEW_LANG_PATH . $locale . '/emails';
+
+        if (file_exists($localPath . '/custom_' . $key . '.phtml')) {
+            $result['path'] = $localPath;
+            $result['key'] = 'custom_' . $key;
+            $result['file'] = $result['key'] . '.phtml';
+        } elseif (file_exists($applicationPath . '/' . $key . '.phtml')) {
+            $result['path'] = $applicationPath;
+            $result['key'] = $key;
+            $result['file'] = $result['key'] . '.phtml';
+        } else {
+            $result = false;
+        }
+
+        return $result;
+    }
+
+    public static function getDefaultList(): array
+    {
+        return self::getList();
+    }
+
+    /**
      * @param array $withoutKeys
      * @param int|null $rvId
      * @return array
@@ -1756,125 +1880,6 @@ class Episciences_Mail_TemplatesManager
 
         return $templates;
     }
-
-    /**
-     * @param Episciences_Mail_Template $template
-     * @param array|null $langs
-     * @return Zend_Form
-     * @throws Zend_Exception
-     * @throws Zend_Form_Exception
-     */
-    public static function getTemplateForm(Episciences_Mail_Template $template, array $langs = null): Zend_Form
-    {
-        $id = $template->getId();
-        $form = new Zend_Form();
-        $form->setAttrib('id', 'template-' . $id);
-        $form->setAction((new Episciences_View_Helper_Url())->url(['controller' => 'administratemail', 'action' => 'savetemplate', 'id' => $id]));
-        $form->setDecorators(array(
-            'FormElements',
-            array('HtmlTag', array('tag' => 'div', 'class' => 'tab-content')),
-            'Form',
-        ));
-
-        if (!$langs) {
-            $langs = Episciences_Tools::getLanguages();
-        }
-        $translator = Zend_Registry::get("Zend_Translate");
-        $locale = $translator->getLocale();
-        $defaultLang = (array_key_exists($locale, $langs)) ? $locale : 'fr';
-        $description = $translator->translate('Tags disponibles : ', $locale) . $template->getAvailableTagsListDescription();
-
-        foreach ($langs as $code => $lang) {
-
-            $subform = new Zend_Form_SubForm();
-
-            $class = 'tab-pane fade';
-
-            if (
-                $code === $defaultLang ||
-                count($langs) === 1
-            ) {
-                $class .= ' in active';
-            }
-
-            $subform->setDecorators(array(
-                'FormElements',
-                array('HtmlTag', array('tag' => 'div', 'class' => $class, 'id' => $code . '_form')),
-            ));
-
-            // Template name
-            $name = new Zend_Form_Element_Text('name');
-            $name->setLabel(Zend_Registry::get("Zend_Translate")->translate('Nom du template'));
-            $name->setAttribs(array('style' => 'width:538px'));
-            $subform->addElement($name);
-
-            // Mail subject
-            $subject = new Zend_Form_Element_Text('subject');
-            $subject->setLabel(Zend_Registry::get("Zend_Translate")->translate('Sujet du mail'));
-            $subject->setAttribs(array('style' => 'width:538px'));
-            $subform->addElement($subject);
-
-            $body = new Zend_Form_Element_Textarea('body');
-            $body->setLabel(Zend_Registry::get("Zend_Translate")->translate('Corps du message'));
-            $body->setDescription($description);
-            $body->setAttribs(array('rows' => 10, 'style' => 'width:538px'));
-            $subform->addElement($body);
-
-            $form->addSubForm($subform, $code);
-        }
-
-        $defaults = self::getTemplateFormDefaults($template, $langs);
-        $form->setDefaults($defaults);
-        return $form;
-    }
-
-
-    /**
-     * @throws Zend_Exception
-     */
-    private static function getTemplateFormDefaults(Episciences_Mail_Template $template, $langs): array
-    {
-        $defaults = array();
-        $template->loadTranslations();
-
-        foreach ($langs as $code => $lang) {
-            $defaults[$code]['name'] = $template->getName($code);
-            $defaults[$code]['subject'] = $template->getSubject($code);
-            // if template is default, nltobr
-            $defaults[$code]['body'] = ($template->getParentid()) ? $template->getBody($code) : nl2br($template->getBody($code));
-        }
-
-        return $defaults;
-    }
-
-    public static function getTemplatePath($key, $locale = null)
-    {
-        if (!$locale) {
-            $locale = Zend_Registry::get('Zend_Translate')->getLocale();
-        }
-        $applicationPath = APPLICATION_PATH . '/languages/' . $locale . '/emails';
-        $localPath = REVIEW_LANG_PATH . $locale . '/emails';
-
-        if (file_exists($localPath . '/custom_' . $key . '.phtml')) {
-            $result['path'] = $localPath;
-            $result['key'] = 'custom_' . $key;
-            $result['file'] = $result['key'] . '.phtml';
-        } elseif (file_exists($applicationPath . '/' . $key . '.phtml')) {
-            $result['path'] = $applicationPath;
-            $result['key'] = $key;
-            $result['file'] = $result['key'] . '.phtml';
-        } else {
-            $result = false;
-        }
-
-        return $result;
-    }
-
-    public static function getDefaultList(): array
-    {
-        return self::getList();
-    }
-
 
     /**
      *
@@ -2007,7 +2012,8 @@ class Episciences_Mail_TemplatesManager
      * @param string $key
      * @return string
      */
-    public static function cleanKey(string $key): string {
+    public static function cleanKey(string $key): string
+    {
         return str_replace(
             [self::SUFFIX_TPL_NAME, self::SUFFIX_TPL_SUBJECT],
             '',
