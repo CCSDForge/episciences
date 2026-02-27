@@ -1685,7 +1685,7 @@ class Episciences_Mail_TemplatesManager
      */
     public static function getTemplateForm(Episciences_Mail_Template $template, array $langs = null): Zend_Form
     {
-        $id = $template->getId();
+        $id = (int) $template->getId();
         $form = new Zend_Form();
         $form->setAttrib('id', 'template-' . $id);
         $form->setAction('/administratemail/savetemplate?id=' . $id);
