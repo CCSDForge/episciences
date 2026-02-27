@@ -43,6 +43,10 @@ return array(
         Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR],
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER =>
         Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER],
+    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR =>
+        Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR],
+    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR =>
+        Episciences_Paper_Logger::$_label[Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR],
     Episciences_Paper_Logger::CODE_PAPER_UPDATED => 'Mise à jour',
     Episciences_Reviewer::STATUS_UNINVITED => 'non invité',
     Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assigné',

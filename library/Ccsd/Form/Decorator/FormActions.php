@@ -54,7 +54,7 @@ class Ccsd_Form_Decorator_FormActions extends Zend_Form_Decorator_HtmlTag
         if ((!$element instanceof Ccsd_Form && !$element instanceof Ccsd_Form_SubForm) || !$element->hasActions()) {
             return $content;
         }
-        
+
         $xhtml = "";
 
         if (!$this->getOption("class")) {
@@ -64,11 +64,15 @@ class Ccsd_Form_Decorator_FormActions extends Zend_Form_Decorator_HtmlTag
             //$this->setOption("style", "clear: both;");
         }
         if (empty ($xhtml)) {
-            if (isset ($this->_cancel)) {
-                $xhtml .= $this->_cancel->__toString();
-            }
             if (isset($this->_submit)) {
                 $xhtml .= $this->_submit->__toString();
+            }
+            // Add spacing between buttons
+            if (isset($this->_submit) && isset ($this->_cancel)) {
+                $xhtml .= '&nbsp;&nbsp;&nbsp;';
+            }
+            if (isset ($this->_cancel)) {
+                $xhtml .= $this->_cancel->__toString();
             }
         }
 

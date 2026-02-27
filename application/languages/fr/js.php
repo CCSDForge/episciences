@@ -31,5 +31,9 @@ return [
     'guest_editor' => 'Rédacteur invité',
     'epiadmin' => 'Root',
     'other' => 'autre',
+
+    // Delete confirmations
+    "Voulez-vous supprimer ce fichier ?" => "Voulez-vous supprimer ce fichier ?",
+    "Voulez-vous supprimer votre fichier attaché ?" => "Voulez-vous supprimer votre fichier attaché ?",
     'not-assigned' => 'Non assigné'
 ];

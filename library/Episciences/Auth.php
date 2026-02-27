@@ -7,6 +7,12 @@
 class Episciences_Auth extends Ccsd_Auth
 {
     /**
+     * UID for anonymous/system users (e.g., anonymized editors)
+     * Value 0 ensures no real user avatar is displayed
+     */
+    public const ANONYMOUS_UID = 0;
+
+    /**
      * Récupération des privilèges de l'utilisateur pour le site actuel
      * @return array
      */

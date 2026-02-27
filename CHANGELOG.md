@@ -139,6 +139,9 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
 - Volume Settings: add New configuration section(displayEmptyVolumes and allowEditVolumeTitleWithPublishedArticles)  in journal settings
 - [#679](https://github.com/CCSDForge/episciences/issues/679) "Ask other editors for their opinion" form now includes chief editors (ROLE_CHIEF_EDITOR) in addition to regular editors (ROLE_EDITOR)
 - [#691](http://github.com/CCSDForge/episciences/issues/691) Display "(optional)" label below comment and cover letter fields in submission forms to clarify these fields are not required
+- [#350](https://github.com/CCSDForge/episciences/issues/350) Author-Editor Communication Settings:
+  - New option to allow authors to contact assigned editors (`authorsCanContactEditors`)
+  - New option to disclose editor names to authors or keep them anonymized (`discloseEditorNamesToAuthors`)
 - feat(navigation): sync predefined page titles with T_PAGES table on menu save
 - New `library/Episciences/Api/` namespace with 5 injectable, independently-testable API clients:
   - `AbstractApiClient` — shared HTTP, PSR-6 cache, and Monolog primitives
@@ -192,7 +195,6 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
 - Synchronization of predefined page titles between navigation menu and T_PAGES table when saving menu configuration
 
 ### Changed
-- The "Encapsulate reviewers" parameter is now hidden
 - [#528](https://github.com/CCSDForge/episciences/issues/528):
     - 'upload a new version' on top of the list
     - "Contact the editors (with an attachment)" instead of "Contact without sending a new version"

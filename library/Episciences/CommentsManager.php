@@ -32,6 +32,10 @@ class Episciences_CommentsManager
     public const TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED = 19;
     public const TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST = 20;
     public const TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION = 21;
+    // Author to assigned editors communication
+    public const TYPE_AUTHOR_TO_EDITOR = 22;
+    // Editor response to author message
+    public const TYPE_EDITOR_TO_AUTHOR_RESPONSE = 23;
 
     public const COPY_EDITING_SOURCES = 'copy_editing_sources';
     public const TYPE_ANSWER_REQUEST = 'answerRequest';
@@ -63,6 +67,8 @@ class Episciences_CommentsManager
         self::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED => 'Préparation de copie : version finale soumise',
         self::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION => "Accepté - en attente de validation par l'auteur",
         self::TYPE_REVISION_CONTACT_COMMENT => "réponse à une demande de modifications (sans dépôt de version)",
+        self::TYPE_AUTHOR_TO_EDITOR => "message de l'auteur aux rédacteurs assignés",
+        self::TYPE_EDITOR_TO_AUTHOR_RESPONSE => "réponse du rédacteur à l'auteur",
         self::TYPE_CONTRIBUTOR_TO_REVIEWER => "commentaire du contributeur au relecteur",
     ];
 
@@ -93,8 +99,6 @@ class Episciences_CommentsManager
 
     /**
      * @param $parentId
-     * @param null $settings
-     * @return array
      */
     public static function getParents($parentId, $settings = null): array
     {
@@ -124,7 +128,7 @@ class Episciences_CommentsManager
         $select->joinLeft(T_ALIAS,
             T_PAPER_COMMENTS . '.UID = ' . T_ALIAS . '.UID AND ' .
             T_PAPER_COMMENTS . '.DOCID = ' . T_ALIAS . '.DOCID',
-            array('ALIAS'));
+            ['ALIAS']);
 
         $select->joinLeftUsing(T_USERS, 'UID');
 
@@ -132,12 +136,6 @@ class Episciences_CommentsManager
 
     }
 
-    /**
-     * @param int $docId
-     * @param array $settings
-     * @param bool $fetchReviewer
-     * @return array
-     */
     public static function getList(int $docId, array $settings = [], bool $fetchReviewer = true): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -179,7 +177,7 @@ class Episciences_CommentsManager
             return [];
         }
 
-        $result = array_filter($result, static function ($value) {
+        $result = array_filter($result, static function ($value): bool {
 
             $isEmptyCommentsAccepted = in_array((int)$value['TYPE'], self::$suggestionTypes, true);
 
@@ -205,7 +203,7 @@ class Episciences_CommentsManager
             T_ALIAS,
             T_PAPER_COMMENTS . '.UID = ' . T_ALIAS . '.UID AND ' .
             T_PAPER_COMMENTS . '.DOCID = ' . T_ALIAS . '.DOCID',
-            array('ALIAS'));
+            ['ALIAS']);
 
         // if admin, get reviewer names
         if (Episciences_Auth::isSecretary()) {
@@ -217,13 +215,15 @@ class Episciences_CommentsManager
 
     /**
      * Comment form
-     * @param string $name
-     * @param bool $modal
+     * @param string $name Form name (used for unique CSRF token)
+     * @param bool $modal If true, submit button is not added
+     * @param bool $withCancelButton If true, adds a cancel button (for author to editor form)
+     * @param string|null $fileFieldSuffix Optional suffix for file field to ensure unique IDs (e.g., pcid for reply forms)
      * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getForm($name = '', $modal = false): \Ccsd_Form
+    public static function getForm($name = '', $modal = false, $withCancelButton = false, $fileFieldSuffix = null): \Ccsd_Form
     {
         $form = new Ccsd_Form();
 
@@ -231,14 +231,21 @@ class Episciences_CommentsManager
             $form->setName($name);
         }
 
-        $form->addElement('hash', 'no_csrf_foo', array('salt' => 'unique'));
-        $form->getElement('no_csrf_foo')->setTimeout(3600);
+        // Use unique salt per form to support multiple forms on same page
+        $csrfSalt = ($name !== '') ? 'csrf_' . $name : 'unique';
+        $csrfElementName = ($name !== '') ? 'csrf_' . $name : 'no_csrf_foo';
+        $form->addElement('hash', $csrfElementName, array('salt' => $csrfSalt));
+        $form->getElement($csrfElementName)->setTimeout(3600);
 
         $form->setAttrib('enctype', 'multipart/form-data');
         $form->setAttrib('class', 'form-horizontal');
         $form->addElementPrefixPath('Episciences_Form_Decorator', 'Episciences/Form/Decorator/', 'decorator');
 
-        $form->addElement('textarea', 'comment', array(
+        // Use unique field names if suffix is provided (for reply forms with multiple forms on same page)
+        $commentFieldName = ($fileFieldSuffix !== null) ? 'comment_' . $fileFieldSuffix : 'comment';
+        $fileFieldName = ($fileFieldSuffix !== null) ? 'file_' . $fileFieldSuffix : 'file';
+
+        $form->addElement('textarea', $commentFieldName, array(
             'label' => 'Commentaire',
             'description' => 'Les commentaires et fichiers associés sont stockés, envoyés et affichés ici.',
             'required' => true,
@@ -246,7 +253,7 @@ class Episciences_CommentsManager
 
         $descriptions = self::getDescriptions();
 
-        $form->addElement('file', 'file', array(
+        $form->addElement('file', $fileFieldName, array(
             'label' => 'Fichier',
             'description' => $descriptions['description'],
             'valueDisabled' => true,
@@ -257,9 +264,19 @@ class Episciences_CommentsManager
                 'Size' => array(false, MAX_FILE_SIZE))));
 
         if (!$modal) {
+            // For author to editor form, use "Envoyer" button
+            $buttonLabel = ($name === 'authorToEditorForm') ? 'Envoyer' : 'Enregistrer';
+
             $form->setActions(true)->createSubmitButton('postComment', array(
-                'label' => 'Enregistrer',
+                'label' => $buttonLabel,
                 'class' => 'btn btn-primary'));
+
+            //  For author to editor form, use "cancel" button
+            if ($withCancelButton) {
+                $form->setActions(true)->createCancelButton('cancel', array(
+                    'label' => 'Annuler',
+                    'class' => 'btn btn-default'));
+            }
         }
 
         return $form;
@@ -268,39 +285,55 @@ class Episciences_CommentsManager
 
     /**
      * Comment reply form (contributor to reviewer)
+     * Reuses getForm() and clears elements to avoid code duplication (similar to getEditAuthorCommentForm)
      * @param $comments
-     * @return array|bool
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getReplyForms($comments)
+    public static function getReplyForms($comments): false|array
     {
-        $forms = array();
+        $forms = [];
 
         if (!$comments) {
             return false;
         }
 
+        // Get translator for multilingual support
+        try {
+            $translator = Zend_Registry::isRegistered('Zend_Translate') ? Zend_Registry::get('Zend_Translate') : null;
+        } catch (Exception) {
+            $translator = null;
+        }
+
         foreach ($comments as $id => $comment) {
 
+            // Create form directly without using getForm() to avoid auto-population issues
             $form = new Ccsd_Form();
             $form->setName('replyForm_' . $id);
-            $form->setAttrib('enctype', 'multipart/form-data');
+            $form->setMethod('post');
             $form->setAttrib('class', 'form-horizontal');
-            $form->addElementPrefixPath('Episciences_Form_Decorator', 'Episciences/Form/Decorator/', 'decorator');
+            $form->setAttrib('enctype', 'multipart/form-data');
+
+            // Add CSRF protection with unique name
+            $form->addElement('hash', 'csrf_token_' . $id, ['salt' => 'unique_' . $id]);
+            $form->getElement('csrf_token_' . $id)->setTimeout(3600);
+
+            // Add comment field with unique name
+            $replyLabel = $translator ? $translator->translate('Répondre :') : 'Répondre :';
+            $replyDescription = $translator ? $translator->translate('Votre réponse et les fichiers associés seront stockés, envoyés et affichés ici.') : 'Votre réponse et les fichiers associés seront stockés, envoyés et affichés ici.';
 
             $form->addElement('textarea', 'comment_' . $id, [
-                'label' => 'Répondre :',
+                'label' => $replyLabel,
+                'description' => $replyDescription,
                 'required' => true,
                 'rows' => 5,
             ]);
 
+            // Add file upload field with unique name
             $descriptions = self::getDescriptions();
-
             $form->addElement('file', 'file_' . $id, [
                 'label' => 'Fichier',
                 'description' => $descriptions['description'],
-                // prevent file to be uploaded when getValues() is called
                 'valueDisabled' => true,
                 'maxFileSize' => MAX_FILE_SIZE,
                 'validators' => [
@@ -310,13 +343,19 @@ class Episciences_CommentsManager
                 ]
             ]);
 
+            // Add submit button with unique name
             $form->setActions(true)->createSubmitButton('postReply_' . $id, [
                 'label' => 'Envoyer',
                 'class' => 'btn btn-primary'
             ]);
+
+            // Add cancel button with proper JavaScript to hide the form
             $form->setActions(true)->createCancelButton('cancel_' . $id, [
                 'label' => 'Annuler',
-                'class' => 'btn btn-default',
+                'class' => 'btn btn-default cancel-reply-form',
+                'data-reply-form-id' => 'reply-form-' . $id,
+                'type' => 'button',
+                'onclick' => "var form = document.getElementById('reply-form-{$id}'); var btn = document.querySelector('.toggle-reply-form[data-reply-form-id=\"reply-form-{$id}\"]'); if(form) form.style.display='none'; if(btn) btn.style.display='inline-block'; var textarea = form ? form.querySelector('textarea') : null; if(textarea) textarea.value=''; return false;"
             ]);
 
             $forms[$id] = $form;
@@ -328,8 +367,6 @@ class Episciences_CommentsManager
 
     /**
      * Revision request reply form (contributor to editor)
-     * @param string $fromAnswerType
-     * @return Ccsd_Form
      * @throws Zend_Form_Exception
      */
     public static function answerRevisionForm(string $fromAnswerType = self::TYPE_ANSWER_REQUEST): \Ccsd_Form
@@ -347,7 +384,7 @@ class Episciences_CommentsManager
             'label' => 'Répondre :',
             'rows' => 5,
             'required' => true,
-            'decorators' => array('Label', 'Description', 'Errors', 'ViewHelper')
+            'decorators' => ['Label', 'Description', 'Errors', 'ViewHelper']
         ]));
 
 
@@ -375,14 +412,33 @@ class Episciences_CommentsManager
      * @param $data
      * @param $type
      * @param bool $replyTo
-     * @param null $file
-     * @param null $deadline
      * @return bool|string
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_File_Transfer_Exception
      */
-    public static function save($docId, $data, $type, $replyTo = false, $file = null, $deadline = null)
+    public static function save($docId, array $data, $type, $replyTo = false, $file = null, $deadline = null)
     {
+        // Input validation
+        if (!is_numeric($docId) || (int)$docId <= 0) {
+            trigger_error("Invalid docId: $docId", E_USER_WARNING);
+            return false;
+        }
+
+        if (!isset($data['comment']) || !is_string($data['comment'])) {
+            trigger_error("Invalid or missing comment data", E_USER_WARNING);
+            return false;
+        }
+
+        // Validate replyTo (PARENTID) - must be false, null, or a positive integer
+        $parentId = null;
+        if ($replyTo !== false && $replyTo !== null) {
+            if (!is_numeric($replyTo) || (int)$replyTo <= 0) {
+                trigger_error("Invalid replyTo value: " . var_export($replyTo, true), E_USER_WARNING);
+                return false;
+            }
+            $parentId = (int)$replyTo;
+        }
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         // receive file and get its name
@@ -392,15 +448,7 @@ class Episciences_CommentsManager
             $file = array_shift($uploads);
         }
 
-        $values = array(
-            'DOCID' => $docId,
-            'PARENTID' => ($replyTo) ?: null,
-            'UID' => Episciences_Auth::getUid(),
-            'TYPE' => $type,
-            'MESSAGE' => $data['comment'],
-            'FILE' => $file['name'] ?? $file,
-            'DEADLINE' => $deadline,
-            'WHEN' => new Zend_DB_Expr('NOW()'));
+        $values = ['DOCID' => (int)$docId, 'PARENTID' => $parentId, 'UID' => Episciences_Auth::getUid(), 'TYPE' => (int)$type, 'MESSAGE' => $data['comment'], 'FILE' => $file['name'] ?? $file, 'DEADLINE' => $deadline, 'WHEN' => new Zend_DB_Expr('NOW()')];
 
         if ($db->insert(T_PAPER_COMMENTS, $values)) {
             return $db->lastInsertId();
@@ -432,11 +480,9 @@ class Episciences_CommentsManager
     /**
      * Retourne le formulaire d'edition de commentaire de l'auteur
      * @param array | null $values
-     * @return Ccsd_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-
     public static function getEditAuthorCommentForm(array $values = null): \Ccsd_Form
     {
         $translator = Zend_Registry::get('Zend_Translate');
@@ -496,10 +542,6 @@ class Episciences_CommentsManager
 
     }
 
-    /**
-     * @param array $extensions
-     * @return array
-     */
     private static function getDescriptions(array $extensions = ALLOWED_EXTENSIONS): array
     {
         $descriptions = [];
@@ -513,8 +555,6 @@ class Episciences_CommentsManager
 
     /**
      * Delete all comments of a paper by DOCID
-     * @param int $docid
-     * @return bool
      */
     public static function deleteByDocid(int $docid): bool
     {
@@ -533,14 +573,11 @@ class Episciences_CommentsManager
     /**
      * Copy editing comment replay (contributor to copy editor)
      * @param $comments
-     * @param Episciences_Paper $paper
-     * @param null $zIdentifier
-     * @return array|bool
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    public static function getCopyEditingReplyForms($comments, Episciences_Paper $paper, $zIdentifier = null)
+    public static function getCopyEditingReplyForms($comments, Episciences_Paper $paper, $zIdentifier = null): false|array
     {
 
         $forms = [];
@@ -570,7 +607,7 @@ class Episciences_CommentsManager
 
             } else {
 
-                $row = !empty($defaultMessage = self::buildAnswerMessage($commentUid, $commentType)) ? 7 : 5;
+                $row = ($defaultMessage = self::buildAnswerMessage($commentUid, $commentType)) === '' || ($defaultMessage = self::buildAnswerMessage($commentUid, $commentType)) === '0' ? 5 : 7;
                 $strElement = $id . '_element';
                 $form = new Ccsd_Form();
                 $form->setName('copy_editing_form_' . $strElement);
@@ -620,10 +657,8 @@ class Episciences_CommentsManager
 
     /**
      * @param $docId
-     * @param Zend_Db_Adapter_Abstract $db
-     * @return Zend_Db_Select
      */
-    private static function findByQuery(Zend_Db_Adapter_Abstract $db, $docId): \Zend_Db_Select
+    private static function findByQuery(Zend_Db_Adapter_Abstract $db, int $docId): \Zend_Db_Select
     {
         return $db->select()
             ->from(T_PAPER_COMMENTS)
@@ -632,12 +667,9 @@ class Episciences_CommentsManager
     }
 
     /**
-     * @param Zend_Db_Adapter_Abstract $db
      * @param $docId
-     * @param Zend_Db_Select $select
-     * @return Zend_Db_Select
      */
-    private static function fetchUnansweredComments(Zend_Db_Adapter_Abstract $db, $docId, Zend_Db_Select $select): \Zend_Db_Select
+    private static function fetchUnansweredComments(Zend_Db_Adapter_Abstract $db, int $docId, Zend_Db_Select $select): \Zend_Db_Select
     {
 
         $subQuery = $db->select()
@@ -651,8 +683,6 @@ class Episciences_CommentsManager
 
     /**
      * fetch reviewer alias
-     * @param Zend_Db_Select $select
-     * @return Zend_Db_Select
      */
     private static function fetchReviewersAlias(Zend_Db_Select $select): \Zend_Db_Select
     {
@@ -660,7 +690,7 @@ class Episciences_CommentsManager
         $select->joinLeft(T_ALIAS,
             T_PAPER_COMMENTS . '.UID = ' . T_ALIAS . '.UID AND ' .
             T_PAPER_COMMENTS . '.DOCID = ' . T_ALIAS . '.DOCID',
-            array('ALIAS'));
+            ['ALIAS']);
         // fetch reviewer names
         $select->joinLeftUsing(T_USERS, 'UID');
         return $select;
@@ -668,10 +698,7 @@ class Episciences_CommentsManager
 
     /**
      * sort comments
-     * @param array $result
-     * @return array
      */
-
     private static function sortComments(array $result): array
     {
 
@@ -685,21 +712,16 @@ class Episciences_CommentsManager
                 $replies[$id] = $comment;
             }
         }
-        if (!empty($replies)) {
-            foreach ($replies as $id => $reply) {
-                $comments[$reply['PARENTID']]['replies'][$id] = $reply;
-            }
+        foreach ($replies as $id => $reply) {
+            $comments[$reply['PARENTID']]['replies'][$id] = $reply;
         }
         return $comments;
     }
 
     /**
-     * @param int $commentUid
-     * @param int $commentType
-     * @return string
      * @throws Zend_Exception
      */
-    private static function buildAnswerMessage(int $commentUid, int $commentType): string
+    private static function buildAnswerMessage(int $commentType): string
     {
         $defaultMessage = '';
         if (in_array($commentType, self::$_UploadFilesRequest)) {
@@ -735,12 +757,6 @@ class Episciences_CommentsManager
 
     }
 
-    /**
-     * @param int $docId
-     * @param array $settings
-     * @return array
-     */
-
     public static function getRevisionRequests(int $docId, array $settings = ['types' => [Episciences_CommentsManager::TYPE_REVISION_REQUEST]]): array
     {
         return self::getList($docId, $settings);
@@ -749,12 +765,8 @@ class Episciences_CommentsManager
 
     /**
      * Save author comment and attached file
-     * @param Episciences_Paper $paper
-     * @param array|Episciences_Comment $coverLetter
      * @param bool $ignoreUpload // [true] the attached file has already been uploaded
-     * @return bool|Episciences_Comment
      */
-
     public static function saveCoverLetter(Episciences_Paper $paper, array | Episciences_Comment $coverLetter = ["message" => '', "attachedFile" => null], bool $ignoreUpload = false): bool | Episciences_Comment
     {
 
@@ -772,7 +784,7 @@ class Episciences_CommentsManager
         $authorComment->setFilePath(REVIEW_FILES_PATH . $paper->getDocid() . '/comments/');
 
 
-        if (!$authorComment->getFile() && empty(trim($authorComment->getMessage()))) { //Avoid inserting an empty row
+        if (!$authorComment->getFile() && in_array(trim($authorComment->getMessage()), ['', '0'], true)) { //Avoid inserting an empty row
             return $authorComment;
         }
 
@@ -787,8 +799,6 @@ class Episciences_CommentsManager
 
     /**
      * Remove comment
-     * @param int $identifier
-     * @return bool
      */
     public static function deleteByIdentifier(int $identifier): bool
     {

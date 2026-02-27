@@ -1,0 +1,315 @@
+/**
+ * Author-Editor Communication Timeline Styles
+ * Extends demands timeline with specific styling for author/editor messages
+ */
+
+.author-editor-timeline {
+  // Customize max-height for better visibility
+  max-height: 600px;
+
+  // Remove line above first timeline item
+  .timeline-track::before {
+    top: 24px; // Start line after first marker (8px top + 16px marker height)
+  }
+
+  // Align timeline marker with first line of text
+  .timeline-marker {
+    top: 8px;
+    left: -55px; // Center on vertical line
+
+    .user-photo-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      object-fit: cover;
+    }
+  }
+
+
+  // Increase content width to prevent name truncation
+  .timeline-content {
+    max-width: 95%;
+  }
+
+  // Remove horizontal connector to first reply inherited from demands-timeline
+  .timeline-thread::after {
+    display: none;
+  }
+
+  // Header styling (similar to demands timeline)
+  // Support both timeline-item-header and timeline-comment-header for reusability
+  .timeline-item-header,
+  .timeline-comment-header {
+    margin-bottom: 10px;
+    font-size: 12px;
+
+    .message-date,
+    .comment-date {
+      font-weight: bold;
+      color: $dark-grey;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .message-author,
+    .comment-author {
+      color: $dark-grey;
+      display: inline; // Changed from block to inline to keep on same line
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+  }
+
+  // Message content
+  // Support both timeline-item-message and timeline-comment-message for reusability
+  .timeline-item-message,
+  .timeline-comment-message {
+    font-size: 12px;
+    color: $darker-grey;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    word-wrap: break-word;
+  }
+
+  // File attachments
+  // Support both timeline-item-files and timeline-comment-attachment for reusability
+  .timeline-item-files,
+  .timeline-comment-attachment {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid $lighter-grey;
+
+    .file-item,
+    > div {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 11px;
+
+      a {
+        flex: 1;
+        color: $blue;
+        text-decoration: none;
+        word-break: break-all;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+
+      .remove-file-btn {
+        margin-left: 10px;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  // Author message wrapper (contains message + reply button)
+  .author-message-wrapper {
+    position: relative;
+
+    // Root message: aligned normally (no offset)
+    &.root-message {
+      // Keep normal alignment for root messages
+    }
+
+    // Reply messages: offset to the right to distinguish from root
+    &.reply-message {
+      margin-left: 20px; // Offset reply messages to the right
+
+      .timeline-item {
+        .timeline-content {
+          border-left: 2px solid #2196F3; // Blue border to indicate reply message
+          padding: 12px 14px; // Smaller padding for reply messages (vs 15px for root)
+          max-width: 85%; // Smaller width for reply messages (vs 95% for root)
+          font-size: 11px; // Slightly smaller font for reply messages
+        }
+
+        // Smaller marker and avatar for reply messages
+        .timeline-marker {
+          left: -52px; // Position to the right with offset
+          width: 24px; // Smaller marker for replies
+          height: 24px;
+          position: relative;
+
+          .user-photo-thumb {
+            width: 20px; // Smaller avatar for replies (vs 28px for root)
+            height: 20px;
+          }
+          // Horizontal connector (tiret) from main timeline to reply marker
+          &::before {
+            content: '';
+            position: absolute;
+            right: 100%; // Start from left edge of marker
+            top: 50%; // Center vertically on the marker
+            transform: translateY(-50%);
+            width: 20px; // Short connector to reach vertical line
+            height: 2px;
+            background-color: $lighter-grey;
+            z-index: -1;
+          }
+        }
+      }
+    }
+  }
+
+  // Reply to indicator (for flattened level 2 messages)
+  .reply-to-indicator {
+    margin-top: 8px;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background-color: #f5f5f5;
+    border-left: 3px solid #2196F3;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #666;
+
+    i.fa-reply {
+      margin-right: 5px;
+      color: #2196F3;
+    }
+
+    strong {
+      font-weight: 600;
+    }
+
+    .reply-to-name {
+      color: #2196F3;
+      font-weight: 500;
+    }
+
+    .reply-to-date {
+      color: #999;
+      margin-left: 8px;
+    }
+
+    .reply-to-preview {
+      margin-top: 5px;
+      font-style: italic;
+      color: #888;
+    }
+  }
+
+  // Actions wrapper: contains attached file, reply button and delete button on same line
+  .timeline-comment-actions-wrapper {
+    display: flex;
+    justify-content: space-between; // File on left, buttons on right
+    align-items: center;
+    margin-top: 10px;
+    gap: 10px; // Space between elements
+    flex-wrap: wrap; // Allow wrapping on small screens
+  }
+
+  // Inline attachment display (on same line as buttons)
+  .timeline-comment-attachment-inline {
+    font-size: 11px;
+    color: $blue;
+    
+    a {
+      color: $blue;
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    
+    .glyphicon-paperclip {
+      margin-right: 5px;
+      color: $dark-grey;
+    }
+  }
+
+  // Comment actions (reply button, etc.)
+  .timeline-comment-actions {
+    text-align: right;
+    margin-left: auto; // Push to the right in flex container
+
+    .btn {
+      margin-left: 5px;
+    }
+  }
+
+  // Delete button container
+  .remove-file-btn {
+    flex-shrink: 0; // Prevent button from shrinking
+  }
+
+  // Custom styling for reply form
+  .reply-form-container {
+    margin-left: 20px;
+    margin-top: 16px;
+    padding: 16px;
+    background: transparent;
+    border-radius: 8px;
+    border: 1px dashed $lighter-grey;
+
+    h5 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: $dark-grey;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .btn {
+      margin-right: 8px;
+    }
+  }
+
+  // Style for "is-you" messages
+  .message-author.is-you {
+    color: #5bc0de;
+    font-weight: 600;
+  }
+
+  // Style for editor messages
+  .message-author.is-editor {
+    color: #5cb85c;
+  }
+
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    .author-message-wrapper.reply-message {
+      margin-left: 15px; // Reduce indent on mobile
+
+      .timeline-item {
+        .timeline-content {
+          max-width: calc(90% - 15px);
+        }
+
+        .timeline-marker {
+          left: -70px; // Adjusted for mobile replies
+        }
+      }
+    }
+
+    .toggle-reply-form {
+      bottom: 5px;
+      right: 5px;
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+
+    .reply-form-container {
+      margin-left: 20px;
+    }
+  }
+
+  // Print styles
+  @media print {
+    .reply-form-container {
+      display: none;
+    }
+  }
+}

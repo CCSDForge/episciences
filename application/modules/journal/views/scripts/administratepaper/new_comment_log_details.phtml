@@ -1,4 +1,99 @@
 <?php $log = $this->log; ?>
+<?php $type = $log['detail']['comment']['type'] ?? null; ?>
+
+<?php if ($type === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) : ?>
+    <!-- Display as email notification for editor-to-author response messages -->
+    <table class="log-details">
+        <tr>
+            <td class="td-label"><?= $this->translate("Date d'envoi"); ?></td>
+            <td class="small"><?= $this->Date($log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?></td>
+        </tr>
+        <tr>
+            <td class="td-label"><?= $this->translate('De'); ?></td>
+            <td class="small">
+                <?= $this->user['fullname']; ?>
+                <?php if (!empty($this->user['email'])) : ?>
+                    (<?= $this->user['email']; ?>)
+                <?php endif; ?>
+            </td>
+        </tr>
+        <tr>
+            <td class="td-label"><?= $this->translate('À'); ?></td>
+            <td class="small">
+                <?php if (!empty($log['detail']['recipient']['fullname'])) : ?>
+                    <?= $log['detail']['recipient']['fullname']; ?>
+                    <?php if (!empty($log['detail']['recipient']['email'])) : ?>
+                        (<?= $log['detail']['recipient']['email']; ?>)
+                    <?php endif; ?>
+                <?php else : ?>
+                    <?= $this->translate('Auteur'); ?>
+                <?php endif; ?>
+            </td>
+        </tr>
+        <?php if (!empty($log['detail']['co_authors_notified'])) : ?>
+            <tr>
+                <td class="td-label"><?= $this->translate('CC'); ?></td>
+                <td class="small">
+                    <?php foreach ($log['detail']['co_authors_notified'] as $coAuthor) : ?>
+                        <?= $coAuthor['fullname']; ?>
+                        <?php if (!empty($coAuthor['email'])) : ?>
+                            (<?= $coAuthor['email']; ?>)
+                        <?php endif; ?>
+                        <br>
+                    <?php endforeach; ?>
+                </td>
+            </tr>
+        <?php endif; ?>
+        <tr>
+            <td class="td-label"><?= $this->translate('Type'); ?></td>
+            <td class="small">
+                <?= array_key_exists($type, Episciences_CommentsManager::$_typeLabel) ? $this->translate(Episciences_CommentsManager::$_typeLabel[$type]) : 'undefined_comment_type_label'; ?>
+            </td>
+        </tr>
+        <?php if (!empty($log['detail']['comment']['message'])) : ?>
+            <tr>
+                <td class="td-label"><?= $this->translate("Message"); ?></td>
+                <td class="small"><?= Episciences_Tools::formatText(htmlspecialchars_decode($log['detail']['comment']['message'])); ?></td>
+            </tr>
+        <?php endif; ?>
+    </table>
+<?php elseif ($type === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) : ?>
+    <!-- Display as email notification for author-to-editor messages -->
+    <table class="log-details">
+        <tr>
+            <td class="td-label"><?= $this->translate("Date d'envoi"); ?></td>
+            <td class="small"><?= $this->Date($log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?></td>
+        </tr>
+        <tr>
+            <td class="td-label"><?= $this->translate('De'); ?></td>
+            <td class="small">
+                <?= $this->user['fullname']; ?>
+                <?php if (!empty($this->user['email'])) : ?>
+                    (<?= $this->user['email']; ?>)
+                <?php endif; ?>
+            </td>
+        </tr>
+        <tr>
+            <td class="td-label"><?= $this->translate('À'); ?></td>
+            <td class="small">
+                <?= $this->translate('Éditeurs assignés'); ?>
+            </td>
+        </tr>
+        <tr>
+            <td class="td-label"><?= $this->translate('Type'); ?></td>
+            <td class="small">
+                <?= array_key_exists($type, Episciences_CommentsManager::$_typeLabel) ? $this->translate(Episciences_CommentsManager::$_typeLabel[$type]) : 'undefined_comment_type_label'; ?>
+            </td>
+        </tr>
+        <?php if (!empty($log['detail']['comment']['message'])) : ?>
+            <tr>
+                <td class="td-label"><?= $this->translate("Message"); ?></td>
+                <td class="small"><?= Episciences_Tools::formatText(htmlspecialchars_decode($log['detail']['comment']['message'])); ?></td>
+            </tr>
+        <?php endif; ?>
+    </table>
+<?php else : ?>
+    <!-- Display as standard comment for other types -->
     <table class="log-details" rules="groups">
         <tr>
             <td class="td-label"><?= $this->translate("Posté le"); ?></td>
@@ -21,7 +116,6 @@
         <tr>
             <td class="td-label"><?= $this->translate("Type"); ?></td>
             <td class="small">
-                <?php $type = $log['detail']['comment']['type']; ?>
                 <?= array_key_exists($type, Episciences_CommentsManager::$_typeLabel) ? $this->translate(Episciences_CommentsManager::$_typeLabel[$type]) : 'undefined_comment_type_label'; ?>
             </td>
         </tr>
@@ -33,6 +127,7 @@
             </tr>
         <?php endif; ?>
     </table>
+<?php endif; ?>
 <?php
 $attachments = $log['detail']['comment']['file'];
 $files = Episciences_Tools::isJson($attachments) ? (array)json_decode($attachments, true) : (array)$attachments; ?>
