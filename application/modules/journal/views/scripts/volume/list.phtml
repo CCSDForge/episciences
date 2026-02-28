@@ -2,6 +2,8 @@
 
 if ($this->volumes) {
     $this->layout()->pageTitle = $this->translate('Volumes') . '<span class="badge badge-secondary" style="margin-left: 5px;">' . count($this->volumes) . '</span>';
+    // Performance: Eager load settings for all volumes to avoid N+1 queries in the loop
+    Episciences_VolumesManager::loadSettingsForVolumes($this->volumes);
 }
 
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
@@ -20,38 +22,44 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
             <span><?php echo $this->translate('Créer un volume'); ?></span>
         </a>
     </div>
-    <hr/>
-
-
+    <hr>
 <?php if ($this->volumes) : ?>
 
     <?= $this->partial('partials/datatable-sort-with-search-filter-alert.phtml') ?>
-
-    <div>
+<style>th{width:auto;}</style>
+    <div class="table-responsive">
         <table class="table table-striped table-bordered dataTable" id="volumes">
             <thead>
             <tr>
-                <th style="display: none"><?php echo $this->translate('Position') ?></th>
-                <th></th>
-                <th><?php echo $this->translate('Titre'); ?></th>
-                <th><?php echo $this->translate('Rédacteurs'); ?></th>
-                <th style="text-align:center"><?php echo $this->translate("Spécial"); ?></th>
-                <th style="text-align:center"><?php echo $this->translate("En cours"); ?></th>
-                <th style="text-align:center"><?php echo $this->translate("Statut"); ?></th>
-                <th style="width:10%;text-align:center"><?php echo $this->translate('Actions'); ?></th>
+                <th style="display: none" scope="col"><?php echo $this->translate('Position') ?></th>
+                <th scope="col"><span class="sr-only"><?php echo $this->translate('Ordre'); ?></span></th>
+                <th scope="col"><?php echo $this->translate('Titre'); ?></th>
+                <th scope="col" style="text-align:center"><?php echo $this->translate('Numéro'); ?></th>
+                <th scope="col" style="text-align:center"><?php echo $this->translate('Année'); ?></th>
+                <th scope="col"><?php echo $this->translate('Rédacteurs'); ?></th>
+                <th scope="col" style="text-align:center"><?php echo $this->translate("Spécial"); ?></th>
+                <th scope="col" style="text-align:center"><?php echo $this->translate("En cours"); ?></th>
+                <th scope="col" style="text-align:center"><?php echo $this->translate("Statut"); ?></th>
+                <th scope="col" style="text-align:center"><?php echo $this->translate('Actions'); ?></th>
             </tr>
             </thead>
             <tbody class="sortable">
             <?php
             /** @var  Episciences_Volume $volume */
             foreach ($this->volumes as $volume) : ?>
-                <?php $volume->loadSettings(); ?>
-                <tr id="volume_<?php echo $volume->getVid(); ?>">
-                    <td style="display:none;"><?php echo $volume->getPosition(); ?></td>
-                    <td class="sortable-handle"><span class="glyphicon glyphicon-move"></span></td>
+                <?php
+                $vIdEscaped = $this->escape($volume->getVid());
+                $volumeTitle = strip_tags(Episciences_Tools::convertMarkdownToHtml($volume->getNameKey()));
+                ?>
+                <tr id="volume_<?php echo $vIdEscaped; ?>">
+                    <td style="display:none;"><?php echo $this->escape($volume->getPosition()); ?></td>
+                    <td class="sortable-handle">
+                        <span class="glyphicon glyphicon-move" aria-hidden="true"></span>
+                        <span class="sr-only"><?php echo $this->translate('Déplacer le volume'); ?></span>
+                    </td>
                     <td>
                         <a title="<?php echo $this->translate('Modifier'); ?>"
-                           href="<?= $this->url(['controller' => 'volume', 'action' => 'edit', 'id' =>$volume->getVid()]) ?>">
+                           href="<?= $this->url(['controller' => 'volume', 'action' => 'edit', 'id' =>$vIdEscaped]) ?>">
                             <?= Episciences_Tools::convertMarkdownToHtml($volume->getNameKey()) ?>
                         </a>
                         <?php if ($this->review->getSetting(Episciences_Review::SETTING_SPECIAL_ISSUE_ACCESS_CODE) &&
@@ -60,17 +68,19 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                         ) : ?>
                             <span class="access_code">
                                 (<?php echo $this->translate("code d'accès :") ?>
-                                <?php echo $volume->getSetting(Episciences_Volume::SETTING_ACCESS_CODE); ?>)
+                                <?php echo $this->escape($volume->getSetting(Episciences_Volume::SETTING_ACCESS_CODE)); ?>)
                             </span>
                         <?php endif; ?>
                     </td>
+                    <td style="text-align:center"><?php echo $this->escape($volume->getVol_num()); ?></td>
+                    <td style="text-align:center"><?php echo $this->escape($volume->getVol_year()); ?></td>
                     <td>
-                        <button id="popover-link-<?php echo $volume->getVid() ?>"
-                                style="float: right;
-                                font-size: 10px"
+                        <button id="popover-link-<?php echo $vIdEscaped; ?>"
+                                style="float: right; font-size: 10px"
                                 class="btn btn-xs btn-default popover-link"
-                                onclick="getEditors(this, <?php echo $volume->getVid() ?>)">
-                            <span class="caret"></span>
+                                aria-label="<?php echo $this->translate('Voir les rédacteurs pour le volume %s', $volumeTitle); ?>"
+                                onclick="getEditors(this, <?php echo $vIdEscaped; ?>)">
+                            <span class="caret" aria-hidden="true"></span>
                         </button>
 
                         <div class="editors">
@@ -92,6 +102,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                     </td>
                     <td style="text-align:center"><?php
                         $current = '';
+                        $class = "";
                         if ($volume->getSetting(Episciences_Volume::SETTING_CURRENT_ISSUE) == 1) {
                             $current = "Oui";
                             $class = "label-success";
@@ -101,25 +112,29 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                     </td>
                     <td style="text-align:center"><?php
                         if ($volume->getSetting(Episciences_Volume::SETTING_STATUS) == 1) {
-                            $status = "Ouvert";
+                            $statusText = $this->translate("Ouvert");
+                            $statusHtml = $statusText;
                             $class = "label-success";
                         } else {
-                            $status = "Fermé";
+                            $statusText = $this->translate("Fermé");
+                            $statusHtml = $statusText;
                             $class = "label-danger";
                         }
                         ?>
-                        <span class="label <?php echo $class ?>"><?php echo $this->translate($status); ?></span>
+                        <span class="label <?php echo $class ?>"><?php echo $statusHtml; ?></span>
                     </td>
                     <td style="text-align:center;">
 
-                        <a href="<?= $this->url(['controller' => 'volume', 'action' => 'edit', 'id' =>$volume->getVid()]) ?>" class="btn btn-default btn-xs"
+                        <a href="<?= $this->url(['controller' => 'volume', 'action' => 'edit', 'id' =>$vIdEscaped]) ?>" class="btn btn-default btn-xs"
                            title="<?php echo $this->translate("Modifier"); ?>">
-                            <span class="glyphicon glyphicon-edit"></span>
+                            <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+                            <span class="sr-only"><?php echo $this->translate("Modifier le volume %s", $volumeTitle); ?></span>
                         </a>
 &nbsp;
-                        <a href="<?= $this->url(['controller' => 'volume', 'action' => 'delete', 'id' => $volume->getVid()]) ?>" class="delete btn btn-danger btn-xs"
+                        <a href="<?= $this->url(['controller' => 'volume', 'action' => 'delete', 'id' => $vIdEscaped]) ?>" class="delete btn btn-danger btn-xs"
                            title="<?php echo $this->translate("Supprimer"); ?>">
-                            <span class="glyphicon glyphicon-trash"></span>
+                            <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                            <span class="sr-only"><?php echo $this->translate("Supprimer le volume %s", $volumeTitle); ?></span>
                         </a>
                     </td>
                 </tr>

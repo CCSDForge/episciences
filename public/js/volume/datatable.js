@@ -14,7 +14,13 @@ $(document).ready(function () {
                 $sortWithSearchFilterAlert.hide();
             }
         },
-        lengthMenu: [[-1], [translate('all')]],
+        fnDrawCallback: function () {
+            activateTooltips();
+        },
+        lengthMenu: [
+            [10, 25, 50, 100, -1],
+            [10, 25, 50, 100, translate('all')],
+        ],
         stateSave: true,
         ordering: false,
         pagingType: 'numbers',

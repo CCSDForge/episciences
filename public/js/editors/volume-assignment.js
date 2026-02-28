@@ -77,6 +77,7 @@ function getEditors(button, vid) {
                             $(container).hide();
                             $(container).html(editors);
                             $(container).fadeIn();
+                            activateTooltips();
                         });
                     }
                 });

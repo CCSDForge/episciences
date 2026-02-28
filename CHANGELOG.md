@@ -32,7 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Manager: Force predefined pages to be public
 - Manager: Review Report: attached document URL has not been updated for the manager application
 
+### Added
+- Comprehensive Jest test suite for ORCID authors management (`tests/js/updateOrcidAuthors.test.js`).
+
 ### Changed
+- Refactored `public/js/paper/updateOrcidAuthors.js` from jQuery to modern vanilla ES6+ with a class-based architecture.
+- Enhanced ORCID form validation: added duplicate detection (with internationalized error messages) while maintaining support for empty submissions for deletions.
 - Update TinyMCE form 7.3.0 to 8.1.2
 - Increased Volume Description length to 1014 chars
 - DOI panel (`paper_doi.phtml`, `request-doi.js`, `view.js`): requesting, saving, and cancelling a DOI no longer triggers a full page reload — the DOM is updated in place; the success feedback message after "Request a DOI" is suppressed since the newly rendered DOI link is sufficient.
@@ -60,15 +65,31 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
 - `Episciences_Cache` and its parent `Ccsd_Cache` are now marked `@deprecated`; use `Symfony\Component\Cache\Adapter\FilesystemAdapter` instead
 
 ### Changed (UI)
+- Improved accessibility of the ORCID authors modal: implemented proper `<label>` associations, added `aria-modal="true"`, and corrected `aria-labelledby` in XSL templates.
+- Modernized ORCID authors row layout using Flexbox to ensure perfect alignment between labels and inputs.
+- Standardized modal button styles for ORCID updates (Cancel: `btn-default`, Save: `btn-primary`).
+- ORCID input fields: URLs are now automatically cleaned to keep only the 16-digit identifier (e.g., https://orcid.org/0000-0000-0000-0000 → 0000-0000-0000-0000)
 - `administratepaper/view.phtml`: reordered panels — paper files, article status, contributor, co-authors, affiliations, and graphical abstract are now grouped at the top of the page; "Volumes & Rubriques" moved earlier; `paper_versions` moved to the bottom (before history); removed redundant "Statut actuel :" label prefix from the article status panel
 - `paper/paper_datasets.phtml`: "Liens publications – données – logiciels" panel is now collapsed by default
 - `paper/paper_graphical_abstract.phtml`: graphical abstract panel is now collapsed by default when no image has been uploaded
 - `partials/coauthors.phtml`: "Ajouter un co-auteur" panel is now collapsed by default; minor HTML cleanup
 - `partials/paper_affiliation_authors.phtml`: "Ajouter une affiliation" panel is now collapsed by default; removed stray `<br>`, inlined `versionCache` script tag
+- `volume/list.phtml`: Added "Number" and "Year" columns; improved table accessibility (ARIA labels, column scopes).
+- `volume/editors_list.phtml`: Removed redundant inline scripts; construction of the editors list optimized.
+- Updated icons from `fas fa-address-card` to `fa-regular fa-address-card` in several views and partials.
+- Improved visual indicators for editor availability in `editor-availability.js`.
 
 ### Security
 - Removed implicit `unserialize()` on filesystem-cached paper data in `PapersManager::getList()`, eliminating a potential PHP object injection vector
 - OAI resumption token cache keys are now MD5-hashed before use, preventing cache-key injection via crafted token values
+- Escaped output in `volume/editors_list.phtml` to prevent potential XSS.
+- Fixed XSS vulnerability in `Projects/ViewFormatter`: funding URL was interpolated unescaped into `href` attribute and link text, allowing HTML injection via malicious project metadata
+- Fixed XSS in `Citations_ViewFormatter`: `href=` attributes for DOI and OA links were unquoted, allowing attribute injection when values contained spaces or special characters; now wrapped in double quotes with `ENT_QUOTES`
+- Fixed XSS vulnerability in `ViewFormatter::buildAuthorHtml()` and `buildAffiliationListHtml()` where user-controlled values were interpolated into unquoted or improperly escaped HTML attributes (ORCID URL, data-title, and affiliation acronym)
+- Fixed potential Solr query injection in `TeiCacheManager::buildApiUrl()`
+- `GetAvatar::asPaperStatusSvg()`: fixed two path traversal vectors — `$lang` is now sanitized to `[a-z]+` before being interpolated into a filesystem path, and `$paperStatus` is cast to `int`
+- `DoiAsLink::DoiAsLink()`: added `rel="noopener noreferrer"` to prevent tab-napping on external DOI links
+- `Ccsd\Auth\Adapter\Idp::filterEmail()`: regex bypass allowed authentication from unauthorized email domains (see Fixed)
 
 ### Changed
 - Refactored `scripts/zbjatZipper.php`: renamed class to PascalCase (`ZbjatZipper`), replaced `echo` with Monolog logger, extracted `run()` God method into focused methods (`processJournal`, `processVolume`, `downloadPaperFiles`, `buildPaperUrl`, `createZipArchive`), switched URLs from hardcoded `http://episciences.org` to HTTPS + `DOMAIN` constant, replaced `fopen`/`fwrite`/`fclose` with `file_put_contents`, replaced `opendir`/`readdir` with `DirectoryIterator`, replaced `exit` with `return`
@@ -86,6 +107,7 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
 - Added `TeiCacheManager::fetchAndGet()` to combine fetch-if-needed + read in a single call; callers updated (`EnrichmentService`, `LicenceManager`, `AuthorsManager`)
 
 ### Fixed
+- Fixed tooltip initialization in volume and section assignment by calling `activateTooltips()` after AJAX refreshes and on DataTable redraws.
 - Fixed Solr search engine indexation of Authors with a middle name
 -  consider an additional review when sending reminders for an insufficient number of reviewers
 - `Projects`: `$_dateUpdated` default was the string `'CURRENT_TIMESTAMP'` instead of `null`; `getDateUpdated()` declared `DateTime` return type but could return a string
@@ -208,6 +230,7 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
 - Synchronization of predefined page titles between navigation menu and T_PAGES table when saving menu configuration
 
 ### Changed
+- `volume/list.phtml`: Eager load volume settings to prevent N+1 queries in the display loop.
 - The "Encapsulate reviewers" parameter is now hidden
 - [#528](https://github.com/CCSDForge/episciences/issues/528):
     - 'upload a new version' on top of the list
