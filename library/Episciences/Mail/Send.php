@@ -60,9 +60,6 @@ class Episciences_Mail_Send
         // to
         $to_element = self::getElementName('to', $prefix);
 
-        $form->addElement('text', $to_element);
-
-
         if (!$to_enabled) {
 
             $options = [

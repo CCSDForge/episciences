@@ -4,8 +4,8 @@ class Episciences_Mail_Reminder
 {
     // event types triggering a reminder
     public const TYPE_UNANSWERED_INVITATION = 0;        // unanswered invitation
-    public const TYPE_BEFORE_REVIEWING_DEADLINE = 1;    // before rewiewing deadline
-    public const TYPE_AFTER_REVIEWING_DEADLINE = 2;    // after rewiewing deadline
+    public const TYPE_BEFORE_REVIEWING_DEADLINE = 1;    // before reviewing deadline
+    public const TYPE_AFTER_REVIEWING_DEADLINE = 2;    // after reviewing deadline
     public const TYPE_BEFORE_REVISION_DEADLINE = 3;    // before revision deadline
     public const TYPE_AFTER_REVISION_DEADLINE = 4;        // after revision deadline
     public const TYPE_NOT_ENOUGH_REVIEWERS = 5;        // not enough reviewers
@@ -263,7 +263,7 @@ class Episciences_Mail_Reminder
      */
     public function loadRecipients(bool $debug = false, $date = null): void
     {
-        $date = ($date) ? "'" . $date . "'" : 'CURDATE()';
+        $date = ($date) ? Zend_Db_Table_Abstract::getDefaultAdapter()->quote((string)$date) : 'CURDATE()';
         $recipients = [];
 
         $filters = [
