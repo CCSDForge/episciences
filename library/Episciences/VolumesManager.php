@@ -151,7 +151,7 @@ class Episciences_VolumesManager
             $form->addElement(new Zend_Form_Element_Button([
                 'name' => 'submit',
                 'type' => 'submit',
-                'class' => 'btn btn-default',
+                'class' => 'btn btn-primary',
                 'label' => 'Valider',
                 'decorators' => [['HtmlTag', ['tag' => 'div', 'openOnly' => true, 'class' => 'control-group']], 'ViewHelper']
             ]));

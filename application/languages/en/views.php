@@ -313,6 +313,7 @@ return array(
     'Motif de DOI incorrect' => 'Wrong DOI pattern',
     'Document non trouvé' => 'Document non found',
     'Échec de la mise à jour' => 'Update failed',
+    'Numéro' => 'Number',
     'Année du volume' => 'Year of the volume',
     'Numéro du volume' => "Volume Number",
     "Volume de l'article" => "Volume of the article",

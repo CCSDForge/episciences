@@ -40,8 +40,7 @@ function initializeEditorAvailability() {
         // Style the label to show unavailable status
         const label = checkbox.closest('label');
         label.css({
-            color: '#999',
-            opacity: '0.7',
+            color: '#dddddd',
         });
 
         // Track if this editor was initially checked
@@ -56,8 +55,7 @@ function initializeEditorAvailability() {
 
             // Visual indicator: more grayed out and add pointer events
             label.css({
-                color: '#ccc',
-                opacity: '0.5',
+                color: '#dddddd',
                 cursor: 'not-allowed',
             });
             checkbox.css('cursor', 'not-allowed');
@@ -89,8 +87,7 @@ function initializeEditorAvailability() {
 
                 // Update visual to show it can't be re-checked
                 label.css({
-                    color: '#ccc',
-                    opacity: '0.5',
+                    color: '#dddddd',
                     'text-decoration': 'line-through',
                     cursor: 'not-allowed',
                 });
