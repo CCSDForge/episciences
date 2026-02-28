@@ -13,234 +13,175 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 ### Removed
 ### Security
+### Performances
 -->
 
 ## Unreleased
-- Added visual indicator for pre-defined pages
-- [RT#259551] it is now possible to modify the Copy Editor at any time
-- Incorrecte URL in the mail template when submitting via preprint server
-- Ability to customise application environment variables
-- *Manager only* Website menu:
-  - It is no longer possible to manually add certain public pages to the site.
-  - The list of pages has been reorganised by group.
-  - Hide "Publishing policies" page: included in the "About" page.
-- Updated 'Resources' module to manage public files
-
-- Manager: reset password url
-- Manager: account creation token url
-- Manager: Fixed path to reviewer report attachments without prefix
-- Manager: Force predefined pages to be public
-- Manager: Review Report: attached document URL has not been updated for the manager application
 
 ### Added
-- Comprehensive Jest test suite for ORCID authors management (`tests/js/updateOrcidAuthors.test.js`).
+
+* Comprehensive Jest test suite for ORCID authors management (`tests/js/updateOrcidAuthors.test.js`).
+* Unit tests for `Episciences_Paper_Projects` entity (setOptions aliases, DateTime handling, toArray serialization, fluent setters).
+* Unit tests for `Episciences_Paper_Projects_EnrichmentService` pure functions (EU/ANR response normalization, OpenAIRE relation filtering).
+* Unit tests for `Episciences_Paper_Projects_ViewFormatter` (empty-array return, URL HTML-escaping, unidentified title suppression).
+* Unit tests for `Episciences_Paper_Citations_ViewFormatter` (20 tests: sort, author formatting, ORCID links, XSS prevention, book-chapter/proceedings-article reordering).
+* Unit tests for `Episciences_Paper_Citations` entity (8 tests: `toArray()` key, fluent setters, nullable `updatedAt`, constructor).
+* Comprehensive unit tests for `Episciences_Paper_Authors_ViewFormatter` covering HTML display logic and XSS prevention.
+* Unit tests for `Episciences_View_Helper_DoiAsLink`, `Episciences_View_Helper_FormatIssn`, `Episciences_View_Helper_Log`, `Episciences_View_Helper_Tag`, `Episciences_View_Helper_UserAvatar`, `Episciences_View_Helper_GetAvatar` and `Episciences_CommentsManager`.
+* 89+ unit tests for `Ccsd\Auth` adapters (`CasAbstract`, `Idp`, `Orcid`, `AdapterFactory`, `Asso`), `Ccsd\User` models (`User`, `UserTokens`, `UserFtpQuota`) and `Episciences\User` entities covering pure logic without DB or network access.
+* Updated `tests/README.md` with accurate Docker-based testing instructions, `make` target reference, subset-run examples, and contributor guidelines.
+* [#883](https://github.com/CCSDForge/episciences/issues/883) Allow json files as attachments.
+* It is now possible to report status changes to an external entry point (can be configured by review).
+* [#658](https://github.com/CCSDForge/episciences/issues/658) It is now possible to link an invitation that is not intended for you to your account.
+* allow the co-author to view the publication.
+* Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt).
+* New option to allow Editors to receive 'Comments for editors' before declaring a conflict of interest (disabled by default).
+* Volume Settings: add New configuration section(displayEmptyVolumes and allowEditVolumeTitleWithPublishedArticles) in journal settings.
+* [#679](https://github.com/CCSDForge/episciences/issues/679) "Ask other editors for their opinion" form now includes chief editors (ROLE_CHIEF_EDITOR) in addition to regular editors (ROLE_EDITOR).
+* [#691](http://github.com/CCSDForge/episciences/issues/691) Display "(optional)" label below comment and cover letter fields in submission forms to clarify these fields are not required.
+* feat(navigation): sync predefined page titles with T_PAGES table on menu save.
+* New `library/Episciences/Api/` namespace with 5 injectable, independently-testable API clients: `AbstractApiClient`, `CrossrefApiClient`, `OpenAlexApiClient`, `OpenCitationsApiClient`, `OpenAireApiClient`.
+* Five Symfony Console commands replacing the legacy JournalScript enrichment scripts: `enrichment:citations`, `enrichment:creators`, `enrichment:funding`, `enrichment:licences`, `enrichment:links`.
+* Added MSC2020 Classification in ZBJATS export.
 
 ### Changed
-- Refactored `public/js/paper/updateOrcidAuthors.js` from jQuery to modern vanilla ES6+ with a class-based architecture.
-- Enhanced ORCID form validation: added duplicate detection (with internationalized error messages) while maintaining support for empty submissions for deletions.
-- Update TinyMCE form 7.3.0 to 8.1.2
-- Increased Volume Description length to 1014 chars
-- DOI panel (`paper_doi.phtml`, `request-doi.js`, `view.js`): requesting, saving, and cancelling a DOI no longer triggers a full page reload — the DOM is updated in place; the success feedback message after "Request a DOI" is suppressed since the newly rendered DOI link is sufficient.
-- Refactored `Episciences_Paper_ProjectsManager` God Class into 4 single-responsibility classes:
-- `Episciences_Paper_Projects_Repository` — database CRUD for `paper_projects`
-- `Episciences_Paper_Projects_HalApiClient` — HTTP calls to the HAL API
-- `Episciences_Paper_Projects_EnrichmentService` — funding enrichment orchestration, cache and logging
-- `Episciences_Paper_Projects_ViewFormatter` — HTML rendering of funding metadata
-- `ProjectsManager` kept as a thin backward-compatible facade; all public method signatures preserved
-Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 single-responsibility classes:
-- `Episciences_Paper_Citations_Repository` — Database I/O (upsert + fetch)
-- `Episciences_Paper_Citations_ViewFormatter` — HTML rendering of citation lists
-- `Episciences_Paper_Citations_EnrichmentService` — OpenCitations → OpenAlex → Crossref enrichment pipeline
-- `Episciences_Paper_Citations_Logger` — Singleton Monolog logger (avoids Logger recreation on every call)
-- `CitationsManager` kept as backward-compatible facade with `@deprecated` proxies
-- Redundant PHPDoc (types duplicating signatures) removed from all new citations classes via Rector
-- Replaced `Episciences_Cache` (file-based, backed by `Ccsd_Cache`) with `symfony/cache` 5.4 (PSR-6 `FilesystemAdapter`) across all internal usages
-- `PapersManager::getList()`: removed `$cached` parameter; paper list is now always fetched fresh from the database
-- `Review::getPapers()`, `CopyEditor::loadAssignedPapers()`, `Editor::loadAssignedPapers()`, `Reviewer::loadAssignedPapers()`, `Volume::getPaperListFromVolume()`: updated signatures and call sites following the removal of `$cached`
-- `Oai/Server::getIds()`: OAI resumption token cache migrated to PSR-6 (`getItem` / `isHit` / `set` / `expiresAfter` / `save`); token conf is now stored natively by the adapter without manual `serialize()`/`unserialize()`
-- Statistics: log import script now supports anonymized log files (.access_log_anonym.gz) as a fallback, with priority order: .access_log, .access_log.gz, .access_log_anonym.gz
 
+* Refactored `public/js/paper/updateOrcidAuthors.js` from jQuery to modern vanilla ES6+ with a class-based architecture.
+* Enhanced ORCID form validation: added duplicate detection while maintaining support for empty submissions for deletions.
+* Update TinyMCE form 7.3.0 to 8.1.2.
+* Increased Volume Description length to 1024 chars.
+* DOI panel: requesting, saving, and cancelling a DOI no longer triggers a full page reload; success feedback message is suppressed.
+* Refactored `Episciences_Paper_ProjectsManager` into `Episciences_Paper_Projects_Repository`, `Episciences_Paper_Projects_HalApiClient`, `Episciences_Paper_Projects_EnrichmentService`, and `Episciences_Paper_Projects_ViewFormatter`.
+* Refactored `Episciences_Paper_CitationsManager` into `Episciences_Paper_Citations_Repository`, `Episciences_Paper_Citations_ViewFormatter`, `Episciences_Paper_Citations_EnrichmentService`, and `Episciences_Paper_Citations_Logger`.
+* Redundant PHPDoc removed from all new citations classes via Rector.
+* Replaced `Episciences_Cache` with `symfony/cache` 5.4 across all internal usages.
+* `PapersManager::getList()`: removed `$cached` parameter; paper list is now always fetched fresh.
+* `Review::getPapers()`, `CopyEditor::loadAssignedPapers()`, `Editor::loadAssignedPapers()`, `Reviewer::loadAssignedPapers()`, `Volume::getPaperListFromVolume()`: updated signatures and call sites following the removal of `$cached`.
+* `Oai/Server::getIds()`: OAI resumption token cache migrated to PSR-6.
+* Statistics: log import script now supports anonymized log files (.access_log_anonym.gz) as a fallback.
+* Improved accessibility of the ORCID authors modal: proper `<label>` associations, `aria-modal="true"`, and corrected `aria-labelledby`.
+* Modernized ORCID authors row layout using Flexbox.
+* Standardized modal button styles for ORCID updates (Cancel: `btn-default`, Save: `btn-primary`).
+* ORCID input fields: URLs are now automatically cleaned to keep only the 16-digit identifier.
+* `administratepaper/view.phtml`: reordered panels; moved "Volumes & Rubriques" earlier; `paper_versions` moved to the bottom; removed redundant label.
+* `paper/paper_datasets.phtml`: "Liens publications – données – logiciels" panel is now collapsed by default.
+* `paper/paper_graphical_abstract.phtml`: graphical abstract panel is now collapsed by default when empty.
+* `partials/coauthors.phtml`: "Ajouter un co-auteur" panel is now collapsed by default.
+* `partials/paper_affiliation_authors.phtml`: "Ajouter une affiliation" panel is now collapsed by default.
+* `volume/list.phtml`: Added "Number" and "Year" columns; improved table accessibility; Eager load volume settings to prevent N+1 queries.
+* `volume/editors_list.phtml`: Removed redundant inline scripts; construction of the editors list optimized.
+* Updated icons from `fas fa-address-card` to `fa-regular fa-address-card`.
+* Improved visual indicators for editor availability in `editor-availability.js`.
+* Refactored `scripts/zbjatZipper.php`: renamed class to `ZbjatZipper`, replaced `echo` with Monolog, extracted God method, switched to HTTPS.
+* Refactored `Episciences_Paper_AuthorsManager` into `Episciences_Hal_TeiCacheManager`, `Episciences_Paper_Authors_HalTeiParser`, `Episciences_Paper_Authors_Repository`, `Episciences_Paper_Authors_EnrichmentService`, `Episciences_Paper_Authors_AffiliationHelper`, and `Episciences_Paper_Authors_ViewFormatter`.
+* Refactored `Episciences_Paper_Authors_ViewFormatter` to separate data fetching from formatting logic.
+* Moved `normalizeOrcid()` implementation from `AuthorsManager` to `HalTeiParser`.
+* `AuthorsManager::ONE_MONTH` now references `TeiCacheManager::ONE_MONTH`.
+* Added `TeiCacheManager::fetchAndGet()` to combine fetch-if-needed + read in a single call.
+* The "Encapsulate reviewers" parameter is now hidden.
+* [#528](https://github.com/CCSDForge/episciences/issues/528): 'upload a new version' on top; updated contact label.
+* Paper metrics Refactored; 1 query instead of 2.
+* The Locale is now stored in a cookie instead of the session.
+* Redirect to the article to be reviewed when accepting an invitation.
+* Allow volume years to be a string (AAAA or AAAA-AAAA).
+* Synchronization of predefined page titles between navigation menu and T_PAGES table when saving menu configuration.
+
+### Fixed
+
+* Fixed tooltip initialization in volume and section assignment after AJAX refreshes and DataTable redraws.
+* Fixed Solr search engine indexation of Authors with a middle name.
+* Consider an additional review when sending reminders for an insufficient number of reviewers.
+* `Projects`: `$_dateUpdated` default fixed; `getDateUpdated()` return type consistency.
+* `Projects::setFunding()`: made method fluent.
+* `Projects::setOptions()`: fixed `setIdproject()` alias and case-insensitive method lookup.
+* `Projects::toArray()`: fixed `DateTime` serialization.
+* `Repository::insert()`: replaced deprecated `VALUES()` syntax with row-alias syntax for MySQL 8.0.20+.
+* `Repository`: exceptions now propagate instead of terminating script on DB errors.
+* `ViewFormatter`: fixed XSS by escaping `$vfunding['url']` and other user-controlled values in HTML attributes.
+* `HalApiClient::doGet()`: added `E_USER_WARNING` severity level.
+* `EnrichmentService::resolveHalProjectIds()`: removed duplicate log message; sanitized cache key.
+* `Citations_ViewFormatter`: removed double escaping; fixed unstable compound sort; added ORCID format validation.
+* `Citations_Repository`: replaced deprecated MySQL `VALUES()` function; added check for `$docId <= 0`.
+* `Citations` entity: fixed `toArray()` key name; fixed `$_updatedAt` type and default.
+* ORCID normalization: `cleanLowerCaseOrcid()` fix; applied normalization in Zenodo and ARCHE hooks.
+* `findAffiliationsOneAuthorByPaperId()`: fixed potential undefined variable.
+* `hasAcronym()`: fixed iteration over nested `id` array.
+* `HalTeiParser::getAuthorsFromHalTei()`: fixed logic to prevent enriching the wrong author.
+* `ViewFormatter::buildAffiliationListHtml()`: fixed Stored XSS by escaping the affiliation acronym.
+* `ViewFormatter`: fixed `html_entity_decode(htmlspecialchars())` no-op.
+* `EnrichmentService::mergeExistingAffiliations()`: fixed matching key lookup with `array_search()`.
+* `AffiliationHelper::isAcronymDuplicate()`: now iterates all identifiers.
+* `AffiliationHelper::setOrUpdateRorAcronym()`: returns first match deterministically.
+* `TeiCacheManager::buildApiUrl()`: applied `urlencode()` to prevent Solr query injection.
+* `TeiCacheManager::getFromCache()`: removed dead `expiresAfter()` call.
+* `Repository`: fixed `JSON_DECODE_FLAGS`.
+* `CommentsManager::$_typeLabel`: added missing entry for `TYPE_CONTRIBUTOR_TO_REVIEWER`.
+* `CommentsManager::updateUid()`: fixed negative UID guard.
+* `FormatIssn::FormatIssn()`: fixed substring length.
+* `Log::log()`: fixed uncaught exception from `$logger->log()`.
+* `DoiAsLink::DoiAsLink()`: fixed label when no text provided.
+* `Ccsd\Auth\Adapter\Idp::filterEmail()`: fixed regex bypass with `preg_quote()` and anchors.
+* Fixed RT#277365: added TinyMCE configuration options to handle `<br>` and `<p>` correctly.
+* [#886](https://github.com/CCSDForge/episciences/issues/886): reminder logic for lack of reviewers fixed.
+* `convertToBytes()`: fixed handling of pure numeric strings and added validation.
+* `isHal()`, `isHalUrl()`, `isArxiv()`: fixed regex anchors.
+* Added comprehensive test coverage for `Episciences_Tools`.
+* [#236](https://github.com/CCSDForge/episciences-front/issues/236): HTML entities (&) displayed in the title.
+* [#695](https://github.com/CCSDForge/episciences/issues/695) Fixed CC/BCC fields not clickable in paper status change forms.
+* [#830](https://github.com/CCSDForge/episciences/issues/830) Paper number messed up for secondary volume; altered secondary volume rendering.
+* [#776](https://github.com/CCSDForge/episciences/issues/776) Action Required: Fix Renovate Configuration.
+* [#657](https://github.com/CCSDForge/episciences/issues/657) Conditionally remove the `<hr>` separator in metadata views.
+* [#786](https://github.com/CCSDForge/episciences/issues/786) English translation of 'Télécharger le fichier'.
+* [#646](https://github.com/CCSDForge/episciences/issues/646) Redirect to article page after submission.
+* [#780](https://github.com/CCSDForge/episciences/issues/780) Option to lock volume name when an article is published.
+* [#147](https://github.com/CCSDForge/episciences/issues/147) Add new pages Acknowledgements in menu 'About'.
+* Fixed Paper Metrics based on wrong DocId.
+* Fixed Pre-defined pages not deleted from the database.
+* [#77](https://github.com/CCSDForge/episciences-front/issues/77) Fix orphan assignments when deleting sections or volumes.
+* `CrossrefTools`: fixed fatal error on constant name; fixed raw `CacheItem` return.
+* `OpenalexTools`: fixed `getPages()` return value and trailing separator in `getAuthors()`.
+* `OpencitationsTools`: fixed caching of empty responses; fixed DOI extraction and updated API format support.
+* `getLinkData`: switched to HTTPS; added null guards for `$valuesResult`.
+* `getLicenceDataEnrichment`: fixed ineffective cache.
+* `OpenAireResearchGraphTools`: enabled strict mode for `array_search()`.
+* `Projects/EnrichmentService`: fixed log path and added `(int)` cast for source ID.
+* `Citations/EnrichmentService`: added null guards for OpenAlex API fields.
+* [#875](https://github.com/CCSDForge/episciences/issues/875): fixed HTML/Emoji translation issue.
 
 ### Deprecated
-- `Episciences_Cache` and its parent `Ccsd_Cache` are now marked `@deprecated`; use `Symfony\Component\Cache\Adapter\FilesystemAdapter` instead
 
-### Changed (UI)
-- Improved accessibility of the ORCID authors modal: implemented proper `<label>` associations, added `aria-modal="true"`, and corrected `aria-labelledby` in XSL templates.
-- Modernized ORCID authors row layout using Flexbox to ensure perfect alignment between labels and inputs.
-- Standardized modal button styles for ORCID updates (Cancel: `btn-default`, Save: `btn-primary`).
-- ORCID input fields: URLs are now automatically cleaned to keep only the 16-digit identifier (e.g., https://orcid.org/0000-0000-0000-0000 → 0000-0000-0000-0000)
-- `administratepaper/view.phtml`: reordered panels — paper files, article status, contributor, co-authors, affiliations, and graphical abstract are now grouped at the top of the page; "Volumes & Rubriques" moved earlier; `paper_versions` moved to the bottom (before history); removed redundant "Statut actuel :" label prefix from the article status panel
-- `paper/paper_datasets.phtml`: "Liens publications – données – logiciels" panel is now collapsed by default
-- `paper/paper_graphical_abstract.phtml`: graphical abstract panel is now collapsed by default when no image has been uploaded
-- `partials/coauthors.phtml`: "Ajouter un co-auteur" panel is now collapsed by default; minor HTML cleanup
-- `partials/paper_affiliation_authors.phtml`: "Ajouter une affiliation" panel is now collapsed by default; removed stray `<br>`, inlined `versionCache` script tag
-- `volume/list.phtml`: Added "Number" and "Year" columns; improved table accessibility (ARIA labels, column scopes).
-- `volume/editors_list.phtml`: Removed redundant inline scripts; construction of the editors list optimized.
-- Updated icons from `fas fa-address-card` to `fa-regular fa-address-card` in several views and partials.
-- Improved visual indicators for editor availability in `editor-availability.js`.
+* `Episciences_Cache` and its parent `Ccsd_Cache` are now marked `@deprecated`; use `Symfony\Component\Cache\Adapter\FilesystemAdapter` instead.
+* `ProjectsManager` kept as a thin backward-compatible facade.
+* `CitationsManager` kept as backward-compatible facade with `@deprecated` proxies.
+* `AuthorsManager` kept as orchestrator with backward-compatible `@deprecated` proxies.
+* `Episciences_Paper_Visits::count` is deprecated.
+
+### Removed
+
+* Redundant "Statut actuel :" label prefix from the article status panel.
+* Stray `<br>` and inlined `versionCache` script tag in `partials/paper_affiliation_authors.phtml`.
+* Removed implicit `unserialize()` on filesystem-cached paper data in `PapersManager::getList()`.
 
 ### Security
-- Removed implicit `unserialize()` on filesystem-cached paper data in `PapersManager::getList()`, eliminating a potential PHP object injection vector
-- OAI resumption token cache keys are now MD5-hashed before use, preventing cache-key injection via crafted token values
-- Escaped output in `volume/editors_list.phtml` to prevent potential XSS.
-- Fixed XSS vulnerability in `Projects/ViewFormatter`: funding URL was interpolated unescaped into `href` attribute and link text, allowing HTML injection via malicious project metadata
-- Fixed XSS in `Citations_ViewFormatter`: `href=` attributes for DOI and OA links were unquoted, allowing attribute injection when values contained spaces or special characters; now wrapped in double quotes with `ENT_QUOTES`
-- Fixed XSS vulnerability in `ViewFormatter::buildAuthorHtml()` and `buildAffiliationListHtml()` where user-controlled values were interpolated into unquoted or improperly escaped HTML attributes (ORCID URL, data-title, and affiliation acronym)
-- Fixed potential Solr query injection in `TeiCacheManager::buildApiUrl()`
-- `GetAvatar::asPaperStatusSvg()`: fixed two path traversal vectors — `$lang` is now sanitized to `[a-z]+` before being interpolated into a filesystem path, and `$paperStatus` is cast to `int`
-- `DoiAsLink::DoiAsLink()`: added `rel="noopener noreferrer"` to prevent tab-napping on external DOI links
-- `Ccsd\Auth\Adapter\Idp::filterEmail()`: regex bypass allowed authentication from unauthorized email domains (see Fixed)
 
-### Changed
-- Refactored `scripts/zbjatZipper.php`: renamed class to PascalCase (`ZbjatZipper`), replaced `echo` with Monolog logger, extracted `run()` God method into focused methods (`processJournal`, `processVolume`, `downloadPaperFiles`, `buildPaperUrl`, `createZipArchive`), switched URLs from hardcoded `http://episciences.org` to HTTPS + `DOMAIN` constant, replaced `fopen`/`fwrite`/`fclose` with `file_put_contents`, replaced `opendir`/`readdir` with `DirectoryIterator`, replaced `exit` with `return`
-- Refactored `Episciences_Paper_AuthorsManager` (879-line God Class) into 6 single-responsibility classes:
-  - `Episciences_Hal_TeiCacheManager` — HAL TEI cache and HTTP
-  - `Episciences_Paper_Authors_HalTeiParser` — TEI XML parsing
-  - `Episciences_Paper_Authors_Repository` — Database CRUD
-  - `Episciences_Paper_Authors_EnrichmentService` — DB/TEI author data merging
-  - `Episciences_Paper_Authors_AffiliationHelper` — Affiliation/ROR/acronym utilities
-  - `Episciences_Paper_Authors_ViewFormatter` — HTML display formatting
-- Refactored `Episciences_Paper_Authors_ViewFormatter` to separate data fetching from formatting logic, improving testability
-- `AuthorsManager` kept as orchestrator with backward-compatible `@deprecated` proxies
-- Moved `normalizeOrcid()` implementation from `AuthorsManager` to `HalTeiParser` to break circular dependency; `AuthorsManager::normalizeOrcid()` is now a deprecated proxy
-- `AuthorsManager::ONE_MONTH` now references `TeiCacheManager::ONE_MONTH` (deduplicated constant)
-- Added `TeiCacheManager::fetchAndGet()` to combine fetch-if-needed + read in a single call; callers updated (`EnrichmentService`, `LicenceManager`, `AuthorsManager`)
+* Removed implicit `unserialize()` on filesystem-cached paper data in `PapersManager::getList()`, eliminating a potential PHP object injection vector.
+* OAI resumption token cache keys are now MD5-hashed before use, preventing cache-key injection.
+* Escaped output in `volume/editors_list.phtml` to prevent potential XSS.
+* Fixed XSS vulnerability in `Projects/ViewFormatter`: funding URL was interpolated unescaped into `href` attribute and link text.
+* Fixed XSS in `Citations_ViewFormatter`: `href=` attributes for DOI and OA links were unquoted.
+* Fixed XSS vulnerability in `ViewFormatter::buildAuthorHtml()` and `buildAffiliationListHtml()` regarding user-controlled values in HTML attributes.
+* Fixed potential Solr query injection in `TeiCacheManager::buildApiUrl()`.
+* `GetAvatar::asPaperStatusSvg()`: fixed two path traversal vectors ($lang sanitization and $paperStatus casting).
+* `DoiAsLink::DoiAsLink()`: added `rel="noopener noreferrer"` to prevent tab-napping.
+* `Ccsd\Auth\Adapter\Idp::filterEmail()`: fixed regex bypass that allowed authentication from unauthorized email domains.
 
-### Fixed
-- Fixed tooltip initialization in volume and section assignment by calling `activateTooltips()` after AJAX refreshes and on DataTable redraws.
-- Fixed Solr search engine indexation of Authors with a middle name
--  consider an additional review when sending reminders for an insufficient number of reviewers
-- `Projects`: `$_dateUpdated` default was the string `'CURRENT_TIMESTAMP'` instead of `null`; `getDateUpdated()` declared `DateTime` return type but could return a string
-- `Projects::setFunding()`: method was not fluent (`void` return), inconsistent with all other setters
-- `Projects::setOptions()`: key `'idproject'` produced `setIdproject()` which does not exist; fixed with a method alias `setIdproject()` → `setProjectId()` and case-insensitive method lookup so `'paperid'` resolves to `setPaperId()`
-- `Projects::toArray()`: included a raw `DateTime` object, breaking serialization; `dateUpdated` is now formatted as `'Y-m-d H:i:s'` string
-- `Repository::insert()`: deprecated `VALUES(funding)` syntax in `ON DUPLICATE KEY UPDATE` replaced with row-alias syntax compatible with MySQL 8.0.20+
-- `Repository`: `trigger_error(E_USER_ERROR)` terminated the script on DB errors; exceptions now propagate so callers can handle failures
-- `ViewFormatter`: `$vfunding['url']` was interpolated raw into `href="…"` and the link text; both are now escaped with `htmlspecialchars(ENT_QUOTES)`
-- `HalApiClient::doGet()`: `trigger_error()` was called without a severity level; now uses `E_USER_WARNING`
-- `EnrichmentService::resolveHalProjectIds()`: ANR project discovery message was echoed twice; duplicate removed
-- `EnrichmentService::resolveHalProjectIds()`: cache key used raw `$identifier` which could contain filesystem-unsafe characters; sanitized with `preg_replace('/[^a-zA-Z0-9_\-]/', '_', …)`
-- `Citations_ViewFormatter`: double `htmlspecialchars()` on author metadata — values were escaped twice (once before `reduceAuthorsView`, then again before `formatAuthors`); now escaped exactly once
-- `Citations_ViewFormatter`: unstable compound sort — two sequential `usort()` calls (author then year) caused the year sort to discard author ordering; replaced with a single comparator (year desc, author asc)
-- `Citations_ViewFormatter`: `createOrcidStringForView()` did not validate the ORCID format before building the URL; invalid values now return an empty string
-- `Citations_Repository`: deprecated MySQL `VALUES()` function in `ON DUPLICATE KEY UPDATE` replaced with alias syntax (MySQL 8.0.20+)
-- `Citations_Repository`: `findByDocId()` now rejects `$docId <= 0` instead of issuing a useless query
-- `Citations` entity: `toArray()` returned key `'licence'` instead of `'citation'`
-- `Citations` entity: `$_updatedAt` was typed as `string` with default `'CURRENT_TIMESTAMP'`; changed to `?DateTime = null` to match the declared return type of `getUpdatedAt()`
-- ORCID normalization: `cleanLowerCaseOrcid()` did not strip `https://orcid.org/` URL prefix; new `normalizeOrcid()` method handles URL stripping, trimming, and lowercase `x` → `X` fix
-- Applied `normalizeOrcid()` in Zenodo and ARCHE hooks where raw ORCID values were stored without normalization
-- `findAffiliationsOneAuthorByPaperId()`: fixed potential undefined variable when author rows are empty
-- `hasAcronym()`: fixed iteration over nested `id` array (was comparing top-level keys instead of inspecting each identifier sub-array, consistent with `hasRor()`)
-- `HalTeiParser::getAuthorsFromHalTei()`: fixed logic to prevent enriching the wrong author when `persName` is missing in TEI XML
-- `ViewFormatter`: fixed XSS via unquoted HTML attributes (`href`, `data-original-title`); values are now properly quoted and escaped with `htmlspecialchars()`
-- `ViewFormatter::buildAffiliationListHtml()`: fixed Stored XSS by escaping the affiliation acronym
-- `ViewFormatter`: fixed `html_entity_decode(htmlspecialchars())` no-op; plain-text author list now uses raw name, HTML template uses escaped name
-- `EnrichmentService::mergeExistingAffiliations()`: fixed `key()` always returning 0 instead of the actual matching DB affiliation key; now uses `array_search()`
-- `AffiliationHelper::isAcronymDuplicate()`: fixed hardcoded `[0]` index; now iterates all identifiers (consistent with `hasRor()`/`hasAcronym()`)
-- `AffiliationHelper::setOrUpdateRorAcronym()`: returns first match deterministically instead of last
-- `TeiCacheManager::buildApiUrl()`: applied `urlencode()` on identifier to prevent Solr query injection
-- `TeiCacheManager::getFromCache()`: removed dead `expiresAfter()` call on the read path
-- `Repository`: `JSON_DECODE_FLAGS` no longer includes encode-only flags (`JSON_UNESCAPED_SLASHES`, `JSON_UNESCAPED_UNICODE`)
-- `CommentsManager::$_typeLabel`: added missing entry for `TYPE_CONTRIBUTOR_TO_REVIEWER` (type 11); lookups on that type silently returned `null`
-- `CommentsManager::updateUid()`: negative UIDs were not rejected by the guard; changed `== 0` to `<= 0`
-- `FormatIssn::FormatIssn()`: second `substr()` call used length `8` instead of `4`; worked by PHP leniency on short strings but was semantically wrong
-- `Log::log()`: exception thrown by `$logger->log()` was not caught; only `Zend_Registry::get()` was inside the `try/catch` block
-- `DoiAsLink::DoiAsLink()`: when no `$text` was provided, the link label displayed the bare DOI instead of the full `https://doi.org/…` URL
-- `Ccsd\Auth\Adapter\Idp::filterEmail()`: unescaped dot in regex allowed partial-match bypass (e.g. `user@inraXfr`); fixed with `preg_quote()` and a trailing `$` anchor to also prevent subdomain injection (e.g. `attacker@inra.fr.evil.com`)
+### Performances
 
-### Security
-- Fixed XSS vulnerability in `Projects/ViewFormatter`: funding URL was interpolated unescaped into `href` attribute and link text, allowing HTML injection via malicious project metadata
-- Fixed XSS in `Citations_ViewFormatter`: `href=` attributes for DOI and OA links were unquoted, allowing attribute injection when values contained spaces or special characters; now wrapped in double quotes with `ENT_QUOTES`
-- Fixed XSS vulnerability in `ViewFormatter::buildAuthorHtml()` and `buildAffiliationListHtml()` where user-controlled values were interpolated into unquoted or improperly escaped HTML attributes (ORCID URL, data-title, and affiliation acronym)
-- Fixed potential Solr query injection in `TeiCacheManager::buildApiUrl()`
-- `GetAvatar::asPaperStatusSvg()`: fixed two path traversal vectors — `$lang` is now sanitized to `[a-z]+` before being interpolated into a filesystem path, and `$paperStatus` is cast to `int`
-- `DoiAsLink::DoiAsLink()`: added `rel="noopener noreferrer"` to prevent tab-napping on external DOI links
-- `Ccsd\Auth\Adapter\Idp::filterEmail()`: regex bypass allowed authentication from unauthorized email domains (see Fixed)
+* `volume/list.phtml`: Eager load volume settings to prevent N+1 queries.
+* `volume/editors_list.phtml`: construction of the editors list optimized.
+* `Episciences_Paper_Citations_Logger`: Singleton Monolog logger (avoids Logger recreation on every call).
+* Paper metrics Refactored; 1 query instead of 2.
 
-### Added
-- Unit tests for `Episciences_Paper_Projects` entity (setOptions aliases, DateTime handling, toArray serialization, fluent setters)
-- Unit tests for `Episciences_Paper_Projects_EnrichmentService` pure functions (EU/ANR response normalization, OpenAIRE relation filtering)
-- Unit tests for `Episciences_Paper_Projects_ViewFormatter` (empty-array return, URL HTML-escaping, unidentified title suppression)
-- Unit tests for `Episciences_Paper_Citations_ViewFormatter` (20 tests: sort, author formatting, ORCID links, XSS prevention, book-chapter/proceedings-article reordering)
-- Unit tests for `Episciences_Paper_Citations` entity (8 tests: `toArray()` key, fluent setters, nullable `updatedAt`, constructor)
-- Comprehensive unit tests for `Episciences_Paper_Authors_ViewFormatter` covering HTML display logic and XSS prevention
-- Unit tests for `Episciences_View_Helper_DoiAsLink`, `Episciences_View_Helper_FormatIssn`, `Episciences_View_Helper_Log`, `Episciences_View_Helper_Tag`, `Episciences_View_Helper_UserAvatar`, `Episciences_View_Helper_GetAvatar` and `Episciences_CommentsManager`
-- 89+ unit tests for `Ccsd\Auth` adapters (`CasAbstract`, `Idp`, `Orcid`, `AdapterFactory`, `Asso`), `Ccsd\User` models (`User`, `UserTokens`, `UserFtpQuota`) and `Episciences\User` entities covering pure logic without DB or network access
-- Updated `tests/README.md` with accurate Docker-based testing instructions, `make` target reference, subset-run examples, and contributor guidelines
-- [#883](https://github.com/CCSDForge/episciences/issues/883) Allow json files as attachments
-- It is now possible to report status changes to an external entry point (can be configured by review)
-  
-- [#658](https://github.com/CCSDForge/episciences/issues/658) It is now possible to link an invitation that is not intended for you to your account
-- allow the co-author to view the publication
-- Statistics: the script has a new parameter `--all` - Process all statistics (with confirmation prompt)
-- New option to allow Editors to receive 'Comments for editors' before declaring a conflict of interest (disabled by default)
-- Volume Settings: add New configuration section(displayEmptyVolumes and allowEditVolumeTitleWithPublishedArticles)  in journal settings
-- [#679](https://github.com/CCSDForge/episciences/issues/679) "Ask other editors for their opinion" form now includes chief editors (ROLE_CHIEF_EDITOR) in addition to regular editors (ROLE_EDITOR)
-- [#691](http://github.com/CCSDForge/episciences/issues/691) Display "(optional)" label below comment and cover letter fields in submission forms to clarify these fields are not required
-- feat(navigation): sync predefined page titles with T_PAGES table on menu save
-- New `library/Episciences/Api/` namespace with 5 injectable, independently-testable API clients:
-  - `AbstractApiClient` — shared HTTP, PSR-6 cache, and Monolog primitives
-  - `CrossrefApiClient` — Crossref REST API (namespace `enrichmentCitations`)
-  - `OpenAlexApiClient` — OpenAlex REST API (namespace `enrichmentCitations`)
-  - `OpenCitationsApiClient` — OpenCitations REST API (namespace `enrichmentCitations`)
-  - `OpenAireApiClient` — OpenAire Research Graph REST API (3 separate cache pools: `openAireResearchGraph`, `enrichmentAuthors`, `enrichmentFunding`)
-- Five Symfony Console commands replacing the legacy JournalScript enrichment scripts; all commands process published papers only and support `-q`/`--quiet` for cron usage:
-  - `enrichment:citations` (`GetCitationsDataCommand`) — downloads citing-paper metadata via OpenCitations → OpenAlex → Crossref and upserts into `paper_citations`
-  - `enrichment:creators` (`GetCreatorDataCommand`) — enriches author ORCID data via the OpenAire Research Graph
-  - `enrichment:funding` (`GetFundingDataCommand`) — enriches funding metadata via OpenAire and HAL (European + ANR projects)
-  - `enrichment:licences` (`GetLicenceDataCommand`) — enriches licence data via HAL TEI metadata
-  - `enrichment:links` (`GetLinkDataCommand`) — enriches dataset/software links via the Scholexplorer API
-  - Added MSC2020 Classification in ZBJATS export
-
-### Fixed
-- Fixed RT#277365: in order to correct the printing of extra lines, two options have been added to the TinyMCE configuration to insert a <br> instead of a <p> and another option to remove extra <br>s at the end of a block
-- [#886](https://github.com/CCSDForge/episciences/issues/886): the reminder about the lack of reviewers is sent as long as the minimum required number of reviewers has not been reached compared to the accepted invitations
-- `convertToBytes()`: fixed handling of pure numeric strings (`'0'`, `'100'`) which were incorrectly treated as having a unit suffix; added validation for empty strings and negative values; replaced switch fall-through with a unit map for readability
-- `isHal()`: fixed regex missing end-of-string anchor, which allowed partial matches
-- `isHalUrl()`: fixed regex to properly match HAL domain instead of matching any URL containing "hal" anywhere
-- `isArxiv()`: fixed regex grouping so the end-of-string anchor applies to both identifier formats
-- Added comprehensive test coverage for `Episciences_Tools`: `decodeLatex`, `decodeAmpersand`, `isSha1`, `isJson`, `isUuid`, `getCleanedUuid`, `isIPv6`, `isRorIdentifier`, `isDoiWithUrl`, `isHal`, `isHalUrl`, `isDoi`, `isArxiv`, `isSoftwareHeritageId`, `isHandle`, `cleanHandle`, `getHalIdAndVer`, `getHalIdInString`, `checkIsArxivUrl`, `checkIsDoiFromArxiv`, `getSoftwareHeritageDirId`, `addDateInterval`, `isValidDate`, `isValidSQLDate`, `isValidSQLDateTime`, `getValidSQLDate`, `getValidSQLDateTime`, `toHumanReadable`, `convertToBytes`, `formatUser`, `checkUrl`, `startsWithNumber`, `formatText`
-- [#236](https://github.com/CCSDForge/episciences-front/issues/236): HTML entities (&amp;) displayed in the title
-- [#695](https://github.com/CCSDForge/episciences/issues/695) Fixed CC/BCC fields not clickable in paper status change forms. Clicking CC/BCC now opens contact selection dialog.
-- [#830](https://github.com/CCSDForge/episciences/issues/830)  Paper number messed up for secondary volume
-- altered secondary volume rendering
-- [#776](https://github.com/CCSDForge/episciences/issues/776) Action Required: Fix Renovate Configuration
-- [#657](https://github.com/CCSDForge/episciences/issues/657) Conditionally remove the `<hr>` separator in the public and admin views of article metadata
-- [#786](https://github.com/CCSDForge/episciences/issues/786) English translation of 'Télécharger le fichier'
-- [#646](https://github.com/CCSDForge/episciences/issues/646) Rediriger sur la page de l'article qui vient d'être soumis au lieu de la page qui liste toutes les soumissions
-- [#780](https://github.com/CCSDForge/episciences/issues/780) Option to lock volume name when an article in it is published
-- [#147](https://github.com/CCSDForge/episciences/issues/147) Add new pages Acknowledgements (page code journal-acknowledgements)  in menu 'About'
-- Fixed Paper Metrics based on wrong DocId, it gave null metrics
-- Fixed Pre-defined pages deleted from the menu are not deleted from the database
-- [#77](https://github.com/CCSDForge/episciences-front/issues/77) Fix orphan assignments when deleting sections or volumes
-- `CrossrefTools`: `defined(CROSSREF_PLUS_API_TOKEN)` (constant name without quotes) caused a fatal PHP error; corrected to `defined('CROSSREF_PLUS_API_TOKEN')`
-- `CrossrefTools`: `getMetadatasCrossref()` returned the raw PSR-6 `CacheItem` object instead of the decoded array
-- `OpenalexTools`: `getPages()` returned `"fp-"` instead of `"fp"` when `$lp` is `null`
-- `OpenalexTools`: `getAuthors()` appended a trailing `; ` separator when `array_key_last()` returned `null` on an empty array
-- `OpencitationsTools`: empty citation response `'[]'` (0 citations) was incorrectly rejected and never cached, causing repeated redundant API calls on subsequent runs
-- `OpencitationsTools`: DOI extraction used the wrong column and a broken regex; replaced with `str_replace()` for the `coci => ` prefix and `preg_replace('/;.*$/', '', …)` for multi-DOI trimming; added support for the current OpenCitations API format where citing DOIs are returned as plain strings (e.g. `10.xxx/yyy`) without a `doi:` prefix
-- `getLinkData`: Scholexplorer API was called over HTTP instead of HTTPS
-- `getLinkData`: array access on `$valuesResult["target"]['objectType']` without `isset()` caused notices/errors on missing keys
-- `getLicenceDataEnrichment`: `$cache->save($item)` was never called after setting the licence item value, making the cache ineffective and causing repeated API calls
-- `OpenAireResearchGraphTools`: `array_search()` was called without strict mode, causing false positives on ORCID matching
-- `Projects/EnrichmentService`: log file was written to `log/` instead of `logs/`; now uses `EPISCIENCES_LOG_PATH` constant
-- `Projects/EnrichmentService`: `Episciences_Repositories::GRAPH_OPENAIRE_ID` and `HAL_REPO_ID` are string constants; missing `(int)` cast caused a `TypeError` when passed to the `int $sourceId` parameter of `buildProject()`
-- `Citations/EnrichmentService`: `biblio`, `authorships`, `locations`, `primary_location`, and `best_oa_location` fields from the OpenAlex API can be `null`; missing null guards caused `TypeError` exceptions when processing citation metadata
-
-- Synchronization of predefined page titles between navigation menu and T_PAGES table when saving menu configuration
-
-### Changed
-- `volume/list.phtml`: Eager load volume settings to prevent N+1 queries in the display loop.
-- The "Encapsulate reviewers" parameter is now hidden
-- [#528](https://github.com/CCSDForge/episciences/issues/528):
-    - 'upload a new version' on top of the list
-    - "Contact the editors (with an attachment)" instead of "Contact without sending a new version"
-- Paper metrics Refactored; 1 query instead of 2 ; Episciences_Paper_Visits::count is deprecated
-- the Locale is now stored in a cookie instead of the session
-- redirect to the article to be reviewed when accepting an invitation
-- Allow volume years to be a string (AAAA or AAAA-AAAA)  
-- ### Fixed
-- [#875](https://github.com/CCSDForge/episciences/issues/875): caused by the presence of HTML (emoji replaced with FA CSS) in the translation
 
 ## v1.0.52 - 2025-08-28
 
