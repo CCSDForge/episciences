@@ -31,6 +31,14 @@ function updateOrcidAuthors() {
                 orcid +
                 '></div>';
             $(htmlrow).appendTo('#modal-body-authors');
+            // Nettoyage visuel immédiat lors de la sortie du champ
+            $('#ORCIDauthor__' + index).on('blur', function () {
+                const orcidPattern = /[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]/;
+                const match = $(this).val().match(orcidPattern);
+                if (match) {
+                    $(this).val(match[0]);
+                }
+            });
         }
     });
 
@@ -78,10 +86,16 @@ function submitNewOrcidAuthors() {
             arrayAuthor.push(fullname);
         });
         $("input[id^='ORCIDauthor__']").each(function (i, el) {
-            let orcid = $(el).val();
+            let orcid = $(el).val().trim();
             if (!orcid) {
                 arrayOrcid.push('');
             } else {
+                // Nettoyage de l'URL ORCID si présente
+                const orcidPattern = /[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]/;
+                const match = orcid.match(orcidPattern);
+                if (match) {
+                    orcid = match[0];
+                }
                 arrayOrcid.push(orcid);
             }
         });

@@ -44,6 +44,7 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
 - `Episciences_Cache` and its parent `Ccsd_Cache` are now marked `@deprecated`; use `Symfony\Component\Cache\Adapter\FilesystemAdapter` instead
 
 ### Changed (UI)
+- ORCID input fields: URLs are now automatically cleaned to keep only the 16-digit identifier (e.g., https://orcid.org/0000-0000-0000-0000 → 0000-0000-0000-0000)
 - `administratepaper/view.phtml`: reordered panels — paper files, article status, contributor, co-authors, affiliations, and graphical abstract are now grouped at the top of the page; "Volumes & Rubriques" moved earlier; `paper_versions` moved to the bottom (before history); removed redundant "Statut actuel :" label prefix from the article status panel
 - `paper/paper_datasets.phtml`: "Liens publications – données – logiciels" panel is now collapsed by default
 - `paper/paper_graphical_abstract.phtml`: graphical abstract panel is now collapsed by default when no image has been uploaded
