@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Episciences\Notify;
 
 trait Headers

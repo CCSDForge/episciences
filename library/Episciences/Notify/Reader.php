@@ -1,7 +1,9 @@
 <?php
 
+declare(strict_types=1);
 
-use cottagelabs\coarNotifications\COARNotificationManager;
+use Episciences\Notify\Notification;
+use Episciences\Notify\NotificationsRepository;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
@@ -13,7 +15,7 @@ class Episciences_Notify_Reader
     public const FILE_PERMISSION_LOGGER = 0664;
     public const MAX_FILE_LOGGER = 0;
     protected Logger $logger;
-    private ?COARNotificationManager $coarNotificationManager;
+    private NotificationsRepository $repository;
 
     /**
      * @return Logger
@@ -31,24 +33,10 @@ class Episciences_Notify_Reader
         $this->logger = $logger;
     }
 
-    public function __construct()
+    public function __construct(?NotificationsRepository $repository = null)
     {
-
         $this->initLogging();
-
-        try {
-            $this->coarNotificationManager = new COARNotificationManager(
-                $this->getConnectionParamsArray(),
-                $this->getLogger(),
-                INBOX_ID,
-                INBOX_URL,
-                10,
-                EPISCIENCES_USER_AGENT
-            );
-        } catch (Exception $e) {
-            $this->coarNotificationManager = null;
-        }
-
+        $this->repository = $repository ?? NotificationsRepository::createFromConstants();
     }
 
     /**
@@ -74,45 +62,19 @@ class Episciences_Notify_Reader
 
 
     /**
-     * @param string $direction
-     * @return array
+     * @return Notification[]
      */
-    public function getNotifications(string $direction = 'in'): array
+    public function getNotifications(): array
     {
-        return $this->coarNotificationManager->getNotifications($direction);
+        return $this->repository->findInbound();
     }
 
     /**
-     * @return array
+     * @return NotificationsRepository
      */
-    public function getConnectionParamsArray(): array
+    public function getRepository(): NotificationsRepository
     {
-        return [
-            'host' => INBOX_DB_HOST,
-            'driver' => INBOX_DB_DRIVER,
-            'user' => INBOX_DB_USER,
-            'password' => INBOX_DB_PASSWORD,
-            'dbname' => INBOX_DB_NAME,
-            'port' => INBOX_DB_PORT,
-        ];
-    }
-
-    /**
-     * @return COARNotificationManager|null
-     */
-    public function getCoarNotificationManager(): ?COARNotificationManager
-    {
-        return $this->coarNotificationManager;
-    }
-
-    /**
-     * @param COARNotificationManager|null $coarNotificationManager
-     * @return Episciences_Notify_Reader
-     */
-    public function setCoarNotificationManager(?COARNotificationManager $coarNotificationManager): self
-    {
-        $this->coarNotificationManager = $coarNotificationManager;
-        return $this;
+        return $this->repository;
     }
 
 

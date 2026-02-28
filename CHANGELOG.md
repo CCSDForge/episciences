@@ -43,6 +43,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * New `library/Episciences/Api/` namespace with 5 injectable, independently-testable API clients: `AbstractApiClient`, `CrossrefApiClient`, `OpenAlexApiClient`, `OpenCitationsApiClient`, `OpenAireApiClient`.
 * Five Symfony Console commands replacing the legacy JournalScript enrichment scripts: `enrichment:citations`, `enrichment:creators`, `enrichment:funding`, `enrichment:licences`, `enrichment:links`.
 * Added MSC2020 Classification in ZBJATS export.
+- `Episciences\Notify\NotifySourceConfig` — immutable value object holding
+  per-source configuration (repoId, label, originId, originInbox, acceptedTypes);
+  new repositories can be added without touching `InboxNotifications`
+- `Episciences\Notify\NotifySourceRegistry` — registry with a
+  `createFromConstants()` factory; resolves source config from a payload's
+  `origin.inbox`
+- `Episciences\Notify\ValidationResult` — pure value object wrapping a
+  validation outcome (success / failure + error message)
+- `Episciences\Notify\PreprintUrlParser` — pure helper extracting version
+  and identifier from preprint landing-page URLs (HAL-style)
+- `Episciences\Notify\PayloadValidator` — validates COAR Notify 1.0.1 payloads
+  for Offer patterns (Request Review / Request Endorsement): all required fields
+  including `object.id` (HTTP URI) and `object['ietf:item']` (id, type, mediaType)
 
 ### Changed
 
@@ -85,6 +98,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Redirect to the article to be reviewed when accepting an invitation.
 * Allow volume years to be a string (AAAA or AAAA-AAAA).
 * Synchronization of predefined page titles between navigation menu and T_PAGES table when saving menu configuration.
+- Replaced `cottagelabs/coar-notifications` (Doctrine ORM + Guzzle) with
+  `cottagelabs/coarnotify` (stateless pattern builder) and a custom PDO
+  persistence layer (`Notification` DTO + `NotificationsRepository`)
+- Refactored `InboxNotifications` (1390-line God Class) into focused private
+  methods (`processFirstSubmission`, `processSubsequentSubmission`,
+  `setupJournalTranslations`, `resolveNewVersionStatus`, `logVersionUpdate`, …)
+  and pure, dependency-free helper classes
+- `checkNotifyPayloads()` and `initSubmission()` are now source-aware:
+  the COAR Notify source is resolved from `origin.inbox` via `NotifySourceRegistry`
+- `InitSubmissionsFromHalInbox.php` is now a direct CLI entry point on
+  `InboxNotifications`; the empty subclass has been removed
+
 
 ### Fixed
 
