@@ -16,7 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Added
+- Comprehensive Jest test suite for ORCID authors management (`tests/js/updateOrcidAuthors.test.js`).
+
 ### Changed
+- Refactored `public/js/paper/updateOrcidAuthors.js` from jQuery to modern vanilla ES6+ with a class-based architecture.
+- Enhanced ORCID form validation: added duplicate detection (with internationalized error messages) while maintaining support for empty submissions for deletions.
 - Update TinyMCE form 7.3.0 to 8.1.2
 - Increased Volume Description length to 1014 chars
 - DOI panel (`paper_doi.phtml`, `request-doi.js`, `view.js`): requesting, saving, and cancelling a DOI no longer triggers a full page reload — the DOM is updated in place; the success feedback message after "Request a DOI" is suppressed since the newly rendered DOI link is sufficient.
@@ -44,6 +49,9 @@ Refactored `Episciences_Paper_CitationsManager` (356-line God Class) into 4 sing
 - `Episciences_Cache` and its parent `Ccsd_Cache` are now marked `@deprecated`; use `Symfony\Component\Cache\Adapter\FilesystemAdapter` instead
 
 ### Changed (UI)
+- Improved accessibility of the ORCID authors modal: implemented proper `<label>` associations, added `aria-modal="true"`, and corrected `aria-labelledby` in XSL templates.
+- Modernized ORCID authors row layout using Flexbox to ensure perfect alignment between labels and inputs.
+- Standardized modal button styles for ORCID updates (Cancel: `btn-default`, Save: `btn-primary`).
 - ORCID input fields: URLs are now automatically cleaned to keep only the 16-digit identifier (e.g., https://orcid.org/0000-0000-0000-0000 → 0000-0000-0000-0000)
 - `administratepaper/view.phtml`: reordered panels — paper files, article status, contributor, co-authors, affiliations, and graphical abstract are now grouped at the top of the page; "Volumes & Rubriques" moved earlier; `paper_versions` moved to the bottom (before history); removed redundant "Statut actuel :" label prefix from the article status panel
 - `paper/paper_datasets.phtml`: "Liens publications – données – logiciels" panel is now collapsed by default

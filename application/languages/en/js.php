@@ -264,5 +264,6 @@ return [
     "Voir moins" => "Show less",
     'Demander un DOI'=> 'Request a DOI',
     'Annuler le DOI'=> 'Cancel theDOI',
-    'not-assigned' => 'Not assigned'
+    'not-assigned' => 'Not assigned',
+    'orcid-duplicate' => 'Each ORCID must be unique.'
 ];
