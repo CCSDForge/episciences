@@ -388,7 +388,18 @@ php scripts/console.php stats:process [options]
 | `--date-s <yyyy-mm-dd>` | Process records up to this date (default: yesterday) |
 | `--all` | Process **all** records regardless of date (mutually exclusive with `--date-s`) |
 | `--dry-run` | Display each row's classification without writing to the database |
+| `--no-dns` | Skip reverse-DNS lookup — the `DOMAIN` column is left empty but processing is much faster |
 
 Recommended cron schedule: daily (e.g. every day at 02:00).
+
+> **Performance note:** By default, the command performs a reverse-DNS lookup (`gethostbyaddr`) for each unique IP to populate the `DOMAIN` column. This call is blocking and can take 5–30 seconds per IP with no timeout. On datasets with many unique IPs (> a few hundred), this makes the command appear frozen. **Use `--no-dns` for large backfills or when domain data is not required.**
+>
+> ```bash
+> # Recommended for backfills or large datasets
+> php scripts/console.php stats:process --all --no-dns
+>
+> # Default (with DNS — suitable for small daily batches)
+> php scripts/console.php stats:process
+> ```
 
 > **Note:** Run `stats:update-robots-list` at least once before the first execution of `stats:process`.
