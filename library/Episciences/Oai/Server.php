@@ -259,8 +259,13 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
 
             if (isset($result['response']['docs'], $result['nextCursorMark']) && is_array($result['response']['docs'])) {
                 $out = [];
+
+                // Batch-load all papers in a single IN query to avoid N+1 DB round-trips.
+                $docIds = array_column($result['response']['docs'], 'docid');
+                $papers = Episciences_PapersManager::getByDocIds($docIds);
+
                 foreach ($result['response']['docs'] as $res) {
-                    $paper = Episciences_PapersManager::get($res['docid'], false);
+                    $paper = $papers[$res['docid']] ?? false;
                     if (false === $paper) {
                         continue;
                     }
