@@ -70,7 +70,13 @@ class ProcessStatTempCommand extends Command
         }
         $logger->info($all ? 'Processing ALL records (no date filter).' : 'Processing records up to: ' . $date);
 
-        $db       = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        if ($db === null) {
+            $logger->error('No database adapter available. Check bootstrap/configuration.');
+            $io->error('No database adapter available.');
+            return Command::FAILURE;
+        }
+
         $giReader = $this->openGeoIpReader($logger, $io);
         if ($giReader === null) {
             return Command::FAILURE;
@@ -263,7 +269,9 @@ class ProcessStatTempCommand extends Command
     {
         try {
             return new Reader(GEO_IP_DATABASE_PATH . GEO_IP_DATABASE);
-        } catch (InvalidDatabaseException $e) {
+        } catch (\Exception $e) {
+            // Catches both InvalidDatabaseException (corrupt file) and
+            // \InvalidArgumentException (file not found).
             $logger->error('Cannot open GeoIP database: ' . $e->getMessage());
             $io->error('Cannot open GeoIP database: ' . $e->getMessage());
             return null;
@@ -392,16 +400,28 @@ class ProcessStatTempCommand extends Command
             : "DELETE FROM `STAT_TEMP` WHERE DATE_FORMAT(DHIT, '%Y-%m-%d') <= :DATE_TO_DEL ORDER BY DHIT LIMIT " . self::STEP_OF_LINES;
         $deletePrepared = $db->prepare($deleteSql);
 
+        $batchNumber = 0;
         while (true) {
             $rows = $this->fetchBatch($db, $all, $date);
             if (empty($rows)) {
                 break;
             }
 
+            $batchNumber++;
             $batch = $this->processBatchRows($rows, $giReader, $botDetector, $insertPrepared, $logger);
             foreach ($batch as $key => $delta) {
                 $counters[$key] += $delta;
             }
+
+            $logger->info(sprintf(
+                'Batch #%d (%d rows) — total: processed=%d, ignored=%d, robots=%d, errors=%d',
+                $batchNumber,
+                count($rows),
+                $counters['processed'],
+                $counters['ignored'],
+                $counters['robots'],
+                $counters['errors']
+            ));
 
             $this->deleteBatch($deletePrepared, $all, $date, $logger);
         }
