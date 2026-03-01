@@ -14,6 +14,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use geertw\IpAnonymizer\IpAnonymizer;
 
+// Verbosity shortcuts (re-exported for brevity inside the class)
+// VERBOSITY_VERBOSE     = -v   → informational messages
+// VERBOSITY_VERY_VERBOSE = -vv → per-batch and detailed debug
+
 /**
  * Symfony Console command: process STAT_TEMP → PAPER_STAT.
  *
@@ -77,27 +81,41 @@ class ProcessStatTempCommand extends Command
         if ($dryRun) {
             $io->note('Dry-run mode — no data will be written.');
         }
-        $logger->info($all ? 'Processing ALL records (no date filter).' : 'Processing records up to: ' . $date);
-        $logger->info('GeoIP database: ' . GEO_IP_DATABASE_PATH . GEO_IP_DATABASE);
+
+        // --- Status messages: written via $io so they always appear regardless of logger state ---
+        $scope = $all ? 'ALL records (no date filter)' : ('records up to: ' . $date);
+        $io->writeln('Scope: ' . $scope);
+        $logger->info('Processing ' . $scope . '.');
+
+        // GeoIP info — visible with -v
+        $geoIpPath = (defined('GEO_IP_DATABASE_PATH') ? GEO_IP_DATABASE_PATH : '[GEO_IP_DATABASE_PATH undefined]')
+            . (defined('GEO_IP_DATABASE') ? GEO_IP_DATABASE : '[GEO_IP_DATABASE undefined]');
+        $io->writeln('GeoIP database: ' . $geoIpPath, OutputInterface::VERBOSITY_VERBOSE);
+        $logger->info('GeoIP database: ' . $geoIpPath);
 
         if (!$noDns) {
-            $logger->warning('DNS lookup enabled (--no-dns not set). gethostbyaddr() may block for several seconds per unique IP. Use --no-dns to skip.');
+            $io->warning('DNS lookup enabled (--no-dns not set). gethostbyaddr() may block for several seconds per unique IP. Use --no-dns to skip.');
+            $logger->warning('DNS lookup enabled.');
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         if ($db === null) {
-            $logger->error('No database adapter available. Check bootstrap/configuration.');
-            $io->error('No database adapter available.');
+            $logger->error('No database adapter available.');
+            $io->error('No database adapter available. Check bootstrap/configuration.');
             return Command::FAILURE;
         }
+        $io->writeln('Database adapter: OK', OutputInterface::VERBOSITY_VERBOSE);
 
         $giReader = $this->openGeoIpReader($logger, $io);
         if ($giReader === null) {
             return Command::FAILURE;
         }
+        $io->writeln('GeoIP reader: OK', OutputInterface::VERBOSITY_VERBOSE);
 
         $botDetector = $this->prepareBotDetector($logger, $io);
         $totalCount  = $this->countPendingRows($db, $all, $date);
+
+        $io->writeln('Total records to process: ' . $totalCount);
         $logger->info('Total records to process: ' . $totalCount);
 
         if ($totalCount === 0) {
@@ -348,7 +366,7 @@ class ProcessStatTempCommand extends Command
             return ['processed' => 0, 'ignored' => 0, 'robots' => 0, 'errors' => 0];
         }
 
-        return $this->runInsertBatches($db, $all, $date, $giReader, $botDetector, $logger);
+        return $this->runInsertBatches($db, $all, $date, $giReader, $botDetector, $logger, $io);
     }
 
     /**
@@ -394,6 +412,9 @@ class ProcessStatTempCommand extends Command
     /**
      * Iterate batches in insert mode: classify, geo-lookup, write PAPER_STAT, delete STAT_TEMP.
      *
+     * -v  → batch progress line after each batch
+     * -vv → per-row classification output
+     *
      * @return array{processed: int, ignored: int, robots: int, errors: int}
      */
     private function runInsertBatches(
@@ -402,7 +423,8 @@ class ProcessStatTempCommand extends Command
         ?string $date,
         Reader $giReader,
         BotDetector $botDetector,
-        Logger $logger
+        Logger $logger,
+        SymfonyStyle $io
     ): array {
         $counters = ['processed' => 0, 'ignored' => 0, 'robots' => 0, 'errors' => 0];
 
@@ -426,20 +448,22 @@ class ProcessStatTempCommand extends Command
             }
 
             $batchNumber++;
-            $batch = $this->processBatchRows($rows, $giReader, $botDetector, $insertPrepared, $logger);
+            $batch = $this->processBatchRows($rows, $giReader, $botDetector, $insertPrepared, $logger, $io);
             foreach ($batch as $key => $delta) {
                 $counters[$key] += $delta;
             }
 
-            $logger->info(sprintf(
-                'Batch #%d (%d rows) — total: processed=%d, ignored=%d, robots=%d, errors=%d',
+            $progress = sprintf(
+                'Batch #%d (%d rows) — processed=%d, ignored=%d, robots=%d, errors=%d',
                 $batchNumber,
                 count($rows),
                 $counters['processed'],
                 $counters['ignored'],
                 $counters['robots'],
                 $counters['errors']
-            ));
+            );
+            $logger->info($progress);
+            $io->writeln($progress, OutputInterface::VERBOSITY_VERBOSE);
 
             $this->deleteBatch($deletePrepared, $all, $date, $logger);
         }
@@ -450,6 +474,8 @@ class ProcessStatTempCommand extends Command
     /**
      * Process one batch of rows: classify, geo-lookup, and insert human visits.
      *
+     * With -vv, outputs one line per row (same format as dry-run).
+     *
      * @param array<int, array<string, mixed>> $rows
      * @return array{processed: int, ignored: int, robots: int, errors: int}
      */
@@ -458,7 +484,8 @@ class ProcessStatTempCommand extends Command
         Reader $giReader,
         BotDetector $botDetector,
         mixed $insertPrepared,
-        Logger $logger
+        Logger $logger,
+        SymfonyStyle $io
     ): array {
         $counters = ['processed' => 0, 'ignored' => 0, 'robots' => 0, 'errors' => 0];
 
@@ -466,6 +493,9 @@ class ProcessStatTempCommand extends Command
             $ip        = (string) ($row['TIP'] ?? '');
             $userAgent = (string) ($row['HTTP_USER_AGENT'] ?? '');
             $outcome   = $this->classifyRow($ip, $userAgent, $botDetector);
+
+            // -vv: show per-row classification
+            $io->writeln($this->formatRowOutput($row, $botDetector), OutputInterface::VERBOSITY_VERY_VERBOSE);
 
             if ($outcome === 'invalid_ip') {
                 $counters['ignored']++;
