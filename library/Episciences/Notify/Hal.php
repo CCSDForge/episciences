@@ -1,15 +1,22 @@
 <?php
-use cottagelabs\coarNotifications\COARNotificationActor;
-use cottagelabs\coarNotifications\COARNotificationContext;
-use cottagelabs\coarNotifications\COARNotificationManager;
-use cottagelabs\coarNotifications\COARNotificationObject;
-use cottagelabs\coarNotifications\COARNotificationTarget;
-use cottagelabs\coarNotifications\COARNotificationURL;
-use cottagelabs\coarNotifications\orm\COARNotificationException;
-use cottagelabs\coarNotifications\orm\COARNotificationNoDatabaseException;
+
+declare(strict_types=1);
+
+use coarnotify\client\COARNotifyClient;
+use coarnotify\client\NotifyResponse;
+use coarnotify\exceptions\NotifyException;
+use coarnotify\patterns\announce_endorsement\AnnounceEndorsement;
+use coarnotify\patterns\announce_endorsement\AnnounceEndorsementContext;
+use coarnotify\patterns\announce_endorsement\AnnounceEndorsementItem;
+use coarnotify\core\notify\NotifyActor;
+use coarnotify\core\notify\NotifyObject;
+use coarnotify\core\notify\NotifyService;
+use Episciences\Notify\Notification;
+use Episciences\Notify\NotificationsRepository;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
+use Ramsey\Uuid\Uuid;
 
 
 class Episciences_Notify_Hal
@@ -18,6 +25,8 @@ class Episciences_Notify_Hal
     protected Episciences_Review $journal;
     protected Episciences_Paper $paper;
     protected Logger $logger;
+    private NotificationsRepository $repository;
+    private ?COARNotifyClient $client;
 
     /**
      * @return Episciences_Review
@@ -71,12 +80,20 @@ class Episciences_Notify_Hal
     /**
      * @param Episciences_Paper $paper
      * @param Episciences_Review $journal
+     * @param NotificationsRepository|null $repository
+     * @param COARNotifyClient|null $client
      */
-    public function __construct(Episciences_Paper $paper, Episciences_Review $journal)
-    {
+    public function __construct(
+        Episciences_Paper $paper,
+        Episciences_Review $journal,
+        ?NotificationsRepository $repository = null,
+        ?COARNotifyClient $client = null
+    ) {
         $this->setJournal($journal);
         $this->setPaper($paper);
         $this->initLogging();
+        $this->repository = $repository ?? NotificationsRepository::createFromConstants();
+        $this->client = $client;
     }
 
     /**
@@ -97,89 +114,103 @@ class Episciences_Notify_Hal
 
     /**
      * @return string
-     * @throws COARNotificationException
-     * @throws COARNotificationNoDatabaseException
      */
     public function announceEndorsement(): string
     {
-
-        $cn_logger = $this->getLogger();
         $cn_paper = $this->getPaper();
         $cn_journal = $this->getJournal();
+        $cn_logger = $this->getLogger();
 
-        $conn = ['host' => INBOX_DB_HOST,
-            'driver' => INBOX_DB_DRIVER,
-            'user' => INBOX_DB_USER,
-            'password' => INBOX_DB_PASSWORD,
-            'dbname' => INBOX_DB_NAME,
-            'port' => INBOX_DB_PORT,
-        ];
+        $notificationId = 'urn:uuid:' . Uuid::uuid4()->toString();
 
+        // Build the AnnounceEndorsement notification (disable stream validation on construct)
+        $announcement = new AnnounceEndorsement(null, false);
+        $announcement->setId($notificationId);
 
-        $coarNotificationManager = new COARNotificationManager(
-            $conn,
-            $cn_logger,
-            $cn_journal->getUrl(),
-            INBOX_URL,
-            5,
-            EPISCIENCES_USER_AGENT
-        );
+        // Sender: Episciences journal acting as Service
+        $actor = new NotifyActor();
+        $actor->setId($cn_journal->getUrl());
+        $actor->setName($cn_journal->getName());
 
+        // Origin: this journal's inbox
+        $origin = new NotifyService();
+        $origin->setId($cn_journal->getUrl());
+        $origin->setInbox(INBOX_URL);
 
-        // Sender Episciences
-        $actor = new COARNotificationActor(
-            $cn_journal->getUrl(),
-            $cn_journal->getName(),
-            'Service');
+        // Target: HAL repository
+        $target = new NotifyService();
+        $target->setId(NOTIFY_TARGET_HAL_URL);
+        $target->setInbox(NOTIFY_TARGET_HAL_INBOX);
 
+        // Object: the published paper page
         $paperUrl = sprintf('%s/%s', $cn_journal->getUrl(), $cn_paper->getPaperid());
-
-        // Article published
         if ($cn_paper->hasDoi()) {
-            $paperPid = $cn_paper->getDoi(true);
+            $paperPid = (string) $cn_paper->getDoi(true);
         } else {
             $paperPid = $paperUrl;
         }
 
-        $object = new COARNotificationObject(
-            $paperUrl,
-            $paperPid,
-            ['Page', 'sorg:WebPage']
+        $object = new NotifyObject();
+        $object->setId($paperUrl);
+        $object->setCiteAs($paperPid);
+        $object->setType(['Page', 'sorg:WebPage']);
+
+        // Context: the preprint in HAL
+        $inRepositoryUrl = (string) Episciences_Repositories::getDocUrl(
+            $cn_paper->getRepoid(),
+            $cn_paper->getIdentifier(),
+            $cn_paper->getVersion()
         );
-
-
-        // Preprint
-        $inRepositoryUrl = Episciences_Repositories::getDocUrl($cn_paper->getRepoid(), $cn_paper->getIdentifier(), $cn_paper->getVersion());
         $inRepositoryUrlPdf = sprintf('%s/pdf', $inRepositoryUrl);
         $inRepositoryPid = $inRepositoryUrl;
-        $url = new COARNotificationURL(
-            $inRepositoryUrlPdf,
-            'application/pdf',
-            ['Article', 'sorg:ScholarlyArticle']
-        );
 
+        $item = new AnnounceEndorsementItem();
+        $item->setId($inRepositoryUrlPdf);
+        $item->setType(['Article', 'sorg:ScholarlyArticle']);
+        $item->setMediaType('application/pdf');
 
-        $context = new COARNotificationContext(
-            $inRepositoryUrl,
-            $inRepositoryPid,
-            ['Announce,coar-notify:EndorsementAction'],
-            $url);
+        $context = new AnnounceEndorsementContext();
+        $context->setId($inRepositoryUrl);
+        $context->setCiteAs($inRepositoryPid);
+        $context->setItem($item->getDoc());
 
-        // Recipient HAL
-        $target = new COARNotificationTarget(
-            NOTIFY_TARGET_HAL_URL,
-            NOTIFY_TARGET_HAL_INBOX);
+        $announcement->setActor($actor);
+        $announcement->setOrigin($origin);
+        $announcement->setTarget($target);
+        $announcement->setObject($object);
+        $announcement->setContext($context);
 
+        // Capture the full JSON-LD payload before sending
+        $originalJson = json_encode($announcement->toJSONLD()) ?: '';
+
+        // Send via COAR Notify client
+        $status = Notification::STATUS_PENDING;
         try {
-            $notification = $coarNotificationManager->createOutboundNotification($actor, $object, $context, $target);
-        } catch (COARNotificationException|Exception $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
-            return '';
+            $client = $this->client ?? new COARNotifyClient(NOTIFY_TARGET_HAL_INBOX);
+            $response = $client->send($announcement);
+            $status = ($response->getAction() === NotifyResponse::CREATED) ? 201 : 202;
+        } catch (NotifyException $e) {
+            $cn_logger->error('COARNotify send failed: ' . $e->getMessage());
+            $status = Notification::STATUS_FAILED;
         }
 
-        $coarNotificationManager->announceEndorsement($notification);
+        // Persist the outbound notification
+        $notification = new Notification();
+        $notification->setId($notificationId);
+        $notification->setFromId($cn_journal->getUrl());
+        $notification->setToId(NOTIFY_TARGET_HAL_URL);
+        $notification->setType(json_encode(['Announce', 'coar-notify:EndorsementAction']) ?: '');
+        $notification->setStatus($status);
+        $notification->setOriginal($originalJson);
+        $notification->setDirection(Notification::DIRECTION_OUTBOUND);
 
-        return $notification->getId();
+        try {
+            $this->repository->save($notification);
+        } catch (\PDOException $e) {
+            $cn_logger->error('Failed to save notification: ' . $e->getMessage());
+        }
+
+        return $notificationId;
     }
 
 
