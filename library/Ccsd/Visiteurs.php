@@ -4,6 +4,10 @@ use GeoIp2\Database\Reader;
 use GeoIp2\Exception\AddressNotFoundException;
 use MaxMind\Db\Reader\InvalidDatabaseException;
 
+/**
+ * @deprecated Will be removed. Use Episciences\Paper\Visits\BotDetector for bot detection.
+ *             GeoIP lookup and domain resolution are now handled by ProcessStatTempCommand (stats:process).
+ */
 class Ccsd_Visiteurs
 {
     const TIMEOUT = 15; // nbre de seconde après lequel on considère que le visiteur est parti
@@ -331,6 +335,7 @@ class Ccsd_Visiteurs
      * Analyse l'IP et le User_Agent pour déterminer si il s'agit d'un robot
      *
      * @return bool
+     * @deprecated Use Episciences\Paper\Visits\BotDetector::isBot() instead.
      */
     public function isRobot()
     {
@@ -387,6 +392,7 @@ class Ccsd_Visiteurs
      * @param Reader|null $giReader
      * @param bool $closeGeoIpDb
      * @return array
+     * @deprecated GeoIP lookup is now handled by ProcessStatTempCommand (stats:process).
      */
     public function getLocalisation(Reader $giReader = null, bool $closeGeoIpDb = false): array
     {
