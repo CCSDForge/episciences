@@ -38,7 +38,7 @@ class Export
     const MODULES_JOURNAL_VIEWS_SCRIPTS_EXPORT = '/modules/journal/views/scripts/export/';
     public const FUNDER_NAME = 'funderName';
 
-    public static function getCrossref(Episciences_Paper $paper): string
+    public static function getCrossref(Episciences_Paper $paper, bool $forOai = false): string
     {
 
         $previousVersionsUrl = self::getPreviousVersionsUrls($paper);
@@ -60,6 +60,9 @@ class Export
         $view = new Zend_View();
         $view->addScriptPath(APPLICATION_PATH . self::MODULES_JOURNAL_VIEWS_SCRIPTS_EXPORT);
 
+        // When served via OAI-PMH, replace the personal depositor email with a generic address.
+        $emailAddress = $forOai ? 'noreply@' . DOMAIN : DOI_EMAIL_CONTACT;
+
         return self::compactXml($view->partial('crossref.phtml', [
             'titles' => $titleCollection,
             'abstracts' => $abstractCollection,
@@ -69,7 +72,8 @@ class Export
             'paper' => $paper,
             'doi' => $doi,
             'paperLanguage' => $paperLanguage,
-            'previousVersionsUrl' => $previousVersionsUrl
+            'previousVersionsUrl' => $previousVersionsUrl,
+            'emailAddress' => $emailAddress,
         ]));
 
     }
