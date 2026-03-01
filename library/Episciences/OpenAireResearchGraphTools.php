@@ -1,9 +1,11 @@
 <?php
+declare(strict_types=1);
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use Psr\Cache\CacheItemInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Episciences_OpenAireResearchGraphTools
@@ -31,11 +33,8 @@ class Episciences_OpenAireResearchGraphTools
 
     // JSON Configuration
     private const JSON_ENCODE_FLAGS = JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE;
-    private const JSON_DECODE_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR;
+    private const JSON_DECODE_FLAGS = JSON_THROW_ON_ERROR; // Only meaningful flags for json_decode
     private const EMPTY_RESULT_MARKER = [""];
-
-    // ORCID Format
-    private const ORCID_PATTERN = '/^\d{4}-\d{4}-\d{4}-\d{3}[0-9X]$/';
 
     // Array Keys for API and Database Data
     private const ARRAY_KEY_ORCID = '@orcid';              // ORCID key in API response
@@ -46,6 +45,7 @@ class Episciences_OpenAireResearchGraphTools
 
     // Singleton instances
     private static ?Logger $logger = null;
+    /** @var array<string, FilesystemAdapter> */
     private static array $cacheAdapters = [];
 
     /**
@@ -84,10 +84,9 @@ class Episciences_OpenAireResearchGraphTools
     }
 
     /**
-     * Get cache directory path using secure directory creation
+     * Get cache directory path
      *
      * @return string The cache directory path
-     * @throws RuntimeException If directory creation fails
      */
     private static function getCacheDirectory(): string
     {
@@ -135,14 +134,14 @@ class Episciences_OpenAireResearchGraphTools
     }
 
     /**
-     * Log message to file and optionally to console (if CLI)
+     * Log message to file and optionally to console (if CLI).
      *
-     * This method works in both web and console contexts.
-     * Handles exceptions gracefully with fallback to error_log.
+     * Adds a stdout handler once if not already present when running in CLI.
+     * A single log call is made so the message is never duplicated in the file.
      *
      * @param string $msg Message to log
-     * @param string $level Log level: 'debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'
-     * @param bool $alsoToConsole Whether to also output to console in CLI context (default: true)
+     * @param string $level Log level: 'debug', 'info', 'warning', 'error', etc.
+     * @param bool $alsoToConsole Whether to also output to stdout in CLI context
      * @return void
      */
     private static function log(string $msg, string $level = 'info', bool $alsoToConsole = true): void
@@ -150,12 +149,7 @@ class Episciences_OpenAireResearchGraphTools
         try {
             $logger = self::getLogger();
 
-            // Log to file
-            $logger->$level($msg);
-
-            // Also log to console if CLI and requested
             if ($alsoToConsole && PHP_SAPI === 'cli') {
-                // Add console handler temporarily if not already present
                 $hasConsoleHandler = false;
                 foreach ($logger->getHandlers() as $handler) {
                     if ($handler instanceof StreamHandler && $handler->getUrl() === 'php://stdout') {
@@ -163,40 +157,30 @@ class Episciences_OpenAireResearchGraphTools
                         break;
                     }
                 }
-
                 if (!$hasConsoleHandler) {
-                    $consoleHandler = new StreamHandler('php://stdout', Logger::DEBUG);
-                    $logger->pushHandler($consoleHandler);
-                    $logger->$level($msg);
-                    $logger->popHandler();
+                    $logger->pushHandler(new StreamHandler('php://stdout', Logger::DEBUG));
                 }
             }
+
+            $logger->$level($msg);
         } catch (Exception $e) {
-            // Fallback to error_log if Monolog fails
-            error_log("Monolog failed: " . $e->getMessage() . " | Original message: " . $msg);
+            error_log('Monolog failed: ' . $e->getMessage() . ' | Original message: ' . $msg);
         }
     }
 
     /**
-     * Decode JSON using Episciences_Tools validation
+     * Decode JSON string into an associative array (or object).
+     *
+     * Uses json_decode directly with JSON_THROW_ON_ERROR — no pre-validation needed.
      *
      * @param string $json The JSON string to decode
      * @param bool $associative Return associative array instead of object
      * @return mixed The decoded JSON data
      * @throws JsonException If JSON is invalid
      */
-    private static function decodeJson(string $json, bool $associative = true)
+    private static function decodeJson(string $json, bool $associative = true): mixed
     {
-        if (!Episciences_Tools::isJson($json)) {
-            throw new JsonException('Invalid JSON data');
-        }
-
-        return json_decode(
-            $json,
-            $associative,
-            self::JSON_MAX_DEPTH,
-            self::JSON_DECODE_FLAGS
-        );
+        return json_decode($json, $associative, self::JSON_MAX_DEPTH, self::JSON_DECODE_FLAGS);
     }
 
     /**
@@ -205,7 +189,7 @@ class Episciences_OpenAireResearchGraphTools
      * @param mixed $data The data to encode
      * @return string The JSON string
      */
-    private static function encodeJson($data): string
+    private static function encodeJson(mixed $data): string
     {
         return json_encode($data, self::JSON_ENCODE_FLAGS);
     }
@@ -239,11 +223,10 @@ class Episciences_OpenAireResearchGraphTools
      * @param mixed $cachedData The cached data to check
      * @return bool True if the data is an empty result marker
      */
-    private static function isEmptyResult($cachedData): bool
+    private static function isEmptyResult(mixed $cachedData): bool
     {
-        return $cachedData === self::EMPTY_RESULT_MARKER || $cachedData === [""];
+        return is_array($cachedData) && $cachedData === self::EMPTY_RESULT_MARKER;
     }
-
 
     /**
      * Check and cache OpenAIRE global info for a DOI
@@ -257,12 +240,12 @@ class Episciences_OpenAireResearchGraphTools
      * @throws JsonException
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function checkOpenAireGlobalInfoByDoi(string $doi, $paperId): void
+    public static function checkOpenAireGlobalInfoByDoi(string $doi, int $paperId): void
     {
         // Validate DOI first
         $validatedDoi = self::validateDoi($doi);
 
-        // Ensure metadata directory exists (security: use proper permissions)
+        // Ensure metadata directory exists
         $dir = CACHE_PATH_METADATA . 'openAireResearchGraph/';
         if (!file_exists($dir)) {
             $result = Episciences_Tools::recursiveMkdir($dir);
@@ -271,27 +254,21 @@ class Episciences_OpenAireResearchGraphTools
             }
         }
 
-        // Use helper methods for cache operations
         $cacheKey = self::generateCacheKey($validatedDoi, '.json');
         $cache = self::getCacheAdapter(self::CACHE_POOL_OARG);
         $cacheItem = $cache->getItem($cacheKey);
         $cacheItem->expiresAfter(self::ONE_MONTH);
 
-        // Only call API if cache miss
         if (!$cacheItem->isHit()) {
             $client = new Client();
             $apiUrl = self::buildApiUrl($validatedDoi);
 
-            // Log API URL to both file and console
             self::log("Calling OpenAIRE API: {$apiUrl}", 'info');
 
             $openAireResponse = self::callOpenAireApi($client, $validatedDoi);
 
             try {
-                // Use helper method for JSON decoding
                 $decodedResponse = self::decodeJson($openAireResponse);
-
-                // Use helper method for JSON encoding
                 $cacheItem->set(self::encodeJson($decodedResponse));
                 $cache->save($cacheItem);
             } catch (JsonException $e) {
@@ -302,7 +279,6 @@ class Episciences_OpenAireResearchGraphTools
                     $e->getMessage()
                 );
 
-                // Log error to both file and console
                 self::log($errorMsg, 'error');
 
                 // OpenAIRE can return malformed JSON, cache empty result to avoid repeated failures
@@ -328,18 +304,18 @@ class Episciences_OpenAireResearchGraphTools
         try {
             $response = $client->get($apiUrl, [
                 'headers' => [
-                    'User-Agent' => self::API_USER_AGENT,
+                    'User-Agent'   => self::API_USER_AGENT,
                     'Content-Type' => 'application/json',
-                    'Accept' => 'application/json'
+                    'Accept'       => 'application/json',
                 ],
-                'timeout' => self::API_TIMEOUT_SECONDS,
+                'timeout'         => self::API_TIMEOUT_SECONDS,
                 'allow_redirects' => [
-                    'max' => self::API_MAX_REDIRECTS,
-                    'strict' => true,
-                    'referer' => true,
-                    'protocols' => ['https'] // Security: only allow HTTPS redirects
+                    'max'       => self::API_MAX_REDIRECTS,
+                    'strict'    => true,
+                    'referer'   => true,
+                    'protocols' => ['https'], // Security: only allow HTTPS redirects
                 ],
-                'verify' => true // Security: verify SSL certificates
+                'verify' => true, // Security: verify SSL certificates
             ]);
 
             $responseBody = $response->getBody()->getContents();
@@ -351,13 +327,11 @@ class Episciences_OpenAireResearchGraphTools
                     self::MAX_RESPONSE_SIZE,
                     $doi
                 ));
-                return ''; // Return empty response for oversized data
+                return '';
             }
-
         } catch (GuzzleException $e) {
             $errorMsg = 'OpenAIRE API error: ' . $e->getMessage();
             self::logErrorMsg($errorMsg);
-            trigger_error($errorMsg);
         }
 
         // Rate limiting: wait 1 second between API calls
@@ -367,13 +341,13 @@ class Episciences_OpenAireResearchGraphTools
     }
 
     /**
-     * Log message using singleton logger instance
+     * Log a message at info level using the singleton logger instance.
      *
      * @param string $msg The message to log
      * @return void
      * @throws Exception
      */
-    public static function logErrorMsg($msg): void
+    public static function logErrorMsg(string $msg): void
     {
         self::getLogger()->info($msg);
     }
@@ -382,11 +356,11 @@ class Episciences_OpenAireResearchGraphTools
      * Get global OpenAIRE Research Graph cache item for a DOI
      *
      * @param string $doi The DOI to get cache for
-     * @return mixed The cache item
+     * @return CacheItemInterface The cache item
      * @throws \Psr\Cache\InvalidArgumentException
      * @throws InvalidArgumentException If DOI is invalid
      */
-    public static function getsGlobalOARGCache(string $doi)
+    public static function getsGlobalOARGCache(string $doi): CacheItemInterface
     {
         $validatedDoi = self::validateDoi($doi);
         $cacheKey = self::generateCacheKey($validatedDoi, '.json');
@@ -398,7 +372,7 @@ class Episciences_OpenAireResearchGraphTools
      * Get creator cache data for a DOI
      *
      * @param string $doi The DOI to get cache for
-     * @return array [cache adapter, cache key, cache item]
+     * @return array{0: FilesystemAdapter, 1: string, 2: CacheItemInterface}
      * @throws \Psr\Cache\InvalidArgumentException
      * @throws InvalidArgumentException If DOI is invalid
      */
@@ -417,8 +391,8 @@ class Episciences_OpenAireResearchGraphTools
      * The API sometimes returns a single object instead of an array.
      * This method ensures we always work with an array format.
      *
-     * @param array $fileFound The decoded API response
-     * @return array Normalized array of author data
+     * @param array<mixed> $fileFound The decoded API response
+     * @return array<mixed> Normalized array of author data
      */
     private static function normalizeApiData(array $fileFound): array
     {
@@ -431,15 +405,15 @@ class Episciences_OpenAireResearchGraphTools
     /**
      * Process a single author to find and update ORCID
      *
-     * @param array $author Author data by reference (will be modified if ORCID found)
+     * @param array<string, mixed> $author Author data by reference (will be modified if ORCID found)
      * @param string $fullname Author's full name from database
-     * @param array $apiData Normalized API data array
+     * @param array<mixed> $apiData Normalized API data array
      * @param int $paperId Paper ID for logging
-     * @param int $recordKey Database record key for logging
+     * @param int|string $recordKey Database record key for logging
      * @return bool True if ORCID was added, false otherwise
      * @throws Exception
      */
-    private static function processAuthorOrcid(array &$author, string $fullname, array $apiData, int $paperId, int $recordKey): bool
+    private static function processAuthorOrcid(array &$author, string $fullname, array $apiData, int $paperId, int|string $recordKey): bool
     {
         if (empty($fullname) || !empty($author[self::ARRAY_KEY_ORCID_DB])) {
             return false;
@@ -461,8 +435,8 @@ class Episciences_OpenAireResearchGraphTools
     /**
      * Update all author records for a paper with ORCID data from API
      *
-     * @param array $authorRecords Array of author records from database
-     * @param array $apiData Normalized API data array
+     * @param array<int|string, mixed> $authorRecords Array of author records from database
+     * @param array<mixed> $apiData Normalized API data array
      * @param int $paperId Paper ID
      * @return int Number of affected rows/authors updated
      * @throws JsonException
@@ -472,12 +446,10 @@ class Episciences_OpenAireResearchGraphTools
         $affectedRow = 0;
 
         foreach ($authorRecords as $key => $authorInfo) {
-            // Decode author JSON from database using helper method
             $decodeAuthor = self::decodeJson($authorInfo[self::ARRAY_KEY_AUTHORS]);
             $originalAuthorsArray = $decodeAuthor;
             $recordUpdated = false;
 
-            // Loop through each author to find and add ORCIDs
             foreach ($decodeAuthor as $authorIndex => $singleAuthor) {
                 $authorFullName = $singleAuthor[self::ARRAY_KEY_FULLNAME] ?? '';
 
@@ -486,7 +458,6 @@ class Episciences_OpenAireResearchGraphTools
                 }
             }
 
-            // Update database if changes were made
             if ($recordUpdated && $decodeAuthor !== $originalAuthorsArray) {
                 self::insertAuthors($decodeAuthor, $paperId, $key);
                 $affectedRow++;
@@ -501,33 +472,28 @@ class Episciences_OpenAireResearchGraphTools
      *
      * CRITICAL FIX: Original had inverted cache logic - was returning early on cache HIT
      *
-     * @param mixed $setsOpenAireCreator The cache item containing creator data
+     * @param CacheItemInterface $setsOpenAireCreator The cache item containing creator data
      * @param int $paperId The paper ID to update
      * @return int Number of affected rows/authors updated
      * @throws JsonException|Exception
      */
-    public static function insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId): int
+    public static function insertOrcidAuthorFromOARG(CacheItemInterface $setsOpenAireCreator, int $paperId): int
     {
-        // Early return if cache miss
         if (!$setsOpenAireCreator->isHit()) {
             return 0;
         }
 
         try {
-            // Decode and validate API data
             $fileFound = self::decodeJson($setsOpenAireCreator->get());
 
             if (self::isEmptyResult($fileFound)) {
                 return 0;
             }
 
-            // Normalize API data and get author records
             $apiData = self::normalizeApiData($fileFound);
             $authorRecords = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
 
-            // Update all authors with ORCID data
             return self::updatePaperAuthors($authorRecords, $apiData, $paperId);
-
         } catch (JsonException $e) {
             self::logErrorMsg("JSON decode error in insertOrcidAuthorFromOARG: " . $e->getMessage());
             return 0;
@@ -537,24 +503,20 @@ class Episciences_OpenAireResearchGraphTools
     /**
      * Find ORCID for a specific author from API data
      *
-     * This method searches through the OpenAire Research Graph API data
-     * to find a matching ORCID for the given author name.
-     * Reduced logging noise by only logging successful matches and final result.
+     * Searches through the OpenAire Research Graph API data to find a matching ORCID
+     * for the given author name.
      *
      * @param string $needleFullName The author's full name from database
-     * @param array $reformatFileFound The formatted API data array
+     * @param array<mixed> $reformatFileFound The formatted API data array
      * @param int $authorIndex The index of the author being processed
      * @return string|null The ORCID if found, null otherwise
      * @throws Exception
      */
     private static function findOrcidForAuthor(string $needleFullName, array $reformatFileFound, int $authorIndex): ?string
     {
-        // Loop through each author record from the API
         foreach ($reformatFileFound as $authorInfoFromApi) {
-            // Initialize match flag
             $isMatch = false;
 
-            // Check if the author name appears anywhere in the API data
             if (array_search($needleFullName, $authorInfoFromApi, true) !== false ||
                 array_search(Episciences_Tools::replaceAccents($needleFullName), $authorInfoFromApi, true) !== false) {
                 $isMatch = true;
@@ -563,39 +525,32 @@ class Episciences_OpenAireResearchGraphTools
                 $isMatch = true;
             }
 
-            // If found a match, check for ORCID
             if ($isMatch) {
-                // Extract and return the ORCID if it exists
                 if (array_key_exists(self::ARRAY_KEY_ORCID, $authorInfoFromApi)) {
                     $orcid = Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($authorInfoFromApi[self::ARRAY_KEY_ORCID]);
 
-                    // Only log successful ORCID extraction (reduced noise)
                     $apiName = $authorInfoFromApi[self::ARRAY_KEY_API_NAME] ?? 'UNKNOWN';
                     self::logErrorMsg("ORCID match: $orcid for author '$needleFullName' matched with API: '$apiName'");
 
                     return $orcid;
                 }
-                // Match found but no ORCID in data - continue searching
             }
         }
 
-        // No ORCID found after checking all API records - log only once per author
-        // (Reduced from logging every failed comparison)
         return null;
     }
 
     /**
      * Insert or update author information in database
      *
-     * @param array $decodeAuthor The decoded author data array
+     * @param array<mixed> $decodeAuthor The decoded author data array
      * @param int $paperId The paper ID
-     * @param int $key The authors record ID
+     * @param int|string $key The authors record ID
      * @return int Number of affected rows
      */
-    public static function insertAuthors($decodeAuthor, $paperId, $key): int
+    public static function insertAuthors(array $decodeAuthor, int $paperId, int|string $key): int
     {
         $newAuthorInfos = new Episciences_Paper_Authors();
-        // Use helper method for JSON encoding
         $newAuthorInfos->setAuthors(self::encodeJson($decodeAuthor));
         $newAuthorInfos->setPaperId($paperId);
         $newAuthorInfos->setAuthorsId($key);
@@ -605,13 +560,13 @@ class Episciences_OpenAireResearchGraphTools
     /**
      * Put creator data into cache
      *
-     * @param array|null $decodeOpenAireResp The decoded OpenAIRE API response
+     * @param array<string, mixed>|null $decodeOpenAireResp The decoded OpenAIRE API response
      * @param string $doi The DOI identifier
      * @return void
      * @throws JsonException If JSON encoding fails
      * @throws InvalidArgumentException|\Psr\Cache\InvalidArgumentException
      */
-    public static function putCreatorInCache($decodeOpenAireResp, string $doi): void
+    public static function putCreatorInCache(?array $decodeOpenAireResp, string $doi): void
     {
         $validatedDoi = self::validateDoi($doi);
         $cacheKey = self::generateCacheKey($validatedDoi, self::CACHE_FILE_SUFFIX_CREATOR);
@@ -619,47 +574,40 @@ class Episciences_OpenAireResearchGraphTools
         $cacheItem = $cache->getItem($cacheKey);
         $cacheItem->expiresAfter(self::ONE_MONTH);
 
-        // Check if valid response with creator data
         if (!self::isEmptyResult($decodeOpenAireResp) &&
-            !is_null($decodeOpenAireResp) &&
+            $decodeOpenAireResp !== null &&
             !empty($decodeOpenAireResp['response']['results'])) {
 
             if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
                 $creatorArrayOpenAire = $decodeOpenAireResp['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['creator'];
                 $cacheItem->set(self::encodeJson($creatorArrayOpenAire));
                 $cache->save($cacheItem);
+                return;
             }
-        } else {
-            // Cache empty result marker
-            $cacheItem->set(self::createEmptyResultMarker());
-            $cache->save($cacheItem);
         }
+
+        $cacheItem->set(self::createEmptyResultMarker());
+        $cache->save($cacheItem);
     }
 
     /**
      * @param string $needleFullName The author's full name to search for
-     * @param array $authorInfoFromApi The author data from API
-     * @param array $decodeAuthor The decoded author array from database
+     * @param array<string, mixed> $authorInfoFromApi The author data from API
+     * @param array<mixed> $decodeAuthor The decoded author array from database
      * @param int|string $keyDbJson The key/index in the author array
      * @param int $flagNewOrcid Flag indicating if new ORCID was found
-     * @return array [updated author array, updated flag]
+     * @return array{0: array<mixed>, 1: int}
      * @throws Exception
-     * @deprecated This method is deprecated and will be removed in a future version.
-     *             Use findOrcidForAuthor() instead, which provides better ORCID validation
+     * @deprecated Use findOrcidForAuthor() instead, which provides better ORCID validation
      *             and reduced logging noise.
-     *
      */
-    public static function getOrcidApiForDb($needleFullName, $authorInfoFromApi, $decodeAuthor, $keyDbJson, int $flagNewOrcid): array
+    public static function getOrcidApiForDb(string $needleFullName, array $authorInfoFromApi, array $decodeAuthor, int|string $keyDbJson, int $flagNewOrcid): array
     {
         trigger_error(
             'getOrcidApiForDb() is deprecated. Use findOrcidForAuthor() instead.',
             E_USER_DEPRECATED
         );
 
-        /*
-         * FIRST IF: Raw string searching
-         * SECOND IF: Replace accents in both fullnames and compare
-         */
         $msgLogAuthorFound = "Author Found \n Searching :\n" . print_r($needleFullName, true) . "\n API: \n" . print_r($authorInfoFromApi, true) . " DB DATA:\n " . print_r($decodeAuthor, true);
 
         if (array_search($needleFullName, $authorInfoFromApi, true) !== false ||
@@ -671,7 +619,6 @@ class Episciences_OpenAireResearchGraphTools
                 $decodeAuthor[$keyDbJson][self::ARRAY_KEY_ORCID_DB] = Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($authorInfoFromApi[self::ARRAY_KEY_ORCID]);
                 $flagNewOrcid = 1;
             }
-
         } elseif (isset($authorInfoFromApi[self::ARRAY_KEY_API_NAME]) &&
                   Episciences_Tools::replaceAccents($needleFullName) === Episciences_Tools::replaceAccents($authorInfoFromApi[self::ARRAY_KEY_API_NAME])) {
 
@@ -686,7 +633,6 @@ class Episciences_OpenAireResearchGraphTools
             self::logErrorMsg("No matching : API " . $apiName . " #DB# " . $needleFullName);
         }
 
-        // Log ORCID search result
         if (!isset($decodeAuthor[$keyDbJson][self::ARRAY_KEY_ORCID_DB])) {
             self::logErrorMsg("ORCID not found \n Searching :\n" . print_r($needleFullName, true) . "\n API: \n" . print_r($authorInfoFromApi, true) . " DB DATA:\n " . print_r($decodeAuthor, true));
         }
@@ -701,22 +647,22 @@ class Episciences_OpenAireResearchGraphTools
     /**
      * Put funding data into cache
      *
-     * @param array|null $decodeOpenAireResp The decoded OpenAIRE API response
+     * @param array<string, mixed>|null $decodeOpenAireResp The decoded OpenAIRE API response
      * @param string $doi The DOI identifier
      * @return void
      * @throws JsonException If JSON encoding fails
      * @throws InvalidArgumentException|\Psr\Cache\InvalidArgumentException
      */
-    public static function putFundingsInCache($decodeOpenAireResp, string $doi): void
+    public static function putFundingsInCache(?array $decodeOpenAireResp, string $doi): void
     {
         $validatedDoi = self::validateDoi($doi);
         $cacheKey = self::generateCacheKey($validatedDoi, self::CACHE_FILE_SUFFIX_FUNDING);
         $cache = self::getCacheAdapter(self::CACHE_POOL_FUNDING);
         $cacheItem = $cache->getItem($cacheKey);
+        $cacheItem->expiresAfter(self::ONE_MONTH);
 
-        // Check if valid response with funding data
         if (!self::isEmptyResult($decodeOpenAireResp) &&
-            !is_null($decodeOpenAireResp) &&
+            $decodeOpenAireResp !== null &&
             !is_null($decodeOpenAireResp['response']['results'])) {
 
             if (array_key_exists('result', $decodeOpenAireResp['response']['results'])) {
@@ -733,7 +679,6 @@ class Episciences_OpenAireResearchGraphTools
             }
         }
 
-        // Cache empty result marker for all other cases
         $cacheItem->set(self::createEmptyResultMarker());
         $cache->save($cacheItem);
     }
@@ -742,7 +687,7 @@ class Episciences_OpenAireResearchGraphTools
      * Get funding cache data for a DOI
      *
      * @param string $doi The DOI to get cache for
-     * @return array [cache adapter, cache key, cache item]
+     * @return array{0: FilesystemAdapter, 1: string, 2: CacheItemInterface}
      * @throws \Psr\Cache\InvalidArgumentException
      * @throws InvalidArgumentException If DOI is invalid
      */
@@ -755,5 +700,4 @@ class Episciences_OpenAireResearchGraphTools
         $cacheItem->expiresAfter(self::ONE_MONTH);
         return [$cache, $cacheKey, $cacheItem];
     }
-
 }

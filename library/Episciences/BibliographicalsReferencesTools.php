@@ -1,45 +1,55 @@
 <?php
-use GuzzleHttp\Client;
+declare(strict_types=1);
 
+use Episciences\Api\BiblioRefApiClient;
+use Episciences\AppRegistry;
+use GuzzleHttp\Client;
+use Psr\Log\NullLogger;
+use Symfony\Component\Cache\Adapter\NullAdapter;
+
+/**
+ * Static facade for BiblioRefApiClient.
+ *
+ * Preserves the legacy static-method API used by callers in Paper.php and Paper/Export.php.
+ * Use setClient() to inject a test double in unit tests.
+ */
 class Episciences_BibliographicalsReferencesTools
 {
-    public static function getBibRefFromApi($pdf): array
-    {
-        $client = new Client();
-        $apiEpiBibCitation = EPISCIENCES_BIBLIOREF['URL'];
-        try {
-            $response = $client->get($apiEpiBibCitation . "/visualize-citations?url=" . $pdf,['verify' => EPISCIENCES_BIBLIOREF["SSL_VERIFY"]])->getBody()->getContents();
-            return self::referencesToArray($response);
-        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
-            return [];
-        }
-    }
-    public static function referencesToArray(string $rawCitations){
-        try {
-            $rawCitations = json_decode($rawCitations, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            return [];
-        }
-        $formattedCitations = [];
-        if (!array_key_exists("message",$rawCitations)) {
-            $i = 0;
-            foreach ($rawCitations as $citation) {
-                $reference = json_decode($citation['ref'], true, 512, JSON_THROW_ON_ERROR);
-                foreach ($reference as $key => $refInfo) {
-                    if ($key === "raw_reference") {
-                        $formattedCitations[$i]['unstructured_citation'] = $refInfo;
-                    }
-                    if ($key === 'doi') {
-                        $formattedCitations[$i]['doi'] = $refInfo;
-                    }
-                }
-                if (array_key_exists('csl',$citation)){
-                    $formattedCitations[$i]['csl'] = $citation['csl'];
-                }
-                $i++;
+    private static ?BiblioRefApiClient $client = null;
 
-            }
+    /**
+     * Inject a pre-configured client (for tests or custom setups).
+     */
+    public static function setClient(?BiblioRefApiClient $client): void
+    {
+        self::$client = $client;
+    }
+
+    private static function getClient(): BiblioRefApiClient
+    {
+        if (self::$client === null) {
+            $logger = AppRegistry::getMonoLogger() ?? new NullLogger();
+            $baseUrl = (string) EPISCIENCES_BIBLIOREF['URL'];
+            $sslVerify = (bool) EPISCIENCES_BIBLIOREF['SSL_VERIFY'];
+            self::$client = new BiblioRefApiClient(new Client(), new NullAdapter(), $logger, $baseUrl, $sslVerify);
         }
-        return $formattedCitations;
+
+        return self::$client;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public static function getBibRefFromApi(string $pdf): array
+    {
+        return self::getClient()->fetchBibRef($pdf);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public static function referencesToArray(string $rawCitations): array
+    {
+        return self::getClient()->parseResponse($rawCitations);
     }
 }
