@@ -2307,6 +2307,39 @@ class Episciences_PapersManager
     }
 
     /**
+     * Batch-loads multiple papers by their Solr document IDs in a single DB query,
+     * avoiding the N+1 problem that arises when listing papers one by one.
+     *
+     * Revision deadlines and conflicts are intentionally omitted: they are
+     * editorial-workflow data not required during metadata export (e.g. OAI-PMH).
+     *
+     * @param  int[] $docIds
+     * @return array<int, Episciences_Paper> map keyed by docId; absent IDs are omitted
+     */
+    public static function getByDocIds(array $docIds, bool $withxsl = false): array
+    {
+        if (empty($docIds)) {
+            return [];
+        }
+
+        $db   = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $rows = $db->select()
+            ->from(T_PAPERS)
+            ->where('DOCID IN (?)', $docIds)
+            ->query()
+            ->fetchAll();
+
+        $papers = [];
+        foreach ($rows as $data) {
+            $paper = new Episciences_Paper(array_merge($data, ['withxsl' => $withxsl]));
+            $paper->loadDataDescriptors();
+            $papers[(int) $data['DOCID']] = $paper;
+        }
+
+        return $papers;
+    }
+
+    /**
      * @param $aid
      * @param array $params
      * @return Ccsd_Form

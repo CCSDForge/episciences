@@ -85,6 +85,17 @@ abstract class Ccsd_Oai_Server
         }
         $this->_params = array_map('rawurldecode', $this->_params);
 
+        // Handle &amp; in query string that PHP doesn't decode in keys (common mistake when copying from XML/XSL)
+        foreach ($this->_params as $key => $val) {
+            if (str_starts_with($key, 'amp;')) {
+                $newKey = substr($key, 4);
+                if (!isset($this->_params[$newKey])) {
+                    $this->_params[$newKey] = $val;
+                }
+                unset($this->_params[$key]);
+            }
+        }
+
         if (array_key_exists('verb', $this->_params) && is_string($this->_params['verb'])) {
             foreach ($this->_params as $key => $param) {
                 if (is_string($param) && !empty($param)) {
@@ -394,6 +405,9 @@ abstract class Ccsd_Oai_Server
                 if ($format === 'oai_openaire') {
                     $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:datacite', 'http://datacite.org/schema/kernel-4');
                 }
+                if ($format === 'crossref') {
+                    $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:crossref', 'http://www.crossref.org/schema/5.3.1');
+                }
                 $data = $this->_xml->createDocumentFragment();
                 $data->appendXML($rec['metadata']);
                 $metadata->appendChild($data);
@@ -554,11 +568,14 @@ abstract class Ccsd_Oai_Server
                         if ($format === 'oai_openaire') {
                             $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:datacite', 'http://datacite.org/schema/kernel-4');
                         }
+                        if ($format === 'crossref') {
+                            $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:crossref', 'http://www.crossref.org/schema/5.3.1');
+                        }
                         $data = $this->_xml->createDocumentFragment();
                         $data->appendXML($document['metadata']);
                         $metadata->appendChild($data);
                         $record->appendChild($metadata);
-                    } else if ($document) {
+                    } else if (is_string($document)) {
                         // Juste une chaine XML (resumptionToken) ou XML deja serialise
                         $str = $this->_xml->createDocumentFragment();
                         $str->appendXML($document);
