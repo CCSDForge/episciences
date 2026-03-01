@@ -431,17 +431,13 @@ zbjats-zip: ## Download PDF + zbJATS XML per volume and create a ZIP archive (re
 
 # --- Stats / GeoIP -------------------------------------------------------------
 
-update-geoip: ## Download or update GeoLite2-City.mmdb (requires MAXMIND_LICENSE_KEY=your_key)
-	# Get a free license key at: https://www.maxmind.com/en/geolite2/signup
-	# Then set GEO_IP.DATABASE_PATH in config/pwd.json to the full path of scripts/geoip/
-	@if [ -z "$(MAXMIND_LICENSE_KEY)" ]; then \
-		echo "Error: MAXMIND_LICENSE_KEY is required."; \
-		echo "Usage: make update-geoip MAXMIND_LICENSE_KEY=your_license_key"; \
-		echo ""; \
-		echo "Get a free key at: https://www.maxmind.com/en/geolite2/signup"; \
-		exit 1; \
-	fi
-	@bash scripts/update-geoip.sh "$(MAXMIND_LICENSE_KEY)"
+update-geoip: ## Download or update GeoLite2-City.mmdb (credentials from config/pwd.json GEO_IP section; optional: force=1 dry-run=1)
+	# Set GEO_IP.ACCOUNT_ID and GEO_IP.LICENSE_KEY in config/pwd.json
+	# Get a free account at: https://www.maxmind.com/en/geolite2/signup
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php geoip:update \
+		$(if $(filter 1,$(force)),--force) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
 
 stats-update-robots-list: ## Download the COUNTER Robots list for bot detection (optional: dry-run=1 force=1)
 	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php stats:update-robots-list [-q]

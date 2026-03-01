@@ -179,10 +179,14 @@ class ProcessStatTempCommand extends Command
     /**
      * Classify a STAT_TEMP row's IP and User-Agent.
      * Returns 'invalid_ip', 'bot', or 'human'.
+     *
+     * IPv6 addresses are treated as invalid: they pass FILTER_VALIDATE_IP but
+     * cannot be anonymized with the 255.255.0.0 mask, so they would all be
+     * stored as 127.0.0.1 in PAPER_STAT and collapse into a single counter row.
      */
     public function classifyRow(string $ip, string $userAgent, BotDetector $botDetector): string
     {
-        if (filter_var($ip, FILTER_VALIDATE_IP) === false) {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
             return 'invalid_ip';
         }
         return $botDetector->isBot($userAgent) ? 'bot' : 'human';
@@ -351,7 +355,7 @@ class ProcessStatTempCommand extends Command
 
     private function countPendingRows(Zend_Db_Adapter_Abstract $db, bool $all, ?string $date, bool $upTo): int
     {
-        $select = $db->select()->from('STAT_TEMP', new Zend_Db_Expr("COUNT('*')"));
+        $select = $db->select()->from('STAT_TEMP', new Zend_Db_Expr('COUNT(*)'));
         if (!$all && $date !== null) {
             if ($upTo) {
                 $select->where("DATE(DHIT) <= ?", $date);
@@ -365,7 +369,7 @@ class ProcessStatTempCommand extends Command
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function fetchBatch(Zend_Db_Adapter_Abstract $db, bool $all, ?string $date, bool $upTo): array
+    private function fetchBatch(Zend_Db_Adapter_Abstract $db, bool $all, ?string $date, bool $upTo, int $offset = 0): array
     {
         $select = $db->select()->from('STAT_TEMP', new Zend_Db_Expr('*, INET_NTOA(IP) as TIP'));
         if (!$all && $date !== null) {
@@ -375,7 +379,7 @@ class ProcessStatTempCommand extends Command
                 $select->where("DATE(DHIT) = ?", $date);
             }
         }
-        $select->order('DHIT ASC')->limit(self::STEP_OF_LINES);
+        $select->order('DHIT ASC')->limit(self::STEP_OF_LINES, $offset);
         return $db->fetchAll($select);
     }
 
@@ -405,6 +409,9 @@ class ProcessStatTempCommand extends Command
 
     /**
      * Iterate batches in dry-run mode: output one line per row, no DB writes.
+     *
+     * Uses an offset counter so each fetchBatch page advances through the result
+     * set without deleting rows (deletion is skipped in dry-run mode).
      */
     private function runDryRunBatches(
         Zend_Db_Adapter_Abstract $db,
@@ -414,14 +421,16 @@ class ProcessStatTempCommand extends Command
         BotDetector $botDetector,
         SymfonyStyle $io
     ): void {
+        $offset = 0;
         while (true) {
-            $rows = $this->fetchBatch($db, $all, $date, $upTo);
+            $rows = $this->fetchBatch($db, $all, $date, $upTo, $offset);
             if (empty($rows)) {
                 break;
             }
             foreach ($rows as $row) {
                 $io->writeln($this->formatRowOutput($row, $botDetector));
             }
+            $offset += count($rows);
         }
     }
 
@@ -497,7 +506,7 @@ class ProcessStatTempCommand extends Command
             $logger->info($progress);
             $io->writeln($progress, OutputInterface::VERBOSITY_VERBOSE);
 
-            $this->deleteBatch($deletePrepared, $all, $date, $logger);
+            $this->deleteBatch($deletePrepared, $all, $date, $logger, $batch['errors']);
         }
 
         return $counters;
@@ -560,9 +569,22 @@ class ProcessStatTempCommand extends Command
 
     /**
      * Execute the DELETE batch statement, logging any failure.
+     *
+     * When $errorCount > 0, the delete is intentionally skipped: rows that
+     * failed to INSERT must remain in STAT_TEMP so they are retried on the
+     * next cron run. Retrying is safe because the INSERT uses ON DUPLICATE KEY
+     * UPDATE, so successfully inserted rows simply increment their counter.
      */
-    private function deleteBatch(mixed $deletePrepared, bool $all, ?string $date, Logger $logger): void
+    private function deleteBatch(mixed $deletePrepared, bool $all, ?string $date, Logger $logger, int $errorCount = 0): void
     {
+        if ($errorCount > 0) {
+            $logger->warning(sprintf(
+                'Skipping batch delete — %d insert error(s) occurred. Rows will be retried on the next run.',
+                $errorCount
+            ));
+            return;
+        }
+
         try {
             $all
                 ? $deletePrepared->execute()

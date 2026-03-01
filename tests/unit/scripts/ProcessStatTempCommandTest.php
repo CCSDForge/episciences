@@ -235,6 +235,15 @@ class ProcessStatTempCommandTest extends TestCase
         $this->assertSame('human', $this->command->classifyRow('1.2.3.4', 'Mozilla/5.0', $detector));
     }
 
+    public function testClassifyRow_IPv6Address_ReturnsInvalidIp(): void
+    {
+        // IPv6 addresses cannot be anonymized with the 255.255.0.0 mask and must be skipped.
+        $detector = $this->makeBotDetector("bot\n");
+        $this->assertSame('invalid_ip', $this->command->classifyRow('2a01:e34:ec28:460::1', 'Mozilla/5.0', $detector));
+        $this->assertSame('invalid_ip', $this->command->classifyRow('::1', 'Mozilla/5.0', $detector));
+        $this->assertSame('invalid_ip', $this->command->classifyRow('fe80::1', 'Mozilla/5.0', $detector));
+    }
+
     // -------------------------------------------------------------------------
     // buildInsertSql()
     // -------------------------------------------------------------------------

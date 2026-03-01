@@ -126,7 +126,7 @@ class UpdateGeoIpCommand extends Command
 
         // Step 5: Backup existing database
         if (file_exists($destPath)) {
-            $backupPath = $this->buildBackupPath($destPath, date('Ymd'));
+            $backupPath = $this->buildBackupPath($destPath, date('Ymd_His'));
             if (!rename($destPath, $backupPath)) {
                 $logger->error('Failed to backup existing database to: ' . $backupPath);
                 $io->error('Could not backup existing GeoIP database.');
@@ -174,14 +174,14 @@ class UpdateGeoIpCommand extends Command
     }
 
     /**
-     * Returns the backup path for the existing database (appends date suffix YYYYMMDD).
+     * Returns the backup path for the existing database (appends a date/time suffix).
      *
      * @param string $destPath Full path to the current database file
-     * @param string $date     Date string in YYYYMMDD format
+     * @param string $suffix   Suffix appended after a dot (e.g. 'YYYYmmdd_HHiiss')
      */
-    public function buildBackupPath(string $destPath, string $date): string
+    public function buildBackupPath(string $destPath, string $suffix): string
     {
-        return $destPath . '.' . $date;
+        return $destPath . '.' . $suffix;
     }
 
     /**

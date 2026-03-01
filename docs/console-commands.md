@@ -37,7 +37,7 @@ php scripts/console.php <command> --help
 | [`import:volumes`](#importvolumes) | Import journal volumes from a CSV file |
 | [`stats:update-robots-list`](#statsupdate-robots-list) | Download the COUNTER Robots list for bot detection |
 | [`stats:process`](#statsprocess) | Process raw visit records from `STAT_TEMP` into `PAPER_STAT` |
-| [`update-geoip` *(make)*](#update-geoip-make-target) | Download or update the GeoLite2-City.mmdb database |
+| [`geoip:update`](#geoipupdate) | Download or update the GeoLite2-City.mmdb database |
 
 ---
 
@@ -322,36 +322,41 @@ php scripts/console.php import:volumes [options]
 
 | File | Provided by |
 |------|-------------|
-| `scripts/geoip/GeoLite2-City.mmdb` | [`make update-geoip`](#update-geoip-make-target) |
+| `scripts/geoip/GeoLite2-City.mmdb` | [`geoip:update`](#geoipupdate) |
 | `cache/counter-robots/COUNTER_Robots_list.txt` | [`stats:update-robots-list`](#statsupdate-robots-list) |
 
-### `update-geoip` *(make target)*
+### `geoip:update`
 
-Downloads or updates the [GeoLite2-City](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) database required by `stats:process` for IP geolocation. This is a **shell script** invoked via `make`, not a Symfony Console command.
+Downloads and installs the [GeoLite2-City](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) database required by `stats:process` for IP geolocation. Verifies the SHA-256 checksum before installation and backs up the existing database with a timestamped suffix.
 
-**Prerequisites:** a free MaxMind account and license key — sign up at <https://www.maxmind.com/en/geolite2/signup>.
-
-```bash
-# Via Make (recommended)
-make update-geoip MAXMIND_LICENSE_KEY=your_license_key
-
-# Directly
-MAXMIND_LICENSE_KEY=your_license_key bash scripts/update-geoip.sh
-```
-
-The script:
-1. Downloads `GeoLite2-City.tar.gz` from the MaxMind API.
-2. Extracts `GeoLite2-City.mmdb` into `scripts/geoip/`.
-3. Sets permissions to `644`.
-4. Prints the database date and reminds you to configure `config/pwd.json`.
-
-After the first download, update `config/pwd.json` so the application can find the file:
+**Prerequisites:** a free MaxMind account — sign up at <https://www.maxmind.com/en/geolite2/signup>. Set your credentials in `config/pwd.json`:
 
 ```json
 "GEO_IP": {
   "DATABASE_PATH": "/absolute/path/to/scripts/geoip/",
-  "DATABASE": "GeoLite2-City.mmdb"
+  "DATABASE": "GeoLite2-City.mmdb",
+  "ACCOUNT_ID": "your_account_id",
+  "LICENSE_KEY": "your_license_key",
+  "DB_URL": "https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz",
+  "DB_SHA256": "https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz.sha256"
 }
+```
+
+```bash
+php scripts/console.php geoip:update [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--force` | Re-download even if the local database is already up to date |
+| `--dry-run` | Show what would be done without writing any file |
+
+```bash
+# Via Make (recommended)
+make update-geoip
+
+# Force re-download
+make update-geoip force=1
 ```
 
 Recommended schedule: run monthly (MaxMind updates GeoLite2 on the first Tuesday of each month).

@@ -94,18 +94,18 @@ class UpdateGeoIpCommandTest extends TestCase
     // buildBackupPath()
     // -------------------------------------------------------------------------
 
-    public function testBuildBackupPath_AppendsDateSuffix(): void
+    public function testBuildBackupPath_AppendsSuffix(): void
     {
         $dest   = '/data/geoip/GeoLite2-City.mmdb';
-        $backup = $this->command->buildBackupPath($dest, '20260301');
-        $this->assertSame('/data/geoip/GeoLite2-City.mmdb.20260301', $backup);
+        $backup = $this->command->buildBackupPath($dest, '20260301_120000');
+        $this->assertSame('/data/geoip/GeoLite2-City.mmdb.20260301_120000', $backup);
     }
 
-    public function testBuildBackupPath_DifferentDates_ProducesDifferentPaths(): void
+    public function testBuildBackupPath_DifferentSuffixes_ProduceDifferentPaths(): void
     {
         $dest    = '/data/geoip/GeoLite2-City.mmdb';
-        $backup1 = $this->command->buildBackupPath($dest, '20260301');
-        $backup2 = $this->command->buildBackupPath($dest, '20260401');
+        $backup1 = $this->command->buildBackupPath($dest, '20260301_120000');
+        $backup2 = $this->command->buildBackupPath($dest, '20260301_130000');
         $this->assertNotSame($backup1, $backup2);
     }
 
