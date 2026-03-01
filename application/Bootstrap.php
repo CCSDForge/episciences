@@ -26,19 +26,16 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         $strFailedToConnect = 'Failed to connect to Database';
 
         if ($db === null) {
-            echo $strFailedToConnect;
             trigger_error($strFailedToConnect, E_USER_ERROR);
         }
 
         try {
             $connection = $db->getConnection();
         } catch (Exception $exception) {
-            echo $strFailedToConnect;
             trigger_error($exception->getMessage(), E_USER_ERROR);
         }
 
         if ($connection === null) {
-            echo $strFailedToConnect;
             trigger_error($strFailedToConnect, E_USER_ERROR);
         }
 

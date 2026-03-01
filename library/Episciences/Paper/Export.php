@@ -321,7 +321,9 @@ class Export
         $dom->formatOutput = false;
         $loadResult = $dom->loadXML($xml);
         if ($loadResult) {
-            $output = $dom->saveXML();
+            // saveXML($documentElement) omits the XML declaration, which is required
+            // when the output is inserted as a DOM fragment inside another document.
+            $output = $dom->saveXML($dom->documentElement);
             $output = str_replace(array("\r\n", "\r", "\n"), '', $output);
         } else {
             $output = '<error>Error loading XML source. Please report to Journal Support.</error>';
@@ -859,7 +861,7 @@ class Export
      * @return string
      * @deprecated use getOpenaire
      */
-    public function getDatacite(Episciences_Paper $paper): string
+    public static function getDatacite(Episciences_Paper $paper): string
     {
         return Export::getOpenaire($paper);
     }
