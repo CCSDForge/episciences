@@ -3,6 +3,7 @@
 namespace unit\library\Episciences\Oai;
 
 use Episciences_Oai_Server;
+use Episciences_Paper;
 use PHPUnit\Framework\TestCase;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
@@ -308,5 +309,427 @@ class Episciences_Oai_ServerTest extends TestCase
         self::assertArrayHasKey('query', $retrieved);
         self::assertArrayHasKey('cursor', $retrieved);
         self::assertArrayHasKey('solr', $retrieved);
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers (shared)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Returns a server instance whose constructor is bypassed (no HTTP context needed).
+     */
+    private function buildServerNoConstructor(array $extraMethods = []): Episciences_Oai_Server
+    {
+        return $this->getMockBuilder(Episciences_Oai_Server::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods($extraMethods)
+            ->getMock();
+    }
+
+    /**
+     * Invokes an arbitrary protected/private method via reflection.
+     *
+     * @throws \ReflectionException
+     */
+    private function invokeMethod(object $object, string $method, mixed ...$args): mixed
+    {
+        $reflection = new ReflectionMethod($object, $method);
+        $reflection->setAccessible(true);
+        return $reflection->invoke($object, ...$args);
+    }
+
+    // -----------------------------------------------------------------------
+    // existFormat()
+    // -----------------------------------------------------------------------
+
+    /**
+     * @dataProvider knownFormatProvider
+     */
+    public function testExistFormatReturnsTrueForKnownFormat(string $format): void
+    {
+        $server = $this->buildServerNoConstructor();
+        self::assertTrue($this->invokeMethod($server, 'existFormat', $format));
+    }
+
+    public static function knownFormatProvider(): array
+    {
+        return [
+            'oai_dc'       => ['oai_dc'],
+            'tei'          => ['tei'],
+            'oai_openaire' => ['oai_openaire'],
+            'crossref'     => ['crossref'],
+        ];
+    }
+
+    /**
+     * @dataProvider unknownFormatProvider
+     */
+    public function testExistFormatReturnsFalseForUnknownFormat(string $format): void
+    {
+        $server = $this->buildServerNoConstructor();
+        self::assertFalse($this->invokeMethod($server, 'existFormat', $format));
+    }
+
+    public static function unknownFormatProvider(): array
+    {
+        return [
+            'empty string'  => [''],
+            'rss'           => ['rss'],
+            'json'          => ['json'],
+            'marc21'        => ['marc21'],
+        ];
+    }
+
+    // -----------------------------------------------------------------------
+    // getFormats()
+    // -----------------------------------------------------------------------
+
+    public function testGetFormatsContainsCrossref(): void
+    {
+        $server  = $this->buildServerNoConstructor();
+        $formats = $this->invokeMethod($server, 'getFormats');
+
+        self::assertIsArray($formats);
+        self::assertArrayHasKey('crossref', $formats);
+    }
+
+    public function testGetFormatsCrossrefHasCorrectSchemaAndNamespace(): void
+    {
+        $server  = $this->buildServerNoConstructor();
+        $formats = $this->invokeMethod($server, 'getFormats');
+
+        self::assertSame(
+            'https://www.crossref.org/schemas/crossref5.3.1.xsd',
+            $formats['crossref']['schema']
+        );
+        self::assertSame(
+            'http://www.crossref.org/schema/5.3.1',
+            $formats['crossref']['ns']
+        );
+    }
+
+    public function testGetFormatsContainsAllExpectedPrefixes(): void
+    {
+        $server  = $this->buildServerNoConstructor();
+        $formats = $this->invokeMethod($server, 'getFormats');
+
+        foreach (['oai_dc', 'tei', 'oai_openaire', 'crossref'] as $prefix) {
+            self::assertArrayHasKey($prefix, $formats, "Format '$prefix' must be registered");
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // checkDateFormat()
+    // -----------------------------------------------------------------------
+
+    /**
+     * @dataProvider validDateProvider
+     */
+    public function testCheckDateFormatReturnsTrueForValidDate(string $date): void
+    {
+        $server = $this->buildServerNoConstructor();
+        self::assertTrue($this->invokeMethod($server, 'checkDateFormat', $date));
+    }
+
+    public static function validDateProvider(): array
+    {
+        return [
+            'typical'      => ['2023-06-15'],
+            'start of year' => ['2024-01-01'],
+            'end of year'  => ['2023-12-31'],
+        ];
+    }
+
+    /**
+     * @dataProvider invalidDateProvider
+     */
+    public function testCheckDateFormatReturnsFalseForInvalidDate(string $date): void
+    {
+        $server = $this->buildServerNoConstructor();
+        self::assertFalse($this->invokeMethod($server, 'checkDateFormat', $date));
+    }
+
+    public static function invalidDateProvider(): array
+    {
+        // Note: Zend_Validate_Date with format 'yyyy-MM-dd' is permissive about
+        // separators and year length. Only include values that it actually rejects.
+        return [
+            'plain text'         => ['not-a-date'],
+            'out-of-range month' => ['2023-13-01'],
+            'empty string'       => [''],
+        ];
+    }
+
+    // -----------------------------------------------------------------------
+    // getOaiMetadata()
+    // -----------------------------------------------------------------------
+
+    /**
+     * For any format other than 'crossref', getOaiMetadata() must delegate to
+     * $paper->get($internalFormat) and return its value unchanged.
+     *
+     * @throws \ReflectionException
+     */
+    public function testGetOaiMetadataDelegatesToPaperGetForNonCrossrefFormat(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->expects(self::once())
+              ->method('get')
+              ->with('dc')
+              ->willReturn('<dc_element/>');
+
+        $server = $this->buildServerNoConstructor();
+        $result = $this->invokeMethod($server, 'getOaiMetadata', $paper, 'dc');
+
+        self::assertSame('<dc_element/>', $result);
+    }
+
+    /**
+     * For the 'crossref' internal format, getOaiMetadata() must NOT call
+     * $paper->get() — it calls Export::getCrossref($paper, true) instead.
+     * This ensures the personal depositor e-mail is replaced with a generic
+     * address in public OAI-PMH output.
+     *
+     * Note: Export::getCrossref() itself may throw in the unit-test environment
+     * (no DB / Zend_View available).  The assertion that matters here is that
+     * $paper->get() was never called; PHPUnit verifies mock expectations on
+     * teardown even when an exception interrupts execution.
+     *
+     * @throws \ReflectionException
+     */
+    public function testGetOaiMetadataBypassesPaperGetForCrossrefFormat(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->expects(self::never())->method('get');
+
+        $server = $this->buildServerNoConstructor();
+
+        try {
+            $this->invokeMethod($server, 'getOaiMetadata', $paper, 'crossref');
+        } catch (\Throwable) {
+            // Export::getCrossref() may fail without a DB/view context; that is
+            // expected in a unit-test.  The only assertion here is the never()
+            // expectation on $paper->get(), which PHPUnit checks at teardown.
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // getIds() — Solr query building
+    // -----------------------------------------------------------------------
+
+    /**
+     * When $from and $until are provided, the Solr query must include a range
+     * filter on publication_date_tdate.
+     *
+     * @throws \ReflectionException
+     */
+    public function testGetIdsIncludesDateRangeFilterInSolrQuery(): void
+    {
+        $server = $this->createPartialMock(
+            Episciences_Oai_Server::class,
+            ['getTokenCachePool', 'executeSolrQuery']
+        );
+        $server->method('getTokenCachePool')->willReturn(new ArrayAdapter());
+        $server->expects(self::once())
+               ->method('executeSolrQuery')
+               ->with(self::stringContains('publication_date_tdate'))
+               ->willReturn(false);
+
+        $this->invokeGetIds($server, 'ListRecords', 'oai_dc', '2023-12-31', '2023-01-01', null, null);
+    }
+
+    /**
+     * When $set is a journal: prefix, the Solr query must filter by revue_code_t.
+     *
+     * @throws \ReflectionException
+     */
+    public function testGetIdsIncludesRevueCodeFilterWhenSetIsProvided(): void
+    {
+        $server = $this->createPartialMock(
+            Episciences_Oai_Server::class,
+            ['getTokenCachePool', 'executeSolrQuery']
+        );
+        $server->method('getTokenCachePool')->willReturn(new ArrayAdapter());
+        $server->expects(self::once())
+               ->method('executeSolrQuery')
+               ->with(self::stringContains('revue_code_t'))
+               ->willReturn(false);
+
+        $this->invokeGetIds($server, 'ListRecords', 'oai_dc', null, null, 'journal:jdmdh', null);
+    }
+
+    /**
+     * ListRecords must request at most LIMIT_RECORDS rows from Solr.
+     *
+     * @throws \ReflectionException
+     */
+    public function testGetIdsRequestsCorrectRowsLimitForListRecords(): void
+    {
+        $server = $this->createPartialMock(
+            Episciences_Oai_Server::class,
+            ['getTokenCachePool', 'executeSolrQuery']
+        );
+        $server->method('getTokenCachePool')->willReturn(new ArrayAdapter());
+        $server->expects(self::once())
+               ->method('executeSolrQuery')
+               ->with(self::stringContains('rows=' . Episciences_Oai_Server::LIMIT_RECORDS))
+               ->willReturn(false);
+
+        $this->invokeGetIds($server, 'ListRecords', 'oai_dc', null, null, null, null);
+    }
+
+    /**
+     * ListIdentifiers must request at most LIMIT_IDENTIFIERS rows from Solr.
+     *
+     * @throws \ReflectionException
+     */
+    public function testGetIdsRequestsCorrectRowsLimitForListIdentifiers(): void
+    {
+        $server = $this->createPartialMock(
+            Episciences_Oai_Server::class,
+            ['getTokenCachePool', 'executeSolrQuery']
+        );
+        $server->method('getTokenCachePool')->willReturn(new ArrayAdapter());
+        $server->expects(self::once())
+               ->method('executeSolrQuery')
+               ->with(self::stringContains('rows=' . Episciences_Oai_Server::LIMIT_IDENTIFIERS))
+               ->willReturn(false);
+
+        $this->invokeGetIds($server, 'ListIdentifiers', 'oai_dc', null, null, null, null);
+    }
+
+    // -----------------------------------------------------------------------
+    // getIds() — Solr result processing
+    // -----------------------------------------------------------------------
+
+    /**
+     * When Solr reports numFound = 0, getIds() must return integer 0 so that
+     * the parent can emit a noRecordsMatch OAI error.
+     *
+     * @throws \ReflectionException
+     */
+    public function testGetIdsReturnsZeroWhenSolrReportsNoDocuments(): void
+    {
+        $solrResponse = serialize([
+            'response'      => ['numFound' => 0, 'docs' => []],
+            'nextCursorMark' => '*',
+        ]);
+
+        $server = $this->buildServer(new ArrayAdapter(), $solrResponse);
+
+        $result = $this->invokeGetIds($server, 'ListRecords', 'oai_dc', null, null, null, null);
+
+        self::assertSame(0, $result);
+    }
+
+    /**
+     * When Solr returns false (network/index failure), getIds() must return false.
+     *
+     * @throws \ReflectionException
+     */
+    public function testGetIdsReturnsFalseWhenSolrFails(): void
+    {
+        $server = $this->buildServer(new ArrayAdapter(), false);
+        $result = $this->invokeGetIds($server, 'ListRecords', 'oai_dc', null, null, null, null);
+
+        self::assertFalse($result);
+    }
+
+    /**
+     * A malformed (non-array) Solr response must not cause an exception and
+     * must return false.
+     *
+     * @throws \ReflectionException
+     */
+    public function testGetIdsReturnsFalseWhenSolrResponseIsMalformed(): void
+    {
+        $server = $this->buildServer(new ArrayAdapter(), serialize('not-an-array'));
+        $result = $this->invokeGetIds($server, 'ListRecords', 'oai_dc', null, null, null, null);
+
+        self::assertFalse($result);
+    }
+
+    // -----------------------------------------------------------------------
+    // getIds() — metadataPrefix propagation bug fix
+    // -----------------------------------------------------------------------
+
+    /**
+     * Bug fix: when getIds() is called with a resumptionToken, the format is
+     * read from the token cache. The returned array must include a 'metadataPrefix'
+     * key so that the parent's listIds() can recover the format and set the
+     * correct XML namespace attributes on <metadata> elements (e.g. xmlns:tei).
+     *
+     * We simulate a cached token for the 'tei' format and a Solr response
+     * reporting numFound = 0, which causes getIds() to return 0 before building
+     * the $out array — proving the cache was hit and the format was recovered.
+     *
+     * @throws \ReflectionException|\Psr\Cache\InvalidArgumentException
+     */
+    public function testGetIdsReturnsZeroWithTokenWhenSolrReportsNoDocuments(): void
+    {
+        $cache = new ArrayAdapter();
+        $item  = $cache->getItem('oai-token-' . md5('tok-tei'));
+        $item->set(['format' => 'tei', 'query' => '', 'cursor' => 0, 'solr' => '']);
+        $cache->save($item);
+
+        $solrResponse = serialize([
+            'response'      => ['numFound' => 0, 'docs' => []],
+            'nextCursorMark' => 'AoE=',
+        ]);
+
+        $server = $this->buildServer($cache, $solrResponse);
+        $result = $this->invokeGetIds($server, 'ListRecords', 'tei', null, null, null, 'tok-tei');
+
+        // numFound = 0 → return 0, not 'token' (which would mean cache was missed)
+        self::assertSame(0, $result, 'Cache hit with numFound=0 must return 0, not the "token" string');
+    }
+
+    /**
+     * When the format is recovered from a token cache hit and Solr returns results
+     * with a nextCursorMark, the returned $out array must start with a 'metadataPrefix'
+     * key containing the recovered format.
+     *
+     * This key is consumed by the parent Ccsd_Oai_Server::listIds() to restore the
+     * format variable so that namespace attributes (xmlns:tei, xmlns:datacite) are
+     * correctly set on <metadata> elements on every resumed page.
+     *
+     * We use ListIdentifiers (no metadata generation) so that the test does not
+     * require a real DB or locale registry.  numFound > LIMIT_IDENTIFIERS triggers
+     * the resumptionToken branch, and getOaiMetadata() is mocked out as a safety net.
+     *
+     * @throws \ReflectionException|\Psr\Cache\InvalidArgumentException
+     */
+    public function testGetIdsPropagatesFormatInReturnedArrayWhenFormatComesFromToken(): void
+    {
+        $cache = new ArrayAdapter();
+        $item  = $cache->getItem('oai-token-' . md5('tok2'));
+        $item->set(['format' => 'tei', 'query' => '', 'cursor' => 0, 'solr' => '']);
+        $cache->save($item);
+
+        // numFound > LIMIT_IDENTIFIERS triggers the resumptionToken branch.
+        // nextCursorMark differs from the input token so a new page token is stored.
+        // The doc is processed via ListIdentifiers (header only, no metadata call).
+        $solrResponse = serialize([
+            'response'      => ['numFound' => 500, 'docs' => [['docid' => 0]]],
+            'nextCursorMark' => 'AoE=NextPage',
+        ]);
+
+        $server = $this->createPartialMock(
+            Episciences_Oai_Server::class,
+            ['getTokenCachePool', 'executeSolrQuery', 'getOaiMetadata']
+        );
+        $server->method('getTokenCachePool')->willReturn($cache);
+        $server->method('executeSolrQuery')->willReturn($solrResponse);
+        $server->method('getOaiMetadata')->willReturn('<stub/>');
+
+        $result = $this->invokeGetIds($server, 'ListIdentifiers', 'tei', null, null, null, 'tok2');
+
+        self::assertIsArray($result, 'A non-empty Solr response must return an array');
+        self::assertArrayHasKey(
+            'metadataPrefix',
+            $result,
+            'getIds() must include metadataPrefix in the returned array when format comes from token cache'
+        );
+        self::assertSame('tei', $result['metadataPrefix']);
     }
 }

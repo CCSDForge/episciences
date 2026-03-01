@@ -171,7 +171,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
      * For the crossref format, the personal depositor email is replaced with a
      * generic address since this output is publicly harvested via OAI-PMH.
      */
-    private function getOaiMetadata(Episciences_Paper $paper, string $internalFormat): string|false
+    protected function getOaiMetadata(Episciences_Paper $paper, string $internalFormat): string|false
     {
         if ($internalFormat === 'crossref') {
             return Export::getCrossref($paper, true);
@@ -293,6 +293,16 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
                         $out[] = '<resumptionToken completeListSize="' . $result['response']['numFound'] . '" />';
                     }
                 }
+
+                // Propagate the format to the parent (Ccsd_Oai_Server::listIds) so it can set
+                // the correct XML namespace attributes on <metadata> elements when responding to
+                // a resumptionToken request.  The parent has a hotfix that reads this key and
+                // removes it before iterating; without this, xmlns:tei / xmlns:datacite are
+                // missing on every page past the first for the tei and oai_openaire formats.
+                if ($token !== null) {
+                    $out = ['metadataPrefix' => $format] + $out;
+                }
+
                 return $out;
             }
 
