@@ -18,6 +18,9 @@ require_once __DIR__ . '/CreateDoajVolumeExportsCommand.php';
 require_once __DIR__ . '/ZbjatsZipperCommand.php';
 require_once __DIR__ . '/ImportSectionsCommand.php';
 require_once __DIR__ . '/ImportVolumesCommand.php';
+require_once __DIR__ . '/UpdateCounterRobotsListCommand.php';
+require_once __DIR__ . '/ProcessStatTempCommand.php';
+require_once __DIR__ . '/UpdateGeoIpCommand.php';
 
 use Symfony\Component\Console\Application;
 
@@ -53,5 +56,12 @@ $application->add(new ZbjatsZipperCommand());
 // Import commands
 $application->add(new ImportSectionsCommand());
 $application->add(new ImportVolumesCommand());
+
+// Stats commands
+$application->add(new UpdateCounterRobotsListCommand());
+$application->add(new ProcessStatTempCommand());
+
+// GeoIP commands
+$application->add(new UpdateGeoIpCommand());
 
 $application->run();

@@ -82,3 +82,5 @@ assets/node_modules/
 /scripts/stats/sites_config.csv
 /tools/
 /.gemini/
+/scripts/checkcasusers.php
+/scripts/checkDoi.php

@@ -68,7 +68,7 @@ $paperLanguageRaw = $this->paperLanguage;
         <timestamp><?php echo $timestamp; ?></timestamp>
         <depositor>
             <depositor_name><?php echo DOMAIN; ?></depositor_name>
-            <email_address><?php echo DOI_EMAIL_CONTACT; ?></email_address>
+            <email_address><?php echo $this->emailAddress ?? DOI_EMAIL_CONTACT; ?></email_address>
         </depositor>
         <registrant><?php echo DOMAIN; ?></registrant>
     </head>
