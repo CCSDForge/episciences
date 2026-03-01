@@ -37,13 +37,20 @@ class ProcessStatTempCommand extends Command
     /** @var array<string, int> Non-resolved IPs cache to avoid repeated reverse-DNS timeouts. */
     private array $nonResolvedIps = [];
 
+    /**
+     * When true, skip reverse-DNS lookup (gethostbyaddr) to avoid blocking the process.
+     * Set via --no-dns option. Strongly recommended for large datasets.
+     */
+    private bool $noDns = false;
+
     protected function configure(): void
     {
         $this
             ->setDescription('Process visits from STAT_TEMP into PAPER_STAT')
             ->addOption('date-s', null, InputOption::VALUE_REQUIRED, 'Process up to this date (yyyy-mm-dd; default: yesterday)')
             ->addOption('all', null, InputOption::VALUE_NONE, 'Process ALL records regardless of date')
-            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'No DB writes; display each row');
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'No DB writes; display each row')
+            ->addOption('no-dns', null, InputOption::VALUE_NONE, 'Skip reverse-DNS lookup (recommended for large datasets — gethostbyaddr() can block for minutes per IP)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -58,7 +65,9 @@ class ProcessStatTempCommand extends Command
             return $options;
         }
 
-        ['all' => $all, 'date' => $date, 'dryRun' => $dryRun] = $options;
+        ['all' => $all, 'date' => $date, 'dryRun' => $dryRun, 'noDns' => $noDns] = $options;
+
+        $this->noDns = $noDns;
 
         if ($all && !$dryRun && !$io->confirm('Process ALL records? This may take a long time.', false)) {
             $io->writeln('Operation cancelled.');
@@ -69,6 +78,11 @@ class ProcessStatTempCommand extends Command
             $io->note('Dry-run mode — no data will be written.');
         }
         $logger->info($all ? 'Processing ALL records (no date filter).' : 'Processing records up to: ' . $date);
+        $logger->info('GeoIP database: ' . GEO_IP_DATABASE_PATH . GEO_IP_DATABASE);
+
+        if (!$noDns) {
+            $logger->warning('DNS lookup enabled (--no-dns not set). gethostbyaddr() may block for several seconds per unique IP. Use --no-dns to skip.');
+        }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         if ($db === null) {
@@ -109,12 +123,13 @@ class ProcessStatTempCommand extends Command
     /**
      * Parse and validate command options.
      *
-     * @return array{all: bool, date: ?string, dryRun: bool}|int Returns Command::FAILURE on validation error.
+     * @return array{all: bool, date: ?string, dryRun: bool, noDns: bool}|int Returns Command::FAILURE on validation error.
      */
     public function resolveOptions(InputInterface $input, SymfonyStyle $io): array|int
     {
         $dryRun = (bool) $input->getOption('dry-run');
         $all    = (bool) $input->getOption('all');
+        $noDns  = (bool) $input->getOption('no-dns');
         $dateS  = $input->getOption('date-s');
 
         if ($all && $dateS !== null) {
@@ -135,7 +150,7 @@ class ProcessStatTempCommand extends Command
             }
         }
 
-        return ['all' => $all, 'date' => $date, 'dryRun' => $dryRun];
+        return ['all' => $all, 'date' => $date, 'dryRun' => $dryRun, 'noDns' => $noDns];
     }
 
     /**
@@ -501,7 +516,9 @@ class ProcessStatTempCommand extends Command
     {
         $data = ['domain' => '', 'continent' => '', 'country' => '', 'city' => '', 'lat' => 0.0, 'lon' => 0.0];
 
-        $data['domain'] = $this->extractDomain($ip);
+        if (!$this->noDns) {
+            $data['domain'] = $this->extractDomain($ip);
+        }
 
         try {
             $record            = $giReader->city($ip)->jsonSerialize();

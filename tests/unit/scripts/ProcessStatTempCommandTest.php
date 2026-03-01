@@ -59,6 +59,13 @@ class ProcessStatTempCommandTest extends TestCase
         $this->assertFalse($definition->getOption('dry-run')->acceptValue(), 'dry-run must be a flag');
     }
 
+    public function testCommandHasNoDnsOption(): void
+    {
+        $definition = $this->command->getDefinition();
+        $this->assertTrue($definition->hasOption('no-dns'));
+        $this->assertFalse($definition->getOption('no-dns')->acceptValue(), 'no-dns must be a flag');
+    }
+
     // -------------------------------------------------------------------------
     // resolveOptions()
     // -------------------------------------------------------------------------
@@ -135,6 +142,22 @@ class ProcessStatTempCommandTest extends TestCase
         $result = $this->command->resolveOptions($input, $this->makeIo($input));
         $this->assertIsArray($result);
         $this->assertTrue($result['dryRun']);
+    }
+
+    public function testResolveOptions_NoDnsFlag_IsPreserved(): void
+    {
+        $input  = $this->makeInput(['--no-dns' => true]);
+        $result = $this->command->resolveOptions($input, $this->makeIo($input));
+        $this->assertIsArray($result);
+        $this->assertTrue($result['noDns']);
+    }
+
+    public function testResolveOptions_NoDns_DefaultsFalse(): void
+    {
+        $input  = $this->makeInput([]);
+        $result = $this->command->resolveOptions($input, $this->makeIo($input));
+        $this->assertIsArray($result);
+        $this->assertFalse($result['noDns']);
     }
 
     // -------------------------------------------------------------------------
