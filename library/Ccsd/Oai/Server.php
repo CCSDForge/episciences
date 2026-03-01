@@ -405,6 +405,9 @@ abstract class Ccsd_Oai_Server
                 if ($format === 'oai_openaire') {
                     $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:datacite', 'http://datacite.org/schema/kernel-4');
                 }
+                if ($format === 'crossref') {
+                    $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:crossref', 'http://www.crossref.org/schema/5.3.1');
+                }
                 $data = $this->_xml->createDocumentFragment();
                 $data->appendXML($rec['metadata']);
                 $metadata->appendChild($data);
@@ -564,6 +567,9 @@ abstract class Ccsd_Oai_Server
                         }
                         if ($format === 'oai_openaire') {
                             $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:datacite', 'http://datacite.org/schema/kernel-4');
+                        }
+                        if ($format === 'crossref') {
+                            $metadata->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:crossref', 'http://www.crossref.org/schema/5.3.1');
                         }
                         $data = $this->_xml->createDocumentFragment();
                         $data->appendXML($document['metadata']);
