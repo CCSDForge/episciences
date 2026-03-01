@@ -4,6 +4,7 @@ namespace unit\library\Episciences;
 
 use Episciences\Api\DoiApiClient;
 use Episciences_DoiTools;
+use Episciences_Repositories;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
