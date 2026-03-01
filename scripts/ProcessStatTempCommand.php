@@ -303,11 +303,19 @@ class ProcessStatTempCommand extends Command
 
     private function openGeoIpReader(Logger $logger, SymfonyStyle $io): ?Reader
     {
+        if (!defined('GEO_IP_DATABASE_PATH') || !defined('GEO_IP_DATABASE')) {
+            $msg = 'GEO_IP_DATABASE_PATH / GEO_IP_DATABASE constants are not defined. '
+                 . 'Add a "GEO_IP" section to config/pwd.json and run make update-geoip.';
+            $logger->error($msg);
+            $io->error($msg);
+            return null;
+        }
+
         try {
             return new Reader(GEO_IP_DATABASE_PATH . GEO_IP_DATABASE);
-        } catch (\Exception $e) {
-            // Catches both InvalidDatabaseException (corrupt file) and
-            // \InvalidArgumentException (file not found).
+        } catch (\Throwable $e) {
+            // Catches InvalidDatabaseException, \InvalidArgumentException (file not found),
+            // and any \Error subclass.
             $logger->error('Cannot open GeoIP database: ' . $e->getMessage());
             $io->error('Cannot open GeoIP database: ' . $e->getMessage());
             return null;
