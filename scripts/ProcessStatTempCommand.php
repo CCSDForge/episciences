@@ -69,7 +69,7 @@ class ProcessStatTempCommand extends Command
             return $options;
         }
 
-        ['all' => $all, 'date' => $date, 'dryRun' => $dryRun, 'noDns' => $noDns] = $options;
+        ['all' => $all, 'date' => $date, 'dryRun' => $dryRun, 'noDns' => $noDns, 'upTo' => $upTo] = $options;
 
         $this->noDns = $noDns;
 
@@ -113,7 +113,7 @@ class ProcessStatTempCommand extends Command
         $io->writeln('GeoIP reader: OK', OutputInterface::VERBOSITY_VERBOSE);
 
         $botDetector = $this->prepareBotDetector($logger, $io);
-        $totalCount  = $this->countPendingRows($db, $all, $date);
+        $totalCount  = $this->countPendingRows($db, $all, $date, $upTo);
 
         $io->writeln('Total records to process: ' . $totalCount);
         $logger->info('Total records to process: ' . $totalCount);
@@ -124,7 +124,7 @@ class ProcessStatTempCommand extends Command
             return Command::SUCCESS;
         }
 
-        $counters = $this->runProcessingLoop($db, $giReader, $botDetector, $all, $date, $dryRun, $io, $logger);
+        $counters = $this->runProcessingLoop($db, $giReader, $botDetector, $all, $date, $upTo, $dryRun, $io, $logger);
         $giReader->close();
 
         $summary = $this->buildSummary($counters['processed'], $counters['ignored'], $counters['robots'], $counters['errors']);
@@ -141,7 +141,10 @@ class ProcessStatTempCommand extends Command
     /**
      * Parse and validate command options.
      *
-     * @return array{all: bool, date: ?string, dryRun: bool, noDns: bool}|int Returns Command::FAILURE on validation error.
+     * upTo=true  → --date-s was given: process rows with DHIT <= date (backfill up to that date)
+     * upTo=false → default: process rows with DHIT = yesterday only (exact day, safe for daily cron)
+     *
+     * @return array{all: bool, date: ?string, dryRun: bool, noDns: bool, upTo: bool}|int Returns Command::FAILURE on validation error.
      */
     public function resolveOptions(InputInterface $input, SymfonyStyle $io): array|int
     {
@@ -155,7 +158,8 @@ class ProcessStatTempCommand extends Command
             return Command::FAILURE;
         }
 
-        $date = null;
+        $date  = null;
+        $upTo  = false;
         if (!$all) {
             if ($dateS !== null) {
                 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $dateS) || !$this->isValidDate((string) $dateS)) {
@@ -163,12 +167,13 @@ class ProcessStatTempCommand extends Command
                     return Command::FAILURE;
                 }
                 $date = (string) $dateS;
+                $upTo = true;
             } else {
                 $date = date('Y-m-d', strtotime('-1 day'));
             }
         }
 
-        return ['all' => $all, 'date' => $date, 'dryRun' => $dryRun, 'noDns' => $noDns];
+        return ['all' => $all, 'date' => $date, 'dryRun' => $dryRun, 'noDns' => $noDns, 'upTo' => $upTo];
     }
 
     /**
@@ -281,6 +286,18 @@ class ProcessStatTempCommand extends Command
         return '';
     }
 
+    /**
+     * Build the INSERT SQL for PAPER_STAT.
+     * IP is wrapped in INET_ATON() because PAPER_STAT.IP is an integer column.
+     */
+    public function buildInsertSql(): string
+    {
+        return 'INSERT INTO `PAPER_STAT` '
+            . '(`DOCID`, `CONSULT`, `IP`, `ROBOT`, `AGENT`, `DOMAIN`, `CONTINENT`, `COUNTRY`, `CITY`, `LAT`, `LON`, `HIT`, `COUNTER`) '
+            . 'VALUES (:DOCID, :CONSULT, INET_ATON(:IP), :ROBOT, :AGENT, :DOMAIN, :CONTINENT, :COUNTRY, :CITY, :LAT, :LON, :HIT, :COUNTER) '
+            . 'ON DUPLICATE KEY UPDATE COUNTER=COUNTER+1';
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -332,11 +349,15 @@ class ProcessStatTempCommand extends Command
         return new BotDetector($path);
     }
 
-    private function countPendingRows(Zend_Db_Adapter_Abstract $db, bool $all, ?string $date): int
+    private function countPendingRows(Zend_Db_Adapter_Abstract $db, bool $all, ?string $date, bool $upTo): int
     {
         $select = $db->select()->from('STAT_TEMP', new Zend_Db_Expr("COUNT('*')"));
         if (!$all && $date !== null) {
-            $select->where("DHIT <= ?", date('Y-m-d H:i:s', strtotime($date)));
+            if ($upTo) {
+                $select->where("DATE(DHIT) <= ?", $date);
+            } else {
+                $select->where("DATE(DHIT) = ?", $date);
+            }
         }
         return (int) $db->fetchOne($select);
     }
@@ -344,11 +365,15 @@ class ProcessStatTempCommand extends Command
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function fetchBatch(Zend_Db_Adapter_Abstract $db, bool $all, ?string $date): array
+    private function fetchBatch(Zend_Db_Adapter_Abstract $db, bool $all, ?string $date, bool $upTo): array
     {
         $select = $db->select()->from('STAT_TEMP', new Zend_Db_Expr('*, INET_NTOA(IP) as TIP'));
         if (!$all && $date !== null) {
-            $select->where("DATE_FORMAT(DHIT, '%Y-%m-%d') <= ?", $date);
+            if ($upTo) {
+                $select->where("DATE(DHIT) <= ?", $date);
+            } else {
+                $select->where("DATE(DHIT) = ?", $date);
+            }
         }
         $select->order('DHIT ASC')->limit(self::STEP_OF_LINES);
         return $db->fetchAll($select);
@@ -365,16 +390,17 @@ class ProcessStatTempCommand extends Command
         BotDetector $botDetector,
         bool $all,
         ?string $date,
+        bool $upTo,
         bool $dryRun,
         SymfonyStyle $io,
         Logger $logger
     ): array {
         if ($dryRun) {
-            $this->runDryRunBatches($db, $all, $date, $botDetector, $io);
+            $this->runDryRunBatches($db, $all, $date, $upTo, $botDetector, $io);
             return ['processed' => 0, 'ignored' => 0, 'robots' => 0, 'errors' => 0];
         }
 
-        return $this->runInsertBatches($db, $all, $date, $giReader, $botDetector, $logger, $io);
+        return $this->runInsertBatches($db, $all, $date, $upTo, $giReader, $botDetector, $logger, $io);
     }
 
     /**
@@ -384,11 +410,12 @@ class ProcessStatTempCommand extends Command
         Zend_Db_Adapter_Abstract $db,
         bool $all,
         ?string $date,
+        bool $upTo,
         BotDetector $botDetector,
         SymfonyStyle $io
     ): void {
         while (true) {
-            $rows = $this->fetchBatch($db, $all, $date);
+            $rows = $this->fetchBatch($db, $all, $date, $upTo);
             if (empty($rows)) {
                 break;
             }
@@ -429,6 +456,7 @@ class ProcessStatTempCommand extends Command
         Zend_Db_Adapter_Abstract $db,
         bool $all,
         ?string $date,
+        bool $upTo,
         Reader $giReader,
         BotDetector $botDetector,
         Logger $logger,
@@ -436,21 +464,17 @@ class ProcessStatTempCommand extends Command
     ): array {
         $counters = ['processed' => 0, 'ignored' => 0, 'robots' => 0, 'errors' => 0];
 
-        $insertPrepared = $db->prepare(
-            'INSERT INTO `PAPER_STAT` '
-            . '(`DOCID`, `CONSULT`, `IP`, `ROBOT`, `AGENT`, `DOMAIN`, `CONTINENT`, `COUNTRY`, `CITY`, `LAT`, `LON`, `HIT`, `COUNTER`) '
-            . 'VALUES (:DOCID, :CONSULT, :IP, :ROBOT, :AGENT, :DOMAIN, :CONTINENT, :COUNTRY, :CITY, :LAT, :LON, :HIT, :COUNTER) '
-            . 'ON DUPLICATE KEY UPDATE COUNTER=COUNTER+1'
-        );
+        $insertPrepared = $db->prepare($this->buildInsertSql());
 
-        $deleteSql = $all
+        $dateOp     = $upTo ? '<=' : '=';
+        $deleteSql  = $all
             ? 'DELETE FROM `STAT_TEMP` ORDER BY DHIT LIMIT ' . self::STEP_OF_LINES
-            : "DELETE FROM `STAT_TEMP` WHERE DATE_FORMAT(DHIT, '%Y-%m-%d') <= :DATE_TO_DEL ORDER BY DHIT LIMIT " . self::STEP_OF_LINES;
+            : "DELETE FROM `STAT_TEMP` WHERE DATE(DHIT) $dateOp :DATE_TO_DEL ORDER BY DHIT LIMIT " . self::STEP_OF_LINES;
         $deletePrepared = $db->prepare($deleteSql);
 
         $batchNumber = 0;
         while (true) {
-            $rows = $this->fetchBatch($db, $all, $date);
+            $rows = $this->fetchBatch($db, $all, $date, $upTo);
             if (empty($rows)) {
                 break;
             }

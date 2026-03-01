@@ -116,6 +116,7 @@ class ProcessStatTempCommandTest extends TestCase
         $this->assertSame('2024-03-15', $result['date']);
         $this->assertFalse($result['all']);
         $this->assertFalse($result['dryRun']);
+        $this->assertTrue($result['upTo'], '--date-s must set upTo=true (process up to that date)');
     }
 
     public function testResolveOptions_AllFlag_ReturnsNullDate(): void
@@ -125,6 +126,7 @@ class ProcessStatTempCommandTest extends TestCase
         $this->assertIsArray($result);
         $this->assertTrue($result['all']);
         $this->assertNull($result['date']);
+        $this->assertFalse($result['upTo']);
     }
 
     public function testResolveOptions_NoOptions_ReturnsYesterdayDate(): void
@@ -134,6 +136,7 @@ class ProcessStatTempCommandTest extends TestCase
         $this->assertIsArray($result);
         $this->assertFalse($result['all']);
         $this->assertSame(date('Y-m-d', strtotime('-1 day')), $result['date']);
+        $this->assertFalse($result['upTo'], 'default (no --date-s) must set upTo=false (exact date only)');
     }
 
     public function testResolveOptions_DryRunFlag_IsPreserved(): void
@@ -230,6 +233,22 @@ class ProcessStatTempCommandTest extends TestCase
         BotDetector::resetCache();
         $detector = new BotDetector('/nonexistent/COUNTER_Robots_list.txt');
         $this->assertSame('human', $this->command->classifyRow('1.2.3.4', 'Mozilla/5.0', $detector));
+    }
+
+    // -------------------------------------------------------------------------
+    // buildInsertSql()
+    // -------------------------------------------------------------------------
+
+    public function testBuildInsertSql_UsesInetAton(): void
+    {
+        $sql = $this->command->buildInsertSql();
+        $this->assertStringContainsString('INET_ATON(:IP)', $sql, 'IP must be wrapped in INET_ATON() — PAPER_STAT.IP is an integer column');
+    }
+
+    public function testBuildInsertSql_ContainsOnDuplicateKeyUpdate(): void
+    {
+        $sql = $this->command->buildInsertSql();
+        $this->assertStringContainsString('ON DUPLICATE KEY UPDATE COUNTER=COUNTER+1', $sql);
     }
 
     // -------------------------------------------------------------------------
