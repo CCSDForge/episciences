@@ -949,6 +949,7 @@ return array(
     "Créer cet utilisateur" => 'Create this User',
     "Bonnes pratiques" => "Guidelines",
     "Comment proposer un document :" => "Guidelines:",
+    "nom d'affichage de l’auteur" => "Author's screen name",
 
     "Voir ce compte." => "See this account.",
     "Se connecter avec ce compte." => "Sign in with this account",
