@@ -17,10 +17,30 @@ use Symfony\Component\Cache\Adapter\NullAdapter;
  */
 class Episciences_DoiToolsTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        // Pre-populate the Repositories cache with the arXiv prefix so that
+        // normalizeArxivDoi() does not require a database connection.
+        $ref = new \ReflectionProperty(Episciences_Repositories::class, '_repositories');
+        $ref->setAccessible(true);
+        $ref->setValue(null, [
+            Episciences_Repositories::ARXIV_REPO_ID => [
+                Episciences_Repositories::REPO_DOI_PREFIX => '10.48550',
+                Episciences_Repositories::REPO_TYPE       => Episciences_Repositories::TYPE_PAPERS_REPOSITORY,
+                Episciences_Repositories::REPO_LABEL      => 'ArXiv',
+            ],
+        ]);
+    }
+
     protected function tearDown(): void
     {
         // Reset the static client singleton between tests
         Episciences_DoiTools::setClient(null);
+
+        // Reset the Repositories cache
+        $ref = new \ReflectionProperty(Episciences_Repositories::class, '_repositories');
+        $ref->setAccessible(true);
+        $ref->setValue(null, []);
     }
 
     // -------------------------------------------------------------------------
@@ -84,6 +104,43 @@ class Episciences_DoiToolsTest extends TestCase
     public function testCleanDoi_DefaultParam_ReturnsEmptyString(): void
     {
         $this->assertSame('', Episciences_DoiTools::cleanDoi());
+    }
+
+    // -------------------------------------------------------------------------
+    // normalizeArxivDoi()
+    // -------------------------------------------------------------------------
+
+    public function testNormalizeArxivDoi_SingleDigitVersion_Stripped(): void
+    {
+        $result = Episciences_DoiTools::normalizeArxivDoi('2301.12345v2');
+        $this->assertSame('10.48550/arxiv.2301.12345', $result);
+    }
+
+    public function testNormalizeArxivDoi_MultiDigitVersion_Stripped(): void
+    {
+        // Regression: the old regex ~v[\d{1,100}]~ was a character class that matched
+        // exactly one character, so "v10" was only partially stripped (left "0" behind).
+        // The new regex ~v\d+$~i correctly strips the entire multi-digit version suffix.
+        $result = Episciences_DoiTools::normalizeArxivDoi('2301.12345v10');
+        $this->assertSame('10.48550/arxiv.2301.12345', $result);
+    }
+
+    public function testNormalizeArxivDoi_NoVersionSuffix_NotModified(): void
+    {
+        $result = Episciences_DoiTools::normalizeArxivDoi('2301.12345');
+        $this->assertSame('10.48550/arxiv.2301.12345', $result);
+    }
+
+    public function testNormalizeArxivDoi_ArxivColonPrefixed_VersionStripped(): void
+    {
+        $result = Episciences_DoiTools::normalizeArxivDoi('arxiv:2301.12345v3');
+        $this->assertSame('10.48550arxiv:2301.12345', $result);
+    }
+
+    public function testNormalizeArxivDoi_ArxivColonPrefixed_NoVersion(): void
+    {
+        $result = Episciences_DoiTools::normalizeArxivDoi('arxiv:2301.12345');
+        $this->assertSame('10.48550arxiv:2301.12345', $result);
     }
 
     // -------------------------------------------------------------------------
