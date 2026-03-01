@@ -269,11 +269,14 @@ class ProcessStatTempCommand extends Command
 
     private function buildLogger(SymfonyStyle $io): Logger
     {
-        $logger = new Logger('statsProcess');
-        $logger->pushHandler(new StreamHandler(
-            EPISCIENCES_LOG_PATH . 'statsProcess_' . date('Y-m-d') . '.log',
-            Logger::INFO
-        ));
+        $logger  = new Logger('statsProcess');
+        $logFile = EPISCIENCES_LOG_PATH . 'statsProcess_' . date('Y-m-d') . '.log';
+        $logDir  = dirname($logFile);
+
+        if (is_dir($logDir) && is_writable($logDir)) {
+            $logger->pushHandler(new StreamHandler($logFile, Logger::INFO));
+        }
+
         if (!$io->isQuiet()) {
             $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
         }
