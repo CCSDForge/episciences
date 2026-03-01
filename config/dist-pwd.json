@@ -137,7 +137,11 @@
   },
   "GEO_IP": {
     "DATABASE_PATH": "/fullPathTo/scripts/geoip/",
-    "DATABASE": "GeoLite2-City.mmdb"
+    "DATABASE": "GeoLite2-City.mmdb",
+    "ACCOUNT_ID": "000000",
+    "LICENSE_KEY": "YOUR-MAXMIND-LICENSE-KEY",
+    "DB_URL": "https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz",
+    "DB_SHA256": "https://download.maxmind.com/geoip/databases/GeoLite2-City/download?suffix=tar.gz.sha256"
   },
   "OPENCITATIONS": {
     "TOKEN" : "YOUR-OPENCITATIONS-ACCESS-TOKEN",
