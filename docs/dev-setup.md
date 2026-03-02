@@ -179,6 +179,8 @@ make rector
 
 ### PhpMetrics (Metrics & Visualization)
 
+[![PhpMetrics](https://github.com/CCSDForge/episciences/actions/workflows/phpmetrics.yml/badge.svg)](https://ccsdforge.github.io/episciences/metrics/)
+
 Generates a comprehensive HTML report about code complexity, coupling, and maintainability.
 
 ```bash
