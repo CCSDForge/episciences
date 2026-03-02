@@ -1,6 +1,9 @@
 name: Weekly Code Metrics
 
 on:
+  push:
+    branches:
+      - staging
   schedule:
     - cron: '0 0 * * 0' # Every Sunday at midnight
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI
