@@ -20,7 +20,6 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
     {
 
         $data = [];
-
         $files = $hookParams['files'] ?? [];
 
         foreach ($files as $file) {
@@ -42,21 +41,7 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
             $checkSumAlgorithm = $checksumInfo['checkSumAlgorithm'] ?? 'MD5';
             $contentLink = $infoFromApi['_links']['content']['href'] ?? $file['url'];
             $size = $infoFromApi['sizeBytes'] ?? 0;
-
             $name = $infoFromApi['name'] ?? null;
-
-            if (!$name) {
-
-                if (!$checksum) {
-                    $checksum = md5_file($name);
-                }
-
-                $name = str_replace('/download', '', $file['url']);
-                $explodedName = explode('/', $name);
-                $name = end($explodedName);
-
-            }
-
             $tmpData = [];
             $tmpData['doc_id'] = $hookParams['docId'];
             $tmpData['source'] = $hookParams['repoId'];
@@ -67,14 +52,11 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
             $tmpData['file_size'] = $size;
             $tmpData['checksum_type'] = $checkSumAlgorithm;
             $data[] = $tmpData;
-
-            usleep(200000);
         }
 
         $hookParams['affectedRows'] = Episciences_Paper_FilesManager::insert($data);
 
         return $hookParams;
-
     }
 
     /**

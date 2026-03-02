@@ -100,7 +100,7 @@ class Episciences_Repositories
 
         if (isset($repositories[$repoId])) {
             $baseUrl = $repositories[$repoId][self::REPO_BASEURL];
-            return rtrim($baseUrl, DIRECTORY_SEPARATOR);
+            return rtrim($baseUrl, '/');
         }
 
         return null;
