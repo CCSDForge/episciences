@@ -49,9 +49,6 @@ class Episciences_Rating_Grid
             $this->setId(filter_var($this->getFilename(), FILTER_SANITIZE_NUMBER_INT));
         }
 
-        $xml->getElementsByTagName('text');
-
-
         $items = $xml->getElementsByTagName('div');
         $criteria = [];
         foreach ($items as $i => $item) {
@@ -66,8 +63,11 @@ class Episciences_Rating_Grid
 
             // labels
             $labels = [];
-            foreach ($item->getElementsByTagName('head')->item(0)->getElementsByTagName('label') as $node) {
-                $labels[$node->getAttribute('xml:lang')] = $node->nodeValue;
+            $headElement = $item->getElementsByTagName('head')->item(0);
+            if ($headElement !== null) {
+                foreach ($headElement->getElementsByTagName('label') as $node) {
+                    $labels[$node->getAttribute('xml:lang')] = $node->nodeValue;
+                }
             }
             $criterion_values['labels'] = $labels;
 
@@ -107,7 +107,9 @@ class Episciences_Rating_Grid
 
             //coefficient & visibility
             foreach ($item->getElementsByTagName('f') as $node) {
-                $criterion_values[$node->getAttribute('name')] = $node->firstChild->getAttribute('value');
+                if ($node->firstChild !== null) {
+                    $criterion_values[$node->getAttribute('name')] = $node->firstChild->getAttribute('value');
+                }
             }
 
             $criteria[] = new Episciences_Rating_Criterion($criterion_values);
@@ -152,7 +154,10 @@ class Episciences_Rating_Grid
 
     public function getCriterion($id)
     {
-        return (array_key_exists($id, $this->_criteria)) ? $this->_criteria[$id] : null;
+        if (!is_array($this->_criteria)) {
+            return null;
+        }
+        return array_key_exists($id, $this->_criteria) ? $this->_criteria[$id] : null;
     }
 
     public function removeCriterion($item_id)

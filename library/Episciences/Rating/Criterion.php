@@ -187,7 +187,11 @@ class Episciences_Rating_Criterion
 
     public function getMaxNote()
     {
-        $max = max(array_keys($this->getOptions()));
+        $keys = array_keys($this->getOptions());
+        if (empty($keys)) {
+            return 1;
+        }
+        $max = max($keys);
         return $max > 0 ? $max : 1;
     }
 
