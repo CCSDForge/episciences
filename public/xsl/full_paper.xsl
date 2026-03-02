@@ -18,7 +18,8 @@
         <xsl:if test="$rightOrcid = '1'">
             <!-- Modal -->
             <form id="post-orcid-author" action="/paper/postorcidauthor" method="POST">
-                <div class="modal fade" id="author-modal-orcid" tabindex="-1" role="dialog" aria-labelledby="author-modal-orcid-label" aria-hidden="true">
+                <!-- Accessibility logic: Added aria-modal="true" to trap screen reader focus and fixed aria-labelledby to point to the correct title ID -->
+                <div class="modal fade" id="author-modal-orcid" tabindex="-1" role="dialog" aria-labelledby="author-modal-orcid-label-title" aria-modal="true" aria-hidden="true">
                     <div class="modal-dialog modal-orcid" role="document">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -29,9 +30,10 @@
                                 <input class='hidden' id='modal-called' value='0' />
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
-                                <button type="submit" class="btn btn-success" id="valid-new-orcid">Save changes</button>
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-primary" id="valid-new-orcid">Save changes</button>
                             </div>
+
                         </div>
                     </div>
                 </div>

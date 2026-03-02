@@ -3,7 +3,15 @@
  * Episciences
  * Script to process stats
  * Add in a Crontab
+ *
+ * @deprecated Use the Symfony Console command instead:
+ *   php scripts/console.php stats:process
  */
+
+trigger_error(
+    'stat.php is deprecated. Use: php scripts/console.php stats:process',
+    E_USER_DEPRECATED
+);
 
 $localopts = [
     'date-s' => "Process stats according to a date (yyyy-mm-dd; default: yesterday)",

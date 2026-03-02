@@ -313,6 +313,7 @@ return array(
     'Motif de DOI incorrect' => 'Wrong DOI pattern',
     'Document non trouvé' => 'Document non found',
     'Échec de la mise à jour' => 'Update failed',
+    'Numéro' => 'Number',
     'Année du volume' => 'Year of the volume',
     'Numéro du volume' => "Volume Number",
     "Volume de l'article" => "Volume of the article",
@@ -948,6 +949,7 @@ return array(
     "Créer cet utilisateur" => 'Create this User',
     "Bonnes pratiques" => "Guidelines",
     "Comment proposer un document :" => "Guidelines:",
+    "nom d'affichage de l’auteur" => "Author's screen name",
 
     "Voir ce compte." => "See this account.",
     "Se connecter avec ce compte." => "Sign in with this account",

@@ -1,19 +1,21 @@
 <?php if ($this->editors) : ?>
-
-<?php if (count($this->editors) > 1 ) : ?>
-<?php 
-	$editors_string = '';
-	foreach ($this->editors as $editor) {
-		$editors_string .= '<span>' . $editor->getFullname() . '</span><br/>';
-	} 
-?>
-<span data-toggle="tooltip" title="<?php echo htmlentities($editors_string);?>"><?php echo count($this->editors) . ' ' . mb_strtolower($this->translate(Episciences_Acl::ROLE_EDITOR_PLURAL), 'UTF-8'); ?></span>
-<script>$("[data-toggle~='tooltip']").tooltip({'container': 'body', 'placement': 'bottom', 'html': true, 'delay': {'show': 200, 'hide': 100}});</script>
-<?php else : ?>
-<span>
-	<?php echo array_shift($this->editors)->getFullname()?>
-</span>
-<br/>
-<?php endif; ?>
-
+    <?php
+    $nbEditors = count($this->editors);
+    if ($nbEditors > 1) :
+        $editors_list = array();
+        /** @var Episciences_Editor $editor */
+        foreach ($this->editors as $editor) {
+            $editors_list[] = '<span>' . $this->escape($editor->getFullname()) . '</span>';
+        }
+        $editors_string = implode('<br/>', $editors_list);
+        ?>
+        <span data-toggle="tooltip"
+              title="<?php echo $this->escape($editors_string); ?>"><?php echo $nbEditors . ' ' . mb_strtolower($this->translate(Episciences_Acl::ROLE_EDITOR_PLURAL), 'UTF-8'); ?></span>
+    <?php else :
+        $editor = reset($this->editors);
+        if ($editor instanceof Episciences_Editor) : ?>
+            <span><?php echo $this->escape($editor->getFullname()); ?></span>
+            <br/>
+        <?php endif; ?>
+    <?php endif; ?>
 <?php endif; ?>

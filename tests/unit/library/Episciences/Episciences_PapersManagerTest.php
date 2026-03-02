@@ -272,4 +272,120 @@ final class Episciences_PapersManagerTest extends TestCase
         $unknown = 9999;
         self::assertSame($unknown, Episciences_PapersManager::getStatusLabel($unknown));
     }
+
+    // -----------------------------------------------------------------------
+    // getByDocIds()
+    // -----------------------------------------------------------------------
+
+    /**
+     * An empty input array must return an empty map immediately, without
+     * touching the database.
+     */
+    public function testGetByDocIdsReturnsEmptyArrayForEmptyInput(): void
+    {
+        self::assertSame([], Episciences_PapersManager::getByDocIds([]));
+    }
+
+    /**
+     * When none of the requested docIds exist in the DB, the result must be
+     * an empty map (not false, not null).
+     *
+     * Uses docId 0 which is never a valid paper identifier.
+     */
+    public function testGetByDocIdsReturnsEmptyArrayWhenNoDocumentFound(): void
+    {
+        $result = Episciences_PapersManager::getByDocIds([0]);
+
+        self::assertIsArray($result);
+        self::assertEmpty($result);
+    }
+
+    /**
+     * The returned map must be keyed by integer docId.
+     * We load a paper that is known to exist in the test DB (any published paper)
+     * and verify the key type and the object type.
+     *
+     * If no published paper is available the test is skipped automatically.
+     */
+    public function testGetByDocIdsReturnsMapKeyedByIntDocId(): void
+    {
+        // Load one existing published paper via the standard API to get a real docId.
+        $existing = Episciences_PapersManager::getList([
+            'is'    => ['STATUS' => [Episciences_Paper::STATUS_PUBLISHED]],
+            'limit' => 1,
+        ]);
+
+        if (empty($existing)) {
+            self::markTestSkipped('No published paper available in test DB.');
+        }
+
+        /** @var Episciences_Paper $reference */
+        $reference = reset($existing);
+        $docId     = (int) $reference->getDocid();
+
+        $result = Episciences_PapersManager::getByDocIds([$docId]);
+
+        self::assertArrayHasKey($docId, $result, 'Result must be keyed by integer docId');
+        self::assertInstanceOf(Episciences_Paper::class, $result[$docId]);
+        self::assertSame($docId, (int) $result[$docId]->getDocid());
+    }
+
+    /**
+     * When multiple docIds are requested, all found papers must be present in
+     * the returned map; docIds that do not exist are silently omitted.
+     */
+    public function testGetByDocIdsReturnsManyPapersInSingleCall(): void
+    {
+        $existing = Episciences_PapersManager::getList([
+            'is'    => ['STATUS' => [Episciences_Paper::STATUS_PUBLISHED]],
+            'limit' => 3,
+        ]);
+
+        if (count($existing) < 2) {
+            self::markTestSkipped('Need at least 2 published papers in test DB.');
+        }
+
+        $docIds = array_map(static fn(Episciences_Paper $p) => (int) $p->getDocid(), $existing);
+
+        // Add a non-existent docId to verify it is silently omitted.
+        $docIds[] = 0;
+
+        $result = Episciences_PapersManager::getByDocIds($docIds);
+
+        self::assertGreaterThanOrEqual(2, count($result));
+        self::assertArrayNotHasKey(0, $result, 'Non-existent docId must be omitted from the map');
+
+        foreach ($result as $key => $paper) {
+            self::assertIsInt($key);
+            self::assertInstanceOf(Episciences_Paper::class, $paper);
+        }
+    }
+
+    /**
+     * getByDocIds() must not include revision deadline or conflict data since
+     * those are editorial-workflow artefacts not needed for metadata export.
+     *
+     * We verify that the returned Paper objects expose a null/empty conflicts
+     * collection (getConflicts() returns [] by default, not a DB-populated set).
+     */
+    public function testGetByDocIdsOmitsWorkflowData(): void
+    {
+        $existing = Episciences_PapersManager::getList([
+            'is'    => ['STATUS' => [Episciences_Paper::STATUS_PUBLISHED]],
+            'limit' => 1,
+        ]);
+
+        if (empty($existing)) {
+            self::markTestSkipped('No published paper available in test DB.');
+        }
+
+        /** @var Episciences_Paper $reference */
+        $reference = reset($existing);
+        $result    = Episciences_PapersManager::getByDocIds([(int) $reference->getDocid()]);
+        $paper     = reset($result);
+
+        // Conflicts default to an empty array when not explicitly loaded.
+        self::assertIsArray($paper->getConflicts());
+        self::assertEmpty($paper->getConflicts(), 'getByDocIds() must not load conflict data');
+    }
 }

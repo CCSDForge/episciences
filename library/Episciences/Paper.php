@@ -3,6 +3,7 @@
 use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
+use Episciences\Paper\Export;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
 use Psr\Log\LogLevel;
@@ -1108,7 +1109,11 @@ class Episciences_Paper
             $method .= 'V2';
         }
 
-        if ((!self::isValidMetadataFormat($format)) || (!method_exists($this, $method))) {
+        if (!self::isValidMetadataFormat($format)) {
+            return false;
+        }
+
+        if (!method_exists($this, $method) && !method_exists(Export::class, $method)) {
             return false;
         }
 
@@ -1125,7 +1130,11 @@ class Episciences_Paper
         $metadataCache->expiresAfter($expireAfterSec);
 
         if (!$metadataCache->isHit()) {
-            $getOutput = $this->$method();
+            if (method_exists($this, $method)) {
+                $getOutput = $this->$method();
+            } else {
+                $getOutput = Export::$method($this);
+            }
             $metadataCache->set($getOutput);
             $cache->save($metadataCache);
         } else {

@@ -85,6 +85,10 @@ class Ccsd_Search_Solr
                     self::ENDPOINT_SEARCH => [
                         'host' => ENDPOINTS_SEARCH_HOST,
                         'port' => ENDPOINTS_SEARCH_PORT,
+                        // Solarium 6: 'path' is the prefix BEFORE the Solr context.
+                        // 'context' (default: 'solr') is the /solr part of the URL.
+                        // ENDPOINTS_SEARCH_PATH ('/solr') must NOT be passed here
+                        // or the URL becomes host/solr/solr/core (doubled).
                         'timeout' => ENDPOINTS_SEARCH_TIMEOUT,
                         'username' => ENDPOINTS_SEARCH_USERNAME,
                         'password' => ENDPOINTS_SEARCH_PASSWORD,

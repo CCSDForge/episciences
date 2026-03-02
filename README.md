@@ -26,6 +26,7 @@ All notable changes to this project will be documented in the [CHANGELOG.md](./C
 
 ### Documentation
 
+- [Console Commands](./docs/console-commands.md) — All CLI commands available via `scripts/console.php` (enrichment, stats, import, sitemap, …).
 - [Paper Statuses](./docs/paper-statuses.md) — List of paper statuses (codes, descriptions, and constants).
 - [Log Event Types](./docs/log-event-types.md) — List of log action codes, descriptions, and UI styles.
 

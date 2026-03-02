@@ -2334,26 +2334,36 @@ class Episciences_PapersManager
     }
 
     /**
-     * @param int $docId
-     * @param int|null $rvId
-     * @return Episciences_Paper|null
-     * @throws Zend_Db_Statement_Exception
+     * Batch-loads multiple papers by their Solr document IDs in a single DB query,
+     * avoiding the N+1 problem that arises when listing papers one by one.
+     *
+     * Revision deadlines and conflicts are intentionally omitted: they are
+     * editorial-workflow data not required during metadata export (e.g. OAI-PMH).
+     *
+     * @param  int[] $docIds
+     * @return array<int, Episciences_Paper> map keyed by docId; absent IDs are omitted
      */
-    public static function partialGet(int $docId, int $rvId = null): ?Episciences_Paper
+    public static function getByDocIds(array $docIds, bool $withxsl = false): array
     {
-        $sql = self::partialGetQuery($docId);
-
-        if (defined('RVID') && !Ccsd_Tools::isFromCli()) {
-            $rvId = RVID;
+        if (empty($docIds)) {
+            return [];
         }
 
-        if ($rvId) {
-            $sql?->where('RVID = ?', $rvId);
+        $db   = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $rows = $db->select()
+            ->from(T_PAPERS)
+            ->where('DOCID IN (?)', $docIds)
+            ->query()
+            ->fetchAll();
+
+        $papers = [];
+        foreach ($rows as $data) {
+            $paper = new Episciences_Paper(array_merge($data, ['withxsl' => $withxsl]));
+            $paper->loadDataDescriptors();
+            $papers[(int) $data['DOCID']] = $paper;
         }
 
-        $data = $sql?->query()->fetch();
-        return !empty($data) ? new Episciences_Paper($data) : null;
-
+        return $papers;
     }
 
     /**
@@ -4328,4 +4338,27 @@ class Episciences_PapersManager
         return $result;
 
     }
+    /**
+     * @param int $docId
+     * @param int|null $rvId
+     * @return Episciences_Paper|null
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function partialGet(int $docId, int $rvId = null): ?Episciences_Paper
+    {
+        $sql = self::partialGetQuery($docId);
+
+        if (defined('RVID') && !Ccsd_Tools::isFromCli()) {
+            $rvId = RVID;
+        }
+
+        if ($rvId) {
+            $sql?->where('RVID = ?', $rvId);
+        }
+
+        $data = $sql?->query()->fetch();
+        return !empty($data) ? new Episciences_Paper($data) : null;
+
+    }
+
 }

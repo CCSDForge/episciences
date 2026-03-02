@@ -112,7 +112,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                 <td style="text-align:right;">
                     <a href="/user/view?userid=<?php echo $user['uid']; ?>"><span data-toggle="tooltip"
                                                                                   title="<?php echo $this->translate("Voir ce compte."); ?>"
-                                                                                  class="darkgrey fas fa-address-card"></span></a>&nbsp;
+                                                                                  class="fa-regular fa-address-card"></span></a>&nbsp;
                     <?php if (Episciences_Auth::isSecretary()) : ?>
                         <?php if ($user['uid'] == Episciences_Auth::getUid()) : ?>
                             <span style="cursor: pointer" data-toggle="tooltip"

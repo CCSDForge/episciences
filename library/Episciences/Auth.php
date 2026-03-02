@@ -211,7 +211,9 @@ class Episciences_Auth extends Ccsd_Auth
             );
 
         } catch (Zend_Exception $e) {
-            trigger_error($e->getMessage());
+            if (APPLICATION_MODULE!=='oai') {
+                trigger_error($e->getMessage());
+            }
             return false;
         }
 
