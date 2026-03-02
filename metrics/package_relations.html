@@ -49,7 +49,7 @@
 <div class="page">
     <div class="content content-first">
         <div class="report-details">
-            Created at 2026-03-02 22:04:18        , with PHPMetrics v2.9.1 (<a href="https://twitter.com/Halleck45">Jean-François Lépine</a>).
+            Created at 2026-03-02 22:18:21        , with PHPMetrics v2.9.1 (<a href="https://twitter.com/Halleck45">Jean-François Lépine</a>).
         </div>
 
         
@@ -93,7 +93,7 @@
                             <path d="M0 0h24v24H0z" fill="none">
                             <path d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5c-.49 0-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z">
                         </svg>
-                        Violations (537)
+                        Violations (503)
                     </a>
                 </li>
                                     <li>
@@ -257,19 +257,18 @@
             "Episciences\\Notify",
             "Ccsd\\Xml",
             "Episciences",
-            "Episciences\\Files",
+            "Episciences\\View",
             "Ccsd\\Auth",
             "Episciences\\Trait",
             "Ccsd\\Auth\\Adapter",
             "ReCaptcha",
             "neverbehave",
             "Defuse\\Crypto",
-            "Episciences\\Api",
+            "Episciences\\Files",
             "GuzzleHttp",
             "Laminas\\Feed\\Writer",
             "Episciences\\Signposting",
-            "Psr\\Http\\Message",
-            "Episciences\\Paper\\Visits"
+            "Psr\\Http\\Message"
         ]
     },
     {
@@ -277,7 +276,6 @@
         "size": 3000,
         "relations": [
             "global",
-            "Episciences\\Api",
             "Symfony\\Component\\Cache\\Adapter",
             "Episciences\\Paper",
             "GuzzleHttp",
@@ -290,7 +288,7 @@
             "Ccsd\\Xml",
             "Episciences\\Notify",
             "Episciences\\Classification",
-            "Episciences\\Paper\\Visits",
+            "Episciences\\View",
             "Episciences\\Trait"
         ]
     },
@@ -303,14 +301,13 @@
             "Ccsd\\Auth",
             "Episciences\\Notify",
             "Ccsd",
-            "Episciences\\Files",
+            "Episciences\\View",
             "Ccsd\\Xml",
-            "Episciences\\Api",
             "Symfony\\Component\\Cache\\Adapter",
-            "Episciences\\Paper",
             "GuzzleHttp",
             "Episciences\\Signposting",
-            "Episciences\\Paper\\Visits",
+            "Episciences\\Files",
+            "Episciences\\Paper",
             "Symfony\\Component\\Serializer\\Normalizer",
             "Symfony\\Component\\Serializer\\Encoder",
             "Symfony\\Component\\Serializer",
@@ -333,12 +330,12 @@
             "Ccsd\\Xml",
             "GuzzleHttp",
             "Symfony\\Component\\Cache\\Adapter",
-            "Episciences\\Api",
-            "Ccsd\\Auth",
-            "Episciences\\Trait",
             "Monolog",
             "Monolog\\Handler",
+            "Ccsd\\Auth",
+            "Episciences\\Trait",
             "Episciences\\Files",
+            "Episciences\\View",
             "Html2Text"
         ]
     },
@@ -351,15 +348,13 @@
         "name": "Episciences\\Notify",
         "size": 3000,
         "relations": [
-            "Episciences\\Api",
-            "Episciences",
-            "Psr\\Log",
             "GuzzleHttp",
-            "Symfony\\Component\\Cache\\Adapter",
             "global",
             "Ccsd\\Xml",
             "Episciences\\Classification",
+            "Episciences",
             "Ccsd",
+            "Episciences\\View",
             "Episciences\\Files",
             "Episciences\\Paper",
             "Ccsd\\Auth",
@@ -385,10 +380,10 @@
             "Solarium\\QueryType\\Update",
             "Symfony\\Component\\Cache\\Adapter",
             "Episciences\\Paper",
-            "Episciences\\Classification",
-            "Episciences\\Files",
+            "Episciences\\View",
             "Episciences\\Signposting",
             "Zend\\Db\\Adapter",
+            "Episciences\\Classification",
             "Solarium\\QueryType\\Select\\Query",
             "Solarium\\Core\\Query\\Result"
         ]
@@ -397,17 +392,13 @@
         "name": "Episciences",
         "size": 3000,
         "relations": [
-            "global",
             "Episciences\\Classification",
+            "global",
             "Ccsd\\Xml",
-            "Episciences\\Files",
+            "Episciences\\View",
             "Episciences\\Signposting",
             "Episciences\\Notify",
             "Ccsd\\Auth",
-            "Episciences\\Api",
-            "Symfony\\Component\\Cache\\Adapter",
-            "Monolog",
-            "Monolog\\Handler",
             "GuzzleHttp",
             "Ccsd",
             "Episciences\\Trait",
@@ -418,40 +409,47 @@
             "League\\CommonMark",
             "League\\HTMLToMarkdown",
             "Ramsey\\Uuid",
-            "Psr\\Cache",
+            "Seboettg\\CiteProc",
+            "geertw\\IpAnonymizer",
+            "Symfony\\Component\\Cache\\Adapter",
+            "Monolog",
+            "Monolog\\Handler",
             "Ccsd\\Auth\\Adapter",
             "Monolog\\Formatter"
         ]
     },
     {
-        "name": "Episciences\\Files",
+        "name": "Episciences\\View",
         "size": 3000,
         "relations": [
             "global",
-            "Episciences",
-            "Ccsd\\Xml",
-            "Ccsd\\Auth",
+            "Laravolt\\Avatar",
             "Ccsd",
-            "Episciences\\Signposting",
             "Episciences\\Notify",
             "Episciences\\Classification",
-            "Episciences\\Paper",
-            "Episciences\\Api",
-            "Episciences\\Trait",
-            "GuzzleHttp",
-            "Laravolt\\Avatar",
+            "Ccsd\\Auth",
+            "Episciences",
+            "Ccsd\\Xml",
             "Ramsey\\Uuid",
+            "Episciences\\Paper",
             "Laminas\\Feed\\Writer",
             "League\\HTMLToMarkdown",
+            "App\\Command",
+            "Monolog",
+            "Monolog\\Handler",
+            "Symfony\\Component\\Cache\\Adapter",
+            "GuzzleHttp",
             "Symfony\\Component\\Console\\Command",
             "Symfony\\Component\\Console\\Input",
             "Symfony\\Component\\Console\\Output",
-            "Symfony\\Component\\Console\\Style",
-            "Faker",
-            "Monolog",
-            "Monolog\\Handler",
             "Symfony\\Component\\Yaml",
-            "Monolog\\Formatter"
+            "Monolog\\Formatter",
+            "Episciences\\Files",
+            "Psr\\Http\\Message",
+            "Episciences\\Signposting",
+            "cottagelabs\\coarNotifications\\orm",
+            "cottagelabs\\coarNotifications",
+            "Episciences\\Trait"
         ]
     },
     {
@@ -475,12 +473,9 @@
             "Episciences",
             "Ccsd",
             "Episciences\\Signposting",
-            "Episciences\\Files",
+            "Episciences\\View",
             "Ccsd\\Xml",
-            "Episciences\\Api",
-            "Psr\\Log",
             "GuzzleHttp",
-            "Symfony\\Component\\Cache\\Adapter",
             "Episciences\\Notify"
         ]
     },
@@ -497,8 +492,7 @@
             "SimpleSAML\\Auth",
             "SimpleSAML",
             "Ccsd\\Auth\\Asso",
-            "Ccsd\\Xml",
-            "Episciences\\Files"
+            "Ccsd\\Xml"
         ]
     },
     {
@@ -517,23 +511,21 @@
         "relations": []
     },
     {
-        "name": "Episciences\\Api",
+        "name": "Episciences\\Files",
         "size": 3000,
         "relations": [
-            "GuzzleHttp",
-            "Psr\\Cache",
-            "Psr\\Log",
-            "Episciences",
-            "Seboettg\\CiteProc",
             "global",
-            "Episciences\\Paper",
-            "Symfony\\Component\\Cache\\Adapter",
-            "Monolog",
-            "Monolog\\Handler",
-            "Episciences\\Files",
+            "Episciences",
+            "Ccsd\\Xml",
+            "Ccsd\\Auth",
+            "Ccsd",
+            "Episciences\\Signposting",
             "Episciences\\Notify",
-            "geertw\\IpAnonymizer",
-            "Episciences\\Classification"
+            "Episciences\\Classification",
+            "Episciences\\View",
+            "Episciences\\Paper",
+            "Episciences\\Trait",
+            "GuzzleHttp"
         ]
     },
     {
@@ -551,13 +543,13 @@
         "size": 3000,
         "relations": [
             "global",
-            "Episciences\\Files",
+            "Episciences\\View",
             "Episciences\\Notify",
-            "Episciences\\Classification",
             "Ccsd\\Auth",
             "Episciences",
             "Episciences\\Trait",
             "Ccsd\\Xml",
+            "Episciences\\Classification",
             "Monolog",
             "Monolog\\Handler",
             "Monolog\\Formatter",
@@ -568,13 +560,6 @@
         "name": "Psr\\Http\\Message",
         "size": 3000,
         "relations": []
-    },
-    {
-        "name": "Episciences\\Paper\\Visits",
-        "size": 3000,
-        "relations": [
-            "global"
-        ]
     },
     {
         "name": "Symfony\\Component\\Filesystem",
@@ -733,16 +718,6 @@
         "relations": []
     },
     {
-        "name": "Psr\\Cache",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "Psr\\Log",
-        "size": 3000,
-        "relations": []
-    },
-    {
         "name": "Seboettg\\CiteProc",
         "size": 3000,
         "relations": []
@@ -783,6 +758,35 @@
         "relations": []
     },
     {
+        "name": "App\\Command",
+        "size": 3000,
+        "relations": [
+            "Symfony\\Component\\Console\\Command",
+            "GuzzleHttp",
+            "Monolog",
+            "Monolog\\Handler",
+            "Symfony\\Component\\Console\\Input",
+            "Symfony\\Component\\Console\\Output",
+            "global",
+            "Episciences\\Notify",
+            "Monolog\\Formatter",
+            "Episciences\\Paper",
+            "Symfony\\Component\\Cache\\Adapter",
+            "Episciences\\Classification",
+            "Episciences",
+            "Ccsd",
+            "Episciences\\View",
+            "Episciences\\Files",
+            "Ccsd\\Xml",
+            "Ramsey\\Uuid",
+            "League\\HTMLToMarkdown",
+            "Ccsd\\Auth",
+            "Episciences\\Signposting",
+            "Symfony\\Component\\Dotenv",
+            "Episciences\\Trait"
+        ]
+    },
+    {
         "name": "Symfony\\Component\\Console\\Command",
         "size": 3000,
         "relations": []
@@ -798,56 +802,9 @@
         "relations": []
     },
     {
-        "name": "Symfony\\Component\\Console\\Style",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "Faker",
-        "size": 3000,
-        "relations": []
-    },
-    {
         "name": "Symfony\\Component\\Yaml",
         "size": 3000,
         "relations": []
-    },
-    {
-        "name": "scripts",
-        "size": 3000,
-        "relations": [
-            "Episciences",
-            "Symfony\\Component\\Console\\Command",
-            "Symfony\\Component\\Console\\Input",
-            "Symfony\\Component\\Console\\Output",
-            "Symfony\\Component\\Console\\Style",
-            "Monolog",
-            "Monolog\\Handler",
-            "Ccsd",
-            "Symfony\\Component\\Cache\\Adapter",
-            "global",
-            "Episciences\\Paper",
-            "Episciences\\Notify",
-            "GuzzleHttp",
-            "Episciences\\Api",
-            "Episciences\\Files",
-            "Episciences\\Classification",
-            "Psr\\Http\\Message",
-            "Episciences\\Signposting",
-            "cottagelabs\\coarNotifications\\orm",
-            "cottagelabs\\coarNotifications",
-            "Episciences\\Trait",
-            "Faker",
-            "Ccsd\\Xml",
-            "Ramsey\\Uuid",
-            "League\\HTMLToMarkdown",
-            "Ccsd\\Auth",
-            "Monolog\\Formatter",
-            "Symfony\\Component\\Dotenv",
-            "Episciences\\Paper\\Visits",
-            "geertw\\IpAnonymizer",
-            "GeoIp2\\Database"
-        ]
     },
     {
         "name": "cottagelabs\\coarNotifications\\orm",

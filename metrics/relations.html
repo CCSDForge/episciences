@@ -49,7 +49,7 @@
 <div class="page">
     <div class="content content-first">
         <div class="report-details">
-            Created at 2026-03-02 22:04:18        , with PHPMetrics v2.9.1 (<a href="https://twitter.com/Halleck45">Jean-François Lépine</a>).
+            Created at 2026-03-02 22:18:21        , with PHPMetrics v2.9.1 (<a href="https://twitter.com/Halleck45">Jean-François Lépine</a>).
         </div>
 
         
@@ -93,7 +93,7 @@
                             <path d="M0 0h24v24H0z" fill="none">
                             <path d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5c-.49 0-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z">
                         </svg>
-                        Violations (537)
+                        Violations (503)
                     </a>
                 </li>
                                     <li>
@@ -416,11 +416,6 @@
             "\\row",
             "\\Episciences_Website_Navigation_Page_Index",
             "\\Ccsd_Lang_Writer",
-            "\\Episciences_Website_Navigation_Page",
-            "\\Episciences_ReviewsManager",
-            "\\Episciences_Page_Manager",
-            "\\Episciences_Auth",
-            "\\Episciences_Page",
             "\\RuntimeException",
             "\\Zend_Json"
         ]
@@ -434,7 +429,6 @@
         "name": "\\Episciences_Page",
         "size": 3000,
         "relations": [
-            "\\Episciences_Tools",
             "\\League\\HTMLToMarkdown\\HtmlConverter"
         ]
     },
@@ -564,6 +558,11 @@
         "relations": []
     },
     {
+        "name": "\\Ccsd_Auth_Adapter_Cas",
+        "size": 3000,
+        "relations": []
+    },
+    {
         "name": "\\Episciences_Auth_Adapter_LmLDAP_Protocol_Cas",
         "size": 3000,
         "relations": [
@@ -575,32 +574,7 @@
         ]
     },
     {
-        "name": "\\Ccsd\\Auth\\AdapterFactory",
-        "size": 3000,
-        "relations": [
-            "\\Ccsd\\Auth\\Adapter\\DbTable",
-            "\\Ccsd_Auth_Adapter_Cas",
-            "\\Ccsd\\Auth\\Adapter\\Idp",
-            "\\Ccsd_Auth_Adapter_Orcid",
-            "\\Ccsd\\Auth\\Adapter\\Mysql"
-        ]
-    },
-    {
-        "name": "\\Ccsd_User_Form_Login",
-        "size": 3000,
-        "relations": [
-            "\\Ccsd_Form",
-            "\\Zend_Config_Ini",
-            "\\Zend_Registry"
-        ]
-    },
-    {
         "name": "\\Zend_Exception",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Ccsd_Auth_Adapter_Cas",
         "size": 3000,
         "relations": []
     },
@@ -1618,8 +1592,6 @@
             "\\PaperDefaultController",
             "\\Episciences_Auth",
             "\\Episciences_ReviewsManager",
-            "\\Episciences_VolumesManager",
-            "\\Episciences_SectionsManager",
             "\\Ccsd_Tools",
             "\\Episciences_PapersManager",
             "\\Episciences_Tools",
@@ -1649,12 +1621,14 @@
             "\\Episciences_User_Invitation",
             "\\Episciences_Mail",
             "\\papersManager",
+            "\\Episciences_VolumesManager",
             "\\Episciences_Mail_Send",
             "\\Episciences_Submit",
             "\\Zend_Json_Encoder",
             "\\Episciences_Volume_PapersManager",
             "\\Episciences_Volume_Paper",
             "\\Ccsd_Search_Solr_Indexer",
+            "\\Episciences_SectionsManager",
             "\\Episciences_Paper_Logger",
             "\\Episciences_User_InvitationsManager",
             "\\Episciences_Rating_Report",
@@ -1750,7 +1724,9 @@
         "size": 3000,
         "relations": [
             "\\Zend_Db_Table_Abstract",
-            "\\Zend_Db_Expr"
+            "\\Episciences_Tools",
+            "\\Zend_Json",
+            "\\Zend_DB_Expr"
         ]
     },
     {
@@ -1779,7 +1755,6 @@
             "\\Episciences_Tools",
             "\\Ccsd_Error",
             "\\Episciences_Submit",
-            "\\Episciences_Paper_AuthorsManager",
             "\\GuzzleHttp\\Client",
             "\\Symfony\\Component\\Intl\\Languages",
             "\\http\\Exception\\InvalidArgumentException"
@@ -3495,12 +3470,18 @@
         ]
     },
     {
-        "name": "\\Ccsd\\Auth\\Adapter\\Mysql",
+        "name": "\\Ccsd_Auth_Adapter_Mysql",
         "size": 3000,
-        "relations": []
+        "relations": [
+            "\\Zend_Auth_Adapter_Interface",
+            "\\Ccsd_User_Models_UserMapper",
+            "\\Zend_Auth_Result",
+            "\\Ccsd_User_Models_User",
+            "\\Zend_Auth_Exception"
+        ]
     },
     {
-        "name": "\\Ccsd_Db_Adapter_Cas",
+        "name": "\\Zend_Auth_Adapter_Interface",
         "size": 3000,
         "relations": []
     },
@@ -3521,11 +3502,6 @@
         ]
     },
     {
-        "name": "\\Zend_Auth_Adapter_Interface",
-        "size": 3000,
-        "relations": []
-    },
-    {
         "name": "\\Hal_Auth_Adapter_DbTable",
         "size": 3000,
         "relations": []
@@ -3541,6 +3517,16 @@
         "relations": [
             "\\Zend_Db_Table_Abstract",
             "\\Exception"
+        ]
+    },
+    {
+        "name": "\\Ccsd\\Auth\\AdapterFactory",
+        "size": 3000,
+        "relations": [
+            "\\Ccsd\\Auth\\Adapter\\DbTable",
+            "\\Ccsd_Auth_Adapter_Cas",
+            "\\Ccsd\\Auth\\Adapter\\Idp",
+            "\\Ccsd_Auth_Adapter_Orcid"
         ]
     },
     {
@@ -3602,6 +3588,11 @@
     },
     {
         "name": "\\Ccsd_Lang_Reader",
+        "size": 3000,
+        "relations": []
+    },
+    {
+        "name": "\\Ccsd_Db_Adapter_Cas",
         "size": 3000,
         "relations": []
     },
@@ -3864,7 +3855,9 @@
     {
         "name": "\\Ccsd_View_Helper_Abstract",
         "size": 3000,
-        "relations": []
+        "relations": [
+            "\\Zend_View_Helper_Abstract"
+        ]
     },
     {
         "name": "\\Ccsd_View_Helper_DisplayFlashMessages",
@@ -3885,19 +3878,7 @@
         "relations": []
     },
     {
-        "name": "\\Episciences\\Api\\OpenAlexApiClient",
-        "size": 3000,
-        "relations": [
-            "\\Episciences\\Api\\AbstractApiClient"
-        ]
-    },
-    {
         "name": "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences_Paper_Citations_Logger",
         "size": 3000,
         "relations": []
     },
@@ -3956,7 +3937,6 @@
             "\\Episciences_Repositories_Common",
             "\\http\\Exception\\InvalidArgumentException",
             "\\Episciences\\Tools\\Translations",
-            "\\Episciences_Paper_AuthorsManager",
             "\\Episciences_Tools",
             "\\Episciences_Submit",
             "\\GuzzleHttp\\Client",
@@ -3988,13 +3968,6 @@
         "relations": []
     },
     {
-        "name": "\\Episciences\\Api\\CrossrefApiClient",
-        "size": 3000,
-        "relations": [
-            "\\Episciences\\Api\\AbstractApiClient"
-        ]
-    },
-    {
         "name": "\\row",
         "size": 3000,
         "relations": []
@@ -4007,15 +3980,6 @@
         ]
     },
     {
-        "name": "\\Episciences_Website_Navigation_Page",
-        "size": 3000,
-        "relations": [
-            "\\Ccsd_Website_Navigation_Page",
-            "\\Episciences_Acl",
-            "\\Zend_Registry"
-        ]
-    },
-    {
         "name": "\\Episciences_Website_Navigation_NavigationManager",
         "size": 3000,
         "relations": []
@@ -4025,6 +3989,15 @@
         "size": 3000,
         "relations": [
             "\\Episciences_Website_Navigation_Page"
+        ]
+    },
+    {
+        "name": "\\Episciences_Website_Navigation_Page",
+        "size": 3000,
+        "relations": [
+            "\\Ccsd_Website_Navigation_Page",
+            "\\Episciences_Acl",
+            "\\Zend_Registry"
         ]
     },
     {
@@ -4232,9 +4205,7 @@
     {
         "name": "\\Episciences_Cache",
         "size": 3000,
-        "relations": [
-            "\\Ccsd_Cache"
-        ]
+        "relations": []
     },
     {
         "name": "\\Episciences_Reviewer_PoolManager",
@@ -4256,6 +4227,11 @@
         "relations": []
     },
     {
+        "name": "\\Episciences_tools",
+        "size": 3000,
+        "relations": []
+    },
+    {
         "name": "\\Episciences_DoiTools",
         "size": 3000,
         "relations": []
@@ -4266,16 +4242,6 @@
         "relations": [
             "\\Zend_View_Helper_Abstract"
         ]
-    },
-    {
-        "name": "\\Episciences\\QueueMessage",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences\\QueueMessageManager",
-        "size": 3000,
-        "relations": []
     },
     {
         "name": "\\Episciences\\Trait\\Tools",
@@ -4309,23 +4275,6 @@
     },
     {
         "name": "\\Episciences\\Trait\\LocaleByCookieTrait",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences\\Api\\DoiApiClient",
-        "size": 3000,
-        "relations": [
-            "\\Episciences\\Api\\AbstractApiClient"
-        ]
-    },
-    {
-        "name": "\\Psr\\Log\\NullLogger",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Symfony\\Component\\Cache\\Adapter\\NullAdapter",
         "size": 3000,
         "relations": []
     },
@@ -4365,30 +4314,9 @@
         "name": "\\Episciences_SoftwareHeritageTools",
         "size": 3000,
         "relations": [
-            "\\Episciences\\Api\\SoftwareHeritageApiClient",
-            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
-            "\\GuzzleHttp\\Client"
-        ]
-    },
-    {
-        "name": "\\Episciences\\Api\\SoftwareHeritageApiClient",
-        "size": 3000,
-        "relations": [
-            "\\Episciences\\Api\\AbstractApiClient",
+            "\\GuzzleHttp\\Client",
             "\\Episciences_Repositories"
         ]
-    },
-    {
-        "name": "\\Monolog\\Handler\\StreamHandler",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences_Hal_TeiCacheManager",
-        "size": 3000,
-        "relations": []
     },
     {
         "name": "\\DateTimeImmutable",
@@ -4522,41 +4450,6 @@
         ]
     },
     {
-        "name": "\\Episciences\\Api\\BiblioRefApiClient",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences\\Api\\AbstractApiClient",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Psr\\Cache\\CacheItemPoolInterface",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Psr\\Log\\LoggerInterface",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences\\Api\\OpenCitationsApiClient",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences\\Api\\OpenAireApiClient",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Psr\\Cache\\CacheItemInterface",
-        "size": 3000,
-        "relations": []
-    },
-    {
         "name": "\\Episciences_Paper_Dataset",
         "size": 3000,
         "relations": []
@@ -4577,34 +4470,6 @@
         "relations": []
     },
     {
-        "name": "\\Episciences_Paper_Projects_ViewFormatter",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences_Paper_Projects_Repository",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences_Paper_Projects",
-        "size": 3000,
-        "relations": [
-            "\\Episciences_Tools",
-            "\\DateTime"
-        ]
-    },
-    {
-        "name": "\\Episciences_Paper_Projects_EnrichmentService",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences_Paper_Projects_HalApiClient",
-        "size": 3000,
-        "relations": []
-    },
-    {
         "name": "\\Episciences_Paper_Citations",
         "size": 3000,
         "relations": []
@@ -4615,38 +4480,12 @@
         "relations": []
     },
     {
-        "name": "\\Episciences_Paper_Authors_HalTeiParser",
+        "name": "\\simpleXMLElement",
         "size": 3000,
         "relations": []
     },
     {
-        "name": "\\Episciences_Paper_Authors_Repository",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences_Paper_Authors_EnrichmentService",
-        "size": 3000,
-        "relations": [
-            "\\Episciences_Paper_Authors_Repository",
-            "\\Episciences_Hal_TeiCacheManager",
-            "\\Episciences_Paper_Authors_HalTeiParser",
-            "\\Episciences_Paper_Authors",
-            "\\Episciences_Tools",
-            "\\Episciences_Paper_Authors_AffiliationHelper",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler"
-        ]
-    },
-    {
-        "name": "\\Episciences_Paper_Authors_ViewFormatter",
-        "size": 3000,
-        "relations": [
-            "\\Episciences_Paper_Authors_Repository"
-        ]
-    },
-    {
-        "name": "\\Episciences_Paper_Authors_AffiliationHelper",
+        "name": "\\Monolog\\Handler\\StreamHandler",
         "size": 3000,
         "relations": []
     },
@@ -4695,20 +4534,7 @@
         "relations": []
     },
     {
-        "name": "\\Episciences_Paper_Citations_Repository",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences_Paper_Citations_ViewFormatter",
-        "size": 3000,
-        "relations": [
-            "\\Episciences_Paper_Citations_Repository",
-            "\\Zend_Registry"
-        ]
-    },
-    {
-        "name": "\\Episciences_Paper_Citations_EnrichmentService",
+        "name": "\\Episciences_OpencitationsTools",
         "size": 3000,
         "relations": []
     },
@@ -4716,6 +4542,14 @@
         "name": "\\Episciences_Paper_ProjectsManager",
         "size": 3000,
         "relations": []
+    },
+    {
+        "name": "\\Episciences_Paper_Projects",
+        "size": 3000,
+        "relations": [
+            "\\Episciences_Tools",
+            "\\DateTime"
+        ]
     },
     {
         "name": "\\Episciences_Paper_ClassificationsManager",
@@ -4743,17 +4577,7 @@
         "relations": []
     },
     {
-        "name": "\\Episciences\\Paper\\Visits\\BotDetector",
-        "size": 3000,
-        "relations": []
-    },
-    {
         "name": "\\Episciences\\Files\\File",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences_OpencitationsTools",
         "size": 3000,
         "relations": []
     },
@@ -4991,8 +4815,7 @@
             "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
             "\\Zend_Db_Table_Abstract",
             "\\Zend_Validate_Date",
-            "\\Episciences\\Paper\\Export",
-            "\\Psr\\Cache\\CacheItemPoolInterface",
+            "\\Episciences_Cache",
             "\\Episciences_Tools"
         ]
     },
@@ -5103,6 +4926,14 @@
         ]
     },
     {
+        "name": "\\Episciences\\View\\Osl",
+        "size": 3000,
+        "relations": [
+            "\\Zend_Controller_Front",
+            "\\Zend_Session_Namespace"
+        ]
+    },
+    {
         "name": "\\Laravolt\\Avatar\\Avatar",
         "size": 3000,
         "relations": []
@@ -5172,27 +5003,32 @@
         "relations": []
     },
     {
-        "name": "\\Episciences_View_Helper_UserAvatar",
+        "name": "\\MergePdfVol",
         "size": 3000,
         "relations": [
-            "\\Ccsd_View_Helper_Abstract",
-            "\\InvalidArgumentException",
-            "\\Episciences_Auth"
+            "\\JournalScript",
+            "\\Monolog\\Logger",
+            "\\Monolog\\Handler\\StreamHandler",
+            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
+            "\\GuzzleHttp\\Client",
+            "\\RuntimeException"
         ]
     },
     {
-        "name": "\\InitDevUsersCommand",
+        "name": "\\JournalScript",
+        "size": 3000,
+        "relations": []
+    },
+    {
+        "name": "\\TranslationUpdaterCommand",
         "size": 3000,
         "relations": [
             "\\Symfony\\Component\\Console\\Command\\Command",
+            "\\Monolog\\Logger",
             "\\Symfony\\Component\\Console\\Input\\InputInterface",
             "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Zend_Application",
-            "\\Zend_Locale",
-            "\\Zend_Registry",
-            "\\Faker\\Factory",
-            "\\Episciences_User"
+            "\\Symfony\\Component\\Yaml\\Yaml",
+            "\\Monolog\\Handler\\StreamHandler"
         ]
     },
     {
@@ -5211,90 +5047,23 @@
         "relations": []
     },
     {
-        "name": "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Faker\\Factory",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\ImportVolumesCommand",
-        "size": 3000,
-        "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
-            "\\Episciences_ReviewsManager",
-            "\\Zend_Registry",
-            "\\Episciences_Volume",
-            "\\RuntimeException",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Locale"
-        ]
-    },
-    {
-        "name": "\\TranslationUpdaterCommand",
-        "size": 3000,
-        "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Monolog\\Logger",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Yaml\\Yaml",
-            "\\Monolog\\Handler\\StreamHandler"
-        ]
-    },
-    {
         "name": "\\Symfony\\Component\\Yaml\\Yaml",
         "size": 3000,
         "relations": []
     },
     {
-        "name": "\\ImportSectionsCommand",
+        "name": "\\GetCreatorData",
         "size": 3000,
         "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
+            "\\JournalScript",
             "\\Monolog\\Logger",
             "\\Monolog\\Handler\\StreamHandler",
-            "\\Monolog\\Formatter\\LineFormatter",
-            "\\Episciences_Section",
             "\\Zend_Db_Table_Abstract",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
-        ]
-    },
-    {
-        "name": "\\scripts\\Queue",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\scripts\\AbstractScript",
-        "size": 3000,
-        "relations": [
-            "\\Script",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\RotatingFileHandler",
-            "\\Monolog\\Formatter\\LineFormatter",
-            "\\Monolog\\Handler\\StreamHandler"
+            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
+            "\\Episciences_PapersManager",
+            "\\Episciences_Paper_AuthorsManager",
+            "\\Episciences_OpenAireResearchGraphTools",
+            "\\Episciences_Paper_Authors"
         ]
     },
     {
@@ -5308,7 +5077,7 @@
         "name": "\\InboxNotifications",
         "size": 3000,
         "relations": [
-            "\\scripts\\AbstractScript",
+            "\\Script",
             "\\Zend_Registry",
             "\\Zend_Locale",
             "\\Episciences_Notify_Reader",
@@ -5331,127 +5100,36 @@
             "\\Episciences_User_Invitation",
             "\\Episciences_User_InvitationsManager",
             "\\Episciences_View_Helper_Date",
-            "\\Episciences_Paper_AuthorsManager"
+            "\\Episciences_Paper_AuthorsManager",
+            "\\Monolog\\Logger",
+            "\\Monolog\\Handler\\RotatingFileHandler",
+            "\\Monolog\\Formatter\\LineFormatter",
+            "\\Monolog\\Handler\\StreamHandler"
         ]
     },
     {
-        "name": "\\GetZbReviewsCommand",
+        "name": "\\getLicenceDataEnrichment",
         "size": 3000,
         "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
-            "\\Episciences_ReviewsManager",
-            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
+            "\\JournalScript",
             "\\Zend_Db_Table_Abstract",
-            "\\Episciences_Paper_DatasetsMetadataManager",
-            "\\Episciences_Paper_DatasetsManager",
-            "\\Episciences_PapersManager",
-            "\\GuzzleHttp\\Client",
-            "\\Episciences_Paper_DatasetMetadata",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
+            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
+            "\\Episciences_Paper_LicenceManager"
         ]
     },
     {
-        "name": "\\MergePdfVolCommand",
+        "name": "\\GetClassificationJel",
         "size": 3000,
         "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
+            "\\JournalScript",
             "\\Monolog\\Logger",
             "\\Monolog\\Handler\\StreamHandler",
-            "\\GuzzleHttp\\Client",
-            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
-            "\\RuntimeException",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
-        ]
-    },
-    {
-        "name": "\\GetClassificationJelCommand",
-        "size": 3000,
-        "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
-            "\\Episciences_ReviewsManager",
-            "\\GuzzleHttp\\Client",
-            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
-            "\\Episciences\\Api\\OpenAireApiClient",
+            "\\Monolog\\Formatter\\LineFormatter",
             "\\Zend_Db_Table_Abstract",
             "\\Episciences_Paper_ClassificationsManager",
-            "\\Episciences_Paper_Classifications",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
-        ]
-    },
-    {
-        "name": "\\CreateDoajVolumeExportsCommand",
-        "size": 3000,
-        "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
+            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
             "\\GuzzleHttp\\Client",
-            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
-            "\\RuntimeException",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
-        ]
-    },
-    {
-        "name": "\\GetLicenceDataCommand",
-        "size": 3000,
-        "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
-            "\\Episciences_ReviewsManager",
-            "\\Zend_Db_Table_Abstract",
-            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
-            "\\Episciences_Paper_LicenceManager",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
+            "\\Episciences_Paper_Classifications"
         ]
     },
     {
@@ -5475,40 +5153,9 @@
         ]
     },
     {
-        "name": "\\JournalScript",
-        "size": 3000,
-        "relations": []
-    },
-    {
         "name": "\\Psr\\Http\\Message\\ResponseInterface",
         "size": 3000,
         "relations": []
-    },
-    {
-        "name": "\\GetCreatorDataCommand",
-        "size": 3000,
-        "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
-            "\\Episciences_ReviewsManager",
-            "\\Zend_Db_Table_Abstract",
-            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
-            "\\Episciences_PapersManager",
-            "\\Episciences_Paper_AuthorsManager",
-            "\\Episciences_OpenAireResearchGraphTools",
-            "\\Episciences_Paper_Authors",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
-        ]
     },
     {
         "name": "\\getDumpVolumeYear",
@@ -5527,12 +5174,13 @@
         ]
     },
     {
-        "name": "\\StatusQueue",
+        "name": "\\getCitationsData",
         "size": 3000,
         "relations": [
-            "\\scripts\\Queue",
-            "\\GuzzleHttp\\Client",
-            "\\Episciences\\QueueMessage"
+            "\\JournalScript",
+            "\\Zend_Db_Table_Abstract",
+            "\\Episciences_OpencitationsTools",
+            "\\Episciences_Paper_CitationsManager"
         ]
     },
     {
@@ -5544,23 +5192,40 @@
         ]
     },
     {
+        "name": "\\Script",
+        "size": 3000,
+        "relations": [
+            "\\ProgressBar",
+            "\\Zend_Loader_Autoloader",
+            "\\Zend_Console_Getopt",
+            "\\Symfony\\Component\\Dotenv\\Dotenv",
+            "\\Zend_Application",
+            "\\Zend_Db",
+            "\\Zend_Db_Table",
+            "\\Episciences_Paper_MetaDataSourcesManager",
+            "\\Zend_Registry",
+            "\\Zend_Translate",
+            "\\Zend_Locale"
+        ]
+    },
+    {
         "name": "\\cottagelabs\\coarNotifications\\orm\\COARNotification",
         "size": 3000,
         "relations": []
     },
     {
-        "name": "\\GenerateUsersCommand",
+        "name": "\\App\\Command\\GenerateSitemap",
         "size": 3000,
         "relations": [
             "\\Symfony\\Component\\Console\\Command\\Command",
+            "\\GuzzleHttp\\Client",
+            "\\Monolog\\Logger",
+            "\\Monolog\\Handler\\StreamHandler",
             "\\Symfony\\Component\\Console\\Input\\InputInterface",
             "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Zend_Application",
-            "\\Zend_Locale",
-            "\\Zend_Registry",
-            "\\Faker\\Factory",
-            "\\Episciences_User"
+            "\\RuntimeException",
+            "\\SimpleXMLElement",
+            "\\DOMDocument"
         ]
     },
     {
@@ -5576,72 +5241,21 @@
         ]
     },
     {
-        "name": "\\UpdateCounterRobotsListCommand",
+        "name": "\\GetZbReviews",
         "size": 3000,
         "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
+            "\\JournalScript",
             "\\Monolog\\Logger",
             "\\Monolog\\Handler\\StreamHandler",
-            "\\GuzzleHttp\\Client",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
-        ]
-    },
-    {
-        "name": "\\GenerateSitemapCommand",
-        "size": 3000,
-        "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
-            "\\GuzzleHttp\\Client",
-            "\\RuntimeException",
-            "\\SimpleXMLElement",
-            "\\DOMDocument",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
-        ]
-    },
-    {
-        "name": "\\GetLinkDataCommand",
-        "size": 3000,
-        "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
-            "\\Episciences_ReviewsManager",
-            "\\GuzzleHttp\\Client",
-            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
+            "\\Monolog\\Formatter\\LineFormatter",
             "\\Zend_Db_Table_Abstract",
             "\\Episciences_Paper_DatasetsMetadataManager",
-            "\\Episciences_DoiTools",
             "\\Episciences_Paper_DatasetsManager",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
+            "\\Episciences_PapersManager",
+            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
+            "\\GuzzleHttp\\Client",
+            "\\Exception",
+            "\\Episciences_Paper_DatasetMetadata"
         ]
     },
     {
@@ -5739,6 +5353,17 @@
         ]
     },
     {
+        "name": "\\zbjatZipper",
+        "size": 3000,
+        "relations": [
+            "\\JournalScript",
+            "\\Episciences_ReviewsManager",
+            "\\GuzzleHttp\\Client",
+            "\\RuntimeException",
+            "\\ZipArchive"
+        ]
+    },
+    {
         "name": "\\UpdatePapersNewJsonFieldDocument",
         "size": 3000,
         "relations": [
@@ -5752,9 +5377,28 @@
         ]
     },
     {
-        "name": "\\Script",
+        "name": "\\getFundingData",
         "size": 3000,
-        "relations": []
+        "relations": [
+            "\\JournalScript",
+            "\\Monolog\\Logger",
+            "\\Monolog\\Handler\\StreamHandler",
+            "\\Zend_Db_Table_Abstract",
+            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
+            "\\Episciences_OpenAireResearchGraphTools",
+            "\\Episciences_Paper_ProjectsManager"
+        ]
+    },
+    {
+        "name": "\\UpdateVolumes",
+        "size": 3000,
+        "relations": [
+            "\\JournalScript",
+            "\\Episciences_ReviewsManager",
+            "\\Zend_Registry",
+            "\\Zend_Exception",
+            "\\Episciences_Volume"
+        ]
     },
     {
         "name": "\\ProgressBar",
@@ -5783,53 +5427,15 @@
         "relations": []
     },
     {
-        "name": "\\GetFundingDataCommand",
+        "name": "\\ImportSections",
         "size": 3000,
         "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
+            "\\JournalScript",
             "\\Monolog\\Logger",
             "\\Monolog\\Handler\\StreamHandler",
-            "\\Episciences_ReviewsManager",
-            "\\Zend_Db_Table_Abstract",
-            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
-            "\\Episciences_OpenAireResearchGraphTools",
-            "\\Episciences_Paper_ProjectsManager",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
-        ]
-    },
-    {
-        "name": "\\ZbjatsZipperCommand",
-        "size": 3000,
-        "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
-            "\\GuzzleHttp\\Client",
-            "\\Episciences_ReviewsManager",
-            "\\Episciences_Volume",
-            "\\RuntimeException",
-            "\\Episciences_Paper",
-            "\\ZipArchive",
-            "\\DirectoryIterator",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
+            "\\Monolog\\Formatter\\LineFormatter",
+            "\\Episciences_Section",
+            "\\Zend_Db_Table_Abstract"
         ]
     },
     {
@@ -5838,55 +5444,16 @@
         "relations": []
     },
     {
-        "name": "\\GetCitationsDataCommand",
+        "name": "\\buildDoajVolumeExport",
         "size": 3000,
         "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
-            "\\Episciences_ReviewsManager",
-            "\\Zend_Db_Table_Abstract",
-            "\\Episciences_OpencitationsTools",
-            "\\Episciences_Paper_Citations_EnrichmentService",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
-        ]
-    },
-    {
-        "name": "\\UpdateGeoIpCommand",
-        "size": 3000,
-        "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
+            "\\JournalScript",
             "\\GuzzleHttp\\Client",
-            "\\PharData",
-            "\\RecursiveDirectoryIterator",
-            "\\RecursiveIteratorIterator"
+            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
+            "\\Monolog\\Logger",
+            "\\Monolog\\Handler\\StreamHandler",
+            "\\RuntimeException"
         ]
-    },
-    {
-        "name": "\\PharData",
-        "size": 3000,
-        "relations": []
     },
     {
         "name": "\\getDumpVolumeSpeIssue",
@@ -5894,31 +5461,6 @@
         "relations": [
             "\\JournalScript",
             "\\Zend_Db_Table_Abstract"
-        ]
-    },
-    {
-        "name": "\\ProcessStatTempCommand",
-        "size": 3000,
-        "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Zend_Db_Table_Abstract",
-            "\\Episciences\\Paper\\Visits\\BotDetector",
-            "\\geertw\\IpAnonymizer\\IpAnonymizer",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
-            "\\GeoIp2\\Database\\Reader",
-            "\\Zend_Db_Adapter_Abstract",
-            "\\Zend_Db_Expr",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
         ]
     },
     {
@@ -5944,43 +5486,31 @@
         ]
     },
     {
-        "name": "\\GetClassificationMscCommand",
+        "name": "\\getLinkData",
         "size": 3000,
         "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Monolog\\Logger",
-            "\\Monolog\\Handler\\StreamHandler",
-            "\\Episciences_ReviewsManager",
-            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
-            "\\Zend_Db_Table_Abstract",
-            "\\Episciences_Paper_ClassificationsManager",
+            "\\JournalScript",
             "\\GuzzleHttp\\Client",
-            "\\Episciences_Paper_Classifications",
-            "\\Zend_Application",
-            "\\Zend_Loader_Autoloader",
-            "\\Zend_Db",
-            "\\Zend_Db_Table",
-            "\\Episciences_Paper_MetaDataSourcesManager",
-            "\\Zend_Registry",
-            "\\Zend_Locale"
+            "\\Zend_Db_Table_Abstract",
+            "\\Episciences_Paper_DatasetsMetadataManager",
+            "\\Episciences_DoiTools",
+            "\\Episciences_Paper_DatasetsManager"
         ]
     },
     {
-        "name": "\\CreateBotUserCommand",
+        "name": "\\GetClassificationMsc",
         "size": 3000,
         "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
-            "\\Zend_Application",
-            "\\Zend_Locale",
-            "\\Zend_Registry",
-            "\\Episciences_User",
-            "\\Ccsd_User_Models_UserMapper"
+            "\\JournalScript",
+            "\\Monolog\\Logger",
+            "\\Monolog\\Handler\\StreamHandler",
+            "\\Monolog\\Formatter\\LineFormatter",
+            "\\Zend_Db_Table_Abstract",
+            "\\Episciences_Paper_ClassificationsManager",
+            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
+            "\\GuzzleHttp\\Client",
+            "\\Exception",
+            "\\Episciences_Paper_Classifications"
         ]
     }
 ];
