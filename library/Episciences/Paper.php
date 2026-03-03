@@ -1748,6 +1748,13 @@ class Episciences_Paper
      */
     public function setConcept_identifier(string $conceptIdentifier = null): self
     {
+        if (
+            $conceptIdentifier &&
+            !$this->hasHook
+        ) {
+            throw new \InvalidArgumentException('Concept identifier should be applied exclusively to submissions coming from a repository with a hook');
+        }
+
         $this->_concept_identifier = $conceptIdentifier;
         return $this;
     }
@@ -2582,18 +2589,22 @@ class Episciences_Paper
 
     /**
      * check if paper already exists in database
+     * @param bool $strict
      * @return string
      */
-    public function alreadyExists(): string
+    public function alreadyExists(bool $strict = true): string
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $sql = $db->select()
-            ->from(T_PAPERS, ['DOCID'])
-            ->where('RVID = ?', $this->getRvid())
-            ->where('STATUS != ?', self::STATUS_DELETED);
+        $sql = $db->select()->from(T_PAPERS, ['DOCID']);
 
-        if ($this->getConcept_identifier()) {
+        if ($strict) {
+            $sql->where('RVID = ?', $this->getRvid());
+        }
+
+        $sql->where('STATUS != ?', self::STATUS_DELETED);
+
+        if ($this->getConcept_identifier()) { // Concept identifier to be used only for repositories with hook
             $sql->where('CONCEPT_IDENTIFIER = ?', $this->getConcept_identifier());
         } else {
             $sql->where('IDENTIFIER = ?', $this->getIdentifier());
@@ -2602,10 +2613,7 @@ class Episciences_Paper
         if ($this->getVersion()) {
             $sql->where('VERSION = ?', $this->getVersion());
         }
-
-        //$sql->where('REPOID = ?', $this->getRepoid());
-
-        // Si plusieurs version de l'article, on recupère l'article dans sa dernière version
+        // If there are several versions of the article, we retrieve the latest version of the article
         $sql->order('WHEN DESC');
 
         return ($db->fetchOne($sql));
@@ -3071,7 +3079,7 @@ class Episciences_Paper
      * @return array
      * @throws Zend_Db_Statement_Exception
      */
-    public function getReports(int | null $status = null, bool $forceFiltering = false): array
+    public function getReports(int|null $status = null, bool $forceFiltering = false): array
     {
         if (!is_array($this->_reports)) {
             $this->loadReports();
