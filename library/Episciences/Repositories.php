@@ -311,9 +311,9 @@ class Episciences_Repositories
         return self::getTypeByIdentifier($repoId) === self::TYPE_DSPACE;
     }
 
-    public static function getTypeByIdentifier(int $repoId): string
+    public static function getTypeByIdentifier(int $repoId): ?string
     {
-        return self::getRepositories()[$repoId][self::REPO_TYPE];
+        return self::getRepositories()[$repoId][self::REPO_TYPE] ?? null;
     }
 }
 
