@@ -11,14 +11,7 @@ class Episciences_Rating_Manager
      */
     public static function find($docid, $uid)
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $db->select()
-            ->from(T_REVIEWER_REPORTS)
-            ->where('DOCID = ?', $docid)
-            ->where('UID = ?', $uid);
-
-        $row = $db->fetchRow($sql);
-        return ($row) ? new Episciences_Rating_Report($row) : false;
+        return Episciences_Rating_Report::find($docid, $uid);
     }
 
     /**
@@ -31,7 +24,7 @@ class Episciences_Rating_Manager
     public static function getList($docid = null, $uid = null, $status = null)
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $db->select()->from(T_REVIEWER_REPORTS)->order('CREATION_DATE', 'DESC');
+        $sql = $db->select()->from(T_REVIEWER_REPORTS)->order('CREATION_DATE DESC');
 
         if ($docid) {
             $sql->where('DOCID = ?', $docid);
@@ -66,7 +59,7 @@ class Episciences_Rating_Manager
         $nbRatings = 0;
 
         foreach ($ratings as $rating) {
-            if ($rating->getStatus()) {
+            if ($rating->getStatus() !== Episciences_Rating_Report::STATUS_PENDING) {
                 $total += $rating->getScore();
                 $nbRatings++;
             }
@@ -108,7 +101,7 @@ class Episciences_Rating_Manager
             // separator
             if ($criterion->isSeparator()) {
                 $form->addElement('note', $id, [
-                    'value' => '<h2 class="separator">' . $criterion->getLabel() . '</h2>']);
+                    'value' => '<h2 class="separator">' . htmlspecialchars($criterion->getLabel(), ENT_QUOTES, 'UTF-8') . '</h2>']);
             }
 
             // note
@@ -173,12 +166,16 @@ class Episciences_Rating_Manager
                         '/cid/' . $criterion->getId() .
                         '/file/' . $criterion->getAttachment();
 
-                    $bloc_delete_file = "<div class=col-sm-2'>";
-                    $bloc_delete_file .= "<a class='btn btn-danger btn-xs pull-right' onclick=\"confirmDeleteAttachment('$file_delete_url')\">";
+                    $safeDeleteUrl    = htmlspecialchars($file_delete_url, ENT_QUOTES, 'UTF-8');
+                    $safeFilepath     = htmlspecialchars($filepath, ENT_QUOTES, 'UTF-8');
+                    $safeAttachment   = htmlspecialchars($criterion->getAttachment(), ENT_QUOTES, 'UTF-8');
+
+                    $bloc_delete_file = "<div class='col-sm-2'>";
+                    $bloc_delete_file .= "<a class='btn btn-danger btn-xs pull-right' onclick=\"confirmDeleteAttachment('$safeDeleteUrl')\">";
                     $bloc_delete_file .= '<span class="glyphicon glyphicon-trash" style="margin-right: 5px;"></span>';
                     $bloc_delete_file .= $translator->translate('Supprimer');
                     $bloc_delete_file .= '</a></div>';
-                    $description .= "<div class='col-sm-10'><p><a href='$filepath' target='_blank'>" . $criterion->getAttachment() . "</a></p></div>"
+                    $description .= "<div class='col-sm-10'><p><a href='$safeFilepath' target='_blank'>$safeAttachment</a></p></div>"
                         . $bloc_delete_file;
                     $description .= "<div class='row'></div>";
                 }

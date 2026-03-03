@@ -83,18 +83,18 @@ class Episciences_Rating_ReportManager
         $nameDir = $gridPath . $uid;
 
         if (!is_dir($nameDir)) {
-            error_log('The filename' . $nameDir . 'not exists or is not a directory');
+            error_log('The filename ' . $nameDir . ' does not exist or is not a directory');
             return false;
         }
 
         $newName = $gridPath . 'unassigned_reviewer_' . $uid . '_' . date("Y-m-d") . '_' . date("H:i:s") . '.save';
 
-        if ($result = !rename($nameDir, $newName)) {
+        if (!rename($nameDir, $newName)) {
             error_log('Failed to rename ' . $nameDir . ' to ' . $newName);
-            return $result;
+            return false;
         }
 
-        return !$result;
+        return true;
     }
 
     /**
@@ -109,25 +109,24 @@ class Episciences_Rating_ReportManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $where[$whereFiled . ' = ?'] = $merger;
 
-        $db->delete(self::TABLE, $where);
-
         $sql = 'INSERT IGNORE INTO ';
         $sql .= $db->quoteIdentifier(self::TABLE);
         $sql .= ' (ID, UID, ONBEHALF_UID, DOCID, STATUS, CREATION_DATE, UPDATE_DATE) VALUES ';
         $sql .= implode(',', $values);
 
-        $insert = $db->prepare($sql);
-
         try {
+            $db->beginTransaction();
+            $db->delete(self::TABLE, $where);
+            $insert = $db->prepare($sql);
             $insert->execute();
+            $db->commit();
         } catch (Exception $e) {
-            $insert = null;
-            trigger_error($e->getMessage(), E_USER_ERROR);
+            $db->rollBack();
+            error_log($e->getMessage());
+            return 0;
         }
 
-
-        return ($insert) ? $insert->rowCount() : 0;
-
+        return $insert->rowCount();
     }
 }
 
