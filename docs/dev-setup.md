@@ -149,6 +149,75 @@ sudo -u www-data php /var/www/htdocs/scripts/console.php enrichment:creators --r
 
 ---
 
+## Code Quality & Static Analysis
+
+The project includes several tools to ensure code quality and maintainability.
+
+### PHPStan (Static Analysis)
+
+Analyzes your code for potential bugs and type errors without running it.
+
+```bash
+# Run on the whole project
+make phpstan
+
+# Run on a specific file or directory
+make phpstan TARGET=library/Episciences/Api
+```
+
+### Rector (Automated Refactoring)
+
+Helps with automated code upgrades and refactoring.
+
+```bash
+# Run in dry-run mode (see what would change)
+make rector DRY_RUN=1
+
+# Apply changes
+make rector
+```
+
+### PhpMetrics (Metrics & Visualization)
+
+[![PhpMetrics](https://github.com/CCSDForge/episciences/actions/workflows/phpmetrics.yml/badge.svg)](https://ccsdforge.github.io/episciences/metrics/)
+
+Generates a comprehensive HTML report about code complexity, coupling, and maintainability.
+
+```bash
+# Optional: Run PHP tests first to include assertions count in the report
+make test-php
+
+# Generate/Update the report
+make phpmetrics
+```
+
+The report is generated in `phpmetrics/report/index.html`. Open it in your browser to view the dashboard.
+
+---
+
+## Testing
+
+The project uses PHPUnit for backend tests and Jest for frontend tests.
+
+```bash
+# Run all tests (PHP + JS)
+make test
+
+# Run all tests with coverage reports
+make test-coverage
+
+# Run only PHP tests
+make test-php
+
+# Run only JS tests
+make test-js
+```
+
+PHP coverage is generated in `build/coverage` (if Xdebug/PCOV is available).
+JS coverage is generated in `coverage/lcov-report/index.html`.
+
+---
+
 ## Available Services
 
 | Service | URL |

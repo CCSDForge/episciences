@@ -84,3 +84,4 @@ assets/node_modules/
 /.gemini/
 /scripts/checkcasusers.php
 /scripts/checkDoi.php
+/build/
