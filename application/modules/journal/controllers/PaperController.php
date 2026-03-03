@@ -2152,6 +2152,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
+     * @throws JsonException
      */
     private function postSaveProcessing(
         Episciences_Paper   $paper,
@@ -2424,10 +2425,16 @@ class PaperController extends PaperDefaultController
     }
 
     /**
-     * @throws Zend_Mail_Exception
-     * @throws Zend_Exception
+     * @param Episciences_Paper $paper
+     * @param Episciences_Paper $newPaper
+     * @param Episciences_Comment $requestComment
+     * @param Episciences_Comment $answerComment
+     * @param array $coAuthors
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Mail_Exception
      */
     private function notifyManagersAndAuthor(
         Episciences_Paper   $paper,
@@ -2485,19 +2492,13 @@ class PaperController extends PaperDefaultController
      */
     private function notifyAuthorNewVersion(Episciences_Paper $newPaper, array $coAuthors): void
     {
-        $publicUrl = $this->view->url([
-            self::CONTROLLER => self::PUBLIC_PAPER_CONTROLLER,
-            self::ACTION => 'view',
-            'id' => $newPaper->getDocid(),
-        ]);
-
         $submitter = $newPaper->getSubmitter();
 
         Episciences_Mail_Send::sendMailFromReview(
             $submitter,
             Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR,
             [
-                Episciences_Mail_Tags::TAG_PAPER_URL => $publicUrl,
+                Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildPublicPaperUrl($newPaper->getDocid()),
                 Episciences_Mail_Tags::TAG_ARTICLE_ID => $newPaper->getDocid(),
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $newPaper->getPaperid(),
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $newPaper->getTitle(),
