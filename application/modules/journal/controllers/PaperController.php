@@ -1841,6 +1841,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      * @throws Zend_Json_Exception
+     * @throws JsonException
      */
     public function savenewversionAction(): void
     {
@@ -2054,8 +2055,15 @@ class PaperController extends PaperDefaultController
     }
 
     /**
-     * @throws Zend_Exception
+     * @param Episciences_Paper $paper
+     * @param array $post
+     * @param float $currentVersion
+     * @param bool|null $reassignReviewers
+     * @param bool|null $isAlreadyAccepted
+     * @return Episciences_Paper
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
     private function initializeNewPaper(
         Episciences_Paper $paper,
@@ -2090,14 +2098,20 @@ class PaperController extends PaperDefaultController
     }
 
     /**
+     * @param Episciences_Paper $newPaper
+     * @param array $post
+     * @param bool $reassignReviewers
+     * @param bool $isAlreadyAccepted
+     * @return int
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
     private function determineNewPaperStatus(
         Episciences_Paper $newPaper,
         array             $post,
-        bool              $reassignReviewers,
-        bool              $isAlreadyAccepted
+        ?bool              $reassignReviewers,
+        ?bool              $isAlreadyAccepted
     ): int
     {
         $isAssignedReviewers = $reassignReviewers && $newPaper->getReviewers(null, true);
