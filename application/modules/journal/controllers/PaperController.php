@@ -2263,7 +2263,11 @@ class PaperController extends PaperDefaultController
     }
 
     /**
-     * @throws Zend_Db_Statement_Exception
+     * @param Episciences_Paper $paper
+     * @param Episciences_Paper $newPaper
+     * @param array $post
+     * @param Episciences_Comment $requestComment
+     * @return Episciences_Comment
      */
     private function createAnswerComment(
         Episciences_Paper   $paper,
@@ -2272,11 +2276,6 @@ class PaperController extends PaperDefaultController
         Episciences_Comment $requestComment
     ): Episciences_Comment
     {
-        $reassignReviewers = $requestComment->getOption('reassign_reviewers');
-
-        $reviewers = $paper->getReviewers(null, true);
-
-        $isAssignedReviewers = $reassignReviewers && $reviewers;
 
         $answerCommentType = !in_array(
             $requestComment->getType(),
