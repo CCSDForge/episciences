@@ -1075,10 +1075,10 @@ class Episciences_Paper
     }
 
     /**
-     *  return oa version number
-     * @return mixed
+     *  return version number
+     * @return float
      */
-    public function getVersion()
+    public function getVersion() : float
     {
         return $this->_version;
     }

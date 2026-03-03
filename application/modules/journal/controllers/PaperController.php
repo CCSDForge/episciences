@@ -2033,9 +2033,9 @@ class PaperController extends PaperDefaultController
     }
 
 
-    private function resolveCurrentVersion(array $post, Episciences_Paper $paper)
+    private function resolveCurrentVersion(array $post, Episciences_Paper $paper) : float
     {
-        return $post['h_version'] ?? $paper->getVersion() + 1;
+        return isset($post['h_version']) ? (float)$post['h_version'] : ($paper->getVersion() + 1);
     }
 
     private function resolveConceptIdentifier(array &$post)
