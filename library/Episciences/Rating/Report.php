@@ -372,7 +372,7 @@ class Episciences_Rating_Report extends Episciences_Rating_Grid
             }
         }
 
-        if ($score != 0 && $coefs != 0) {
+        if ($coefs != 0) {
             $score = round(($score / $coefs) * $this->getMax_score(), $precision);
         } else {
             $score = null;
