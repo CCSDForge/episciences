@@ -26,6 +26,8 @@ test-php: ## Run PHP tests (PHPUnit)
 	@echo "Running PHP tests..."
 	@if [ -f $(PHPUNIT_CONFIG) ]; then \
 		echo "Using PHPUnit configuration: $(PHPUNIT_CONFIG)"; \
+		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p $(CNTR_APP_DIR)/build && \
+		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod 777 $(CNTR_APP_DIR)/build; \
 		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit; \
 	else \
 		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP tests"; \
@@ -99,6 +101,7 @@ test-clean: ## Clean test artifacts and caches
 	@echo "Cleaning test artifacts..."
 	@rm -rf coverage/
 	@rm -rf tests/coverage/
+	@rm -rf build/
 	@rm -rf .phpunit.result.cache
 	@echo "✅ Test artifacts cleaned"
 
@@ -137,7 +140,7 @@ test-status: ## Show testing setup status
 # =============================================================================
 # Linting & Refactoring Commands
 # =============================================================================
-.PHONY: phpstan rector
+.PHONY: phpstan rector phpmetrics
 
 phpstan: ## Run PHPStan static analysis (usage: make phpstan [TARGET=path/to/file] [LEVEL=X])
 	@echo "Ensuring PHPStan cache directory exists and is writable..."
@@ -154,3 +157,15 @@ rector: ## Run Rector refactoring tool (usage: make rector [TARGET=path/to/file]
 	@echo "Running Rector..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		./vendor/bin/rector process $(TARGET) $(if $(DRY_RUN),--dry-run)
+
+phpmetrics: ## Run PhpMetrics to generate static analysis report
+	@echo "Running PhpMetrics..."
+	@$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p $(CNTR_APP_DIR)/phpmetrics && \
+	 $(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod 777 $(CNTR_APP_DIR)/phpmetrics
+	@if [ ! -f build/junit.xml ]; then \
+		echo "⚠️ Warning: build/junit.xml not found. Assertions count won't be in the report."; \
+		echo "Run 'make test-php' first to generate the unit test logs."; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u 0:0 -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		./vendor/bin/phpmetrics --config=phpmetrics.json --report-html=phpmetrics/report .
+	@echo "✅ PhpMetrics report generated in phpmetrics/report/index.html"
