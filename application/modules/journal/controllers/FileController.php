@@ -416,14 +416,4 @@ class FileController extends DefaultController
         }
         return $fileUrl;
     }
-
-    private function buildReachedMessage() : string{
-
-        $message = $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limitée à');
-        $message .= ' ';
-        $message .= '<code>' . Episciences_Tools::toHumanReadable(MAX_FILE_SIZE) . '</code>';
-        return $message;
-
-    }
-
 }
