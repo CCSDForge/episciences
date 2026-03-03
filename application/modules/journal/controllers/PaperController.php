@@ -1933,15 +1933,7 @@ class PaperController extends PaperDefaultController
         $this->_helper->layout->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
     }
-
-    private function loadJournal(): Episciences_Review
-    {
-        /** @var Episciences_Review $review */
-        $review = Episciences_ReviewsManager::find(RVID);
-        $review->loadSettings();
-        return $review;
-    }
-
+    
     /**
      * @param Zend_Controller_Request_Http $request
      * @return Episciences_Paper
