@@ -1933,7 +1933,7 @@ class PaperController extends PaperDefaultController
         $this->_helper->layout->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
     }
-    
+
     /**
      * @param Zend_Controller_Request_Http $request
      * @return Episciences_Paper
@@ -2030,7 +2030,7 @@ class PaperController extends PaperDefaultController
         return isset($post['h_version']) ? (float)$post['h_version'] : ($paper->getVersion() + 1);
     }
 
-    private function resolveConceptIdentifier(array &$post)
+    private function resolveConceptIdentifier(array $post)
     {
         return $post['concept_identifier'] ?? null;
     }
