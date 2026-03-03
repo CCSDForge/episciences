@@ -2263,12 +2263,12 @@ class Episciences_PapersManager
     /**
      * without field DOCUMENT and RECORD
      * @param int $docId
-     * @param mixed $cols
+     * @param array|string $cols
      * @return Zend_Db_Select|null
      */
 
 
-    public static function partialGetQuery(int $docId, mixed $cols = [
+    public static function partialGetQuery(int $docId, array|string $cols = [
         'DOCID',
         'PAPERID',
         'DOI',
