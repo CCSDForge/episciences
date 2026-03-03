@@ -215,6 +215,6 @@ class Episciences_Mail_Tags
         self::TAG_VOLUME_ID => "identifiant du volume de l'article",
         self::TAG_VOLUME_NAME => "nom du volume de l'article",
         self::TAG_AUTHOR_FULL_NAME => "nom d'affichage de l’auteur",
-        self::TAG_AUTHOR_SCREEN_NAME => 'nom complet de l’auteur'
+        self::TAG_AUTHOR_SCREEN_NAME => "nom d’affichage de l’auteur"
     ];
 }
