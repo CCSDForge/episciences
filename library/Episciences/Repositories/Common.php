@@ -293,12 +293,17 @@ class Episciences_Repositories_Common
             $identifier = (string)$relatedId;
             $relationType = (string)$relatedId['relationType'];
             $relatedIdentifierType = (string)$relatedId['relatedIdentifierType'];
+            $ressourceType = (string)$relatedId['resource_type'];
+
+            if ($ressourceType === ''){
+                $ressourceType = 'dataset';
+            }
 
             if (!empty($identifier)) {
                 $relatedIdentifiers[] = [
                     'identifier' => $identifier,
                     'relation' => $relationType,
-                    'resource_type' => 'dataset', // Default to dataset as shown in example
+                    'resource_type' => $ressourceType,
                     'scheme' => strtolower($relatedIdentifierType) === 'handle' ? 'url' : strtolower($relatedIdentifierType)
                 ];
             }
