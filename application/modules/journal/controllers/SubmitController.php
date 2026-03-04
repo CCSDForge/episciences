@@ -234,6 +234,7 @@ class SubmitController extends DefaultController
      *
      * @param array $formValues
      * @return array{0: array, 1: string} [result, message]
+     * @throws InvalidArgumentExceptionAlias
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */

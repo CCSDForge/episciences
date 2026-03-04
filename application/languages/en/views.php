@@ -1445,6 +1445,7 @@ return array(
     "l'entrepôt de cet article a changé." => "the record repository of this article has changed.",
     "la version de l'article à mettre à jour doit être supérieure à la version précédente." => "the version of the article to be updated must be greater than the previous version.",
     "Une erreur interne s'est produite, veuillez recommencer." => "An internal error has occurred, please try again.",
+    "Une erreur s'est produite pendant l'enregistrement de votre article." => "An error occurred while saving your article.",
     //Soumission d'une notice vide
     "Vous ne pouvez pas soumettre ce document; le fichier est non disponible; fin d'embargo : " => "You can not submit this document; the file is not available; the end date of the embargo: ",
     //suggestions de l'auteur

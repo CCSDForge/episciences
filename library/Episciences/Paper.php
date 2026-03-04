@@ -6,6 +6,7 @@ use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\Export;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
+use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 use Psr\Log\LogLevel;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Intl\Exception\MissingResourceException;
@@ -1098,7 +1099,7 @@ class Episciences_Paper
      * @param string $format
      * @param int|null $version
      * @return string|false
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      */
     public function get(string $format = 'tei', int $version = null)
     {
@@ -1167,7 +1168,7 @@ class Episciences_Paper
      * save paper to database
      * @return bool
      * @throws Zend_Db_Adapter_Exception
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      */
     public function save(): bool
     {
@@ -4029,6 +4030,7 @@ class Episciences_Paper
     /**
      * @param array $values
      * @return array
+     * @throws InvalidArgumentExceptionAlias
      * @throws Zend_Exception
      */
     public function updatePaper(array $values): array
@@ -4098,6 +4100,7 @@ class Episciences_Paper
             $translator = Zend_Registry::get('Zend_Translate');
             $message = $translator->translate("Une erreur interne s'est produite, veuillez recommencer.");
             $update['message'] = $message;
+            error_log($e->getMessage());
             return $update;
         }
     }
