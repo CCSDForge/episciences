@@ -219,6 +219,8 @@ class Episciences_Repositories_Common
         $rawReference = implode('. ', array_filter($parts, static fn($part) => $part !== ''));
         $rawReference = rtrim($rawReference, '.') . '.';
 
+        $tmp = [];
+
         if (!empty($reference['doi'])) {
             $rawReference .= ' ' . $reference['doi'] . '.';
             $tmp['doi'] = $reference['doi'];
@@ -369,7 +371,10 @@ class Episciences_Repositories_Common
         $personName = (string)$person->$nameField; // pour ARCHE
 
         if (empty($personName)) {
-            $personName = (string)$person->xpath($nameField)[0];
+            $result = $person->xpath($nameField);
+            if (!empty($result)) {
+                $personName = (string)$result[0];
+            }
         }
 
         if (empty($personName)) {
@@ -430,6 +435,9 @@ class Episciences_Repositories_Common
 
     public static function convertTo2LetterCode(string $language = null): ?string
     {
+        if ($language === null) {
+            return null;
+        }
         $strLen = strlen($language);
         if ($strLen > 2) {
             if ($strLen === 3) {
@@ -589,6 +597,15 @@ class Episciences_Repositories_Common
         if (preg_match('/\d+\.([0-9.]+)/', $identifier, $matches)) {
             return $matches[1];
         }
-        return 1;
+        return '1';
+    }
+
+    public static function safeDateFormat(string $datestamp): string
+    {
+        if ($datestamp === '') {
+            return '';
+        }
+        $dt = date_create($datestamp);
+        return $dt !== false ? $dt->format('Y-m-d') : '';
     }
 }
