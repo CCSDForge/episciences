@@ -215,22 +215,15 @@ class HeaderManager {
     }
 
     /**
-     * SECURITY: Replaces innerHTML with a safer alternative that also executes scripts.
-     * @param {HTMLElement} container 
-     * @param {string} html 
+     * SECURITY: Replaces innerHTML with a safer alternative.
+     * Scripts are NOT executed to prevent XSS.
+     * @param {HTMLElement} container
+     * @param {string} html
      */
     _safeSetInnerHTML(container, html) {
         container.innerHTML = '';
         const fragment = document.createRange().createContextualFragment(html);
-        const scripts = fragment.querySelectorAll('script');
         container.appendChild(fragment);
-
-        scripts.forEach(oldScript => {
-            const newScript = document.createElement('script');
-            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-            oldScript.parentNode.replaceChild(newScript, oldScript);
-        });
 
         // Initialize conditional display for new form
         this.setDisplayElements(container);
@@ -241,19 +234,27 @@ class HeaderManager {
     // -------------------------------------------------------------------------
 
     /**
-     * POST helper — always sends the X-Requested-With header expected by ZF1 isXmlHttpRequest().
+     * POST helper — always sends the X-Requested-With header expected by ZF1 isXmlHttpRequest()
+     * and includes the CSRF token from the meta tag if available.
      *
      * @param {string} url
      * @param {URLSearchParams|string} body
      * @returns {Promise<Response>}
      */
     async post(url, body) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const headers = {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        };
+
+        if (csrfToken) {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
+
         const res = await fetch(url, {
             method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
+            headers: headers,
             body: body ? body.toString() : null,
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -334,6 +335,12 @@ class HeaderManager {
                 clone.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
 
+            // ACCESSIBILITY: Move focus to the first input of the new form
+            const firstInput = divForm.querySelector('input:not([type="hidden"]), select, textarea');
+            if (firstInput) {
+                firstInput.focus();
+            }
+
             this.uniq++;
 
             this.announce(
@@ -373,7 +380,22 @@ class HeaderManager {
         if (!confirmed) return;
 
         const li = document.getElementById(logoId);
-        if (li) li.remove();
+        if (li) {
+            // ACCESSIBILITY: Determine where to move focus after deletion
+            const nextFocusTarget = li.nextElementSibling || li.previousElementSibling || document.querySelector('[data-action="add-logo"]');
+            
+            li.remove();
+
+            if (nextFocusTarget) {
+                // If it's another logo, focus its edit button
+                if (nextFocusTarget.tagName === 'LI' || nextFocusTarget.tagName === 'TR') {
+                    const editBtn = nextFocusTarget.querySelector('[data-action="toggle-edit"]');
+                    if (editBtn) editBtn.focus();
+                } else {
+                    nextFocusTarget.focus();
+                }
+            }
+        }
 
         this.announce(
             document.documentElement.lang === 'fr'
@@ -443,6 +465,12 @@ class HeaderManager {
             form.querySelectorAll('.elem-link').forEach(link => {
                 this.displayElements(link);
             });
+
+            // ACCESSIBILITY: Move focus to the first input of the form
+            const firstInput = form.querySelector('input:not([type="hidden"]), select, textarea');
+            if (firstInput) {
+                firstInput.focus();
+            }
         }
     }
 

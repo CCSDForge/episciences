@@ -155,17 +155,20 @@ class MenuManager {
 
     /**
      * POST helper — always sends the X-Requested-With header expected by ZF1 isXmlHttpRequest().
+     * Also sends the CSRF token from the <meta name="csrf-token"> tag.
      *
      * @param {string} url
      * @param {URLSearchParams|string} body
      * @returns {Promise<Response>}
      */
     async post(url, body) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
         const res = await fetch(url, {
             method: 'POST',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-Token': csrfToken || '',
             },
             body: body.toString(),
         });
@@ -361,6 +364,12 @@ class MenuManager {
             // Scroll to the new item
             if (typeof clone.scrollIntoView === 'function') {
                 clone.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            // ACCESSIBILITY: Move focus to the first input of the new form
+            const firstInput = formContainer.querySelector('input:not([type="hidden"]), select, textarea');
+            if (firstInput) {
+                firstInput.focus();
             }
 
             this.announce(

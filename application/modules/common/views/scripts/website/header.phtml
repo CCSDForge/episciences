@@ -7,6 +7,7 @@ $this->jQuery()
     ->addJavascriptFile('/js/website/header-manager.js')
     ->addJavascriptFile('/js/website/header.js');
 ?>
+<meta name="csrf-token" content="<?php echo $this->escape($this->csrfToken); ?>">
 <script>
     $(function () {
         $('.colorpicker').colorpicker();

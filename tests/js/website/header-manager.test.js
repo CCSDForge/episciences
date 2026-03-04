@@ -93,19 +93,80 @@ describe('HeaderManager', () => {
             await manager.addLogo();
             expect(spy).toHaveBeenCalledWith(expect.stringContaining('Nouveau logo ajouté'));
         });
+
+        test('focuses the first input of the new form', async () => {
+            const manager = makeManager(0);
+            global.fetch = jest.fn(() =>
+                Promise.resolve({
+                    ok: true,
+                    text: () => Promise.resolve('<input type="text" id="focus-me">'),
+                })
+            );
+
+            await manager.addLogo();
+            const input = document.getElementById('focus-me');
+            expect(document.activeElement).toBe(input);
+        });
+    });
+
+    describe('security and HTTP', () => {
+        test('_safeSetInnerHTML does NOT execute scripts', () => {
+            const manager = makeManager(0);
+            const container = document.createElement('div');
+            const spy = jest.fn();
+            window.scriptExecuted = spy;
+
+            manager._safeSetInnerHTML(container, '<script>window.scriptExecuted()</script><p>Safe content</p>');
+            
+            expect(container.querySelector('p').textContent).toBe('Safe content');
+            expect(spy).not.toHaveBeenCalled();
+            delete window.scriptExecuted;
+        });
+
+        test('post() includes CSRF token from meta tag', async () => {
+            const meta = document.createElement('meta');
+            meta.name = 'csrf-token';
+            meta.content = 'test-token';
+            document.head.appendChild(meta);
+
+            const manager = makeManager(0);
+            global.fetch = jest.fn(() => Promise.resolve({ ok: true }));
+
+            await manager.post('/test', 'data=1');
+
+            expect(global.fetch).toHaveBeenCalledWith('/test', expect.objectContaining({
+                headers: expect.objectContaining({
+                    'X-CSRF-Token': 'test-token'
+                })
+            }));
+            document.head.removeChild(meta);
+        });
     });
 
     describe('deleteLogo()', () => {
-        test('removes the logo after confirmation', () => {
+        test('removes the logo after confirmation and moves focus', () => {
             const manager = makeManager(0);
-            const li = document.createElement('li');
-            li.id = 'logo-test';
-            manager.rootList.appendChild(li);
+            const li1 = document.createElement('li');
+            li1.id = 'logo-1';
+            const editBtn1 = document.createElement('button');
+            editBtn1.setAttribute('data-action', 'toggle-edit');
+            li1.appendChild(editBtn1);
+            
+            const li2 = document.createElement('li');
+            li2.id = 'logo-2';
+            const editBtn2 = document.createElement('button');
+            editBtn2.setAttribute('data-action', 'toggle-edit');
+            li2.appendChild(editBtn2);
+
+            manager.rootList.appendChild(li1);
+            manager.rootList.appendChild(li2);
 
             jest.spyOn(window, 'confirm').mockReturnValue(true);
-            manager.deleteLogo('logo-test');
-
-            expect(document.getElementById('logo-test')).toBeNull();
+            
+            // Delete first logo, should focus second logo's edit button
+            manager.deleteLogo('logo-1');
+            expect(document.getElementById('logo-1')).toBeNull();
+            expect(document.activeElement).toBe(editBtn2);
         });
 
         test('does not remove the logo if cancelled', () => {
@@ -140,6 +201,23 @@ describe('HeaderManager', () => {
             manager.toggleEditForm(btn);
             expect(form.hidden).toBe(true);
             expect(btn.getAttribute('aria-expanded')).toBe('false');
+        });
+
+        test('focuses the first input when opening the form', () => {
+            const manager = makeManager(0);
+            const btn = document.createElement('button');
+            btn.setAttribute('aria-controls', 'form-focus');
+            btn.setAttribute('aria-expanded', 'false');
+            
+            const form = document.createElement('div');
+            form.id = 'form-focus';
+            form.hidden = true;
+            const input = document.createElement('input');
+            form.appendChild(input);
+            document.body.appendChild(form);
+
+            manager.toggleEditForm(btn);
+            expect(document.activeElement).toBe(input);
         });
     });
 

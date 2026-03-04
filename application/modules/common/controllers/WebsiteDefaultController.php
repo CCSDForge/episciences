@@ -234,6 +234,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxformpageAction()
     {
+        if (!$this->_validateCsrf()) return;
         if (!Episciences_Auth::isAdministrator()
             && !Episciences_Auth::isChiefEditor()
             && !Episciences_Auth::isSecretary()
@@ -258,6 +259,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxorderAction()
     {
+        if (!$this->_validateCsrf()) return;
         if (!Episciences_Auth::isAdministrator()
             && !Episciences_Auth::isChiefEditor()
             && !Episciences_Auth::isSecretary()
@@ -280,6 +282,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxrmpageAction(): void
     {
+        if (!$this->_validateCsrf()) return;
         if (!Episciences_Auth::isAdministrator()
             && !Episciences_Auth::isChiefEditor()
             && !Episciences_Auth::isSecretary()
