@@ -8,6 +8,12 @@ class WebsiteDefaultController extends Zend_Controller_Action
     {
         //Session courante
         $this->_session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+
+        // Initialisation du jeton CSRF
+        if (!isset($this->_session->csrfToken)) {
+            $this->_session->csrfToken = bin2hex(random_bytes(32));
+        }
+        $this->view->csrfToken = $this->_session->csrfToken;
     }
 
     /**
@@ -77,6 +83,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxheaderAction()
     {
+        if (!$this->_validateCsrf()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
         $this->_helper->layout()->disableLayout();
         $header = new Episciences_Website_Header();
         $this->view->form = $header->getLogoForm($this->getRequest()->getParam('id', '0'));
@@ -152,6 +162,27 @@ class WebsiteDefaultController extends Zend_Controller_Action
             }
         }
         $this->view->files = $files;
+    }
+
+    /**
+     * Valide le jeton CSRF pour les requêtes AJAX et POST
+     * @return bool
+     */
+    protected function _validateCsrf()
+    {
+        $request = $this->getRequest();
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        $expectedToken = $session->csrfToken;
+
+        if (!$expectedToken) {
+            return false;
+        }
+
+        if ($request->isXmlHttpRequest()) {
+            return $request->getHeader('X-CSRF-Token') === $expectedToken;
+        }
+
+        return $request->getPost('csrf_token') === $expectedToken;
     }
 
     /**
@@ -234,7 +265,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxformpageAction()
     {
-        if (!$this->_validateCsrf()) return;
+        if (!$this->_validateCsrf()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
         if (!Episciences_Auth::isAdministrator()
             && !Episciences_Auth::isChiefEditor()
             && !Episciences_Auth::isSecretary()
@@ -259,7 +293,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxorderAction()
     {
-        if (!$this->_validateCsrf()) return;
+        if (!$this->_validateCsrf()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
         if (!Episciences_Auth::isAdministrator()
             && !Episciences_Auth::isChiefEditor()
             && !Episciences_Auth::isSecretary()
@@ -282,7 +319,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxrmpageAction(): void
     {
-        if (!$this->_validateCsrf()) return;
+        if (!$this->_validateCsrf()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
         if (!Episciences_Auth::isAdministrator()
             && !Episciences_Auth::isChiefEditor()
             && !Episciences_Auth::isSecretary()

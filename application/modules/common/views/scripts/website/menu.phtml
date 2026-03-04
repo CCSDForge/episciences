@@ -5,6 +5,7 @@ $this->jQuery()
     ->addJavascriptFile('/js/website/menu-manager.js')
     ->addJavascriptFile('/js/website/menu.js');
 ?>
+<meta name="csrf-token" content="<?php echo $this->escape($this->csrfToken); ?>">
 
 <?php $this->layout()->pageDescription = $this->translate("Ajout/suppression de nouvelles pages dans le site") ?>
 
