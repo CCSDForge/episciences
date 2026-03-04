@@ -154,7 +154,7 @@ class HeaderManager {
         if (!closestForm) return;
 
         // Try to get the control ID from 'elem' attribute, fallback to data-elem, name or id
-        const elemId = parent.getAttribute('elem') || parent.getAttribute('data-elem') || parent.name?.split('[').pop().replace(']', '') || parent.id?.split('-').pop();
+        const elemId = parent.getAttribute('elem') || parent.getAttribute('data-elem') || parent.name?.split('[').pop().replace(/\]/g, '') || parent.id?.split('-').pop();
         if (!elemId) return;
 
         // Find all elements or containers linked to this control (using standard or data attributes)
