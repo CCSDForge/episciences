@@ -79,7 +79,7 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
             throw new Ccsd_Error($e->getMessage());
         }
 
-        $messages = $response['messages'][array_key_first($response['messages'])];
+        $messages = $response['messages'][array_key_first($response['messages'] ?? [])] ?? [];
         $collection = $response[self::COLLECTION]; // all versions
 
         if (
@@ -378,7 +378,7 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
                         return is_numeric($value);
                     }); // affiliation labels
 
-                    $orcid = isset($cVals['contrib-id']) ? preg_replace('#^http(s*)://orcid.org/#', '', $cVals['contrib-id']) : '';
+                    $orcid = isset($cVals['contrib-id']) ? preg_replace('#^https?://orcid.org/#', '', $cVals['contrib-id']) : '';
 
                     $tmp = [
                         'degrees' => $cVals['degrees'] ?? '',
@@ -443,7 +443,7 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
                         $authorStr .= ', ' . $sn['given-names'];
                     }
 
-                    if ($index <= count($sn) - 1) {
+                    if ($index < count($stringName) - 1) {
                         $authorStr .= '; ';
                     }
                 }
@@ -490,7 +490,11 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
     {
         $license = '';
 
-        $explodedStr = explode(' ', explode(', ', $string)[1]);
+        $parts = explode(', ', $string);
+        if (!isset($parts[1])) {
+            return '[CC_NO] ' . $string;
+        }
+        $explodedStr = explode(' ', $parts[1]);
 
 
         if (strtolower($explodedStr[0]) === 'cc') {
