@@ -118,11 +118,11 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
         $identifiers = [];
 
         // Extraction header
-        $header = $xml->header;
+        $header = $xml->header ?? null;
 
         $header = [
-            'identifier' => (string)$header->identifier,
-            'datestamp' => (string)$header->datestamp,
+            'identifier' => (string)$header?->identifier,
+            'datestamp' => (string)$header?->datestamp,
             //'setSpecs' => array_map('strval', $header->xpath('setSpec'))
         ];
 

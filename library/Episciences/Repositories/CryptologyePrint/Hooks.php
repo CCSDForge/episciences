@@ -41,8 +41,8 @@ class Episciences_Repositories_CryptologyePrint_Hooks implements CommonHooksInte
             return [];
         }
 
-        $header = $xml->header;
-        $isoDate = (string)$header->datestamp;
+        $header = $xml->header ?? null;
+        $isoDate = (string)$header?->datestamp;
 
         $data['record'] = $record;
 
