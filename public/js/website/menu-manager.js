@@ -102,25 +102,15 @@ class MenuManager {
     }
 
     /**
-     * SECURITY: Replaces innerHTML with a safer alternative that also executes scripts.
-     * @param {HTMLElement} container 
-     * @param {string} html 
+     * SECURITY: Replaces innerHTML with a safer alternative.
+     * Scripts are NOT executed to prevent XSS.
+     * @param {HTMLElement} container
+     * @param {string} html
      */
     _safeSetInnerHTML(container, html) {
         container.innerHTML = '';
         const fragment = document.createRange().createContextualFragment(html);
-        
-        // ContextualFragment executes scripts in real browsers, but not always in JSDOM
-        // or in some specific scenarios. To be safe, we manually execute them.
-        const scripts = fragment.querySelectorAll('script');
         container.appendChild(fragment);
-
-        scripts.forEach(oldScript => {
-            const newScript = document.createElement('script');
-            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-            oldScript.parentNode.replaceChild(newScript, oldScript);
-        });
     }
 
     // -------------------------------------------------------------------------

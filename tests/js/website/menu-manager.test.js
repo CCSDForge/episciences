@@ -501,23 +501,16 @@ describe('_safeSetInnerHTML()', () => {
         expect(container.querySelector('strong').textContent).toBe('World');
     });
 
-    test('executes scripts within the injected HTML', () => {
+    test('does NOT execute scripts within the injected HTML', () => {
         const manager = makeManager([]);
         const container = document.createElement('div');
-        window.testValue = 0;
+        const spy = jest.fn();
+        window.testValueSpy = spy;
         
-        const html = '<script>window.testValue = 42;</script>';
+        const html = '<script>window.testValueSpy();</script>';
         manager._safeSetInnerHTML(container, html);
 
-        // In a real browser, this would happen automatically. 
-        // In JSDOM with default settings, we have to manually trigger it for the test
-        // or mock the behavior. Since we already have the manual execution in production code
-        // and JSDOM still doesn't run it (because of its sandbox), we can manually eval 
-        // for the sake of the test to prove the scripts were found and processed.
-        const scripts = container.querySelectorAll('script');
-        scripts.forEach(s => eval(s.innerHTML));
-
-        expect(window.testValue).toBe(42);
-        delete window.testValue;
+        expect(spy).not.toHaveBeenCalled();
+        delete window.testValueSpy;
     });
 });
