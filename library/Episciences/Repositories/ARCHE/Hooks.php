@@ -42,9 +42,11 @@ class Episciences_Repositories_ARCHE_Hooks implements CommonHooksInterface, Link
         $data = [];
         $creatorsDc = [];
 
+        libxml_use_internal_errors(true);
         $metadata = simplexml_load_string($xmlString);
+        libxml_clear_errors();
         if ($metadata === false) {
-            throw new \http\Exception\InvalidArgumentException('Invalid XML');
+            throw new \InvalidArgumentException('Invalid XML');
         }
 
         // Register namespaces for OAI-PMH and DataCite
@@ -130,7 +132,7 @@ class Episciences_Repositories_ARCHE_Hooks implements CommonHooksInterface, Link
         $headers['datestamp'] = $datestamp;
 
         if ('' !== $datestamp) {
-            $datestamp = date_create($datestamp)->format('Y-m-d');
+            $datestamp = Episciences_Repositories_Common::safeDateFormat($datestamp);
             $headers['datestamp'] = $datestamp;
         }
 

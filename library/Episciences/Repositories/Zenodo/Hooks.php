@@ -328,7 +328,7 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
         }
 
         if ('' !== $datestamp) {
-            $datestamp = date_create($datestamp)->format('Y-m-d');
+            $datestamp = Episciences_Repositories_Common::safeDateFormat($datestamp);
             $headers['datestamp'] = $datestamp;
         }
 
@@ -415,7 +415,7 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
         $enrichment = [
             Episciences_Repositories_Common::CONTRIB_ENRICHMENT => $authors,
             Episciences_Repositories_Common::RESOURCE_TYPE_ENRICHMENT => $dcType,
-            Episciences_Repositories_Common::FILES => $data[Episciences_Repositories_Common::FILES]
+            Episciences_Repositories_Common::FILES => $data[Episciences_Repositories_Common::FILES] ?? []
 
         ];
 
@@ -542,9 +542,11 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
     {
         $data = [];
 
+        libxml_use_internal_errors(true);
         $metadata = simplexml_load_string($xmlString);
+        libxml_clear_errors();
         if ($metadata === false) {
-            throw new \http\Exception\InvalidArgumentException('Invalid XML');
+            throw new \InvalidArgumentException('Invalid XML');
         }
 
         // Register namespaces for OAI-PMH and DataCite
