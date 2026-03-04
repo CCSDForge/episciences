@@ -86,11 +86,11 @@ ul.nav {
 								
 				if ($page->hasPages() || $page->getClass() == 'nav-header') {
 					?>
-					<li class="dropdown <?php echo $active ? 'active' : ''?>"><a href="javascript:void(0)" onclick="displaySubMenu('.submenu<?php echo $i?>')"><?php echo $this->view->translate($page->getLabel());?><b class="caret"></b></a></li>
+					<li class="dropdown <?php echo $active ? 'active' : ''?>"><a href="javascript:void(0)" onclick="displaySubMenu('.submenu<?php echo $i?>')"><?php echo $this->view->escape($this->view->translate($page->getLabel()));?><b class="caret"></b></a></li>
 					<?php
 				} else {
 					?>
-					<li class="<?php echo $active ? 'active' : ''?>"><a href="<?php echo $this->view->pagelink($page, $prefix); ?>"><?php echo $this->view->translate($page->getLabel());?></a></li>
+					<li class="<?php echo $active ? 'active' : ''?>"><a href="<?php echo $this->view->pagelink($page, $prefix); ?>"><?php echo $this->view->escape($this->view->translate($page->getLabel()));?></a></li>
 					<?php
 				}
 			} else {
@@ -110,12 +110,12 @@ ul.nav {
 				if ($spages->hasPages()) {
 					?>
 					<div class="menu-slider-group">
-						<b><?php echo $this->view->translate($spages->getLabel());?></b>
+						<b><?php echo $this->view->escape($this->view->translate($spages->getLabel()));?></b>
 						<ul>
 							<?php 
 							foreach ($spages as $sspages) {
 								?>
-								<li><a href="<?php echo $this->view->pagelink($sspages, $prefix)?>"><?php echo $this->view->translate($sspages->getLabel());?></a></li>
+								<li><a href="<?php echo $this->view->pagelink($sspages, $prefix)?>"><?php echo $this->view->escape($this->view->translate($sspages->getLabel()));?></a></li>
 								<?php
 							}
 							?>
@@ -124,7 +124,7 @@ ul.nav {
 					<?php
 				} else {
 					?>
-					<div class="menu-slider-elem"><a href="<?php echo $this->view->pagelink($spages, $prefix)?>"><?php echo $this->view->translate($spages->getLabel());?></a></div>
+					<div class="menu-slider-elem"><a href="<?php echo $this->view->pagelink($spages, $prefix)?>"><?php echo $this->view->escape($this->view->translate($spages->getLabel()));?></a></div>
 					<?php
 				}
 			}
