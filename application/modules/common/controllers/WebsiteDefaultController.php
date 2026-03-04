@@ -269,6 +269,12 @@ class WebsiteDefaultController extends Zend_Controller_Action
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
+
+        if (!isset($this->_session->website)) {
+            $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
+            $this->_session->website->load();
+        }
+
         if (!Episciences_Auth::isAdministrator()
             && !Episciences_Auth::isChiefEditor()
             && !Episciences_Auth::isSecretary()
@@ -297,6 +303,12 @@ class WebsiteDefaultController extends Zend_Controller_Action
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
+
+        if (!isset($this->_session->website)) {
+            $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
+            $this->_session->website->load();
+        }
+
         if (!Episciences_Auth::isAdministrator()
             && !Episciences_Auth::isChiefEditor()
             && !Episciences_Auth::isSecretary()
@@ -323,6 +335,12 @@ class WebsiteDefaultController extends Zend_Controller_Action
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
+
+        if (!isset($this->_session->website)) {
+            $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
+            $this->_session->website->load();
+        }
+
         if (!Episciences_Auth::isAdministrator()
             && !Episciences_Auth::isChiefEditor()
             && !Episciences_Auth::isSecretary()
