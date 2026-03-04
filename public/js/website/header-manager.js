@@ -82,8 +82,8 @@ class HeaderManager {
      */
     _syncLogoItem(li) {
         const typeSelect = li.querySelector('select[elem="type"]');
-        const itemNameSpan = li.querySelector('.menu-item-name');
-        const iconSpan = li.querySelector('.menu-item-type-icon .glyphicon');
+        const itemNameText = li.querySelector('.menu-item-name-text');
+        const iconSpan = li.querySelector('.menu-item-type-icon .glyphicon') || li.querySelector('.menu-item-name .glyphicon');
         const lang = document.documentElement.lang || 'fr';
         
         const updateDisplay = () => {
@@ -100,14 +100,14 @@ class HeaderManager {
                 const fileInput = li.querySelector('input[type="file"]');
                 // Use temp filename or new selected filename
                 if (fileInput && fileInput.files.length > 0) {
-                    if (itemNameSpan) itemNameSpan.textContent = fileInput.files[0].name;
+                    if (itemNameText) itemNameText.textContent = fileInput.files[0].name;
                 } else if (imgTmp) {
-                    if (itemNameSpan) itemNameSpan.textContent = imgTmp.value;
+                    if (itemNameText) itemNameText.textContent = imgTmp.value;
                 }
             } else {
                 const labelInput = li.querySelector(`input[name$="[text][${lang}]"]`);
-                if (labelInput && itemNameSpan) {
-                    itemNameSpan.textContent = labelInput.value;
+                if (labelInput && itemNameText) {
+                    itemNameText.textContent = labelInput.value;
                 }
             }
         };
@@ -316,8 +316,8 @@ class HeaderManager {
             }
 
             // Set initial title (it's empty for new logo)
-            const titleElement = clone.querySelector('.menu-item-name');
-            if (titleElement) titleElement.textContent = '...';
+            const itemNameText = clone.querySelector('.menu-item-name-text');
+            if (itemNameText) itemNameText.textContent = '...';
 
             this.rootList.appendChild(clone);
 

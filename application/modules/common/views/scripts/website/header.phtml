@@ -47,17 +47,17 @@ $this->layout()->description = $this->translate("Personnalisez le bandeau en-tê
             }
 
             if ($form->getElement('type')->getValue() == Episciences_Website_Header::LOGO_IMG) {
-                $title = '<span class="glyphicon glyphicon-picture active"></span>&nbsp;-&nbsp;';
-                $title .= $form->getElement('img_tmp')->getValue();
+                $icon = '<span class="glyphicon glyphicon-picture active" aria-hidden="true"></span>';
+                $text = $form->getElement('img_tmp')->getValue();
             } else {
-                $title = '<span class="glyphicon glyphicon-font active"></span>&nbsp;-&nbsp;';
-                $text = $form->getElement('text')->getValue();
-                $title .= isset($text[Zend_Registry::get('lang')]) ? $text[Zend_Registry::get('lang')] : '';
+                $icon = '<span class="glyphicon glyphicon-font active" aria-hidden="true"></span>';
+                $textValues = $form->getElement('text')->getValue();
+                $text = isset($textValues[Zend_Registry::get('lang')]) ? $textValues[Zend_Registry::get('lang')] : '';
             } ?>
             <tr class="logo" id="logo-<?php echo $this->escape($i); ?>">
                 <td><button type="button" class="menu-drag-handle" aria-label="<?php echo $this->escape($this->translate('Déplacer')) ?>"><span aria-hidden="true">⠿</span></button></td>
                 <td>
-                    <b class="menu-item-name logo-title"><?php echo $title; ?></b>
+                    <b class="menu-item-name logo-title"><?php echo $icon; ?>&nbsp;-&nbsp;<span class="menu-item-name-text"><?php echo $this->escape($text); ?></span></b>
                     <div class="menu-edit-form div-form" id="form-logo-<?php echo $this->escape($i); ?>" <?php echo(isset($this->errors[$i]) ? '' : 'hidden'); ?>>
                         <?php echo $this->partial('website/header-logo-form.phtml', ['form' => $form]); ?>
                     </div>
@@ -89,11 +89,8 @@ $this->layout()->description = $this->translate("Personnalisez le bandeau en-tê
                 <button type="button" class="menu-drag-handle" aria-label="<?php echo $this->escape($this->translate('Déplacer')) ?>">
                     <span aria-hidden="true">⠿</span>
                 </button>
-                <span class="menu-item-type-icon" aria-hidden="true">
-                    <span class="glyphicon glyphicon-picture menu-icon-page"></span>
-                </span>
                 <div class="menu-item-label">
-                    <span class="menu-item-name"></span>
+                    <span class="menu-item-name"><span class="glyphicon glyphicon-picture menu-icon-page" aria-hidden="true"></span>&nbsp;-&nbsp;<span class="menu-item-name-text"></span></span>
                     <div class="menu-edit-form"></div>
                 </div>
                 <div class="menu-item-actions">

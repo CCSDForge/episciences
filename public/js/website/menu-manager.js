@@ -28,10 +28,37 @@ class MenuManager {
         this._initAllSortables();
         this._initEventListeners();
 
+        // Initial setup for existing items
+        this.rootList.querySelectorAll('.logo, .menu-sortable > li').forEach(li => {
+            this._initSync(li);
+        });
+
         // Initially toggle required status for all forms based on their visibility
         this.rootList.querySelectorAll('.menu-edit-form').forEach(form => {
             this.toggleRequired(form, !form.hidden);
         });
+    }
+
+    /**
+     * Initialise sync between label inputs and the item name.
+     * @private
+     * @param {HTMLLIElement} li
+     */
+    _initSync(li) {
+        const lang = document.documentElement.lang || 'fr';
+        // The input name format is pages_IDX[labels][LANG]
+        const labelInput = li.querySelector(`input[name$="[labels][${lang}]"]`);
+        const itemNameSpan = li.querySelector('.menu-item-name');
+        
+        if (labelInput && itemNameSpan) {
+            labelInput.addEventListener('input', (e) => {
+                itemNameSpan.textContent = e.target.value;
+            });
+            // Initial value (already escaped by PHP, but textContent is safe anyway)
+            if (labelInput.value) {
+                itemNameSpan.textContent = labelInput.value;
+            }
+        }
     }
 
     /**
@@ -333,17 +360,10 @@ class MenuManager {
             }
 
             // Initialise sync between label inputs and the item name
-            const labelInputs = formContainer.querySelectorAll('input[name$="[labels][' + (document.documentElement.lang || 'fr') + ']"]');
-            const itemNameSpan = clone.querySelector('.menu-item-name');
-            labelInputs.forEach(input => {
-                input.addEventListener('input', (e) => {
-                    if (itemNameSpan) itemNameSpan.textContent = e.target.value;
-                });
-                // Initial value
-                if (itemNameSpan && input.value) itemNameSpan.textContent = input.value;
-            });
+            this._initSync(clone);
             
             // Add a default name for new pages
+            const itemNameSpan = clone.querySelector('.menu-item-name');
             if (itemNameSpan && !itemNameSpan.textContent) {
                 itemNameSpan.textContent = type === 'folder' ? 'Nouveau dossier' : 'Nouvelle page';
             }

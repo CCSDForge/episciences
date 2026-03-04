@@ -27,7 +27,9 @@ function makeManager(uniq = 0) {
                 <div class="menu-item">
                     <button type="button" class="menu-drag-handle"></button>
                     <div class="menu-item-label">
-                        <span class="menu-item-name"></span>
+                        <span class="menu-item-name">
+                            <span class="glyphicon"></span>&nbsp;-&nbsp;<span class="menu-item-name-text"></span>
+                        </span>
                         <div class="menu-edit-form" hidden></div>
                     </div>
                     <div class="menu-item-actions">
@@ -78,6 +80,10 @@ describe('HeaderManager', () => {
             // Check if renameInputFile was called implicitly
             const fileInput = newLi.querySelector('input[type="file"]');
             expect(fileInput.name).toBe('logo_5[img]');
+
+            // Check if initial text is set correctly
+            const itemNameText = newLi.querySelector('.menu-item-name-text');
+            expect(itemNameText.textContent).toBe('...');
         });
 
         test('announces new logo to screen readers', async () => {
@@ -288,8 +294,9 @@ describe('HeaderManager', () => {
             li.id = 'logo-sync';
             li.innerHTML = `
                 <div class="menu-item">
-                    <span class="menu-item-type-icon"><span class="glyphicon"></span></span>
-                    <span class="menu-item-name"></span>
+                    <span class="menu-item-name">
+                        <span class="glyphicon"></span>&nbsp;-&nbsp;<span class="menu-item-name-text"></span>
+                    </span>
                     <div class="menu-edit-form">
                         <select elem="type">
                             <option value="text" selected>Text</option>
@@ -304,25 +311,25 @@ describe('HeaderManager', () => {
             manager.rootList.appendChild(li);
             manager._syncLogoItem(li);
 
-            const iconSpan = li.querySelector('.menu-item-type-icon .glyphicon');
-            const itemNameSpan = li.querySelector('.menu-item-name');
+            const iconSpan = li.querySelector('.menu-item-name .glyphicon');
+            const itemNameText = li.querySelector('.menu-item-name-text');
             const typeSelect = li.querySelector('select');
             const textInput = li.querySelector('.header-label-input');
 
             // Initial (Text)
             expect(iconSpan.classList.contains('glyphicon-font')).toBe(true);
-            expect(itemNameSpan.textContent).toBe('Mon Logo');
+            expect(itemNameText.textContent).toBe('Mon Logo');
 
             // Change text
             textInput.value = 'Nouveau Titre';
             textInput.dispatchEvent(new Event('input'));
-            expect(itemNameSpan.textContent).toBe('Nouveau Titre');
+            expect(itemNameText.textContent).toBe('Nouveau Titre');
 
             // Change to Image
             typeSelect.value = 'img';
             typeSelect.dispatchEvent(new Event('change'));
             expect(iconSpan.classList.contains('glyphicon-picture')).toBe(true);
-            expect(itemNameSpan.textContent).toBe('image.png');
+            expect(itemNameText.textContent).toBe('image.png');
         });
     });
 });
