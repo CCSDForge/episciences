@@ -8,6 +8,12 @@ class WebsiteDefaultController extends Zend_Controller_Action
     {
         //Session courante
         $this->_session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+
+        // Initialisation du jeton CSRF
+        if (!isset($this->_session->csrfToken)) {
+            $this->_session->csrfToken = bin2hex(random_bytes(32));
+        }
+        $this->view->csrfToken = $this->_session->csrfToken;
     }
 
     /**
@@ -77,10 +83,14 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxheaderAction()
     {
+        if (!$this->_validateCsrf()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
         $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
         $header = new Episciences_Website_Header();
-        echo $header->getLogoForm($this->getRequest()->getParam('id', '0'));
+        $this->view->form = $header->getLogoForm($this->getRequest()->getParam('id', '0'));
+        $this->render('header-logo-form');
     }
 
     /**
@@ -155,18 +165,45 @@ class WebsiteDefaultController extends Zend_Controller_Action
     }
 
     /**
+     * Valide le jeton CSRF pour les requêtes AJAX et POST
+     * @return bool
+     */
+    protected function _validateCsrf()
+    {
+        $request = $this->getRequest();
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        $expectedToken = $session->csrfToken;
+
+        if (!$expectedToken) {
+            return false;
+        }
+
+        if ($request->isXmlHttpRequest()) {
+            return $request->getHeader('X-CSRF-Token') === $expectedToken;
+        }
+
+        return $request->getPost('csrf_token') === $expectedToken;
+    }
+
+    /**
      * Gestion des pages du site
      */
     public function menuAction(): void
     {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        // Si ce n'est pas une requête AJAX ou POST (donc un accès direct en GET)
+        // On force le rechargement depuis la base de données
+        if (!$request->isXmlHttpRequest() && !$request->isPost()) {
+            unset($this->_session->website);
+        }
+
         if (!isset($this->_session->website)) {
             //Récupération de la navigation du portail ou d'un journal
             $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
             $this->_session->website->load();
         }
-
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
 
         if ($request->isPost()) {
             $valid = true;
@@ -228,6 +265,16 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxformpageAction()
     {
+        if (!$this->_validateCsrf()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
+        if (!isset($this->_session->website)) {
+            $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
+            $this->_session->website->load();
+        }
+
         if (!Episciences_Auth::isAdministrator()
             && !Episciences_Auth::isChiefEditor()
             && !Episciences_Auth::isSecretary()
@@ -252,6 +299,16 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxorderAction()
     {
+        if (!$this->_validateCsrf()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
+        if (!isset($this->_session->website)) {
+            $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
+            $this->_session->website->load();
+        }
+
         if (!Episciences_Auth::isAdministrator()
             && !Episciences_Auth::isChiefEditor()
             && !Episciences_Auth::isSecretary()
@@ -274,6 +331,16 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function ajaxrmpageAction(): void
     {
+        if (!$this->_validateCsrf()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
+        if (!isset($this->_session->website)) {
+            $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
+            $this->_session->website->load();
+        }
+
         if (!Episciences_Auth::isAdministrator()
             && !Episciences_Auth::isChiefEditor()
             && !Episciences_Auth::isSecretary()

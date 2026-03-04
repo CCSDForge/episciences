@@ -63,9 +63,29 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             ->order('NAVIGATIONID ASC');
 
         $this->_pages = [];
+        $this->_order = [];
+        $this->_idx = 0;
+
+        // Ensure we see the latest changes on disk
+        clearstatcache();
+        
         $reader = new Ccsd_Lang_Reader('menu', REVIEW_LANG_PATH, $this->_languages, true);
-        foreach ($this->_db->fetchAll($sql) as $row) {
-            //Récupération des infos sur la page en base
+        $rows = $this->_db->fetchAll($sql);
+
+        if (count($rows) === 0) {
+            $this->_pages[0] = new Episciences_Website_Navigation_Page_Index();
+            $this->_order[0] = [];
+            $this->_idx = 1;
+            return;
+        }
+
+        // Pass 1: Create all page objects
+        $parentMap = [];
+        foreach ($rows as $row) {
+            $pageId = (int)$row['PAGEID'];
+            $parentId = (int)$row['PARENT_PAGEID'];
+            
+            // Collect info for the page
             $options = array_merge(['languages' => $this->_languages], $row);
             foreach ($this->_languages as $lang) {
                 $options['labels'][$lang] = $reader->get($row['LABEL'], $lang);
@@ -73,33 +93,54 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             if ($row['PARAMS'] != '') {
                 $options = array_merge($options, unserialize($row['PARAMS'], ['allowed_classes' => false]));
             }
-            //Création de la page
-            $this->_pages[$row['PAGEID']] = new $row['TYPE_PAGE']($options);
+            
+            // Create page instance
+            $this->_pages[$pageId] = new $row['TYPE_PAGE']($options);
             /** @var Episciences_Website_Navigation_Page $currentPage */
-            $currentPage = $this->_pages[$row['PAGEID']];
+            $currentPage = $this->_pages[$pageId];
             $currentPage->load();
-            //Définition de l'ordre des pages
-            if ($row['PAGEID'] > $this->_idx) {
-                $this->_idx = $row['PAGEID'];
+
+            if ($pageId > $this->_idx) {
+                $this->_idx = $pageId;
             }
-            if ($row['PARENT_PAGEID'] == 0) {
-                $this->_order[$row['PAGEID']] = [];
+            
+            $parentMap[$pageId] = $parentId;
+        }
+
+        // Pass 2: Rebuild the hierarchy
+        foreach ($parentMap as $pageId => $parentId) {
+            if ($parentId == 0) {
+                // Level 1: Root pages
+                if (!isset($this->_order[$pageId])) {
+                    $this->_order[$pageId] = [];
+                }
             } else {
-                if (isset($this->_order[$row['PARENT_PAGEID']])) {
-                    $this->_order[$row['PARENT_PAGEID']][$row['PAGEID']] = [];
+                // Level 2: Children
+                if (isset($this->_order[$parentId])) {
+                    $this->_order[$parentId][$pageId] = [];
                 } else {
-                    foreach ($this->_order as $i => $elem) {
-                        if (is_array($elem) && isset($this->_order[$i][$row['PARENT_PAGEID']])) {
-                            $this->_order[$i][$row['PARENT_PAGEID']][$row['PAGEID']] = [];
+                    // Level 3: Grandchildren
+                    $found = false;
+                    foreach ($this->_order as $rootId => $children) {
+                        if (isset($children[$parentId])) {
+                            $this->_order[$rootId][$parentId][$pageId] = [];
+                            $found = true;
+                            break;
                         }
+                    }
+                    
+                    if (!$found) {
+                        // If parent not yet found in the tree (should not happen with NAVIGATIONID ASC), 
+                        // create a placeholder in _order to keep the structure.
+                        if (!isset($this->_order[$parentId])) {
+                            $this->_order[$parentId] = [];
+                        }
+                        $this->_order[$parentId][$pageId] = [];
                     }
                 }
             }
         }
-        if (count($this->_pages) == 0) {
-            $this->_pages[0] = new Episciences_Website_Navigation_Page_Index();
-            $this->_order[0] = [];
-        }
+
         $this->_idx++;
     }
 
