@@ -65,7 +65,15 @@ class Ccsd_Lang_Writer
 		if (! is_dir($dir)) {
 			mkdir($dir, 0777, true);
 		}
-		file_put_contents($dir . $filename, $this->createFileContent($this->_data[$lang]));
+		$fullPath = $dir . $filename;
+		file_put_contents($fullPath, $this->createFileContent($this->_data[$lang]));
+
+		// Invalidate OPcache if enabled to ensure immediate reload in the next request
+		if (function_exists('opcache_invalidate')) {
+			opcache_invalidate($fullPath, true);
+		}
+		// Clear file status cache
+		clearstatcache(true, $fullPath);
 	}
 	
 	

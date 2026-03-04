@@ -91,18 +91,22 @@ class Episciences_Website_Navigation_Page extends Ccsd_Website_Navigation_Page
 
         $rolesToolTip = Zend_Registry::get('Zend_Translate')->translate("Si aucun rôle n'est sélectionné, la page sera publique");
         // Multicheckbox pour personnaliser la visibilité de la page (accès limité par rôle)
-        $display = (true) ? 'none' : '';
         $this->_form->addElement('multiCheckbox', 'acl',
             ['label' => 'Visible par : ',
+                'escape' => false,
                 'decorators' => [
                     'Label' => ['decorator' => 'Label', 'options' => (['style' => 'display: inline', 'data-toggle' => 'tooltip', 'title' => $rolesToolTip])],
                     'ViewHelper',
-                    'HtmlTag' => ['decorator' => 'HtmlTag', 'options' => (['tag' => 'div', 'class' => 'multicheckbox', 'style' => 'display:' . $display])],
+                    'HtmlTag' => ['decorator' => 'HtmlTag', 'options' => (['tag' => 'div', 'class' => 'multicheckbox'])],
                 ],
                 'separator' => '',
                 'belongsTo' => 'pages_' . $pageidx,
                 'multioptions' => $roles,
                 'value' => $selectedRoles]);
+
+        if ($visibility < 2) {
+            $this->_form->getElement('acl')->getDecorator('HtmlTag')->setOption('hidden', 'hidden');
+        }
 
         return $this->_form;
     }

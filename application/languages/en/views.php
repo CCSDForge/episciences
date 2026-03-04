@@ -1661,8 +1661,13 @@ return array(
     "Ajout / suppression de pages" => "Add / delete pages",
     "Ajouter la page" => "Add page",
     "Ajouter un dossier" => "Add folder",
+    "Type de page" => "Page type",
     "Type de la page" => "Page type",
     "Titre de la page" => "Page title",
+    "Déplacer" => "Move",
+    "Structure du menu" => "Menu structure",
+    "ou" => "or",
+    "Erreur de saisie" => "Input error",
 
     "Visibilité de la page" => "Page visibility",
     "Publique" => "Public",

@@ -78,9 +78,9 @@ class WebsiteDefaultController extends Zend_Controller_Action
     public function ajaxheaderAction()
     {
         $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
         $header = new Episciences_Website_Header();
-        echo $header->getLogoForm($this->getRequest()->getParam('id', '0'));
+        $this->view->form = $header->getLogoForm($this->getRequest()->getParam('id', '0'));
+        $this->render('header-logo-form');
     }
 
     /**
@@ -159,14 +159,20 @@ class WebsiteDefaultController extends Zend_Controller_Action
      */
     public function menuAction(): void
     {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        // Si ce n'est pas une requête AJAX ou POST (donc un accès direct en GET)
+        // On force le rechargement depuis la base de données
+        if (!$request->isXmlHttpRequest() && !$request->isPost()) {
+            unset($this->_session->website);
+        }
+
         if (!isset($this->_session->website)) {
             //Récupération de la navigation du portail ou d'un journal
             $this->_session->website = new Episciences_Website_Navigation(['languages' => Zend_Registry::get('languages'), 'sid' => RVID]);
             $this->_session->website->load();
         }
-
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
 
         if ($request->isPost()) {
             $valid = true;
