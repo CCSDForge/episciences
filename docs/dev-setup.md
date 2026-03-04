@@ -1,0 +1,318 @@
+# Developer Setup Guide
+
+This guide walks through setting up a local Episciences development environment from scratch using Docker.
+
+---
+
+## Prerequisites
+
+| Requirement | Minimum version |
+|-------------|-----------------|
+| Docker | 24.x |
+| Docker Compose | v2 (plugin, not standalone `docker-compose`) |
+| Git | any recent version |
+
+Verify your installation:
+
+```bash
+docker --version
+docker compose version
+```
+
+---
+
+## /etc/hosts Configuration
+
+The application uses virtual-host-based routing. Add the following line to `/etc/hosts` **before** starting the containers:
+
+```bash
+sudo sh -c 'echo "127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org manager-dev.episciences.org" >> /etc/hosts'
+```
+
+Verify:
+
+```bash
+ping -c1 dev.episciences.org
+```
+
+---
+
+## First-time Setup
+
+```bash
+git clone <repository-url>
+cd episciences
+make dev-setup
+```
+
+`make dev-setup` performs the following steps automatically:
+
+1. **`make build`** — builds all Docker images (Apache vhost, PHP-FPM, etc.)
+2. **`make copy-config`** — copies `config/dist-dev.pwd.json` → `config/pwd.json`
+3. **`make setup-logs`** — creates log directories with correct permissions
+4. **`make up`** — starts all containers in detached mode
+5. **`make wait-for-db`** — waits until MySQL is accepting connections
+6. **`make init-data-dir`** — creates `data/dev/` with sub-directories and seeds `navigation.json`
+7. **`make composer-install`** — installs PHP dependencies
+8. **`make load-dev-db`** — loads the development SQL dataset
+9. **`make init-dev-users`** — creates 30 test users and prints a summary table
+10. **`make create-bot-user`** — creates the fixed `episciences-bot` account
+11. **`make collection`** — creates the Solr `episciences` collection
+12. **`make index`** — indexes sample content into Solr
+
+When it completes, open **http://dev.episciences.org/** in your browser.
+
+---
+
+## Regular Workflow
+
+```bash
+# Start containers
+make up
+
+# Stop containers
+make down
+
+# Restart everything
+make restart
+
+# View logs
+make logs
+# Or for a specific container:
+make logs CONTAINER=php-fpm
+```
+
+---
+
+## Application CLI Commands
+
+Episciences ships a Symfony Console application at `scripts/console.php`. All commands run inside
+the PHP container. Use `make <target>` as a shortcut during development, or invoke the script
+directly in production.
+
+```bash
+# List all available commands
+docker compose exec -u www-data php php scripts/console.php list
+
+# Get help for a specific command
+docker compose exec -u www-data php php scripts/console.php enrichment:creators --help
+```
+
+### Command reference
+
+| Namespace | Command | Description |
+|-----------|---------|-------------|
+| **user** | `user:generate` | Generate test user accounts |
+| | `user:init-dev` | Seed development users (called by `make init-dev-users`) |
+| | `user:create-bot` | Create the `episciences-bot` account |
+| **enrichment** | `enrichment:citations` | Enrich citation metadata (OpenCitations / OpenAlex / Crossref) |
+| | `enrichment:creators` | Enrich author ORCID data (OpenAIRE / HAL TEI) |
+| | `enrichment:licences` | Enrich licence data from repository APIs |
+| | `enrichment:links` | Enrich dataset links (Scholexplorer) |
+| | `enrichment:funding` | Enrich funding data (OpenAIRE / HAL) |
+| | `enrichment:classifications-jel` | Enrich JEL classification codes (OpenAIRE) |
+| | `enrichment:classifications-msc` | Enrich MSC 2020 classification codes (zbMATH) |
+| | `enrichment:zb-reviews` | Discover zbMATH Open reviews |
+| **sitemap** | `sitemap:generate` | Generate XML sitemaps |
+| **volume** | `volume:merge-pdf` | Merge per-volume PDFs into a single file |
+| **doaj** | `doaj:export-volumes` | Create DOAJ XML exports per volume |
+| **zbjats** | `zbjats:zip` | Package PDF + zbJATS XML files into a ZIP archive |
+| **import** | `import:sections` | Import journal sections from a CSV file |
+| | `import:volumes` | Import journal volumes from a CSV file |
+
+### Common options
+
+| Option | Applies to | Description |
+|--------|-----------|-------------|
+| `--dry-run` | all commands | Simulate without writing to the database or filesystem |
+| `--rvcode=<code>` | all `enrichment:*` commands | Restrict processing to one journal |
+| `-q` / `--quiet` | all commands | Suppress console output (log file only) |
+| `-vv` | `enrichment:zb-reviews`, `enrichment:classifications-msc` | Print each zbMATH API URL as it is called |
+
+### Makefile shortcuts (development)
+
+Each command has a corresponding `make` target that runs it inside the container as `www-data`.
+Run `make help` or inspect the `Makefile` for the full list. Example:
+
+```bash
+make enrich-creators
+make enrich-zb-reviews ARGS="--rvcode=jdmdh --dry-run"
+```
+
+### Production usage
+
+In production there is no Make or Docker. Commands are run directly on the server:
+
+```bash
+sudo -u www-data php /var/www/htdocs/scripts/console.php enrichment:creators --rvcode=jdmdh
+```
+
+---
+
+## Code Quality & Static Analysis
+
+The project includes several tools to ensure code quality and maintainability.
+
+### PHPStan (Static Analysis)
+
+Analyzes your code for potential bugs and type errors without running it.
+
+```bash
+# Run on the whole project
+make phpstan
+
+# Run on a specific file or directory
+make phpstan TARGET=library/Episciences/Api
+```
+
+### Rector (Automated Refactoring)
+
+Helps with automated code upgrades and refactoring.
+
+```bash
+# Run in dry-run mode (see what would change)
+make rector DRY_RUN=1
+
+# Apply changes
+make rector
+```
+
+### PhpMetrics (Metrics & Visualization)
+
+[![PhpMetrics](https://github.com/CCSDForge/episciences/actions/workflows/phpmetrics.yml/badge.svg)](https://ccsdforge.github.io/episciences/metrics/)
+
+Generates a comprehensive HTML report about code complexity, coupling, and maintainability.
+
+```bash
+# Optional: Run PHP tests first to include assertions count in the report
+make test-php
+
+# Generate/Update the report
+make phpmetrics
+```
+
+The report is generated in `phpmetrics/report/index.html`. Open it in your browser to view the dashboard.
+
+---
+
+## Testing
+
+The project uses PHPUnit for backend tests and Jest for frontend tests.
+
+```bash
+# Run all tests (PHP + JS)
+make test
+
+# Run all tests with coverage reports
+make test-coverage
+
+# Run only PHP tests
+make test-php
+
+# Run only JS tests
+make test-js
+```
+
+PHP coverage is generated in `build/coverage` (if Xdebug/PCOV is available).
+JS coverage is generated in `coverage/lcov-report/index.html`.
+
+---
+
+## Available Services
+
+| Service | URL |
+|---------|-----|
+| Journal | http://dev.episciences.org/ |
+| Manager | http://manager-dev.episciences.org/dev/ |
+| OAI-PMH | http://oai-dev.episciences.org/ |
+| Data | http://data-dev.episciences.org/ |
+| PhpMyAdmin | http://localhost:8001/ |
+| Apache Solr | http://localhost:8983/solr |
+
+---
+
+## Credentials
+
+| Account | Login | Password | Role |
+|---------|-------|----------|------|
+| Bot user | `episciences-bot` | `botPassword123` | administrator |
+| Generated users (×30) | see terminal table after setup | `password123` | various |
+
+The terminal prints a table of all generated usernames after `make init-dev-users` completes.
+Users are distributed as: 1 Chief Editor, 2 Administrators, 5 Editors, 22 Members.
+
+---
+
+## Troubleshooting
+
+### Rootless Docker / `composer-install` permission error
+
+If you see a permission-denied error during `composer-install`, your host UID does not match the
+container's expected `1000:1000`. Override it:
+
+```bash
+make dev-setup CNTR_USER_ID=0:0
+```
+
+Or, to run only composer as root without redoing the full setup:
+
+```bash
+make composer-install CNTR_USER_ID=0:0
+```
+
+### `data/dev` not created / "navigation.json" fatal error
+
+The application needs `data/dev/config/navigation.json` to bootstrap. This is created automatically
+by `make init-data-dir` (which is part of `make dev-setup`). If you skipped it or the directory was
+deleted, run:
+
+```bash
+make init-data-dir
+```
+
+This requires the containers to be running (`make up` first).
+
+### `copy-config` prompt hangs in CI or non-interactive shell
+
+`make copy-config` asks for confirmation interactively when `config/pwd.json` already exists.
+In non-interactive environments, pre-create the file before running `make dev-setup`:
+
+```bash
+cp config/dist-dev.pwd.json config/pwd.json
+make dev-setup
+```
+
+### Finding generated usernames
+
+After `make init-dev-users` runs, a table listing every username, role, and email is printed to
+stdout. If you missed it, you can re-run the command alone:
+
+```bash
+make init-dev-users
+```
+
+Note: this will attempt to create users again; duplicate-email errors are reported but do not
+break the existing accounts.
+
+### Database reset
+
+To start over with a clean database:
+
+```bash
+make down
+make clean-mysql    # WARNING: deletes all MySQL volumes — prompts for confirmation
+make dev-setup
+```
+
+---
+
+## Database Operations Reference
+
+| Command | Description                                                 |
+|---------|-------------------------------------------------------------|
+| `make load-dev-db` | Load the development SQL dataset, inludes the 'Dev' journal |
+| `make load-db-episciences` | Restore from `~/tmp/episciences.sql`                        |
+| `make load-db-auth` | Restore from `~/tmp/cas_users.sql`                          |
+| `make backup-db` | Dump current databases to `~/tmp/`                          |
+| `make shell-mysql` | Open a MySQL shell in the container                         |
+| `make clean-mysql` | Delete MySQL volumes (irreversible, prompts)                |
