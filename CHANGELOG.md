@@ -19,10 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-
+* New supported servers:
+    Cryptology ePrint Archive (https://eprint.iacr.org)
+    Support for any data repositories powered by Dspace (eg. [repositorium.uminho(University of Minho)](https://repositorium.uminho.pt))
 * Statistics: new Symfony Console commands `stats:process` (replaces legacy `scripts/stat.php`) and `stats:update-robots-list` for UA-based bot detection using the COUNTER Robots list; real client IP is now stored in `STAT_TEMP` and anonymized at processing time.
 * Documentation: added `docs/console-commands.md` listing all 19 CLI commands available via `scripts/console.php` with options and usage examples.
-
 * OAI-PMH: added `crossref` as a new metadata format (`metadataPrefix=crossref`), exposing Crossref 5.3.1 XML for each published paper. The depositor email is automatically replaced with a generic `noreply@{domain}` address in this context.
 * Comprehensive Jest test suite for ORCID authors management (`tests/js/updateOrcidAuthors.test.js`).
 * Unit tests for `Episciences_Paper_Projects` entity (setOptions aliases, DateTime handling, toArray serialization, fluent setters).
