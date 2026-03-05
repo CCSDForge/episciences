@@ -503,6 +503,7 @@ class PaperDefaultController extends DefaultController
 
         // For author-to-editor messages, also notify co-authors
         $coAuthorsNotifiedCount = 0;
+        $totalCoAuthorsToNotify = 0;
         if ($oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
             try {
                 // Get co-authors to notify them
@@ -516,9 +517,10 @@ class PaperDefaultController extends DefaultController
                         $coAuthors = [];
                     }
                 }
-                
+
                 // Remove the author who sent the message from co-authors list to avoid duplicate email
                 unset($coAuthors[$commentatorUid]);
+                $totalCoAuthorsToNotify = count($coAuthors);
                 
                 // Send notification to each co-author
                 if (!empty($coAuthors)) {
@@ -602,7 +604,7 @@ class PaperDefaultController extends DefaultController
                         // Check if editor names should be disclosed to authors
                         $review = Episciences_ReviewsManager::find($paper->getRvid());
                         $discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
-                        $discloseEditorNames = ($discloseEditorNames === '1' || $discloseEditorNames === 1 || $discloseEditorNames === true);
+                        $discloseEditorNames = filter_var($discloseEditorNames, FILTER_VALIDATE_BOOLEAN);
 
                         // Use anonymous name if option is disabled
                         $senderFullName = $discloseEditorNames
@@ -671,8 +673,9 @@ class PaperDefaultController extends DefaultController
         // - All editors in $recipients were notified (if any), AND
         // - All co-authors were notified (if any)
         if ($oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
-            // Expected notifications: editors (if any) + co-authors actually notified
-            $expectedNotifications = count($recipients) + $coAuthorsNotifiedCount;
+            // Expected notifications: editors (if any) + total co-authors to notify
+            // (not $coAuthorsNotifiedCount which only tracks successes, making the comparison always true)
+            $expectedNotifications = count($recipients) + $totalCoAuthorsToNotify;
             return $nbNotifications === $expectedNotifications;
         }
 

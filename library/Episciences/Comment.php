@@ -60,7 +60,8 @@ class Episciences_Comment
 
     protected $_excludedCommentsTypes = [
         Episciences_CommentsManager::TYPE_REVISION_REQUEST,
-        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE
+        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+        Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
     ];
 
     /**

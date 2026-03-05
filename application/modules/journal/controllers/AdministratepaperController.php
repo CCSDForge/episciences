@@ -1313,7 +1313,8 @@ class AdministratepaperController extends PaperDefaultController
 
         // Handle file upload explicitly with correct field name (reply forms use 'file_<pcid>')
         $fileFieldName = 'file_' . $parentCommentId;
-        if (!empty($_FILES[$fileFieldName]['name']) && $_FILES[$fileFieldName]['error'] === UPLOAD_ERR_OK) {
+        $fileTransfer = new Zend_File_Transfer_Adapter_Http();
+        if ($fileTransfer->isUploaded($fileFieldName)) {
             // Create directory if needed
             if (!is_dir($commentPath)) {
                 mkdir($commentPath, 0755, true);

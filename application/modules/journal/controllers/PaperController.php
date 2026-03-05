@@ -4344,10 +4344,7 @@ class PaperController extends PaperDefaultController
             ];
 
             // Include file if uploaded (reply forms use 'file_<pcid>' as field name)
-            $fileFieldName = 'file_' . $pcid;
-            if (!empty($_FILES[$fileFieldName]['name'])) {
-                $data['file'] = $_FILES[$fileFieldName];
-            }
+            // CommentsManager::save() calls uploadFiles() internally which picks up $_FILES via ZF1 adapter
         } else {
             // For initial messages, trim the comment to prevent whitespace-only messages
             if (isset($data['comment'])) {
