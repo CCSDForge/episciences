@@ -53,7 +53,7 @@ class SubmitController extends DefaultController
             ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
             ->addMessage($this->buildReachedMessage());
 
-        $this->_helper->redirector('index', 'submit');
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'submit']));
     }
 
     /**

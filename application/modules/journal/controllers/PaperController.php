@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Files\File;
+use Episciences\Files\FileManager;
 use Episciences\Files\Uploader;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
@@ -62,18 +64,18 @@ class PaperController extends PaperDefaultController
 
     /**
      * display paper public page
+     * @throws DOMException
+     * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Controller_Exception
      * @throws Zend_Controller_Response_Exception
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Form_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
-     * @throws InvalidArgumentExceptionAlias
      */
     public function viewAction(): void
     {
@@ -125,8 +127,8 @@ class PaperController extends PaperDefaultController
 
                 $uploader = new Uploader(sprintf('%s/dd/', REVIEW_FILES_PATH . $paper->getDocid()));
                 try {
-                    $allMd5 = \Episciences\Files\FileManager::findByMd5($paper->getDocid());
-                    /** @var \Episciences\Files\File $dFile */
+                    $allMd5 = FileManager::findByMd5($paper->getDocid());
+                    /** @var File $dFile */
                     $dFile = $uploader->upload(true)->getInfo()[$uploader::UPLOADED_FILES_KEY][Episciences_Submit::DD_FILE_ELEMENT_NAME];
                     if (in_array($dFile->getMd5(), $allMd5, true)) {
                         $message = $this->view->translate("La version que vous essayez d'envoyer existe déjà.");
@@ -162,10 +164,10 @@ class PaperController extends PaperDefaultController
 
             if ($id !== 0) {
                 // redirect to published version
-                $this->redirect('/' . $id);
+                $this->redirect(sprintf('%s%s', PREFIX_URL, $id));
             } elseif (!Episciences_Auth::isLogged()) {
                 // redirect to login if user is not logged in
-                $this->redirect($this->url(['controller' => 'user', 'action' => 'login', 'forward-controller' => 'paper', 'forward-action' => 'view', 'id' => $docId ]));
+                $this->redirect($this->url(['controller' => 'user', 'action' => 'login', 'forward-controller' => 'paper', 'forward-action' => 'view', 'id' => $docId]));
             }
 
             $this->redirectsIfHaveNotEnoughPermissions($paper);
@@ -1968,7 +1970,7 @@ class PaperController extends PaperDefaultController
     private function handleInvalidForm($form, Episciences_Paper $paper): void
     {
         $this->renderFormErrors($form);
-        $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()]));
     }
 
     /**
@@ -1983,7 +1985,7 @@ class PaperController extends PaperDefaultController
             ->setNamespace(self::ERROR)
             ->addMessage($this->view->translate($message));
 
-        $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'paper', 'action' => 'view', 'id' => $paper->getDocid()]));
     }
 
     /**
