@@ -45,6 +45,7 @@ class Episciences_Repositories
     public const EPI_USER_ID = '12';
     public const HAL_LABEL = 'HAL';
 
+    /** @var array<int|string, array<string, mixed>> */
     private static array $_repositories = [];
 
     public const IDENTIFIER_EXEMPLES = [
@@ -58,6 +59,9 @@ class Episciences_Repositories
         self::CRYPTOLOGY_EPRINT => '2026/1234'
     ];
 
+    /**
+     * @return array<int|string, array<string, mixed>>
+     */
     public static function getRepositories(): array
     {
 
@@ -83,17 +87,28 @@ class Episciences_Repositories
 
     }
 
+    /**
+     * @param int|string $label
+     * @return int|string|null
+     */
     public static function getRepoIdByLabel($label)
     {
         $r = Episciences_Tools::search_multiarray(self::getRepositories(), $label);
         return ($r) ? $r[0] : null;
     }
 
-    public static function getLabel($repoId)
+    /**
+     * @param int|string $repoId
+     * @return string
+     */
+    public static function getLabel($repoId): string
     {
         return isset (self::getRepositories()[$repoId]) ? self::getRepositories()[$repoId][self::REPO_LABEL] : '';
     }
 
+    /**
+     * @param int|string $repoId
+     */
     public static function getBaseUrl($repoId): ?string
     {
         $repositories = self::getRepositories();
@@ -106,6 +121,10 @@ class Episciences_Repositories
         return null;
     }
 
+    /**
+     * @param int|string $repoId
+     * @param int|string|null $version
+     */
     public static function getIdentifier(
         $repoId,
         string $identifier,
@@ -121,7 +140,7 @@ class Episciences_Repositories
         if ($version !== null) {
             return str_replace(
                 ['%%ID', '%%VERSION'],
-                [$identifier, $version],
+                [$identifier, (string)$version],
                 $template
             );
         }
@@ -134,16 +153,23 @@ class Episciences_Repositories
     }
 
 
+    /**
+     * @param int|string $repoId
+     * @param int|string $identifier
+     * @param int|string|float|null $version
+     * @param int|string $versionMinorNumber
+     * @return string|null
+     */
     public static function getDocUrl($repoId, $identifier, $version = null, $versionMinorNumber = Episciences_Repositories_Dataverse_Hooks::VERSION_MINOR_NUMBER)
 
     {
         if ($version && self::isDataverse($repoId)) {
             $exploded = explode('.', (string)$version);
-            $version = (int)($exploded[0] ?? 1);
+            $version = (int)$exploded[0];
             $versionMinorNumber = (int)($exploded[1] ?? Episciences_Repositories_Dataverse_Hooks::VERSION_MINOR_NUMBER);
         }
 
-        $repoDocUrl = self::getRepositories()[$repoId][self::REPO_DOCURL];
+        $repoDocUrl = self::getRepositories()[$repoId][self::REPO_DOCURL] ?? null;
 
         if (!empty($repoDocUrl)) {
             return str_replace(['%%ID', '%%VERSION', '%%V_MINOR_NUMBER'], [$identifier, $version, $versionMinorNumber], $repoDocUrl);
@@ -152,30 +178,37 @@ class Episciences_Repositories
         return $repoDocUrl;
     }
 
-    public static function getApiUrl($repoId)
+    /**
+     * @param int|string $repoId
+     */
+    public static function getApiUrl($repoId): string
     {
         return self::getRepositories()[$repoId][self::REPO_API_URL] ?? '';
     }
 
     /**
-     * @param $repoId
-     * @param $identifier
+     * @param int|string $repoId
+     * @param int|string $identifier
      * @param float|null $version
      * @return string
      */
     public static function getPaperUrl($repoId, $identifier, ?float $version = 1): string
     {
-        $repoPaperUrl = self::getRepositories()[$repoId][self::REPO_PAPERURL];
+        $repoPaperUrl = self::getRepositories()[$repoId][self::REPO_PAPERURL] ?? '';
 
         if (!empty($repoPaperUrl)) {
             $identifier  = Episciences_Repositories_Common::replaceYMDHMSWithTimestamp($identifier);
-            return str_replace(['%%ID', '%%VERSION'], [$identifier, $version], self::getRepositories()[$repoId][self::REPO_PAPERURL]);
+            return str_replace(['%%ID', '%%VERSION'], [$identifier, (string)$version], self::getRepositories()[$repoId][self::REPO_PAPERURL]);
         }
 
         return $repoPaperUrl;
     }
 
-    public static function getRepoDoiPrefix($repoId)
+    /**
+     * @param int|string $repoId
+     * @return string
+     */
+    public static function getRepoDoiPrefix($repoId): string
     {
         return Ccsd_Tools::ifsetor(self::getRepositories()[$repoId][self::REPO_DOI_PREFIX], self::REPO_DOI_PREFIX);
     }
@@ -215,8 +248,8 @@ class Episciences_Repositories
 
     /**
      * @param string $hookName
-     * @param array $hookParams
-     * @return array
+     * @param array<string, mixed> $hookParams
+     * @return array<mixed>
      */
     public static function callHook(string $hookName, array $hookParams): array
     {
@@ -235,7 +268,7 @@ class Episciences_Repositories
 
 
     /**
-     * @return array
+     * @return array<int|string, string>
      */
     public static function getLabels(): array
     {
@@ -282,7 +315,7 @@ class Episciences_Repositories
             return self::IDENTIFIER_EXEMPLES[self::HAL_REPO_ID];
         }
 
-        return 'Uninitialized variable';
+        return '';
 
     }
 
@@ -293,6 +326,9 @@ class Episciences_Repositories
     }
 
 
+    /**
+     * @return array<string, array<string, mixed>>
+     */
     public static function getRepositoriesByLabel(): array
     {
 
@@ -316,4 +352,3 @@ class Episciences_Repositories
         return self::getRepositories()[$repoId][self::REPO_TYPE] ?? null;
     }
 }
-
