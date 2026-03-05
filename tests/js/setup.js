@@ -20,6 +20,13 @@ global.translate = function (text, locale) {
     return text; // Simple passthrough for tests
 };
 
+// Mock requestAnimationFrame to execute synchronously in tests
+global.requestAnimationFrame = (callback) => {
+    callback();
+    return 0;
+};
+global.cancelAnimationFrame = (id) => {};
+
 // Mock jQuery-like $ function for functions.js compatibility
 global.$ = function (selector) {
     // Minimal jQuery mock for tests
@@ -47,6 +54,27 @@ global.CSS = {
         return str.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&');
     },
 };
+
+// Polyfill document.createRange for JSDOM
+if (typeof document !== 'undefined') {
+    document.createRange = () => ({
+        setStart: () => {},
+        setEnd: () => {},
+        commonAncestorContainer: {
+            nodeName: 'BODY',
+            ownerDocument: document,
+        },
+        createContextualFragment: (html) => {
+            const div = document.createElement('div');
+            div.innerHTML = html;
+            const fragment = document.createDocumentFragment();
+            while (div.firstChild) {
+                fragment.appendChild(div.firstChild);
+            }
+            return fragment;
+        },
+    });
+}
 
 // Clean up after each test
 afterEach(() => {

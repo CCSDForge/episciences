@@ -26,8 +26,8 @@ class Episciences_UsersManager
 
     /**
      * fetch review user list, filtered by role
-     * @param null $with
-     * @param null $without
+     * @param string|list<string>|null $with
+     * @param string|list<string>|null $without
      * @return array
      * @throws Zend_Db_Statement_Exception
      */

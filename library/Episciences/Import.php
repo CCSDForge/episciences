@@ -148,7 +148,10 @@ class Episciences_Import
      */
     public function load(){
 
-        $metadata = Episciences_Submit::getDoc($this->getRepoid(), $this->getId(), $this->getVersion());
+        $id = $this->getId();
+        $version = $this->getVersion();
+
+        $metadata = Episciences_Submit::getDoc($this->getRepoid(), $id, $version);
 
         if (!$metadata || $metadata['status'] == 0) {
             throw new Exception("L'article (".$this->getRepoid().' - '.$this->getId().' - v'.$this->getVersion().") n'existe pas");

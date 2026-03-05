@@ -189,21 +189,21 @@ class AdministratepaperController extends PaperDefaultController
                 E_USER_WARNING
             );
             echo json_encode([
-                'doi'           => 'Error',
-                'doi_status'    => 'Error',
-                'feedback'      => '',
+                'doi' => 'Error',
+                'doi_status' => 'Error',
+                'feedback' => '',
                 'error_message' => 'Unauthorized access',
             ]);
             return;
         }
 
         // Validate and sanitize the document identifier.
-        $docId = (int) $request->getPost('docid');
+        $docId = (int)$request->getPost('docid');
         if ($docId <= 0) {
             echo json_encode([
-                'doi'           => 'Error',
-                'doi_status'    => 'Error',
-                'feedback'      => '',
+                'doi' => 'Error',
+                'doi_status' => 'Error',
+                'feedback' => '',
                 'error_message' => $this->view->translate('Invalid document identifier.'),
             ]);
             return;
@@ -214,9 +214,9 @@ class AdministratepaperController extends PaperDefaultController
         $paper = Episciences_PapersManager::get($docId);
         if (!$paper instanceof Episciences_Paper) {
             echo json_encode([
-                'doi'           => 'Error',
-                'doi_status'    => 'Error',
-                'feedback'      => '',
+                'doi' => 'Error',
+                'doi_status' => 'Error',
+                'feedback' => '',
                 'error_message' => $this->view->translate('Document not found.'),
             ]);
             return;
@@ -224,9 +224,9 @@ class AdministratepaperController extends PaperDefaultController
 
         if (!$paper->canBeAssignedDOI()) {
             echo json_encode([
-                'doi'           => 'Error',
-                'doi_status'    => 'Error',
-                'feedback'      => '',
+                'doi' => 'Error',
+                'doi_status' => 'Error',
+                'feedback' => '',
                 'error_message' => $this->view->translate('Le statut du document ne permet pas de lui assigner un DOI'),
             ]);
             return;
@@ -234,15 +234,15 @@ class AdministratepaperController extends PaperDefaultController
 
         $resCreateDoi = Episciences_Paper::createPaperDoi(RVID, $paper);
 
-        $doi          = 'Error';
-        $doiStatus    = 'Error';
-        $feedback     = '';
+        $doi = 'Error';
+        $doiStatus = 'Error';
+        $feedback = '';
         $errorMessage = '';
-        $doiStr       = '';
+        $doiStr = '';
 
         if ($resCreateDoi['resUpdateDoi'] > 0) {
-            $doiStr    = trim($resCreateDoi['doi'] ?? '');
-            $doi       = Episciences_View_Helper_DoiAsLink::DoiAsLink($resCreateDoi['doi']);
+            $doiStr = trim($resCreateDoi['doi'] ?? '');
+            $doi = Episciences_View_Helper_DoiAsLink::DoiAsLink($resCreateDoi['doi']);
             $feedback .= ' ' . $this->view->translate('DOI créé.');
         } else {
             $errorMessage .= ' ' . $this->view->translate('Erreur lors de la creation du DOI.');
@@ -267,10 +267,10 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         echo json_encode([
-            'doi'           => trim($doi),
-            'doiStr'        => $doiStr,
-            'doi_status'    => trim($doiStatus),
-            'feedback'      => trim($feedback),
+            'doi' => trim($doi),
+            'doiStr' => $doiStr,
+            'doi_status' => trim($doiStatus),
+            'feedback' => trim($feedback),
             'error_message' => trim($errorMessage),
         ]);
     }
@@ -3155,9 +3155,9 @@ class AdministratepaperController extends PaperDefaultController
             return;
         }
 
-        $docId   = (int) $request->getPost('docid');
-        $paperId = (int) $request->getPost('paperid');
-        $doi     = trim((string) $request->getPost('doi'));
+        $docId = (int)$request->getPost('docid');
+        $paperId = (int)$request->getPost('paperid');
+        $doi = trim((string)$request->getPost('doi'));
 
         if ($docId <= 0 || $paperId <= 0) {
             echo json_encode(['success' => false, 'doi' => '', 'error' => 'Invalid document ID']);
@@ -3190,7 +3190,7 @@ class AdministratepaperController extends PaperDefaultController
         // Add or update the DOI queue entry with STATUS_ASSIGNED so the badge
         // and "Cancel the DOI" button are shown in the UI after a manual save.
         $doiQueueEntry = new Episciences_Paper_DoiQueue([
-            'paperid'    => $paperId,
+            'paperid' => $paperId,
             'doi_status' => Episciences_Paper_DoiQueue::STATUS_ASSIGNED,
         ]);
         $existingQueue = Episciences_Paper_DoiQueueManager::findByPaperId($paperId);
@@ -4779,11 +4779,29 @@ class AdministratepaperController extends PaperDefaultController
             $identifier = Episciences_Repositories::getIdentifier($paper->getRepoid(), $paper->getIdentifier());
             $baseUrl = Episciences_Repositories::getBaseUrl($paper->getRepoid());
             $oai = new Episciences_Oai_Client($baseUrl, 'xml');
+
             if ((int)Episciences_Repositories::ARXIV_REPO_ID === $repoId) {
                 try {
                     $versions = Episciences_Submit::extractVersionsFromArXivRaw($oai->getArXivRawRecord($identifier));
                 } catch (Exception $e) {
                     trigger_error($e->getMessage());
+                }
+            } else {
+
+                $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', [
+                    'identifier' => $paper->getConcept_identifier(),
+                    'repoId' => $paper->getRepoid()
+                ]);
+
+                if ((int)Episciences_Repositories::CRYPTOLOGY_EPRINT === $repoId) {
+                    $latestVersionDateTime = $hookApiRecord[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
+                    $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($paper->getIdentifier());
+                    $latestIdentifier = sprintf('%s/%s', $paper->getConcept_identifier(), $latestVersionDateTime);
+                    // This behavior is intentional because a submission without a specific version is the most recent version.
+                    // If the paper does not yet have a datetime in its identifier, getDateTimePattern() returns ''.
+                    if ($latestVersionDateTime > $previousPaperVersionDateTime) {
+                        $versions[] = $latestIdentifier;
+                    }
                 }
             }
 
@@ -4796,7 +4814,9 @@ class AdministratepaperController extends PaperDefaultController
     /**
      * Update paper version
      * @return false|void
-     * @throws Exception
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
 
     public function savenewpostedversionAction()
@@ -4807,15 +4827,25 @@ class AdministratepaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $post = $request->getPost();
+        $hasDateTime = false;
 
-        $latestPostedVersion = isset($post['latest-repository-version']) ? (float)$post['latest-repository-version'] : 0; // version or identifier
+        if (isset($post['latest-repository-version'])) {
+            $latestPostedVersion = $post['latest-repository-version'];
+            $hasDateTime = Episciences_Repositories_Common::getDateTimePattern($latestPostedVersion) !== '';
+
+            if (!$hasDateTime) {
+                $latestPostedVersion = (float)$latestPostedVersion;
+            }
+
+        } else {
+            $latestPostedVersion = 0;
+        } // version or identifier
 
         if (!$latestPostedVersion) {
             return false;
         }
 
         $isReadyToPublish = isset($post['ready-to-publish']) && $post['ready-to-publish'] === 'on';
-
 
         $docId = (int)$request->getPost('docid');
 
@@ -4842,9 +4872,15 @@ class AdministratepaperController extends PaperDefaultController
 
         $hookedVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $latestPostedVersion, 'repoId' => $paper->getRepoid()]);
 
-        if (isset($hookedVersion['version'])) {
+        if (isset($hookedVersion['version']) || $hasDateTime) {
             $paper->setIdentifier($latestPostedVersion); // posted identifier
-            $latestPostedVersion = (float)$hookedVersion['version'];
+
+            if ($hasDateTime) {
+                $latestPostedVersion = $paper->getVersion() + 1;
+
+            } else {
+                $latestPostedVersion = (float)$hookedVersion['version'];
+            }
         }
 
         $currentVersion = $paper->getVersion();
@@ -4886,6 +4922,8 @@ class AdministratepaperController extends PaperDefaultController
      * and logs the cancellation.
      *
      * @return void
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
      */
     public function ajaxrequestremovedoiAction(): void
     {
@@ -4905,8 +4943,8 @@ class AdministratepaperController extends PaperDefaultController
             return;
         }
 
-        $paperId = (int) $request->getPost('paperId');
-        $docId   = (int) $request->getPost('docId');
+        $paperId = (int)$request->getPost('paperId');
+        $docId = (int)$request->getPost('docId');
 
         if ($paperId <= 0 || $docId <= 0) {
             echo json_encode(['success' => false, 'error' => 'Invalid document ID']);
@@ -4934,7 +4972,7 @@ class AdministratepaperController extends PaperDefaultController
         // it means the DOI field was already empty (idempotent operation).
         Episciences_PapersManager::updateDoi('', $paperId);
 
-        $doi = trim((string) $request->getPost('doi'));
+        $doi = trim((string)$request->getPost('doi'));
         Episciences_Paper_Logger::log(
             $paperId,
             $docId,

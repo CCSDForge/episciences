@@ -86,7 +86,6 @@ abstract class Ccsd_Website_Navigation
      * Récupération de la liste des types de pages disponibles
      * @param bool $reload
      * @return array
-     * @throws ReflectionException
      * @throws Zend_Loader_Exception
      */
     public function getPageTypes($reload = false)

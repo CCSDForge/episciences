@@ -342,6 +342,7 @@ function defineVendorJsLibraries(): void
         'VENDOR_JQUERY_DATATABLES' => 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js',
         'VENDOR_JQUERY_FILE_UPLOAD' => 'https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/10.32.0/js/jquery.fileupload.min.js',
         'VENDOR_JQUERY_NESTED_SORTABLE' => 'https://cdnjs.cloudflare.com/ajax/libs/nestedSortable/1.3.4/jquery.ui.nestedSortable.min.js',
+        'VENDOR_SORTABLE_JS' => 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js',
         'VENDOR_JQUERY_UI' => 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js', // Do not upgrade
         'VENDOR_JQUERY_URL_PARSER' => 'https://cdnjs.cloudflare.com/ajax/libs/jquery-url-parser/2.2.1/purl.min.js',
         'VENDOR_MATHJAX' => 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML',
@@ -596,6 +597,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('VENDOR_JQUERY_DATATABLES', '');
         define('VENDOR_JQUERY_FILE_UPLOAD', '');
         define('VENDOR_JQUERY_NESTED_SORTABLE', '');
+        define('VENDOR_SORTABLE_JS', '');
         define('VENDOR_JQUERY_UI', '');
         define('VENDOR_JQUERY_URL_PARSER', '');
         define('VENDOR_MATHJAX', '');

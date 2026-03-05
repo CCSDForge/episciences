@@ -213,12 +213,18 @@ class Ccsd_Form_Validate_RequiredLang extends Zend_Validate_Abstract
      */
     public function isValid($value)
     {
-        $diff = array_diff($this->_langs, array_keys($value));
+        $missing = [];
+        foreach ($this->_langs as $lang) {
+            if (!isset($value[$lang]) || (is_string($value[$lang]) && trim($value[$lang]) === '')) {
+                $missing[] = $lang;
+            }
+        }
 
-        if (!empty ($diff)) {
+        if (!empty ($missing)) {
             $this->_error(self::REQUIRED_LANG, implode(", ", array_map(function ($v) {
-                return Ccsd_Form::getDefaultTranslator()->translate("lang_$v");
-            }, $diff)));
+                $translator = Ccsd_Form::getDefaultTranslator();
+                return $translator ? $translator->translate("lang_$v") : "lang_$v";
+            }, $missing)));
             return false;
         }
 

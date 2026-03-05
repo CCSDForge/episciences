@@ -1,13 +1,12 @@
 <?php
 
-
 use cottagelabs\coarNotifications\COARNotificationManager;
 use cottagelabs\coarNotifications\orm\COARNotification;
+use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 use Episciences\Trait\UrlBuilder;
-use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\RotatingFileHandler;
-use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+
+
 use scripts\AbstractScript;
 
 require_once "AbstractScript.php";
@@ -53,9 +52,6 @@ class InboxNotifications extends AbstractScript
     }
 
 
-    /**
-     * @throws \Psr\Cache\InvalidArgumentException
-     */
     public function run(): void
     {
 
@@ -124,7 +120,6 @@ class InboxNotifications extends AbstractScript
 
 
     /**
-     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function notificationsProcess(COARNotification $notification): bool
     {
@@ -332,7 +327,7 @@ class InboxNotifications extends AbstractScript
      * @param string $url
      * @param array $notifyPayloads
      * @return bool
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      */
     private function initSubmission(Episciences_Review $journal, string $actor, string $url, array $notifyPayloads = []): bool
     {
@@ -490,7 +485,7 @@ class InboxNotifications extends AbstractScript
      * @param array $data
      * @param array|null $options
      * @return bool
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      */
     public function addSubmission(Episciences_Review $journal, array $data, array $options = null): bool
     {
@@ -732,6 +727,7 @@ class InboxNotifications extends AbstractScript
      * @param Episciences_Paper $paper
      * @param array $options
      * @return void
+     * @throws JsonException
      */
     private function notifyAuthorAndEditorialCommittee(Episciences_Review $journal, Episciences_Paper $paper, array $options = []): void
     {
@@ -1087,13 +1083,14 @@ class InboxNotifications extends AbstractScript
      * @param array $logDetails
      * @return bool
      * @throws DOMException
+     * @throws InvalidArgumentExceptionAlias
+     * @throws JsonException
      * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
-     * @throws \Psr\Cache\InvalidArgumentException
      */
     private function saveNewVersion(Episciences_Paper $context, array $newPaperData, Episciences_Review $journal, array $logDetails = []): bool
     {
@@ -1362,7 +1359,7 @@ class InboxNotifications extends AbstractScript
                 Episciences_Paper_AuthorsManager::enrichAffiOrcidFromTeiHalInDB($paper->getRepoid(), $paper->getPaperid(), $paper->getIdentifier(), (int)$paper->getVersion());
             }
 
-        } catch (JsonException|\Psr\Cache\InvalidArgumentException $e) {
+        } catch (JsonException|InvalidArgumentExceptionAlias $e) {
             $this->logger->critical($e->getMessage());
         }
 
@@ -1374,7 +1371,8 @@ class InboxNotifications extends AbstractScript
      * @param array $data
      * @param array $options
      * @return bool
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
+     * @throws JsonException
      */
     private function getFirstSubmissionResult(
         Episciences_Paper  $paper,

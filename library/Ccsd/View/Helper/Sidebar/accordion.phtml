@@ -31,7 +31,7 @@
                 $resource = $page->getController() . '-' . $page->getAction();
                 if ("administrate-index" == $resource || "rights-index" == $resource) {
                     ?>
-                    <li class="smenu list-group-item nav-header"><?php echo $this->view->translate($page->getLabel())?></li>
+                    <li class="smenu list-group-item nav-header"><?php echo $this->view->escape($this->view->translate($page->getLabel()))?></li>
                     <?php
                     foreach($page->getPages() as $page) {
                         if (!$nav->accept($page)) continue;
@@ -39,7 +39,7 @@
                         ?>
                         <li class="smenu list-group-item menu <?php echo $active ? 'active' : ''?>">
                             <a tabindex="-1" href="<?php echo ($page->hasPages() ? 'javascript:void(0);' : $this->view->pagelink($page, $prefix)); ?>" style="display: table-cell">
-                            	<span style="margin-right: 15px; float: left"><?php echo $this->view->translate($page->getLabel())?></span>
+                            	<span style="margin-right: 15px; float: left"><?php echo $this->view->escape($this->view->translate($page->getLabel()))?></span>
                                 <?php if ($page->hasPages()) { ?><span class="caret" style="right: 15px; position: absolute"></span><?php } ?>
                             </a>
                         	<span class="clearfix"></span>
@@ -49,7 +49,7 @@
                                     //Page à ne pas afficher (pas le droit)
                                     if (!$nav->accept($subPage)) continue;
                                     ?>
-                                    <li class="<?php echo $subPage->isActive(true) ? 'active' : ''?>"><a href="<?php echo $this->view->pagelink($subPage, $prefix) ?>" target="<?php echo $subPage->getTarget() ?>"><?php echo $this->view->translate($subPage->getLabel())?></a></li>
+                                    <li class="<?php echo $subPage->isActive(true) ? 'active' : ''?>"><a href="<?php echo $this->view->pagelink($subPage, $prefix) ?>" target="<?php echo $subPage->getTarget() ?>"><?php echo $this->view->escape($this->view->translate($subPage->getLabel()))?></a></li>
                                 <?php } ?>
                             </ul>
                             <?php } ?>
@@ -61,7 +61,7 @@
                     ?>
                     <li class="smenu list-group-item <?php echo $active ? 'active' : ''?>">
                         <a tabindex="-1" href="javascript:void(0);" style="display: table-cell">
-                        	<span style="margin-right: 15px; float: left"><?php echo $this->view->translate($page->getLabel())?></span>
+                        	<span style="margin-right: 15px; float: left"><?php echo $this->view->escape($this->view->translate($page->getLabel()))?></span>
                         	<span class="caret" style="right: 15px; position: absolute"></span>
                         </a>
                         <span class="clearfix"></span>
@@ -73,7 +73,7 @@
                                 ?>
                         	<li class="<?php echo ($subPage->hasPages() ? 'smenu' : '');?> <?php echo $subPage->isActive(true) ? 'active' : ''?>">
                         		<a href="<?php echo ($subPage->hasPages() ? 'javascript:void(0);' : $this->view->pagelink($subPage, $prefix)); ?>" target="<?php echo $subPage->getTarget() ?>">
-                        			<?php echo $this->view->translate($subPage->getLabel())?>
+                        			<?php echo $this->view->escape($this->view->translate($subPage->getLabel()))?>
                         		</a>
                                 <ul class="smenu-list" <?php echo $subPage->isActive(true) ? '' : 'style="display:none;"'?>>
                                     <?php foreach ($subPage->getPages() as $subsubPage) {
@@ -82,7 +82,7 @@
                                         ?>
                                         <li class="<?php echo $subsubPage->isActive(true) ? 'active' : ''?>">
                                             <a href="<?php echo $this->view->pagelink($subsubPage, $prefix) ?>" target="<?php echo $subsubPage->getTarget() ?>">
-                                                <?php echo $this->view->translate($subsubPage->getLabel())?>
+                                                <?php echo $this->view->escape($this->view->translate($subsubPage->getLabel()))?>
                                             </a>
                                         </li>
                                     <?php } ?>
@@ -96,7 +96,7 @@
             } else {
                 $active = $page->isActive(true);
                 ?>
-                <li class="list-group-item <?php echo $active ? 'active' : ''?>"><a href="<?php echo $this->view->pagelink($page, $prefix) ?>" target="<?php echo $page->getTarget() ?>"><?php echo $this->view->translate($page->getLabel())?></a></li>
+                <li class="list-group-item <?php echo $active ? 'active' : ''?>"><a href="<?php echo $this->view->pagelink($page, $prefix) ?>" target="<?php echo $page->getTarget() ?>"><?php echo $this->view->escape($this->view->translate($page->getLabel()))?></a></li>
             <?php
             }
         } ?>

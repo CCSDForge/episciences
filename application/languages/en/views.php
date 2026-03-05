@@ -1430,7 +1430,7 @@ return array(
     "Progression : " => "Progression:",
     "Dernière modification" => "Last modified",
 
-    "Vous n'êtes pas l'auteur de cet article." => "You are not the author of this article.",
+    "Vous êtes connecté avec un compte différent de celui ayant été utilisé pour soumettre ce document. Veuillez vous déconnecter et vous reconnecter avec le bon compte pour continuer." => "You’re signed in with a different account than the one used to submit this document. Please sign out and log in with the correct account to continue.",
     "Souhaitez-vous remplacer la version précédente ?" => "Do you want to replace the previous version?",
     "ou" => 'or',
     "Attention : " => "Warning: ",
@@ -1453,6 +1453,7 @@ return array(
     "l'entrepôt de cet article a changé." => "the record repository of this article has changed.",
     "la version de l'article à mettre à jour doit être supérieure à la version précédente." => "the version of the article to be updated must be greater than the previous version.",
     "Une erreur interne s'est produite, veuillez recommencer." => "An internal error has occurred, please try again.",
+    "Une erreur s'est produite pendant l'enregistrement de votre article." => "An error occurred while saving your article.",
     //Soumission d'une notice vide
     "Vous ne pouvez pas soumettre ce document; le fichier est non disponible; fin d'embargo : " => "You can not submit this document; the file is not available; the end date of the embargo: ",
     //suggestions de l'auteur
@@ -1669,8 +1670,13 @@ return array(
     "Ajout / suppression de pages" => "Add / delete pages",
     "Ajouter la page" => "Add page",
     "Ajouter un dossier" => "Add folder",
+    "Type de page" => "Page type",
     "Type de la page" => "Page type",
     "Titre de la page" => "Page title",
+    "Déplacer" => "Move",
+    "Structure du menu" => "Menu structure",
+    "ou" => "or",
+    "Erreur de saisie" => "Input error",
 
     "Visibilité de la page" => "Page visibility",
     "Publique" => "Public",
