@@ -24,12 +24,16 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
 
     /**
      * @param $stringToMakeAvatar
+     * @param string|null $backgroundColor Hex color code without # (e.g., 'FFC107')
      * @return string
      */
-    public static function asSvg($stringToMakeAvatar): string
+    public static function asSvg($stringToMakeAvatar, ?string $backgroundColor = null): string
     {
+        // Use custom color if provided, otherwise use default palette
+        $backgrounds = $backgroundColor ? ['#' . $backgroundColor] : self::$_defaultBackgroundColors;
+
         $avatar = new Avatar([
-            'shape' => 'circle', 'theme' => 'colorful', 'width' => 34, 'height' => 34, 'fontSize' => 16, 'backgrounds' => self::$_defaultBackgroundColors]);
+            'shape' => 'circle', 'theme' => 'colorful', 'width' => 34, 'height' => 34, 'fontSize' => 16, 'backgrounds' => $backgrounds]);
 
         return $avatar->create($stringToMakeAvatar)->setFontFamily('Helvetica')->toSvg();
 
