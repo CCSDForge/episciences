@@ -53,6 +53,8 @@ class Episciences_Paper_Logger
     public const CODE_EDITOR_COMMENT = "editor_comment";
     public const CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR = "paper_comment_form_reviewer_to_contributor";
     public const CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER = "paper_comment_form_contributor_to_reviewer";
+    public const CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR = "paper_comment_from_author_to_editor";
+    public const CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR = "paper_comment_from_editor_to_author";
     public const CODE_PAPER_UPDATED = "paper_updated";
     // https://github.com/CCSDForge/episciences/issues/50
     public const CODE_ALTER_PUBLICATION_DATE = "paper_alter_publication_date";
@@ -114,6 +116,7 @@ class Episciences_Paper_Logger
         self::CODE_DOI_ASSIGNED                         => self::INFO,
         self::CODE_DOI_CANCELED                         => self::INFO,
         self::CODE_DOI_UPDATED                          => self::INFO,
+        self::CODE_DOCUMENT_IMPORTED                    => self::INFO,
         self::CODE_EDITOR_ASSIGNMENT                    => self::WARNING,
         self::CODE_EDITOR_COMMENT                       => self::VIOLET,
         self::CODE_EDITOR_UNASSIGNMENT                  => self::WARNING,
@@ -129,8 +132,9 @@ class Episciences_Paper_Logger
         self::CODE_OTHER_VOLUMES_SELECTION              => self::VIOLET,
         self::CODE_ALTER_PUBLICATION_DATE               => self::WARNING,
         self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => self::VIOLET,
+        self::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR => self::VIOLET,
+        self::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR => self::VIOLET,
         self::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => self::VIOLET,
-        self::CODE_DOCUMENT_IMPORTED                    => self::INFO,
         self::CODE_PAPER_UPDATED                        => self::WARNING,
         self::CODE_REMINDER_SENT                        => self::INFO,
         self::CODE_RESTORATION_OF_STATUS               => self::SUCCESS,
@@ -176,6 +180,7 @@ class Episciences_Paper_Logger
         self::CODE_DOI_ASSIGNED                         => 'DOI assigné',
         self::CODE_DOI_CANCELED                         => 'DOI Annulé',
         self::CODE_DOI_UPDATED                          => 'DOI mis à jour',
+        self::CODE_DOCUMENT_IMPORTED                    => "Le document a été importé",
         self::CODE_EDITOR_ASSIGNMENT                    => "Assignation d'un rédacteur",
         self::CODE_EDITOR_COMMENT                       => "Commentaire du rédacteur",
         self::CODE_EDITOR_UNASSIGNMENT                  => "Désassignation d'un rédacteur",
@@ -191,8 +196,9 @@ class Episciences_Paper_Logger
         self::CODE_OTHER_VOLUMES_SELECTION              => "Sélection des volumes secondaires",
         self::CODE_ALTER_PUBLICATION_DATE               => "Modification de la date de publication",
         self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Réponse à une demande d'éclaircissement (contributeur au relecteur)",
+        self::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR => "Message de l'auteur aux rédacteurs assignés",
+        self::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR => "Réponse du rédacteur à l'auteur",
         self::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => "Demande d'éclaircissements (relecteur au contributeur)",
-        self::CODE_DOCUMENT_IMPORTED                    => "Le document a été importé",
         self::CODE_PAPER_UPDATED                        => "Article mis à jour",
         self::CODE_REMINDER_SENT                        => "Envoi d'une relance automatique",
         self::CODE_RESTORATION_OF_STATUS               => "Restauration du statut",

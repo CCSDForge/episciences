@@ -11,15 +11,53 @@ class CommentsController extends PaperController
 {
     /**
      * Remove a file comment
+     * Security: Requires POST method with CSRF token
      */
     public function removefilecommentAction(): void
     {
 
         $this->_helper->getHelper('layout')->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
+
+        // SECURITY FIX: Require POST method with CSRF token
+        if (!$this->getRequest()->isPost()) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Invalid request method."));
+            $this->_helper->redirector->gotoUrl('/');
+            return;
+        }
+
+        // Verify CSRF token using Zend_Form_Element_Hash via helper
+        $csrfTokenName = $this->getRequest()->getPost('csrf_token_name');
+        if (empty($csrfTokenName)) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Invalid or expired security token. Please try again."));
+            $this->_helper->redirector->gotoUrl('/');
+            return;
+        }
+
+        // Get the sanitized element name (same logic as in Helper)
+        $elementName = preg_replace('/[^a-zA-Z0-9_]/', '_', (string) $csrfTokenName);
+        $csrfTokenValue = $this->getRequest()->getPost($elementName);
+
+        if (!Episciences_Csrf_Helper::validateToken($csrfTokenName, $csrfTokenValue)) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Invalid or expired security token. Please try again."));
+            $this->_helper->redirector->gotoUrl('/');
+            return;
+        }
+
         $docid = (int)$this->getRequest()->getParam('docid');
         $pcid = (int)$this->getRequest()->getParam('pcid');
         $file = $this->getRequest()->getParam('file');
+
+        // SECURITY FIX: Validate filename format (alphanumeric, dots, dashes, underscores only)
+        if (!is_string($file) || $file === '' || !preg_match('/^[a-zA-Z0-9._-]+$/', $file)) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Invalid filename."));
+            $this->_helper->redirector->gotoUrl('/');
+            return;
+        }
 
         try {
             $paper = Episciences_PapersManager::get($docid, false, RVID);
@@ -72,7 +110,76 @@ class CommentsController extends PaperController
             return;
         }
 
+        // Special handling for author-editor communication (both directions)
+        $isAuthorEditorCommunication = in_array($comment->getType(), [
+            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+            Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR
+        ], true);
 
+        if ($isAuthorEditorCommunication) {
+            // If a specific file is provided, delete only that file (not the entire comment)
+            if ($file !== '0') {
+                $isJson = Episciences_Tools::isJson($comment->getFile());
+
+                try {
+                    $jFiles = $isJson ? json_decode($comment->getFile(), true, 512, JSON_THROW_ON_ERROR) : (array)$comment->getFile();
+                    $jFiles = array_filter($jFiles); // Remove empty values
+                } catch (JsonException $e) {
+                    trigger_error($e->getMessage());
+                    $jFiles = [];
+                }
+
+                $dir = $docid . '/comments/';
+                $comment_path = REVIEW_FILES_PATH . $dir . $file;
+
+                if (!$this->validateFileDeletePermission($file, $jFiles, $comment_path, $url)) {
+                    return;
+                }
+
+                $is_file = is_file($comment_path);
+
+                if ($is_file) {
+                    $key = array_search($file, $jFiles, true);
+                    if ($key !== false) {
+                        unset($jFiles[$key]);
+                    }
+                    $jFiles === [] ? $comment->setFile(null) : $comment->setFile(json_encode($jFiles));
+                    unlink($comment_path);
+
+                    // Save the comment (this updates the file field)
+                    // For TYPE_AUTHOR_TO_EDITOR, save() automatically creates a log
+                    // For TYPE_EDITOR_TO_AUTHOR_RESPONSE, we need to create the log manually (excluded in Comment._excludedCommentsTypes)
+                    $comment->save(true);
+
+                    if ($comment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                        $paper->log(
+                            Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR,
+                            Episciences_Auth::getUid(),
+                            [
+                                'user' => Episciences_Auth::getUser()->toArray(),
+                                'comment' => $comment->toArray(),
+                                'file_removed' => $file
+                            ]
+                        );
+                    }
+
+                    $message = $this->view->translate("Le fichier attaché a bien été supprimé.");
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
+                } else {
+                    $message = $this->view->translate("Impossible de supprimer le fichier : élément introuvable.");
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
+                }
+
+                $this->_helper->redirector->gotoUrl($url);
+                return;
+            }
+
+            // No file specified - nothing to delete, redirect back
+            $this->_helper->redirector->gotoUrl($url);
+            return;
+        }
+
+        // Default behavior: delete only the specified file (for other comment types)
         $isJson = Episciences_Tools::isJson($comment->getFile());
 
         try {
@@ -95,6 +202,10 @@ class CommentsController extends PaperController
 
         $comment_path = REVIEW_FILES_PATH . $dir . $file;
 
+        if (!$this->validateFileDeletePermission($file, $jFiles, $comment_path, $url)) {
+            return;
+        }
+
         $is_file = is_file($comment_path);
         if ($file && $is_file) {//note that is_file() returns false if the parent directory doesn't have +x set for you
 
@@ -102,10 +213,10 @@ class CommentsController extends PaperController
             if ($key !== false) {
                 unset($jFiles[$key]);
             }
-            !empty($jFiles) ? $comment->setFile(json_encode($jFiles)) : $comment->setFile(null);
+            empty($jFiles) ? $comment->setFile(null) : $comment->setFile(json_encode($jFiles));
             unlink($comment_path);
             $comment->save(true);
-            $message = $this->view->translate("Le fichier a bien été supprimé.");
+            $message = $this->view->translate("Le fichier attaché a bien été supprimé.");
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($message);
 
         } else {
@@ -199,7 +310,6 @@ class CommentsController extends PaperController
     }
 
     /**
-     * @return void
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -288,6 +398,41 @@ class CommentsController extends PaperController
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
             $this->_helper->redirector->gotoUrl('/paper/submitted');
         }
+    }
+
+    /**
+     * Validate file deletion permission
+     * SECURITY FIX: Verify file belongs to comment and path is within allowed directory
+     *
+     * @param string $file The filename to delete
+     * @param array $jFiles The list of files attached to the comment
+     * @param string $commentPath The full path to the file
+     * @param string $redirectUrl The URL to redirect to on failure
+     * @return bool True if validation passes, false otherwise
+     */
+    private function validateFileDeletePermission(string $file, array $jFiles, string $commentPath, string $redirectUrl): bool
+    {
+        // SECURITY FIX: Verify file belongs to this comment
+        if (!in_array($file, $jFiles, true)) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("File not found in comment."));
+            $this->_helper->redirector->gotoUrl($redirectUrl);
+            return false;
+        }
+
+        // SECURITY FIX: Verify the resolved path is within allowed directory
+        $realPath = realpath($commentPath);
+        $allowedBasePath = realpath(REVIEW_FILES_PATH);
+
+        if ($realPath === false || $allowedBasePath === false ||
+            !str_starts_with($realPath, $allowedBasePath . DIRECTORY_SEPARATOR)) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Access denied."));
+            $this->_helper->redirector->gotoUrl($redirectUrl);
+            return false;
+        }
+
+        return true;
     }
 
 }
