@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performances
 -->
 
-## Unreleased
+## Unreleasedf
 
 ### Added
 * New supported servers:
@@ -50,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Added MSC2020 Classification in ZBJATS export.
 
 ### Changed
-
+- [RT#259551] it is now possible to modify the Copy Editor at any time
 * Refactored `public/js/paper/updateOrcidAuthors.js` from jQuery to modern vanilla ES6+ with a class-based architecture.
 * Enhanced ORCID form validation: added duplicate detection while maintaining support for empty submissions for deletions.
 * Update TinyMCE form 7.3.0 to 8.1.2.
