@@ -629,9 +629,9 @@ class Episciences_Paper
 
     /**
      * @param $action
-     * @param null $uid
-     * @param null $detail
-     * @param null $date
+     * @param int|null $uid
+     * @param array<string, mixed>|string|null $detail
+     * @param string|null $date
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      */

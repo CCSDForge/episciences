@@ -4,9 +4,9 @@ class Episciences_View_Helper_Date extends Zend_View_Helper_Abstract
 {
     /**
      * get date in localized format
-     * @param null $date
-     * @param null $locale
-     * @param null $format
+     * @param string|null $date
+     * @param string|null $locale
+     * @param string|null $format
      * @return bool|string
      * @throws Zend_Date_Exception
      * @throws Zend_Exception

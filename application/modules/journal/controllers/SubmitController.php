@@ -381,7 +381,7 @@ class SubmitController extends DefaultController
             (int)$params['repoId'],
             $params['docId'],
             $params['version'],
-            $params['latestObsoleteDocId'] ?? null
+            isset($params['latestObsoleteDocId']) && $params['latestObsoleteDocId'] !== '' ? (int)$params['latestObsoleteDocId'] : null
         );
 
     }
