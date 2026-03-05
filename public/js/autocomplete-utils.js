@@ -10,7 +10,7 @@ class ModernUserAutocomplete {
             selectedUserIdField: 'selectedUserId',
             selectButtonId: 'select_user',
             appendTo: null,
-            url: '/user/findcasusers',
+            url: JS_PREFIX_URL + 'user/findcasusers',
             minLength: 2,
             debounceDelay: 300,
             maxResults: 100,
