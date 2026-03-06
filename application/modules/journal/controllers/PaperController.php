@@ -4137,7 +4137,7 @@ class PaperController extends PaperDefaultController
 
             if ($service->canAuthorContactEditors()) {
                 // Handle form submissions
-                $this->processAuthorMessageSubmission($paper);
+                $this->processAuthorMessageSubmission($paper, $service);
 
                 // Load comments
                 $authorToEditorComments = $service->loadComments();
@@ -4153,7 +4153,7 @@ class PaperController extends PaperDefaultController
                     // Handle POST submission before creating forms (to validate CSRF before token regeneration)
                     $isReplyPost = $this->getRequest()->isPost() && !empty($postData['reply_to_pcid']);
                     if ($isReplyPost) {
-                        $this->processAuthorReplySubmission($paper, (int)$postData['reply_to_pcid']);
+                        $this->processAuthorReplySubmission($paper, (int)$postData['reply_to_pcid'], $service);
                     }
                     // Create forms with CSRF for rendering (new tokens after POST processing)
                     $authorReplyForms = $service->createAuthorReplyForms($authorToEditorComments);
@@ -4173,9 +4173,10 @@ class PaperController extends PaperDefaultController
      * Process author initial message submission
      *
      * @param Episciences_Paper $paper
+     * @param Episciences_Paper_AuthorEditorCommunicationService $service
      * @return void
      */
-    private function processAuthorMessageSubmission(Episciences_Paper $paper): void
+    private function processAuthorMessageSubmission(Episciences_Paper $paper, Episciences_Paper_AuthorEditorCommunicationService $service): void
     {
         $postData = $this->getRequest()->getPost();
 
@@ -4185,34 +4186,32 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        //Verify authorization even though caller should have checked
+        // Verify authorization even though caller should have checked
         if (!Episciences_Auth::isLogged() || !$paper->isOwnerOrCoAuthor()) {
             return;
         }
 
-        $form = Episciences_CommentsManager::getForm('authorToEditorForm', false, true);
-        $form->setAction('/paper/view?id=' . $paper->getDocid());
-
-        if (!$form->isValid($postData)) {
-            return;
-        }
-
         try {
-            $commentId = $this->save_author_response_to_editor($paper, $form->getValues());
+            $result = $service->processMainMessage(
+                $postData,
+                fn() => Episciences_Auth::isLogged() && $paper->isOwnerOrCoAuthor()
+            );
 
-            if ($commentId) {
-                $this->_helper->FlashMessenger->setNamespace('success')->addMessage(
-                    $this->view->translate("Votre message a bien été envoyé aux rédacteurs.")
-                );
-                $this->_helper->redirector->gotoUrl('/paper/view?id=' . $paper->getDocid());
-            } else {
-                $this->_helper->FlashMessenger->setNamespace('error')->addMessage(
-                    $this->view->translate("Votre message n'a pas pu être envoyé.")
+            $this->handleAuthorSubmissionResult($result, $paper);
+
+            // Send notifications if successful
+            if ($result->isSuccess() && $result->getComment() !== null) {
+                $this->newCommentNotifyManager(
+                    $paper,
+                    $result->getComment(),
+                    [],
+                    [],
+                    ['coAuthors' => $service->getCoAuthorsExcludingSender()]
                 );
             }
         } catch (Exception $e) {
             $this->_helper->FlashMessenger->setNamespace('error')->addMessage(
-                $this->view->translate("Une erreur s'est produite lors de l'envoi du message.")
+                $this->view->translate(Episciences_Paper_AuthorEditorCommunicationService::MSG_ERROR_GENERAL)
             );
             trigger_error('Error sending author to editor message: ' . $e->getMessage());
         }
@@ -4224,9 +4223,10 @@ class PaperController extends PaperDefaultController
      *
      * @param Episciences_Paper $paper
      * @param int $pcid Parent comment ID
+     * @param Episciences_Paper_AuthorEditorCommunicationService $service
      * @return void
      */
-    private function processAuthorReplySubmission(Episciences_Paper $paper, int $pcid): void
+    private function processAuthorReplySubmission(Episciences_Paper $paper, int $pcid, Episciences_Paper_AuthorEditorCommunicationService $service): void
     {
         $postData = $this->getRequest()->getPost();
 
@@ -4234,208 +4234,42 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        // 1. Authorization check (verify logged in AND is owner/co-author)
-        if (!Episciences_Auth::isLogged() || !$paper->isOwnerOrCoAuthor()) {
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage(
-                $this->view->translate("Vous n'êtes pas autorisé à répondre.")
-            );
-            return;
-        }
+        $result = $service->processReplyMessage(
+            $postData,
+            $pcid,
+            fn() => Episciences_Auth::isLogged() && $paper->isOwnerOrCoAuthor()
+        );
 
-        // 2. Validate CSRF token FIRST (before creating any forms that would regenerate tokens)
-        $csrfElementName = 'csrf_author_reply_form_' . $pcid;
-        if (!Episciences_Csrf_Helper::validateFormToken($csrfElementName, $postData)) {
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage(
-                $this->view->translate("Erreur de validation du formulaire (token CSRF invalide). Veuillez réessayer.")
-            );
-            // Redirect to prevent form regeneration which would create new CSRF tokens
-            $this->_helper->redirector->gotoUrl('/paper/view?id=' . $paper->getDocid());
-            return;
-        }
+        $this->handleAuthorSubmissionResult($result, $paper);
 
-        // 3. Validate comment field manually (trim to prevent whitespace-only messages)
-        $commentFieldName = 'comment_' . $pcid;
-        $commentMessage = trim($postData[$commentFieldName] ?? '');
-        if (empty($commentMessage)) {
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage(
-                $this->view->translate("Le commentaire ne peut pas être vide.")
-            );
-            // Redirect to prevent form regeneration which would create new CSRF tokens
-            $this->_helper->redirector->gotoUrl('/paper/view?id=' . $paper->getDocid());
-            return;
-        }
-
-        // 4. Process the submission
-        if ($this->save_author_response_to_editor($paper, null, $pcid)) {
-            $this->_helper->FlashMessenger->setNamespace('success')->addMessage(
-                $this->view->translate("Votre réponse a bien été envoyée.")
-            );
-            $this->_helper->redirector->gotoUrl('/paper/view?id=' . $paper->getDocid());
-        } else {
-            $this->_helper->FlashMessenger->setNamespace('error')->addMessage(
-                $this->view->translate("Erreur lors de la sauvegarde de votre réponse.")
+        // Send notifications if successful
+        if ($result->isSuccess() && $result->getComment() !== null) {
+            $this->newCommentNotifyManager(
+                $paper,
+                $result->getComment(),
+                [],
+                [],
+                ['coAuthors' => $service->getCoAuthorsExcludingSender()]
             );
         }
     }
 
     /**
-     * Save author message/response to editor
-     * Handles both:
-     * - Initial messages from author to editor ($data array from form, $pcid = null)
-     * - Author replies to editor messages ($data from POST, $pcid = parent comment ID)
+     * Handle the result of an author message submission
      *
+     * @param Episciences_Paper_MessageSubmissionResult $result
      * @param Episciences_Paper $paper
-     * @param array|null $data Comment data (for initial messages from form)
-     * @param int|null $pcid Parent comment ID (for replies to editor)
-     * @return int|false Comment ID on success, false on failure
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
-     * @throws Zend_Mail_Exception
+     * @return void
      */
-    private function save_author_response_to_editor(Episciences_Paper $paper, ?array $data = null, ?int $pcid = null): int|false
+    private function handleAuthorSubmissionResult(Episciences_Paper_MessageSubmissionResult $result, Episciences_Paper $paper): void
     {
-        // Authorization check: verify user is logged in and is the author or co-author of this paper
-        // Re-verify at save time to mitigate race conditions
-        if (!Episciences_Auth::isLogged() || !$paper->isOwnerOrCoAuthor()) {
-            return false;
-        }
-
-        // If data is provided, use it (initial message from form)
-        // Otherwise, get from POST (reply)
-        if ($data === null) {
-            $post = $this->getRequest()->getPost();
-
-            // Validate PCID for replies
-            if ($pcid === null || $pcid === 0) {
-                return false;
-            }
-
-            // Fetch and validate parent comment (editor's response)
-            $parentComment = new Episciences_Comment();
-            if (!$parentComment->find($pcid)) {
-                trigger_error("Parent comment not found: $pcid");
-                return false;
-            }
-
-            // Validate parent comment belongs to this paper
-            if ((int)$parentComment->getDocid() !== (int)$paper->getDocid()) {
-                trigger_error("Parent comment $pcid does not belong to paper " . $paper->getDocid());
-                return false;
-            }
-
-            // Validate parent comment is an editor-to-author response
-            if ((int)$parentComment->getType() !== Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
-                trigger_error("Parent comment $pcid is not an editor-to-author response (type: " . $parentComment->getType() . ")");
-                return false;
-            }
-
-            // Get the comment message (reply forms use 'comment_<pcid>' as field name)
-            $commentFieldName = 'comment_' . $pcid;
-            $commentMessage = trim($post[$commentFieldName] ?? '');
-            if (empty($commentMessage)) {
-                return false;
-            }
-
-            // Prepare data with parentid (this makes it a reply)
-            $data = [
-                'comment' => $commentMessage,
-                'parentid' => $pcid
-            ];
-
-            // Include file if uploaded (reply forms use 'file_<pcid>' as field name)
-            // CommentsManager::save() calls uploadFiles() internally which picks up $_FILES via ZF1 adapter
-        } else {
-            // For initial messages, trim the comment to prevent whitespace-only messages
-            if (isset($data['comment'])) {
-                $data['comment'] = trim($data['comment']);
-                if (empty($data['comment'])) {
-                    return false;
-                }
-            }
-            // Add parentid if provided
-            if ($pcid !== null && $pcid > 0) {
-                $data['parentid'] = $pcid;
-            }
-        }
-
-        // Save comment to database
-        // Note: Le 4ème paramètre ($replyTo) contient le PARENTID !
-        $replyTo = $data['parentid'] ?? false;
-        $commentId = Episciences_CommentsManager::save(
-            $paper->getDocid(),
-            $data,
-            Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
-            $replyTo
+        $this->_helper->FlashMessenger->setNamespace($result->getFlashNamespace())->addMessage(
+            $this->view->translate($result->getMessageKey())
         );
 
-        if (!$commentId) {
-            return false;
+        if ($result->shouldRedirect()) {
+            $this->_helper->redirector->gotoUrl('/paper/view?id=' . $paper->getDocid());
         }
-
-        // Get the saved comment
-        $comment = new Episciences_Comment();
-        if (!$comment->find($commentId)) {
-            return false;
-        }
-
-        // Get co-authors once to pass to notification manager (avoids duplicate DB query)
-        $coAuthors = [];
-        try {
-            $coAuthors = $paper->getCoAuthors();
-            // Remove the sender from co-authors list (they don't need to be notified)
-            unset($coAuthors[Episciences_Auth::getUid()]);
-        } catch (Zend_Db_Statement_Exception $e) {
-            // Log warning but continue - notification manager will fetch if needed
-            trigger_error('Error fetching co-authors in save_author_response_to_editor: ' . $e->getMessage());
-        }
-
-        // Prepare log data
-        $logData = [
-            'comment' => [
-                'pcid' => $commentId,
-                'type' => $comment->getType(),
-                'message' => $comment->getMessage(),
-                'file' => $comment->getFile(),
-                'docid' => $paper->getDocid(),
-                'uid' => Episciences_Auth::getUid()
-            ],
-            'user' => [
-                'fullname' => Episciences_Auth::getFullName(),
-                'SCREEN_NAME' => Episciences_Auth::getScreenName(),
-                'email' => Episciences_Auth::getEmail()
-            ]
-        ];
-
-        // Add parentid to log if this is a reply
-        if (!empty($data['parentid'])) {
-            $logData['comment']['parentid'] = $data['parentid'];
-        }
-
-        // Add co-authors notification info to log
-        if (!empty($coAuthors)) {
-            $coAuthorsNotified = [];
-            foreach ($coAuthors as $coAuthor) {
-                $coAuthorsNotified[] = [
-                    'uid' => $coAuthor->getUid(),
-                    'email' => $coAuthor->getEmail(),
-                    'fullname' => $coAuthor->getFullName()
-                ];
-            }
-            $logData['co_authors_notified'] = $coAuthorsNotified;
-        }
-
-        // Log the comment in paper history
-        $paper->log(
-            Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR,
-            Episciences_Auth::getUid(),
-            $logData
-        );
-
-        // Send email notifications to assigned editors and co-authors
-        $this->newCommentNotifyManager($paper, $comment, [], [], ['coAuthors' => $coAuthors]);
-
-        return $commentId;
     }
 
     public function cslAction()

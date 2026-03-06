@@ -354,7 +354,7 @@ class PaperDefaultController extends DefaultController
         // For author-editor communication, only notify assigned editors
         $isAuthorEditorCommunication = in_array($oComment->getType(), [
             Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
-            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE
+            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR
         ], true);
 
         try {
@@ -376,7 +376,7 @@ class PaperDefaultController extends DefaultController
                         Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION,
                         Episciences_CommentsManager::TYPE_SUGGESTION_REFUS,
                         Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
-                        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE
+                        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR
                     ], true)
                     );
                 Episciences_Review::checkReviewNotifications($recipients, $strict);
@@ -414,7 +414,7 @@ class PaperDefaultController extends DefaultController
             Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
         ];
 
-        if ($oComment->isEditorComment() || $oComment->isSuggestion() || $oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+        if ($oComment->isEditorComment() || $oComment->isSuggestion() || $oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
             $recipientTags[Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME] = $commentator->getScreenName();
             $recipientTags[Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME] = $commentator->getFullName();
         } elseif ($oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
@@ -461,7 +461,7 @@ class PaperDefaultController extends DefaultController
             case Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR:
                 $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_EDITOR_COPY;
                 break;
-            case Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE:
+            case Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR:
                 // Use generic template for editors (no specific template exists for this case)
                 // The author receives TYPE_PAPER_EDITOR_RESPONSE_TO_AUTHOR_AUTHOR_COPY (handled separately below)
                 $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY;
@@ -579,7 +579,7 @@ class PaperDefaultController extends DefaultController
 
         // For editor responses to authors, also notify the author (main author + co-authors)
         $authorNotificationSent = false;
-        if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+        if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
             try {
                 // Get the parent comment (author's message) to identify the recipient author
                 // Use pre-fetched parent comment from options if available to avoid duplicate DB query
@@ -679,11 +679,11 @@ class PaperDefaultController extends DefaultController
             return $nbNotifications === $expectedNotifications;
         }
 
-        // For TYPE_EDITOR_TO_AUTHOR_RESPONSE, success if:
+        // For TYPE_EDITOR_TO_AUTHOR, success if:
         // - All editors in $recipients were notified (if any), AND
         // - The author was notified (if parent comment exists)
         // This handles the case where $recipients is empty (editor responding is the only assigned editor)
-        if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+        if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
             // Expected notifications: editors (if any) + author (if parent exists)
             $expectedNotifications = count($recipients) + ($authorNotificationSent ? 1 : 0);
             return $nbNotifications === $expectedNotifications;

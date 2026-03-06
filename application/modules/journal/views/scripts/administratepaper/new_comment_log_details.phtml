@@ -1,7 +1,19 @@
 <?php $log = $this->log; ?>
 <?php $type = $log['detail']['comment']['type'] ?? null; ?>
 
-<?php if ($type === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) : ?>
+<?php
+// Get email from live user data or fallback to stored log detail
+// Use ?: (Elvis) instead of ?? because we need to skip empty strings, not just null
+$senderEmail = !empty($this->user['email']) ? $this->user['email'] : (!empty($log['detail']['user']['email']) ? $log['detail']['user']['email'] : '');
+$senderFullname = !empty($this->user['fullname']) ? $this->user['fullname'] : (!empty($log['detail']['user']['fullname']) ? $log['detail']['user']['fullname'] : '');
+?>
+<!-- DEBUG - Remove after testing -->
+<div style="background: #ffe0e0; padding: 10px; margin-bottom: 10px; font-size: 12px;">
+    <strong>DEBUG:</strong><br>
+    this->user['email']: <code><?= var_export($this->user['email'] ?? 'NOT SET', true); ?></code><br>
+    log['detail']['user']: <code><?= var_export($log['detail']['user'] ?? 'NOT SET', true); ?></code>
+</div>
+<?php if ($type === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) : ?>
     <!-- Display as email notification for editor-to-author response messages -->
     <table class="log-details">
         <tr>
@@ -11,9 +23,9 @@
         <tr>
             <td class="td-label"><?= $this->translate('De'); ?></td>
             <td class="small">
-                <?= $this->user['fullname']; ?>
-                <?php if (!empty($this->user['email'])) : ?>
-                    (<?= $this->user['email']; ?>)
+                <?= $senderFullname; ?>
+                <?php if (!empty($senderEmail)) : ?>
+                    (<?= $senderEmail; ?>)
                 <?php endif; ?>
             </td>
         </tr>
@@ -67,9 +79,9 @@
         <tr>
             <td class="td-label"><?= $this->translate('De'); ?></td>
             <td class="small">
-                <?= $this->user['fullname']; ?>
-                <?php if (!empty($this->user['email'])) : ?>
-                    (<?= $this->user['email']; ?>)
+                <?= $senderFullname; ?>
+                <?php if (!empty($senderEmail)) : ?>
+                    (<?= $senderEmail; ?>)
                 <?php endif; ?>
             </td>
         </tr>

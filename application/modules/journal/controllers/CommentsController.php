@@ -112,7 +112,7 @@ class CommentsController extends PaperController
 
         // Special handling for author-editor communication (both directions)
         $isAuthorEditorCommunication = in_array($comment->getType(), [
-            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
             Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR
         ], true);
 
@@ -148,10 +148,10 @@ class CommentsController extends PaperController
 
                     // Save the comment (this updates the file field)
                     // For TYPE_AUTHOR_TO_EDITOR, save() automatically creates a log
-                    // For TYPE_EDITOR_TO_AUTHOR_RESPONSE, we need to create the log manually (excluded in Comment._excludedCommentsTypes)
+                    // For TYPE_EDITOR_TO_AUTHOR, we need to create the log manually (excluded in Comment._excludedCommentsTypes)
                     $comment->save(true);
 
-                    if ($comment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                    if ($comment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
                         $paper->log(
                             Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR,
                             Episciences_Auth::getUid(),

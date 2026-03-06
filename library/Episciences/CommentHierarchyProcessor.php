@@ -14,7 +14,7 @@ class Episciences_CommentHierarchyProcessor
      */
     private const VALID_TYPES = [
         Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
-        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE
+        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR
     ];
 
     /**

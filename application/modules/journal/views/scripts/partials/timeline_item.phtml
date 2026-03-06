@@ -17,7 +17,7 @@ if (!$id) {
         if (isset($comment['TYPE'])) {
             if ($comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
                 $avatarColor = 'FFC107'; // Yellow for authors
-            } elseif ($comment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+            } elseif ($comment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
                 $avatarColor = '2196F3'; // Blue for editors
             }
         }
@@ -50,7 +50,7 @@ if (!$id) {
         <?php if (isset($comment['REPLY_TO_INFO']) && !empty($comment['REPLY_TO_INFO']) &&
                   isset($comment['TYPE']) &&
                   ($comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR ||
-                   $comment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE)) : ?>
+                   $comment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR)) : ?>
             <div class="reply-to-indicator">
                 <i class="fa fa-reply" aria-hidden="true"></i>
                 <strong><?= $this->translate('Répond à :') ?></strong>
