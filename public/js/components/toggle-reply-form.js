@@ -11,10 +11,16 @@
      * @param {string} formId - ID of the form to show
      */
     function showReplyForm(formId) {
+        if (!formId) {
+            return;
+        }
         var form = document.getElementById(formId);
-        var button = document.querySelector('.toggle-reply-form[data-reply-form-id="' + formId + '"]');
+        if (!form) {
+            return;
+        }
+        var button = document.querySelector('.toggle-reply-form[data-reply-form-id="' + CSS.escape(formId) + '"]');
 
-        if (form && button) {
+        if (button) {
             // Hide the button
             button.style.display = 'none';
 
@@ -34,10 +40,16 @@
      * @param {string} formId - ID of the form to hide
      */
     function hideReplyForm(formId) {
+        if (!formId) {
+            return;
+        }
         var form = document.getElementById(formId);
-        var button = document.querySelector('.toggle-reply-form[data-reply-form-id="' + formId + '"]');
+        if (!form) {
+            return;
+        }
+        var button = document.querySelector('.toggle-reply-form[data-reply-form-id="' + CSS.escape(formId) + '"]');
 
-        if (form && button) {
+        if (button) {
             // Hide the form
             form.style.display = 'none';
 
@@ -122,7 +134,6 @@
                             fileInput.value = '';
                         }
                     }
-                    return false;
                 });
             })(newCancelAuthorBtn);
         }
