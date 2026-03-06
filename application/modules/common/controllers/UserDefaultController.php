@@ -911,6 +911,7 @@ class UserDefaultController extends Zend_Controller_Action
         $userMapper = new Ccsd_User_Models_UserMapper();
         $userMapper->activateAccountByUid($userTokens->getUid());
         $userTokensMapper->delete($token);
+        $this->_helper->redirector->gotoUrl('/');
     }
 
     /**
