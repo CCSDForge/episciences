@@ -534,7 +534,9 @@ class Episciences_CommentsManager
 
         $group[] = Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME;
         if (isset($values['FILE'])) {
-            $href = '<a href="/docfiles/comments/' . $values['DOCID'] . '/' . $values['FILE'] . '">' . $values['FILE'] . '</a>';
+            $safeFile  = htmlspecialchars((string)$values['FILE'], ENT_QUOTES, 'UTF-8');
+            $safeDocId = (int)$values['DOCID'];
+            $href = '<a href="/docfiles/comments/' . $safeDocId . '/' . $safeFile . '">' . $safeFile . '</a>';
 
             $infos = $translator->translate('Ci-dessous votre ancienne lettre d’accompagnement, son remplacement est possible en joignant un nouveau fichier à votre commentaire.')
                 . '<br>' . $translator->translate('Ces modifications seront prises en compte une fois le formulaire est validé.');
@@ -622,7 +624,8 @@ class Episciences_CommentsManager
 
             } else {
 
-                $row = ($defaultMessage = self::buildAnswerMessage($commentType)) === '' || ($defaultMessage = self::buildAnswerMessage($commentType)) === '0' ? 5 : 7;
+                $defaultMessage = self::buildAnswerMessage($commentType);
+                $row = ($defaultMessage === '' || $defaultMessage === '0') ? 5 : 7;
                 $strElement = $id . '_element';
                 $form = new Ccsd_Form();
                 $form->setName('copy_editing_form_' . $strElement);

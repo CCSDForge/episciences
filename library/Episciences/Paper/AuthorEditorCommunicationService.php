@@ -17,6 +17,12 @@ class Episciences_Paper_AuthorEditorCommunicationService
 
     public function __construct(Episciences_Paper $paper, Episciences_Review $review, private readonly string $controllerPath = self::CONTROLLER_PAPER)
     {
+        if (!in_array($controllerPath, [self::CONTROLLER_PAPER, self::CONTROLLER_ADMINISTRATEPAPER], true)) {
+            throw new \InvalidArgumentException(
+                "Invalid controller path '$controllerPath'. Expected one of: " .
+                self::CONTROLLER_PAPER . ', ' . self::CONTROLLER_ADMINISTRATEPAPER
+            );
+        }
         $this->paper = $paper;
         $this->review = $review;
     }
@@ -139,7 +145,7 @@ class Episciences_Paper_AuthorEditorCommunicationService
     {
         foreach ($comments as $comment) {
             // Check root message
-            if (isset($comment['TYPE']) && (int)$comment['TYPE'] === $targetType) {
+            if (isset($comment['TYPE']) && isset($comment['PCID']) && (int)$comment['TYPE'] === $targetType) {
                 $pcid = $comment['PCID'];
                 if (!isset($replyForms[$pcid])) {
                     $replyForms[$pcid] = $this->createReplyForm($pcid, $formPrefix);
@@ -150,7 +156,7 @@ class Episciences_Paper_AuthorEditorCommunicationService
             // This prevents form creation for corrupted nested hierarchies
             if (!empty($comment['replies'])) {
                 foreach ($comment['replies'] as $reply) {
-                    if (isset($reply['TYPE']) && (int)$reply['TYPE'] === $targetType) {
+                    if (isset($reply['TYPE']) && isset($reply['PCID']) && (int)$reply['TYPE'] === $targetType) {
                         $pcid = $reply['PCID'];
                         if (!isset($replyForms[$pcid])) {
                             $replyForms[$pcid] = $this->createReplyForm($pcid, $formPrefix);
