@@ -114,7 +114,7 @@ class Episciences_Repositories
         $repositories = self::getRepositories();
 
         if (isset($repositories[$repoId])) {
-            $baseUrl = $repositories[$repoId][self::REPO_BASEURL];
+            $baseUrl = $repositories[$repoId][self::REPO_BASEURL] ?? '';
             return rtrim($baseUrl, '/');
         }
 
