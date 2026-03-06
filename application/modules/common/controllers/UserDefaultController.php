@@ -902,6 +902,7 @@ class UserDefaultController extends Episciences_Controller_Action
         $userMapper = new Ccsd_User_Models_UserMapper();
         $userMapper->activateAccountByUid($userTokens->getUid());
         $userTokensMapper->delete($token);
+        $this->redirect($this->url(['controller' => 'index']));
     }
 
     /**
