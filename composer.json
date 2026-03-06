@@ -25,7 +25,7 @@
     "ext-xsl": "*",
     "ext-zip": "*",
     "apereo/phpcas": "1.6.1",
-    "cottagelabs/coar-notifications": "^0.9.70",
+    "cottagelabs/coarnotify": "dev-main",
     "defuse/php-encryption": "^2.3",
     "doctrine/annotations": "^1.13",
     "ezyang/htmlpurifier": "^4.14",
