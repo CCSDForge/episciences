@@ -19,6 +19,7 @@ return [
     'secretary' => 'Secrétaire de rédaction',
     'reviewer' => 'Relecteur',
     'editor' => 'Rédacteur',
+    'Un rédacteur' => 'Un rédacteur',
     'administrator' => 'Administrateur',
     'chief_editor' => 'Rédacteur en chef',
     'guest_editor' => 'Rédacteur invité',

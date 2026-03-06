@@ -59,4 +59,54 @@ class Episciences_User_AssignmentsManagerTest extends TestCase
         $result = Episciences_User_AssignmentsManager::findById(999999999);
         $this->assertFalse($result);
     }
+
+    // -------------------------------------------------------------------------
+    // removeAssignment() — guards that do not require DB access
+    // -------------------------------------------------------------------------
+
+    public function testRemoveAssignmentWithZeroReturnsFalse(): void
+    {
+        $result = Episciences_User_AssignmentsManager::removeAssignment(0);
+        $this->assertFalse($result);
+    }
+
+    public function testRemoveAssignmentWithNegativeIntReturnsFalse(): void
+    {
+        $result = Episciences_User_AssignmentsManager::removeAssignment(-1);
+        $this->assertFalse($result);
+    }
+
+    public function testRemoveAssignmentWithEmptyArrayReturnsFalse(): void
+    {
+        $result = Episciences_User_AssignmentsManager::removeAssignment([]);
+        $this->assertFalse($result);
+    }
+
+    // -------------------------------------------------------------------------
+    // updateUid() — zero guards (no DB access)
+    // -------------------------------------------------------------------------
+
+    public function testUpdateUidWithZeroOldUidReturnsZero(): void
+    {
+        $result = Episciences_User_AssignmentsManager::updateUid(0, 99);
+        $this->assertSame(0, $result);
+    }
+
+    public function testUpdateUidWithZeroNewUidReturnsZero(): void
+    {
+        $result = Episciences_User_AssignmentsManager::updateUid(99, 0);
+        $this->assertSame(0, $result);
+    }
+
+    public function testUpdateUidWithBothZeroReturnsZero(): void
+    {
+        $result = Episciences_User_AssignmentsManager::updateUid(0, 0);
+        $this->assertSame(0, $result);
+    }
+
+    public function testUpdateUidWithDefaultParametersReturnsZero(): void
+    {
+        $result = Episciences_User_AssignmentsManager::updateUid();
+        $this->assertSame(0, $result);
+    }
 }

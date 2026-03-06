@@ -279,13 +279,22 @@ if ($this->citations !== '') {
 <?php // editor comments ***************************************************** ?>
     <div class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Commentaires des rédacteurs'); ?></h2>
+            <h2 class="panel-title"><?php echo $this->translate('Communication entre les rédacteurs'); ?></h2>
         </div>
         <div class="panel-body in">
             <?php echo $this->render('partials/paper_editor_comments.phtml') ?>
         </div>
     </div>
 
+<?php // author to editor communication ************************************** ?>
+<?= $this->partial('partials/paper_author_to_editor_messages.phtml', [
+    'paper' => $paper,
+    'review' => $this->review,
+    'authorToEditorForm' => null,
+    'editorReplyForms' => $this->editorReplyForms ?? null,
+    'authorToEditorComments' => $this->authorToEditorComments,
+    'editors' => $this->editors ?? []
+]) ?>
 
 <?php // revision requests ***************************************************** ?>
 <?php if ($this->demands || $this->currentDemand || $this->previousVersionsDemands) : ?>

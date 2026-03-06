@@ -186,4 +186,66 @@ class Episciences_User_InvitationAnswerTest extends TestCase
     {
         $this->assertSame([], $this->answer->getDetails());
     }
+
+    // -------------------------------------------------------------------------
+    // BUG FIX: getDetail() triple-encoding (fixed to double)
+    //
+    // Before fix: cleanDetailValue() was called 3 times on setDetail/getDetail path:
+    //   1. setDetail() stores cleanDetailValue(value)
+    //   2. getDetail() → getDetails() → cleanDetailValue(stored)  [2nd time]
+    //   3. getDetail() → cleanDetailValue(result)                  [3rd time]
+    // After fix: getDetail() returns the value from getDetails() directly,
+    //   so encoding is applied exactly twice (once in setter, once in getter).
+    // -------------------------------------------------------------------------
+
+    public function testGetDetailDoesNotTripleEncodeHtmlEntities(): void
+    {
+        // Store a value with HTML entities via setDetail
+        $this->answer->setDetail(Episciences_User_InvitationAnswer::DETAIL_COMMENT, '<b>bold</b> & more');
+
+        $result = $this->answer->getDetail(Episciences_User_InvitationAnswer::DETAIL_COMMENT);
+
+        // Triple encoding would produce '&amp;amp;amp;' — must not appear
+        $this->assertStringNotContainsString('&amp;amp;amp;', $result);
+        // Double encoding (from setDetail + getDetails) is still present: '&amp;amp;'
+        $this->assertStringContainsString('&amp;amp;', $result);
+    }
+
+    public function testGetDetailPlainTextIsUnchanged(): void
+    {
+        $this->answer->setDetail(Episciences_User_InvitationAnswer::DETAIL_SUGGEST, 'John Doe');
+        $result = $this->answer->getDetail(Episciences_User_InvitationAnswer::DETAIL_SUGGEST);
+        // Plain ASCII is unaffected by HTML encoding
+        $this->assertSame('John Doe', $result);
+    }
+
+    public function testSetDetailTagsAreStrippedBeforeStorage(): void
+    {
+        $this->answer->setDetail(Episciences_User_InvitationAnswer::DETAIL_COMMENT, '<script>xss</script>clean');
+        $result = $this->answer->getDetail(Episciences_User_InvitationAnswer::DETAIL_COMMENT);
+        $this->assertStringNotContainsString('<script>', $result);
+        $this->assertStringContainsString('clean', $result);
+    }
+
+    // -------------------------------------------------------------------------
+    // Known double-encoding in setDetails/getDetails (preserved for BC)
+    //
+    // cleanDetailValue() is applied in both setDetails() and getDetails(),
+    // causing values stored with HTML entities to be double-encoded on read.
+    // This is documented as a known limitation.
+    // -------------------------------------------------------------------------
+
+    public function testGetDetailsDoubleEncodesHtmlEntities(): void
+    {
+        $this->answer->setDetails([
+            Episciences_User_InvitationAnswer::DETAIL_COMMENT => 'A & B',
+        ]);
+        $details = $this->answer->getDetails();
+        $value = $details[Episciences_User_InvitationAnswer::DETAIL_COMMENT];
+
+        // '&' is encoded to '&amp;' by setDetails, then to '&amp;amp;' by getDetails
+        $this->assertStringContainsString('&amp;amp;', $value);
+        // Triple encoding must NOT occur (no additional pass)
+        $this->assertStringNotContainsString('&amp;amp;amp;', $value);
+    }
 }

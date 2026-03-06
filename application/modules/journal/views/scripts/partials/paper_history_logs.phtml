@@ -29,6 +29,8 @@ $logs_with_details = [
     Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION,
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR,
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER,
+    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR,
+    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR,
     Episciences_Paper_Logger::CODE_COI_REPORTED,
     Episciences_Paper_Logger::CODE_COI_REVERTED,
     Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION,
@@ -42,11 +44,13 @@ $logs_with_details = [
 
     <?php
     // Decode JSON details once per log entry
+    // Handle both JSON and plain text (for legacy/simple log entries)
     try {
         $detail = ($log['DETAIL']) ? Zend_Json::decode($log['DETAIL']) : [];
     } catch (Zend_Json_Exception $e) {
+        // If JSON decoding fails, it's likely a plain text detail or legacy data
+        // Just use an empty array - the log action label will still display
         $detail = [];
-        trigger_error($e->getMessage() . ' of docid ' . $log['DOCID'], E_USER_WARNING);
     }
 
     // Extract status once (used by multiple cases)
@@ -75,8 +79,8 @@ $logs_with_details = [
         <a class="modal-opener" href="<?= $logHref ?>"
            data-width="50%"
            data-hidesubmit="true"
-           title="<?= $this->translate($log['ACTION']) ?>"
-           aria-label="<?= $this->translate('View details for') . ' ' . $this->translate($log['ACTION']) ?>">
+           title="<?= isset(Episciences_Paper_Logger::$_label[$log['ACTION']]) ? $this->translate(Episciences_Paper_Logger::$_label[$log['ACTION']]) : $this->translate($log['ACTION']) ?>"
+           aria-label="<?= $this->translate('View details for') . ' ' . (isset(Episciences_Paper_Logger::$_label[$log['ACTION']]) ? $this->translate(Episciences_Paper_Logger::$_label[$log['ACTION']]) : $this->translate($log['ACTION'])) ?>">
     <?php endif; ?>
 
     <div class="log-entry <?= $log['ACTION'] ?> alert alert-<?= Episciences_Paper_Logger::$_css[$log['ACTION']] ?> alert-fixed"
@@ -91,7 +95,7 @@ $logs_with_details = [
         </span>
 
         <span>
-            <strong><?= $this->translate($log['ACTION']) ?></strong>
+            <strong><?= isset(Episciences_Paper_Logger::$_label[$log['ACTION']]) ? $this->translate(Episciences_Paper_Logger::$_label[$log['ACTION']]) : $this->translate($log['ACTION']) ?></strong>
 
             <?php switch ($log['ACTION']):
                 // Status changes (2 cases)
@@ -245,6 +249,8 @@ $logs_with_details = [
                 case Episciences_Paper_Logger::CODE_MONITORING_REFUSED:
                 case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR:
                 case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER:
+                case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR:
+                case Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR:
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_NEW_VERSION:
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION:
                 case Episciences_Paper_Logger::CODE_REVISION_REQUEST_ANSWER:

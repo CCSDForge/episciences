@@ -74,6 +74,11 @@ class Episciences_View_Helper_UserAvatar extends Ccsd_View_Helper_Abstract
      * @var bool
      */
     private bool $lazyLoad = false;
+    /**
+     * Background color for avatar (hex color code)
+     * @var string|null
+     */
+    private ?string $backgroundColor = null;
 
     /**
      * Entry point for the helper
@@ -111,6 +116,7 @@ class Episciences_View_Helper_UserAvatar extends Ccsd_View_Helper_Abstract
         $this->classes = [];
         $this->attributes = [];
         $this->lazyLoad = false;
+        $this->backgroundColor = null;
     }
 
     /**
@@ -146,6 +152,10 @@ class Episciences_View_Helper_UserAvatar extends Ccsd_View_Helper_Abstract
     private function extractScreenName(array|object $user): ?string
     {
         if (is_array($user)) {
+            // Check for AVATAR_NAME first (used for anonymous editors)
+            if (isset($user['AVATAR_NAME'])) {
+                return $user['AVATAR_NAME'];
+            }
             return $user['SCREEN_NAME'] ?? $user['screen_name'] ?? null;
         }
 
@@ -262,6 +272,25 @@ class Episciences_View_Helper_UserAvatar extends Ccsd_View_Helper_Abstract
     }
 
     /**
+     * Set background color for avatar
+     *
+     * @param string $color Hex color code (e.g., '#FF5722', 'FF5722')
+     * @return self
+     */
+    public function setBackgroundColor(string $color): self
+    {
+        // Remove # if present
+        $color = ltrim($color, '#');
+
+        // Validate hex color
+        if (preg_match('/^[0-9A-Fa-f]{6}$/', $color)) {
+            $this->backgroundColor = $color;
+        }
+
+        return $this;
+    }
+
+    /**
      * Convert to string (calls render())
      *
      * @return string
@@ -342,6 +371,12 @@ class Episciences_View_Helper_UserAvatar extends Ccsd_View_Helper_Abstract
         // Add size parameter
         $urlParts[] = 'size';
         $urlParts[] = $this->size;
+
+        // Add background color parameter if set
+        if ($this->backgroundColor !== null) {
+            $urlParts[] = 'bgcolor';
+            $urlParts[] = $this->backgroundColor;
+        }
 
         // Build URL with cache busting version parameter
         $url = implode('/', $urlParts);
