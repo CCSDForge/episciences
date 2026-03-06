@@ -18,8 +18,11 @@ use PHPUnit\Framework\TestCase;
 
 class Episciences_Notify_HalTest extends TestCase
 {
+    /** @var MockObject&Episciences_Paper */
     private MockObject $paper;
+    /** @var MockObject&Episciences_Review */
     private MockObject $journal;
+    /** @var MockObject&NotificationsRepository */
     private MockObject $repository;
 
     protected function setUp(): void
@@ -32,7 +35,7 @@ class Episciences_Notify_HalTest extends TestCase
         $this->paper->method('hasDoi')->willReturn(false);
         $this->paper->method('getRepoid')->willReturn((int) Episciences_Repositories::HAL_REPO_ID);
         $this->paper->method('getIdentifier')->willReturn('hal-12345678');
-        $this->paper->method('getVersion')->willReturn(1);
+        $this->paper->method('getVersion')->willReturn(1.0);
 
         $this->journal->method('getUrl')->willReturn('https://test-journal.episciences.org');
         $this->journal->method('getName')->willReturn('Test Journal');
