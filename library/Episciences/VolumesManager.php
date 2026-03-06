@@ -675,7 +675,7 @@ class Episciences_VolumesManager
             try {
                 $db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE POSITION=VALUES(POSITION)');
             } catch (Exception $e) {
-                trigger_error(sprintf($e->getMessage(), E_USER_WARNING));
+                trigger_error($e->getMessage(), E_USER_WARNING);
             }
         }
     }

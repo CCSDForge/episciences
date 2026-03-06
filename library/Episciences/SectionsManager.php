@@ -18,7 +18,7 @@ class Episciences_SectionsManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sections = array();
 
-        $select = $db->select()->from(self::TABLE)->order('POSITION', 'ASC');
+        $select = $db->select()->from(self::TABLE)->order('POSITION ASC');
         if ($options) {
             foreach ($options as $cmd => $params) {
                 $select->$cmd($params);

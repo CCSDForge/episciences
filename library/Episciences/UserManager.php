@@ -57,7 +57,7 @@ class Episciences_UserManager
             ->where('RVID = ?', RVID);
     }
 
-    public static function getCorrespondingUidFromUuid(string $uuid = '', int $rvId = null): int
+    public static function getCorrespondingUidFromUuid(string $uuid = '', ?int $rvId = null): int
     {
 
         if (empty($uuid)){
@@ -86,7 +86,7 @@ class Episciences_UserManager
 
 
 
-    public static function getUuidFromUid(int $uid , int $rvId = null): ?string
+    public static function getUuidFromUid(int $uid, ?int $rvId = null): ?string
     {
 
         if (empty($uid)){

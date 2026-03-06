@@ -37,8 +37,8 @@ class Episciences_User_InvitationsManager
 		$sql = $db->select()->from(T_USER_INVITATIONS, '*');
 		foreach ($params as $param=>$value) {
 			$sql->where("$param = ?", $value);
-            $sql->order('ID DESC');
 		}
+		$sql->order('ID DESC');
 		
 		$data = $db->fetchRow($sql);
 		
@@ -64,8 +64,8 @@ class Episciences_User_InvitationsManager
                 return 0;
             }
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-            $data['UID'] = (int)$newUid;
-            $where['UID = ?'] = (int)$oldUid;
+            $data['SENDER_UID'] = (int)$newUid;
+            $where['SENDER_UID = ?'] = (int)$oldUid;
             return $db->update(T_USER_INVITATIONS, $data, $where);
         } catch (Exception $e){
             return 0;

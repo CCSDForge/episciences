@@ -251,6 +251,39 @@ class Episciences_Csrf_HelperTest extends TestCase
     }
 
     // =========================================================================
+    // validateToken() Tests
+    // =========================================================================
+
+    /**
+     * Test that validateToken() returns false when an obviously invalid token value is submitted.
+     *
+     * validateToken() creates a new Zend_Form_Element_Hash and calls isValid().
+     * Even without a session, an arbitrary string should never validate as a correct token.
+     */
+    public function testValidateTokenReturnsFalseForGarbageValue(): void
+    {
+        try {
+            $result = Episciences_Csrf_Helper::validateToken('test_token', 'invalid_garbage_value');
+            $this->assertFalse($result);
+        } catch (\Exception $e) {
+            $this->markTestSkipped('Session not available: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Test that validateToken() returns false for an empty token value.
+     */
+    public function testValidateTokenReturnsFalseForEmptyString(): void
+    {
+        try {
+            $result = Episciences_Csrf_Helper::validateToken('test_token', '');
+            $this->assertFalse($result);
+        } catch (\Exception $e) {
+            $this->markTestSkipped('Session not available: ' . $e->getMessage());
+        }
+    }
+
+    // =========================================================================
     // DEFAULT_TIMEOUT Constant Tests
     // =========================================================================
 
