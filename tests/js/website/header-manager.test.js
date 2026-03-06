@@ -9,6 +9,9 @@ global.Sortable = {
     create: () => ({ el: null }),
 };
 
+// Stub JS_PREFIX_URL global used in addLogo()
+global.JS_PREFIX_URL = '/';
+
 // Load the module under test
 const { HeaderManager } = require('../../../public/js/website/header-manager');
 
