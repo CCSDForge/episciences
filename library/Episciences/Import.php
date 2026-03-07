@@ -37,7 +37,7 @@ class Episciences_Import
             $method = 'set' . ucfirst(strtolower($key));
             if (in_array($method, $methods)) {
                 $this->$method($value);
-            } else echo $method;
+            }
         }
     }
 

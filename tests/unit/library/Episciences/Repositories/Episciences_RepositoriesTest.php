@@ -555,4 +555,56 @@ final class Episciences_RepositoriesTest extends TestCase
         $result = Episciences_Repositories::getPaperUrl(9999, 'some-id');
         self::assertSame('', $result);
     }
+
+    // =========================================================================
+    // Bug B3 — getIdentifier(): empty('0') short-circuits on valid template
+    // =========================================================================
+
+    /**
+     * Regression B3: empty($template) returns true for '0', which is a valid template.
+     * The fix uses ($template === null || $template === '') instead.
+     */
+    public function testGetIdentifierWithZeroStringTemplateIsNotTreatedAsEmpty(): void
+    {
+        $sources = self::$fakeSources;
+        $sources[50] = [
+            'name'       => 'ZeroTemplate',
+            'type'       => 'repository',
+            'identifier' => '0',
+            'doc_url'    => '',
+            'paper_url'  => '',
+            'base_url'   => 'https://example.org/',
+            'api_url'    => '',
+            'doi_prefix' => '',
+        ];
+        Zend_Registry::set('metadataSources', $sources);
+        $this->resetRepositoriesCache();
+
+        $result = Episciences_Repositories::getIdentifier(50, 'some-id');
+        // Template '0' has no placeholders → str_replace returns '0', not null
+        self::assertSame('0', $result);
+    }
+
+    /**
+     * Confirm that an empty string template still returns '' (null-ish, triggers API call).
+     */
+    public function testGetIdentifierWithEmptyStringTemplateReturnsEmpty(): void
+    {
+        $sources = self::$fakeSources;
+        $sources[51] = [
+            'name'       => 'EmptyTemplate',
+            'type'       => 'repository',
+            'identifier' => '',
+            'doc_url'    => '',
+            'paper_url'  => '',
+            'base_url'   => 'https://example.org/',
+            'api_url'    => '',
+            'doi_prefix' => '',
+        ];
+        Zend_Registry::set('metadataSources', $sources);
+        $this->resetRepositoriesCache();
+
+        $result = Episciences_Repositories::getIdentifier(51, 'some-id');
+        self::assertSame('', $result);
+    }
 }

@@ -102,7 +102,7 @@ class Episciences_Mail_Send
                         'screen_name' => $coAuthor->getScreenName(),
                         'mail' => $coAuthor->getEmail(),
                         'label' => $coAuthor->getFullName() . ' <' . $coAuthor->getEmail() . '>',
-                        'htmlLabel' => "<div>" . $coAuthor->getFullName() . "</div><div class=\"grey\">" . $coAuthor->getEmail() . "</div>"
+                        'htmlLabel' => "<div>" . htmlspecialchars($coAuthor->getFullName(), ENT_QUOTES, 'UTF-8') . "</div><div class=\"grey\">" . htmlspecialchars($coAuthor->getEmail(), ENT_QUOTES, 'UTF-8') . "</div>"
                     ])
                 ]);
             }
