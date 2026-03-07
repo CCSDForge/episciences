@@ -53,7 +53,8 @@ class Ccsd_Tools_String {
         if ($stringMaxLength < 1) {
             return '';
         }
-        $l = strlen($inputString);
+        // ST1 fix: use mb_strlen/mb_strrpos/mb_substr for correct multi-byte UTF-8 handling
+        $l = mb_strlen($inputString);
         // Renvoie la chaîne entière si max_length plus long que la chaîne
         if ($stringMaxLength >= $l) {
             return $inputString;
@@ -64,13 +65,13 @@ class Ccsd_Tools_String {
             // On raccourci la chaine avant de trouver les mots.
             // Cela ecite un parcours de l'ensemble des mots de la fin a $stringMaxLength
             $fromEnd = $stringMaxLength - $l;
-            $cutPos = strrpos($inputString, ' ', $fromEnd);
+            $cutPos = mb_strrpos($inputString, ' ', $fromEnd);
             if ($cutPos === false) {
                 // Si il ne reste pas d'espaces, la chaîne entière est tronquée brutalement independamment des espaces
                 $cutPos = $stringMaxLength;
             }
         }
-        $inputString = trim(substr($inputString, 0, $cutPos));
+        $inputString = trim(mb_substr($inputString, 0, $cutPos));
         return $inputString . $postTruncateString;
     }
 
@@ -235,7 +236,8 @@ class Ccsd_Tools_String {
             $string =  preg_replace($reg, '', $string);
         }
         if ($endreg != '') {
-            $reg = "/[$begreg]+\z/mu";
+            // ST3 fix: was incorrectly using $begreg instead of $endreg
+            $reg = "/[$endreg]+\z/mu";
             $string =  preg_replace($reg, '', $string);
         }
         if ($midreg != '') {
