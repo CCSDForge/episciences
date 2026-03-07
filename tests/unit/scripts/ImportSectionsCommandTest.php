@@ -70,6 +70,7 @@ class ImportSectionsCommandTest extends TestCase
     public function testParseStatusValue(string $raw, int $expected): void
     {
         $logger = new Logger('test');
+        $logger->pushHandler(new \Monolog\Handler\NullHandler());
         $result = ImportSectionsCommand::parseStatusValue($raw, 1, $logger);
         $this->assertSame($expected, $result);
     }

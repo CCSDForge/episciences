@@ -1,7 +1,6 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
-use ReflectionProperty;
 
 /**
  * Unit tests for Episciences_ReviewsManager.

@@ -120,7 +120,9 @@ class GetClassificationMscCommandTest extends TestCase
     {
         $method = new ReflectionMethod(GetClassificationMscCommand::class, 'buildClassifications');
         $method->setAccessible(true);
-        return $method->invoke($this->command, $codes, $docId, $allCodes, new \Monolog\Logger('test'));
+        $logger = new \Monolog\Logger('test');
+        $logger->pushHandler(new \Monolog\Handler\NullHandler());
+        return $method->invoke($this->command, $codes, $docId, $allCodes, $logger);
     }
 
     public function testBuildClassifications_ValidCode_CorrectEntity(): void
