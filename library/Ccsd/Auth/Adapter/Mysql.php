@@ -257,6 +257,9 @@ class Mysql implements AdapterInterface
      */
     protected function setUsername(string $username): self
     {
+        // A2 fix: strip UTF-8 non-breaking space (\xC2\xA0) before trim() so that
+        // whitespace-only usernames (including NBSP) are correctly rejected.
+        $username = trim(str_replace("\xC2\xA0", ' ', $username));
         if (empty($username)) {
             throw new \Zend_Auth_Exception(
                 "No username provided",
@@ -276,6 +279,8 @@ class Mysql implements AdapterInterface
      */
     protected function setCredential(string $password): self
     {
+        // A2 fix: same NBSP-aware trimming as setUsername()
+        $password = trim(str_replace("\xC2\xA0", ' ', $password));
         if (empty($password)) {
             throw new \Zend_Auth_Exception(
                 "No password provided",
