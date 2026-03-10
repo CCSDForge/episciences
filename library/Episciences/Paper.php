@@ -637,7 +637,9 @@ class Episciences_Paper
      */
     public function log($action, $uid = null, $detail = null, $date = null): bool
     {
-        if ($this->getPaperid() && $this->getDocid()) {
+        $paperId = $this->getPaperid();
+        $docId = $this->getDocid();
+        if ($paperId && $docId) {
             $detail = (is_array($detail)) ? Zend_Json::encode($detail) : $detail;
             Episciences_Paper_Logger::log($this->getPaperid(), $this->getDocid(), $action, $uid, $detail, $date, $this->getRvid());
 
@@ -5024,6 +5026,18 @@ class Episciences_Paper
         return $this->isOwner() || $this->isCoauthor();
     }
 
+    /**
+     * Check if a specific user is a co-author of this paper
+     */
+    public function isCoAuthorByUid(int $uid): bool
+    {
+        $assignments = Episciences_User_AssignmentsManager::findAll([
+            'ITEMID' => $this->getDocid(),
+            'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR,
+            'UID' => $uid
+        ]);
+        return !empty($assignments);
+    }
 
     public function isEditableVersion(): bool
     {

@@ -197,7 +197,7 @@ class Episciences_Paper_Logger
         self::CODE_ALTER_PUBLICATION_DATE               => "Modification de la date de publication",
         self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Réponse à une demande d'éclaircissement (contributeur au relecteur)",
         self::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR => "Message de l'auteur aux rédacteurs assignés",
-        self::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR => "Réponse du rédacteur à l'auteur",
+        self::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR => "Message du rédacteur à l'auteur",
         self::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => "Demande d'éclaircissements (relecteur au contributeur)",
         self::CODE_PAPER_UPDATED                        => "Article mis à jour",
         self::CODE_REMINDER_SENT                        => "Envoi d'une relance automatique",

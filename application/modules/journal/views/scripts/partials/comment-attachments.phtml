@@ -14,9 +14,9 @@ if ($file) : ?>
 
     <?php foreach ($files as $file) : ?>
         <div class="col-sm-10">
-            <a href="/docfiles/ce/<?= $comment['DOCID'] . '/' . $file . '/' . $comment['PCID'] ?>"
+            <a href="/docfiles/ce/<?= $comment['DOCID'] . '/' . rawurlencode($file) . '/' . $comment['PCID'] ?>"
                target="_blank">
-                <?= $file ?>
+                <?= $this->escape($file) ?>
             </a>
         </div>
         <div class="col-sm-2">

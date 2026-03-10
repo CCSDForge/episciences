@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
  *
  * The processor only handles two comment types:
  * - TYPE_AUTHOR_TO_EDITOR (22): Messages from authors to editors
- * - TYPE_EDITOR_TO_AUTHOR_RESPONSE (23): Editor replies to authors
+ * - TYPE_EDITOR_TO_AUTHOR (23): Editor replies to authors
  *
  * @covers Episciences_CommentHierarchyProcessor
  * @see Episciences_CommentsManager For comment type constants
@@ -202,7 +202,7 @@ class Episciences_CommentHierarchyProcessorTest extends TestCase
     {
         $validTypes = [
             Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
-            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
         ];
 
         foreach ($validTypes as $type) {

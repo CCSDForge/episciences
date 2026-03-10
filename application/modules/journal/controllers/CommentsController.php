@@ -112,7 +112,7 @@ class CommentsController extends PaperController
 
         // Special handling for author-editor communication (both directions)
         $isAuthorEditorCommunication = in_array($comment->getType(), [
-            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
             Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR
         ], true);
 
@@ -147,18 +147,90 @@ class CommentsController extends PaperController
                     unlink($comment_path);
 
                     // Save the comment (this updates the file field)
-                    // For TYPE_AUTHOR_TO_EDITOR, save() automatically creates a log
-                    // For TYPE_EDITOR_TO_AUTHOR_RESPONSE, we need to create the log manually (excluded in Comment._excludedCommentsTypes)
+                    // Both types are excluded in Comment._excludedCommentsTypes to avoid double-log on message creation
+                    //  create the log manually for file removal
                     $comment->save(true);
 
-                    if ($comment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) {
+                    if ($comment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+                        // Get editors and co-authors for the log (same style as normal message)
+                        $editorsNotified = [];
+                        $coAuthorsNotified = [];
+                        try {
+                            $editors = $paper->getEditors(true, true);
+                            foreach ($editors as $editor) {
+                                $editorsNotified[] = [
+                                    'uid' => $editor->getUid(),
+                                    'email' => $editor->getEmail(),
+                                    'fullname' => $editor->getFullName()
+                                ];
+                            }
+                            $coAuthors = $paper->getCoAuthors();
+                            foreach ($coAuthors as $coAuthor) {
+                                $coAuthorsNotified[] = [
+                                    'uid' => $coAuthor->getUid(),
+                                    'email' => $coAuthor->getEmail(),
+                                    'fullname' => $coAuthor->getFullName()
+                                ];
+                            }
+                        } catch (Zend_Db_Statement_Exception $e) {
+                            trigger_error('Error fetching recipients for log: ' . $e->getMessage());
+                        }
+
+                        $paper->log(
+                            Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR,
+                            Episciences_Auth::getUid(),
+                            [
+                                'user' => Episciences_Auth::getUser()->toArray(),
+                                'comment' => $comment->toArray(),
+                                'file_removed' => $file,
+                                'editors_notified' => $editorsNotified,
+                                'co_authors_notified' => $coAuthorsNotified
+                            ]
+                        );
+                    } elseif ($comment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
+                        // Get author, co-authors and other editors for the log (same style as normal message)
+                        $author = new Episciences_User();
+                        $author->findWithCAS($paper->getUid());
+                        $recipient = [
+                            'uid' => $author->getUid(),
+                            'email' => $author->getEmail(),
+                            'fullname' => $author->getFullName()
+                        ];
+
+                        $coAuthorsNotified = [];
+                        $editorsNotified = [];
+                        try {
+                            $coAuthors = $paper->getCoAuthors();
+                            foreach ($coAuthors as $coAuthor) {
+                                $coAuthorsNotified[] = [
+                                    'uid' => $coAuthor->getUid(),
+                                    'email' => $coAuthor->getEmail(),
+                                    'fullname' => $coAuthor->getFullName()
+                                ];
+                            }
+                            $editors = $paper->getEditors(true, true);
+                            unset($editors[Episciences_Auth::getUid()]);
+                            foreach ($editors as $editor) {
+                                $editorsNotified[] = [
+                                    'uid' => $editor->getUid(),
+                                    'email' => $editor->getEmail(),
+                                    'fullname' => $editor->getFullName()
+                                ];
+                            }
+                        } catch (Zend_Db_Statement_Exception $e) {
+                            trigger_error('Error fetching recipients for log: ' . $e->getMessage());
+                        }
+
                         $paper->log(
                             Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR,
                             Episciences_Auth::getUid(),
                             [
                                 'user' => Episciences_Auth::getUser()->toArray(),
                                 'comment' => $comment->toArray(),
-                                'file_removed' => $file
+                                'file_removed' => $file,
+                                'recipient' => $recipient,
+                                'co_authors_notified' => $coAuthorsNotified,
+                                'editors_notified' => $editorsNotified
                             ]
                         );
                     }

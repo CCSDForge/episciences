@@ -226,9 +226,9 @@ return [
     "paper_comment_from_author_to_editor_coauthor_copy_tpl_name" => "Message from co-author to assigned editors (co-authors copy)",
     "paper_comment_from_author_to_editor_coauthor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - a co-author sent a message to editors about %%ARTICLE_RELATIONSHIP%%",
 
-    // Editor response to author message
-    "paper_editor_response_to_author_author_copy_tpl_name" => "Editor response to your message (author copy)",
-    "paper_editor_response_to_author_author_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - an editor responded to your message",
+    // Editor message to author
+    "paper_comment_from_editor_to_author_author_copy_tpl_name" => "Editor message to author (author copy)",
+    "paper_comment_from_editor_to_author_author_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - an editor sent you a message",
 
     // Commentaire de l'auteur / lettre d'accompagnement
     'paper_author_comment_editor_copy_tpl_name' => "Author's comments / Cover letter",
