@@ -1,5 +1,6 @@
 <?php
 
+use League\HTMLToMarkdown\Converter\TableConverter;
 use League\HTMLToMarkdown\HtmlConverter;
 
 class Episciences_Page
@@ -97,6 +98,7 @@ class Episciences_Page
     public function setContent(string|array $content, bool $serialize = true): void
     {
         $converter = new HtmlConverter(array('strip_tags' => true, 'header_style' => 'atx'));
+        $converter->getEnvironment()->addConverter(new TableConverter());
         if (is_array($content)) {
             foreach ($content as $language => $value) {
                 $content[$language] = $converter->convert($value);
