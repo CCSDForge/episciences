@@ -238,17 +238,17 @@ final class Episciences_Mail_SenderTest extends TestCase
     // getAddress() — private
     // -------------------------------------------------------------------------
 
-    public function testGetAddressReturnsFalseWhenFieldIsMissing(): void
+    public function testGetAddressReturnsEmptyArrayWhenFieldIsMissing(): void
     {
         $sender = new Episciences_Mail_Sender();
         $sender->mail = $this->buildMailXml('<mail errors="0" charset="UTF-8"></mail>');
 
         $result = $this->callPrivate($sender, 'getAddress', 'from');
 
-        self::assertFalse($result);
+        self::assertEmpty($result);
     }
 
-    public function testGetAddressReturnsFalseWhenMailElementIsMissing(): void
+    public function testGetAddressReturnsEmptyArrayWhenMailElementIsMissing(): void
     {
         $sender = new Episciences_Mail_Sender();
         $sender->mail = $this->buildMailXml(
@@ -257,7 +257,7 @@ final class Episciences_Mail_SenderTest extends TestCase
 
         $result = $this->callPrivate($sender, 'getAddress', 'from');
 
-        self::assertFalse($result);
+        self::assertEmpty($result);
     }
 
     public function testGetAddressReturnsMailAndName(): void
@@ -298,7 +298,7 @@ final class Episciences_Mail_SenderTest extends TestCase
     // getAttachments() — private
     // -------------------------------------------------------------------------
 
-    public function testGetAttachmentsReturnsFalseWhenNoFiles(): void
+    public function testGetAttachmentsReturnsEmptyArrayWhenNoFiles(): void
     {
         $sender = new Episciences_Mail_Sender();
         $sender->mail = $this->buildMailXml(
@@ -307,7 +307,7 @@ final class Episciences_Mail_SenderTest extends TestCase
 
         $result = $this->callPrivate($sender, 'getAttachments');
 
-        self::assertFalse($result);
+        self::assertEmpty($result);
     }
 
     public function testGetAttachmentsReturnsFileNamesAsStrings(): void

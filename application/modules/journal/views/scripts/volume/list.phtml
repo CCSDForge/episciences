@@ -18,7 +18,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 ?>
     <div class="form-actions">
         <a class="btn btn-default" href="<?= $this->url(['controller' => 'volume', 'action' => 'add']) ?>">
-            <span class="glyphicon glyphicon-book"></span>
+            <span class="glyphicon glyphicon-plus"></span>
             <span><?php echo $this->translate('Créer un volume'); ?></span>
         </a>
     </div>
@@ -40,7 +40,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                 <th scope="col" style="text-align:center"><?php echo $this->translate("Spécial"); ?></th>
                 <th scope="col" style="text-align:center"><?php echo $this->translate("En cours"); ?></th>
                 <th scope="col" style="text-align:center"><?php echo $this->translate("Statut"); ?></th>
-                <th scope="col" style="text-align:center"><?php echo $this->translate('Actions'); ?></th>
+                <th scope="col" style="text-align:center;min-width: 70px"><?php echo $this->translate('Actions'); ?></th>
             </tr>
             </thead>
             <tbody class="sortable">

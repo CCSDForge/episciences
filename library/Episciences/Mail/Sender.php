@@ -350,13 +350,13 @@ class Episciences_Mail_Sender
      *Le paramètre est le nom du champ à récupérer (from, return-path, reply-to)
      *
      * @param $fieldname string
-     * @return bool|array
+     * @return array<string, string>
      */
     private function getAddress($fieldname)
     {
 
 
-        $res = false;
+        $res = [];
         if (!empty($this->mail->$fieldname)) {
             $item = $this->mail->$fieldname;
 
@@ -377,11 +377,11 @@ class Episciences_Mail_Sender
 
     /**
      * Renvoie la liste des pièces jointes
-     * @return array|bool
+     * @return list<string>
      */
     private function getAttachments()
     {
-        $files = false;
+        $files = [];
         if ($this->mail->files_list->file) {
             foreach ($this->mail->files_list->file as $file) {
                 $files[] = strval($file);
