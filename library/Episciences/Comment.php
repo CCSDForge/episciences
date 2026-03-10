@@ -60,7 +60,7 @@ class Episciences_Comment
 
     protected $_excludedCommentsTypes = [
         Episciences_CommentsManager::TYPE_REVISION_REQUEST,
-        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
         Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
     ];
 
@@ -559,7 +559,7 @@ class Episciences_Comment
                     $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR;
                     break;
 
-                case Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE:
+                case Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR:
                     $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR;
                     break;
 

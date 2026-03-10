@@ -2,10 +2,16 @@
 
 namespace unit\library\Episciences\Paper;
 
+use Episciences_Auth;
+use Episciences_Comment;
 use Episciences_CommentsManager;
+use Episciences_Editor;
 use Episciences_Paper;
 use Episciences_Paper_AuthorEditorCommunicationService;
+use Episciences_Paper_Logger;
+use Episciences_Paper_MessageSubmissionResult;
 use Episciences_Review;
+use Episciences_User;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -583,7 +589,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
     /**
      * Test that createAuthorReplyForms() ignores comments of type TYPE_AUTHOR_TO_EDITOR.
      *
-     * Author reply forms respond to editor messages (TYPE_EDITOR_TO_AUTHOR_RESPONSE).
+     * Author reply forms respond to editor messages (TYPE_EDITOR_TO_AUTHOR).
      * Root comments sent BY the author (TYPE_AUTHOR_TO_EDITOR) do not get a reply form.
      */
     public function testCreateAuthorReplyFormsIgnoresAuthorTypeRootComments(): void
@@ -674,7 +680,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
     /**
      * BUG B documented: collectCommentForms() accesses $comment['PCID'] without isset check.
      *
-     * When a comment has the matching TYPE (TYPE_EDITOR_TO_AUTHOR_RESPONSE for author forms)
+     * When a comment has the matching TYPE (TYPE_EDITOR_TO_AUTHOR for author forms)
      * but no PCID key, the code does $pcid = $comment['PCID'] blindly.
      * PHP 8 emits an "Undefined array key" warning; null is coerced to int 0 for the
      * createReplyForm(int $pcid) parameter.
@@ -706,10 +712,10 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
     // =========================================================================
 
     /**
-     * Test that createEditorReplyForms() ignores comments of type TYPE_EDITOR_TO_AUTHOR_RESPONSE.
+     * Test that createEditorReplyForms() ignores comments of type TYPE_EDITOR_TO_AUTHOR.
      *
      * Editor reply forms respond to author messages (TYPE_AUTHOR_TO_EDITOR).
-     * Root comments from the editor (TYPE_EDITOR_TO_AUTHOR_RESPONSE) do not need a reply form.
+     * Root comments from the editor (TYPE_EDITOR_TO_AUTHOR) do not need a reply form.
      */
     public function testCreateEditorReplyFormsIgnoresEditorTypeRootComments(): void
     {
@@ -719,7 +725,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
 
         $comments = [
             [
-                'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+                'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
                 'PCID' => 20,
                 'WHEN' => '2025-02-01 10:00:00',
             ],
@@ -729,7 +735,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
     }
 
     /**
-     * Test that createEditorReplyForms() ignores replies of type TYPE_EDITOR_TO_AUTHOR_RESPONSE.
+     * Test that createEditorReplyForms() ignores replies of type TYPE_EDITOR_TO_AUTHOR.
      */
     public function testCreateEditorReplyFormsIgnoresEditorTypeReplies(): void
     {
@@ -739,11 +745,11 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
 
         $comments = [
             [
-                'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+                'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
                 'PCID' => 20,
                 'replies' => [
                     [
-                        'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+                        'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
                         'PCID' => 21,
                     ],
                 ],
@@ -784,17 +790,17 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
 
         $comments = [
             [
-                'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+                'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
                 'PCID' => 30,
                 'replies' => [
                     [
-                        'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+                        'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
                         'PCID' => 31,
                     ],
                 ],
             ],
             [
-                'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+                'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
                 'PCID' => 32,
                 'replies' => [],
             ],
@@ -819,11 +825,11 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
         // Root: wrong type. Reply: wrong type. Deep reply: would be right type for editor, but never read.
         $comments = [
             [
-                'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+                'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
                 'PCID' => 40,
                 'replies' => [
                     [
-                        'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+                        'TYPE' => Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
                         'PCID' => 41,
                         'replies' => [
                             // This level is intentionally NOT processed
@@ -885,6 +891,1274 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
         $this->expectNotToPerformAssertions();
         new Episciences_Paper_AuthorEditorCommunicationService(
             $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+    }
+
+    // =========================================================================
+    // Message Constants Tests
+    // =========================================================================
+
+    public function testMessageConstantsAreDefined(): void
+    {
+        $this->assertSame(
+            "Votre message a bien été envoyé aux rédacteurs.",
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_SUCCESS_AUTHOR_SENT
+        );
+        $this->assertSame(
+            "Votre réponse a bien été envoyée.",
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_SUCCESS_AUTHOR_REPLY
+        );
+        $this->assertSame(
+            "Votre message a bien été envoyé à l'auteur.",
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_SUCCESS_EDITOR_SENT
+        );
+        $this->assertSame(
+            "Votre réponse a bien été envoyée à l'auteur.",
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_SUCCESS_EDITOR_REPLY
+        );
+    }
+
+    public function testErrorMessageConstantsAreDefined(): void
+    {
+        $this->assertSame(
+            "Votre message n'a pas pu être envoyé.",
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_ERROR_SEND_FAILED
+        );
+        $this->assertSame(
+            "Erreur de validation du formulaire (token CSRF invalide). Veuillez réessayer.",
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_ERROR_CSRF_INVALID
+        );
+        $this->assertSame(
+            "Le commentaire ne peut pas être vide.",
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_ERROR_COMMENT_EMPTY
+        );
+    }
+
+    // =========================================================================
+    // getCommentType() Tests
+    // =========================================================================
+
+    /**
+     * Test that getCommentType returns TYPE_AUTHOR_TO_EDITOR for paper controller.
+     */
+    public function testGetCommentTypeReturnsAuthorToEditorForPaperController(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_PAPER
+        );
+
+        $this->assertSame(
+            Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
+            $service->getCommentType()
+        );
+    }
+
+    /**
+     * Test that getCommentType returns TYPE_EDITOR_TO_AUTHOR for administratepaper controller.
+     */
+    public function testGetCommentTypeReturnsEditorToAuthorForAdminController(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $this->assertSame(
+            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
+            $service->getCommentType()
+        );
+    }
+
+    // =========================================================================
+    // getExpectedParentType() Tests
+    // =========================================================================
+
+    /**
+     * Test that getExpectedParentType returns TYPE_EDITOR_TO_AUTHOR for paper controller.
+     * Author replies to editor messages.
+     */
+    public function testGetExpectedParentTypeReturnsEditorToAuthorForPaperController(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_PAPER
+        );
+
+        $this->assertSame(
+            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
+            $service->getExpectedParentType()
+        );
+    }
+
+    /**
+     * Test that getExpectedParentType returns TYPE_AUTHOR_TO_EDITOR for administratepaper controller.
+     * Editor replies to author messages.
+     */
+    public function testGetExpectedParentTypeReturnsAuthorToEditorForAdminController(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $this->assertSame(
+            Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
+            $service->getExpectedParentType()
+        );
+    }
+
+    // =========================================================================
+    // getLogCode() Tests
+    // =========================================================================
+
+    /**
+     * Test that getLogCode returns correct code for paper controller.
+     */
+    public function testGetLogCodeReturnsAuthorToEditorCodeForPaperController(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_PAPER
+        );
+
+        $this->assertSame(
+            Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR,
+            $service->getLogCode()
+        );
+    }
+
+    /**
+     * Test that getLogCode returns correct code for administratepaper controller.
+     */
+    public function testGetLogCodeReturnsEditorToAuthorCodeForAdminController(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $this->assertSame(
+            Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR,
+            $service->getLogCode()
+        );
+    }
+
+    // =========================================================================
+    // validateCommentField() Tests
+    // =========================================================================
+
+    /**
+     * Test that validateCommentField returns null for valid main message.
+     */
+    public function testValidateCommentFieldReturnsNullForValidMainMessage(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $result = $service->validateCommentField(['comment' => 'Hello, this is a message']);
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test that validateCommentField returns error for empty main message.
+     */
+    public function testValidateCommentFieldReturnsErrorForEmptyMainMessage(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $result = $service->validateCommentField(['comment' => '']);
+        $this->assertNotNull($result);
+        $this->assertSame(
+            Episciences_Paper_MessageSubmissionResult::TYPE_VALIDATION_ERROR,
+            $result->getType()
+        );
+    }
+
+    /**
+     * Test that validateCommentField returns error for whitespace-only message.
+     */
+    public function testValidateCommentFieldReturnsErrorForWhitespaceOnlyMessage(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $result = $service->validateCommentField(['comment' => '   ']);
+        $this->assertNotNull($result);
+        $this->assertSame(
+            Episciences_Paper_MessageSubmissionResult::TYPE_VALIDATION_ERROR,
+            $result->getType()
+        );
+    }
+
+    /**
+     * Test that validateCommentField returns null for valid reply message.
+     */
+    public function testValidateCommentFieldReturnsNullForValidReplyMessage(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $result = $service->validateCommentField(['comment_123' => 'Reply message'], 123);
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test that validateCommentField returns error for empty reply message.
+     */
+    public function testValidateCommentFieldReturnsErrorForEmptyReplyMessage(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $result = $service->validateCommentField(['comment_456' => ''], 456);
+        $this->assertNotNull($result);
+        $this->assertSame(
+            Episciences_Paper_MessageSubmissionResult::TYPE_VALIDATION_ERROR,
+            $result->getType()
+        );
+    }
+
+    /**
+     * Test that validateCommentField returns error when field is missing.
+     */
+    public function testValidateCommentFieldReturnsErrorForMissingField(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $result = $service->validateCommentField([]);
+        $this->assertNotNull($result);
+        $this->assertSame(
+            Episciences_Paper_MessageSubmissionResult::TYPE_VALIDATION_ERROR,
+            $result->getType()
+        );
+    }
+
+    // =========================================================================
+    // validateParentComment() Tests
+    // =========================================================================
+
+    /**
+     * Test that validateParentComment returns error for zero PCID.
+     */
+    public function testValidateParentCommentReturnsErrorForZeroPcid(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $result = $service->validateParentComment(0);
+        $this->assertInstanceOf(Episciences_Paper_MessageSubmissionResult::class, $result);
+        $this->assertSame(
+            Episciences_Paper_MessageSubmissionResult::TYPE_NOT_FOUND,
+            $result->getType()
+        );
+    }
+
+    /**
+     * Test that validateParentComment returns error for negative PCID.
+     */
+    public function testValidateParentCommentReturnsErrorForNegativePcid(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $result = $service->validateParentComment(-5);
+        $this->assertInstanceOf(Episciences_Paper_MessageSubmissionResult::class, $result);
+        $this->assertSame(
+            Episciences_Paper_MessageSubmissionResult::TYPE_NOT_FOUND,
+            $result->getType()
+        );
+    }
+
+    // =========================================================================
+    // getPaper() and getControllerPath() Tests
+    // =========================================================================
+
+    /**
+     * Test that getPaper returns the paper instance.
+     */
+    public function testGetPaperReturnsThePaperInstance(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $this->assertSame($paper, $service->getPaper());
+    }
+
+    /**
+     * Test that getControllerPath returns the controller path.
+     */
+    public function testGetControllerPathReturnsDefaultControllerPath(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_PAPER,
+            $service->getControllerPath()
+        );
+    }
+
+    /**
+     * Test that getControllerPath returns the custom controller path.
+     */
+    public function testGetControllerPathReturnsCustomControllerPath(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review,
+            Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER,
+            $service->getControllerPath()
+        );
+    }
+
+    // =========================================================================
+    // buildLogData() Tests
+    // =========================================================================
+
+    /**
+     * Test that buildLogData creates proper structure for main message.
+     * Requires authenticated user session (Episciences_Auth::getUser() must return a user)
+     */
+    public function testBuildLogDataCreatesProperStructureForMainMessage(): void
+    {
+        if (Episciences_Auth::getUser() === null) {
+            $this->markTestSkipped('Requires authenticated user session');
+        }
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(100);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $comment = $this->createMock(Episciences_Comment::class);
+        $comment->method('getPcid')->willReturn(500);
+        $comment->method('getType')->willReturn(Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR);
+        $comment->method('getMessage')->willReturn('Test message');
+        $comment->method('getFile')->willReturn(null);
+        $comment->method('getParentid')->willReturn(0);
+
+        $logData = $service->buildLogData($comment, []);
+
+        $this->assertArrayHasKey('comment', $logData);
+        $this->assertArrayHasKey('user', $logData);
+        $this->assertSame(500, $logData['comment']['pcid']);
+        $this->assertSame('Test message', $logData['comment']['message']);
+        $this->assertSame(100, $logData['comment']['docid']);
+    }
+
+    /**
+     * Test that buildLogData includes parentid for reply messages.
+     */
+    public function testBuildLogDataIncludesParentIdForReply(): void
+    {
+        if (Episciences_Auth::getUser() === null) {
+            $this->markTestSkipped('Requires authenticated user session');
+        }
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(100);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $comment = $this->createMock(Episciences_Comment::class);
+        $comment->method('getPcid')->willReturn(501);
+        $comment->method('getType')->willReturn(Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR);
+        $comment->method('getMessage')->willReturn('Reply message');
+        $comment->method('getFile')->willReturn(null);
+        $comment->method('getParentid')->willReturn(250);
+
+        $logData = $service->buildLogData($comment, []);
+
+        $this->assertArrayHasKey('parentid', $logData['comment']);
+        $this->assertSame(250, $logData['comment']['parentid']);
+    }
+
+    /**
+     * Test that buildLogData includes recipient for editor messages.
+     */
+    public function testBuildLogDataIncludesRecipientWhenProvided(): void
+    {
+        if (Episciences_Auth::getUser() === null) {
+            $this->markTestSkipped('Requires authenticated user session');
+        }
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(100);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $comment = $this->createMock(Episciences_Comment::class);
+        $comment->method('getPcid')->willReturn(502);
+        $comment->method('getType')->willReturn(Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR);
+        $comment->method('getMessage')->willReturn('Editor message');
+        $comment->method('getFile')->willReturn(null);
+        $comment->method('getParentid')->willReturn(0);
+
+        $recipient = $this->createMock(Episciences_User::class);
+        $recipient->method('getUid')->willReturn(999);
+        $recipient->method('getEmail')->willReturn('author@example.com');
+        $recipient->method('getFullName')->willReturn('John Author');
+
+        $logData = $service->buildLogData($comment, [], $recipient);
+
+        $this->assertArrayHasKey('recipient', $logData);
+        $this->assertSame(999, $logData['recipient']['uid']);
+        $this->assertSame('author@example.com', $logData['recipient']['email']);
+        $this->assertSame('John Author', $logData['recipient']['fullname']);
+    }
+
+    /**
+     * Test that buildLogData includes co-authors when provided.
+     */
+    public function testBuildLogDataIncludesCoAuthorsWhenProvided(): void
+    {
+        if (Episciences_Auth::getUser() === null) {
+            $this->markTestSkipped('Requires authenticated user session');
+        }
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(100);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $comment = $this->createMock(Episciences_Comment::class);
+        $comment->method('getPcid')->willReturn(503);
+        $comment->method('getType')->willReturn(Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR);
+        $comment->method('getMessage')->willReturn('Message');
+        $comment->method('getFile')->willReturn(null);
+        $comment->method('getParentid')->willReturn(0);
+
+        $coAuthor1 = $this->createMock(Episciences_User::class);
+        $coAuthor1->method('getUid')->willReturn(10);
+        $coAuthor1->method('getEmail')->willReturn('coauthor1@example.com');
+        $coAuthor1->method('getFullName')->willReturn('Co Author One');
+
+        $coAuthor2 = $this->createMock(Episciences_User::class);
+        $coAuthor2->method('getUid')->willReturn(20);
+        $coAuthor2->method('getEmail')->willReturn('coauthor2@example.com');
+        $coAuthor2->method('getFullName')->willReturn('Co Author Two');
+
+        $coAuthors = [10 => $coAuthor1, 20 => $coAuthor2];
+
+        $logData = $service->buildLogData($comment, $coAuthors);
+
+        $this->assertArrayHasKey('co_authors_notified', $logData);
+        $this->assertCount(2, $logData['co_authors_notified']);
+        $this->assertSame(10, $logData['co_authors_notified'][0]['uid']);
+        $this->assertSame(20, $logData['co_authors_notified'][1]['uid']);
+    }
+
+    /**
+     * Test that buildLogData does not include co_authors_notified when empty.
+     */
+    public function testBuildLogDataDoesNotIncludeCoAuthorsWhenEmpty(): void
+    {
+        if (Episciences_Auth::getUser() === null) {
+            $this->markTestSkipped('Requires authenticated user session');
+        }
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(100);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $comment = $this->createMock(Episciences_Comment::class);
+        $comment->method('getPcid')->willReturn(504);
+        $comment->method('getType')->willReturn(Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR);
+        $comment->method('getMessage')->willReturn('Message');
+        $comment->method('getFile')->willReturn(null);
+        $comment->method('getParentid')->willReturn(0);
+
+        $logData = $service->buildLogData($comment, []);
+
+        $this->assertArrayNotHasKey('co_authors_notified', $logData);
+    }
+
+    // =========================================================================
+    // getEditorsForLog() Tests
+    // =========================================================================
+
+    /**
+     * Test that getEditorsForLog returns all editors for paper controller (author->editor).
+     * For author messages, all assigned editors are recipients (To).
+     */
+    public function testGetEditorsForLogReturnsEditorsForPaperController(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $editor1 = $this->createMock(Episciences_Editor::class);
+        $editor2 = $this->createMock(Episciences_Editor::class);
+
+        $editors = [100 => $editor1, 200 => $editor2];
+
+        $paper->method('getEditors')
+            ->with(true, true)
+            ->willReturn($editors);
+
+        // Paper controller (author context)
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_PAPER
+        );
+
+        $result = $service->getEditorsForLog();
+
+        // For author->editor, all editors should be returned as recipients
+        $this->assertIsArray($result);
+        $this->assertCount(2, $result);
+    }
+
+    /**
+     * Test that getEditorsForLog returns other editors (excluding sender) for administratepaper controller.
+     * For editor messages, other editors are CC (excluding the sender).
+     */
+    public function testGetEditorsForLogReturnsOtherEditorsForAdminController(): void
+    {
+        $paper = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $editor1 = $this->createMock(Episciences_Editor::class);
+        $editor2 = $this->createMock(Episciences_Editor::class);
+
+        // Simulate current user is editor with UID 100
+        $editors = [100 => $editor1, 200 => $editor2];
+
+        $paper->method('getEditors')
+            ->with(true, true)
+            ->willReturn($editors);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        // Note: In real scenario, Episciences_Auth::getUid() would be mocked
+        // Here we just verify the method calls getEditors
+        $result = $service->getEditorsForLog();
+
+        // Result depends on Episciences_Auth::getUid() which we can't mock easily
+        // At minimum, verify it returns an array
+        $this->assertIsArray($result);
+    }
+
+    // =========================================================================
+    // buildLogData() with editorsNotified Tests
+    // =========================================================================
+
+    /**
+     * Test that buildLogData includes editors_notified when provided.
+     */
+    public function testBuildLogDataIncludesEditorsNotifiedWhenProvided(): void
+    {
+        if (Episciences_Auth::getUser() === null) {
+            $this->markTestSkipped('Requires authenticated user session');
+        }
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(100);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $comment = $this->createMock(Episciences_Comment::class);
+        $comment->method('getPcid')->willReturn(600);
+        $comment->method('getType')->willReturn(Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR);
+        $comment->method('getMessage')->willReturn('Editor message to author');
+        $comment->method('getFile')->willReturn(null);
+        $comment->method('getParentid')->willReturn(0);
+
+        $editor1 = $this->createMock(Episciences_User::class);
+        $editor1->method('getUid')->willReturn(200);
+        $editor1->method('getEmail')->willReturn('editor1@example.com');
+        $editor1->method('getFullName')->willReturn('Editor One');
+
+        $editor2 = $this->createMock(Episciences_User::class);
+        $editor2->method('getUid')->willReturn(300);
+        $editor2->method('getEmail')->willReturn('editor2@example.com');
+        $editor2->method('getFullName')->willReturn('Editor Two');
+
+        $editorsNotified = [200 => $editor1, 300 => $editor2];
+
+        $logData = $service->buildLogData($comment, [], null, $editorsNotified);
+
+        $this->assertArrayHasKey('editors_notified', $logData);
+        $this->assertCount(2, $logData['editors_notified']);
+        $this->assertSame(200, $logData['editors_notified'][0]['uid']);
+        $this->assertSame('editor1@example.com', $logData['editors_notified'][0]['email']);
+        $this->assertSame('Editor One', $logData['editors_notified'][0]['fullname']);
+        $this->assertSame(300, $logData['editors_notified'][1]['uid']);
+    }
+
+    /**
+     * Test that buildLogData does not include editors_notified when empty.
+     */
+    public function testBuildLogDataDoesNotIncludeEditorsNotifiedWhenEmpty(): void
+    {
+        if (Episciences_Auth::getUser() === null) {
+            $this->markTestSkipped('Requires authenticated user session');
+        }
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(100);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $comment = $this->createMock(Episciences_Comment::class);
+        $comment->method('getPcid')->willReturn(601);
+        $comment->method('getType')->willReturn(Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR);
+        $comment->method('getMessage')->willReturn('Message');
+        $comment->method('getFile')->willReturn(null);
+        $comment->method('getParentid')->willReturn(0);
+
+        $logData = $service->buildLogData($comment, [], null, []);
+
+        $this->assertArrayNotHasKey('editors_notified', $logData);
+    }
+
+    /**
+     * Test that buildLogData can include both co_authors_notified and editors_notified.
+     */
+    public function testBuildLogDataIncludesBothCoAuthorsAndEditorsNotified(): void
+    {
+        if (Episciences_Auth::getUser() === null) {
+            $this->markTestSkipped('Requires authenticated user session');
+        }
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getDocid')->willReturn(100);
+        $review = $this->createMock(Episciences_Review::class);
+
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $comment = $this->createMock(Episciences_Comment::class);
+        $comment->method('getPcid')->willReturn(602);
+        $comment->method('getType')->willReturn(Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR);
+        $comment->method('getMessage')->willReturn('Message');
+        $comment->method('getFile')->willReturn(null);
+        $comment->method('getParentid')->willReturn(0);
+
+        $coAuthor = $this->createMock(Episciences_User::class);
+        $coAuthor->method('getUid')->willReturn(50);
+        $coAuthor->method('getEmail')->willReturn('coauthor@example.com');
+        $coAuthor->method('getFullName')->willReturn('Co Author');
+
+        $editor = $this->createMock(Episciences_User::class);
+        $editor->method('getUid')->willReturn(200);
+        $editor->method('getEmail')->willReturn('editor@example.com');
+        $editor->method('getFullName')->willReturn('Other Editor');
+
+        $logData = $service->buildLogData($comment, [50 => $coAuthor], null, [200 => $editor]);
+
+        $this->assertArrayHasKey('co_authors_notified', $logData);
+        $this->assertArrayHasKey('editors_notified', $logData);
+        $this->assertCount(1, $logData['co_authors_notified']);
+        $this->assertCount(1, $logData['editors_notified']);
+    }
+
+    // =========================================================================
+    // validateCommentField() — Bug: '0' is rejected as invalid
+    // =========================================================================
+
+    /**
+     * BUG: '0' (the string) is a valid comment but validateCommentField() rejects it.
+     *
+     * The condition `$commentMessage === '0'` was added alongside the empty-string check,
+     * but "0" is a legitimate message body (e.g. a score or a single-character reply).
+     * This test documents the current (buggy) behaviour so any future fix is detectable.
+     */
+    public function testValidateCommentFieldRejectsZeroStringAsBug(): void
+    {
+        $paper  = $this->createMock(Episciences_Paper::class);
+        $review = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        // '0' is logically valid content — the current code wrongly treats it as empty
+        $result = $service->validateCommentField(['comment' => '0']);
+
+        // Document the current (broken) behaviour: returns a validation error for '0'
+        $this->assertNotNull($result, 'BUG: the string "0" is rejected as if it were an empty comment');
+        $this->assertSame(
+            Episciences_Paper_MessageSubmissionResult::TYPE_VALIDATION_ERROR,
+            $result->getType()
+        );
+    }
+
+    // =========================================================================
+    // validateCsrfToken() Tests
+    // =========================================================================
+
+    /**
+     * validateCsrfToken returns a CSRF error when the token element is absent from POST data
+     * (paper controller, main form — element name: 'csrf_authorToEditorForm').
+     *
+     * validateFormToken() returns false immediately when the element key is missing,
+     * so no session is needed for this assertion.
+     */
+    public function testValidateCsrfTokenReturnsErrorWhenTokenMissingForMainFormPaperController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        set_error_handler(static fn(): bool => true); // suppress E_USER_WARNING from CSRF helper
+        $result = $service->validateCsrfToken([], null);
+        restore_error_handler();
+
+        $this->assertNotNull($result);
+        $this->assertSame(Episciences_Paper_MessageSubmissionResult::TYPE_CSRF_INVALID, $result->getType());
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_ERROR_CSRF_INVALID,
+            $result->getMessageKey()
+        );
+    }
+
+    /**
+     * validateCsrfToken returns a CSRF error when the token element is absent from POST data
+     * (admin controller, main form — element name: 'csrf_editorToAuthorForm').
+     */
+    public function testValidateCsrfTokenReturnsErrorWhenTokenMissingForMainFormAdminController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        set_error_handler(static fn(): bool => true);
+        $result = $service->validateCsrfToken([], null);
+        restore_error_handler();
+
+        $this->assertNotNull($result);
+        $this->assertSame(Episciences_Paper_MessageSubmissionResult::TYPE_CSRF_INVALID, $result->getType());
+    }
+
+    /**
+     * validateCsrfToken returns a CSRF error for a reply form on paper controller
+     * (element name: 'csrf_author_reply_form_<pcid>').
+     */
+    public function testValidateCsrfTokenReturnsErrorWhenTokenMissingForReplyFormPaperController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        set_error_handler(static fn(): bool => true);
+        $result = $service->validateCsrfToken([], 77);
+        restore_error_handler();
+
+        $this->assertNotNull($result);
+        $this->assertSame(Episciences_Paper_MessageSubmissionResult::TYPE_CSRF_INVALID, $result->getType());
+    }
+
+    /**
+     * validateCsrfToken returns a CSRF error for a reply form on admin controller
+     * (element name: 'csrf_editor_reply_form_<pcid>').
+     */
+    public function testValidateCsrfTokenReturnsErrorWhenTokenMissingForReplyFormAdminController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        set_error_handler(static fn(): bool => true);
+        $result = $service->validateCsrfToken([], 88);
+        restore_error_handler();
+
+        $this->assertNotNull($result);
+        $this->assertSame(Episciences_Paper_MessageSubmissionResult::TYPE_CSRF_INVALID, $result->getType());
+    }
+
+    /**
+     * validateCsrfToken returns null when the expected token key is present in POST data
+     * AND happens to match what's in the session.
+     *
+     * Without a real session we can only test the "token missing" path above.
+     * This test verifies that an incorrect token value (not matching session) also fails.
+     * A wrong token still has the key → validateFormToken() reaches the session check → returns false.
+     */
+    public function testValidateCsrfTokenReturnsErrorForWrongTokenValue(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        set_error_handler(static fn(): bool => true);
+        $result = $service->validateCsrfToken(['csrf_authorToEditorForm' => 'invalid_token'], null);
+        restore_error_handler();
+
+        // Session has no stored hash → validateFormToken returns false → CSRF error
+        $this->assertNotNull($result);
+        $this->assertSame(Episciences_Paper_MessageSubmissionResult::TYPE_CSRF_INVALID, $result->getType());
+    }
+
+    // =========================================================================
+    // processMainMessage() Tests
+    // =========================================================================
+
+    /**
+     * processMainMessage returns an unauthorized result when the auth callback returns false
+     * (paper controller — unauthorized message matches MSG_ERROR_UNAUTHORIZED_AUTHOR).
+     */
+    public function testProcessMainMessageReturnsUnauthorizedWhenAuthFailsPaperController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $result = $service->processMainMessage(
+            ['comment' => 'Hello'],
+            static fn(): bool => false
+        );
+
+        $this->assertSame(Episciences_Paper_MessageSubmissionResult::TYPE_UNAUTHORIZED, $result->getType());
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_ERROR_UNAUTHORIZED_AUTHOR,
+            $result->getMessageKey()
+        );
+    }
+
+    /**
+     * processMainMessage returns an unauthorized result when the auth callback returns false
+     * (admin controller — unauthorized message matches MSG_ERROR_UNAUTHORIZED_EDITOR_SEND).
+     */
+    public function testProcessMainMessageReturnsUnauthorizedWhenAuthFailsAdminController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $result = $service->processMainMessage(
+            ['comment' => 'Hello'],
+            static fn(): bool => false
+        );
+
+        $this->assertSame(Episciences_Paper_MessageSubmissionResult::TYPE_UNAUTHORIZED, $result->getType());
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_ERROR_UNAUTHORIZED_EDITOR_SEND,
+            $result->getMessageKey()
+        );
+    }
+
+    /**
+     * processMainMessage returns a CSRF error when auth passes but the CSRF token is missing.
+     * Auth returns true, CSRF element absent from POST → CSRF error returned before saving.
+     */
+    public function testProcessMainMessageReturnsCsrfErrorWhenTokenMissing(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        set_error_handler(static fn(): bool => true);
+        $result = $service->processMainMessage(
+            ['comment' => 'Hello editor'],
+            static fn(): bool => true
+        );
+        restore_error_handler();
+
+        $this->assertSame(Episciences_Paper_MessageSubmissionResult::TYPE_CSRF_INVALID, $result->getType());
+    }
+
+    /**
+     * processMainMessage returns a validation error when auth passes, CSRF is skipped
+     * (wrong token → CSRF error fires first).
+     *
+     * When we inject the CSRF element key with a wrong value the CSRF check still fires,
+     * so to isolate the validation path we must also inject a matching CSRF key.
+     * Since we cannot generate a real session token here, we document that the validation
+     * path is reachable by checking that an empty comment after auth yields validation_error
+     * when we force CSRF to pass by injecting the expected key with an invalid value.
+     *
+     * NOTE: in practice the CSRF check fires first (before comment validation), so an empty
+     * comment together with a bad CSRF token yields TYPE_CSRF_INVALID, not TYPE_VALIDATION_ERROR.
+     * This test verifies that ordering.
+     */
+    public function testProcessMainMessageReturnsCsrfErrorBeforeValidationError(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        set_error_handler(static fn(): bool => true);
+        // Empty comment + bad CSRF token → CSRF fires first
+        $result = $service->processMainMessage(
+            ['comment' => '', 'csrf_authorToEditorForm' => 'bad_token'],
+            static fn(): bool => true
+        );
+        restore_error_handler();
+
+        // CSRF check fires before comment validation
+        $this->assertSame(Episciences_Paper_MessageSubmissionResult::TYPE_CSRF_INVALID, $result->getType());
+    }
+
+    // =========================================================================
+    // processReplyMessage() Tests
+    // =========================================================================
+
+    /**
+     * processReplyMessage returns an unauthorized result when the auth callback returns false
+     * (paper controller — unauthorized message matches MSG_ERROR_UNAUTHORIZED_AUTHOR).
+     */
+    public function testProcessReplyMessageReturnsUnauthorizedWhenAuthFailsPaperController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $result = $service->processReplyMessage(
+            ['comment_5' => 'My reply'],
+            5,
+            static fn(): bool => false
+        );
+
+        $this->assertSame(Episciences_Paper_MessageSubmissionResult::TYPE_UNAUTHORIZED, $result->getType());
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_ERROR_UNAUTHORIZED_AUTHOR,
+            $result->getMessageKey()
+        );
+    }
+
+    /**
+     * processReplyMessage returns an unauthorized result when the auth callback returns false
+     * (admin controller — unauthorized message matches MSG_ERROR_UNAUTHORIZED_EDITOR).
+     */
+    public function testProcessReplyMessageReturnsUnauthorizedWhenAuthFailsAdminController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $result = $service->processReplyMessage(
+            ['comment_5' => 'My reply'],
+            5,
+            static fn(): bool => false
+        );
+
+        $this->assertSame(Episciences_Paper_MessageSubmissionResult::TYPE_UNAUTHORIZED, $result->getType());
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_ERROR_UNAUTHORIZED_EDITOR,
+            $result->getMessageKey()
+        );
+    }
+
+    /**
+     * processReplyMessage returns a CSRF error when auth passes but the CSRF token is missing.
+     */
+    public function testProcessReplyMessageReturnsCsrfErrorWhenTokenMissing(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        set_error_handler(static fn(): bool => true);
+        $result = $service->processReplyMessage(
+            ['comment_10' => 'My reply'],
+            10,
+            static fn(): bool => true
+        );
+        restore_error_handler();
+
+        $this->assertSame(Episciences_Paper_MessageSubmissionResult::TYPE_CSRF_INVALID, $result->getType());
+    }
+
+    /**
+     * processReplyMessage validates the parent comment after CSRF check.
+     * When pcid <= 0 (here 0), validateParentComment() returns TYPE_NOT_FOUND before any DB access.
+     *
+     * To reach the parent-validation step we need auth=true and a CSRF token present in POST.
+     * Since we cannot generate a real session token in unit tests, the CSRF check fires first
+     * and returns TYPE_CSRF_INVALID. This test documents that ordering.
+     */
+    public function testProcessReplyMessageReturnsCsrfErrorBeforeParentValidation(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        set_error_handler(static fn(): bool => true);
+        // pcid=0 would trigger parent-not-found, but CSRF fires first
+        $result = $service->processReplyMessage(
+            ['comment_0' => 'reply'],
+            0,
+            static fn(): bool => true
+        );
+        restore_error_handler();
+
+        // Auth passes → CSRF fires before parent validation
+        $this->assertSame(Episciences_Paper_MessageSubmissionResult::TYPE_CSRF_INVALID, $result->getType());
+    }
+
+    // =========================================================================
+    // getSuccessMessage() Tests (via reflection — private method)
+    // =========================================================================
+
+    /**
+     * getSuccessMessage returns MSG_SUCCESS_AUTHOR_SENT for paper controller, main message.
+     */
+    public function testGetSuccessMessageAuthorMainMessage(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $method = new \ReflectionMethod($service, 'getSuccessMessage');
+        $method->setAccessible(true);
+
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_SUCCESS_AUTHOR_SENT,
+            $method->invoke($service, false)
+        );
+    }
+
+    /**
+     * getSuccessMessage returns MSG_SUCCESS_AUTHOR_REPLY for paper controller, reply.
+     */
+    public function testGetSuccessMessageAuthorReply(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $method = new \ReflectionMethod($service, 'getSuccessMessage');
+        $method->setAccessible(true);
+
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_SUCCESS_AUTHOR_REPLY,
+            $method->invoke($service, true)
+        );
+    }
+
+    /**
+     * getSuccessMessage returns MSG_SUCCESS_EDITOR_SENT for admin controller, main message.
+     */
+    public function testGetSuccessMessageEditorMainMessage(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $method = new \ReflectionMethod($service, 'getSuccessMessage');
+        $method->setAccessible(true);
+
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_SUCCESS_EDITOR_SENT,
+            $method->invoke($service, false)
+        );
+    }
+
+    /**
+     * getSuccessMessage returns MSG_SUCCESS_EDITOR_REPLY for admin controller, reply.
+     */
+    public function testGetSuccessMessageEditorReply(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $method = new \ReflectionMethod($service, 'getSuccessMessage');
+        $method->setAccessible(true);
+
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_SUCCESS_EDITOR_REPLY,
+            $method->invoke($service, true)
+        );
+    }
+
+    // =========================================================================
+    // buildCsrfElementName() Tests (private method via reflection)
+    // =========================================================================
+
+    /**
+     * buildCsrfElementName returns 'csrf_authorToEditorForm' for paper controller, no pcid.
+     */
+    public function testBuildCsrfElementNameMainFormPaperController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $method = new \ReflectionMethod($service, 'buildCsrfElementName');
+        $method->setAccessible(true);
+
+        $this->assertSame('csrf_authorToEditorForm', $method->invoke($service, null));
+    }
+
+    /**
+     * buildCsrfElementName returns 'csrf_editorToAuthorForm' for admin controller, no pcid.
+     */
+    public function testBuildCsrfElementNameMainFormAdminController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $method = new \ReflectionMethod($service, 'buildCsrfElementName');
+        $method->setAccessible(true);
+
+        $this->assertSame('csrf_editorToAuthorForm', $method->invoke($service, null));
+    }
+
+    /**
+     * buildCsrfElementName returns 'csrf_author_reply_form_<pcid>' for paper controller with pcid.
+     */
+    public function testBuildCsrfElementNameReplyFormPaperController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $method = new \ReflectionMethod($service, 'buildCsrfElementName');
+        $method->setAccessible(true);
+
+        $this->assertSame('csrf_author_reply_form_42', $method->invoke($service, 42));
+    }
+
+    /**
+     * buildCsrfElementName returns 'csrf_editor_reply_form_<pcid>' for admin controller with pcid.
+     */
+    public function testBuildCsrfElementNameReplyFormAdminController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $method = new \ReflectionMethod($service, 'buildCsrfElementName');
+        $method->setAccessible(true);
+
+        $this->assertSame('csrf_editor_reply_form_99', $method->invoke($service, 99));
+    }
+
+    // =========================================================================
+    // getUnauthorizedSendMessage() / getUnauthorizedReplyMessage() — private via reflection
+    // =========================================================================
+
+    public function testGetUnauthorizedSendMessageForPaperController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $method = new \ReflectionMethod($service, 'getUnauthorizedSendMessage');
+        $method->setAccessible(true);
+
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_ERROR_UNAUTHORIZED_AUTHOR,
+            $method->invoke($service)
+        );
+    }
+
+    public function testGetUnauthorizedSendMessageForAdminController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $method = new \ReflectionMethod($service, 'getUnauthorizedSendMessage');
+        $method->setAccessible(true);
+
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_ERROR_UNAUTHORIZED_EDITOR_SEND,
+            $method->invoke($service)
+        );
+    }
+
+    public function testGetUnauthorizedReplyMessageForPaperController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
+
+        $method = new \ReflectionMethod($service, 'getUnauthorizedReplyMessage');
+        $method->setAccessible(true);
+
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_ERROR_UNAUTHORIZED_AUTHOR,
+            $method->invoke($service)
+        );
+    }
+
+    public function testGetUnauthorizedReplyMessageForAdminController(): void
+    {
+        $paper   = $this->createMock(Episciences_Paper::class);
+        $review  = $this->createMock(Episciences_Review::class);
+        $service = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper, $review, Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        $method = new \ReflectionMethod($service, 'getUnauthorizedReplyMessage');
+        $method->setAccessible(true);
+
+        $this->assertSame(
+            Episciences_Paper_AuthorEditorCommunicationService::MSG_ERROR_UNAUTHORIZED_EDITOR,
+            $method->invoke($service)
         );
     }
 }

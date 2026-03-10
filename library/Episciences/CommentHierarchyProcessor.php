@@ -14,7 +14,7 @@ class Episciences_CommentHierarchyProcessor
      */
     private const VALID_TYPES = [
         Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
-        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE
+        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR
     ];
 
     /**
@@ -23,7 +23,7 @@ class Episciences_CommentHierarchyProcessor
      * @param mixed $type Comment type to validate
      * @return bool True if valid type
      */
-    private static function isValidType($type): bool
+    private static function isValidType(mixed $type): bool
     {
         return in_array((int)$type, self::VALID_TYPES, true);
     }
@@ -43,7 +43,7 @@ class Episciences_CommentHierarchyProcessor
      */
     public static function processCommentsForTimeline(array $comments): array
     {
-        if (empty($comments)) {
+        if ($comments === []) {
             return [];
         }
 
@@ -61,9 +61,9 @@ class Episciences_CommentHierarchyProcessor
         $flattenedMessages = self::flattenAllReplies($rootMessages);
 
         // Step 5: Sort root messages by date (replies are already sorted under each root)
-        uasort($flattenedMessages, function($a, $b) {
-            $timeA = isset($a['WHEN']) ? strtotime($a['WHEN']) : 0;
-            $timeB = isset($b['WHEN']) ? strtotime($b['WHEN']) : 0;
+        uasort($flattenedMessages, function($a, $b): int {
+            $timeA = isset($a['WHEN']) ? strtotime((string) $a['WHEN']) : 0;
+            $timeB = isset($b['WHEN']) ? strtotime((string) $b['WHEN']) : 0;
             return $timeA <=> $timeB;
         });
 
@@ -169,7 +169,7 @@ class Episciences_CommentHierarchyProcessor
         $remaining = $replies;
 
         // Keep trying until no more replies can be placed
-        while (!empty($remaining)) {
+        while ($remaining !== []) {
             $beforeCount = count($remaining);
 
             foreach ($remaining as $replyId => $reply) {
@@ -187,7 +187,7 @@ class Episciences_CommentHierarchyProcessor
             // If no replies were placed in this pass, break to avoid infinite loop
             if (count($remaining) === $beforeCount) {
                 // Log warning for orphaned replies that couldn't be placed
-                foreach ($remaining as $replyId => $reply) {
+                foreach ($remaining as $reply) {
                     trigger_error(
                         "Orphaned reply in placeReplies: PCID " . ($reply['PCID'] ?? 'unknown') .
                         " with PARENTID " . ($reply['PARENTID'] ?? 'unknown'),
@@ -210,7 +210,7 @@ class Episciences_CommentHierarchyProcessor
      */
     private static function findAndPlace(array &$items, $parentId, $replyId, array $reply, bool &$found): void
     {
-        foreach ($items as $key => &$item) {
+        foreach ($items as &$item) {
             if (isset($item['PCID']) && (int)$item['PCID'] === (int)$parentId) {
                 if (!isset($item['replies'])) {
                     $item['replies'] = [];
@@ -221,7 +221,9 @@ class Episciences_CommentHierarchyProcessor
             }
             if (!empty($item['replies'])) {
                 self::findAndPlace($item['replies'], $parentId, $replyId, $reply, $found);
-                if ($found) return;
+                if ($found) {
+                    return;
+                }
             }
         }
         unset($item);
@@ -234,9 +236,9 @@ class Episciences_CommentHierarchyProcessor
      */
     private static function sortCommentsRecursive(array &$comments): void
     {
-        uasort($comments, function($a, $b) {
-            $timeA = isset($a['WHEN']) ? strtotime($a['WHEN']) : 0;
-            $timeB = isset($b['WHEN']) ? strtotime($b['WHEN']) : 0;
+        uasort($comments, function($a, $b): int {
+            $timeA = isset($a['WHEN']) ? strtotime((string) $a['WHEN']) : 0;
+            $timeB = isset($b['WHEN']) ? strtotime((string) $b['WHEN']) : 0;
             return $timeA <=> $timeB;
         });
         foreach ($comments as &$comment) {
@@ -287,10 +289,11 @@ class Episciences_CommentHierarchyProcessor
                     if ($parent !== null && isset($parent['PCID'])) {
                         $reply['REPLY_TO_INFO'] = [
                             'PCID' => $parent['PCID'],
+                            'TYPE' => $parent['TYPE'] ?? null,
                             'SCREEN_NAME' => $parent['SCREEN_NAME'] ?? 'Unknown',
                             'WHEN' => $parent['WHEN'] ?? '',
                             'MESSAGE_PREVIEW' => isset($parent['MESSAGE'])
-                                ? mb_substr(strip_tags($parent['MESSAGE']), 0, 100)
+                                ? mb_substr(strip_tags((string) $parent['MESSAGE']), 0, 100)
                                 : ''
                         ];
                     } else {
@@ -305,9 +308,9 @@ class Episciences_CommentHierarchyProcessor
                 }
 
                 // Sort replies by date under this root
-                uasort($flattenedRoot['replies'], function($a, $b) {
-                    $timeA = isset($a['WHEN']) ? strtotime($a['WHEN']) : 0;
-                    $timeB = isset($b['WHEN']) ? strtotime($b['WHEN']) : 0;
+                uasort($flattenedRoot['replies'], function($a, $b): int {
+                    $timeA = isset($a['WHEN']) ? strtotime((string) $a['WHEN']) : 0;
+                    $timeB = isset($b['WHEN']) ? strtotime((string) $b['WHEN']) : 0;
                     return $timeA <=> $timeB;
                 });
             }
