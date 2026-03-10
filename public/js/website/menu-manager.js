@@ -281,7 +281,7 @@ class MenuManager {
      */
     async saveOrder() {
         try {
-            await this.post('/website/ajaxorder', this.serializeOrder(this.rootList));
+            await this.post(JS_PREFIX_URL + 'website/ajaxorder', this.serializeOrder(this.rootList));
         } catch (err) {
             console.error('MenuManager: saveOrder failed', err);
         }
@@ -295,7 +295,7 @@ class MenuManager {
     async addPage(type) {
         try {
             const params = new URLSearchParams({ type });
-            const res = await this.post('/website/ajaxformpage', params);
+            const res = await this.post(JS_PREFIX_URL + 'website/ajaxformpage', params);
             const html = await res.text();
 
             if (!html.trim()) return;
@@ -408,7 +408,7 @@ class MenuManager {
 
         try {
             const params = new URLSearchParams({ idx, page_id: pageId });
-            await this.post('/website/ajaxrmpage', params);
+            await this.post(JS_PREFIX_URL + 'website/ajaxrmpage', params);
 
             const li = document.getElementById(`page_${idx}`);
             if (li) li.remove();
