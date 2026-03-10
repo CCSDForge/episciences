@@ -120,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Fixed
-
+* [#258](https://github.com/CCSDForge/episciences-front/issues/258): Tables are not handled by default: Explicit table conversion
 * Fixed tooltip initialization in volume and section assignment after AJAX refreshes and DataTable redraws.
 * Fixed Solr search engine indexation of Authors with a middle name.
 * Consider an additional review when sending reminders for an insufficient number of reviewers.
