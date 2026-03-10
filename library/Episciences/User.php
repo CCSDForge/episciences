@@ -1541,19 +1541,29 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     private function disableAssignmentsForRemovedRoles(int $uid, int $rvId, array $removedRoles): void
     {
-        // Liste des rôles dont le retrait entraîne la désactivation automatique des assignments
-        // Ici on utilise un tableau pour étendre facilement à d'autres rôles
-        $rolesWithAutoDisableAssignments = ['editor'];
+        // Mapping des rôles utilisateur vers les rôles d'assignation (USER_ASSIGNMENT.ROLEID)
+        // Dans USER_ASSIGNMENT, seuls 'editor', 'reviewer', 'copyeditor' existent comme ROLEID
+        $userRoleToAssignmentRole = [
+            Episciences_Acl::ROLE_EDITOR => Episciences_User_Assignment::ROLE_EDITOR,
+            Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_User_Assignment::ROLE_EDITOR,
+        ];
 
-        // Déterminer quels rôles avec auto-désactivation ont été retirés
-        $rolesToDisable = array_intersect($removedRoles, $rolesWithAutoDisableAssignments);
+        // Déterminer quels rôles d'assignation doivent être désactivés
+        $assignmentRolesToDisable = [];
+        foreach ($removedRoles as $removedRole) {
+            if (isset($userRoleToAssignmentRole[$removedRole])) {
+                $assignmentRolesToDisable[] = $userRoleToAssignmentRole[$removedRole];
+            }
+        }
 
-        // Désactiver les assignments pour chaque rôle retiré
-        if (empty($rolesToDisable)) {
+        // Supprimer les doublons (editor, chief_editor mappent tous vers 'editor')
+        $assignmentRolesToDisable = array_unique($assignmentRolesToDisable);
+
+        if (empty($assignmentRolesToDisable)) {
             return;
         }
 
-        foreach ($rolesToDisable as $roleToDisable) {
+        foreach ($assignmentRolesToDisable as $roleToDisable) {
             $this->_db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
             SELECT `u`.`RVID`, `u`.`ITEMID`, `u`.`ITEM`, `u`.`UID`, `u`.`ROLEID`, 'disabled', NOW()
             FROM USER_ASSIGNMENT `u`
