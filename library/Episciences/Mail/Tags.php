@@ -58,6 +58,8 @@ class Episciences_Mail_Tags
     public const TAG_REQUESTER_SCREEN_NAME = '%%REQUESTER_SCREEN_NAME%%';
     public const TAG_COMMENT_DATE = '%%COMMENT_DATE%%';
     public const TAG_ANSWER = '%%ANSWER%%';
+    public const TAG_EDITOR_ACTION = '%%EDITOR_ACTION%%';
+    public const TAG_AUTHOR_ACTION = '%%AUTHOR_ACTION%%';
     public const TAG_REQUEST_DATE = '%%REQUEST_DATE%%';
     public const TAG_REQUEST_MESSAGE = '%%REQUEST_MESSAGE%%';
     public const TAG_REQUEST_ANSWER = '%%REQUEST_ANSWER%%';
@@ -235,7 +237,9 @@ class Episciences_Mail_Tags
         self::TAG_VOLUME_EDITORS => "tous les rédacteurs assignés au volume de l'article (e.g. : Hartman Rodney, Daniel Bryan, Walls John)",
         self::TAG_VOLUME_ID => "identifiant du volume de l'article",
         self::TAG_VOLUME_NAME => "nom du volume de l'article",
-        self::TAG_AUTHOR_FULL_NAME => "nom d'affichage de l’auteur",
-        self::TAG_AUTHOR_SCREEN_NAME => "nom d’affichage de l’auteur"
+        self::TAG_AUTHOR_FULL_NAME => "nom d'affichage de l'auteur",
+        self::TAG_AUTHOR_SCREEN_NAME => "nom d'affichage de l'auteur",
+        self::TAG_EDITOR_ACTION => "action de l'éditeur (envoie/répond)",
+        self::TAG_AUTHOR_ACTION => "action de l'auteur (envoie/répond)"
     ];
 }

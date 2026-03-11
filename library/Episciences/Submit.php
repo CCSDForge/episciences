@@ -1285,7 +1285,7 @@ class Episciences_Submit
         }
 
         if ($translator) {
-            $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . $e->getMessage();
+            $result['error'] = '<b style="color: red;">' . $translator->translate('Erreur') . '</b> : ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
         } else {
             $result['error'] = $e->getMessage();
         }

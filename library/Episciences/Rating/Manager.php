@@ -107,9 +107,13 @@ class Episciences_Rating_Manager
             // note
             if ($criterion->hasOptions()) {
                 $notes = array();
-                $max = count($criterion->getOptions()) - 1;
+                $options = $criterion->getOptions();
+                if (empty($options)) {
+                    continue;
+                }
+                $max = count($options) - 1;
 
-                $cOptions = $criterion->getOptions();
+                $cOptions = $options;
                 // user language
                 $userLanguage = Episciences_Auth::getLangueid();
                 $locale = Episciences_Tools::getLocale();

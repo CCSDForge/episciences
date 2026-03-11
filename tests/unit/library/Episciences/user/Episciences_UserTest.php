@@ -608,4 +608,36 @@ class Episciences_UserTest extends TestCase
         $this->assertSame('en', $user->getLangueid());
         $this->assertSame('0000-0001-1234-5678', $user->getOrcid());
     }
+
+    // -------------------------------------------------------------------------
+    // Security S3 — XSS in getUserRoleForm() (source inspection)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Regression S3: SCREEN_NAME, USERNAME, EMAIL from DB were injected into HTML
+     * without htmlspecialchars(), allowing stored XSS.
+     * The fix wraps each value with htmlspecialchars(..., ENT_QUOTES, 'UTF-8').
+     */
+    public function testGetUserRoleFormEscapesUserFields(): void
+    {
+        $method = new \ReflectionMethod(Episciences_User::class, 'getUserRoleForm');
+        $lines = file($method->getFileName());
+        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        self::assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*\$user\[.SCREEN_NAME.\]/',
+            $source,
+            'Security S3: SCREEN_NAME must be escaped with htmlspecialchars() before HTML injection'
+        );
+        self::assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*\$user\[.USERNAME.\]/',
+            $source,
+            'Security S3: USERNAME must be escaped with htmlspecialchars() before HTML injection'
+        );
+        self::assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*\$user\[.EMAIL.\]/',
+            $source,
+            'Security S3: EMAIL must be escaped with htmlspecialchars() before HTML injection'
+        );
+    }
 }

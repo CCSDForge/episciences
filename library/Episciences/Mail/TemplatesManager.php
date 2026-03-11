@@ -27,7 +27,7 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY = 'paper_comment_answer_editor_copy';
     public const TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY = 'paper_comment_author_copy';
     public const TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY = 'paper_comment_editor_copy'; // existe mais pas encore exploiter
-    public const TYPE_PAPER_EDITOR_RESPONSE_TO_AUTHOR_AUTHOR_COPY = 'paper_editor_response_to_author_author_copy';
+    public const TYPE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR_AUTHOR_COPY = 'paper_comment_from_editor_to_author_author_copy';
     public const TYPE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_EDITOR_COPY = 'paper_comment_from_author_to_editor_editor_copy';
     public const TYPE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_COAUTHOR_COPY = 'paper_comment_from_author_to_editor_coauthor_copy';
 
@@ -347,7 +347,7 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_PAPER_URL
     ];
 
-    public const paper_editor_response_to_author_author_copy_tags = [
+    public const paper_comment_from_editor_to_author_author_copy_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
@@ -361,7 +361,8 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_COMMENT,
         Episciences_Mail_Tags::TAG_COMMENT_DATE,
         Episciences_Mail_Tags::TAG_ANSWER,
-        Episciences_Mail_Tags::TAG_PAPER_URL
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_EDITOR_ACTION
     ];
 
     public const paper_comment_from_author_to_editor_editor_copy_tags = [
@@ -380,6 +381,7 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
         Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME,
         Episciences_Mail_Tags::TAG_ARTICLE_RELATIONSHIP,
+        Episciences_Mail_Tags::TAG_AUTHOR_ACTION,
     ];
 
     public const paper_comment_from_author_to_editor_coauthor_copy_tags = [
@@ -398,6 +400,7 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_SENDER_FULL_NAME,
         Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME,
         Episciences_Mail_Tags::TAG_ARTICLE_RELATIONSHIP,
+        Episciences_Mail_Tags::TAG_AUTHOR_ACTION,
     ];
 
     public const paper_comment_from_reviewer_to_contributor_author_copy_tags = [
@@ -1569,7 +1572,7 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_EDITOR_UNASSIGN => [self::DESCRIPTION => 'notification informant le rédacteur que son assignation à un article a été retirée', self::RECIPIENT => "le rédacteur dont l'assignation a été supprimée"],
         self::TYPE_PAPER_ASK_OTHER_EDITORS => [self::DESCRIPTION => "demande d'avis d'un rédacteur sur l'article", self::RECIPIENT => 'rédacteurs'],
         self::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY => [self::DESCRIPTION => "notification informant le relecteur de la réponse de l'auteur suite à son commentaire", self::RECIPIENT => "relecteur (demandeur)"],
-        self::TYPE_PAPER_EDITOR_RESPONSE_TO_AUTHOR_AUTHOR_COPY => [self::DESCRIPTION => "notification informant l'auteur de la réponse de l'éditeur suite à son message", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
+        self::TYPE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR_AUTHOR_COPY => [self::DESCRIPTION => "notification informant l'auteur d'un message de l'éditeur", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY => [self::DESCRIPTION => "notification informant le comité éditorial quand un rédacteur commente un article", self::RECIPIENT => self::MANAGERS_COPY_EDITORS_EXCEPTED_EXP],
         self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY => [self::DESCRIPTION => "notification informant l'auteur quand un relecteur poste un commentaire sur la page de son article", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY => [self::DESCRIPTION => "notification informant le comité éditorial quand un relecteur poste un commentaire sur la page de l'article", self::RECIPIENT => self::MANAGERS_COPY_EDITORS_EXCEPTED_EXP],
@@ -1730,7 +1733,9 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY,
         self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION,
         self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION,
-        self::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY
+        self::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY,
+        self::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR,
+        self::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR
     ];
 
     /**
@@ -1962,7 +1967,7 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY => self::paper_comment_from_reviewer_to_contributor_author_copy_tags,
             self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY => self::paper_comment_from_reviewer_to_contributor_editor_copy_tags,
             self::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY => self::paper_comment_answer_reviewer_copy_tags,
-            self::TYPE_PAPER_EDITOR_RESPONSE_TO_AUTHOR_AUTHOR_COPY => self::paper_editor_response_to_author_author_copy_tags,
+            self::TYPE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR_AUTHOR_COPY => self::paper_comment_from_editor_to_author_author_copy_tags,
             self::TYPE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_EDITOR_COPY => self::paper_comment_from_author_to_editor_editor_copy_tags,
             self::TYPE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_COAUTHOR_COPY => self::paper_comment_from_author_to_editor_coauthor_copy_tags,
             self::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY => self::paper_comment_answer_reviewer_copy_tags,

@@ -287,9 +287,9 @@ class Episciences_Mail_Sender
                 fclose($fileStream);
             }
 
-            $message = $mailPath . " : ERREUR - échec de l'envoi (" . ($this->mail[self::MAIL_ERRORS] + 1) . '/' . MAX_RETRIES . ')';
+            $message = $mailPath . " : ERREUR - échec de l'envoi (" . ((int)$this->mail[self::MAIL_ERRORS] + 1) . '/' . MAX_RETRIES . ')';
 
-            if ($this->mail[self::MAIL_ERRORS] < MAX_RETRIES) {
+            if ((int)$this->mail[self::MAIL_ERRORS] < MAX_RETRIES) {
                 $this->updateErrorsCount($mailPath . '/mail.xml');
             } else {
                 $this->moveDirectory($mailPath, $this->getPath() . 'log/' . $mail_directory);

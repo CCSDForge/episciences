@@ -1,7 +1,13 @@
 <?php $log = $this->log; ?>
 <?php $type = $log['detail']['comment']['type'] ?? null; ?>
 
-<?php if ($type === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE) : ?>
+<?php
+// Get email from live user data or fallback to stored log detail
+// Use ?: (Elvis) instead of ?? because we need to skip empty strings, not just null
+$senderEmail = !empty($this->user['email']) ? $this->user['email'] : (!empty($log['detail']['user']['email']) ? $log['detail']['user']['email'] : '');
+$senderFullname = !empty($this->user['fullname']) ? $this->user['fullname'] : (!empty($log['detail']['user']['fullname']) ? $log['detail']['user']['fullname'] : '');
+?>
+<?php if ($type === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) : ?>
     <!-- Display as email notification for editor-to-author response messages -->
     <table class="log-details">
         <tr>
@@ -11,9 +17,9 @@
         <tr>
             <td class="td-label"><?= $this->translate('De'); ?></td>
             <td class="small">
-                <?= $this->user['fullname']; ?>
-                <?php if (!empty($this->user['email'])) : ?>
-                    (<?= $this->user['email']; ?>)
+                <?= $this->escape($senderFullname); ?>
+                <?php if (!empty($senderEmail)) : ?>
+                    (<?= $this->escape($senderEmail); ?>)
                 <?php endif; ?>
             </td>
         </tr>
@@ -21,26 +27,41 @@
             <td class="td-label"><?= $this->translate('À'); ?></td>
             <td class="small">
                 <?php if (!empty($log['detail']['recipient']['fullname'])) : ?>
-                    <?= $log['detail']['recipient']['fullname']; ?>
+                    <?= $this->escape($log['detail']['recipient']['fullname']); ?>
                     <?php if (!empty($log['detail']['recipient']['email'])) : ?>
-                        (<?= $log['detail']['recipient']['email']; ?>)
+                        (<?= $this->escape($log['detail']['recipient']['email']); ?>)
                     <?php endif; ?>
                 <?php else : ?>
                     <?= $this->translate('Auteur'); ?>
                 <?php endif; ?>
             </td>
         </tr>
-        <?php if (!empty($log['detail']['co_authors_notified'])) : ?>
+        <?php if (!empty($log['detail']['co_authors_notified']) || !empty($log['detail']['editors_notified'])) : ?>
             <tr>
-                <td class="td-label"><?= $this->translate('CC'); ?></td>
+                <td class="td-label"><?= $this->translate('Cc'); ?></td>
                 <td class="small">
-                    <?php foreach ($log['detail']['co_authors_notified'] as $coAuthor) : ?>
-                        <?= $coAuthor['fullname']; ?>
-                        <?php if (!empty($coAuthor['email'])) : ?>
-                            (<?= $coAuthor['email']; ?>)
-                        <?php endif; ?>
-                        <br>
-                    <?php endforeach; ?>
+                    <?php
+                    $ccList = [];
+                    if (!empty($log['detail']['co_authors_notified'])) {
+                        foreach ($log['detail']['co_authors_notified'] as $coAuthor) {
+                            $coAuthorDisplay = $this->escape($coAuthor['fullname'] ?? '');
+                            if (!empty($coAuthor['email'])) {
+                                $coAuthorDisplay .= ' (' . $this->escape($coAuthor['email']) . ')';
+                            }
+                            $ccList[] = $coAuthorDisplay;
+                        }
+                    }
+                    if (!empty($log['detail']['editors_notified'])) {
+                        foreach ($log['detail']['editors_notified'] as $editor) {
+                            $editorDisplay = $this->escape($editor['fullname'] ?? '');
+                            if (!empty($editor['email'])) {
+                                $editorDisplay .= ' (' . $this->escape($editor['email']) . ')';
+                            }
+                            $ccList[] = $editorDisplay;
+                        }
+                    }
+                    echo implode(', ', $ccList);
+                    ?>
                 </td>
             </tr>
         <?php endif; ?>
@@ -67,18 +88,50 @@
         <tr>
             <td class="td-label"><?= $this->translate('De'); ?></td>
             <td class="small">
-                <?= $this->user['fullname']; ?>
-                <?php if (!empty($this->user['email'])) : ?>
-                    (<?= $this->user['email']; ?>)
+                <?= $this->escape($senderFullname); ?>
+                <?php if (!empty($senderEmail)) : ?>
+                    (<?= $this->escape($senderEmail); ?>)
                 <?php endif; ?>
             </td>
         </tr>
         <tr>
             <td class="td-label"><?= $this->translate('À'); ?></td>
             <td class="small">
-                <?= $this->translate('Éditeurs assignés'); ?>
+                <?php if (!empty($log['detail']['editors_notified'])) : ?>
+                    <?php
+                    $editorsList = [];
+                    foreach ($log['detail']['editors_notified'] as $editor) {
+                        $editorDisplay = $this->escape($editor['fullname'] ?? '');
+                        if (!empty($editor['email'])) {
+                            $editorDisplay .= ' (' . $this->escape($editor['email']) . ')';
+                        }
+                        $editorsList[] = $editorDisplay;
+                    }
+                    echo implode(', ', $editorsList);
+                    ?>
+                <?php else : ?>
+                    <?= $this->translate('Éditeurs assignés'); ?>
+                <?php endif; ?>
             </td>
         </tr>
+        <?php if (!empty($log['detail']['co_authors_notified'])) : ?>
+            <tr>
+                <td class="td-label"><?= $this->translate('Cc'); ?></td>
+                <td class="small">
+                    <?php
+                    $coAuthorsList = [];
+                    foreach ($log['detail']['co_authors_notified'] as $coAuthor) {
+                        $coAuthorDisplay = $this->escape($coAuthor['fullname'] ?? '');
+                        if (!empty($coAuthor['email'])) {
+                            $coAuthorDisplay .= ' (' . $this->escape($coAuthor['email']) . ')';
+                        }
+                        $coAuthorsList[] = $coAuthorDisplay;
+                    }
+                    echo implode(', ', $coAuthorsList);
+                    ?>
+                </td>
+            </tr>
+        <?php endif; ?>
         <tr>
             <td class="td-label"><?= $this->translate('Type'); ?></td>
             <td class="small">
@@ -102,14 +155,14 @@
         <tr>
             <td class="td-label"><?= ucfirst($this->translate('par')); ?></td>
             <td class="small">
-                <?= $this->user['fullname']; ?>
+                <?= $this->escape($this->user['fullname']); ?>
             </td>
         </tr>
         <?php if (array_key_exists('submitter', $log['detail'])) : ?>
             <tr>
                 <td class="td-label"><?= $this->translate('À'); ?></td>
                 <td class="small">
-                    <?= $log['detail']['submitter']['fullname']; ?>
+                    <?= $this->escape($log['detail']['submitter']['fullname']); ?>
                 </td>
             </tr>
         <?php endif; ?>
@@ -130,15 +183,10 @@
 <?php endif; ?>
 <?php
 $attachments = $log['detail']['comment']['file'];
-try {
-    $files = Episciences_Tools::isJson($attachments) ? (array)json_decode($attachments, true, 512, JSON_THROW_ON_ERROR) : (array)$attachments;
-} catch (JsonException $e) {
-    trigger_error($e->getMessage());
-    $files = [];
-} ?>
+$files = Episciences_Tools::isJson($attachments) ? (array)json_decode($attachments, true) : (array)$attachments; ?>
 <?php if (!empty($files)): ?>
     <hr>
-    <?php ?>
+    <?php if (is_array($files)): ?>
         <p class="small">
             <strong><?= $this->translate(['Fichier joint', 'Fichiers joints', count($files)]); ?> :</strong>
         </p>
@@ -148,20 +196,20 @@ try {
             $type = $log['detail']['comment']['type'];
             $docId = $log['detail']['comment']['docid'];
 
-            if ($type === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION) { // tmp version comments
+            if (in_array($type, [Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION])) { // tmp version comments
                 $attachmentUrl = 'tmp_files/' . $docId . '/' . $file;
-            } elseif (!in_array($type, array_merge(Episciences_CommentsManager::$_copyEditingRequestTypes, Episciences_CommentsManager::$_copyEditingAnswerTypes), true)) { //other comments
+            } elseif (!in_array($type, array_merge(Episciences_CommentsManager::$_copyEditingRequestTypes, Episciences_CommentsManager::$_copyEditingAnswerTypes))) { //other comments
                 $attachmentUrl = 'docfiles/comments/' . $docId . '/' . $file;
 
             } else { //copy editing comments
                 $attachmentUrl = 'docfiles/ce/' . $docId . '/' . $file . '/' . $log['detail']['comment']['pcid'];
             }
             ?>
-            <?= '<div class="small">' ?>
-            <?= '<a target="_blank" href="' .PREFIX_URL . $attachmentUrl . '">' ?>
-            <?= $file ?>
-            <?= '</a>' ?>
-            <?= '</div>' ?>
+            <?= '<div class="small">'; ?>
+            <?= '<a target="_blank" href="' .PREFIX_URL . $this->escape($attachmentUrl) . '">' ?>
+            <?= $this->escape($file); ?>
+            <?= '</a>'; ?>
+            <?= '</div>'; ?>
         <?php endforeach; ?>
-    <?php ?>
+    <?php endif; ?>
 <?php endif; ?>

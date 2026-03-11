@@ -11,8 +11,8 @@ class Episciences_Volume_Metadata
     private $_deletelist;
     private $_position;
 
-    private ?array $_title;
-    private ?array $_content;
+    private ?array $_title = null;
+    private ?array $_content = null;
     private ?string $date_creation = null;
     private string $date_updated;
 

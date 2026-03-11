@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performances
 -->
 
-## Unreleasedf
+## Unreleased
 
 ### Added
 * New supported servers:
@@ -120,7 +120,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Fixed
+* [#944](https://github.com/CCSDForge/episciences/issues/944): An author informed us that they received this message signed with their name: %%SENDER_FULL_NAME%% and %%RECIPIENT_SCREEN_NAME%% filled with the same value
 * [#258](https://github.com/CCSDForge/episciences-front/issues/258): Tables are not handled by default: Explicit table conversion
+* Fixed RT#277365: in order to correct the printing of extra lines, two options have been added to the TinyMCE configuration to insert a <br> instead of a <p> and another option to remove extra <br>s at the end of a block
 * Fixed tooltip initialization in volume and section assignment after AJAX refreshes and DataTable redraws.
 * Fixed Solr search engine indexation of Authors with a middle name.
 * Consider an additional review when sending reminders for an insufficient number of reviewers.

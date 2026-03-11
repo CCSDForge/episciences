@@ -133,7 +133,7 @@ class Episciences_Repositories
         $repositories = self::getRepositories();
         $template = $repositories[$repoId][self::REPO_IDENTIFIER] ?? null;
 
-        if (empty($template)) {
+        if ($template === null || $template === '') {
             return $template; // the OAI identifier is set to null in the database. an API call will be made instead of an OAI call
         }
 

@@ -57,14 +57,14 @@ class Episciences_CommentsManagerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * TYPE_AUTHOR_TO_EDITOR and TYPE_EDITOR_TO_AUTHOR_RESPONSE must equal 22 and 23.
+     * TYPE_AUTHOR_TO_EDITOR and TYPE_EDITOR_TO_AUTHOR must equal 22 and 23.
      *
      * These values are persisted in the database. Changing them would corrupt existing data.
      */
     public function testAuthorEditorTypeConstantValues(): void
     {
         $this->assertSame(22, Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR);
-        $this->assertSame(23, Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE);
+        $this->assertSame(23, Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR);
     }
 
     /**
@@ -75,9 +75,9 @@ class Episciences_CommentsManagerTest extends TestCase
         $labels = Episciences_CommentsManager::$_typeLabel;
 
         $this->assertArrayHasKey(Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR, $labels);
-        $this->assertArrayHasKey(Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE, $labels);
+        $this->assertArrayHasKey(Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR, $labels);
         $this->assertNotEmpty($labels[Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR]);
-        $this->assertNotEmpty($labels[Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE]);
+        $this->assertNotEmpty($labels[Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR]);
     }
 
     // ---------------------------------------------------------------
@@ -167,7 +167,7 @@ class Episciences_CommentsManagerTest extends TestCase
             Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT,
             // Author-editor communication types
             Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
-            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR_RESPONSE,
+            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
         ];
 
         foreach ($allTypes as $type) {

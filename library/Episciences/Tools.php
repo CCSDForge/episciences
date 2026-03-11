@@ -1359,9 +1359,9 @@ class Episciences_Tools
         $cHref = sprintf('%stmp_file/%s/', PREFIX_URL, $paperId);
 
         foreach ($result as $index => $fileName) {
-            $href = $cHref . $fileName;
-            $text .= '<a target="_blank" href="' . $href . '">';
-            $text .= $fileExp . ' ' . ($index + 1) . ' > ' . $fileName;
+            $href = $cHref . urlencode($fileName);
+            $text .= '<a target="_blank" href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '">';
+            $text .= $fileExp . ' ' . ($index + 1) . ' > ' . htmlspecialchars($fileName, ENT_QUOTES, 'UTF-8');
             $text .= '</a>';
             $text .= '</br>';
         }
