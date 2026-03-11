@@ -23,6 +23,9 @@ global.Sortable = {
     create: () => ({ el: null }),
 };
 
+// Stub JS_PREFIX_URL global used in saveOrder, addPage, deletePage
+global.JS_PREFIX_URL = '/';
+
 // ---------------------------------------------------------------------------
 // Load the module under test
 // ---------------------------------------------------------------------------
