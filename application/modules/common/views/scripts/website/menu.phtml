@@ -61,6 +61,10 @@ $this->jQuery()
 <form action="<?= $this->url(['controller' => 'website', 'action' => 'menu']) ?>" enctype="multipart/form-data"
       method="post" class="form-horizontal">
     <input type="hidden" name="csrf_token" value="<?php echo $this->escape($this->csrfToken); ?>">
+    <p class="text-muted small">
+        <span role="img" aria-hidden="true">🛈</span>
+        <?php echo $this->escape($this->translate('Page prédéfinie')) ?>
+    </p>
     <ul class="menu-sortable" role="tree"
         aria-label="<?php echo $this->escape($this->translate('Structure du menu')) ?>">
         <?php foreach ($this->order as $key => $value) {

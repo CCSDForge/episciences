@@ -15,11 +15,10 @@
         <?php endif; ?>
     </span>
     <div class="menu-item-label">
-        <span class="menu-item-name"><?php echo $this->escape($this->page->getLabel(Zend_Registry::get('lang'))) ?></span>
+        <span class="menu-item-name"><?php echo $this->escape($this->page->getLabel(Zend_Registry::get('lang'))) ?><?php if ($this->page instanceof Episciences_Website_Navigation_Page_Predefined): ?> <span role="img" aria-label="<?php echo $this->escape($this->translate('Page prédéfinie')) ?>">🛈</span><?php endif; ?></span>
         <div class="menu-edit-form"
              id="form-<?= (int)$this->i ?>"
              <?php echo (isset($this->pagesDisplay[$this->i]) && $this->pagesDisplay[$this->i]) ? '' : 'hidden' ?>>
-            <hr/>
             <?php include __DIR__ . "/menu-page-form.phtml"; ?>
         </div>
     </div>
