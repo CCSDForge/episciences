@@ -51,21 +51,26 @@ if (!$id) {
                   isset($comment['TYPE']) &&
                   ($comment['TYPE'] == Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR ||
                    $comment['TYPE'] == Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR)) : ?>
-            <div class="reply-to-indicator">
+            <?php
+                $replyToName = $this->escape($comment['REPLY_TO_INFO']['SCREEN_NAME']);
+                $replyToDateFormatted = $this->Date($comment['REPLY_TO_INFO']['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT);
+                $replyToDatetime = date('c', strtotime($comment['REPLY_TO_INFO']['WHEN']));
+            ?>
+            <aside class="reply-to-indicator"
+                   role="note"
+                   aria-label="<?= $this->translate('En réponse à') ?> <?= $replyToName ?>, <?= $replyToDateFormatted ?>">
                 <i class="fa fa-reply" aria-hidden="true"></i>
                 <strong><?= $this->translate('Répond à :') ?></strong>
-                <span class="reply-to-name">
-                    <?= $this->escape($comment['REPLY_TO_INFO']['SCREEN_NAME']) ?>
-                </span>
-                <span class="reply-to-date">
-                    (<?= $this->Date($comment['REPLY_TO_INFO']['WHEN'], null, Zend_Date::DATE_SHORT . ' - ' . Zend_Date::TIME_SHORT) ?>)
-                </span>
+                <span class="reply-to-name"><?= $replyToName ?></span>
+                <time class="reply-to-date" datetime="<?= $replyToDatetime ?>">
+                    (<?= $replyToDateFormatted ?>)
+                </time>
                 <?php if (!empty($comment['REPLY_TO_INFO']['MESSAGE_PREVIEW'])) : ?>
                     <div class="reply-to-preview">
                         "<?= $this->escape($comment['REPLY_TO_INFO']['MESSAGE_PREVIEW']) ?><?= mb_strlen(strip_tags($comment['REPLY_TO_INFO']['MESSAGE_PREVIEW'])) >= 100 ? '...' : '' ?>"
                     </div>
                 <?php endif; ?>
-            </div>
+            </aside>
         <?php endif; ?>
 
         <!-- Comment message -->
