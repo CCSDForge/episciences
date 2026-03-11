@@ -1,9 +1,9 @@
 <?php
 $this->jQuery()
-    ->addStylesheet('/css/website/menu.css')
-    ->addJavascriptFile(VENDOR_SORTABLE_JS)
-    ->addJavascriptFile('/js/website/menu-manager.js')
-    ->addJavascriptFile('/js/website/menu.js');
+        ->addStylesheet('/css/website/menu.css')
+        ->addJavascriptFile(VENDOR_SORTABLE_JS)
+        ->addJavascriptFile('/js/website/menu-manager.js')
+        ->addJavascriptFile('/js/website/menu.js');
 ?>
 <meta name="csrf-token" content="<?php echo $this->escape($this->csrfToken); ?>">
 
@@ -13,18 +13,31 @@ $this->jQuery()
 <div class="menu-toolbar">
     <label for="type" class="menu-toolbar__label"><?php echo $this->translate("Type de page") ?></label>
     <select name="type" id="type" class="menu-toolbar__select">
-        <?php foreach ($this->pageTypes as $type => $label) {
-            $disabled = '';
-            foreach ($this->pages as $page) {
-                if ($label == get_class($page) && !$page->isMultiple()) {
-                    $disabled = ' disabled="disabled"';
-                    break;
-                }
-            }
-            ?>
-            <option value="<?php echo $this->escape($type); ?>" <?php echo $disabled; ?>
-                    type="<?php echo $this->escape($label); ?>"><?php echo $this->escape($this->translate($label)); ?></option>
-        <?php } ?>
+        <option value=""><?= $this->translate('Choisissez une page') ?></option>
+        <?php foreach ($this->groupedPageTypes as $group => $types) : ?>
+            <optgroup label="<?= $this->translate($group) ?>">
+                <?php foreach ($types as $type) :
+
+                    $label = sprintf('Episciences_Website_Navigation_Page_%s', ucfirst($type));
+                    $disabled = '';
+
+                    foreach ($this->pages as $page) {
+                        if ($label === get_class($page) && !$page->isMultiple()) {
+                            //La page est déjà ajoutée et non multiple
+                            $disabled = ' disabled = "disabled"';
+                            break;
+                        }
+                    }
+
+                    ?>
+
+                    <option value="<?= $this->escape($type) ?>" <?= $disabled ?>
+                            type="<?= $this->escape($label) ?>"><?= $this->translate($this->escape($label)) ?><?php if (!empty($this->predefinedPageTypes[$type])): ?> 🛈 <?php endif; ?>
+                    </option>
+
+                <?php endforeach; ?>
+            </optgroup>
+        <?php endforeach; ?>
     </select>
     <button type="button" class="btn btn-primary menu-toolbar__btn"
             aria-label="<?php echo $this->escape($this->translate('Ajouter la page')) ?>"
@@ -45,9 +58,11 @@ $this->jQuery()
 <div aria-live="polite" aria-atomic="true" class="sr-only" id="menu-announcer"></div>
 
 <?php //Liste des pages ?>
-<form action="<?= $this->url(['controller' => 'website', 'action' => 'menu']) ?>" enctype="multipart/form-data" method="post" class="form-horizontal">
+<form action="<?= $this->url(['controller' => 'website', 'action' => 'menu']) ?>" enctype="multipart/form-data"
+      method="post" class="form-horizontal">
     <input type="hidden" name="csrf_token" value="<?php echo $this->escape($this->csrfToken); ?>">
-    <ul class="menu-sortable" role="tree" aria-label="<?php echo $this->escape($this->translate('Structure du menu')) ?>">
+    <ul class="menu-sortable" role="tree"
+        aria-label="<?php echo $this->escape($this->translate('Structure du menu')) ?>">
         <?php foreach ($this->order as $key => $value) {
             $this->i = $key;
             if (!isset($this->pages[$key])) {
@@ -115,7 +130,8 @@ $this->jQuery()
     <div id="clone" hidden>
         <li class="">
             <div class="menu-item">
-                <button type="button" class="menu-drag-handle" aria-label="<?php echo $this->escape($this->translate('Déplacer')) ?>">
+                <button type="button" class="menu-drag-handle"
+                        aria-label="<?php echo $this->escape($this->translate('Déplacer')) ?>">
                     <span aria-hidden="true">⠿</span>
                 </button>
                 <span class="menu-item-type-icon" aria-hidden="true">
@@ -142,7 +158,7 @@ $this->jQuery()
     </div>
 
     <div class="form-actions text-center">
-        <a href="<?= $this->url(['controller' => 'website', 'action' => 'reset'])?>">
+        <a href="<?= $this->url(['controller' => 'website', 'action' => 'reset']) ?>">
             <button type="button" class="btn btn-default btn-sm"><?= $this->translate('Annuler') ?></button>
         </a>
         <button type="submit" class="btn btn-primary"><?= $this->translate('Enregistrer') ?></button>
@@ -151,7 +167,7 @@ $this->jQuery()
 </form>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    window._menuManager = new MenuManager(document.querySelector('.menu-sortable'));
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        window._menuManager = new MenuManager(document.querySelector('.menu-sortable'));
+    });
 </script>
