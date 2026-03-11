@@ -50,12 +50,18 @@ class Ccsd_Form_Validate_Date extends Zend_Validate_Date {
     );
 
     /**
-     * Optional minimum date (included)
+     * Optional minimum date (included). Holds a DateTime during validation,
+     * temporarily formatted to string for error messages, then restored.
      *
-     * @var string|null
+     * @var DateTime|string|null
      */
     protected $_start;
-    /** @var string */
+
+    /**
+     * Optional maximum date (included). Same lifecycle as $_start.
+     *
+     * @var DateTime|string|null
+     */
     protected $_end;
     /**
      * Optional minimum date format / Required if $_start given
@@ -105,7 +111,7 @@ class Ccsd_Form_Validate_Date extends Zend_Validate_Date {
     /**
      * @return DateTime|string|null
      */
-    private function getEnd() {
+    protected function getEnd() {
         return $this->_end;
     }
 
@@ -141,7 +147,7 @@ class Ccsd_Form_Validate_Date extends Zend_Validate_Date {
      * @return Zend_Validate_Date provides a fluent interface
      * @throws Zend_Date_Exception
      */
-    private function setEnd($end = null)
+    protected function setEnd($end = null)
     {
         if (isset ($end) && !isset ($this->_endFormat)) {
             throw new Zend_Date_Exception("Maximum date format : null given, string expected");
@@ -174,7 +180,7 @@ class Ccsd_Form_Validate_Date extends Zend_Validate_Date {
      *
      * @return string|null
      */
-    private function getEndFormat()
+    protected function getEndFormat()
     {
         return $this->_endFormat;
     }
@@ -224,7 +230,8 @@ class Ccsd_Form_Validate_Date extends Zend_Validate_Date {
         //Premier test de validation : le format d la valeur donnée
         foreach ($this->_format as $format) {
             if (($date = DateTime::createFromFormat($format, $tovalidvalue)) instanceof DateTime) {
-                $formatIsValid =  $date->format($format) == $tovalidvalue;
+                // D2 fix: use strict comparison to avoid type-juggling false positives
+                $formatIsValid =  $date->format($format) === $tovalidvalue;
                 $valid = $valid || $formatIsValid;
                 if ($valid === FALSE) {
                     $default_error = self::INVALID_DATE;
@@ -242,18 +249,22 @@ class Ccsd_Form_Validate_Date extends Zend_Validate_Date {
         $date = $this->_value;
 
         $start = $this->getStart();
-        if ($valid && isset ($date) && isset ($start) && $start->getTimeStamp() > $date->getTimeStamp()) {
+        // D3 fix: guard instanceof DateTime before calling getTimestamp(); also restore
+        // $_start after _error() so repeated isValid() calls do not corrupt state.
+        if ($valid && isset ($date) && $start instanceof DateTime && $start->getTimeStamp() > $date->getTimeStamp()) {
             $this->_setValue($value);
             $this->_start = $start->format($this->getStartFormat());
             $this->_error(self::WRONGDATE);
+            $this->_start = $start; // restore DateTime for subsequent calls
             $valid = false;
         }
 
         $end = $this->getEnd();
-        if ($valid && isset ($date) && isset ($end) && $end->getTimeStamp() < $date->getTimeStamp()) {
+        if ($valid && isset ($date) && $end instanceof DateTime && $end->getTimeStamp() < $date->getTimeStamp()) {
             $this->_setValue($value);
             $this->_end = $end->format($this->getEndFormat());
             $this->_error(self::WRONGDATE);
+            $this->_end = $end; // restore DateTime for subsequent calls
             $valid = false;
 
         }
