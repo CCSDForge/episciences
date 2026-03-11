@@ -164,8 +164,8 @@ $(function () {
 
         $result_container.html(
             '<div class="panel panel-default"><div class="panel-body">' +
-                getLoader() +
-                '</div></div>'
+            getLoader() +
+            '</div></div>'
         );
         if ($result_container.css('display') === 'none') {
             $result_container.fadeIn();
@@ -194,7 +194,6 @@ $(function () {
 
     // display the document if it has been found
     function showResult(result) {
-        console.log(result);
 
         let message = '';
 
@@ -208,39 +207,44 @@ $(function () {
             toggleDD('file_data_descriptor', result['ddOptions']);
 
             if ('conceptIdentifier' in result) {
-                $submit_form.append(
-                    '<input id = "concept_identifier" type="hidden" name="concept_identifier" value="' +
-                        result.conceptIdentifier +
-                        '">'
-                );
+                $('<input>', {
+                    type: 'hidden',
+                    name: 'concept_identifier',
+                    value: result.conceptIdentifier
+                }).appendTo($submit_form);
             }
 
             if ('update' in result) {
-                $submit_form.append(
-                    '<input id = "update" type="hidden" name="update" value="' +
-                    result.update +
-                    '">'
-                );
+                $('<input>', {
+                    type: 'hidden',
+                    name: 'update',
+                    value: result.update
+                }).appendTo($submit_form);
             }
 
             if ('hookVersion' in result) {
-                $submit_form.append(
-                    '<input id = "h_version" type="hidden" name="h_version" value="' + result.hookVersion + '">'
-                );
+                $('<input>', {
+                    type: 'hidden',
+                    name: 'h_version',
+                    value: result.hookVersion
+                }).appendTo($submit_form);
             }
 
             if ('hookId' in result) {
-                $submit_form.append(
-                    '<input id = "h_doc" type="hidden" name="h_doc" value="' + result.hookId + '">'
-                );
+                $('<input>', {
+                    type: 'hidden',
+                    name: 'h_doc',
+                    value: result.hookId
+                }).appendTo($submit_form);
             }
 
             if ('hookRepoId' in result) {
-                $submit_form.append(
-                    '<input id = "h_repoId" type="hidden" name="h_repoId" value="' + result.hookRepoId + '">'
-                );
+                $('<input>', {
+                    type: 'hidden',
+                    name: 'h_repoId',
+                    value: result.hookRepoId
+                }).appendTo($submit_form);
             }
-
 
             // document found: hide search form
             $search_form.hide();
@@ -249,60 +253,75 @@ $(function () {
             if (result['status'] === 2) {
                 if ('newVerErrors' in result) {
                     let newVersionErrors = JSON.parse(result['newVerErrors']);
-                    $submit_form.append(
-                        '<input type="hidden" name="can_replace" value="' +
-                            newVersionErrors.canBeReplaced +
-                            '">'
-                    );
+
+                    $('<input>', {
+                        type: 'hidden',
+                        name: 'can_replace',
+                        value: newVersionErrors.canBeReplaced
+                    }).appendTo($submit_form);
+
                     if (newVersionErrors.canBeReplaced) {
-                        $submit_form.append(
-                            '<input id = "old_docid" type="hidden" name="old_docid" value="' +
-                                newVersionErrors.oldDocId +
-                                '">'
-                        );
-                        $submit_form.append(
-                            '<input id = "old_identifier" type="hidden" name="old_identifier" value="' +
-                                newVersionErrors.oldIdentifier +
-                                '">'
-                        );
-                        $submit_form.append(
-                            '<input id = "old_version" type="hidden" name="old_version" value="' +
-                                newVersionErrors.oldVersion +
-                                '">'
-                        );
-                        $submit_form.append(
-                            '<input id = "old_repoid" type="hidden" name="old_repoid" value="' +
-                                newVersionErrors.oldRepoId +
-                                '">'
-                        );
-                        $submit_form.append(
-                            '<input id = "old_paper_status" type="hidden" name="old_paper_status" value="' +
-                                newVersionErrors.oldPaperStatus +
-                                '">'
-                        );
-                        $submit_form.append(
-                            '<input id = "old_paper_sid" type="hidden" name="old_paper_sid" value="' +
-                                newVersionErrors.oldSid +
-                                '">'
-                        );
-                        $submit_form.append(
-                            '<input id = "old_paper_vid" type="hidden" name="old_paper_vid" value="' +
-                                newVersionErrors.oldVid +
-                                '">'
-                        );
+
+                        $('<input>', {
+                            type: 'hidden',
+                            name: 'old_docid',
+                            value: newVersionErrors.oldDocId
+                        }).appendTo($submit_form);
+
+                        $('<input>', {
+                            type: 'hidden',
+                            name: 'old_identifier',
+                            value: newVersionErrors.oldIdentifier
+                        }).appendTo($submit_form);
+
+                        $('<input>', {
+                            type: 'hidden',
+                            name: 'old_version',
+                            value: newVersionErrors.oldVersion
+                        }).appendTo($submit_form);
+
+                        $('<input>', {
+                            type: 'hidden',
+                            name: 'old_repoid',
+                            value: newVersionErrors.oldRepoId
+                        }).appendTo($submit_form);
+
+                        $('<input>', {
+                            type: 'hidden',
+                            name: 'old_paper_status',
+                            value: newVersionErrors.oldPaperStatus
+                        }).appendTo($submit_form);
+
+                        $('<input>', {
+                            type: 'hidden',
+                            name: 'old_paper_sid',
+                            value: newVersionErrors.oldSid
+                        }).appendTo($submit_form);
+
+                        $('<input>', {
+                            type: 'hidden',
+                            name: 'old_paper_vid',
+                            value: newVersionErrors.oldVid
+                        }).appendTo($submit_form);
+
+
                         if (newVersionErrors.oldPaperId) {
-                            $submit_form.append(
-                                '<input id= "old_paperid" type="hidden" name="old_paperid" value="' +
-                                    newVersionErrors.oldPaperId +
-                                    '">'
-                            );
+
+                            $('<input>', {
+                                type: 'hidden',
+                                name: 'old_paperid',
+                                value: newVersionErrors.oldPaperId
+                            }).appendTo($submit_form);
+
                         }
                         if (newVersionErrors.submissionDate) {
-                            $submit_form.append(
-                                '<input id = "old_submissiondate" type="hidden" name="old_submissiondate" value="' +
-                                    newVersionErrors.submissionDate +
-                                    '">'
-                            );
+
+                            $('<input>', {
+                                type: 'hidden',
+                                name: 'old_submissiondate',
+                                value: newVersionErrors.submissionDate
+                            }).appendTo($submit_form);
+
                         }
                     }
 
@@ -374,10 +393,10 @@ $(function () {
     function fail(response = null) {
         let message = !response
             ? '<div class="panel panel-danger"><div class="panel-body">' +
-              translate(
-                  "Une erreur s'est produite pendant la récupération des informations. Parfois l'archive ouverte ne répond pas assez vite. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue."
-              ) +
-              '</div></div>'
+            translate(
+                "Une erreur s'est produite pendant la récupération des informations. Parfois l'archive ouverte ne répond pas assez vite. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue."
+            ) +
+            '</div></div>'
             : response;
         $result_container.html(message);
         $search_button.prop('disabled', false);

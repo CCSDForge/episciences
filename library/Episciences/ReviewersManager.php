@@ -24,7 +24,7 @@ class Episciences_ReviewersManager
         $select = $db->select()
             ->from(T_PAPER_SETTINGS, 'value')
             ->where('DOCID = ?', $docid)
-            ->where('SETTING = \'suggestedReviewer\'');
+            ->where('SETTING = ?', 'suggestedReviewer');
 
         return $db->fetchCol($select);
     }
@@ -40,7 +40,7 @@ class Episciences_ReviewersManager
         $select = $db->select()
             ->from(T_PAPER_SETTINGS, 'value')
             ->where('DOCID = ?', $docid)
-            ->where('SETTING = \'unwantedReviewer\'');
+            ->where('SETTING = ?', 'unwantedReviewer');
 
         return $db->fetchCol($select);
     }
@@ -150,10 +150,15 @@ class Episciences_ReviewersManager
      * @return bool
      */
 
-    public static function addReviewerToPool($uid, $vid = 0, $rvid = RVID)
+    public static function addReviewerToPool($uid, $vid = 0, $rvid = RVID): bool
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $db->query('INSERT IGNORE INTO ' . T_REVIEWER_POOL . ' (RVID, VID, UID) VALUES (?, ?, ?)', array($rvid, $vid, $uid));
+        try {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $db->query('INSERT IGNORE INTO ' . T_REVIEWER_POOL . ' (RVID, VID, UID) VALUES (?, ?, ?)', [$rvid, $vid, $uid]);
+        } catch (Exception $e) {
+            error_log($e->getMessage());
+            return false;
+        }
         return true;
     }
 

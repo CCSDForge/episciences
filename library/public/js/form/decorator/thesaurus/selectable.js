@@ -8,7 +8,7 @@ var fct_click_check_%%IDFILTER%% = function (event, b) {
     var tooltip = document.createElement("DIV");
     
     function create_tooltip ( root, item ) {	
-    	var label = $(item).find('.libelle:first').html(), span = document.createElement("SPAN");
+    	var label = $(item).find('.libelle:first').text(), span = document.createElement("SPAN");
         span.appendChild(document.createTextNode(label));
 
     	root.insertBefore (span, root.childNodes[0]);
@@ -40,7 +40,7 @@ var fct_click_check_%%IDFILTER%% = function (event, b) {
 
         tooltip.setAttribute('style', 'text-align: left;');
         
-        addSelectedItem_%%IDFILTER%%($(this).closest('li').find('input:first').val(), tooltip.innerHTML, $(this).closest('li').find('.libelle:first').html(), b);
+        addSelectedItem_%%IDFILTER%%($(this).closest('li').find('input:first').val(), tooltip.innerHTML, $(this).closest('li').find('.libelle:first').text(), b);
         
     } else {
     	

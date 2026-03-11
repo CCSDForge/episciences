@@ -44,8 +44,8 @@ class Episciences_Section
      * @var int
      */
     private int $_position = 0;
-    private ?array $titles;
-    private ?array $descriptions;
+    private ?array $titles = null;
+    private ?array $descriptions = null;
     private $_settings = [];
     /**
      * @var array of Episciences_Editor

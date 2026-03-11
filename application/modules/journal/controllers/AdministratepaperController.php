@@ -9,6 +9,7 @@ require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultControl
  */
 class AdministratepaperController extends PaperDefaultController
 {
+    use Episciences_Paper_AuthorEditorCommunicationControllerTrait;
     public const ACTION_ASSIGNED = 'assigned';
     public const DATATABLE_COLUMNS = [
         '0' => 'paperid',
@@ -189,21 +190,21 @@ class AdministratepaperController extends PaperDefaultController
                 E_USER_WARNING
             );
             echo json_encode([
-                'doi'           => 'Error',
-                'doi_status'    => 'Error',
-                'feedback'      => '',
+                'doi' => 'Error',
+                'doi_status' => 'Error',
+                'feedback' => '',
                 'error_message' => 'Unauthorized access',
             ]);
             return;
         }
 
         // Validate and sanitize the document identifier.
-        $docId = (int) $request->getPost('docid');
+        $docId = (int)$request->getPost('docid');
         if ($docId <= 0) {
             echo json_encode([
-                'doi'           => 'Error',
-                'doi_status'    => 'Error',
-                'feedback'      => '',
+                'doi' => 'Error',
+                'doi_status' => 'Error',
+                'feedback' => '',
                 'error_message' => $this->view->translate('Invalid document identifier.'),
             ]);
             return;
@@ -214,9 +215,9 @@ class AdministratepaperController extends PaperDefaultController
         $paper = Episciences_PapersManager::get($docId);
         if (!$paper instanceof Episciences_Paper) {
             echo json_encode([
-                'doi'           => 'Error',
-                'doi_status'    => 'Error',
-                'feedback'      => '',
+                'doi' => 'Error',
+                'doi_status' => 'Error',
+                'feedback' => '',
                 'error_message' => $this->view->translate('Document not found.'),
             ]);
             return;
@@ -224,9 +225,9 @@ class AdministratepaperController extends PaperDefaultController
 
         if (!$paper->canBeAssignedDOI()) {
             echo json_encode([
-                'doi'           => 'Error',
-                'doi_status'    => 'Error',
-                'feedback'      => '',
+                'doi' => 'Error',
+                'doi_status' => 'Error',
+                'feedback' => '',
                 'error_message' => $this->view->translate('Le statut du document ne permet pas de lui assigner un DOI'),
             ]);
             return;
@@ -234,15 +235,15 @@ class AdministratepaperController extends PaperDefaultController
 
         $resCreateDoi = Episciences_Paper::createPaperDoi(RVID, $paper);
 
-        $doi          = 'Error';
-        $doiStatus    = 'Error';
-        $feedback     = '';
+        $doi = 'Error';
+        $doiStatus = 'Error';
+        $feedback = '';
         $errorMessage = '';
-        $doiStr       = '';
+        $doiStr = '';
 
         if ($resCreateDoi['resUpdateDoi'] > 0) {
-            $doiStr    = trim($resCreateDoi['doi'] ?? '');
-            $doi       = Episciences_View_Helper_DoiAsLink::DoiAsLink($resCreateDoi['doi']);
+            $doiStr = trim($resCreateDoi['doi'] ?? '');
+            $doi = Episciences_View_Helper_DoiAsLink::DoiAsLink($resCreateDoi['doi']);
             $feedback .= ' ' . $this->view->translate('DOI créé.');
         } else {
             $errorMessage .= ' ' . $this->view->translate('Erreur lors de la creation du DOI.');
@@ -267,10 +268,10 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         echo json_encode([
-            'doi'           => trim($doi),
-            'doiStr'        => $doiStr,
-            'doi_status'    => trim($doiStatus),
-            'feedback'      => trim($feedback),
+            'doi' => trim($doi),
+            'doiStr' => $doiStr,
+            'doi_status' => trim($doiStatus),
+            'feedback' => trim($feedback),
             'error_message' => trim($errorMessage),
         ]);
     }
@@ -648,7 +649,10 @@ class AdministratepaperController extends PaperDefaultController
             $editor_comment_form = Episciences_CommentsManager::getForm('editor_comment_form');
             $this->view->editor_comment_form = $editor_comment_form;
 
-            if (($request->getPost('postComment') !== null) && $editor_comment_form->isValid($request->getPost())) {
+            // Only process editor comment form if it's not a reply form (reply forms have reply_to_pcid)
+            if (($request->getPost('postComment') !== null) && 
+                empty($request->getPost('reply_to_pcid')) && 
+                $editor_comment_form->isValid($request->getPost())) {
                 if ($this->save_editor_comment($paper)) {
                     $message = $this->view->translate("Votre commentaire a bien été envoyé.");
                     $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
@@ -924,6 +928,46 @@ class AdministratepaperController extends PaperDefaultController
             $enabledBib = true;
         }
         $this->view->enabledBib = $enabledBib;
+
+        // Author to editor communication ******************************************************
+        $authorToEditorComments = [];
+        $editorReplyForms = [];
+        $editorToAuthorForm = null;
+
+        // Use shared service for author-editor communication
+        $commService = new Episciences_Paper_AuthorEditorCommunicationService(
+            $paper,
+            $review,
+            Episciences_Paper_AuthorEditorCommunicationService::CONTROLLER_ADMINISTRATEPAPER
+        );
+
+        if ($commService->canAuthorContactEditors()) {
+            // Load existing author-to-editor comments
+            $authorToEditorComments = $commService->loadComments();
+
+            // Only assigned editors can send messages and respond
+            if ($paper->getEditor(Episciences_Auth::getUid())) {
+                $authCallback = fn() => (bool)$paper->getEditor(Episciences_Auth::getUid());
+
+                //Handle form submissions (main message or reply) via trait
+                $this->handleCommunicationSubmission($paper, $commService, $authCallback, self::ADMINISTRATE_PAPER_CONTROLLER);
+
+                // Create main form for editor to initiate contact with author (if not a POST)
+               $postData = $request->getPost();
+               if (!isset($postData['postComment'])) {
+                    $editorToAuthorForm = $commService->createMainForm('editorToAuthorForm');
+                }
+
+                // Create reply forms for reding
+                if (!empty($authorToEditorComments)) {
+                    $editorReplyForms = $commService->createEditorReplyForms($authorToEditorComments);
+                }
+            }
+        }
+
+        $this->view->editorReplyForms = $editorReplyForms;
+        $this->view->editorToAuthorForm = $editorToAuthorForm;
+        $this->view->authorToEditorComments = $authorToEditorComments;
     }
 
     /**
@@ -1212,6 +1256,7 @@ class AdministratepaperController extends PaperDefaultController
         //Notifications
         return $this->newCommentNotifyManager($paper, $oComment);
     }
+
 
     /**
      * @param int $docId
@@ -3155,9 +3200,9 @@ class AdministratepaperController extends PaperDefaultController
             return;
         }
 
-        $docId   = (int) $request->getPost('docid');
-        $paperId = (int) $request->getPost('paperid');
-        $doi     = trim((string) $request->getPost('doi'));
+        $docId = (int)$request->getPost('docid');
+        $paperId = (int)$request->getPost('paperid');
+        $doi = trim((string)$request->getPost('doi'));
 
         if ($docId <= 0 || $paperId <= 0) {
             echo json_encode(['success' => false, 'doi' => '', 'error' => 'Invalid document ID']);
@@ -3190,7 +3235,7 @@ class AdministratepaperController extends PaperDefaultController
         // Add or update the DOI queue entry with STATUS_ASSIGNED so the badge
         // and "Cancel the DOI" button are shown in the UI after a manual save.
         $doiQueueEntry = new Episciences_Paper_DoiQueue([
-            'paperid'    => $paperId,
+            'paperid' => $paperId,
             'doi_status' => Episciences_Paper_DoiQueue::STATUS_ASSIGNED,
         ]);
         $existingQueue = Episciences_Paper_DoiQueueManager::findByPaperId($paperId);
@@ -4797,6 +4842,8 @@ class AdministratepaperController extends PaperDefaultController
                     $latestVersionDateTime = $hookApiRecord[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
                     $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($paper->getIdentifier());
                     $latestIdentifier = sprintf('%s/%s', $paper->getConcept_identifier(), $latestVersionDateTime);
+                    // This behavior is intentional because a submission without a specific version is the most recent version.
+                    // If the paper does not yet have a datetime in its identifier, getDateTimePattern() returns ''.
                     if ($latestVersionDateTime > $previousPaperVersionDateTime) {
                         $versions[] = $latestIdentifier;
                     }
@@ -4941,8 +4988,8 @@ class AdministratepaperController extends PaperDefaultController
             return;
         }
 
-        $paperId = (int) $request->getPost('paperId');
-        $docId   = (int) $request->getPost('docId');
+        $paperId = (int)$request->getPost('paperId');
+        $docId = (int)$request->getPost('docId');
 
         if ($paperId <= 0 || $docId <= 0) {
             echo json_encode(['success' => false, 'error' => 'Invalid document ID']);
@@ -4970,7 +5017,7 @@ class AdministratepaperController extends PaperDefaultController
         // it means the DOI field was already empty (idempotent operation).
         Episciences_PapersManager::updateDoi('', $paperId);
 
-        $doi = trim((string) $request->getPost('doi'));
+        $doi = trim((string)$request->getPost('doi'));
         Episciences_Paper_Logger::log(
             $paperId,
             $docId,

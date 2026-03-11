@@ -77,7 +77,7 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
         ) {
 
 
-            $result = $response['message'] ?? '"Empty record';
+            $result = $response['message'] ?? 'Empty record';
 
             return ['error' => $result, 'record' => null];
         }
@@ -108,7 +108,7 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
 
         $result = ['record' => Episciences_Repositories_Common::toDublinCore($elements)];
 
-        if ($processedData[Episciences_Repositories_Common::ENRICHMENT]) {
+        if (!empty($processedData[Episciences_Repositories_Common::ENRICHMENT])) {
             $result[Episciences_Repositories_Common::ENRICHMENT] = $processedData[Episciences_Repositories_Common::ENRICHMENT];
 
         }
@@ -182,7 +182,9 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
         ];
 
         $result[self::TO_COMPILE_OAI_DC]['headers'] = $headers;
-        $result[self::TO_COMPILE_OAI_DC]['date'] = isset($data['releaseTime']) ? date_create($data['releaseTime'])->format('Y-m-d') : '';
+        $result[self::TO_COMPILE_OAI_DC]['date'] = isset($data['releaseTime'])
+            ? Episciences_Repositories_Common::safeDateFormat($data['releaseTime'])
+            : '';
 
         if (isset($data['license']['uri'])) {
             $license = $data['license']['uri'];
@@ -246,6 +248,7 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
 
                     $tmp = [];
                     $currentAuthorAffiliations = [];
+                    $projectTitle = Episciences_Paper_ProjectsManager::UNIDENTIFIED;
 
                     if (!is_array($val)) {
                         $val = (array)$val;

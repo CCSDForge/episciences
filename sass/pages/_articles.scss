@@ -1,3 +1,29 @@
+// Volume assignment popover — 10% narrower than Bootstrap default (276px)
+.popover.volume-form-popover {
+  max-width: 248px;
+}
+
+// Secondary volumes checkbox list
+.multicheckbox_option {
+  display: inline-block;
+  width: 100%;
+  cursor: pointer;
+  margin-bottom: 1px;
+  line-height: 25px;
+  padding-left: 3px;
+
+  input[type="checkbox"] {
+    margin: 0 3px 0 0;
+    position: relative;
+    vertical-align: text-bottom;
+  }
+
+  &:hover {
+    background-color: #357ebd;
+    color: #fff;
+  }
+}
+
 .status-flag {
   margin: auto;
   width: 16px;

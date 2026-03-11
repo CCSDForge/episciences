@@ -4,6 +4,7 @@ use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Exception\EnvironmentIsBrokenException;
 use Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException;
 use Defuse\Crypto\Key;
+use Episciences\Tools\Http\Exceptions\FileGetContentsException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use League\CommonMark\CommonMarkConverter;
@@ -264,7 +265,6 @@ class Episciences_Tools
      * @param $path : folder where the files will be stored
      * @param array $replace : if $replace is defined, delete files having the same id before upload
      * @return array
-
      */
     public static function uploadFiles($path, array $replace = []): array
     {
@@ -1036,8 +1036,8 @@ class Episciences_Tools
      * see preg_mach_all : http://php.net/manual/fr/function.preg-match-all.php
      * Extract all matches for a given regex pattern within a string.
      *
-     * @param string $pattern  A valid regular expression (including delimiters).
-     * @param string $subject  The string to search in.
+     * @param string $pattern A valid regular expression (including delimiters).
+     * @param string $subject The string to search in.
      * @return array           An array of matched substrings; empty if none found or invalid regex.
      */
     public static function extractPattern(string $pattern, string $subject): array
@@ -1049,10 +1049,10 @@ class Episciences_Tools
         $matches = [];
         try {
             // Run the regex and capture matches
-            if (@preg_match_all($pattern, $subject, $matches)) {
+            if (preg_match_all($pattern, $subject, $matches)) {
                 return $matches[0] ?? [];
             }
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             Episciences_View_Helper_Log::log($e->getMessage());
         }
 
@@ -1359,9 +1359,9 @@ class Episciences_Tools
         $cHref = sprintf('%stmp_file/%s/', PREFIX_URL, $paperId);
 
         foreach ($result as $index => $fileName) {
-            $href = $cHref . $fileName;
-            $text .= '<a target="_blank" href="' . $href . '">';
-            $text .= $fileExp . ' ' . ($index + 1) . ' > ' . $fileName;
+            $href = $cHref . urlencode($fileName);
+            $text .= '<a target="_blank" href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '">';
+            $text .= $fileExp . ' ' . ($index + 1) . ' > ' . htmlspecialchars($fileName, ENT_QUOTES, 'UTF-8');
             $text .= '</a>';
             $text .= '</br>';
         }
@@ -2103,7 +2103,7 @@ class Episciences_Tools
 
         // Basic Handle regex
         $pattern = '/^[0-9]+(\.[0-9]+)*\/[^\s]+$/u';
-        return (bool) preg_match($pattern, $handle);
+        return (bool)preg_match($pattern, $handle);
     }
 
     /**
@@ -2155,7 +2155,7 @@ class Episciences_Tools
             if ($checkFunction($value)) {
                 return $type;
             }
-            }
+        }
 
         return false;
     }
@@ -2283,9 +2283,10 @@ class Episciences_Tools
      */
     public static function spaceCleaner(
         string|array|null $input,
-        bool $stripBr = true,
-        bool $allUtf8 = false
-    ): string|array {
+        bool              $stripBr = true,
+        bool              $allUtf8 = false
+    ): string|array
+    {
         // Handle null input
         if ($input === null) {
             return '';
@@ -2336,7 +2337,8 @@ class Episciences_Tools
     }
 
 
-    public static function isIPv6(string $ipv6): bool{
+    public static function isIPv6(string $ipv6): bool
+    {
         return filter_var($ipv6, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
     }
 
@@ -2362,4 +2364,32 @@ class Episciences_Tools
         return null;
     }
 
+
+    /**
+     * @throws FileGetContentsException
+     */
+    public static function safeFileGetContents(string $url, $timeout = 5): string
+    {
+        set_error_handler(static function ($code, $message) use ($url) {
+            throw new FileGetContentsException($url, $message, $code);
+        });
+
+        $options = [
+            'http' => [
+                'method' => 'GET',
+                'timeout' => $timeout // timeout en secondes
+            ],
+            'header' => [
+                'User-Agent' => EPISCIENCES_USER_AGENT
+            ]
+        ];
+
+        $context = stream_context_create($options);
+        try {
+            $content = file_get_contents($url, false, $context);
+        } finally {
+            restore_error_handler();
+        }
+        return $content;
+    }
 }

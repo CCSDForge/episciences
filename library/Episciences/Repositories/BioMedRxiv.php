@@ -3,6 +3,7 @@
 
 use Episciences\Repositories\CommonHooksInterface;
 use Episciences\Repositories\InputSanitizerInterface;
+use Episciences\Tools\Http\Exceptions\FileGetContentsException;
 use GuzzleHttp\Exception\GuzzleException;
 
 class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, InputSanitizerInterface
@@ -71,14 +72,14 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
         try {
             $response = Episciences_Tools::callApi($url, $options);
 
-            if (!is_array($response) || empty($response[self::COLLECTION] ?? null)){
+            if (!is_array($response) || empty($response[self::COLLECTION] ?? null)) {
                 throw new Ccsd_Error(Ccsd_Error::ID_DOES_NOT_EXIST_CODE);
             }
         } catch (GuzzleException $e) {
             throw new Ccsd_Error($e->getMessage());
         }
 
-        $messages = $response['messages'][array_key_first($response['messages'])];
+        $messages = $response['messages'][array_key_first($response['messages'] ?? [])] ?? [];
         $collection = $response[self::COLLECTION]; // all versions
 
         if (
@@ -128,6 +129,7 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
     {
         return [];
     }
+
     /**
      * @return string
      */
@@ -254,10 +256,17 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
             return;
         }
 
+        try {
+            $content = Episciences_Tools::safeFileGetContents($values['jatsxml']);
+        } catch (FileGetContentsException $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
+            return;
+        }
+
 
         libxml_use_internal_errors(true);
         /** @var SimpleXMLElement $simpleXlmDoc */
-        $simpleXlmDoc = simplexml_load_string(file_get_contents($values['jatsxml']));
+        $simpleXlmDoc = simplexml_load_string($content);
         libxml_clear_errors();
 
         if (!$simpleXlmDoc) {
@@ -369,7 +378,7 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
                         return is_numeric($value);
                     }); // affiliation labels
 
-                    $orcid = isset($cVals['contrib-id']) ? preg_replace('#^http(s*)://orcid.org/#', '', $cVals['contrib-id']) : '';
+                    $orcid = isset($cVals['contrib-id']) ? preg_replace('#^https?://orcid.org/#', '', $cVals['contrib-id']) : '';
 
                     $tmp = [
                         'degrees' => $cVals['degrees'] ?? '',
@@ -434,7 +443,7 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
                         $authorStr .= ', ' . $sn['given-names'];
                     }
 
-                    if ($index <= count($sn) - 1) {
+                    if ($index < count($stringName) - 1) {
                         $authorStr .= '; ';
                     }
                 }
@@ -481,7 +490,11 @@ class Episciences_Repositories_BioMedRxiv implements CommonHooksInterface, Input
     {
         $license = '';
 
-        $explodedStr = explode(' ', explode(', ', $string)[1]);
+        $parts = explode(', ', $string);
+        if (!isset($parts[1])) {
+            return '[CC_NO] ' . $string;
+        }
+        $explodedStr = explode(' ', $parts[1]);
 
 
         if (strtolower($explodedStr[0]) === 'cc') {

@@ -20,7 +20,6 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
     {
 
         $data = [];
-
         $files = $hookParams['files'] ?? [];
 
         foreach ($files as $file) {
@@ -42,21 +41,7 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
             $checkSumAlgorithm = $checksumInfo['checkSumAlgorithm'] ?? 'MD5';
             $contentLink = $infoFromApi['_links']['content']['href'] ?? $file['url'];
             $size = $infoFromApi['sizeBytes'] ?? 0;
-
             $name = $infoFromApi['name'] ?? null;
-
-            if (!$name) {
-
-                if (!$checksum) {
-                    $checksum = md5_file($name);
-                }
-
-                $name = str_replace('/download', '', $file['url']);
-                $explodedName = explode('/', $name);
-                $name = end($explodedName);
-
-            }
-
             $tmpData = [];
             $tmpData['doc_id'] = $hookParams['docId'];
             $tmpData['source'] = $hookParams['repoId'];
@@ -67,14 +52,11 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
             $tmpData['file_size'] = $size;
             $tmpData['checksum_type'] = $checkSumAlgorithm;
             $data[] = $tmpData;
-
-            usleep(200000);
         }
 
         $hookParams['affectedRows'] = Episciences_Paper_FilesManager::insert($data);
 
         return $hookParams;
-
     }
 
     /**
@@ -105,7 +87,7 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
         // Pour RepositóriUM, le conceptId correspondra à la première version ; à vérifier donc lors d'ajout des autres repos compatible Dspace
         // Original version (v1) of record: https://hdl.handle.net/1822/92528
         // Version 4 of the same record: https://hdl.handle.net/1822/92528.4
-        //$data['conceptrecid'] = Episciences_Repositories_Common::getConceptIdentifierFromString($hookParams['identifier']); // Identique pour toutes les versions
+        $data[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY] = Episciences_Repositories_Common::getConceptIdentifierFromString($hookParams['identifier']); // Identique pour toutes les versions
 
         return $data;
     }
@@ -136,11 +118,11 @@ class Episciences_Repositories_Dspace_Hooks implements CommonHooksInterface, Fil
         $identifiers = [];
 
         // Extraction header
-        $header = $xml->header;
+        $header = $xml->header ?? null;
 
         $header = [
-            'identifier' => (string)$header->identifier,
-            'datestamp' => (string)$header->datestamp,
+            'identifier' => (string)$header?->identifier,
+            'datestamp' => (string)$header?->datestamp,
             //'setSpecs' => array_map('strval', $header->xpath('setSpec'))
         ];
 

@@ -527,7 +527,8 @@ class Ccsd_Tools
      */
     public static function preg_in_array_get_key($needle = "", $array = [], $begin = "", $end = "")
     {
-        $pattern = '/' . str_replace('/', '\/', $begin . $needle . $end) . '/';
+        // T4 fix: use preg_quote for $needle to escape all regex metacharacters; $begin/$end remain literal regex context
+        $pattern = '/' . str_replace('/', '\/', $begin) . preg_quote($needle, '/') . str_replace('/', '\/', $end) . '/';
         if (is_array($array)) {
             foreach ($array as $k => $val) {
                 if (preg_match($pattern, $val)) {
@@ -1087,6 +1088,12 @@ class Ccsd_Tools
      */
     public static function curlSourceGetContents(string $url, array $options = [])
     {
+
+        // S2 fix: block non-HTTP(S) schemes to prevent SSRF via file://, gopher://, etc.
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        if (!in_array(strtolower((string) $scheme), ['http', 'https'], true)) {
+            throw new Ccsd_Error('Only http and https URLs are allowed', 0, 'CURL_ERROR');
+        }
 
         $curlUserAgent = 'CcsdToolsCurl';
 

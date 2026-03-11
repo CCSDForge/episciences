@@ -43,7 +43,10 @@ $(document).ready(function () {
     });
 
     // Auto-expand the panel targeted by the URL hash
-    if (window.location.hash) {
+    if (
+        window.location.hash &&
+        isValidCSSSelector(window.location.hash)
+    ) {
         var $targetPanel = $(window.location.hash + '.collapsable');
         if ($targetPanel.length && !$targetPanel.find('.panel-body:first').is(':visible')) {
             $targetPanel.find('.panel-heading:first').trigger('click');
@@ -1138,3 +1141,14 @@ function truncate(str, length, suffix = '...') {
     if (typeof str !== 'string') return '';
     return str.length <= length ? str : str.slice(0, length) + suffix;
 }
+
+function isValidCSSSelector(selector) {
+    try {
+        document.querySelectorAll(selector);
+        return true;
+    } catch (e) {
+        console.log(e.toString()); // i.e. SyntaxError: Document.querySelectorAll: '#[object%20Object]' is not a valid selector
+        return false;
+    }
+}
+

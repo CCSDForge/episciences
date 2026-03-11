@@ -220,6 +220,16 @@ return [
     "paper_comment_by_editor_editor_copy_tpl_name" => "Editor's comment about a paper (editors copy)",
     "paper_comment_by_editor_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - editor comment about an article you're managing",
 
+    // Communication from author to assigned editors
+    "paper_comment_from_author_to_editor_editor_copy_tpl_name" => "Message from author to assigned editors (editors copy)",
+    "paper_comment_from_author_to_editor_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - new message about %%ARTICLE_RELATIONSHIP%%",
+    "paper_comment_from_author_to_editor_coauthor_copy_tpl_name" => "Message from co-author to assigned editors (co-authors copy)",
+    "paper_comment_from_author_to_editor_coauthor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - a co-author sent a message to editors about %%ARTICLE_RELATIONSHIP%%",
+
+    // Editor message to author
+    "paper_comment_from_editor_to_author_author_copy_tpl_name" => "Editor message to author (author copy)",
+    "paper_comment_from_editor_to_author_author_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - an editor sent you a message",
+
     // Commentaire de l'auteur / lettre d'accompagnement
     'paper_author_comment_editor_copy_tpl_name' => "Author's comments / Cover letter",
     'paper_author_comment_editor_copy_mail_subject' => "Author's comments / Cover letter",

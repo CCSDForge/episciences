@@ -53,8 +53,8 @@ class Episciences_Volume
     private ?string $_vol_year = null;
     private $_vol_num = null;
     private int $nbOfPapersInVolume = 0;
-    private ?array $titles;
-    private ?array $descriptions;
+    private ?array $titles = null;
+    private ?array $descriptions = null;
 
     /**
      * Episciences_Volume constructor.
@@ -905,7 +905,7 @@ class Episciences_Volume
                 $this->_db->query($sql);
             }
         } catch (Zend_Db_Adapter_Exception $exception) {
-            trigger_error(sprintf($exception->getMessage(), E_USER_WARNING));
+            trigger_error($exception->getMessage(), E_USER_WARNING);
         }
     }
 

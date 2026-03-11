@@ -31,5 +31,10 @@ return [
     'guest_editor' => 'Rédacteur invité',
     'epiadmin' => 'Root',
     'other' => 'autre',
-    'not-assigned' => 'Non assigné'
+    'not-assigned' => 'Non assigné',
+    'orcid-duplicate' => 'Chaque ORCID doit être unique.',
+
+    // Delete confirmations
+    "Voulez-vous supprimer ce fichier ?" => "Voulez-vous supprimer ce fichier ?",
+    "Voulez-vous supprimer votre fichier attaché ?" => "Voulez-vous supprimer votre fichier attaché ?",
 ];

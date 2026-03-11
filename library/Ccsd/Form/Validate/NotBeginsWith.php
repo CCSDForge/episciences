@@ -24,6 +24,15 @@ class Ccsd_Form_Validate_NotBeginsWith extends Ccsd_Form_Validate_BeginsWith
     	'type'		=> '_type',
     	'start'		=> '_start',
     );
+
+    /**
+     * Formatted forbidden values string used in error messages (populated during isValid()).
+     * Must be declared as a property because Zend_Validate_Abstract::createMessage() calls
+     * property_exists($this, ...) before accessing the value.
+     *
+     * @var string|null
+     */
+    protected $_start;
     
     /**
      * Generates the standard validator object

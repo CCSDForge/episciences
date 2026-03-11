@@ -3,8 +3,10 @@
 use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
+use Episciences\Paper\Export;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
+use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 use Psr\Log\LogLevel;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Intl\Exception\MissingResourceException;
@@ -456,7 +458,7 @@ class Episciences_Paper
     private $_licence;
     /** @var Episciences_Paper_Projects $_fundings */
     private $_fundings;
-    /** @var Episciences_Paper_Dataset $_linkedData */
+    /** @var array $_linkedData */
 
     private array $_linkedData;
     private ?string $_password = null;
@@ -466,6 +468,7 @@ class Episciences_Paper
     /**
      * Episciences_Paper constructor.
      * @param array|null $options
+     * @throws DOMException
      * @throws Zend_Db_Statement_Exception
      */
     public function __construct(array $options = null)
@@ -627,15 +630,17 @@ class Episciences_Paper
 
     /**
      * @param $action
-     * @param null $uid
-     * @param null $detail
-     * @param null $date
+     * @param int|null $uid
+     * @param array<string, mixed>|string|null $detail
+     * @param string|null $date
      * @return bool
      * @throws Zend_Db_Adapter_Exception
      */
     public function log($action, $uid = null, $detail = null, $date = null): bool
     {
-        if ($this->getPaperid() && $this->getDocid()) {
+        $paperId = $this->getPaperid();
+        $docId = $this->getDocid();
+        if ($paperId && $docId) {
             $detail = (is_array($detail)) ? Zend_Json::encode($detail) : $detail;
             Episciences_Paper_Logger::log($this->getPaperid(), $this->getDocid(), $action, $uid, $detail, $date, $this->getRvid());
 
@@ -1074,10 +1079,10 @@ class Episciences_Paper
     }
 
     /**
-     *  return oa version number
-     * @return mixed
+     *  return version number
+     * @return float
      */
-    public function getVersion()
+    public function getVersion() : float
     {
         return $this->_version;
     }
@@ -1097,7 +1102,7 @@ class Episciences_Paper
      * @param string $format
      * @param int|null $version
      * @return string|false
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      */
     public function get(string $format = 'tei', int $version = null)
     {
@@ -1108,7 +1113,11 @@ class Episciences_Paper
             $method .= 'V2';
         }
 
-        if ((!self::isValidMetadataFormat($format)) || (!method_exists($this, $method))) {
+        if (!self::isValidMetadataFormat($format)) {
+            return false;
+        }
+
+        if (!method_exists($this, $method) && !method_exists(Export::class, $method)) {
             return false;
         }
 
@@ -1125,7 +1134,11 @@ class Episciences_Paper
         $metadataCache->expiresAfter($expireAfterSec);
 
         if (!$metadataCache->isHit()) {
-            $getOutput = $this->$method();
+            if (method_exists($this, $method)) {
+                $getOutput = $this->$method();
+            } else {
+                $getOutput = Export::$method($this);
+            }
             $metadataCache->set($getOutput);
             $cache->save($metadataCache);
         } else {
@@ -1158,7 +1171,7 @@ class Episciences_Paper
      * save paper to database
      * @return bool
      * @throws Zend_Db_Adapter_Exception
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentExceptionAlias
      */
     public function save(): bool
     {
@@ -1686,6 +1699,7 @@ class Episciences_Paper
      * @param bool $isCurrentVersionIncluded
      * @param bool $includeTempVersions
      * @return array|null
+     * @throws DOMException
      * @throws Zend_Db_Statement_Exception
      */
     public function getPreviousVersions(bool $isCurrentVersionIncluded = false, bool $includeTempVersions = true): ?array
@@ -1739,6 +1753,13 @@ class Episciences_Paper
      */
     public function setConcept_identifier(string $conceptIdentifier = null): self
     {
+        if (
+            $conceptIdentifier &&
+            !$this->hasHook
+        ) {
+            throw new \InvalidArgumentException('Concept identifier should be applied exclusively to submissions coming from a repository with a hook');
+        }
+
         $this->_concept_identifier = $conceptIdentifier;
         return $this;
     }
@@ -2236,7 +2257,7 @@ class Episciences_Paper
 
     /**
      *delete paper volume position
-     * @return int
+     * @return bool
      */
     public function deletePosition()
     {
@@ -2353,7 +2374,6 @@ class Episciences_Paper
      */
     public function filterReportsByReviewer(array $reports, $uid): array
     {
-        /** @var Episciences_Rating_Report $report */
         foreach ($reports as $id => $report) {
             if ($report->getUid() != $uid) {
                 unset($reports[$id]);
@@ -2370,7 +2390,6 @@ class Episciences_Paper
      */
     public function filterReportsByStatus(array $reports, $status): array
     {
-        /** @var Episciences_Rating_Report $report */
         foreach ($reports as $id => $report) {
             if ($report->getStatus() != $status) {
                 unset($reports[$id]);
@@ -2382,7 +2401,7 @@ class Episciences_Paper
     /**
      * filter an array of rating reports criterion, according to a given user
      * @param Episciences_Rating_Report[] $reports
-     * @param Episciences_User $user
+     * @param Episciences_User|null $user
      * @return Episciences_Rating_Report[]
      * @throws Zend_Db_Statement_Exception
      */
@@ -2425,6 +2444,7 @@ class Episciences_Paper
      * fetch an editor
      * @param $uid
      * @return Episciences_Editor|bool
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function getEditor($uid)
@@ -2457,6 +2477,7 @@ class Episciences_Paper
     /**
      * @param int|null $uid
      * @return bool
+     * @throws JsonException
      */
     public function isEditor(int $uid = null): bool
     {
@@ -2573,18 +2594,22 @@ class Episciences_Paper
 
     /**
      * check if paper already exists in database
+     * @param bool $strict
      * @return string
      */
-    public function alreadyExists(): string
+    public function alreadyExists(bool $strict = true): string
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $sql = $db->select()
-            ->from(T_PAPERS, ['DOCID'])
-            ->where('RVID = ?', $this->getRvid())
-            ->where('STATUS != ?', self::STATUS_DELETED);
+        $sql = $db->select()->from(T_PAPERS, ['DOCID']);
 
-        if ($this->getConcept_identifier()) {
+        if ($strict) {
+            $sql->where('RVID = ?', $this->getRvid());
+        }
+
+        $sql->where('STATUS != ?', self::STATUS_DELETED);
+
+        if ($this->getConcept_identifier()) { // Concept identifier to be used only for repositories with hook
             $sql->where('CONCEPT_IDENTIFIER = ?', $this->getConcept_identifier());
         } else {
             $sql->where('IDENTIFIER = ?', $this->getIdentifier());
@@ -2593,10 +2618,7 @@ class Episciences_Paper
         if ($this->getVersion()) {
             $sql->where('VERSION = ?', $this->getVersion());
         }
-
-        //$sql->where('REPOID = ?', $this->getRepoid());
-
-        // Si plusieurs version de l'article, on recupère l'article dans sa dernière version
+        // If there are several versions of the article, we retrieve the latest version of the article
         $sql->order('WHEN DESC');
 
         return ($db->fetchOne($sql));
@@ -2813,7 +2835,7 @@ class Episciences_Paper
      * @return Zend_Db_Select
      */
 
-    private function loadHistoryByStatuesQuery(int|array $statues , string|array $cols = '*'): Zend_Db_Select
+    private function loadHistoryByStatuesQuery(int|array $statues, string|array $cols = '*'): Zend_Db_Select
     {
         $query = $this->loadHistoryQuery($cols);
 
@@ -2833,7 +2855,7 @@ class Episciences_Paper
     }
 
     /**
-     * @return mixed
+     * @return array
      */
     public function getVersionsIds()
     {
@@ -2971,6 +2993,7 @@ class Episciences_Paper
      * @param null $status
      * @param bool $priority
      * @return int|null
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function updateStatus($status = null, $priority = false)
@@ -3062,7 +3085,7 @@ class Episciences_Paper
      * @return array
      * @throws Zend_Db_Statement_Exception
      */
-    public function getReports(int | null $status = null, bool $forceFiltering = false): array
+    public function getReports(int|null $status = null, bool $forceFiltering = false): array
     {
         if (!is_array($this->_reports)) {
             $this->loadReports();
@@ -3532,7 +3555,6 @@ class Episciences_Paper
      * @param null $lang
      * @param bool $forceResult
      * @return mixed|string|null
-     * @throws Zend_Exception
      */
     public function getAbstract($lang = null, $forceResult = false)
     {
@@ -3667,7 +3689,9 @@ class Episciences_Paper
     }
 
     /**
+     * Gère les erreurs de soumission d'une nouvelle version
      * @param array $options
+     *
      * @return array|string
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -3675,17 +3699,17 @@ class Episciences_Paper
 
     public function manageNewVersionErrors(array $options = []): array|string
     {
-        $viewHelper  = new Zend_View_Helper_Url();
-        $translator  = Zend_Registry::get('Zend_Translate');
-        $isFromCli   = Ccsd_Tools::isFromCli();
+        $viewHelper = new Zend_View_Helper_Url();
+        $translator = Zend_Registry::get('Zend_Translate');
+        $isFromCli = Ccsd_Tools::isFromCli();
         $isEpiNotify = !empty($options['isEpiNotify']);
-        $rvId        = $options['rvId'] ?? RVID;
+        $rvId = $options['rvId'] ?? RVID;
 
-        $docId       = $this->getDocid();
-        $status      = $this->getStatus();
-        $identifier  = $this->getIdentifier();
-        $version     = $this->getVersion();
-        $repoId      = $this->getRepoid();
+        $docId = $this->getDocid();
+        $status = $this->getStatus();
+        $identifier = $this->getIdentifier();
+        $version = $this->getVersion();
+        $repoId = $this->getRepoid();
 
         $id = $docId;
         if ($this->isObsolete()) {
@@ -3694,14 +3718,14 @@ class Episciences_Paper
             $id = $versionIds[array_key_last($versionIds)];
         }
 
-        $isMainSubmission = array_key_exists('isNewVersionOf', $options) && !$options['isNewVersionOf']; // fisrt submission
+        $isMainSubmission = array_key_exists('isNewVersionOf', $options) && !$options['isNewVersionOf']; // first submission
 
         // Base UI helpers
-        $span    = $isFromCli ? '' : '<span class="fas fa-exclamation-circle"></span>';
+        $span = $isFromCli ? '' : '<span class="fas fa-exclamation-circle"></span>';
         $warning = $span;
-        $style   = 'btn btn-default btn-xs';
+        $style = 'btn btn-default btn-xs';
 
-        $submittedMsg    = $translator
+        $submittedMsg = $translator
             ? $translator->translate("Vous êtes connecté avec un compte différent de celui ayant été utilisé pour soumettre ce document. Veuillez vous déconnecter et vous reconnecter avec le bon compte pour continuer.")
             : "You’re signed in with a different account than the one used to submit this document. Please sign out and log in with the correct account to continue.";
         $cannotChangeMsg = $translator
@@ -3709,21 +3733,21 @@ class Episciences_Paper
             : 'You can not change it.';
 
         $confirmHtml = '';
-        $link        = '';
+        $link = '';
 
         if (!$isFromCli) {
             $warning .= ' ';
             $link = $isMainSubmission
-                ? $viewHelper->url(['controller' => 'submit'])
+                ? $viewHelper->url(['controller' => 'submit', 'action' => 'index'])
                 : $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $id]);
 
-            $exitLink  = '&nbsp;&nbsp;&nbsp;';
+            $exitLink = '&nbsp;&nbsp;&nbsp;';
             $exitLink .= '<a class="' . $style . '" href="' . $link . '">';
             $exitLink .= '<span class="glyphicon glyphicon-remove-circle"></span>&nbsp;';
             $exitLink .= $translator ? $translator->translate('Annuler') : 'Cancel';
             $exitLink .= '</a>';
 
-            $confirmHtml  = '<p style="margin:1em;">';
+            $confirmHtml = '<p style="margin:1em;">';
             $confirmHtml .= '<button class="' . $style . '" onclick="hideResultMessage();">';
             $confirmHtml .= '<span class="glyphicon glyphicon-ok-circle"></span>&nbsp;';
             $confirmHtml .= $translator ? $translator->translate('Remplacer') : 'Replace';
@@ -3733,7 +3757,7 @@ class Episciences_Paper
         }
 
         $canReplace = false;
-        $result     = [];
+        $result = [];
 
         // Permission check
         $hasPermission =
@@ -3752,7 +3776,7 @@ class Episciences_Paper
 
         if ($isFromCli || $hasPermission) {
 
-            $review   = Episciences_ReviewsManager::find($rvId);
+            $review = Episciences_ReviewsManager::find($rvId);
             $question = $translator
                 ? $translator->translate('Souhaitez-vous remplacer la version précédente ?')
                 : 'Do you want to replace the previous version?';
@@ -3769,21 +3793,25 @@ class Episciences_Paper
                     : "You can't re-propose an abandoned article. For more information please contact the editorial committee.";
 
                 // 2. Can be replaced
-            } elseif ($this->canBeReplaced()) {
-                $msg  = $result['message'];
+            } elseif (
+                isset($options['version']) &&
+                $options['version'] > $this->getVersion() &&
+                $this->canBeReplaced()
+            ) {
+                $msg = $result['message'];
                 $msg .= $isEpiNotify ? ' *** The previous version will be replaced ***' : $question;
                 $msg .= $confirmHtml;
 
-                $result['message']        = $msg;
-                $result['oldPaperId']     = $this->getPaperid();
+                $result['message'] = $msg;
+                $result['oldPaperId'] = $this->getPaperid();
                 $result['submissionDate'] = $this->getSubmission_date();
-                $result['oldVid']         = $this->getVid();
-                $result['oldSid']         = $this->getSid();
-                $canReplace               = true;
+                $result['oldVid'] = $this->getVid();
+                $result['oldSid'] = $this->getSid();
+                $canReplace = true;
 
                 if ($isEpiNotify) {
                     $result[InboxNotifications::PAPER_CONTEXT] = $this;
-                    $result['message']                        = '*** Update Version ***';
+                    $result['message'] = '*** Update Version ***';
                 }
 
                 // 3. New submission in expected revision / final version / obsolete
@@ -3812,8 +3840,8 @@ class Episciences_Paper
 
                 } else {
 
-                    $url    = $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $this->getDocid()]);
-                    $selfMsg  = $result['message'];
+                    $url = $viewHelper->url(['controller' => 'paper', 'action' => 'view', 'id' => $this->getDocid()]);
+                    $selfMsg = $result['message'];
                     $selfMsg .= $translator
                         ? $translator->translate(
                             'Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel ' .
@@ -3840,7 +3868,7 @@ class Episciences_Paper
 
                 // 4. Being reviewed
             } elseif ($status === self::STATUS_BEING_REVIEWED) {
-                $msg  = $result['message'];
+                $msg = $result['message'];
                 $msg .= $translator
                     ? $translator->translate('Cet article a déjà été soumis et il est en cours de relecture.')
                     : "This article has been submitted and is waiting for reviewing.";
@@ -3849,7 +3877,7 @@ class Episciences_Paper
 
                 // 5. Reviewed
             } elseif ($status === self::STATUS_REVIEWED) {
-                $msg  = $result['message'];
+                $msg = $result['message'];
                 $msg .= $translator
                     ? $translator->translate("Cet article est en cours d'évaluation.")
                     : "This article is under review.";
@@ -3858,7 +3886,7 @@ class Episciences_Paper
 
                 // 6. Accepted
             } elseif ($status === self::STATUS_ACCEPTED) {
-                $msg  = $result['message'];
+                $msg = $result['message'];
                 $msg .= $translator
                     ? $translator->translate('Cet article a été accepté.')
                     : "This article has been accepted.";
@@ -3870,7 +3898,7 @@ class Episciences_Paper
 
                 if ($review->getSetting(Episciences_Review::SETTING_CAN_RESUBMIT_REFUSED_PAPER)) {
 
-                    $msg  = $result['message'];
+                    $msg = $result['message'];
                     $msg .= $translator
                         ? $translator->translate(
                             'Cet article a déjà été soumis et refusé. ' .
@@ -3879,11 +3907,11 @@ class Episciences_Paper
                         : "This article has already been submitted and refused. Have you made any major changes to the document?";
                     $msg .= $isFromCli ? '' : $confirmHtml;
 
-                    $result['message']    = $msg;
+                    $result['message'] = $msg;
                     $result['oldPaperId'] = $this->getPaperid();
-                    $result['oldVid']     = $this->getVid();
-                    $result['oldSid']     = $this->getSid();
-                    $canReplace           = true;
+                    $result['oldVid'] = $this->getVid();
+                    $result['oldSid'] = $this->getSid();
+                    $canReplace = true;
 
                     if ($isEpiNotify) {
                         $result[InboxNotifications::PAPER_CONTEXT] = $this;
@@ -3893,7 +3921,7 @@ class Episciences_Paper
 
                 } else {
 
-                    $msg  = $isFromCli ? '' : $warning;
+                    $msg = $isFromCli ? '' : $warning;
                     $msg .= $cannotChangeMsg . ' ';
                     $msg .= $translator
                         ? $translator->translate(
@@ -3940,12 +3968,12 @@ class Episciences_Paper
                     : "The publication process of this article is in progress, so you will not be able to replace it.";
             }
 
-            $result['oldDocId']      = (int) $docId;
-            $result['oldPaperStatus'] = (int) $status;
+            $result['oldDocId'] = (int)$docId;
+            $result['oldPaperStatus'] = (int)$status;
 
         } else {
             // Not author, no extra info about status
-            $message  = $span;
+            $message = $span;
             $message .= $translator ? $translator->translate('Erreur') : "Erreur";
             $message .= $translator ? $translator->translate(': ') : ':';
             $message .= $submittedMsg;
@@ -3959,8 +3987,8 @@ class Episciences_Paper
 
         $result['canBeReplaced'] = $canReplace;
         $result['oldIdentifier'] = $identifier;
-        $result['oldVersion']    = (float) $version;
-        $result['oldRepoId']     = $repoId;
+        $result['oldVersion'] = (float)$version;
+        $result['oldRepoId'] = $repoId;
 
         try {
             $jResult = $isFromCli ? $result : json_encode($result, JSON_THROW_ON_ERROR);
@@ -3981,9 +4009,10 @@ class Episciences_Paper
     }
 
     /**
-     * fetch an copy editor
+     * fetch a copy editor
      * @param $uid
      * @return Episciences_CopyEditor|bool
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function getCopyEditor($uid)
@@ -3999,6 +4028,7 @@ class Episciences_Paper
      * @param bool $active
      * @param bool $getCASdata
      * @return Episciences_CopyEditor[]
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function getCopyEditors(bool $active = true, bool $getCASdata = false): array
@@ -4014,6 +4044,7 @@ class Episciences_Paper
     /**
      * @param array $values
      * @return array
+     * @throws InvalidArgumentExceptionAlias
      * @throws Zend_Exception
      */
     public function updatePaper(array $values): array
@@ -4083,6 +4114,7 @@ class Episciences_Paper
             $translator = Zend_Registry::get('Zend_Translate');
             $message = $translator->translate("Une erreur interne s'est produite, veuillez recommencer.");
             $update['message'] = $message;
+            error_log($e->getMessage());
             return $update;
         }
     }
@@ -4166,6 +4198,7 @@ class Episciences_Paper
     }
 
     /**
+     * @throws InvalidArgumentExceptionAlias
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
@@ -4248,7 +4281,7 @@ class Episciences_Paper
      *
      * //loadLastAbandonActionDetail // getLastStatusAtTimeOfAbandon
      */
-    public function loadLastAbandonActionDetail() : int
+    public function loadLastAbandonActionDetail(): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -4262,7 +4295,7 @@ class Episciences_Paper
         $jsonDetail = $db?->fetchOne($sql);
 
         // Lors de la reprise de la publication d'un article, une exception est levée si aucune trace de l'abandon du processus de publication précédemment effectué n'est trouvée
-        if (!$jsonDetail){
+        if (!$jsonDetail) {
             throw new Zend_Exception(sprintf('no sign of abandonment of the publication process [%s]', Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS));
         }
 
@@ -4272,11 +4305,12 @@ class Episciences_Paper
             Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
         }
 
-        return isset($detail['lastStatus']) ? (int) $detail['lastStatus'] : self::STATUS_SUBMITTED;
+        return isset($detail['lastStatus']) ? (int)$detail['lastStatus'] : self::STATUS_SUBMITTED;
     }
 
     /**
      * @return array
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function getRatingInvitations(): array
@@ -4432,12 +4466,14 @@ class Episciences_Paper
     }
 
     /**
-     * @param string $locale = null (ISO FORMAT)
-     * @return false|string
+     * @param string|null $locale = null (ISO FORMAT)
+     * @return string
+     * @throws DOMException
      * @throws Zend_Date_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    public function buildRevisionDates(string $locale = null)
+    public function buildRevisionDates(string $locale = null): string
     {
         $revisionDates = '';
         $previousVersions = $this->getPreviousVersions(true);
@@ -4449,7 +4485,7 @@ class Episciences_Paper
         foreach ($previousVersions as $paper) {
             $revisionDates .= (!$locale) ? date('Y-m-d', strtotime($paper->getWhen())) . '; ' : Episciences_View_Helper_Date::Date($paper->getWhen(), $locale) . '; ';
         }
-        return substr($revisionDates, 0, strlen($revisionDates) - 2);
+        return substr($revisionDates, 0, -2);
     }
 
     /**
@@ -4473,6 +4509,7 @@ class Episciences_Paper
      * @param array $recipients
      * @param int|null $principalRecipient
      * @return array
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function extractCCRecipients(array &$recipients = [], int $principalRecipient = null): array
@@ -4496,6 +4533,7 @@ class Episciences_Paper
     }
 
     /**
+     * @param string $yearFormat
      * @return string
      */
     public function getPublicationYear(string $yearFormat = 'Y'): string
@@ -4920,7 +4958,7 @@ class Episciences_Paper
     }
 
 
-    public function getLinkedDataByRelation(string $relation = 'isDocumentedBy' ): ?\Episciences_Paper_Dataset
+    public function getLinkedDataByRelation(string $relation = 'isDocumentedBy'): ?\Episciences_Paper_Dataset
     {
         return Episciences_Paper_DatasetsManager::findByrelation($this->getDocid(), $relation);
     }
@@ -4995,6 +5033,29 @@ class Episciences_Paper
             (Episciences_Auth::getOriginalIdentity() && isset($coAuthors[Episciences_Auth::getOriginalIdentity()?->getUid()]));
     }
 
+    /**
+     * Check if the current user is the paper owner or a co-author
+     * Used for access control in author-editor communication feature
+     *
+     * @return bool
+     */
+    public function isOwnerOrCoAuthor(): bool
+    {
+        return $this->isOwner() || $this->isCoauthor();
+    }
+
+    /**
+     * Check if a specific user is a co-author of this paper
+     */
+    public function isCoAuthorByUid(int $uid): bool
+    {
+        $assignments = Episciences_User_AssignmentsManager::findAll([
+            'ITEMID' => $this->getDocid(),
+            'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR,
+            'UID' => $uid
+        ]);
+        return !empty($assignments);
+    }
 
     public function isEditableVersion(): bool
     {
@@ -5047,6 +5108,7 @@ class Episciences_Paper
     /**
      * @param bool $strict : [true] only if the document has already been assigned (excepted for secretary and owner)
      * @return bool
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
 
@@ -5073,6 +5135,7 @@ class Episciences_Paper
     }
 
     /**
+     * @param $docId
      * @return string | null
      */
     public function getGraphical_abstract($docId): ?string
@@ -5466,7 +5529,7 @@ class Episciences_Paper
         // This parameter must be activated directly in the database
         $isPostStatusEnabled = $journal->getSetting(Episciences_Review::SETTING_POST_PAPER_STATUS) === '1';
 
-        if (!$isPostStatusEnabled){
+        if (!$isPostStatusEnabled) {
             return;
         }
 

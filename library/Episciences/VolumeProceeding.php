@@ -100,7 +100,7 @@ class Episciences_VolumeProceeding
                 $this->_db->query($sql);
             }
         } catch (Zend_Db_Adapter_Exception $exception) {
-            trigger_error(sprintf($exception->getMessage(), E_USER_WARNING));
+            trigger_error($exception->getMessage(), E_USER_WARNING);
         }
     }
 

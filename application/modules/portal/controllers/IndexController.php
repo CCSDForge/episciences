@@ -26,13 +26,15 @@ class IndexController extends Episciences_Controller_Action
         $paginator->setCurrentPageNumber($page);
 
         $reviewData = [];
+        /** @var Episciences_Review $review */
 
         foreach ($paginator as $review) {
+            $url = $review->getUrl();
             $reviewData[] = [
                 'name' => $review->getName(),
                 'code' => $review->getCode(),
-                'url' => 'https://' . $review->getCode() . '.' . DOMAIN,
-                'logo' => 'https://' . $review->getCode() . '.' . DOMAIN.'/logos/logo-' . $review->getCode() . '-small.svg'
+                'url' => $url,
+                'logo' => sprintf('%s./logos/logo-%s.svg', $url, $review->getCode())
             ];
         }
 

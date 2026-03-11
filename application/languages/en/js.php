@@ -12,6 +12,7 @@ return [
     "Annuler" => "Cancel",
     'Confirmer' => 'Confirm',
     "Voulez-vous supprimer ce fichier ?" => "Do you want to delete this file?",
+    "Voulez-vous supprimer votre fichier attaché ?" => "Do you want to delete your attached file?",
     'Merci de confirmer cette suppression' => 'Please confirm this deletion',
     'Type de relation :' => 'Type of relation:',
     'Jeu de données' => 'Dataset',
@@ -265,5 +266,6 @@ return [
     "Voir moins" => "Show less",
     'Demander un DOI'=> 'Request a DOI',
     'Annuler le DOI'=> 'Cancel theDOI',
-    'not-assigned' => 'Not assigned'
+    'not-assigned' => 'Not assigned',
+    'orcid-duplicate' => 'Each ORCID must be unique.'
 ];

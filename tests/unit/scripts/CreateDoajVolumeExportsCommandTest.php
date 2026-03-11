@@ -103,8 +103,9 @@ class CreateDoajVolumeExportsCommandTest extends TestCase
 
         $command->method('downloadDoajExport')->willReturn($rawXml);
 
-        // Inject a null-handler logger so $this->logger->info() does not throw
+        // Inject a silent logger so $this->logger->info() produces no output
         $logger = new Logger('test');
+        $logger->pushHandler(new \Monolog\Handler\NullHandler());
         $prop   = new \ReflectionProperty(CreateDoajVolumeExportsCommand::class, 'logger');
         $prop->setAccessible(true);
         $prop->setValue($command, $logger);

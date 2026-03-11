@@ -46,7 +46,7 @@ class Episciences_Paper_Citations_ViewFormatter
             foreach ($decodeCitations as $citationMetadataArray) {
                 $templateCitation .= "<ul class='list-unstyled'>";
                 $templateCitation .= '<li>';
-                $citationMetadataArray = array_map(strip_tags(...), $citationMetadataArray);
+                $citationMetadataArray = array_map(static fn($v) => $v !== null ? strip_tags((string) $v) : null, $citationMetadataArray);
 
                 $citationType = $citationMetadataArray['type'] ?? null;
 

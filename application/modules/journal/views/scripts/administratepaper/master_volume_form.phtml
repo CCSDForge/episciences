@@ -1,4 +1,4 @@
-<div>
+<div style="max-width: 700px;">
     <?php if (null !== $this->paperPosition): ?>
     <?php
         $alert = $this->translate('Si le papier est retiré du volume cela n’entraîne pas le réordonnancement automatique des autres articles.');
@@ -12,19 +12,27 @@
     <?php endif; ?>
     <form action="<?= $this->url(['controller' => 'administratepaper', 'action' => 'savemastervolume'])?>" id="volume-form-<?= $this->docid ?>" style="height : 34px;">
 
-        <div class="pull-right" style="padding-left : 10px;">
-            <button type="submit" class="btn btn-primary"><?= $this->translate("Enregistrer") ?></button>
+        <div style="margin-bottom: 5px;">
+            <label for="volume_search_input" class="sr-only"><?= $this->translate('Rechercher un volume') ?></label>
+            <input type="text" class="form-control input-md" id="volume_search_input"
+                   placeholder="<?= $this->translate('Rechercher') ?>"
+                   autocomplete="off"
+                   aria-controls="master_volume_select">
         </div>
 
-        <div class="input-group">
-            <span class="input-group-addon"><?= $this->translate('Volume') ?></span>
-            <label for="master_volume_select"></label>
+        <label for="master_volume_select" class="sr-only"><?= $this->translate('Volume') ?></label>
+        <div class="input-group" style="margin-bottom: 5px;">
+            <span class="input-group-addon" aria-hidden="true"><?= $this->translate('Volume') ?></span>
             <select class="form-control" name="vid" id="master_volume_select">
-                <option><?php echo $this->translate('Hors volume') ?></option>
+                <option value=""><?php echo $this->translate('Hors volume') ?></option>
                 <?php foreach ($this->volumes as $volume) : ?>
                     <option <?= ($volume->getVid() === $this->vid) ? 'selected="selected"' : '' ?> value="<?= $volume->getVid() ?>"><?= $volume->getNameKey() ?></option>
                 <?php endforeach; ?>
             </select>
+        </div>
+
+        <div class="text-right">
+            <button type="submit" class="btn btn-primary"><?= $this->translate("Enregistrer") ?></button>
         </div>
     </form>
 </div>

@@ -1,8 +1,6 @@
 <?php
-
-use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
-
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
+use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
 class SubmitController extends DefaultController
 {
@@ -55,7 +53,7 @@ class SubmitController extends DefaultController
             ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
             ->addMessage($this->buildReachedMessage());
 
-        $this->_helper->redirector('index', 'submit', null, [PREFIX_ROUTE => RVCODE]);
+        $this->_helper->redirector->gotoUrl($this->url(['controller' => 'submit']));
     }
 
     /**
@@ -234,6 +232,7 @@ class SubmitController extends DefaultController
      *
      * @param array $formValues
      * @return array{0: array, 1: string} [result, message]
+     * @throws InvalidArgumentExceptionAlias
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
@@ -377,10 +376,10 @@ class SubmitController extends DefaultController
     private function fetchDocument(array &$params): array
     {
         return Episciences_Submit::getDoc(
-            $params['repoId'],
+            (int)$params['repoId'],
             $params['docId'],
             $params['version'],
-            $params['latestObsoleteDocId'] ?? null
+            isset($params['latestObsoleteDocId']) && $params['latestObsoleteDocId'] !== '' ? (int)$params['latestObsoleteDocId'] : null
         );
 
     }
@@ -595,19 +594,5 @@ class SubmitController extends DefaultController
         } catch (JsonException $e) {
             trigger_error($e->getMessage());
         }
-
-    }
-
-    private function buildReachedMessage(): string
-    {
-        $message = $this->view->translate('Ce formulaire comporte des erreurs.');
-        $message .= ' ';
-        $message .= $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limitée à');
-        $message .= ' ';
-        $message .= '<code>' . Episciences_Tools::toHumanReadable(MAX_FILE_SIZE) . '</code>. ';
-        $message .= $this->view->translate('Merci de les corriger.');
-        return $message;
-
-
     }
 }
