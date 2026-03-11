@@ -121,7 +121,7 @@
 
       .timeline-item {
         .timeline-content {
-          border-left: 2px solid #2196F3; // Blue border to indicate reply message
+          //border-left: 2px solid #2196F3; // Blue border to indicate reply message
           padding: 12px 14px; // Smaller padding for reply messages (vs 15px for root)
           max-width: 85%; // Smaller width for reply messages (vs 95% for root)
           font-size: 11px; // Slightly smaller font for reply messages
@@ -160,15 +160,15 @@
     margin-top: 8px;
     margin-bottom: 10px;
     padding: 8px 12px;
-    background-color: #f5f5f5;
-    border-left: 3px solid #2196F3;
+    background-color: rgba($blue, 0.05);
+    border-left: 3px solid $blue;
     border-radius: 4px;
-    font-size: 11px;
-    color: #666;
+    font-size: 12px; // Match header font-size
+    color: $dark-grey;
 
     i.fa-reply {
       margin-right: 5px;
-      color: #2196F3;
+      color: $blue;
     }
 
     strong {
@@ -176,19 +176,21 @@
     }
 
     .reply-to-name {
-      color: #2196F3;
-      font-weight: 500;
+      color: $darker-grey;
+      font-weight: 600; // Match <strong> in comment-author header
     }
 
     .reply-to-date {
-      color: #999;
-      margin-left: 8px;
+      color: $dark-grey;
+      margin-left: 4px;
+      font-size: 11px; // Slightly smaller — secondary info
     }
 
     .reply-to-preview {
       margin-top: 5px;
       font-style: italic;
-      color: #888;
+      color: $dark-grey;
+      font-size: 11px;
     }
   }
 
