@@ -606,6 +606,53 @@ final class Episciences_Rating_ManagerTest extends TestCase
     }
 
     // =========================================================================
+    // Bug B2 — getRatingForm(): $max = -1 when criterion has empty options array
+    // =========================================================================
+
+    /**
+     * Regression B2: if hasOptions() returns true but getOptions() returns [],
+     * count([]) - 1 = -1, causing nonsensical label "x/-1".
+     * The fix adds a guard: if (empty($options)) continue;
+     */
+    public function testGetRatingFormHasGuardForEmptyOptionsArray(): void
+    {
+        $reflection = new ReflectionMethod(Episciences_Rating_Manager::class, 'getRatingForm');
+        $source = $this->getMethodSource($reflection);
+
+        self::assertStringContainsString(
+            'if (empty($options)) {',
+            $source,
+            'Bug B2 fix: getRatingForm() must guard against empty options array to prevent $max = -1'
+        );
+        self::assertStringContainsString(
+            'continue;',
+            $source,
+            'Bug B2 fix: guard must skip the criterion via continue when options array is empty'
+        );
+    }
+
+    /**
+     * Criterion with no options: hasOptions() returns false (empty array).
+     * Sanity check for the guard condition.
+     */
+    public function testCriterionHasOptionsReturnsFalseWhenNoOptionsSet(): void
+    {
+        $c = new Episciences_Rating_Criterion();
+        self::assertFalse($c->hasOptions());
+        self::assertSame([], $c->getOptions());
+    }
+
+    /**
+     * Criterion with empty array explicitly set: hasOptions() returns false.
+     */
+    public function testCriterionHasOptionsReturnsFalseWhenOptionsIsEmptyArray(): void
+    {
+        $c = new Episciences_Rating_Criterion();
+        $c->setOptions([]);
+        self::assertFalse($c->hasOptions());
+    }
+
+    // =========================================================================
     // Helpers
     // =========================================================================
 

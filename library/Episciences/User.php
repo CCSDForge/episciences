@@ -935,8 +935,8 @@ class Episciences_User extends Ccsd_User_Models_User
                 $form->addElement('html', 'openTd1_' . $uid, ['value' => '<td style="width: 200px">']); // opening td
 
                 // Infos sur l'utilisateur
-                $string = $user['SCREEN_NAME'] . ' <i>(' . $user['USERNAME'] . ')</i><br/>';
-                $string .= '<i>' . $user['EMAIL'] . '</i>';
+                $string = htmlspecialchars($user['SCREEN_NAME'], ENT_QUOTES, 'UTF-8') . ' <i>(' . htmlspecialchars($user['USERNAME'], ENT_QUOTES, 'UTF-8') . ')</i><br/>';
+                $string .= '<i>' . htmlspecialchars($user['EMAIL'], ENT_QUOTES, 'UTF-8') . '</i>';
                 $form->addElement('html', 'text_' . $uid, ['value' => $string]);
 
                 $form->addElement('html', 'closeTd1_' . $uid, ['value' => '</td>']); // closing td

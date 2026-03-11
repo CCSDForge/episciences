@@ -54,7 +54,9 @@ class GetClassificationJelCommandTest extends TestCase
     ): array {
         $method = new ReflectionMethod(GetClassificationJelCommand::class, 'buildClassifications');
         $method->setAccessible(true);
-        return $method->invoke($this->command, $codes, $docId, $allCodes, new \Monolog\Logger('test'));
+        $logger = new \Monolog\Logger('test');
+        $logger->pushHandler(new \Monolog\Handler\NullHandler());
+        return $method->invoke($this->command, $codes, $docId, $allCodes, $logger);
     }
 
     public function testBuildClassifications_EmptyCodes_ReturnsEmptyArray(): void

@@ -14,8 +14,17 @@ use Zend_Registry;
  */
 class LogTest extends TestCase
 {
+    private string $originalErrorLog;
+
+    protected function setUp(): void
+    {
+        $this->originalErrorLog = (string) ini_get('error_log');
+        ini_set('error_log', '/dev/null');
+    }
+
     protected function tearDown(): void
     {
+        ini_set('error_log', $this->originalErrorLog);
         // Clean up registry entry after each test
         if (Zend_Registry::isRegistered('appLogger')) {
             $registry = Zend_Registry::getInstance();

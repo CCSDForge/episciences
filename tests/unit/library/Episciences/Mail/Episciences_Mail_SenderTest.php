@@ -360,6 +360,53 @@ final class Episciences_Mail_SenderTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // Bug B1 — TypeError: (int) cast missing on MAIL_ERRORS before arithmetic
+    // -------------------------------------------------------------------------
+
+    /**
+     * Regression B1: when <errors> node is absent from mail.xml, SimpleXML
+     * returns null for $this->mail[MAIL_ERRORS]. Arithmetic on null (null + 1)
+     * throws a TypeError in PHP 8.x. The fix casts to (int) before use.
+     */
+    public function testSendCastsMailErrorsToIntBeforeArithmetic(): void
+    {
+        $method = new ReflectionMethod(Episciences_Mail_Sender::class, 'send');
+        $lines  = file($method->getFileName());
+        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        self::assertMatchesRegularExpression(
+            '/\(int\)\s*\$this->mail\s*\[\s*self::MAIL_ERRORS\s*\]\s*\+\s*1/',
+            $source,
+            'Bug B1: $this->mail[MAIL_ERRORS] must be cast to (int) before + 1 to avoid TypeError on null'
+        );
+    }
+
+    public function testSendCastsMailErrorsToIntBeforeComparison(): void
+    {
+        $method = new ReflectionMethod(Episciences_Mail_Sender::class, 'send');
+        $lines  = file($method->getFileName());
+        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        self::assertMatchesRegularExpression(
+            '/\(int\)\s*\$this->mail\s*\[\s*self::MAIL_ERRORS\s*\]\s*<\s*MAX_RETRIES/',
+            $source,
+            'Bug B1: $this->mail[MAIL_ERRORS] must be cast to (int) before comparison with MAX_RETRIES'
+        );
+    }
+
+    /**
+     * Demonstrate the fix pattern: (int)null yields 0 so a missing XML node
+     * is treated as 0 errors instead of throwing TypeError.
+     */
+    public function testAbsentSimpleXmlElementCastsToZeroInt(): void
+    {
+        $xml = simplexml_load_string('<mail charset="UTF-8"></mail>');
+        // 'errors' attribute is absent → $xml['errors'] is null
+        self::assertSame(0, (int)$xml[Episciences_Mail_Sender::MAIL_ERRORS]);
+        self::assertSame(1, (int)$xml[Episciences_Mail_Sender::MAIL_ERRORS] + 1);
+    }
+
+    // -------------------------------------------------------------------------
     // BUG: updateErrorsCount() — inverted ternary (charset logic)
     // -------------------------------------------------------------------------
 

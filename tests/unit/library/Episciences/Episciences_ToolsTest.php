@@ -4,6 +4,7 @@ namespace unit\library\Episciences;
 
 use Episciences_Tools;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 
 class Episciences_ToolsTest extends TestCase
@@ -45,6 +46,38 @@ class Episciences_ToolsTest extends TestCase
         self::assertFalse(Episciences_Tools::checkValueType('invalid-value'));
         self::assertFalse(Episciences_Tools::checkValueType(''));
         self::assertFalse(Episciences_Tools::checkValueType('just some text'));
+    }
+
+    // -------------------------------------------------------------------------
+    // Security S5 — XSS in getTmpFilesLinks() (source inspection)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Regression S5: $fileName from JSON payload injected into href and link text
+     * without encoding — allows XSS and path traversal.
+     * The fix uses urlencode() for the href and htmlspecialchars() for the display text.
+     */
+    public function testBuildHtmlTmpDocUrlsEscapesFileName(): void
+    {
+        $method = new ReflectionMethod(Episciences_Tools::class, 'buildHtmlTmpDocUrls');
+        $lines = file($method->getFileName());
+        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        self::assertStringContainsString(
+            'urlencode($fileName)',
+            $source,
+            'Security S5: $fileName must be urlencode()d in the href attribute'
+        );
+        self::assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*\$href/',
+            $source,
+            'Security S5: href must be escaped with htmlspecialchars() before HTML injection'
+        );
+        self::assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*\$fileName/',
+            $source,
+            'Security S5: $fileName must be escaped with htmlspecialchars() in the link text'
+        );
     }
 
 }
