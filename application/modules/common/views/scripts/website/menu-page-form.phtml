@@ -11,7 +11,7 @@ $form->removeElement('labels');
 if ($labelsEl !== null) {
     $pageName = 'pages_' . (int)$this->i;
     $labelsValues = (array)$labelsEl->getValue();
-    $labelText = $this->escape($this->translate('Titre de la page'));
+    $labelText = $this->escape($this->translate($this->page->isFolder() ? 'Titre du répertoire' : 'Titre de la page'));
     $errors = $labelsEl->getMessages();
     $hasErrors = !empty($errors);
     ?>
