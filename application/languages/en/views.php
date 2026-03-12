@@ -1897,6 +1897,7 @@ return array(
     "Add" => "Add",
     "Actions" => "Actions",
     "Edit list" => "Edit list",
+    "A mailing list with this name already exists in this journal." => "A mailing list with this name already exists in this journal.",
     "Manage members for" => "Manage members for",
     "Delete list" => "Delete list",
     "Add user" => "Add user",

@@ -66,12 +66,29 @@ class AdministratemailinglistController extends Zend_Controller_Action
                 $name = str_replace($suffix, '', $name);
             }
 
-            $list->setName($prefix . $name . $suffix);
+            // Ensure name uniqueness within the journal
+            $fullName = $prefix . $name . $suffix;
+            $existingList = MailingListsManager::getByName(RVID, $fullName);
+            if ($existingList && (!$id || $existingList->getId() != $id)) {
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                    ->addMessage($this->view->translate('A mailing list with this name already exists in this journal.'));
+                $this->view->list = $list;
+                $this->view->csrfToken = Episciences_Csrf_Helper::generateToken($csrfTokenName);
+                return;
+            }
+
+            $list->setName($fullName);
             $list->setType($params['type'] ?? '');
             $list->setStatus((int)($params['status'] ?? 1));
             
-            MailingListsManager::save($list);
-            $this->_helper->redirector->gotoSimple('index');
+            $savedId = MailingListsManager::save($list);
+
+            if (!$id) {
+                // New list created: redirect to member management
+                $this->_helper->redirector->gotoSimple('manage', null, null, ['id' => $savedId]);
+            } else {
+                $this->_helper->redirector->gotoSimple('index');
+            }
             return;
         }
 

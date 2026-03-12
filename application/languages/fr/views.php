@@ -205,6 +205,7 @@ return [
     "Total unique members" => "Total des membres uniques",
     "Add" => "Ajouter",
 
+    "A mailing list with this name already exists in this journal." => "Une liste de diffusion avec ce nom existe déjà dans cette revue.",
     "Manage members for" => "Gérer les membres pour",
     "Delete list" => "Supprimer la liste",
     "Add user" => "Ajouter l'utilisateur",

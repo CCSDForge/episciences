@@ -181,6 +181,28 @@ class Manager
     }
 
     /**
+     * @param int $rvid
+     * @param string $name
+     * @return MailingList|null
+     */
+    public static function getByName(int $rvid, string $name): ?MailingList
+    {
+        $db = \Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(self::TABLE_MAILING_LISTS)
+            ->where('rvid = ?', $rvid)
+            ->where('name = ?', $name);
+
+        $row = $db->fetchRow($select);
+        if (!$row) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $row */
+        return self::getById((int)$row['id']);
+    }
+
+    /**
      * Resolve all unique users in the mailing list (individual + roles)
      * @param MailingList $list
      * @return array<int, array<string, mixed>> Array of user data (firstname, lastname, email)
