@@ -15,28 +15,33 @@ $this->jQuery()
     <select name="type" id="type" class="menu-toolbar__select">
         <option value=""><?= $this->translate('Choisissez une page') ?></option>
         <?php foreach ($this->groupedPageTypes as $group => $types) : ?>
-            <optgroup label="<?= $this->translate($group) ?>">
-                <?php foreach ($types as $type) :
+            <?php $hasGroup = $group !== '' ?>
+            <?php if ($hasGroup) : ?>
+                <optgroup label="<?= $this->translate($group) ?>">
+            <?php endif; ?>
+            <?php foreach ($types as $type) :
 
-                    $label = sprintf('Episciences_Website_Navigation_Page_%s', ucfirst($type));
-                    $disabled = '';
+                $label = sprintf('Episciences_Website_Navigation_Page_%s', ucfirst($type));
+                $disabled = '';
 
-                    foreach ($this->pages as $page) {
-                        if ($label === get_class($page) && !$page->isMultiple()) {
-                            //La page est déjà ajoutée et non multiple
-                            $disabled = ' disabled = "disabled"';
-                            break;
-                        }
+                foreach ($this->pages as $page) {
+                    if ($label === get_class($page) && !$page->isMultiple()) {
+                        //La page est déjà ajoutée et non multiple
+                        $disabled = ' disabled = "disabled"';
+                        break;
                     }
+                }
 
-                    ?>
+                ?>
 
-                    <option value="<?= $this->escape($type) ?>" <?= $disabled ?>
-                            type="<?= $this->escape($label) ?>"><?= $this->translate($this->escape($label)) ?><?php if (!empty($this->predefinedPageTypes[$type])): ?> 🛈 <?php endif; ?>
-                    </option>
+                <option value="<?= $this->escape($type) ?>" <?= $disabled ?>
+                        type="<?= $this->escape($label) ?>"><?= $this->translate($this->escape($label)) ?><?php if (!empty($this->predefinedPageTypes[$type])): ?> 🛈 <?php endif; ?>
+                </option>
 
-                <?php endforeach; ?>
-            </optgroup>
+            <?php endforeach; ?>
+            <?php if ($hasGroup) : ?>
+                </optgroup>
+            <?php endif; ?>
         <?php endforeach; ?>
     </select>
     <button type="button" class="btn btn-primary menu-toolbar__btn"

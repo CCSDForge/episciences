@@ -261,17 +261,44 @@ class WebsiteDefaultController extends Episciences_Controller_Action
     private function processPageTypes(array $pageTypes = []): array
     {
 
+        $journal = Episciences_ReviewsManager::find(RVCODE);
+        $isSwitched = $journal->isNewFrontSwitched();
+
         $processed = [];
-        foreach ($pageTypes as $type => $label) {
+
+        if ($isSwitched) { // old sites
+            //Flat mode
+            $processed[''] = array_keys($pageTypes);
+        } else {
+            // Group mode
+            $typeToGroup = [];
             foreach (Episciences_Website_Navigation::$groupedPages as $group => $gTypes) {
-                if (in_array($type, $gTypes, true)) {
-                    $processed[$group][] = $type;
+                foreach ($gTypes as $t) {
+                    $typeToGroup[$t] = $group;
                 }
             }
-        }
-        ksort($processed);
-        return $processed;
 
+            foreach ($pageTypes as $type => $label) {
+                if (!isset($typeToGroup[$type])) {
+                    continue;
+                }
+                $group = $typeToGroup[$type];
+                $processed[$group][] = $type;
+            }
+        }
+        $this->sort($processed);
+
+        return $processed;
+    }
+
+    private function sort(array &$processed): void
+    {
+        foreach ($processed as $group => $types) {
+            asort($types, SORT_STRING); // ordered values, keys retained
+            $processed[$group] = $types;
+        }
+
+        ksort($processed, SORT_STRING); //  Sort groups by their key
     }
 
     /**
