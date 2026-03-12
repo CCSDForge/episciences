@@ -33,8 +33,18 @@
                         <?php foreach ($this->mailingLists as $list): ?>
                             <?php $count = $this->memberCounts[$list->getId()] ?? 0; ?>
                             <tr style="transition: background 0.2s ease;">
-                                <th scope="row" style="padding: 15px; vertical-align: middle;">
-                                    <span style="font-weight: 600; color: #333;"><?php echo $this->escape($list->getName()); ?></span>
+                                <th scope="row" style="padding: 15px; vertical-align: middle;" class="list-name-cell">
+                                    <div style="display: flex; align-items: center;">
+                                        <span style="font-weight: 600; color: #333;" class="list-name"><?php echo $this->escape($list->getName()); ?></span>
+                                        <button type="button" class="btn btn-link btn-xs copy-btn" 
+                                                style="opacity: 0; transition: opacity 0.2s; margin-left: 8px; color: #999; padding: 0;" 
+                                                title="<?php echo $this->translate('Copy to clipboard'); ?>" 
+                                                aria-label="<?php echo $this->translate('Copy list name to clipboard'); ?>"
+                                                data-name="<?php echo $this->escape($list->getName()); ?>">
+                                            <span class="glyphicon glyphicon-copy"></span>
+                                        </button>
+                                        <span class="copy-feedback label label-success" style="display: none; margin-left: 8px; font-weight: normal; font-size: 0.75em;"><?php echo $this->translate('Copied!'); ?></span>
+                                    </div>
                                 </th>
                                 <td style="padding: 15px; vertical-align: middle;">
                                     <span class="text-muted"><?php echo $this->translate($list->getType()); ?></span>
@@ -82,3 +92,60 @@
         <?php endif; ?>
     </div>
 </div>
+
+<style>
+.list-name-cell:hover .copy-btn { opacity: 1 !important; }
+.copy-btn:hover { color: #333 !important; }
+</style>
+
+<script>
+(function() {
+    'use strict';
+    document.addEventListener('DOMContentLoaded', function() {
+        const table = document.querySelector('table[aria-labelledby="mailing-lists-title"]');
+        if (!table) return;
+
+        table.addEventListener('click', function(event) {
+            const copyBtn = event.target.closest('.copy-btn');
+            if (!copyBtn) return;
+
+            const name = copyBtn.getAttribute('data-name');
+            const row = copyBtn.closest('tr');
+            const feedback = row.querySelector('.copy-feedback');
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(name).then(() => {
+                    showFeedback(feedback);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                    fallbackCopy(name, feedback);
+                });
+            } else {
+                fallbackCopy(name, feedback);
+            }
+        });
+
+        function fallbackCopy(text, feedback) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showFeedback(feedback);
+            } catch (err) {
+                console.error('Fallback copy failed', err);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function showFeedback(el) {
+            if (!el) return;
+            el.style.display = 'inline-block';
+            setTimeout(() => {
+                el.style.display = 'none';
+            }, 2000);
+        }
+    });
+})();
+</script>
