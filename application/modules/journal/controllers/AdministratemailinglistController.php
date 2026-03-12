@@ -85,10 +85,21 @@ class AdministratemailinglistController extends Zend_Controller_Action
             $list->setRoles($params['roles'] ?? []);
             $list->setUsers($params['uids'] ?? []);
             
+            // Resolve members to check count. If zero, automatically close the list.
+            $members = MailingListsManager::resolveMembers($list);
+            if (empty($members)) {
+                $list->setStatus(0); // Closed
+            }
+
             MailingListsManager::save($list);
             
+            $successMessage = $this->view->translate('Mailing list members saved successfully.');
+            if (empty($members)) {
+                $successMessage .= ' ' . $this->view->translate('The list has been automatically closed because it has no members.');
+            }
+            
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
-                ->addMessage($this->view->translate('Mailing list members saved successfully.'));
+                ->addMessage($successMessage);
 
             $this->_helper->redirector->gotoSimple('manage', null, null, ['id' => $id]);
             return;
