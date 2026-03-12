@@ -266,7 +266,7 @@ class WebsiteDefaultController extends Episciences_Controller_Action
 
         $processed = [];
 
-        if ($isSwitched) { // old sites
+        if (!$isSwitched) { // old sites
             //Flat mode
             $processed[''] = array_keys($pageTypes);
         } else {
