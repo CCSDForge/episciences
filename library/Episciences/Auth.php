@@ -231,6 +231,10 @@ class Episciences_Auth extends Ccsd_Auth
      */
     public static function getPhotoVersion(): string
     {
+        if (!self::isLogged()) {
+            return self::getPhotoVersionAsHash(0);
+        }
+
         $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
         if (!is_int($session->photoVersion)) {
             $session->photoVersion = 0;

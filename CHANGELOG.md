@@ -67,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - [RT#259551] it is now possible to modify the Copy Editor at any time
+* [#947](https://github.com/CCSDForge/episciences/issues/947) [Feature request] wording on the platform - refused / rejected and refused/declined
 * Refactored `public/js/paper/updateOrcidAuthors.js` from jQuery to modern vanilla ES6+ with a class-based architecture.
 * Enhanced ORCID form validation: added duplicate detection while maintaining support for empty submissions for deletions.
 * Update TinyMCE form 7.3.0 to 8.1.2.
