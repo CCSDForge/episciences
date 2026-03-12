@@ -1,0 +1,66 @@
+<div class="row">
+    <div class="col-md-10 col-md-offset-1">
+        <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: none;">
+            <div class="panel-heading" style="background: #fff; border-bottom: 1px solid #eee; padding: 20px;">
+                <h3 style="margin: 0; color: #333;"><?php echo $this->list->getId() ? $this->translate('Edit Mailing List') : $this->translate('Create a new Mailing List'); ?></h3>
+            </div>
+            <div class="panel-body" style="padding: 30px;">
+                <form method="post" class="form-horizontal">
+                    <div class="form-group">
+                        <label for="name-input" class="col-sm-3 control-label"><?php echo $this->translate('Name'); ?> <span class="text-danger" aria-hidden="true">*</span></label>
+                        <div class="col-sm-9">
+                            <div class="input-group">
+                                <span class="input-group-addon" style="background: #f9f9f9; border-right: none; font-family: monospace;"><?php echo strtolower((string)RVCODE); ?>-</span>
+                                <?php 
+                                    $prefix = strtolower((string)RVCODE) . '-';
+                                    $suffix = '@' . DOMAIN;
+                                    $currentName = $this->list->getName();
+                                    $displayName = $currentName;
+                                    if (strpos($currentName, $prefix) === 0) {
+                                        $displayName = substr($currentName, strlen($prefix));
+                                    }
+                                    if (strpos($displayName, $suffix) !== false) {
+                                        $displayName = str_replace($suffix, '', $displayName);
+                                    }
+                                ?>
+                                <input type="text" class="form-control" id="name-input" name="name" 
+                                       value="<?php echo $this->escape($displayName); ?>" 
+                                       required aria-required="true" 
+                                       pattern="[a-zA-Z0-9._-]+"
+                                       title="<?php echo $this->translate('Only alphanumeric characters, dots, dashes and underscores are allowed.'); ?>"
+                                       style="border-left: none; border-right: none; font-family: monospace;">
+                                <span class="input-group-addon" style="background: #f9f9f9; border-left: none; font-family: monospace;">@<?php echo DOMAIN; ?></span>
+                            </div>
+                            <p class="help-block" style="font-size: 0.85em;"><?php echo $this->translate('The journal prefix and domain are added automatically.'); ?></p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="type-input" class="col-sm-3 control-label"><?php echo $this->translate('Type'); ?></label>
+                        <div class="col-sm-9">
+                            <select name="type" id="type-input" class="form-control">
+                                <option value="mailing_list_type_subscribers" <?php echo $this->list->getType() == 'mailing_list_type_subscribers' ? 'selected' : ''; ?>><?php echo $this->translate('mailing_list_type_subscribers'); ?></option>
+                                <option value="mailing_list_type_open" <?php echo $this->list->getType() == 'mailing_list_type_open' ? 'selected' : ''; ?>><?php echo $this->translate('mailing_list_type_open'); ?></option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="status-select" class="col-sm-3 control-label"><?php echo $this->translate('Status'); ?></label>
+                        <div class="col-sm-9">
+                            <select name="status" id="status-select" class="form-control">
+                                <option value="1" <?php echo $this->list->getStatus() == 1 ? 'selected' : ''; ?>><?php echo $this->translate('Open'); ?></option>
+                                <option value="0" <?php echo $this->list->getStatus() == 0 ? 'selected' : ''; ?>><?php echo $this->translate('Closed'); ?></option>
+                            </select>
+                        </div>
+                    </div>
+                    <hr style="margin: 30px 0;">
+                    <div class="form-group">
+                        <div class="col-sm-offset-3 col-sm-9">
+                            <button type="submit" class="btn btn-primary" style="padding: 8px 24px; font-weight: 600;"><?php echo $this->translate('Save Changes'); ?></button>
+                            <a href="<?php echo $this->url(['action' => 'index']); ?>" class="btn btn-link" style="color: #777;"><?php echo $this->translate('Cancel'); ?></a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

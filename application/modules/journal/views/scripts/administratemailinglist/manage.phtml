@@ -1,0 +1,453 @@
+<div class="row" style="margin-bottom: 20px;">
+    <div class="col-md-12">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <h3 style="margin: 0;"><?php echo $this->translate('Manage members for: ') . '<span class="text-primary">' . $this->escape($this->list->getName()) . '</span>'; ?></h3>
+            <a href="<?php echo $this->url(['action' => 'index']); ?>" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-arrow-left"></span> <?php echo $this->translate('Back to list'); ?>
+            </a>
+        </div>
+    </div>
+</div>
+
+<form method="post" id="manage-members-form">
+    <div class="row">
+        <!-- Roles Selection Card -->
+        <div class="col-md-6">
+            <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); height: 100%;">
+                <div class="panel-heading" style="background: #fff; padding: 15px 20px;">
+                    <h4 style="margin: 0; display: flex; align-items: center;">
+                        <span class="glyphicon glyphicon-tags text-muted" style="margin-right: 10px;"></span>
+                        <?php echo $this->translate('Roles'); ?>
+                    </h4>
+                </div>
+                <div class="panel-body" style="padding: 20px;">
+                    <p class="text-muted" id="roles-help" style="font-size: 0.9em; margin-bottom: 20px;">
+                        <?php echo $this->translate('Users with these roles will be automatically included.'); ?>
+                    </p>
+                    <div style="max-height: 350px; overflow-y: auto; padding-right: 10px;" aria-describedby="roles-help">
+                        <?php foreach ($this->availableRoles as $roleId => $roleName): ?>
+                            <?php 
+                                $count = $this->roleUserCounts[$roleId] ?? 0;
+                                if ($count === 0) continue;
+                                $roleClass = 'role-' . $roleId;
+                            ?>
+                            <div class="checkbox-item" style="margin-bottom: 10px; padding: 8px 12px; border: 1px solid #f0f0f0; border-radius: 6px; transition: all 0.2s;">
+                                <label style="display: flex; align-items: center; width: 100%; cursor: pointer; margin-bottom: 0; font-weight: normal;">
+                                    <input type="checkbox" name="roles[]" value="<?php echo $roleId; ?>" <?php echo in_array($roleId, $this->list->getRoles()) ? 'checked' : ''; ?> class="role-checkbox" style="margin: 0 12px 0 0;">
+                                    <span class="label <?php echo $roleClass; ?>" style="flex-grow: 0; margin-right: 10px; font-size: 0.9em; padding: 4px 10px;">
+                                        <?php echo $this->translate($roleName); ?>
+                                    </span>
+                                    <span class="badge" style="background: #f0f0f0; color: #777; font-weight: normal; margin-left: auto;">
+                                        <?php echo $count; ?> <small style="opacity: 0.7; font-size: 0.8em;"><?php echo $this->translate('users'); ?></small>
+                                    </span>
+                                </label>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Individual Members Card -->
+        <div class="col-md-6">
+            <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); height: 100%;">
+                <div class="panel-heading" style="background: #fff; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <h4 style="margin: 0; display: flex; align-items: center;">
+                        <span class="glyphicon glyphicon-user text-muted" style="margin-right: 10px;"></span>
+                        <?php echo $this->translate('Individual Members'); ?>
+                    </h4>
+                    <button type="button" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#userModal" id="open-user-modal">
+                        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> <?php echo $this->translate('Add'); ?>
+                    </button>
+                </div>
+                <div class="panel-body" style="padding: 20px;">
+                    <div id="selected-users">
+                        <div class="sr-only" aria-live="polite" id="member-announcements"></div>
+                        <table class="table table-condensed" id="users-table" aria-labelledby="individual-members-title" style="margin-bottom: 0;">
+                            <thead>
+                                <tr style="border-top: none;">
+                                    <th scope="col" style="border-top: none; color: #999; font-weight: normal; text-transform: uppercase; font-size: 0.8em;"><?php echo $this->translate('User'); ?></th>
+                                    <th scope="col" style="width: 40px; border-top: none;"><span class="sr-only"><?php echo $this->translate('Actions'); ?></span></th>
+                                </tr>
+                            </thead>
+                            <tbody style="border-top: none;">
+                                <?php if (empty($this->list->getUsers())): ?>
+                                    <tr id="no-users-msg">
+                                        <td colspan="2" class="text-center" style="padding: 40px 0; border-top: none;">
+                                            <p class="text-muted" style="margin-bottom: 0; font-style: italic;"><?php echo $this->translate('No individual members selected.'); ?></p>
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($this->list->getUsers() as $uid): ?>
+                                        <?php if (isset($this->journalUsers[$uid])): ?>
+                                            <tr id="user-row-<?php echo $uid; ?>" class="member-row">
+                                                <td style="vertical-align: middle; border-top: 1px solid #f9f9f9;">
+                                                    <span style="font-weight: 500;"><?php echo $this->escape($this->journalUsers[$uid]['SCREEN_NAME']); ?></span>
+                                                    <input type="hidden" name="uids[]" value="<?php echo $uid; ?>" class="uid-input">
+                                                </td>
+                                                <td style="vertical-align: middle; text-align: right; border-top: 1px solid #f9f9f9;">
+                                                    <button type="button" class="btn btn-link btn-xs remove-user text-danger" 
+                                                            data-uid="<?php echo $uid; ?>"
+                                                            aria-label="<?php echo $this->translate('Remove user') . ' ' . $this->escape($this->journalUsers[$uid]['SCREEN_NAME']); ?>">
+                                                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="row" style="margin-top: 30px;">
+        <div class="col-md-12">
+            <div class="well" style="background: #fff; border-radius: 8px; border: 1px solid #eee; display: flex; align-items: center; padding: 15px 25px;">
+                <button type="submit" class="btn btn-primary" style="padding: 10px 30px; font-weight: 600;">
+                    <?php echo $this->translate('Save Members'); ?>
+                </button>
+                <p class="text-muted" style="margin: 0 0 0 20px; font-size: 0.9em;">
+                    <span class="glyphicon glyphicon-info-sign"></span> <?php echo $this->translate('Changes take effect immediately for the view.'); ?>
+                </p>
+            </div>
+        </div>
+    </div>
+</form>
+
+<hr style="margin: 40px 0;">
+
+<!-- Audience Preview Section -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-info" style="border-radius: 8px; border: 1px solid #d9edf7; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+            <div class="panel-heading" style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="panel-title" style="font-weight: 600;">
+                    <span class="glyphicon glyphicon-eye-open" style="margin-right: 8px;"></span>
+                    <?php echo $this->translate('Final Audience Preview'); ?>
+                </h3>
+                <button type="button" id="refresh-preview" class="btn btn-info btn-xs" style="border-radius: 4px; padding: 4px 12px;">
+                    <span class="glyphicon glyphicon-refresh" aria-hidden="true" id="refresh-icon"></span> <?php echo $this->translate('Update Preview'); ?>
+                </button>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+                <div style="padding: 20px; background: #fcfdfe; border-bottom: 1px solid #eee;">
+                    <div class="input-group">
+                        <span class="input-group-addon" style="background: transparent; border-right: none;"><span class="glyphicon glyphicon-search text-muted"></span></span>
+                        <input type="text" id="audience-search" class="form-control" placeholder="<?php echo $this->translate('Filter final audience by name or email...'); ?>" style="border-left: none; box-shadow: none;">
+                    </div>
+                </div>
+                <div style="max-height: 450px; overflow-y: auto;">
+                    <table class="table table-hover" id="audience-table" style="margin-bottom: 0;">
+                        <thead>
+                            <tr style="background: #fdfdfd;">
+                                <th scope="col" style="padding: 12px 20px; color: #777; font-size: 0.85em; text-transform: uppercase; border-top: none;"><?php echo $this->translate('Member'); ?></th>
+                                <th scope="col" style="padding: 12px 20px; color: #777; font-size: 0.85em; text-transform: uppercase; border-top: none;"><?php echo $this->translate('Email'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($this->resolvedMembers)): ?>
+                                <tr id="no-audience-msg">
+                                    <td colspan="2" class="text-center" style="padding: 60px 0;">
+                                        <p class="text-muted" style="font-size: 1.1em;"><?php echo $this->translate('No members match the current selection.'); ?></p>
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($this->resolvedMembers as $member): ?>
+                                    <tr class="audience-row" data-search="<?php echo strtolower(($member['FIRSTNAME'] ?? '') . ' ' . ($member['LASTNAME'] ?? '') . ' ' . ($member['EMAIL'] ?? '')); ?>">
+                                        <td style="padding: 12px 20px; vertical-align: middle;">
+                                            <span style="font-weight: 600; color: #333;"><?php echo $this->escape(($member['FIRSTNAME'] ?? '') . ' ' . ($member['LASTNAME'] ?? '')); ?></span>
+                                        </td>
+                                        <td style="padding: 12px 20px; vertical-align: middle;">
+                                            <code style="background: #f4f4f4; color: #555; padding: 2px 6px; border-radius: 4px; border: none;"><?php echo $this->escape($member['EMAIL'] ?? ''); ?></code>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="panel-footer text-center" style="background: #fff; color: #999; font-size: 0.85em; padding: 10px;">
+                <?php echo $this->translate('This list is dynamically resolved from active roles and individual members.'); ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for User Selection -->
+<div class="modal fade" id="userModal" tabindex="-1" role="dialog" aria-labelledby="userModalLabel" aria-modal="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" style="border-radius: 12px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+            <div class="modal-header" style="background: #fff; border-bottom: 1px solid #f0f0f0; padding: 20px 25px;">
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo $this->translate('Close'); ?>" style="font-size: 24px;"><span>&times;</span></button>
+                <h4 class="modal-title" id="userModalLabel" style="font-weight: 600; color: #333;"><?php echo $this->translate('Add Individual Members'); ?></h4>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <div style="padding: 20px 25px; background: #f9fafb; border-bottom: 1px solid #eee;">
+                    <div class="row">
+                        <div class="col-md-7">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="user-search" class="sr-only"><?php echo $this->translate('Search by name or pseudonym'); ?></label>
+                                <div class="input-group">
+                                    <span class="input-group-addon" style="background: #fff; border-right: none;"><span class="glyphicon glyphicon-search text-muted"></span></span>
+                                    <input type="text" id="user-search" class="form-control" placeholder="<?php echo $this->translate('Search by name, screen name or role...'); ?>" aria-controls="modal-users-table" style="border-left: none; box-shadow: none;">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="role-filter" class="sr-only"><?php echo $this->translate('Filter by role'); ?></label>
+                                <select id="role-filter" class="form-control" aria-controls="modal-users-table" style="box-shadow: none;">
+                                    <option value=""><?php echo $this->translate('All active roles'); ?></option>
+                                    <?php foreach ($this->availableRoles as $roleId => $roleName): ?>
+                                        <?php if (($this->roleUserCounts[$roleId] ?? 0) > 0): ?>
+                                            <option value="<?php echo $roleId; ?>"><?php echo $this->translate($roleName); ?></option>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-hover" id="modal-users-table" style="margin-bottom: 0;">
+                        <thead>
+                            <tr style="background: #fff;">
+                                <th scope="col" style="padding: 12px 25px; color: #999; font-weight: normal; font-size: 0.8em; text-transform: uppercase; border-top: none;"><?php echo $this->translate('User'); ?></th>
+                                <th scope="col" style="padding: 12px 25px; color: #999; font-weight: normal; font-size: 0.8em; text-transform: uppercase; border-top: none;"><?php echo $this->translate('Roles'); ?></th>
+                                <th scope="col" style="padding: 12px 25px; border-top: none; width: 60px;"><span class="sr-only"><?php echo $this->translate('Add'); ?></span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($this->journalUsers as $uid => $user): ?>
+                                <?php if (in_array($uid, $this->selectableUids)): ?>
+                                    <?php 
+                                        $userRoles = $user['ROLES'][RVID] ?? [];
+                                        $rolesLabels = [];
+                                        $searchRoles = '';
+                                        $rolesJson = json_encode($userRoles);
+                                        foreach ($userRoles as $rId) {
+                                            $translatedRole = $this->translate($rId);
+                                            $rolesLabels[] = '<span class="label role-' . $rId . '" style="margin-right: 2px; font-weight: normal; padding: 2px 6px;">' . $translatedRole . '</span>';
+                                            $searchRoles .= ' ' . $translatedRole;
+                                        }
+                                        $dataSearch = strtolower($user['SCREEN_NAME'] . ' ' . ($user['LASTNAME'] ?? '') . ' ' . ($user['FIRSTNAME'] ?? '') . $searchRoles);
+                                    ?>
+                                    <tr class="user-item" data-uid="<?php echo $uid; ?>" data-search="<?php echo $this->escape($dataSearch); ?>" data-roles='<?php echo $rolesJson; ?>'>
+                                        <td style="padding: 12px 25px; vertical-align: middle;">
+                                            <div style="font-weight: 600; color: #333;"><?php echo $this->escape($user['SCREEN_NAME']); ?></div>
+                                            <div style="font-size: 0.85em; color: #777;"><?php echo $this->escape(($user['LASTNAME'] ?? '') . ' ' . ($user['FIRSTNAME'] ?? '')); ?></div>
+                                        </td>
+                                        <td style="padding: 12px 25px; vertical-align: middle;">
+                                            <div style="display: flex; flex-wrap: wrap; gap: 2px;">
+                                                <?php echo implode('', $rolesLabels); ?>
+                                            </div>
+                                        </td>
+                                        <td style="padding: 12px 25px; vertical-align: middle; text-align: right;">
+                                            <button type="button" class="btn btn-default btn-sm add-user-btn" 
+                                                    data-uid="<?php echo $uid; ?>" 
+                                                    data-screenname="<?php echo $this->escape($user['SCREEN_NAME']); ?>"
+                                                    aria-label="<?php echo $this->translate('Add user') . ' ' . $this->escape($user['SCREEN_NAME']); ?>"
+                                                    style="border-radius: 50%; width: 30px; height: 30px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                                                <span class="glyphicon glyphicon-plus" aria-hidden="true" style="top: 0;"></span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #f0f0f0; padding: 15px 25px;">
+                <button type="button" class="btn btn-primary" data-dismiss="modal" style="font-weight: 600; padding: 8px 30px;"><?php echo $this->translate('Done'); ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.checkbox-item:hover { background: #fcfcfc; border-color: #ddd !important; }
+.checkbox-item input[type="checkbox"]:checked + span + span { background: #5cb85c !important; color: #fff !important; }
+.member-row:hover { background: #fcfcfc; }
+.audience-row { transition: background 0.2s; }
+.audience-row:hover { background: #f9f9f9; }
+.fa-spin { animation: fa-spin 2s infinite linear; }
+@keyframes fa-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(359deg); } }
+</style>
+
+<script>
+(function() {
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const announcementContainer = document.getElementById('member-announcements');
+        const userSearchInput = document.getElementById('user-search');
+        const roleFilterSelect = document.getElementById('role-filter');
+        const modalUsersTableBody = document.querySelector('#modal-users-table tbody');
+        const selectedUsersTableBody = document.querySelector('#users-table tbody');
+        const userModal = document.getElementById('userModal');
+        
+        // Audience Preview Elements
+        const audienceSearchInput = document.getElementById('audience-search');
+        const audienceTableBody = document.querySelector('#audience-table tbody');
+        const refreshPreviewBtn = document.getElementById('refresh-preview');
+        const refreshIcon = document.getElementById('refresh-icon');
+
+        function announce(message) {
+            if (announcementContainer) {
+                announcementContainer.textContent = message;
+            }
+        }
+
+        function filterModalUsers() {
+            const searchValue = userSearchInput.value.toLowerCase();
+            const roleValue = roleFilterSelect.value;
+            const rows = modalUsersTableBody.querySelectorAll('tr');
+
+            rows.forEach(row => {
+                const searchData = row.getAttribute('data-search') || '';
+                const matchesSearch = searchData.indexOf(searchValue) > -1;
+                let matchesRole = true;
+
+                if (roleValue !== '') {
+                    try {
+                        const roles = JSON.parse(row.getAttribute('data-roles') || '[]');
+                        matchesRole = Array.isArray(roles) && roles.indexOf(roleValue) > -1;
+                    } catch (e) {
+                        matchesRole = false;
+                    }
+                }
+
+                row.style.display = (matchesSearch && matchesRole) ? '' : 'none';
+            });
+        }
+
+        // Search/Filter in audience preview
+        audienceSearchInput.addEventListener('keyup', function() {
+            const value = this.value.toLowerCase();
+            const rows = audienceTableBody.querySelectorAll('.audience-row');
+            rows.forEach(row => {
+                const searchData = row.getAttribute('data-search') || '';
+                row.style.display = searchData.indexOf(value) > -1 ? '' : 'none';
+            });
+        });
+
+        // AJAX refresh for audience preview
+        refreshPreviewBtn.addEventListener('click', function() {
+            refreshPreviewBtn.disabled = true;
+            refreshIcon.classList.add('fa-spin');
+
+            const roles = Array.from(document.querySelectorAll('.role-checkbox:checked')).map(cb => cb.value);
+            const uids = Array.from(document.querySelectorAll('.uid-input')).map(input => input.value);
+
+            const formData = new FormData();
+            roles.forEach(role => formData.append('roles[]', role));
+            uids.forEach(uid => formData.append('uids[]', uid));
+
+            fetch('<?php echo $this->url(['action' => 'preview']); ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                audienceTableBody.innerHTML = '';
+                if (data.length === 0) {
+                    audienceTableBody.innerHTML = `<tr><td colspan="2" class="text-center" style="padding: 60px 0;"><p class="text-muted" style="font-size: 1.1em;"><?php echo $this->translate('No members match the current selection.'); ?></p></td></tr>`;
+                } else {
+                    data.forEach(member => {
+                        const row = document.createElement('tr');
+                        row.className = 'audience-row';
+                        const searchData = `${member.FIRSTNAME || ''} ${member.LASTNAME || ''} ${member.EMAIL || ''}`.toLowerCase();
+                        row.setAttribute('data-search', searchData);
+                        row.innerHTML = `
+                            <td style="padding: 12px 20px; vertical-align: middle;">
+                                <span style="font-weight: 600; color: #333;">${member.FIRSTNAME || ''} ${member.LASTNAME || ''}</span>
+                            </td>
+                            <td style="padding: 12px 20px; vertical-align: middle;">
+                                <code style="background: #f4f4f4; color: #555; padding: 2px 6px; border-radius: 4px; border: none;">${member.EMAIL || ''}</code>
+                            </td>`;
+                        audienceTableBody.appendChild(row);
+                    });
+                }
+                announce('<?php echo $this->translate('Audience preview updated'); ?>');
+            })
+            .catch(error => {
+                console.error('Error fetching preview:', error);
+                alert('<?php echo $this->translate('Failed to update preview'); ?>');
+            })
+            .finally(() => {
+                refreshPreviewBtn.disabled = false;
+                refreshIcon.classList.remove('fa-spin');
+            });
+        });
+
+        // Event delegation for dynamic buttons
+        document.addEventListener('click', function(event) {
+            // Add user from modal
+            const addBtn = event.target.closest('.add-user-btn');
+            if (addBtn) {
+                const uid = addBtn.getAttribute('data-uid');
+                const screenName = addBtn.getAttribute('data-screenname');
+                
+                if (!document.getElementById('user-row-' + uid)) {
+                    const noUsersMsg = document.getElementById('no-users-msg');
+                    if (noUsersMsg) {
+                        noUsersMsg.remove();
+                    }
+
+                    const rowHtml = `
+                        <tr id="user-row-${uid}" class="member-row">
+                            <td style="vertical-align: middle; border-top: 1px solid #f9f9f9;">
+                                <span style="font-weight: 500;">${screenName}</span>
+                                <input type="hidden" name="uids[]" value="${uid}" class="uid-input">
+                            </td>
+                            <td style="vertical-align: middle; text-align: right; border-top: 1px solid #f9f9f9;">
+                                <button type="button" class="btn btn-link btn-xs remove-user text-danger" data-uid="${uid}" aria-label="<?php echo $this->translate('Remove user'); ?> ${screenName}">
+                                    <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                                </button>
+                            </td>
+                        </tr>`;
+                    selectedUsersTableBody.insertAdjacentHTML('beforeend', rowHtml);
+                    announce(screenName + ' <?php echo $this->translate('added to list'); ?>');
+                }
+
+                const parentRow = addBtn.closest('tr');
+                parentRow.style.backgroundColor = '#f0fff0';
+                setTimeout(() => {
+                    parentRow.style.backgroundColor = '';
+                }, 500);
+            }
+
+            // Remove user
+            const removeBtn = event.target.closest('.remove-user');
+            if (removeBtn) {
+                const uid = removeBtn.getAttribute('data-uid');
+                const row = document.getElementById('user-row-' + uid);
+                if (row) {
+                    const screenNameCell = row.querySelector('td');
+                    const screenName = screenNameCell ? screenNameCell.textContent.trim() : '';
+                    row.remove();
+                    
+                    if (selectedUsersTableBody.querySelectorAll('tr.member-row').length === 0) {
+                        selectedUsersTableBody.insertAdjacentHTML('beforeend', '<tr id="no-users-msg"><td colspan="2" class="text-center" style="padding: 40px 0; border-top: none;"><p class="text-muted" style="margin-bottom: 0; font-style: italic;"><?php echo $this->translate('No individual members selected.'); ?></p></td></tr>');
+                    }
+                    announce(screenName + ' <?php echo $this->translate('removed from list'); ?>');
+                }
+            }
+        });
+
+        // Modal focus management
+        if (userModal && typeof jQuery !== 'undefined') {
+            window.jQuery(userModal).on('shown.bs.modal', function() {
+                userSearchInput.focus();
+            });
+        }
+    });
+})();
+</script>
