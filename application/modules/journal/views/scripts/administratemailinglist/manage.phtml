@@ -10,6 +10,7 @@
 </div>
 
 <form method="post" id="manage-members-form">
+    <input type="hidden" name="<?php echo $this->escape($this->csrfToken['name']); ?>" value="<?php echo $this->escape($this->csrfToken['value']); ?>">
     <div class="row">
         <!-- Roles Selection Card -->
         <div class="col-md-6">

@@ -6,6 +6,7 @@
             </div>
             <div class="panel-body" style="padding: 30px;">
                 <form method="post" class="form-horizontal">
+                    <input type="hidden" name="<?php echo $this->escape($this->csrfToken['name']); ?>" value="<?php echo $this->escape($this->csrfToken['value']); ?>">
                     <div class="form-group">
                         <label for="name-input" class="col-sm-3 control-label"><?php echo $this->translate('Name'); ?> <span class="text-danger" aria-hidden="true">*</span></label>
                         <div class="col-sm-9">

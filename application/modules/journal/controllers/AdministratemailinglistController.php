@@ -27,6 +27,8 @@ class AdministratemailinglistController extends Zend_Controller_Action
     public function editAction(): void
     {
         $id = $this->_getParam('id');
+        $csrfTokenName = 'mailing_list_edit_' . ($id ?: 'new');
+
         if ($id) {
             $list = MailingListsManager::getById((int)$id);
             if (!$list || $list->getRvid() != RVID) {
@@ -40,6 +42,12 @@ class AdministratemailinglistController extends Zend_Controller_Action
 
         if ($this->getRequest()->isPost()) {
             $params = $this->getRequest()->getPost();
+
+            if (!Episciences_Csrf_Helper::validateToken($csrfTokenName, $params[$csrfTokenName] ?? '')) {
+                $this->_helper->redirector->gotoUrl('/error/deny');
+                return;
+            }
+
             $name = $params['name'] ?? '';
             
             // Sanitize user part: only alphanumeric, dots, dashes, underscores
@@ -68,11 +76,13 @@ class AdministratemailinglistController extends Zend_Controller_Action
         }
 
         $this->view->list = $list;
+        $this->view->csrfToken = Episciences_Csrf_Helper::generateToken($csrfTokenName);
     }
 
     public function manageAction(): void
     {
         $id = (int)$this->_getParam('id');
+        $csrfTokenName = 'mailing_list_manage_' . $id;
         $list = MailingListsManager::getById($id);
 
         if (!$list || $list->getRvid() != RVID) {
@@ -82,6 +92,12 @@ class AdministratemailinglistController extends Zend_Controller_Action
 
         if ($this->getRequest()->isPost()) {
             $params = $this->getRequest()->getPost();
+
+            if (!Episciences_Csrf_Helper::validateToken($csrfTokenName, $params[$csrfTokenName] ?? '')) {
+                $this->_helper->redirector->gotoUrl('/error/deny');
+                return;
+            }
+
             $list->setRoles($params['roles'] ?? []);
             $list->setUsers($params['uids'] ?? []);
             
@@ -106,6 +122,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
         }
 
         $this->view->list = $list;
+        $this->view->csrfToken = Episciences_Csrf_Helper::generateToken($csrfTokenName);
         
         // Get available roles for the journal
         $acl = new Episciences_Acl();
