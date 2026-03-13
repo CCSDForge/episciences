@@ -201,6 +201,10 @@ class AdministratemailinglistController extends Zend_Controller_Action
         foreach ($uidsInList as $uid) {
             if (!isset($usersWithRoles[$uid])) {
                 $oUser = new Episciences_User();
+                // findWithCAS() can return null when the user no longer exists,
+                // but ZF1's fetchRow() return type (non-null) prevents PHPStan
+                // from seeing the falsy path through the call chain.
+                /** @phpstan-ignore if.alwaysTrue */
                 if ($oUser->findWithCAS($uid)) {
                     $oUser->loadRoles();
                     $usersWithRoles[$uid] = $oUser;
