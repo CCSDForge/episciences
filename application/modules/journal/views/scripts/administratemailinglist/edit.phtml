@@ -23,10 +23,10 @@
                                             $displayName = '';
                                         } else {
                                             $prefixWithHyphen = $rvcode . '-';
-                                            if (strpos($currentName, $prefixWithHyphen) === 0) {
+                                            if (str_starts_with($currentName, $prefixWithHyphen)) {
                                                 $displayName = substr($currentName, strlen($prefixWithHyphen));
                                             }
-                                            if (strpos($displayName, $suffix) !== false) {
+                                            if (str_contains($displayName, $suffix)) {
                                                 $displayName = str_replace($suffix, '', $displayName);
                                             }
                                         }

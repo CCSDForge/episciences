@@ -1917,6 +1917,7 @@ return array(
     "Manage members for" => "Manage members for",
     "Delete list" => "Delete list",
     "Add user" => "Add user",
+    "Invalid list type." => "Invalid list type.",
     "Mails" => "Mail",
     "Relances" => "Reminders",
 

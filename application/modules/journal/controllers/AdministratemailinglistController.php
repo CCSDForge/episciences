@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 use Episciences\MailingList\MailingList;
 use Episciences\MailingList\Manager as MailingListsManager;
 
@@ -23,6 +23,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
         $this->view->mailingLists = MailingListsManager::getList(RVID);
         $this->view->memberCounts = MailingListsManager::getMemberCounts(RVID);
         $this->view->mandatoryName = strtolower((string)RVCODE) . '@' . DOMAIN;
+        $this->view->deleteCsrfToken = Episciences_Csrf_Helper::generateToken('mailing_list_delete');
     }
 
     public function editAction(): void
@@ -32,7 +33,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
 
         if ($id) {
             $list = MailingListsManager::getById((int)$id);
-            if (!$list || $list->getRvid() != RVID) {
+            if (!$list || $list->getRvid() !== (int)RVID) {
                 $this->_helper->redirector->gotoSimple('index');
                 return;
             }
@@ -64,7 +65,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
 
             // 1. Ensure name uniqueness globally (across all journals)
             $existingList = MailingListsManager::getByName($fullName);
-            if ($existingList && (!$id || $existingList->getId() != $id)) {
+            if ($existingList && (!$id || $existingList->getId() !== (int)$id)) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
                     ->addMessage($this->view->translate('A mailing list with this name already exists.'));
                 $this->view->list = $list;
@@ -87,13 +88,22 @@ class AdministratemailinglistController extends Zend_Controller_Action
             }
 
             $list->setName($fullName);
-            
+
             // Mandatory list (rvcode@domain) must be 'open'
             $mandatoryName = $rvcode . $suffix;
             if ($fullName === $mandatoryName) {
                 $list->setType('mailing_list_type_open');
             } else {
-                $list->setType($params['type'] ?? '');
+                $allowedTypes = ['mailing_list_type_open', 'mailing_list_type_subscribers'];
+                $type = $params['type'] ?? '';
+                if (!in_array($type, $allowedTypes, true)) {
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                        ->addMessage($this->view->translate('Invalid list type.'));
+                    $this->view->list = $list;
+                    $this->view->csrfToken = Episciences_Csrf_Helper::generateToken($csrfTokenName);
+                    return;
+                }
+                $list->setType($type);
             }
 
             $list->setStatus((int)($params['status'] ?? 1));
@@ -120,7 +130,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
         $csrfTokenName = 'mailing_list_manage_' . $id;
         $list = MailingListsManager::getById($id);
 
-        if (!$list || $list->getRvid() != RVID) {
+        if (!$list || $list->getRvid() !== (int)RVID) {
             $this->_helper->redirector->gotoSimple('index');
             return;
         }
@@ -133,8 +143,10 @@ class AdministratemailinglistController extends Zend_Controller_Action
                 return;
             }
 
-            $list->setRoles($params['roles'] ?? []);
-            $list->setUsers($params['uids'] ?? []);
+            $rawRoles = is_array($params['roles'] ?? null) ? $params['roles'] : [];
+            $rawUids  = is_array($params['uids'] ?? null) ? $params['uids'] : [];
+            $list->setRoles(array_slice($rawRoles, 0, MailingListsManager::MAX_ROLES));
+            $list->setUsers(array_map('intval', array_slice($rawUids, 0, MailingListsManager::MAX_USERS)));
             
             // Resolve members to check count. If zero, automatically close the list.
             $members = MailingListsManager::resolveMembers($list);
@@ -245,8 +257,18 @@ class AdministratemailinglistController extends Zend_Controller_Action
         }
 
         $params = $this->getRequest()->getPost();
-        $roles = $params['roles'] ?? [];
-        $uids = $params['uids'] ?? [];
+        $rawRoles = is_array($params['roles'] ?? null) ? $params['roles'] : [];
+        $rawUids  = is_array($params['uids'] ?? null) ? $params['uids'] : [];
+
+        // Cap array sizes to prevent oversized SQL IN() clauses
+        $roles = array_slice($rawRoles, 0, MailingListsManager::MAX_ROLES);
+        $uids  = array_map('intval', array_slice($rawUids, 0, MailingListsManager::MAX_USERS));
+
+        // Validate that submitted UIDs actually belong to this journal
+        if (!empty($uids)) {
+            $journalUids = MailingListsManager::getJournalUids(RVID);
+            $uids = array_values(array_intersect($uids, $journalUids));
+        }
 
         $tempList = new MailingList();
         $tempList->setRvid(RVID);
@@ -254,18 +276,40 @@ class AdministratemailinglistController extends Zend_Controller_Action
         $tempList->setUsers($uids);
 
         $members = MailingListsManager::resolveMembers($tempList);
-        
+
+        try {
+            $body = json_encode($members, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            $this->getResponse()
+                ->setHttpResponseCode(500)
+                ->setHeader('Content-Type', 'application/json')
+                ->setBody('{"error":"encoding_failed"}');
+            return;
+        }
+
         $this->getResponse()
             ->setHeader('Content-Type', 'application/json')
-            ->setBody(json_encode($members));
+            ->setBody($body);
     }
 
     public function deleteAction(): void
     {
-        $id = (int)$this->_getParam('id');
+        if (!$this->getRequest()->isPost()) {
+            $this->_helper->redirector->gotoSimple('index');
+            return;
+        }
+
+        $params = $this->getRequest()->getPost();
+
+        if (!Episciences_Csrf_Helper::validateToken('mailing_list_delete', $params['mailing_list_delete'] ?? '')) {
+            $this->_helper->redirector->gotoUrl('/error/deny');
+            return;
+        }
+
+        $id = (int)($params['id'] ?? 0);
         $list = MailingListsManager::getById($id);
 
-        if ($list && $list->getRvid() == RVID) {
+        if ($list && $list->getRvid() === (int)RVID) {
             // Prevent deletion of mandatory list
             $mandatoryName = strtolower((string)RVCODE) . '@' . DOMAIN;
             if ($list->getName() === $mandatoryName) {

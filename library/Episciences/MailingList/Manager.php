@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 namespace Episciences\MailingList;
 
 use Zend_Db_Table_Abstract;
@@ -11,6 +11,8 @@ class Manager
     public const TABLE_MAILING_LIST_ROLES = 'mailing_list_roles';
 
     public const MAX_MAILING_LISTS = 5;
+    public const MAX_ROLES = 50;
+    public const MAX_USERS = 500;
 
     /**
      * @param int $rvid
@@ -74,38 +76,65 @@ class Manager
     /**
      * @param MailingList $list
      * @return int
+     * @throws \Exception
      */
     public static function save(MailingList $list): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $data = $list->toArray();
-        unset($data['id']);
+        $db->beginTransaction();
 
-        if ($list->getId()) {
-            $db->update(self::TABLE_MAILING_LISTS, $data, ['id = ?' => $list->getId()]);
-            $id = (int)$list->getId();
-        } else {
-            $db->insert(self::TABLE_MAILING_LISTS, $data);
-            $id = (int)$db->lastInsertId();
-            $list->setId($id);
-        }
+        try {
+            $data = $list->toArray();
+            unset($data['id']);
 
-        // Save users
-        $db->delete(self::TABLE_MAILING_LIST_USERS, ['list_id = ?' => $id]);
-        foreach ($list->getUsers() as $uid) {
-            $db->insert(self::TABLE_MAILING_LIST_USERS, [
-                'list_id' => $id,
-                'uid' => $uid
-            ]);
-        }
+            if ($list->getId()) {
+                $db->update(self::TABLE_MAILING_LISTS, $data, ['id = ?' => $list->getId()]);
+                $id = (int)$list->getId();
+            } else {
+                $db->insert(self::TABLE_MAILING_LISTS, $data);
+                $id = (int)$db->lastInsertId();
+                if ($id === 0) {
+                    throw new \RuntimeException('Failed to retrieve last insert ID after creating mailing list.');
+                }
+                $list->setId($id);
+            }
 
-        // Save roles
-        $db->delete(self::TABLE_MAILING_LIST_ROLES, ['list_id = ?' => $id]);
-        foreach ($list->getRoles() as $role) {
-            $db->insert(self::TABLE_MAILING_LIST_ROLES, [
-                'list_id' => $id,
-                'role' => $role
-            ]);
+            // Save users — delete then batch insert
+            $db->delete(self::TABLE_MAILING_LIST_USERS, ['list_id = ?' => $id]);
+            $users = $list->getUsers();
+            if (!empty($users)) {
+                $placeholders = implode(', ', array_fill(0, count($users), '(?, ?)'));
+                $params = [];
+                foreach ($users as $uid) {
+                    $params[] = $id;
+                    $params[] = (int)$uid;
+                }
+                $db->query(
+                    'INSERT INTO ' . self::TABLE_MAILING_LIST_USERS . ' (list_id, uid) VALUES ' . $placeholders,
+                    $params
+                );
+            }
+
+            // Save roles — delete then batch insert
+            $db->delete(self::TABLE_MAILING_LIST_ROLES, ['list_id = ?' => $id]);
+            $roles = $list->getRoles();
+            if (!empty($roles)) {
+                $placeholders = implode(', ', array_fill(0, count($roles), '(?, ?)'));
+                $params = [];
+                foreach ($roles as $role) {
+                    $params[] = $id;
+                    $params[] = (string)$role;
+                }
+                $db->query(
+                    'INSERT INTO ' . self::TABLE_MAILING_LIST_ROLES . ' (list_id, role) VALUES ' . $placeholders,
+                    $params
+                );
+            }
+
+            $db->commit();
+        } catch (\Exception $e) {
+            $db->rollBack();
+            throw $e;
         }
 
         return $id;
@@ -224,15 +253,38 @@ class Manager
     }
 
     /**
+     * Return all UIDs that have at least one role in the given journal.
+     * Used to scope preview/manage actions to the current journal.
+     * @param int $rvid
+     * @return array<int>
+     */
+    public static function getJournalUids(int $rvid): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->distinct()
+            ->from(T_USER_ROLES, ['UID'])
+            ->where('RVID = ?', $rvid);
+
+        /** @var array<int> $uids */
+        $uids = array_map('intval', $db->fetchCol($select));
+        return $uids;
+    }
+
+    /**
      * Resolve all unique users in the mailing list (individual + roles)
      * @param MailingList $list
      * @return array<int, array<string, mixed>> Array of user data (firstname, lastname, email)
      */
     public static function resolveMembers(MailingList $list): array
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $rvid = $list->getRvid();
-        
+        if ($rvid === null) {
+            return [];
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
         $uids = $list->getUsers();
         $roles = $list->getRoles();
 

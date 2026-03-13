@@ -91,17 +91,31 @@ const EpisciencesMailingList = (function() {
                         audienceTableBody.innerHTML = `<tr><td colspan="2" class="text-center" style="padding: 60px 0;"><p class="text-muted" style="font-size: 1.1em;">${options.noMembersMsg}</p></td></tr>`;
                     } else {
                         data.forEach(member => {
+                            const firstName = member.FIRSTNAME || '';
+                            const lastName = member.LASTNAME || '';
+                            const email = member.EMAIL || '';
+                            const searchData = `${firstName} ${lastName} ${email}`.toLowerCase();
+
                             const row = document.createElement('tr');
                             row.className = 'audience-row';
-                            const searchData = `${member.FIRSTNAME || ''} ${member.LASTNAME || ''} ${member.EMAIL || ''}`.toLowerCase();
                             row.setAttribute('data-search', searchData);
-                            row.innerHTML = `
-                                <td style="padding: 12px 20px; vertical-align: middle;">
-                                    <span style="font-weight: 600; color: #333;">${member.FIRSTNAME || ''} ${member.LASTNAME || ''}</span>
-                                </td>
-                                <td style="padding: 12px 20px; vertical-align: middle;">
-                                    <code style="background: #f4f4f4; color: #555; padding: 2px 6px; border-radius: 4px; border: none;">${member.EMAIL || ''}</code>
-                                </td>`;
+
+                            const tdName = document.createElement('td');
+                            tdName.style.cssText = 'padding: 12px 20px; vertical-align: middle;';
+                            const nameSpan = document.createElement('span');
+                            nameSpan.style.cssText = 'font-weight: 600; color: #333;';
+                            nameSpan.textContent = `${firstName} ${lastName}`;
+                            tdName.appendChild(nameSpan);
+
+                            const tdEmail = document.createElement('td');
+                            tdEmail.style.cssText = 'padding: 12px 20px; vertical-align: middle;';
+                            const emailCode = document.createElement('code');
+                            emailCode.style.cssText = 'background: #f4f4f4; color: #555; padding: 2px 6px; border-radius: 4px; border: none;';
+                            emailCode.textContent = email;
+                            tdEmail.appendChild(emailCode);
+
+                            row.appendChild(tdName);
+                            row.appendChild(tdEmail);
                             audienceTableBody.appendChild(row);
                         });
                     }

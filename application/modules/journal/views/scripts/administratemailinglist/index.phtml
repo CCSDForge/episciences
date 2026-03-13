@@ -82,13 +82,16 @@
                                             <span class="glyphicon glyphicon-user" aria-hidden="true"></span>
                                         </a>
                                         <?php if ($list->getName() !== $this->mandatoryName): ?>
-                                            <a href="<?php echo $this->url(['action' => 'delete', 'id' => $list->getId()]); ?>" 
-                                               class="btn btn-danger btn-sm" 
-                                               aria-label="<?php echo $this->translate('Delete list') . ' ' . $this->escape($list->getName()); ?>"
-                                               title="<?php echo $this->translate('Delete'); ?>"
-                                               onclick="return confirm('<?php echo $this->translate('Are you sure you want to delete this list?'); ?>');">
-                                                <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
-                                            </a>
+                                            <form method="post" action="<?php echo $this->url(['controller' => 'administratemailinglist', 'action' => 'delete'], null, true); ?>" style="display:inline;" onsubmit="return confirm('<?php echo $this->escape($this->translate('Are you sure you want to delete this list?')); ?>');">
+                                                <input type="hidden" name="id" value="<?php echo (int)$list->getId(); ?>">
+                                                <input type="hidden" name="mailing_list_delete" value="<?php echo $this->escape($this->deleteCsrfToken); ?>">
+                                                <button type="submit"
+                                                        class="btn btn-danger btn-sm"
+                                                        aria-label="<?php echo $this->escape($this->translate('Delete list') . ' ' . $list->getName()); ?>"
+                                                        title="<?php echo $this->escape($this->translate('Delete')); ?>">
+                                                    <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                                                </button>
+                                            </form>
                                         <?php else: ?>
                                             <button class="btn btn-danger btn-sm disabled" title="<?php echo $this->translate('The mandatory mailing list cannot be deleted.'); ?>" disabled>
                                                 <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
