@@ -1457,30 +1457,30 @@ __metadata:
   linkType: hard
 
 "@emnapi/core@npm:^1.4.3":
-  version: 1.8.1
-  resolution: "@emnapi/core@npm:1.8.1"
+  version: 1.9.0
+  resolution: "@emnapi/core@npm:1.9.0"
   dependencies:
-    "@emnapi/wasi-threads": "npm:1.1.0"
+    "@emnapi/wasi-threads": "npm:1.2.0"
     tslib: "npm:^2.4.0"
-  checksum: 10/904ea60c91fc7d8aeb4a8f2c433b8cfb47c50618f2b6f37429fc5093c857c6381c60628a5cfbc3a7b0d75b0a288f21d4ed2d4533e82f92c043801ef255fd6a5c
+  checksum: 10/52d8dc5ba0d6814c5061686b8286d84cc5349c8fc09de3a9c4175bc2369c2890b335f7b03e55bc19ce3033158962cd817522fcb3bdeb1feb9ba7a060d61b69ab
   languageName: node
   linkType: hard
 
 "@emnapi/runtime@npm:^1.4.3":
-  version: 1.8.1
-  resolution: "@emnapi/runtime@npm:1.8.1"
+  version: 1.9.0
+  resolution: "@emnapi/runtime@npm:1.9.0"
   dependencies:
     tslib: "npm:^2.4.0"
-  checksum: 10/26725e202d4baefdc4a6ba770f703dfc80825a27c27a08c22bac1e1ce6f8f75c47b4fe9424d9b63239463c33ef20b650f08d710da18dfa1164a95e5acb865dba
+  checksum: 10/d04a7e67676c2560d5394a01d63532af943760cf19cc8f375390a345aeab2b19e9ee35485b06b5c211df18f947fb14ac50658fca5c4067946f1e50af3490b3b5
   languageName: node
   linkType: hard
 
-"@emnapi/wasi-threads@npm:1.1.0":
-  version: 1.1.0
-  resolution: "@emnapi/wasi-threads@npm:1.1.0"
+"@emnapi/wasi-threads@npm:1.2.0":
+  version: 1.2.0
+  resolution: "@emnapi/wasi-threads@npm:1.2.0"
   dependencies:
     tslib: "npm:^2.4.0"
-  checksum: 10/0d557e75262d2f4c95cb2a456ba0785ef61f919ce488c1d76e5e3acfd26e00c753ef928cd80068363e0c166ba8cc0141305daf0f81aad5afcd421f38f11e0f4e
+  checksum: 10/c8e48c7200530744dc58170d2e25933b61433e4a0c50b4f192f5d8d4b065c7023dbfc48dac0afadbc29bd239013f2ae454c6e54e0ca6e8248402bf95c9e77e22
   languageName: node
   linkType: hard
 
@@ -4085,13 +4085,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"find-up@npm:5.0.0":
-  version: 5.0.0
-  resolution: "find-up@npm:5.0.0"
+"find-up@npm:8.0.0":
+  version: 8.0.0
+  resolution: "find-up@npm:8.0.0"
   dependencies:
-    locate-path: "npm:^6.0.0"
-    path-exists: "npm:^4.0.0"
-  checksum: 10/07955e357348f34660bde7920783204ff5a26ac2cafcaa28bace494027158a97b9f56faaf2d89a6106211a8174db650dd9f503f9c0d526b1202d5554a00b9095
+    locate-path: "npm:^8.0.0"
+    unicorn-magic: "npm:^0.3.0"
+  checksum: 10/0db90efb0543250e4239a299205389d490afffe178e8ed916d53100611faa69f9f3039b2dc951eb254f02ff4ac4c25bf6511c93c4c08f582b314b1aa776e4584
   languageName: node
   linkType: hard
 
@@ -5254,12 +5254,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"locate-path@npm:^6.0.0":
-  version: 6.0.0
-  resolution: "locate-path@npm:6.0.0"
+"locate-path@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "locate-path@npm:8.0.0"
   dependencies:
-    p-locate: "npm:^5.0.0"
-  checksum: 10/72eb661788a0368c099a184c59d2fee760b3831c9c1c33955e8a19ae4a21b4116e53fa736dc086cdeb9fce9f7cc508f2f92d2d3aae516f133e16a2bb59a39f5a
+    p-locate: "npm:^6.0.0"
+  checksum: 10/9c8c1c0ace8dc496e916fadee5a7bcc6abf3a4a0952e25c6e7c8c4c8cd9f8f6e97e0ee5d303b61df1c13dce92b15aad60ce262aa4b728e617d1e03c196ea6a8a
   languageName: node
   linkType: hard
 
@@ -5691,7 +5691,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"p-limit@npm:^3.0.2, p-limit@npm:^3.1.0":
+"p-limit@npm:^3.1.0":
   version: 3.1.0
   resolution: "p-limit@npm:3.1.0"
   dependencies:
@@ -5700,12 +5700,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"p-locate@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "p-locate@npm:5.0.0"
+"p-limit@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "p-limit@npm:4.0.0"
   dependencies:
-    p-limit: "npm:^3.0.2"
-  checksum: 10/1623088f36cf1cbca58e9b61c4e62bf0c60a07af5ae1ca99a720837356b5b6c5ba3eb1b2127e47a06865fee59dd0453cad7cc844cda9d5a62ac1a5a51b7c86d3
+    yocto-queue: "npm:^1.0.0"
+  checksum: 10/01d9d70695187788f984226e16c903475ec6a947ee7b21948d6f597bed788e3112cc7ec2e171c1d37125057a5f45f3da21d8653e04a3a793589e12e9e80e756b
+  languageName: node
+  linkType: hard
+
+"p-locate@npm:^6.0.0":
+  version: 6.0.0
+  resolution: "p-locate@npm:6.0.0"
+  dependencies:
+    p-limit: "npm:^4.0.0"
+  checksum: 10/2bfe5234efa5e7a4e74b30a5479a193fdd9236f8f6b4d2f3f69e3d286d9a7d7ab0c118a2a50142efcf4e41625def635bd9332d6cbf9cc65d85eb0718c579ab38
   languageName: node
   linkType: hard
 
@@ -5750,13 +5759,6 @@ __metadata:
   dependencies:
     entities: "npm:^6.0.0"
   checksum: 10/1973850932bb1cbd52ab64502761489fbe1bb43a52dee7ce41aac0b6c33a51a92aaee04661590b0912b739ae9ee316bce4c78c8ea34af42a7e522c983c3c6cf5
-  languageName: node
-  linkType: hard
-
-"path-exists@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "path-exists@npm:4.0.0"
-  checksum: 10/505807199dfb7c50737b057dd8d351b82c033029ab94cb10a657609e00c1bc53b951cfdbccab8de04c5584d5eff31128ce6afd3db79281874a5ef2adbba55ed1
   languageName: node
   linkType: hard
 
@@ -6948,15 +6950,15 @@ __metadata:
   linkType: hard
 
 "tar@npm:^7.5.4":
-  version: 7.5.9
-  resolution: "tar@npm:7.5.9"
+  version: 7.5.11
+  resolution: "tar@npm:7.5.11"
   dependencies:
     "@isaacs/fs-minipass": "npm:^4.0.0"
     chownr: "npm:^3.0.0"
     minipass: "npm:^7.1.2"
     minizlib: "npm:^3.1.0"
     yallist: "npm:^5.0.0"
-  checksum: 10/1213cdde9c22d6acf8809ba5d2a025212ce3517bc99c4a4c6981b7dc0489bf3b164db9c826c9517680889194c9ba57448c8ff0da35eca9a60bb7689bf0b3897d
+  checksum: 10/fb2e77ee858a73936c68e066f4a602d428d6f812e6da0cc1e14a41f99498e4f7fd3535e355fa15157240a5538aa416026cfa6306bb0d1d1c1abf314b1f878e9a
   languageName: node
   linkType: hard
 
@@ -7211,6 +7213,13 @@ __metadata:
   version: 2.2.0
   resolution: "unicode-property-aliases-ecmascript@npm:2.2.0"
   checksum: 10/0dd0f6e70130c59b4a841bac206758f70227b113145e4afe238161e3e8540e8eb79963e7a228cd90ad13d499e96f7ef4ee8940835404b2181ad9bf9c174818e3
+  languageName: node
+  linkType: hard
+
+"unicorn-magic@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "unicorn-magic@npm:0.3.0"
+  checksum: 10/bdd7d7c522f9456f32a0b77af23f8854f9a7db846088c3868ec213f9550683ab6a2bdf3803577eacbafddb4e06900974385841ccb75338d17346ccef45f9cb01
   languageName: node
   linkType: hard
 
@@ -7718,5 +7727,12 @@ __metadata:
   version: 0.1.0
   resolution: "yocto-queue@npm:0.1.0"
   checksum: 10/f77b3d8d00310def622123df93d4ee654fc6a0096182af8bd60679ddcdfb3474c56c6c7190817c84a2785648cdee9d721c0154eb45698c62176c322fb46fc700
+  languageName: node
+  linkType: hard
+
+"yocto-queue@npm:^1.0.0":
+  version: 1.2.2
+  resolution: "yocto-queue@npm:1.2.2"
+  checksum: 10/92dd9880c324dbc94ff4b677b7d350ba8d835619062b7102f577add7a59ab4d87f40edc5a03d77d369dfa9d11175b1b2ec4a06a6f8a5d8ce5d1306713f66ee41
   languageName: node
   linkType: hard
