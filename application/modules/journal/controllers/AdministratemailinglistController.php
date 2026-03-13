@@ -157,7 +157,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
 
             $rawRoles = is_array($params['roles'] ?? null) ? $params['roles'] : [];
             $rawUids  = is_array($params['uids'] ?? null) ? $params['uids'] : [];
-            $list->setRoles(array_slice($rawRoles, 0, MailingListsManager::MAX_ROLES));
+            $list->setRoles(array_slice(array_intersect($rawRoles, $this->getAllowedRoleIds()), 0, MailingListsManager::MAX_ROLES));
             $list->setUsers(array_map('intval', array_slice($rawUids, 0, MailingListsManager::MAX_USERS)));
             
             // Resolve members to check count. If zero, automatically close the list.
@@ -186,25 +186,15 @@ class AdministratemailinglistController extends Zend_Controller_Action
 
         // Get available roles for the journal
         $acl = new Episciences_Acl();
-        $roles = $acl->getRolesCodes();
+        $allowedRoleIds = $this->getAllowedRoleIds();
+        $availableRoles = array_intersect_key($acl->getRolesCodes(), array_flip($allowedRoleIds));
 
-        // Exclude restricted roles from mailing list selection
-        unset(
-            $roles[Episciences_Acl::ROLE_MEMBER],
-            $roles[Episciences_Acl::ROLE_GUEST],
-            $roles[Episciences_Acl::ROLE_REVIEWER],
-            $roles[Episciences_Acl::ROLE_AUTHOR],
-            $roles[Episciences_Acl::ROLE_ROOT]
-        );
+        $this->view->availableRoles = $availableRoles;
 
-        $this->view->availableRoles = $roles;
-        
         // Get user counts for each role
         $this->view->roleUserCounts = MailingListsManager::getUserCountByRole(RVID);
-        
+
         // Restricted user list for Individual Members
-        /** @var array<string> $allowedRoleIds */
-        $allowedRoleIds = array_keys($roles);
         
         $usersWithRoles = Episciences_UsersManager::getUsersWithRoles($allowedRoleIds);
         
@@ -279,8 +269,8 @@ class AdministratemailinglistController extends Zend_Controller_Action
         $rawRoles = is_array($params['roles'] ?? null) ? $params['roles'] : [];
         $rawUids  = is_array($params['uids'] ?? null) ? $params['uids'] : [];
 
-        // Cap array sizes to prevent oversized SQL IN() clauses
-        $roles = array_slice($rawRoles, 0, MailingListsManager::MAX_ROLES);
+        // Filter against ACL-allowed roles, then cap array size
+        $roles = array_slice(array_intersect($rawRoles, $this->getAllowedRoleIds()), 0, MailingListsManager::MAX_ROLES);
         $uids  = array_map('intval', array_slice($rawUids, 0, MailingListsManager::MAX_USERS));
 
         // Validate that submitted UIDs actually belong to this journal
@@ -315,6 +305,27 @@ class AdministratemailinglistController extends Zend_Controller_Action
         $this->getResponse()
             ->setHeader('Content-Type', 'application/json')
             ->setBody($body);
+    }
+
+    /**
+     * Returns the list of ACL role IDs that may be assigned to a mailing list.
+     * Excludes roles that are either too broad (root, member, guest) or managed
+     * separately (reviewer, author).
+     *
+     * @return list<string>
+     */
+    private function getAllowedRoleIds(): array
+    {
+        $acl = new Episciences_Acl();
+        $roles = $acl->getRolesCodes();
+        unset(
+            $roles[Episciences_Acl::ROLE_MEMBER],
+            $roles[Episciences_Acl::ROLE_GUEST],
+            $roles[Episciences_Acl::ROLE_REVIEWER],
+            $roles[Episciences_Acl::ROLE_AUTHOR],
+            $roles[Episciences_Acl::ROLE_ROOT]
+        );
+        return array_keys($roles);
     }
 
     public function deleteAction(): void
