@@ -29,7 +29,8 @@
                                        required aria-required="true" 
                                        pattern="[a-zA-Z0-9._-]+"
                                        title="<?php echo $this->translate('Only alphanumeric characters, dots, dashes and underscores are allowed.'); ?>"
-                                       style="border-left: none; border-right: none; font-family: monospace;">
+                                       style="border-left: none; border-right: none; font-family: monospace;"
+                                       autocomplete="off">
                                 <span class="input-group-addon" style="background: #f9f9f9; border-left: none; font-family: monospace;">@<?php echo DOMAIN; ?></span>
                             </div>
                             <p class="help-block" style="font-size: 0.85em;"><?php echo $this->translate('The journal prefix and domain are added automatically.'); ?></p>
