@@ -14,14 +14,17 @@ CREATE TABLE IF NOT EXISTS `mailing_lists` (
 CREATE TABLE IF NOT EXISTS `mailing_list_users` (
   `list_id` int(11) UNSIGNED NOT NULL,
   `uid` int(11) UNSIGNED NOT NULL,
+  -- Note: no FK on `uid` — the USER table lives in the auth database (separate schema).
   PRIMARY KEY (`list_id`, `uid`),
-  KEY `uid` (`uid`)
+  KEY `uid` (`uid`),
+  CONSTRAINT `fk_mlu_list_id` FOREIGN KEY (`list_id`) REFERENCES `mailing_lists` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `mailing_list_roles` (
   `list_id` int(11) UNSIGNED NOT NULL,
   `role` varchar(50) NOT NULL,
-  PRIMARY KEY (`list_id`, `role`)
+  PRIMARY KEY (`list_id`, `role`),
+  CONSTRAINT `fk_mlr_list_id` FOREIGN KEY (`list_id`) REFERENCES `mailing_lists` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------

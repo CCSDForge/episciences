@@ -1,6 +1,5 @@
 parameters:
 	level: 1
-	reportUnmatchedIgnoredErrors: false
 	paths:
 		- application
 		- library

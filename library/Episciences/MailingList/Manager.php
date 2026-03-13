@@ -66,7 +66,13 @@ class Manager
 
         /** @var array<string, mixed> $row */
         $list = new MailingList(self::castRow($row));
-        
+
+        // Three separate queries instead of a JOIN+aggregation: intentional.
+        // A single JOIN would require GROUP_CONCAT or subqueries to reconstruct
+        // two independent arrays (users, roles), which is harder to read and maintain
+        // in ZF1's query builder. Given the volume cap (MAX_MAILING_LISTS=5 per journal),
+        // the extra round-trips have no measurable impact.
+
         // Load users
         $selectUsers = $db->select()
             ->from(self::TABLE_MAILING_LIST_USERS, ['uid'])
@@ -155,14 +161,23 @@ class Manager
 
     /**
      * @param int $id
-     * @return int
+     * @return int Number of deleted mailing_lists rows (0 if not found, 1 on success)
+     * @throws \Exception
      */
     public static function delete(int $id): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $db->delete(self::TABLE_MAILING_LIST_USERS, ['list_id = ?' => $id]);
-        $db->delete(self::TABLE_MAILING_LIST_ROLES, ['list_id = ?' => $id]);
-        return $db->delete(self::TABLE_MAILING_LISTS, ['id = ?' => $id]);
+        $db->beginTransaction();
+        try {
+            $db->delete(self::TABLE_MAILING_LIST_USERS, ['list_id = ?' => $id]);
+            $db->delete(self::TABLE_MAILING_LIST_ROLES, ['list_id = ?' => $id]);
+            $affected = $db->delete(self::TABLE_MAILING_LISTS, ['id = ?' => $id]);
+            $db->commit();
+        } catch (\Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+        return $affected;
     }
 
     /**

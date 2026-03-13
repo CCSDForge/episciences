@@ -201,7 +201,6 @@ class AdministratemailinglistController extends Zend_Controller_Action
         foreach ($uidsInList as $uid) {
             if (!isset($usersWithRoles[$uid])) {
                 $oUser = new Episciences_User();
-                /** @phpstan-ignore-next-line */
                 if ($oUser->findWithCAS($uid)) {
                     $oUser->loadRoles();
                     $usersWithRoles[$uid] = $oUser;
