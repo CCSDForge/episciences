@@ -55,39 +55,33 @@ class Manager
     public static function getById(int $id): ?MailingList
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()
-            ->from(self::TABLE_MAILING_LISTS)
-            ->where('id = ?', $id);
 
-        $row = $db->fetchRow($select);
+        // Single round-trip: correlated JSON_ARRAYAGG subqueries avoid both the
+        // N+1 pattern and the GROUP_CONCAT truncation risk (default max_len=1024).
+        // Requires MySQL 5.7.22+ (available since MySQL 8.0 is the project baseline).
+        // We use raw SQL here because ZF1's query builder has no native support for
+        // correlated subqueries in the SELECT clause.
+        $sql = 'SELECT ml.*,
+                    (SELECT JSON_ARRAYAGG(uid)  FROM ' . self::TABLE_MAILING_LIST_USERS . ' WHERE list_id = ml.id) AS users_json,
+                    (SELECT JSON_ARRAYAGG(role) FROM ' . self::TABLE_MAILING_LIST_ROLES . ' WHERE list_id = ml.id) AS roles_json
+                FROM ' . self::TABLE_MAILING_LISTS . ' ml
+                WHERE ml.id = ?';
+
+        /** @var array<string, mixed>|false $row */
+        $row = $db->fetchRow($sql, [$id]);
         if (!$row) {
             return null;
         }
 
-        /** @var array<string, mixed> $row */
         $list = new MailingList(self::castRow($row));
 
-        // Three separate queries instead of a JOIN+aggregation: intentional.
-        // A single JOIN would require GROUP_CONCAT or subqueries to reconstruct
-        // two independent arrays (users, roles), which is harder to read and maintain
-        // in ZF1's query builder. Given the volume cap (MAX_MAILING_LISTS=5 per journal),
-        // the extra round-trips have no measurable impact.
+        /** @var array<int>|null $users */
+        $users = json_decode((string)($row['users_json'] ?? 'null'), true);
+        $list->setUsers(array_map('intval', $users ?? []));
 
-        // Load users
-        $selectUsers = $db->select()
-            ->from(self::TABLE_MAILING_LIST_USERS, ['uid'])
-            ->where('list_id = ?', $id);
-        /** @var array<int> $users */
-        $users = $db->fetchCol($selectUsers);
-        $list->setUsers($users);
-
-        // Load roles
-        $selectRoles = $db->select()
-            ->from(self::TABLE_MAILING_LIST_ROLES, ['role'])
-            ->where('list_id = ?', $id);
-        /** @var array<string> $roles */
-        $roles = $db->fetchCol($selectRoles);
-        $list->setRoles($roles);
+        /** @var array<string>|null $roles */
+        $roles = json_decode((string)($row['roles_json'] ?? 'null'), true);
+        $list->setRoles(array_map('strval', $roles ?? []));
 
         return $list;
     }

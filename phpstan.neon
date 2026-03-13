@@ -1,5 +1,8 @@
 parameters:
 	level: 1
+	# Required because global ignoreErrors patterns (e.g. constant.notFound) do not
+	# match when running with a partial TARGET path (make phpstan TARGET=...).
+	reportUnmatchedIgnoredErrors: false
 	paths:
 		- application
 		- library
@@ -16,8 +19,6 @@ parameters:
 		- application/languages/en/Zend.php
 		- application/languages/fr/Zend.php
 	ignoreErrors:
-		- '#Call to an undefined method Zend_.*#'
-		- '#Access to an undefined property Zend_.*#'
 		-
 			identifier: constant.notFound
 	bootstrapFiles:
