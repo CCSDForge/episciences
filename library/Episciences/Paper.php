@@ -900,6 +900,7 @@ class Episciences_Paper
         $this->hasHook = !empty(Episciences_Repositories::hasHook($this->getRepoid())) &&
             (
                 $this->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID ||
+                $this->getRepoid() === (int)Episciences_Repositories::CRYPTOLOGY_EPRINT ||
                 Episciences_Repositories::isDataverse($repoId) ||
                 Episciences_Repositories::isDspace($repoId)
             );

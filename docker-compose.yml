@@ -39,7 +39,7 @@ services:
         - ./cache:/var/www/cache
         - ./logs:/var/www/logs
         - ./src/php-fpm/php-fpm.conf:/usr/local/etc/php-fpm.d/zz-custom.conf
-        - ./logs/xdebug.log:/var/www/logs
+        - ./logs/xdebug.log:/var/www/logs/xdebug.log
     environment:
         - PHP_FPM_LISTEN_PORT=9000
         - XDEBUG_MODE=debug

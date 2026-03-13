@@ -1,9 +1,10 @@
 <?php
 
 use Episciences\Repositories\CommonHooksInterface;
+use Episciences\Repositories\FilesEnrichmentInterface;
 use Episciences\Repositories\InputSanitizerInterface;
 
-class Episciences_Repositories_CryptologyePrint_Hooks implements CommonHooksInterface, InputSanitizerInterface
+class Episciences_Repositories_CryptologyePrint_Hooks implements CommonHooksInterface, InputSanitizerInterface, FilesEnrichmentInterface
 {
     public const SELF_URL = 'https://eprint.iacr.org/';
     public const SHORT_URL = 'https://ia.cr/';
@@ -64,6 +65,31 @@ class Episciences_Repositories_CryptologyePrint_Hooks implements CommonHooksInte
         $data[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY] = $identifier; // identique pour toutes les versions ; renvoie à la dernière version
 
         return $data;
+    }
+
+    public static function hookFilesProcessing(array $hookParams): array
+    {
+        if (!isset($hookParams['docId'], $hookParams['repoId'], $hookParams['identifier'])) {
+            return $hookParams;
+        }
+
+        $identifier = rtrim(Episciences_Repositories_Common::removeDateTimePattern($hookParams['identifier']), '/');
+        $pdfUrl = self::SELF_URL . $identifier . '.pdf';
+
+        $data = [[
+            'doc_id'        => $hookParams['docId'],
+            'source'        => $hookParams['repoId'],
+            'file_name'     => basename($identifier) . '.pdf',
+            'file_type'     => 'pdf',
+            'file_size'     => 0,
+            'checksum'      => '',
+            'checksum_type' => null,
+            'self_link'     => $pdfUrl,
+        ]];
+
+        $hookParams['affectedRows'] = Episciences_Paper_FilesManager::insert($data);
+
+        return $hookParams;
     }
 
     public static function hookCleanIdentifiers(array $hookParams): array
