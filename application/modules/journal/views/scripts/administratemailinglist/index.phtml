@@ -84,7 +84,7 @@
                                         <?php if ($list->getName() !== $this->mandatoryName): ?>
                                             <form method="post" action="<?php echo $this->url(['controller' => 'administratemailinglist', 'action' => 'delete'], null, true); ?>" style="display:inline;" onsubmit="return confirm('<?php echo $this->escape($this->translate('Are you sure you want to delete this list?')); ?>');">
                                                 <input type="hidden" name="id" value="<?php echo (int)$list->getId(); ?>">
-                                                <input type="hidden" name="mailing_list_delete" value="<?php echo $this->escape($this->deleteCsrfToken); ?>">
+                                                <input type="hidden" name="<?php echo $this->escape($this->deleteCsrfToken['name']); ?>" value="<?php echo $this->escape($this->deleteCsrfToken['value']); ?>">
                                                 <button type="submit"
                                                         class="btn btn-danger btn-sm"
                                                         aria-label="<?php echo $this->escape($this->translate('Delete list') . ' ' . $list->getName()); ?>"
