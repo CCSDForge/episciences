@@ -20,6 +20,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
 
     public function indexAction(): void
     {
+        MailingListsManager::ensureMandatoryList(RVID, strtolower((string)RVCODE) . '@' . DOMAIN);
         $this->view->mailingLists = MailingListsManager::getList(RVID);
         $this->view->memberCounts = MailingListsManager::getMemberCounts(RVID);
         $this->view->mandatoryName = strtolower((string)RVCODE) . '@' . DOMAIN;
@@ -106,9 +107,20 @@ class AdministratemailinglistController extends Zend_Controller_Action
                 $list->setType($type);
             }
 
-            $list->setStatus((int)($params['status'] ?? 1));
+            $status = (int)($params['status'] ?? 1);
+            if (!in_array($status, [0, 1], true)) {
+                $status = 1;
+            }
+            $list->setStatus($status);
             
-            $savedId = MailingListsManager::save($list);
+            try {
+                $savedId = MailingListsManager::save($list);
+            } catch (\OverflowException $e) {
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                    ->addMessage($this->view->translate('You have reached the maximum number of mailing lists allowed for this journal.'));
+                $this->_helper->redirector->gotoSimple('index');
+                return;
+            }
 
             if (!$id) {
                 // New list created: redirect to member management
@@ -219,17 +231,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
             
             // Check if user has at least one of the allowed roles
             $userRoles = $oUser->getRoles(RVID);
-            $found = false;
-            foreach ($userRoles as $roleId) {
-                foreach ($allowedRoleIds as $allowedId) {
-                    if ((string)$roleId === (string)$allowedId) {
-                        $found = true;
-                        break 2;
-                    }
-                }
-            }
-            
-            if ($found) {
+            if (!empty(array_intersect((array)$userRoles, $allowedRoleIds))) {
                 $selectableUids[] = $uid;
             }
         }
@@ -256,6 +258,10 @@ class AdministratemailinglistController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender();
 
         if (!$this->getRequest()->isPost()) {
+            $this->getResponse()
+                ->setHttpResponseCode(405)
+                ->setHeader('Content-Type', 'application/json')
+                ->setBody('{"error":"method_not_allowed"}');
             return;
         }
 

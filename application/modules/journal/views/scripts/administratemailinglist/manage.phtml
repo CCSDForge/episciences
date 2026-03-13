@@ -159,7 +159,7 @@
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($this->resolvedMembers as $member): ?>
-                                    <tr class="audience-row" data-search="<?php echo strtolower(($member['FIRSTNAME'] ?? '') . ' ' . ($member['LASTNAME'] ?? '') . ' ' . ($member['EMAIL'] ?? '')); ?>">
+                                    <tr class="audience-row" data-search="<?php echo $this->escape(strtolower(($member['FIRSTNAME'] ?? '') . ' ' . ($member['LASTNAME'] ?? '') . ' ' . ($member['EMAIL'] ?? ''))); ?>">
                                         <td style="padding: 12px 20px; vertical-align: middle;">
                                             <span style="font-weight: 600; color: #333;"><?php echo $this->escape(($member['FIRSTNAME'] ?? '') . ' ' . ($member['LASTNAME'] ?? '')); ?></span>
                                         </td>
@@ -231,7 +231,7 @@
                                         $userRoles = $user['ROLES'][RVID] ?? [];
                                         $rolesLabels = [];
                                         $searchRoles = '';
-                                        $rolesJson = json_encode($userRoles);
+                                        $rolesJson = json_encode($userRoles, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
                                         foreach ($userRoles as $rId) {
                                             $translatedRole = $this->translate($rId);
                                             $rolesLabels[] = '<span class="label role-' . $rId . '" style="margin-right: 2px; font-weight: normal; padding: 2px 6px;">' . $translatedRole . '</span>';

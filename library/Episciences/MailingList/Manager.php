@@ -104,6 +104,13 @@ class Manager
                 $db->update(self::TABLE_MAILING_LISTS, $data, ['id = ?' => $list->getId()]);
                 $id = (int)$list->getId();
             } else {
+                // Enforce list limit atomically within the transaction to prevent race conditions
+                $currentCount = (int)$db->fetchOne(
+                    $db->select()->from(self::TABLE_MAILING_LISTS, ['COUNT(*)'])->where('rvid = ?', $list->getRvid())
+                );
+                if ($currentCount >= self::MAX_MAILING_LISTS) {
+                    throw new \OverflowException('Maximum number of mailing lists reached for this journal.');
+                }
                 $db->insert(self::TABLE_MAILING_LISTS, $data);
                 $id = (int)$db->lastInsertId();
                 if ($id === 0) {
@@ -291,6 +298,28 @@ class Manager
         /** @var array<int> $uids */
         $uids = array_map('intval', $db->fetchCol($select));
         return $uids;
+    }
+
+    /**
+     * Ensure the mandatory journal list (rvcode@domain) exists, creating it if absent.
+     * Safe to call on every page load: performs only one SELECT when the list already exists.
+     * @param int $rvid
+     * @param string $mandatoryName Full list name e.g. "dev@episciences.org"
+     * @throws \Exception
+     */
+    public static function ensureMandatoryList(int $rvid, string $mandatoryName): void
+    {
+        if (self::getByName($mandatoryName) !== null) {
+            return;
+        }
+
+        $list = new MailingList();
+        $list->setRvid($rvid)
+             ->setName($mandatoryName)
+             ->setType('mailing_list_type_open')
+             ->setStatus(1);
+
+        self::save($list);
     }
 
     /**
