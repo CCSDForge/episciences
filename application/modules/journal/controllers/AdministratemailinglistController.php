@@ -182,7 +182,8 @@ class AdministratemailinglistController extends Zend_Controller_Action
 
         $this->view->list = $list;
         $this->view->csrfToken = Episciences_Csrf_Helper::generateToken($csrfTokenName);
-        
+        $this->view->previewCsrfToken = Episciences_Csrf_Helper::generateToken('mailing_list_preview');
+
         // Get available roles for the journal
         $acl = new Episciences_Acl();
         $roles = $acl->getRolesCodes();
@@ -266,6 +267,15 @@ class AdministratemailinglistController extends Zend_Controller_Action
         }
 
         $params = $this->getRequest()->getPost();
+
+        if (!Episciences_Csrf_Helper::validateToken('mailing_list_preview', $params['mailing_list_preview'] ?? '')) {
+            $this->getResponse()
+                ->setHttpResponseCode(403)
+                ->setHeader('Content-Type', 'application/json')
+                ->setBody('{"error":"csrf_invalid"}');
+            return;
+        }
+
         $rawRoles = is_array($params['roles'] ?? null) ? $params['roles'] : [];
         $rawUids  = is_array($params['uids'] ?? null) ? $params['uids'] : [];
 
@@ -286,8 +296,14 @@ class AdministratemailinglistController extends Zend_Controller_Action
 
         $members = MailingListsManager::resolveMembers($tempList);
 
+        // Generate a new token for the next AJAX call (rotating token pattern)
+        $nextToken = Episciences_Csrf_Helper::generateToken('mailing_list_preview');
+
         try {
-            $body = json_encode($members, JSON_THROW_ON_ERROR);
+            $body = json_encode(
+                ['members' => $members, 'csrf' => $nextToken],
+                JSON_THROW_ON_ERROR
+            );
         } catch (\JsonException $e) {
             $this->getResponse()
                 ->setHttpResponseCode(500)

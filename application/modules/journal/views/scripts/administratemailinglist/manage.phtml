@@ -290,6 +290,8 @@
     document.addEventListener('DOMContentLoaded', function() {
         EpisciencesMailingList.init({
             previewUrl: '<?php echo $this->url(['action' => 'preview']); ?>',
+            previewCsrfName: '<?php echo $this->escape($this->previewCsrfToken['name']); ?>',
+            previewCsrfValue: '<?php echo $this->escape($this->previewCsrfToken['value']); ?>',
             noMembersMsg: '<?php echo $this->translate('No members match the current selection.'); ?>',
             previewUpdatedMsg: '<?php echo $this->translate('Audience preview updated'); ?>',
             previewFailedMsg: '<?php echo $this->translate('Failed to update preview'); ?>',

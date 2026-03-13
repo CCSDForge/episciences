@@ -66,7 +66,10 @@ const EpisciencesMailingList = (function() {
             });
         }
 
-        // AJAX refresh for audience preview
+        // AJAX refresh for audience preview — rotating CSRF token
+        let previewCsrfName = options.previewCsrfName || '';
+        let previewCsrfValue = options.previewCsrfValue || '';
+
         if (refreshPreviewBtn) {
             refreshPreviewBtn.addEventListener('click', function() {
                 refreshPreviewBtn.disabled = true;
@@ -76,6 +79,7 @@ const EpisciencesMailingList = (function() {
                 const uids = Array.from(document.querySelectorAll('.uid-input')).map(input => input.value);
 
                 const formData = new FormData();
+                formData.append(previewCsrfName, previewCsrfValue);
                 roles.forEach(role => formData.append('roles[]', role));
                 uids.forEach(uid => formData.append('uids[]', uid));
 
@@ -86,11 +90,30 @@ const EpisciencesMailingList = (function() {
                 .then(response => response.json())
                 .then(data => {
                     if (!audienceTableBody) return;
+
+                    // Rotate the CSRF token for the next request
+                    if (data.csrf) {
+                        previewCsrfName = data.csrf.name;
+                        previewCsrfValue = data.csrf.value;
+                    }
+
+                    const members = data.members || [];
                     audienceTableBody.innerHTML = '';
-                    if (data.length === 0) {
-                        audienceTableBody.innerHTML = `<tr><td colspan="2" class="text-center" style="padding: 60px 0;"><p class="text-muted" style="font-size: 1.1em;">${options.noMembersMsg}</p></td></tr>`;
+                    if (members.length === 0) {
+                        const emptyRow = document.createElement('tr');
+                        const emptyTd = document.createElement('td');
+                        emptyTd.colSpan = 2;
+                        emptyTd.className = 'text-center';
+                        emptyTd.style.cssText = 'padding: 60px 0;';
+                        const emptyP = document.createElement('p');
+                        emptyP.className = 'text-muted';
+                        emptyP.style.cssText = 'font-size: 1.1em;';
+                        emptyP.textContent = options.noMembersMsg;
+                        emptyTd.appendChild(emptyP);
+                        emptyRow.appendChild(emptyTd);
+                        audienceTableBody.appendChild(emptyRow);
                     } else {
-                        data.forEach(member => {
+                        members.forEach(member => {
                             const firstName = member.FIRSTNAME || '';
                             const lastName = member.LASTNAME || '';
                             const email = member.EMAIL || '';

@@ -46,12 +46,17 @@ describe('EpisciencesMailingList', () => {
 
         global.fetch = jest.fn(() =>
             Promise.resolve({
-                json: () => Promise.resolve([{ FIRSTNAME: 'New', LASTNAME: 'User', EMAIL: 'new@test.com' }]),
+                json: () => Promise.resolve({
+                    members: [{ FIRSTNAME: 'New', LASTNAME: 'User', EMAIL: 'new@test.com' }],
+                    csrf: { name: 'mailing_list_preview', value: 'tok_next' }
+                }),
             })
         );
 
         EpisciencesMailingList.init({
             previewUrl: '/preview',
+            previewCsrfName: 'mailing_list_preview',
+            previewCsrfValue: 'tok_initial',
             noMembersMsg: 'No members',
             previewUpdatedMsg: 'Updated',
             previewFailedMsg: 'Failed',
@@ -142,16 +147,37 @@ describe('EpisciencesMailingList', () => {
         expect(btn.disabled).toBe(false);
     });
 
+    test('it sends the CSRF token in the preview request body', async () => {
+        document.getElementById('refresh-preview').click();
+        await new Promise(process.nextTick);
+
+        const [, fetchOptions] = global.fetch.mock.calls[0];
+        const body = fetchOptions.body;
+        expect(body.get('mailing_list_preview')).toBe('tok_initial');
+    });
+
+    test('it rotates the CSRF token after a successful preview', async () => {
+        document.getElementById('refresh-preview').click();
+        await new Promise(process.nextTick);
+
+        // Second click must send the rotated token from the first response
+        document.getElementById('refresh-preview').click();
+        await new Promise(process.nextTick);
+
+        const [, fetchOptions] = global.fetch.mock.calls[1];
+        expect(fetchOptions.body.get('mailing_list_preview')).toBe('tok_next');
+    });
+
     test('it shows no-members placeholder when preview returns empty array', async () => {
         global.fetch = jest.fn(() =>
-            Promise.resolve({ json: () => Promise.resolve([]) })
+            Promise.resolve({ json: () => Promise.resolve({ members: [], csrf: { name: 'mailing_list_preview', value: 'tok2' } }) })
         );
 
         document.getElementById('refresh-preview').click();
         await new Promise(process.nextTick);
 
         const tbody = document.querySelector('#audience-table tbody');
-        expect(tbody.innerHTML).toContain('No members');
+        expect(tbody.textContent).toContain('No members');
         expect(document.querySelectorAll('.audience-row').length).toBe(0);
     });
 
