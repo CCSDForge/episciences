@@ -77,6 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## v1.0.52 - 2025-08-28
 
 ### Fixed
+- RT#279519, TR#279601: Dates prior to the reviewing deadline were not permitted; however, it is now possible to change the reviewing deadline between the minimum and maximum dates.
 - DOI metadata: stop overwriting acceptance date with the last modification date
 - [#693](https://github.com/CCSDForge/episciences/issues/693) allow to save comment without attachment
 - [#690](https://github.com/CCSDForge/episciences/issues/690) ORCID might be duplicated when one of the authors has no ORCID
