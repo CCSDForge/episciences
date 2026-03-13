@@ -289,16 +289,16 @@
     'use strict';
     document.addEventListener('DOMContentLoaded', function() {
         EpisciencesMailingList.init({
-            previewUrl: '<?php echo $this->url(['controller' => 'administratemailinglist', 'action' => 'preview']); ?>',
-            previewCsrfName: '<?php echo $this->escape($this->previewCsrfToken['name']); ?>',
-            previewCsrfValue: '<?php echo $this->escape($this->previewCsrfToken['value']); ?>',
-            noMembersMsg: '<?php echo $this->translate('No members match the current selection.'); ?>',
-            previewUpdatedMsg: '<?php echo $this->translate('Audience preview updated'); ?>',
-            previewFailedMsg: '<?php echo $this->translate('Failed to update preview'); ?>',
-            removeUserMsg: '<?php echo $this->translate('Remove user'); ?>',
-            addedMsg: '<?php echo $this->translate('added to list'); ?>',
-            removedMsg: '<?php echo $this->translate('removed from list'); ?>',
-            noUsersSelectedMsg: '<?php echo $this->translate('No individual members selected.'); ?>'
+            previewUrl: <?php echo json_encode($this->url(['controller' => 'administratemailinglist', 'action' => 'preview'])); ?>,
+            previewCsrfName: <?php echo json_encode($this->previewCsrfToken['name']); ?>,
+            previewCsrfValue: <?php echo json_encode($this->previewCsrfToken['value']); ?>,
+            noMembersMsg: <?php echo json_encode($this->translate('No members match the current selection.')); ?>,
+            previewUpdatedMsg: <?php echo json_encode($this->translate('Audience preview updated')); ?>,
+            previewFailedMsg: <?php echo json_encode($this->translate('Failed to update preview')); ?>,
+            removeUserMsg: <?php echo json_encode($this->translate('Remove user')); ?>,
+            addedMsg: <?php echo json_encode($this->translate('added to list')); ?>,
+            removedMsg: <?php echo json_encode($this->translate('removed from list')); ?>,
+            noUsersSelectedMsg: <?php echo json_encode($this->translate('No individual members selected.')); ?>
         });
     });
 })();
