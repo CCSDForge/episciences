@@ -69,13 +69,13 @@
                                 </td>
                                 <td style="padding: 15px; vertical-align: middle; text-align: right;">
                                     <div class="btn-group">
-                                        <a href="<?php echo $this->url(['action' => 'edit', 'id' => $list->getId()]); ?>" 
+                                        <a href="<?php echo $this->url(['controller' => 'administratemailinglist', 'action' => 'edit', 'id' => $list->getId()]); ?>"
                                            class="btn btn-default btn-sm" 
                                            aria-label="<?php echo $this->translate('Edit list') . ' ' . $this->escape($list->getName()); ?>"
                                            title="<?php echo $this->translate('Edit Settings'); ?>">
                                             <span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
                                         </a>
-                                        <a href="<?php echo $this->url(['action' => 'manage', 'id' => $list->getId()]); ?>" 
+                                        <a href="<?php echo $this->url(['controller' => 'administratemailinglist', 'action' => 'manage', 'id' => $list->getId()]); ?>"
                                            class="btn btn-info btn-sm" 
                                            aria-label="<?php echo $this->translate('Manage members for') . ' ' . $this->escape($list->getName()); ?>"
                                            title="<?php echo $this->translate('Manage Members'); ?>">
