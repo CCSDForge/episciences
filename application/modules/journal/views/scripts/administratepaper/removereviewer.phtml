@@ -37,5 +37,4 @@
         var editor = <?= $this->js_editor ?>;
     </script>
 <?php endif; ?>
-
-<script src="/js/administratepaper/reviewer-removal-modal.js"></script>
+<?php $this->jQuery()->addJavascriptFile("/js/administratepaper/reviewer-removal-modal.js"); ?>
