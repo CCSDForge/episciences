@@ -149,7 +149,19 @@ const EpisciencesMailingList = (function() {
                         row.remove();
                         const remainingRows = selectedUsersTableBody.querySelectorAll('tr.member-row');
                         if (remainingRows.length === 0) {
-                            selectedUsersTableBody.insertAdjacentHTML('beforeend', `<tr id="no-users-msg"><td colspan="2" class="text-center" style="padding: 40px 0; border-top: none;"><p class="text-muted" style="margin-bottom: 0; font-style: italic;">${options.noUsersSelectedMsg}</p></td></tr>`);
+                            const emptyRow = document.createElement('tr');
+                            emptyRow.id = 'no-users-msg';
+                            const emptyTd = document.createElement('td');
+                            emptyTd.colSpan = 2;
+                            emptyTd.className = 'text-center';
+                            emptyTd.style.cssText = 'padding: 40px 0; border-top: none;';
+                            const emptyP = document.createElement('p');
+                            emptyP.className = 'text-muted';
+                            emptyP.style.cssText = 'margin-bottom: 0; font-style: italic;';
+                            emptyP.textContent = options.noUsersSelectedMsg;
+                            emptyTd.appendChild(emptyP);
+                            emptyRow.appendChild(emptyTd);
+                            selectedUsersTableBody.appendChild(emptyRow);
                         }
                         announce(screenName + ' ' + options.removedMsg);
                     }
@@ -173,19 +185,39 @@ const EpisciencesMailingList = (function() {
                             noUsersMsg.remove();
                         }
 
-                        const rowHtml = `
-                            <tr id="user-row-${uid}" class="member-row">
-                                <td style="vertical-align: middle; border-top: 1px solid #f9f9f9;">
-                                    <span style="font-weight: 500;">${screenName}</span>
-                                    <input type="hidden" name="uids[]" value="${uid}" class="uid-input">
-                                </td>
-                                <td style="vertical-align: middle; text-align: right; border-top: 1px solid #f9f9f9;">
-                                    <button type="button" class="btn btn-link btn-xs remove-user text-danger" data-uid="${uid}" aria-label="${options.removeUserMsg} ${screenName}">
-                                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-                                    </button>
-                                </td>
-                            </tr>`;
-                        selectedUsersTableBody.insertAdjacentHTML('beforeend', rowHtml);
+                        const newRow = document.createElement('tr');
+                        newRow.id = 'user-row-' + uid;
+                        newRow.className = 'member-row';
+
+                        const tdName = document.createElement('td');
+                        tdName.style.cssText = 'vertical-align: middle; border-top: 1px solid #f9f9f9;';
+                        const nameSpan = document.createElement('span');
+                        nameSpan.style.fontWeight = '500';
+                        nameSpan.textContent = screenName;
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'uids[]';
+                        hiddenInput.value = uid;
+                        hiddenInput.className = 'uid-input';
+                        tdName.appendChild(nameSpan);
+                        tdName.appendChild(hiddenInput);
+
+                        const tdAction = document.createElement('td');
+                        tdAction.style.cssText = 'vertical-align: middle; text-align: right; border-top: 1px solid #f9f9f9;';
+                        const removeBtn = document.createElement('button');
+                        removeBtn.type = 'button';
+                        removeBtn.className = 'btn btn-link btn-xs remove-user text-danger';
+                        removeBtn.setAttribute('data-uid', uid);
+                        removeBtn.setAttribute('aria-label', options.removeUserMsg + ' ' + screenName);
+                        const removeIcon = document.createElement('span');
+                        removeIcon.className = 'glyphicon glyphicon-remove';
+                        removeIcon.setAttribute('aria-hidden', 'true');
+                        removeBtn.appendChild(removeIcon);
+                        tdAction.appendChild(removeBtn);
+
+                        newRow.appendChild(tdName);
+                        newRow.appendChild(tdAction);
+                        selectedUsersTableBody.appendChild(newRow);
                         announce(screenName + ' ' + options.addedMsg);
                     }
 
