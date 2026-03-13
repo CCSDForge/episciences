@@ -211,7 +211,8 @@ return [
     "Total unique members" => "Total des membres uniques",
     "Add" => "Ajouter",
 
-    "A mailing list with this name already exists in this journal." => "Une liste de diffusion avec ce nom existe déjà dans cette revue.",
+    "A mailing list with this name already exists." => "Une liste de diffusion avec ce nom existe déjà.",
+    "This name collides with an existing journal code." => "Ce nom entre en collision avec le code d'une revue existante.",
     "Manage members for" => "Gérer les membres pour",
     "Delete list" => "Supprimer la liste",
     "Add user" => "Ajouter l'utilisateur",

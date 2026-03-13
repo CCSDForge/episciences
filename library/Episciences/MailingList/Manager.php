@@ -183,16 +183,15 @@ class Manager
     }
 
     /**
-     * @param int $rvid
+     * Get a mailing list by its full name (global check)
      * @param string $name
      * @return MailingList|null
      */
-    public static function getByName(int $rvid, string $name): ?MailingList
+    public static function getByName(string $name): ?MailingList
     {
         $db = \Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
             ->from(self::TABLE_MAILING_LISTS)
-            ->where('rvid = ?', $rvid)
             ->where('name = ?', $name);
 
         $row = $db->fetchRow($select);
@@ -202,6 +201,26 @@ class Manager
 
         /** @var array<string, mixed> $row */
         return self::getById((int)$row['id']);
+    }
+
+    /**
+     * Check if a journal exists with the given code
+     * @param string $code
+     * @param int|null $excludeRvid
+     * @return bool
+     */
+    public static function journalCodeExists(string $code, ?int $excludeRvid = null): bool
+    {
+        $db = \Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_REVIEW, ['RVID'])
+            ->where('CODE = ?', $code);
+        
+        if ($excludeRvid !== null) {
+            $select->where('RVID != ?', $excludeRvid);
+        }
+
+        return (bool)$db->fetchOne($select);
     }
 
     /**

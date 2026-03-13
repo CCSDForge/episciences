@@ -73,14 +73,28 @@ class AdministratemailinglistController extends Zend_Controller_Action
                 $fullName = $rvcode . '-' . $name . $suffix;
             }
 
-            // Ensure name uniqueness within the journal
-            $existingList = MailingListsManager::getByName(RVID, $fullName);
+            // 1. Ensure name uniqueness globally (across all journals)
+            $existingList = MailingListsManager::getByName($fullName);
             if ($existingList && (!$id || $existingList->getId() != $id)) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
-                    ->addMessage($this->view->translate('A mailing list with this name already exists in this journal.'));
+                    ->addMessage($this->view->translate('A mailing list with this name already exists.'));
                 $this->view->list = $list;
                 $this->view->csrfToken = Episciences_Csrf_Helper::generateToken($csrfTokenName);
                 return;
+            }
+
+            // 2. Prevent collisions with other journal mandatory names
+            // If we are creating 'dev-test@domain', we must check if journal 'dev-test' exists.
+            // If we are creating 'dev@domain', we already are journal 'dev' so it's fine.
+            if ($name !== '') {
+                $potentialCollidingCode = $rvcode . '-' . $name;
+                if (MailingListsManager::journalCodeExists($potentialCollidingCode)) {
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                        ->addMessage($this->view->translate('This name collides with an existing journal code.'));
+                    $this->view->list = $list;
+                    $this->view->csrfToken = Episciences_Csrf_Helper::generateToken($csrfTokenName);
+                    return;
+                }
             }
 
             $list->setName($fullName);

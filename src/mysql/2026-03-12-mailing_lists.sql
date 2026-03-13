@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS `mailing_lists` (
   `type` varchar(50) DEFAULT NULL,
   `status` tinyint(4) NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `name_unique` (`name`),
   KEY `rvid` (`rvid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
