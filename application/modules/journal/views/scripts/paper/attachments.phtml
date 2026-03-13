@@ -40,5 +40,4 @@ $attribsForm = $selfElement->getAttribs();
     // init paper comment Id.
     paperCommentId = <?= $pcId ?>;
 </script>
-
-<script src="/js/library/es.fileupload.js"></script>
+<?php $this->jQuery()->addJavascriptFile("/js/library/es.fileupload.js"); ?>

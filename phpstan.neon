@@ -1,5 +1,8 @@
 parameters:
 	level: 1
+	# Required because global ignoreErrors patterns (e.g. constant.notFound) do not
+	# match when running with a partial TARGET path (make phpstan TARGET=...).
+	reportUnmatchedIgnoredErrors: false
 	paths:
 		- application
 		- library
@@ -16,6 +19,10 @@ parameters:
 		- application/languages/en/Zend.php
 		- application/languages/fr/Zend.php
 	ignoreErrors:
+		# ZF1 magic properties ($this->_helper->redirector, $this->view->xxx, etc.)
+		# and magic methods ($this->view->translate(), $request->isPost(), etc.)
+		# are not declared in ZF1 class signatures — PHPStan flags them at level 6+.
+		# These patterns are dormant at level 1 but required for level 6 analysis.
 		- '#Call to an undefined method Zend_.*#'
 		- '#Access to an undefined property Zend_.*#'
 		-
