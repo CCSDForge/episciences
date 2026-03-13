@@ -11,38 +11,52 @@
                         <label for="name-input" class="col-sm-3 control-label"><?php echo $this->translate('Name'); ?> <span class="text-danger" aria-hidden="true">*</span></label>
                         <div class="col-sm-9">
                             <div class="input-group">
-                                <span class="input-group-addon" style="background: #f9f9f9; border-right: none; font-family: monospace;"><?php echo strtolower((string)RVCODE); ?>-</span>
+                                <span class="input-group-addon" style="background: #f9f9f9; border-right: none; font-family: monospace;"><?php echo strtolower((string)RVCODE); ?></span>
                                 <?php 
-                                    $prefix = strtolower((string)RVCODE) . '-';
+                                    $rvcode = strtolower((string)RVCODE);
                                     $suffix = '@' . DOMAIN;
                                     $currentName = $this->list->getName();
-                                    $displayName = $currentName;
-                                    if (strpos($currentName, $prefix) === 0) {
-                                        $displayName = substr($currentName, strlen($prefix));
-                                    }
-                                    if (strpos($displayName, $suffix) !== false) {
-                                        $displayName = str_replace($suffix, '', $displayName);
+                                    $displayName = '';
+                                    
+                                    if ($currentName !== '') {
+                                        if ($currentName === $rvcode . $suffix) {
+                                            $displayName = '';
+                                        } else {
+                                            $prefixWithHyphen = $rvcode . '-';
+                                            if (strpos($currentName, $prefixWithHyphen) === 0) {
+                                                $displayName = substr($currentName, strlen($prefixWithHyphen));
+                                            }
+                                            if (strpos($displayName, $suffix) !== false) {
+                                                $displayName = str_replace($suffix, '', $displayName);
+                                            }
+                                        }
                                     }
                                 ?>
                                 <input type="text" class="form-control" id="name-input" name="name" 
                                        value="<?php echo $this->escape($displayName); ?>" 
-                                       required aria-required="true" 
-                                       pattern="[a-zA-Z0-9._-]+"
+                                       aria-required="true" 
+                                       pattern="[a-zA-Z0-9._-]*"
+                                       placeholder="<?php echo $this->translate('(optional sub-name)'); ?>"
                                        title="<?php echo $this->translate('Only alphanumeric characters, dots, dashes and underscores are allowed.'); ?>"
                                        style="border-left: none; border-right: none; font-family: monospace;"
                                        autocomplete="off">
                                 <span class="input-group-addon" style="background: #f9f9f9; border-left: none; font-family: monospace;">@<?php echo DOMAIN; ?></span>
                             </div>
-                            <p class="help-block" style="font-size: 0.85em;"><?php echo $this->translate('The journal prefix and domain are added automatically.'); ?></p>
+                            <p class="help-block" style="font-size: 0.85em;"><?php echo $this->translate('The journal prefix and domain are added automatically. Leave the name empty to manage the main journal list.'); ?></p>
                         </div>
                     </div>
                     <div class="form-group">
                         <label for="type-input" class="col-sm-3 control-label"><?php echo $this->translate('Type'); ?></label>
                         <div class="col-sm-9">
-                            <select name="type" id="type-input" class="form-control">
+                            <?php $isMandatory = $this->list->getName() === $this->mandatoryName; ?>
+                            <select name="type" id="type-input" class="form-control" <?php echo $isMandatory ? 'disabled' : ''; ?>>
                                 <option value="mailing_list_type_subscribers" <?php echo $this->list->getType() == 'mailing_list_type_subscribers' ? 'selected' : ''; ?>><?php echo $this->translate('mailing_list_type_subscribers'); ?></option>
-                                <option value="mailing_list_type_open" <?php echo $this->list->getType() == 'mailing_list_type_open' ? 'selected' : ''; ?>><?php echo $this->translate('mailing_list_type_open'); ?></option>
+                                <option value="mailing_list_type_open" <?php echo ($isMandatory || $this->list->getType() == 'mailing_list_type_open') ? 'selected' : ''; ?>><?php echo $this->translate('mailing_list_type_open'); ?></option>
                             </select>
+                            <?php if ($isMandatory): ?>
+                                <input type="hidden" name="type" value="mailing_list_type_open">
+                                <p class="help-block" style="font-size: 0.85em;"><?php echo $this->translate('The type of the mandatory mailing list is fixed to Open.'); ?></p>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="form-group">

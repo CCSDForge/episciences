@@ -22,6 +22,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
     {
         $this->view->mailingLists = MailingListsManager::getList(RVID);
         $this->view->memberCounts = MailingListsManager::getMemberCounts(RVID);
+        $this->view->mandatoryName = strtolower((string)RVCODE) . '@' . DOMAIN;
     }
 
     public function editAction(): void
@@ -62,20 +63,17 @@ class AdministratemailinglistController extends Zend_Controller_Action
             $name = preg_replace('/[^a-zA-Z0-9._-]/', '', $name);
             $name = strtolower((string)$name);
 
-            // Automatically build the final email-like name: rvcode-name@domain
-            $prefix = strtolower((string)RVCODE) . '-';
+            // Automatically build the final email-like name
+            $rvcode = strtolower((string)RVCODE);
             $suffix = '@' . DOMAIN;
             
-            // Strip existing prefix/suffix if user pasted them by mistake
-            if (stripos($name, $prefix) === 0) {
-                $name = substr($name, strlen($prefix));
-            }
-            if (strpos($name, $suffix) !== false) {
-                $name = str_replace($suffix, '', $name);
+            if ($name === '') {
+                $fullName = $rvcode . $suffix;
+            } else {
+                $fullName = $rvcode . '-' . $name . $suffix;
             }
 
             // Ensure name uniqueness within the journal
-            $fullName = $prefix . $name . $suffix;
             $existingList = MailingListsManager::getByName(RVID, $fullName);
             if ($existingList && (!$id || $existingList->getId() != $id)) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
@@ -86,7 +84,15 @@ class AdministratemailinglistController extends Zend_Controller_Action
             }
 
             $list->setName($fullName);
-            $list->setType($params['type'] ?? '');
+            
+            // Mandatory list (rvcode@domain) must be 'open'
+            $mandatoryName = $rvcode . $suffix;
+            if ($fullName === $mandatoryName) {
+                $list->setType('mailing_list_type_open');
+            } else {
+                $list->setType($params['type'] ?? '');
+            }
+
             $list->setStatus((int)($params['status'] ?? 1));
             
             $savedId = MailingListsManager::save($list);
@@ -102,6 +108,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
 
         $this->view->list = $list;
         $this->view->csrfToken = Episciences_Csrf_Helper::generateToken($csrfTokenName);
+        $this->view->mandatoryName = strtolower((string)RVCODE) . '@' . DOMAIN;
     }
 
     public function manageAction(): void
@@ -256,7 +263,14 @@ class AdministratemailinglistController extends Zend_Controller_Action
         $list = MailingListsManager::getById($id);
 
         if ($list && $list->getRvid() == RVID) {
-            MailingListsManager::delete($id);
+            // Prevent deletion of mandatory list
+            $mandatoryName = strtolower((string)RVCODE) . '@' . DOMAIN;
+            if ($list->getName() === $mandatoryName) {
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                    ->addMessage($this->view->translate('The mandatory mailing list cannot be deleted.'));
+            } else {
+                MailingListsManager::delete($id);
+            }
         }
 
         $this->_helper->redirector->gotoSimple('index');
