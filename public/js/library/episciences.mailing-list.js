@@ -41,7 +41,7 @@ const EpisciencesMailingList = (function() {
                 if (roleValue !== '') {
                     try {
                         const roles = JSON.parse(row.getAttribute('data-roles') || '[]');
-                        matchesRole = Array.isArray(roles) && roles.indexOf(roleValue) > -1;
+                        matchesRole = Array.isArray(roles) && roles.some(r => String(r) === roleValue);
                     } catch (e) {
                         matchesRole = false;
                     }
