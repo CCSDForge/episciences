@@ -9,7 +9,7 @@ $journalSettings = Zend_Registry::get('reviewSettings');
                 <ul class="contact">
                     <span><?php echo $this->translate('À propos'); ?></span>
                     <li><i aria-hidden="true" class="fas fa-rss"></i>&nbsp;<a
-                                href="<?php echo APPLICATION_URL; ?>/rss/papers">RSS</a>
+                                href="<?= EPISCIENCES_API_URL . 'feed/rss/' . RVCODE; ?>">RSS</a>
                     </li>
                     <?php
                     if (isset($journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL_EMAIL]) && $journalSettings[Episciences_Review::SETTING_CONTACT_JOURNAL_EMAIL] !== '') {
