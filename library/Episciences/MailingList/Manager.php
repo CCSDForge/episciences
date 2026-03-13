@@ -15,6 +15,19 @@ class Manager
     public const MAX_USERS = 500;
 
     /**
+     * Cast numeric columns returned as strings by the DB adapter.
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    private static function castRow(array $row): array
+    {
+        if (isset($row['id']))     $row['id']     = (int)$row['id'];
+        if (isset($row['rvid']))   $row['rvid']   = (int)$row['rvid'];
+        if (isset($row['status'])) $row['status'] = (int)$row['status'];
+        return $row;
+    }
+
+    /**
      * @param int $rvid
      * @return MailingList[]
      */
@@ -30,7 +43,7 @@ class Manager
         $lists = [];
         foreach ($rows as $row) {
             /** @var array<string, mixed> $row */
-            $lists[] = new MailingList($row);
+            $lists[] = new MailingList(self::castRow($row));
         }
         return $lists;
     }
@@ -52,7 +65,7 @@ class Manager
         }
 
         /** @var array<string, mixed> $row */
-        $list = new MailingList($row);
+        $list = new MailingList(self::castRow($row));
         
         // Load users
         $selectUsers = $db->select()
