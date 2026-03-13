@@ -8,7 +8,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
     public function init(): void
     {
         // Permission check: available only to epiadmin, chief_editor, administrator, secretary
-        $isAllowed = Episciences_Auth::isSecretary() || 
+        $isAllowed = Episciences_Auth::isSecretary() ||
                      Episciences_Auth::isChiefEditor() ||
                      Episciences_Auth::isAdministrator() ||
                      Episciences_Auth::isRoot();
@@ -35,7 +35,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
         if ($id) {
             $list = MailingListsManager::getById((int)$id);
             if (!$list || $list->getRvid() !== (int)RVID) {
-                $this->_helper->redirector->gotoSimple('index');
+                $this->_helper->redirector->gotoUrl($this->_helper->url('index', 'administratemailinglist'));
                 return;
             }
         } else {
@@ -44,7 +44,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
             if (count($currentLists) >= MailingListsManager::MAX_MAILING_LISTS) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
                     ->addMessage($this->view->translate('You have reached the maximum number of mailing lists allowed for this journal.'));
-                $this->_helper->redirector->gotoSimple('index');
+                $this->_helper->redirector->gotoUrl($this->_helper->url('index', 'administratemailinglist'));
                 return;
             }
             $list = new MailingList();
@@ -118,15 +118,15 @@ class AdministratemailinglistController extends Zend_Controller_Action
             } catch (\OverflowException $e) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
                     ->addMessage($this->view->translate('You have reached the maximum number of mailing lists allowed for this journal.'));
-                $this->_helper->redirector->gotoSimple('index');
+                $this->_helper->redirector->gotoUrl($this->_helper->url('index', 'administratemailinglist'));
                 return;
             }
 
             if (!$id) {
                 // New list created: redirect to member management
-                $this->_helper->redirector->gotoSimple('manage', null, null, ['id' => $savedId]);
+                $this->_helper->redirector->gotoUrl($this->_helper->url('manage', 'administratemailinglist', null, ['id' => $savedId]));
             } else {
-                $this->_helper->redirector->gotoSimple('index');
+                $this->_helper->redirector->gotoUrl($this->_helper->url('index', 'administratemailinglist'));
             }
             return;
         }
@@ -143,7 +143,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
         $list = MailingListsManager::getById($id);
 
         if (!$list || $list->getRvid() !== (int)RVID) {
-            $this->_helper->redirector->gotoSimple('index');
+            $this->_helper->redirector->gotoUrl($this->_helper->url('index', 'administratemailinglist'));
             return;
         }
 
@@ -176,7 +176,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
                 ->addMessage($successMessage);
 
-            $this->_helper->redirector->gotoSimple('manage', null, null, ['id' => $id]);
+            $this->_helper->redirector->gotoUrl($this->_helper->url('manage', 'administratemailinglist', null, ['id' => $id]));
             return;
         }
 
@@ -331,7 +331,7 @@ class AdministratemailinglistController extends Zend_Controller_Action
     public function deleteAction(): void
     {
         if (!$this->getRequest()->isPost()) {
-            $this->_helper->redirector->gotoSimple('index');
+            $this->_helper->redirector->gotoUrl($this->_helper->url('index', 'administratemailinglist'));
             return;
         }
 
@@ -356,6 +356,6 @@ class AdministratemailinglistController extends Zend_Controller_Action
             }
         }
 
-        $this->_helper->redirector->gotoSimple('index');
+        $this->_helper->redirector->gotoUrl($this->_helper->url('index', 'administratemailinglist'));
     }
 }
