@@ -110,54 +110,12 @@
 .copy-btn:hover { color: #333 !important; }
 </style>
 
+<script src="/js/library/episciences.mailing-list.js"></script>
 <script>
 (function() {
     'use strict';
     document.addEventListener('DOMContentLoaded', function() {
-        const table = document.querySelector('table[aria-labelledby="mailing-lists-title"]');
-        if (!table) return;
-
-        table.addEventListener('click', function(event) {
-            const copyBtn = event.target.closest('.copy-btn');
-            if (!copyBtn) return;
-
-            const name = copyBtn.getAttribute('data-name');
-            const row = copyBtn.closest('tr');
-            const feedback = row.querySelector('.copy-feedback');
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(name).then(() => {
-                    showFeedback(feedback);
-                }).catch(err => {
-                    console.error('Failed to copy: ', err);
-                    fallbackCopy(name, feedback);
-                });
-            } else {
-                fallbackCopy(name, feedback);
-            }
-        });
-
-        function fallbackCopy(text, feedback) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                showFeedback(feedback);
-            } catch (err) {
-                console.error('Fallback copy failed', err);
-            }
-            document.body.removeChild(textArea);
-        }
-
-        function showFeedback(el) {
-            if (!el) return;
-            el.style.display = 'inline-block';
-            setTimeout(() => {
-                el.style.display = 'none';
-            }, 2000);
-        }
+        EpisciencesMailingList.initDashboard();
     });
 })();
 </script>

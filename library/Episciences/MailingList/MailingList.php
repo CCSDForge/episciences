@@ -66,6 +66,26 @@ class MailingList
         ];
     }
 
+    /**
+     * Build a standardized mailing list name
+     * @param string $rvcode Journal code
+     * @param string $subName Sub-name (optional)
+     * @return string
+     */
+    public static function buildFullName(string $rvcode, string $subName = ''): string
+    {
+        $rvcode = strtolower($rvcode);
+        $subName = preg_replace('/[^a-zA-Z0-9._-]/', '', $subName);
+        $subName = strtolower($subName);
+        $suffix = '@' . (defined('DOMAIN') ? DOMAIN : 'episciences.org');
+
+        if ($subName === '') {
+            return $rvcode . $suffix;
+        }
+
+        return $rvcode . '-' . $subName . $suffix;
+    }
+
     public function getId(): ?int
     {
         return $this->_id;

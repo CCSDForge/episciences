@@ -58,20 +58,9 @@ class AdministratemailinglistController extends Zend_Controller_Action
             }
 
             $name = $params['name'] ?? '';
-            
-            // Sanitize user part: only alphanumeric, dots, dashes, underscores
-            $name = preg_replace('/[^a-zA-Z0-9._-]/', '', $name);
-            $name = strtolower((string)$name);
-
-            // Automatically build the final email-like name
             $rvcode = strtolower((string)RVCODE);
             $suffix = '@' . DOMAIN;
-            
-            if ($name === '') {
-                $fullName = $rvcode . $suffix;
-            } else {
-                $fullName = $rvcode . '-' . $name . $suffix;
-            }
+            $fullName = MailingList::buildFullName($rvcode, $name);
 
             // 1. Ensure name uniqueness globally (across all journals)
             $existingList = MailingListsManager::getByName($fullName);

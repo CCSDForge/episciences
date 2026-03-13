@@ -100,4 +100,40 @@ class MailingListTest extends TestCase
         self::assertSame('Type', $list->getType());
         self::assertSame(0, $list->getStatus());
     }
+
+    /**
+     * @covers \Episciences\MailingList\MailingList::buildFullName
+     */
+    public function testBuildFullNameWithEmptySubName(): void
+    {
+        $fullName = MailingList::buildFullName('DEV');
+        self::assertSame('dev@episciences.org', $fullName);
+    }
+
+    /**
+     * @covers \Episciences\MailingList\MailingList::buildFullName
+     */
+    public function testBuildFullNameWithSubName(): void
+    {
+        $fullName = MailingList::buildFullName('DEV', 'Editors');
+        self::assertSame('dev-editors@episciences.org', $fullName);
+    }
+
+    /**
+     * @covers \Episciences\MailingList\MailingList::buildFullName
+     */
+    public function testBuildFullNameSanitizesSubName(): void
+    {
+        $fullName = MailingList::buildFullName('DEV', 'Editors Space & Test!');
+        self::assertSame('dev-editorsspacetest@episciences.org', $fullName);
+    }
+
+    /**
+     * @covers \Episciences\MailingList\MailingList::buildFullName
+     */
+    public function testBuildFullNameAllowsDotsDashesUnderscores(): void
+    {
+        $fullName = MailingList::buildFullName('DEV', 'sub.name_test-123');
+        self::assertSame('dev-sub.name_test-123@episciences.org', $fullName);
+    }
 }

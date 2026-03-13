@@ -282,173 +282,21 @@
 @keyframes fa-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(359deg); } }
 </style>
 
+<script src="/js/library/episciences.mailing-list.js"></script>
 <script>
 (function() {
     'use strict';
-
     document.addEventListener('DOMContentLoaded', function() {
-        const announcementContainer = document.getElementById('member-announcements');
-        const userSearchInput = document.getElementById('user-search');
-        const roleFilterSelect = document.getElementById('role-filter');
-        const modalUsersTableBody = document.querySelector('#modal-users-table tbody');
-        const selectedUsersTableBody = document.querySelector('#users-table tbody');
-        const userModal = document.getElementById('userModal');
-        
-        // Audience Preview Elements
-        const audienceSearchInput = document.getElementById('audience-search');
-        const audienceTableBody = document.querySelector('#audience-table tbody');
-        const refreshPreviewBtn = document.getElementById('refresh-preview');
-        const refreshIcon = document.getElementById('refresh-icon');
-
-        function announce(message) {
-            if (announcementContainer) {
-                announcementContainer.textContent = message;
-            }
-        }
-
-        function filterModalUsers() {
-            const searchValue = userSearchInput.value.toLowerCase();
-            const roleValue = roleFilterSelect.value;
-            const rows = modalUsersTableBody.querySelectorAll('tr');
-
-            rows.forEach(row => {
-                const searchData = row.getAttribute('data-search') || '';
-                const matchesSearch = searchData.indexOf(searchValue) > -1;
-                let matchesRole = true;
-
-                if (roleValue !== '') {
-                    try {
-                        const roles = JSON.parse(row.getAttribute('data-roles') || '[]');
-                        matchesRole = Array.isArray(roles) && roles.indexOf(roleValue) > -1;
-                    } catch (e) {
-                        matchesRole = false;
-                    }
-                }
-
-                row.style.display = (matchesSearch && matchesRole) ? '' : 'none';
-            });
-        }
-
-        // Search/Filter in audience preview
-        audienceSearchInput.addEventListener('keyup', function() {
-            const value = this.value.toLowerCase();
-            const rows = audienceTableBody.querySelectorAll('.audience-row');
-            rows.forEach(row => {
-                const searchData = row.getAttribute('data-search') || '';
-                row.style.display = searchData.indexOf(value) > -1 ? '' : 'none';
-            });
+        EpisciencesMailingList.init({
+            previewUrl: '<?php echo $this->url(['action' => 'preview']); ?>',
+            noMembersMsg: '<?php echo $this->translate('No members match the current selection.'); ?>',
+            previewUpdatedMsg: '<?php echo $this->translate('Audience preview updated'); ?>',
+            previewFailedMsg: '<?php echo $this->translate('Failed to update preview'); ?>',
+            removeUserMsg: '<?php echo $this->translate('Remove user'); ?>',
+            addedMsg: '<?php echo $this->translate('added to list'); ?>',
+            removedMsg: '<?php echo $this->translate('removed from list'); ?>',
+            noUsersSelectedMsg: '<?php echo $this->translate('No individual members selected.'); ?>'
         });
-
-        // AJAX refresh for audience preview
-        refreshPreviewBtn.addEventListener('click', function() {
-            refreshPreviewBtn.disabled = true;
-            refreshIcon.classList.add('fa-spin');
-
-            const roles = Array.from(document.querySelectorAll('.role-checkbox:checked')).map(cb => cb.value);
-            const uids = Array.from(document.querySelectorAll('.uid-input')).map(input => input.value);
-
-            const formData = new FormData();
-            roles.forEach(role => formData.append('roles[]', role));
-            uids.forEach(uid => formData.append('uids[]', uid));
-
-            fetch('<?php echo $this->url(['action' => 'preview']); ?>', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                audienceTableBody.innerHTML = '';
-                if (data.length === 0) {
-                    audienceTableBody.innerHTML = `<tr><td colspan="2" class="text-center" style="padding: 60px 0;"><p class="text-muted" style="font-size: 1.1em;"><?php echo $this->translate('No members match the current selection.'); ?></p></td></tr>`;
-                } else {
-                    data.forEach(member => {
-                        const row = document.createElement('tr');
-                        row.className = 'audience-row';
-                        const searchData = `${member.FIRSTNAME || ''} ${member.LASTNAME || ''} ${member.EMAIL || ''}`.toLowerCase();
-                        row.setAttribute('data-search', searchData);
-                        row.innerHTML = `
-                            <td style="padding: 12px 20px; vertical-align: middle;">
-                                <span style="font-weight: 600; color: #333;">${member.FIRSTNAME || ''} ${member.LASTNAME || ''}</span>
-                            </td>
-                            <td style="padding: 12px 20px; vertical-align: middle;">
-                                <code style="background: #f4f4f4; color: #555; padding: 2px 6px; border-radius: 4px; border: none;">${member.EMAIL || ''}</code>
-                            </td>`;
-                        audienceTableBody.appendChild(row);
-                    });
-                }
-                announce('<?php echo $this->translate('Audience preview updated'); ?>');
-            })
-            .catch(error => {
-                console.error('Error fetching preview:', error);
-                alert('<?php echo $this->translate('Failed to update preview'); ?>');
-            })
-            .finally(() => {
-                refreshPreviewBtn.disabled = false;
-                refreshIcon.classList.remove('fa-spin');
-            });
-        });
-
-        // Event delegation for dynamic buttons
-        document.addEventListener('click', function(event) {
-            // Add user from modal
-            const addBtn = event.target.closest('.add-user-btn');
-            if (addBtn) {
-                const uid = addBtn.getAttribute('data-uid');
-                const screenName = addBtn.getAttribute('data-screenname');
-                
-                if (!document.getElementById('user-row-' + uid)) {
-                    const noUsersMsg = document.getElementById('no-users-msg');
-                    if (noUsersMsg) {
-                        noUsersMsg.remove();
-                    }
-
-                    const rowHtml = `
-                        <tr id="user-row-${uid}" class="member-row">
-                            <td style="vertical-align: middle; border-top: 1px solid #f9f9f9;">
-                                <span style="font-weight: 500;">${screenName}</span>
-                                <input type="hidden" name="uids[]" value="${uid}" class="uid-input">
-                            </td>
-                            <td style="vertical-align: middle; text-align: right; border-top: 1px solid #f9f9f9;">
-                                <button type="button" class="btn btn-link btn-xs remove-user text-danger" data-uid="${uid}" aria-label="<?php echo $this->translate('Remove user'); ?> ${screenName}">
-                                    <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-                                </button>
-                            </td>
-                        </tr>`;
-                    selectedUsersTableBody.insertAdjacentHTML('beforeend', rowHtml);
-                    announce(screenName + ' <?php echo $this->translate('added to list'); ?>');
-                }
-
-                const parentRow = addBtn.closest('tr');
-                parentRow.style.backgroundColor = '#f0fff0';
-                setTimeout(() => {
-                    parentRow.style.backgroundColor = '';
-                }, 500);
-            }
-
-            // Remove user
-            const removeBtn = event.target.closest('.remove-user');
-            if (removeBtn) {
-                const uid = removeBtn.getAttribute('data-uid');
-                const row = document.getElementById('user-row-' + uid);
-                if (row) {
-                    const screenNameCell = row.querySelector('td');
-                    const screenName = screenNameCell ? screenNameCell.textContent.trim() : '';
-                    row.remove();
-                    
-                    if (selectedUsersTableBody.querySelectorAll('tr.member-row').length === 0) {
-                        selectedUsersTableBody.insertAdjacentHTML('beforeend', '<tr id="no-users-msg"><td colspan="2" class="text-center" style="padding: 40px 0; border-top: none;"><p class="text-muted" style="margin-bottom: 0; font-style: italic;"><?php echo $this->translate('No individual members selected.'); ?></p></td></tr>');
-                    }
-                    announce(screenName + ' <?php echo $this->translate('removed from list'); ?>');
-                }
-            }
-        });
-
-        // Modal focus management
-        if (userModal && typeof jQuery !== 'undefined') {
-            window.jQuery(userModal).on('shown.bs.modal', function() {
-                userSearchInput.focus();
-            });
-        }
     });
 })();
 </script>

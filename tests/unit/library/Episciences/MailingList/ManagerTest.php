@@ -56,4 +56,9 @@ class ManagerTest extends TestCase
         self::assertSame(123, $list->getRvid());
         self::assertSame('My List', $list->getName());
     }
+
+    public function testMaxMailingListsConstant(): void
+    {
+        self::assertSame(5, Manager::MAX_MAILING_LISTS);
+    }
 }
