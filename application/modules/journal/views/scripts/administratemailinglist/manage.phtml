@@ -2,7 +2,7 @@
     <div class="col-md-12">
         <div style="display: flex; align-items: center; justify-content: space-between;">
             <h3 style="margin: 0;"><?php echo $this->translate('Manage members for: ') . '<span class="text-primary">' . $this->escape($this->list->getName()) . '</span>'; ?></h3>
-            <a href="<?php echo $this->url(['action' => 'index']); ?>" class="btn btn-default btn-sm">
+            <a href="<?php echo $this->url(['controller' => 'administratemailinglist', 'action' => 'index']); ?>" class="btn btn-default btn-sm">
                 <span class="glyphicon glyphicon-arrow-left"></span> <?php echo $this->translate('Back to list'); ?>
             </a>
         </div>
@@ -289,7 +289,7 @@
     'use strict';
     document.addEventListener('DOMContentLoaded', function() {
         EpisciencesMailingList.init({
-            previewUrl: '<?php echo $this->url(['action' => 'preview']); ?>',
+            previewUrl: '<?php echo $this->url(['controller' => 'administratemailinglist', 'action' => 'preview']); ?>',
             previewCsrfName: '<?php echo $this->escape($this->previewCsrfToken['name']); ?>',
             previewCsrfValue: '<?php echo $this->escape($this->previewCsrfToken['value']); ?>',
             noMembersMsg: '<?php echo $this->translate('No members match the current selection.'); ?>',
