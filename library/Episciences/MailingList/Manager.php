@@ -10,6 +10,8 @@ class Manager
     public const TABLE_MAILING_LIST_USERS = 'mailing_list_users';
     public const TABLE_MAILING_LIST_ROLES = 'mailing_list_roles';
 
+    public const MAX_MAILING_LISTS = 5;
+
     /**
      * @param int $rvid
      * @return MailingList[]

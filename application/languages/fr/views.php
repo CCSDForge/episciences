@@ -159,6 +159,8 @@ return [
     "Save Members" => "Enregistrer les membres",
     "Mailing list members saved successfully." => "Les membres de la liste de diffusion ont été enregistrés avec succès.",
     "The list has been automatically closed because it has no members." => "La liste a été automatiquement fermée car elle ne comporte aucun membre.",
+    "You have reached the maximum number of mailing lists allowed for this journal." => "Vous avez atteint le nombre maximum de listes de diffusion autorisées pour cette revue.",
+    "Maximum number of mailing lists reached" => "Nombre maximum de listes de diffusion atteint",
     "Back to list" => "Retour à la liste",
     "Select users" => "Sélectionner des utilisateurs",
     "Search by name or screen name..." => "Chercher par nom ou pseudonyme...",

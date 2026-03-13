@@ -1860,6 +1860,8 @@ return array(
     "Save Members" => "Save Members",
     "Mailing list members saved successfully." => "Mailing list members saved successfully.",
     "The list has been automatically closed because it has no members." => "The list has been automatically closed because it has no members.",
+    "You have reached the maximum number of mailing lists allowed for this journal." => "You have reached the maximum number of mailing lists allowed for this journal.",
+    "Maximum number of mailing lists reached" => "Maximum number of mailing lists reached",
     "Back to list" => "Back to list",
     "Select users" => "Select users",
     "Search by name or screen name..." => "Search by name or screen name...",

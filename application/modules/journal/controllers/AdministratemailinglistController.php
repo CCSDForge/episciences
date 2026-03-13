@@ -36,6 +36,14 @@ class AdministratemailinglistController extends Zend_Controller_Action
                 return;
             }
         } else {
+            // Check list limit for new lists
+            $currentLists = MailingListsManager::getList(RVID);
+            if (count($currentLists) >= MailingListsManager::MAX_MAILING_LISTS) {
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                    ->addMessage($this->view->translate('You have reached the maximum number of mailing lists allowed for this journal.'));
+                $this->_helper->redirector->gotoSimple('index');
+                return;
+            }
             $list = new MailingList();
             $list->setRvid(RVID);
         }

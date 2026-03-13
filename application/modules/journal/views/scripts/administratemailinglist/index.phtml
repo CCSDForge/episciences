@@ -2,9 +2,15 @@
     <div class="col-md-12">
         <div class="page-header" style="margin-top: 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px;">
             <h2 id="mailing-lists-title" style="margin: 0;"><?php echo $this->translate('Mailing Lists'); ?></h2>
-            <a href="<?php echo $this->url(['controller' => 'administratemailinglist', 'action' => 'edit'], null, true); ?>" class="btn btn-primary btn-sm">
-                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> <?php echo $this->translate('Create a new list'); ?>
-            </a>
+            <?php if (count($this->mailingLists) < \Episciences\MailingList\Manager::MAX_MAILING_LISTS): ?>
+                <a href="<?php echo $this->url(['controller' => 'administratemailinglist', 'action' => 'edit'], null, true); ?>" class="btn btn-primary btn-sm">
+                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> <?php echo $this->translate('Create a new list'); ?>
+                </a>
+            <?php else: ?>
+                <button class="btn btn-primary btn-sm disabled" title="<?php echo $this->translate('Maximum number of mailing lists reached'); ?>" disabled>
+                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> <?php echo $this->translate('Create a new list'); ?>
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 </div>
