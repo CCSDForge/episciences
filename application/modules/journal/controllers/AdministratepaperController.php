@@ -1556,7 +1556,7 @@ class AdministratepaperController extends PaperDefaultController
 
         //init invitation form
         $params = [
-            'rating_deadline_min' => Episciences_Tools::addDateInterval(date('Y-m-d'), date('Y-m-d')),
+            'rating_deadline_min' => Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting('rating_deadline_min')),
             'rating_deadline_max' => Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting('rating_deadline_max'))];
         $form = Episciences_PapersManager::getDeadlineForm($aid, $params);
         $defaults = [
@@ -1628,28 +1628,51 @@ class AdministratepaperController extends PaperDefaultController
             return;
         }
 
-        //deadline validations
-        if (!array_key_exists('deadline', $post)) {
-            $result['message'] = $translator->translate("La date limite de rendu de relecture est obligatoire");
+        $userDeadline = $post['deadline'] ?? '';
+
+        if (
+            $userDeadline === '' ||
+            !Episciences_Tools::isValidSQLDate($userDeadline)
+        ) {
+            $result['message'] = $translator->translate("La date limite saisie est invalide.");
             echo Zend_Json::encode($result);
             return;
         }
-        if (!Episciences_Tools::isValidSQLDate($post['deadline'])) {
-            $result['message'] = $translator->translate("La date limite de rendu de relecture est invalide");
+
+
+        $journal = Episciences_ReviewsManager::find(RVCODE);
+
+        // Retrieving time stamps from today's date
+        $today = date('Y-m-d');
+        $minDeadline = Episciences_Tools::addDateInterval($today, $journal->getSetting('rating_deadline_min'));
+        $maxDeadline = Episciences_Tools::addDateInterval($today, $journal->getSetting('rating_deadline_max'));
+
+        $minTimestamp = strtotime($minDeadline);
+        $maxTimestamp = strtotime($maxDeadline);
+        $userDeadlineTimestamp = strtotime($userDeadline);
+
+        if ($userDeadlineTimestamp < $minTimestamp) {
+            $result['message'] = sprintf(
+                $translator->translate("La nouvelle date limite de rendu de relecture doit être postérieure au %s."),
+                $this->view->Date($minDeadline, Episciences_Tools::getLocale())
+            );
+        } elseif ($userDeadlineTimestamp > $maxTimestamp) {
+            $result['message'] = sprintf(
+                $translator->translate("La nouvelle date limite de rendu de relecture doit être antérieure au %s."),
+                $this->view->Date($maxDeadline, Episciences_Tools::getLocale())
+            );
+        }
+
+        if (!empty($result['message'])) {
             echo Zend_Json::encode($result);
             return;
         }
-        if (strtotime($post['deadline']) <= strtotime($assignment->getDeadline())) {
-            $result['message'] = $translator->translate("La nouvelle date limite de rendu de relecture doit être supérieure à : ");
-            $result['message'] .= $this->view->Date($assignment->getDeadline(), Episciences_Tools::getLocale());
-            echo Zend_Json::encode($result);
-            return;
-        }
+
 
         $oldDeadline = $assignment->getDeadline();
 
         //assignment update
-        $assignment->setDeadline($post['deadline']);
+        $assignment->setDeadline($userDeadline);
         $assignment->save();
 
         $paper->log(
@@ -1668,7 +1691,7 @@ class AdministratepaperController extends PaperDefaultController
         $result = [
             'status' => 1,
             'id' => $id,
-            'deadline' => $this->view->Date($post['deadline'], Episciences_Tools::getLocale()),
+            'deadline' => $this->view->Date($userDeadline, Episciences_Tools::getLocale()),
             'docId' => $paper->getDocid()
         ];
         echo Zend_Json::encode($result);
