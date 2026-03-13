@@ -91,9 +91,9 @@ class MailingList
         return $this->_id;
     }
 
-    public function setId(int $id): self
+    public function setId(int|string $id): self
     {
-        $this->_id = $id;
+        $this->_id = (int)$id;
         return $this;
     }
 
@@ -102,9 +102,9 @@ class MailingList
         return $this->_rvid;
     }
 
-    public function setRvid(int $rvid): self
+    public function setRvid(int|string $rvid): self
     {
-        $this->_rvid = $rvid;
+        $this->_rvid = (int)$rvid;
         return $this;
     }
 
@@ -135,9 +135,9 @@ class MailingList
         return $this->_status;
     }
 
-    public function setStatus(int $status): self
+    public function setStatus(int|string $status): self
     {
-        $this->_status = $status;
+        $this->_status = (int)$status;
         return $this;
     }
 
