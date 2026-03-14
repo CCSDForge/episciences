@@ -896,13 +896,7 @@ class Episciences_Paper
     {
         $this->_repoId = (int)$repoId;
 
-        $this->hasHook = !empty(Episciences_Repositories::hasHook($this->getRepoid())) &&
-            (
-                $this->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID ||
-                $this->getRepoid() === (int)Episciences_Repositories::CRYPTOLOGY_EPRINT ||
-                Episciences_Repositories::isDataverse($repoId) ||
-                Episciences_Repositories::isDspace($repoId)
-            );
+        $this->hasHook = !empty(Episciences_Repositories::hasHook($this->getRepoid()));
 
         return $this;
     }
@@ -1754,7 +1748,8 @@ class Episciences_Paper
     {
         if (
             $conceptIdentifier &&
-            !$this->hasHook
+            !$this->hasHook &&
+            !$this->isTmp() // repoId = 0 : hasHook returns false
         ) {
             throw new \InvalidArgumentException('Concept identifier should be applied exclusively to submissions coming from a repository with a hook');
         }
@@ -2594,9 +2589,9 @@ class Episciences_Paper
     /**
      * check if paper already exists in database
      * @param bool $strict
-     * @return string
+     * @return int
      */
-    public function alreadyExists(bool $strict = true): string
+    public function alreadyExists(bool $strict = true): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -2620,7 +2615,7 @@ class Episciences_Paper
         // If there are several versions of the article, we retrieve the latest version of the article
         $sql->order('WHEN DESC');
 
-        return ($db->fetchOne($sql));
+        return (int)($db->fetchOne($sql));
     }
 
     /**

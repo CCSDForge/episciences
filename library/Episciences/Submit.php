@@ -794,7 +794,7 @@ class Episciences_Submit
             $rvId = RVID;
         }
 
-        $isNewVersionOf = !empty($latestObsoleteDocId);
+        $isNewVersionOf = $latestObsoleteDocId !== null;
         $oldPaper = null;
         $result = [];
         $oai = null;
@@ -858,7 +858,7 @@ class Episciences_Submit
             $docId = $paper->alreadyExists();
 
             if ($docId) {
-                $oldPaper = Episciences_PapersManager::partialGet((int)$docId, $rvId);
+                $oldPaper = Episciences_PapersManager::partialGet($docId, $rvId);
             }
 
             //the order in which functions are called is important
@@ -2039,7 +2039,7 @@ class Episciences_Submit
             }
         }
 
-        /** @var Episciences_Editor $recipient */
+        /** @var Episciences_Editor | Episciences_User $recipient */
         foreach ($managers as $recipient) {
             // git #230
             $templateKey = ($canReplace || $paper->getEditor($recipient->getUid())) ? $defaultTemplateKey : Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY; // re-initialisation
@@ -2063,7 +2063,7 @@ class Episciences_Submit
             $adminTags [Episciences_Mail_Tags::TAG_SECTION_NAME] = $sTag;
 
             if (!$canReplace) { // new submission only
-                $rTag = $recipient->getTag();
+                $rTag = $recipient instanceof Episciences_Editor ? $recipient->getTag() : null;
                 if ($rTag === Episciences_Editor::TAG_VOLUME_EDITOR) {
                     $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_VOLUME_EDITOR_ASSIGN;
                 } elseif ($rTag === Episciences_Editor::TAG_SECTION_EDITOR) {
