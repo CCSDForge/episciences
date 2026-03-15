@@ -1958,6 +1958,7 @@ return array(
     "Episciences_Website_Navigation_Page_PrepareSubmission" => "Prepare your submission",
     "Episciences_Website_Navigation_Page_ForReviewers" => "For reviewers",
     "Episciences_Website_Navigation_Page_ForConferenceOrganisers" => "For conference organisers",
+    "Episciences_Website_Navigation_Page_ProposingSpecialIssues" => "Proposing special issues",
     "Episciences_Website_Navigation_Page_JournalIndexing" => "Abstracted and indexed in",
     "Episciences_Website_Navigation_Page_JournalAcknowledgements" => "Acknowledgements",
 

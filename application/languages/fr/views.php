@@ -79,6 +79,7 @@ return [
     "Episciences_Website_Navigation_Page_PrepareSubmission" => "Preparer votre soumission",
     "Episciences_Website_Navigation_Page_ForReviewers" => "Pour les relecteurs",
     "Episciences_Website_Navigation_Page_ForConferenceOrganisers" => "Pour les organisateurs de conférences",
+    "Episciences_Website_Navigation_Page_ProposingSpecialIssues" => "Proposer des numéros spéciaux",
 
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Articles acceptés à publier",
 
