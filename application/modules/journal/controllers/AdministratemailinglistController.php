@@ -8,7 +8,7 @@ class AdministratemailinglistController extends Episciences_Controller_Action
     public function init(): void
     {
         // Permission check: available only to epiadmin, chief_editor, administrator, secretary
-        $isAllowed = Episciences_Auth::isSecretary() || 
+        $isAllowed = Episciences_Auth::isSecretary() ||
                      Episciences_Auth::isChiefEditor() ||
                      Episciences_Auth::isAdministrator() ||
                      Episciences_Auth::isRoot();

@@ -27,6 +27,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     public const PAGE_PREPARE_SUBMISSION = 'PrepareSubmission';
     public const PAGE_FOR_REVIEWERS = 'ForReviewers';
     public const PAGE_FOR_CONFERENCE_ORGANISERS = 'ForConferenceOrganisers';
+    public const PAGE_PROPOSING_SPECIAL_ISSUES= 'ProposingSpecialIssues';
     public const PAGE_ABOUT = 'about';
     public const PAGE_JOURNAL_INDEXING = 'journalIndexing';
     public const PAGE_JOURNAL_ACKNOWLEDGEMENTS = 'journalAcknowledgements';
@@ -61,6 +62,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             self::PAGE_PREPARE_SUBMISSION,
             self::PAGE_FOR_REVIEWERS,
             self::PAGE_FOR_CONFERENCE_ORGANISERS,
+            self::PAGE_PROPOSING_SPECIAL_ISSUES,
         ],
 
         'Other' => [
