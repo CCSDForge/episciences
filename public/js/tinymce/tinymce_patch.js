@@ -27,8 +27,8 @@ function __initEditor(selectorName, context, options) {
     const licenceKey = {license_key: 'gpl'}; //https://www.tiny.cloud/license-key/
     //To correct the printing of extra lines
     const newLineOptions = {
-        newline_behavior: 'linebreak', //inserting a <br> instead of <p>
-        remove_trailing_brs: true      //removing extra <br> at the end of a block
+        newline_behavior: 'default', // never use linebreak: instead tell users to use shift+enter to insert br
+        remove_trailing_brs: true, //removing extra <br> at the end of a block
     };
     const defaultOptions = $.extend({}, domainAbsoluteURLsOptions, newLineOptions);
     const baseTinyMceOptions = {
