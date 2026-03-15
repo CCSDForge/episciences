@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+* Adding "Publish" => "Proposing special issues" template page [#951](https://github.com/CCSDForge/episciences/issues/951)
 * New supported servers:
     Cryptology ePrint Archive (https://eprint.iacr.org)
     Support for any data repositories powered by Dspace (eg. [repositorium.uminho(University of Minho)](https://repositorium.uminho.pt))

@@ -27,6 +27,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     const PAGE_PREPARE_SUBMISSION= 'PrepareSubmission';
     const PAGE_FOR_REVIEWERS= 'ForReviewers';
     const PAGE_FOR_CONFERENCE_ORGANISERS= 'ForConferenceOrganisers';
+    const PAGE_PROPOSING_SPECIAL_ISSUES= 'ProposingSpecialIssues';
     const PAGE_ABOUT = 'about';
     const PAGE_JOURNAL_INDEXING= 'journalIndexing';
     const PAGE_JOURNAL_ACKNOWLEDGEMENTS = 'journalAcknowledgements';
