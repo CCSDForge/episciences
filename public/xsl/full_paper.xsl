@@ -222,6 +222,16 @@
                     </div>
                 </xsl:if>
 
+                <xsl:if test="episciences/secondaryVolumes/secondaryVolume">
+                    <div class="small">
+                        <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Volumes secondaires: ')"/>
+                        <xsl:for-each select="episciences/secondaryVolumes/secondaryVolume">
+                            <xsl:if test="position() > 1">, </xsl:if>
+                            <xsl:value-of select="name"/>
+                        </xsl:for-each>
+                    </div>
+                </xsl:if>
+
                 <xsl:if test="episciences/section and episciences/section != ''">
                     <div class="small">
                         <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Rubrique : ')"/>
