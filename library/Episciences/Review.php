@@ -63,7 +63,7 @@ class Episciences_Review
     public const SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES = 'allowEditVolumeTitleWithPublishedArticles';
     public const SETTING_ENCAPSULATE_REVIEWERS = 'encapsulateReviewers';
     public const SETTING_EDITORS_CAN_REASSIGN_ARTICLES = 'editorsCanReassignArticle';
-    public const SETTING_AUTHORS_CAN_CONTACT_EDITORS = 'authorsCanContactEditors';
+    public const SETTING_AUTHOR_EDITOR_COMMUNICATION = 'authorEditorCommunication';
     public const SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS = 'discloseEditorNamesToAuthors';
     //Assignation automatique de rédacteurs
     public const SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT = 'systemAutoEditorsAssignment';
@@ -210,7 +210,7 @@ class Episciences_Review
             self::SETTING_SPECIAL_ISSUE_ACCESS_CODE,
             self::SETTING_ENCAPSULATE_REVIEWERS,
             self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES,
-            self::SETTING_AUTHORS_CAN_CONTACT_EDITORS,
+            self::SETTING_AUTHOR_EDITOR_COMMUNICATION,
             self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS,
             self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
             self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
@@ -1082,7 +1082,7 @@ class Episciences_Review
             self::SETTING_EDITORS_CAN_EDIT_TEMPLATES,
             self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
             self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
-            self::SETTING_AUTHORS_CAN_CONTACT_EDITORS,
+            self::SETTING_AUTHOR_EDITOR_COMMUNICATION,
             self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS,
         ], 'editors', ["legend" => "Paramètres des rédacteurs"]);
         $form->getDisplayGroup('editors')->removeDecorator('DtDdWrapper');
@@ -1467,11 +1467,17 @@ class Episciences_Review
                 'decorators' => $checkboxDecorators]
         );
 
-        $form->addElement('checkbox', self::SETTING_AUTHORS_CAN_CONTACT_EDITORS, [
-                'label' => "Permettre aux auteurs de contacter les rédacteurs responsables",
-                'description' => "Si activé, les auteurs peuvent envoyer des messages directement aux rédacteurs assignés à leur article",
+        $form->addElement('checkbox', self::SETTING_AUTHOR_EDITOR_COMMUNICATION, [
+                'label' => "Permettre la communication entre auteurs et rédacteurs",
+                'description' => "Si activé, les auteurs et les rédacteurs assignés peuvent s'envoyer des messages directement",
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-                'decorators' => $checkboxDecorators]
+                'decorators' => [
+                    'ViewHelper',
+                    'Description',
+                    ['Label', ['placement' => 'APPEND']],
+                    ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3', 'id' => 'authorEditorCommunication-wrapper']],
+                    ['Errors', ['placement' => 'APPEND']]
+                ]]
         );
 
         $form->addElement('checkbox', self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS, [
@@ -1852,7 +1858,7 @@ class Episciences_Review
             self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
             self::SETTING_TO_REQUIRE_REVISION_DEADLINE, self::SETTING_START_STATS_AFTER_DATE,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, self::SETTING_DISPLAY_EMPTY_VOLUMES,
-            self::SETTING_AUTHORS_CAN_CONTACT_EDITORS, self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS
+            self::SETTING_AUTHOR_EDITOR_COMMUNICATION, self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS
         ];
 
         foreach ($settings as $setting) {

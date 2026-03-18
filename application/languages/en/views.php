@@ -307,6 +307,8 @@ return array(
     "Les rédacteurs peuvent réattribuer la gestion de l'article" => "Editors can reassign handled articles to another editor",
     "Permettre aux auteurs de contacter les rédacteurs responsables" => "Allow authors to contact assigned editors",
     "Si activé, les auteurs peuvent envoyer des messages directement aux rédacteurs assignés à leur article" => "If enabled, authors can send messages directly to the editors assigned to their article",
+    "Permettre la communication entre auteurs et rédacteurs" => "Allow communication between authors and editors",
+    "Si activé, les auteurs et les rédacteurs assignés peuvent s'envoyer des messages directement" => "If enabled, authors and assigned editors can send messages directly to each other",
     "Afficher les noms des rédacteurs aux auteurs" => "Display editor names to authors",
     "Si activé, les auteurs peuvent voir les noms des rédacteurs assignés à leur article" => "If enabled, authors can see the names of the editors assigned to their article",
     "Le lieu de publication est renseigné, veuillez saisir l'éditeur également" => "The publication location is provided, please also enter the publisher",

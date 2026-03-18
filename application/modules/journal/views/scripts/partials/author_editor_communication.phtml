@@ -14,7 +14,7 @@
 // Check if the author-to-editor communication is enabled
 // $review is passed from the controller to avoid redundant DB query
 $review = $this->review;
-$canAuthorContactEditors = $review->getSetting(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS);
+$canAuthorContactEditors = $review->getSetting(Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION);
 $discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
 
 // Determine if the user can see this panel

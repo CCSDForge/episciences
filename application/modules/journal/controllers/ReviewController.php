@@ -54,7 +54,7 @@ class ReviewController extends Zend_Controller_Action
                     Episciences_Review::SETTING_EDITORS_CAN_EDIT_TEMPLATES,
                     Episciences_Review::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
                     Episciences_Review::SETTING_EDITORS_CAN_REASSIGN_ARTICLES,
-                    Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS,
+                    Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION,
                     Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS,
                     Episciences_Review::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
                     Episciences_Review::SETTING_CAN_CHOOSE_VOLUME,
