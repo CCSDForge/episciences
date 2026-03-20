@@ -1,6 +1,6 @@
 <?php
 
-use Episciences\HtmlToMarkdown\ListItemConverter;
+use Episciences\HtmlToMarkdown\HtmlFixer;
 use League\HTMLToMarkdown\Converter\TableConverter;
 use League\HTMLToMarkdown\HtmlConverter;
 
@@ -102,9 +102,10 @@ class Episciences_Page
     {
         $converter = new HtmlConverter(array('strip_tags' => true, 'header_style' => 'atx'));
         $converter->getEnvironment()->addConverter(new TableConverter());
-        $converter->getEnvironment()->addConverter(new ListItemConverter());
         if (is_array($content)) {
             foreach ($content as $language => $value) {
+                // Fix malformed nested lists before conversion
+                $value = HtmlFixer::fixNestedLists($value);
                 $content[$language] = $converter->convert($value);
             }
         }
