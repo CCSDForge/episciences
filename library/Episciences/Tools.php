@@ -7,6 +7,7 @@ use Defuse\Crypto\Key;
 use Episciences\Tools\Http\Exceptions\FileGetContentsException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Episciences\HtmlToMarkdown\ListItemConverter;
 use League\CommonMark\CommonMarkConverter;
 use League\CommonMark\GithubFlavoredMarkdownConverter;
 use League\HTMLToMarkdown\HtmlConverter;
@@ -1906,6 +1907,7 @@ class Episciences_Tools
     {
 
         $converter = new HtmlConverter();
+        $converter->getEnvironment()->addConverter(new ListItemConverter());
         $config = $converter->getConfig();
 
         if (empty($options)) {
