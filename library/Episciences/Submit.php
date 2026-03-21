@@ -1170,7 +1170,7 @@ class Episciences_Submit
 
         if (
             (isset($hookHasDoiInfoRepresentsAllVersions['hasDoiInfoRepresentsAllVersions']) && !$hookHasDoiInfoRepresentsAllVersions['hasDoiInfoRepresentsAllVersions']) ||
-            $submissionInProgress->getConcept_identifier() !== $oldPaper->getConcept_identifier()||
+            $submissionInProgress->getConcept_identifier() !== $oldPaper->getConcept_identifier() ||
             (!$oldPaper->getConcept_identifier() && $oldPaper->getIdentifier() !== $submissionInProgress->getIdentifier())
         ) {
 
@@ -2497,52 +2497,25 @@ class Episciences_Submit
             return [];
         }
 
-        $processedType = [];
-        $type = !is_array($type) ? [$type] : $type;
-        $currentType = strtolower($type[array_key_first($type)]);
+        $types = (array)$type;
+        $currentType = strtolower(reset($types));
 
-        if (str_contains($currentType, 'info:eu-repo/semantics/')) {
-            $currentType = str_replace('info:eu-repo/semantics/', '', $currentType);
-        }
+        $currentType = str_replace('info:eu-repo/semantics/', '', $currentType);
 
         if ($currentType === Episciences_Paper::OTHER_TYPE) {
-            $currentType = strtolower($type[array_key_last($type)]);
+            $currentType = strtolower(end($types));
         }
 
-        $currentType = str_replace(
-            search: [
-                ' ',
-                Episciences_Paper::JOURNAL_ARTICLE_TYPE_TITLE,
-                ' ',
-                Episciences_Paper::REGULAR_ARTICLE_TYPE_TITLE,
-                Episciences_Paper::WORKING_PAPER_TYPE_TITLE,
-                Episciences_Paper::PUBLICATION_TYPE_TITLE,
-                Episciences_Paper::JOURNAL_TYPE_TITLE,
-                Episciences_Paper::CONFERENCE_PAPER_TYPE_TITLE
+        $search = [' ', Episciences_Paper::JOURNAL_ARTICLE_TYPE_TITLE, Episciences_Paper::REGULAR_ARTICLE_TYPE_TITLE, Episciences_Paper::WORKING_PAPER_TYPE_TITLE, Episciences_Paper::PUBLICATION_TYPE_TITLE, Episciences_Paper::JOURNAL_TYPE_TITLE, Episciences_Paper::CONFERENCE_PAPER_TYPE_TITLE];
+        $replace = ['', Episciences_Paper::ARTICLE_TYPE_TITLE, Episciences_Paper::ARTICLE_TYPE_TITLE, Episciences_Paper::ARTICLE_TYPE_TITLE, Episciences_Paper::ARTICLE_TYPE_TITLE, Episciences_Paper::ARTICLE_TYPE_TITLE, Episciences_Paper::CONFERENCE_TYPE];
 
-            ],
-            replace: [
-                '',
-                Episciences_Paper::ARTICLE_TYPE_TITLE,
-                '',
-                Episciences_Paper::ARTICLE_TYPE_TITLE,
-                Episciences_Paper::ARTICLE_TYPE_TITLE,
-                Episciences_Paper::ARTICLE_TYPE_TITLE,
-                Episciences_Paper::ARTICLE_TYPE_TITLE,
-                Episciences_Paper::CONFERENCE_TYPE
-            ],
-            subject: $currentType
-        );
-
+        $currentType = str_replace($search, $replace, $currentType);
 
         if (in_array($currentType, Episciences_Paper::PREPRINT_TYPES, true)) {
             $currentType = Episciences_Paper::DEFAULT_TYPE_TITLE;
         }
 
-        $processedType[Episciences_Paper::TITLE_TYPE] = $currentType;
-
-
-        return $processedType;
+        return [Episciences_Paper::TITLE_TYPE => $currentType];
 
     }
 

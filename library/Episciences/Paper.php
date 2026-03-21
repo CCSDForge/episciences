@@ -261,6 +261,7 @@ class Episciences_Paper
     public const JOURNAL_ARTICLE_TYPE_TITLE = 'journalarticle';
     public const PUBLICATION_TYPE_TITLE = 'publication';// Zenodo
     public const MED_ARXIV_PREPRINT = 'hwp-article-coll';
+    public const CRYPTOLOGY_TYPE = 'e-print';
 
 
     public const ENUM_TYPES = [
@@ -278,7 +279,7 @@ class Episciences_Paper
         self::TEXT_TYPE_TITLE,
         self::WORKING_PAPER_TYPE_TITLE,
         self::MED_ARXIV_PREPRINT,
-        'E-print' //  Cryptology
+        self::CRYPTOLOGY_TYPE
     ];
     public const JSON_PATH_ABS_FILE = "$.database.current.graphical_abstract_file";
     public static array $_statusPriority = [
@@ -1075,7 +1076,7 @@ class Episciences_Paper
      *  return version number
      * @return float
      */
-    public function getVersion() : float
+    public function getVersion(): float
     {
         return $this->_version;
     }
