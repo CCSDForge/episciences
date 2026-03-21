@@ -896,13 +896,7 @@ class Episciences_Paper
     {
         $this->_repoId = (int)$repoId;
 
-        $this->hasHook = !empty(Episciences_Repositories::hasHook($this->getRepoid())) &&
-            (
-                $this->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID ||
-                $this->getRepoid() === (int)Episciences_Repositories::CRYPTOLOGY_EPRINT ||
-                Episciences_Repositories::isDataverse($repoId) ||
-                Episciences_Repositories::isDspace($repoId)
-            );
+        $this->hasHook = !empty(Episciences_Repositories::hasHook($this->getRepoid()));
 
         return $this;
     }
@@ -918,7 +912,6 @@ class Episciences_Paper
     /**
      * @param $record
      * @return $this
-     * @throws Zend_Db_Statement_Exception
      * @throws DOMException
      */
     public function setRecord($record): self
@@ -1754,7 +1747,8 @@ class Episciences_Paper
     {
         if (
             $conceptIdentifier &&
-            !$this->hasHook
+            !$this->hasHook &&
+            !$this->isTmp() // repoId = 0 : hasHook returns false
         ) {
             throw new \InvalidArgumentException('Concept identifier should be applied exclusively to submissions coming from a repository with a hook');
         }
