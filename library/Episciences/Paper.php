@@ -2588,9 +2588,9 @@ class Episciences_Paper
     /**
      * check if paper already exists in database
      * @param bool $strict
-     * @return string
+     * @return int
      */
-    public function alreadyExists(bool $strict = true): string
+    public function alreadyExists(bool $strict = true): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -2614,7 +2614,7 @@ class Episciences_Paper
         // If there are several versions of the article, we retrieve the latest version of the article
         $sql->order('WHEN DESC');
 
-        return ($db->fetchOne($sql));
+        return (int)($db->fetchOne($sql));
     }
 
     /**
