@@ -323,6 +323,17 @@ $(function () {
                             }).appendTo($submit_form);
                             
                         }
+
+                        if (newVersionErrors.oldConceptIdentifier) {
+                            console.log(newVersionErrors.oldConceptIdentifier);
+
+                            $('<input>', {
+                                type: 'hidden',
+                                name: 'old_conceptIdentifier',
+                                value: newVersionErrors.oldConceptIdentifier
+                            }).appendTo($submit_form);
+
+                        }
                     }
 
                     let hideResultMessage = function hideResultMessage() {

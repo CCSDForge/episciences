@@ -862,13 +862,13 @@ class Episciences_Submit
             }
 
             //the order in which functions are called is important
-            self::assertDateTimeVersion($docId, $oldPaper, $result);
+            self::assertDateTimeVersion($docId, $oldPaper, $result, $isNewVersionOf);
             $paper->setVersion($result['hookVersion']);
 
             self::assertNewVersionConsistency($oldPaper, $paper, $result);
             self::assertVersion($docId, $oldPaper, $result);
 
-            $result['status'] = $docId ? 2 : 1;
+            $result['status'] = $result['status'] ?? ($docId ? 2 : 1);
 
             if (($result['status'] === 2) && $manageNewVersionErrors) {
 
@@ -904,10 +904,11 @@ class Episciences_Submit
      * @param $docId
      * @param Episciences_Paper|null $previousPaper
      * @param array $result
+     * @param bool $isNewVersion
      * @return void
      */
 
-    private static function assertDateTimeVersion(&$docId, ?Episciences_Paper $previousPaper, array &$result): void
+    private static function assertDateTimeVersion(&$docId, ?Episciences_Paper $previousPaper, array &$result, bool $isNewVersion): void
     {
         $currentVersionDateTime = $result[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
         if (
@@ -920,8 +921,13 @@ class Episciences_Submit
         $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($previousPaper?->getIdentifier());
 
         if ($previousPaperVersionDateTime < $currentVersionDateTime) {
+
+            if ($isNewVersion) {
+                $docId = null; // validation
+            }
+
+            $result['status'] = 2;
             $version = $previousPaper?->getVersion() + 1;
-            $docId = null; // validation
             $result['hookVersion'] = $version;
         }
     }
