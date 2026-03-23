@@ -864,9 +864,8 @@ class Episciences_Submit
             //the order in which functions are called is important
             self::assertDateTimeVersion($docId, $oldPaper, $result, $isNewVersionOf);
             $paper->setVersion($result['hookVersion']);
-
-            self::assertNewVersionConsistency($oldPaper, $paper, $result);
-            self::assertVersion($docId, $oldPaper, $result);
+            self::assertNewVersionConsistency($oldPaper, $paper);
+            self::assertDspaceVersion($docId, $oldPaper, $result);
 
             $result['status'] = $result['status'] ?? ($docId ? 2 : 1);
 
@@ -944,24 +943,17 @@ class Episciences_Submit
      * @throws Ccsd_Error
      */
 
-    private static function assertVersion(&$docId, ?Episciences_Paper $previousPaper, array $result): void
+    private static function assertDspaceVersion(&$docId, ?Episciences_Paper $previousPaper, array $result): void
     {
 
-        if (!$previousPaper) {
+        if (
+            !$previousPaper ||
+            !Episciences_Repositories::isDspace($previousPaper->getRepoid())) {
             return;
         }
 
         if ($previousPaper->getVersion() < $result['hookVersion']) {
-
-            $hookResult = Episciences_Repositories::callHook(
-                'hookIsRequiredVersion',
-                ['repoId' => $previousPaper->getRepoid()]
-            );
-
-            $isRequiredVersion = $hookResult['result'] ?? true;
-
-            $docId = $isRequiredVersion ? $docId : null;
-
+            $docId = null;
             return;
         }
 
@@ -1162,42 +1154,27 @@ class Episciences_Submit
      *
      * @param Episciences_Paper|null $oldPaper
      * @param Episciences_Paper $submissionInProgress
-     * @param array $result
      * @throws Ccsd_Error
      */
     private static function assertNewVersionConsistency(
         ?Episciences_Paper $oldPaper,
-        Episciences_Paper  $submissionInProgress,
-        array              $result
+        Episciences_Paper  $submissionInProgress
     ): void
     {
-        if (
-            !$oldPaper ||
-            !$oldPaper->hasHook) {
+        if (!$oldPaper) {
             return;
         }
 
-        $repoId = $oldPaper->getRepoid();
-
-        $hookHasDoiInfoRepresentsAllVersions = Episciences_Repositories::callHook( // For new versions, check DOI binding consistency.
-            'hookHasDoiInfoRepresentsAllVersions',
-            [
-                'repoId' => $repoId,
-                'record' => $result['record'] ?? '',
-                Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY => $oldPaper->getConcept_identifier(),
-            ]
-        );
-
+        $conceptChanged = $submissionInProgress->getConcept_identifier() !== $oldPaper->getConcept_identifier();
+        $noOldConcept = !$oldPaper->getConcept_identifier();
+        $identifierChanged = $oldPaper->getIdentifier() !== $submissionInProgress->getIdentifier();
 
         if (
-            (isset($hookHasDoiInfoRepresentsAllVersions['hasDoiInfoRepresentsAllVersions']) && !$hookHasDoiInfoRepresentsAllVersions['hasDoiInfoRepresentsAllVersions']) ||
-            $submissionInProgress->getConcept_identifier() !== $oldPaper->getConcept_identifier() ||
-            (!$oldPaper->getConcept_identifier() && $oldPaper->getIdentifier() !== $submissionInProgress->getIdentifier())
+            $conceptChanged ||
+            ($noOldConcept && $identifierChanged)
         ) {
-
             self::handleError();
         }
-
     }
 
     /**
