@@ -910,11 +910,15 @@ class Episciences_Submit
 
     private static function assertDateTimeVersion(&$docId, ?Episciences_Paper $previousPaper, array &$result, bool $isNewVersion): void
     {
-        $currentVersionDateTime = $result[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
-        if (
+        if(
             !$docId ||
-            empty($currentVersionDateTime)
-        ) {
+            !$previousPaper->hasHook){
+            return;
+        }
+
+        $currentVersionDateTime = $result[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
+
+        if (empty($currentVersionDateTime)) {
             return;
         }
 
@@ -948,7 +952,16 @@ class Episciences_Submit
         }
 
         if ($previousPaper->getVersion() < $result['hookVersion']) {
-            $docId = null;
+
+            $hookResult = Episciences_Repositories::callHook(
+                'hookIsRequiredVersion',
+                ['repoId' => $previousPaper->getRepoid()]
+            );
+
+            $isRequiredVersion = $hookResult['result'] ?? true;
+
+            $docId = $isRequiredVersion ? $docId : null;
+
             return;
         }
 
@@ -1158,7 +1171,9 @@ class Episciences_Submit
         array              $result
     ): void
     {
-        if (!$oldPaper) {
+        if (
+            !$oldPaper ||
+            !$oldPaper->hasHook) {
             return;
         }
 
