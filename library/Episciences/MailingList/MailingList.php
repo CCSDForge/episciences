@@ -76,6 +76,7 @@ class MailingList
     {
         $rvcode = strtolower($rvcode);
         $subName = preg_replace('/[^a-zA-Z0-9._-]/', '', $subName);
+        $subName = ltrim($subName, '-');
         $subName = strtolower($subName);
         $suffix = '@' . (defined('DOMAIN') ? DOMAIN : 'episciences.org');
 
