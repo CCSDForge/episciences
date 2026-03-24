@@ -2046,6 +2046,7 @@ return array(
 
     "article refusé" => 'rejected article',
     "articles refusés" => 'rejected articles',
+    'articles acceptés'=> 'accepted articles',
 
     "%s article refusé" => array("%s rejected article", "%s rejected articles"),
 
