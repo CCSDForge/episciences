@@ -47,8 +47,9 @@ class MailingListTest extends TestCase
         self::assertSame(0, $this->list->getStatus());
     }
 
-    public function testDefaultStatusIsOpen(): void
+    public function testDefaultStatusIsEnabled(): void
     {
+        // Status 1 means enabled (active). The default must be enabled.
         self::assertSame(1, $this->list->getStatus());
     }
 
@@ -261,6 +262,43 @@ class MailingListTest extends TestCase
         // All chars stripped → treated as empty → mandatory list form
         $fullName = MailingList::buildFullName('DEV', '!!! @@@');
         self::assertSame('dev@episciences.org', $fullName);
+    }
+
+    /**
+     * A user who types "-editors" in the sub-name field (thinking the prefix
+     * already ends with the separator) must not produce a double dash.
+     * buildFullName() strips any leading hyphens from the sub-name before
+     * prepending its own separator.
+     *
+     * @covers \Episciences\MailingList\MailingList::buildFullName
+     */
+    public function testBuildFullNameStripsLeadingHyphensFromSubName(): void
+    {
+        $fullName = MailingList::buildFullName('DEV', '-editors');
+        self::assertSame('dev-editors@episciences.org', $fullName);
+    }
+
+    /**
+     * Multiple leading hyphens must all be removed.
+     *
+     * @covers \Episciences\MailingList\MailingList::buildFullName
+     */
+    public function testBuildFullNameStripsMultipleLeadingHyphens(): void
+    {
+        $fullName = MailingList::buildFullName('journal', '--board');
+        self::assertSame('journal-board@episciences.org', $fullName);
+    }
+
+    /**
+     * A sub-name that is only hyphens collapses to empty after stripping,
+     * so the result is the mandatory list address.
+     *
+     * @covers \Episciences\MailingList\MailingList::buildFullName
+     */
+    public function testBuildFullNameSubNameOfOnlyHyphensYieldsMainList(): void
+    {
+        $fullName = MailingList::buildFullName('journal', '---');
+        self::assertSame('journal@episciences.org', $fullName);
     }
 
     /**

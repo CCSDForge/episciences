@@ -221,4 +221,46 @@ class AdministratemailinglistControllerTest extends TestCase
             'previewAction() must check isPost() and reject requests that are not HTTP POST'
         );
     }
+
+    // ---------------------------------------------------------------
+    // manageAction — auto-disable on empty members (CCE #436)
+    // ---------------------------------------------------------------
+
+    /**
+     * When the resolved member list is empty, manageAction() must set status
+     * to 0 (disabled) and use the "automatically disabled" translation key —
+     * not the legacy "closed" wording which is ambiguous alongside the Type
+     * field's "Open/Members only" vocabulary.
+     */
+    public function testManageActionUsesDisabledLanguageWhenMembersEmpty(): void
+    {
+        $method = $this->extractMethod('manageAction');
+
+        $this->assertStringContainsString(
+            'automatically disabled',
+            $method,
+            'manageAction() must use the "automatically disabled" translation key (not "closed") when auto-disabling an empty list'
+        );
+
+        $this->assertStringNotContainsString(
+            'automatically closed',
+            $method,
+            'manageAction() must not use the legacy "automatically closed" string; use "automatically disabled" instead'
+        );
+    }
+
+    /**
+     * The auto-disable comment in the source must use status 0 and reference
+     * "disabled" to stay consistent with the Status field vocabulary.
+     */
+    public function testManageActionSetsStatusZeroOnEmptyMembers(): void
+    {
+        $method = $this->extractMethod('manageAction');
+
+        $this->assertMatchesRegularExpression(
+            '/setStatus\s*\(\s*0\s*\)/',
+            $method,
+            'manageAction() must call setStatus(0) to disable the list when it has no members'
+        );
+    }
 }

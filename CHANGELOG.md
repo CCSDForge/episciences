@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [#679](https://github.com/CCSDForge/episciences/issues/679) "Ask other editors for their opinion" form now includes chief editors (ROLE_CHIEF_EDITOR) in addition to regular editors (ROLE_EDITOR).
 * [#691](http://github.com/CCSDForge/episciences/issues/691) Display "(optional)" label below comment and cover letter fields in submission forms to clarify these fields are not required.
 * [#350](https://github.com/CCSDForge/episciences/issues/350) Author-Editor Communication Settings:
-  - New option to allow authors to contact assigned editors (`authorsCanContactEditors`)
+  - New option to allow authors to contact assigned editors (`authorEditorCommunication`)
   - New option to disclose editor names to authors or keep them anonymized (`discloseEditorNamesToAuthors`)
 * feat(navigation): sync predefined page titles with T_PAGES table on menu save.
 * New `library/Episciences/Api/` namespace with 5 injectable, independently-testable API clients: `AbstractApiClient`, `CrossrefApiClient`, `OpenAlexApiClient`, `OpenCitationsApiClient`, `OpenAireApiClient`.

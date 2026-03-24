@@ -163,14 +163,14 @@ class AdministratemailinglistController extends Episciences_Controller_Action
             // Resolve members to check count. If zero, automatically close the list.
             $members = MailingListsManager::resolveMembers($list);
             if (empty($members)) {
-                $list->setStatus(0); // Closed
+                $list->setStatus(0); // Disabled: no members
             }
 
             MailingListsManager::save($list);
-            
+
             $successMessage = $this->view->translate('Mailing list members saved successfully.');
             if (empty($members)) {
-                $successMessage .= ' ' . $this->view->translate('The list has been automatically closed because it has no members.');
+                $successMessage .= ' ' . $this->view->translate('The list has been automatically disabled because it has no members.');
             }
             
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)
