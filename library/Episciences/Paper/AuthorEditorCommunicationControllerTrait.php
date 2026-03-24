@@ -64,7 +64,7 @@ trait Episciences_Paper_AuthorEditorCommunicationControllerTrait
             );
             trigger_error('Error in author-editor communication: ' . $e->getMessage());
             // Redirect to show the saved message if any
-            $this->_helper->redirector->gotoUrl('/' . $redirectController . '/view?id=' . $paper->getDocid());
+            $this->_helper->redirector->gotoUrl($this->view->url(['controller' => $redirectController, 'action' => 'view', 'id' => $paper->getDocid()]));
         }
     }
 
@@ -86,7 +86,7 @@ trait Episciences_Paper_AuthorEditorCommunicationControllerTrait
             ->addMessage($this->view->translate($result->getMessageKey()));
 
         if ($result->shouldRedirect()) {
-            $this->_helper->redirector->gotoUrl('/' . $redirectController . '/view?id=' . $paper->getDocid());
+            $this->_helper->redirector->gotoUrl($this->view->url(['controller' => $redirectController, 'action' => 'view', 'id' => $paper->getDocid()]));
         }
     }
 }
