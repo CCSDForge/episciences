@@ -124,7 +124,7 @@ return [
     "administratemail-edittemplate" => "Modifier un template",
     "administratemail-history" => "Lister l'historique de e-mails",
     "administratemail-reminders" => "Gérer les relances automatiques",
-    "administratemail-send" => "Envoyer un e-mail depuis la platforme",
+    "administratemail-send" => "Envoyer un e-mail depuis la plateforme",
     "administratemail-templates" => "Lister les templates d'e-mails",
     "administratemailinglist-index" => "Lister les listes de diffusion",
     "administratemailinglist-edit" => "Créer ou modifier une liste de diffusion",
