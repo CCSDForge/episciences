@@ -104,7 +104,12 @@ class Episciences_Paper_AuthorEditorCommunicationService
     public function createMainForm(string $formName = 'authorToEditorForm'): Ccsd_Form
     {
         $form = Episciences_CommentsManager::getForm($formName, false, false);
-        $form->setAction('/' . $this->controllerPath . '/view?id=' . $this->paper->getDocid());
+        $action = (new Episciences_View_Helper_Url())->url(
+            ['controller' => $this->controllerPath,
+                'action' => 'view',
+                'id' => $this->paper->getDocid()
+            ]);
+        $form->setAction($action);
 
         return $form;
     }
@@ -195,7 +200,12 @@ class Episciences_Paper_AuthorEditorCommunicationService
     {
         $formName = $formPrefix . $pcid;
         $form = Episciences_CommentsManager::getForm($formName, false, true, $pcid);
-        $form->setAction('/' . $this->controllerPath . '/view?id=' . $this->paper->getDocid());
+        $action = (new Episciences_View_Helper_Url())->url(
+            ['controller' => $this->controllerPath,
+                'action' => 'view',
+                'id' => $this->paper->getDocid()
+            ]);
+        $form->setAction($action);
 
         $form->addElement('hidden', 'reply_to_pcid', [
             'value' => $pcid,
