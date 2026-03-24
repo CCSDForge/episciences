@@ -31,7 +31,7 @@ use PHPUnit\Framework\TestCase;
  * - Episciences_Review: The journal containing settings
  *
  * Related settings in REVIEW_SETTINGS table:
- * - SETTING_AUTHORS_CAN_CONTACT_EDITORS: Enable/disable author-editor messaging
+ * - SETTING_AUTHOR_EDITOR_COMMUNICATION: Enable/disable author-editor messaging
  * - SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS: Show/hide editor names to authors
  *
  * @covers Episciences_Paper_AuthorEditorCommunicationService
@@ -74,7 +74,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
     /**
      * Test that canAuthorContactEditors() returns true when the setting is enabled.
      *
-     * When SETTING_AUTHORS_CAN_CONTACT_EDITORS = '1' (or truthy value),
+     * When SETTING_AUTHOR_EDITOR_COMMUNICATION = '1' (or truthy value),
      * authors should be able to send messages to assigned editors.
      *
      * This setting is configured per journal in the review settings panel.
@@ -85,7 +85,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
         $review = $this->createMock(Episciences_Review::class);
 
         $review->method('getSetting')
-            ->with(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS)
+            ->with(Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION)
             ->willReturn('1');
 
         $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
@@ -96,7 +96,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
     /**
      * Test that canAuthorContactEditors() returns false when the setting is disabled.
      *
-     * When SETTING_AUTHORS_CAN_CONTACT_EDITORS = '0', the author-editor
+     * When SETTING_AUTHOR_EDITOR_COMMUNICATION = '0', the author-editor
      * communication panel should not be displayed and message submission
      * should be blocked.
      */
@@ -106,7 +106,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
         $review = $this->createMock(Episciences_Review::class);
 
         $review->method('getSetting')
-            ->with(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS)
+            ->with(Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION)
             ->willReturn('0');
 
         $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
@@ -126,7 +126,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
         $review = $this->createMock(Episciences_Review::class);
 
         $review->method('getSetting')
-            ->with(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS)
+            ->with(Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION)
             ->willReturn(null);
 
         $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
@@ -204,7 +204,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
         $review->method('getSetting')
             ->willReturnCallback(function ($setting) {
                 return match ($setting) {
-                    Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS => '0',
+                    Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION => '0',
                     Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS => '0',
                     default => null
                 };
@@ -238,7 +238,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
         $review->method('getSetting')
             ->willReturnCallback(function ($setting) {
                 return match ($setting) {
-                    Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS => '1',
+                    Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION => '1',
                     Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS => '0',
                     default => null
                 };
@@ -270,7 +270,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
         $review->method('getSetting')
             ->willReturnCallback(function ($setting) {
                 return match ($setting) {
-                    Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS => '0',
+                    Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION => '0',
                     Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS => '1',
                     default => null
                 };
@@ -304,7 +304,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
         $review->method('getSetting')
             ->willReturnCallback(function ($setting) {
                 return match ($setting) {
-                    Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS => '1',
+                    Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION => '1',
                     Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS => '1',
                     default => null
                 };
@@ -421,7 +421,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
         $review = $this->createMock(Episciences_Review::class);
 
         $review->method('getSetting')
-            ->with(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS)
+            ->with(Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION)
             ->willReturn('');
 
         $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
@@ -441,7 +441,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
         $review = $this->createMock(Episciences_Review::class);
 
         $review->method('getSetting')
-            ->with(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS)
+            ->with(Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION)
             ->willReturn('2');
 
         $service = new Episciences_Paper_AuthorEditorCommunicationService($paper, $review);
@@ -548,7 +548,7 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
         $review->method('getSetting')
             ->willReturnCallback(function ($setting) {
                 return match ($setting) {
-                    Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS => null,
+                    Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION => null,
                     Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS => '1',
                     default => null
                 };
