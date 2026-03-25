@@ -62,9 +62,9 @@
                                 </td>
                                 <td style="padding: 15px; vertical-align: middle; text-align: center;">
                                     <?php if ($list->getStatus() == 1): ?>
-                                        <span class="label label-success" style="padding: 4px 8px; border-radius: 12px; font-weight: normal;"><?php echo $this->translate('Open'); ?></span>
+                                        <span class="label label-success" style="padding: 4px 8px; border-radius: 12px; font-weight: normal;"><?php echo $this->escape($this->translate('Enabled')); ?></span>
                                     <?php else: ?>
-                                        <span class="label label-default" style="padding: 4px 8px; border-radius: 12px; font-weight: normal; background-color: #999;"><?php echo $this->translate('Closed'); ?></span>
+                                        <span class="label label-default" style="padding: 4px 8px; border-radius: 12px; font-weight: normal; background-color: #999;"><?php echo $this->escape($this->translate('Disabled')); ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td style="padding: 15px; vertical-align: middle; text-align: right;">

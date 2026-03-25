@@ -16,7 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const form = modalBody.querySelector('form');
-            const contactsContainer = modalBody.querySelector('.contacts-container');
+            const contactsContainer = modalBody.querySelector(
+                '.contacts-container'
+            );
 
             if (!form || !contactsContainer) {
                 return;
@@ -26,8 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
             form.style.display = 'none';
 
             // Also hide all "Required fields" decorators in the modal body
-            const requiredFields = modalBody.querySelectorAll('.ccsd_form_required');
-            requiredFields.forEach(el => el.style.display = 'none');
+            const requiredFields = modalBody.querySelectorAll(
+                '.ccsd_form_required'
+            );
+            requiredFields.forEach(el => (el.style.display = 'none'));
 
             contactsContainer.style.display = 'block';
             contactsContainer.innerHTML = getLoader(); // OK: getLoader() returns static HTML
@@ -77,12 +81,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Note: DOMPurify removes <script> tags, so it must be loaded manually
                 $.ajaxSetup({ cache: true });
                 $.getScript('/js/administratemail/get-contacts.js')
-                    .done(function() {
+                    .done(function () {
                         if (typeof initGetContacts === 'function') {
                             initGetContacts();
                         }
                     })
-                    .fail(function() {
+                    .fail(function () {
                         console.error('Failed to load get-contacts.js');
                     });
             } catch (error) {

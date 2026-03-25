@@ -643,7 +643,7 @@ class AdministratepaperController extends PaperDefaultController
         if (Episciences_Auth::isGuestEditor() || Episciences_Auth::isEditor()) {
 
             // get editor comments ******************************************************
-            $editor_comment_form = Episciences_CommentsManager::getForm('editor_comment_form');
+            $editor_comment_form = Episciences_CommentsManager::getForm('editor_comment_form_' . $paper->getDocid());
             $this->view->editor_comment_form = $editor_comment_form;
 
             // Only process editor comment form if it's not a reply form (reply forms have reply_to_pcid)

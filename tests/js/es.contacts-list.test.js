@@ -22,7 +22,7 @@ describe('es.contacts-list', function () {
         global.sanitizeHTML = jest.fn(html => html);
 
         // Mock jQuery and $.getScript
-        global.$ = jest.fn((selector) => {
+        global.$ = jest.fn(selector => {
             if (selector === '#' || typeof selector === 'function') {
                 return; // Handle jQuery ready
             }
@@ -32,7 +32,7 @@ describe('es.contacts-list', function () {
         });
         global.$.ajaxSetup = jest.fn();
         global.$.getScript = jest.fn(() => ({
-            done: jest.fn(function(callback) {
+            done: jest.fn(function (callback) {
                 // Simulate successful script load
                 if (typeof callback === 'function') {
                     global.initGetContacts = jest.fn();
@@ -40,7 +40,9 @@ describe('es.contacts-list', function () {
                 }
                 return this;
             }),
-            fail: jest.fn(function() { return this; })
+            fail: jest.fn(function () {
+                return this;
+            }),
         }));
 
         // Create mock DOM structure matching the new modal structure
@@ -73,8 +75,8 @@ describe('es.contacts-list', function () {
                 text: () =>
                     Promise.resolve(
                         '<script>var target="cc"; var all_contacts={};</script>' +
-                        '<div class="contact">Contact 1</div>' +
-                        '<div class="contact">Contact 2</div>'
+                            '<div class="contact">Contact 1</div>' +
+                            '<div class="contact">Contact 2</div>'
                     ),
             })
         );
@@ -98,7 +100,9 @@ describe('es.contacts-list', function () {
 
     describe('Label click event', function () {
         it('should hide form and show contacts container on CC button click', function () {
-            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
+            const button = document.querySelector(
+                '.show_contacts_button[href*="target=cc"]'
+            );
             const form = document.getElementById('test-form');
             const container = document.querySelector('.contacts-container');
 
@@ -109,8 +113,12 @@ describe('es.contacts-list', function () {
         });
 
         it('should hide required fields indicator', function () {
-            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
-            const requiredFields = document.querySelector('.ccsd_form_required');
+            const button = document.querySelector(
+                '.show_contacts_button[href*="target=cc"]'
+            );
+            const requiredFields = document.querySelector(
+                '.ccsd_form_required'
+            );
 
             button.click();
 
@@ -118,7 +126,9 @@ describe('es.contacts-list', function () {
         });
 
         it('should display loader while loading contacts', function () {
-            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
+            const button = document.querySelector(
+                '.show_contacts_button[href*="target=cc"]'
+            );
             const container = document.querySelector('.contacts-container');
 
             button.click();
@@ -128,7 +138,9 @@ describe('es.contacts-list', function () {
         });
 
         it('should make POST request to correct endpoint for CC', async function () {
-            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
+            const button = document.querySelector(
+                '.show_contacts_button[href*="target=cc"]'
+            );
 
             button.click();
 
@@ -149,7 +161,9 @@ describe('es.contacts-list', function () {
         });
 
         it('should make POST request to correct endpoint for BCC', async function () {
-            const button = document.querySelector('.show_contacts_button[href*="target=bcc"]');
+            const button = document.querySelector(
+                '.show_contacts_button[href*="target=bcc"]'
+            );
 
             button.click();
 
@@ -164,7 +178,9 @@ describe('es.contacts-list', function () {
         });
 
         it('should populate container with fetched content', async function () {
-            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
+            const button = document.querySelector(
+                '.show_contacts_button[href*="target=cc"]'
+            );
             const container = document.querySelector('.contacts-container');
 
             button.click();
@@ -177,13 +193,17 @@ describe('es.contacts-list', function () {
         });
 
         it('should load get-contacts.js script', async function () {
-            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
+            const button = document.querySelector(
+                '.show_contacts_button[href*="target=cc"]'
+            );
 
             button.click();
 
             await new Promise(resolve => setTimeout(resolve, 50));
 
-            expect(global.$.getScript).toHaveBeenCalledWith('/js/administratemail/get-contacts.js');
+            expect(global.$.getScript).toHaveBeenCalledWith(
+                '/js/administratemail/get-contacts.js'
+            );
             expect(global.initGetContacts).toHaveBeenCalled();
         });
     });
@@ -195,7 +215,9 @@ describe('es.contacts-list', function () {
                 Promise.reject(new Error('Network error'))
             );
 
-            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
+            const button = document.querySelector(
+                '.show_contacts_button[href*="target=cc"]'
+            );
             const container = document.querySelector('.contacts-container');
 
             // Mock console.error to avoid test output noise
@@ -228,7 +250,9 @@ describe('es.contacts-list', function () {
                 })
             );
 
-            const button = document.querySelector('.show_contacts_button[href*="target=cc"]');
+            const button = document.querySelector(
+                '.show_contacts_button[href*="target=cc"]'
+            );
             const container = document.querySelector('.contacts-container');
 
             const consoleErrorSpy = jest

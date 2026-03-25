@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [#679](https://github.com/CCSDForge/episciences/issues/679) "Ask other editors for their opinion" form now includes chief editors (ROLE_CHIEF_EDITOR) in addition to regular editors (ROLE_EDITOR).
 * [#691](http://github.com/CCSDForge/episciences/issues/691) Display "(optional)" label below comment and cover letter fields in submission forms to clarify these fields are not required.
 * [#350](https://github.com/CCSDForge/episciences/issues/350) Author-Editor Communication Settings:
-  - New option to allow authors to contact assigned editors (`authorsCanContactEditors`)
+  - New option to allow authors to contact assigned editors (`authorEditorCommunication`)
   - New option to disclose editor names to authors or keep them anonymized (`discloseEditorNamesToAuthors`)
 * feat(navigation): sync predefined page titles with T_PAGES table on menu save.
 * New `library/Episciences/Api/` namespace with 5 injectable, independently-testable API clients: `AbstractApiClient`, `CrossrefApiClient`, `OpenAlexApiClient`, `OpenCitationsApiClient`, `OpenAireApiClient`.
@@ -121,6 +121,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Fixed
+* - Limit the editor’s permissions to allow assigning only the "reviewer" role.
 * [#944](https://github.com/CCSDForge/episciences/issues/944): An author informed us that they received this message signed with their name: %%SENDER_FULL_NAME%% and %%RECIPIENT_SCREEN_NAME%% filled with the same value
 * [#258](https://github.com/CCSDForge/episciences-front/issues/258): Tables are not handled by default: Explicit table conversion
 * Fixed RT#277365: in order to correct the printing of extra lines, two options have been added to the TinyMCE configuration to insert a <br> instead of a <p> and another option to remove extra <br>s at the end of a block

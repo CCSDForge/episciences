@@ -794,7 +794,7 @@ class Episciences_Submit
             $rvId = RVID;
         }
 
-        $isNewVersionOf = !empty($latestObsoleteDocId);
+        $isNewVersionOf = $latestObsoleteDocId !== null;
         $oldPaper = null;
         $result = [];
         $oai = null;
@@ -858,17 +858,16 @@ class Episciences_Submit
             $docId = $paper->alreadyExists();
 
             if ($docId) {
-                $oldPaper = Episciences_PapersManager::partialGet((int)$docId, $rvId);
+                $oldPaper = Episciences_PapersManager::partialGet($docId, $rvId);
             }
 
             //the order in which functions are called is important
-            self::assertDateTimeVersion($docId, $oldPaper, $result);
+            self::assertDateTimeVersion($docId, $oldPaper, $result, $isNewVersionOf);
             $paper->setVersion($result['hookVersion']);
+            self::assertNewVersionConsistency($oldPaper, $paper);
+            self::assertDspaceVersion($docId, $oldPaper, $result);
 
-            self::assertNewVersionConsistency($oldPaper, $paper, $result);
-            self::assertVersion($docId, $oldPaper, $result);
-
-            $result['status'] = $docId ? 2 : 1;
+            $result['status'] = $result['status'] ?? ($docId ? 2 : 1);
 
             if (($result['status'] === 2) && $manageNewVersionErrors) {
 
@@ -904,24 +903,34 @@ class Episciences_Submit
      * @param $docId
      * @param Episciences_Paper|null $previousPaper
      * @param array $result
+     * @param bool $isNewVersion
      * @return void
      */
 
-    private static function assertDateTimeVersion(&$docId, ?Episciences_Paper $previousPaper, array &$result): void
+    private static function assertDateTimeVersion(&$docId, ?Episciences_Paper $previousPaper, array &$result, bool $isNewVersion): void
     {
-        $currentVersionDateTime = $result[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
-        if (
+        if(
             !$docId ||
-            empty($currentVersionDateTime)
-        ) {
+            !$previousPaper->hasHook){
+            return;
+        }
+
+        $currentVersionDateTime = $result[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
+
+        if (empty($currentVersionDateTime)) {
             return;
         }
 
         $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($previousPaper?->getIdentifier());
 
         if ($previousPaperVersionDateTime < $currentVersionDateTime) {
+
+            if ($isNewVersion) {
+                $docId = null; // validation
+            }
+
+            $result['status'] = 2;
             $version = $previousPaper?->getVersion() + 1;
-            $docId = null; // validation
             $result['hookVersion'] = $version;
         }
     }
@@ -934,10 +943,12 @@ class Episciences_Submit
      * @throws Ccsd_Error
      */
 
-    private static function assertVersion(&$docId, ?Episciences_Paper $previousPaper, array $result): void
+    private static function assertDspaceVersion(&$docId, ?Episciences_Paper $previousPaper, array $result): void
     {
 
-        if (!$previousPaper) {
+        if (
+            !$previousPaper ||
+            !Episciences_Repositories::isDspace($previousPaper->getRepoid())) {
             return;
         }
 
@@ -1143,40 +1154,27 @@ class Episciences_Submit
      *
      * @param Episciences_Paper|null $oldPaper
      * @param Episciences_Paper $submissionInProgress
-     * @param array $result
      * @throws Ccsd_Error
      */
     private static function assertNewVersionConsistency(
         ?Episciences_Paper $oldPaper,
-        Episciences_Paper  $submissionInProgress,
-        array              $result
+        Episciences_Paper  $submissionInProgress
     ): void
     {
         if (!$oldPaper) {
             return;
         }
 
-        $repoId = $oldPaper->getRepoid();
-
-        $hookHasDoiInfoRepresentsAllVersions = Episciences_Repositories::callHook( // For new versions, check DOI binding consistency.
-            'hookHasDoiInfoRepresentsAllVersions',
-            [
-                'repoId' => $repoId,
-                'record' => $result['record'] ?? '',
-                Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY => $oldPaper->getConcept_identifier(),
-            ]
-        );
-
+        $conceptChanged = $submissionInProgress->getConcept_identifier() !== $oldPaper->getConcept_identifier();
+        $noOldConcept = !$oldPaper->getConcept_identifier();
+        $identifierChanged = $oldPaper->getIdentifier() !== $submissionInProgress->getIdentifier();
 
         if (
-            (isset($hookHasDoiInfoRepresentsAllVersions['hasDoiInfoRepresentsAllVersions']) && !$hookHasDoiInfoRepresentsAllVersions['hasDoiInfoRepresentsAllVersions']) ||
-            $submissionInProgress->getConcept_identifier() !== $oldPaper->getConcept_identifier()||
-            (!$oldPaper->getConcept_identifier() && $oldPaper->getIdentifier() !== $submissionInProgress->getIdentifier())
+            $conceptChanged ||
+            ($noOldConcept && $identifierChanged)
         ) {
-
             self::handleError();
         }
-
     }
 
     /**
@@ -2039,7 +2037,7 @@ class Episciences_Submit
             }
         }
 
-        /** @var Episciences_Editor $recipient */
+        /** @var Episciences_Editor | Episciences_User $recipient */
         foreach ($managers as $recipient) {
             // git #230
             $templateKey = ($canReplace || $paper->getEditor($recipient->getUid())) ? $defaultTemplateKey : Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY; // re-initialisation
@@ -2063,7 +2061,7 @@ class Episciences_Submit
             $adminTags [Episciences_Mail_Tags::TAG_SECTION_NAME] = $sTag;
 
             if (!$canReplace) { // new submission only
-                $rTag = $recipient->getTag();
+                $rTag = $recipient instanceof Episciences_Editor ? $recipient->getTag() : null;
                 if ($rTag === Episciences_Editor::TAG_VOLUME_EDITOR) {
                     $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_VOLUME_EDITOR_ASSIGN;
                 } elseif ($rTag === Episciences_Editor::TAG_SECTION_EDITOR) {
@@ -2497,52 +2495,25 @@ class Episciences_Submit
             return [];
         }
 
-        $processedType = [];
-        $type = !is_array($type) ? [$type] : $type;
-        $currentType = strtolower($type[array_key_first($type)]);
+        $types = (array)$type;
+        $currentType = strtolower(reset($types));
 
-        if (str_contains($currentType, 'info:eu-repo/semantics/')) {
-            $currentType = str_replace('info:eu-repo/semantics/', '', $currentType);
-        }
+        $currentType = str_replace('info:eu-repo/semantics/', '', $currentType);
 
         if ($currentType === Episciences_Paper::OTHER_TYPE) {
-            $currentType = strtolower($type[array_key_last($type)]);
+            $currentType = strtolower(end($types));
         }
 
-        $currentType = str_replace(
-            search: [
-                ' ',
-                Episciences_Paper::JOURNAL_ARTICLE_TYPE_TITLE,
-                ' ',
-                Episciences_Paper::REGULAR_ARTICLE_TYPE_TITLE,
-                Episciences_Paper::WORKING_PAPER_TYPE_TITLE,
-                Episciences_Paper::PUBLICATION_TYPE_TITLE,
-                Episciences_Paper::JOURNAL_TYPE_TITLE,
-                Episciences_Paper::CONFERENCE_PAPER_TYPE_TITLE
+        $search = [' ', Episciences_Paper::JOURNAL_ARTICLE_TYPE_TITLE, Episciences_Paper::REGULAR_ARTICLE_TYPE_TITLE, Episciences_Paper::WORKING_PAPER_TYPE_TITLE, Episciences_Paper::PUBLICATION_TYPE_TITLE, Episciences_Paper::JOURNAL_TYPE_TITLE, Episciences_Paper::CONFERENCE_PAPER_TYPE_TITLE];
+        $replace = ['', Episciences_Paper::ARTICLE_TYPE_TITLE, Episciences_Paper::ARTICLE_TYPE_TITLE, Episciences_Paper::ARTICLE_TYPE_TITLE, Episciences_Paper::ARTICLE_TYPE_TITLE, Episciences_Paper::ARTICLE_TYPE_TITLE, Episciences_Paper::CONFERENCE_TYPE];
 
-            ],
-            replace: [
-                '',
-                Episciences_Paper::ARTICLE_TYPE_TITLE,
-                '',
-                Episciences_Paper::ARTICLE_TYPE_TITLE,
-                Episciences_Paper::ARTICLE_TYPE_TITLE,
-                Episciences_Paper::ARTICLE_TYPE_TITLE,
-                Episciences_Paper::ARTICLE_TYPE_TITLE,
-                Episciences_Paper::CONFERENCE_TYPE
-            ],
-            subject: $currentType
-        );
-
+        $currentType = str_replace($search, $replace, $currentType);
 
         if (in_array($currentType, Episciences_Paper::PREPRINT_TYPES, true)) {
             $currentType = Episciences_Paper::DEFAULT_TYPE_TITLE;
         }
 
-        $processedType[Episciences_Paper::TITLE_TYPE] = $currentType;
-
-
-        return $processedType;
+        return [Episciences_Paper::TITLE_TYPE => $currentType];
 
     }
 

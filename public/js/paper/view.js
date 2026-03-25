@@ -43,13 +43,15 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Cancel buttons - hide forms and show comment_only
-    document.querySelectorAll('button[id^="cancel"]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            hide(submitNewVersion);
-            hide(submitTmpVersion);
-            fadeIn(commentOnly);
+    document
+        .querySelectorAll('button[id^="cancel"]')
+        .forEach(function (button) {
+            button.addEventListener('click', function () {
+                hide(submitNewVersion);
+                hide(submitTmpVersion);
+                fadeIn(commentOnly);
+            });
         });
-    });
 
     // Display revision form
     const displayRevisionForm = document.getElementById('displayRevisionForm');
@@ -63,7 +65,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Display temporary version form
-    const displayTmpVersionForm = document.getElementById('displayTmpVersionForm');
+    const displayTmpVersionForm = document.getElementById(
+        'displayTmpVersionForm'
+    );
     if (displayTmpVersionForm) {
         displayTmpVersionForm.addEventListener('click', function () {
             hide(commentOnly);
@@ -96,25 +100,29 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Cancel buttons in reply forms
-    document.querySelectorAll('button[id^="cancel"]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            const replyForm = button.closest('.replyForm');
-            if (!replyForm) return;
+    document
+        .querySelectorAll('button[id^="cancel"]')
+        .forEach(function (button) {
+            button.addEventListener('click', function () {
+                const replyForm = button.closest('.replyForm');
+                if (!replyForm) return;
 
-            hide(replyForm);
-            const prevElement = replyForm.previousElementSibling;
+                hide(replyForm);
+                const prevElement = replyForm.previousElementSibling;
 
-            if (prevElement) {
-                const replyButton = prevElement.classList.contains('replyButton')
-                    ? prevElement
-                    : prevElement.querySelector('.replyButton');
+                if (prevElement) {
+                    const replyButton = prevElement.classList.contains(
+                        'replyButton'
+                    )
+                        ? prevElement
+                        : prevElement.querySelector('.replyButton');
 
-                if (replyButton) {
-                    fadeIn(replyButton);
+                    if (replyButton) {
+                        fadeIn(replyButton);
+                    }
                 }
-            }
+            });
         });
-    });
 
     // Handle isFromZSubmit flag
     if (typeof isFromZSubmit !== 'undefined' && isFromZSubmit) {
@@ -136,19 +144,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnHideCitations = document.getElementById('btn-hide-citations');
     const btnShowCitations = document.getElementById('btn-show-citations');
 
-    document.querySelectorAll('button[id^="btn-show-citations"]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            show(listCitations);
-            show(btnHideCitations);
-            hide(btnShowCitations);
+    document
+        .querySelectorAll('button[id^="btn-show-citations"]')
+        .forEach(function (button) {
+            button.addEventListener('click', function () {
+                show(listCitations);
+                show(btnHideCitations);
+                hide(btnShowCitations);
+            });
         });
-    });
 
-    document.querySelectorAll('button[id^="btn-hide-citations"]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            hide(listCitations);
-            hide(btnHideCitations);
-            show(btnShowCitations);
+    document
+        .querySelectorAll('button[id^="btn-hide-citations"]')
+        .forEach(function (button) {
+            button.addEventListener('click', function () {
+                hide(listCitations);
+                hide(btnHideCitations);
+                show(btnShowCitations);
+            });
         });
-    });
 });
