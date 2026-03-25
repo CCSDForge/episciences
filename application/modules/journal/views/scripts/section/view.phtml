@@ -42,9 +42,12 @@
 				$arrayOfAuthors[] = $tab[0];
 			}
 			
-			if (count($arrayOfAuthors) > $maxNumberOfAuthors) {
+			$totalAuthors = count($arrayOfAuthors);
+
+			// Only use "et al." when 2+ authors are omitted (respecting plural meaning)
+			if ($totalAuthors > $maxNumberOfAuthors + 1) {
 				$multiArraysOfAuthors = array_chunk($arrayOfAuthors, $maxNumberOfAuthors, true);
-			
+
 				foreach ($multiArraysOfAuthors[0] as $authorName) {
 					$url = $this->url(array(
 							'controller' => 'search',
@@ -55,7 +58,7 @@
 				}
 				$authorList = implode($authorSeparator, $arrayOfAuthorsWithURL) . ' <abbr lang="la" title="et alii">et al.</abbr>';
 			} else {
-			
+				// Show all authors (including when exactly 1 extra would have been truncated)
 				foreach ($arrayOfAuthors as $authorName) {
 					$url = $this->url(array(
 							'controller' => 'search',

@@ -185,7 +185,8 @@ class Episciences_Paper_Citations_ViewFormatter
 
     /**
      * Truncate a semicolon-separated author list to NUMBER_OF_AUTHORS_WANTED_VIEWS authors,
-     * appending "et al." when truncated.
+     * appending "et al." only when 2+ authors are omitted (respecting Latin plural meaning).
+     * If exactly one extra author exists, all authors are shown without truncation.
      *
      * @param string $author semicolon-separated author string
      * @return string truncated author string
@@ -193,9 +194,13 @@ class Episciences_Paper_Citations_ViewFormatter
     public static function reduceAuthorsView(string $author): string
     {
         $authorRows = array_map(trim(...), explode(';', $author));
+        $totalAuthors = count($authorRows);
+        $limit = self::NUMBER_OF_AUTHORS_WANTED_VIEWS;
 
-        if (count($authorRows) > self::NUMBER_OF_AUTHORS_WANTED_VIEWS) {
-            $authorRows = array_slice($authorRows, 0, self::NUMBER_OF_AUTHORS_WANTED_VIEWS, true);
+        // Only use "et al." when 2+ authors are omitted (plural meaning)
+        // If exactly 1 extra author, show all authors instead
+        if ($totalAuthors > $limit + 1) {
+            $authorRows = array_slice($authorRows, 0, $limit, true);
             $authorRows[] = 'et al.';
         }
 
