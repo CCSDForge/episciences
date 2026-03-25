@@ -798,7 +798,7 @@ class Episciences_Submit
             $rvId = RVID;
         }
 
-        $isNewVersionOf = !empty($latestObsoleteDocId);
+        $isNewVersionOf = $latestObsoleteDocId !== null;
         $oldPaper = null;
         $result = [];
         $oai = null;
@@ -862,7 +862,7 @@ class Episciences_Submit
             $docId = $paper->alreadyExists();
 
             if ($docId) {
-                $oldPaper = Episciences_PapersManager::partialGet((int)$docId, $rvId);
+                $oldPaper = Episciences_PapersManager::partialGet($docId, $rvId);
             }
 
             //the order in which functions are called is important
@@ -1912,7 +1912,7 @@ class Episciences_Submit
         $sql = 'INSERT INTO ' . T_PAPER_SETTINGS . ' (DOCID, SETTING, VALUE) VALUES ' . implode(',', $values);
 
         if (!$this->_db->query($sql)) {
-            Episciences_View_Helper_Log::log(sprintf('Failed to save %s for DOCID = %s', $suggestionType, $docId), LogLevel::CRITICAL);
+            error_log('Failed to save ' . $suggestionType . ' for DOCID = ' . $docId);
             return false;
         }
 
@@ -2015,7 +2015,7 @@ class Episciences_Submit
             }
         }
 
-        /** @var Episciences_Editor $recipient */
+        /** @var Episciences_Editor | Episciences_User $recipient */
         foreach ($managers as $recipient) {
             // git #230
             $templateKey = ($canReplace || $paper->getEditor($recipient->getUid())) ? $defaultTemplateKey : Episciences_Mail_TemplatesManager::TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY; // re-initialisation
@@ -2038,8 +2038,8 @@ class Episciences_Submit
             $adminTags [Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF] = ($volume && $volume->getBib_reference()) ?: $translator->translate('Aucune', $locale);
             $adminTags [Episciences_Mail_Tags::TAG_SECTION_NAME] = $sTag;
 
-            if (!$canReplace && method_exists($recipient, 'getTag')) { // new submission only
-                $rTag = $recipient->getTag();
+            if (!$canReplace) { // new submission only
+                $rTag = $recipient instanceof Episciences_Editor ? $recipient->getTag() : null;
                 if ($rTag === Episciences_Editor::TAG_VOLUME_EDITOR) {
                     $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_VOLUME_EDITOR_ASSIGN;
                 } elseif ($rTag === Episciences_Editor::TAG_SECTION_EDITOR) {
@@ -2432,9 +2432,6 @@ class Episciences_Submit
                     $insertedRows += Episciences_Paper_CitationsManager::insert([$oCitations]);
 
                 }
-
-            } elseif ($key === Episciences_Repositories_Common::REFERENCES_EPI_CITATIONS) {
-                // todo to be saved in REFERENCES EPI CITATIONS
 
             } elseif ($key === Episciences_Repositories_Common::PROJECTS) {
 
