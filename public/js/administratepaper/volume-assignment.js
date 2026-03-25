@@ -9,7 +9,7 @@ var openedPopover = null;
 function filterOptions(options, query) {
     if (!query) return options;
     const q = query.toLowerCase();
-    return options.filter((opt) => opt.text.toLowerCase().includes(q));
+    return options.filter(opt => opt.text.toLowerCase().includes(q));
 }
 
 /**
@@ -22,7 +22,7 @@ function rebuildSelectOptions(select, options, currentVal) {
     while (select.options.length > 0) {
         select.remove(0);
     }
-    options.forEach((opt) => {
+    options.forEach(opt => {
         const option = new Option(opt.text, opt.value);
         if (String(opt.value) === String(currentVal)) {
             option.selected = true;
@@ -38,7 +38,7 @@ function rebuildSelectOptions(select, options, currentVal) {
  * @param {HTMLSelectElement} volumeSelect
  */
 function initVolumeSearch(searchInput, volumeSelect) {
-    const allOptions = Array.from(volumeSelect.options).map((opt) => ({
+    const allOptions = Array.from(volumeSelect.options).map(opt => ({
         value: opt.value,
         text: opt.text,
     }));
@@ -254,11 +254,13 @@ function getOtherVolumesForm(button, docid, partial) {
             .popover('show');
 
         // Initialize search filter and checkbox selected state
-        const searchInput = document.getElementById('other_volumes_search_input');
+        const searchInput = document.getElementById(
+            'other_volumes_search_input'
+        );
         const container = document.getElementById('other_volumes_list');
         if (searchInput && container) {
             initCheckboxSearch(searchInput, container);
-            container.querySelectorAll('.multicheckbox_option').forEach((opt) => {
+            container.querySelectorAll('.multicheckbox_option').forEach(opt => {
                 opt.addEventListener('click', function () {
                     const input = this.querySelector('input[type="checkbox"]');
                     if (input) {
@@ -348,7 +350,7 @@ function initCheckboxSearch(searchInput, container) {
 
     searchInput.addEventListener('input', function () {
         const query = this.value.toLowerCase().trim();
-        items.forEach((item) => {
+        items.forEach(item => {
             const span = item.querySelector('span');
             const text = span ? span.textContent.toLowerCase() : '';
             item.hidden = query ? !text.includes(query) : false;
@@ -359,5 +361,10 @@ function initCheckboxSearch(searchInput, container) {
 }
 
 if (typeof module !== 'undefined') {
-    module.exports = { filterOptions, rebuildSelectOptions, initVolumeSearch, initCheckboxSearch };
+    module.exports = {
+        filterOptions,
+        rebuildSelectOptions,
+        initVolumeSearch,
+        initCheckboxSearch,
+    };
 }

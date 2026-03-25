@@ -2,20 +2,27 @@
  * Mailing List Management JS
  * Handles member selection, filtering and audience preview.
  */
-const EpisciencesMailingList = (function() {
+const EpisciencesMailingList = (function () {
     'use strict';
 
     function init(options) {
-        const announcementContainer = document.getElementById('member-announcements');
+        const announcementContainer = document.getElementById(
+            'member-announcements'
+        );
         const userSearchInput = document.getElementById('user-search');
         const roleFilterSelect = document.getElementById('role-filter');
-        const modalUsersTableBody = document.querySelector('#modal-users-table tbody');
-        const selectedUsersTableBody = document.querySelector('#users-table tbody');
+        const modalUsersTableBody = document.querySelector(
+            '#modal-users-table tbody'
+        );
+        const selectedUsersTableBody =
+            document.querySelector('#users-table tbody');
         const userModal = document.getElementById('userModal');
-        
+
         // Audience Preview Elements
         const audienceSearchInput = document.getElementById('audience-search');
-        const audienceTableBody = document.querySelector('#audience-table tbody');
+        const audienceTableBody = document.querySelector(
+            '#audience-table tbody'
+        );
         const refreshPreviewBtn = document.getElementById('refresh-preview');
         const refreshIcon = document.getElementById('refresh-icon');
 
@@ -40,28 +47,36 @@ const EpisciencesMailingList = (function() {
 
                 if (roleValue !== '') {
                     try {
-                        const roles = JSON.parse(row.getAttribute('data-roles') || '[]');
-                        matchesRole = Array.isArray(roles) && roles.some(r => String(r) === roleValue);
+                        const roles = JSON.parse(
+                            row.getAttribute('data-roles') || '[]'
+                        );
+                        matchesRole =
+                            Array.isArray(roles) &&
+                            roles.some(r => String(r) === roleValue);
                     } catch (e) {
                         matchesRole = false;
                     }
                 }
 
-                row.style.display = (matchesSearch && matchesRole) ? '' : 'none';
+                row.style.display = matchesSearch && matchesRole ? '' : 'none';
             });
         }
 
-        if (userSearchInput) userSearchInput.addEventListener('keyup', filterModalUsers);
-        if (roleFilterSelect) roleFilterSelect.addEventListener('change', filterModalUsers);
+        if (userSearchInput)
+            userSearchInput.addEventListener('keyup', filterModalUsers);
+        if (roleFilterSelect)
+            roleFilterSelect.addEventListener('change', filterModalUsers);
 
         // Search/Filter in audience preview
         if (audienceSearchInput) {
-            audienceSearchInput.addEventListener('keyup', function() {
+            audienceSearchInput.addEventListener('keyup', function () {
                 const value = this.value.toLowerCase();
-                const rows = audienceTableBody.querySelectorAll('.audience-row');
+                const rows =
+                    audienceTableBody.querySelectorAll('.audience-row');
                 rows.forEach(row => {
                     const searchData = row.getAttribute('data-search') || '';
-                    row.style.display = searchData.indexOf(value) > -1 ? '' : 'none';
+                    row.style.display =
+                        searchData.indexOf(value) > -1 ? '' : 'none';
                 });
             });
         }
@@ -71,12 +86,16 @@ const EpisciencesMailingList = (function() {
         let previewCsrfValue = options.previewCsrfValue || '';
 
         if (refreshPreviewBtn) {
-            refreshPreviewBtn.addEventListener('click', function() {
+            refreshPreviewBtn.addEventListener('click', function () {
                 refreshPreviewBtn.disabled = true;
                 if (refreshIcon) refreshIcon.classList.add('fa-spin');
 
-                const roles = Array.from(document.querySelectorAll('.role-checkbox:checked')).map(cb => cb.value);
-                const uids = Array.from(document.querySelectorAll('.uid-input')).map(input => input.value);
+                const roles = Array.from(
+                    document.querySelectorAll('.role-checkbox:checked')
+                ).map(cb => cb.value);
+                const uids = Array.from(
+                    document.querySelectorAll('.uid-input')
+                ).map(input => input.value);
 
                 const formData = new FormData();
                 formData.append(previewCsrfName, previewCsrfValue);
@@ -85,81 +104,88 @@ const EpisciencesMailingList = (function() {
 
                 fetch(options.previewUrl, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (!audienceTableBody) return;
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!audienceTableBody) return;
 
-                    // Rotate the CSRF token for the next request
-                    if (data.csrf) {
-                        previewCsrfName = data.csrf.name;
-                        previewCsrfValue = data.csrf.value;
-                    }
+                        // Rotate the CSRF token for the next request
+                        if (data.csrf) {
+                            previewCsrfName = data.csrf.name;
+                            previewCsrfValue = data.csrf.value;
+                        }
 
-                    const members = data.members || [];
-                    audienceTableBody.innerHTML = '';
-                    if (members.length === 0) {
-                        const emptyRow = document.createElement('tr');
-                        const emptyTd = document.createElement('td');
-                        emptyTd.colSpan = 2;
-                        emptyTd.className = 'text-center';
-                        emptyTd.style.cssText = 'padding: 60px 0;';
-                        const emptyP = document.createElement('p');
-                        emptyP.className = 'text-muted';
-                        emptyP.style.cssText = 'font-size: 1.1em;';
-                        emptyP.textContent = options.noMembersMsg;
-                        emptyTd.appendChild(emptyP);
-                        emptyRow.appendChild(emptyTd);
-                        audienceTableBody.appendChild(emptyRow);
-                    } else {
-                        members.forEach(member => {
-                            const firstName = member.FIRSTNAME || '';
-                            const lastName = member.LASTNAME || '';
-                            const email = member.EMAIL || '';
-                            const searchData = `${firstName} ${lastName} ${email}`.toLowerCase();
+                        const members = data.members || [];
+                        audienceTableBody.innerHTML = '';
+                        if (members.length === 0) {
+                            const emptyRow = document.createElement('tr');
+                            const emptyTd = document.createElement('td');
+                            emptyTd.colSpan = 2;
+                            emptyTd.className = 'text-center';
+                            emptyTd.style.cssText = 'padding: 60px 0;';
+                            const emptyP = document.createElement('p');
+                            emptyP.className = 'text-muted';
+                            emptyP.style.cssText = 'font-size: 1.1em;';
+                            emptyP.textContent = options.noMembersMsg;
+                            emptyTd.appendChild(emptyP);
+                            emptyRow.appendChild(emptyTd);
+                            audienceTableBody.appendChild(emptyRow);
+                        } else {
+                            members.forEach(member => {
+                                const firstName = member.FIRSTNAME || '';
+                                const lastName = member.LASTNAME || '';
+                                const email = member.EMAIL || '';
+                                const searchData =
+                                    `${firstName} ${lastName} ${email}`.toLowerCase();
 
-                            const row = document.createElement('tr');
-                            row.className = 'audience-row';
-                            row.setAttribute('data-search', searchData);
+                                const row = document.createElement('tr');
+                                row.className = 'audience-row';
+                                row.setAttribute('data-search', searchData);
 
-                            const tdName = document.createElement('td');
-                            tdName.style.cssText = 'padding: 12px 20px; vertical-align: middle;';
-                            const nameSpan = document.createElement('span');
-                            nameSpan.style.cssText = 'font-weight: 600; color: #333;';
-                            nameSpan.textContent = `${firstName} ${lastName}`;
-                            tdName.appendChild(nameSpan);
+                                const tdName = document.createElement('td');
+                                tdName.style.cssText =
+                                    'padding: 12px 20px; vertical-align: middle;';
+                                const nameSpan = document.createElement('span');
+                                nameSpan.style.cssText =
+                                    'font-weight: 600; color: #333;';
+                                nameSpan.textContent = `${firstName} ${lastName}`;
+                                tdName.appendChild(nameSpan);
 
-                            const tdEmail = document.createElement('td');
-                            tdEmail.style.cssText = 'padding: 12px 20px; vertical-align: middle;';
-                            const emailCode = document.createElement('code');
-                            emailCode.style.cssText = 'background: #f4f4f4; color: #555; padding: 2px 6px; border-radius: 4px; border: none;';
-                            emailCode.textContent = email;
-                            tdEmail.appendChild(emailCode);
+                                const tdEmail = document.createElement('td');
+                                tdEmail.style.cssText =
+                                    'padding: 12px 20px; vertical-align: middle;';
+                                const emailCode =
+                                    document.createElement('code');
+                                emailCode.style.cssText =
+                                    'background: #f4f4f4; color: #555; padding: 2px 6px; border-radius: 4px; border: none;';
+                                emailCode.textContent = email;
+                                tdEmail.appendChild(emailCode);
 
-                            row.appendChild(tdName);
-                            row.appendChild(tdEmail);
-                            audienceTableBody.appendChild(row);
-                        });
-                    }
-                    announce(options.previewUpdatedMsg);
-                })
-                .catch(error => {
-                    console.error('Error fetching preview:', error);
-                    alert(options.previewFailedMsg);
-                })
-                .finally(() => {
-                    refreshPreviewBtn.disabled = false;
-                    if (refreshIcon) refreshIcon.classList.remove('fa-spin');
-                });
+                                row.appendChild(tdName);
+                                row.appendChild(tdEmail);
+                                audienceTableBody.appendChild(row);
+                            });
+                        }
+                        announce(options.previewUpdatedMsg);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching preview:', error);
+                        alert(options.previewFailedMsg);
+                    })
+                    .finally(() => {
+                        refreshPreviewBtn.disabled = false;
+                        if (refreshIcon)
+                            refreshIcon.classList.remove('fa-spin');
+                    });
             });
         }
 
         // Event delegation for dynamic buttons
         const manageForm = document.getElementById('manage-members-form');
         if (manageForm) {
-            manageForm.addEventListener('click', function(event) {
-                // Add user from modal handled below or here? 
+            manageForm.addEventListener('click', function (event) {
+                // Add user from modal handled below or here?
                 // Wait, the modal is outside the form usually in Bootstrap.
                 // But the 'remove' buttons are inside.
                 const removeBtn = event.target.closest('.remove-user');
@@ -168,19 +194,26 @@ const EpisciencesMailingList = (function() {
                     const row = document.getElementById('user-row-' + uid);
                     if (row) {
                         const screenNameCell = row.querySelector('td');
-                        const screenName = screenNameCell ? screenNameCell.textContent.trim() : '';
+                        const screenName = screenNameCell
+                            ? screenNameCell.textContent.trim()
+                            : '';
                         row.remove();
-                        const remainingRows = selectedUsersTableBody.querySelectorAll('tr.member-row');
+                        const remainingRows =
+                            selectedUsersTableBody.querySelectorAll(
+                                'tr.member-row'
+                            );
                         if (remainingRows.length === 0) {
                             const emptyRow = document.createElement('tr');
                             emptyRow.id = 'no-users-msg';
                             const emptyTd = document.createElement('td');
                             emptyTd.colSpan = 2;
                             emptyTd.className = 'text-center';
-                            emptyTd.style.cssText = 'padding: 40px 0; border-top: none;';
+                            emptyTd.style.cssText =
+                                'padding: 40px 0; border-top: none;';
                             const emptyP = document.createElement('p');
                             emptyP.className = 'text-muted';
-                            emptyP.style.cssText = 'margin-bottom: 0; font-style: italic;';
+                            emptyP.style.cssText =
+                                'margin-bottom: 0; font-style: italic;';
                             emptyP.textContent = options.noUsersSelectedMsg;
                             emptyTd.appendChild(emptyP);
                             emptyRow.appendChild(emptyTd);
@@ -196,14 +229,15 @@ const EpisciencesMailingList = (function() {
         // We can attach a listener to the modal body.
         const modalBody = document.querySelector('#userModal .modal-body');
         if (modalBody) {
-            modalBody.addEventListener('click', function(event) {
+            modalBody.addEventListener('click', function (event) {
                 const addBtn = event.target.closest('.add-user-btn');
                 if (addBtn) {
                     const uid = addBtn.getAttribute('data-uid');
                     const screenName = addBtn.getAttribute('data-screenname');
-                    
+
                     if (!document.getElementById('user-row-' + uid)) {
-                        const noUsersMsg = document.getElementById('no-users-msg');
+                        const noUsersMsg =
+                            document.getElementById('no-users-msg');
                         if (noUsersMsg) {
                             noUsersMsg.remove();
                         }
@@ -213,7 +247,8 @@ const EpisciencesMailingList = (function() {
                         newRow.className = 'member-row';
 
                         const tdName = document.createElement('td');
-                        tdName.style.cssText = 'vertical-align: middle; border-top: 1px solid #f9f9f9;';
+                        tdName.style.cssText =
+                            'vertical-align: middle; border-top: 1px solid #f9f9f9;';
                         const nameSpan = document.createElement('span');
                         nameSpan.style.fontWeight = '500';
                         nameSpan.textContent = screenName;
@@ -226,12 +261,17 @@ const EpisciencesMailingList = (function() {
                         tdName.appendChild(hiddenInput);
 
                         const tdAction = document.createElement('td');
-                        tdAction.style.cssText = 'vertical-align: middle; text-align: right; border-top: 1px solid #f9f9f9;';
+                        tdAction.style.cssText =
+                            'vertical-align: middle; text-align: right; border-top: 1px solid #f9f9f9;';
                         const removeBtn = document.createElement('button');
                         removeBtn.type = 'button';
-                        removeBtn.className = 'btn btn-link btn-xs remove-user text-danger';
+                        removeBtn.className =
+                            'btn btn-link btn-xs remove-user text-danger';
                         removeBtn.setAttribute('data-uid', uid);
-                        removeBtn.setAttribute('aria-label', options.removeUserMsg + ' ' + screenName);
+                        removeBtn.setAttribute(
+                            'aria-label',
+                            options.removeUserMsg + ' ' + screenName
+                        );
                         const removeIcon = document.createElement('span');
                         removeIcon.className = 'glyphicon glyphicon-remove';
                         removeIcon.setAttribute('aria-hidden', 'true');
@@ -255,17 +295,19 @@ const EpisciencesMailingList = (function() {
 
         // Modal focus management
         if (userModal && typeof window.jQuery !== 'undefined') {
-            window.jQuery(userModal).on('shown.bs.modal', function() {
+            window.jQuery(userModal).on('shown.bs.modal', function () {
                 if (userSearchInput) userSearchInput.focus();
             });
         }
     }
 
     function initDashboard() {
-        const table = document.querySelector('table[aria-labelledby="mailing-lists-title"]');
+        const table = document.querySelector(
+            'table[aria-labelledby="mailing-lists-title"]'
+        );
         if (!table) return;
 
-        table.addEventListener('click', function(event) {
+        table.addEventListener('click', function (event) {
             const copyBtn = event.target.closest('.copy-btn');
             if (!copyBtn) return;
 
@@ -274,19 +316,22 @@ const EpisciencesMailingList = (function() {
             const feedback = row.querySelector('.copy-feedback');
 
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(name).then(() => {
-                    showFeedback(feedback);
-                }).catch(err => {
-                    console.error('Failed to copy: ', err);
-                    fallbackCopy(name, feedback);
-                });
+                navigator.clipboard
+                    .writeText(name)
+                    .then(() => {
+                        showFeedback(feedback);
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy: ', err);
+                        fallbackCopy(name, feedback);
+                    });
             } else {
                 fallbackCopy(name, feedback);
             }
         });
 
         function fallbackCopy(text, feedback) {
-            const textArea = document.createElement("textarea");
+            const textArea = document.createElement('textarea');
             textArea.value = text;
             document.body.appendChild(textArea);
             textArea.select();
@@ -310,7 +355,7 @@ const EpisciencesMailingList = (function() {
 
     return {
         init: init,
-        initDashboard: initDashboard
+        initDashboard: initDashboard,
     };
 })();
 

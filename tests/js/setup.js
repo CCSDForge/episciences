@@ -21,11 +21,11 @@ global.translate = function (text, locale) {
 };
 
 // Mock requestAnimationFrame to execute synchronously in tests
-global.requestAnimationFrame = (callback) => {
+global.requestAnimationFrame = callback => {
     callback();
     return 0;
 };
-global.cancelAnimationFrame = (id) => {};
+global.cancelAnimationFrame = id => {};
 
 // Mock jQuery-like $ function for functions.js compatibility
 global.$ = function (selector) {
@@ -64,7 +64,7 @@ if (typeof document !== 'undefined') {
             nodeName: 'BODY',
             ownerDocument: document,
         },
-        createContextualFragment: (html) => {
+        createContextualFragment: html => {
             const div = document.createElement('div');
             div.innerHTML = html;
             const fragment = document.createDocumentFragment();
