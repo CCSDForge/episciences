@@ -167,7 +167,9 @@ describe('saveOrder()', () => {
         expect(global.fetch).toHaveBeenCalledTimes(1);
         expect(global.fetch.mock.calls[0][0]).toBe('/website/ajaxorder');
         expect(capturedOptions.method).toBe('POST');
-        expect(capturedOptions.headers['X-Requested-With']).toBe('XMLHttpRequest');
+        expect(capturedOptions.headers['X-Requested-With']).toBe(
+            'XMLHttpRequest'
+        );
         expect(capturedOptions.headers['Content-Type']).toBe(
             'application/x-www-form-urlencoded'
         );
@@ -211,7 +213,10 @@ describe('addPage()', () => {
         global.fetch = jest.fn(() =>
             Promise.resolve({
                 ok: true,
-                text: () => Promise.resolve('<input type="hidden" value="7">New page content'),
+                text: () =>
+                    Promise.resolve(
+                        '<input type="hidden" value="7">New page content'
+                    ),
             })
         );
 
@@ -239,7 +244,9 @@ describe('addPage()', () => {
         const newLi = document.getElementById('page_7');
         expect(newLi).not.toBeNull();
         expect(manager.rootList.contains(newLi)).toBe(true);
-        expect(spy).toHaveBeenCalledWith(expect.stringContaining('Nouvelle page ajoutée'));
+        expect(spy).toHaveBeenCalledWith(
+            expect.stringContaining('Nouvelle page ajoutée')
+        );
     });
 
     test('adds no-nest class for non-folder pages', async () => {
@@ -462,7 +469,7 @@ describe('announce()', () => {
 
         // Mock requestAnimationFrame to execute the callback synchronously
         const originalRaf = global.requestAnimationFrame;
-        global.requestAnimationFrame = (cb) => cb();
+        global.requestAnimationFrame = cb => cb();
 
         manager.announce('Test announcement');
 
@@ -475,7 +482,7 @@ describe('announce()', () => {
         const manager = makeManager([]);
 
         const originalRaf = global.requestAnimationFrame;
-        global.requestAnimationFrame = (cb) => cb();
+        global.requestAnimationFrame = cb => cb();
 
         manager.announce('First');
         manager.announce('Second');
@@ -499,7 +506,10 @@ describe('_safeSetInnerHTML()', () => {
     test('injects HTML into the container', () => {
         const manager = makeManager([]);
         const container = document.createElement('div');
-        manager._safeSetInnerHTML(container, '<p>Hello <strong>World</strong></p>');
+        manager._safeSetInnerHTML(
+            container,
+            '<p>Hello <strong>World</strong></p>'
+        );
 
         expect(container.querySelector('strong').textContent).toBe('World');
     });
@@ -509,7 +519,7 @@ describe('_safeSetInnerHTML()', () => {
         const container = document.createElement('div');
         const spy = jest.fn();
         window.testValueSpy = spy;
-        
+
         const html = '<script>window.testValueSpy();</script>';
         manager._safeSetInnerHTML(container, html);
 

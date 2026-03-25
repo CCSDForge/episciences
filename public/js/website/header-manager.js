@@ -46,7 +46,7 @@ class HeaderManager {
         });
 
         // Delegate actions within the list
-        this.rootList.addEventListener('click', (e) => {
+        this.rootList.addEventListener('click', e => {
             const btn = e.target.closest('button[data-action]');
             if (!btn) return;
 
@@ -65,12 +65,12 @@ class HeaderManager {
                 this.setDisplayElements(form);
                 this._syncLogoItem(li);
             }
-            
+
             // Rename input file for existing items (workaround for Zend_Form_Element_File belongsTo)
             const match = li.id.match(/^logo-(logo_\d+)$/);
             if (match) {
                 const belongsTo = match[1];
-                this.renameInputFile(li.id, belongsTo + "[img]");
+                this.renameInputFile(li.id, belongsTo + '[img]');
             }
         });
     }
@@ -83,9 +83,11 @@ class HeaderManager {
     _syncLogoItem(li) {
         const typeSelect = li.querySelector('select[elem="type"]');
         const itemNameText = li.querySelector('.menu-item-name-text');
-        const iconSpan = li.querySelector('.menu-item-type-icon .glyphicon') || li.querySelector('.menu-item-name .glyphicon');
+        const iconSpan =
+            li.querySelector('.menu-item-type-icon .glyphicon') ||
+            li.querySelector('.menu-item-name .glyphicon');
         const lang = document.documentElement.lang || 'fr';
-        
+
         const updateDisplay = () => {
             if (!typeSelect) return;
             const type = typeSelect.value;
@@ -93,19 +95,22 @@ class HeaderManager {
             if (iconSpan) {
                 iconSpan.className = `glyphicon glyphicon-${type === 'img' ? 'picture' : 'font'} active`;
             }
-            
+
             // Update title
             if (type === 'img') {
                 const imgTmp = li.querySelector('input[name$="[img_tmp]"]');
                 const fileInput = li.querySelector('input[type="file"]');
                 // Use temp filename or new selected filename
                 if (fileInput && fileInput.files.length > 0) {
-                    if (itemNameText) itemNameText.textContent = fileInput.files[0].name;
+                    if (itemNameText)
+                        itemNameText.textContent = fileInput.files[0].name;
                 } else if (imgTmp) {
                     if (itemNameText) itemNameText.textContent = imgTmp.value;
                 }
             } else {
-                const labelInput = li.querySelector(`input[name$="[text][${lang}]"]`);
+                const labelInput = li.querySelector(
+                    `input[name$="[text][${lang}]"]`
+                );
                 if (labelInput && itemNameText) {
                     itemNameText.textContent = labelInput.value;
                 }
@@ -124,7 +129,7 @@ class HeaderManager {
         if (fileInput) {
             fileInput.addEventListener('change', updateDisplay);
         }
-        
+
         // Initial call
         updateDisplay();
     }
@@ -132,7 +137,7 @@ class HeaderManager {
     /**
      * Set up conditional display for form elements.
      * Vanilla JS replacement for public/js/form.js logic.
-     * 
+     *
      * @param {HTMLElement} container
      */
     setDisplayElements(container) {
@@ -146,28 +151,39 @@ class HeaderManager {
 
     /**
      * Show/hide elements based on the value of a controlling element.
-     * 
+     *
      * @param {HTMLElement} parent
      */
     displayElements(parent) {
-        const closestForm = parent.closest('.menu-edit-form') || parent.closest('form');
+        const closestForm =
+            parent.closest('.menu-edit-form') || parent.closest('form');
         if (!closestForm) return;
 
         // Try to get the control ID from 'elem' attribute, fallback to data-elem, name or id
-        const elemId = parent.getAttribute('elem') || parent.getAttribute('data-elem') || parent.name?.split('[').pop().replace(/\]/g, '') || parent.id?.split('-').pop();
+        const elemId =
+            parent.getAttribute('elem') ||
+            parent.getAttribute('data-elem') ||
+            parent.name?.split('[').pop().replace(/\]/g, '') ||
+            parent.id?.split('-').pop();
         if (!elemId) return;
 
         // Find all elements or containers linked to this control (using standard or data attributes)
-        const targets = closestForm.querySelectorAll(`[elem-link="${elemId}"], [data-elem-link="${elemId}"]`);
-        
+        const targets = closestForm.querySelectorAll(
+            `[elem-link="${elemId}"], [data-elem-link="${elemId}"]`
+        );
+
         targets.forEach(el => {
-            const elValue = el.getAttribute('elem-value') || el.getAttribute('data-elem-value');
+            const elValue =
+                el.getAttribute('elem-value') ||
+                el.getAttribute('data-elem-value');
             const matchesValue = elValue === parent.value;
             const shouldBeVisible = matchesValue;
 
             // Find the container to hide (form-group for Bootstrap, or DT/DD pair for standard Zend)
-            let container = el.closest('.form-group') || (el.tagName === 'FIELDSET' ? el : null);
-            
+            let container =
+                el.closest('.form-group') ||
+                (el.tagName === 'FIELDSET' ? el : null);
+
             if (!container) {
                 // Handle standard Zend Framework dt/dd structure
                 const dd = el.closest('dd');
@@ -187,7 +203,10 @@ class HeaderManager {
             // Toggle required attribute to avoid blocking submission when hidden
             // Also handle all children inputs that might be required
             const toggleRequired = (element, visible) => {
-                if (element.hasAttribute('required') || element.hasAttribute('data-was-required')) {
+                if (
+                    element.hasAttribute('required') ||
+                    element.hasAttribute('data-was-required')
+                ) {
                     if (visible) {
                         if (element.hasAttribute('data-was-required')) {
                             element.required = true;
@@ -203,7 +222,9 @@ class HeaderManager {
             };
 
             toggleRequired(el, shouldBeVisible);
-            el.querySelectorAll('input[required], input[data-was-required], select[required], select[data-was-required]').forEach(child => {
+            el.querySelectorAll(
+                'input[required], input[data-was-required], select[required], select[data-was-required]'
+            ).forEach(child => {
                 toggleRequired(child, shouldBeVisible);
             });
 
@@ -242,7 +263,9 @@ class HeaderManager {
      * @returns {Promise<Response>}
      */
     async post(url, body) {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const csrfToken = document.querySelector(
+            'meta[name="csrf-token"]'
+        )?.content;
         const headers = {
             'X-Requested-With': 'XMLHttpRequest',
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -288,9 +311,12 @@ class HeaderManager {
     async addLogo() {
         try {
             const id = 'logo_' + this.uniq;
-            const res = await fetch(JS_PREFIX_URL + "website/ajaxheader/id/" + id, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
+            const res = await fetch(
+                JS_PREFIX_URL + 'website/ajaxheader/id/' + id,
+                {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                }
+            );
             const html = await res.text();
 
             if (!html.trim()) return;
@@ -306,7 +332,9 @@ class HeaderManager {
             divForm.id = 'form-' + logoId;
             this._safeSetInnerHTML(divForm, html);
 
-            const removeBtn = clone.querySelector('[data-action="delete-logo"]');
+            const removeBtn = clone.querySelector(
+                '[data-action="delete-logo"]'
+            );
             if (removeBtn) removeBtn.dataset.logoId = logoId;
 
             const editBtn = clone.querySelector('[data-action="toggle-edit"]');
@@ -322,7 +350,7 @@ class HeaderManager {
             this.rootList.appendChild(clone);
 
             // Rename input file if needed (as done in original)
-            this.renameInputFile(logoId, id + "[img]");
+            this.renameInputFile(logoId, id + '[img]');
 
             // Synchronize logo display
             this._syncLogoItem(clone);
@@ -336,7 +364,9 @@ class HeaderManager {
             }
 
             // ACCESSIBILITY: Move focus to the first input of the new form
-            const firstInput = divForm.querySelector('input:not([type="hidden"]), select, textarea');
+            const firstInput = divForm.querySelector(
+                'input:not([type="hidden"]), select, textarea'
+            );
             if (firstInput) {
                 firstInput.focus();
             }
@@ -382,14 +412,22 @@ class HeaderManager {
         const li = document.getElementById(logoId);
         if (li) {
             // ACCESSIBILITY: Determine where to move focus after deletion
-            const nextFocusTarget = li.nextElementSibling || li.previousElementSibling || document.querySelector('[data-action="add-logo"]');
-            
+            const nextFocusTarget =
+                li.nextElementSibling ||
+                li.previousElementSibling ||
+                document.querySelector('[data-action="add-logo"]');
+
             li.remove();
 
             if (nextFocusTarget) {
                 // If it's another logo, focus its edit button
-                if (nextFocusTarget.tagName === 'LI' || nextFocusTarget.tagName === 'TR') {
-                    const editBtn = nextFocusTarget.querySelector('[data-action="toggle-edit"]');
+                if (
+                    nextFocusTarget.tagName === 'LI' ||
+                    nextFocusTarget.tagName === 'TR'
+                ) {
+                    const editBtn = nextFocusTarget.querySelector(
+                        '[data-action="toggle-edit"]'
+                    );
                     if (editBtn) editBtn.focus();
                 } else {
                     nextFocusTarget.focus();
@@ -405,28 +443,32 @@ class HeaderManager {
     }
 
     /**
-     * Toggle the required attribute on inputs within a container to avoid 
+     * Toggle the required attribute on inputs within a container to avoid
      * HTML5 validation errors on hidden fields.
      *
-     * @param {HTMLElement} container 
-     * @param {boolean}     isVisible 
+     * @param {HTMLElement} container
+     * @param {boolean}     isVisible
      */
     toggleRequired(container, isVisible) {
         const targets = container.querySelectorAll('input, select, textarea');
         targets.forEach(el => {
             if (isVisible) {
-                // If it's a child of a currently hidden container (.form-group or similar), 
+                // If it's a child of a currently hidden container (.form-group or similar),
                 // don't restore required yet — let displayElements handle it.
                 let parentHidden = false;
                 let p = el.parentElement;
                 while (p && p !== container) {
-                    if (p.hidden || (p.classList.contains('form-group') && p.style.display === 'none')) {
+                    if (
+                        p.hidden ||
+                        (p.classList.contains('form-group') &&
+                            p.style.display === 'none')
+                    ) {
                         parentHidden = true;
                         break;
                     }
                     p = p.parentElement;
                 }
-                
+
                 if (!parentHidden && el.dataset.wasRequired) {
                     el.required = true;
                     delete el.dataset.wasRequired;
@@ -467,7 +509,9 @@ class HeaderManager {
             });
 
             // ACCESSIBILITY: Move focus to the first input of the form
-            const firstInput = form.querySelector('input:not([type="hidden"]), select, textarea');
+            const firstInput = form.querySelector(
+                'input:not([type="hidden"]), select, textarea'
+            );
             if (firstInput) {
                 firstInput.focus();
             }

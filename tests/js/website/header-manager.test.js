@@ -69,17 +69,23 @@ describe('HeaderManager', () => {
             global.fetch = jest.fn(() =>
                 Promise.resolve({
                     ok: true,
-                    text: () => Promise.resolve('<input type="file" name="temp">New logo form'),
+                    text: () =>
+                        Promise.resolve(
+                            '<input type="file" name="temp">New logo form'
+                        ),
                 })
             );
 
             await manager.addLogo();
 
-            expect(global.fetch).toHaveBeenCalledWith('/website/ajaxheader/id/logo_5', expect.any(Object));
+            expect(global.fetch).toHaveBeenCalledWith(
+                '/website/ajaxheader/id/logo_5',
+                expect.any(Object)
+            );
             const newLi = document.getElementById('logo-5');
             expect(newLi).not.toBeNull();
             expect(manager.rootList.contains(newLi)).toBe(true);
-            
+
             // Check if renameInputFile was called implicitly
             const fileInput = newLi.querySelector('input[type="file"]');
             expect(fileInput.name).toBe('logo_5[img]');
@@ -100,7 +106,9 @@ describe('HeaderManager', () => {
             );
 
             await manager.addLogo();
-            expect(spy).toHaveBeenCalledWith(expect.stringContaining('Nouveau logo ajouté'));
+            expect(spy).toHaveBeenCalledWith(
+                expect.stringContaining('Nouveau logo ajouté')
+            );
         });
 
         test('focuses the first input of the new form', async () => {
@@ -108,7 +116,8 @@ describe('HeaderManager', () => {
             global.fetch = jest.fn(() =>
                 Promise.resolve({
                     ok: true,
-                    text: () => Promise.resolve('<input type="text" id="focus-me">'),
+                    text: () =>
+                        Promise.resolve('<input type="text" id="focus-me">'),
                 })
             );
 
@@ -125,9 +134,14 @@ describe('HeaderManager', () => {
             const spy = jest.fn();
             window.scriptExecuted = spy;
 
-            manager._safeSetInnerHTML(container, '<script>window.scriptExecuted()</script><p>Safe content</p>');
-            
-            expect(container.querySelector('p').textContent).toBe('Safe content');
+            manager._safeSetInnerHTML(
+                container,
+                '<script>window.scriptExecuted()</script><p>Safe content</p>'
+            );
+
+            expect(container.querySelector('p').textContent).toBe(
+                'Safe content'
+            );
             expect(spy).not.toHaveBeenCalled();
             delete window.scriptExecuted;
         });
@@ -143,11 +157,14 @@ describe('HeaderManager', () => {
 
             await manager.post('/test', 'data=1');
 
-            expect(global.fetch).toHaveBeenCalledWith('/test', expect.objectContaining({
-                headers: expect.objectContaining({
-                    'X-CSRF-Token': 'test-token'
+            expect(global.fetch).toHaveBeenCalledWith(
+                '/test',
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        'X-CSRF-Token': 'test-token',
+                    }),
                 })
-            }));
+            );
             document.head.removeChild(meta);
         });
     });
@@ -160,7 +177,7 @@ describe('HeaderManager', () => {
             const editBtn1 = document.createElement('button');
             editBtn1.setAttribute('data-action', 'toggle-edit');
             li1.appendChild(editBtn1);
-            
+
             const li2 = document.createElement('li');
             li2.id = 'logo-2';
             const editBtn2 = document.createElement('button');
@@ -171,7 +188,7 @@ describe('HeaderManager', () => {
             manager.rootList.appendChild(li2);
 
             jest.spyOn(window, 'confirm').mockReturnValue(true);
-            
+
             // Delete first logo, should focus second logo's edit button
             manager.deleteLogo('logo-1');
             expect(document.getElementById('logo-1')).toBeNull();
@@ -197,7 +214,7 @@ describe('HeaderManager', () => {
             const btn = document.createElement('button');
             btn.setAttribute('aria-controls', 'form-test');
             btn.setAttribute('aria-expanded', 'false');
-            
+
             const form = document.createElement('div');
             form.id = 'form-test';
             form.hidden = true;
@@ -217,7 +234,7 @@ describe('HeaderManager', () => {
             const btn = document.createElement('button');
             btn.setAttribute('aria-controls', 'form-focus');
             btn.setAttribute('aria-expanded', 'false');
-            
+
             const form = document.createElement('div');
             form.id = 'form-focus';
             form.hidden = true;
@@ -250,11 +267,12 @@ describe('HeaderManager', () => {
             const manager = makeManager(0);
             const container = document.createElement('div');
             container.className = 'menu-edit-form';
-            
+
             const select = document.createElement('select');
             select.setAttribute('elem', 'type');
             select.className = 'elem-link';
-            select.innerHTML = '<option value="img" selected>Image</option><option value="text">Text</option>';
+            select.innerHTML =
+                '<option value="img" selected>Image</option><option value="text">Text</option>';
             container.appendChild(select);
 
             const groupImg = document.createElement('div');
@@ -267,7 +285,9 @@ describe('HeaderManager', () => {
             container.appendChild(groupImg);
 
             document.body.appendChild(container);
-            Object.defineProperty(select, 'offsetParent', { get: () => document.body });
+            Object.defineProperty(select, 'offsetParent', {
+                get: () => document.body,
+            });
 
             // Initial: visible and required
             manager.displayElements(select);

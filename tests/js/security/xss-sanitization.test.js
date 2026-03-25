@@ -9,10 +9,7 @@ global.DOMPurify = {
         // Mock: remove script tags, event handlers, and javascript: URIs
         let clean = dirty
             // Remove script tags
-            .replace(
-                /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-                ''
-            )
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
             // Remove inline event handlers (onload, onerror, etc.)
             .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
             .replace(/on\w+\s*=\s*\S+/gi, '')

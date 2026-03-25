@@ -30,7 +30,11 @@
     function parseDoiResponse(text) {
         try {
             const data = JSON.parse(text);
-            if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+            if (
+                data === null ||
+                typeof data !== 'object' ||
+                Array.isArray(data)
+            ) {
                 return null;
             }
             return data;
@@ -129,12 +133,21 @@
             icon.className = 'fa-solid fa-rotate-left';
             icon.style.marginRight = '5px';
             cancelBtn.appendChild(icon);
-            cancelBtn.appendChild(document.createTextNode(
-                typeof translate === 'function' ? translate('Annuler le DOI') : 'Cancel DOI'
-            ));
+            cancelBtn.appendChild(
+                document.createTextNode(
+                    typeof translate === 'function'
+                        ? translate('Annuler le DOI')
+                        : 'Cancel DOI'
+                )
+            );
             cancelBtn.addEventListener('click', function () {
                 if (typeof removeDoi === 'function') {
-                    removeDoi(cancelBtn, Number(paperId), Number(docId), data.doiStr || '');
+                    removeDoi(
+                        cancelBtn,
+                        Number(paperId),
+                        Number(docId),
+                        data.doiStr || ''
+                    );
                 }
             });
             doiLink.insertAdjacentElement('afterend', cancelBtn);
@@ -173,17 +186,20 @@
      * @returns {Promise<{ ok: boolean, status: number, text: string }|null|'aborted'>}
      */
     async function fetchDoi(docid, signal) {
-        const response = await fetch(JS_PREFIX_URL + 'administratepaper/ajaxrequestnewdoi', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                // Required so the PHP controller can verify this is an XHR request
-                // via Zend_Controller_Request_Http::isXmlHttpRequest().
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: new URLSearchParams({ docid }),
-            signal,
-        });
+        const response = await fetch(
+            JS_PREFIX_URL + 'administratepaper/ajaxrequestnewdoi',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    // Required so the PHP controller can verify this is an XHR request
+                    // via Zend_Controller_Request_Http::isXmlHttpRequest().
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: new URLSearchParams({ docid }),
+                signal,
+            }
+        );
 
         const text = await response.text();
         return { ok: response.ok, status: response.status, text };
@@ -263,7 +279,8 @@
         }
 
         if (loader) {
-            loader.innerHTML = typeof getLoader === 'function' ? getLoader() : '';
+            loader.innerHTML =
+                typeof getLoader === 'function' ? getLoader() : '';
             loader.hidden = false;
         }
 
@@ -292,6 +309,12 @@
 
     // Expose internals for unit testing only.
     if (typeof module !== 'undefined' && module.exports) {
-        module.exports = { parseDoiResponse, createAlert, safeHtml, init, _internals };
+        module.exports = {
+            parseDoiResponse,
+            createAlert,
+            safeHtml,
+            init,
+            _internals,
+        };
     }
 })();

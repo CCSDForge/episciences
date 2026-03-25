@@ -43,14 +43,17 @@ $(document).ready(function () {
     });
 
     // Auto-expand the panel targeted by the URL hash
-    if (
-        window.location.hash &&
-        isValidCSSSelector(window.location.hash)
-    ) {
+    if (window.location.hash && isValidCSSSelector(window.location.hash)) {
         var $targetPanel = $(window.location.hash + '.collapsable');
-        if ($targetPanel.length && !$targetPanel.find('.panel-body:first').is(':visible')) {
+        if (
+            $targetPanel.length &&
+            !$targetPanel.find('.panel-body:first').is(':visible')
+        ) {
             $targetPanel.find('.panel-heading:first').trigger('click');
-            $('html, body').animate({ scrollTop: $targetPanel.offset().top }, 300);
+            $('html, body').animate(
+                { scrollTop: $targetPanel.offset().top },
+                300
+            );
         }
     }
 
@@ -1151,4 +1154,3 @@ function isValidCSSSelector(selector) {
         return false;
     }
 }
-

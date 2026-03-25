@@ -16,7 +16,7 @@ function __initMCE(selectorName, context, options) {
 }
 
 function __initEditor(selectorName, context, options) {
-// see https://www.tiny.cloud/docs-4x/configure/url-handling/#domainabsoluteurls
+    // see https://www.tiny.cloud/docs-4x/configure/url-handling/#domainabsoluteurls
     const domainAbsoluteURLsOptions = {
         convert_urls: false,
         relative_urls: false,
@@ -24,13 +24,17 @@ function __initEditor(selectorName, context, options) {
         document_base_url: window.location.origin,
     };
 
-    const licenceKey = {license_key: 'gpl'}; //https://www.tiny.cloud/license-key/
+    const licenceKey = { license_key: 'gpl' }; //https://www.tiny.cloud/license-key/
     //To correct the printing of extra lines
     const newLineOptions = {
         newline_behavior: 'default', // never use linebreak: instead tell users to use shift+enter to insert br
         remove_trailing_brs: true, //removing extra <br> at the end of a block
     };
-    const defaultOptions = $.extend({}, domainAbsoluteURLsOptions, newLineOptions);
+    const defaultOptions = $.extend(
+        {},
+        domainAbsoluteURLsOptions,
+        newLineOptions
+    );
     const baseTinyMceOptions = {
         theme: 'silver',
         plugins: 'link image code fullscreen table',
@@ -68,7 +72,7 @@ function __initEditor(selectorName, context, options) {
     if (context) {
         $(selectorName, $(context)).tinymce(finalOptions);
     } else {
-        finalOptions = $.extend({}, finalOptions, {selector: selectorName});
+        finalOptions = $.extend({}, finalOptions, { selector: selectorName });
         tinymce.init(finalOptions);
     }
 

@@ -21,7 +21,9 @@ function displayElements(parent) {
     closest
         .find('[elem-link="' + $(parent).attr('elem') + '"]')
         .each(function (index) {
-            var isVisible = $(parent).is(':visible') && $(this).attr('elem-value') == $(parent).val();
+            var isVisible =
+                $(parent).is(':visible') &&
+                $(this).attr('elem-value') == $(parent).val();
             var $target = $(this);
             var $group = $target.closest('.form-group');
 
@@ -50,9 +52,13 @@ function displayElements(parent) {
             };
 
             toggleRequired(this, isVisible);
-            $target.find('input[required], input[data-was-required], select[required], select[data-was-required], textarea[required], textarea[data-was-required]').each(function () {
-                toggleRequired(this, isVisible);
-            });
+            $target
+                .find(
+                    'input[required], input[data-was-required], select[required], select[data-was-required], textarea[required], textarea[data-was-required]'
+                )
+                .each(function () {
+                    toggleRequired(this, isVisible);
+                });
 
             if ($target.hasClass('elem-link')) {
                 displayElements($target);

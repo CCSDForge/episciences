@@ -26,14 +26,25 @@ global.getLoader = jest.fn(() => '<span class="spinner"></span>');
 // Load the module
 // ---------------------------------------------------------------------------
 
-const { parseDoiResponse, createAlert, safeHtml, init, _internals } = require('../../../public/js/administratepaper/request-doi');
+const {
+    parseDoiResponse,
+    createAlert,
+    safeHtml,
+    init,
+    _internals,
+} = require('../../../public/js/administratepaper/request-doi');
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /** Build the standard DOM fixture used by most click-handler tests. */
-function buildFixture({ docid = '42', hiddenLoader = true, paperid = '100', doiAssignMode = 'automatic' } = {}) {
+function buildFixture({
+    docid = '42',
+    hiddenLoader = true,
+    paperid = '100',
+    doiAssignMode = 'automatic',
+} = {}) {
     document.body.innerHTML = `
         <div id="doi-panel" data-paperid="${paperid}" data-doi-assign-mode="${doiAssignMode}" data-docid="${docid}">
             <div id="doi-status-loader"${hiddenLoader ? ' hidden' : ''}></div>
@@ -450,7 +461,9 @@ describe('server-side error flags', () => {
             feedback: '',
             error_message: 'Complete failure.',
         });
-        expect(document.querySelectorAll('.alert-danger').length).toBeGreaterThan(0);
+        expect(
+            document.querySelectorAll('.alert-danger').length
+        ).toBeGreaterThan(0);
     });
 
     test('does NOT call location.reload() when there is an error', async () => {
@@ -674,7 +687,8 @@ describe('XSS safety', () => {
         // data.doi from the server is DoiAsLink() HTML markup.
         // It is now injected via safeHtml() (sanitizeHTML wrapper) rather than
         // textContent, so the link renders correctly without a raw-HTML flash.
-        const htmlDoi = '<a rel="noopener noreferrer" href="https://doi.org/10.1/ok">https://doi.org/10.1/ok</a>';
+        const htmlDoi =
+            '<a rel="noopener noreferrer" href="https://doi.org/10.1/ok">https://doi.org/10.1/ok</a>';
         mockFetchSuccess({
             doi: htmlDoi,
             doiStr: '10.1/ok',
