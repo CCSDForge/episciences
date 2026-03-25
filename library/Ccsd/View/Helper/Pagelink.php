@@ -20,7 +20,7 @@ class Ccsd_View_Helper_Pagelink
         $action = $page->getAction();
 
         if ($controller === '') {
-            return $action;
+            return $prefixUrl . ltrim($action, '/');
         }
 
         if ($controller === 'index' && $action === 'index') {
