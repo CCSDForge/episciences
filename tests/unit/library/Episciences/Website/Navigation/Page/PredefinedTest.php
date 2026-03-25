@@ -253,11 +253,11 @@ class PredefinedTest extends TestCase
     {
         $result = Episciences_Website_Navigation_Page_Predefined::getAllPermaliens();
 
-        // Based on current codebase, there should be exactly 17 predefined pages
+        // Based on current codebase, there should be exactly 18 predefined pages
         $this->assertCount(
-            17,
+            18,
             $result,
-            'Expected exactly 17 predefined pages'
+            'Expected exactly 18 predefined pages'
         );
     }
 
