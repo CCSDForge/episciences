@@ -169,27 +169,6 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
         return Episciences_Repositories_Common::isOpenAccessRight($hookParams);
     }
 
-    public static function hookHasDoiInfoRepresentsAllVersions(array $hookParams): array
-    {
-
-        $hasDoiInfoRepresentsAllVersions = false;
-
-        if (isset($hookParams['repoId'], $hookParams['record'], $hookParams[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY])) {
-
-            $pattern = '<dc:relation>';
-            $pattern .= Episciences_DoiTools::DOI_ORG_PREFIX . Episciences_Repositories::getRepoDoiPrefix($hookParams['repoId']) . '/' . mb_strtolower(Episciences_Repositories::getLabel($hookParams['repoId'])) . '.';
-            $pattern .= $hookParams[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY];
-            $pattern .= '</dc:relation>';
-
-            $found = Episciences_Tools::extractPattern('#' . $pattern . '#', $hookParams['record']);
-
-            $hasDoiInfoRepresentsAllVersions = !empty($found);
-        }
-
-        return ['hasDoiInfoRepresentsAllVersions' => $hasDoiInfoRepresentsAllVersions];
-
-    }
-
     public static function hookGetConceptIdentifierFromRecord(array $hookParams): array
     {
         $conceptIdentifier = null;
@@ -228,8 +207,8 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
 
         $response = self::checkResponse($hookParams);
 
-        if (array_key_exists(Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY, $response)) {
-            $conceptIdentifier = $response[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY];
+        if (array_key_exists('conceptrecid', $response)) {
+            $conceptIdentifier = $response['conceptrecid'];
         }
 
         return [Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY => $conceptIdentifier];

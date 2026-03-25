@@ -2858,7 +2858,7 @@ class Episciences_PapersManager
         $affectedRows = 0;
 
         $context = self::initializeContext($params);
-        $recordData = self::fetchRecordData($context);
+        $recordData = self::fetchRecordData($context); // as well as updating the version from the original archive
         [$record, $enrichment] = [$recordData['record'], $recordData['enrichment']];
 
         $record = self::cleanRecord($record, $context['repoId']);
@@ -2871,7 +2871,7 @@ class Episciences_PapersManager
         $affectedRows = self::processLicence($context, $affectedRows);
         $affectedRows = self::processHalOpenAireData($context, $affectedRows);
 
-        $affectedRows += $db?->update(T_PAPERS, ['RECORD' => $record], ['DOCID = ?' => $context['docId']]);
+        $affectedRows += $db?->update(T_PAPERS, ['RECORD' => $record, 'VERSION' => $context['version']], ['DOCID = ?' => $context['docId']]);
         return $affectedRows;
     }
 
@@ -2894,7 +2894,7 @@ class Episciences_PapersManager
      * @throws Exception
      */
 
-    private static function fetchRecordData(array $context): array
+    private static function fetchRecordData(array &$context): array
     {
         $repoIdentifier = Episciences_Repositories::getIdentifier(
             $context['repoId'], $context['identifier'], $context['version']
@@ -2907,6 +2907,18 @@ class Episciences_PapersManager
         ]);
 
         if (!empty($response['record'])) {
+
+            // version form repository
+            $hookedVersion = Episciences_Repositories::callHook('hookVersion', [
+                'identifier' => $context['identifier'],
+                'repoId' => $context['repoId'],
+                'response' => $response
+            ]);
+
+            if (isset($hookedVersion['version'])) {
+                $context['version'] = (float)$hookedVersion['version'];
+            }
+
             return ['record' => $response['record'], 'enrichment' => $response['enrichment'] ?? []];
         }
 

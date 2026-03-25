@@ -261,6 +261,7 @@ class Episciences_Paper
     public const JOURNAL_ARTICLE_TYPE_TITLE = 'journalarticle';
     public const PUBLICATION_TYPE_TITLE = 'publication';// Zenodo
     public const MED_ARXIV_PREPRINT = 'hwp-article-coll';
+    public const CRYPTOLOGY_TYPE = 'e-print';
 
 
     public const ENUM_TYPES = [
@@ -278,7 +279,7 @@ class Episciences_Paper
         self::TEXT_TYPE_TITLE,
         self::WORKING_PAPER_TYPE_TITLE,
         self::MED_ARXIV_PREPRINT,
-        'E-print' //  Cryptology
+        self::CRYPTOLOGY_TYPE
     ];
     public const JSON_PATH_ABS_FILE = "$.database.current.graphical_abstract_file";
     public static array $_statusPriority = [
@@ -913,7 +914,6 @@ class Episciences_Paper
     /**
      * @param $record
      * @return $this
-     * @throws Zend_Db_Statement_Exception
      * @throws DOMException
      */
     public function setRecord($record): self
@@ -1077,7 +1077,7 @@ class Episciences_Paper
      *  return version number
      * @return float
      */
-    public function getVersion() : float
+    public function getVersion(): float
     {
         return $this->_version;
     }
@@ -3803,6 +3803,7 @@ class Episciences_Paper
                 $result['submissionDate'] = $this->getSubmission_date();
                 $result['oldVid'] = $this->getVid();
                 $result['oldSid'] = $this->getSid();
+                $result['oldConceptIdentifier'] = $this->getConcept_identifier();
                 $canReplace = true;
 
                 if ($isEpiNotify) {
@@ -3983,7 +3984,7 @@ class Episciences_Paper
 
         $result['canBeReplaced'] = $canReplace;
         $result['oldIdentifier'] = $identifier;
-        $result['oldVersion'] = (float)$version;
+        $result['oldVersion'] = $version;
         $result['oldRepoId'] = $repoId;
 
         try {
@@ -4055,7 +4056,8 @@ class Episciences_Paper
             $paper = new Episciences_Paper([
                 'identifier' => $values['search_doc']['docId'],
                 'version' => (float)$values['search_doc']['version'],
-                'repoId' => (int)$values['search_doc']['repoId']
+                'repoId' => (int)$values['search_doc']['repoId'],
+                'concept_identifier' => $values['concept_identifier'] ?? null
             ]);
 
             if ($this->getIdentifier() === $paper->getIdentifier() &&
@@ -4067,10 +4069,17 @@ class Episciences_Paper
                 return $update;
             }
 
-            if (!$this->hasHook && $this->getIdentifier() !== $paper->getIdentifier()) {
-                $message .= ' : ';
-                $message .= $translator->translate("l'identifiant de l'article a changé.");
+            if (
+                !$this->hasHook ||
+                $this->getConcept_identifier() === null
+            ) {
+                $identifierChanged = $this->getIdentifier() !== $paper->getIdentifier();
+            } else {
+                $identifierChanged = $this->getConcept_identifier() !== $paper->getConcept_identifier();
+            }
 
+            if ($identifierChanged) {
+                $message .= ' : ' . $translator->translate("l'identifiant de l'article a changé.");
             } elseif ($this->getRepoid() !== $paper->getRepoid()) {
                 $message .= " : ";
                 $message .= $translator->translate("l'entrepôt de cet article a changé.");
