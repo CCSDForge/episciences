@@ -4,9 +4,11 @@ namespace unit\library\Episciences\submit;
 
 use Ccsd_Error;
 use Episciences_Paper;
+use Episciences_Repositories;
 use Episciences_Submit;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use ReflectionProperty;
 
 /**
  * Unit tests for Episciences_Submit private methods.
@@ -37,13 +39,37 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         return $static ? $rm->invokeArgs(null, $args) : $rm->invokeArgs(new Episciences_Submit(), $args);
     }
 
-    /** Create a mock Episciences_Paper with getVersion() and getIdentifier() stubs. */
-    private function mockPaper(float $version, string $identifier = ''): Episciences_Paper
+    private const FAKE_DSPACE_REPOID = 9999;
+
+    /** Create a mock Episciences_Paper with getVersion(), getIdentifier(), and getRepoid() stubs. */
+    private function mockPaper(float $version, string $identifier = '', int $repoid = 0): Episciences_Paper
     {
         $mock = $this->createMock(Episciences_Paper::class);
         $mock->method('getVersion')->willReturn($version);
         $mock->method('getIdentifier')->willReturn($identifier);
+        $mock->method('getRepoid')->willReturn($repoid);
         return $mock;
+    }
+
+    /** Inject a fake DSpace repository into the static Repositories cache. */
+    private function setUpFakeDspaceRepo(): void
+    {
+        $rp = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
+        $rp->setAccessible(true);
+        $rp->setValue(null, [
+            self::FAKE_DSPACE_REPOID => [
+                Episciences_Repositories::REPO_LABEL => 'Fake DSpace',
+                Episciences_Repositories::REPO_TYPE  => Episciences_Repositories::TYPE_DSPACE,
+            ],
+        ]);
+    }
+
+    /** Reset the static Repositories cache after DSpace tests. */
+    private function tearDownFakeDspaceRepo(): void
+    {
+        $rp = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
+        $rp->setAccessible(true);
+        $rp->setValue(null, []);
     }
 
     // =========================================================================
@@ -57,7 +83,7 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
     {
         $docId = null;
         $result = ['update' => '20240315:120000'];
-        $this->invoke('assertDateTimeVersion', [&$docId, null, &$result]);
+        $this->invoke('assertDateTimeVersion', [&$docId, null, &$result, false]);
         self::assertNull($docId); // unchanged
     }
 
@@ -69,7 +95,8 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $docId = 42;
         $result = [];
         $paper = $this->mockPaper(1.0, 'some-id-no-datetime');
-        $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result]);
+        $paper->hasHook = true;
+        $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, false]);
         self::assertSame(42, $docId); // unchanged
     }
 
@@ -83,7 +110,8 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $result = ['update' => '20240315:120000', 'hookVersion' => 1.0];
         // identifier has no YYYYMMDD:HHMMSS pattern → getDateTimePattern returns ''
         $paper = $this->mockPaper(1.0, 'some-id-without-datetime');
-        $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result]);
+        $paper->hasHook = true;
+        $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
         self::assertNull($docId);
         self::assertSame(2.0, $result['hookVersion']);
     }
@@ -97,7 +125,8 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $datetime = '20240315:120000';
         $result = ['update' => $datetime, 'hookVersion' => 1.0];
         $paper = $this->mockPaper(1.0, 'some-id/' . $datetime);
-        $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result]);
+        $paper->hasHook = true;
+        $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
         // same datetime → previousDatetime is NOT < current → no change
         self::assertSame(42, $docId);
         self::assertSame(1.0, $result['hookVersion']);
@@ -111,7 +140,8 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $docId = 99;
         $result = ['update' => '20250101:000000', 'hookVersion' => 3.0];
         $paper = $this->mockPaper(3.0, 'paper/20240101:000000'); // older
-        $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result]);
+        $paper->hasHook = true;
+        $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
         self::assertNull($docId);
         self::assertSame(4.0, $result['hookVersion']);
     }
@@ -124,7 +154,8 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $docId = 77;
         $result = ['update' => '20230101:000000', 'hookVersion' => 2.0]; // current is older
         $paper = $this->mockPaper(2.0, 'paper/20250101:000000'); // previous is newer
-        $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result]);
+        $paper->hasHook = true;
+        $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
         self::assertSame(77, $docId); // unchanged — previous > current, NOT a new version
     }
 
@@ -135,48 +166,63 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
     /**
      * No previousPaper → returns immediately, docId unchanged.
      */
-    public function testAssertVersionEarlyReturnWhenNoPreviousPaper(): void
+    public function testAssertDspaceVersionEarlyReturnWhenNoPreviousPaper(): void
     {
         $docId = 42;
         $result = ['hookVersion' => 2.0];
-        $this->invoke('assertVersion', [&$docId, null, $result]);
+        $this->invoke('assertDspaceVersion', [&$docId, null, $result]);
         self::assertSame(42, $docId);
     }
 
     /**
      * previousPaper version (1.0) < hookVersion (2.0) → docId set to null, return.
      */
-    public function testAssertVersionResetsDocIdWhenNewVersionIsHigher(): void
+    public function testAssertDspaceVersionResetsDocIdWhenNewVersionIsHigher(): void
     {
-        $docId = 42;
-        $result = ['hookVersion' => 2.0];
-        $paper = $this->mockPaper(1.0);
-        $this->invoke('assertVersion', [&$docId, $paper, $result]);
-        self::assertNull($docId);
+        $this->setUpFakeDspaceRepo();
+        try {
+            $docId = 42;
+            $result = ['hookVersion' => 2.0];
+            $paper = $this->mockPaper(1.0, '', self::FAKE_DSPACE_REPOID);
+            $this->invoke('assertDspaceVersion', [&$docId, $paper, $result]);
+            self::assertNull($docId);
+        } finally {
+            $this->tearDownFakeDspaceRepo();
+        }
     }
 
     /**
      * previousPaper version (2.0) equal to hookVersion (2.0) → throws Ccsd_Error.
      */
-    public function testAssertVersionThrowsWhenVersionNotHigherThanPrevious(): void
+    public function testAssertDspaceVersionThrowsWhenVersionNotHigherThanPrevious(): void
     {
-        $this->expectException(Ccsd_Error::class);
-        $docId = 42;
-        $result = ['hookVersion' => 2.0];
-        $paper = $this->mockPaper(2.0);
-        $this->invoke('assertVersion', [&$docId, $paper, $result]);
+        $this->setUpFakeDspaceRepo();
+        try {
+            $this->expectException(Ccsd_Error::class);
+            $docId = 42;
+            $result = ['hookVersion' => 2.0];
+            $paper = $this->mockPaper(2.0, '', self::FAKE_DSPACE_REPOID);
+            $this->invoke('assertDspaceVersion', [&$docId, $paper, $result]);
+        } finally {
+            $this->tearDownFakeDspaceRepo();
+        }
     }
 
     /**
      * previousPaper version (3.0) > hookVersion (2.0) → throws Ccsd_Error.
      */
-    public function testAssertVersionThrowsWhenVersionLowerThanPrevious(): void
+    public function testAssertDspaceVersionThrowsWhenVersionLowerThanPrevious(): void
     {
-        $this->expectException(Ccsd_Error::class);
-        $docId = 42;
-        $result = ['hookVersion' => 2.0];
-        $paper = $this->mockPaper(3.0);
-        $this->invoke('assertVersion', [&$docId, $paper, $result]);
+        $this->setUpFakeDspaceRepo();
+        try {
+            $this->expectException(Ccsd_Error::class);
+            $docId = 42;
+            $result = ['hookVersion' => 2.0];
+            $paper = $this->mockPaper(3.0, '', self::FAKE_DSPACE_REPOID);
+            $this->invoke('assertDspaceVersion', [&$docId, $paper, $result]);
+        } finally {
+            $this->tearDownFakeDspaceRepo();
+        }
     }
 
     // =========================================================================
