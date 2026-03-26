@@ -34,7 +34,7 @@ if (empty($editors)) {
                     </span>
                 </a>&nbsp;
 
-                <img src="/user/photo/name/<?= urlencode($this->escape($editor->getScreenName())) ?>/uid/<?= $editor->getUid() ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
+                <img src="<?= PREFIX_URL ?>user/photo/name/<?= urlencode($this->escape($editor->getScreenName())) ?>/uid/<?= $editor->getUid() ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
                      class="user-photo-small" alt="avatar">
                 <span style="margin-left: 0.5em;"><strong><?= $this->escape($editor->getScreenName()) ?></strong></span>
 
