@@ -296,7 +296,9 @@ class Episciences_Acl extends Ccsd_Acl
         if (!Episciences_Auth::isSecretary()) { // git #235
             return [];
         }
-        
+
+        unset($roles[$acl::ROLE_GUEST], $roles[$acl::ROLE_MEMBER]);
+
         return $roles;
     }
 }
