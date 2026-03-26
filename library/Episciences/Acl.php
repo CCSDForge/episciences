@@ -263,7 +263,7 @@ class Episciences_Acl extends Ccsd_Acl
         //return self::$_rolesCodes[$rightid];
     }
 
-    public function getRolesCodes()
+    public function getRolesCodes(): array
     {
         $rolesKeys = array_keys($this->_roles);
         krsort($rolesKeys); // high to low
@@ -272,7 +272,7 @@ class Episciences_Acl extends Ccsd_Acl
         return array_combine($rolesKeys, $rolesKeys);
     }
 
-    public function getEditableRoles()
+    public function getEditableRoles(): array
     {
         $acl = new Episciences_Acl();
         $roles = $acl->getRolesCodes();
