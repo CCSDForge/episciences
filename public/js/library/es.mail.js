@@ -11,7 +11,7 @@ $(function () {
 });
 
 function addContacts() {
-    let added_contacts = JSON.parse($('#hidden_added_contacts').val());
+    let added_contacts = JSON.parse($('#hidden_added_contacts').val() || '[]');
     for (let i in added_contacts) {
         let uid = added_contacts[i].uid;
         let user;
