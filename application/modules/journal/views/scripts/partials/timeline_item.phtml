@@ -89,7 +89,7 @@ if (!$id) {
             <?php if (!empty($comment['FILE'])) : ?>
                 <div class="timeline-comment-attachment-inline">
                     <i class="glyphicon glyphicon-paperclip" aria-hidden="true"></i> <a
-                            href="/docfiles/comments/<?= $comment['DOCID'] . '/' . rawurlencode($comment['FILE']) ?>"
+                            href="<?= PREFIX_URL ?>docfiles/comments/<?= $comment['DOCID'] . '/' . rawurlencode($comment['FILE']) ?>"
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label="<?= $this->translate('Télécharger le fichier'); ?> <?= $this->escape($comment['FILE']) ?>">
