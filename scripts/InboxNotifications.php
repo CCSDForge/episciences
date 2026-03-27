@@ -8,12 +8,15 @@ use Episciences\Notify\NotifySourceConfig;
 use Episciences\Notify\NotifySourceRegistry;
 use Episciences\Notify\PayloadValidator;
 use Episciences\Notify\PreprintUrlParser;
+use Episciences\Trait\UrlBuilder;
 use scripts\AbstractScript;
 
 require_once "AbstractScript.php";
+require '../library/Episciences/Trait/UrlBuilder.php';
 
 class InboxNotifications extends AbstractScript
 {
+    use UrlBuilder;
     public const COAR_NOTIFY_AT_CONTEXT = [
         'https://www.w3.org/ns/activitystreams',
         'https://purl.org/coar/notify',
@@ -117,6 +120,10 @@ class InboxNotifications extends AbstractScript
 
         try {
             $notifyPayloads = json_decode($nOriginal, true, 512, JSON_THROW_ON_ERROR);
+
+            if (is_string($notifyPayloads)) {
+                $notifyPayloads = json_decode($notifyPayloads, true, 512, JSON_THROW_ON_ERROR);
+            }
 
             if ($this->isVerbose()) {
                 $this->logger->info(sprintf("Current notification: %s ", $nOriginal));
@@ -687,12 +694,7 @@ class InboxNotifications extends AbstractScript
         $this->setupJournalTranslations($journal);
 
         $journalOptions = ['rvCode' => $journal->getCode(), 'rvId' => $journal->getRvid()];
-        $paperUrl = sprintf(
-            SERVER_PROTOCOL . "://%s.%s/paper/view?id=%s",
-            $journal->getCode(),
-            DOMAIN,
-            $paper->getDocid()
-        );
+        $paperUrl = self::buildPublicPaperUrl($paper->getDocid(), $journalOptions);
 
         $commonTags = $this->buildCommonNotificationTags($journal, $paper, $author);
 
@@ -717,12 +719,7 @@ class InboxNotifications extends AbstractScript
             }
         }
 
-        $adminPaperUrl = sprintf(
-            SERVER_PROTOCOL . "://%s.%s/administratepaper/view?id=%s",
-            $journal->getCode(),
-            DOMAIN,
-            $paper->getDocid()
-        );
+        $adminPaperUrl = self::buildAdminPaperUrl($paper->getDocid(), $journalOptions);
 
         $this->sendManagerNotifications(
             $recipients,
