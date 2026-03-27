@@ -26,7 +26,7 @@ if (empty($editors)) {
         foreach ($editors as $editor) : ?>
             <div class="editor" style="margin-bottom: 5px;">
 
-                <a class="btn btn-default" href="/user/view/userid/<?= $editor->getUid() ?>" target="_blank">
+                <a class="btn btn-default" href="<?= PREFIX_URL ?>user/view/userid/<?= $editor->getUid() ?>" target="_blank">
                     <span data-toggle="tooltip"
                           class="fas fa-address-card"
                           style="margin: 0.2rem"
