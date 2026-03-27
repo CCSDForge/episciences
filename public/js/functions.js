@@ -43,7 +43,8 @@ $(document).ready(function () {
     });
 
     // Auto-expand the panel targeted by the URL hash
-    if (window.location.hash && isValidCSSSelector(window.location.hash)) {
+    // CSS IDs cannot start with a digit — skip numeric-only hashes (e.g. #0, #17539)
+    if (window.location.hash && !/^#\d/.test(window.location.hash) && isValidCSSSelector(window.location.hash)) {
         var $targetPanel = $(window.location.hash + '.collapsable');
         if (
             $targetPanel.length &&
