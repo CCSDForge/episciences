@@ -2453,6 +2453,8 @@ return array(
     "Autoriser l'affichage des volumes vides" => "Allow displaying empty volumes",
     "Si activé, les volumes sans articles seront visibles sur le site" => "If enabled, volumes without articles will be visible on the site",
     "Autoriser la modification du titre du volume avec des articles publiés" => "Allow editing volume title with published articles",
-    "Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés" => "If enabled, a volume's title can be modified even if it contains published articles"
-
+    "Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés" => "If enabled, a volume's title can be modified even if it contains published articles",
+    "Afficher les volumes secondaires sur la page publique de l'article" => "Display secondary volumes on the public article page",
+    "Si activé, les volumes secondaires seront visibles sur la page publique de l'article" => "If enabled, secondary volumes will be visible on the public article page",
+    "Volumes secondaires: " => "Secondary volumes: "
 );
