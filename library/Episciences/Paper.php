@@ -4528,7 +4528,9 @@ class Episciences_Paper
         $year = date($yearFormat);
         if ($this->isPublished()) {
             $date = DateTime::createFromFormat("Y-m-d H:i:s", $this->getPublication_date());
-            $year = $date->format($yearFormat);
+            if ($date !== false) {
+                $year = $date->format($yearFormat);
+            }
         }
         return $year;
     }
@@ -4541,7 +4543,9 @@ class Episciences_Paper
         $month = date('m');
         if ($this->isPublished()) {
             $date = DateTime::createFromFormat("Y-m-d H:i:s", $this->getPublication_date());
-            $month = $date->format('m');
+            if ($date !== false) {
+                $month = $date->format('m');
+            }
         }
         return $month;
     }
@@ -4774,7 +4778,7 @@ class Episciences_Paper
     public function getConflicts(bool $onlyConfirmed = false, bool $sortedByAnswer = false): array
     {
 
-        if ($this->_conflicts) {
+        if (empty($this->_conflicts)) {
             $this->loadConflicts();
         }
 
