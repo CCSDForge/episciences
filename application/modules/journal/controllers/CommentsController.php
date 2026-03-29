@@ -23,7 +23,7 @@ class CommentsController extends PaperController
         if (!$this->getRequest()->isPost()) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
                 ->addMessage($this->view->translate("Invalid request method."));
-            $this->_helper->redirector->gotoUrl('/');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'index', 'action' => 'index']));
             return;
         }
 
@@ -32,7 +32,7 @@ class CommentsController extends PaperController
         if (empty($csrfTokenName)) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
                 ->addMessage($this->view->translate("Invalid or expired security token. Please try again."));
-            $this->_helper->redirector->gotoUrl('/');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'index', 'action' => 'index']));
             return;
         }
 
@@ -43,7 +43,7 @@ class CommentsController extends PaperController
         if (!Episciences_Csrf_Helper::validateToken($csrfTokenName, $csrfTokenValue)) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
                 ->addMessage($this->view->translate("Invalid or expired security token. Please try again."));
-            $this->_helper->redirector->gotoUrl('/');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'index', 'action' => 'index']));
             return;
         }
 
@@ -55,7 +55,7 @@ class CommentsController extends PaperController
         if (!is_string($file) || $file === '' || !preg_match('/^[a-zA-Z0-9._-]+$/', $file)) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
                 ->addMessage($this->view->translate("Invalid filename."));
-            $this->_helper->redirector->gotoUrl('/');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'index', 'action' => 'index']));
             return;
         }
 

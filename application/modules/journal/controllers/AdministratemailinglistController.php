@@ -14,7 +14,7 @@ class AdministratemailinglistController extends Episciences_Controller_Action
                      Episciences_Auth::isRoot();
 
         if (!$isAllowed) {
-            $this->_helper->redirector->gotoUrl('/error/deny');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'error', 'action' => 'deny']));
         }
     }
 
@@ -55,7 +55,7 @@ class AdministratemailinglistController extends Episciences_Controller_Action
             $params = $this->getRequest()->getPost();
 
             if (!Episciences_Csrf_Helper::validateToken($csrfTokenName, $params[$csrfTokenName] ?? '')) {
-                $this->_helper->redirector->gotoUrl('/error/deny');
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => 'error', 'action' => 'deny']));
                 return;
             }
 
@@ -151,7 +151,7 @@ class AdministratemailinglistController extends Episciences_Controller_Action
             $params = $this->getRequest()->getPost();
 
             if (!Episciences_Csrf_Helper::validateToken($csrfTokenName, $params[$csrfTokenName] ?? '')) {
-                $this->_helper->redirector->gotoUrl('/error/deny');
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => 'error', 'action' => 'deny']));
                 return;
             }
 
@@ -338,7 +338,7 @@ class AdministratemailinglistController extends Episciences_Controller_Action
         $params = $this->getRequest()->getPost();
 
         if (!Episciences_Csrf_Helper::validateToken('mailing_list_delete', $params['mailing_list_delete'] ?? '')) {
-            $this->_helper->redirector->gotoUrl('/error/deny');
+            $this->_helper->redirector->gotoUrl($this->url(['controller' => 'error', 'action' => 'deny']));
             return;
         }
 
