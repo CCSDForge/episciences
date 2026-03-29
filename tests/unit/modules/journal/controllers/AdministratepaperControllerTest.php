@@ -852,4 +852,299 @@ class AdministratepaperControllerTest extends TestCase
             );
         }
     }
+
+    // -----------------------------------------------------------------------
+    // updatedeadlineAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::updatedeadlineAction
+     *
+     * The assignment id ($aid) must be validated as numeric before use to
+     * prevent non-integer values from reaching the DB layer.
+     */
+    public function testUpdatedeadlineActionValidatesAidIsNumeric(): void
+    {
+        $method = $this->extractMethod('updatedeadlineAction');
+
+        $this->assertStringContainsString(
+            'is_numeric($aid)',
+            $method,
+            'updatedeadlineAction must verify $aid is numeric before looking up the assignment'
+        );
+    }
+
+    public function testUpdatedeadlineActionReturnsEarlyIfAidIsEmpty(): void
+    {
+        $method = $this->extractMethod('updatedeadlineAction');
+
+        $this->assertStringContainsString(
+            'return false',
+            $method,
+            'updatedeadlineAction must return false when $aid is invalid or missing'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // savecopyeditorsAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savecopyeditorsAction
+     *
+     * The action must check isPost() before processing any state change.
+     */
+    public function testSavecopyeditorsActionChecksIsPost(): void
+    {
+        $method = $this->extractMethod('savecopyeditorsAction');
+
+        $this->assertStringContainsString(
+            'isPost()',
+            $method,
+            'savecopyeditorsAction must check isPost() before applying changes'
+        );
+    }
+
+    public function testSavecopyeditorsActionDisablesLayout(): void
+    {
+        $method = $this->extractMethod('savecopyeditorsAction');
+
+        $this->assertStringContainsString(
+            'disableLayout',
+            $method,
+            'savecopyeditorsAction must disable layout (AJAX action)'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // savemastervolumeAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savemastervolumeAction
+     *
+     * The vid (volume id) must be cast to (int) before use.
+     */
+    public function testSavemastervolumeActionCastsVidToInt(): void
+    {
+        $method = $this->extractMethod('savemastervolumeAction');
+
+        $this->assertStringContainsString(
+            "(int)\$request->getPost('vid')",
+            $method,
+            'savemastervolumeAction must cast the vid POST parameter to (int)'
+        );
+    }
+
+    public function testSavemastervolumeActionChecksIsPost(): void
+    {
+        $method = $this->extractMethod('savemastervolumeAction');
+
+        $this->assertStringContainsString(
+            'isPost()',
+            $method,
+            'savemastervolumeAction must check isPost() before applying changes'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // saveeditorsAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::saveeditorsAction
+     *
+     * Editor UIDs from POST must be cast to int via array_map('intval', ...).
+     */
+    public function testSaveeditorsActionCastsEditorUidsToInt(): void
+    {
+        $method = $this->extractMethod('saveeditorsAction');
+
+        $this->assertStringContainsString(
+            "array_map('intval'",
+            $method,
+            'saveeditorsAction must cast submitted editor UIDs to int via array_map(intval)'
+        );
+    }
+
+    public function testSaveeditorsActionChecksIsPost(): void
+    {
+        $method = $this->extractMethod('saveeditorsAction');
+
+        $this->assertStringContainsString(
+            'isPost()',
+            $method,
+            'saveeditorsAction must verify the request is a POST'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // refreshratingAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::refreshratingAction
+     *
+     * Both docId and reviewerUid must be cast to (int) to avoid string-based
+     * DB lookups from unsanitized parameters.
+     */
+    public function testRefreshratingActionCastsIdsToInt(): void
+    {
+        $method = $this->extractMethod('refreshratingAction');
+
+        $this->assertStringContainsString(
+            "(int)\$request->getParam('id')",
+            $method,
+            'refreshratingAction must cast the id parameter to (int)'
+        );
+        $this->assertStringContainsString(
+            "(int)\$request->getParam('reviewer_uid')",
+            $method,
+            'refreshratingAction must cast the reviewer_uid parameter to (int)'
+        );
+    }
+
+    /**
+     * The action must only reset a report that is already in STATUS_COMPLETED,
+     * not any report regardless of state.
+     */
+    public function testRefreshratingActionOnlyResetsCompletedReports(): void
+    {
+        $method = $this->extractMethod('refreshratingAction');
+
+        $this->assertStringContainsString(
+            'isCompleted()',
+            $method,
+            'refreshratingAction must check isCompleted() before resetting the report status'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // savereviewerremovalAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savereviewerremovalAction
+     *
+     * The assignment id must be numeric — non-numeric values must be rejected
+     * with a JSON error response.
+     */
+    public function testSavereviewerremovalActionRejectsNonNumericAid(): void
+    {
+        $method = $this->extractMethod('savereviewerremovalAction');
+
+        $this->assertStringContainsString(
+            'is_numeric($id)',
+            $method,
+            'savereviewerremovalAction must validate that $id is numeric'
+        );
+    }
+
+    public function testSavereviewerremovalActionDisablesLayout(): void
+    {
+        $method = $this->extractMethod('savereviewerremovalAction');
+
+        $this->assertStringContainsString(
+            'disableLayout',
+            $method,
+            'savereviewerremovalAction must disable layout (AJAX action returning JSON)'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // publicationdateformAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::publicationdateformAction
+     *
+     * The docid is read from POST (form field) and must be checked for
+     * presence before use. If missing, the action returns false immediately.
+     */
+    public function testPublicationdateformActionReadsDocidFromPost(): void
+    {
+        $method = $this->extractMethod('publicationdateformAction');
+
+        $this->assertStringContainsString(
+            "getPost('docid')",
+            $method,
+            'publicationdateformAction must read docid from POST'
+        );
+    }
+
+    public function testPublicationdateformActionReturnsFalseWhenDocidMissing(): void
+    {
+        $method = $this->extractMethod('publicationdateformAction');
+
+        $this->assertStringContainsString(
+            'return false',
+            $method,
+            'publicationdateformAction must return false when docid is not provided'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // saverefusedmonitoringAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::saverefusedmonitoringAction
+     *
+     * The action reads the paper id from GET (getQuery) and processes the
+     * form data from POST. It must check isPost() before applying changes.
+     */
+    public function testSaverefusedmonitoringActionChecksIsPost(): void
+    {
+        $method = $this->extractMethod('saverefusedmonitoringAction');
+
+        $this->assertStringContainsString(
+            'isPost()',
+            $method,
+            'saverefusedmonitoringAction must check isPost() before processing form data'
+        );
+    }
+
+    public function testSaverefusedmonitoringActionReadsIdFromGet(): void
+    {
+        $method = $this->extractMethod('saverefusedmonitoringAction');
+
+        $this->assertStringContainsString(
+            "getQuery('id')",
+            $method,
+            "saverefusedmonitoringAction must read the paper id from GET via getQuery('id')"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // revisiondeadlineformAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::revisiondeadlineformAction
+     *
+     * The docid is read from POST. The action must verify the paper status
+     * before rendering the form: only papers with a pending revision request
+     * should show this form.
+     */
+    public function testRevisiondeadlineformActionReadsDocidFromPost(): void
+    {
+        $method = $this->extractMethod('revisiondeadlineformAction');
+
+        $this->assertStringContainsString(
+            "getPost('docid')",
+            $method,
+            'revisiondeadlineformAction must read docid from POST'
+        );
+    }
+
+    public function testRevisiondeadlineformActionChecksRevisionRequestedStatus(): void
+    {
+        $method = $this->extractMethod('revisiondeadlineformAction');
+
+        $this->assertStringContainsString(
+            'isRevisionRequested()',
+            $method,
+            'revisiondeadlineformAction must verify the paper has a revision-requested status before rendering the form'
+        );
+    }
 }

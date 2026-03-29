@@ -824,6 +824,10 @@ class PaperController extends PaperDefaultController
 
         $parentPathContent = scandir($parentPath);
 
+        if ($parentPathContent === false) {
+            $parentPathContent = [];
+        }
+
         foreach ($parentPathContent as $file) {
             if (!in_array($file, ['.', '..'])
                 && in_array($file, $attachments, true) &&
@@ -840,7 +844,9 @@ class PaperController extends PaperDefaultController
                 Episciences_Tools::cpFiles((array)$file, $parentPath, $mailPath, true);
             }
 
-            unlink($parentPath . $file);
+            if (is_file($parentPath . $file)) {
+                unlink($parentPath . $file);
+            }
         }
 
         $settings = ['unanswered' => true, 'type' => $commentType];
