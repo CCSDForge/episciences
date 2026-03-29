@@ -139,7 +139,11 @@ function activateDeleteButton($button, target) {
  */
 function removeRecipient($tag) {
     // hidden input where recipients list is stored
-    let suffix = $tag.parent('span').attr('id').replace('_tags', '');
+    let parentId = $tag.parent('span').attr('id');
+    if (!parentId) {
+        return;
+    }
+    let suffix = parentId.replace('_tags', '');
     let $recipients_hidden_input = $('#hidden_' + suffix);
 
     let $copy_checkbox = $('#copy');
