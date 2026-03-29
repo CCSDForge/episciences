@@ -2370,6 +2370,7 @@ class Episciences_Paper
      */
     public function filterReportsByReviewer(array $reports, $uid): array
     {
+        /** @var Episciences_Rating_Report $report */
         foreach ($reports as $id => $report) {
             if ($report->getUid() != $uid) {
                 unset($reports[$id]);
@@ -2386,6 +2387,7 @@ class Episciences_Paper
      */
     public function filterReportsByStatus(array $reports, $status): array
     {
+        /** @var Episciences_Rating_Report $report */
         foreach ($reports as $id => $report) {
             if ($report->getStatus() != $status) {
                 unset($reports[$id]);
@@ -3304,8 +3306,7 @@ class Episciences_Paper
         // fetch volume data
         if ($this->getVid()) {
             $oVolume = Episciences_VolumesManager::find($this->getVid());
-
-            if ($oVolume) {
+            if ($oVolume instanceof Episciences_Volume) {
                 $node->appendChild($dom->createElement('volumeName', $oVolume->getNameKey()));
                 $oVolume->loadSettings();
             }
@@ -3356,11 +3357,9 @@ class Episciences_Paper
         // si l'option est activée
         // et qu'il s'agit d'un volume spécial
         // et qu'on est rédacteur de l'article
-        if (
-            $oVolume &&
-            $this->getDocid() &&
+        if ($this->getDocid() &&
             $oReview->getSetting(Episciences_Review::SETTING_EDITORS_CAN_REASSIGN_ARTICLES) &&
-            $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
+            isset($oVolume) && $oVolume instanceof Episciences_Volume && $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
             array_key_exists(Episciences_Auth::getUid(), $this->getEditors(true, true))
         ) {
 
@@ -3551,6 +3550,7 @@ class Episciences_Paper
      * @param null $lang
      * @param bool $forceResult
      * @return mixed|string|null
+     * @throws Zend_Exception
      */
     public function getAbstract($lang = null, $forceResult = false)
     {
@@ -4490,7 +4490,7 @@ class Episciences_Paper
         foreach ($previousVersions as $paper) {
             $revisionDates .= (!$locale) ? date('Y-m-d', strtotime($paper->getWhen())) . '; ' : Episciences_View_Helper_Date::Date($paper->getWhen(), $locale) . '; ';
         }
-        return substr($revisionDates, 0, -2);
+        return substr($revisionDates, 0, strlen($revisionDates) - 2);
     }
 
     /**
@@ -4546,7 +4546,9 @@ class Episciences_Paper
         $year = date($yearFormat);
         if ($this->isPublished()) {
             $date = DateTime::createFromFormat("Y-m-d H:i:s", $this->getPublication_date());
-            $year = $date->format($yearFormat);
+            if ($date !== false) {
+                $year = $date->format($yearFormat);
+            }
         }
         return $year;
     }
@@ -4559,7 +4561,9 @@ class Episciences_Paper
         $month = date('m');
         if ($this->isPublished()) {
             $date = DateTime::createFromFormat("Y-m-d H:i:s", $this->getPublication_date());
-            $month = $date->format('m');
+            if ($date !== false) {
+                $month = $date->format('m');
+            }
         }
         return $month;
     }
@@ -4792,7 +4796,7 @@ class Episciences_Paper
     public function getConflicts(bool $onlyConfirmed = false, bool $sortedByAnswer = false): array
     {
 
-        if($this->_conflicts){
+        if (empty($this->_conflicts)) {
             $this->loadConflicts();
         }
 
@@ -5386,7 +5390,8 @@ class Episciences_Paper
     }
 
 
-    private function loadConflicts() : void{
+    private function loadConflicts(): void
+    {
 
         $allConflicts = Episciences_Paper_ConflictsManager::findByPaperId($this->getPaperid(), $this->getRvid());
         $this->_conflicts = $allConflicts;
@@ -5397,7 +5402,7 @@ class Episciences_Paper
     {
         if ($this->isDataSetOrSoftware()) {
 
-            if($force || !$this->_data_descriptors){
+            if ($force || !$this->_data_descriptors) {
                 $this->setDataDescriptors(DataDescriptorManager::getByDocId($this->getDocid()));
             }
         }
@@ -5413,7 +5418,8 @@ class Episciences_Paper
         return $this->getType()[self::TITLE_TYPE] === self::SOFTWARE_TYPE_TITLE;
     }
 
-    public function isDataset(): bool{
+    public function isDataset(): bool
+    {
         return
             Episciences_Repositories::isDataverse($this->getRepoid()) ||
             $this->getType()[self::TITLE_TYPE] === self::DATASET_TYPE_TITLE;
@@ -5435,7 +5441,7 @@ class Episciences_Paper
             trigger_error($e->getMessage());
         }
 
-        if(!$owner->getUid()){
+        if (!$owner->getUid()) {
             return null;
         }
 
@@ -5450,7 +5456,7 @@ class Episciences_Paper
 
     public function getMainPaperUrl(): ?string
     {
-        if($this->isTmp()){
+        if ($this->isTmp()) {
             return null;
         }
 
@@ -5500,10 +5506,11 @@ class Episciences_Paper
 
     public function canBeReplaced(): bool
     {
-        return in_array($this->getStatus(),  [self::STATUS_SUBMITTED, self::STATUS_OK_FOR_REVIEWING, self::STATUS_CE_READY_TO_PUBLISH, self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION], true);
+        return in_array($this->getStatus(), [self::STATUS_SUBMITTED, self::STATUS_OK_FOR_REVIEWING, self::STATUS_CE_READY_TO_PUBLISH, self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION], true);
     }
 
-    private function combineDocUrlLabel() : string{
+    private function combineDocUrlLabel(): string
+    {
 
         $docUrlLabel = 'Voir la page du document sur';
 
