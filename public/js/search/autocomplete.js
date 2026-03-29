@@ -5,7 +5,7 @@ $(function () {
     $('#q')
         .autocomplete({
             minLength: 1,
-            source: '/search/autocomplete',
+            source: JS_PREFIX_URL + 'search/autocomplete',
             focus: function (event, ui) {
                 $('#project').val(ui.item.label);
                 return false;
