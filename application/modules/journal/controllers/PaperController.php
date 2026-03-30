@@ -2204,8 +2204,8 @@ class PaperController extends PaperDefaultController
         $newPaper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), $statusDetails);
 
         $redirectUrl = $paper->isOwner()
-            ? 'paper/submitted'
-            : '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $newPaper->getDocid();
+            ? $this->url(['controller' => 'paper', 'action' => 'submitted'])
+            : self::buildAdminPaperUrl($newPaper->getDocid());
 
         $this->redirectWithSuccess(
             "La nouvelle version de votre article a bien été enregistrée.",
@@ -2924,6 +2924,7 @@ class PaperController extends PaperDefaultController
      * @param Episciences_Paper $paper
      * @param int|null $reviewerUid
      * @return array
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
@@ -2943,10 +2944,10 @@ class PaperController extends PaperDefaultController
                     $oLastInvitation = Episciences_User_InvitationsManager::find(['ID' => $lastArrayInvitation['INVITATION_ID']]);
 
                     if ($paper->getDocid() == $lastArrayInvitation['DOCID'] && !$oLastInvitation->hasExpired() && $oLastInvitation->getStatus() === Episciences_User_Invitation::STATUS_PENDING) {
+                        $journal = Episciences_ReviewsManager::find(RVID);
                         $message = $translator->translate("Vous avez été redirigé, car une invitation vous a été envoyé.");
-                        $url = '/reviewer/invitation/id/' . $invitations[Episciences_Auth::getUid()][0]['INVITATION_ID'];
                         $accessResult['message'] = $message;
-                        $accessResult['url'] = $url;
+                        $accessResult['url'] = $journal->getBackEndUrl() . '/reviewer/invitation/id/' . $invitations[Episciences_Auth::getUid()][0]['INVITATION_ID'];
                         return $accessResult;
                     }
                 }
@@ -2956,9 +2957,8 @@ class PaperController extends PaperDefaultController
 
             } else {
                 $message = $translator->translate("Vous avez été redirigé, car vous n'êtes pas relecteur pour cet article.");
-                $url = '/';
                 $accessResult['message'] = $message;
-                $accessResult['url'] = $url;
+                $accessResult['url'] = $this->url( ['controller' => 'index']);
             }// End not reviewer
 
         } else {
