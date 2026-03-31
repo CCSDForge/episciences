@@ -40,7 +40,7 @@ if ($isCopyEditingComment) {
     $urlSuffix = isset($comment['PCID']) ? '/' . $comment['PCID'] : '';
 } else {
     // Regular comment files or tmp files
-    $tmpUrl = '/tmp_files/' . $paperId;
+    $tmpUrl = sprintf('%stmp_files/%s', PREFIX_URL, $paperId);
     $commentUrl = sprintf('%sdocfiles/comments/%s', PREFIX_URL, $docId);
     $href = (int)$type === Episciences_CommentsManager::TYPE_REVISION_ANSWER_TMP_VERSION
         ? $tmpUrl : $commentUrl;
