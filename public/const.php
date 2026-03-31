@@ -160,7 +160,7 @@ function defineJournalConstants(string $rvCode = null): void
 
     if ($rvCode) {
 
-        // define application ur
+        // define application url
         if (!defined('APPLICATION_URL')) {
             if (getenv('RVCODE')) {
                 define('APPLICATION_URL', SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN);

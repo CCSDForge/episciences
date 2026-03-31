@@ -2192,7 +2192,7 @@ class AdministratepaperController extends PaperDefaultController
                 $this->_helper->FlashMessenger->setNamespace('success')->addMessage(
                     $this->view->translate("Vous pouvez partager cette publication")
                     . '&nbsp;<a class="btn btn-default" href="'
-                    . APPLICATION_URL . $this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]) . '#share">'
+                    . self::buildBaseUrl() . $this->url(['action' => 'view', 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'id' => $docId]) . '#share">'
                     . $this->view->translate('Partager')
                     . '</a>');
 
