@@ -198,8 +198,16 @@ function activateDeleteButton($button, target) {
  * remove recipient from hidden input
  */
 function removeRecipient($tag) {
+    if (!$tag || !$tag.length) {
+        return;
+    }
     // hidden input where recipients list is stored
-    let suffix = $tag.parent('span').attr('id').replace('_tags', '');
+    const parentId = $tag.parent('span').attr('id');
+    if (!parentId) {
+        // Unexpected DOM structure; avoid throwing in UI.
+        return;
+    }
+    let suffix = parentId.replace('_tags', '');
     const $mailForm = $tag.closest('form');
     let $recipients_hidden_input = $mailForm.length
         ? $mailForm.find('#hidden_' + suffix)

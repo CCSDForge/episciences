@@ -139,6 +139,53 @@ function select(row) {
 
 function unselect(row) {
     let uid = $(row).attr('id').replace(/[^\d]/g, '');
-    let tag = $('#' + target + '_tags .recipient-tag[data-uid="' + uid + '"]');
-    removeRecipient(tag);
+    // Prefer tags container within the active form if present
+    const formEl =
+        typeof window.__epContactsForm !== 'undefined'
+            ? window.__epContactsForm
+            : null;
+    const $scope = formEl ? $(formEl) : $(document);
+
+    let $tagsContainer = $scope.find('#' + target + '_tags');
+    if (!$tagsContainer.length) {
+        $tagsContainer = $('#' + target + '_tags');
+    }
+
+    if ($tagsContainer.length) {
+        const tag = $tagsContainer.find(
+            '.recipient-tag[data-uid="' + uid + '"]'
+        );
+        if (tag.length) {
+            removeRecipient(tag);
+        }
+        return;
+    }
+
+    // Fallback (paper status modals): remove from input[name="cc|bcc"] (semicolon-separated)
+    let user = null;
+    for (let i in all_contacts) {
+        if (all_contacts[i].uid == uid) {
+            user = all_contacts[i];
+            break;
+        }
+    }
+    const $input = $scope.find('input[name="' + target + '"]').first();
+    if (!$input.length || !user || !user.mail) {
+        return;
+    }
+
+    const mail = String(user.mail).trim().toLowerCase();
+    const parts = ($input.val() || '')
+        .toString()
+        .split(';')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+    const kept = parts.filter(p => {
+        const mm = p.match(/<([^>]+)>/);
+        const email = (mm ? mm[1] : p).trim().toLowerCase();
+        return email !== mail;
+    });
+
+    $input.val(kept.length ? kept.join('; ') + ';' : '');
 }
