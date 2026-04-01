@@ -117,6 +117,7 @@ function addRecipient(target, recipient, type) {
     // fall back to appending to the plain input field (semicolon-separated).
     if (!$tags_container.length) {
         const $input = $scope.find('input[name="' + target + '"]').first();
+        const $hidden = $scope.find('#hidden_' + target).first();
         if ($input.length) {
             const currentRaw = ($input.val() || '').toString();
             // Normalize trailing separators to avoid ";;" when users already ended with ";"
@@ -128,6 +129,27 @@ function addRecipient(target, recipient, type) {
                 ? current + ';' + toAppend + ';'
                 : toAppend + ';';
             $input.val(next);
+        }
+        // If a JSON hidden field exists (e.g. hidden_to when "to" input is disabled in ajax modal),
+        // keep server-side recipient parsing working by writing there too.
+        if ($hidden.length) {
+            const key =
+                'fallback-' +
+                target +
+                '-' +
+                (uid ? uid : Date.now().toString());
+            const recipients = $hidden.val() ? JSON.parse($hidden.val()) : [];
+            const exists =
+                uid &&
+                recipients.some(r => r && r.uid && String(r.uid) === String(uid));
+            if (!exists) {
+                recipients.push({
+                    key,
+                    value: rawValue || value,
+                    uid: uid || null,
+                });
+                $hidden.val(JSON.stringify(recipients));
+            }
         }
         return '';
     }
