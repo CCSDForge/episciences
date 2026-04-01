@@ -114,7 +114,16 @@ $(document).ready(function () {
     });
 
     $('.submit-modal').click(function () {
-        $(this).closest('.modal-content').find('form').submit();
+        const $modalContent = $(this).closest('.modal-content');
+        // Prefer submitting the visible form inside the modal body.
+        // This avoids accidentally submitting auxiliary forms injected in hidden containers
+        // (e.g. administratemail/getcontacts adds add_contacts_form inside .contacts-container).
+        const $visibleForm = $modalContent.find('.modal-body form:visible').first();
+        if ($visibleForm.length) {
+            $visibleForm.submit();
+            return;
+        }
+        $modalContent.find('form').first().submit();
     });
 
     // Initialisation du menu des rédacteurs

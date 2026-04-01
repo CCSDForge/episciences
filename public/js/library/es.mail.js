@@ -46,9 +46,20 @@ function addContacts() {
  * @returns {string} id
  */
 function addRecipient(target, recipient, type) {
-    let $tags_container = $('#' + target + '_tags');
+    // Prefer tags container within the active mail/status form if available.
+    const formEl =
+        typeof window.__epContactsForm !== 'undefined'
+            ? window.__epContactsForm
+            : null;
+    const $scope = formEl ? $(formEl) : $(document);
+
+    let $tags_container = $scope.find('#' + target + '_tags');
+    if (!$tags_container.length) {
+        $tags_container = $('#' + target + '_tags');
+    }
     let label = '';
     let value = '';
+    let rawValue = '';
     let tooltip = '';
     let style = 'unknown';
     let uid = null;
@@ -56,7 +67,8 @@ function addRecipient(target, recipient, type) {
     // recipient has been found via autocomplete
     if (type === 'known') {
         label = htmlEntities(recipient.fullname);
-        value = htmlEntities(recipient.fullname + ' <' + recipient.mail + '>');
+        rawValue = recipient.fullname + ' <' + recipient.mail + '>';
+        value = htmlEntities(rawValue);
 
         // Build tooltip securely using DOM elements
         const $tooltipDiv1 = $('<div>').addClass('white');
@@ -87,6 +99,7 @@ function addRecipient(target, recipient, type) {
     }
     // recipient has been manually inserted
     else {
+        rawValue = recipient;
         label = value = htmlEntities(recipient);
         const $tooltipDiv = $('<div>')
             .addClass('white')
@@ -99,6 +112,25 @@ function addRecipient(target, recipient, type) {
     }
 
     let tag = getTag(label, value, uid, tooltip, style);
+
+    // If the tags container doesn't exist (e.g. paper status modals),
+    // fall back to appending to the plain input field (semicolon-separated).
+    if (!$tags_container.length) {
+        const $input = $scope.find('input[name="' + target + '"]').first();
+        if ($input.length) {
+            const currentRaw = ($input.val() || '').toString();
+            // Normalize trailing separators to avoid ";;" when users already ended with ";"
+            const current = currentRaw.replace(/\s*;+\s*$/, '').trimEnd();
+            // IMPORTANT: write unescaped value into input fields; HTML entities (e.g. &gt;) end with ';'
+            // and look like duplicated separators in raw text.
+            const toAppend = rawValue || value;
+            const next = current
+                ? current + ';' + toAppend + ';'
+                : toAppend + ';';
+            $input.val(next);
+        }
+        return '';
+    }
 
     // insert tag
     $tags_container.append(tag);
@@ -116,8 +148,14 @@ function addRecipient(target, recipient, type) {
         .find('.remove-recipient');
     activateDeleteButton($button, target);
 
-    // add recipient to hidden input
-    addUser('#hidden_' + target, id, value, uid);
+    // add recipient to hidden input (if the form uses JSON hidden fields)
+    let $hidden = $scope.find('#hidden_' + target);
+    if (!$hidden.length) {
+        $hidden = $('#hidden_' + target);
+    }
+    if ($hidden.length) {
+        addUser($hidden, id, value, uid);
+    }
 
     return id;
 }
@@ -140,11 +178,17 @@ function activateDeleteButton($button, target) {
 function removeRecipient($tag) {
     // hidden input where recipients list is stored
     let suffix = $tag.parent('span').attr('id').replace('_tags', '');
-    let $recipients_hidden_input = $('#hidden_' + suffix);
+    const $mailForm = $tag.closest('form');
+    let $recipients_hidden_input = $mailForm.length
+        ? $mailForm.find('#hidden_' + suffix)
+        : $();
+    if (!$recipients_hidden_input.length) {
+        $recipients_hidden_input = $('#hidden_' + suffix);
+    }
 
     let $copy_checkbox = $('#copy');
 
-    let recipients = JSON.parse($recipients_hidden_input.val());
+    let recipients = JSON.parse($recipients_hidden_input.val() || '[]');
     for (let i in recipients) {
         if (recipients[i].key === $tag.attr('id')) {
             recipients.splice(i, 1);
@@ -166,16 +210,17 @@ function removeRecipient($tag) {
     }
 }
 
-// add recipient to recipients hidden input
-function addUser(input, key, value, uid) {
+// add recipient to recipients hidden input ($field: selector string or jQuery)
+function addUser($field, key, value, uid) {
     uid = uid || null;
+    const $input = $field instanceof jQuery ? $field : $($field);
     let recipients = [];
-    if ($(input).val()) {
-        recipients = JSON.parse($(input).val());
+    if ($input.val()) {
+        recipients = JSON.parse($input.val());
     }
     recipients.push({ key: key, value: value, uid: uid });
 
-    $(input).val(JSON.stringify(recipients));
+    $input.val(JSON.stringify(recipients));
 }
 
 // generate tag (html)

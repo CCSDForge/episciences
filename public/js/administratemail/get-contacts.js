@@ -6,8 +6,6 @@ let $contact_type_dropdown;
  *
  */
 function initGetContacts() {
-    console.log('executed initGetContacts');
-
     $contact_list = $('#contact-list');
     $contacts = $contact_list.find('tr');
     $contact_type_dropdown = $('#contact-type-dropdown');
@@ -71,7 +69,7 @@ function filterTable(input, elements) {
 
 // when a contact is clicked, it is either added or removed
 function initList() {
-    $contacts.on('click', function () {
+    $contacts.off('click.epContacts').on('click.epContacts', function () {
         let action = $(this).hasClass('selected') ? 'remove' : 'add';
         if (action === 'add') {
             select($(this));

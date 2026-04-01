@@ -2,6 +2,45 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle all .show_contacts_button links across all forms
     const contactButtons = document.querySelectorAll('.show_contacts_button');
 
+    // Intercept .submit-modal clicks when contacts list is open (capture phase)
+    document.addEventListener(
+        'click',
+        evt => {
+            const submitBtn = evt.target.closest
+                ? evt.target.closest('.submit-modal')
+                : null;
+            if (!submitBtn) return;
+
+            const modalBody = submitBtn.closest('.modal-content')?.querySelector(
+                '.modal-body'
+            );
+            if (!modalBody) return;
+
+            const contactsContainer = modalBody.querySelector(
+                '.contacts-container'
+            );
+            const form = modalBody.querySelector('form');
+            if (!contactsContainer || !form) return;
+
+            const contactsOpen =
+                contactsContainer.style.display !== 'none' &&
+                form.style.display === 'none';
+
+            if (contactsOpen) {
+                evt.preventDefault();
+                evt.stopImmediatePropagation();
+                contactsContainer.style.display = 'none';
+                form.style.display = 'block';
+                // Restore required fields decorators
+                const requiredFields = modalBody.querySelectorAll(
+                    '.ccsd_form_required'
+                );
+                requiredFields.forEach(el => (el.style.display = ''));
+            }
+        },
+        true
+    );
+
     contactButtons.forEach(button => {
         button.addEventListener('click', async e => {
             e.preventDefault();
@@ -24,6 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Store form reference for addRecipient() in paper-status modals
+            window.__epContactsForm = form;
+
             // Hide the form
             form.style.display = 'none';
 
@@ -35,6 +77,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
             contactsContainer.style.display = 'block';
             contactsContainer.innerHTML = getLoader(); // OK: getLoader() returns static HTML
+
+            // Override submit button: return to form when contacts list is open
+            const modalContent = modalBody.closest('.modal-content');
+            const submitButton = modalContent
+                ? modalContent.querySelector('.submit-modal')
+                : null;
+            if (submitButton && !submitButton.dataset.epContactsBound) {
+                submitButton.dataset.epContactsBound = 'true';
+                submitButton.dataset.epContactsOriginalText =
+                    submitButton.textContent || '';
+                submitButton.textContent =
+                    submitButton.getAttribute('data-contacts-text') || 'Submit';
+                submitButton.addEventListener('click', evt => {
+                    if (
+                        contactsContainer.style.display !== 'none' &&
+                        form.style.display === 'none'
+                    ) {
+                        evt.preventDefault();
+                        contactsContainer.style.display = 'none';
+                        form.style.display = 'block';
+                        requiredFields.forEach(el => (el.style.display = ''));
+                        // Restore button label for normal submit flow
+                        const originalText =
+                            submitButton.dataset.epContactsOriginalText;
+                        if (originalText) {
+                            submitButton.textContent = originalText;
+                        }
+                    }
+                });
+            }
 
             try {
                 const response = await fetch(
