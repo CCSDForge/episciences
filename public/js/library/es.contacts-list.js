@@ -2,6 +2,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle all .show_contacts_button links across all forms
     const contactButtons = document.querySelectorAll('.show_contacts_button');
 
+    function ensureGetContactsCssLoaded() {
+        // When getcontacts.phtml is injected via sanitizeHTML (DOMPurify),
+        // <link> tags may be removed, resulting in an unstyled list (no row lines / no blue selection).
+        // Load the stylesheet explicitly once.
+        const id = 'ep-get-contacts-css';
+        if (document.getElementById(id)) return;
+        const link = document.createElement('link');
+        link.id = id;
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = '/css/administratemail/get-contacts.css';
+        document.head.appendChild(link);
+    }
+
     // Intercept .submit-modal clicks when contacts list is open (capture phase)
     document.addEventListener(
         'click',
@@ -77,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             contactsContainer.style.display = 'block';
             contactsContainer.innerHTML = getLoader(); // OK: getLoader() returns static HTML
+            ensureGetContactsCssLoaded();
 
             // Override submit button: return to form when contacts list is open
             const modalContent = modalBody.closest('.modal-content');
