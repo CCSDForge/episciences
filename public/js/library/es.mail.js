@@ -173,7 +173,6 @@ function addRecipient(target, recipient, type) {
     }
     // recipient has been manually inserted
     else {
-        rawValue = recipient;
         label = value = htmlEntities(recipient);
         const $tooltipDiv = $('<div>')
             .addClass('white')
@@ -187,25 +186,18 @@ function addRecipient(target, recipient, type) {
 
     let tag = getTag(label, value, uid, tooltip, style);
 
-    // If the tags container doesn't exist (e.g. paper status modals),
-    // fall back to appending to the plain input field (semicolon-separated).
+    // Fallback for fields without tags container (e.g. disabled "to" field in modals).
+    // Write to plain input (semicolon-separated) and hidden JSON field.
     if (!$tags_container.length) {
         const $input = epFindRecipientTextInput($scope, formEl, target);
         const $hidden = $scope.find('#hidden_' + target).first();
         if ($input.length) {
             const currentRaw = ($input.val() || '').toString();
-            // Normalize trailing separators to avoid ";;" when users already ended with ";"
             const current = currentRaw.replace(/\s*;+\s*$/, '').trimEnd();
-            // IMPORTANT: write unescaped value into input fields; HTML entities (e.g. &gt;) end with ';'
-            // and look like duplicated separators in raw text.
             const toAppend = rawValue || value;
-            const next = current
-                ? current + ';' + toAppend + ';'
-                : toAppend + ';';
+            const next = current ? current + '; ' + toAppend : toAppend;
             $input.val(next);
         }
-        // If a JSON hidden field exists (e.g. hidden_to when "to" input is disabled in ajax modal),
-        // keep server-side recipient parsing working by writing there too.
         if ($hidden.length) {
             const key =
                 'fallback-' +
