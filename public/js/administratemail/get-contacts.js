@@ -50,6 +50,23 @@ function initGetContacts() {
     });
 }
 
+function epResolveTagsContainer(targetField) {
+    const t = targetField !== undefined ? targetField : target;
+    const formEl =
+        typeof window.__epContactsForm !== 'undefined'
+            ? window.__epContactsForm
+            : null;
+    const $scope = formEl ? $(formEl) : $(document);
+    let $c = $scope.find('.ep-recipient-tags.ep-target-' + t);
+    if (!$c.length) {
+        $c = $scope.find('#' + t + '_tags');
+    }
+    if (!$c.length) {
+        $c = $('#' + t + '_tags');
+    }
+    return $c;
+}
+
 function filterTable(input, elements) {
     var query = stripAccents($(input).val());
     var $elements = $(elements);
@@ -114,7 +131,7 @@ function showList($li) {
     initList();
 
     // (re)selection des contacts déjà ajoutés, dans la liste nouvellement chargée
-    $('#' + target + '_tags')
+    epResolveTagsContainer(target)
         .find('.recipient-tag')
         .each(function () {
             $('#contact_' + $(this).data('uid')).addClass('selected');
@@ -130,11 +147,16 @@ function select(row) {
         }
     }
     let tagId = addRecipient(target, user, 'known');
-    $('#' + tagId)
-        .find('.remove-recipient')
-        .on('click', function () {
-            $('#contact_' + uid).removeClass('selected');
-        });
+    if (tagId) {
+        const tagEl = document.getElementById(tagId);
+        if (tagEl) {
+            $(tagEl)
+                .find('.remove-recipient')
+                .on('click', function () {
+                    $('#contact_' + uid).removeClass('selected');
+                });
+        }
+    }
 }
 
 function unselect(row) {
@@ -146,7 +168,10 @@ function unselect(row) {
             : null;
     const $scope = formEl ? $(formEl) : $(document);
 
-    let $tagsContainer = $scope.find('#' + target + '_tags');
+    let $tagsContainer = $scope.find('.ep-recipient-tags.ep-target-' + target);
+    if (!$tagsContainer.length) {
+        $tagsContainer = $scope.find('#' + target + '_tags');
+    }
     if (!$tagsContainer.length) {
         $tagsContainer = $('#' + target + '_tags');
     }
@@ -169,7 +194,11 @@ function unselect(row) {
             break;
         }
     }
-    const $input = $scope.find('input[name="' + target + '"]').first();
+    const formNode = formEl || null;
+    const $input =
+        typeof epFindRecipientTextInput === 'function'
+            ? epFindRecipientTextInput($scope, formNode, target)
+            : $scope.find('input[name="' + target + '"]').first();
     if (!$input.length || !user || !user.mail) {
         return;
     }

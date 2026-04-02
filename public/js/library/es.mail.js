@@ -1,6 +1,53 @@
 var $modal_box;
 var in_modal;
+
+/**
+ * Paper status modals: render initial CC/BCC tags from hidden_* JSON set server-side.
+ */
+function initPaperModalRecipientTagsFromHidden() {
+    document.querySelectorAll('form[id] .ep-recipient-tags').forEach(span => {
+        const form = span.closest('form');
+        if (!form || !form.id) {
+            return;
+        }
+        if (span.querySelector('.recipient-tag')) {
+            return;
+        }
+        let target = null;
+        if (span.classList.contains('ep-target-cc')) {
+            target = 'cc';
+        } else if (span.classList.contains('ep-target-bcc')) {
+            target = 'bcc';
+        }
+        if (!target) {
+            return;
+        }
+        const hid = form.querySelector('#' + form.id + '-hidden_' + target);
+        if (!hid || !hid.value) {
+            return;
+        }
+        let arr;
+        try {
+            arr = JSON.parse(hid.value);
+        } catch (e) {
+            return;
+        }
+        if (!Array.isArray(arr) || !arr.length) {
+            return;
+        }
+        hid.value = '[]';
+        window.__epContactsForm = form;
+        arr.forEach(r => {
+            if (r && r.value) {
+                addRecipient(target, r.value, 'else');
+            }
+        });
+        delete window.__epContactsForm;
+    });
+}
+
 $(function () {
+    initPaperModalRecipientTagsFromHidden();
     $('a#modal-contributor').click(function () {
         waitForElm('input#coAuthorsInfo').then(elm => {
             $('input#coAuthorsInfo').each(function () {
@@ -9,6 +56,30 @@ $(function () {
         });
     });
 });
+
+/**
+ * Find CC/BCC text input in paper modals: name "cc", Zend subform "askEditors[cc]",
+ * or id "{formId}-cc" (e.g. ask-other-editors-form-cc).
+ */
+function epFindRecipientTextInput($scope, formEl, target) {
+    const fid = formEl && formEl.id ? formEl.id : '';
+    if (fid) {
+        const byId = document.getElementById(fid + '-' + target);
+        if (byId && byId.tagName && byId.tagName.toLowerCase() === 'input') {
+            return $(byId);
+        }
+    }
+    let $i = $scope.find('input[name="' + target + '"]');
+    if ($i.length) {
+        return $i.first();
+    }
+    const suffix = '[' + target + ']';
+    $i = $scope.find('input').filter(function () {
+        const n = (this.getAttribute('name') || this.name || '').toString();
+        return n === target || n.endsWith(suffix);
+    });
+    return $i.first();
+}
 
 function addContacts() {
     let added_contacts = JSON.parse($('#hidden_added_contacts').val() || '[]');
@@ -53,7 +124,10 @@ function addRecipient(target, recipient, type) {
             : null;
     const $scope = formEl ? $(formEl) : $(document);
 
-    let $tags_container = $scope.find('#' + target + '_tags');
+    let $tags_container = $scope.find('.ep-recipient-tags.ep-target-' + target);
+    if (!$tags_container.length) {
+        $tags_container = $scope.find('#' + target + '_tags');
+    }
     if (!$tags_container.length) {
         $tags_container = $('#' + target + '_tags');
     }
@@ -116,7 +190,7 @@ function addRecipient(target, recipient, type) {
     // If the tags container doesn't exist (e.g. paper status modals),
     // fall back to appending to the plain input field (semicolon-separated).
     if (!$tags_container.length) {
-        const $input = $scope.find('input[name="' + target + '"]').first();
+        const $input = epFindRecipientTextInput($scope, formEl, target);
         const $hidden = $scope.find('#hidden_' + target).first();
         if ($input.length) {
             const currentRaw = ($input.val() || '').toString();
@@ -141,7 +215,9 @@ function addRecipient(target, recipient, type) {
             const recipients = $hidden.val() ? JSON.parse($hidden.val()) : [];
             const exists =
                 uid &&
-                recipients.some(r => r && r.uid && String(r.uid) === String(uid));
+                recipients.some(
+                    r => r && r.uid && String(r.uid) === String(uid)
+                );
             if (!exists) {
                 recipients.push({
                     key,
@@ -171,7 +247,13 @@ function addRecipient(target, recipient, type) {
     activateDeleteButton($button, target);
 
     // add recipient to hidden input (if the form uses JSON hidden fields)
-    let $hidden = $scope.find('#hidden_' + target);
+    let $hidden = $();
+    if (formEl && formEl.id) {
+        $hidden = $scope.find('#' + formEl.id + '-hidden_' + target);
+    }
+    if (!$hidden.length) {
+        $hidden = $scope.find('input[name="hidden_' + target + '"]');
+    }
     if (!$hidden.length) {
         $hidden = $('#hidden_' + target);
     }
@@ -184,10 +266,17 @@ function addRecipient(target, recipient, type) {
 
 function activateDeleteButton($button, target) {
     $button.on('click', function () {
-        removeRecipient($(this).parent('.recipient-tag'));
-        if ($('#' + target).length) {
+        const $tag = $(this).parent('.recipient-tag');
+        const $form = $tag.closest('form');
+        const formNode = $form.length ? $form[0] : null;
+        removeRecipient($tag);
+        const $inp = $form.length
+            ? epFindRecipientTextInput($form, formNode, target)
+            : $();
+        if ($inp.length) {
+            $inp.focus();
+        } else if ($('#' + target).length) {
             $('#' + target).focus();
-            //resizeInput('#' + target, 'remove');
         }
     });
 }
@@ -201,19 +290,50 @@ function removeRecipient($tag) {
     if (!$tag || !$tag.length) {
         return;
     }
-    // hidden input where recipients list is stored
-    const parentId = $tag.parent('span').attr('id');
-    if (!parentId) {
-        // Unexpected DOM structure; avoid throwing in UI.
+    const $parentSpan = $tag.parent('span');
+    if (!$parentSpan.length) {
         return;
     }
-    let suffix = parentId.replace('_tags', '');
-    const $mailForm = $tag.closest('form');
-    let $recipients_hidden_input = $mailForm.length
-        ? $mailForm.find('#hidden_' + suffix)
-        : $();
+    const mailFormEl = $tag.closest('form').get(0);
+    let $recipients_hidden_input = $();
+    let suffix = '';
+
+    if (
+        $parentSpan.hasClass('ep-recipient-tags') &&
+        mailFormEl &&
+        mailFormEl.id
+    ) {
+        let scopedTarget = null;
+        if ($parentSpan.hasClass('ep-target-cc')) {
+            scopedTarget = 'cc';
+        } else if ($parentSpan.hasClass('ep-target-bcc')) {
+            scopedTarget = 'bcc';
+        }
+        if (scopedTarget) {
+            $recipients_hidden_input = $(mailFormEl).find(
+                '#' + mailFormEl.id + '-hidden_' + scopedTarget
+            );
+            suffix = scopedTarget;
+        }
+    }
+
     if (!$recipients_hidden_input.length) {
-        $recipients_hidden_input = $('#hidden_' + suffix);
+        const parentId = $parentSpan.attr('id');
+        if (!parentId) {
+            return;
+        }
+        suffix = parentId.replace('_tags', '');
+        const $mailForm = $tag.closest('form');
+        $recipients_hidden_input = $mailForm.length
+            ? $mailForm.find('#hidden_' + suffix)
+            : $();
+        if (!$recipients_hidden_input.length) {
+            $recipients_hidden_input = $('#hidden_' + suffix);
+        }
+    }
+
+    if (!$recipients_hidden_input.length) {
+        return;
     }
 
     let $copy_checkbox = $('#copy');

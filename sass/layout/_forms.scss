@@ -224,7 +224,8 @@ ul.errors li:first-child:nth-last-child(2) {
   }
 }
 
-#to_tags, #cc_tags, #bcc_tags {
+#to_tags, #cc_tags, #bcc_tags,
+span.ep-recipient-tags {
   float: left;
 }
 

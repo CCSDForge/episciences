@@ -6,6 +6,8 @@ describe('es.contacts-list', function () {
     let mockGetLoader;
 
     beforeEach(function () {
+        delete window.__epContactsListBound;
+
         // Load the actual JavaScript file
         contactsListJs = fs.readFileSync(
             path.join(__dirname, '../../public/js/library/es.contacts-list.js'),
@@ -81,15 +83,12 @@ describe('es.contacts-list', function () {
             })
         );
 
-        // Execute the script to bind event listeners
+        // Execute the script to bind event listeners (delegated on document; no DOMContentLoaded)
         eval(contactsListJs);
-
-        // Trigger DOMContentLoaded manually
-        const event = new Event('DOMContentLoaded');
-        document.dispatchEvent(event);
     });
 
     afterEach(function () {
+        delete window.__epContactsListBound;
         jest.clearAllMocks();
         delete global.getLoader;
         delete global.fetch;
@@ -272,13 +271,10 @@ describe('es.contacts-list', function () {
 
     describe('Edge cases', function () {
         it('should do nothing if modal-body is not found', function () {
-            document.body.innerHTML = '<div></div>';
-
-            // Re-execute script with missing element
-            const event = new Event('DOMContentLoaded');
-            document.dispatchEvent(event);
-
-            // Should not throw error
+            document.body.innerHTML = `
+                <a class="show_contacts_button" href="/administratemail/getcontacts?target=cc">CC</a>
+            `;
+            document.querySelector('.show_contacts_button').click();
             expect(global.fetch).not.toHaveBeenCalled();
         });
 
@@ -292,9 +288,6 @@ describe('es.contacts-list', function () {
                     <div class="contacts-container"></div>
                 </div>
             `;
-
-            const event = new Event('DOMContentLoaded');
-            document.dispatchEvent(event);
 
             const button = document.querySelector('.show_contacts_button');
             button.click();
@@ -314,9 +307,6 @@ describe('es.contacts-list', function () {
                     </form>
                 </div>
             `;
-
-            const event = new Event('DOMContentLoaded');
-            document.dispatchEvent(event);
 
             const button = document.querySelector('.show_contacts_button');
             button.click();

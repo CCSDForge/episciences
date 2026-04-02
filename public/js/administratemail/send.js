@@ -74,9 +74,13 @@ $(document).ready(function () {
 
     $('.show_contacts_button').on('click', function (e) {
         e.preventDefault();
+        e.stopPropagation(); // Prevent es.contacts-list.js from handling this
         // fetch and parse button url
         let oUrl = $.url($(this).attr('href'));
         let urlParams = oUrl.param();
+
+        // Set form reference for addRecipient() to find tags containers
+        window.__epContactsForm = document.getElementById('send_form');
 
         if (in_modal) {
             // fetch and display contacts

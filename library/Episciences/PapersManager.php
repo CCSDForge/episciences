@@ -1607,6 +1607,80 @@ class Episciences_PapersManager
     }
 
     /**
+     * Build JSON for hidden_cc / hidden_bcc (same shape as public/js/library/es.mail.js addUser).
+     */
+    private static function recipientHiddenJsonFromSemicolonString(string $semicolonMails): string
+    {
+        $semicolonMails = trim($semicolonMails);
+        if ($semicolonMails === '') {
+            return '[]';
+        }
+        $parts = array_filter(array_map('trim', explode(';', $semicolonMails)));
+        $out = [];
+        foreach ($parts as $i => $p) {
+            if ($p === '') {
+                continue;
+            }
+            $out[] = [
+                'key' => 'paper-modal-init-' . $i,
+                'value' => $p,
+                'uid' => null,
+            ];
+        }
+
+        return json_encode($out, JSON_UNESCAPED_UNICODE);
+    }
+
+    private static function applyRecipientTagDecorators(\Zend_Form_Element $element, string $formId, string $field): void
+    {
+        $tagsId = $formId . '-' . $field . '-tags';
+        $decorators = $element->getDecorators();
+        $element->clearDecorators()
+            ->addDecorator(['openDiv' => 'HtmlTag'], [
+                'tag' => 'span',
+                'id' => $tagsId,
+                'class' => 'ep-recipient-tags ep-target-' . $field,
+                'placement' => 'APPEND',
+                'openOnly' => true,
+            ])
+            ->addDecorator(['closeDiv' => 'HtmlTag'], [
+                'tag' => 'span',
+                'placement' => 'APPEND',
+                'closeOnly' => true,
+            ])
+            ->addDecorators($decorators);
+    }
+
+    /**
+     * Tag containers + JSON hiddens for CC/BCC (aligned with administrate mail UI).
+     *
+     * @param Ccsd_Form|Zend_Form_SubForm $form Form or SubForm containing cc/bcc elements
+     * @param Ccsd_Form|null $hiddenFieldsForm Form to add hidden fields to (defaults to $form)
+     * @throws Zend_Form_Exception
+     */
+    private static function addMailModalCcBccWithTags(
+        $form,
+        string $formId,
+        string $ccDefaults,
+        string $bccDefaults,
+        ?Ccsd_Form $hiddenFieldsForm = null
+    ): void {
+        $targetForm = $hiddenFieldsForm ?? $form;
+        foreach (['cc' => $ccDefaults, 'bcc' => $bccDefaults] as $field => $defaults) {
+            $el = $form->getElement($field);
+            if (!$el) {
+                continue;
+            }
+            self::applyRecipientTagDecorators($el, $formId, $field);
+            $targetForm->addElement('hidden', 'hidden_' . $field, [
+                'id' => $formId . '-hidden_' . $field,
+                'value' => self::recipientHiddenJsonFromSemicolonString($defaults),
+            ]);
+            $el->setValue('');
+        }
+    }
+
+    /**
      * @param $default
      * @return Ccsd_Form
      * @throws Zend_Form_Exception
@@ -1663,6 +1737,8 @@ class Episciences_PapersManager
             'id' => $formId . '-bcc',
             'class' => 'autocomplete'
         ]);
+
+        self::addMailModalCcBccWithTags($form, $formId, $existingMails, '');
 
         // from
         $form->addElement('text', 'from', [
@@ -1760,6 +1836,8 @@ class Episciences_PapersManager
             'id' => $formId . '-bcc',
             'class' => 'autocomplete'
         ]);
+
+        self::addMailModalCcBccWithTags($form, $formId, $existingMails, '');
 
         // from
         $form->addElement('text', 'from', [
@@ -1867,6 +1945,8 @@ class Episciences_PapersManager
             'value' => $bccVal,
             'class' => 'autocomplete'
         ]);
+
+        self::addMailModalCcBccWithTags($form, $formId, $existingMails, $bccVal);
 
         // from
         $form->addElement('text', 'from', [
@@ -2078,12 +2158,15 @@ class Episciences_PapersManager
         ]);
 
         // bcc
+        $bccDefault = Episciences_Review::forYourInformation($docId);
         $form->addElement('text', 'bcc', [
             'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
             'id' => $formId . '-bcc',
-            'value' => Episciences_Review::forYourInformation($docId),
+            'value' => $bccDefault,
             'class' => 'autocomplete'
         ]);
+
+        self::addMailModalCcBccWithTags($form, $formId, $existingMails, $bccDefault);
 
         // from
         $form->addElement('text', 'from', [
@@ -3127,23 +3210,34 @@ class Episciences_PapersManager
      */
     public static function getReviewFormattingDeposedForm(array $default): \Zend_Form
     {
-        $form = self::getModalPaperStatusCommonForm($default, 'reviewFormattingDeposed');
-        $form->setAttrib('id', 'review-formatting-deposed-form');
+        $form = self::getModalPaperStatusCommonForm(
+            $default,
+            'reviewFormattingDeposed',
+            'review-formatting-deposed-form'
+        );
         $form->setAction('/administratepaper/reviewformattingdeposed/id/' . $default['id']);
         return $form;
     }
 
     /**
      * @param array $default
-     * @param string $prefix
+     * @param string $prefix element id prefix (e.g. authorSourcesRequest-to)
+     * @param string $formElementId HTML id on &lt;form&gt; (used for CC/BCC tag containers and hidden_* fields)
      * @param bool $displayDeadlineElement
      * @return Zend_Form
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
-    private static function getModalPaperStatusCommonForm(array $default, string $prefix, bool $displayDeadlineElement = false): \Zend_Form
-    {
-        $form = new Ccsd_Form(['class' => 'form-horizontal']);
+    private static function getModalPaperStatusCommonForm(
+        array $default,
+        string $prefix,
+        string $formElementId,
+        bool $displayDeadlineElement = false
+    ): \Zend_Form {
+        $form = new Ccsd_Form([
+            'class' => 'form-horizontal',
+            'id' => $formElementId,
+        ]);
         $subjectStr = 'Subject';
         $messageStr = 'Message';
 
@@ -3170,10 +3264,23 @@ class Episciences_PapersManager
         if (!empty($default['coAuthor'])) {
             $existingMails = self::getCoAuthorsMails($default['coAuthor']);
         }
-        $form->addElement('text', 'cc', ['label' => 'CC', 'id' => $prefix . '-cc', 'value' => $existingMails]);
+        $translator = Zend_Registry::get('Zend_Translate');
+        $contactsTitle = $translator->translate('Ajouter des destinataires');
+        $form->addElement('text', 'cc', [
+            'label' => '<a class="show_contacts_button" title="' . $contactsTitle . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'id' => $prefix . '-cc',
+            'value' => $existingMails,
+            'class' => 'autocomplete',
+        ]);
 
         // bcc
-        $form->addElement('text', 'bcc', ['label' => 'BCC', 'id' => $prefix . '-bcc']);
+        $form->addElement('text', 'bcc', [
+            'label' => '<a class="show_contacts_button" title="' . $contactsTitle . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'id' => $prefix . '-bcc',
+            'class' => 'autocomplete',
+        ]);
+
+        self::addMailModalCcBccWithTags($form, $formElementId, $existingMails, '');
 
         // from
         $form->addElement('text', 'from', [
@@ -3235,8 +3342,11 @@ class Episciences_PapersManager
      */
     public static function getCeAcceptFinalVersionForm(array $default): \Zend_Form
     {
-        $form = self::getModalPaperStatusCommonForm($default, 'ceAcceptFinalVersionRequest');
-        $form->setAttrib('id', 'ready-to-publish-form');
+        $form = self::getModalPaperStatusCommonForm(
+            $default,
+            'ceAcceptFinalVersionRequest',
+            'ready-to-publish-form'
+        );
         $form->setAction('/administratepaper/copyeditingacceptfinalversion/id/' . $default['id']);
         return $form;
     }
@@ -3251,8 +3361,11 @@ class Episciences_PapersManager
     public static function getWaitingForAuthorSourcesForm(array $default): \Zend_Form
     {
 
-        $form = self::getModalPaperStatusCommonForm($default, 'authorSourcesRequest');
-        $form->setAttrib('id', 'waiting-for-author-sources-form');
+        $form = self::getModalPaperStatusCommonForm(
+            $default,
+            'authorSourcesRequest',
+            'waiting-for-author-sources-form'
+        );
         $form->setAction('/administratepaper/waitingforauthorsources/id/' . $default['id']);
 
         return $form;
@@ -3268,8 +3381,11 @@ class Episciences_PapersManager
     public static function getWaitingForAuthorFormatting(array $default): \Zend_Form
     {
 
-        $form = self::getModalPaperStatusCommonForm($default, 'authorFormattingRequest');
-        $form->setAttrib('id', 'waiting-for-author-formatting-form');
+        $form = self::getModalPaperStatusCommonForm(
+            $default,
+            'authorFormattingRequest',
+            'waiting-for-author-formatting-form'
+        );
         $form->setAction('/administratepaper/waitingforauthorformatting/id/' . $default['id']);
         return $form;
     }
@@ -3285,8 +3401,7 @@ class Episciences_PapersManager
         $type = 'acceptedAskAuthorsFinalVersion';
         $formId = $type . '-form';
         $formAction = '/administratepaper/acceptedaskauhorfinalversion/id/' . $default['id'] . '/type/' . $type;
-        $form = self::getModalPaperStatusCommonForm($default, $type, true);
-        $form->setAttrib('id', $formId);
+        $form = self::getModalPaperStatusCommonForm($default, $type, $formId, true);
         $form->setAction($formAction);
         return $form;
     }
@@ -3301,8 +3416,7 @@ class Episciences_PapersManager
     {
         $formId = 'accepted-ask-author-validation-form';
         $formAction = '/administratepaper/acceptedaskauthorvalidation/id/' . $default['id'];
-        $form = self::getModalPaperStatusCommonForm($default, 'acceptedAskAuthorValidation');
-        $form->setAttrib('id', $formId);
+        $form = self::getModalPaperStatusCommonForm($default, 'acceptedAskAuthorValidation', $formId);
         $form->setAction($formAction);
         return $form;
     }
