@@ -369,6 +369,7 @@ $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
 
+$this->jQuery()->addJavascriptFile("/js/vendor/jquery.ui.autocomplete.html.js");
 $this->jQuery()->addJavascriptFile('/js/library/es.mail.js');
 // Security: DOMPurify for XSS prevention (needed by es.contacts-list.js)
 $this->jQuery()->addJavascriptFile("https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js");
@@ -378,7 +379,6 @@ $this->jQuery()->addJavascriptFile('/js/administratepaper/view.js');
 $this->jQuery()->addJavascriptFile('/js/components/collapsible-message.js');
 
 $this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
-$this->jQuery()->addJavascriptFile("/js/vendor/jquery.ui.autocomplete.html.js");
 $this->jQuery()->addJavascriptFile('/js/autocomplete-utils.js');
 $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
 $this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');

@@ -1,6 +1,35 @@
 var $modal_box;
 var in_modal;
 
+// Same bridge as administratemail/send.js so the renderItem option is honored (htmlLabel layout).
+(function ($) {
+    if (!$ || !$.ui || !$.ui.autocomplete) {
+        return;
+    }
+    if (window.__epAutocompleteRenderItemBridge) {
+        return;
+    }
+    window.__epAutocompleteRenderItemBridge = true;
+    $.widget('ui.autocomplete', $.ui.autocomplete, {
+        options: {
+            renderItem: null,
+            renderMenu: null,
+        },
+        _renderItem: function (ul, item) {
+            if ($.isFunction(this.options.renderItem)) {
+                return this.options.renderItem(ul, item);
+            }
+            return this._super(ul, item);
+        },
+        _renderMenu: function (ul, items) {
+            if ($.isFunction(this.options.renderMenu)) {
+                this.options.renderMenu(ul, items);
+            }
+            this._super(ul, items);
+        },
+    });
+})(typeof jQuery !== 'undefined' ? jQuery : null);
+
 /**
  * Paper status modals: render initial CC/BCC tags from hidden_* JSON set server-side.
  */

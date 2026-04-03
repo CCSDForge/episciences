@@ -314,5 +314,29 @@ describe('es.contacts-list', function () {
             // Should not call fetch when container is missing
             expect(global.fetch).not.toHaveBeenCalled();
         });
+
+        it('enables footer submit while contacts picker is open (deadline must not block merge)', function () {
+            document.body.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <form id="revision-form">
+                            <a class="show_contacts_button"
+                               href="/administratemail/getcontacts?target=cc">CC</a>
+                        </form>
+                        <div class="contacts-container" style="display: none;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="submit-modal" disabled>Valider</button>
+                    </div>
+                </div>
+            `;
+
+            const submitBtn = document.querySelector('.submit-modal');
+            expect(submitBtn.disabled).toBe(true);
+
+            document.querySelector('.show_contacts_button').click();
+
+            expect(submitBtn.disabled).toBe(false);
+        });
     });
 });

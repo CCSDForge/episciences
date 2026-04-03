@@ -15,6 +15,7 @@ $.widget('ui.autocomplete', $.ui.autocomplete, {
         this._super(ul, items);
     },
 });
+window.__epAutocompleteRenderItemBridge = true;
 
 function initModal() {
     if (!modalStructureExists()) {
