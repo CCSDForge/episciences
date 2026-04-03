@@ -492,8 +492,33 @@ filterList.clearCache = function () {
     if (filterList._textCache) filterList._textCache.clear();
 };
 
-function scrollTo(target, container) {
-    window.location.hash = target;
+/**
+ *
+ * @param target jquery object or selector
+ */
+
+function scrollTo(target) {
+    const element = (target instanceof jQuery) ? target[0] : document.querySelector(target);
+    if (!element) {
+        return;
+    }
+
+    //Check whether the browser supports "scrollIntoView" with options
+    if (element.scrollIntoView) {
+        try {
+            element.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        } catch (e) {
+            // Fallback for older browsers
+            element.scrollIntoView();
+        }
+    } else {
+        // fallback for very old browsers
+        const top = element.getBoundingClientRect().top + window.pageYOffset;
+        window.scrollTo(0, top);
+    }
 }
 
 function htmlEntities(str) {
