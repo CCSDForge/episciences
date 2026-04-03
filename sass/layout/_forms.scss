@@ -225,7 +225,8 @@ ul.errors li:first-child:nth-last-child(2) {
 }
 
 #to_tags, #cc_tags, #bcc_tags,
-span.ep-recipient-tags {
+span[id$="-cc-tags"],
+span[id$="-bcc-tags"] {
   float: left;
 }
 

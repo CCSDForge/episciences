@@ -1639,7 +1639,6 @@ class Episciences_PapersManager
             ->addDecorator(['openDiv' => 'HtmlTag'], [
                 'tag' => 'span',
                 'id' => $tagsId,
-                'class' => 'ep-recipient-tags ep-target-' . $field,
                 'placement' => 'APPEND',
                 'openOnly' => true,
             ])
@@ -2046,6 +2045,9 @@ class Episciences_PapersManager
             'id' => $formId . '-bcc',
             'class' => 'autocomplete'
         ]);
+
+        // Tags + hidden_cc/bcc on parent form (same form id as modal — required by es.mail.js)
+        self::addMailModalCcBccWithTags($askeditors_subform, $formId, '', '', $form);
 
         // from
         $askeditors_subform->addElement('text', 'from', [

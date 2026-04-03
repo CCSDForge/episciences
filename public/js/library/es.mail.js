@@ -5,44 +5,42 @@ var in_modal;
  * Paper status modals: render initial CC/BCC tags from hidden_* JSON set server-side.
  */
 function initPaperModalRecipientTagsFromHidden() {
-    document.querySelectorAll('form[id] .ep-recipient-tags').forEach(span => {
-        const form = span.closest('form');
-        if (!form || !form.id) {
+    document.querySelectorAll('form[id]').forEach(form => {
+        if (!form.id) {
             return;
         }
-        if (span.querySelector('.recipient-tag')) {
-            return;
-        }
-        let target = null;
-        if (span.classList.contains('ep-target-cc')) {
-            target = 'cc';
-        } else if (span.classList.contains('ep-target-bcc')) {
-            target = 'bcc';
-        }
-        if (!target) {
-            return;
-        }
-        const hid = form.querySelector('#' + form.id + '-hidden_' + target);
-        if (!hid || !hid.value) {
-            return;
-        }
-        let arr;
-        try {
-            arr = JSON.parse(hid.value);
-        } catch (e) {
-            return;
-        }
-        if (!Array.isArray(arr) || !arr.length) {
-            return;
-        }
-        hid.value = '[]';
-        window.__epContactsForm = form;
-        arr.forEach(r => {
-            if (r && r.value) {
-                addRecipient(target, r.value, 'else');
+        ['cc', 'bcc'].forEach(target => {
+            const span = form.querySelector(
+                '#' + form.id + '-' + target + '-tags'
+            );
+            if (!span || !span.id) {
+                return;
             }
+            if (span.querySelector('.recipient-tag')) {
+                return;
+            }
+            const hid = form.querySelector('#' + form.id + '-hidden_' + target);
+            if (!hid || !hid.value) {
+                return;
+            }
+            let arr;
+            try {
+                arr = JSON.parse(hid.value);
+            } catch (e) {
+                return;
+            }
+            if (!Array.isArray(arr) || !arr.length) {
+                return;
+            }
+            hid.value = '[]';
+            window.__epContactsForm = form;
+            arr.forEach(r => {
+                if (r && r.value) {
+                    addRecipient(target, r.value, 'else');
+                }
+            });
+            delete window.__epContactsForm;
         });
-        delete window.__epContactsForm;
     });
 }
 
@@ -124,10 +122,12 @@ function addRecipient(target, recipient, type) {
             : null;
     const $scope = formEl ? $(formEl) : $(document);
 
-    let $tags_container = $scope.find('.ep-recipient-tags.ep-target-' + target);
-    if (!$tags_container.length) {
-        $tags_container = $scope.find('#' + target + '_tags');
+    // Search by id with form prefix first (paper status modals)
+    let $tags_container = $();
+    if (formEl && formEl.id) {
+        $tags_container = $scope.find('#' + formEl.id + '-' + target + '-tags');
     }
+    // Fallback: id without prefix (main mail form)
     if (!$tags_container.length) {
         $tags_container = $('#' + target + '_tags');
     }
@@ -290,15 +290,13 @@ function removeRecipient($tag) {
     let $recipients_hidden_input = $();
     let suffix = '';
 
-    if (
-        $parentSpan.hasClass('ep-recipient-tags') &&
-        mailFormEl &&
-        mailFormEl.id
-    ) {
+    // Extract target from span id (e.g., "acceptance-form-cc-tags" → "cc")
+    if (mailFormEl && mailFormEl.id) {
+        const spanId = $parentSpan.attr('id') || '';
         let scopedTarget = null;
-        if ($parentSpan.hasClass('ep-target-cc')) {
+        if (spanId.endsWith('-cc-tags')) {
             scopedTarget = 'cc';
-        } else if ($parentSpan.hasClass('ep-target-bcc')) {
+        } else if (spanId.endsWith('-bcc-tags')) {
             scopedTarget = 'bcc';
         }
         if (scopedTarget) {

@@ -57,10 +57,12 @@ function epResolveTagsContainer(targetField) {
             ? window.__epContactsForm
             : null;
     const $scope = formEl ? $(formEl) : $(document);
-    let $c = $scope.find('.ep-recipient-tags.ep-target-' + t);
-    if (!$c.length) {
-        $c = $scope.find('#' + t + '_tags');
+    // Search by id with form prefix first (paper status modals)
+    let $c = $();
+    if (formEl && formEl.id) {
+        $c = $scope.find('#' + formEl.id + '-' + t + '-tags');
     }
+    // Fallback: id without prefix (main mail form)
     if (!$c.length) {
         $c = $('#' + t + '_tags');
     }
@@ -168,10 +170,14 @@ function unselect(row) {
             : null;
     const $scope = formEl ? $(formEl) : $(document);
 
-    let $tagsContainer = $scope.find('.ep-recipient-tags.ep-target-' + target);
-    if (!$tagsContainer.length) {
-        $tagsContainer = $scope.find('#' + target + '_tags');
+    // Search by id with form prefix first (paper status modals)
+    let $tagsContainer = $();
+    if (formEl && formEl.id) {
+        $tagsContainer = $scope.find(
+            '#' + formEl.id + '-' + target + '-tags'
+        );
     }
+    // Fallback: id without prefix (main mail form)
     if (!$tagsContainer.length) {
         $tagsContainer = $('#' + target + '_tags');
     }
