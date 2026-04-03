@@ -79,20 +79,85 @@ function epFindRecipientTextInput($scope, formEl, target) {
     return $i.first();
 }
 
-function addContacts() {
-    let added_contacts = JSON.parse($('#hidden_added_contacts').val() || '[]');
-    for (let i in added_contacts) {
-        let uid = added_contacts[i].uid;
-        let user;
-        for (let i in all_contacts) {
-            if (all_contacts[i].uid == uid) {
-                user = all_contacts[i];
+/** True while the contacts picker (#add_contacts_box or .contacts-container) is open. */
+function epAddedContactsPickerActive() {
+    const el = document.getElementById('added_contacts_tags');
+    if (!el) {
+        return false;
+    }
+    const host = el.closest('#add_contacts_box, .contacts-container');
+    if (!host) {
+        return false;
+    }
+    return $(host).is(':visible');
+}
+
+/** Focus Cc/Bcc input: handles {formId}-cc as well as plain #cc (send form). */
+function epFocusRecipientField(target) {
+    if (!target) {
+        return;
+    }
+    const formEl = window.__epContactsForm;
+    if (formEl && formEl.id) {
+        const byPrefixed = document.getElementById(formEl.id + '-' + target);
+        if (byPrefixed && typeof byPrefixed.focus === 'function') {
+            byPrefixed.focus();
+            return;
+        }
+    }
+    const plain = document.getElementById(target);
+    if (plain && typeof plain.focus === 'function') {
+        plain.focus();
+    }
+}
+
+/**
+ * Apply pick-list selection to the mail form (Cc/Bcc tags + hidden JSON).
+ * Same flow as the historical function, with safe JSON parse, picker hide, and
+ * prefixed input focus for paper modals ({formId}-cc).
+ *
+ * @param {boolean} [skipModalChrome] Pass true from paper status modals: merge
+ *   only; do not toggle #send_form or call $modal_box.modal('hide').
+ */
+function addContacts(skipModalChrome) {
+    if (document.getElementById('hidden_added_contacts')) {
+        let added_contacts = [];
+        try {
+            added_contacts = JSON.parse(
+                $('#hidden_added_contacts').val() || '[]'
+            );
+        } catch (e) {
+            added_contacts = [];
+        }
+
+        // Hide picker before addRecipient so tags go to #…-cc-tags, not #added_contacts_tags
+        const $pickerHost = $('#added_contacts_tags').closest(
+            '#add_contacts_box, .contacts-container'
+        );
+        if ($pickerHost.length) {
+            $pickerHost.hide();
+        }
+
+        for (const contact of Object.values(added_contacts)) {
+            const user = Object.values(all_contacts).find(c => c.uid == contact.uid);
+            if (user) {
+                addRecipient(target, user, 'known');
             }
         }
-        addRecipient(target, user, 'known');
+
+        $('#added_contacts_tags').empty();
+        $('#hidden_added_contacts').val('[]');
+    }
+
+    if (typeof target !== 'undefined' && target) {
+        epFocusRecipientField(target);
     }
     //resizeInput('#' + target, 'add');
-    $('#' + target).focus();
+
+    if (skipModalChrome) {
+        return;
+    }
+
     /*global in_modal */
     if (in_modal) {
         $('#add_contacts_box').hide();
@@ -115,21 +180,24 @@ function addContacts() {
  * @returns {string} id
  */
 function addRecipient(target, recipient, type) {
-    // Prefer tags container within the active mail/status form if available.
     const formEl =
         typeof window.__epContactsForm !== 'undefined'
             ? window.__epContactsForm
             : null;
     const $scope = formEl ? $(formEl) : $(document);
 
-    // Search by id with form prefix first (paper status modals)
     let $tags_container = $();
-    if (formEl && formEl.id) {
-        $tags_container = $scope.find('#' + formEl.id + '-' + target + '-tags');
-    }
-    // Fallback: id without prefix (main mail form)
-    if (!$tags_container.length) {
-        $tags_container = $('#' + target + '_tags');
+    if (epAddedContactsPickerActive()) {
+        $tags_container = $('#added_contacts_tags');
+    } else {
+        if (formEl && formEl.id) {
+            $tags_container = $scope.find(
+                '#' + formEl.id + '-' + target + '-tags'
+            );
+        }
+        if (!$tags_container.length) {
+            $tags_container = $('#' + target + '_tags');
+        }
     }
     let label = '';
     let value = '';
@@ -161,6 +229,15 @@ function addRecipient(target, recipient, type) {
 
         style = 'default';
         uid = recipient.uid;
+
+        if ($tags_container.length) {
+            const $dup = $tags_container.find(
+                '.recipient-tag[data-uid="' + uid + '"]'
+            );
+            if ($dup.length) {
+                return $dup.attr('id');
+            }
+        }
 
         // if sender added himself as bcc, check the checkbox
         if (
@@ -249,6 +326,9 @@ function addRecipient(target, recipient, type) {
     if (!$hidden.length) {
         $hidden = $('#hidden_' + target);
     }
+    if (epAddedContactsPickerActive()) {
+        $hidden = $('#hidden_added_contacts');
+    }
     if ($hidden.length) {
         addUser($hidden, id, value, uid);
     }
@@ -267,8 +347,8 @@ function activateDeleteButton($button, target) {
             : $();
         if ($inp.length) {
             $inp.focus();
-        } else if ($('#' + target).length) {
-            $('#' + target).focus();
+        } else {
+            epFocusRecipientField(target);
         }
     });
 }
@@ -308,17 +388,23 @@ function removeRecipient($tag) {
     }
 
     if (!$recipients_hidden_input.length) {
-        const parentId = $parentSpan.attr('id');
-        if (!parentId) {
+        const parentId = $parentSpan.attr('id') || '';
+        if (parentId === 'added_contacts_tags') {
+            $recipients_hidden_input = $('#hidden_added_contacts');
+            if (typeof target !== 'undefined' && target) {
+                suffix = target;
+            }
+        } else if (!parentId) {
             return;
-        }
-        suffix = parentId.replace('_tags', '');
-        const $mailForm = $tag.closest('form');
-        $recipients_hidden_input = $mailForm.length
-            ? $mailForm.find('#hidden_' + suffix)
-            : $();
-        if (!$recipients_hidden_input.length) {
-            $recipients_hidden_input = $('#hidden_' + suffix);
+        } else {
+            suffix = parentId.replace('_tags', '');
+            const $mailForm = $tag.closest('form');
+            $recipients_hidden_input = $mailForm.length
+                ? $mailForm.find('#hidden_' + suffix)
+                : $();
+            if (!$recipients_hidden_input.length) {
+                $recipients_hidden_input = $('#hidden_' + suffix);
+            }
         }
     }
 

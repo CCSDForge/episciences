@@ -45,6 +45,9 @@
             if (contactsOpen) {
                 evt.preventDefault();
                 evt.stopImmediatePropagation();
+                if (typeof addContacts === 'function') {
+                    addContacts(true);
+                }
                 contactsContainer.style.display = 'none';
                 form.style.display = 'block';
                 const requiredFields = modalBody.querySelectorAll(
@@ -110,6 +113,9 @@
                         form.style.display === 'none'
                     ) {
                         evt.preventDefault();
+                        if (typeof addContacts === 'function') {
+                            addContacts(true);
+                        }
                         contactsContainer.style.display = 'none';
                         form.style.display = 'block';
                         requiredFields.forEach(el => (el.style.display = ''));

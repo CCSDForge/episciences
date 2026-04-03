@@ -48,21 +48,80 @@ function initGetContacts() {
             filterTable('#filter-input', '#contact-list tr');
         }, 4);
     });
+
+    epSeedAddedContactsPreviewFromMainHidden();
+}
+
+/** Restore picker tags from the mail form hidden field (re-open modal with existing Cc/Bcc). */
+function epSeedAddedContactsPreviewFromMainHidden() {
+    if (!document.getElementById('added_contacts_tags')) {
+        return;
+    }
+    const formEl = window.__epContactsForm;
+    if (!formEl || typeof target === 'undefined' || !target) {
+        return;
+    }
+    let hid = formEl.querySelector('#' + formEl.id + '-hidden_' + target);
+    if (!hid) {
+        hid = document.getElementById('hidden_' + target);
+    }
+    if (!hid || !hid.value || hid.value === '[]') {
+        return;
+    }
+    let recs;
+    try {
+        recs = JSON.parse(hid.value);
+    } catch (e) {
+        return;
+    }
+    if (!Array.isArray(recs) || !recs.length) {
+        return;
+    }
+    recs.forEach(function (r) {
+        if (!r || !r.uid) {
+            return;
+        }
+        let user;
+        for (let j = 0; j < all_contacts.length; j++) {
+            if (String(all_contacts[j].uid) === String(r.uid)) {
+                user = all_contacts[j];
+                break;
+            }
+        }
+        if (user) {
+            addRecipient(target, user, 'known');
+        }
+    });
+    epResolveTagsContainer(target)
+        .find('.recipient-tag')
+        .each(function () {
+            const uid = $(this).data('uid');
+            if (uid) {
+                $('#contact_' + uid).addClass('selected');
+            }
+        });
 }
 
 function epResolveTagsContainer(targetField) {
     const t = targetField !== undefined ? targetField : target;
+    if (
+        typeof epAddedContactsPickerActive === 'function' &&
+        epAddedContactsPickerActive()
+    ) {
+        const $added = $('#added_contacts_tags');
+        if ($added.length) {
+            return $added;
+        }
+    }
     const formEl =
         typeof window.__epContactsForm !== 'undefined'
             ? window.__epContactsForm
             : null;
     const $scope = formEl ? $(formEl) : $(document);
-    // Search by id with form prefix first (paper status modals)
     let $c = $();
     if (formEl && formEl.id) {
         $c = $scope.find('#' + formEl.id + '-' + t + '-tags');
     }
-    // Fallback: id without prefix (main mail form)
     if (!$c.length) {
         $c = $('#' + t + '_tags');
     }
@@ -163,24 +222,7 @@ function select(row) {
 
 function unselect(row) {
     let uid = $(row).attr('id').replace(/[^\d]/g, '');
-    // Prefer tags container within the active form if present
-    const formEl =
-        typeof window.__epContactsForm !== 'undefined'
-            ? window.__epContactsForm
-            : null;
-    const $scope = formEl ? $(formEl) : $(document);
-
-    // Search by id with form prefix first (paper status modals)
-    let $tagsContainer = $();
-    if (formEl && formEl.id) {
-        $tagsContainer = $scope.find(
-            '#' + formEl.id + '-' + target + '-tags'
-        );
-    }
-    // Fallback: id without prefix (main mail form)
-    if (!$tagsContainer.length) {
-        $tagsContainer = $('#' + target + '_tags');
-    }
+    const $tagsContainer = epResolveTagsContainer(target);
 
     if (!$tagsContainer.length) {
         console.warn('unselect: no tags container found for target:', target);
