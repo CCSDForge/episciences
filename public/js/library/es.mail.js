@@ -278,27 +278,6 @@ function epFindRecipientTextInput($scope, formEl, target) {
     return $i.first();
 }
 
-/**
- * True while the contacts picker is open: inline #add_contacts_box, paper modal
- * .contacts-container, or getcontacts loaded inside #modal-box (send mail, in_modal false).
- */
-function epAddedContactsPickerActive() {
-    if (window.__epContactsMergeInProgress) {
-        return false;
-    }
-    const el = document.getElementById('added_contacts_tags');
-    if (!el) {
-        return false;
-    }
-    const host = el.closest(
-        '#add_contacts_box, .contacts-container, #modal-box'
-    );
-    if (!host) {
-        return false;
-    }
-    return $(host).is(':visible');
-}
-
 /** Focus Cc/Bcc input: handles {formId}-cc as well as plain #cc (send form). */
 function epFocusRecipientField(target) {
     if (!target) {
@@ -489,18 +468,9 @@ function addRecipient(target, recipient, type) {
             : null;
     const $scope = formEl ? $(formEl) : $(document);
 
-    let $tags_container = $();
-    if (epAddedContactsPickerActive()) {
-        $tags_container = $('#added_contacts_tags');
-    } else {
-        if (formEl && formEl.id) {
-            $tags_container = $scope.find(
-                '#' + formEl.id + '-' + target + '-tags'
-            );
-        }
-        if (!$tags_container.length) {
-            $tags_container = $('#' + target + '_tags');
-        }
+    let $tags_container = $('#' + target + '_tags');
+    if (!$tags_container.length && formEl && formEl.id) {
+        $tags_container = $scope.find('#' + formEl.id + '-' + target + '-tags');
     }
     let label = '';
     let value = '';
@@ -631,9 +601,6 @@ function addRecipient(target, recipient, type) {
     }
     if (!$hidden.length) {
         $hidden = $('#hidden_' + target);
-    }
-    if (epAddedContactsPickerActive()) {
-        $hidden = $('#hidden_added_contacts');
     }
     if ($hidden.length) {
         addUser($hidden, id, value, uid);
