@@ -15,12 +15,12 @@ class Episciences_Paper_LicenceManager
     /**
      * @param string|int $repoId
      * @param string $identifier
-     * @param int $version
+     * @param int| float $version
      * @return string
      * @throws GuzzleException
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function getApiResponseByRepoId($repoId, string $identifier, int $version): string
+    public static function getApiResponseByRepoId(int|string $repoId, string $identifier, int|float $version): string
     {
         if (empty(trim($identifier))) {
             return '';
