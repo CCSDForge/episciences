@@ -18,6 +18,17 @@
         document.head.appendChild(link);
     }
 
+    // Sync footer submit disabled state with revision-deadline rules (see view.js).
+    function refreshRevisionSubmitAfterContactsClosed(modalBody) {
+        if (!modalBody || typeof jQuery === 'undefined') {
+            return;
+        }
+        const $deadline = jQuery(modalBody).find("[id$='-revision-deadline']");
+        if ($deadline.length) {
+            $deadline.trigger('change');
+        }
+    }
+
     // Intercept .submit-modal clicks when contacts list is open (capture phase)
     document.addEventListener(
         'click',
@@ -35,7 +46,13 @@
             const contactsContainer = modalBody.querySelector(
                 '.contacts-container'
             );
-            const form = modalBody.querySelector('form');
+            const cf =
+                typeof window !== 'undefined' &&
+                window.__epContactsForm instanceof HTMLElement &&
+                modalBody.contains(window.__epContactsForm)
+                    ? window.__epContactsForm
+                    : null;
+            const form = cf || modalBody.querySelector('form');
             if (!contactsContainer || !form) return;
 
             const contactsOpen =
@@ -54,6 +71,7 @@
                     '.ccsd_form_required'
                 );
                 requiredFields.forEach(el => (el.style.display = ''));
+                refreshRevisionSubmitAfterContactsClosed(modalBody);
             }
         },
         true
@@ -71,7 +89,7 @@
         const modalBody = button.closest('.modal-body');
         if (!modalBody) return;
 
-        const form = modalBody.querySelector('form');
+        const form = button.closest('form') || modalBody.querySelector('form');
         const contactsContainer = modalBody.querySelector(
             '.contacts-container'
         );
@@ -101,6 +119,14 @@
             const submitButton = modalContent
                 ? modalContent.querySelector('.submit-modal')
                 : null;
+            if (submitButton) {
+                submitButton.disabled = false;
+                if (submitButton.dataset.epContactsBound) {
+                    submitButton.textContent =
+                        submitButton.getAttribute('data-contacts-text') ||
+                        'Submit';
+                }
+            }
             if (submitButton && !submitButton.dataset.epContactsBound) {
                 submitButton.dataset.epContactsBound = 'true';
                 submitButton.dataset.epContactsOriginalText =
@@ -124,6 +150,7 @@
                         if (originalText) {
                             submitButton.textContent = originalText;
                         }
+                        refreshRevisionSubmitAfterContactsClosed(modalBody);
                     }
                 });
             }
