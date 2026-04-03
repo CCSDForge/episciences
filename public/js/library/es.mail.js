@@ -53,7 +53,177 @@ $(function () {
             });
         });
     });
+
+    if (
+        typeof window.users !== 'undefined' &&
+        window.users &&
+        window.users.length &&
+        $.ui &&
+        $.ui.autocomplete
+    ) {
+        initRecipientsAutocompleteInScope($(document));
+    }
 });
+
+function epNormalize(term) {
+    const accentMap = {
+        à: 'a',
+        â: 'a',
+        é: 'e',
+        è: 'e',
+        ê: 'e',
+        ë: 'e',
+        ï: 'i',
+        î: 'i',
+        ô: 'o',
+        ù: 'u',
+        û: 'u',
+    };
+    let ret = '';
+    for (let i = 0; i < term.length; i++) {
+        ret += accentMap[term.charAt(i)] || term.charAt(i);
+    }
+    return ret;
+}
+
+function initRecipientsAutocompleteInScope($scope) {
+    $scope.find('form .autocomplete').each(function () {
+        const input = this;
+        const $input = $(input);
+        if ($input.hasClass('ui-autocomplete-input')) {
+            return;
+        }
+        const input_id = $input.attr('id');
+        if (!input_id) {
+            return;
+        }
+        const formEl = $input.closest('form').get(0) || null;
+
+        function getRecipientTargetFromInput(el) {
+            const n = (el.getAttribute('name') || el.name || '').toString();
+            if (n === 'to' || n === 'cc' || n === 'bcc') {
+                return n;
+            }
+            const id = (el.getAttribute('id') || '').toString();
+            if (id.endsWith('-to')) {
+                return 'to';
+            }
+            if (id.endsWith('-cc')) {
+                return 'cc';
+            }
+            if (id.endsWith('-bcc')) {
+                return 'bcc';
+            }
+            return id;
+        }
+
+        function getTagsSelector(f, targetField) {
+            if (
+                f &&
+                f.id &&
+                document.getElementById(f.id + '-' + targetField + '-tags')
+            ) {
+                return '#' + f.id + '-' + targetField + '-tags';
+            }
+            return '#' + targetField + '_tags';
+        }
+
+        function withContactsForm(cb) {
+            const prev = window.__epContactsForm;
+            if (formEl) {
+                window.__epContactsForm = formEl;
+            }
+            try {
+                cb();
+            } finally {
+                window.__epContactsForm = prev;
+            }
+        }
+
+        const targetField = getRecipientTargetFromInput(input);
+        const tagsSel = getTagsSelector(formEl, targetField);
+        let input_val = 0;
+
+        $input.autocomplete({
+            appendTo: $input.closest('form'),
+            minLength: 0,
+            source: function (request, response) {
+                const matcher = new RegExp(
+                    $.ui.autocomplete.escapeRegex(request.term),
+                    'i'
+                );
+                response(
+                    $.grep(window.users, function (value) {
+                        value = value.label || value.value || value;
+                        return (
+                            matcher.test(value) ||
+                            matcher.test(epNormalize(value))
+                        );
+                    })
+                );
+            },
+            focus: function () {
+                return false;
+            },
+            select: function (event, ui) {
+                withContactsForm(function () {
+                    addRecipient(targetField, ui.item, 'known');
+                });
+                $input.val('');
+                return false;
+            },
+            renderItem: function (ul, item) {
+                return $('<li>')
+                    .append('<a>' + item.htmlLabel + '</a>')
+                    .appendTo(ul);
+            },
+        });
+
+        $input.on('focus', function () {
+            try {
+                $input.autocomplete('search', $input.val() || '');
+            } catch (e) {
+                // ignore
+            }
+        });
+
+        $input.on('blur', function () {
+            if ($input.val() !== '') {
+                withContactsForm(function () {
+                    addRecipient(targetField, $input.val(), 'unknown');
+                });
+                $input.autocomplete('close');
+                $input.val('');
+            }
+        });
+
+        $input.on('keydown', function (e) {
+            const code = e.keyCode || e.which;
+            input_val = ($input.val() || '').length;
+            if (code === 13) {
+                e.preventDefault();
+                if ($input.val() !== '') {
+                    withContactsForm(function () {
+                        addRecipient(targetField, $input.val(), 'unknown');
+                    });
+                    $input.autocomplete('close');
+                    $input.val('');
+                }
+            }
+        });
+
+        $input.on('keyup', function (e) {
+            const code = e.keyCode || e.which;
+            if (
+                code === 8 &&
+                input_val === 0 &&
+                $(tagsSel).find('.recipient-tag').length
+            ) {
+                removeRecipient($(tagsSel).find('.recipient-tag:last'));
+            }
+        });
+    });
+}
 
 /**
  * Find CC/BCC text input in paper modals: name "cc", Zend subform "askEditors[cc]",

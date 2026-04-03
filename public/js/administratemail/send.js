@@ -172,6 +172,7 @@ function initAutocomplete() {
 
         $(input).autocomplete({
             appendTo: $(input).closest('form'),
+            minLength: 0,
 
             source: function (request, response) {
                 let matcher = new RegExp(
@@ -196,7 +197,6 @@ function initAutocomplete() {
             select: function (event, ui) {
                 addRecipient(input_id, ui.item, 'known');
                 $(input).val('');
-                //resizeInput('#' + input_id, 'add');
 
                 return false;
             },
@@ -208,17 +208,22 @@ function initAutocomplete() {
             },
         });
 
-        // add recipient when focus is lost
-        $(input).blur(function (e) {
+        $(input).on('focus', function () {
+            try {
+                $(this).autocomplete('search', $(this).val() || '');
+            } catch (e) {
+                // ignore if autocomplete not initialized
+            }
+        });
+
+        $(input).blur(function () {
             if ($(input).val() != '') {
                 addRecipient(input_id, $(input).val(), 'unknown');
                 $(input).autocomplete('close');
                 $(input).val('');
-                //resizeInput('#' + input_id, 'add');
             }
         });
 
-        // enter: manual input
         $(input).keydown(function (e) {
             let code = e.keyCode || e.which;
             input_val = $(input).val().length;
@@ -228,12 +233,10 @@ function initAutocomplete() {
                     addRecipient(input_id, $(input).val(), 'unknown');
                     $(input).autocomplete('close');
                     $(input).val('');
-                    //resizeInput('#' + input_id, 'add');
                 }
             }
         });
 
-        // backspace : remove recipient
         $(input).keyup(function (e) {
             let code = e.keyCode || e.which;
             if (
@@ -244,7 +247,6 @@ function initAutocomplete() {
                 removeRecipient(
                     $('#' + input_id + '_tags').find('.recipient-tag:last')
                 );
-                //resizeInput('#' + input_id, 'remove');
             }
         });
     });
