@@ -37,12 +37,12 @@ class SubmitController extends DefaultController
         $submit = new Episciences_Submit();
         $form = $submit::getForm($settings, $default, $isFromZSubmit);
 
+        $this->prepareViewData($settings, $isFromZSubmit, $form);
+
         if ($isPost && array_key_exists('submitPaper', $post)) {
             $this->handleSubmitPaper($request, $form, $submit, $post);
-            return;
         }
 
-        $this->prepareViewData($settings, $isFromZSubmit, $form);
     }
 
     /**
