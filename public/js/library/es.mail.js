@@ -278,13 +278,21 @@ function epFindRecipientTextInput($scope, formEl, target) {
     return $i.first();
 }
 
-/** True while the contacts picker (#add_contacts_box or .contacts-container) is open. */
+/**
+ * True while the contacts picker is open: inline #add_contacts_box, paper modal
+ * .contacts-container, or getcontacts loaded inside #modal-box (send mail, in_modal false).
+ */
 function epAddedContactsPickerActive() {
+    if (window.__epContactsMergeInProgress) {
+        return false;
+    }
     const el = document.getElementById('added_contacts_tags');
     if (!el) {
         return false;
     }
-    const host = el.closest('#add_contacts_box, .contacts-container');
+    const host = el.closest(
+        '#add_contacts_box, .contacts-container, #modal-box'
+    );
     if (!host) {
         return false;
     }
@@ -320,32 +328,39 @@ function epFocusRecipientField(target) {
  */
 function addContacts(skipModalChrome) {
     if (document.getElementById('hidden_added_contacts')) {
-        let added_contacts = [];
+        window.__epContactsMergeInProgress = true;
         try {
-            added_contacts = JSON.parse(
-                $('#hidden_added_contacts').val() || '[]'
-            );
-        } catch (e) {
-            added_contacts = [];
-        }
-
-        // Hide picker before addRecipient so tags go to #…-cc-tags, not #added_contacts_tags
-        const $pickerHost = $('#added_contacts_tags').closest(
-            '#add_contacts_box, .contacts-container'
-        );
-        if ($pickerHost.length) {
-            $pickerHost.hide();
-        }
-
-        for (const contact of Object.values(added_contacts)) {
-            const user = Object.values(all_contacts).find(c => c.uid == contact.uid);
-            if (user) {
-                addRecipient(target, user, 'known');
+            let added_contacts = [];
+            try {
+                added_contacts = JSON.parse(
+                    $('#hidden_added_contacts').val() || '[]'
+                );
+            } catch (e) {
+                added_contacts = [];
             }
-        }
 
-        $('#added_contacts_tags').empty();
-        $('#hidden_added_contacts').val('[]');
+            // Hide inline / paper hosts only (not #modal-box — Bootstrap owns visibility).
+            const $pickerHost = $('#added_contacts_tags').closest(
+                '#add_contacts_box, .contacts-container'
+            );
+            if ($pickerHost.length) {
+                $pickerHost.hide();
+            }
+
+            for (const contact of Object.values(added_contacts)) {
+                const user = Object.values(all_contacts).find(
+                    c => c.uid == contact.uid
+                );
+                if (user) {
+                    addRecipient(target, user, 'known');
+                }
+            }
+
+            $('#added_contacts_tags').empty();
+            $('#hidden_added_contacts').val('[]');
+        } finally {
+            window.__epContactsMergeInProgress = false;
+        }
     }
 
     if (typeof target !== 'undefined' && target) {
