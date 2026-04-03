@@ -192,11 +192,9 @@ function showList($li) {
     initList();
 
     // (re)selection des contacts déjà ajoutés, dans la liste nouvellement chargée
-    epResolveTagsContainer(target)
-        .find('.recipient-tag')
-        .each(function () {
-            $('#contact_' + $(this).data('uid')).addClass('selected');
-        });
+    $('#added_contacts_tags').find('.recipient-tag').each(function () {
+        $('#contact_' + $(this).data('uid')).addClass('selected');
+    });
 }
 
 function select(row) {
@@ -207,30 +205,14 @@ function select(row) {
             user = all_contacts[i];
         }
     }
-    let tagId = addRecipient(target, user, 'known');
-    if (tagId) {
-        const tagEl = document.getElementById(tagId);
-        if (tagEl) {
-            $(tagEl)
-                .find('.remove-recipient')
-                .on('click', function () {
-                    $('#contact_' + uid).removeClass('selected');
-                });
-        }
-    }
+    let tagId = addRecipient('added_contacts', user, 'known');
+    $('#' + tagId).find('.remove-recipient').on('click', function () {
+        $('#contact_' + uid).removeClass('selected');
+    });
 }
 
 function unselect(row) {
     let uid = $(row).attr('id').replace(/[^\d]/g, '');
-    const $tagsContainer = epResolveTagsContainer(target);
-
-    if (!$tagsContainer.length) {
-        console.warn('unselect: no tags container found for target:', target);
-        return;
-    }
-
-    const tag = $tagsContainer.find('.recipient-tag[data-uid="' + uid + '"]');
-    if (tag.length) {
-        removeRecipient(tag);
-    }
+    let tag = $('#added_contacts_tags .recipient-tag[data-uid="' + uid + '"]');
+    removeRecipient(tag);
 }
