@@ -170,7 +170,8 @@ $(function () {
         if ($result_container.css('display') === 'none') {
             $result_container.fadeIn();
         }
-        scrollTo($result_container, $('#modal-box'));
+
+        scrollTo($result_container);
 
         let request = $.ajax({
             type: 'POST',
