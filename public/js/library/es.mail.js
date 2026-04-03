@@ -367,6 +367,87 @@ function addContacts(skipModalChrome) {
     }
 }
 
+function epMailUsersList() {
+    const u = typeof window.users !== 'undefined' ? window.users : null;
+    if (!u) {
+        return [];
+    }
+    return Array.isArray(u) ? u : Object.values(u);
+}
+
+function epManualRecipientToRawString(recipient) {
+    if (typeof recipient === 'string') {
+        return recipient;
+    }
+    if (recipient && typeof recipient === 'object' && recipient.mail) {
+        return recipient.fullname
+            ? recipient.fullname + ' <' + recipient.mail + '>'
+            : '<' + recipient.mail + '>';
+    }
+    return recipient == null ? '' : String(recipient);
+}
+
+/** Extract a single email from "u@h", "<u@h>", or "Name <u@h>". */
+function epExtractLookupEmail(rawStr) {
+    if (!rawStr || typeof rawStr !== 'string') {
+        return '';
+    }
+    const t = rawStr.trim();
+    const bracketOnly = t.match(/^<\s*([^<>@\s][^<>]*@[^<>]+)\s*>$/);
+    if (bracketOnly) {
+        return bracketOnly[1].trim();
+    }
+    if (/^[^\s<>]+@[^\s<>]+$/.test(t)) {
+        return t;
+    }
+    const tail = t.match(/<\s*([^<>@\s][^<>]*@[^<>]+)\s*>$/);
+    if (tail) {
+        return tail[1].trim();
+    }
+    return '';
+}
+
+/** For display/storage: drop outer <email> chevrons when there is nothing else. */
+function epRecipientLabelWithoutRedundantChevrons(rawStr) {
+    if (!rawStr || typeof rawStr !== 'string') {
+        return rawStr;
+    }
+    const t = rawStr.trim();
+    const m = t.match(/^<\s*([^<>]+@[^<>]+)\s*>$/);
+    if (m) {
+        return m[1].trim();
+    }
+    return rawStr;
+}
+
+/**
+ * If manual input matches an entry in window.users (e.g. "<uid@journal.fr>"), treat as known.
+ */
+function epResolveManualRecipientToKnown(recipient) {
+    const list = epMailUsersList();
+    if (!list.length) {
+        return { recipient, type: 'unknown' };
+    }
+    if (recipient && typeof recipient === 'object' && recipient.uid) {
+        return { recipient, type: 'known' };
+    }
+    const rawStr = epManualRecipientToRawString(recipient);
+    const email = epExtractLookupEmail(rawStr);
+    if (!email) {
+        return { recipient, type: 'unknown' };
+    }
+    const found = list.find(
+        u =>
+            u &&
+            u.mail &&
+            String(u.mail).toLowerCase() === email.toLowerCase()
+    );
+    if (found) {
+        return { recipient: found, type: 'known' };
+    }
+    return { recipient, type: 'unknown' };
+}
+
 /**
  * add a recipient
  *  create tag
@@ -379,6 +460,14 @@ function addContacts(skipModalChrome) {
  * @returns {string} id
  */
 function addRecipient(target, recipient, type) {
+    if (type !== 'known') {
+        const resolved = epResolveManualRecipientToKnown(recipient);
+        if (resolved.type === 'known') {
+            recipient = resolved.recipient;
+            type = 'known';
+        }
+    }
+
     const formEl =
         typeof window.__epContactsForm !== 'undefined'
             ? window.__epContactsForm
@@ -447,9 +536,12 @@ function addRecipient(target, recipient, type) {
             $('#copy').prop('checked', true);
         }
     }
-    // recipient has been manually inserted
+    // recipient has been manually inserted (or rehydrated from hidden JSON as plain text)
     else {
-        label = value = htmlEntities(recipient);
+        const rawStr = epManualRecipientToRawString(recipient);
+        const shown = epRecipientLabelWithoutRedundantChevrons(rawStr);
+        label = shown;
+        value = htmlEntities(shown === rawStr ? rawStr : shown);
         const $tooltipDiv = $('<div>')
             .addClass('white')
             .text(
