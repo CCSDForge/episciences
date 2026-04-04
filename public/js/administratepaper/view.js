@@ -281,20 +281,15 @@ $(document).ready(function () {
     });
     $('input#copycoauthor').click(function () {
         let coAuthorsMailStr = $('input#coauthormail').val();
+        let $modal = $('.modal.in, .modal.show').first();
+        let $ccInput = $modal.find('input[id$="-cc"]');
         if ($(this).prop('checked')) {
-            if (typeof epAddRecipientProgrammatically === 'function') {
-                epAddRecipientProgrammatically('cc', coAuthorsMailStr);
-            }
+            $ccInput.val(coAuthorsMailStr).trigger('blur');
         } else {
-            // Find tag by uid using existing resolution function
-            if (typeof epResolveManualRecipientToKnown === 'function') {
-                let resolved = epResolveManualRecipientToKnown(coAuthorsMailStr);
-                if (resolved.type === 'known' && resolved.recipient.uid) {
-                    let $tag = $('.recipient-tag[data-uid="' + resolved.recipient.uid + '"]');
-                    if ($tag.length && typeof removeRecipient === 'function') {
-                        removeRecipient($tag);
-                    }
-                }
+            let resolved = epResolveManualRecipientToKnown(coAuthorsMailStr);
+            if (resolved.type === 'known' && resolved.recipient.uid) {
+                let $tag = $('.recipient-tag[data-uid="' + resolved.recipient.uid + '"]');
+                removeRecipient($tag);
             }
         }
     });
