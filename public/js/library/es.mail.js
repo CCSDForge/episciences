@@ -361,6 +361,42 @@ function addContacts(skipModalChrome) {
     }
 }
 
+/**
+ * Programmatically add a recipient to Cc/Bcc field.
+ * Called when external code (e.g., view.js co-author checkbox) sets a recipient.
+ * @param {string} target - 'cc' or 'bcc'
+ * @param {string} emailStr - Email string like "<email@domain.com>" or "Name <email@domain.com>"
+ * @param {HTMLElement} [formEl] - Optional form element context
+ */
+function epAddRecipientProgrammatically(target, emailStr, formEl) {
+    if (!emailStr || !target) {
+        return;
+    }
+
+    // Auto-detect form if not provided: find the visible modal's form
+    if (!formEl) {
+        const $modal = $('.modal.in, .modal.show').first();
+        if ($modal.length) {
+            const $form = $modal.find('form[id]').first();
+            if ($form.length) {
+                formEl = $form.get(0);
+            }
+        }
+    }
+
+    const prev = window.__epContactsForm;
+    if (formEl) {
+        window.__epContactsForm = formEl;
+    }
+
+    try {
+        const resolved = epResolveManualRecipientToKnown(emailStr);
+        addRecipient(target, resolved.recipient, resolved.type);
+    } finally {
+        window.__epContactsForm = prev;
+    }
+}
+
 function epMailUsersList() {
     const u = typeof window.users !== 'undefined' ? window.users : null;
     if (!u) {

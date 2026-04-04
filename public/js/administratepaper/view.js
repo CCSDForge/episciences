@@ -282,10 +282,20 @@ $(document).ready(function () {
     $('input#copycoauthor').click(function () {
         let coAuthorsMailStr = $('input#coauthormail').val();
         if ($(this).prop('checked')) {
-            $("input[name='cc']").val(coAuthorsMailStr);
+            if (typeof epAddRecipientProgrammatically === 'function') {
+                epAddRecipientProgrammatically('cc', coAuthorsMailStr);
+            }
         } else {
-            let inputcc = $("input[name='cc']");
-            inputcc.val(inputcc.val().replace(coAuthorsMailStr, ''));
+            // Find tag by uid using existing resolution function
+            if (typeof epResolveManualRecipientToKnown === 'function') {
+                let resolved = epResolveManualRecipientToKnown(coAuthorsMailStr);
+                if (resolved.type === 'known' && resolved.recipient.uid) {
+                    let $tag = $('.recipient-tag[data-uid="' + resolved.recipient.uid + '"]');
+                    if ($tag.length && typeof removeRecipient === 'function') {
+                        removeRecipient($tag);
+                    }
+                }
+            }
         }
     });
 });
