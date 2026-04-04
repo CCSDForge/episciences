@@ -347,7 +347,7 @@ function addContacts(skipModalChrome) {
     }
     //resizeInput('#' + target, 'add');
 
-    if (skipModalChrome) {
+    if (skipModalChrome === true) {
         return;
     }
 
