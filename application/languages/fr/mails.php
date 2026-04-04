@@ -71,6 +71,14 @@ return [
     "paper_editor_unassign_tpl_name" => "Suppression de l'assignation d'un rédacteur",
     "paper_editor_unassign_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - L'édition d'un article vous a été retirée",
 
+    "paper_coi_unassign_chief_editor_copy_tpl_name" => "Déclaration de conflit d'intérêts — copie rédacteur en chef",
+    "paper_coi_unassign_chief_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Un éditeur a déclaré un conflit d'intérêts",
+
+    "paper_coi_unassign_other_editors_copy_tpl_name" => "Déclaration de conflit d'intérêts — copie autres éditeurs assignés",
+    "paper_coi_unassign_other_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Un éditeur a déclaré un conflit d'intérêts",
+
+    "paper_coi_last_editor_warning" => "Il s'agissait du dernier éditeur assigné à cet article. L'article n'a actuellement plus d'éditeur assigné.",
+
 
     // PAPER - RELECTURE ****************************************************************************************************************************
     "paper_review_tpl_group" => "Article - relecture",

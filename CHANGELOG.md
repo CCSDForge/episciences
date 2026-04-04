@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+* [#630](https://github.com/CCSDForge/episciences/issues/630) COI (Conflict of Interest) notifications:
+  - Email notification to the editor-in-chief when an editor declares a positive COI (answered "yes")
+  - Email notification to other assigned editors (if any) when an editor declares a COI
 * Adding "Publish" => "Proposing special issues" template page [#951](https://github.com/CCSDForge/episciences/issues/951)
 * New supported servers:
     Cryptology ePrint Archive (https://eprint.iacr.org)
