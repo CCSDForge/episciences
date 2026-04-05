@@ -94,25 +94,65 @@ $(function () {
     }
 });
 
+/**
+ * Remove accents from a string for search matching.
+ * Uses String.normalize() for robust Unicode handling.
+ */
 function epNormalize(term) {
-    const accentMap = {
-        à: 'a',
-        â: 'a',
-        é: 'e',
-        è: 'e',
-        ê: 'e',
-        ë: 'e',
-        ï: 'i',
-        î: 'i',
-        ô: 'o',
-        ù: 'u',
-        û: 'u',
-    };
-    let ret = '';
-    for (let i = 0; i < term.length; i++) {
-        ret += accentMap[term.charAt(i)] || term.charAt(i);
+    if (!term || typeof term !== 'string') {
+        return '';
     }
-    return ret;
+    return term.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/**
+ * Extract recipient target (to/cc/bcc) from input element.
+ */
+function epGetRecipientTargetFromInput(el) {
+    const n = (el.getAttribute('name') || el.name || '').toString();
+    if (n === 'to' || n === 'cc' || n === 'bcc') {
+        return n;
+    }
+    const id = (el.getAttribute('id') || '').toString();
+    if (id.endsWith('-to')) {
+        return 'to';
+    }
+    if (id.endsWith('-cc')) {
+        return 'cc';
+    }
+    if (id.endsWith('-bcc')) {
+        return 'bcc';
+    }
+    return id;
+}
+
+/**
+ * Get tags container selector for a form and target field.
+ */
+function epGetTagsSelector(formEl, targetField) {
+    if (
+        formEl &&
+        formEl.id &&
+        document.getElementById(formEl.id + '-' + targetField + '-tags')
+    ) {
+        return '#' + formEl.id + '-' + targetField + '-tags';
+    }
+    return '#' + targetField + '_tags';
+}
+
+/**
+ * Execute callback with form context set.
+ */
+function epWithContactsForm(formEl, cb) {
+    const prev = window.__epContactsForm;
+    if (formEl) {
+        window.__epContactsForm = formEl;
+    }
+    try {
+        cb();
+    } finally {
+        window.__epContactsForm = prev;
+    }
 }
 
 function initRecipientsAutocompleteInScope($scope) {
@@ -127,50 +167,8 @@ function initRecipientsAutocompleteInScope($scope) {
             return;
         }
         const formEl = $input.closest('form').get(0) || null;
-
-        function getRecipientTargetFromInput(el) {
-            const n = (el.getAttribute('name') || el.name || '').toString();
-            if (n === 'to' || n === 'cc' || n === 'bcc') {
-                return n;
-            }
-            const id = (el.getAttribute('id') || '').toString();
-            if (id.endsWith('-to')) {
-                return 'to';
-            }
-            if (id.endsWith('-cc')) {
-                return 'cc';
-            }
-            if (id.endsWith('-bcc')) {
-                return 'bcc';
-            }
-            return id;
-        }
-
-        function getTagsSelector(f, targetField) {
-            if (
-                f &&
-                f.id &&
-                document.getElementById(f.id + '-' + targetField + '-tags')
-            ) {
-                return '#' + f.id + '-' + targetField + '-tags';
-            }
-            return '#' + targetField + '_tags';
-        }
-
-        function withContactsForm(cb) {
-            const prev = window.__epContactsForm;
-            if (formEl) {
-                window.__epContactsForm = formEl;
-            }
-            try {
-                cb();
-            } finally {
-                window.__epContactsForm = prev;
-            }
-        }
-
-        const targetField = getRecipientTargetFromInput(input);
-        const tagsSel = getTagsSelector(formEl, targetField);
+        const targetField = epGetRecipientTargetFromInput(input);
+        const tagsSel = epGetTagsSelector(formEl, targetField);
         let input_val = 0;
 
         $input.autocomplete({
@@ -195,7 +193,7 @@ function initRecipientsAutocompleteInScope($scope) {
                 return false;
             },
             select: function (event, ui) {
-                withContactsForm(function () {
+                epWithContactsForm(formEl, function () {
                     addRecipient(targetField, ui.item, 'known');
                 });
                 $input.val('');
@@ -218,7 +216,7 @@ function initRecipientsAutocompleteInScope($scope) {
 
         $input.on('blur', function () {
             if ($input.val() !== '') {
-                withContactsForm(function () {
+                epWithContactsForm(formEl, function () {
                     addRecipient(targetField, $input.val(), 'unknown');
                 });
                 $input.autocomplete('close');
@@ -232,7 +230,7 @@ function initRecipientsAutocompleteInScope($scope) {
             if (code === 13) {
                 e.preventDefault();
                 if ($input.val() !== '') {
-                    withContactsForm(function () {
+                    epWithContactsForm(formEl, function () {
                         addRecipient(targetField, $input.val(), 'unknown');
                     });
                     $input.autocomplete('close');
@@ -326,12 +324,14 @@ function addContacts(skipModalChrome) {
                 $pickerHost.hide();
             }
 
+            // target is a global variable set by get-contacts.js (cc or bcc)
+            const recipientTarget = typeof target !== 'undefined' ? target : 'cc';
             for (const contact of Object.values(added_contacts)) {
                 const user = Object.values(all_contacts).find(
                     c => c.uid == contact.uid
                 );
                 if (user) {
-                    addRecipient(target, user, 'known');
+                    addRecipient(recipientTarget, user, 'known');
                 }
             }
 
@@ -626,10 +626,51 @@ function activateDeleteButton($button, target) {
     });
 }
 
-/* remove a recipient
- * destroy tooltip
- * delete tag
- * remove recipient from hidden input
+/**
+ * Extract target (cc/bcc) from tags container span id.
+ */
+function epExtractTargetFromSpanId(spanId) {
+    if (!spanId) {
+        return null;
+    }
+    if (spanId.endsWith('-cc-tags') || spanId === 'cc_tags') {
+        return 'cc';
+    }
+    if (spanId.endsWith('-bcc-tags') || spanId === 'bcc_tags') {
+        return 'bcc';
+    }
+    if (spanId.endsWith('-to-tags') || spanId === 'to_tags') {
+        return 'to';
+    }
+    if (spanId === 'added_contacts_tags') {
+        return 'added_contacts';
+    }
+    // Fallback: remove _tags suffix
+    return spanId.replace('_tags', '').replace(/-tags$/, '');
+}
+
+/**
+ * Find hidden input for recipients based on form and target.
+ */
+function epFindHiddenInput($form, formEl, target) {
+    if (target === 'added_contacts') {
+        return $('#hidden_added_contacts');
+    }
+    if (formEl && formEl.id) {
+        const $prefixed = $form.find('#' + formEl.id + '-hidden_' + target);
+        if ($prefixed.length) {
+            return $prefixed;
+        }
+    }
+    const $inForm = $form.find('#hidden_' + target);
+    if ($inForm.length) {
+        return $inForm;
+    }
+    return $('#hidden_' + target);
+}
+
+/**
+ * Remove a recipient tag, destroy tooltip, and update hidden input.
  */
 function removeRecipient($tag) {
     if (!$tag || !$tag.length) {
@@ -639,48 +680,17 @@ function removeRecipient($tag) {
     if (!$parentSpan.length) {
         return;
     }
-    const mailFormEl = $tag.closest('form').get(0);
-    let $recipients_hidden_input = $();
-    let suffix = '';
 
-    // Extract target from span id (e.g., "acceptance-form-cc-tags" → "cc")
-    if (mailFormEl && mailFormEl.id) {
-        const spanId = $parentSpan.attr('id') || '';
-        let scopedTarget = null;
-        if (spanId.endsWith('-cc-tags')) {
-            scopedTarget = 'cc';
-        } else if (spanId.endsWith('-bcc-tags')) {
-            scopedTarget = 'bcc';
-        }
-        if (scopedTarget) {
-            $recipients_hidden_input = $(mailFormEl).find(
-                '#' + mailFormEl.id + '-hidden_' + scopedTarget
-            );
-            suffix = scopedTarget;
-        }
+    const $mailForm = $tag.closest('form');
+    const mailFormEl = $mailForm.get(0) || null;
+    const spanId = $parentSpan.attr('id') || '';
+    const suffix = epExtractTargetFromSpanId(spanId);
+
+    if (!suffix) {
+        return;
     }
 
-    if (!$recipients_hidden_input.length) {
-        const parentId = $parentSpan.attr('id') || '';
-        if (parentId === 'added_contacts_tags') {
-            $recipients_hidden_input = $('#hidden_added_contacts');
-            if (typeof target !== 'undefined' && target) {
-                suffix = target;
-            }
-        } else if (!parentId) {
-            return;
-        } else {
-            suffix = parentId.replace('_tags', '');
-            const $mailForm = $tag.closest('form');
-            $recipients_hidden_input = $mailForm.length
-                ? $mailForm.find('#hidden_' + suffix)
-                : $();
-            if (!$recipients_hidden_input.length) {
-                $recipients_hidden_input = $('#hidden_' + suffix);
-            }
-        }
-    }
-
+    const $recipients_hidden_input = epFindHiddenInput($mailForm, mailFormEl, suffix);
     if (!$recipients_hidden_input.length) {
         return;
     }
