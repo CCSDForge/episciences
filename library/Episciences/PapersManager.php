@@ -1605,7 +1605,6 @@ class Episciences_PapersManager
 
         return $form;
     }
-
     /**
      * Build JSON for hidden_cc / hidden_bcc (same shape as public/js/library/es.mail.js addUser).
      */
@@ -1717,16 +1716,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $existingMails = '';
-        if (!empty($default['coAuthor'])) {
-            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
-        }
         $translator = Zend_Registry::get('Zend_Translate');
         $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
             'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
             'id' => $formId . '-cc',
-            'value' => $existingMails,
             'class' => 'autocomplete'
         ]);
 
@@ -1737,7 +1731,7 @@ class Episciences_PapersManager
             'class' => 'autocomplete'
         ]);
 
-        self::addMailModalCcBccWithTags($form, $formId, $existingMails, '');
+        self::addMailModalCcBccWithTags($form, $formId, '', '');
 
         // from
         $form->addElement('text', 'from', [
@@ -1816,16 +1810,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $existingMails = '';
-        if (!empty($default['coAuthor'])) {
-            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
-        }
         $translator = Zend_Registry::get('Zend_Translate');
         $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
             'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
             'id' => $formId . '-cc',
-            'value' => $existingMails,
             'class' => 'autocomplete'
         ]);
 
@@ -1836,7 +1825,7 @@ class Episciences_PapersManager
             'class' => 'autocomplete'
         ]);
 
-        self::addMailModalCcBccWithTags($form, $formId, $existingMails, '');
+        self::addMailModalCcBccWithTags($form, $formId, '', '');
 
         // from
         $form->addElement('text', 'from', [
@@ -1915,16 +1904,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $existingMails = '';
-        if (!empty($default['coAuthor'])) {
-            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
-        }
         $translator = Zend_Registry::get('Zend_Translate');
         $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
             'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
             'id' => $formId . '-cc',
-            'value' => $existingMails,
             'class' => 'autocomplete'
         ]);
 
@@ -1945,7 +1929,7 @@ class Episciences_PapersManager
             'class' => 'autocomplete'
         ]);
 
-        self::addMailModalCcBccWithTags($form, $formId, $existingMails, $bccVal);
+        self::addMailModalCcBccWithTags($form, $formId, '', $bccVal);
 
         // from
         $form->addElement('text', 'from', [
@@ -2146,16 +2130,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $existingMails = '';
-        if (!empty($default['coAuthor'])) {
-            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
-        }
         $translator = Zend_Registry::get('Zend_Translate');
         $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
             'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
             'id' => $formId . '-cc',
-            'value' => $existingMails,
             'class' => 'autocomplete'
         ]);
 
@@ -2168,7 +2147,7 @@ class Episciences_PapersManager
             'class' => 'autocomplete'
         ]);
 
-        self::addMailModalCcBccWithTags($form, $formId, $existingMails, $bccDefault);
+        self::addMailModalCcBccWithTags($form, $formId, '', $bccDefault);
 
         // from
         $form->addElement('text', 'from', [
@@ -3262,16 +3241,11 @@ class Episciences_PapersManager
             'value' => $default['author']->getFullName() . ' <' . $default['author']->getEmail() . '>']);
 
         // cc
-        $existingMails = '';
-        if (!empty($default['coAuthor'])) {
-            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
-        }
         $translator = Zend_Registry::get('Zend_Translate');
         $contactsTitle = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
             'label' => '<a class="show_contacts_button" title="' . $contactsTitle . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
             'id' => $prefix . '-cc',
-            'value' => $existingMails,
             'class' => 'autocomplete',
         ]);
 
@@ -3282,7 +3256,7 @@ class Episciences_PapersManager
             'class' => 'autocomplete',
         ]);
 
-        self::addMailModalCcBccWithTags($form, $formElementId, $existingMails, '');
+        self::addMailModalCcBccWithTags($form, $formElementId, '', '');
 
         // from
         $form->addElement('text', 'from', [
@@ -3502,24 +3476,32 @@ class Episciences_PapersManager
     /**
      * @param array $coAuthors
      * @param Ccsd_Form $form
+     * @param string $formId
      * @return void
      * @throws Zend_Form_Exception
      */
     public static function getCoAuthorsForm(array $coAuthors, Ccsd_Form $form): void
     {
-// get a copy
+        // Get co-authors emails for the hidden field
         $strMail = self::getCoAuthorsMails($coAuthors);
         $strMail = substr($strMail, 0, -1);
-        $form->addElement('hidden', 'co-author-mail', ['value' => $strMail]);
-        $form->addElement('checkbox', 'copy-co-author', array(
+
+        // Use IDs that match the JavaScript in view.js (copycoauthor, coauthormail)
+        $form->addElement('hidden', 'coauthormail', [
+            'id' => 'coauthormail',
+            'value' => $strMail
+        ]);
+        // Label uses original French key - Zend_Form translates automatically
+        $form->addElement('checkbox', 'copycoauthor', [
+            'id' => 'copycoauthor',
             'label' => "Envoyer une copie de ce message aux co-auteur",
             'decorators' => [
                 'ViewHelper',
-                ['Label', array('placement' => 'APPEND')],
-                ['HtmlTag', array('tag' => 'div', 'class' => 'col-md-9 col-md-offset-3')]
+                ['Label', ['placement' => 'APPEND']],
+                ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']]
             ],
-            'value' => '1'
-        ));
+            'value' => '0'  // Unchecked by default - user must opt-in to send to co-authors
+        ]);
     }
 
     /**
