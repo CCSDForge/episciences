@@ -281,16 +281,30 @@ $(document).ready(function () {
     });
     $('input#copycoauthor').click(function () {
         let coAuthorsMailStr = $('input#coauthormail').val();
+        if (!coAuthorsMailStr) {
+            return;
+        }
         let $modal = $('.modal.in, .modal.show').first();
         let $ccInput = $modal.find('input[id$="-cc"]');
+        if (!$ccInput.length) {
+            return;
+        }
+        // Split by semicolon to handle multiple co-authors: "<a@b>;<c@d>"
+        let emails = coAuthorsMailStr.split(';').map(e => e.trim()).filter(e => e);
         if ($(this).prop('checked')) {
-            $ccInput.val(coAuthorsMailStr).trigger('blur');
+            // Add each co-author as a separate CC tag
+            emails.forEach(email => {
+                $ccInput.val(email).trigger('blur');
+            });
         } else {
-            let resolved = epResolveManualRecipientToKnown(coAuthorsMailStr);
-            if (resolved.type === 'known' && resolved.recipient.uid) {
-                let $tag = $('.recipient-tag[data-uid="' + resolved.recipient.uid + '"]');
-                removeRecipient($tag);
-            }
+            // Remove each co-author tag
+            emails.forEach(email => {
+                let resolved = epResolveManualRecipientToKnown(email);
+                if (resolved.type === 'known' && resolved.recipient.uid) {
+                    let $tag = $modal.find('.recipient-tag[data-uid="' + resolved.recipient.uid + '"]');
+                    removeRecipient($tag);
+                }
+            });
         }
     });
 });
