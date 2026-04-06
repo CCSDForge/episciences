@@ -19,8 +19,8 @@ class GenerateDownloadKpiCommand extends Command
 {
     protected static $defaultName = 'stats:download-kpi';
 
-    private const CONSULT_FILE   = 'notice'; // page view
-    private const CONSULT_NOTICE = 'file';   // file download
+    private const CONSULT_FILE   = 'file';    // PDF/file download
+    private const CONSULT_NOTICE = 'notice'; // abstract page view
 
     protected function configure(): void
     {
@@ -79,9 +79,14 @@ class GenerateDownloadKpiCommand extends Command
         $statRows = $this->fetchStats($db, $rvid);
         $logger->info(sprintf('Found %d stat rows.', count($statRows)));
 
+        $logger->info('Fetching geographic statistics …');
+        $geoRows = $this->fetchGeoStats($db, $rvid);
+        $logger->info(sprintf('Found %d geo rows.', count($geoRows)));
+
         $papers     = $this->aggregatePapers($paperRows);
         $stats      = $this->aggregateStats($statRows);
-        $journalMap = $this->buildJournalMap($papers, $stats);
+        $geoStats   = $this->aggregateGeoStats($geoRows);
+        $journalMap = $this->buildJournalMap($papers, $stats, $geoStats);
         $payload    = $this->buildPayload($journalMap, (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM));
 
         $totalPapers  = $payload['total_papers'];
@@ -177,8 +182,8 @@ class GenerateDownloadKpiCommand extends Command
     /**
      * Build a nested stats map from raw PAPER_STAT rows.
      *
-     * Return shape: [paperid => [consult => [month => total]]]
-     * where consult is 'file' or 'notice', month is 'YYYY-MM'.
+     * Return shape: [paperid => [consult => [year => total]]]
+     * where consult is 'file' or 'notice', year is 'YYYY'.
      *
      * @param array<int, array<string, mixed>> $statRows
      * @return array<int, array<string, array<string, int>>>
@@ -191,33 +196,34 @@ class GenerateDownloadKpiCommand extends Command
         foreach ($statRows as $row) {
             $paperid = (int) ($row['PAPERID'] ?? 0);
             $consult = (string) ($row['CONSULT'] ?? '');
-            $month   = (string) ($row['MONTH'] ?? '');
+            $year    = (string) ($row['YEAR'] ?? '');
             $total   = (int) ($row['total'] ?? 0);
 
-            if ($paperid === 0 || $consult === '' || $month === '') {
+            if ($paperid === 0 || $consult === '' || $year === '') {
                 continue;
             }
 
-            if (!isset($stats[$paperid][$consult][$month])) {
-                $stats[$paperid][$consult][$month] = 0;
+            if (!isset($stats[$paperid][$consult][$year])) {
+                $stats[$paperid][$consult][$year] = 0;
             }
-            $stats[$paperid][$consult][$month] += $total;
+            $stats[$paperid][$consult][$year] += $total;
         }
 
         return $stats;
     }
 
     /**
-     * Merge deduplicated papers and stats into a per-journal map.
+     * Merge deduplicated papers, temporal stats and geographic stats into a per-journal map.
      *
      * Return shape:
      * [rvcode => ['rvid' => int, 'name' => string, 'papers' => list<array>]]
      *
-     * @param array<int, array<string, mixed>>                         $papers  Output of aggregatePapers()
-     * @param array<int, array<string, array<string, int>>>            $stats   Output of aggregateStats()
+     * @param array<int, array<string, mixed>>                                                       $papers    Output of aggregatePapers()
+     * @param array<int, array<string, array<string, int>>>                                          $stats     Output of aggregateStats()
+     * @param array<int, array<string, array{continent: string, downloads: int, page_views: int}>>   $geoStats  Output of aggregateGeoStats()
      * @return array<string, array<string, mixed>>
      */
-    public function buildJournalMap(array $papers, array $stats): array
+    public function buildJournalMap(array $papers, array $stats, array $geoStats): array
     {
         /** @var array<string, array<string, mixed>> $journals */
         $journals = [];
@@ -235,8 +241,8 @@ class GenerateDownloadKpiCommand extends Command
 
             $paperStats = $stats[$paperid] ?? [];
 
-            $downloads = $this->buildMetricEntry($paperStats[self::CONSULT_NOTICE] ?? []);
-            $pageViews = $this->buildMetricEntry($paperStats[self::CONSULT_FILE] ?? []);
+            $downloads = $this->buildMetricEntry($paperStats[self::CONSULT_FILE] ?? []);
+            $pageViews = $this->buildMetricEntry($paperStats[self::CONSULT_NOTICE] ?? []);
 
             /** @var list<array<string, mixed>> $journalPapers */
             $journalPapers   = $journals[$rvcode]['papers'];
@@ -246,6 +252,7 @@ class GenerateDownloadKpiCommand extends Command
                 'publication_date' => $paper['publication_date'],
                 'downloads'        => $downloads,
                 'page_views'       => $pageViews,
+                'geo'              => $geoStats[$paperid] ?? (object) [],
             ];
             $journals[$rvcode]['papers'] = $journalPapers;
         }
@@ -253,6 +260,52 @@ class GenerateDownloadKpiCommand extends Command
         ksort($journals);
 
         return $journals;
+    }
+
+    /**
+     * Build a per-country geographic breakdown from raw PAPER_STAT geo rows.
+     *
+     * Return shape: [paperid => [country_code => ['continent' => string, 'downloads' => int, 'page_views' => int]]]
+     * - country_code is the ISO 3166-1 alpha-2 code (e.g. 'FR') or '' when unknown.
+     * - continent is the GeoIP continent code (e.g. 'EU') or '' when unknown.
+     *
+     * @param array<int, array<string, mixed>> $geoRows
+     * @return array<int, array<string, array{continent: string, downloads: int, page_views: int}>>
+     */
+    public function aggregateGeoStats(array $geoRows): array
+    {
+        /** @var array<int, array<string, array{continent: string, downloads: int, page_views: int}>> $geo */
+        $geo = [];
+
+        foreach ($geoRows as $row) {
+            $paperid   = (int) ($row['PAPERID'] ?? 0);
+            $consult   = (string) ($row['CONSULT'] ?? '');
+            $country   = (string) ($row['COUNTRY'] ?? '');
+            $continent = (string) ($row['CONTINENT'] ?? '');
+            $total     = (int) ($row['total'] ?? 0);
+
+            if ($paperid === 0 || $consult === '') {
+                continue;
+            }
+
+            if (!isset($geo[$paperid][$country])) {
+                $geo[$paperid][$country] = ['continent' => $continent, 'downloads' => 0, 'page_views' => 0];
+            }
+
+            if ($consult === self::CONSULT_FILE) {
+                $geo[$paperid][$country]['downloads'] += $total;
+            } elseif ($consult === self::CONSULT_NOTICE) {
+                $geo[$paperid][$country]['page_views'] += $total;
+            }
+        }
+
+        // Sort countries alphabetically within each paper (empty string last).
+        foreach ($geo as &$countries) {
+            ksort($countries);
+        }
+        unset($countries);
+
+        return $geo;
     }
 
     /**
@@ -320,17 +373,17 @@ class GenerateDownloadKpiCommand extends Command
     // -------------------------------------------------------------------------
 
     /**
-     * Build a metric entry {total, by_month} from a [month => count] map.
+     * Build a metric entry {total, by_year} from a [year => count] map.
      *
-     * @param array<string, int> $byMonth
-     * @return array{total: int, by_month: array<string, int>}
+     * @param array<string, int> $byYear
+     * @return array{total: int, by_year: array<string, int>}
      */
-    private function buildMetricEntry(array $byMonth): array
+    private function buildMetricEntry(array $byYear): array
     {
-        ksort($byMonth);
+        ksort($byYear);
         return [
-            'total'    => array_sum($byMonth),
-            'by_month' => $byMonth,
+            'total'   => array_sum($byYear),
+            'by_year' => $byYear,
         ];
     }
 
@@ -369,7 +422,7 @@ class GenerateDownloadKpiCommand extends Command
     }
 
     /**
-     * Fetch aggregated stats for all published papers, collapsed to PAPERID + month.
+     * Fetch aggregated stats for all published papers, collapsed to PAPERID + year.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -378,7 +431,7 @@ class GenerateDownloadKpiCommand extends Command
         $select = $db->select()
             ->from(['ps' => T_PAPER_VISITS], [
                 'CONSULT' => 'ps.CONSULT',
-                'MONTH'   => new Zend_Db_Expr("SUBSTRING(ps.HIT, 1, 7)"),
+                'YEAR'    => new Zend_Db_Expr("SUBSTRING(ps.HIT, 1, 4)"),
                 'total'   => new Zend_Db_Expr('SUM(ps.COUNTER)'),
             ])
             ->join(['p' => T_PAPERS], 'ps.DOCID = p.DOCID', ['PAPERID' => 'p.PAPERID'])
@@ -387,7 +440,36 @@ class GenerateDownloadKpiCommand extends Command
             ->where('p.STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
             ->where('p.DOI IS NOT NULL')
             ->where('p.DOI != ?', '')
-            ->group(['p.PAPERID', 'ps.CONSULT', new Zend_Db_Expr("SUBSTRING(ps.HIT, 1, 7)")]);
+            ->group(['p.PAPERID', 'ps.CONSULT', new Zend_Db_Expr("SUBSTRING(ps.HIT, 1, 4)")]);
+
+        if ($rvid !== null) {
+            $select->where('p.RVID = ?', $rvid);
+        }
+
+        return $db->fetchAll($select);
+    }
+
+    /**
+     * Fetch aggregated geographic stats for all published papers, collapsed to PAPERID + country.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchGeoStats(Zend_Db_Adapter_Abstract $db, ?int $rvid): array
+    {
+        $select = $db->select()
+            ->from(['ps' => T_PAPER_VISITS], [
+                'CONSULT'   => 'ps.CONSULT',
+                'COUNTRY'   => 'ps.COUNTRY',
+                'CONTINENT' => 'ps.CONTINENT',
+                'total'     => new Zend_Db_Expr('SUM(ps.COUNTER)'),
+            ])
+            ->join(['p' => T_PAPERS], 'ps.DOCID = p.DOCID', ['PAPERID' => 'p.PAPERID'])
+            ->where('ps.ROBOT = 0')
+            ->where('ps.CONSULT IN (?)', ['notice', 'file'])
+            ->where('p.STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
+            ->where('p.DOI IS NOT NULL')
+            ->where('p.DOI != ?', '')
+            ->group(['p.PAPERID', 'ps.CONSULT', 'ps.COUNTRY', 'ps.CONTINENT']);
 
         if ($rvid !== null) {
             $select->where('p.RVID = ?', $rvid);

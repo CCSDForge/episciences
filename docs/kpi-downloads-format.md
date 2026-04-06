@@ -46,6 +46,7 @@ type Paper = {
   publication_date: string | null; // "YYYY-MM-DD" ou null
   downloads:        Metric;        // téléchargements PDF  (CONSULT = 'file')
   page_views:       Metric;        // vues de la page abstract (CONSULT = 'notice')
+  geo:              GeoMap;        // répartition géographique des consultations
 };
 ```
 
@@ -53,8 +54,22 @@ type Paper = {
 
 ```ts
 type Metric = {
-  total:    number;                  // cumul sur toute la période
-  by_month: Record<string, number>;  // clé = "YYYY-MM", valeur = nb de visites humaines
+  total:   number;                  // cumul sur toute la période
+  by_year: Record<string, number>;  // clé = "YYYY", valeur = nb de visites humaines
+};
+```
+
+### GeoMap
+
+```ts
+// Clé = code ISO 3166-1 alpha-2 (ex: "FR", "US") ou "" si pays inconnu.
+// L'objet est {} (pas []) quand aucune visite géolocalisée.
+type GeoMap = Record<string, GeoEntry>;
+
+type GeoEntry = {
+  continent:  string; // code continent GeoIP (ex: "EU", "NA") ou "" si inconnu
+  downloads:  number; // nb de téléchargements PDF depuis ce pays
+  page_views: number; // nb de vues de la page abstract depuis ce pays
 };
 ```
 
@@ -64,12 +79,13 @@ type Metric = {
 
 | Règle | Détail |
 |-------|--------|
-| **Bots exclus** | `ROBOT = 0` dans PAPER_STAT — filtrés par la commande `stats:process` |
-| **Multi-versions** | Les stats de tous les DOCID d'un même article sont sommées sous un seul `paperid` |
-| **`paperid`** | Identifiant stable à utiliser dans l'appli (le DOI est aussi unique) |
-| **Mois** | Clés au format `YYYY-MM` (jamais `YYYY-MM-DD`) |
-| **Tri** | Journaux triés alphabétiquement par rvcode ; articles triés par DOI |
-| **Pas de stats** | Un article sans visites a `total: 0` et `by_month: {}` (toujours présent) |
+| **Bots exclus** | `ROBOT = 0` dans PAPER_STAT — filtrés par `stats:process` |
+| **Multi-versions** | Stats de tous les DOCID d'un même PAPERID sommées ; `paperid` est l'identifiant stable |
+| **Granularité temporelle** | Annuelle (`by_year` = `"YYYY"`) pour limiter la taille du fichier |
+| **Géographie** | Par pays (ISO alpha-2) avec continent ; pays inconnu = clé `""` |
+| **Tri journaux** | Alphabétique par rvcode |
+| **Tri pays** | Alphabétique dans `geo` (clé vide `""` en dernier) |
+| **Pas de stats** | `total: 0`, `by_year: {}`, `geo: {}` — toujours présents |
 
 ---
 
@@ -90,18 +106,47 @@ type Metric = {
           "doi": "10.46298/epiga.2024.1",
           "paperid": 101,
           "publication_date": "2024-03-10",
-          "downloads":  { "total": 340, "by_month": { "2024-03": 120, "2024-04": 220 } },
-          "page_views": { "total": 800, "by_month": { "2024-03": 300, "2024-04": 500 } }
+          "downloads":  { "total": 340, "by_year": { "2024": 120, "2025": 220 } },
+          "page_views": { "total": 800, "by_year": { "2024": 300, "2025": 500 } },
+          "geo": {
+            "DE": { "continent": "EU", "downloads": 40,  "page_views": 100 },
+            "FR": { "continent": "EU", "downloads": 200, "page_views": 500 },
+            "US": { "continent": "NA", "downloads": 100, "page_views": 200 },
+            "":   { "continent": "",   "downloads": 0,   "page_views": 10  }
+          }
         },
         {
           "doi": "10.46298/epiga.2024.2",
           "paperid": 102,
           "publication_date": "2024-06-01",
-          "downloads":  { "total": 0,  "by_month": {} },
-          "page_views": { "total": 45, "by_month": { "2024-06": 45 } }
+          "downloads":  { "total": 0, "by_year": {} },
+          "page_views": { "total": 45, "by_year": { "2024": 45 } },
+          "geo": {}
         }
       ]
     }
   }
 }
+```
+
+---
+
+## Patterns Next.js utiles
+
+```ts
+// Itérer sur tous les articles d'une revue
+kpi.journals["epiga"].papers.forEach(paper => { ... });
+
+// Top 5 pays par téléchargements pour un article
+const top5 = Object.entries(paper.geo)
+  .filter(([country]) => country !== "")
+  .sort(([, a], [, b]) => b.downloads - a.downloads)
+  .slice(0, 5);
+
+// Évolution annuelle (pour un graphe)
+const years = Object.keys(paper.downloads.by_year).sort();
+const values = years.map(y => paper.downloads.by_year[y]);
+
+// Total mondial téléchargements d'une revue
+const total = journal.papers.reduce((s, p) => s + p.downloads.total, 0);
 ```
