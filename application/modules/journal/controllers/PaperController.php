@@ -217,12 +217,6 @@ class PaperController extends PaperDefaultController
         $review->loadSettings();
         $this->view->review = $review;
 
-        if ($review->getSetting(Episciences_Review::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE)) {
-            $paper->loadOtherVolumes();
-            $paper->updateXml();
-        }
-
-
         // ratings **************************************************
         //[#169]: https://github.com/CCSDForge/episciences/issues/169
         $isVisibleRatings = (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid) || $paper->getCopyEditor($loggedUid)) ||
