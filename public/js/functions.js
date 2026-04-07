@@ -707,6 +707,17 @@ function createModalStructure(params) {
             $modal_body = $modal_box.find('.modal-body');
             $modal_footer = $modal_box.find('.modal-footer');
             $modal_button = $('#submit-modal');
+
+            // ARIA: Bootstrap sets aria-hidden on hide; ensure focused descendants
+            $modal_box.on('hide.bs.modal', function () {
+                if (
+                    document.activeElement &&
+                    this.contains(document.activeElement) &&
+                    typeof document.activeElement.blur === 'function'
+                ) {
+                    document.activeElement.blur();
+                }
+            });
         },
     });
 }
