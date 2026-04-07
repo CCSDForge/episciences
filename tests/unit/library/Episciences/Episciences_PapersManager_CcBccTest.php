@@ -121,20 +121,11 @@ final class Episciences_PapersManager_CcBccTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * BUG: non-sequential key indices when consecutive semicolons are present.
-     *
-     * array_filter() preserves the original explode() indices.
-     * After filtering index 1 (empty string), the remaining entries keep
-     * indices 0 and 2. The foreach uses those as $i, producing
-     * "paper-modal-init-2" instead of "paper-modal-init-1" for the second entry.
-     *
-     * Impact: cosmetic — keys are unique identifiers, not positions —
-     * but the gap is unexpected given the "init-N" naming convention.
-     *
-     * Fix: use array_values() after array_filter() to re-index, or use
-     * a manual counter instead of $i.
+     * Fixed (BUG-1 + BUG-2): array_values() re-indexes after array_filter() so keys
+     * are always sequential (0, 1, 2…) even when consecutive separators are present.
+     * The dead `if ($p === '') continue;` guard was removed at the same time.
      */
-    public function testConsecutiveSemicolonsProduceNonSequentialKeys(): void
+    public function testConsecutiveSemicolonsProduceSequentialKeys(): void
     {
         $rows = json_decode($this->callRecipientJson('alice@example.com;;bob@example.com'), true);
 
@@ -142,23 +133,16 @@ final class Episciences_PapersManager_CcBccTest extends TestCase
         self::assertSame('alice@example.com', $rows[0]['value']);
         self::assertSame('bob@example.com', $rows[1]['value']);
 
-        // BUG: key skips index 1 because array_filter removes it without re-indexing
+        // Keys must be sequential after the fix
         self::assertSame('paper-modal-init-0', $rows[0]['key']);
-        self::assertSame('paper-modal-init-2', $rows[1]['key'], // BUG: should be "paper-modal-init-1"
-            'BUG: array_filter preserves original indices so key is "init-2" not "init-1"'
-        );
+        self::assertSame('paper-modal-init-1', $rows[1]['key']);
     }
 
     /**
-     * Dead code: the `if ($p === '') continue;` guard inside the foreach is unreachable.
-     *
-     * array_filter() with no callback already removes all falsy values (including '').
-     * No empty string can survive into the loop body.
-     *
-     * Fix: remove the redundant guard, or switch to array_values(array_filter(...))
-     * and keep the guard as the sole empty-string filter.
+     * Fixed (BUG-2): the dead `if ($p === '') continue;` guard has been removed.
+     * array_values(array_filter(...)) is now the sole empty-string filter.
      */
-    public function testEmptyStringGuardInsideLoopIsDeadCode(): void
+    public function testDeadCodeGuardHasBeenRemoved(): void
     {
         $source = (string) file_get_contents(
             dirname(__DIR__, 4) . '/library/Episciences/PapersManager.php'
@@ -167,10 +151,11 @@ final class Episciences_PapersManager_CcBccTest extends TestCase
         $end   = strpos($source, 'function applyRecipientTagDecorators');
         $body  = substr($source, (int) $start, (int) $end - (int) $start);
 
-        // Both the filter and the guard are present, making the guard unreachable
-        self::assertStringContainsString('array_filter', $body);
-        self::assertStringContainsString("if (\$p === '') {", $body,
-            'Dead-code guard is still present — remove it or keep only array_filter'
+        self::assertStringContainsString('array_values', $body,
+            'array_values() must wrap array_filter() to guarantee sequential indices'
+        );
+        self::assertStringNotContainsString("if (\$p === '') {", $body,
+            'The dead-code guard must be absent — array_values(array_filter()) handles empty strings'
         );
     }
 

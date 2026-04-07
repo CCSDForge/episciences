@@ -1163,11 +1163,11 @@ class AdministratepaperControllerTest extends TestCase
     {
         $method = $this->extractMethod('compileMailUsers');
 
-        // fullName is escaped before inclusion in htmlLabel
+        // fullName is cast to string then escaped before inclusion in htmlLabel
         $this->assertMatchesRegularExpression(
-            '/htmlspecialchars\s*\(\s*\$user->getFullName\(\)/',
+            '/htmlspecialchars\s*\(\s*\(string\)\s*\$user->getFullName\(\)/',
             $method,
-            'getFullName() must be wrapped in htmlspecialchars() before injection into htmlLabel'
+            'getFullName() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
         );
     }
 
@@ -1176,9 +1176,9 @@ class AdministratepaperControllerTest extends TestCase
         $method = $this->extractMethod('compileMailUsers');
 
         $this->assertMatchesRegularExpression(
-            '/htmlspecialchars\s*\(\s*mb_strtolower\s*\(\s*\$user->getUsername\(\)\s*\)/',
+            '/htmlspecialchars\s*\(\s*mb_strtolower\s*\(\s*\(string\)\s*\$user->getUsername\(\)\s*\)/',
             $method,
-            'getUsername() must be wrapped in htmlspecialchars() before injection into htmlLabel'
+            'getUsername() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
         );
     }
 
@@ -1187,9 +1187,9 @@ class AdministratepaperControllerTest extends TestCase
         $method = $this->extractMethod('compileMailUsers');
 
         $this->assertMatchesRegularExpression(
-            '/htmlspecialchars\s*\(\s*\$user->getEmail\(\)/',
+            '/htmlspecialchars\s*\(\s*\(string\)\s*\$user->getEmail\(\)/',
             $method,
-            'getEmail() must be wrapped in htmlspecialchars() before injection into htmlLabel'
+            'getEmail() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
         );
     }
 
@@ -1229,11 +1229,15 @@ class AdministratepaperControllerTest extends TestCase
      * Fix: cast each value to (string) before passing to htmlspecialchars(),
      * e.g. htmlspecialchars((string) $user->getFullName(), ENT_QUOTES, 'UTF-8').
      */
+    /**
+     * Fixed (BUG-5): all three getter return values are now cast to (string)
+     * before being passed to htmlspecialchars(), preventing TypeError when
+     * getFullName()/getUsername()/getEmail() returns null (PHP 8.2+).
+     */
     public function testCompileMailUsersCastsGettersToStringBeforeHtmlspecialchars(): void
     {
         $method = $this->extractMethod('compileMailUsers');
 
-        // Check for (string) cast on at least one of the three getter calls used in htmlLabel
         $hasCast = (bool) preg_match(
             '/htmlspecialchars\s*\(\s*\(string\)/',
             $method
@@ -1241,7 +1245,7 @@ class AdministratepaperControllerTest extends TestCase
 
         $this->assertTrue(
             $hasCast,
-            'BUG: getter return values must be cast to (string) before htmlspecialchars() ' .
+            'getter return values must be cast to (string) before htmlspecialchars() ' .
             'to avoid TypeError when getFullName()/getUsername()/getEmail() returns null (PHP 8.2+)'
         );
     }

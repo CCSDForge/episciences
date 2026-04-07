@@ -985,8 +985,8 @@ class AdministratepaperController extends PaperDefaultController
                 $cUser['username'] = $user->getUsername();
                 $cUser['mail'] = $user->getEmail();
                 $cUser['label'] = $user->getFullName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>';
-                $cUser['htmlLabel'] = '<span class="ep-ac-name">' . htmlspecialchars($user->getFullName(), ENT_QUOTES, 'UTF-8') . ' <span class="darkgrey">(' . htmlspecialchars(mb_strtolower($user->getUsername()), ENT_QUOTES, 'UTF-8') . ')</span></span>'
-                    . '<span class="ep-ac-email">' . htmlspecialchars($user->getEmail(), ENT_QUOTES, 'UTF-8') . '</span>';
+                $cUser['htmlLabel'] = '<span class="ep-ac-name">' . htmlspecialchars((string) $user->getFullName(), ENT_QUOTES, 'UTF-8') . ' <span class="darkgrey">(' . htmlspecialchars(mb_strtolower((string) $user->getUsername()), ENT_QUOTES, 'UTF-8') . ')</span></span>'
+                    . '<span class="ep-ac-email">' . htmlspecialchars((string) $user->getEmail(), ENT_QUOTES, 'UTF-8') . '</span>';
 
                 $compiledUsers[$user->getUid()] = $cUser;
             }

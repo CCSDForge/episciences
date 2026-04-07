@@ -1614,12 +1614,9 @@ class Episciences_PapersManager
         if ($semicolonMails === '') {
             return '[]';
         }
-        $parts = array_filter(array_map('trim', explode(';', $semicolonMails)));
+        $parts = array_values(array_filter(array_map('trim', explode(';', $semicolonMails))));
         $out = [];
         foreach ($parts as $i => $p) {
-            if ($p === '') {
-                continue;
-            }
             $out[] = [
                 'key' => 'paper-modal-init-' . $i,
                 'value' => $p,
