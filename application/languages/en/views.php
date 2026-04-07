@@ -1683,7 +1683,7 @@ return array(
     "Vous avez suggéré de proposer la relecture à :" => "You suggested another reviewer:",
     "Commentaire :" => "Comment:",
 
-    "Vous avez choisi d'accepter de relire cet article" => "You've chosen to accept to review this article",
+    "Vous avezdernière version choisi d'accepter de relire cet article" => "You've chosen to accept to review this article",
     "Sous quels délais pensez-vous effectuer votre relecture ?" => "Can you give us an estimation of the time you need to review this article?",
     "jour(s)" => "day(s)",
     "semaine(s)" => "week(s)",
@@ -2473,9 +2473,10 @@ return array(
     "Si activé, les volumes sans articles seront visibles sur le site" => "If enabled, volumes without articles will be visible on the site",
     "Autoriser la modification du titre du volume avec des articles publiés" => "Allow editing volume title with published articles",
     "Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés" => "If enabled, a volume's title can be modified even if it contains published articles",
-
-    // Website > menu
+    "Afficher les volumes secondaires sur la page publique de l'article" => "Display secondary volumes on the public article page",
+    "Si activé, les volumes secondaires seront visibles sur la page publique de l'article" => "If enabled, secondary volumes will be visible on the public article page",
+    "Volumes secondaires: " => "Secondary volumes: ",
+     // Website > menu
     'Choisissez une page' => 'Select a page',
     'unavailable' => 'Unavailable'
-
 );

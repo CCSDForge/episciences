@@ -219,7 +219,6 @@ class PaperController extends PaperDefaultController
         $review->loadSettings();
         $this->view->review = $review;
 
-
         // ratings **************************************************
         //[#169]: https://github.com/CCSDForge/episciences/issues/169
         $isVisibleRatings = (Episciences_Auth::isSecretary() || $paper->getEditor($loggedUid) || $paper->getCopyEditor($loggedUid)) ||
