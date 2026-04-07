@@ -102,6 +102,14 @@ $(document).ready(function () {
 
     __initMCE('.full_mce', undefined, options);
 
+    // Avoid ARIA warning: don't hide a modal while a descendant still has focus.
+    // Bootstrap toggles aria-hidden on hide; blurring prevents "Blocked aria-hidden..." messages.
+    $(document).on('hide.bs.modal', '.modal', function () {
+        if (document.activeElement && this.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
+    });
+
     $('#confirmNewVersion').on('click', function (e) {
         if (!$('#commentNewVersion').tinymce().getContent()) {
             alert(
