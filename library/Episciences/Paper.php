@@ -3303,6 +3303,41 @@ class Episciences_Paper
                 $oVolume->loadSettings();
             }
         }
+        
+        // fetch secondary volume data if the setting is enabled in the review
+        $review = Episciences_ReviewsManager::find($this->getRvid());
+
+        $displaySecondaryVolumes = (int) $review->getSetting(
+                Episciences_Review::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE
+            ) === 1;
+
+        if ($displaySecondaryVolumes) {
+            $otherVolumes = $this->getOtherVolumes();
+
+            if (!empty($otherVolumes)) {
+                $secondaryVolumesNode = $dom->createElement('secondaryVolumes');
+
+                foreach ($otherVolumes as $volumePaper) {
+                    $oSecondaryVolume = Episciences_VolumesManager::find($volumePaper->getVid());
+
+                    if ($oSecondaryVolume instanceof Episciences_Volume) {
+                        $secondaryVolumeNode = $dom->createElement('secondaryVolume');
+
+                        $secondaryVolumeNode->appendChild(
+                            $dom->createElement('vid', $volumePaper->getVid())
+                        );
+
+                        $secondaryVolumeNode->appendChild(
+                            $dom->createElement('name', $oSecondaryVolume->getNameKey())
+                        );
+
+                        $secondaryVolumesNode->appendChild($secondaryVolumeNode);
+                    }
+                }
+
+                $node->appendChild($secondaryVolumesNode);
+            }
+        }
 
         // fetch section data
         if ($this->getSid()) {
