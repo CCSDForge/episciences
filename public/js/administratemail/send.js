@@ -173,7 +173,7 @@ function initAutocomplete() {
 
         $(input).autocomplete({
             appendTo: $(input).closest('form'),
-            minLength: 0,
+            minLength: 2,
 
             source: function (request, response) {
                 let matcher = new RegExp(
@@ -207,14 +207,6 @@ function initAutocomplete() {
                     .append('<a>' + item.htmlLabel + '</a>')
                     .appendTo(ul);
             },
-        });
-
-        $(input).on('focus', function () {
-            try {
-                $(this).autocomplete('search', $(this).val() || '');
-            } catch (e) {
-                // ignore if autocomplete not initialized
-            }
         });
 
         $(input).blur(function () {

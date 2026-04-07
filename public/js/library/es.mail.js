@@ -172,8 +172,8 @@ function initRecipientsAutocompleteInScope($scope) {
         let input_val = 0;
 
         $input.autocomplete({
-            appendTo: $input.closest('form'),
-            minLength: 0,
+            appendTo: 'body',
+            minLength: 2,
             source: function (request, response) {
                 const matcher = new RegExp(
                     $.ui.autocomplete.escapeRegex(request.term),
@@ -204,14 +204,6 @@ function initRecipientsAutocompleteInScope($scope) {
                     .append('<a>' + item.htmlLabel + '</a>')
                     .appendTo(ul);
             },
-        });
-
-        $input.on('focus', function () {
-            try {
-                $input.autocomplete('search', $input.val() || '');
-            } catch (e) {
-                // ignore
-            }
         });
 
         $input.on('blur', function () {
@@ -725,7 +717,11 @@ function addUser($field, key, value, uid) {
     const $input = $field instanceof jQuery ? $field : $($field);
     let recipients = [];
     if ($input.val()) {
-        recipients = JSON.parse($input.val());
+        try {
+            recipients = JSON.parse($input.val());
+        } catch (e) {
+            recipients = [];
+        }
     }
     recipients.push({ key: key, value: value, uid: uid });
 
