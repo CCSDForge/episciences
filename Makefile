@@ -38,7 +38,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
 .PHONY: enter-container-php
-.PHONY: update-geoip stats-process stats-update-robots-list
+.PHONY: update-geoip stats-process stats-update-robots-list stats-download-kpi
 .PHONY: format format-check format-tests format-file
 
 # =============================================================================
@@ -455,6 +455,16 @@ stats-process: ## Process STAT_TEMP into PAPER_STAT (optional: date=YYYY-MM-DD a
 		$(if $(date),--date-s=$(date)) \
 		$(if $(filter 1,$(all)),--all) \
 		$(if $(filter 1,$(dry-run)),--dry-run)
+
+stats-download-kpi: ## Generate download KPI JSON for all published articles (optional: rvcode=xxx pretty=1 dry-run=1 output=path)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php stats:download-kpi [-q]
+	@echo "Generating download KPI JSON..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php stats:download-kpi \
+		$(if $(rvcode),--rvcode=$(rvcode)) \
+		$(if $(filter 1,$(pretty)),--pretty) \
+		$(if $(filter 1,$(dry-run)),--dry-run) \
+		$(if $(output),--output=$(output))
 
 can-i-use-update: ## Update browserslist database when caniuse-lite is outdated
 	@echo "Updating browserslist database..."

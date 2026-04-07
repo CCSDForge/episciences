@@ -166,7 +166,7 @@ return array(
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned reviewers if the 'Automatically reassign the same reviewers when a new version is submitted' option is enabled",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_SUBMITTED][Episciences_Mail_TemplatesManager::DESCRIPTION] => "author reply to a request for modifications issued by an editor: the author suggest a temporary version",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_SUBMITTED][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned editors and according to the journal's settings, the editors-in-chief, administrators and sub-editors",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_SUBMITTED][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned editors and according to the journal's settings, the editors-in-chief, administrators and editorial secretaries",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMITTED][Episciences_Mail_TemplatesManager::DESCRIPTION] => "author reply to a request for modifications issued by an editor in chief: the author suggest a new version",
 
