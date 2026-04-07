@@ -1724,14 +1724,14 @@ class Episciences_PapersManager
         $translator = Zend_Registry::get('Zend_Translate');
         $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=cc">%s</a>', $title, PREFIX_URL, $translator->translate('Cc')),
             'id' => $formId . '-cc',
             'class' => 'autocomplete'
         ]);
 
         // bcc
         $form->addElement('text', 'bcc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=bcc">%s</a>', $title, PREFIX_URL, $translator->translate('Bcc')),
             'id' => $formId . '-bcc',
             'class' => 'autocomplete'
         ]);
@@ -1819,14 +1819,14 @@ class Episciences_PapersManager
         $translator = Zend_Registry::get('Zend_Translate');
         $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=cc">%s</a>', $title, PREFIX_URL, $translator->translate('Cc')),
             'id' => $formId . '-cc',
             'class' => 'autocomplete'
         ]);
 
         // bcc
         $form->addElement('text', 'bcc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=bcc">%s</a>', $title, PREFIX_URL, $translator->translate('Bcc')),
             'id' => $formId . '-bcc',
             'class' => 'autocomplete'
         ]);
@@ -1914,7 +1914,7 @@ class Episciences_PapersManager
         $translator = Zend_Registry::get('Zend_Translate');
         $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=cc">%s</a>', $title, PREFIX_URL, $translator->translate('Cc')),
             'id' => $formId . '-cc',
             'class' => 'autocomplete'
         ]);
@@ -1930,7 +1930,7 @@ class Episciences_PapersManager
 
         // bcc
         $form->addElement('text', 'bcc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=bcc">%s</a>', $title, PREFIX_URL, $translator->translate('Bcc')),
             'id' => $formId . '-bcc',
             'value' => $bccVal,
             'class' => 'autocomplete'
@@ -2027,14 +2027,14 @@ class Episciences_PapersManager
         $translator = Zend_Registry::get('Zend_Translate');
         $title = $translator->translate('Ajouter des destinataires');
         $askeditors_subform->addElement('text', 'cc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=cc">%s</a>', $title, PREFIX_URL, $translator->translate('Cc')),
             'id' => $formId . '-cc',
             'class' => 'autocomplete'
         ]);
 
         // bcc
         $askeditors_subform->addElement('text', 'bcc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=bcc">%s</a>', $title, PREFIX_URL, $translator->translate('Bcc')),
             'id' => $formId . '-bcc',
             'class' => 'autocomplete'
         ]);
@@ -2142,7 +2142,7 @@ class Episciences_PapersManager
         $translator = Zend_Registry::get('Zend_Translate');
         $title = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=cc">%s</a>', $title, PREFIX_URL, $translator->translate('Cc')),
             'id' => $formId . '-cc',
             'class' => 'autocomplete'
         ]);
@@ -2150,7 +2150,7 @@ class Episciences_PapersManager
         // bcc
         $bccDefault = Episciences_Review::forYourInformation($docId);
         $form->addElement('text', 'bcc', [
-            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=bcc">%s</a>', $title, PREFIX_URL, $translator->translate('Bcc')),
             'id' => $formId . '-bcc',
             'value' => $bccDefault,
             'class' => 'autocomplete'
@@ -3266,14 +3266,14 @@ class Episciences_PapersManager
         $translator = Zend_Registry::get('Zend_Translate');
         $contactsTitle = $translator->translate('Ajouter des destinataires');
         $form->addElement('text', 'cc', [
-            'label' => '<a class="show_contacts_button" title="' . $contactsTitle . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=cc">%s</a>', $contactsTitle, PREFIX_URL, $translator->translate('Cc')),
             'id' => $prefix . '-cc',
             'class' => 'autocomplete',
         ]);
 
         // bcc
         $form->addElement('text', 'bcc', [
-            'label' => '<a class="show_contacts_button" title="' . $contactsTitle . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'label' => sprintf('<a class="show_contacts_button" title="%s" href="%sadministratemail/getcontacts?target=bcc">%s</a>', $contactsTitle, PREFIX_URL, $translator->translate('Bcc')),
             'id' => $prefix . '-bcc',
             'class' => 'autocomplete',
         ]);
