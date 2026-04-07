@@ -1580,7 +1580,7 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION => [self::DESCRIPTION => "notification informant le relecteur de sa réassignation à la nouvelle version de l'article", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN => [self::DESCRIPTION => "notification informant le relecteur de sa réassignation à la version temporaire de l'article", self::RECIPIENT => "tous les relecteurs assignés à l'article si l'option 'Réassigner automatiquement les mêmes relecteurs quand une nouvelle version est soumise' est activée"],
         self::TYPE_PAPER_TMP_VERSION_SUBMITTED => [self::DESCRIPTION => "réponse de l'auteur à une demande de modifications émise par le comité éditorial : l’auteur propose une version temporaire", self::RECIPIENT => self::MANAGERS_COPY_EDITORS_EXCEPTED_EXP],
-        self::TYPE_PAPER_NEW_VERSION_SUBMITTED => [self::DESCRIPTION => "réponse de l'auteur à une demande de modifications émise par le comité éditorial : l'auteur propose une nouvelle version", self::RECIPIENT => "tous les rédacteurs et l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaires de rédaction"],
+        self::TYPE_PAPER_NEW_VERSION_SUBMITTED => [self::DESCRIPTION => "réponse de l'auteur à une demande de modifications émise par le comité éditorial : l'auteur propose une nouvelle version", self::RECIPIENT => self::MANAGERS_COPY_EDITORS_EXCEPTED_EXP],
         self::TYPE_PAPER_REVIEWED_REVIEWER_COPY => [self::DESCRIPTION => "message de remerciement au relecteur, suite à une relecture terminée", self::RECIPIENT => 'relecteur'],
         self::TYPE_PAPER_REVIEWED_EDITOR_COPY => [self::DESCRIPTION => "notification prévenant les rédacteurs qu'un relecteur a terminé sa relecture", self::RECIPIENT => self::EDITORS_RECEP_EXP],
         self::TYPE_PAPER_DELETED_AUTHOR_COPY => [self::DESCRIPTION => "confirmation de la suppression de l'article par son auteur", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
@@ -1653,7 +1653,7 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY => [self::DESCRIPTION => "confirmation de la soumission automatique de l'article depuis le serveur de preprint", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION => [self::DESCRIPTION => "notification informant les rédacteurs que le travail de révision a été effectué par les relecteurs", self::RECIPIENT => self::EDITORS_RECEP_EXP],
         self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION => [self::DESCRIPTION => "notification informant les rédacteurs des articles bloqués à l'état soumis", self::RECIPIENT => self::EDITORS_RECEP_EXP],
-        self::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY => [self::DESCRIPTION => "notification informant le comité éditorial qu'un auteur vient d'ajouter / éditer son commentaire (lettre d'accompagnement)", self::RECIPIENT => "tous les rédacteurs assignés à l'article et selon le paramétrage de la revue, les rédacteurs en chef, administrateurs et secrétaire de rédaction"],
+        self::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY => [self::DESCRIPTION => "notification informant le comité éditorial qu'un auteur vient d'ajouter / éditer son commentaire (lettre d'accompagnement)", self::RECIPIENT => self::MANAGERS_COPY_EDITORS_EXCEPTED_EXP],
 
 
     ];
