@@ -102,6 +102,14 @@ $(document).ready(function () {
 
     __initMCE('.full_mce', undefined, options);
 
+    // Avoid ARIA warning: don't hide a modal while a descendant still has focus.
+    // Bootstrap toggles aria-hidden on hide; blurring prevents "Blocked aria-hidden..." messages.
+    $(document).on('hide.bs.modal', '.modal', function () {
+        if (document.activeElement && this.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
+    });
+
     $('#confirmNewVersion').on('click', function (e) {
         if (!$('#commentNewVersion').tinymce().getContent()) {
             alert(
@@ -114,7 +122,14 @@ $(document).ready(function () {
     });
 
     $('.submit-modal').click(function () {
-        $(this).closest('.modal-content').find('form').submit();
+        const $modalContent = $(this).closest('.modal-content');
+        // Submit only the visible form, ignoring hidden auxiliary forms (e.g. contacts picker)
+        const $visibleForm = $modalContent.find('.modal-body form:visible').first();
+        if ($visibleForm.length) {
+            $visibleForm.submit();
+            return;
+        }
+        $modalContent.find('form').first().submit();
     });
 
     // Initialisation du menu des rédacteurs
@@ -272,11 +287,50 @@ $(document).ready(function () {
     });
     $('input#copycoauthor').click(function () {
         let coAuthorsMailStr = $('input#coauthormail').val();
+        if (!coAuthorsMailStr) {
+            return;
+        }
+        let $modal = $('.modal.in, .modal.show').first();
+        let $ccInput = $modal.find('input[id$="-cc"]');
+        if (!$ccInput.length) {
+            return;
+        }
+        // Split by semicolon to handle multiple co-authors: "<a@b>;<c@d>"
+        let emails = coAuthorsMailStr.split(';').map(e => e.trim()).filter(e => e);
         if ($(this).prop('checked')) {
-            $("input[name='cc']").val(coAuthorsMailStr);
+            // Add each co-author as a separate CC tag
+            emails.forEach(email => {
+                $ccInput.val(email).trigger('blur');
+            });
         } else {
-            let inputcc = $("input[name='cc']");
-            inputcc.val(inputcc.val().replace(coAuthorsMailStr, ''));
+            // Remove each co-author tag
+            emails.forEach(email => {
+                let resolved = epResolveManualRecipientToKnown(email);
+                if (resolved.type === 'known' && resolved.recipient.uid) {
+                    let $tag = $modal.find('.recipient-tag[data-uid="' + resolved.recipient.uid + '"]');
+                    removeRecipient($tag);
+                }
+            });
+        }
+    });
+
+    // Auto-add co-authors to CC when modal opens if checkbox is checked by default
+    $(document).on('shown.bs.modal', '.modal', function () {
+        let $modal = $(this);
+        let $checkbox = $modal.find('input#copycoauthor');
+        if ($checkbox.length && $checkbox.prop('checked')) {
+            let coAuthorsMailStr = $modal.find('input#coauthormail').val();
+            if (!coAuthorsMailStr) {
+                return;
+            }
+            let $ccInput = $modal.find('input[id$="-cc"]');
+            if (!$ccInput.length) {
+                return;
+            }
+            let emails = coAuthorsMailStr.split(';').map(e => e.trim()).filter(e => e);
+            emails.forEach(email => {
+                $ccInput.val(email).trigger('blur');
+            });
         }
     });
 });

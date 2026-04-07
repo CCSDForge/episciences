@@ -80,6 +80,53 @@ class PaperDefaultController extends DefaultController
     }
 
     /**
+     * CC/BCC from modal POST: prefer hidden_cc / hidden_bcc JSON (tags UI), else semicolon-separated text fields.
+     * Also reads Zend subform keys askEditors[cc] / askEditors[bcc] (ask other editors modal).
+     */
+    protected function extractModalRecipientEmails(array $data, string $field): array
+    {
+        $hiddenKey = 'hidden_' . $field;
+        $hiddenRaw = $data[$hiddenKey] ?? null;
+        $textRaw = $data[$field] ?? null;
+        if (isset($data['askEditors']) && is_array($data['askEditors'])) {
+            $sub = $data['askEditors'];
+            if (($hiddenRaw === null || $hiddenRaw === '') && array_key_exists($hiddenKey, $sub)) {
+                $hiddenRaw = $sub[$hiddenKey];
+            }
+            if (($textRaw === null || $textRaw === '') && array_key_exists($field, $sub)) {
+                $textRaw = $sub[$field];
+            }
+        }
+
+        if (!empty($hiddenRaw) && is_string($hiddenRaw)) {
+            try {
+                $decoded = Zend_Json::decode($hiddenRaw);
+            } catch (Exception $e) {
+                $decoded = null;
+            }
+            if (is_array($decoded) && $decoded !== []) {
+                $emails = [];
+                foreach ($decoded as $row) {
+                    if (empty($row['value'])) {
+                        continue;
+                    }
+                    $emails[] = Episciences_Tools::postMailValidation((string) $row['value'])['email'];
+                }
+                $emails = array_values(array_filter($emails));
+                if ($emails !== []) {
+                    return $emails;
+                }
+            }
+        }
+
+        if (!empty($textRaw)) {
+            return array_values(array_filter(array_map('trim', explode(';', (string) $textRaw))));
+        }
+
+        return [];
+    }
+
+    /**
      * @param Episciences_User $submitter
      * @param Episciences_Paper $paper
      * @param string $subject
@@ -116,9 +163,9 @@ class PaperDefaultController extends DefaultController
             }
         }
 
-        // Other reciptients
-        $cc = (!empty($data['cc'])) ? explode(';', $data['cc']) : [];
-        $bcc = (!empty($data['bcc'])) ? explode(';', $data['bcc']) : [];
+        // Other recipients (plain cc/bcc fields and/or JSON hiddens from tag UI in paper status modals)
+        $cc = $this->extractModalRecipientEmails($data, 'cc');
+        $bcc = $this->extractModalRecipientEmails($data, 'bcc');
         $this->addOtherRecipients($mail, $cc, $bcc);
         $mail->writeMail();
 
@@ -526,7 +573,7 @@ class PaperDefaultController extends DefaultController
 
                 // Send notification to each co-author
                 if (!empty($coAuthors)) {
-                    $paperUrl = self::buildPublicPaperUrl($docId);
+                    $paperUrl = $this->buildPublicPaperUrl($docId);
 
                     foreach ($coAuthors as $coAuthorUid => $coAuthor) {
                         try {
@@ -619,7 +666,7 @@ class PaperDefaultController extends DefaultController
                     $authorLocale = $author->getLangueid();
 
                     // Build paper URL for author (public URL, not admin URL)
-                    $paperUrl = self::buildPublicPaperUrl($docId);
+                    $paperUrl = $this->buildPublicPaperUrl($docId);
 
                     // Check if editor names should be disclosed to authors
                     $review = Episciences_ReviewsManager::find($paper->getRvid());

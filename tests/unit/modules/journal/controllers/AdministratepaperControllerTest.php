@@ -1147,4 +1147,134 @@ class AdministratepaperControllerTest extends TestCase
             'revisiondeadlineformAction must verify the paper has a revision-requested status before rendering the form'
         );
     }
+
+    // ---------------------------------------------------------------
+    // compileMailUsers() — source-code analysis
+    // ---------------------------------------------------------------
+
+    /**
+     * All three user-supplied values injected into htmlLabel must be escaped
+     * via htmlspecialchars() to prevent XSS.
+     *
+     * htmlLabel is passed as a raw HTML string to jQuery's .append(), so any
+     * unescaped < > " & in a user's name, username or email is executable.
+     */
+    public function testCompileMailUsersEscapesFullNameInHtmlLabel(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        // fullName is cast to string then escaped before inclusion in htmlLabel
+        $this->assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*\(string\)\s*\$user->getFullName\(\)/',
+            $method,
+            'getFullName() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
+        );
+    }
+
+    public function testCompileMailUsersEscapesUsernameInHtmlLabel(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        $this->assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*mb_strtolower\s*\(\s*\(string\)\s*\$user->getUsername\(\)\s*\)/',
+            $method,
+            'getUsername() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
+        );
+    }
+
+    public function testCompileMailUsersEscapesEmailInHtmlLabel(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        $this->assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*\(string\)\s*\$user->getEmail\(\)/',
+            $method,
+            'getEmail() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
+        );
+    }
+
+    /**
+     * htmlLabel must use <span> elements, not <div>.
+     *
+     * <div> (block) inside <a> (inline) is invalid HTML: browsers emit orphaned
+     * empty <a> boxes between autocomplete items. <span class="ep-ac-name/email">
+     * with display:block via CSS is the correct approach.
+     */
+    public function testCompileMailUsersUsesSpanNotDivInHtmlLabel(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        $this->assertStringNotContainsString(
+            "'<div>",
+            $method,
+            'htmlLabel must not use <div> — block elements inside <a> produce invalid HTML'
+        );
+        $this->assertStringContainsString(
+            'ep-ac-name',
+            $method,
+            'htmlLabel must use <span class="ep-ac-name"> for the name line'
+        );
+        $this->assertStringContainsString(
+            'ep-ac-email',
+            $method,
+            'htmlLabel must use <span class="ep-ac-email"> for the email line'
+        );
+    }
+
+    /**
+     * BUG: getFullName(), getUsername(), and getEmail() may return null when a user
+     * record is incomplete. Passing null to htmlspecialchars() raises a TypeError
+     * in PHP 8.2+ (and a deprecation notice in PHP 8.1).
+     *
+     * Fix: cast each value to (string) before passing to htmlspecialchars(),
+     * e.g. htmlspecialchars((string) $user->getFullName(), ENT_QUOTES, 'UTF-8').
+     */
+    /**
+     * Fixed (BUG-5): all three getter return values are now cast to (string)
+     * before being passed to htmlspecialchars(), preventing TypeError when
+     * getFullName()/getUsername()/getEmail() returns null (PHP 8.2+).
+     */
+    public function testCompileMailUsersCastsGettersToStringBeforeHtmlspecialchars(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        $hasCast = (bool) preg_match(
+            '/htmlspecialchars\s*\(\s*\(string\)/',
+            $method
+        );
+
+        $this->assertTrue(
+            $hasCast,
+            'getter return values must be cast to (string) before htmlspecialchars() ' .
+            'to avoid TypeError when getFullName()/getUsername()/getEmail() returns null (PHP 8.2+)'
+        );
+    }
+
+    /**
+     * The "label" field (used for autocomplete text matching) is intentionally
+     * not HTML-escaped — it is JSON-encoded by Zend_Json::encode() before being
+     * output to the page, which makes it safe as a data value.
+     * This test documents that the absence of htmlspecialchars on $cUser['label'] is correct.
+     */
+    public function testCompileMailUsersLabelFieldIsNotHtmlEscaped(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        // Find the label assignment line and confirm it has no htmlspecialchars
+        $labelLinePos  = strpos($method, "\$cUser['label']");
+        $htmlspecPos   = strpos($method, 'htmlspecialchars', (int) $labelLinePos);
+        $nextAssignPos = strpos($method, "\$cUser[", (int) $labelLinePos + 1);
+
+        // htmlspecialchars must not appear between the label assignment and the next field
+        if ($htmlspecPos !== false && $nextAssignPos !== false) {
+            $this->assertGreaterThan(
+                $nextAssignPos,
+                $htmlspecPos,
+                'label field should not be HTML-escaped — it goes through JSON encoding, not direct HTML injection'
+            );
+        } else {
+            // htmlspecialchars is not present at all after the label line — correct
+            $this->addToAssertionCount(1);
+        }
+    }
 }
