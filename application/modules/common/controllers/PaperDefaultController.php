@@ -373,7 +373,8 @@ class PaperDefaultController extends DefaultController
      * @param array $additionalAttachments
      * @param array $options : others options
      * @return bool
-     *
+     * @throws JsonException
+     * @throws Zend_Exception
      */
     protected function newCommentNotifyManager(Episciences_Paper $paper, Episciences_Comment $oComment, array $tags = [], array $additionalAttachments = [], array $options = []): bool
     {
@@ -573,7 +574,7 @@ class PaperDefaultController extends DefaultController
 
                 // Send notification to each co-author
                 if (!empty($coAuthors)) {
-                    $paperUrl = $this->buildPublicPaperUrl($docId);
+                    $paperUrl = self::buildPublicPaperUrl($docId);
 
                     foreach ($coAuthors as $coAuthorUid => $coAuthor) {
                         try {
@@ -666,7 +667,7 @@ class PaperDefaultController extends DefaultController
                     $authorLocale = $author->getLangueid();
 
                     // Build paper URL for author (public URL, not admin URL)
-                    $paperUrl = $this->buildPublicPaperUrl($docId);
+                    $paperUrl = self::buildPublicPaperUrl($docId);
 
                     // Check if editor names should be disclosed to authors
                     $review = Episciences_ReviewsManager::find($paper->getRvid());
