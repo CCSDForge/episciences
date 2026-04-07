@@ -647,8 +647,8 @@ class AdministratepaperController extends PaperDefaultController
             $this->view->editor_comment_form = $editor_comment_form;
 
             // Only process editor comment form if it's not a reply form (reply forms have reply_to_pcid)
-            if (($request->getPost('postComment') !== null) && 
-                empty($request->getPost('reply_to_pcid')) && 
+            if (($request->getPost('postComment') !== null) &&
+                empty($request->getPost('reply_to_pcid')) &&
                 $editor_comment_form->isValid($request->getPost())) {
                 if ($this->save_editor_comment($paper)) {
                     $message = $this->view->translate("Votre commentaire a bien été envoyé.");
@@ -865,6 +865,8 @@ class AdministratepaperController extends PaperDefaultController
             'repository' => (int)$paper->getRepoid()]);
         $this->view->js_contributor = Zend_Json::encode($contributor->toArray());
         $this->view->js_sender = Zend_Json::encode(['fullname' => Episciences_Auth::getFullName(), 'screen_name' => Episciences_Auth::getScreenName(), 'email' => Episciences_Auth::getEmail()]);
+        // Recipients autocomplete in paper status modals
+        $this->view->js_users = Zend_Json::encode(array_values($this->compileMailUsers($review)));
         $this->view->available_languages = Zend_Json::encode(Episciences_Tools::getLanguages());
 
         $this->view->paper = $paper;
@@ -964,6 +966,33 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->editorReplyForms = $editorReplyForms;
         $this->view->editorToAuthorForm = $editorToAuthorForm;
         $this->view->authorToEditorComments = $authorToEditorComments;
+    }
+
+    /**
+     * Build the "users" array used by recipients autocomplete (Cc/Bcc).
+     * Shape is aligned with AdministratemailController::compileUsers().
+     */
+    private function compileMailUsers(Episciences_Review $review): array
+    {
+        $compiledUsers = [];
+        $users = $review::getUsers();
+
+        if ($users) {
+            foreach ($users as $user) {
+                $cUser = [];
+                $cUser['uid'] = $user->getUid();
+                $cUser['fullname'] = $user->getFullName();
+                $cUser['username'] = $user->getUsername();
+                $cUser['mail'] = $user->getEmail();
+                $cUser['label'] = $user->getFullName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>';
+                $cUser['htmlLabel'] = '<span class="ep-ac-name">' . htmlspecialchars((string) $user->getFullName(), ENT_QUOTES, 'UTF-8') . ' <span class="darkgrey">(' . htmlspecialchars(mb_strtolower((string) $user->getUsername()), ENT_QUOTES, 'UTF-8') . ')</span></span>'
+                    . '<span class="ep-ac-email">' . htmlspecialchars((string) $user->getEmail(), ENT_QUOTES, 'UTF-8') . '</span>';
+
+                $compiledUsers[$user->getUid()] = $cUser;
+            }
+        }
+
+        return $compiledUsers;
     }
 
     /**

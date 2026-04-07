@@ -17,7 +17,7 @@ class PaperController extends PaperDefaultController
 
     /**
      *  display paper pdf
-     * @throws GuzzleException
+     * @throws GuzzleExceptio
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception

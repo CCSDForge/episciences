@@ -6,6 +6,8 @@ describe('es.contacts-list', function () {
     let mockGetLoader;
 
     beforeEach(function () {
+        delete window.__epContactsListBound;
+
         // Load the actual JavaScript file
         contactsListJs = fs.readFileSync(
             path.join(__dirname, '../../public/js/library/es.contacts-list.js'),
@@ -83,13 +85,10 @@ describe('es.contacts-list', function () {
 
         // Execute the script to bind event listeners
         eval(contactsListJs);
-
-        // Trigger DOMContentLoaded manually
-        const event = new Event('DOMContentLoaded');
-        document.dispatchEvent(event);
     });
 
     afterEach(function () {
+        delete window.__epContactsListBound;
         jest.clearAllMocks();
         delete global.getLoader;
         delete global.fetch;
@@ -272,13 +271,10 @@ describe('es.contacts-list', function () {
 
     describe('Edge cases', function () {
         it('should do nothing if modal-body is not found', function () {
-            document.body.innerHTML = '<div></div>';
-
-            // Re-execute script with missing element
-            const event = new Event('DOMContentLoaded');
-            document.dispatchEvent(event);
-
-            // Should not throw error
+            document.body.innerHTML = `
+                <a class="show_contacts_button" href="/administratemail/getcontacts?target=cc">CC</a>
+            `;
+            document.querySelector('.show_contacts_button').click();
             expect(global.fetch).not.toHaveBeenCalled();
         });
 
@@ -292,9 +288,6 @@ describe('es.contacts-list', function () {
                     <div class="contacts-container"></div>
                 </div>
             `;
-
-            const event = new Event('DOMContentLoaded');
-            document.dispatchEvent(event);
 
             const button = document.querySelector('.show_contacts_button');
             button.click();
@@ -315,14 +308,35 @@ describe('es.contacts-list', function () {
                 </div>
             `;
 
-            const event = new Event('DOMContentLoaded');
-            document.dispatchEvent(event);
-
             const button = document.querySelector('.show_contacts_button');
             button.click();
 
             // Should not call fetch when container is missing
             expect(global.fetch).not.toHaveBeenCalled();
+        });
+
+        it('enables footer submit while contacts picker is open (deadline must not block merge)', function () {
+            document.body.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <form id="revision-form">
+                            <a class="show_contacts_button"
+                               href="/administratemail/getcontacts?target=cc">CC</a>
+                        </form>
+                        <div class="contacts-container" style="display: none;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="submit-modal" disabled>Valider</button>
+                    </div>
+                </div>
+            `;
+
+            const submitBtn = document.querySelector('.submit-modal');
+            expect(submitBtn.disabled).toBe(true);
+
+            document.querySelector('.show_contacts_button').click();
+
+            expect(submitBtn.disabled).toBe(false);
         });
     });
 });
