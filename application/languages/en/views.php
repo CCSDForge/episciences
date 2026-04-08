@@ -626,7 +626,7 @@ return array(
     "Répondre sans faire de modifications" => "Answer without any modifications",
     "Envoyer une version temporaire" => "Send a temporary version",
     "Proposer une nouvelle version" => "Upload a new version",
-    'Contacter les éditeurs (avec une pièce jointe)' => 'Contact the editors (with an attachment)',
+    'Contacter les éditeurs (avec une pièce jointe facultative)' => 'Contact the editors (with an optional attachment)',
     "Répondre" => "Reply",
     "Répondre :" => "Answer:",
     "Votre réponse et les fichiers associés seront stockés, envoyés et affichés ici." => "Your answer and associated files will be stored, sent and shown here.",
