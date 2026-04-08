@@ -61,8 +61,13 @@ class Episciences_Review
     public const SETTING_ISSN = 'ISSN';
     public const SETTING_REPOSITORIES = 'repositories';
     public const SETTING_SPECIAL_ISSUE_ACCESS_CODE = 'specialIssueAccessCode';
+    public const SETTING_DISPLAY_EMPTY_VOLUMES = 'displayEmptyVolumes';
+    public const SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES = 'allowEditVolumeTitleWithPublishedArticles';
+    public const SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE = 'displaySecondaryVolumesOnPublicPage';
     public const SETTING_ENCAPSULATE_REVIEWERS = 'encapsulateReviewers';
     public const SETTING_EDITORS_CAN_REASSIGN_ARTICLES = 'editorsCanReassignArticle';
+    public const SETTING_AUTHOR_EDITOR_COMMUNICATION = 'authorEditorCommunication';
+    public const SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS = 'discloseEditorNamesToAuthors';
     //Assignation automatique de rédacteurs
     public const SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT = 'systemAutoEditorsAssignment';
     //Paramétrage avancé
@@ -92,6 +97,9 @@ class Episciences_Review
     public const SETTING_SYSTEM_NOTIFICATIONS = 'systemNotifications';
     public const SETTING_SYSTEM_IS_COI_ENABLED = 'isCoiEnabled'; //Conflict Of Interest (COI) is Disabled by default
     public const SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED = 'coiCommentsToEditorsEnabled';
+    // send the document status to an external API (currently configurable in the database: must be activated directly in the database)
+    // INSERT INTO `REVIEW_SETTING` (`RVID`, `SETTING`, `VALUE`) VALUES (?, 'postPaperStatus', '1');
+    public const SETTING_POST_PAPER_STATUS = 'postPaperStatus'; // Valeurs possibles [0,1]
 
     public const ASSIGNMENT_EDITORS_DETAIL = [
         self::SETTING_SYSTEM_CAN_ASSIGN_CHIEF_EDITORS => '0',
@@ -206,6 +214,8 @@ class Episciences_Review
             self::SETTING_SPECIAL_ISSUE_ACCESS_CODE,
             self::SETTING_ENCAPSULATE_REVIEWERS,
             self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES,
+            self::SETTING_AUTHOR_EDITOR_COMMUNICATION,
+            self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS,
             self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
             self::SETTING_AUTOMATICALLY_REASSIGN_SAME_REVIEWERS_WHEN_NEW_VERSION,
             self::SETTING_SYSTEM_NOTIFICATIONS,
@@ -225,6 +235,9 @@ class Episciences_Review
             self::SETTING_START_STATS_AFTER_DATE,
             self::SETTING_JOURNAL_PUBLISHER,
             self::SETTING_JOURNAL_PUBLISHER_LOC,
+            self::SETTING_DISPLAY_EMPTY_VOLUMES,
+            self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
+            self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE,
         ];
 
 
@@ -708,17 +721,16 @@ class Episciences_Review
      * $options['isNot']['key'] = value : WHERE key != value
      * $options['limit'] = limit    : LIMIT limit
      * $options['offset'] = offset     : LIMIT limit, offset
-     * @param bool $cached
      * @param bool $isFilterInfos
      * @param string|array|Zend_Db_Expr $cols //The columns to select
      * @return Episciences_Paper[]
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
      */
-    public function getPapers(array $options = null, bool $cached = false, bool $isFilterInfos = false, string|array|Zend_Db_Expr $cols = '*'): array
+    public function getPapers(array $options = null, bool $isFilterInfos = false, string|array|Zend_Db_Expr $cols = '*'): array
     {
         $options['is']['rvid'] = $this->getRvid();
-        return Episciences_PapersManager::getList($options, $cached, $isFilterInfos, true,  $cols);
+        return Episciences_PapersManager::getList($options, $isFilterInfos, true, $cols);
     }
 
     /**
@@ -1038,6 +1050,9 @@ class Episciences_Review
         // special issue settings **********************************************
         $form = $this->addSpecialIssueSettingsForm($form);
 
+        // volume settings **********************************************
+        $form = $this->addVolumeSettingsForm($form);
+
         $form = $this->addNotificationSettingsForm($form);
 
         //Copy editing checkBox
@@ -1096,6 +1111,8 @@ class Episciences_Review
             self::SETTING_EDITORS_CAN_EDIT_TEMPLATES,
             self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
             self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS,
+            self::SETTING_AUTHOR_EDITOR_COMMUNICATION,
+            self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS,
         ], 'editors', ["legend" => "Paramètres des rédacteurs"]);
         $form->getDisplayGroup('editors')->removeDecorator('DtDdWrapper');
 
@@ -1112,6 +1129,15 @@ class Episciences_Review
             self::SETTING_EDITORS_CAN_REASSIGN_ARTICLES
         ], 'special_issues', ["legend" => "Paramètres des volumes spéciaux"]);
         $form->getDisplayGroup('special_issues')->removeDecorator('DtDdWrapper');
+
+        // display group : volume settings
+        $form->addDisplayGroup([
+            self::SETTING_DISPLAY_EMPTY_VOLUMES,
+            self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
+            self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE
+        ], 'volumes', ["legend" => "Paramètres des volumes"]);
+        $form->getDisplayGroup('volumes')->removeDecorator('DtDdWrapper');
+
 
         // display group : copy editors settings
         $form->addDisplayGroup([
@@ -1472,6 +1498,25 @@ class Episciences_Review
                 'decorators' => $checkboxDecorators]
         );
 
+        $form->addElement('checkbox', self::SETTING_AUTHOR_EDITOR_COMMUNICATION, [
+                'label' => "Permettre la communication entre auteurs et rédacteurs",
+                'description' => "Si activé, les auteurs et les rédacteurs assignés peuvent s'envoyer des messages directement",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => [
+                    'ViewHelper',
+                    'Description',
+                    ['Label', ['placement' => 'APPEND']],
+                    ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3', 'id' => 'authorEditorCommunication-wrapper']],
+                    ['Errors', ['placement' => 'APPEND']]
+                ]]
+        );
+
+        $form->addElement('checkbox', self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS, [
+                'label' => "Afficher les noms des rédacteurs aux auteurs",
+                'description' => "Si activé, les auteurs peuvent voir les noms des rédacteurs assignés à leur article",
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
 
         $form->addElement('checkbox', self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION, [
                 'label' => "Ne pas permettre le choix d'un rédacteur en chef",
@@ -1578,6 +1623,48 @@ class Episciences_Review
             'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
             'decorators' => $checkboxDecorators
         ]);
+
+        return $form;
+    }
+
+    /**
+     * @param Ccsd_Form $form
+     * @return Ccsd_Form
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     */
+    private function addVolumeSettingsForm(Ccsd_Form $form): Ccsd_Form
+    {
+        $translator = Zend_Registry::get('Zend_Translate');
+
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+        $form->addElement('checkbox', self::SETTING_DISPLAY_EMPTY_VOLUMES, [
+                'label' => $translator->translate("Autoriser l'affichage des volumes vides"),
+                'description' => $translator->translate("Si activé, les volumes sans articles seront visibles sur le site"),
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, [
+                'label' => $translator->translate("Autoriser la modification du titre du volume avec des articles publiés"),
+                'description' => $translator->translate("Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés"),
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE, [
+                'label' => $translator->translate("Afficher les volumes secondaires sur la page publique de l'article"),
+                'description' => $translator->translate("Si activé, les volumes secondaires seront visibles sur la page publique de l'article"),
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
 
         return $form;
     }
@@ -1807,9 +1894,11 @@ class Episciences_Review
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION, self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
             self::SETTING_ARXIV_PAPER_PASSWORD, self::SETTING_DISPLAY_STATISTICS, self::SETTING_CONTACT_ERROR_MAIL,
             self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
-            self::SETTING_TO_REQUIRE_REVISION_DEADLINE, self::SETTING_START_STATS_AFTER_DATE
+            self::SETTING_TO_REQUIRE_REVISION_DEADLINE, self::SETTING_START_STATS_AFTER_DATE,
+            self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, self::SETTING_DISPLAY_EMPTY_VOLUMES,
+            self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE, self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS,
+            self::SETTING_AUTHOR_EDITOR_COMMUNICATION, 
         ];
-
 
         foreach ($settings as $setting) {
             $allSettings[$setting] = $this->getSetting($setting);
@@ -1831,6 +1920,7 @@ class Episciences_Review
         $allSettings[self::SETTING_JOURNAL_PUBLISHER] = trim(strip_tags((string)$this->getSetting(self::SETTING_JOURNAL_PUBLISHER)));
         $allSettings[self::SETTING_JOURNAL_PUBLISHER_LOC] = trim(strip_tags((string)$this->getSetting(self::SETTING_JOURNAL_PUBLISHER_LOC)));
 
+        // Publisher validation: location requires publisher name
         if ($allSettings[self::SETTING_JOURNAL_PUBLISHER] === '' && $allSettings[self::SETTING_JOURNAL_PUBLISHER_LOC] !== '') {
             return false;
         }

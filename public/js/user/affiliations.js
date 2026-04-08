@@ -17,8 +17,8 @@ function initializeAffiliationsAutocomplete() {
     // Create autocomplete functionality
     function createAutocomplete() {
         let debounceTimer;
-        
-        affiliationsElement.addEventListener('input', function(e) {
+
+        affiliationsElement.addEventListener('input', function (e) {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 handleInput(e.target.value);
@@ -27,10 +27,13 @@ function initializeAffiliationsAutocomplete() {
 
         affiliationsElement.addEventListener('keydown', handleKeydown);
         affiliationsElement.addEventListener('focus', handleFocus);
-        
+
         // Close autocomplete when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!affiliationsElement.contains(e.target) && !resultsContainer?.contains(e.target)) {
+        document.addEventListener('click', function (e) {
+            if (
+                !affiliationsElement.contains(e.target) &&
+                !resultsContainer?.contains(e.target)
+            ) {
                 hideResults();
             }
         });
@@ -54,10 +57,13 @@ function initializeAffiliationsAutocomplete() {
     function handleKeydown(e) {
         if (!resultsContainer || currentResults.length === 0) return;
 
-        switch(e.key) {
+        switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
-                activeIndex = Math.min(activeIndex + 1, currentResults.length - 1);
+                activeIndex = Math.min(
+                    activeIndex + 1,
+                    currentResults.length - 1
+                );
                 updateActiveItem();
                 break;
             case 'ArrowUp':
@@ -99,18 +105,26 @@ function initializeAffiliationsAutocomplete() {
                 if (rorResponse.items) {
                     rorResponse.items.forEach(item => {
                         let additionalInfo = '';
-                        if (item.matching_type === 'ACRONYM' && item.organization.acronyms && item.organization.acronyms.length > 0) {
+                        if (
+                            item.matching_type === 'ACRONYM' &&
+                            item.organization.acronyms &&
+                            item.organization.acronyms.length > 0
+                        ) {
                             additionalInfo = `[${item.organization.acronyms[0]}]`;
                             cacheAcronym.push(additionalInfo);
                             cacheAcronym = [...new Set(cacheAcronym)];
                         }
-                        
+
                         // Get the display name from the names array
                         let displayName = '';
                         if (item.organization.names) {
-                            const rorDisplayName = item.organization.names.find(n => n.types && n.types.includes('ror_display'));
-                            const labelName = item.organization.names.find(n => n.types && n.types.includes('label'));
-                            
+                            const rorDisplayName = item.organization.names.find(
+                                n => n.types && n.types.includes('ror_display')
+                            );
+                            const labelName = item.organization.names.find(
+                                n => n.types && n.types.includes('label')
+                            );
+
                             if (rorDisplayName) {
                                 displayName = rorDisplayName.value;
                             } else if (labelName) {
@@ -119,12 +133,13 @@ function initializeAffiliationsAutocomplete() {
                                 displayName = item.organization.names[0].value;
                             }
                         }
-                        
-                        const label = `${displayName} ${additionalInfo} #${item.organization.id}`.trim();
+
+                        const label =
+                            `${displayName} ${additionalInfo} #${item.organization.id}`.trim();
                         availableAffiliations.push({
                             label: label,
                             identifier: item.organization.id,
-                            acronym: additionalInfo
+                            acronym: additionalInfo,
                         });
                     });
 
@@ -151,7 +166,7 @@ function initializeAffiliationsAutocomplete() {
         }
 
         resultsContainer.innerHTML = '';
-        
+
         results.forEach((result, index) => {
             const item = document.createElement('div');
             item.className = 'autocomplete-item';
@@ -183,7 +198,7 @@ function initializeAffiliationsAutocomplete() {
             width: 100%;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         `;
-        
+
         // Add CSS for items
         const style = document.createElement('style');
         style.textContent = `
@@ -201,7 +216,7 @@ function initializeAffiliationsAutocomplete() {
             }
         `;
         document.head.appendChild(style);
-        
+
         affiliationsElement.parentNode.style.position = 'relative';
         affiliationsElement.parentNode.appendChild(resultsContainer);
     }
@@ -222,7 +237,7 @@ function initializeAffiliationsAutocomplete() {
 
     function updateActiveItem() {
         if (!resultsContainer) return;
-        
+
         const items = resultsContainer.querySelectorAll('.autocomplete-item');
         items.forEach((item, index) => {
             item.classList.toggle('active', index === activeIndex);
@@ -232,7 +247,7 @@ function initializeAffiliationsAutocomplete() {
     function selectItem(item) {
         affiliationsElement.value = item.label;
         hideResults();
-        
+
         // Trigger change event for any listeners
         const changeEvent = new Event('change', { bubbles: true });
         affiliationsElement.dispatchEvent(changeEvent);
@@ -240,26 +255,32 @@ function initializeAffiliationsAutocomplete() {
 
     // Handle Add button click
     function handleAddButton() {
-        const addButton = document.querySelector('button[data-original-title="Add"]');
+        const addButton = document.querySelector(
+            'button[data-original-title="Add"]'
+        );
         if (addButton) {
-            addButton.addEventListener('click', function(e) {
-                const affiliationAcronymInput = document.getElementById('affiliationAcronym');
+            addButton.addEventListener('click', function (e) {
+                const affiliationAcronymInput =
+                    document.getElementById('affiliationAcronym');
                 if (affiliationAcronymInput) {
                     let strAcronym = '';
                     const numberOfAcronyms = cacheAcronym.length;
-                    
-                    if (flagAddPreviousAffiliationWithNew !== 1 && affiliationAcronymInput.value !== '') {
+
+                    if (
+                        flagAddPreviousAffiliationWithNew !== 1 &&
+                        affiliationAcronymInput.value !== ''
+                    ) {
                         strAcronym += affiliationAcronymInput.value + '||';
                         flagAddPreviousAffiliationWithNew = 1;
                     }
-                    
+
                     cacheAcronym.forEach((acronym, index) => {
                         strAcronym += acronym;
                         if (index < numberOfAcronyms - 1) {
                             strAcronym += '||';
                         }
                     });
-                    
+
                     affiliationAcronymInput.value = strAcronym;
                 }
             });
@@ -277,7 +298,7 @@ function initializeAffiliationsAutocomplete() {
         selectItem,
         cache,
         cacheAcronym,
-        currentResults
+        currentResults,
     };
 }
 
@@ -285,11 +306,17 @@ function initializeAffiliationsAutocomplete() {
 window.initializeAffiliationsAutocomplete = initializeAffiliationsAutocomplete;
 
 // Initialize on DOM ready for pages that have the form initially
-document.addEventListener('DOMContentLoaded', initializeAffiliationsAutocomplete);
+document.addEventListener(
+    'DOMContentLoaded',
+    initializeAffiliationsAutocomplete
+);
 
 // Also initialize immediately if DOM is already loaded
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeAffiliationsAutocomplete);
+    document.addEventListener(
+        'DOMContentLoaded',
+        initializeAffiliationsAutocomplete
+    );
 } else {
     initializeAffiliationsAutocomplete();
 }

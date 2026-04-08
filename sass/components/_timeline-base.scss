@@ -1,0 +1,173 @@
+/**
+ * Timeline Base Component
+ * Shared styles for left-aligned timelines across the application
+ * Used by: editor comments timeline, demands timeline
+ */
+
+// Core timeline container
+.timeline-container {
+  position: relative;
+  max-height: 800px;
+  overflow-y: auto;
+  padding: 20px 0;
+  margin: 20px 0;
+}
+
+// Timeline track with vertical line
+.timeline-track {
+  position: relative;
+  min-height: 100%;
+  padding-left: 60px; // Space for markers and line
+
+  // Vertical line on the left
+  &::before {
+    content: '';
+    position: absolute;
+    left: 20px; // 20px from left edge
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background-color: $lighter-grey;
+    z-index: 0;
+  }
+}
+
+// Timeline item (single comment/demand)
+.timeline-item {
+  position: relative;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+// Timeline marker (circle on the line with user photo)
+.timeline-marker {
+  position: absolute;
+  left: -56px; // Position to center on the 20px line (20px - 60px padding - 16px half-width)
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: $white;
+  border: 2px solid $lighter-grey;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .user-photo-thumb {
+    width: 28px; // Smaller to fit within the 32px marker
+    height: 28px;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    object-fit: cover;
+  }
+}
+
+// Timeline content card
+.timeline-content {
+  background-color: $white;
+  border: 1px solid $lighter-grey;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  position: relative;
+  flex: 1;
+  margin-left: 30px; // Space from marker (20px line + 10px gap)
+  max-width: 87%; // 87% width for content blocks
+  transition: all 0.2s ease;
+
+  // Arrow pointing left toward the timeline marker
+  &::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 15px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 10px 10px 10px 0;
+    border-color: transparent $light-grey transparent transparent;
+  }
+
+  // Hover effect
+  &:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+  }
+}
+
+// Responsive: Mobile & Tablet (768px and below)
+@media (max-width: 768px) {
+  .timeline-track {
+    padding-left: 50px;
+  }
+
+  .timeline-marker {
+    left: -46px; // Adjusted for mobile: 20px - 50px padding - 16px half-width
+  }
+
+  .timeline-content {
+    margin-left: 30px;
+    max-width: calc(100% - 40px);
+  }
+}
+
+// Accessibility: Reduced motion
+@media (prefers-reduced-motion: reduce) {
+  .timeline-content {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: more) {
+  .timeline-content {
+    border-width: 2px;
+  }
+
+  .timeline-marker {
+    border-width: 3px;
+  }
+
+  .timeline-track::before {
+    width: 3px;
+  }
+}
+
+// Focus states for accessibility
+.timeline-content:focus-within {
+  outline: 2px solid $blue;
+  outline-offset: 2px;
+}
+
+a:focus {
+  outline: 2px solid $blue;
+  outline-offset: 2px;
+}
+
+// Print styles
+@media print {
+  .timeline-container {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .timeline-track::before {
+    background-color: $dark-grey;
+  }
+
+  .timeline-content {
+    page-break-inside: avoid;
+    box-shadow: none;
+  }
+
+  .timeline-marker {
+    box-shadow: none;
+  }
+}

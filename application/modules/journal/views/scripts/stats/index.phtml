@@ -1,6 +1,6 @@
 <?php
 $this->layout()->pageTitle = $this->translate('Statistiques');
-$description = $this->translate('Indicateurs de statistiques pour la revue') . ' <code>' . RVNAME . '</code>';
+$description = $this->translate('Indicateurs de statistiques pour la revue') . ' <span class="stat-code">' . RVNAME . '</span>';
 $this->layout()->description = $description;
 ?>
 <?php if ($this->errorMessage): ?>
@@ -65,7 +65,7 @@ $this->layout()->description = $description;
     <div class="col-md-12">
         <?php if ($this->isAvailableUsersStats && $this->allUsers) : ?>
             <?php $this->jQuery()->addJavascriptFile('/js/stats/users.js'); ?>
-            <h2><?= $this->translate('Utilisateurs') ?> <?= $this->yearQuery ? ' - <code>' . $this->yearQuery . '</code>' : '' ?> </h2>
+            <h2><?= $this->translate('Utilisateurs') ?> <?= $this->yearQuery ? ' - <span class="stat-code">' . $this->yearQuery . '</span>' : '' ?> </h2>
             <?= $this->partial('stats/users.phtml', [
                     'chart5Title' => $this->chart5Title,
                     'allUsers' => $this->allUsers

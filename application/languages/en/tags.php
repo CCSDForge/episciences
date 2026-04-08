@@ -166,7 +166,7 @@ return array(
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned reviewers if the 'Automatically reassign the same reviewers when a new version is submitted' option is enabled",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_SUBMITTED][Episciences_Mail_TemplatesManager::DESCRIPTION] => "author reply to a request for modifications issued by an editor: the author suggest a temporary version",
-    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_SUBMITTED][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned editors and according to the journal's settings, the editors-in-chief, administrators and sub-editors",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_TMP_VERSION_SUBMITTED][Episciences_Mail_TemplatesManager::RECIPIENT] => "all assigned editors and according to the journal's settings, the editors-in-chief, administrators and editorial secretaries",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMITTED][Episciences_Mail_TemplatesManager::DESCRIPTION] => "author reply to a request for modifications issued by an editor in chief: the author suggest a new version",
 
@@ -370,6 +370,8 @@ return array(
     Episciences_Paper_Logger::CODE_EDITOR_COMMENT => "Editor comment",
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => "Clarification request (reviewer to contributor)",
     Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => "Clarification answer (contributor to reviewer)",
+    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR => "Message from author to assigned editors",
+    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR => "Editor's message to author",
     Episciences_Paper_Logger::CODE_DOI_ASSIGNED => 'DOI assignment',
     Episciences_Paper_Logger::CODE_DOI_UPDATED => 'DOI Updated',
     Episciences_Paper_Logger::CODE_DOI_CANCELED => 'DOI canceled',

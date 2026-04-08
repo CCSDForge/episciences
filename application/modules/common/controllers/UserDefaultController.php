@@ -159,27 +159,26 @@ class UserDefaultController extends Episciences_Controller_Action
     {
         $localUser = new Episciences_User();
 
-        $adapter = new Ccsd_Auth_Adapter_Cas(); // default auth adapter
+        // Determine adapter type from configuration, default to CAS
+        $adapterType = defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS';
 
-        if (defined('EPISCIENCES_AUTH_ADAPTER_NAME')) {
-
-            if (EPISCIENCES_AUTH_ADAPTER_NAME === 'LemonLDAP') {
-
-                $adapter = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
-
-            } elseif (EPISCIENCES_AUTH_ADAPTER_NAME === 'MySQL') {
-                $adapter = null;
-            }
-
-            if (!$adapter) {
-                die(EPISCIENCES_AUTH_ADAPTER_NAME . ' User authentication: the development of this feature is still in process');
-
-            }
-
+        // Special case for LemonLDAP (uses custom class outside Factory)
+        if ($adapterType === 'LemonLDAP') {
+            $adapter = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
+        } else {
+            // Use Factory for standard adapters (CAS, MYSQL, DB, IDP, ORCID)
+            $adapter = \Ccsd\Auth\AdapterFactory::getTypedAdapter($adapterType);
         }
 
         $adapter->setIdentityStructure($localUser);
         $adapter->setServiceURL($this->_request->getParams());
+
+        // Call pre_auth to handle form display or credential storage
+        // Returns false if form was displayed (stops execution), true or null to continue
+        $preAuthResult = $adapter->pre_auth($this);
+        if ($preAuthResult === false) {
+            return; // Form was displayed, stop here
+        }
 
         $result = Episciences_Auth::getInstance()->authenticate($adapter);
 
@@ -187,10 +186,29 @@ class UserDefaultController extends Episciences_Controller_Action
         switch ($result->getCode()) {
 
             case Zend_Auth_Result::FAILURE:
-                // on ne devrait jamais arriver là : c'est géré par CAS
-                $this->view->message = "Erreur d'authentification";
-                $this->view->description = "L'authentification a échoué";
-                $this->renderScript('error/error.phtml');
+            case Zend_Auth_Result::FAILURE_CREDENTIAL_INVALID:
+            case Zend_Auth_Result::FAILURE_IDENTITY_NOT_FOUND:
+                // For MySQL adapter, redisplay login form with error message
+                if ($adapter instanceof \Ccsd\Auth\Adapter\Mysql) {
+                    $form = new \Ccsd_User_Form_Login();
+                    $form->setAction($this->view->url());
+                    $form->setActions(true)->createSubmitButton("Connexion");
+
+                    // Add error message using Zend_Translate
+                    $translate = Zend_Registry::get('Zend_Translate');
+                    $form->getElement('username')->addError(
+                        $translate->translate("Identifiants invalides ou compte non validé")
+                    );
+
+                    $this->view->form = $form;
+                    $this->renderScript('user/login.phtml');
+                    return;
+                } else {
+                    // For other adapters (CAS, etc.), show generic error
+                    $this->view->message = "Erreur d'authentification";
+                    $this->view->description = "L'authentification a échoué";
+                    $this->renderScript('error/error.phtml');
+                }
                 break;
 
             case Zend_Auth_Result::SUCCESS:
@@ -310,24 +328,21 @@ class UserDefaultController extends Episciences_Controller_Action
 
         $url = $scheme . $_SERVER['HTTP_HOST'] . $this->view->url($urlParams);
 
-        $auth = new Ccsd_Auth_Adapter_Cas();
+        $auth = null;
+        $adapterName = strtoupper(defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? (string)EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS');
 
-        if (defined('EPISCIENCES_AUTH_ADAPTER_NAME')) {
+        if ($adapterName === 'LEMONLDAP') {
+            $auth = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
+        } elseif ($adapterName === 'MYSQL') {
+            Episciences_Auth::getInstance()->clearIdentity();
+            $this->_redirect($url);
+            return;
+        } else {
+            $auth = new Ccsd_Auth_Adapter_Cas();
+        }
 
-            if (EPISCIENCES_AUTH_ADAPTER_NAME === 'LemonLDAP') {
-
-                $auth = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
-
-
-            } elseif (EPISCIENCES_AUTH_ADAPTER_NAME === 'MySQL') {
-                $auth = null;
-            }
-
-            if (!$auth) {
-                die(EPISCIENCES_AUTH_ADAPTER_NAME . ' User authentication: the development of this feature is still in process');
-
-            }
-
+        if (!$auth) {
+            die($adapterName . ' User authentication: the development of this feature is still in process');
         }
 
         $auth->logout($url);
@@ -1602,6 +1617,7 @@ class UserDefaultController extends Episciences_Controller_Action
         $this->_helper->viewRenderer->setNoRender(true);
         $uid = $this->getParam('uid', 0);
         $size = $this->getParam('size', Ccsd_User_Models_User::IMG_NAME_NORMAL);
+        $backgroundColor = $this->getParam('bgcolor');
 
         $photoPathName = false;
         $data = false;
@@ -1638,18 +1654,38 @@ class UserDefaultController extends Episciences_Controller_Action
             }
         }
 
+        // If custom background color is provided for initials, generate SVG dynamically (skip cache)
+        if ($backgroundColor && $size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
+            $data = Episciences_View_Helper_GetAvatar::asSvg($screenName, $backgroundColor);
+            $contentSize = strlen($data);
+            $maxAge = 300; // Shorter cache for dynamic content
+            $expires = gmdate('D, d M Y H:i:s \G\M\T', time() + $maxAge);
+
+            $this->getResponse()
+                ->setHeader('ETag', md5($data), true)
+                ->setHeader('Expires', $expires, true)
+                ->setHeader('Pragma', '', true)
+                ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
+                ->setHeader('Content-Type', 'image/svg+xml', true)
+                ->setHeader('Content-Length', $contentSize, true)
+                ->setBody($data);
+            return;
+        }
+
         if (!$photoPathName) {
             if ($size === Ccsd_User_Models_User::IMG_NAME_INITIALS) {
+
+                // Generate SVG
+                $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
 
                 $userPhotoPath = $user->getPhotoPath();
 
                 if (!is_dir($userPhotoPath) && !mkdir($userPhotoPath, 0777, true) && !is_dir($userPhotoPath)) {
                     trigger_error(sprintf('Directory "%s" was not created', $userPhotoPath), E_USER_WARNING);
                 }
-                $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . '.svg';
-                $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
-                file_put_contents($photoPathName, $data);
 
+                $photoPathName = $userPhotoPath . '/' . Ccsd_User_Models_User::IMG_PREFIX_INITIALS . $user->getUid() . '.svg';
+                file_put_contents($photoPathName, $data);
 
             } else {
                 $imageMimeType = 'image/svg+xml';

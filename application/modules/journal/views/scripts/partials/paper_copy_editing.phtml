@@ -1,131 +1,78 @@
 <?php
+/**
+ * Copy-Editing Timeline View
+ * Displays copy-editing requests and replies in chronological timeline format
+ * Reuses timeline components from demands system for consistency
+ */
+
+const PARTIALS_CE_DEMAND_ITEM = 'partials/copy_editing_demand_item.phtml';
+const PARTIALS_CE_REPLY_FORM = 'partials/copy_editing_reply_form.phtml';
+
+// Extract data from view
 $comments = $this->copyEditingDemands;
-$replyForms = $this->copyEditingReplyForms;
-$status = $this->paperStatus;
-$latestDocId = $this->latestDocId;
+$replyForms = $this->copyEditingReplyForms ?? [];
+$paperStatus = $this->paperStatus;
 $linkToLatestDocId = $this->linkToLatestDocId;
-$towPoints = $this->translate(' :');
-$isFinalVersionRequest = false;
-foreach ($comments as $id => $comment) : ?>
-    <?php // Copy editing : plusieurs fichiers peuvent être uploader => encodage json
-    // TODO A CONVERTIR TOUT EN JSON DANS LA BD
-    ?>
-    <div class="small">
-        <div id="copy-editing-request-<?= $id ?>" class="row">
-            <strong><em class="fas fa-paper-plane"
-                        style="margin-right: 5px;"></em><?= $this->Date($comment['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) . $towPoints . ' ' ?>
-            </strong>
-            <?php
-            echo '(';
-            if (
-                $comment['TYPE'] === Episciences_CommentsManager::TYPE_REVIEW_FORMATTING_DEPOSED_REQUEST ||
-                !in_array($comment['TYPE'], Episciences_CommentsManager::$_copyEditingRequestTypes, false)
-            ) {
-                echo $this->translate('contributeur');
-            } else {
-                echo $this->translate('comité éditorial');
-            }
-            if ((int)$comment['UID'] === Episciences_Auth::getUid()) {
-                echo $towPoints . ' ' . $this->translate('vous');
-            } elseif (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor() || Episciences_Auth::isCopyEditor()) {
-                echo ' : ' . $comment['SCREEN_NAME'];
-            }
-            echo ') <strong>' . $towPoints . ' </strong><span class="label label-status-' . $comment['TYPE'] . '">' . $this->translate(Episciences_CommentsManager::$_typeLabel[$comment['TYPE']]) . '</span>'; ?>
+$isAllowedToReply = !empty($replyForms);
 
-            <div id="copy-editing-request-types">
-                <?= $this->partial('partials/comment-attachments.phtml', ['comment' => $comment]) ?>
-            </div>
+// Get paperId from first comment's DOCID (needed for file URLs)
+// For copy-editing files, DOCID is used, but paperId is needed for tmp_files in demand_files.phtml
+$paperId = !empty($comments) ? reset($comments)['DOCID'] : null;
+?>
 
-        </div>
+<?php if (!empty($comments)): ?>
 
-        <?php if ($replyForms) : ?>
-            <?php
+    <!-- Copy-editing section -->
+    <div class="copy-editing-section">
 
-            $isFinalVersionRequest = in_array($comment['TYPE'], Episciences_CommentsManager::$_copyEditingFinalVersionRequest, false);
-            $commentType = (int)$comment['TYPE'];
-            $replyBtnClass = 'btn-default';
-            $btnTitle = '';
-            $autoClickable = '';
+        <!-- Timeline -->
+        <div class="copy-editing-timeline">
+            <div class="copy-editing-timeline-track">
 
-            $isDisabled = in_array($status, Episciences_Paper::$_noEditableStatus, true);
+                <?php foreach ($comments as $id => $comment): ?>
 
-            if ($isFinalVersionRequest) {
-                $replyBtnMsg = 'Soumettre la version finale';
-                $replyBtnClass = 'btn-primary';
-                $btnTitle = "Soumettre la version finale de l'archive ouverte";
-                $autoClickable = 'auto-clickable';
-            } elseif ($commentType === Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_SOURCES_REQUEST) {
-                $replyBtnMsg = 'Ajouter les fichiers sources';
-                $isDisabled = $isDisabled || $status === Episciences_Paper::STATUS_CE_REVIEW_FORMATTING_DEPOSED;
-            } elseif ($commentType === Episciences_CommentsManager::TYPE_WAITING_FOR_AUTHOR_FORMATTING_REQUEST) {
-                $replyBtnMsg = 'Ajouter la version formatée';
-                //La version formatée par l'auteur a été validée
-                $isDisabled = $isDisabled || $status === Episciences_Paper::STATUS_CE_AUTHOR_FORMATTING_DEPOSED;
-            } else {
-                $replyBtnMsg = 'Répondre';
-            }
+                    <!-- Main copy-editing request -->
+                    <?= $this->partial(PARTIALS_CE_DEMAND_ITEM, [
+                        'item' => $comment,
+                        'paperId' => $paperId,
+                        'isReply' => false,
+                        'cleanMessage' => false,
+                        'linkToLatestDocId' => $linkToLatestDocId
+                    ]) ?>
 
-            $toolTip = !(empty($btnTitle)) ? 'data-toggle="tooltip"' . ' ' . 'title="' . $this->translate($btnTitle) . '"' : '';
+                    <!-- Reply form (if user is allowed to reply) -->
+                    <?php if ($isAllowedToReply): ?>
+                        <?= $this->partial(PARTIALS_CE_REPLY_FORM, [
+                            'demand' => $comment,
+                            'replyForm' => $replyForms[$id] ?? null,
+                            'paperStatus' => $paperStatus,
+                            'linkToLatestDocId' => $linkToLatestDocId,
+                            'isAllowedToReply' => $isAllowedToReply,
+                            'isFromZSubmit' => $this->isFromZSubmit ?? false,
+                            'zSubmitUrl' => $this->zSubmitUrl ?? ''
+                        ]) ?>
+                    <?php endif; ?>
 
-            $disabled = $isDisabled ? 'disabled' : '';
+                    <!-- Replies thread -->
+                    <?php if (!empty($comment['replies'])): ?>
+                        <div class="timeline-thread">
+                            <?php foreach ($comment['replies'] as $reply): ?>
+                                <?= $this->partial(PARTIALS_CE_DEMAND_ITEM, [
+                                    'item' => $reply,
+                                    'paperId' => $paperId,
+                                    'isReply' => true,
+                                    'cleanMessage' => false,
+                                    'linkToLatestDocId' => $linkToLatestDocId
+                                ]) ?>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
 
-            ?>
+                <?php endforeach; ?>
 
-            <button id="replyFormBtn_<?= $id ?>" style="margin: 10px 0 20px 20px"
-                    class='btn btn <?= $replyBtnClass ?> btn-sm replyButton <?= $autoClickable ?>' <?= $disabled . ' ' . $toolTip ?>>
-                <span class="glyphicon glyphicon-edit "></span> <?= $this->translate($replyBtnMsg) ?>
-            </button>
+            </div><!-- /.copy-editing-timeline-track -->
+        </div><!-- /.copy-editing-timeline -->
 
-        <?php endif; ?>
-    </div>
-    <?php if (!empty($replyForms[$id])) : ?>
-        <div id="replyForm_<?= $id ?>" class="replyForm small" style="margin: 20px 20px 10px 20px; display: none">
-            <?php if ($isFinalVersionRequest) : ?>
-                <?= $this->partial('paper/new_version_show_result.phtml',
-                    ['form' => $replyForms[$id], 'isFromZSubmit' => $this->isFromZSubmit, 'zenodoRepoId' => Episciences_Repositories::ZENODO_REPO_ID, 'zSubmitUrl' => $this->zSubmitUrl]) ?>
-            <?php else: ?>
-                <?= $replyForms[$id] ?>
-            <?php endif; ?>
-        </div>
-    <?php endif; ?>
+    </div><!-- /.copy-editing-section -->
 
-    <?php if (isset($comment['replies'])) : ?>
-
-        <?php foreach ($comment['replies'] as $reply) : ?>
-            <?php
-            $isFinalVersion = (int)$reply['TYPE'] === Episciences_CommentsManager::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED;
-            $infoMsg = '<strong>' . $towPoints . ' </strong>';
-            $infoMsg .= $isFinalVersion ? ('<a class="btn btn-primary btn-sm" href="' . $linkToLatestDocId . '" data-toggle="tooltip" title="' . $this->translate('Accéder à la version finale') . '"><i class="fas fa-link" style="margin-right: 5px;"></i>') : '';
-            $infoMsg .= !$isFinalVersion ? '<span class="label label-status-' . $reply['TYPE'] . '">' : '';
-            $infoMsg .= $this->translate(Episciences_CommentsManager::$_typeLabel[$reply['TYPE']]);
-            $infoMsg .= !$isFinalVersion ? '</span>' : '';
-            $infoMsg .= $isFinalVersion ? '</a>' : '';
-            ?>
-            <br>
-            <div style="margin: 10px 0 10px 20px" class="small">
-
-                <span>
-                    <strong>
-                        <em class="fas fa-reply" style="margin-right: 5px;"></em>
-                        <?= $this->Date($reply['WHEN'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) . $towPoints . ' ' ?>
-                    </strong>
-                </span>
-
-                <?php if ($reply['UID'] === Episciences_Auth::getUid()) : ?>
-                    (<?= $this->translate('vous') ?>)
-                <?php else: ?>
-                    (<?= $reply['SCREEN_NAME'] ?>)
-                <?php endif; ?>
-                <?= $infoMsg ?>
-
-                <div>
-                    <?= Episciences_Tools::formatText($this->escape($reply['MESSAGE'])) ?>
-                    <?= $this->partial('partials/comment-attachments.phtml', ['comment' => $reply]) ?>
-
-                </div>
-
-            </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
-
-<?php endforeach; ?>
+<?php endif; ?>

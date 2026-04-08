@@ -2,7 +2,7 @@
 
 class Episciences_VolumesManager
 {
-    public const MAX_STRING_LENGTH = 255;
+    public const MAX_STRING_LENGTH = 1024;
     public const MAX_STRING_LENGTH_VOL_NUM = 6;
 
     /**
@@ -38,6 +38,49 @@ class Episciences_VolumesManager
         }
 
         return $volumes;
+    }
+
+    /**
+     * Charge les paramètres pour une liste de volumes en une seule requête
+     * @param Episciences_Volume[] $volumes
+     * @return void
+     */
+    public static function loadSettingsForVolumes(array $volumes): void
+    {
+        if (empty($volumes)) {
+            return;
+        }
+
+        $vids = array_map(fn($volume) => $volume->getVid(), $volumes);
+
+        if (empty($vids)) {
+            return;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_VOLUME_SETTINGS, ['VID', 'SETTING', 'VALUE'])
+            ->where('VID IN (?)', $vids);
+
+        try {
+            $results = $db->fetchAll($select);
+
+            $settingsByVid = [];
+            foreach ($results as $row) {
+                $settingsByVid[$row['VID']][$row['SETTING']] = $row['VALUE'];
+            }
+
+            foreach ($volumes as $volume) {
+                $vid = $volume->getVid();
+                if (isset($settingsByVid[$vid])) {
+                    $volume->setSettings($settingsByVid[$vid]);
+                } else {
+                    $volume->setSettings([]);
+                }
+            }
+        } catch (Exception $e) {
+            trigger_error("Error loading volume settings: " . $e->getMessage(), E_USER_WARNING);
+        }
     }
 
     /**
@@ -108,7 +151,7 @@ class Episciences_VolumesManager
             $form->addElement(new Zend_Form_Element_Button([
                 'name' => 'submit',
                 'type' => 'submit',
-                'class' => 'btn btn-default',
+                'class' => 'btn btn-primary',
                 'label' => 'Valider',
                 'decorators' => [['HtmlTag', ['tag' => 'div', 'openOnly' => true, 'class' => 'control-group']], 'ViewHelper']
             ]));
@@ -189,47 +232,76 @@ class Episciences_VolumesManager
         // Récupération de l'id de position pour MAJ des autres volumes
         $select = $db->select()->from(T_VOLUMES)->where('VID = ?', $id);
         $data = $select->query()->fetch();
+
+        if (!$data) {
+            return false;
+        }
+
         $position = $data['POSITION'];
-        $rvid = $data['RVID'];
+        $rvId = $data['RVID'];
 
-        if ($db->delete(T_VOLUMES, 'VID = ' . $id)) {
+        // Démarrer une transaction
+        $db->beginTransaction();
 
-            // Mise à jour de l'id de position des autres volumes
+        try {
+            // 1. Suppression des assignations liées au volume
+            Episciences_User_AssignmentsManager::removeAssignment([
+                'ITEM = ?' => Episciences_User_Assignment::ITEM_VOLUME,
+                'ITEMID = ?' => $id,
+                'RVID = ?' => $rvId
+            ]);
+
+            // 2. Suppression du volume
+            $deleted = $db->delete(T_VOLUMES, 'VID = ' . $id);
+            if (!$deleted) {
+                throw new Exception("Unable to delete volume " . $id);
+            }
+
+            // 3. Mise à jour de l'id de position des autres volumes
             $db->update(
                 T_VOLUMES,
                 ['POSITION' => new Zend_DB_Expr('POSITION-1')],
-                ['RVID = ?' => $rvid, 'POSITION > ?' => $position]
+                ['RVID = ?' => $rvId, 'POSITION > ?' => $position]
             );
 
-            // Suppression des paramètres du volume
+            // 4. Suppression des paramètres du volume
             $db->delete(T_VOLUME_SETTINGS, 'VID = ' . $id);
 
-            // Suppression de la grille de notation liée au volume (si elle existe)
-            $file = 'grid_' . $id . '.xml';
-            if (Episciences_GridsManager::gridExists($file)) {
-                Episciences_GridsManager::delete($file);
-            }
-
-            // Suppression des metadatas du volume
-            if ($db->delete(T_VOLUME_METADATAS, 'VID = ' . $id)) {
-                try {
-                    self::deleteVolumeMetadataFiles($id);
-                } catch (InvalidArgumentException | RuntimeException $e) {
-                    trigger_error($e->getMessage(), E_USER_WARNING);
-                    return false;
-                }
-
-            }
 
 
-            //suppression de la file pour le volume
+            // 5. Suppression des metadatas du volume (SQL)
+            $hasDeletedMetadatas = $db->delete(T_VOLUME_METADATAS, 'VID = ' . $id);
 
+            // 6. Suppression de la file pour le volume
             $db->delete(T_DOI_QUEUE_VOLUMES, 'VID = ' . $id);
             Episciences_VolumeProceeding::deleteByVid($id);
-            return true;
+
+            // Valider transaction
+            $db->commit();
+
+        } catch (Exception $e) {
+            //Annuler la transaction en cas d'erreur
+            $db->rollBack();
+            trigger_error("Error deleting volume: " . $e->getMessage(), E_USER_WARNING);
+            return false;
         }
 
-        return false;
+        // 7. Suppression des fichiers de metadatas du volume
+        if ($hasDeletedMetadatas) {
+            try {
+                self::deleteVolumeMetadataFiles($id);
+            } catch (InvalidArgumentException|RuntimeException $e) {
+                trigger_error($e->getMessage(), E_USER_WARNING);
+            }
+        }
+
+        // 8. Suppression de la grille de notation liée au volume (si elle existe)
+        $file = 'grid_' . $id . '.xml';
+        if (Episciences_GridsManager::gridExists($file)) {
+            Episciences_GridsManager::delete($file);
+        }
+
+        return true;
     }
 
     private static function getAssignedPapers(int $vid): array
@@ -603,7 +675,7 @@ class Episciences_VolumesManager
             try {
                 $db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE POSITION=VALUES(POSITION)');
             } catch (Exception $e) {
-                trigger_error(sprintf($e->getMessage(), E_USER_WARNING));
+                trigger_error($e->getMessage(), E_USER_WARNING);
             }
         }
     }

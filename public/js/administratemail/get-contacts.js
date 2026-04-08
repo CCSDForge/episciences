@@ -6,21 +6,17 @@ let $contact_type_dropdown;
  *
  */
 function initGetContacts() {
-
-    console.log('executed initGetContacts');
-
     $contact_list = $('#contact-list');
     $contacts = $contact_list.find('tr');
     $contact_type_dropdown = $('#contact-type-dropdown');
 
-    // contact type dropdown
-    $contact_type_dropdown.find('a').on('click', function () {
+    // contact type dropdown - use .off() to prevent double binding
+    $contact_type_dropdown.find('a').off('click.epContactsDropdown').on('click.epContactsDropdown', function () {
         showList($(this).parent('li'));
     });
 
-    // toggle all contacts
-    $('#toggleAll').on('click', function () {
-
+    // toggle all contacts - use .off() to prevent double binding
+    $('#toggleAll').off('click.epContactsToggle').on('click.epContactsToggle', function () {
         let action = $(this).data('action');
 
         $contacts.each(function () {
@@ -40,21 +36,19 @@ function initGetContacts() {
         } else {
             $(this).data('action', 'select');
         }
-
     });
 
     initList();
 
-
-    $('#filter-input').keyup(function () {
+    // Filter input - use .off() to prevent double binding
+    $('#filter-input').off('keyup.epContactsFilter').on('keyup.epContactsFilter', function () {
         filterTable('#filter-input', '#contact-list tr');
     });
-    $('#filter-input').on('paste', function () {
+    $('#filter-input').off('paste.epContactsFilter').on('paste.epContactsFilter', function () {
         setTimeout(function () {
             filterTable('#filter-input', '#contact-list tr');
-        }, 4)
+        }, 4);
     });
-
 }
 
 function filterTable(input, elements) {
@@ -64,7 +58,11 @@ function filterTable(input, elements) {
     if (query.length) {
         var r = new RegExp(query, 'i');
         $elements.hide();
-        $elements.filter(function(){ return $(this).text().match(r) }).show();
+        $elements
+            .filter(function () {
+                return $(this).text().match(r);
+            })
+            .show();
     } else {
         $elements.show();
     }
@@ -72,7 +70,7 @@ function filterTable(input, elements) {
 
 // when a contact is clicked, it is either added or removed
 function initList() {
-    $contacts.on('click', function () {
+    $contacts.off('click.epContacts').on('click.epContacts', function () {
         let action = $(this).hasClass('selected') ? 'remove' : 'add';
         if (action === 'add') {
             select($(this));
@@ -84,13 +82,11 @@ function initList() {
 }
 
 function showList($li) {
-
     $contact_type_dropdown.find('span:first').html($li.find('a').html());
     let contacts = eval($li.data('value'));
 
     let html = '';
     for (let i in contacts) {
-
         let user = contacts[i];
 
         html += '<tr id="contact_' + user['uid'] + '">';
@@ -98,12 +94,18 @@ function showList($li) {
         html += '   <td class="grey">' + user['username'] + '</td>';
         let roleArr = user['role'];
         html += '<td>';
-        if (roleArr.length > 0){
-            roleArr.forEach((el) => {
-                if(el !== "member") html += '   <span class="label label-default role-'+el+'">' + translate(el) + '</span>'
+        if (roleArr.length > 0) {
+            roleArr.forEach(el => {
+                if (el !== 'member')
+                    html +=
+                        '   <span class="label label-default role-' +
+                        el +
+                        '">' +
+                        translate(el) +
+                        '</span>';
             });
         }
-        html += '</td>'
+        html += '</td>';
         html += '   <td>' + user['mail'] + '</td>';
         html += '</tr>';
     }

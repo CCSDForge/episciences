@@ -1,6 +1,6 @@
 <?php
+declare(strict_types=1);
 
-use Episciences\MonoLog\MonologFactory;
 use geertw\IpAnonymizer\IpAnonymizer;
 use Psr\Log\LogLevel;
 
@@ -12,161 +12,156 @@ class Episciences_Paper_Visits
     public const FILE_COUNT_METRICS_NAME = 'file_count';
 
     /**
-     * @param $docId
-     * @param string $consult
+     * Record a paper visit in STAT_TEMP.
+     *
+     * The real (non-anonymized) IP is stored so the cron job (stats:process)
+     * can perform GeoIP lookup, bot detection, and anonymization at processing time.
+     *
      * @throws Zend_Db_Adapter_Exception
      */
-    public static function add($docId, string $consult = self::CONSULT_TYPE_NOTICE): void
+    public static function add(int $docId, string $consult = self::CONSULT_TYPE_NOTICE): void
     {
-
-        /**
-         * Changer le type de la colonne IP à BIGINT ?
-         * Possibilité de stocker les adresses IPv6 et IPv4 dans la même colonne
-         *
-         */
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        /** @var Zend_Controller_Request_Http $request */
-        $request = Zend_Controller_Front::getInstance()?->getRequest();
-
-        $clientIp = $request?->getClientIp();
-
-        /**
-         * Les adresses IPv6 ne sont généralement pas routées,
-         * mais il arrive parfois d'en rencontrer, ce qui nécessite alors une investigation...
-         *
-         */
-        if (Episciences_Tools::isIPv6($clientIp)) {
-
-            $trace = [
-                'checkProxy' => true,
-                'clientIp' => $clientIp,
-                'server' => $request->getServer()
-            ];
-
-            Episciences_View_Helper_Log::log('Paper visits with IPv6 client: ', LogLevel::INFO, $trace);
+        if ($db === null) {
+            return;
         }
 
-        $clientIpAnon = self::anonymizeClientIp($clientIp);
-        $clientIpAnon = $db?->quote($clientIpAnon);
+        // Zend_Controller_Front::getInstance() is always non-null (singleton).
+        // getRequest() returns ?Zend_Controller_Request_Abstract; Http subclass has getClientIp().
+        $request  = Zend_Controller_Front::getInstance()->getRequest();
+        $clientIp = null;
+        if ($request instanceof Zend_Controller_Request_Http) {
+            $clientIp = $request->getClientIp();
+            if (Episciences_Tools::isIPv6($clientIp)) {
+                Episciences_View_Helper_Log::log('Paper visits with IPv6 client: ', LogLevel::INFO, [
+                    'checkProxy' => true,
+                    'clientIp'   => $clientIp,
+                    'server'     => $request->getServer(),
+                ]);
+            }
+        }
 
-        $ipAnonExp = "IFNULL(CASE WHEN IS_IPV4($clientIpAnon) THEN INET_ATON($clientIpAnon) ELSE INET_ATON('127.1') END, INET_ATON('127.1'))";
+        $clientIpQuoted = $db->quote((string) $clientIp);
+        $ipExpr = "IFNULL(CASE WHEN IS_IPV4($clientIpQuoted) THEN INET_ATON($clientIpQuoted) ELSE INET_ATON('127.1') END, INET_ATON('127.1'))";
 
-        $data = [
-            'DOCID' => (int)$docId,
-            'IP' => new Zend_Db_Expr($ipAnonExp),
+        $db->insert(VISITS_TEMP, [
+            'DOCID'           => $docId,
+            'IP'              => new Zend_Db_Expr($ipExpr),
             'HTTP_USER_AGENT' => self::getUserAgent(),
-            'DHIT' => new Zend_Db_Expr('NOW()'),
-            'CONSULT' => $consult
-        ];
-
-
-        $db?->insert(VISITS_TEMP, $data);
-
+            'DHIT'            => new Zend_Db_Expr('NOW()'),
+            'CONSULT'         => $consult,
+        ]);
     }
 
     /**
-     * @param $clientIp
-     * @return string
+     * Return the current request's User-Agent, sanitized and truncated.
+     * Returns 'Unknown' when no UA is present or when the value is empty after sanitization.
      */
-    protected static function anonymizeClientIp($clientIp): string
+    public static function getUserAgent(): string
     {
-        $ipAnonymizer = new IpAnonymizer();
-        $ipAnonymizer->ipv4NetMask = "255.255.0.0";
-
-        $anonymizedIp = $ipAnonymizer->anonymize($clientIp);
-
-        if ($anonymizedIp === '' || $anonymizedIp === null) {
-            $anonymizedIp = '127.0.0.1';
+        $raw = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
+        if ($raw === '') {
+            return 'Unknown';
         }
 
-        return $anonymizedIp;
+        $sanitized = filter_var($raw, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $userAgent  = is_string($sanitized) ? substr($sanitized, 0, 2000) : '';
+
+        return $userAgent !== '' ? $userAgent : 'Unknown';
     }
 
     /**
-     * @return false|string
-     */
-    public static function getUserAgent(): bool|string
-    {
-        $userAgent = false;
-        if (array_key_exists('HTTP_USER_AGENT', $_SERVER)) {
-            $userAgent = filter_var($_SERVER['HTTP_USER_AGENT'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $userAgent = substr($userAgent, 0, 2000);
-        }
-        if (!$userAgent) {
-            $userAgent = 'Unknown';
-        }
-        return $userAgent;
-    }
-
-    /**
-     * @param $docId
-     * @param string $consult
-     * @return int|string
-     * @deprecated @see self::getPaperMetricsByPaperId())
-     */
-    public static function count($docId, string $consult = self::CONSULT_TYPE_NOTICE): int|string
-    {
-        trigger_error(
-            __METHOD__ . ' is deprecated. ' .
-            'use self::getPaperMetricsByPaperId()',
-            E_USER_DEPRECATED
-        );
-
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = $db?->select()
-            ->from(T_PAPER_VISITS, new Zend_Db_Expr('SUM(COUNTER)'))
-            ->where('DOCID = ?', $docId)
-            ->where('ROBOT = 0')
-            ->where('CONSULT = ?', $consult);
-        return (int)$db?->fetchOne($sql);
-    }
-
-    /**
-     * Get all access metrics for a PaperID
+     * Get all access metrics for a PaperID.
+     *
+     * @return array<string, int>
      */
     public static function getPaperMetricsByPaperId(int $paperId): array
     {
-        $allDocIdsArray = Episciences_PapersManager::getDocIdsFromPaperId($paperId);
-        $allDocIdsArray = array_column($allDocIdsArray, 'DOCID');
-        return self::countAccessMetricForDocIds($allDocIdsArray);
+        $docIds = array_column(Episciences_PapersManager::getDocIdsFromPaperId($paperId), 'DOCID');
+        return self::countAccessMetricForDocIds($docIds);
     }
 
+    /**
+     * @param array<int, mixed> $docIds
+     * @return array<string, int>
+     */
     private static function countAccessMetricForDocIds(array $docIds): array
     {
         $result = [
             self::PAGE_COUNT_METRICS_NAME => 0,
-            self::FILE_COUNT_METRICS_NAME => 0
+            self::FILE_COUNT_METRICS_NAME => 0,
         ];
 
-        // Validate and convert all docIds to integers to prevent SQL injection
-        $docIds = array_map('intval', $docIds);
-        $docIds = array_filter($docIds, static fn($id) => $id > 0);
+        // Cast to int and drop non-positive values to prevent SQL injection.
+        $docIds = array_values(
+            array_filter(array_map('intval', $docIds), static fn(int $id): bool => $id > 0)
+        );
 
-        // Return default result if no valid docIds
         if (empty($docIds)) {
             return $result;
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        if ($db === null) {
+            return $result;
+        }
 
-        $sql = $db?->select()
+        $sql = $db->select()
             ->from(
                 T_PAPER_VISITS,
                 [
                     self::PAGE_COUNT_METRICS_NAME => new Zend_Db_Expr("SUM(CASE WHEN CONSULT = '" . self::CONSULT_TYPE_NOTICE . "' THEN COUNTER ELSE 0 END)"),
-                    self::FILE_COUNT_METRICS_NAME => new Zend_Db_Expr("SUM(CASE WHEN CONSULT = '" . self::CONSULT_TYPE_FILE . "' THEN COUNTER ELSE 0 END)")
+                    self::FILE_COUNT_METRICS_NAME => new Zend_Db_Expr("SUM(CASE WHEN CONSULT = '" . self::CONSULT_TYPE_FILE . "' THEN COUNTER ELSE 0 END)"),
                 ]
             )
             ->where('ROBOT = 0')
             ->where('DOCID IN (?)', $docIds);
 
         try {
-            $result = $db?->fetchRow($sql);
+            $row = $db->fetchRow($sql);
+            // fetchRow() returns array|false; cast SUM() string values to int.
+            if (is_array($row)) {
+                $result = [
+                    self::PAGE_COUNT_METRICS_NAME => (int) ($row[self::PAGE_COUNT_METRICS_NAME] ?? 0),
+                    self::FILE_COUNT_METRICS_NAME => (int) ($row[self::FILE_COUNT_METRICS_NAME] ?? 0),
+                ];
+            }
         } catch (Exception $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
         }
 
         return $result;
+    }
+
+    /**
+     * @deprecated Use self::getPaperMetricsByPaperId() instead.
+     */
+    public static function count(int $docId, string $consult = self::CONSULT_TYPE_NOTICE): int
+    {
+        trigger_error(
+            __METHOD__ . ' is deprecated. Use self::getPaperMetricsByPaperId()',
+            E_USER_DEPRECATED
+        );
+
+        $db  = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $sql = $db?->select()
+            ->from(T_PAPER_VISITS, new Zend_Db_Expr('SUM(COUNTER)'))
+            ->where('DOCID = ?', $docId)
+            ->where('ROBOT = 0')
+            ->where('CONSULT = ?', $consult);
+
+        return (int) $db?->fetchOne($sql);
+    }
+
+    /**
+     * @deprecated IP anonymization is now performed in ProcessStatTempCommand (stats:process cron).
+     */
+    protected static function anonymizeClientIp(string $clientIp): string
+    {
+        $anonymizer              = new IpAnonymizer();
+        $anonymizer->ipv4NetMask = '255.255.0.0';
+        $anonymizedIp            = $anonymizer->anonymize($clientIp);
+
+        return $anonymizedIp !== '' ? $anonymizedIp : '127.0.0.1';
     }
 }

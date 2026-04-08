@@ -1,93 +1,65 @@
 <?php
+declare(strict_types=1);
+
+use Episciences\Api\OpenCitationsApiClient;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
+use Psr\Cache\InvalidArgumentException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
-class Episciences_OpencitationsTools {
-
+/**
+ * Facade for OpenCitations API access.
+ *
+ * Wraps OpenCitationsApiClient with lazy-init singleton and static-method API
+ * for backward compatibility with existing callers.
+ */
+class Episciences_OpencitationsTools
+{
     public const ONE_MONTH = 3600 * 24 * 31;
-    public const CITATIONS_PREFIX_VALUE = "coci => ";
+
+    private static ?OpenCitationsApiClient $client = null;
+
     /**
-     * @param string $doi
-     * @return mixed
-     * @throws \Psr\Cache\InvalidArgumentException
+     * For tests: inject a preconfigured client.
      */
-    public static function getOpenCitationCitedByDoi(string $doi)
+    public static function setClient(?OpenCitationsApiClient $client): void
     {
-        $cache = new FilesystemAdapter('enrichmentCitations', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-        $trimDoi = trim($doi);
-        $fileName = $trimDoi . "_citations.json";
-        $sets = $cache->getItem($fileName);
-        $sets->expiresAfter(self::ONE_MONTH);
-        if (!$sets->isHit()) {
-            if (PHP_SAPI === 'cli') {
-                echo PHP_EOL .'Call API Opencitations for ' . $trimDoi . PHP_EOL;
-            }
-            $respCitationsApi = self::retrieveAllCitationsByDoi($trimDoi);
-            if ($respCitationsApi !== '' && $respCitationsApi !== '[]') {
-                $sets->set($respCitationsApi);
-                $cache->save($sets);
-                if (PHP_SAPI === 'cli') {
-                    echo PHP_EOL .'PUT CACHE CALL FOR ' . $trimDoi . PHP_EOL;
-                }
-            } else {
-                if (PHP_SAPI === 'cli') {
-                    echo PHP_EOL .'EMPTY RESPONSE ' . $trimDoi . PHP_EOL;
-                }
-                $sets->set(json_encode([""]));
-                return $sets;
-            }
-        }
-        if (PHP_SAPI === 'cli') {
-            echo PHP_EOL .'GET CACHE CALL FOR ' . $trimDoi . PHP_EOL;
-        }
-        return $sets;
-    }
-    public static function retrieveAllCitationsByDoi(string $doi)
-    {
-
-        $client = new Client();
-        $openCitationCall = '';
-        try {
-            usleep(500000);
-            return $client->get(OPENCITATIONS_APIURL . $doi, [
-                'headers' => [
-                    'User-Agent' => EPISCIENCES_USER_AGENT,
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                    'authorization' => OPENCITATIONS_TOKEN
-                ]
-            ])->getBody()->getContents();
-        } catch (GuzzleException $e) {
-            trigger_error($e->getMessage());
-        }
-        return $openCitationCall;
+        self::$client = $client;
     }
 
+    private static function getClient(): OpenCitationsApiClient
+    {
+        if (self::$client === null) {
+            $cache = new FilesystemAdapter('enrichmentCitations', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+            $logger = Episciences_Paper_Citations_Logger::getMonologInstance();
+            self::$client = new OpenCitationsApiClient(new Client(), $cache, $logger);
+        }
+        return self::$client;
+    }
 
     /**
-     * @param array $apiCallCitationCache
-     * @return array
+     * Fetch citing DOIs for a given DOI from OpenCitations.
+     *
+     * Returns:
+     *  - null  : API error (not cached)
+     *  - []    : 0 citations (bug #5 fixed: valid, cached)
+     *  - array : citation rows
+     *
+     * @return array<int, array<string, string>>|null
+     * @throws InvalidArgumentException
+     */
+    public static function getOpenCitationCitedByDoi(string $doi): ?array
+    {
+        return self::getClient()->fetchCitingDois($doi);
+    }
+
+    /**
+     * Extract clean DOI strings from OpenCitations citation rows.
+     *
+     * @param array<int, array<string, string>> $apiCallCitationCache raw citation rows
+     * @return array<string> clean DOI list
      */
     public static function cleanDoisCitingFound(array $apiCallCitationCache): array
     {
-        $globalArrayCiteDOI = array_map(static function ($citationsValues) {
-            $citationHasDoi = 0;
-            $doi = str_replace(self::CITATIONS_PREFIX_VALUE, "", $citationsValues['citing']);
-            $separateAllIds = explode(" ",$doi);
-            foreach ($separateAllIds as $id) {
-                if (preg_match("~^doi:~",$id)){
-                    $doi = str_replace('doi:',"",$id);
-                    $citationHasDoi = 1;
-                    break;
-                }
-            }
-            if ($citationHasDoi === 0) {
-                $doi = '';
-            }
-            return preg_replace("~;(?<=;)\s.*~", "", $doi);
-        }, $apiCallCitationCache);
-        return $globalArrayCiteDOI;
+        return self::getClient()->extractCitingDois($apiCallCitationCache);
     }
 }
-

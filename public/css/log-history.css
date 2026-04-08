@@ -1,0 +1,195 @@
+/**
+ * Log History Styles
+ * Styles for paper history logs display with accessibility enhancements
+ */
+
+/* ============================================================================
+   History Filters
+   ========================================================================= */
+
+.history-filters {
+    margin-bottom: 1rem;
+}
+
+.history-filter-inline {
+    display: inline-block;
+}
+
+.history-filter-input-group {
+    margin-bottom: 5px;
+}
+
+.history-popover-buttons {
+    text-align: right;
+    margin-top: 0.5rem;
+}
+
+/* Search input states */
+.history-search.has-search {
+    border: 1px solid #ff9d00;
+    border-color: #ff9d00;
+}
+
+.history-search.no-search {
+    border: 1px solid #ccc;
+    border-color: #ccc;
+}
+
+/* Focus states for search input */
+.history-search:focus {
+    outline: 2px solid #0056b3;
+    outline-offset: 2px;
+}
+
+.history-search:focus-visible {
+    outline: 2px solid #0056b3;
+    outline-offset: 2px;
+}
+
+.history-search:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* ============================================================================
+   History Tabs
+   ========================================================================= */
+
+.history-tabs {
+    margin-bottom: 5px;
+}
+
+.history-tabs li {
+    margin-bottom: 0;
+    outline: 0;
+}
+
+.history-tabs li a {
+    padding: 8px 10px 5px 10px;
+    color: #999;
+    outline: 0;
+}
+
+.history-tabs li.active a {
+    color: #000;
+}
+
+.history-tabs li.current {
+    font-weight: bold !important;
+}
+
+/* Accessible focus states for tab navigation */
+.history-tabs li a:focus,
+.history-tabs li a:focus-visible {
+    outline: 2px solid #0056b3;
+    outline-offset: 2px;
+}
+
+.history-tabs li a:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* ============================================================================
+   History Logs
+   ========================================================================= */
+
+.history-logs a {
+    text-decoration: none;
+}
+
+/* ============================================================================
+   Log Entries
+   ========================================================================= */
+
+/* Log entry container styles */
+.log-entry {
+    padding: 5px;
+    margin-bottom: 5px;
+    margin-right: 5px;
+}
+
+/* Log timestamp label - using rem for better accessibility */
+.log-timestamp {
+    font-size: 0.85rem; /* ~11px but scalable */
+    margin-right: 5px;
+}
+
+/* Log detail icon */
+.log-detail-icon {
+    float: right;
+    top: 6px;
+    right: 6px;
+    font-size: 10px;
+    opacity: 0.7;
+    display: none;
+    cursor: pointer;
+}
+
+/* Show icon on hover for modal entries */
+.modal-opener .log-entry {
+    cursor: pointer;
+}
+
+.modal-opener .log-entry:hover .log-detail-icon {
+    display: block !important;
+}
+
+/* Accessible focus states for interactive log entries */
+a.modal-opener:focus {
+    outline: 2px solid #0056b3;
+    outline-offset: 2px;
+}
+
+a.modal-opener:focus-visible {
+    outline: 2px solid #0056b3;
+    outline-offset: 2px;
+}
+
+/* Remove outline for mouse users (keeps it for keyboard users) */
+a.modal-opener:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Bootstrap alert extension for violet color scheme with WCAG AA contrast */
+.alert-violet {
+    background-color: #e6d9f2;
+    border-color: #9b59b6;
+    color: #4a235a; /* Darker purple for better contrast */
+}
+
+/* Ensure sufficient contrast for all alert types in log entries */
+.log-entry.alert {
+    border-width: 1px;
+    border-style: solid;
+}
+
+/* Improve readability for screen readers */
+.log-entry[role="alert"] {
+    position: relative;
+}
+
+/* ============================================================================
+   Accessibility Enhancements
+   ========================================================================= */
+
+/* Respect user preference for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .log-entry,
+    .modal-opener,
+    .history-tabs li a {
+        transition: none;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .log-entry.alert {
+        border-width: 2px;
+    }
+
+    a.modal-opener:focus,
+    a.modal-opener:focus-visible,
+    .history-tabs li a:focus,
+    .history-tabs li a:focus-visible {
+        outline-width: 3px;
+    }
+}

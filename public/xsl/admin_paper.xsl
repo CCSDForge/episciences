@@ -20,7 +20,7 @@
                 <xsl:attribute name="action">
                     <xsl:value-of select="concat($prefixUrl,'paper/postorcidauthor')"/>
                 </xsl:attribute>
-                <div class="modal fade" id="author-modal-orcid" tabindex="-1" role="dialog" aria-labelledby="author-modal-orcid-label" aria-hidden="true">
+                <div class="modal fade" id="author-modal-orcid" tabindex="-1" role="dialog" aria-labelledby="author-modal-orcid-label-title" aria-modal="true" aria-hidden="true">
                     <div class="modal-dialog modal-orcid" role="document">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -31,8 +31,8 @@
                                 <input class='hidden' id='modal-called' value='0'></input>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
-                                <button type="submit" class="btn btn-success" id="valid-new-orcid">Save changes</button>
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-primary" id="valid-new-orcid">Save changes</button>
                             </div>
                         </div>
                     </div>
@@ -67,13 +67,26 @@
                 <h2 class="panel-title" style="margin-bottom: 5px">
 
                     <span class="darkgrey">
-                        <xsl:for-each select="metadata/oai_dc:dc/dc:creator[position() &lt;= 5]">
-                            <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
-                            <xsl:if test="position() != last()"> ; </xsl:if>
-                        </xsl:for-each>
-                        <xsl:if test="count(metadata/oai_dc:dc/dc:creator) &gt; 5">
-                            <i> et al.</i>
-                        </xsl:if>
+                        <!-- Show first 5 authors, or all 6 if exactly 6 -->
+                        <xsl:choose>
+                            <xsl:when test="count(metadata/oai_dc:dc/dc:creator) = 6">
+                                <!-- Exactly 6 authors: show all 6, no et al. -->
+                                <xsl:for-each select="metadata/oai_dc:dc/dc:creator">
+                                    <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
+                                    <xsl:if test="position() != last()"> ; </xsl:if>
+                                </xsl:for-each>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <!-- 5 or fewer, or 7+: show first 5 -->
+                                <xsl:for-each select="metadata/oai_dc:dc/dc:creator[position() &lt;= 5]">
+                                    <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
+                                    <xsl:if test="position() != last()"> ; </xsl:if>
+                                </xsl:for-each>
+                                <xsl:if test="count(metadata/oai_dc:dc/dc:creator) &gt; 6">
+                                    <i> et al.</i>
+                                </xsl:if>
+                            </xsl:otherwise>
+                        </xsl:choose>
                         -
                     </span>
 

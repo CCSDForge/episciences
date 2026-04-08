@@ -19,13 +19,15 @@ $currentSmall = "";
 <?php endif; ?>
 <?php if (Episciences_Auth::isAllowedToManagePaper() || $paper->isOwner()): ?>
     <div class="panel panel-default collapsable" id="manage-linked-data">
-        <div class="panel-heading">
+        <div class="panel-heading" role="button" data-toggle="collapse" data-target="#container-manager-linkeddatas" style="cursor: pointer;">
             <h2 class="panel-title"><?= $this->translate('Liens publications - données - logiciels') ?></h2>
         </div>
         <input class="hidden" id="paper_docId" value="<?= $paper->getDocid() ?>">
         <input class="hidden" id="paper_id" value="<?= $paper->getPaperid() ?>">
-        <div id="container-manager-linkeddatas" class="panel-body in">
-            <button id="add-linkdata" class="btn btn-default btn-sm" style="margin: 2px;"><span class="fas fa-link" style="margin-right: 5px"></span>
+
+        <div id="container-manager-linkeddatas" class="panel-body collapse">
+            <button id="add-linkdata" class="btn btn-default btn-sm" style="margin: 2px;">
+                <span class="fas fa-link" style="margin-right: 5px"></span>
                 <?= $this->translate('Ajouter une relation') ?>
             </button>
             <?php $this->jQuery()->addJavascriptFile('/js/linkeddatas/managelinkeddatas.js'); ?>

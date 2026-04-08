@@ -24,12 +24,16 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
 
     /**
      * @param $stringToMakeAvatar
+     * @param string|null $backgroundColor Hex color code without # (e.g., 'FFC107')
      * @return string
      */
-    public static function asSvg($stringToMakeAvatar): string
+    public static function asSvg($stringToMakeAvatar, ?string $backgroundColor = null): string
     {
+        // Use custom color if provided, otherwise use default palette
+        $backgrounds = $backgroundColor ? ['#' . $backgroundColor] : self::$_defaultBackgroundColors;
+
         $avatar = new Avatar([
-            'shape' => 'circle', 'theme' => 'colorful', 'width' => 34, 'height' => 34, 'fontSize' => 16, 'backgrounds' => self::$_defaultBackgroundColors]);
+            'shape' => 'circle', 'theme' => 'colorful', 'width' => 34, 'height' => 34, 'fontSize' => 16, 'backgrounds' => $backgrounds]);
 
         return $avatar->create($stringToMakeAvatar)->setFontFamily('Helvetica')->toSvg();
 
@@ -57,16 +61,20 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
             $lang = 'en';
         }
 
+        // Sanitize $lang to prevent path traversal via malformed registry value
+        $lang = preg_replace('/[^a-z]/', '', strtolower($lang)) ?: 'en';
+
         $paperStatusAvatarDir = REVIEW_PUBLIC_PATH . 'paper-status';
 
         if (!is_dir($paperStatusAvatarDir)) {
-            $resMkdir = mkdir($paperStatusAvatarDir);
-            if (!$resMkdir) {
+            if (!mkdir($paperStatusAvatarDir)) {
                 trigger_error(sprintf('Directory "%s" was not created', $paperStatusAvatarDir), E_USER_WARNING);
+                return '404.svg';
             }
         }
 
-        $paperStatusAvatarFileName = $paperStatus . '.' . $lang . '.svg';
+        // Cast to int to prevent path traversal via a crafted $paperStatus value
+        $paperStatusAvatarFileName = (int)$paperStatus . '.' . $lang . '.svg';
         $paperStatusAvatarFileNamePath = $paperStatusAvatarDir . '/' . $paperStatusAvatarFileName;
 
         if (!is_readable($paperStatusAvatarFileNamePath)) {

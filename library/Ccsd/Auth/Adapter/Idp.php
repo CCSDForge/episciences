@@ -374,16 +374,13 @@ class Idp implements AdapterInterface {
      */
     public function filterEmail($email) : bool
     {
-        $isOK = false;
+        $emailFilters = ['@inra.fr', '@irstea.fr', '@inrae.fr'];
 
-        $emailFilters = ['@inra.fr','@irstea.fr','@inrae.fr'];
-
-        foreach($emailFilters as $emailFilter){
-            $result = preg_match('/'.$emailFilter.'/',$email);
-            if ($result!==0 && $result!==false){
-                $isOK = true;
+        foreach ($emailFilters as $emailFilter) {
+            if (preg_match('/' . preg_quote($emailFilter, '/') . '$/', $email)) {
+                return true;
             }
         }
-        return $isOK;
+        return false;
     }
 }

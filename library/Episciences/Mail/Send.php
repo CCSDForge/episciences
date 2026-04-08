@@ -60,9 +60,6 @@ class Episciences_Mail_Send
         // to
         $to_element = self::getElementName('to', $prefix);
 
-        $form->addElement('text', $to_element);
-
-
         if (!$to_enabled) {
 
             $options = [
@@ -105,7 +102,7 @@ class Episciences_Mail_Send
                         'screen_name' => $coAuthor->getScreenName(),
                         'mail' => $coAuthor->getEmail(),
                         'label' => $coAuthor->getFullName() . ' <' . $coAuthor->getEmail() . '>',
-                        'htmlLabel' => "<div>" . $coAuthor->getFullName() . "</div><div class=\"grey\">" . $coAuthor->getEmail() . "</div>"
+                        'htmlLabel' => "<div>" . htmlspecialchars($coAuthor->getFullName(), ENT_QUOTES, 'UTF-8') . "</div><div class=\"grey\">" . htmlspecialchars($coAuthor->getEmail(), ENT_QUOTES, 'UTF-8') . "</div>"
                     ])
                 ]);
             }
@@ -242,8 +239,11 @@ class Episciences_Mail_Send
             $mail->setDocid($paper->getDocid());
         }
 
+        $existingTags = $mail->getTags();
+
         foreach ($tags as $tag => $value) {
-            if (!array_key_exists($tag, $mail->getTags())) {
+            if (!array_key_exists($tag, $existingTags)
+                || Episciences_Mail_Tags::isOverridable($tag)) {
                 $mail->addTag($tag, $value);
             }
         }

@@ -14,7 +14,7 @@ include makefiles/testing.mk
 DOCKER := docker
 DOCKER_COMPOSE := docker compose
 NPX := npx
-PROJECT_NAME := episciences-gpl
+PROJECT_NAME := episciences
 
 # Container Configuration
 CNTR_NAME_SOLR := solr
@@ -22,6 +22,8 @@ CNTR_NAME_PHP := php-fpm
 CNTR_NAME_HTTPD := httpd
 CNTR_APP_DIR := /var/www/htdocs
 CNTR_APP_USER := www-data
+# Override with 0:0 if composer-install fails (rootless Docker or uid mismatch):
+#   make dev-setup CNTR_USER_ID=0:0
 CNTR_USER_ID := 1000:1000
 
 # Paths Configuration  
@@ -31,11 +33,13 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 # PHONY Targets
 # =============================================================================
 .PHONY: help build up down status logs restart clean clean-mysql
-.PHONY: collection index dev-setup
+.PHONY: collection index dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir yarn-encore-dev
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
 .PHONY: enter-container-php
+.PHONY: update-geoip stats-process stats-update-robots-list stats-download-kpi
+.PHONY: format format-check format-tests format-file
 
 # =============================================================================
 # Help & Information
@@ -48,7 +52,7 @@ help: ## Display this help message
 	@grep -E '^(build|up|down|status|logs|restart|clean|clean-mysql):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Database Commands:"
-	@grep -h -E '^(wait-for-db|load-db|shell-mysql|backup-db):.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No database commands found"
+	@grep -h -E '^(wait-for-db|load-db.*|generate-users|shell-mysql.*|backup-db):.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No database commands found"
 	@echo ""
 	@echo "Solr Commands:"
 	@grep -E '^(collection|index):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
@@ -58,6 +62,12 @@ help: ## Display this help message
 	@echo ""
 	@echo "Testing Commands:"
 	@grep -h -E '^test.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No testing commands found"
+	@echo ""
+	@echo "Linting & Quality Commands:"
+	@grep -h -E '^(phpstan|rector).*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No quality commands found"
+	@echo ""
+	@echo "Formatting Commands:"
+	@grep -E '^format.*:.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Deployment Commands:"
 	@grep -h -E '^deploy.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No deployment commands found"
@@ -78,22 +88,16 @@ up: ## Start all docker containers
 	@echo "====================================================================="
 	@echo "Development Environment Started Successfully!"
 	@echo "====================================================================="
-	@echo "Make sure you have the following in /etc/hosts:"
+	@echo "📝 Make sure you have the following in /etc/hosts:"
 	@echo "127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org manager-dev.episciences.org"
 	@echo ""
-	@echo "Available Services:"
+	@echo "🌐 Available Services:"
 	@echo "  Journal     : http://dev.episciences.org/"
 	@echo "  Manager     : http://manager-dev.episciences.org/dev/"
 	@echo "  OAI-PMH     : http://oai-dev.episciences.org/"
 	@echo "  Data        : http://data-dev.episciences.org/"
 	@echo "  PhpMyAdmin  : http://localhost:8001/"
 	@echo "  Apache Solr : http://localhost:8983/solr"
-	@echo "====================================================================="
-	@echo "Next Steps:"
-	@echo "  1. Import databases: 'make load-db-episciences' and 'make load-db-auth'"
-	@echo "  2. Create Solr collection: 'make collection'"
-	@echo "  3. Index content: 'make index'"
-	@echo "  4. Or run complete setup: 'make dev-setup'"
 	@echo "====================================================================="
 
 down: ## Stop all docker containers and remove orphans
@@ -122,6 +126,8 @@ restart: down up ## Restart all containers
 clean: down ## Clean up unused docker resources
 	@echo "Cleaning up Docker resources..."
 	@$(DOCKER) system prune -f
+	@echo "Removing episciences network..."
+	@$(DOCKER) network rm epi-network 2>/dev/null || true
 
 clean-mysql: down ## Remove all MySQL volumes (WARNING: This will delete all database data!)
 	@echo "WARNING: This will permanently delete all MySQL database data!"
@@ -148,41 +154,82 @@ clean-mysql: down ## Remove all MySQL volumes (WARNING: This will delete all dat
 collection: up ## Create Solr collection after starting containers
 	@echo "Setting up Solr collection..."
 	@echo "Waiting for Solr container to be ready..."
-	@until $(DOCKER) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
+	@until $(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
 		echo "Waiting for Solr..."; \
 		sleep 2; \
 	done
 	@echo "Solr is ready. Creating 'episciences' collection..."
-	@$(DOCKER) exec $(CNTR_NAME_SOLR) solr create_collection -c episciences -d $(SOLR_COLLECTION_CONFIG) || \
+	@$(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) solr create_collection -c episciences -d $(SOLR_COLLECTION_CONFIG) -s http://localhost:8983 >/dev/null 2>&1 || \
 		echo "Collection may already exist, continuing..."
 	@echo "Solr collection setup complete!"
 
-index: ## Index content into Solr
+index: ## Index content into Solr  [V=1 verbose] [D=1 debug]
 	@echo "Indexing content into Solr..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/solr/solrJob.php -D % -v
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/solr/solrJob.php -D % $(if $(V),-v) $(if $(D),-d)
 	@echo "Indexing complete!"
 
 # =============================================================================
 # Development Setup Commands
 # =============================================================================
-dev-setup: up wait-for-db ## Complete development environment setup
+dev-setup: build copy-config setup-logs up wait-for-db init-data-dir ## Complete development environment setup with 30 generated users
 	@echo "Setting up complete development environment..."
-	@if [ -f $(SQL_DUMP_DIR)/episciences.sql ]; then \
-		echo "Loading episciences.sql ..."; \
-		$(MAKE) load-db-episciences; \
-	else \
-		echo "Warning: $(SQL_DUMP_DIR)/episciences.sql not found, skipping database import"; \
-	fi
-	@if [ -f $(SQL_DUMP_DIR)/cas_users.sql ]; then \
-		echo "Loading cas_users.sql ..."; \
-		$(MAKE) load-db-auth; \
-	else \
-		echo "Warning: $(SQL_DUMP_DIR)/cas_users.sql not found, skipping auth database import"; \
-	fi
 	@$(MAKE) composer-install
+	@$(MAKE) yarn-encore-dev
+	@$(MAKE) load-dev-db
+	@$(MAKE) init-dev-users
+	@$(MAKE) create-bot-user
 	@$(MAKE) collection
 	@$(MAKE) index
 	@echo "Development environment setup complete!"
+	@echo ""
+	@echo "====================================================================="
+	@echo "🔑 TEST USER CREDENTIALS"
+	@echo "====================================================================="
+	@echo "30 users have been created for the 'dev' journal (RVID 1)."
+	@echo "Default password for all: password123"
+	@echo "Available roles: 1 Chief Editor, 2 Administrators, 5 Editors, 22 Members"
+	@echo "====================================================================="
+
+setup-logs: ## Setup log directory and files with correct permissions
+	@echo "Setting up logs..."
+	@./scripts/setup-logs.sh
+
+copy-config: ## Copy dist-dev.pwd.json to config/pwd.json if it doesn't exist
+	@if [ -f config/pwd.json ]; then \
+		echo "config/pwd.json already exists."; \
+		printf "Overwrite with dist-dev.pwd.json? (y/N): "; \
+		read -r answer; \
+		if [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
+			cp config/dist-dev.pwd.json config/pwd.json; \
+			echo "config/pwd.json overwritten."; \
+		else \
+			echo "Keeping existing config/pwd.json."; \
+		fi; \
+	else \
+		cp config/dist-dev.pwd.json config/pwd.json; \
+		echo "config/pwd.json created from dist-dev.pwd.json."; \
+	fi
+
+init-data-dir: ## Create data/dev directory with correct permissions for the journal
+	@echo "Initializing data/dev directory..."
+	@$(DOCKER_COMPOSE) exec -u 0:0 -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		sh -c "chown $(CNTR_APP_USER):$(CNTR_APP_USER) data && chmod 775 data \
+		       && cp -rn src/data/default data/ 2>/dev/null || true \
+		       && mkdir -p data/dev/config data/dev/files data/dev/languages data/dev/layout data/dev/public data/dev/tmp \
+		       && cp -n data/default/config/navigation.json data/dev/config/navigation.json 2>/dev/null || true \
+		       && chown -R $(CNTR_APP_USER):$(CNTR_APP_USER) data/dev \
+		       && chmod -R 775 data/dev \
+		       && find /tmp -maxdepth 1 -name 'zend_cache---*' ! -user $(CNTR_APP_USER) -delete 2>/dev/null || true"
+	@echo "data/dev directory ready."
+
+generate-users: ## Generate random test users (usage: make generate-users COUNT=10 ROLE=editor)
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:generate-users --count=$(or $(COUNT),5) --role=$(or $(ROLE),member) --rvcode=dev
+
+init-dev-users: ## Initialize journal 'dev' with 30 users (1 chief, 2 admins, 5 editors, 22 members)
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:init-dev-users
+
+create-bot-user: ## Create the fixed episciences-bot user
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:create-bot-user
 
 
 # =============================================================================
@@ -196,13 +243,18 @@ composer-update: ## Update composer dependencies
 	@echo "Updating Composer dependencies..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) composer update --no-interaction --prefer-dist --optimize-autoloader
 
+yarn-encore-dev: ## Build frontend assets for development
+	@echo "Building frontend assets (dev)..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -e HOME=/tmp -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn install
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -e HOME=/tmp -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn encore dev
+
 yarn-encore-production: ## Build frontend assets for production
 	@echo "Building frontend assets..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn install
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn encore production
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -e HOME=/tmp -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn install
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_USER_ID) -e HOME=/tmp -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) yarn encore production
 
 enter-container-php: ## Open shell in PHP container
-	@$(DOCKER) exec -it $(CNTR_NAME_PHP) sh -c "cd $(CNTR_APP_DIR) && /bin/bash"
+	@$(DOCKER_COMPOSE) exec $(CNTR_NAME_PHP) sh -c "cd $(CNTR_APP_DIR) && /bin/bash"
 
 # =============================================================================
 # Service Management Commands
@@ -217,32 +269,202 @@ restart-php: ## Restart PHP-FPM container
 
 # =============================================================================
 # Application Specific Commands
+#
+# These targets are development shortcuts that run Episciences CLI commands
+# inside the PHP container as $(CNTR_APP_USER).
+#
+# In production, commands are run directly on the server (no Make, no Docker):
+#   sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php <command> [options]
+#
+# All console commands accept --dry-run (simulate without writing) and -q (quiet/cron mode).
+# Run `php scripts/console.php list` for the full list of available commands.
 # =============================================================================
-send-mails: ## Send queued emails using the mail queue system
-	@echo "Sending queued emails..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/send_mails.php
 
-merge-pdf-volume: ## Merge all PDFs from a volume into one PDF (requires rvcode parameter)
+# --- Mail -----------------------------------------------------------------------
+
+send-mails: ## Send queued emails using the mail queue system
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/send_mails.php
+	@echo "Sending queued emails..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/send_mails.php
+
+# --- Enrichment -----------------------------------------------------------------
+
+enrich-citations: ## Enrich citation data from the Episciences API
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:citations [-q] [--dry-run]
+	@echo "Enriching citation data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:citations
+
+enrich-creators: ## Enrich author ORCID data from OpenAIRE Research Graph and HAL TEI
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:creators [-q] [--dry-run]
+	@echo "Enriching author (creator) data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:creators
+
+enrich-licences: ## Enrich licence data from the Episciences API
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:licences [-q] [--dry-run]
+	@echo "Enriching licence data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:licences
+
+enrich-links: ## Enrich link data from the Episciences API
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:links [-q] [--dry-run]
+	@echo "Enriching link data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:links
+
+enrich-funding: ## Enrich funding data from OpenAIRE Research Graph
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:funding [-q] [--dry-run]
+	@echo "Enriching funding data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:funding
+
+get-classification-jel: ## Enrich JEL classification data from OpenAIRE Research Graph
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:classifications-jel [-q] [--dry-run]
+	@echo "Enriching JEL classification data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:classifications-jel
+
+get-classification-msc: ## Enrich MSC 2020 classification data from zbMATH Open
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:classifications-msc [-q] [--dry-run]
+	@echo "Enriching MSC 2020 classification data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:classifications-msc
+
+enrich-zb-reviews: ## Enrich zbMATH review data
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php enrichment:zb-reviews [-q] [--dry-run]
+	@echo "Enriching zbMATH review data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php enrichment:zb-reviews
+
+# --- Sitemap --------------------------------------------------------------------
+
+generate-sitemap: ## Generate XML sitemap for a journal (requires rvcode=JOURNAL_CODE; optional: pretty=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate RVCODE [--pretty] [-q]
 	@if [ -z "$(rvcode)" ]; then \
 		echo "Error: rvcode parameter is required"; \
-		echo "Usage: make merge-pdf-volume rvcode=JOURNAL_CODE"; \
-		echo "Optional: ignorecache=1 removecache=1"; \
+		echo "Usage: make generate-sitemap rvcode=JOURNAL_CODE [pretty=1]"; \
 		exit 1; \
 	fi
-	@echo "Merging PDFs for volume $(rvcode)..."
+	@echo "Generating sitemap for journal '$(rvcode)'..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
-		php scripts/mergePdfVol.php \
+		php scripts/console.php sitemap:generate $(rvcode) \
+		$(if $(filter 1,$(pretty)),--pretty)
+
+# --- Volume / DOAJ --------------------------------------------------------------
+
+merge-pdf-volume: ## Merge PDFs for all articles in a journal volume into one file (requires rvcode=JOURNAL_CODE; optional: ignore-cache=1 remove-cache=1 dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php volume:merge-pdf --rvcode=RVCODE [--ignore-cache] [--remove-cache] [--dry-run] [-q]
+	@if [ -z "$(rvcode)" ]; then \
+		echo "Error: rvcode parameter is required"; \
+		echo "Usage: make merge-pdf-volume rvcode=JOURNAL_CODE [ignore-cache=1] [remove-cache=1] [dry-run=1]"; \
+		exit 1; \
+	fi
+	@echo "Merging PDFs for journal '$(rvcode)'..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php volume:merge-pdf \
 		--rvcode=$(rvcode) \
-		--ignorecache=$(or $(ignorecache),0) \
-		--removecache=$(or $(removecache),0)
+		$(if $(filter 1,$(ignore-cache)),--ignore-cache) \
+		$(if $(filter 1,$(remove-cache)),--remove-cache) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
 
-get-classification-msc: ## Get MSC 2020 Classifications from zbMATH Open
-	@echo "Fetching MSC 2020 classifications..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/getClassificationMsc.php
+doaj-export-volumes: ## Create DOAJ XML volume exports (requires rvcode=JOURNAL_CODE or rvcode=allJournals; optional: ignore-cache=1 remove-cache=1 dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php doaj:export-volumes --rvcode=RVCODE|allJournals [--ignore-cache] [--remove-cache] [--dry-run] [-q]
+	@if [ -z "$(rvcode)" ]; then \
+		echo "Error: rvcode parameter is required"; \
+		echo "Usage: make doaj-export-volumes rvcode=JOURNAL_CODE|allJournals [ignore-cache=1] [remove-cache=1] [dry-run=1]"; \
+		exit 1; \
+	fi
+	@echo "Creating DOAJ volume exports for '$(rvcode)'..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php doaj:export-volumes \
+		--rvcode=$(rvcode) \
+		$(if $(filter 1,$(ignore-cache)),--ignore-cache) \
+		$(if $(filter 1,$(remove-cache)),--remove-cache) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
 
-get-classification-jel: ## Get JEL Classifications from OpenAIRE Research Graph
-	@echo "Fetching JEL classifications..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/getClassificationJEL.php
+# --- Import ---------------------------------------------------------------------
+
+import-sections: ## Import journal sections from a CSV file (requires csv-file=PATH; optional: dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php import:sections --csv-file=PATH [--dry-run] [-q]
+	@if [ -z "$(csv-file)" ]; then \
+		echo "Error: csv-file parameter is required"; \
+		echo "Usage: make import-sections csv-file=PATH/TO/FILE.csv [dry-run=1]"; \
+		exit 1; \
+	fi
+	@echo "Importing sections from '$(csv-file)'..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php import:sections \
+		--csv-file=$(csv-file) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
+
+import-volumes: ## Import journal volumes from a CSV file (requires rvid=JOURNAL_RVID csv-file=PATH; optional: dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php import:volumes --rvid=RVID --csv-file=PATH [--dry-run] [-q]
+	@if [ -z "$(rvid)" ] || [ -z "$(csv-file)" ]; then \
+		echo "Error: rvid and csv-file parameters are required"; \
+		echo "Usage: make import-volumes rvid=JOURNAL_RVID csv-file=PATH/TO/FILE.csv [dry-run=1]"; \
+		exit 1; \
+	fi
+	@echo "Importing volumes for RVID $(rvid) from '$(csv-file)'..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php import:volumes \
+		--rvid=$(rvid) \
+		--csv-file=$(csv-file) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
+
+# --- zbJATS ---------------------------------------------------------------------
+
+zbjats-zip: ## Download PDF + zbJATS XML per volume and create a ZIP archive (requires rvid=JOURNAL_RVID; optional: zip-prefix=PREFIX dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php zbjats:zip --rvid=RVID [--zip-prefix=PREFIX] [--dry-run] [-q]
+	@if [ -z "$(rvid)" ]; then \
+		echo "Error: rvid parameter is required"; \
+		echo "Usage: make zbjats-zip rvid=JOURNAL_RVID [zip-prefix=PREFIX] [dry-run=1]"; \
+		exit 1; \
+	fi
+	@echo "Creating zbJATS ZIP for RVID $(rvid)..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php zbjats:zip \
+		--rvid=$(rvid) \
+		$(if $(zip-prefix),--zip-prefix=$(zip-prefix)) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
+
+# --- Stats / GeoIP -------------------------------------------------------------
+
+update-geoip: ## Download or update GeoLite2-City.mmdb (credentials from config/pwd.json GEO_IP section; optional: force=1 dry-run=1)
+	# Set GEO_IP.ACCOUNT_ID and GEO_IP.LICENSE_KEY in config/pwd.json
+	# Get a free account at: https://www.maxmind.com/en/geolite2/signup
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php geoip:update \
+		$(if $(filter 1,$(force)),--force) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
+
+stats-update-robots-list: ## Download the COUNTER Robots list for bot detection (optional: dry-run=1 force=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php stats:update-robots-list [-q]
+	@echo "Downloading COUNTER Robots list..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php stats:update-robots-list \
+		$(if $(filter 1,$(force)),--force) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
+
+stats-process: ## Process STAT_TEMP into PAPER_STAT (optional: date=YYYY-MM-DD all=1 dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php stats:process [-q]
+	@echo "Processing statistics..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php stats:process \
+		$(if $(date),--date-s=$(date)) \
+		$(if $(filter 1,$(all)),--all) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
+
+stats-download-kpi: ## Generate download KPI JSON for all published articles (optional: rvcode=xxx pretty=1 dry-run=1 output=path)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php stats:download-kpi [-q]
+	@echo "Generating download KPI JSON..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php stats:download-kpi \
+		$(if $(rvcode),--rvcode=$(rvcode)) \
+		$(if $(filter 1,$(pretty)),--pretty) \
+		$(if $(filter 1,$(dry-run)),--dry-run) \
+		$(if $(output),--output=$(output))
 
 can-i-use-update: ## Update browserslist database when caniuse-lite is outdated
 	@echo "Updating browserslist database..."
@@ -273,6 +495,30 @@ update-statistics: ## Update statistics for journal logs (rvcode=JOURNAL [date=Y
 		cmd="$$cmd --force"; \
 	fi; \
 	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) $$cmd
+
+# =============================================================================
+# Code Formatting Commands (Prettier)
+# =============================================================================
+format: ## Format all JavaScript files with Prettier
+	@echo "Formatting JavaScript files..."
+	@yarn format
+
+format-check: ## Check JavaScript formatting without modifying files
+	@echo "Checking JavaScript formatting..."
+	@yarn format:check
+
+format-tests: ## Format JavaScript test files
+	@echo "Formatting JavaScript test files..."
+	@yarn format:tests
+
+format-file: ## Format a specific file with Prettier (usage: make format-file FILE=path/to/file.js)
+	@if [ -z "$(FILE)" ]; then \
+		echo "Error: FILE parameter is required"; \
+		echo "Usage: make format-file FILE=path/to/file.js"; \
+		exit 1; \
+	fi
+	@echo "Formatting $(FILE)..."
+	@yarn prettier --write "$(FILE)"
 
 # =============================================================================
 # Default Target

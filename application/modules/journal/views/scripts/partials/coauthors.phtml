@@ -1,10 +1,10 @@
 <?php /** @var Episciences_Paper $paper */
 $paper = $this->paper; ?>
 <div class="panel panel-default collapsable">
-    <div class="panel-heading">
+    <div class="panel-heading" role="button" data-toggle="collapse" data-target="#add-coauthor-content" style="cursor: pointer;">
         <h2 class="panel-title"><?php echo $this->translate('Ajouter un co-auteur'); ?></h2>
     </div>
-    <div class="panel-body in">
+    <div id="add-coauthor-content" class="panel-body collapse">
         <form action="<?= $this->url(['controller' => 'administratepaper', 'action' => 'addcoauthor']) ?>" enctype="multipart/form-data" class="form-inline" method="post">
             <div class="ui-widget form-group">
 
@@ -19,10 +19,8 @@ $paper = $this->paper; ?>
                         disabled><?= $this->translate("Ajouter un co-auteur") ?></button>
 
 
-                <input id="selectedUserId" name="selectedUserId" value="0" hidden> <input id="docId" name="docId"
-                                                                                          value="<?= $paper->getDocid() ?>"
-                                                                                          hidden>
-
+                <input id="selectedUserId" name="selectedUserId" value="0" hidden>
+                <input id="docId" name="docId" value="<?= $paper->getDocid() ?>" hidden>
 
             </div>
         </form>

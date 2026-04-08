@@ -2,13 +2,20 @@ function __initMCE(selectorName, context, options) {
     let f = __initEditor(selectorName, context, options);
     __initAction(f);
 
-    $(document).on('click', 'input[type="submit"], button[type="submit"]', function (event) {
-        $(this).closest("form").find(".glyphicon-ok").parent().trigger("click");
-    })
-};
+    $(document).on(
+        'click',
+        'input[type="submit"], button[type="submit"]',
+        function (event) {
+            $(this)
+                .closest('form')
+                .find('.glyphicon-ok')
+                .parent()
+                .trigger('click');
+        }
+    );
+}
 
 function __initEditor(selectorName, context, options) {
-
     // see https://www.tiny.cloud/docs-4x/configure/url-handling/#domainabsoluteurls
     const domainAbsoluteURLsOptions = {
         convert_urls: false,
@@ -17,13 +24,17 @@ function __initEditor(selectorName, context, options) {
         document_base_url: window.location.origin,
     };
 
-    const licenceKey = {license_key: 'gpl'}; //https://www.tiny.cloud/license-key/
+    const licenceKey = { license_key: 'gpl' }; //https://www.tiny.cloud/license-key/
     //To correct the printing of extra lines
     const newLineOptions = {
         newline_behavior: 'default', // never use linebreak: instead tell users to use shift+enter to insert br
         remove_trailing_brs: true, //removing extra <br> at the end of a block
     };
-    const defaultOptions = $.extend({}, domainAbsoluteURLsOptions, newLineOptions);
+    const defaultOptions = $.extend(
+        {},
+        domainAbsoluteURLsOptions,
+        newLineOptions
+    );
     const baseTinyMceOptions = {
         theme: 'silver',
         plugins: 'link image code fullscreen table',
@@ -61,7 +72,7 @@ function __initEditor(selectorName, context, options) {
     if (context) {
         $(selectorName, $(context)).tinymce(finalOptions);
     } else {
-        finalOptions = $.extend({}, finalOptions, {selector: selectorName});
+        finalOptions = $.extend({}, finalOptions, { selector: selectorName });
         tinymce.init(finalOptions);
     }
 
@@ -74,60 +85,74 @@ function __initEditor(selectorName, context, options) {
 function __pasteContentMCE() {
     tiny = tinyMCE.activeEditor;
 
-    tiny.getElement().value = tiny.getContent({format: 'html'});
-};
+    tiny.getElement().value = tiny.getContent({ format: 'html' });
+}
 
 function __destroyActiveMCE() {
     tiny = tinyMCE.activeEditor;
     $(tiny.getElement()).tinymce().remove();
-};
+}
 
 function __removeAttrOnclick(e) {
     let fct = $(e).attr('onclick');
     $(e).removeAttr('onclick');
     return fct;
-};
+}
 
 function __initAction(context) {
+    $('.glyphicon-plus', context)
+        .parent()
+        .each(function (i) {
+            let fct = __removeAttrOnclick(this);
 
-    $('.glyphicon-plus', context).parent().each(function (i) {
-        let fct = __removeAttrOnclick(this);
-
-        $(this).click(function (event) {
-            __pasteContentMCE();
-            eval(fct);
-            $(this).closest('.textarea-group').parent().find('.textarea-group:not(:last-child)').each(function (i) {
-                __initModifications(this);
+            $(this).click(function (event) {
+                __pasteContentMCE();
+                eval(fct);
+                $(this)
+                    .closest('.textarea-group')
+                    .parent()
+                    .find('.textarea-group:not(:last-child)')
+                    .each(function (i) {
+                        __initModifications(this);
+                    });
             });
         });
-    });
 
-    $(context).find('.textarea-group:not(:last-child)').each(function (i) {
-        __initModifications(this);
-    });
+    $(context)
+        .find('.textarea-group:not(:last-child)')
+        .each(function (i) {
+            __initModifications(this);
+        });
 
     function __initModifications(context) {
         let textarea = $(context).find('textarea');
-        $('.glyphicon-pencil', context).parent().each(function (i) {
-            let fct = __removeAttrOnclick(this);
-            $(this).click(function (event) {
-                tinyMCE.activeEditor.setContent(textarea[0].value);
-                eval(fct);
-                $('.glyphicon-ok', $(context).parent().find('.textarea-group:last')).parent().each(function (i) {
-                    let fct = __removeAttrOnclick(this);
-                    $(this).click(function (event) {
-                        __pasteContentMCE();
-                        eval(fct);
-                        if (!$.isEmptyObject(tinyMCE.activeEditor)) {
-                            tinyMCE.activeEditor.setContent("");
-                        }
-                    });
+        $('.glyphicon-pencil', context)
+            .parent()
+            .each(function (i) {
+                let fct = __removeAttrOnclick(this);
+                $(this).click(function (event) {
+                    tinyMCE.activeEditor.insertContent(textarea[0].value);
+                    eval(fct);
+                    $(
+                        '.glyphicon-ok',
+                        $(context).parent().find('.textarea-group:last')
+                    )
+                        .parent()
+                        .each(function (i) {
+                            let fct = __removeAttrOnclick(this);
+                            $(this).click(function (event) {
+                                __pasteContentMCE();
+                                eval(fct);
+                                if (!$.isEmptyObject(tinyMCE.activeEditor)) {
+                                    tinyMCE.activeEditor.insertContent('');
+                                }
+                            });
+                        });
                 });
             });
-        });
 
         if (!$.isEmptyObject(tinyMCE.activeEditor)) {
-            tinyMCE.activeEditor.setContent("");
+            tinyMCE.activeEditor.insertContent('');
         }
-    };
-};
+    }
+}

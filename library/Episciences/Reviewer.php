@@ -128,7 +128,7 @@ class Episciences_Reviewer extends Episciences_User
 
     public function getAssignment($docId)
     {
-        return $this->_assignments[$docId];
+        return $this->_assignments[$docId] ?? null;
     }
 
 
@@ -218,7 +218,7 @@ class Episciences_Reviewer extends Episciences_User
     public function unassign($docId, $params = [])
     {
         $params = [
-            'rvid' => Ccsd_Tools::ifsetor($params['rvid'], RVID),
+            'rvid' => $params['rvid'] ?? RVID,
             'itemid' => $docId,
             'item' => Episciences_User_Assignment::ITEM_PAPER,
             'roleid' => Episciences_User_Assignment::ROLE_REVIEWER,
@@ -236,7 +236,7 @@ class Episciences_Reviewer extends Episciences_User
      * @return array
      * @throws Zend_Db_Select_Exception
      */
-    public function getAssignedPapers(array $settings = [], bool $loadInvitations = false, bool $isFilterInfos = false, $isLimit = true)
+    public function getAssignedPapers(array $settings = [], bool $loadInvitations = false, bool $isFilterInfos = false, bool $isLimit = true)
     {
         if ($isFilterInfos || empty($this->_assignedPapers)) {
             $this->loadAssignedPapers($settings, $loadInvitations, $isFilterInfos, $isLimit);
@@ -258,7 +258,7 @@ class Episciences_Reviewer extends Episciences_User
      * @return array|Episciences_Paper[]
      * @throws Zend_Db_Select_Exception
      */
-    public function loadAssignedPapers(array $settings = [], bool $loadInvitations = false, bool $isFilterInfos = false, $isLimit = true): array
+    public function loadAssignedPapers(array $settings = [], bool $loadInvitations = false, bool $isFilterInfos = false, bool $isLimit = true): array
     {
 
         // fetch paper reviewer active assignments
@@ -308,7 +308,7 @@ class Episciences_Reviewer extends Episciences_User
 
         if (count($docIds)) {
             $settings['is']['docid'] = array_keys($docIds);
-            $papers = Episciences_PapersManager::getList($settings, false, $isFilterInfos, $isLimit);
+            $papers = Episciences_PapersManager::getList($settings, $isFilterInfos, $isLimit);
         } else {
             $papers = [];
         }
@@ -453,8 +453,9 @@ class Episciences_Reviewer extends Episciences_User
         // Met à jour le status
         $oReviewing->loadStatus();
 
+        $reviewings = $this->getReviewings();
         $reviewings[$docId] = $oReviewing;
-        $this->_reviewings = $reviewings;
+        $this->setReviewings($reviewings);
     }
 
     public function getReviewing($docId)
@@ -495,11 +496,11 @@ class Episciences_Reviewer extends Episciences_User
 
     public function getComments(int $docId): array
     {
-        if (empty($this->_comments)) {
-            $this->_comments = Episciences_CommentsManager::getList($docId, ['UID' => $this->getUid()]);
+        if (!array_key_exists($docId, $this->_comments)) {
+            $this->_comments[$docId] = Episciences_CommentsManager::getList($docId, ['UID' => $this->getUid()]);
         }
 
-        return $this->_comments;
+        return $this->_comments[$docId];
     }
 
     public function setRatings($ratings): \Episciences_Reviewer

@@ -88,17 +88,20 @@ class PaperAffiAuthorsManager {
     async loadAffiliations(authorId) {
         const paperId = this.paperIdDiv?.textContent || '';
 
-        const response = await fetch(JS_PREFIX_URL + 'paper/getaffiliationsbyauthor/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify({
-                idAuthor: authorId,
-                paperId: paperId,
-            }),
-        });
+        const response = await fetch(
+            JS_PREFIX_URL + 'paper/getaffiliationsbyauthor/',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    idAuthor: authorId,
+                    paperId: paperId,
+                }),
+            }
+        );
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);

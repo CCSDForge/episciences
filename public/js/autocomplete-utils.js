@@ -16,7 +16,7 @@ class ModernUserAutocomplete {
             maxResults: 100,
             onSelectCallback: null,
             onErrorCallback: null,
-            ...options
+            ...options,
         };
 
         this.cache = new Map();
@@ -30,11 +30,15 @@ class ModernUserAutocomplete {
 
     init() {
         this.inputElement = document.getElementById(this.config.inputId);
-        this.selectedUserIdElement = document.getElementById(this.config.selectedUserIdField);
+        this.selectedUserIdElement = document.getElementById(
+            this.config.selectedUserIdField
+        );
         this.selectButton = document.getElementById(this.config.selectButtonId);
 
         if (!this.inputElement) {
-            console.error(`Autocomplete input element with id "${this.config.inputId}" not found`);
+            console.error(
+                `Autocomplete input element with id "${this.config.inputId}" not found`
+            );
             return;
         }
 
@@ -139,16 +143,31 @@ class ModernUserAutocomplete {
     }
 
     bindEvents() {
-        this.debouncedSearch = this.debounce(this.search.bind(this), this.config.debounceDelay);
+        this.debouncedSearch = this.debounce(
+            this.search.bind(this),
+            this.config.debounceDelay
+        );
 
-        this.inputElement.addEventListener('input', this.handleInput.bind(this));
-        this.inputElement.addEventListener('focus', this.handleFocus.bind(this));
+        this.inputElement.addEventListener(
+            'input',
+            this.handleInput.bind(this)
+        );
+        this.inputElement.addEventListener(
+            'focus',
+            this.handleFocus.bind(this)
+        );
         this.inputElement.addEventListener('blur', this.handleBlur.bind(this));
-        this.inputElement.addEventListener('keydown', this.handleKeydown.bind(this));
+        this.inputElement.addEventListener(
+            'keydown',
+            this.handleKeydown.bind(this)
+        );
 
         // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!this.inputElement.contains(e.target) && !this.dropdown.contains(e.target)) {
+        document.addEventListener('click', e => {
+            if (
+                !this.inputElement.contains(e.target) &&
+                !this.dropdown.contains(e.target)
+            ) {
                 this.closeDropdown();
             }
         });
@@ -164,7 +183,7 @@ class ModernUserAutocomplete {
 
     handleInput(e) {
         const value = e.target.value.trim();
-        
+
         if (value !== this.lastValue) {
             this.clearSelection();
             this.lastValue = value;
@@ -192,12 +211,17 @@ class ModernUserAutocomplete {
     handleKeydown(e) {
         if (!this.isOpen) return;
 
-        const items = this.dropdown.querySelectorAll('.modern-autocomplete-item:not(.modern-autocomplete-loading):not(.modern-autocomplete-empty):not(.modern-autocomplete-error)');
-        
+        const items = this.dropdown.querySelectorAll(
+            '.modern-autocomplete-item:not(.modern-autocomplete-loading):not(.modern-autocomplete-empty):not(.modern-autocomplete-error)'
+        );
+
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
-                this.selectedIndex = Math.min(this.selectedIndex + 1, items.length - 1);
+                this.selectedIndex = Math.min(
+                    this.selectedIndex + 1,
+                    items.length - 1
+                );
                 this.updateSelection(items);
                 break;
             case 'ArrowUp':
@@ -221,7 +245,7 @@ class ModernUserAutocomplete {
         items.forEach((item, index) => {
             item.classList.toggle('selected', index === this.selectedIndex);
         });
-        
+
         if (this.selectedIndex >= 0 && items[this.selectedIndex]) {
             items[this.selectedIndex].scrollIntoView({ block: 'nearest' });
         }
@@ -234,7 +258,7 @@ class ModernUserAutocomplete {
         }
 
         this.showLoading();
-        
+
         // Cancel previous request
         if (this.currentXhr) {
             this.currentXhr.abort();
@@ -258,7 +282,7 @@ class ModernUserAutocomplete {
             this.currentXhr = xhr;
 
             const url = `${this.config.url}?term=${encodeURIComponent(term)}`;
-            
+
             xhr.open('GET', url, true);
             xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
             xhr.setRequestHeader('Content-Type', 'application/json');
@@ -271,11 +295,16 @@ class ModernUserAutocomplete {
                     if (xhr.status === 200) {
                         try {
                             const data = JSON.parse(xhr.responseText);
-                            resolve(Array.isArray(data) ? data.slice(0, this.config.maxResults) : []);
+                            resolve(
+                                Array.isArray(data)
+                                    ? data.slice(0, this.config.maxResults)
+                                    : []
+                            );
                         } catch (e) {
                             reject(new Error('Failed to parse response'));
                         }
-                    } else if (xhr.status !== 0) { // 0 means aborted
+                    } else if (xhr.status !== 0) {
+                        // 0 means aborted
                         reject(new Error(`Request failed: ${xhr.status}`));
                     }
                 }
@@ -292,7 +321,10 @@ class ModernUserAutocomplete {
     }
 
     showLoading() {
-        this.dropdown.innerHTML = '<div class="modern-autocomplete-loading">' + translate('Recherche...') + '</div>';
+        this.dropdown.innerHTML =
+            '<div class="modern-autocomplete-loading">' +
+            translate('Recherche...') +
+            '</div>';
         this.openDropdown();
     }
 
@@ -308,7 +340,10 @@ class ModernUserAutocomplete {
 
     displayResults(results, term) {
         if (!results || results.length === 0) {
-            this.dropdown.innerHTML = '<div class="modern-autocomplete-empty">' + translate('Aucun résultat') + '</div>';
+            this.dropdown.innerHTML =
+                '<div class="modern-autocomplete-empty">' +
+                translate('Aucun résultat') +
+                '</div>';
             this.openDropdown();
             return;
         }
@@ -316,8 +351,10 @@ class ModernUserAutocomplete {
         // Create DOM elements securely to prevent XSS
         this.dropdown.innerHTML = '';
 
-        results.forEach((user) => {
-            const name = user.full_name || `${user.firstname || ''} ${user.lastname || ''}`.trim();
+        results.forEach(user => {
+            const name =
+                user.full_name ||
+                `${user.firstname || ''} ${user.lastname || ''}`.trim();
             const email = user.email || user.EMAIL || '';
             const uid = user.id || user.UID || '';
 
@@ -355,7 +392,10 @@ class ModernUserAutocomplete {
             return;
         }
 
-        const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        const regex = new RegExp(
+            `(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`,
+            'gi'
+        );
         const parts = text.split(regex);
 
         parts.forEach((part, index) => {
@@ -371,8 +411,10 @@ class ModernUserAutocomplete {
     }
 
     bindItemEvents() {
-        const items = this.dropdown.querySelectorAll('.modern-autocomplete-item');
-        items.forEach((item) => {
+        const items = this.dropdown.querySelectorAll(
+            '.modern-autocomplete-item'
+        );
+        items.forEach(item => {
             item.addEventListener('click', () => this.selectItem(item));
             item.addEventListener('mouseenter', () => {
                 items.forEach(i => i.classList.remove('selected'));
@@ -388,13 +430,16 @@ class ModernUserAutocomplete {
         const email = item.dataset.email;
 
         this.inputElement.value = name;
-        
+        this.lastValue = name;
+
         if (this.selectedUserIdElement) {
             this.selectedUserIdElement.value = id;
         }
-        
+
         if (this.selectButton) {
             this.selectButton.removeAttribute('disabled');
+            this.selectButton.classList.remove('btn-default');
+            this.selectButton.classList.add('btn-primary');
         }
 
         this.closeDropdown();
@@ -405,7 +450,7 @@ class ModernUserAutocomplete {
                 id: id,
                 name: name,
                 email: email,
-                full_name: name
+                full_name: name,
             });
         }
     }
@@ -416,6 +461,8 @@ class ModernUserAutocomplete {
         }
         if (this.selectButton) {
             this.selectButton.setAttribute('disabled', 'disabled');
+            this.selectButton.classList.remove('btn-primary');
+            this.selectButton.classList.add('btn-default');
         }
     }
 
@@ -435,13 +482,16 @@ class ModernUserAutocomplete {
     positionDropdown() {
         const rect = this.inputElement.getBoundingClientRect();
         const dropdownRect = this.dropdown.getBoundingClientRect();
-        
+
         this.dropdown.style.top = `${this.inputElement.offsetHeight}px`;
         this.dropdown.style.left = '0px';
         this.dropdown.style.width = `${this.inputElement.offsetWidth}px`;
 
         // Adjust if dropdown goes below viewport
-        if (rect.bottom + dropdownRect.height > window.innerHeight && rect.top > dropdownRect.height) {
+        if (
+            rect.bottom + dropdownRect.height > window.innerHeight &&
+            rect.top > dropdownRect.height
+        ) {
             this.dropdown.style.top = `-${dropdownRect.height}px`;
         }
     }

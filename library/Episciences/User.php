@@ -482,10 +482,10 @@ class Episciences_User extends Ccsd_User_Models_User
 
 
         // Création des données locales (compte ES + rôle)
+        $uid = $this->getUid();
 
-        $hasLocalData = $this->hasLocalData($this->getUid());
-        $hasRolesCurrentUser = $this->hasRoles($this->getUid(), $rvId);
-
+        $hasLocalData = $uid ? $this->hasLocalData((int)$uid) : false;
+        $hasRolesCurrentUser = $uid ? $this->hasRoles((int)$uid, $rvId) : false;
 
         if (!$hasLocalData || !$hasRolesCurrentUser) {
 
@@ -517,7 +517,7 @@ class Episciences_User extends Ccsd_User_Models_User
             // L'utilisateur n'a pas de rôles pour cette revue : on lui en crée un
             $rData = ['RVID' => $rvId, 'UID' => $uid, 'ROLEID' => 'member'];
 
-            if (!$this->hasRoles($uid, $rvId) && !$this->_db->insert(T_USER_ROLES, $rData)) {
+            if ($uid && !$this->hasRoles((int)$uid, $rvId) && !$this->_db->insert(T_USER_ROLES, $rData)) {
                 return false;
             }
 
@@ -613,8 +613,8 @@ class Episciences_User extends Ccsd_User_Models_User
         }
 
         $select = $this->_db->select()
-            ->from(T_USERS, ['uuid','nombre' => 'COUNT(UID)'])
-            ->where('UID = ?', $uid)
+            ->from(T_USERS, ['uuid','nombre' => new Zend_Db_Expr('COUNT(*)')])
+            ->where('`UID` = ?', (int)$uid)
             ->group('uuid');
 
 
@@ -935,8 +935,8 @@ class Episciences_User extends Ccsd_User_Models_User
                 $form->addElement('html', 'openTd1_' . $uid, ['value' => '<td style="width: 200px">']); // opening td
 
                 // Infos sur l'utilisateur
-                $string = $user['SCREEN_NAME'] . ' <i>(' . $user['USERNAME'] . ')</i><br/>';
-                $string .= '<i>' . $user['EMAIL'] . '</i>';
+                $string = htmlspecialchars($user['SCREEN_NAME'], ENT_QUOTES, 'UTF-8') . ' <i>(' . htmlspecialchars($user['USERNAME'], ENT_QUOTES, 'UTF-8') . ')</i><br/>';
+                $string .= '<i>' . htmlspecialchars($user['EMAIL'], ENT_QUOTES, 'UTF-8') . '</i>';
                 $form->addElement('html', 'text_' . $uid, ['value' => $string]);
 
                 $form->addElement('html', 'closeTd1_' . $uid, ['value' => '</td>']); // closing td
@@ -1541,19 +1541,29 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     private function disableAssignmentsForRemovedRoles(int $uid, int $rvId, array $removedRoles): void
     {
-        // Liste des rôles dont le retrait entraîne la désactivation automatique des assignments
-        // Ici on utilise un tableau pour étendre facilement à d'autres rôles
-        $rolesWithAutoDisableAssignments = ['editor'];
+        // Mapping des rôles utilisateur vers les rôles d'assignation (USER_ASSIGNMENT.ROLEID)
+        // Dans USER_ASSIGNMENT, seuls 'editor', 'reviewer', 'copyeditor' existent comme ROLEID
+        $userRoleToAssignmentRole = [
+            Episciences_Acl::ROLE_EDITOR => Episciences_User_Assignment::ROLE_EDITOR,
+            Episciences_Acl::ROLE_CHIEF_EDITOR => Episciences_User_Assignment::ROLE_EDITOR,
+        ];
 
-        // Déterminer quels rôles avec auto-désactivation ont été retirés
-        $rolesToDisable = array_intersect($removedRoles, $rolesWithAutoDisableAssignments);
+        // Déterminer quels rôles d'assignation doivent être désactivés
+        $assignmentRolesToDisable = [];
+        foreach ($removedRoles as $removedRole) {
+            if (isset($userRoleToAssignmentRole[$removedRole])) {
+                $assignmentRolesToDisable[] = $userRoleToAssignmentRole[$removedRole];
+            }
+        }
 
-        // Désactiver les assignments pour chaque rôle retiré
-        if (empty($rolesToDisable)) {
+        // Supprimer les doublons (editor, chief_editor mappent tous vers 'editor')
+        $assignmentRolesToDisable = array_unique($assignmentRolesToDisable);
+
+        if (empty($assignmentRolesToDisable)) {
             return;
         }
 
-        foreach ($rolesToDisable as $roleToDisable) {
+        foreach ($assignmentRolesToDisable as $roleToDisable) {
             $this->_db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
             SELECT `u`.`RVID`, `u`.`ITEMID`, `u`.`ITEM`, `u`.`UID`, `u`.`ROLEID`, 'disabled', NOW()
             FROM USER_ASSIGNMENT `u`

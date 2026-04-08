@@ -21,7 +21,7 @@ function initializeEditorAvailability() {
         return;
     }
 
-    unavailableEditors.forEach(function(editorId) {
+    unavailableEditors.forEach(function (editorId) {
         console.log('Processing editor ID:', editorId);
         const checkbox = $('input[name="editors[]"][value="' + editorId + '"]');
 
@@ -30,13 +30,17 @@ function initializeEditorAvailability() {
             return;
         }
 
-        console.log('Checkbox found for editor:', editorId, 'checked:', checkbox.is(':checked'));
+        console.log(
+            'Checkbox found for editor:',
+            editorId,
+            'checked:',
+            checkbox.is(':checked')
+        );
 
         // Style the label to show unavailable status
         const label = checkbox.closest('label');
         label.css({
-            'color': '#999',
-            'opacity': '0.7'
+            color: '#dddddd',
         });
 
         // Track if this editor was initially checked
@@ -51,9 +55,8 @@ function initializeEditorAvailability() {
 
             // Visual indicator: more grayed out and add pointer events
             label.css({
-                'color': '#ccc',
-                'opacity': '0.5',
-                'cursor': 'not-allowed'
+                color: '#dddddd',
+                cursor: 'not-allowed',
             });
             checkbox.css('cursor', 'not-allowed');
 
@@ -65,7 +68,7 @@ function initializeEditorAvailability() {
         }
 
         // Add click handler to prevent checking (but not unchecking)
-        checkbox.on('click', function(e) {
+        checkbox.on('click', function (e) {
             const $this = $(this);
 
             // If this is an unavailable editor that should not be checked
@@ -84,10 +87,9 @@ function initializeEditorAvailability() {
 
                 // Update visual to show it can't be re-checked
                 label.css({
-                    'color': '#ccc',
-                    'opacity': '0.5',
+                    color: '#dddddd',
                     'text-decoration': 'line-through',
-                    'cursor': 'not-allowed'
+                    cursor: 'not-allowed',
                 });
                 checkbox.css('cursor', 'not-allowed');
 

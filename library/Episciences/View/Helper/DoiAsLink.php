@@ -5,17 +5,14 @@
  */
 class Episciences_View_Helper_DoiAsLink extends Zend_View_Helper_Abstract
 {
-    public static function DoiAsLink($doi = '', $text = '', $asHtml = true)
+    public static function DoiAsLink($doi = '', $text = '', $asHtml = true): string
     {
         if (!$doi) {
             return '';
         }
         if ($asHtml) {
-            if (!$text) {
-                $text = $doi;
-            }
-            $format = '<a href="https://doi.org/%s">https://doi.org/%s</a>';
-            return sprintf($format, $doi, $text);
+            $label = $text ?: 'https://doi.org/' . $doi;
+            return sprintf('<a rel="noopener noreferrer" href="https://doi.org/%s">%s</a>', $doi, $label);
         } else {
             $format = 'https://doi.org/%s';
             return sprintf($format, $doi);

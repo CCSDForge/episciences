@@ -1,13 +1,13 @@
 services:
   solr:
     image: solr:9.6
-    container_name: solr
+    container_name: episciences-solr
     ports:
       - "8983:8983"
     networks:
       - search
     environment:
-      ZK_HOST: "zoo:2181"
+      ZK_HOST: "episciences-zoo:2181"
     depends_on:
       - zoo
     volumes:
@@ -19,7 +19,7 @@ services:
 
   zoo:
     image: zookeeper:3.9
-    container_name: zoo
+    container_name: episciences-zoo
     networks:
       - search
     environment:
@@ -30,7 +30,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-    container_name: 'db-episciences'
+    container_name: 'episciences-db-episciences'
     expose:
       - "3306"
     ports:
@@ -50,7 +50,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-    container_name: 'db-indexing'
+    container_name: 'episciences-db-indexing'
     expose:
       - "3306"
     ports:
@@ -70,7 +70,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-    container_name: 'db-auth'
+    container_name: 'episciences-db-auth'
     expose:
       - "3306"
     ports:
@@ -86,7 +86,7 @@ services:
       - search
 
   pma:
-    container_name: 'db-phpmyadmin'
+    container_name: 'episciences-db-phpmyadmin'
     image: "phpmyadmin:latest"
     environment:
       - "PMA_PMADB=pma"
@@ -96,7 +96,7 @@ services:
       - "PMA_USER=root"
       - "PMA_PASSWORD=root"
       - "PMA_ARBITRARY=1"
-      - "PMA_HOSTS=db-episciences,db-indexing,db-auth"
+      - "PMA_HOSTS=episciences-db-episciences,episciences-db-indexing,episciences-db-auth"
       - "PMA_VERBOSES=episciences,indexing,auth"
       - "UPLOAD_LIMIT=2G"
       - "MEMORY_LIMIT=1G"

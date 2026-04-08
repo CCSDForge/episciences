@@ -145,7 +145,7 @@ class  Episciences_CopyEditor extends Episciences_User
 
         if (count($docIds)) {
             $settings['is']['docid'] = $docIds;
-            $papers = Episciences_PapersManager::getList($settings, false, $isFilterInfos, $isLimit);
+            $papers = Episciences_PapersManager::getList($settings, $isFilterInfos, $isLimit);
         } else {
             $papers = [];
         }

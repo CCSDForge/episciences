@@ -12,6 +12,7 @@ return [
     "Annuler" => "Cancel",
     'Confirmer' => 'Confirm',
     "Voulez-vous supprimer ce fichier ?" => "Do you want to delete this file?",
+    "Voulez-vous supprimer votre fichier attaché ?" => "Do you want to delete your attached file?",
     'Merci de confirmer cette suppression' => 'Please confirm this deletion',
     'Type de relation :' => 'Type of relation:',
     'Jeu de données' => 'Dataset',
@@ -88,7 +89,7 @@ return [
     'un rappel automatique de la date limite pour une relecture peut être envoyé x jours après cette date (définie dans Gérer la revue/Revue/Paramètres)' => 'an automatic reminder after reviewing deadline can bend x days after the review deadline (defined in Journal Management/Review/Settings)',
     'un rappel automatique de la date limite de modification peut être envoyé x jours avant cette date (définie dans la demande de modification)' => 'an automatic reminder before revision deadline can bend x days before the revision deadline (defined in the revision request)',
     'un rappel automatique de la date limite de modification peut être envoyé x jours après cette date (définie dans la demande de modification)' => 'an automatic reminder after revision deadline can bend x days after the revision deadline (defined in the revision request)',
-    "si il y a pas suffisamment d'invitations, un rappel automatique peut être envoyé x jours après la date de la dernière invitation, si des invitations ont été envoyées. Sinon, après la date d'assignation de l'article au rédacteur. On n'envoie pas de relances, si on n'a pas spécifié de nombre minimum de relecteurs (définie dans Gérer la revue/Revue/Paramètres)" => "if there are not enough invitations, an automatic reminder can be send x days after th latest invitation date, if invitations have been sent. Otherwise, after the date of assignment of the article to the editor. No reminders will be sent if no minimum number of reviewing has been specified (defined in Journal Management/Review/Settings)",
+    "si il y a pas suffisamment d'invitations acceptées, un rappel automatique peut être envoyé x jours après la date de la dernière invitation, si des invitations ont été envoyées. Sinon, après la date d'assignation de l'article au rédacteur. On n'envoie pas de relances, si on n'a pas spécifié de nombre minimum de relecteurs (définie dans Gérer la revue/Revue/Paramètres)" => "if there are not enough accepted invitations, an automatic reminder can be send x days after th latest invitation date, if invitations have been sent. Otherwise, after the date of assignment of the article to the editor. No reminders will be sent if no minimum number of reviewing has been specified (defined in Journal Management/Review/Settings)",
 
     "la relance sera envoyée x jours après la date d'acceptation de l'article" => "the reminder will be sent x days after the date of acceptance of the article",
     "Saisir un nombre de jours (la relance sera envoyée x jours après l’expiration du délai paramétré dans la revue)." => "Enter a number of days (the reminder will be sent x days after the expiry of the time limit set in the review).",
@@ -204,7 +205,7 @@ return [
     "Cette adresse est inconnue et n'est peut-être pas valide." => 'This address is unknown by the journal and might not be valid.',
 
     // edit publication date
-    'Veuillez indiquer une date valide !' => 'Please enter a valid date!',
+    'Veuillez indiquer une date valide' => 'Please enter a valid date',
 
     //COI
     'Aucun conflit pour le moment.' => 'No conflict yet.',
@@ -251,7 +252,8 @@ return [
     "Article bloqué à l'état accepté" => "Article blocked in accepted state",
     "Article bloqué à l'état initial (soumis)" => "Article blocked in initial state (submitted)",
     "Article bloqué à l'état relu" => "Article blocked in reviewed state)",
-    "Si une soumission est restée dans cet état pendant plus de 30 jours, le rappel sera envoyé après un délai de (30 + x jours), où x est le nombre de jours saisi dans le champ « Délai »." => "If an submission has remained in this state for more than 30 days, the reminder will be sent after a period of (30 + x days), where x is the number of days entered in the 'Delay' field.",
+    "un rappel sera déclenché lorsqu’une soumission restera dans cet état au-delà de x jours, où x est la valeur entrée dans le champ" =>"A reminder will be triggered when a submission remains in this state for more than x days, where x is the value entered in the field",
+
     //DD
     'Descripteur de logiciel' => 'Software descriptor',
     'Descripteurs de logiciel' => 'Software descriptors',
@@ -260,5 +262,10 @@ return [
     // Dashboard paper search error messages
     "Erreur lors du traitement de la réponse du serveur." => "Error processing server response.",
     "Erreur de connexion. Veuillez vérifier votre connexion réseau et réessayer." => "Connection error. Please check your network connection and try again.",
-
+    "Voir plus" => "Show more",
+    "Voir moins" => "Show less",
+    'Demander un DOI'=> 'Request a DOI',
+    'Annuler le DOI'=> 'Cancel theDOI',
+    'not-assigned' => 'Not assigned',
+    'orcid-duplicate' => 'Each ORCID must be unique.'
 ];

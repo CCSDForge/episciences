@@ -6,7 +6,7 @@
 
 define('DEFAULT_ENV', 'development');
 define('APPLICATION_PATH', __DIR__ . '/../application');
-define('SCRIPT_NAME', basename($_SERVER['PHP_SELF']));
+define('SCRIPT_NAME', pathinfo($_SERVER['PHP_SELF'], PATHINFO_FILENAME));
 
 $localopts = [
     'date=s' => 'Fetch reminders for the specified date (default date is today)',
@@ -20,36 +20,46 @@ if (file_exists(__DIR__ . "/loadHeader.php")) {
 }
 
 /**
- *  display errors
- * @param Zend_Console_Getopt $opts
- * @param $msg
- */
-function displayError(Zend_Console_Getopt $opts, $msg)
-{
-    echo PHP_EOL . PHP_EOL;
-    echo $opts->getUsageMessage();
-    echo PHP_EOL . PHP_EOL;
-    echo $msg;
-    echo PHP_EOL . PHP_EOL;
-    die();
-}
-
-/**
  * display messages
  * @param $msg
  * @param string $color
  * @param bool $localDebug
  * @param bool $logInFile
  */
-function displayMessage($msg, string $color = 'default', bool $localDebug = false, bool $logInFile = true)
+function displayMessage($msg, string $color = 'default', bool $localDebug = false, bool $logInFile = true): void
 {
-    echo $localDebug ? Episciences_Tools::$bashColors[$color] . $msg . Episciences_Tools::$bashColors['default'] . PHP_EOL : '';
 
-    if ($logInFile && $msg) {
-        $msg .= PHP_EOL;
-        file_put_contents('/tmp/' . substr(SCRIPT_NAME, 0, (strlen(SCRIPT_NAME) - 4)) . '_' . APPLICATION_ENV . '.log', $msg, FILE_APPEND);
+    if (!$msg) {
+        return;
     }
 
+    $coloredMsg = $localDebug ? formatColored($msg, $color) . PHP_EOL : '';
+    echo $coloredMsg;
+
+    if ($logInFile) {
+        file_put_contents(buildLogFilePath(), $msg . PHP_EOL, FILE_APPEND);
+    }
+}
+
+/**
+ * Build the log file path for the current script/environment
+ */
+
+function buildLogFilePath(string $dirName = '/tmp'): string
+{
+    $normalizedDirName = rtrim($dirName, DIRECTORY_SEPARATOR);
+    $logFileName = SCRIPT_NAME . '_' . APPLICATION_ENV . '.log';
+    return DIRECTORY_SEPARATOR . $normalizedDirName . DIRECTORY_SEPARATOR . $logFileName;
+}
+
+/**
+ * Wrap a message with bash color codes.
+ */
+function formatColored(string $msg, string $color): string
+{
+    $colors = Episciences_Tools::$bashColors;
+    $start = $colors[$color] ?? $colors['default'];
+    return $start . $msg . $colors['default'];
 }
 
 
@@ -96,14 +106,15 @@ try {
         displayMessage($sql . PHP_EOL);
     }
 
+    $reviews = Episciences_ReviewsManager::getList(['is' => ['code' => $opts->rvcode]]);
+
+    if (empty($reviews)) {
+        die(sprintf('Oops! Journal %s Not Found' . PHP_EOL, $opts->rvcode));
+    }
+
     $remindersData = $db->fetchAll($sql);
 
-    $settings = ['is' => ['code' => $opts->rvcode]];
-
     // loop through each journal
-    $reviews = Episciences_ReviewsManager::getList($settings);
-
-
     foreach ($reviews as $review) {
 
 
@@ -172,7 +183,7 @@ try {
             }
 
             $origin = !$opts->date ? new DateTime("now") : date_create($opts->date);
-            $origin->setTime(0,0); // otherwise, the number of days before the review deadline was calculated incorrectly (one day difference).
+            $origin->setTime(0, 0); // otherwise, the number of days before the review deadline was calculated incorrectly (one day difference).
 
             foreach ($recipients as $recipient) {
 
@@ -194,10 +205,10 @@ try {
 
                 if (isset($recipient['deadline'])) {
 
-                    displayMessage('Deadline: ' . date('Y-m-d', strtotime($recipient['deadline'])) . ')', 'default', true);
+                    displayMessage('Deadline: ' . date('Y-m-d', strtotime($recipient['deadline'])), 'default', true);
 
                     $target = date_create($recipient['deadline']);
-                    $target->setTime(0,0);
+                    $target->setTime(0, 0);
                     $interval = $origin->diff($target, true)->format('%a'); // in days
 
                     $mail->addTag(Episciences_Mail_Tags::TAG_REMINDER_DELAY, $interval);
@@ -210,7 +221,7 @@ try {
 
                 $mail->addTo($recipient['email'], $recipient['fullname']);
 
-                displayMessage('Recipient > to ' . $recipient['fullname'] . ' (' . $recipient['email'], 'default', true);
+                displayMessage('Recipient > to ' . $recipient['fullname'] . ' (' . $recipient['email'] . ')', 'default', true);
 
                 $mail->setSubject($reminder->getSubject($recipient['lang']));
                 $mail->setRawBody($reminder->getBody($recipient['lang']));
@@ -242,7 +253,5 @@ try {
     }
 
 } catch (Exception $e) {
-    error_log('APPLICATION EXCEPTION : ' . $e->getCode() . ' ' . $e->getMessage());
     displayMessage('APPLICATION EXCEPTION : ' . $e->getCode() . ' ' . $e->getMessage(), 'red', true);
 }
-

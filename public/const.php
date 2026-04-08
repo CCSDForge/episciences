@@ -160,7 +160,7 @@ function defineJournalConstants(string $rvCode = null): void
 
     if ($rvCode) {
 
-        // define application ur
+        // define application url
         if (!defined('APPLICATION_URL')) {
             if (getenv('RVCODE')) {
                 define('APPLICATION_URL', SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN);
@@ -342,11 +342,12 @@ function defineVendorJsLibraries(): void
         'VENDOR_JQUERY_DATATABLES' => 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js',
         'VENDOR_JQUERY_FILE_UPLOAD' => 'https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/10.32.0/js/jquery.fileupload.min.js',
         'VENDOR_JQUERY_NESTED_SORTABLE' => 'https://cdnjs.cloudflare.com/ajax/libs/nestedSortable/1.3.4/jquery.ui.nestedSortable.min.js',
+        'VENDOR_SORTABLE_JS' => 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js',
         'VENDOR_JQUERY_UI' => 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js', // Do not upgrade
         'VENDOR_JQUERY_URL_PARSER' => 'https://cdnjs.cloudflare.com/ajax/libs/jquery-url-parser/2.2.1/purl.min.js',
         'VENDOR_MATHJAX' => 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML',
-        'VENDOR_TINYMCE' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.3.0/tinymce.min.js',
-        'VENDOR_TINYMCE_JQUERY' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.3.0/tinymce.min.js',
+        'VENDOR_TINYMCE' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
+        'VENDOR_TINYMCE_JQUERY' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
         'VENDOR_CHART' => 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js',
         'VENDOR_CHART_PLUGIN_DATALABELS' => 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/0.7.0/chartjs-plugin-datalabels.min.js',
     ];
@@ -365,9 +366,9 @@ function defineVendorCssLibraries(): void
         'VENDOR_BOOTSTRAP' => 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css',
         'VENDOR_BOOTSTRAP_COLORPICKER_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/css/bootstrap-colorpicker.css',
         'VENDOR_DATATABLES_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/dataTables.bootstrap.min.css',
-        'VENDOR_FONT_AWESOME' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/fontawesome.min.css',
-        'VENDOR_FONT_AWESOME_BRAND' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/brands.min.css',
-        'VENDOR_FONT_AWESOME_SOLID' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/solid.min.css',
+        'VENDOR_FONT_AWESOME' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/fontawesome.min.css',
+        'VENDOR_FONT_AWESOME_BRAND' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/brands.min.css',
+        'VENDOR_FONT_AWESOME_SOLID' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/solid.min.css',
         'VENDOR_JQUERY_UI_THEME_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/flick/jquery-ui.min.css',
         'VENDOR_CHART_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css',
         'VENDOR_COOKIE_CONSENT_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.css',
@@ -596,6 +597,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('VENDOR_JQUERY_DATATABLES', '');
         define('VENDOR_JQUERY_FILE_UPLOAD', '');
         define('VENDOR_JQUERY_NESTED_SORTABLE', '');
+        define('VENDOR_SORTABLE_JS', '');
         define('VENDOR_JQUERY_UI', '');
         define('VENDOR_JQUERY_URL_PARSER', '');
         define('VENDOR_MATHJAX', '');

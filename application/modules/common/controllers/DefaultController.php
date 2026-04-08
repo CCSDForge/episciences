@@ -382,4 +382,16 @@ class DefaultController extends Episciences_Controller_Action
         $this->view->error = true;
 
     }
+
+
+    protected function buildReachedMessage(): string
+    {
+        $message = $this->view->translate('Ce formulaire comporte des erreurs.');
+        $message .= ' ';
+        $message .= $this->view->translate('La taille maximale des fichiers que vous pouvez télécharger est limitée à');
+        $message .= ' ';
+        $message .= '<code>' . Episciences_Tools::toHumanReadable(MAX_FILE_SIZE) . '</code>. ';
+        $message .= $this->view->translate('Merci de les corriger.');
+        return $message;
+    }
 }

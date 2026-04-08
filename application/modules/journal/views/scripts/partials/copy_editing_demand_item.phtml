@@ -1,0 +1,100 @@
+<?php
+/**
+ * Copy-editing timeline item component
+ * Displays a single copy-editing request or reply in timeline format
+ *
+ * Parameters:
+ * - $item: array with SCREEN_NAME, UID, WHEN, MESSAGE, DEADLINE, FILE, TYPE, DOCID, PCID
+ * - $paperId: int - paper ID
+ * - $isReply: boolean - true for replies, false for main requests (default: false)
+ * - $cleanMessage: boolean - whether to apply cleanBody() to message (default: false)
+ * - $linkToLatestDocId: string - URL to latest document version
+ */
+
+// Extract variables from $this if they're not already set
+if (!isset($item) && isset($this->item)) {
+    $item = $this->item;
+}
+if (!isset($paperId) && isset($this->paperId)) {
+    $paperId = $this->paperId;
+}
+if (!isset($linkToLatestDocId) && isset($this->linkToLatestDocId)) {
+    $linkToLatestDocId = $this->linkToLatestDocId;
+}
+
+// Set defaults for optional parameters
+if (!isset($isReply)) {
+    $isReply = $this->isReply ?? false;
+}
+if (!isset($cleanMessage)) {
+    $cleanMessage = $this->cleanMessage ?? false;
+}
+
+// Check if this is a final version submission (TYPE 19) - displays as link instead of badge
+$isFinalVersion = (int)$item['TYPE'] === Episciences_CommentsManager::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED;
+?>
+<article class="timeline-item <?= $isReply ? 'timeline-item--reply' : 'timeline-item--demand' ?>">
+
+    <!-- Timeline marker with user photo -->
+    <div class="timeline-marker" aria-hidden="true">
+        <?= $this->userAvatar($item, 'initials') ?>
+    </div>
+
+    <!-- Timeline content card -->
+    <div class="timeline-content">
+
+        <!-- Header: user + date + deadline -->
+        <header class="timeline-item-header">
+            <?= $this->partial('partials/demand_header.phtml', [
+                'user' => $item,
+                'date' => $item['WHEN'],
+                'deadline' => $item['DEADLINE'] ?? null,
+                'showDeadline' => !$isReply
+            ]) ?>
+        </header>
+
+        <!-- Status badge or final version link -->
+        <div class="timeline-item-status">
+            <?php if ($isFinalVersion): ?>
+                <!-- TYPE 19: Final version submitted - display as link button -->
+                <a class="btn btn-primary btn-sm"
+                   href="<?= $linkToLatestDocId ?>"
+                   data-toggle="tooltip"
+                   title="<?= $this->translate('Accéder à la version finale') ?>">
+                    <i class="fas fa-link"></i>
+                    <?= $this->translate(Episciences_CommentsManager::$_typeLabel[$item['TYPE']]) ?>
+                </a>
+            <?php else: ?>
+                <!-- Other types: display as status badge -->
+                <span class="label label-status-<?= $item['TYPE'] ?>">
+                    <?= $this->translate(Episciences_CommentsManager::$_typeLabel[$item['TYPE']]) ?>
+                </span>
+            <?php endif; ?>
+        </div>
+
+        <!-- Message body -->
+        <div class="timeline-item-message">
+            <?php
+            $message = $cleanMessage
+                ? Episciences_Tools::epi_html_decode(Episciences_Tools::cleanBody($item['MESSAGE']))
+                : Episciences_Tools::epi_html_decode($item['MESSAGE']);
+            echo $message;
+            ?>
+        </div>
+
+        <!-- Files (if present) -->
+        <?php if (!empty($item['FILE'])): ?>
+            <div class="timeline-item-files">
+                <?= $this->partial('partials/demand_files.phtml', [
+                    'files' => $item['FILE'],
+                    'type' => $item['TYPE'],
+                    'docId' => $item['DOCID'],
+                    'comment' => $item,
+                    'paperId' => $paperId
+                ]) ?>
+            </div>
+        <?php endif; ?>
+
+    </div>
+
+</article>

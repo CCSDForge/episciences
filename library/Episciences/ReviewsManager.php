@@ -7,6 +7,13 @@
 class Episciences_ReviewsManager
 {
     /**
+     * Intra-request cache for Review objects
+     * Stores both successful finds and false results to avoid redundant DB queries
+     * @var array<string, Episciences_Review|false>
+     */
+    private static array $_cache = [];
+
+    /**
      * fetch a list of all episciences reviews
      */
     public static function getList(array $settings = null): array
@@ -69,26 +76,44 @@ class Episciences_ReviewsManager
      * @param int $id
      * @return bool|Episciences_Review
      */
-    public static function findByRvid(int $id)
+    public static function findByRvid(int $id): Episciences_Review|bool
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        $select = $db->select()->from(T_REVIEW)->where('RVID = ?', $id);
-
-        $data = $db->fetchRow($select);
-        if (empty($data)) {
-            $review = false;
-        } else {
-            $review = new Episciences_Review($data);
+        // Check cache first
+        $cacheKey = 'rvid_' . $id;
+        if (array_key_exists($cacheKey, self::$_cache)) {
+            return self::$_cache[$cacheKey];
         }
+
+        // Load from database
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()->from(T_REVIEW)->where('RVID = ?', $id);
+        $data = $db->fetchRow($select);
+
+        $review = empty($data) ? false : new Episciences_Review($data);
+
+        // Cache the result
+        self::$_cache[$cacheKey] = $review;
+
         return $review;
     }
 
     /**
      * Find a review by RVCODE (string)
+     * @param string $rvcode
+     * @param bool $enabledOnly
+     * @param bool $fetchSettings :to force loading settings
+     * @return bool|Episciences_Review
      */
-    public static function findByRvcode(string $rvcode, bool $enabledOnly = false)
+    public static function findByRvcode(string $rvcode, bool $enabledOnly = false, bool $fetchSettings = false): bool|Episciences_Review
     {
+        // Cache key includes the enabledOnly flag for proper segregation
+        $cacheKey = 'rvcode_' . $rvcode . ($enabledOnly ? '_enabled' : '');
+
+        if (array_key_exists($cacheKey, self::$_cache)) {
+            return self::$_cache[$cacheKey];
+        }
+
+        // Load from database
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->from(T_REVIEW)->where('CODE = ?', $rvcode);
 
@@ -97,11 +122,20 @@ class Episciences_ReviewsManager
         }
 
         $data = $db->fetchRow($select);
+
         if (empty($data)) {
-            $review = false;
-        } else {
-            $review = new Episciences_Review($data);
+            return false;
         }
+
+        $review = new Episciences_Review($data);
+
+        if ($fetchSettings) {
+            $review->loadSettings();
+        }
+
+        // Cache the result
+        self::$_cache[$cacheKey] = $review;
+
         return $review;
     }
 
@@ -133,9 +167,10 @@ class Episciences_ReviewsManager
     public static function findActiveJournals(): array
     {
 
+
         $jNumber = 0;
         $journalCollection[$jNumber] = ['Number', 'Code', 'Title', 'ISSN', 'EISSN', 'Address', 'Accepted-repositories'];
-        $allJournals = self::AllJournals();
+        $allJournals = self::allJournals();
         if (!$allJournals) {
             return $journalCollection;
         }
@@ -185,12 +220,23 @@ class Episciences_ReviewsManager
 
     }
 
-    public static function AllJournals(int|string $status = Episciences_Review::ENABLED): ?array
+    public static function allJournals(int|string $status = Episciences_Review::ENABLED): ?array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->from(T_REVIEW)->where('STATUS = ?', $status);
         $select->order('NAME ASC');
         return $db->fetchAll($select);
     }
+
+    /**
+     * Clear the internal cache
+     * Useful for unit tests or when Review data is modified during request
+     * @return void
+     */
+    public static function clearCache(): void
+    {
+        self::$_cache = [];
+    }
+
 
 }

@@ -40,9 +40,10 @@ ehthumbs.db
 Thumbs.db
 
 # Legacy/vendor JavaScript libraries
-public/js/vendor/
 public/js/lib/
 public/js/libraries/
+# CCSD lib JS templates
+library/public/js/
 
 # Test coverage
 coverage/

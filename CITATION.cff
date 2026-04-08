@@ -10,6 +10,9 @@ authors:
     family-names: Marmol
     orcid: 'https://orcid.org/0000-0003-2955-5678'
     affiliation: CCSD
+  - given-names: Claire
+    family-names: Zhao
+    affiliation: CCSD
   - given-names: Djamel
     family-names: Chibane
     affiliation: CCSD
@@ -39,4 +42,5 @@ url: 'https://www.episciences.org/'
 keywords:
   - open access
   - overlay journals
+  - diamond open access
 license: GPL-3.0-or-later

@@ -11,8 +11,8 @@ class Episciences_Volume_Metadata
     private $_deletelist;
     private $_position;
 
-    private ?array $_title;
-    private ?array $_content;
+    private ?array $_title = null;
+    private ?array $_content = null;
     private ?string $date_creation = null;
     private string $date_updated;
 
@@ -48,7 +48,8 @@ class Episciences_Volume_Metadata
         // Executer les setters
         foreach ($execution_list as $key => $value) {
             $key = Episciences_Tools::convertToCamelCase($key, '_', true);
-            $method = 'set' . ucfirst($key);
+        //ucfirst is redundant
+            $method = 'set' . $key;
             if (in_array($method, $methods)) {
                 $this->$method($value);
             }

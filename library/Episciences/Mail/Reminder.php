@@ -8,15 +8,15 @@ class Episciences_Mail_Reminder
 
     // event types triggering a reminder
     public const TYPE_UNANSWERED_INVITATION = 0;        // unanswered invitation
-    public const TYPE_BEFORE_REVIEWING_DEADLINE = 1;    // before rewiewing deadline
-    public const TYPE_AFTER_REVIEWING_DEADLINE = 2;    // after rewiewing deadline
+    public const TYPE_BEFORE_REVIEWING_DEADLINE = 1;    // before reviewing deadline
+    public const TYPE_AFTER_REVIEWING_DEADLINE = 2;    // after reviewing deadline
     public const TYPE_BEFORE_REVISION_DEADLINE = 3;    // before revision deadline
     public const TYPE_AFTER_REVISION_DEADLINE = 4;        // after revision deadline
     public const TYPE_NOT_ENOUGH_REVIEWERS = 5;        // not enough reviewers
     public const TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE = 6; // article accepté : si rien n’est fait et qu’un article reste “bloqué” à ce stade.
     public const TYPE_ARTICLE_BLOCKED_IN_SUBMITTED_STATE = 7;
     public const TYPE_ARTICLE_BLOCKED_IN_REVIEWED_STATE = 8;
-    public const DEFAULT_WAITING_TIME = 30; // days
+    public const DEFAULT_WAITING_TIME = 0; // days
 
     // reminder types labels
     public static array $_typeLabel = [
@@ -233,21 +233,20 @@ class Episciences_Mail_Reminder
         $translations = Episciences_Tools::getOtherTranslations(REVIEW_LANG_PATH, Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME, '#^' . $key . '#');
 
         foreach ($this->getCustom() as $lang => $custom) {
+            $custom = (int)$custom;
             $path = REVIEW_LANG_PATH . $lang . '/emails/';
             if (!file_exists($path) && !mkdir($path) && !is_dir($path)) {
                 throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
             }
             $filename = $key . '.phtml';
-            if ($custom == 1) {
+            if ($custom === 1) {
                 // write file (body)
                 file_put_contents($path . $filename, $this->getBody($lang));
 
                 // subject translations
                 $translations[$lang][$key . Episciences_Mail_TemplatesManager::SUFFIX_TPL_SUBJECT] = $this->getSubject($lang);
-            } else {
-                if ($edit && file_exists($path . $filename)) {
-                    unlink($path . $filename);
-                }
+            } elseif ($edit && file_exists($path . $filename)) {
+                unlink($path . $filename);
             }
         }
 
@@ -268,7 +267,7 @@ class Episciences_Mail_Reminder
      */
     public function loadRecipients(bool $debug = false, $date = null): void
     {
-        $date = ($date) ? "'" . $date . "'" : 'CURDATE()';
+        $date = ($date) ? Zend_Db_Table_Abstract::getDefaultAdapter()->quote((string)$date) : 'CURDATE()';
         $recipients = [];
 
         $filters = [
@@ -395,7 +394,7 @@ class Episciences_Mail_Reminder
      */
     public function setType($type): self
     {
-        $this->_type = $type;
+        $this->_type = (int)$type;
         return $this;
     }
 
@@ -741,6 +740,7 @@ class Episciences_Mail_Reminder
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
+     * @throws JsonException
      */
 
     private function getNotEnoughReviewersRecipients($debug, $date, $filters): array
@@ -765,12 +765,20 @@ class Episciences_Mail_Reminder
 
         /** @var Episciences_Paper $paper */
         foreach ($papers as $paper) {
-            $acceptedInvitations = $paper->getInvitations(
-                [Episciences_User_Assignment::STATUS_ACTIVE],
+            // L'ajout d'une relecture supplémentaire ne passe pas par les invitations, on doit donc d'abord vérifier cela.
+            $nbReports = count($paper->getReports());
+
+            if ($nbReports >= $requiredReviewers){
+                continue;
+            }
+
+            $pendingAndAcceptedInvitations = $paper->getInvitations(
+                [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_PENDING],
                 true,
                 $review->getRvid()
-            )[Episciences_User_Assignment::STATUS_ACTIVE] ?? [];
+            );
 
+            $acceptedInvitations = $pendingAndAcceptedInvitations[Episciences_User_Assignment::STATUS_ACTIVE] ?? [];
             $nbAcceptedInvitations = count($acceptedInvitations);
 
             if ($nbAcceptedInvitations >= $requiredReviewers) {
@@ -781,13 +789,20 @@ class Episciences_Mail_Reminder
 
             $commonTags = [
                 Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN =>  $lostLoginLink,
-                Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink // present in custom templates
+                Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $lostLoginLink, // present in custom templates
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                Episciences_Mail_Tags::TAG_ARTICLE_LINK => self::buildAdminPaperUrl($paper->getDocid(), $journalOptions),
+                Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT => $nbAcceptedInvitations,
+                Episciences_Mail_Tags::TAG_REQUIRED_REVIEWERS_COUNT => $requiredReviewers,
             ];
+
+            $pendingInvitations = $pendingAndAcceptedInvitations[Episciences_User_Assignment::STATUS_PENDING] ?? [];
 
             // pour chacun des rédacteurs de l'article
             /** @var Episciences_Editor $editor */
             foreach ($paper->getEditors() as $editor) {
-                $originDate = $this->resolveOriginDate($acceptedInvitations, $editor);
+                $originDate = $this->resolveOriginDate([...$acceptedInvitations, ...$pendingInvitations], $editor);
                 if (!$originDate) {
                     continue;
                 }
@@ -800,12 +815,7 @@ class Episciences_Mail_Reminder
                     Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $editor->getScreenName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $editor->getFullName(),
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $editor->getUsername(),
-                    Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                     Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($editor->getLangueid(), true),
-                    Episciences_Mail_Tags::TAG_ARTICLE_LINK => self::buildAdminPaperUrl($paper->getDocid(), $journalOptions),
-                    Episciences_Mail_Tags::TAG_INVITED_REVIEWERS_COUNT => $nbAcceptedInvitations,
-                    Episciences_Mail_Tags::TAG_REQUIRED_REVIEWERS_COUNT => $requiredReviewers,
                 ];
 
                 if ($this->shouldSendReminder($intervalDays)) {
@@ -1333,6 +1343,7 @@ class Episciences_Mail_Reminder
 
     /**
      * La relance n'est envoyée que si rien n'est fait pendant une période > (reminder delay + $time) = x (jours).
+     * Désormais basé uniquement sur le champ delay (DEFAULT_WAITING_TIME = 0). todo $time à supprimer par conséquent
      * @param int $status
      * @param $debug
      * @param $date
@@ -1350,7 +1361,7 @@ class Episciences_Mail_Reminder
         $rRecipient = $this->getRecipient();
         $editors = [];
 
-        $delay = (int)$this->getDelay();
+        $delay = (int)$this->getDelay() + $waitingTime;
         $repetition = $this->getRepetition();
 
         $review = Episciences_ReviewsManager::find($this->getRvid());
@@ -1368,8 +1379,8 @@ class Episciences_Mail_Reminder
         $paperQuery = $db
             ->select()
             ->from(['p' => $pq])
-            ->join(['pl' => T_LOGS], 'pl.DOCID = p.DOCID', ['ACTION', 'max(DATE) as  date'])
-            ->where('ACTION = ?', 'status')
+            ->join(['pl' => T_LOGS], 'pl.DOCID = p.DOCID', ['status', 'max(DATE) as  date'])
+            ->where('pl.status = ?', $status)
             ->group('pl.DOCID');
 
         $refDate = 'date'; // not based on the "MODIFICATION_DATE" column, which is not immutable: (e.g. modified when metadata is updated)
@@ -1621,20 +1632,21 @@ class Episciences_Mail_Reminder
 
     }
 
-    private function resolveOriginDate(array $acceptedInvitations, Episciences_Editor $editor): ?DateTimeImmutable
+    private function resolveOriginDate(array $invitations, Episciences_Editor $editor): ?DateTimeImmutable
     {
-        $latestInvitationDate = $this->getLatestInvitationDate($acceptedInvitations);
+        $latestInvitationDate = $this->getLatestInvitationDate($invitations);
+
+        if ($latestInvitationDate) {
+            return $latestInvitationDate;
+        }
+
         $editorAssignmentDate = $this->createDateWithoutTime($editor->getWhen());
 
         if (!$editorAssignmentDate) {
             return null;
         }
 
-        if (!$latestInvitationDate || $latestInvitationDate < $editorAssignmentDate) {
-            return $editorAssignmentDate;
-        }
-
-        return $latestInvitationDate;
+        return $editorAssignmentDate;
     }
 
     private function getLatestInvitationDate(array $acceptedInvitations): ?DateTimeImmutable

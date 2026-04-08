@@ -1,11 +1,11 @@
+<?php $graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId())) ?>
 <div class="panel panel-default collapsable">
     <div class="panel-heading">
         <h2 class="panel-title"><?= $this->translate('Graphical Abstract') ?></h2>
     </div>
-    <div class="panel-body in">
+    <div class="panel-body <?= ($graphAbs !== "") ? 'in' : '' ?>">
         <form id="f-graph-abs">
             <div style="max-height:480px;overflow: auto;">
-                <?php $graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId())) ?>
                 <?php if ($graphAbs !== "") : ?>
                     <img alt="graphical abstract"
                          style="max-width: 100%;max-height: 100%; object-fit: contain; overflow: scroll"

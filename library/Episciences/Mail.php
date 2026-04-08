@@ -117,7 +117,7 @@ class Episciences_Mail extends Zend_Mail
         ];
 
         foreach ($folders as $folder) {
-            if (!is_dir($folder) && !mkdir($folder) && !is_dir($folder)) {
+            if (!is_dir($folder) && !mkdir($folder, 0755, true) && !is_dir($folder)) {
                 throw new Exception('Storage folder creation failed in: ' . $folder, self::STATUS_FAILED_MAIL_STORAGE_CREATION);
             }
         }
@@ -782,11 +782,12 @@ class Episciences_Mail extends Zend_Mail
 
         if (!empty($docIds)) {
 
-            $implodedDocId = implode(',', $docIds);
+            $safeIds = array_map('intval', array_filter($docIds, 'is_numeric'));
+            $implodedDocId = implode(',', $safeIds);
             if (!$isStrict) {
-                $sql->where(sprintf('DOCID IS NULL OR DOCID IN (%s) OR UID = %s', $implodedDocId, Episciences_Auth::getUid()));
+                $sql->where(sprintf('DOCID IS NULL OR DOCID IN (%s) OR UID = %s', $implodedDocId, (int)Episciences_Auth::getUid()));
             } else {
-                $sql->where(sprintf('DOCID IN (%s) OR UID = %s', $implodedDocId, Episciences_Auth::getUid()));
+                $sql->where(sprintf('DOCID IN (%s) OR UID = %s', $implodedDocId, (int)Episciences_Auth::getUid()));
             }
 
 

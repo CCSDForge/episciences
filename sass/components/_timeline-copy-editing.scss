@@ -1,0 +1,254 @@
+/**
+ * Copy-Editing Timeline Component
+ * Extends base timeline with copy-editing-specific features
+ * Requires: _timeline-base.scss, _timeline-demands.scss
+ */
+
+// Copy-editing timeline containers (extend existing timeline styles)
+.copy-editing-timeline {
+  @extend .timeline-container;
+}
+
+.copy-editing-timeline-track {
+  @extend .timeline-track;
+}
+
+// Copy-editing section wrapper
+.copy-editing-section {
+  margin: 20px 0;
+
+  // Timeline item modifiers (must be scoped to copy-editing section)
+  .timeline-item--demand {
+    // Main demands use base styles
+  }
+
+  .timeline-item--reply {
+    // Replies are indented and have subtle visual distinction
+    margin-left: 10px; // Indent from parent
+
+    .timeline-content {
+      border-color: $lighter-grey;
+      max-width: calc(87% - 10px); // Reduce width to account for indent
+    }
+
+    // Smaller marker for replies
+    .timeline-marker {
+      left: -56px; // Aligned with main timeline
+      width: 24px;
+      height: 24px;
+
+      .user-photo-thumb {
+        width: 20px; // Smaller to fit within the 24px marker
+        height: 20px;
+      }
+    }
+  }
+
+  // Timeline thread (wrapper for nested replies)
+  .timeline-thread {
+    position: relative;
+    margin-top: 15px;
+    margin-bottom: 20px;
+    padding-left: 10px; // Indent for replies
+
+    // Connection line from parent to replies
+    &::before {
+      content: '';
+      position: absolute;
+      left: -40px; // Align with main timeline (20px - 60px padding)
+      top: -15px;
+      width: 2px;
+      height: calc(100% + 15px);
+      background-color: $lighter-grey;
+      z-index: 0;
+    }
+
+    // Horizontal connector to first reply
+    &::after {
+      content: '';
+      position: absolute;
+      left: -40px; // Start from main timeline
+      top: 15px; // Vertical position of first reply marker
+      width: 20px;
+      height: 2px;
+      background-color: $lighter-grey;
+      z-index: 0;
+    }
+  }
+}
+
+
+// Status badge in timeline items
+.timeline-item-status {
+  margin-bottom: 10px;
+  margin-top: 5px;
+
+  // Status labels (badges)
+  .label {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    display: inline-block;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    max-width: 100%;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.4;
+  }
+
+  // Final version link button (TYPE 19)
+  .btn-primary {
+    font-size: 11px;
+    padding: 6px 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+
+    .fas {
+      margin-right: 5px;
+    }
+
+    &:hover {
+      opacity: 0.9;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+  }
+}
+
+// Reply form container
+.copy-editing-reply-form {
+  margin: 15px 0 20px 60px; // Align with timeline content (60px = marker padding)
+
+  .replyButton {
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+
+    .glyphicon {
+      margin-right: 5px;
+    }
+
+    &:hover:not([disabled]) {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    &[disabled] {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+
+  // Reply form content
+  .replyForm {
+    background-color: $almost-white;
+    border: 1px solid $lighter-grey;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+    // Form groups
+    .form-group {
+      margin-bottom: 15px;
+
+      label {
+        font-weight: 600;
+        color: $darker-grey;
+        margin-bottom: 5px;
+      }
+
+      .form-control {
+        border-radius: 4px;
+        border-color: $lighter-grey;
+
+        &:focus {
+          border-color: $blue;
+          box-shadow: 0 0 0 0.2rem rgba(6, 119, 191, 0.25);
+        }
+      }
+    }
+
+    // Form actions
+    .form-actions {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid $lighter-grey;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+  }
+}
+
+// Responsive: Mobile & Tablet (768px and below)
+@media (max-width: 768px) {
+
+  .copy-editing-reply-form {
+    margin-left: 50px; // Match mobile timeline padding
+
+    .replyButton {
+      font-size: 12px;
+      padding: 6px 10px;
+    }
+  }
+
+  .timeline-item-status {
+    .label,
+    .btn {
+      font-size: 10px;
+      padding: 3px 6px;
+    }
+  }
+}
+
+// Accessibility: Focus states
+.copy-editing-reply-form {
+  .replyButton:focus {
+    outline: 2px solid $blue;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 0.2rem rgba(6, 119, 191, 0.25);
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: more) {
+
+  .timeline-item-status .label {
+    border: 2px solid currentColor;
+  }
+
+  .copy-editing-reply-form .replyForm {
+    border-width: 2px;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .copy-editing-reply-form .replyButton {
+    transition: none;
+
+    &:hover:not([disabled]) {
+      transform: none;
+    }
+  }
+
+  .timeline-item-status .btn-primary {
+    transition: none;
+  }
+}
+
+// Print: Hide interactive elements
+@media print {
+  .copy-editing-reply-form {
+    display: none;
+  }
+
+  .timeline-item-status .btn-primary {
+    border: 1px solid $darker-grey;
+    color: $darker-grey;
+    background: transparent;
+  }
+}

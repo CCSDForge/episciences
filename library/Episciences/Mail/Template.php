@@ -40,8 +40,8 @@ class Episciences_Mail_Template
 
                 $key = array_search($tag, $tags, true);
 
-                if($key){
-                    unset( $tags[$key]);
+                if ($key !== false) {
+                    unset($tags[$key]);
                 }
             }
         }
@@ -102,8 +102,6 @@ class Episciences_Mail_Template
             $method = 'set' . ucfirst($key);
             if (in_array($method, $methods)) {
                 $this->$method($value);
-            } else {
-                echo "La méthode $value n'existe pas<br/>";
             }
         }
 
@@ -490,6 +488,8 @@ class Episciences_Mail_Template
      */
     public function getRvid(): int
     {
+        // TODO: getter side effect — setRvid() mutates object state; callers may
+        // depend on this lazy-init behaviour, so refactoring requires wider analysis.
         if (!$this->_rvid && defined('RVID')) {
             $this->setRvid(RVID);
         }
@@ -604,6 +604,8 @@ class Episciences_Mail_Template
 
     public function getRvcode()
     {
+        // TODO: getter side effect — setRvcode() mutates object state; callers may
+        // depend on this lazy-init behaviour, so refactoring requires wider analysis.
         if (!$this->_rvcode && defined('RVCODE')) {
             $this->setRvcode(RVCODE);
         }

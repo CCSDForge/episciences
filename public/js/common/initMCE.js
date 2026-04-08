@@ -1,6 +1,6 @@
-__initMCE ('textarea', undefined, {
+__initMCE('textarea', undefined, {
     theme: 'silver',
-    plugins: "link image code fullscreen table",
-    toolbar1: "bold italic underline",
-    menubar: false
+    plugins: 'link image code fullscreen table',
+    toolbar1: 'bold italic underline',
+    menubar: false,
 });

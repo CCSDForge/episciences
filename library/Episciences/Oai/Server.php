@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Paper\Export;
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Episciences_Oai_Server extends Ccsd_Oai_Server
@@ -13,7 +15,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
     public const SET_JOURNAL = 'journal';
     public const SET_JOURNAL_PREFIX = 'journal:';
     public const OAI_TOKEN_EXPIRATION_TIME = 7200;
-    private $_formats = ['oai_dc' => 'dc', 'tei' => 'tei', 'oai_openaire' => 'datacite'];
+    private $_formats = ['oai_dc' => 'dc', 'tei' => 'tei', 'oai_openaire' => 'datacite', 'crossref' => 'crossref'];
 
 
     /**
@@ -83,7 +85,8 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
         return [
             'oai_dc' => ['schema' => 'https://www.openarchives.org/OAI/2.0/oai_dc.xsd', 'ns' => 'http://www.openarchives.org/OAI/2.0/oai_dc/'],
             'tei' => ['schema' => 'https://api.archives-ouvertes.fr/documents/aofr.xsd', 'ns' => 'https://hal.archives-ouvertes.fr/'],
-            'oai_openaire' => ['schema' => 'https://www.openaire.eu/schema/repo-lit/4.0/openaire.xsd', 'ns' => 'http://namespace.openaire.eu/schema/oaire/']
+            'oai_openaire' => ['schema' => 'https://www.openaire.eu/schema/repo-lit/4.0/openaire.xsd', 'ns' => 'http://namespace.openaire.eu/schema/oaire/'],
+            'crossref' => ['schema' => 'https://www.crossref.org/schemas/crossref5.3.1.xsd', 'ns' => 'http://www.crossref.org/schema/5.3.1']
         ];
     }
 
@@ -160,7 +163,41 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
         if (!array_key_exists($format, $this->_formats)) {
             return false;
         }
-        return ['header' => $paper->getOaiHeader(), 'metadata' => $paper->get($this->_formats[$format])];
+        return ['header' => $paper->getOaiHeader(), 'metadata' => $this->getOaiMetadata($paper, $this->_formats[$format])];
+    }
+
+    /**
+     * Returns the metadata string for a paper in the given internal format.
+     * For the crossref format, the personal depositor email is replaced with a
+     * generic address since this output is publicly harvested via OAI-PMH.
+     */
+    protected function getOaiMetadata(Episciences_Paper $paper, string $internalFormat): string|false
+    {
+        if ($internalFormat === 'crossref') {
+            return Export::getCrossref($paper, true);
+        }
+        return $paper->get($internalFormat);
+    }
+
+    /**
+     * Returns the cache pool used to store OAI resumption tokens.
+     *
+     * Extracted as a protected method to allow injection of a test double (e.g. ArrayAdapter)
+     * in unit tests without touching the filesystem.
+     */
+    protected function getTokenCachePool(): CacheItemPoolInterface
+    {
+        return new FilesystemAdapter('oai-token', 0, CACHE_PATH_METADATA);
+    }
+
+    /**
+     * Executes a Solr query and returns the raw serialized response.
+     *
+     * Extracted as a protected method to allow mocking in unit tests.
+     */
+    protected function executeSolrQuery(string $queryString): string|false
+    {
+        return Episciences_Tools::solrCurl($queryString);
     }
 
     /**
@@ -187,17 +224,19 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
             if ($until !== null || $from !== null) {
                 $query .= "&fq=publication_date_tdate:" . urlencode('[' . (($from == null) ? "*" : '"' . $from . 'T00:00:00Z"') . " TO " . (($until == null) ? "*" : '"' . $until . 'T23:59:59Z"') . "]");
             }
-            if ((($set !== null) || ($set !== self::SET_DRIVER) || ($set !== self::SET_OPENAIRE)) && strpos($set, self::SET_JOURNAL_PREFIX) === 0) {
+            if ($set !== null && str_starts_with($set, self::SET_JOURNAL_PREFIX)) {
                 $query .= "&fq=revue_code_t:" . urlencode(substr($set, 8));
             }
             $conf['query'] = $query;
             $queryString .= $query;
             $queryString .= "&cursorMark=*";
         } else {
-            if (!Episciences_Cache::exist('oai-token-' . md5($token) . '.phps', self::OAI_TOKEN_EXPIRATION_TIME)) {
+            $tokenPool = $this->getTokenCachePool();
+            $cacheItem = $tokenPool->getItem('oai-token-' . md5($token));
+            if (!$cacheItem->isHit()) {
                 return 'token';
             }
-            $conf = unserialize(Episciences_Cache::get('oai-token-' . md5($token) . '.phps'), ['allowed_classes' => false]);
+            $conf = $cacheItem->get();
             $format = $conf['format'];
             $queryString .= $conf['query'] . "&cursorMark=" . urlencode($token);
         }
@@ -211,7 +250,8 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
         $queryString .= "&sort=docid+desc";
         $queryString .= "&fl=docid&wt=phps";
 
-        $result = unserialize(Episciences_Tools::solrCurl($queryString), ['allowed_classes' => false]);
+        $solrResponse = $this->executeSolrQuery($queryString);
+        $result = $solrResponse !== false ? unserialize($solrResponse, ['allowed_classes' => false]) : false;
         if (isset($result['response'], $result['response']['numFound']) && is_array($result['response'])) {
             if ($result['response']['numFound'] == 0) {
                 return 0;
@@ -219,8 +259,13 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
 
             if (isset($result['response']['docs'], $result['nextCursorMark']) && is_array($result['response']['docs'])) {
                 $out = [];
+
+                // Batch-load all papers in a single IN query to avoid N+1 DB round-trips.
+                $docIds = array_column($result['response']['docs'], 'docid');
+                $papers = Episciences_PapersManager::getByDocIds($docIds);
+
                 foreach ($result['response']['docs'] as $res) {
-                    $paper = Episciences_PapersManager::get($res['docid'], false);
+                    $paper = $papers[$res['docid']] ?? false;
                     if (false === $paper) {
                         continue;
                     }
@@ -228,7 +273,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
                     if ($method === self::OAI_VERB_LISTIDS) {
                         $out[] = $oaiHeader;
                     } else {
-                        $out[] = ['header' => $oaiHeader, 'metadata' => $paper->get($this->_formats[$format])];
+                        $out[] = ['header' => $oaiHeader, 'metadata' => $this->getOaiMetadata($paper, $this->_formats[$format])];
                     }
                 }
                 // token
@@ -245,11 +290,24 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
                         $conf['cursor'] += (($method === self::OAI_VERB_LISTIDS) ? self::LIMIT_IDENTIFIERS : self::LIMIT_RECORDS);
                         $conf['solr'] = $queryString;
 
-                        Episciences_Cache::save('oai-token-' . md5($result['nextCursorMark']) . '.phps', serialize($conf));
+                        $tokenPool = $this->getTokenCachePool();
+                        $newTokenItem = $tokenPool->getItem('oai-token-' . md5($result['nextCursorMark']));
+                        $newTokenItem->set($conf)->expiresAfter(self::OAI_TOKEN_EXPIRATION_TIME);
+                        $tokenPool->save($newTokenItem);
                     } else {
                         $out[] = '<resumptionToken completeListSize="' . $result['response']['numFound'] . '" />';
                     }
                 }
+
+                // Propagate the format to the parent (Ccsd_Oai_Server::listIds) so it can set
+                // the correct XML namespace attributes on <metadata> elements when responding to
+                // a resumptionToken request.  The parent has a hotfix that reads this key and
+                // removes it before iterating; without this, xmlns:tei / xmlns:datacite are
+                // missing on every page past the first for the tei and oai_openaire formats.
+                if ($token !== null) {
+                    $out = ['metadataPrefix' => $format] + $out;
+                }
+
                 return $out;
             }
 

@@ -1,9 +1,9 @@
-function processForm(object){
+function processForm(object) {
     object.hide();
     $('#dd-new-version-form').show();
 }
 
-function cancel(){
+function cancel() {
     $('#dd-new-version-form').hide();
     $('#btn-add').show();
 }

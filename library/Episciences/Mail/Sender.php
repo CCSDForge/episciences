@@ -77,7 +77,7 @@ class Episciences_Mail_Sender
 
     public function setPath(string $path): string
     {
-        if (!is_dir($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
+        if (!is_dir($path) && !mkdir($path, 0755, true) && !is_dir($path)) {
             return '';
         }
 
@@ -146,6 +146,7 @@ class Episciences_Mail_Sender
 
         // Verrouillage du fichier
         if (!flock($fileStream, LOCK_EX | LOCK_NB)) {
+            fclose($fileStream);
             return $mailPath . " : ERROR file is locked, probably by another process";
         }
 
@@ -250,7 +251,7 @@ class Episciences_Mail_Sender
             $filesList = $this->getAttachments();
             if ($filesList) {
                 foreach ($filesList as $attachment) {
-                    $mailer->addAttachment($mailPath . '/' . $attachment);
+                    $mailer->addAttachment($mailPath . '/' . basename($attachment));
                 }
             }
 
@@ -273,7 +274,7 @@ class Episciences_Mail_Sender
 
             // Transfert du mail dans le dossier "sent"
             if (!is_dir($this->getPath() . SENTMAILDIR . '/')) {
-                mkdir($this->getPath() . SENTMAILDIR . '/', 0777);
+                mkdir($this->getPath() . SENTMAILDIR . '/', 0755);
             }
             if (APPLICATION_ENV != ENV_DEV) {
                 $this->moveDirectory($mailPath, $this->getPath() . SENTMAILDIR . '/' . $mail_directory);
@@ -286,9 +287,9 @@ class Episciences_Mail_Sender
                 fclose($fileStream);
             }
 
-            $message = $mailPath . " : ERREUR - échec de l'envoi (" . ($this->mail[self::MAIL_ERRORS] + 1) . '/' . MAX_RETRIES . ')';
+            $message = $mailPath . " : ERREUR - échec de l'envoi (" . ((int)$this->mail[self::MAIL_ERRORS] + 1) . '/' . MAX_RETRIES . ')';
 
-            if ($this->mail[self::MAIL_ERRORS] < MAX_RETRIES) {
+            if ((int)$this->mail[self::MAIL_ERRORS] < MAX_RETRIES) {
                 $this->updateErrorsCount($mailPath . '/mail.xml');
             } else {
                 $this->moveDirectory($mailPath, $this->getPath() . 'log/' . $mail_directory);
@@ -349,13 +350,13 @@ class Episciences_Mail_Sender
      *Le paramètre est le nom du champ à récupérer (from, return-path, reply-to)
      *
      * @param $fieldname string
-     * @return bool|array
+     * @return array<string, string>
      */
     private function getAddress($fieldname)
     {
 
 
-        $res = false;
+        $res = [];
         if (!empty($this->mail->$fieldname)) {
             $item = $this->mail->$fieldname;
 
@@ -376,11 +377,11 @@ class Episciences_Mail_Sender
 
     /**
      * Renvoie la liste des pièces jointes
-     * @return array|bool
+     * @return list<string>
      */
     private function getAttachments()
     {
-        $files = false;
+        $files = [];
         if ($this->mail->files_list->file) {
             foreach ($this->mail->files_list->file as $file) {
                 $files[] = strval($file);
@@ -396,7 +397,7 @@ class Episciences_Mail_Sender
     private function updateErrorsCount($file)
     {
         $errorsCount = $this->mail[self::MAIL_ERRORS];
-        $headersCharset = ($this->mail['charset']) ? 'UTF-8' : $this->mail['charset'];
+        $headersCharset = (string)$this->mail['charset'] ?: 'UTF-8';
 
         $buffer = file($file);
         $buffer[1] = '<mail errors="' . ($errorsCount + 1) . '" charset="' . $headersCharset . '">' . PHP_EOL;

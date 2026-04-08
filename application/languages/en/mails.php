@@ -100,10 +100,10 @@ return [
     "paper_reviewer_acceptation_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - A reviewer has accepted to review this article",
 
     "paper_reviewer_refusal_reviewer_copy_tpl_name" => "Refused reviewer invitation (reviewer copy)",
-    "paper_reviewer_refusal_reviewer_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - You've refused a reviewing invitation",
+    "paper_reviewer_refusal_reviewer_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - You've declined a reviewing invitation",
 
     "paper_reviewer_refusal_editor_copy_tpl_name" => "Refused reviewer invitation (editors copy)",
-    "paper_reviewer_refusal_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - A reviewer has refused to review this article",
+    "paper_reviewer_refusal_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - A reviewer has declined to review this article",
 
     // Relecture terminée - copie destinée au relecteur
     "paper_reviewed_reviewer_copy_tpl_name" => "Completed rating (reviewer copy)",
@@ -130,7 +130,7 @@ return [
     "paper_reviewer_paper_revision_request_stop_pending_reviewing_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - reviewing is no longer needed",
 
     // refus de l'artcile : notifier les relecteurs qui n'ont pas encore achevé leurs relectures.
-    "paper_reviewer_paper_refused_stop_pending_reviewing_tpl_name" => "Article refused: reviewing is no longer needed",
+    "paper_reviewer_paper_refused_stop_pending_reviewing_tpl_name" => "Article rejected: reviewing is no longer needed",
     "paper_reviewer_paper_refused_stop_pending_reviewing_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - reviewing is no longer needed",
 
     // Notification de réinvitation à la nouvelle version d'un article (relecteurs)
@@ -220,6 +220,16 @@ return [
     "paper_comment_by_editor_editor_copy_tpl_name" => "Editor's comment about a paper (editors copy)",
     "paper_comment_by_editor_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - editor comment about an article you're managing",
 
+    // Communication from author to assigned editors
+    "paper_comment_from_author_to_editor_editor_copy_tpl_name" => "Message from author to assigned editors (editors copy)",
+    "paper_comment_from_author_to_editor_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - new message about %%ARTICLE_RELATIONSHIP%%",
+    "paper_comment_from_author_to_editor_coauthor_copy_tpl_name" => "Message from co-author to assigned editors (co-authors copy)",
+    "paper_comment_from_author_to_editor_coauthor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - a co-author sent a message to editors about %%ARTICLE_RELATIONSHIP%%",
+
+    // Editor message to author
+    "paper_comment_from_editor_to_author_author_copy_tpl_name" => "Editor message to author (author copy)",
+    "paper_comment_from_editor_to_author_author_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - an editor sent you a message",
+
     // Commentaire de l'auteur / lettre d'accompagnement
     'paper_author_comment_editor_copy_tpl_name' => "Author's comments / Cover letter",
     'paper_author_comment_editor_copy_mail_subject' => "Author's comments / Cover letter",
@@ -290,10 +300,10 @@ return [
 
     // Article refusé
     "paper_refused_tpl_name" => "Refused article - author copy",
-    "paper_refused_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Your article has been refused",
+    "paper_refused_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Your article has been rejected",
 
     "paper_refused_editors_copy_tpl_name" => "Refused article - editor copy",
-    "paper_refused_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - An article has just been refused",
+    "paper_refused_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - An article has just been rejected",
 
     // ask other editors
     "paper_ask_other_editors_tpl_name" => "Ask other editors for their opinion",

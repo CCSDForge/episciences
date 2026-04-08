@@ -62,15 +62,37 @@ describe('PaperAffiAuthorsManager', () => {
         // Mock window.versionCache
         window.versionCache = '1.0.0';
 
+        // Mock sanitizeHTML function (for XSS prevention)
+        global.sanitizeHTML = jest.fn(html => html);
+
+        // Mock jQuery for tooltip initialization
+        global.$ = jest.fn(selector => ({
+            find: jest.fn(() => ({
+                tooltip: jest.fn(),
+            })),
+            fn: {
+                tooltip: jest.fn(),
+            },
+        }));
+        global.$.fn = {
+            tooltip: jest.fn(),
+        };
+
         // Mock console methods
         jest.spyOn(console, 'error').mockImplementation(() => {});
         jest.spyOn(console, 'log').mockImplementation(() => {});
+
+        // Mock JS_PREFIX_URL
+        global.JS_PREFIX_URL = '/';
     });
 
     afterEach(() => {
         jest.restoreAllMocks();
         delete window.versionCache;
         delete window.initializeAffiliationsAutocomplete;
+        delete global.JS_PREFIX_URL;
+        delete global.sanitizeHTML;
+        delete global.$;
     });
 
     describe('Constructor', () => {

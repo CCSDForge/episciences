@@ -1,12 +1,21 @@
 <?php
-$name = $this->user['name'];
-$uid = $this->user['uid'];
-?>
+/**
+ * User identity icon partial
+ * Displays user avatar using the UserAvatar view helper
+ *
+ * Parameters:
+ * - $user: array or object with user data (optional, uses $this->user if not set)
+ * - $size: avatar size (optional, defaults to 'initials')
+ */
 
-<?php if (isset($name, $uid)) : ?>
+// Extract variables from $this if they're not already set
+if (!isset($user) && isset($this->user)) {
+    $user = $this->user;
+}
+if (!isset($size)) {
+    $size = $this->size ?? 'initials';
+}
 
-    <img src="<?= PREFIX_URL ?>user/photo/name/<?= urlencode($this->escape($name)) ?>/uid/<?= $uid ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
-         class="user-photo-thumb" alt="avatar"
-    >
-
-<?php endif; ?>
+if (isset($user)):
+    echo $this->userAvatar($user, $size);
+endif;

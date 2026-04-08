@@ -1,12 +1,11 @@
-<?php
-$affiForm  = $this->affiliations;
-?>
+<?php $affiForm  = $this->affiliations; ?>
 <div id="affiliations-body" class="panel panel-default collapsable">
-    <div class="panel-heading">
-        <h2 class="panel-title"><?= $this->translate('Ajouter une affiliation à un auteur') ?></h2>
+    <div class="panel-heading" role="button" data-toggle="collapse" data-target="#affi-content" style="cursor: pointer;">
+        <h2 class="panel-title">
+            <?= $this->translate('Ajouter une affiliation à un auteur') ?>
+        </h2>
     </div>
-    <br>
-    <div class="panel-body in" style="overflow: visible">
+    <div id="affi-content" class="panel-body collapse" style="overflow: visible">
         <div>
             <span><?php echo $this->translate('Choisissez un auteur');?></span>
             <label id="affiliations-label" for="affiliations"></label>
@@ -14,7 +13,5 @@ $affiForm  = $this->affiliations;
         </div>
     </div>
 </div>
-<script>
-    let versionCache = '<?= APPLICATION_VERSION ?>';
-</script>
+<script>let versionCache = '<?= APPLICATION_VERSION ?>';</script>
 

@@ -1,6 +1,8 @@
 <?php
 
 use Episciences\AppRegistry;
+use Episciences\QueueMessage;
+use Episciences\QueueMessageManager;
 use Episciences\Trait\Tools;
 use Episciences\Trait\UrlBuilder;
 
@@ -78,6 +80,53 @@ class PaperDefaultController extends DefaultController
     }
 
     /**
+     * CC/BCC from modal POST: prefer hidden_cc / hidden_bcc JSON (tags UI), else semicolon-separated text fields.
+     * Also reads Zend subform keys askEditors[cc] / askEditors[bcc] (ask other editors modal).
+     */
+    protected function extractModalRecipientEmails(array $data, string $field): array
+    {
+        $hiddenKey = 'hidden_' . $field;
+        $hiddenRaw = $data[$hiddenKey] ?? null;
+        $textRaw = $data[$field] ?? null;
+        if (isset($data['askEditors']) && is_array($data['askEditors'])) {
+            $sub = $data['askEditors'];
+            if (($hiddenRaw === null || $hiddenRaw === '') && array_key_exists($hiddenKey, $sub)) {
+                $hiddenRaw = $sub[$hiddenKey];
+            }
+            if (($textRaw === null || $textRaw === '') && array_key_exists($field, $sub)) {
+                $textRaw = $sub[$field];
+            }
+        }
+
+        if (!empty($hiddenRaw) && is_string($hiddenRaw)) {
+            try {
+                $decoded = Zend_Json::decode($hiddenRaw);
+            } catch (Exception $e) {
+                $decoded = null;
+            }
+            if (is_array($decoded) && $decoded !== []) {
+                $emails = [];
+                foreach ($decoded as $row) {
+                    if (empty($row['value'])) {
+                        continue;
+                    }
+                    $emails[] = Episciences_Tools::postMailValidation((string) $row['value'])['email'];
+                }
+                $emails = array_values(array_filter($emails));
+                if ($emails !== []) {
+                    return $emails;
+                }
+            }
+        }
+
+        if (!empty($textRaw)) {
+            return array_values(array_filter(array_map('trim', explode(';', (string) $textRaw))));
+        }
+
+        return [];
+    }
+
+    /**
      * @param Episciences_User $submitter
      * @param Episciences_Paper $paper
      * @param string $subject
@@ -114,9 +163,9 @@ class PaperDefaultController extends DefaultController
             }
         }
 
-        // Other reciptients
-        $cc = (!empty($data['cc'])) ? explode(';', $data['cc']) : [];
-        $bcc = (!empty($data['bcc'])) ? explode(';', $data['bcc']) : [];
+        // Other recipients (plain cc/bcc fields and/or JSON hiddens from tag UI in paper status modals)
+        $cc = $this->extractModalRecipientEmails($data, 'cc');
+        $bcc = $this->extractModalRecipientEmails($data, 'bcc');
         $this->addOtherRecipients($mail, $cc, $bcc);
         $mail->writeMail();
 
@@ -203,7 +252,6 @@ class PaperDefaultController extends DefaultController
      * @param array $tags
      * @param array $CC
      * @return bool
-     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -278,27 +326,24 @@ class PaperDefaultController extends DefaultController
      * @param Episciences_Paper $paper
      * @param string $templateType
      * @param array $tags
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
      */
     protected function paperStatusChangedNotifyReviewer(Episciences_Paper $paper, string $templateType, array $tags = []): void
     {
 
         $docId = $paper->getDocid();
 
-        $paperUrl = $this->view->url([
-            'controller' => 'paper',
-            'action' => 'view',
-            'id' => $docId]);
-
-        $paperUrl = self::buildBaseUrl() . $paperUrl;
-
         $tags += [
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-            Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl
+            Episciences_Mail_Tags::TAG_PAPER_URL => $this->publicPaperUrl($docId),
         ];
+
+
 
         /** @var  Episciences_Reviewer $reviewer [] */
         $reviewers = $paper->getReviewers(null, true);
@@ -328,15 +373,16 @@ class PaperDefaultController extends DefaultController
      * @param array $additionalAttachments
      * @param array $options : others options
      * @return bool
-     *
+     * @throws JsonException
+     * @throws Zend_Exception
      */
     protected function newCommentNotifyManager(Episciences_Paper $paper, Episciences_Comment $oComment, array $tags = [], array $additionalAttachments = [], array $options = []): bool
     {
-
         $logger = AppRegistry::getMonoLogger();
         $editors = [];
 
-        $commentatorUid = $oComment->getUid();
+        // Use comment UID, fallback to current user (handles edge case when comment UID not yet set)
+        $commentatorUid = $oComment->getUid() ?: Episciences_Auth::getUid();
         $commentator = new Episciences_User();
 
         try {
@@ -350,6 +396,13 @@ class PaperDefaultController extends DefaultController
         $docId = $paper->getDocid();
         $recipients = [];
         $CC = [];
+
+        // For author-editor communication, only notify assigned editors
+        $isAuthorEditorCommunication = in_array($oComment->getType(), [
+            Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
+            Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR
+        ], true);
+
         try {
             $recipients = $this->getAllEditors($paper);
             // ne pas notifier le commentateur
@@ -358,17 +411,22 @@ class PaperDefaultController extends DefaultController
         } catch (JsonException|Zend_Db_Statement_Exception$e) {
             $logger?->warning($e);
         }
-        //false : si aucun rédacteur n'est affecté à l'article ou si le commentaire est une suggestion
-        $strict = !empty($recipients) &&
-            (!in_array($oComment->getType(), [
-                Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
-                Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION,
-                Episciences_CommentsManager::TYPE_SUGGESTION_REFUS
-            ], true)
-            );
-
         try {
-            Episciences_Review::checkReviewNotifications($recipients, $strict);
+            // For author-editor communication, skip checkReviewNotifications to avoid notifying all managers
+            if (!$isAuthorEditorCommunication) {
+                // Calculate $strict only if needed (not for author-editor communication)
+                // false : si aucun rédacteur n'est affecté à l'article ou si le commentaire est une suggestion
+                $strict = !empty($recipients) &&
+                    (!in_array($oComment->getType(), [
+                        Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
+                        Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION,
+                        Episciences_CommentsManager::TYPE_SUGGESTION_REFUS,
+                        Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
+                        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR
+                    ], true)
+                    );
+                Episciences_Review::checkReviewNotifications($recipients, $strict);
+            }
             // remove users if COI is enabled
             Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
             $journal = Episciences_ReviewsManager::find(RVCODE);
@@ -402,9 +460,13 @@ class PaperDefaultController extends DefaultController
             Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
         ];
 
-        if ($oComment->isEditorComment() || $oComment->isSuggestion()) {
+        if ($oComment->isEditorComment() || $oComment->isSuggestion() || $oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
             $recipientTags[Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME] = $commentator->getScreenName();
             $recipientTags[Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME] = $commentator->getFullName();
+        } elseif ($oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+            // For author-to-editor messages, the commentator is the author
+            $recipientTags[Episciences_Mail_Tags::TAG_AUTHOR_SCREEN_NAME] = $commentator->getScreenName();
+            $recipientTags[Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME] = $commentator->getFullName();
         } elseif($paper->isOwner()){
             $recipientTags[Episciences_Mail_Tags::TAG_AUTHOR_SCREEN_NAME] = Episciences_Auth::getScreenName();
             $recipientTags[Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME] = Episciences_Auth::getFullName();
@@ -442,6 +504,14 @@ class PaperDefaultController extends DefaultController
             case Episciences_CommentsManager::TYPE_AUTHOR_COMMENT:
                 $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY;
                 break;
+            case Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR:
+                $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_EDITOR_COPY;
+                break;
+            case Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR:
+                // Use generic template for editors (no specific template exists for this case)
+                // The author receives TYPE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR_AUTHOR_COPY (handled separately below)
+                $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY;
+                break;
             default:
                 $templateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY;
         }
@@ -457,6 +527,15 @@ class PaperDefaultController extends DefaultController
             $locale = $recipient->getLangueid();
             $recipientTags[Episciences_Mail_Tags::TAG_SUBMISSION_DATE] = $this->view->Date($paper->getSubmission_date(), $locale);
 
+            // Add article relationship and action tags for author-to-editor messages (for editors)
+            if ($isAuthorEditorCommunication && $oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+                $recipientTags[Episciences_Mail_Tags::TAG_ARTICLE_RELATIONSHIP] = Zend_Registry::get('Zend_Translate')->translate("un article dont vous êtes responsable", $locale);
+                // Determine if this is a reply or a new message
+                $recipientTags[Episciences_Mail_Tags::TAG_AUTHOR_ACTION] = $oComment->getParentid()
+                    ? Zend_Registry::get('Zend_Translate')->translate('a répondu à votre message concernant', $locale)
+                    : Zend_Registry::get('Zend_Translate')->translate('vous a envoyé un message concernant', $locale);
+            }
+
             try {
                 $recipientTags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
                 $recipientTags[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($locale);
@@ -471,6 +550,223 @@ class PaperDefaultController extends DefaultController
             // reset $CC
             $CC = [];
         }
+
+        // For author-to-editor messages, also notify co-authors
+        $coAuthorsNotifiedCount = 0;
+        $totalCoAuthorsToNotify = 0;
+        if ($oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+            try {
+                // Get co-authors to notify them
+                // Use pre-fetched co-authors from options if available to avoid duplicate DB query
+                $coAuthors = $options['coAuthors'] ?? [];
+                if (empty($coAuthors)) {
+                    try {
+                        $coAuthors = $paper->getCoAuthors();
+                    } catch (Zend_Db_Statement_Exception $e) {
+                        trigger_error('Error fetching co-authors for notification: ' . $e->getMessage());
+                        $coAuthors = [];
+                    }
+                }
+
+                // Remove the author who sent the message from co-authors list to avoid duplicate email
+                unset($coAuthors[$commentatorUid]);
+                $totalCoAuthorsToNotify = count($coAuthors);
+
+                // Send notification to each co-author
+                if (!empty($coAuthors)) {
+                    $paperUrl = self::buildPublicPaperUrl($docId);
+
+                    foreach ($coAuthors as $coAuthorUid => $coAuthor) {
+                        try {
+                            // Verify co-author is still valid before sending (race condition protection)
+                            if (!$paper->isCoAuthorByUid($coAuthorUid)) {
+                                $logger?->info('Skipping notification to former co-author UID ' . $coAuthorUid);
+                                continue;
+                            }
+
+                            $coAuthorLocale = $coAuthor->getLangueid();
+
+                            // Prepare email tags for co-author with personalized article relationship
+                            $coAuthorTags = [
+                                Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+                                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($coAuthorLocale, true),
+                                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($coAuthorLocale),
+                                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $coAuthorLocale),
+                                Episciences_Mail_Tags::TAG_COMMENT => $oComment->getMessage(),
+                                Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
+                                Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => $commentator->getScreenName(),
+                                Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => $commentator->getFullName(),
+                                Episciences_Mail_Tags::TAG_SENDER_EMAIL => $commentator->getEmail(),
+                                Episciences_Mail_Tags::TAG_AUTHOR_SCREEN_NAME => $commentator->getScreenName(),
+                                Episciences_Mail_Tags::TAG_AUTHOR_FULL_NAME => $commentator->getFullName(),
+                                // Personalized message for co-authors
+                                Episciences_Mail_Tags::TAG_ARTICLE_RELATIONSHIP => Zend_Registry::get('Zend_Translate')->translate("un article que vous avez co-signé", $coAuthorLocale),
+                                // Action description for co-authors (third person)
+                                Episciences_Mail_Tags::TAG_AUTHOR_ACTION => $oComment->getParentid()
+                                    ? Zend_Registry::get('Zend_Translate')->translate('a répondu aux rédacteurs concernant', $coAuthorLocale)
+                                    : Zend_Registry::get('Zend_Translate')->translate('a envoyé un message aux rédacteurs concernant', $coAuthorLocale)
+                            ];
+
+                            // Merge with additional tags if provided
+                            if (!empty($tags)) {
+                                $coAuthorTags = array_merge($tags, $coAuthorTags);
+                            }
+
+                            // Send email to co-author using the dedicated co-author template
+                            Episciences_Mail_Send::sendMailFromReview(
+                                $coAuthor,
+                                Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_COAUTHOR_COPY,
+                                $coAuthorTags,
+                                $paper,
+                                $commentatorUid,
+                                $attachmentsFiles,
+                                true,
+                                []
+                            );
+                            ++$nbNotifications;
+                            ++$coAuthorsNotifiedCount;
+                        } catch (Exception $e) {
+                            $logger?->warning('FAILED_TO_SEND_AUTHOR_MESSAGE_NOTIFICATION_TO_COAUTHOR_' . $coAuthorUid . ': ' . $e->getMessage());
+                            continue;
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                $logger?->warning('FAILED_TO_SEND_AUTHOR_MESSAGE_NOTIFICATION_TO_COAUTHORS: ' . $e->getMessage());
+            }
+        }
+
+        // For editor messages to authors, notify the author (main author + co-authors in CC)
+        $authorNotificationSent = false;
+        if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
+            try {
+                $parentCommentId = $oComment->getParentid();
+                $parentComment = null;
+                $author = null;
+
+                if ($parentCommentId) {
+                    // This is a reply to an author's message - notify the author of the parent comment
+                    $parentComment = $options['parentComment'] ?? null;
+                    if (!$parentComment) {
+                        $parentComment = new Episciences_Comment();
+                        if (!$parentComment->find($parentCommentId)) {
+                            $parentComment = null;
+                        }
+                    }
+                    if ($parentComment) {
+                        $author = new Episciences_User();
+                        $author->findWithCAS($parentComment->getUid());
+                    }
+                } else {
+                    // This is a new message from editor - notify the paper owner (main author)
+                    $author = $paper->getOwner();
+                }
+
+                if ($author) {
+                    $authorLocale = $author->getLangueid();
+
+                    // Build paper URL for author (public URL, not admin URL)
+                    $paperUrl = self::buildPublicPaperUrl($docId);
+
+                    // Check if editor names should be disclosed to authors
+                    $review = Episciences_ReviewsManager::find($paper->getRvid());
+                    $discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
+                    $discloseEditorNames = filter_var($discloseEditorNames, FILTER_VALIDATE_BOOLEAN);
+
+                    // Use anonymous name if option is disabled
+                    $senderFullName = $discloseEditorNames
+                        ? Episciences_Auth::getFullName()
+                        : Zend_Registry::get('Zend_Translate')->translate('Un rédacteur', $authorLocale);
+
+                    // Prepare email tags for author
+                    $authorTags = [
+                        Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
+                        Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => $senderFullName,
+                        Episciences_Mail_Tags::TAG_SENDER_SCREEN_NAME => Episciences_Auth::getScreenName(),
+                        Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+                        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($authorLocale, true),
+                        Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($authorLocale),
+                        Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $authorLocale),
+                        Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
+                        Episciences_Mail_Tags::TAG_ANSWER => $oComment->getMessage()
+                    ];
+
+                    // Add parent comment info and action description for replies vs new messages
+                    if ($parentComment) {
+                        $authorTags[Episciences_Mail_Tags::TAG_COMMENT] = $parentComment->getMessage();
+                        $authorTags[Episciences_Mail_Tags::TAG_COMMENT_DATE] = $this->view->Date($parentComment->getWhen(), $authorLocale);
+                        $authorTags[Episciences_Mail_Tags::TAG_EDITOR_ACTION] = Zend_Registry::get('Zend_Translate')->translate('a répondu à votre message concernant', $authorLocale);
+                    } else {
+                        // For new messages, use the editor's message as the comment
+                        $authorTags[Episciences_Mail_Tags::TAG_COMMENT] = $oComment->getMessage();
+                        $authorTags[Episciences_Mail_Tags::TAG_EDITOR_ACTION] = Zend_Registry::get('Zend_Translate')->translate('vous a envoyé un message concernant', $authorLocale);
+                    }
+
+                    // Merge with additional tags if provided
+                    if (!empty($tags)) {
+                        $authorTags = array_merge($tags, $authorTags);
+                    }
+
+                    // Get co-authors to CC them on the email
+                    // Use pre-fetched co-authors from options if available to avoid duplicate DB query
+                    $coAuthors = $options['coAuthors'] ?? [];
+                    if (empty($coAuthors)) {
+                        try {
+                            $coAuthors = $paper->getCoAuthors();
+                        } catch (Zend_Db_Statement_Exception $e) {
+                            trigger_error('Error fetching co-authors for CC: ' . $e->getMessage());
+                            $coAuthors = [];
+                        }
+                    }
+                    // Remove the main recipient from CC to avoid duplicate email
+                    unset($coAuthors[$author->getUid()]);
+
+                    // Filter out co-authors who are no longer valid (race condition protection)
+                    $coAuthors = array_filter($coAuthors, function ($coAuthor, $uid) use ($paper) {
+                        return $paper->isCoAuthorByUid($uid);
+                    }, ARRAY_FILTER_USE_BOTH);
+
+                    // Send email to author with co-authors in CC
+                    Episciences_Mail_Send::sendMailFromReview(
+                        $author,
+                        Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR_AUTHOR_COPY,
+                        $authorTags,
+                        $paper,
+                        Episciences_Auth::getUid(),
+                        $attachmentsFiles,
+                        true,
+                        $coAuthors
+                    );
+                    ++$nbNotifications;
+                    $authorNotificationSent = true;
+                }
+            } catch (Exception $e) {
+                $logger?->warning('FAILED_TO_SEND_EDITOR_RESPONSE_NOTIFICATION_TO_AUTHOR: ' . $e->getMessage());
+            }
+        }
+
+        // For TYPE_AUTHOR_TO_EDITOR, success if:
+        // - All editors in $recipients were notified (if any), AND
+        // - All co-authors were notified (if any)
+        if ($oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
+            // Expected notifications: editors (if any) + total co-authors to notify
+            // (not $coAuthorsNotifiedCount which only tracks successes, making the comparison always true)
+            $expectedNotifications = count($recipients) + $totalCoAuthorsToNotify;
+            return $nbNotifications === $expectedNotifications;
+        }
+
+        // For TYPE_EDITOR_TO_AUTHOR, success if:
+        // - All editors in $recipients were notified (if any), AND
+        // - The author was notified (if parent comment exists)
+        // This handles the case where $recipients is empty (editor responding is the only assigned editor)
+        if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
+            // Expected notifications: editors (if any) + author (if parent exists)
+            $expectedNotifications = count($recipients) + ($authorNotificationSent ? 1 : 0);
+            return $nbNotifications === $expectedNotifications;
+        }
+
         return count($recipients) === $nbNotifications;
     }
 
@@ -527,7 +823,7 @@ class PaperDefaultController extends DefaultController
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      */
-    protected function paperStatusChangedNotifyManagers(Episciences_Paper $paper, string $templateType, Episciences_User $principalRecipient = null, array $tags = [], array $attachments = [], bool $strict = true, array $ignoredRecipients = []): void
+    public function notifyManagers(Episciences_Paper $paper, string $templateType, Episciences_User $principalRecipient = null, array $tags = [], array $attachments = [], bool $strict = true, array $ignoredRecipients = []): void
     {
         $docId = (int)$paper->getDocid();
 
@@ -571,6 +867,21 @@ class PaperDefaultController extends DefaultController
             //reset $CC
             $CC = [];
         }
+    }
+
+    /**
+     * @param Episciences_User|null $principalRecipient : action initiator
+     * @param boolean $strict = true : prendre en compte le module de notifications
+     * @throws JsonException
+     * @throws Zend_Date_Exception
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Mail_Exception
+     */
+    protected function paperStatusChangedNotifyManagers(Episciences_Paper $paper, string $templateType, Episciences_User $principalRecipient = null, array $tags = [], array $attachments = [], bool $strict = true, array $ignoredRecipients = []): void
+    {
+        $this->notifyManagers($paper, $templateType, $principalRecipient, $tags, $attachments, $strict, $ignoredRecipients);
     }
 
     /**
@@ -913,7 +1224,5 @@ class PaperDefaultController extends DefaultController
     {
         $this->index($paper);
         $this->COARNotify($paper, $journal);
-
     }
-
 }

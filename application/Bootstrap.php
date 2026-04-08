@@ -8,8 +8,6 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
     /**
      * Chargement automatique des différents modèles
-     *
-     * @return Zend_Loader_Autoloader
      */
     protected function _initAutoload(): \Zend_Loader_Autoloader
     {
@@ -28,19 +26,16 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
         $strFailedToConnect = 'Failed to connect to Database';
 
         if ($db === null) {
-            echo $strFailedToConnect;
             trigger_error($strFailedToConnect, E_USER_ERROR);
         }
 
         try {
             $connection = $db->getConnection();
         } catch (Exception $exception) {
-            echo $strFailedToConnect;
             trigger_error($exception->getMessage(), E_USER_ERROR);
         }
 
         if ($connection === null) {
-            echo $strFailedToConnect;
             trigger_error($strFailedToConnect, E_USER_ERROR);
         }
 
@@ -130,8 +125,6 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
     /**
      * Ajout des Helpers de vue
-     *
-     * @return Zend_View
      */
     protected function _initView(): \Zend_View
     {
@@ -167,15 +160,14 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
     }
 
     /**
-     * @return Episciences_Acl|void
      * @throws Zend_Config_Exception
      * @throws Zend_Exception
      * @throws Zend_Navigation_Exception
      */
-    protected function _initAcl()
+    protected function _initAcl(): ?\Episciences_Acl
     {
         if (APPLICATION_MODULE === 'oai') {
-            return;
+            return null;
         }
         //Chargement des Acl et de la navigation
         $acl = new Episciences_Acl();
@@ -251,6 +243,10 @@ class Bootstrap extends Zend_Application_Bootstrap_Bootstrap
 
     protected function _initcheckApplicationDirectories(): void
     {
+        if (empty(REVIEW_PATH)) {
+            return;
+        }
+
         // Verification de l'existence des dossiers de stockage, creation si necessaire
         $folders = [
             REVIEW_PATH . 'config',

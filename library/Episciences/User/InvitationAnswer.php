@@ -197,7 +197,7 @@ class Episciences_User_InvitationAnswer
         $details = $this->getDetails();
 
         if (array_key_exists($name, $details)) {
-            return $this->cleanDetailValue($details[$name]);
+            return $details[$name]; // already sanitized by getDetails()
         }
 
         return false;

@@ -19,13 +19,13 @@ class Episciences_Comment
     /**
      * @var int
      */
-    protected $_type;
+    protected int $_type = 0;
 
 
     /**
      * @var int
      */
-    protected $_docId;
+    protected int $_docId = 0;
     /**
      * @var int
      */
@@ -59,7 +59,9 @@ class Episciences_Comment
     protected $_isCopyEditingComment = false;
 
     protected $_excludedCommentsTypes = [
-        Episciences_CommentsManager::TYPE_REVISION_REQUEST
+        Episciences_CommentsManager::TYPE_REVISION_REQUEST,
+        Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR,
+        Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR,
     ];
 
     /**
@@ -329,7 +331,7 @@ class Episciences_Comment
      */
     public function getMessage(): ?string
     {
-        if ($this->_message){
+        if ($this->_message !== null) {
             return Episciences_Tools::epi_html_decode(html_entity_decode($this->_message));
         }
 
@@ -381,7 +383,7 @@ class Episciences_Comment
      * @param string $deadline
      * @return Episciences_Comment
      */
-    public function setDeadline(string $deadline = null)
+    public function setDeadline(?string $deadline = null): Episciences_Comment
     {
         $this->_deadline = $deadline;
         return $this;
@@ -456,9 +458,9 @@ class Episciences_Comment
      * @param string|null $message
      * @return Episciences_Comment
      */
-    public function setMessage(string $message = null): Episciences_Comment
+    public function setMessage(?string $message = null): Episciences_Comment
     {
-        if ($message){
+        if ($message !== null) {
             $this->_message = htmlspecialchars(Episciences_Tools::epi_html_decode(trim($message)));
         }
 
@@ -551,6 +553,14 @@ class Episciences_Comment
 
                 case Episciences_CommentsManager::TYPE_ACCEPTED_ASK_AUTHOR_VALIDATION:
                     $action = Episciences_Paper_Logger::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION;
+                    break;
+
+                case Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR:
+                    $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR;
+                    break;
+
+                case Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR:
+                    $action = Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR;
                     break;
 
                 default: // todo vérifier les anciennes actions et les logs dans les controlleurs pour eviter la duplication de ces dernier ; aussi les autres actions à personaliser

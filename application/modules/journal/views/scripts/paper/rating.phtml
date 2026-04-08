@@ -91,7 +91,13 @@ $previousRatings = $this->previousRatings;
             <?php if ($this->comments) : ?>
                 <hr/>
                 <div style="max-height: 200px; margin-top: 20px; overflow: auto;">
-                    <?php echo $this->partial('partials/paper_reviewer_comments.phtml', array('comments' => $this->comments, 'paperContributorUid' => $this->paper->getUid())) ?>
+
+                    <?= $this->partial('partials/paper_reviewer_comments.phtml', [
+                            'comments' => $this->comments,
+                            'replyForms' => $this->replyForms,
+                            'paper' => $this->paper
+                    ]) ?>
+
                 </div>
 
             <?php endif; ?>

@@ -1,0 +1,41 @@
+<?php
+// Display user identity + date + optional deadline
+// Parameters:
+// - $user: array with SCREEN_NAME, UID
+// - $date: date string (WHEN)
+// - $deadline: date string (DEADLINE) - optional
+// - $showDeadline: boolean - default true
+
+// Extract variables from $this if they're not already set
+if (!isset($user) && isset($this->user)) {
+    $user = $this->user;
+}
+if (!isset($date) && isset($this->date)) {
+    $date = $this->date;
+}
+if (!isset($deadline) && isset($this->deadline)) {
+    $deadline = $this->deadline;
+}
+
+// Set defaults for optional parameters
+if (!isset($showDeadline)) {
+    $showDeadline = !isset($this->showDeadline) || $this->showDeadline;
+}
+?>
+
+<time class="comment-date" datetime="<?php echo date('c', strtotime($date)); ?>">
+    <?php echo $this->Date($date, null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?>
+</time>
+<i class="fa-solid fa-user" aria-hidden="true"></i>&nbsp;<?= $this->translate('De : ') ?>
+<span class="comment-author">
+    <strong>
+        <?php echo ($user['UID'] == Episciences_Auth::getUid()) ? $this->translate('Vous') : $this->escape($user['SCREEN_NAME']); ?>
+    </strong>
+</span>
+<?php if ($showDeadline && isset($deadline) && $deadline): ?>
+    <div>
+        <i class="fa-regular fa-calendar-check"
+           aria-hidden="true"></i>&nbsp;<?= $this->translate('Date limite de réponse :') ?>
+        <?= $this->Date($deadline) ?>
+    </div>
+<?php endif; ?>

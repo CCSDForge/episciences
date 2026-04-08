@@ -1,149 +1,92 @@
 <?php
+declare(strict_types=1);
+
+use Episciences\Api\CrossrefApiClient;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
+use Psr\Cache\InvalidArgumentException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
+/**
+ * Facade for Crossref API access.
+ *
+ * Wraps CrossrefApiClient with lazy-init singleton and static-method API
+ * for backward compatibility with existing callers.
+ *
+ * Inject a custom client via setClient() for unit tests.
+ */
 class Episciences_CrossrefTools
 {
     public const ONE_MONTH = 3600 * 24 * 31;
     public const CROSSREF_PLUS_API_TOKEN_HEADER_NAME = 'Crossref-Plus-API-Token';
 
-    /**
-     * @param string $doiWhoCite
-     * @return mixed
-     * @throws JsonException
-     * @throws \Psr\Cache\InvalidArgumentException
-     */
-    public static function callCrossRefOrGetCacheMetadata(string $doiWhoCite)
-    {
-        $cache = new FilesystemAdapter('enrichmentCitations', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-        $fileNameMetadataCr = $doiWhoCite . "_citationsMetadatas_crossref.json";
-        $setsMetadataCr = $cache->getItem($fileNameMetadataCr);
-        $setsMetadataCr->expiresAfter(self::ONE_MONTH);
-        if (!$setsMetadataCr->isHit()) {
-            if (PHP_SAPI === 'cli') {
-                echo PHP_EOL . 'CALL API CROSSREF FOR EXTRA METADATAS ' . $doiWhoCite . PHP_EOL;
-            }
-            Episciences_Paper_CitationsManager::logInfoMessage( 'CALL API CROSSREF FOR EXTRA METADATAS ' . $doiWhoCite );
-            $respCitationMetadataApi = '';
-            if (!empty($doiWhoCite)) {
-                $respCitationMetadataApi = self::getMetadatasCrossref($doiWhoCite);
-            }
-            if ($respCitationMetadataApi !== '') {
-                $setsMetadataCr->set($respCitationMetadataApi);
-            } else {
-                $setsMetadataCr->set(json_encode([""], JSON_THROW_ON_ERROR));
-            }
-            $cache->save($setsMetadataCr);
+    private static ?CrossrefApiClient $client = null;
 
-        }
-        return $setsMetadataCr;
+    /**
+     * For tests: inject a preconfigured client (e.g. with MockHandler).
+     */
+    public static function setClient(?CrossrefApiClient $client): void
+    {
+        self::$client = $client;
     }
 
-
-    /**
-     * @param string $doi
-     * @return string
-     */
-    public static function getMetadatasCrossref(string $doi): string
+    private static function getClient(): CrossrefApiClient
     {
-        $client = new Client();
-        $crossrefApiResponse = '';
-
-        $headers = [
-            'headers' => [
-                'User-Agent' => EPISCIENCES_USER_AGENT,
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ]
-        ];
-
-        if (defined(CROSSREF_PLUS_API_TOKEN) && CROSSREF_PLUS_API_TOKEN !== '') {
-            $headers['headers'][self::CROSSREF_PLUS_API_TOKEN_HEADER_NAME] = 'Bearer ' . CROSSREF_PLUS_API_TOKEN;
-        } else {
-            // try to remain below rate limit with 0.5s sleep when no Crossref metadata plus token is available
-            usleep(500000);
+        if (self::$client === null) {
+            $cache = new FilesystemAdapter('enrichmentCitations', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+            $logger = Episciences_Paper_Citations_Logger::getMonologInstance();
+            self::$client = new CrossrefApiClient(new Client(), $cache, $logger);
         }
-
-        try {
-            $crossrefApiResponse =  $client->get(CROSSREF_APIURL.$doi."?mailto=".CROSSREF_MAILTO, [$headers])->getBody()->getContents();
-        } catch (GuzzleException $e) {
-            trigger_error(sprintf("Code: %s Message: %s", $e->getCode(), $e->getMessage()));
-        }
-
-        return $crossrefApiResponse;
+        return self::$client;
     }
 
     /**
-     * @param $getBestOpenAccessInfo
-     * @param string $doiWhoCite
-     * @return string
-     * @throws JsonException
-     * @throws \Psr\Cache\InvalidArgumentException
+     * Return the container-title from Crossref when OpenAlex has no location.
+     *
+     * @param array<string, mixed>|string $getBestOpenAccessInfo result from OpenalexTools::getBestOaInfo()
+     * @param string $doiWhoCite DOI of the citing paper
+     * @return string location string, or empty string
+     * @throws InvalidArgumentException
      */
     public static function getLocationFromCrossref($getBestOpenAccessInfo, string $doiWhoCite): string
     {
-        $getLocationFromCr = "";
-        // if not found in openAlex surely Closed access citation and locations doesn't found in openAlex
-        // we try to get at least in crossref the host of this citation
-        if ($getBestOpenAccessInfo === "") {
-            if (PHP_SAPI === 'cli') {
-                echo PHP_EOL .'NO LOCATIONS IN OPENALEX ' . $doiWhoCite. PHP_EOL;
-            }
-            Episciences_Paper_CitationsManager::logInfoMessage('NO LOCATIONS IN OPENALEX ' . $doiWhoCite);
-            $setsMetadataCr = self::callCrossRefOrGetCacheMetadata($doiWhoCite);
-            $metadataInfoCitationCr = json_decode($setsMetadataCr->get(), true, 512, JSON_THROW_ON_ERROR);
-            if (reset($metadataInfoCitationCr) !== "") {
-                $getLocationFromCr = self::getLocation($metadataInfoCitationCr);
-            }
+        if ($getBestOpenAccessInfo !== '') {
+            return '';
         }
-        return $getLocationFromCr;
+
+        Episciences_Paper_Citations_Logger::log('NO LOCATIONS IN OPENALEX ' . $doiWhoCite);
+
+        $metadata = self::getClient()->fetchMetadata($doiWhoCite);
+        if ($metadata === null || reset($metadata) === '') {
+            return '';
+        }
+
+        return self::getClient()->extractLocation($metadata);
     }
 
     /**
-     * @param $typeCrossref
-     * @param $doiWhoCite
-     * @param $globalInfoMetadata
-     * @param int $i
-     * @return array
-     * @throws JsonException
-     * @throws \Psr\Cache\InvalidArgumentException
+     * Add event_place to the global metadata array for a proceedings-article.
+     *
+     * @param string $typeCrossref Crossref document type
+     * @param string $doiWhoCite DOI of the citing paper
+     * @param array<int, array<string, mixed>> $globalInfoMetadata accumulated metadata array
+     * @param int $i current index
+     * @return array<int, array<string, mixed>> updated metadata array
+     * @throws InvalidArgumentException
      */
-    public static function addLocationEvent($typeCrossref, $doiWhoCite, $globalInfoMetadata, int $i): array
+    public static function addLocationEvent(string $typeCrossref, string $doiWhoCite, array $globalInfoMetadata, int $i): array
     {
-        if ($typeCrossref === 'proceedings-article') {
-            $setsMetadataCr = self::callCrossRefOrGetCacheMetadata($doiWhoCite);
-            $metadataInfoCitationCr = json_decode($setsMetadataCr->get(), true, 512, JSON_THROW_ON_ERROR);
-            return self::addEventLocationInArray($metadataInfoCitationCr, $globalInfoMetadata, $i);
+        if ($typeCrossref !== 'proceedings-article') {
+            $globalInfoMetadata[$i]['event_place'] = '';
+            return $globalInfoMetadata;
         }
-        $globalInfoMetadata[$i]['event_place'] = "";
-        return $globalInfoMetadata;
-    }
-    /**
-     * @param $metadataInfoCitationCr
-     * @param array $globalInfoMetadata
-     * @param int $i
-     * @return array
-     */
-    public static function addEventLocationInArray($metadataInfoCitationCr, array $globalInfoMetadata, int $i): array
-    {
-        if (reset($metadataInfoCitationCr) !== "") {
-            $getEventPlace = self::getEventPlace($metadataInfoCitationCr);
-            $globalInfoMetadata[$i]['event_place'] = $getEventPlace;
-        } else {
-            $globalInfoMetadata[$i]['event_place'] = "";
-        }
-        return $globalInfoMetadata;
-    }
 
-    /**
-     * @param $jsonCr
-     * @return mixed
-     */
-    public static function getLocation($jsonCr) {
-        return $jsonCr['message']['container-title'][0] ?? '';
-    }
-    public static function getEventPlace($jsonCr){
-        return $jsonCr['message']['event']['location'] ?? '';
+        $metadata = self::getClient()->fetchMetadata($doiWhoCite);
+        if ($metadata === null || reset($metadata) === '') {
+            $globalInfoMetadata[$i]['event_place'] = '';
+            return $globalInfoMetadata;
+        }
+
+        $globalInfoMetadata[$i]['event_place'] = self::getClient()->extractEventPlace($metadata);
+        return $globalInfoMetadata;
     }
 }

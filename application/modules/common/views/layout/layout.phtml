@@ -10,7 +10,7 @@ $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
 echo $this->doctype('HTML5');
 
 ?>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html lang="<?= Zend_Registry::get('lang') ?>" xmlns="http://www.w3.org/1999/xhtml">
 
 <head
     <?php if ($controller === "paper" || $controller === "administratepaper"): ?>prefix="og: https://ogp.me/ns# article: http://ogp.me/ns/article# profile: http://ogp.me/ns/profile#"<?php endif; ?>>

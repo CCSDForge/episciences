@@ -172,7 +172,7 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
      */
     public function setLogFilename(): void
     {
-        $logFilename = $this->getCore() . '_' . APPLICATION_ENV . '.log';
+        $logFilename = $this->getCore() . '_' . APPLICATION_ENV;
         $logPath = EPISCIENCES_SOLR_LOG_PATH;
         $this->logFilename = $logPath . $logFilename;
     }
@@ -535,7 +535,10 @@ abstract class Ccsd_Search_Solr_Indexer extends Ccsd_Search_Solr
             }
 
             Ccsd_Log::message($message, $this->isDebugMode(), $logLevel, $this->getLogFilename());
-            unset($update);
+            // Reset the static Query so the next batch starts with an empty document list.
+            // Without this, self::$update accumulates ALL documents across every batch,
+            // causing Json.php to re-serialize everything on each flush → OOM.
+            self::$update = null;
             $this->resetBuffer();
         }
     }
