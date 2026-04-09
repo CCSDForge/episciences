@@ -304,35 +304,35 @@
             "controller": "administratemailinglist",
             "action": "index",
             "resource": "administratemailinglist-index",
-            "privilege": "epiadmin,chief_editor,administrator,secretary",
+            "privilege": "epiadmin",
             "pages": [
               {
                 "label": "Modifier une liste",
                 "controller": "administratemailinglist",
                 "action": "edit",
                 "resource": "administratemailinglist-edit",
-                "privilege": "epiadmin,chief_editor,administrator,secretary"
+                "privilege": "epiadmin"
               },
               {
                 "label": "Gérer les membres",
                 "controller": "administratemailinglist",
                 "action": "manage",
                 "resource": "administratemailinglist-manage",
-                "privilege": "epiadmin,chief_editor,administrator,secretary"
+                "privilege": "epiadmin"
               },
               {
                 "label": "Supprimer une liste",
                 "controller": "administratemailinglist",
                 "action": "delete",
                 "resource": "administratemailinglist-delete",
-                "privilege": "epiadmin,chief_editor,administrator,secretary"
+                "privilege": "epiadmin"
               },
               {
                 "label": "Aperçu de l'audience",
                 "controller": "administratemailinglist",
                 "action": "preview",
                 "resource": "administratemailinglist-preview",
-                "privilege": "epiadmin,chief_editor,administrator,secretary"
+                "privilege": "epiadmin"
               }
             ]
           }
