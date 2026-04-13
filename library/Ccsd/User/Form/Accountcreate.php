@@ -20,17 +20,17 @@ class Ccsd_User_Form_Accountcreate extends Ccsd_Form
         $elem = $this->getElement('USERNAME');
         if ($elem) {
         
-						// Prevent '@' in usernames
-						$elem->addValidator(
-							 'Regex',
-							 false,
-							 [
-									 'pattern' => '/^[^@]+$/',
-									 'messages' => [
-											 Zend_Validate_Regex::NOT_MATCH => "Username cannot contain '@'"
-									 ]
-							 ]
-						);
+			// Prevent '@' in usernames
+			$elem->addValidator(
+				 'Regex',
+				 false,
+				 [
+						 'pattern' => '/^[^@]+$/',
+						 'messages' => [
+								 Zend_Validate_Regex::NOT_MATCH => "Username cannot contain '@'"
+						 ]
+				 ]
+			);
 						 
             $options = array(
                     'table' => 'T_UTILISATEURS',
