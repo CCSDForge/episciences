@@ -4776,8 +4776,11 @@ class Episciences_Paper
             return true;
         }
 
-        // Publication date before creation date (inconsistent)
-        if ($publicationDate !== null && $publicationDate < $whenDate) {
+        // Publication date precedes acceptance date (inconsistent)
+        // We previously utilised 'WhenDate'; however, as the publication date may be updated shortly after release - for instance,
+        // to accommodate moderation delays on preprint servers - it is more robust to use the acceptance date.
+        $acceptanceDate = $this->parseDateSafely($this->getAcceptanceDate());
+        if ($publicationDate !== null && $publicationDate < $acceptanceDate) {
             return true;
         }
 
