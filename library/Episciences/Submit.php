@@ -802,6 +802,12 @@ class Episciences_Submit
 
         if ($isNewVersionOf) {
             $oldPaper = Episciences_PapersManager::partialGet((int)$latestObsoleteDocId, $rvId);
+
+            if ($oldPaper->isTmp()) {
+                $previousVersions = $oldPaper->getPreviousVersions(false, false);
+                $oldPaper = $previousVersions[array_key_first($previousVersions)];
+            }
+
         }
 
         $id = self::cleanIdentifier($id, $repoId);
@@ -815,11 +821,18 @@ class Episciences_Submit
             ]);
 
             if (!empty($hookApiRecord)) {
-                $hookVersion = Episciences_Repositories::callHook('hookVersion', [
+
+                $parms = [
                     'identifier' => $id,
                     'repoId' => $repoId,
                     'response' => $hookApiRecord,
-                ]);
+                ];
+
+                if ($isNewVersionOf) {
+                    $parms['previousVersion'] = $oldPaper->getVersion();
+                }
+
+                $hookVersion = Episciences_Repositories::callHook('hookVersion', $parms);
             }
 
             if (isset($hookVersion['version'])) {
@@ -1155,7 +1168,6 @@ class Episciences_Submit
      * @param Episciences_Paper|null $oldPaper
      * @param Episciences_Paper $submissionInProgress
      * @throws Ccsd_Error
-     * @throws Zend_Db_Statement_Exception
      */
     private static function assertNewVersionConsistency(
         ?Episciences_Paper $oldPaper,
@@ -1168,17 +1180,12 @@ class Episciences_Submit
 
         $conceptChanged = $submissionInProgress->getConcept_identifier() !== $oldPaper->getConcept_identifier();
         $noOldConcept = !$oldPaper->getConcept_identifier();
+        $identifierChanged = $oldPaper->getIdentifier() !== $submissionInProgress->getIdentifier();
 
-        $originalIdentifier = $oldPaper->getIdentifier();
-
-        if ($oldPaper->isTmp()) {
-            $firstPaper = Episciences_PapersManager::get($oldPaper->getPaperid(), false);
-            $originalIdentifier = $firstPaper->getIdentifier();
-        }
-
-        $identifierChanged = $noOldConcept && ($originalIdentifier !== $submissionInProgress->getIdentifier());
-
-        if ($conceptChanged || $identifierChanged) {
+        if (
+            $conceptChanged ||
+            ($noOldConcept && $identifierChanged)
+        ) {
             self::handleError();
         }
     }
