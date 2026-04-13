@@ -878,7 +878,7 @@ class Episciences_Submit
             self::assertDateTimeVersion($docId, $oldPaper, $result, $isNewVersionOf);
             $paper->setVersion($result['hookVersion']);
             self::assertNewVersionConsistency($oldPaper, $paper);
-            self::assertDspaceVersion($docId, $oldPaper, $result);
+            self::assertVersion($docId, $oldPaper, $result, $isNewVersionOf);
 
             $result['status'] = $result['status'] ?? ($docId ? 2 : 1);
 
@@ -952,25 +952,26 @@ class Episciences_Submit
      * @param $docId
      * @param Episciences_Paper|null $previousPaper
      * @param array $result
+     * @param bool $isNewVersion
      * @return void
-     * @throws Ccsd_Error
      */
 
-    private static function assertDspaceVersion(&$docId, ?Episciences_Paper $previousPaper, array $result): void
+    private static function assertVersion(&$docId, ?Episciences_Paper $previousPaper, array &$result, bool $isNewVersion): void
     {
 
+        if (!$previousPaper) {
+            return;
+        }
+
         if (
-            !$previousPaper ||
-            !Episciences_Repositories::isDspace($previousPaper->getRepoid())) {
+            $isNewVersion &&
+            $previousPaper->getVersion() < $result['hookVersion']) {
+            $docId = null; // confirm check
             return;
         }
 
-        if ($previousPaper->getVersion() < $result['hookVersion']) {
-            $docId = null;
-            return;
-        }
+        $result['status'] = 2; // force error handling :  replace the current version if necessary
 
-        self::handleError();
     }
 
     /**
