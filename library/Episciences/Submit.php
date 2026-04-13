@@ -1159,6 +1159,7 @@ class Episciences_Submit
      * @param Episciences_Paper|null $oldPaper
      * @param Episciences_Paper $submissionInProgress
      * @throws Ccsd_Error
+     * @throws Zend_Db_Statement_Exception
      */
     private static function assertNewVersionConsistency(
         ?Episciences_Paper $oldPaper,
@@ -1171,12 +1172,17 @@ class Episciences_Submit
 
         $conceptChanged = $submissionInProgress->getConcept_identifier() !== $oldPaper->getConcept_identifier();
         $noOldConcept = !$oldPaper->getConcept_identifier();
-        $identifierChanged = $oldPaper->getIdentifier() !== $submissionInProgress->getIdentifier();
 
-        if (
-            $conceptChanged ||
-            ($noOldConcept && $identifierChanged)
-        ) {
+        $originalIdentifier = $oldPaper->getIdentifier();
+
+        if ($oldPaper->isTmp()) {
+            $firstPaper = Episciences_PapersManager::get($oldPaper->getPaperid(), false);
+            $originalIdentifier = $firstPaper->getIdentifier();
+        }
+
+        $identifierChanged = $noOldConcept && ($originalIdentifier !== $submissionInProgress->getIdentifier());
+
+        if ($conceptChanged || $identifierChanged) {
             self::handleError();
         }
     }
@@ -2260,20 +2266,21 @@ class Episciences_Submit
         $repository = $paper->getRepoid();
         $identifier = $paper->getIdentifier();
         $version = (int)$paper->getVersion();
+        $repoId = $paper->getRepoid();
 
         if ($isTmp) {
-
             $firstSubmission = Episciences_PapersManager::get($paper->getPaperid());
 
             if ($firstSubmission) {
                 $repository = $firstSubmission->getRepoid();
                 //$hasHook = $firstSubmission->hasHook;
                 $identifier = $firstSubmission->getIdentifier();
+                $repoId = $firstSubmission->getRepoid();
             }
 
         }
 
-        $result = Episciences_Repositories::callHook('hookIsIdentifierCommonToAllVersions', ['repoId' => $paper->getRepoid()]);
+        $result = Episciences_Repositories::callHook('hookIsIdentifierCommonToAllVersions', ['repoId' => $repoId]);
         $isIdentifierCommonToAllVersions = empty($result) ? true : ($result['result'] ?? true);
 
         $identifier = rtrim(Episciences_Repositories_Common::removeDateTimePattern($identifier), '/');
