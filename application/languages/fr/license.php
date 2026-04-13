@@ -42,7 +42,11 @@ return [
     'http://hal.archives-ouvertes.fr/licences/publicDomain/' => 'HAL - Public Domain',
     'http://creativecommons.org/licenses/by-nc-nd/' => 'Attribution - Pas d\'Utilisation Commerciale - Pas de Modification 3.0 non transposé (CC BY-NC-ND)',
     'http://creativecommons.org/licenses/by-nc/' => 'Creative Commons Attribution International (CC BY-NC)',
-    'http://creativecommons.org/licenses/by/' => 'Attribution 4.0 International (CC BY 4.0)',
+    'http://creativecommons.org/licenses/by/4.0' => 'Attribution 4.0 International (CC BY 4.0)',
+    'http://creativecommons.org/licenses/by/4.0/' => 'Attribution 4.0 International (CC BY 4.0)',
+    'https://creativecommons.org/licenses/by/4.0/' => 'Attribution 4.0 International (CC BY 4.0)',
     'http://creativecommons.org/licenses/by-nc-sa/' => 'Attribution - Pas d\'Utilisation Commerciale - Partage dans les Mêmes Conditions 4.0 International (CC BY-NC-SA 4.0)',
+    'https://about.hal.science/hal-authorisation-v1' => 'Hal authorisation v1',
+    'https://hal.science/licences/copyright/' => 'Copyright - Tous droits réservés',
 ];
 
