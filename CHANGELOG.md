@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performances
 -->
 
+
+## Unreleased
+### Changed
+- Refactored English email templates, grammar only, no new features, no new tags
+
+### Fixed
+- TypeError in enrichment:creators on non-sequential affiliation keys
+- isImported detection for published papers when the the publication date has been fixed after publication
+- [#985](https://github.com/CCSDForge/episciences/issues/985) Impossible to submit a final version
+
 ## v1.0.54 - 2026-04-09
 
 ### Added
