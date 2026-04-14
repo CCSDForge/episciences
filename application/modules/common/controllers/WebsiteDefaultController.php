@@ -83,10 +83,6 @@ class WebsiteDefaultController extends Episciences_Controller_Action
      */
     public function ajaxheaderAction()
     {
-        if (!$this->_validateCsrf()) {
-            $this->getResponse()->setHttpResponseCode(403);
-            return;
-        }
         $this->_helper->layout()->disableLayout();
         $header = new Episciences_Website_Header();
         $this->view->form = $header->getLogoForm($this->getRequest()->getParam('id', '0'));
