@@ -45,7 +45,13 @@ function %%FCT_NAME%% (btn, name) {
 
     	$(btn).closest('.textarea-group').parent().find(".glyphicon-plus").closest("span").show();
 
-		$(inputGroup).find('ul li a[val=' + lang + ']').closest('li').addClass('disabled');
+		$(inputGroup)
+			.find('ul li a')
+			.filter(function () {
+				return $(this).attr('val') === lang;
+			})
+			.closest('li')
+			.addClass('disabled');
 
 		let elm = $(inputGroup).find('ul li[class!="disabled"]:first a');
 		if (typeof $(elm).html() != 'undefined') {

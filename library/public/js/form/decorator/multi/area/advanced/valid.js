@@ -13,10 +13,14 @@ function %%FCT_NAME%% (btn, name, fct) {
     	
     	$(input).val(value);
 
-		if (!$.isEmptyObject($(value).contents().first()[0])) {
-			value = $(value).contents().text();
+		// value is a string; never pass it to $() (it would be treated as HTML or a selector)
+		// Use a temporary div to safely extract text from potential HTML content
+		var tempDiv = document.createElement('div');
+		tempDiv.innerHTML = value;
+		if (tempDiv.textContent !== value) {
+			value = tempDiv.textContent || tempDiv.innerText || value;
 		}
-		
+
 		if (%%LENGTH%%) {
         	value = value.substring(0,%%LENGTH%%) + (value.length > %%LENGTH%% ? '...' : '')
         }

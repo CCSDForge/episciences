@@ -184,6 +184,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Projects/EnrichmentService`: fixed log path and added `(int)` cast for source ID.
 * `Citations/EnrichmentService`: added null guards for OpenAlex API fields.
 * [#875](https://github.com/CCSDForge/episciences/issues/875): fixed HTML/Emoji translation issue.
+* [#962](https://github.com/CCSDForge/episciences/issues/962) Fixed double HTML encoding bug in volume metadata titles where special                                     
+  characters like `<`, `>`, and `'` were displayed as `&lt;`, `&gt;`, `&#039;`
 
 ### Deprecated
 
