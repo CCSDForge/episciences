@@ -829,7 +829,7 @@ class Episciences_Submit
                 ];
 
                 if ($isNewVersionOf) {
-                    $parms['previousVersion'] = $oldPaper->getVersion();
+                    self::addContext($oldPaper, $parms);
                 }
 
                 $hookVersion = Episciences_Repositories::callHook('hookVersion', $parms);
@@ -2888,6 +2888,11 @@ class Episciences_Submit
         }
         throw new Ccsd_Error($error);
 
+    }
+
+    private static function addContext(Episciences_Paper $context, array &$parms = [],): void
+    {
+        $parms['context']['previousVersion'] = $context->getVersion();
     }
 
 }
