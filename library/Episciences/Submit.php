@@ -806,6 +806,12 @@ class Episciences_Submit
 
         if ($isNewVersionOf) {
             $oldPaper = Episciences_PapersManager::partialGet((int)$latestObsoleteDocId, $rvId);
+
+            if ($oldPaper->isTmp()) {
+                $previousVersions = $oldPaper->getPreviousVersions(false, false);
+                $oldPaper = $previousVersions[array_key_first($previousVersions)];
+            }
+
         }
 
         $id = self::cleanIdentifier($id, $repoId);
@@ -819,11 +825,18 @@ class Episciences_Submit
             ]);
 
             if (!empty($hookApiRecord)) {
-                $hookVersion = Episciences_Repositories::callHook('hookVersion', [
+
+                $parms = [
                     'identifier' => $id,
                     'repoId' => $repoId,
                     'response' => $hookApiRecord,
-                ]);
+                ];
+
+                if ($isNewVersionOf) {
+                    self::addContext($oldPaper, $parms);
+                }
+
+                $hookVersion = Episciences_Repositories::callHook('hookVersion', $parms);
             }
 
             if (isset($hookVersion['version'])) {
@@ -869,7 +882,7 @@ class Episciences_Submit
             self::assertDateTimeVersion($docId, $oldPaper, $result, $isNewVersionOf);
             $paper->setVersion($result['hookVersion']);
             self::assertNewVersionConsistency($oldPaper, $paper);
-            self::assertDspaceVersion($docId, $oldPaper, $result);
+            self::assertVersion($docId, $oldPaper, $result, $isNewVersionOf);
 
             $result['status'] = $result['status'] ?? ($docId ? 2 : 1);
 
@@ -943,25 +956,26 @@ class Episciences_Submit
      * @param $docId
      * @param Episciences_Paper|null $previousPaper
      * @param array $result
+     * @param bool $isNewVersion
      * @return void
-     * @throws Ccsd_Error
      */
 
-    private static function assertDspaceVersion(&$docId, ?Episciences_Paper $previousPaper, array $result): void
+    private static function assertVersion(&$docId, ?Episciences_Paper $previousPaper, array &$result, bool $isNewVersion): void
     {
 
+        if (!$previousPaper) {
+            return;
+        }
+
         if (
-            !$previousPaper ||
-            !Episciences_Repositories::isDspace($previousPaper->getRepoid())) {
+            $isNewVersion &&
+            $previousPaper->getVersion() < $result['hookVersion']) {
+            $docId = null; // confirm check
             return;
         }
 
-        if ($previousPaper->getVersion() < $result['hookVersion']) {
-            $docId = null;
-            return;
-        }
+        $result['status'] = 2; // force error handling :  replace the current version if necessary
 
-        self::handleError();
     }
 
     /**
@@ -1159,7 +1173,6 @@ class Episciences_Submit
      * @param Episciences_Paper|null $oldPaper
      * @param Episciences_Paper $submissionInProgress
      * @throws Ccsd_Error
-     * @throws Zend_Db_Statement_Exception
      */
     private static function assertNewVersionConsistency(
         ?Episciences_Paper $oldPaper,
@@ -1172,17 +1185,12 @@ class Episciences_Submit
 
         $conceptChanged = $submissionInProgress->getConcept_identifier() !== $oldPaper->getConcept_identifier();
         $noOldConcept = !$oldPaper->getConcept_identifier();
+        $identifierChanged = $oldPaper->getIdentifier() !== $submissionInProgress->getIdentifier();
 
-        $originalIdentifier = $oldPaper->getIdentifier();
-
-        if ($oldPaper->isTmp()) {
-            $firstPaper = Episciences_PapersManager::get($oldPaper->getPaperid(), false);
-            $originalIdentifier = $firstPaper->getIdentifier();
-        }
-
-        $identifierChanged = $noOldConcept && ($originalIdentifier !== $submissionInProgress->getIdentifier());
-
-        if ($conceptChanged || $identifierChanged) {
+        if (
+            $conceptChanged ||
+            ($noOldConcept && $identifierChanged)
+        ) {
             self::handleError();
         }
     }
@@ -2856,6 +2864,11 @@ class Episciences_Submit
         }
         throw new Ccsd_Error($error);
 
+    }
+
+    private static function addContext(Episciences_Paper $context, array &$parms = [],): void
+    {
+        $parms['context']['previousVersion'] = $context->getVersion();
     }
 
 }
