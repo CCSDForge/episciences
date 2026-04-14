@@ -14,13 +14,15 @@ class QueueMessageManager
 {
     public const TABLE = 'queue_messages';
     public const TYPE_DEFAULT_TIMEOUT = 120;
+    public const TYPE_NEXT_REVALIDATION = 'next_revalidation';
+    public const TYPE_NEXT_REVALIDATION_TIMEOUT = 3600; // 1 hour — cron must run within this window
 
     public const UNPROCESSED = 0;
     public const PROCESSED = 1;
     public const MAX_RECEIVE = 1000;
     public const DEFAULT_RECEIVE = 10;
     public const TYPE_STATUS_CHANGED = 'status_changed';
-    public const VALID_TYPES = [self::TYPE_STATUS_CHANGED];
+    public const VALID_TYPES = [self::TYPE_STATUS_CHANGED, self::TYPE_NEXT_REVALIDATION];
 
 
     public static function add(QueueMessage $queue): int
@@ -32,10 +34,10 @@ class QueueMessageManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $unprocessed = self::UNPROCESSED;
         $table = self::TABLE;
-        $defaultTimeOut = self::TYPE_DEFAULT_TIMEOUT;
+        $timeout = $queue->getTimeout() ?? self::TYPE_DEFAULT_TIMEOUT;
 
-        $sql = "INSERT INTO {$table} (rvcode, type, message, created_at, timeout, processed) 
-        VALUES (:rvcode, :type, :message, UNIX_TIMESTAMP(), {$defaultTimeOut}, {$unprocessed})";
+        $sql = "INSERT INTO {$table} (rvcode, type, message, created_at, timeout, processed)
+        VALUES (:rvcode, :type, :message, UNIX_TIMESTAMP(), {$timeout}, {$unprocessed})";
 
         $stmt = $db?->prepare($sql);
 

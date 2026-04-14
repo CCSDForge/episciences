@@ -2289,6 +2289,15 @@ class Episciences_PapersManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $paper = Episciences_PapersManager::get($docid, false);
 
+        // Capture rvcode before deletion for Next.js cache revalidation
+        $rvcode = null;
+        if ($paper !== false && $paper !== null) {
+            $journal = Episciences_ReviewsManager::find($paper->getRvid());
+            if ($journal !== false) {
+                $rvcode = $journal->getCode();
+            }
+        }
+
         // delete from database
         Episciences_CommentsManager::deleteByDocid($docid);
         Episciences_Mail_LogManager::deleteByDocid($docid);
@@ -2316,6 +2325,15 @@ class Episciences_PapersManager
         // TODO: delete user invitations
         // TODO: delete user invitation answers
         // TODO: if published paper, update HAL metadata
+
+        // Enqueue Next.js cache revalidation for deleted article
+        if ($rvcode !== null) {
+            \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                "article-{$docid}",
+                "articles-{$rvcode}",
+                "sitemap-{$rvcode}",
+            ]);
+        }
 
         return true;
 

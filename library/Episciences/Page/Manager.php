@@ -2,6 +2,21 @@
 
 class Episciences_Page_Manager
 {
+    /** Page codes that have no corresponding Next.js fetch tag — skip revalidation. */
+    private const NEXT_SKIP_PAGE_CODES = ['editorial-workflow', 'ethical-charter', 'prepare-submission'];
+
+    /** Direct mapping from page_code to tag template (placeholder {rvcode} resolved at runtime). */
+    private const NEXT_PAGE_CODE_TAGS = [
+        'about'                     => 'about',
+        'indexing'                  => 'indexing',
+        'indexation-metrics'        => 'indexation',
+        'credits'                   => 'credits',
+        'for-reviewers'             => 'for-reviewers',
+        'for-conference-organisers' => 'for-conference-organisers',
+        'proposing-special-issues'  => 'proposing-special-issues',
+        'acknowledgements'          => 'acknowledgements',
+    ];
+
     public static function findByCodeAndPageCode(string $code, string $page_code): Episciences_Page
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -40,6 +55,13 @@ class Episciences_Page_Manager
             $resInsert = 0;
         }
 
+        if ($resInsert > 0) {
+            $tag = self::resolvePageTag($page->getPageCode(), $page->getCode());
+            if ($tag !== null) {
+                \Episciences\Next\RevalidationService::revalidateOrEnqueue($page->getCode(), $tag);
+            }
+        }
+
         return $resInsert;
     }
 
@@ -66,6 +88,13 @@ class Episciences_Page_Manager
             $resUpdate = 0;
         }
 
+        if ($resUpdate > 0) {
+            $tag = self::resolvePageTag($page->getPageCode(), $page->getCode());
+            if ($tag !== null) {
+                \Episciences\Next\RevalidationService::revalidateOrEnqueue($page->getCode(), $tag);
+            }
+        }
+
         return $resUpdate;
     }
 
@@ -84,7 +113,30 @@ class Episciences_Page_Manager
             $resDelete = 0;
         }
 
+        if ($resDelete > 0) {
+            $tag = self::resolvePageTag($page_code, $code);
+            if ($tag !== null) {
+                \Episciences\Next\RevalidationService::revalidateOrEnqueue($code, $tag);
+            }
+        }
 
         return $resDelete > 0;
+    }
+
+    /**
+     * Resolve the Next.js cache tag for a given page_code and journal rvcode.
+     * Returns null for pages that have no corresponding Next.js fetch tag.
+     */
+    private static function resolvePageTag(string $pageCode, string $rvcode): ?string
+    {
+        if (in_array($pageCode, self::NEXT_SKIP_PAGE_CODES, true)) {
+            return null;
+        }
+
+        if (isset(self::NEXT_PAGE_CODE_TAGS[$pageCode])) {
+            return self::NEXT_PAGE_CODE_TAGS[$pageCode] . '-' . $rvcode;
+        }
+
+        return 'page-' . $pageCode . '-' . $rvcode;
     }
 }

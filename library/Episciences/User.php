@@ -1082,6 +1082,22 @@ class Episciences_User extends Ccsd_User_Models_User
         $removedRoles = array_diff($currentRoles, $roles);
         $this->disableAssignmentsForRemovedRoles($uid, $rvId, $removedRoles);
 
+        // Enqueue Next.js cache revalidation if any board role was added or removed
+        $boardRoles = [
+            Episciences_Acl::ROLE_EDITORIAL_BOARD,
+            Episciences_Acl::ROLE_TECHNICAL_BOARD,
+            Episciences_Acl::ROLE_SCIENTIFIC_ADVISORY_BOARD,
+            Episciences_Acl::ROLE_ADVISORY_BOARD,
+        ];
+        $affectedRoles = array_merge((array) $roles, $removedRoles);
+        if (!empty(array_intersect($affectedRoles, $boardRoles))) {
+            $journal = Episciences_ReviewsManager::find($rvId);
+            if ($journal !== false) {
+                $rvcode = $journal->getCode();
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "members-{$rvcode}");
+            }
+        }
+
         return true;
     }
 
@@ -1112,6 +1128,21 @@ class Episciences_User extends Ccsd_User_Models_User
         if (!$db->getConnection()->query($sql)) {
             trigger_error(sprintf('Failed to execute SQL query: %s', $sql));
             return false;
+        }
+
+        // Enqueue Next.js cache revalidation if any board role was added
+        $boardRoles = [
+            Episciences_Acl::ROLE_EDITORIAL_BOARD,
+            Episciences_Acl::ROLE_TECHNICAL_BOARD,
+            Episciences_Acl::ROLE_SCIENTIFIC_ADVISORY_BOARD,
+            Episciences_Acl::ROLE_ADVISORY_BOARD,
+        ];
+        if (!empty(array_intersect($roles, $boardRoles))) {
+            $journal = Episciences_ReviewsManager::find($rvId);
+            if ($journal !== false) {
+                $rvcode = $journal->getCode();
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "members-{$rvcode}");
+            }
         }
 
         return true;

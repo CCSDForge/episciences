@@ -31,6 +31,12 @@ class Episciences_Volume_PapersManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        // Collect old VIDs before update for cache revalidation
+        $oldVids = [];
+        foreach (self::findPaperVolumes($docid) as $relation) {
+            $oldVids[] = $relation->getVid();
+        }
+
         $vids = array();
         foreach ($paper_volumes as $paper_volume) {
             $vids[] = $paper_volume->getVid();
@@ -52,11 +58,30 @@ class Episciences_Volume_PapersManager
             $db->delete(T_VOLUME_PAPER, 'DOCID = ' . $docid);
         }
 
+        // Enqueue Next.js cache revalidation for all affected volumes
+        $rvcode = defined('RVCODE') ? RVCODE : null;
+        if ($rvcode !== null) {
+            $affectedVids = array_unique(array_merge($oldVids, $vids));
+            $tags = ["volumes-{$rvcode}"];
+            foreach ($affectedVids as $affectedVid) {
+                $tags[] = "volume-{$affectedVid}";
+            }
+            \Episciences\Next\RevalidationService::enqueueTags($rvcode, $tags);
+        }
     }
 
-    public static function deletePaperVolume($docid, $vid)
+    public static function deletePaperVolume($docid, $vid): void
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $db->delete(T_VOLUME_PAPER, 'DOCID = ' . $docid . ' AND VID = ' . $vid);
+
+        // Enqueue Next.js cache revalidation for affected volume
+        $rvcode = defined('RVCODE') ? RVCODE : null;
+        if ($rvcode !== null) {
+            \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                "volume-{$vid}",
+                "volumes-{$rvcode}",
+            ]);
+        }
     }
 }

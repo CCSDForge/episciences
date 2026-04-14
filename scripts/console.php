@@ -22,6 +22,7 @@ require_once __DIR__ . '/UpdateCounterRobotsListCommand.php';
 require_once __DIR__ . '/ProcessStatTempCommand.php';
 require_once __DIR__ . '/UpdateGeoIpCommand.php';
 require_once __DIR__ . '/GenerateDownloadKpiCommand.php';
+require_once __DIR__ . '/RevalidateNextCacheCommand.php';
 
 use Symfony\Component\Console\Application;
 
@@ -65,5 +66,8 @@ $application->add(new GenerateDownloadKpiCommand());
 
 // GeoIP commands
 $application->add(new UpdateGeoIpCommand());
+
+// Next.js cache revalidation commands
+$application->add(new RevalidateNextCacheCommand());
 
 $application->run();

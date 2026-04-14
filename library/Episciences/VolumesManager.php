@@ -301,6 +301,16 @@ class Episciences_VolumesManager
             Episciences_GridsManager::delete($file);
         }
 
+        // Enqueue Next.js cache revalidation for deleted volume
+        $journal = Episciences_ReviewsManager::find($rvId);
+        if ($journal !== false) {
+            $rvcode = $journal->getCode();
+            \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                "volumes-{$rvcode}",
+                "sitemap-{$rvcode}",
+            ]);
+        }
+
         return true;
     }
 

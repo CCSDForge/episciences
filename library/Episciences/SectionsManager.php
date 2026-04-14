@@ -164,6 +164,14 @@ class Episciences_SectionsManager
             // 4. Suppression des paramètres de la rubrique
             $db->delete(self::SETTINGS_TABLE, 'SID = ' . $id);
             $db->commit();
+
+            // Enqueue Next.js cache revalidation for deleted section
+            $journal = Episciences_ReviewsManager::find($rvId);
+            if ($journal !== false) {
+                $rvcode = $journal->getCode();
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "sections-{$rvcode}");
+            }
+
             return true;
 
         } catch (Exception $e) {

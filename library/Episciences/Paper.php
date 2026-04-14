@@ -646,6 +646,7 @@ class Episciences_Paper
 
             if ($action === Episciences_Paper_Logger::CODE_STATUS) {
                 $this->postPaperStatus();
+                $this->enqueueNextRevalidationForStatus();
             }
 
             return true;
@@ -1291,6 +1292,12 @@ class Episciences_Paper
 
         if (!$db?->update(T_PAPERS, $data, ['DOCID = ?' => $docId])) {
             return false;
+        }
+
+        // Enqueue Next.js cache revalidation for article metadata update
+        $journal = Episciences_ReviewsManager::find($this->getRvid());
+        if ($journal !== false) {
+            \Episciences\Next\RevalidationService::enqueueTag($journal->getCode(), "article-{$docId}");
         }
 
         return true;
@@ -5550,6 +5557,53 @@ class Episciences_Paper
     public function getStatusLabelFromDictionary(): string
     {
         return self::STATUS_DICTIONARY[$this->getStatus()] ?? 'unknown';
+    }
+
+    private function enqueueNextRevalidationForStatus(): void
+    {
+        $journal = Episciences_ReviewsManager::find($this->getRvid());
+        if ($journal === false) {
+            return;
+        }
+
+        $rvcode = $journal->getCode();
+        $docId  = (int) $this->getDocid();
+
+        switch ($this->getStatus()) {
+            case self::STATUS_PUBLISHED:
+                \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                    "article-{$docId}",
+                    "articles-{$rvcode}",
+                    "articles-accepted-{$rvcode}",
+                    "sitemap-{$rvcode}",
+                ]);
+                break;
+
+            case self::STATUS_ACCEPTED:
+            case self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION:
+            case self::STATUS_ACCEPTED_WAITING_FOR_MAJOR_REVISION:
+            case self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING:
+            case self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION:
+            case self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION:
+                \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                    "article-{$docId}",
+                    "articles-accepted-{$rvcode}",
+                ]);
+                break;
+
+            case self::STATUS_DELETED:
+            case self::STATUS_REMOVED:
+                \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                    "article-{$docId}",
+                    "articles-{$rvcode}",
+                    "sitemap-{$rvcode}",
+                ]);
+                break;
+
+            default:
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "article-{$docId}");
+                break;
+        }
     }
 
     private function postPaperStatus(): void

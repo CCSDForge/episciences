@@ -786,6 +786,14 @@ class Episciences_Volume
                 $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding, $vid);
             }
 
+            // Enqueue Next.js cache revalidation for new volume
+            $rvcode = defined('RVCODE') ? RVCODE : null;
+            if ($rvcode !== null) {
+                \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                    "volumes-{$rvcode}",
+                    "sitemap-{$rvcode}",
+                ]);
+            }
 
         } else {
             // Modification d'un volume
@@ -799,6 +807,11 @@ class Episciences_Volume
                 $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding, $vid, true);
             }
 
+            // Enqueue Next.js cache revalidation for updated volume
+            $rvcode = defined('RVCODE') ? RVCODE : null;
+            if ($rvcode !== null) {
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "volume-{$vid}");
+            }
 
         }
 
