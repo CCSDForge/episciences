@@ -191,13 +191,21 @@ class HeaderManager {
                 if (dt && dt.tagName === 'DT') {
                     dt.hidden = !shouldBeVisible;
                     dd.hidden = !shouldBeVisible;
+                    if (shouldBeVisible) {
+                        dt.style.display = '';
+                        dd.style.display = '';
+                    }
                 } else if (dd) {
                     dd.hidden = !shouldBeVisible;
+                    if (shouldBeVisible) dd.style.display = '';
                 } else {
                     el.hidden = !shouldBeVisible;
+                    if (shouldBeVisible) el.style.display = '';
                 }
             } else {
                 container.hidden = !shouldBeVisible;
+                // Clear any inline display:none set by jQuery's .hide() (e.g. from the global form.js)
+                if (shouldBeVisible) container.style.display = '';
             }
 
             // Toggle required attribute to avoid blocking submission when hidden
