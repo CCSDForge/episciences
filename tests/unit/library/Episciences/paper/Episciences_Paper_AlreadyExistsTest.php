@@ -10,8 +10,7 @@ use PHPUnit\Framework\TestCase;
  *
  * Both methods require a live database for their full flow.
  * Here we verify the delegation contract between alreadyExists() and
- * findExistingDocId() using a partial mock, and document the expected
- * return types.
+ * findExistingDocId() using a partial mock.
  *
  * @covers Episciences_Paper
  */
@@ -21,7 +20,7 @@ final class Episciences_Paper_AlreadyExistsTest extends TestCase
     // alreadyExists() — return type contract
     // -----------------------------------------------------------------------
 
-    public function testAlreadyExistsReturnsBoolWhenDocIdFound(): void
+    public function testAlreadyExistsReturnsTrueWhenDocIdFound(): void
     {
         $paper = $this->getMockBuilder(Episciences_Paper::class)
             ->onlyMethods(['findExistingDocId'])
@@ -39,16 +38,6 @@ final class Episciences_Paper_AlreadyExistsTest extends TestCase
         $paper->method('findExistingDocId')->willReturn(0);
 
         self::assertFalse($paper->alreadyExists());
-    }
-
-    public function testAlreadyExistsReturnsBool(): void
-    {
-        $paper = $this->getMockBuilder(Episciences_Paper::class)
-            ->onlyMethods(['findExistingDocId'])
-            ->getMock();
-        $paper->method('findExistingDocId')->willReturn(0);
-
-        self::assertIsBool($paper->alreadyExists());
     }
 
     // -----------------------------------------------------------------------
@@ -82,40 +71,8 @@ final class Episciences_Paper_AlreadyExistsTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // findExistingDocId() — return type contract (no DB)
+    // findExistingDocId() — integration tests require a live DB.
+    // The return type contract (int, 0 when not found, positive when found)
+    // is enforced by the PHP type declaration and covered by integration tests.
     // -----------------------------------------------------------------------
-
-    /**
-     * findExistingDocId() must return an int.
-     * Verified via a mock to avoid requiring a database in unit tests.
-     */
-    public function testFindExistingDocIdReturnsInt(): void
-    {
-        $paper = $this->getMockBuilder(Episciences_Paper::class)
-            ->onlyMethods(['findExistingDocId'])
-            ->getMock();
-        $paper->method('findExistingDocId')->willReturn(7);
-
-        self::assertIsInt($paper->findExistingDocId());
-    }
-
-    public function testFindExistingDocIdReturnsZeroWhenNotFound(): void
-    {
-        $paper = $this->getMockBuilder(Episciences_Paper::class)
-            ->onlyMethods(['findExistingDocId'])
-            ->getMock();
-        $paper->method('findExistingDocId')->willReturn(0);
-
-        self::assertSame(0, $paper->findExistingDocId());
-    }
-
-    public function testFindExistingDocIdReturnsPositiveIntWhenFound(): void
-    {
-        $paper = $this->getMockBuilder(Episciences_Paper::class)
-            ->onlyMethods(['findExistingDocId'])
-            ->getMock();
-        $paper->method('findExistingDocId')->willReturn(123);
-
-        self::assertGreaterThan(0, $paper->findExistingDocId());
-    }
 }
