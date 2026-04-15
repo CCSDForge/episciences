@@ -125,9 +125,10 @@ function removeFile() {
 }
 
 /**
- * Decode HTML entities in a string using the browser's native parser.
- * DOMParser is immune to </textarea> injection truncation and handles
- * all named and numeric entities natively.
+ * Decode the five HTML entities produced by PHP's htmlspecialchars(ENT_QUOTES).
+ * A targeted regex is safer than DOMParser (no HTML parsing sink) and complete
+ * for this specific use case: we only need to undo what the server encoded.
+ * Order matters: &amp; must be last to avoid double-decoding &amp;lt; → &lt; → <
  * @param {string|null|undefined} text
  * @returns {string}
  */
@@ -135,9 +136,12 @@ function decodeHtmlEntities(text) {
     if (text === null || text === undefined) return text;
     var str = String(text);
     if (!str.includes('&')) return str;
-    return new DOMParser()
-        .parseFromString(str, 'text/html')
-        .body.textContent;
+    return str
+        .replace(/&quot;/g, '"')
+        .replace(/&#0?39;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
 }
 
 
