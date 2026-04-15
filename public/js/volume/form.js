@@ -125,10 +125,10 @@ function removeFile() {
 }
 
 function decodeHtmlEntities(text) {
-    if (!text) return text;
-    var textarea = document.createElement('textarea');
-    textarea.innerHTML = text;
-    return textarea.value;
+    if (text === null || text === undefined) return text;
+    // Use DOMParser to safely decode HTML entities without executing scripts
+    var doc = new DOMParser().parseFromString(String(text), 'text/html');
+    return doc.documentElement.textContent;
 }
 
 /**
