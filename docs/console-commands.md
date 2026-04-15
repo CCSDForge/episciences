@@ -35,6 +35,7 @@ php scripts/console.php <command> --help
 | [`zbjats:zip`](#zbjatszip) | Package PDF + zbJATS XML into a ZIP archive per volume |
 | [`import:sections`](#importsections) | Import journal sections from a CSV file |
 | [`import:volumes`](#importvolumes) | Import journal volumes from a CSV file |
+| [`stats:download-kpi`](#statsdownload-kpi) | Aggregate download KPIs for all published articles and write a JSON file |
 | [`stats:update-robots-list`](#statsupdate-robots-list) | Download the COUNTER Robots list for bot detection |
 | [`stats:process`](#statsprocess) | Process raw visit records from `STAT_TEMP` into `PAPER_STAT` |
 | [`geoip:update`](#geoipupdate) | Download or update the GeoLite2-City.mmdb database |
@@ -317,6 +318,31 @@ php scripts/console.php import:volumes [options]
 ---
 
 ## Statistics
+
+### `stats:download-kpi`
+
+Aggregates download and page-view statistics for all published papers (those with a DOI and `STATUS = 16`) and writes the result to `data/kpi_downloads.json`. The output is keyed by journal `rvcode` and includes per-year breakdowns and per-country geographic data. See [docs/kpi-downloads-format.md](./kpi-downloads-format.md) for the full JSON schema.
+
+```bash
+php scripts/console.php stats:download-kpi [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--output <path>` | Destination path for the JSON file (default: `data/kpi_downloads.json`) |
+| `--rvcode <code>` | Restrict to one journal |
+| `--pretty` | Pretty-print the JSON output |
+| `--dry-run` | Print a summary without writing any file |
+
+```bash
+# Via Make (recommended)
+make stats-download-kpi pretty=1           # all journals, pretty-printed
+make stats-download-kpi rvcode=epiga       # one journal only
+make stats-download-kpi output=/srv/kpi.json  # custom output path
+make stats-download-kpi dry-run=1          # summary only, no file written
+```
+
+---
 
 `stats:process` depends on two external data files that must be present before the first run:
 
