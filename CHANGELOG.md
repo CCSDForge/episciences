@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#962](https://github.com/CCSDForge/episciences/issues/962) Fixed double HTML encoding bug in volume metadata titles where special                                     
+  characters like `<`, `>`, and `'` were displayed as `&lt;`, `&gt;`, `&#039;`
 - TypeError in enrichment:creators on non-sequential affiliation keys
 - isImported detection for published papers when the the publication date has been fixed after publication
 - [#985](https://github.com/CCSDForge/episciences/issues/985) Impossible to submit a final version
