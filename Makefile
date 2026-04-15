@@ -73,7 +73,7 @@ help: ## Display this help message
 	@grep -h -E '^deploy.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No deployment commands found"
 	@echo ""
 	@echo "Other Commands:"
-	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use|import-apache-logs):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 
 # =============================================================================
 # Core Docker Commands
@@ -469,6 +469,44 @@ stats-download-kpi: ## Generate download KPI JSON for all published articles (op
 can-i-use-update: ## Update browserslist database when caniuse-lite is outdated
 	@echo "Updating browserslist database..."
 	@$(NPX) update-browserslist-db@latest
+
+import-apache-logs: ## Parse Apache logs into STAT_TEMP (rvcode=JOURNAL|all=1 [date=YYYY-MM-DD|month=YYYY-MM|year=YYYY|start-date=…+end-date=…] [logs-path=PATH] [force=1])
+	@if [ -z "$(rvcode)" ] && [ "$(all)" != "1" ]; then \
+		echo "Error: specify rvcode=JOURNAL_CODE or all=1"; \
+		echo "Usage: make import-apache-logs rvcode=JOURNAL_CODE [options]"; \
+		echo "       make import-apache-logs all=1 [options]"; \
+		echo "Options:"; \
+		echo "  date=YYYY-MM-DD          Process a specific day"; \
+		echo "  month=YYYY-MM            Process entire month"; \
+		echo "  year=YYYY                Process entire year"; \
+		echo "  start-date=YYYY-MM-DD    Start date for custom range"; \
+		echo "  end-date=YYYY-MM-DD      End date for custom range"; \
+		echo "  logs-path=PATH           Base path to Apache log directory"; \
+		echo "  force=1                  Force reprocessing of already-processed dates"; \
+		exit 1; \
+	fi
+	@cmd="php scripts/console.php stats:import-logs"; \
+	if [ "$(all)" = "1" ]; then \
+		cmd="$$cmd --all"; \
+	else \
+		cmd="$$cmd --rvcode=$(rvcode)"; \
+	fi; \
+	if [ -n "$(date)" ]; then \
+		cmd="$$cmd --date=$(date)"; \
+	elif [ -n "$(month)" ]; then \
+		cmd="$$cmd --month=$(month)"; \
+	elif [ -n "$(year)" ]; then \
+		cmd="$$cmd --year=$(year)"; \
+	elif [ -n "$(start-date)" ] && [ -n "$(end-date)" ]; then \
+		cmd="$$cmd --start-date=$(start-date) --end-date=$(end-date)"; \
+	fi; \
+	if [ -n "$(logs-path)" ]; then \
+		cmd="$$cmd --logs-path=$(logs-path)"; \
+	fi; \
+	if [ "$(force)" = "1" ]; then \
+		cmd="$$cmd --force"; \
+	fi; \
+	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) $$cmd
 
 # =============================================================================
 # Code Formatting Commands (Prettier)
