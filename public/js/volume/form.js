@@ -153,13 +153,23 @@ function init(source) {
         var values = JSON.parse($('#mTmpData').val());
 
         for (var lang in values.title) {
-            $('#mTitle').val(values.title[lang]);
-            $('#mTitle').attr('lang', lang);
-            $('#mTitle').next('span').find('button').attr('value', lang);
+            var decodedTitle = decodeHtmlEntities(values.title[lang]);
+
+            // First, trigger language selection click (may overwrite input value from hidden field)
             $('#mTitle')
                 .parent('div')
-                .find('li a[val="' + lang + '"]')
+                .find('li a')
+                .filter(function () {
+                    return $(this).attr('val') === lang;
+                })
                 .trigger('click');
+
+            // Set the decoded value after language click to ensure it is not overwritten
+            $('#mTitle').val(decodedTitle);
+            $('#mTitle').attr('lang', lang);
+            $('#mTitle').next('span').find('button').attr('value', lang);
+
+            // Then trigger the add button
             $('#mTitle')
                 .parent('div')
                 .find('span:last button')
@@ -167,13 +177,15 @@ function init(source) {
         }
 
         for (var lang in values.content) {
-            //tinyMCE.get('mContent').setContent(values.content[lang]);
-            $('#mContent').val(values.content[lang]);
+            $('#mContent').val(decodeHtmlEntities(values.content[lang]));
             $('#mContent').attr('lang', lang);
             $('#mContent').next('div').find('button').attr('value', lang);
             $('#mContent')
                 .parent('div')
-                .find('li a[val="' + lang + '"]')
+                .find('li a')
+                .filter(function () {
+                    return $(this).attr('val') === lang;
+                })
                 .trigger('click');
             $('#mContent')
                 .parent('div')
@@ -221,22 +233,12 @@ function getInput(id, mce) {
                 langs.push($(this).attr('val'));
             });
         for (var i in langs) {
-            if (
-                $(
-                    '#modal-box form textarea[name="' +
-                        id +
-                        '[' +
-                        langs[i] +
-                        ']"]'
-                ).val()
-            ) {
-                value[langs[i]] = $(
-                    '#modal-box form textarea[name="' +
-                        id +
-                        '[' +
-                        langs[i] +
-                        ']"]'
-                ).val();
+            var fieldName = id + '[' + langs[i] + ']';
+            var $field = $('#modal-box form textarea').filter(function () {
+                return this.name === fieldName;
+            });
+            if ($field.val()) {
+                value[langs[i]] = $field.val();
             } /*else if (tinyMCE.activeEditor.getContent() && $('#'+id+'-element').find('button[data-toggle="dropdown"]').val() == langs[i]) {
 				value[langs[i]] = tinyMCE.activeEditor.getContent();
 			}*/
@@ -249,9 +251,12 @@ function getInput(id, mce) {
                 langs.push($(this).attr('val'));
             });
         for (i in langs) {
-            value[langs[i]] = $(
-                '#modal-box form input[name="' + id + '[' + langs[i] + ']"]'
-            ).val();
+            var fieldName = id + '[' + langs[i] + ']';
+            var $field = $('#modal-box form input').filter(function () {
+                return this.name === fieldName;
+            });
+            // Decode HTML entities that may have been added by the multilang decorator
+            value[langs[i]] = decodeHtmlEntities($field.val());
         }
     }
 
@@ -418,14 +423,12 @@ function validMultilangInput(id, mce) {
                 langs.push($(this).attr('val'));
             });
         for (var i in langs) {
+            var fieldName = id + '[' + langs[i] + ']';
+            var $field = $('#modal-box form textarea').filter(function () {
+                return this.name === fieldName;
+            });
             if (
-                !$(
-                    '#modal-box form textarea[name="' +
-                        id +
-                        '[' +
-                        langs[i] +
-                        ']"]'
-                ).val() &&
+                !$field.val() &&
                 (!tinyMCE.activeEditor.getContent() ||
                     $('#' + id + '-element')
                         .find('button[data-toggle="dropdown"]')
@@ -442,11 +445,11 @@ function validMultilangInput(id, mce) {
                 langs.push($(this).attr('val'));
             });
         for (i in langs) {
-            if (
-                !$(
-                    '#modal-box form input[name="' + id + '[' + langs[i] + ']"]'
-                ).val()
-            ) {
+            var fieldName = id + '[' + langs[i] + ']';
+            var $field = $('#modal-box form input').filter(function () {
+                return this.name === fieldName;
+            });
+            if (!$field.val()) {
                 return false;
             }
         }
