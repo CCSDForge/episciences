@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 ### Performances
 -->
+## Unreleased
+### fixed
+- Inability to change the review deadline
 
 ## v1.0.54.1 - 2026-04-14
 
