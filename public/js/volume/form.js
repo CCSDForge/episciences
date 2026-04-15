@@ -126,9 +126,35 @@ function removeFile() {
 
 function decodeHtmlEntities(text) {
     if (text === null || text === undefined) return text;
-    // Use DOMParser to safely decode HTML entities without executing scripts
-    var doc = new DOMParser().parseFromString(String(text), 'text/html');
-    return doc.documentElement.textContent;
+
+    var str = String(text);
+    if (!str.includes('&')) return str;
+
+    // Decode named entities (order matters: &amp; must be last)
+    return str
+        .replace(/&quot;/g, '"')
+        .replace(/&#0?39;|&apos;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        // Decimal numeric entities: &#1234;
+        .replace(/&#(\d+);/g, function (_m, dec) {
+            try {
+                var cp = Number(dec);
+                return (cp >= 0 && cp <= 0x10ffff) ? String.fromCodePoint(cp) : _m;
+            } catch (_e) {
+                return _m;
+            }
+        })
+        // Hex numeric entities: &#x1F600;
+        .replace(/&#x([0-9a-fA-F]+);/gi, function (_m, hex) {
+            try {
+                var cp = parseInt(hex, 16);
+                return (cp >= 0 && cp <= 0x10ffff) ? String.fromCodePoint(cp) : _m;
+            } catch (_e) {
+                return _m;
+            }
+        });
 }
 
 /**
