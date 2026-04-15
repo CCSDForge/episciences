@@ -15,16 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 ### Performances
 -->
-
-
 ## Unreleased
+### fixed
+- Inability to change the review deadline
+
+## v1.0.54.1 - 2026-04-14
+
 ### Changed
+
 - Refactored English email templates, grammar only, no new features, no new tags
 
 ### Fixed
+
 - TypeError in enrichment:creators on non-sequential affiliation keys
 - isImported detection for published papers when the the publication date has been fixed after publication
 - [#985](https://github.com/CCSDForge/episciences/issues/985) Impossible to submit a final version
+- Fixed bug in management of journal headers for adding and updating logo and texts
 
 ## v1.0.54 - 2026-04-09
 
