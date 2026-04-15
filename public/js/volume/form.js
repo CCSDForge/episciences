@@ -124,39 +124,6 @@ function removeFile() {
     }
 }
 
-function decodeHtmlEntities(text) {
-    if (text === null || text === undefined) return text;
-
-    var str = String(text);
-    if (!str.includes('&')) return str;
-
-    // Decode named entities (order matters: &amp; must be last)
-    return str
-        .replace(/&quot;/g, '"')
-        .replace(/&#0?39;|&apos;/g, "'")
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&')
-        // Decimal numeric entities: &#1234;
-        .replace(/&#(\d+);/g, function (_m, dec) {
-            try {
-                var cp = Number(dec);
-                return (cp >= 0 && cp <= 0x10ffff) ? String.fromCodePoint(cp) : _m;
-            } catch (_e) {
-                return _m;
-            }
-        })
-        // Hex numeric entities: &#x1F600;
-        .replace(/&#x([0-9a-fA-F]+);/gi, function (_m, hex) {
-            try {
-                var cp = parseInt(hex, 16);
-                return (cp >= 0 && cp <= 0x10ffff) ? String.fromCodePoint(cp) : _m;
-            } catch (_e) {
-                return _m;
-            }
-        });
-}
-
 /**
  * init form in modal
  * @param source
@@ -169,23 +136,13 @@ function init(source) {
         var values = JSON.parse($('#mTmpData').val());
 
         for (var lang in values.title) {
-            var decodedTitle = decodeHtmlEntities(values.title[lang]);
-
-            // First, trigger language selection click (may overwrite input value from hidden field)
-            $('#mTitle')
-                .parent('div')
-                .find('li a')
-                .filter(function () {
-                    return $(this).attr('val') === lang;
-                })
-                .trigger('click');
-
-            // Set the decoded value after language click to ensure it's not overwritten
-            $('#mTitle').val(decodedTitle);
+            $('#mTitle').val(values.title[lang]);
             $('#mTitle').attr('lang', lang);
             $('#mTitle').next('span').find('button').attr('value', lang);
-
-            // THEN trigger add button
+            $('#mTitle')
+                .parent('div')
+                .find('li a[val="' + lang + '"]')
+                .trigger('click');
             $('#mTitle')
                 .parent('div')
                 .find('span:last button')
@@ -193,15 +150,13 @@ function init(source) {
         }
 
         for (var lang in values.content) {
-            $('#mContent').val(decodeHtmlEntities(values.content[lang]));
+            //tinyMCE.get('mContent').setContent(values.content[lang]);
+            $('#mContent').val(values.content[lang]);
             $('#mContent').attr('lang', lang);
             $('#mContent').next('div').find('button').attr('value', lang);
             $('#mContent')
                 .parent('div')
-                .find('li a')
-                .filter(function () {
-                    return $(this).attr('val') === lang;
-                })
+                .find('li a[val="' + lang + '"]')
                 .trigger('click');
             $('#mContent')
                 .parent('div')
@@ -249,13 +204,25 @@ function getInput(id, mce) {
                 langs.push($(this).attr('val'));
             });
         for (var i in langs) {
-            var fieldName = id + '[' + langs[i] + ']';
-            var $field = $('#modal-box form textarea').filter(function () {
-                return this.name === fieldName;
-            });
-            if ($field.val()) {
-                value[langs[i]] = $field.val();
-            }
+            if (
+                $(
+                    '#modal-box form textarea[name="' +
+                        id +
+                        '[' +
+                        langs[i] +
+                        ']"]'
+                ).val()
+            ) {
+                value[langs[i]] = $(
+                    '#modal-box form textarea[name="' +
+                        id +
+                        '[' +
+                        langs[i] +
+                        ']"]'
+                ).val();
+            } /*else if (tinyMCE.activeEditor.getContent() && $('#'+id+'-element').find('button[data-toggle="dropdown"]').val() == langs[i]) {
+				value[langs[i]] = tinyMCE.activeEditor.getContent();
+			}*/
         }
     } else {
         $('#' + id)
@@ -265,12 +232,9 @@ function getInput(id, mce) {
                 langs.push($(this).attr('val'));
             });
         for (i in langs) {
-            var fieldName = id + '[' + langs[i] + ']';
-            var $field = $('#modal-box form input').filter(function () {
-                return this.name === fieldName;
-            });
-            // Decode HTML entities that may have been added by the multilang decorator
-            value[langs[i]] = decodeHtmlEntities($field.val());
+            value[langs[i]] = $(
+                '#modal-box form input[name="' + id + '[' + langs[i] + ']"]'
+            ).val();
         }
     }
 
@@ -437,12 +401,14 @@ function validMultilangInput(id, mce) {
                 langs.push($(this).attr('val'));
             });
         for (var i in langs) {
-            var fieldName = id + '[' + langs[i] + ']';
-            var $field = $('#modal-box form textarea').filter(function () {
-                return this.name === fieldName;
-            });
             if (
-                !$field.val() &&
+                !$(
+                    '#modal-box form textarea[name="' +
+                        id +
+                        '[' +
+                        langs[i] +
+                        ']"]'
+                ).val() &&
                 (!tinyMCE.activeEditor.getContent() ||
                     $('#' + id + '-element')
                         .find('button[data-toggle="dropdown"]')
@@ -459,12 +425,10 @@ function validMultilangInput(id, mce) {
                 langs.push($(this).attr('val'));
             });
         for (i in langs) {
-            var fieldName = id + '[' + langs[i] + ']';
-            var $field = $('#modal-box form input').filter(function () {
-                return this.name === fieldName;
-            });
             if (
-                !$field.val()
+                !$(
+                    '#modal-box form input[name="' + id + '[' + langs[i] + ']"]'
+                ).val()
             ) {
                 return false;
             }

@@ -7,15 +7,10 @@ function %%FCT_NAME%% (btn, name) {
 
 		var value = $(btn).closest(".textarea-group").find('textarea').val();
 
-		var text_node = value;
-
-		// value is a string; never pass it to $() (it would be treated as HTML or a selector)
-		// Use a temporary div to safely extract text from potential HTML content
-		var tempDiv = document.createElement('div');
-		tempDiv.innerHTML = value;
-		if (tempDiv.textContent !== value) {
-			text_node = tempDiv.textContent || tempDiv.innerText || value;
-		}
+		// Extract plain text safely — textarea decodes HTML entities without executing scripts
+		var ta = document.createElement('textarea');
+		ta.innerHTML = value;
+		var text_node = ta.value;
 
         if (%%LENGTH%%) {
         	text_node = text_node.substring(0,%%LENGTH%%) + (text_node.length > %%LENGTH%% ? '...' : '')

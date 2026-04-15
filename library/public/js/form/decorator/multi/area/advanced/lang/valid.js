@@ -18,15 +18,16 @@ function %%FCT_NAME%% (btn, name) {
 
     	$(input).val(value);
 
-		if (!$.isEmptyObject($(name).contents().first()[0])) {
-			value = $(name).contents().text();
-		}
+		// Extract plain text safely — textarea decodes HTML entities without executing scripts
+		var ta = document.createElement('textarea');
+		ta.innerHTML = value;
+		value = ta.value;
 
 		if (%%LENGTH%%) {
         	value = value.substring(0,%%LENGTH%%) + (value.length > %%LENGTH%% ? '...' : '')
         }
 
-    	textNode.replaceWith(value + " (" + libelle + ")");
+    	textNode.replaceWith(document.createTextNode(value + " (" + libelle + ")"));
 
     	$(input).attr('name', name + "[" + lang + "]");
     	$(input).attr('lang', lang);
