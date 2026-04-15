@@ -18,10 +18,11 @@ function %%FCT_NAME%% (btn, name) {
 
     	$(input).val(value);
 
-		// Extract plain text safely — textarea decodes HTML entities without executing scripts
-		var ta = document.createElement('textarea');
-		ta.innerHTML = value;
-		value = ta.value;
+		// Extract plain text safely — DOMParser avoids innerHTML XSS and jQuery selector misuse
+		// Note: was incorrectly using $(name) instead of $(value); fixed here
+		value = new DOMParser()
+			.parseFromString(value, 'text/html')
+			.body.textContent;
 
 		if (%%LENGTH%%) {
         	value = value.substring(0,%%LENGTH%%) + (value.length > %%LENGTH%% ? '...' : '')

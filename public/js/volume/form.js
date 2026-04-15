@@ -125,6 +125,23 @@ function removeFile() {
 }
 
 /**
+ * Decode HTML entities in a string using the browser's native parser.
+ * DOMParser is immune to </textarea> injection truncation and handles
+ * all named and numeric entities natively.
+ * @param {string|null|undefined} text
+ * @returns {string}
+ */
+function decodeHtmlEntities(text) {
+    if (text === null || text === undefined) return text;
+    var str = String(text);
+    if (!str.includes('&')) return str;
+    return new DOMParser()
+        .parseFromString(str, 'text/html')
+        .body.textContent;
+}
+
+
+/**
  * init form in modal
  * @param source
  */
