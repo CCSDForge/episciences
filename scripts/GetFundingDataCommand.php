@@ -92,6 +92,8 @@ class GetFundingDataCommand extends Command
         $logger->info('Starting funding enrichment for ' . count($rows) . ' papers');
         $io->progressStart(count($rows));
 
+        $oaClient = \Episciences\Api\OpenAireApiClient::create();
+
         foreach ($rows as $value) {
             $paperId = (int) $value['PAPERID'];
 
@@ -107,7 +109,6 @@ class GetFundingDataCommand extends Command
                     $cacheFund->deleteItem(md5($doiTrim) . '_funding.json');
                 }
 
-                $oaClient = \Episciences\Api\OpenAireApiClient::create();
                 $response = $oaClient->fetchPublication($doiTrim, $paperId);
 
                 if ($response !== null && !$dryRun) {

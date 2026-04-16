@@ -288,6 +288,7 @@ class OpenAireApiClient extends AbstractApiClient
      *
      * @param array<string, mixed>|null $response Decoded OpenAire API response, or null on error.
      * @throws InvalidArgumentException
+     * @throws \JsonException
      */
     public function putCreatorInCache(?array $response, string $doi): void
     {
@@ -298,8 +299,8 @@ class OpenAireApiClient extends AbstractApiClient
         $creators = ($response !== null) ? $this->extractCreators($response) : null;
 
         $item->set($creators !== null
-            ? json_encode($creators, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-            : json_encode([''])
+            ? json_encode($creators, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)
+            : json_encode([''], JSON_THROW_ON_ERROR)
         );
         $this->authorsCache->save($item);
     }
@@ -311,6 +312,7 @@ class OpenAireApiClient extends AbstractApiClient
      *
      * @param array<string, mixed>|null $response Decoded OpenAire API response, or null on error.
      * @throws InvalidArgumentException
+     * @throws \JsonException
      */
     public function putFundingInCache(?array $response, string $doi): void
     {
@@ -321,8 +323,8 @@ class OpenAireApiClient extends AbstractApiClient
         $funding = ($response !== null) ? $this->extractFunding($response) : null;
 
         $item->set($funding !== null
-            ? json_encode($funding, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-            : json_encode([''])
+            ? json_encode($funding, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)
+            : json_encode([''], JSON_THROW_ON_ERROR)
         );
         $this->fundingCache->save($item);
     }

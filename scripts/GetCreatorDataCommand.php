@@ -95,6 +95,8 @@ class GetCreatorDataCommand extends Command
         $logger->info('Starting author enrichment for ' . count($rows) . ' papers');
         $io->progressStart(count($rows));
 
+        $oaClient = \Episciences\Api\OpenAireApiClient::create();
+
         foreach ($rows as $value) {
             $paperId = (int) $value['PAPERID'];
             $docId   = (int) $value['DOCID'];
@@ -112,7 +114,6 @@ class GetCreatorDataCommand extends Command
             Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper);
 
             if ($doiTrim !== '' && !$dryRun) {
-                $oaClient = \Episciences\Api\OpenAireApiClient::create();
                 $response = $oaClient->fetchPublication($doiTrim, $paperId);
 
                 if ($response !== null) {
