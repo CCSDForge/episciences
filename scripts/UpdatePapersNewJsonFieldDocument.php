@@ -42,6 +42,7 @@ class UpdatePapersNewJsonFieldDocument extends JournalScript
     public function run(): void
     {
         defineProtocol();
+        defineApplicationConstants();
         defineSimpleConstants();
         defineSQLTableConstants();
 
