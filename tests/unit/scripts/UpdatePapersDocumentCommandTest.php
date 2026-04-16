@@ -160,6 +160,12 @@ class UpdatePapersDocumentCommandTest extends TestCase
         $this->assertSame(UpdatePapersDocumentCommand::DEFAULT_BUFFER, $this->command->validateBuffer('abc'));
     }
 
+    public function testValidateBuffer_floatString_returnsDefault(): void
+    {
+        // FILTER_VALIDATE_INT rejects '3.7' — floats are not valid page sizes
+        $this->assertSame(UpdatePapersDocumentCommand::DEFAULT_BUFFER, $this->command->validateBuffer('3.7'));
+    }
+
     public function testValidateBuffer_defaultConstantIs500(): void
     {
         $this->assertSame(500, UpdatePapersDocumentCommand::DEFAULT_BUFFER);
@@ -220,5 +226,13 @@ class UpdatePapersDocumentCommandTest extends TestCase
         $this->assertStringContainsString('DOCID = 10', $sql1);
         $this->assertStringContainsString('DOCID = 20', $sql2);
         $this->assertNotSame($sql1, $sql2);
+    }
+
+    public function testBuildUpdateStatement_withZeroDocId_producesValidSql(): void
+    {
+        $sql = $this->command->buildUpdateStatement(0, "'{}'");
+        $this->assertStringContainsString('WHERE DOCID = 0', $sql);
+        $this->assertStringStartsWith('UPDATE', $sql);
+        $this->assertStringEndsWith(';', $sql);
     }
 }

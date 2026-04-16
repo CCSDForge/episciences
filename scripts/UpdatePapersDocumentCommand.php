@@ -32,7 +32,7 @@ class UpdatePapersDocumentCommand extends Command
         $this
             ->setDescription('Update the DOCUMENT JSON column in the PAPERS table from Paper::toJson().')
             ->addOption('docid',         null, InputOption::VALUE_REQUIRED, 'Process only this DOCID.')
-            ->addOption('sqlwhere',      null, InputOption::VALUE_REQUIRED, "SQL WHERE clause to filter DOCIDs (e.g. 'DOCID > 1000').")
+            ->addOption('sqlwhere',      null, InputOption::VALUE_REQUIRED, "SQL WHERE clause to filter DOCIDs (e.g. 'DOCID > 1000'). TRUSTED INPUT ONLY — passed as-is to the query.")
             ->addOption('buffer',        null, InputOption::VALUE_REQUIRED, 'Number of papers to process per page.', self::DEFAULT_BUFFER)
             ->addOption('update-record', null, InputOption::VALUE_NONE,     'Refresh the RECORD column from the repository before updating DOCUMENT.')
             ->addOption('notify',        null, InputOption::VALUE_NONE,     'Send COAR notifications after processing each paper.')
@@ -87,7 +87,7 @@ class UpdatePapersDocumentCommand extends Command
             'sqlwhere' => $input->getOption('sqlwhere'),
         ];
 
-        [$countQuery, $dataQuery, $filterMsg] = $this->buildPaperQueries($db, $shouldUpdateRec, $params);
+        [$countQuery, $dataQuery, $filterMsg] = $this->buildPaperQueries($db, $params);
 
         $count = (int) $db->fetchOne($countQuery);
 
@@ -120,7 +120,7 @@ class UpdatePapersDocumentCommand extends Command
             $logger->info(sprintf('Processing page %d/%d', $page, $totalPages));
             $paginator->setCurrentPageNumber($page);
 
-            $batchSql       = '';
+            $pageStatements = [];
             $currentRvId    = 0;
             $currentJournal = null;
 
@@ -164,7 +164,11 @@ class UpdatePapersDocumentCommand extends Command
                 }
 
                 if ($shouldNotify) {
-                    $this->COARNotify($paper, $currentJournal);
+                    try {
+                        $this->COARNotify($paper, $currentJournal);
+                    } catch (\Exception $e) {
+                        $logger->error(sprintf('[DOCID %d] COARNotify failed: %s', $docId, $e->getMessage()));
+                    }
                 }
 
                 try {
@@ -184,7 +188,7 @@ class UpdatePapersDocumentCommand extends Command
                         echo $paperJson . PHP_EOL;
                     }
 
-                    $batchSql .= PHP_EOL . $this->buildUpdateStatement($docId, (string) $db->quote($paperJson));
+                    $pageStatements[] = $this->buildUpdateStatement($docId, (string) $db->quote($paperJson));
                     $logger->info(sprintf('[DOCID %d] JSON generated.', $docId));
                     $processedCount++;
                 } catch (\Zend_Db_Statement_Exception|\JsonException $e) {
@@ -197,23 +201,28 @@ class UpdatePapersDocumentCommand extends Command
                 }
             }
 
-            if (trim($batchSql) === '') {
+            if (empty($pageStatements)) {
                 $logger->info(sprintf('Page %d: nothing to update.', $page));
                 continue;
             }
 
             if ($isDryRun) {
-                $logger->info(sprintf('Page %d: dry-run — SQL not executed.', $page));
+                $logger->info(sprintf('Page %d: dry-run — %d update(s) not executed.', $page, count($pageStatements)));
                 continue;
             }
 
             try {
-                $stmt = $db->query($batchSql);
-                $rows = $stmt->rowCount();
-                $stmt->closeCursor();
-                $logger->info(sprintf('Page %d: %d row(s) updated.', $page, $rows));
-            } catch (\Zend_Db_Statement_Exception|\Exception $e) {
-                $logger->error(sprintf('Page %d: query failed: %s', $page, $e->getMessage()));
+                $db->beginTransaction();
+
+                foreach ($pageStatements as $sql) {
+                    $db->query($sql);
+                }
+
+                $db->commit();
+                $logger->info(sprintf('Page %d: %d row(s) updated.', $page, count($pageStatements)));
+            } catch (\Exception $e) {
+                $db->rollBack();
+                $logger->error(sprintf('Page %d: transaction failed: %s', $page, $e->getMessage()));
                 $failureCount++;
             }
         }
@@ -328,7 +337,7 @@ class UpdatePapersDocumentCommand extends Command
      * @param array{docid: mixed, sqlwhere: mixed} $params
      * @return array{0: \Zend_Db_Select, 1: \Zend_Db_Select, 2: string}
      */
-    private function buildPaperQueries(\Zend_Db_Adapter_Abstract $db, bool $shouldUpdateRecord, array $params): array
+    private function buildPaperQueries(\Zend_Db_Adapter_Abstract $db, array $params): array
     {
         $cols      = $this->buildColumns();
         $filterMsg = '';
@@ -387,7 +396,7 @@ class UpdatePapersDocumentCommand extends Command
 
                 $paper->save();
                 $logger->info(sprintf('[DOCID %d] isTmp: type propagated and saved.', $docId));
-            } catch (\Zend_Db_Statement_Exception|\Zend_Db_Adapter_Exception $e) {
+            } catch (\Exception $e) {
                 $logger->error(sprintf('[DOCID %d] isTmp save failed: %s', $docId, $e->getMessage()));
             }
 
