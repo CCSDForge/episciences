@@ -148,9 +148,15 @@ class GetDoiCommand extends Command
 
         $dataPath = APPLICATION_PATH . '/../data/' . $rvcode;
         $realPath = realpath($dataPath);
-        define('REVIEW_PATH', ($realPath !== false ? $realPath : $dataPath) . '/');
-        define('REVIEW_LANG_PATH', REVIEW_PATH . 'languages/');
-        define('CACHE_PATH', CACHE_PATH_METADATA . $rvcode . '/');
+        if (!defined('REVIEW_PATH')) {
+            define('REVIEW_PATH', ($realPath !== false ? $realPath : $dataPath) . '/');
+        }
+        if (!defined('REVIEW_LANG_PATH')) {
+            define('REVIEW_LANG_PATH', REVIEW_PATH . 'languages/');
+        }
+        if (!defined('CACHE_PATH')) {
+            define('CACHE_PATH', CACHE_PATH_METADATA . $rvcode . '/');
+        }
 
         if (!is_dir(CACHE_PATH) && !mkdir(CACHE_PATH, 0755, true) && !is_dir(CACHE_PATH)) {
             $io->warning(sprintf('Could not create cache directory: %s', CACHE_PATH));
@@ -212,9 +218,6 @@ class GetDoiCommand extends Command
         return Command::SUCCESS;
     }
 
-    /**
-     * @throws \RuntimeException on metadata fetch failure.
-     */
     private function requestDois(
         SymfonyStyle                $io,
         Episciences_Review          $review,
@@ -273,7 +276,8 @@ class GetDoiCommand extends Command
                 file_put_contents($xmlFilePath, $body);
             } catch (GuzzleException $e) {
                 $logger->error("Metadata fetch failed for paper #{$paperId}: " . $e->getMessage());
-                throw new \RuntimeException($e->getMessage(), 0, $e);
+                $io->progressAdvance();
+                continue;
             }
 
             try {
@@ -358,7 +362,7 @@ class GetDoiCommand extends Command
                 $doiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_PUBLIC);
                 Episciences_Paper_DoiQueueManager::update($doiQueue);
                 $logger->info("Paper #{$paperId}: DOI status is now public.");
-            } elseif (!$result->isSuccess()) {
+            } elseif ($result->doiFound && !$result->isSuccess()) {
                 $logger->warning(sprintf('Paper #%d: DOI not confirmed as successful (status: %s).', $paperId, $result->doiStatus));
             }
 
@@ -374,9 +378,8 @@ class GetDoiCommand extends Command
      * Re-send metadata XML to Crossref for already-registered DOIs.
      *
      * Crossref treats a POST for an existing DOI as a free metadata update.
-     * The doi_status in database stays STATUS_PUBLIC — no queue change needed.
-     *
-     * @throws \RuntimeException on internal API metadata fetch failure.
+     * doi_status transitions from STATUS_PUBLIC to STATUS_UPDATE_PENDING so
+     * --check can verify the update was received before marking it public again.
      */
     private function updateDois(
         SymfonyStyle                $io,
@@ -445,7 +448,8 @@ class GetDoiCommand extends Command
                 file_put_contents($xmlFilePath, $body);
             } catch (GuzzleException $e) {
                 $logger->error("Metadata fetch failed for paper #{$currentPaperId}: " . $e->getMessage());
-                throw new \RuntimeException($e->getMessage(), 0, $e);
+                $io->progressAdvance();
+                continue;
             }
 
             try {
