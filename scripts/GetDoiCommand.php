@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Api\CrossrefDiagnosticParser;
 use Episciences\Api\CrossrefSubmissionApiClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -307,6 +308,7 @@ class GetDoiCommand extends Command
             Episciences_Paper_DoiQueueManager::findDoisByStatus($rvid, Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper_DoiQueue::STATUS_UPDATE_PENDING)
         );
 
+        $parser = new CrossrefDiagnosticParser();
         $io->progressStart(count($collection));
 
         foreach ($collection as $doiData) {
@@ -316,6 +318,7 @@ class GetDoiCommand extends Command
             $doiQueue = $doiData['doiq'];
 
             $paperId     = $paper->getPaperId();
+            $articleDoi  = $paper->getDoi();
             $xmlFileName = sprintf('%s-%d.xml', $rvcode, $paperId);
 
             $xmlBody = $crossrefClient->fetchStatus($xmlFileName, $dryRun);
@@ -326,15 +329,37 @@ class GetDoiCommand extends Command
                 continue;
             }
 
-            $successCount = $this->parseSuccessCount($xmlBody, $logger, $paperId);
+            $result = $parser->parse($xmlBody, $articleDoi);
 
-            if ($successCount > 0 && $doiQueue->getDoi_status() !== Episciences_Paper_DoiQueue::STATUS_PUBLIC) {
-                $logger->info("Paper #{$paperId}: setting status to public.");
+            if ($result === null) {
+                $logger->error("Failed to parse Crossref XML for paper #{$paperId}.");
+                $io->progressAdvance();
+                continue;
+            }
+
+            $logger->info(sprintf(
+                'Paper #%d Crossref batch [%s]: %d success / %d failure / %d warning',
+                $paperId, $result->batchStatus, $result->batchSuccess, $result->batchFailure, $result->batchWarning
+            ));
+
+            if (!$result->isCompleted()) {
+                $logger->info("Paper #{$paperId}: batch not yet processed by Crossref, will retry on next --check.");
+                $io->progressAdvance();
+                continue;
+            }
+
+            if (!$result->doiFound) {
+                $logger->warning(sprintf('Paper #%d: DOI %s not found individually in Crossref response — falling back to batch count.', $paperId, $articleDoi));
+            } else {
+                $logger->info(sprintf('Paper #%d DOI %s: %s — %s', $paperId, $articleDoi, $result->doiStatus, $result->doiMsg));
+            }
+
+            if ($result->isSuccess() && $doiQueue->getDoi_status() !== Episciences_Paper_DoiQueue::STATUS_PUBLIC) {
                 $doiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_PUBLIC);
                 Episciences_Paper_DoiQueueManager::update($doiQueue);
                 $logger->info("Paper #{$paperId}: DOI status is now public.");
-            } else {
-                $logger->info(sprintf('Paper #%d DOI status: %s', $paperId, $doiQueue->getDoi_status()));
+            } elseif (!$result->isSuccess()) {
+                $logger->warning(sprintf('Paper #%d: DOI not confirmed as successful (status: %s).', $paperId, $result->doiStatus));
             }
 
             $io->progressAdvance();
@@ -440,21 +465,6 @@ class GetDoiCommand extends Command
         $io->progressFinish();
         $io->success(sprintf('DOI metadata update submitted for journal %s. Use --check to confirm.', $rvcode));
         return Command::SUCCESS;
-    }
-
-    private function parseSuccessCount(string $xmlBody, Logger $logger, int $paperId): int
-    {
-        libxml_use_internal_errors(true);
-        $xml = simplexml_load_string($xmlBody);
-        libxml_clear_errors();
-        libxml_use_internal_errors(false);
-
-        if ($xml === false) {
-            $logger->error("Failed to parse Crossref XML response for paper #{$paperId}.");
-            return 0;
-        }
-
-        return (int) (string) $xml->batch_data->success_count;
     }
 
     private function bootstrap(): void
