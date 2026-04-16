@@ -73,7 +73,7 @@ help: ## Display this help message
 	@grep -h -E '^deploy.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No deployment commands found"
 	@echo ""
 	@echo "Other Commands:"
-	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use|update-statistics):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use|import-apache-logs):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 
 # =============================================================================
 # Core Docker Commands
@@ -470,26 +470,38 @@ can-i-use-update: ## Update browserslist database when caniuse-lite is outdated
 	@echo "Updating browserslist database..."
 	@$(NPX) update-browserslist-db@latest
 
-update-statistics: ## Update statistics for journal logs (rvcode=JOURNAL [date=YYYY-MM-DD] [month=YYYY-MM] [start-date=YYYY-MM-DD end-date=YYYY-MM-DD] [force=1])
-	@if [ -z "$(rvcode)" ]; then \
-		echo "Error: rvcode parameter is required"; \
-		echo "Usage: make update-statistics rvcode=JOURNAL_CODE [options]"; \
+import-apache-logs: ## Parse Apache logs into STAT_TEMP (rvcode=JOURNAL|all=1 [date=YYYY-MM-DD|month=YYYY-MM|year=YYYY|start-date=…+end-date=…] [logs-path=PATH] [force=1])
+	@if [ -z "$(rvcode)" ] && [ "$(all)" != "1" ]; then \
+		echo "Error: specify rvcode=JOURNAL_CODE or all=1"; \
+		echo "Usage: make import-apache-logs rvcode=JOURNAL_CODE [options]"; \
+		echo "       make import-apache-logs all=1 [options]"; \
 		echo "Options:"; \
-		echo "  date=YYYY-MM-DD          Process specific date"; \
+		echo "  date=YYYY-MM-DD          Process a specific day"; \
 		echo "  month=YYYY-MM            Process entire month"; \
-		echo "  start-date=YYYY-MM-DD    Start date for range"; \
-		echo "  end-date=YYYY-MM-DD      End date for range"; \
-		echo "  force=1                  Force reprocessing"; \
+		echo "  year=YYYY                Process entire year"; \
+		echo "  start-date=YYYY-MM-DD    Start date for custom range"; \
+		echo "  end-date=YYYY-MM-DD      End date for custom range"; \
+		echo "  logs-path=PATH           Base path to Apache log directory"; \
+		echo "  force=1                  Force reprocessing of already-processed dates"; \
 		exit 1; \
 	fi
-	@echo "Updating statistics for journal: $(rvcode)..."
-	@cmd="php scripts/UpdateStatistics.php update:statistics --rvcode=$(rvcode)"; \
+	@cmd="php scripts/console.php stats:import-logs"; \
+	if [ "$(all)" = "1" ]; then \
+		cmd="$$cmd --all"; \
+	else \
+		cmd="$$cmd --rvcode=$(rvcode)"; \
+	fi; \
 	if [ -n "$(date)" ]; then \
 		cmd="$$cmd --date=$(date)"; \
 	elif [ -n "$(month)" ]; then \
 		cmd="$$cmd --month=$(month)"; \
+	elif [ -n "$(year)" ]; then \
+		cmd="$$cmd --year=$(year)"; \
 	elif [ -n "$(start-date)" ] && [ -n "$(end-date)" ]; then \
 		cmd="$$cmd --start-date=$(start-date) --end-date=$(end-date)"; \
+	fi; \
+	if [ -n "$(logs-path)" ]; then \
+		cmd="$$cmd --logs-path=$(logs-path)"; \
 	fi; \
 	if [ "$(force)" = "1" ]; then \
 		cmd="$$cmd --force"; \

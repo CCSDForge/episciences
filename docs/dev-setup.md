@@ -102,9 +102,9 @@ docker compose exec -u www-data php php scripts/console.php enrichment:creators 
 
 | Namespace | Command | Description |
 |-----------|---------|-------------|
-| **user** | `user:generate` | Generate test user accounts |
-| | `user:init-dev` | Seed development users (called by `make init-dev-users`) |
-| | `user:create-bot` | Create the `episciences-bot` account |
+| **app** | `app:generate-users` | Generate test user accounts |
+| | `app:init-dev-users` | Seed development users (called by `make init-dev-users`) |
+| | `app:create-bot-user` | Create the `episciences-bot` account |
 | **enrichment** | `enrichment:citations` | Enrich citation metadata (OpenCitations / OpenAlex / Crossref) |
 | | `enrichment:creators` | Enrich author ORCID data (OpenAIRE / HAL TEI) |
 | | `enrichment:licences` | Enrich licence data from repository APIs |
@@ -119,6 +119,11 @@ docker compose exec -u www-data php php scripts/console.php enrichment:creators 
 | **zbjats** | `zbjats:zip` | Package PDF + zbJATS XML files into a ZIP archive |
 | **import** | `import:sections` | Import journal sections from a CSV file |
 | | `import:volumes` | Import journal volumes from a CSV file |
+| **stats** | `stats:import-logs` | Parse Apache access logs into `STAT_TEMP` |
+| | `stats:download-kpi` | Aggregate download KPIs and write `data/kpi_downloads.json` |
+| | `stats:update-robots-list` | Download the COUNTER Robots list for bot detection |
+| | `stats:process` | Process raw visit records from `STAT_TEMP` into `PAPER_STAT` |
+| **geoip** | `geoip:update` | Download or update the GeoLite2-City database |
 
 ### Common options
 
