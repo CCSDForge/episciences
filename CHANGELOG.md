@@ -15,9 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 ### Performances
 -->
-## Unreleased
-### fixed
-- Inability to change the review deadline
+
+## v1.0.54.2 - 2026-04-16
+
+### Fixed
+
+- Inability to change the review deadline (restore loading js via url).
+
+### Added
+
+- docs: add documentation index to README and update docs
+- stats:import-logs command to parse Apache logs into STAT_TEMP. Introduces ImportApacheLogsCommand (stats:import-logs), a Symfony Console command that parses Apache access logs and inserts article visits into STAT_TEMP. Replaces the legacy UpdateStatistics.php . Run src/mysql/2025-08-24-stat-processing-log-table.sql before deploying
 
 ## v1.0.54.1 - 2026-04-14
 
