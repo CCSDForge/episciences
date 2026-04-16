@@ -26,13 +26,15 @@ class GetDoiCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Manage DOI lifecycle: assign, submit to Crossref, check submission status')
+            ->setDescription('Manage DOI lifecycle: assign, submit to Crossref, check submission status, update metadata')
             ->addOption('rvcode',           null, InputOption::VALUE_REQUIRED, 'Journal RV code')
             ->addOption('rvid',             null, InputOption::VALUE_REQUIRED, 'Journal RVID (integer)')
+            ->addOption('paperid',          null, InputOption::VALUE_REQUIRED, 'Restrict --update to a single paper ID')
             ->addOption('assign-accepted',  null, InputOption::VALUE_NONE,     'Assign DOIs to accepted papers')
             ->addOption('assign-published', null, InputOption::VALUE_NONE,     'Assign DOIs to published papers')
             ->addOption('request',          null, InputOption::VALUE_NONE,     'Submit assigned DOIs to Crossref deposit API')
             ->addOption('check',            null, InputOption::VALUE_NONE,     'Check Crossref submission status')
+            ->addOption('update',           null, InputOption::VALUE_NONE,     'Re-send metadata to Crossref for already-registered DOIs (free update)')
             ->addOption('fetch-journals',   null, InputOption::VALUE_NONE,     'Fetch active journals list from the API')
             ->addOption('dry-run',          null, InputOption::VALUE_NONE,     'Use Crossref test API instead of production');
     }
@@ -110,7 +112,12 @@ class GetDoiCommand extends Command
             return $this->checkDois($io, $review, $dryRun, $crossrefClient, $logger);
         }
 
-        $io->warning('No action specified. Use --assign-accepted, --assign-published, --request, --check, or --fetch-journals.');
+        if ($input->getOption('update')) {
+            $paperId = $input->getOption('paperid') !== null ? (int) $input->getOption('paperid') : null;
+            return $this->updateDois($io, $review, $dryRun, $http, $crossrefClient, $logger, $paperId);
+        }
+
+        $io->warning('No action specified. Use --assign-accepted, --assign-published, --request, --check, --update, or --fetch-journals.');
         return Command::FAILURE;
     }
 
@@ -336,6 +343,99 @@ class GetDoiCommand extends Command
 
         $io->progressFinish();
         $io->success("DOI status check completed for journal {$rvcode}.");
+        return Command::SUCCESS;
+    }
+
+    /**
+     * Re-send metadata XML to Crossref for already-registered DOIs.
+     *
+     * Crossref treats a POST for an existing DOI as a free metadata update.
+     * The doi_status in database stays STATUS_PUBLIC — no queue change needed.
+     *
+     * @throws \RuntimeException on internal API metadata fetch failure.
+     */
+    private function updateDois(
+        SymfonyStyle                $io,
+        Episciences_Review          $review,
+        bool                        $dryRun,
+        Client                      $http,
+        CrossrefSubmissionApiClient $crossrefClient,
+        Logger                      $logger,
+        ?int                        $paperId
+    ): int {
+        $rvid   = $review->getRvid();
+        $rvcode = $review->getCode();
+
+        $res = Episciences_Paper_DoiQueueManager::findDoisByStatus(
+            $rvid,
+            Episciences_Paper::STATUS_PUBLISHED,
+            Episciences_Paper_DoiQueue::STATUS_PUBLIC
+        );
+
+        if ($paperId !== null) {
+            $res = array_filter($res, static fn(array $entry): bool => $entry['paper']->getPaperId() === $paperId);
+            $res = array_values($res);
+        }
+
+        $total = count($res);
+
+        if ($total === 0) {
+            $logger->info("{$rvcode}: no registered DOIs to update.");
+            $io->info('No registered DOIs found to update.');
+            return Command::SUCCESS;
+        }
+
+        if ($total > self::MAX_WITHOUT_CONFIRM) {
+            $apiLabel = $dryRun ? 'test' : 'production';
+            if (!$io->confirm(sprintf('Update %d DOIs on %s API?', $total, $apiLabel), false)) {
+                $io->note('Cancelled.');
+                return Command::FAILURE;
+            }
+        }
+
+        $logger->info(sprintf('%s: updating %d DOI(s) on Crossref', $rvcode, $total));
+        $io->progressStart($total);
+
+        foreach ($res as $doiToProcess) {
+            /** @var Episciences_Paper $paper */
+            $paper = $doiToProcess['paper'];
+
+            $currentPaperId = $paper->getPaperId();
+            $logger->info(sprintf('%s: updating paper #%d', $rvcode, $currentPaperId));
+
+            $docId = Episciences_PapersManager::getPublishedPaperId($currentPaperId);
+            if ($docId === 0) {
+                $logger->info("Paper #{$currentPaperId} has no published version, skipping.");
+                $io->progressAdvance();
+                continue;
+            }
+
+            $xmlFileName = sprintf('%s-%d.xml', $rvcode, $currentPaperId);
+            $xmlFilePath = CACHE_PATH . $xmlFileName;
+            $paperUrl    = sprintf('%spapers/export/%d/crossref?code=%s', EPISCIENCES_API_URL, $docId, $rvcode);
+
+            $logger->info("Fetching metadata: {$paperUrl}");
+
+            try {
+                $body = $http->request('GET', $paperUrl)->getBody()->getContents();
+                file_put_contents($xmlFilePath, $body);
+            } catch (GuzzleException $e) {
+                $logger->error("Metadata fetch failed for paper #{$currentPaperId}: " . $e->getMessage());
+                throw new \RuntimeException($e->getMessage(), 0, $e);
+            }
+
+            try {
+                $response = $crossrefClient->postMetadata($xmlFilePath, $xmlFileName, $dryRun);
+                $logger->info(sprintf('%s: Crossref answered: %s', $rvcode, $response->getBody()));
+            } catch (GuzzleException $e) {
+                $logger->error("Crossref update failed for paper #{$currentPaperId}: " . $e->getMessage());
+            }
+
+            $io->progressAdvance();
+        }
+
+        $io->progressFinish();
+        $io->success(sprintf('DOI metadata update completed for journal %s.', $rvcode));
         return Command::SUCCESS;
     }
 
