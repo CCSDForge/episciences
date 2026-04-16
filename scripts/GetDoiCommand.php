@@ -302,10 +302,9 @@ class GetDoiCommand extends Command
         $rvid   = $review->getRvid();
         $rvcode = $review->getCode();
 
-        $collection = Episciences_Paper_DoiQueueManager::findDoisByStatus(
-            $rvid,
-            Episciences_Paper::STATUS_PUBLISHED,
-            Episciences_Paper_DoiQueue::STATUS_REQUESTED
+        $collection = array_merge(
+            Episciences_Paper_DoiQueueManager::findDoisByStatus($rvid, Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper_DoiQueue::STATUS_REQUESTED),
+            Episciences_Paper_DoiQueueManager::findDoisByStatus($rvid, Episciences_Paper::STATUS_PUBLISHED, Episciences_Paper_DoiQueue::STATUS_UPDATE_PENDING)
         );
 
         $io->progressStart(count($collection));
@@ -426,6 +425,10 @@ class GetDoiCommand extends Command
 
             try {
                 $response = $crossrefClient->postMetadata($xmlFilePath, $xmlFileName, $dryRun);
+                /** @var Episciences_Paper_DoiQueue $doiQueue */
+                $doiQueue = $doiToProcess['doiq'];
+                $doiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_UPDATE_PENDING);
+                Episciences_Paper_DoiQueueManager::update($doiQueue);
                 $logger->info(sprintf('%s: Crossref answered: %s', $rvcode, $response->getBody()));
             } catch (GuzzleException $e) {
                 $logger->error("Crossref update failed for paper #{$currentPaperId}: " . $e->getMessage());
@@ -435,7 +438,7 @@ class GetDoiCommand extends Command
         }
 
         $io->progressFinish();
-        $io->success(sprintf('DOI metadata update completed for journal %s.', $rvcode));
+        $io->success(sprintf('DOI metadata update submitted for journal %s. Use --check to confirm.', $rvcode));
         return Command::SUCCESS;
     }
 
