@@ -23,6 +23,7 @@ require_once __DIR__ . '/ProcessStatTempCommand.php';
 require_once __DIR__ . '/ImportApacheLogsCommand.php';
 require_once __DIR__ . '/UpdateGeoIpCommand.php';
 require_once __DIR__ . '/GenerateDownloadKpiCommand.php';
+require_once __DIR__ . '/GetDoiCommand.php';
 
 use Symfony\Component\Console\Application;
 
@@ -64,6 +65,9 @@ $application->add(new UpdateCounterRobotsListCommand());
 $application->add(new ImportApacheLogsCommand());
 $application->add(new ProcessStatTempCommand());
 $application->add(new GenerateDownloadKpiCommand());
+
+// DOI commands
+$application->add(new GetDoiCommand());
 
 // GeoIP commands
 $application->add(new UpdateGeoIpCommand());
