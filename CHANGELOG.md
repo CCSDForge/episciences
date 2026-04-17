@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### fixed
 - Inability to change the review deadline
 
+### Added
+* [#630](https://github.com/CCSDForge/episciences/issues/630) COI (Conflict of Interest) notifications:
+  - Email notification to the editor-in-chief when an editor declares a positive COI (answered "yes")
+  - Email notification to other assigned editors (if any) when an editor declares a COI
+
 ## v1.0.54.1 - 2026-04-14
 
 ### Changed
@@ -27,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#962](https://github.com/CCSDForge/episciences/issues/962) Fixed double HTML encoding bug in volume metadata titles where special                                     
+- [#962](https://github.com/CCSDForge/episciences/issues/962) Fixed double HTML encoding bug in volume metadata titles where special
   characters like `<`, `>`, and `'` were displayed as `&lt;`, `&gt;`, `&#039;`
 - TypeError in enrichment:creators on non-sequential affiliation keys
 - isImported detection for published papers when the the publication date has been fixed after publication
