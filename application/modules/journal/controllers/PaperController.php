@@ -17,7 +17,7 @@ class PaperController extends PaperDefaultController
 
     /**
      *  display paper pdf
-     * @throws GuzzleException
+     * @throws GuzzleExceptio
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -216,7 +216,6 @@ class PaperController extends PaperDefaultController
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
         $this->view->review = $review;
-
 
         // ratings **************************************************
         //[#169]: https://github.com/CCSDForge/episciences/issues/169
@@ -653,7 +652,7 @@ class PaperController extends PaperDefaultController
 
             // paper rating page url
             $paper_url = $this->view->url([self::CONTROLLER => self::CONTROLLER_NAME, self::ACTION => self::RATING_ACTION, 'id' => $paper->getDocid()]);
-            $paper_url = SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
+            $paper_url = APPLICATION_URL . $paper_url;
 
             $locale = $reviewer->getLangueid();
 
@@ -824,6 +823,10 @@ class PaperController extends PaperDefaultController
 
         $parentPathContent = scandir($parentPath);
 
+        if ($parentPathContent === false) {
+            $parentPathContent = [];
+        }
+
         foreach ($parentPathContent as $file) {
             if (!in_array($file, ['.', '..'])
                 && in_array($file, $attachments, true) &&
@@ -840,7 +843,9 @@ class PaperController extends PaperDefaultController
                 Episciences_Tools::cpFiles((array)$file, $parentPath, $mailPath, true);
             }
 
-            unlink($parentPath . $file);
+            if (is_file($parentPath . $file)) {
+                unlink($parentPath . $file);
+            }
         }
 
         $settings = ['unanswered' => true, 'type' => $commentType];
@@ -1683,11 +1688,7 @@ class PaperController extends PaperDefaultController
         $template->loadTranslations();
 
         // link to previous version page
-        $paper1_url = $this->view->url([
-            self::CONTROLLER => self::CONTROLLER_NAME,
-            self::ACTION => 'view',
-            'id' => $paper1->getDocid()]);
-        $paper1_url = SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper1_url;
+        $paper1_url = $this->buildPublicPaperUrl($paper1->getDocid());
 
         // settings for new invitation / assignment
         $oReview = Episciences_ReviewsManager::find(RVID);
@@ -1721,7 +1722,7 @@ class PaperController extends PaperDefaultController
                 self::CONTROLLER => 'reviewer',
                 self::ACTION => 'invitation',
                 'id' => $oInvitation->getId()]);
-            $invitation_url = SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $invitation_url;
+            $invitation_url = APPLICATION_URL . $invitation_url;
 
             // update assignment with invitation_id
             $oAssignment->setInvitation_id($oInvitation->getId());
@@ -1746,11 +1747,7 @@ class PaperController extends PaperDefaultController
             if ($submissionType === self::TMP_VERSION_TYPE) {
 
                 // link to tmp version page
-                $tmpUrl = $this->view->url([
-                    self::CONTROLLER => self::CONTROLLER_NAME,
-                    self::ACTION => 'view',
-                    'id' => $paper2->getDocid()]);
-                $tmpUrl = SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $tmpUrl;
+                $tmpUrl = $this->buildPublicPaperUrl($paper2->getDocid());
 
                 $mail->addTag(Episciences_Mail_Tags::TAG_TMP_PAPER_URL, $tmpUrl);
             }
@@ -2985,13 +2982,7 @@ class PaperController extends PaperDefaultController
 
         // send mail to contributor
         // paper page url
-        $paper_url = $this->view->url([
-            self::CONTROLLER => self::CONTROLLER_NAME,
-            self::ACTION => 'view',
-            'id' => $docId
-        ]);
-
-        $paper_url = SERVER_PROTOCOL . '://' . $_SERVER[self::SERVER_NAME_STR] . $paper_url;
+        $paper_url = $this->buildPublicPaperUrl($docId);
 
         $contributorTags = [
             Episciences_Mail_Tags::TAG_SENDER_EMAIL => null,
@@ -3291,7 +3282,7 @@ class PaperController extends PaperDefaultController
             // send mail to reviewer *********************
             // url to rating page
             $paper_url = $this->view->url([self::CONTROLLER => self::CONTROLLER_NAME, self::ACTION => self::RATING_ACTION, 'id' => $report->getDocid()]);
-            $paper_url = 'https://' . $_SERVER [self::SERVER_NAME_STR] . $paper_url;
+            $paper_url = APPLICATION_URL . $paper_url;
 
             $reviewerTags = $commonTags + [
                     Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $user->getUsername(),

@@ -3,3 +3,9 @@
   background-color: $black;
   color: $white;
 }
+
+// Bootstrap label-warning: white on #f0ad4e = ~1.9:1 (fails WCAG AA 4.5:1)
+// black on #f0ad4e = ~11.1:1
+.label-warning {
+  color: #000;
+}

@@ -35,6 +35,8 @@ php scripts/console.php <command> --help
 | [`zbjats:zip`](#zbjatszip) | Package PDF + zbJATS XML into a ZIP archive per volume |
 | [`import:sections`](#importsections) | Import journal sections from a CSV file |
 | [`import:volumes`](#importvolumes) | Import journal volumes from a CSV file |
+| [`stats:import-logs`](#statsimport-logs) | Parse Apache access logs and insert article visits into `STAT_TEMP` |
+| [`stats:download-kpi`](#statsdownload-kpi) | Aggregate download KPIs for all published articles and write a JSON file |
 | [`stats:update-robots-list`](#statsupdate-robots-list) | Download the COUNTER Robots list for bot detection |
 | [`stats:process`](#statsprocess) | Process raw visit records from `STAT_TEMP` into `PAPER_STAT` |
 | [`geoip:update`](#geoipupdate) | Download or update the GeoLite2-City.mmdb database |
@@ -214,15 +216,21 @@ php scripts/console.php enrichment:zb-reviews [options]
 
 ### `sitemap:generate`
 
-Generates a sitemap XML file for a given journal. The `rvcode` argument is required.
+Generates a sitemap XML file for one journal or for all active journals (STATUS = 1).
+Exactly one of `--rvcode` or `--all` must be provided.
 
 ```bash
-php scripts/console.php sitemap:generate <rvcode> [options]
+# One journal
+php scripts/console.php sitemap:generate --rvcode=<code> [--pretty]
+
+# All active journals
+php scripts/console.php sitemap:generate --all [--pretty]
 ```
 
-| Argument / Option | Description |
-|-------------------|-------------|
-| `rvcode` | The RV code of the journal (required) |
+| Option | Description |
+|--------|-------------|
+| `--rvcode=<code>` | RV code of the journal to process — mutually exclusive with `--all` |
+| `--all` | Process all active journals (STATUS = 1) — mutually exclusive with `--rvcode` |
 | `--pretty` | Pretty-print the XML output |
 
 ---
@@ -317,6 +325,69 @@ php scripts/console.php import:volumes [options]
 ---
 
 ## Statistics
+
+### `stats:import-logs`
+
+Parses Apache Combined Log Format access logs for one or all journals and bulk-inserts raw article
+visits into `STAT_TEMP`. Supports plain and `.gz`-compressed log files. Duplicate runs are skipped
+via the `STAT_PROCESSING_LOG` table (use `--force` to reprocess).
+
+> **Prerequisite:** run `src/mysql/2025-08-24-stat-processing-log-table.sql` before the first use.
+> See [docs/STATISTICS_UPDATE_README.md](./STATISTICS_UPDATE_README.md) for the full pipeline overview.
+
+```bash
+php scripts/console.php stats:import-logs [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--rvcode <code>` | Journal to process — mutually exclusive with `--all` |
+| `--all` | Process all journals with `is_new_front_switched = yes` |
+| `--date <YYYY-MM-DD>` | Single day (default: yesterday) |
+| `--month <YYYY-MM>` | Entire month |
+| `--year <YYYY>` | Entire year |
+| `--start-date <YYYY-MM-DD>` | Start of custom range (requires `--end-date`) |
+| `--end-date <YYYY-MM-DD>` | End of custom range (requires `--start-date`) |
+| `--force` | Reprocess dates already in `STAT_PROCESSING_LOG` |
+| `--logs-path <path>` | Override the base Apache log directory (default: `../logs/httpd`) |
+
+```bash
+# Via Make (recommended)
+make import-apache-logs rvcode=epiga              # yesterday's logs
+make import-apache-logs all=1                     # all journals, yesterday
+make import-apache-logs rvcode=epiga month=2025-06
+make import-apache-logs rvcode=epiga start-date=2025-06-01 end-date=2025-06-30
+make import-apache-logs rvcode=epiga force=1      # reprocess already-processed dates
+```
+
+Recommended cron schedule: daily at 01:00, before `stats:process`.
+
+---
+
+### `stats:download-kpi`
+
+Aggregates download and page-view statistics for all published papers (those with a DOI and `STATUS = 16`) and writes the result to `data/kpi_downloads.json`. The output is keyed by journal `rvcode` and includes per-year breakdowns and per-country geographic data. See [docs/kpi-downloads-format.md](./kpi-downloads-format.md) for the full JSON schema.
+
+```bash
+php scripts/console.php stats:download-kpi [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--output <path>` | Destination path for the JSON file (default: `data/kpi_downloads.json`) |
+| `--rvcode <code>` | Restrict to one journal |
+| `--pretty` | Pretty-print the JSON output |
+| `--dry-run` | Print a summary without writing any file |
+
+```bash
+# Via Make (recommended)
+make stats-download-kpi pretty=1           # all journals, pretty-printed
+make stats-download-kpi rvcode=epiga       # one journal only
+make stats-download-kpi output=/srv/kpi.json  # custom output path
+make stats-download-kpi dry-run=1          # summary only, no file written
+```
+
+---
 
 `stats:process` depends on two external data files that must be present before the first run:
 

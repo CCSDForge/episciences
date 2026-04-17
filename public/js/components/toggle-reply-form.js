@@ -3,7 +3,7 @@
  * Shows/hides editor reply forms in author-editor communication timeline
  */
 
-(function() {
+(function () {
     'use strict';
 
     /**
@@ -18,7 +18,11 @@
         if (!form) {
             return;
         }
-        var button = document.querySelector('.toggle-reply-form[data-reply-form-id="' + CSS.escape(formId) + '"]');
+        var button = document.querySelector(
+            '.toggle-reply-form[data-reply-form-id="' +
+                CSS.escape(formId) +
+                '"]'
+        );
 
         if (button) {
             // Hide the button
@@ -47,7 +51,11 @@
         if (!form) {
             return;
         }
-        var button = document.querySelector('.toggle-reply-form[data-reply-form-id="' + CSS.escape(formId) + '"]');
+        var button = document.querySelector(
+            '.toggle-reply-form[data-reply-form-id="' +
+                CSS.escape(formId) +
+                '"]'
+        );
 
         if (button) {
             // Hide the form
@@ -78,8 +86,8 @@
             button.parentNode.replaceChild(newButton, button);
 
             // Add event listener
-            (function(btn) {
-                btn.addEventListener('click', function(e) {
+            (function (btn) {
+                btn.addEventListener('click', function (e) {
                     e.preventDefault();
                     var formId = btn.getAttribute('data-reply-form-id');
                     showReplyForm(formId);
@@ -98,8 +106,8 @@
             cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
 
             // Add event listener
-            (function(btn) {
-                btn.addEventListener('click', function(e) {
+            (function (btn) {
+                btn.addEventListener('click', function (e) {
                     e.preventDefault();
                     var formId = btn.getAttribute('data-reply-form-id');
                     hideReplyForm(formId); // This hides the form and shows the Reply button
@@ -109,27 +117,35 @@
 
         // Cancel main author form - clear form fields (delete message content)
         // For the main form: clicking Cancel will clear/delete the message content but keep the form visible
-        var cancelAuthorFormButtons = document.querySelectorAll('.cancel-author-form');
+        var cancelAuthorFormButtons = document.querySelectorAll(
+            '.cancel-author-form'
+        );
         for (var k = 0; k < cancelAuthorFormButtons.length; k++) {
             var cancelAuthorBtn = cancelAuthorFormButtons[k];
 
             // Remove any existing event listeners
             var newCancelAuthorBtn = cancelAuthorBtn.cloneNode(true);
-            cancelAuthorBtn.parentNode.replaceChild(newCancelAuthorBtn, cancelAuthorBtn);
+            cancelAuthorBtn.parentNode.replaceChild(
+                newCancelAuthorBtn,
+                cancelAuthorBtn
+            );
 
             // Add event listener
-            (function(btn) {
-                btn.addEventListener('click', function(e) {
+            (function (btn) {
+                btn.addEventListener('click', function (e) {
                     e.preventDefault();
                     var form = btn.closest('form');
                     if (form) {
                         // Clear textarea (delete message content)
-                        var textarea = form.querySelector('textarea[name="comment"]');
+                        var textarea = form.querySelector(
+                            'textarea[name="comment"]'
+                        );
                         if (textarea) {
                             textarea.value = '';
                         }
                         // Clear file input (delete attached file)
-                        var fileInput = form.querySelector('input[type="file"]');
+                        var fileInput =
+                            form.querySelector('input[type="file"]');
                         if (fileInput) {
                             fileInput.value = '';
                         }
@@ -156,5 +172,4 @@
 
     // Start initialization
     init();
-
 })();

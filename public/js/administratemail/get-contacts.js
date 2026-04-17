@@ -6,19 +6,17 @@ let $contact_type_dropdown;
  *
  */
 function initGetContacts() {
-    console.log('executed initGetContacts');
-
     $contact_list = $('#contact-list');
     $contacts = $contact_list.find('tr');
     $contact_type_dropdown = $('#contact-type-dropdown');
 
-    // contact type dropdown
-    $contact_type_dropdown.find('a').on('click', function () {
+    // contact type dropdown - use .off() to prevent double binding
+    $contact_type_dropdown.find('a').off('click.epContactsDropdown').on('click.epContactsDropdown', function () {
         showList($(this).parent('li'));
     });
 
-    // toggle all contacts
-    $('#toggleAll').on('click', function () {
+    // toggle all contacts - use .off() to prevent double binding
+    $('#toggleAll').off('click.epContactsToggle').on('click.epContactsToggle', function () {
         let action = $(this).data('action');
 
         $contacts.each(function () {
@@ -42,10 +40,11 @@ function initGetContacts() {
 
     initList();
 
-    $('#filter-input').keyup(function () {
+    // Filter input - use .off() to prevent double binding
+    $('#filter-input').off('keyup.epContactsFilter').on('keyup.epContactsFilter', function () {
         filterTable('#filter-input', '#contact-list tr');
     });
-    $('#filter-input').on('paste', function () {
+    $('#filter-input').off('paste.epContactsFilter').on('paste.epContactsFilter', function () {
         setTimeout(function () {
             filterTable('#filter-input', '#contact-list tr');
         }, 4);
@@ -71,7 +70,7 @@ function filterTable(input, elements) {
 
 // when a contact is clicked, it is either added or removed
 function initList() {
-    $contacts.on('click', function () {
+    $contacts.off('click.epContacts').on('click.epContacts', function () {
         let action = $(this).hasClass('selected') ? 'remove' : 'add';
         if (action === 'add') {
             select($(this));
@@ -116,11 +115,9 @@ function showList($li) {
     initList();
 
     // (re)selection des contacts déjà ajoutés, dans la liste nouvellement chargée
-    $('#' + target + '_tags')
-        .find('.recipient-tag')
-        .each(function () {
-            $('#contact_' + $(this).data('uid')).addClass('selected');
-        });
+    $('#added_contacts_tags').find('.recipient-tag').each(function () {
+        $('#contact_' + $(this).data('uid')).addClass('selected');
+    });
 }
 
 function select(row) {
@@ -131,16 +128,14 @@ function select(row) {
             user = all_contacts[i];
         }
     }
-    let tagId = addRecipient(target, user, 'known');
-    $('#' + tagId)
-        .find('.remove-recipient')
-        .on('click', function () {
-            $('#contact_' + uid).removeClass('selected');
-        });
+    let tagId = addRecipient('added_contacts', user, 'known');
+    $('#' + tagId).find('.remove-recipient').on('click', function () {
+        $('#contact_' + uid).removeClass('selected');
+    });
 }
 
 function unselect(row) {
     let uid = $(row).attr('id').replace(/[^\d]/g, '');
-    let tag = $('#' + target + '_tags .recipient-tag[data-uid="' + uid + '"]');
+    let tag = $('#added_contacts_tags .recipient-tag[data-uid="' + uid + '"]');
     removeRecipient(tag);
 }

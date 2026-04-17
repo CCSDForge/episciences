@@ -261,6 +261,7 @@ class Episciences_Paper
     public const JOURNAL_ARTICLE_TYPE_TITLE = 'journalarticle';
     public const PUBLICATION_TYPE_TITLE = 'publication';// Zenodo
     public const MED_ARXIV_PREPRINT = 'hwp-article-coll';
+    public const CRYPTOLOGY_TYPE = 'e-print';
 
 
     public const ENUM_TYPES = [
@@ -278,7 +279,7 @@ class Episciences_Paper
         self::TEXT_TYPE_TITLE,
         self::WORKING_PAPER_TYPE_TITLE,
         self::MED_ARXIV_PREPRINT,
-        'E-print' //  Cryptology
+        self::CRYPTOLOGY_TYPE
     ];
     public const JSON_PATH_ABS_FILE = "$.database.current.graphical_abstract_file";
     public static array $_statusPriority = [
@@ -896,13 +897,7 @@ class Episciences_Paper
     {
         $this->_repoId = (int)$repoId;
 
-        $this->hasHook = !empty(Episciences_Repositories::hasHook($this->getRepoid())) &&
-            (
-                $this->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID ||
-                $this->getRepoid() === (int)Episciences_Repositories::CRYPTOLOGY_EPRINT ||
-                Episciences_Repositories::isDataverse($repoId) ||
-                Episciences_Repositories::isDspace($repoId)
-            );
+        $this->hasHook = !empty(Episciences_Repositories::hasHook($this->getRepoid()));
 
         return $this;
     }
@@ -918,7 +913,6 @@ class Episciences_Paper
     /**
      * @param $record
      * @return $this
-     * @throws Zend_Db_Statement_Exception
      * @throws DOMException
      */
     public function setRecord($record): self
@@ -1082,7 +1076,7 @@ class Episciences_Paper
      *  return version number
      * @return float
      */
-    public function getVersion() : float
+    public function getVersion(): float
     {
         return $this->_version;
     }
@@ -1754,7 +1748,8 @@ class Episciences_Paper
     {
         if (
             $conceptIdentifier &&
-            !$this->hasHook
+            !$this->hasHook &&
+            !$this->isTmp() // repoId = 0 : hasHook returns false
         ) {
             throw new \InvalidArgumentException('Concept identifier should be applied exclusively to submissions coming from a repository with a hook');
         }
@@ -2594,9 +2589,9 @@ class Episciences_Paper
     /**
      * check if paper already exists in database
      * @param bool $strict
-     * @return string
+     * @return int
      */
-    public function alreadyExists(bool $strict = true): string
+    public function alreadyExists(bool $strict = true): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -2620,7 +2615,7 @@ class Episciences_Paper
         // If there are several versions of the article, we retrieve the latest version of the article
         $sql->order('WHEN DESC');
 
-        return ($db->fetchOne($sql));
+        return (int)($db->fetchOne($sql));
     }
 
     /**
@@ -3308,6 +3303,41 @@ class Episciences_Paper
                 $oVolume->loadSettings();
             }
         }
+        
+        // fetch secondary volume data if the setting is enabled in the review
+        $review = Episciences_ReviewsManager::find($this->getRvid());
+
+        $displaySecondaryVolumes = (int) $review->getSetting(
+                Episciences_Review::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE
+            ) === 1;
+
+        if ($displaySecondaryVolumes) {
+            $otherVolumes = $this->getOtherVolumes();
+
+            if (!empty($otherVolumes)) {
+                $secondaryVolumesNode = $dom->createElement('secondaryVolumes');
+
+                foreach ($otherVolumes as $volumePaper) {
+                    $oSecondaryVolume = Episciences_VolumesManager::find($volumePaper->getVid());
+
+                    if ($oSecondaryVolume instanceof Episciences_Volume) {
+                        $secondaryVolumeNode = $dom->createElement('secondaryVolume');
+
+                        $secondaryVolumeNode->appendChild(
+                            $dom->createElement('vid', $volumePaper->getVid())
+                        );
+
+                        $secondaryVolumeNode->appendChild(
+                            $dom->createElement('name', $oSecondaryVolume->getNameKey())
+                        );
+
+                        $secondaryVolumesNode->appendChild($secondaryVolumeNode);
+                    }
+                }
+
+                $node->appendChild($secondaryVolumesNode);
+            }
+        }
 
         // fetch section data
         if ($this->getSid()) {
@@ -3798,6 +3828,7 @@ class Episciences_Paper
                 $result['submissionDate'] = $this->getSubmission_date();
                 $result['oldVid'] = $this->getVid();
                 $result['oldSid'] = $this->getSid();
+                $result['oldConceptIdentifier'] = $this->getConcept_identifier();
                 $canReplace = true;
 
                 if ($isEpiNotify) {
@@ -3978,7 +4009,7 @@ class Episciences_Paper
 
         $result['canBeReplaced'] = $canReplace;
         $result['oldIdentifier'] = $identifier;
-        $result['oldVersion'] = (float)$version;
+        $result['oldVersion'] = $version;
         $result['oldRepoId'] = $repoId;
 
         try {
@@ -4048,7 +4079,8 @@ class Episciences_Paper
             $paper = new Episciences_Paper([
                 'identifier' => $values['search_doc']['docId'],
                 'version' => (float)$values['search_doc']['version'],
-                'repoId' => (int)$values['search_doc']['repoId']
+                'repoId' => (int)$values['search_doc']['repoId'],
+                'concept_identifier' => $values['concept_identifier'] ?? null
             ]);
 
             if ($this->getIdentifier() === $paper->getIdentifier() &&
@@ -4060,10 +4092,17 @@ class Episciences_Paper
                 return $update;
             }
 
-            if (!$this->hasHook && $this->getIdentifier() !== $paper->getIdentifier()) {
-                $message .= ' : ';
-                $message .= $translator->translate("l'identifiant de l'article a changé.");
+            if (
+                !$this->hasHook ||
+                $this->getConcept_identifier() === null
+            ) {
+                $identifierChanged = $this->getIdentifier() !== $paper->getIdentifier();
+            } else {
+                $identifierChanged = $this->getConcept_identifier() !== $paper->getConcept_identifier();
+            }
 
+            if ($identifierChanged) {
+                $message .= ' : ' . $translator->translate("l'identifiant de l'article a changé.");
             } elseif ($this->getRepoid() !== $paper->getRepoid()) {
                 $message .= " : ";
                 $message .= $translator->translate("l'entrepôt de cet article a changé.");
@@ -4524,7 +4563,9 @@ class Episciences_Paper
         $year = date($yearFormat);
         if ($this->isPublished()) {
             $date = DateTime::createFromFormat("Y-m-d H:i:s", $this->getPublication_date());
-            $year = $date->format($yearFormat);
+            if ($date !== false) {
+                $year = $date->format($yearFormat);
+            }
         }
         return $year;
     }
@@ -4537,7 +4578,9 @@ class Episciences_Paper
         $month = date('m');
         if ($this->isPublished()) {
             $date = DateTime::createFromFormat("Y-m-d H:i:s", $this->getPublication_date());
-            $month = $date->format('m');
+            if ($date !== false) {
+                $month = $date->format('m');
+            }
         }
         return $month;
     }
@@ -4715,8 +4758,11 @@ class Episciences_Paper
             return true;
         }
 
-        // Publication date before creation date (inconsistent)
-        if ($publicationDate !== null && $publicationDate < $whenDate) {
+        // Publication date precedes acceptance date (inconsistent)
+        // We previously utilised 'WhenDate'; however, as the publication date may be updated shortly after release - for instance,
+        // to accommodate moderation delays on preprint servers - it is more robust to use the acceptance date.
+        $acceptanceDate = $this->parseDateSafely($this->getAcceptanceDate());
+        if ($publicationDate !== null && $publicationDate < $acceptanceDate) {
             return true;
         }
 
@@ -4770,7 +4816,7 @@ class Episciences_Paper
     public function getConflicts(bool $onlyConfirmed = false, bool $sortedByAnswer = false): array
     {
 
-        if ($this->_conflicts) {
+        if (empty($this->_conflicts)) {
             $this->loadConflicts();
         }
 

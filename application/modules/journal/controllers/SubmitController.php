@@ -37,12 +37,12 @@ class SubmitController extends DefaultController
         $submit = new Episciences_Submit();
         $form = $submit::getForm($settings, $default, $isFromZSubmit);
 
+        $this->prepareViewData($settings, $isFromZSubmit, $form);
+
         if ($isPost && array_key_exists('submitPaper', $post)) {
             $this->handleSubmitPaper($request, $form, $submit, $post);
-            return;
         }
 
-        $this->prepareViewData($settings, $isFromZSubmit, $form);
     }
 
     /**
@@ -240,16 +240,25 @@ class SubmitController extends DefaultController
      */
     private function handlePaperReplacement(array &$formValues): array
     {
+
+        $formValues['old_paper_status'] = (int)$formValues['old_paper_status'];
+        $formValues['old_version'] = (float)$formValues['old_version'];
+        $formValues['old_repoid'] = (int)$formValues['old_repoid'];
+        $formValues['old_docid'] = (int)$formValues['old_docid'];
+
         $selfPaper = new Episciences_Paper([
-            'identifier' => $formValues['old_identifier'],
-            'version' => (int)$formValues['old_version'],
-            'repoId' => (int)$formValues['old_repoid'],
-            'status' => (int)$formValues['old_paper_status'],
+            'docid' => $formValues['old_docid'],
+            'identifier' => $formValues['old_identifier'] ?? '',
+            'version' => $formValues['old_version'],
+            'repoId' => $formValues['old_repoid'],
+            'status' => $formValues['old_paper_status'],
+            'concept_identifier' => $formValues['old_conceptIdentifier'] ?? null
         ]);
 
         unset(
             $formValues['old_identifier'],
-            $formValues['old_repoid']
+            $formValues['old_repoid'],
+            $formValues['old_conceptIdentifier']
         );
 
         $result = $selfPaper->updatePaper($formValues);

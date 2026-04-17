@@ -359,7 +359,12 @@ describe('initVolumeSearch', () => {
 // ---------------------------------------------------------------------------
 
 describe('initCheckboxSearch', () => {
-    const VOLUME_NAMES = ['Volume 1', 'Special Issue', 'VOLUME 3', 'Hors volume'];
+    const VOLUME_NAMES = [
+        'Volume 1',
+        'Special Issue',
+        'VOLUME 3',
+        'Hors volume',
+    ];
 
     /** Build a container with .multicheckbox_option labels and a search input. */
     function makeCheckboxDOM(names) {
@@ -373,7 +378,8 @@ describe('initCheckboxSearch', () => {
                 `<span>${name}</span>`;
             container.appendChild(label);
         });
-        document.body.innerHTML = '<input type="text" id="other_volumes_search_input">';
+        document.body.innerHTML =
+            '<input type="text" id="other_volumes_search_input">';
         document.body.appendChild(container);
         return {
             searchInput: document.getElementById('other_volumes_search_input'),
@@ -393,10 +399,10 @@ describe('initCheckboxSearch', () => {
         searchInput.dispatchEvent(new Event('input'));
 
         const items = container.querySelectorAll('.multicheckbox_option');
-        expect(items[0].hidden).toBe(true);  // Volume 1
+        expect(items[0].hidden).toBe(true); // Volume 1
         expect(items[1].hidden).toBe(false); // Special Issue
-        expect(items[2].hidden).toBe(true);  // VOLUME 3
-        expect(items[3].hidden).toBe(true);  // Hors volume
+        expect(items[2].hidden).toBe(true); // VOLUME 3
+        expect(items[3].hidden).toBe(true); // Hors volume
     });
 
     test('shows all items when query is empty', () => {
@@ -409,7 +415,7 @@ describe('initCheckboxSearch', () => {
         searchInput.value = '';
         searchInput.dispatchEvent(new Event('input'));
 
-        container.querySelectorAll('.multicheckbox_option').forEach((item) => {
+        container.querySelectorAll('.multicheckbox_option').forEach(item => {
             expect(item.hidden).toBe(false);
         });
     });
@@ -423,7 +429,7 @@ describe('initCheckboxSearch', () => {
 
         const items = container.querySelectorAll('.multicheckbox_option');
         // 'Volume 1', 'VOLUME 3', 'Hors volume' — 3 matches
-        const visible = Array.from(items).filter((item) => !item.hidden);
+        const visible = Array.from(items).filter(item => !item.hidden);
         expect(visible).toHaveLength(3);
     });
 
@@ -434,7 +440,7 @@ describe('initCheckboxSearch', () => {
         searchInput.value = 'xyz_no_match';
         searchInput.dispatchEvent(new Event('input'));
 
-        container.querySelectorAll('.multicheckbox_option').forEach((item) => {
+        container.querySelectorAll('.multicheckbox_option').forEach(item => {
             expect(item.hidden).toBe(true);
         });
     });
@@ -449,7 +455,10 @@ describe('initCheckboxSearch', () => {
     });
 
     test('checked items are hidden by search like unchecked ones', () => {
-        const { searchInput, container } = makeCheckboxDOM(['Volume 1', 'Special Issue']);
+        const { searchInput, container } = makeCheckboxDOM([
+            'Volume 1',
+            'Special Issue',
+        ]);
         // Check first item
         const cb = container.querySelector('input[type="checkbox"]');
         cb.checked = true;
@@ -460,7 +469,7 @@ describe('initCheckboxSearch', () => {
         searchInput.dispatchEvent(new Event('input'));
 
         const items = container.querySelectorAll('.multicheckbox_option');
-        expect(items[0].hidden).toBe(true);  // checked but hidden by filter
+        expect(items[0].hidden).toBe(true); // checked but hidden by filter
         expect(items[1].hidden).toBe(false);
     });
 
@@ -472,8 +481,10 @@ describe('initCheckboxSearch', () => {
         searchInput.dispatchEvent(new Event('input'));
 
         const items = container.querySelectorAll('.multicheckbox_option');
-        const visible = Array.from(items).filter((i) => !i.hidden);
+        const visible = Array.from(items).filter(i => !i.hidden);
         expect(visible).toHaveLength(1);
-        expect(visible[0].querySelector('span').textContent).toBe('Hors volume');
+        expect(visible[0].querySelector('span').textContent).toBe(
+            'Hors volume'
+        );
     });
 });

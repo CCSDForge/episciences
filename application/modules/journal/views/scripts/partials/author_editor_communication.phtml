@@ -14,7 +14,7 @@
 // Check if the author-to-editor communication is enabled
 // $review is passed from the controller to avoid redundant DB query
 $review = $this->review;
-$canAuthorContactEditors = $review->getSetting(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS);
+$canAuthorContactEditors = $review->getSetting(Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION);
 $discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
 
 // Determine if the user can see this panel
@@ -29,13 +29,25 @@ if ($canAuthorContactEditors && $canViewPanel) :
 ?>
 
 <?php if ($this->authorToEditorForm || $this->authorToEditorComments || (isset($this->editorReplyForms) && !empty($this->editorReplyForms)) || (isset($this->editorToAuthorForm) && $this->editorToAuthorForm)) : ?>
-    <div class="panel panel-default collapsable">
+    <div class="panel panel-info collapsable">
         <div class="panel-heading">
             <h2 class="panel-title">
-                <?php echo $this->translate("Communication entre auteurs/autrices et éditeurs/éditrices"); ?>
+                <span aria-hidden="true">💬</span>
+                &nbsp;<?php if ($isAuthor): ?>
+                    <?php echo $this->translate("Échanges avec les rédacteurs"); ?>
+                <?php else: ?>
+                    <?php echo $this->translate("Échanges avec l'auteur/autrice"); ?>
+                <?php endif; ?>
+                <span class="label label-warning" style="font-size: 0.6em; vertical-align: middle; margin-left: 0.5em;">
+                    <?php if ($isAuthor): ?>
+                        <?php echo $this->translate("Visible par les rédacteurs assignés"); ?>
+                    <?php else: ?>
+                        <?php echo $this->translate("Visible par l'auteur/autrice"); ?>
+                    <?php endif; ?>
+                </span>
             </h2>
         </div>
-        <div class="panel-body in">
+        <div class="panel-body <?php echo !empty($this->authorToEditorComments) ? 'in' : ''; ?>">
 
             <?php // Display the form - different for authors and editors ?>
             <?php if ($isAuthor && $this->authorToEditorForm) : ?>

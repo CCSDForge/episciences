@@ -38,7 +38,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
 .PHONY: enter-container-php
-.PHONY: update-geoip stats-process stats-update-robots-list
+.PHONY: update-geoip stats-process stats-update-robots-list stats-download-kpi
 .PHONY: format format-check format-tests format-file
 
 # =============================================================================
@@ -73,7 +73,7 @@ help: ## Display this help message
 	@grep -h -E '^deploy.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No deployment commands found"
 	@echo ""
 	@echo "Other Commands:"
-	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use|import-apache-logs):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 
 # =============================================================================
 # Core Docker Commands
@@ -340,17 +340,26 @@ enrich-zb-reviews: ## Enrich zbMATH review data
 
 # --- Sitemap --------------------------------------------------------------------
 
-generate-sitemap: ## Generate XML sitemap for a journal (requires rvcode=JOURNAL_CODE; optional: pretty=1)
-	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate RVCODE [--pretty] [-q]
-	@if [ -z "$(rvcode)" ]; then \
-		echo "Error: rvcode parameter is required"; \
+generate-sitemap: ## Generate XML sitemap — use rvcode=CODE for one journal, or all=1 for all active journals (optional: pretty=1)
+	# Prod (one journal):  sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate --rvcode=RVCODE [--pretty] [-q]
+	# Prod (all journals): sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate --all [--pretty] [-q]
+	@if [ -z "$(rvcode)" ] && [ "$(all)" != "1" ]; then \
+		echo "Error: specify rvcode=JOURNAL_CODE or all=1"; \
 		echo "Usage: make generate-sitemap rvcode=JOURNAL_CODE [pretty=1]"; \
+		echo "       make generate-sitemap all=1 [pretty=1]"; \
 		exit 1; \
 	fi
-	@echo "Generating sitemap for journal '$(rvcode)'..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
-		php scripts/console.php sitemap:generate $(rvcode) \
-		$(if $(filter 1,$(pretty)),--pretty)
+	@if [ -n "$(rvcode)" ]; then \
+		echo "Generating sitemap for journal '$(rvcode)'..."; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+			php scripts/console.php sitemap:generate --rvcode=$(rvcode) \
+			$(if $(filter 1,$(pretty)),--pretty); \
+	else \
+		echo "Generating sitemaps for all active journals..."; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+			php scripts/console.php sitemap:generate --all \
+			$(if $(filter 1,$(pretty)),--pretty); \
+	fi
 
 # --- Volume / DOAJ --------------------------------------------------------------
 
@@ -456,9 +465,57 @@ stats-process: ## Process STAT_TEMP into PAPER_STAT (optional: date=YYYY-MM-DD a
 		$(if $(filter 1,$(all)),--all) \
 		$(if $(filter 1,$(dry-run)),--dry-run)
 
+stats-download-kpi: ## Generate download KPI JSON for all published articles (optional: rvcode=xxx pretty=1 dry-run=1 output=path)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php stats:download-kpi [-q]
+	@echo "Generating download KPI JSON..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php stats:download-kpi \
+		$(if $(rvcode),--rvcode=$(rvcode)) \
+		$(if $(filter 1,$(pretty)),--pretty) \
+		$(if $(filter 1,$(dry-run)),--dry-run) \
+		$(if $(output),--output=$(output))
+
 can-i-use-update: ## Update browserslist database when caniuse-lite is outdated
 	@echo "Updating browserslist database..."
 	@$(NPX) update-browserslist-db@latest
+
+import-apache-logs: ## Parse Apache logs into STAT_TEMP (rvcode=JOURNAL|all=1 [date=YYYY-MM-DD|month=YYYY-MM|year=YYYY|start-date=…+end-date=…] [logs-path=PATH] [force=1])
+	@if [ -z "$(rvcode)" ] && [ "$(all)" != "1" ]; then \
+		echo "Error: specify rvcode=JOURNAL_CODE or all=1"; \
+		echo "Usage: make import-apache-logs rvcode=JOURNAL_CODE [options]"; \
+		echo "       make import-apache-logs all=1 [options]"; \
+		echo "Options:"; \
+		echo "  date=YYYY-MM-DD          Process a specific day"; \
+		echo "  month=YYYY-MM            Process entire month"; \
+		echo "  year=YYYY                Process entire year"; \
+		echo "  start-date=YYYY-MM-DD    Start date for custom range"; \
+		echo "  end-date=YYYY-MM-DD      End date for custom range"; \
+		echo "  logs-path=PATH           Base path to Apache log directory"; \
+		echo "  force=1                  Force reprocessing of already-processed dates"; \
+		exit 1; \
+	fi
+	@cmd="php scripts/console.php stats:import-logs"; \
+	if [ "$(all)" = "1" ]; then \
+		cmd="$$cmd --all"; \
+	else \
+		cmd="$$cmd --rvcode=$(rvcode)"; \
+	fi; \
+	if [ -n "$(date)" ]; then \
+		cmd="$$cmd --date=$(date)"; \
+	elif [ -n "$(month)" ]; then \
+		cmd="$$cmd --month=$(month)"; \
+	elif [ -n "$(year)" ]; then \
+		cmd="$$cmd --year=$(year)"; \
+	elif [ -n "$(start-date)" ] && [ -n "$(end-date)" ]; then \
+		cmd="$$cmd --start-date=$(start-date) --end-date=$(end-date)"; \
+	fi; \
+	if [ -n "$(logs-path)" ]; then \
+		cmd="$$cmd --logs-path=$(logs-path)"; \
+	fi; \
+	if [ "$(force)" = "1" ]; then \
+		cmd="$$cmd --force"; \
+	fi; \
+	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) $$cmd
 
 # =============================================================================
 # Code Formatting Commands (Prettier)

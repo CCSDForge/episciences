@@ -96,3 +96,9 @@ input#affiliations{
 #biblio-refs-container > li {
   margin-bottom:0.5em;
 }
+
+// Bootstrap panel-warning heading: default color #8a6d3b on #fcf8e3 = ~3.0:1 (fails WCAG AA 4.5:1)
+// #5c4100 on #fcf8e3 = ~8.7:1
+.panel-warning > .panel-heading {
+  color: #5c4100;
+}

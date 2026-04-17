@@ -40,10 +40,6 @@ $zSubmitUrl .= '/deposit?epi-rvcode=' . RVCODE;
 <?php $this->jQuery()->addJavascriptFile('/js/submit/index.js'); ?>
 <?php $this->jQuery()->addJavascriptFile('/js/submit/insertZSubmitElement.js'); ?>
 
-<?php if ($this->error) : ?>
-    <script type="text/javascript">error();</script>
-<?php endif; ?>
-
 <script>
     let examples = <?= $this->examples ?>;
     let hasHook = false;

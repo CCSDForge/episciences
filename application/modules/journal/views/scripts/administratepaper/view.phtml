@@ -277,11 +277,17 @@ if ($this->citations !== '') {
 
 
 <?php // editor comments ***************************************************** ?>
-    <div class="panel panel-default collapsable">
+    <div class="panel panel-warning collapsable" role="region" aria-labelledby="editor-comments-heading">
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Communication entre les rédacteurs'); ?></h2>
+            <h2 class="panel-title" id="editor-comments-heading">
+                <span aria-hidden="true">🔒</span>
+                &nbsp;<?php echo $this->translate('Discussion interne des rédacteurs/rédactrices'); ?>
+                <span class="label label-success" style="font-size: 0.6em; vertical-align: middle; margin-left: 0.5em;">
+                    <?php echo $this->translate('Non visible par les auteurs/autrices'); ?>
+                </span>
+            </h2>
         </div>
-        <div class="panel-body in">
+        <div id="editor-comments-body" class="panel-body <?php echo !empty($this->editor_comments) ? 'in' : ''; ?>">
             <?php echo $this->render('partials/paper_editor_comments.phtml') ?>
         </div>
     </div>
@@ -340,6 +346,9 @@ if ($this->citations !== '') {
         var paper_ratings = <?php if ($this->js_ratings) : ?><?php echo $this->js_ratings; ?><?php else:?>null<?php endif;?>;
         var author = <?php if ($this->js_contributor) : ?><?php echo $this->js_contributor; ?><?php else:?>null<?php endif;?>;
         var sender = <?php if ($this->js_sender) : ?><?php echo $this->js_sender; ?><?php else:?>null<?php endif;?>;
+        // Used by recipients autocomplete (Cc/Bcc) inside paper status modals (es.mail.js)
+        var users = <?php if (isset($this->js_users)) : ?><?php echo $this->js_users; ?><?php else:?>[]<?php endif;?>;
+        var sender_uid = <?= (int) Episciences_Auth::getUid(); ?>;
         var available_languages = <?php echo $this->available_languages?>;
         let siteLocale = '<?= $this->siteLocale ?>';
         let defaultLocale = '<?= $this->defaultLocale ?>';
@@ -360,6 +369,7 @@ $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
 
+$this->jQuery()->addJavascriptFile("/js/vendor/jquery.ui.autocomplete.html.js");
 $this->jQuery()->addJavascriptFile('/js/library/es.mail.js');
 // Security: DOMPurify for XSS prevention (needed by es.contacts-list.js)
 $this->jQuery()->addJavascriptFile("https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js");
@@ -369,7 +379,6 @@ $this->jQuery()->addJavascriptFile('/js/administratepaper/view.js');
 $this->jQuery()->addJavascriptFile('/js/components/collapsible-message.js');
 
 $this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
-$this->jQuery()->addJavascriptFile("/js/vendor/jquery.ui.autocomplete.html.js");
 $this->jQuery()->addJavascriptFile('/js/autocomplete-utils.js');
 $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
 $this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');

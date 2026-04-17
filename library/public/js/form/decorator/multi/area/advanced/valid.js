@@ -13,10 +13,11 @@ function %%FCT_NAME%% (btn, name, fct) {
     	
     	$(input).val(value);
 
-		if (!$.isEmptyObject($(value).contents().first()[0])) {
-			value = $(value).contents().text();
-		}
-		
+		// Extract plain text safely — textarea decodes HTML entities without executing scripts
+		var ta = document.createElement('textarea');
+		ta.innerHTML = value;
+		value = ta.value;
+
 		if (%%LENGTH%%) {
         	value = value.substring(0,%%LENGTH%%) + (value.length > %%LENGTH%% ? '...' : '')
         }

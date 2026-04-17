@@ -263,7 +263,7 @@ class Episciences_Acl extends Ccsd_Acl
         //return self::$_rolesCodes[$rightid];
     }
 
-    public function getRolesCodes()
+    public function getRolesCodes(): array
     {
         $rolesKeys = array_keys($this->_roles);
         krsort($rolesKeys); // high to low
@@ -272,7 +272,7 @@ class Episciences_Acl extends Ccsd_Acl
         return array_combine($rolesKeys, $rolesKeys);
     }
 
-    public function getEditableRoles()
+    public function getEditableRoles(): array
     {
         $acl = new Episciences_Acl();
         $roles = $acl->getRolesCodes();
@@ -281,14 +281,22 @@ class Episciences_Acl extends Ccsd_Acl
             return $roles;
         }
 
+        $isOnlyEditor = Episciences_Auth::isEditor(RVID, true) &&
+            !Episciences_Auth::isRoot() &&
+            !Episciences_Auth::isSecretary();
+
+        if ($isOnlyEditor) {
+            return [self::ROLE_REVIEWER => self::ROLE_REVIEWER];
+        }
 
         if (!Episciences_Auth::isRoot()) {
             unset($roles[$acl::ROLE_ROOT], $roles[$acl::ROLE_AUTHOR]);
         }
 
         if (!Episciences_Auth::isSecretary()) { // git #235
-            unset($roles[$acl::ROLE_CHIEF_EDITOR], $roles[$acl::ROLE_ADMIN], $roles[$acl::ROLE_EDITOR], $roles[$acl::ROLE_GUEST_EDITOR], $roles[$acl::ROLE_WEBMASTER], $roles[$acl::ROLE_SECRETARY], $roles[$acl::ROLE_COPY_EDITOR]);
+            return [];
         }
+
         unset($roles[$acl::ROLE_GUEST], $roles[$acl::ROLE_MEMBER]);
 
         return $roles;

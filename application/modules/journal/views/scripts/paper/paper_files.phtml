@@ -3,6 +3,7 @@
 $paper = $this->paper;
 $action = 'oafiles';
 $files = $paper->getFiles();
+$hideSizeAndChecksumColumns = array_filter($files, static fn($f): bool => $f->getFileSize() > 0);
 ?>
 <?php if ($paper->hasHook && $files): ?>
     <div class="panel panel-default collapsable" id="paper-files">
@@ -16,8 +17,8 @@ $files = $paper->getFiles();
                 <thead>
                 <tr class="">
                     <th> <?= $this->translate('Nom') ?></th>
-                    <?php if (array_filter($files, fn($f) => $f->getFileSize() > 0)): ?>
-                    <th> <?= $this->translate('Taille') ?></th>
+                    <?php if ($hideSizeAndChecksumColumns): ?>
+                        <th> <?= $this->translate('Taille') ?></th>
                     <?php endif; ?>
                 </tr>
                 </thead>
@@ -28,17 +29,18 @@ $files = $paper->getFiles();
                         <td>
                             <a href="<?= $oFile->getSelfLink() ?>" target="_blank"><?= $oFile->getName() ?></a>
                             <?php if ($oFile->getChecksum() !== ''): ?>
-                            <br/>
-                            <small class="label label-default"> <?= $oFile->getChecksumType() ?><?= $this->translate(' :') . ' ' ?><?= $oFile->getChecksum() ?>
-                            </small>
+                                <br/>
+                                <small class="label label-default"> <?= $oFile->getChecksumType() ?><?= $this->translate(' :') . ' ' ?><?= $oFile->getChecksum() ?>
+                                </small>
                             <?php endif; ?>
                         </td>
-                        <?php if (array_filter($files, fn($f) => $f->getFileSize() > 0)): ?>
-                        <td> <?= Episciences_Tools::toHumanReadable($oFile->getFileSize()) ?></td>
+                        <?php if ($hideSizeAndChecksumColumns): ?>
+                            <td> <?= Episciences_Tools::toHumanReadable($oFile->getFileSize()) ?></td>
                         <?php endif; ?>
                         <td>
                     <span class="pull-right">
-                        <a class="btn btn-xs btn-default" href="<?= $oFile->getDownloadLike() ?>" data-toggle="tooltip" title="<?= $this->translate('Télécharger le fichier') ?>">
+                        <a class="btn btn-xs btn-default" href="<?= $oFile->getDownloadLike() ?>" data-toggle="tooltip"
+                           title="<?= $this->translate('Télécharger le fichier') ?>">
                            <i class="fas fa-file-download"></i>
                         </a>
                     </span>

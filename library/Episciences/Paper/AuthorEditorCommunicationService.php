@@ -49,7 +49,7 @@ class Episciences_Paper_AuthorEditorCommunicationService
      */
     public function canAuthorContactEditors(): bool
     {
-        return (bool)$this->review->getSetting(Episciences_Review::SETTING_AUTHORS_CAN_CONTACT_EDITORS);
+        return (bool)$this->review->getSetting(Episciences_Review::SETTING_AUTHOR_EDITOR_COMMUNICATION);
     }
 
     /**

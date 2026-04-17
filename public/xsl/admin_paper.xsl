@@ -65,13 +65,26 @@
                 <h2 class="panel-title" style="margin-bottom: 5px">
 
                     <span class="darkgrey">
-                        <xsl:for-each select="metadata/oai_dc:dc/dc:creator[position() &lt;= 5]">
-                            <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
-                            <xsl:if test="position() != last()"> ; </xsl:if>
-                        </xsl:for-each>
-                        <xsl:if test="count(metadata/oai_dc:dc/dc:creator) &gt; 5">
-                            <i> et al.</i>
-                        </xsl:if>
+                        <!-- Show first 5 authors, or all 6 if exactly 6 -->
+                        <xsl:choose>
+                            <xsl:when test="count(metadata/oai_dc:dc/dc:creator) = 6">
+                                <!-- Exactly 6 authors: show all 6, no et al. -->
+                                <xsl:for-each select="metadata/oai_dc:dc/dc:creator">
+                                    <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
+                                    <xsl:if test="position() != last()"> ; </xsl:if>
+                                </xsl:for-each>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <!-- 5 or fewer, or 7+: show first 5 -->
+                                <xsl:for-each select="metadata/oai_dc:dc/dc:creator[position() &lt;= 5]">
+                                    <xsl:value-of select="php:function('Episciences_Tools::reformatOaiDcAuthor', string(.))"/>
+                                    <xsl:if test="position() != last()"> ; </xsl:if>
+                                </xsl:for-each>
+                                <xsl:if test="count(metadata/oai_dc:dc/dc:creator) &gt; 6">
+                                    <i> et al.</i>
+                                </xsl:if>
+                            </xsl:otherwise>
+                        </xsl:choose>
                         -
                     </span>
 
