@@ -90,11 +90,11 @@ class AdministratelinkeddataController extends Episciences_Controller_Action
                 $typeLd = 'hal';
                 $rawValueLd = $getHalIdentifierInUrl[0];
                 if (isset($getHalIdentifierInUrl[1])) {
-                    $rawValueLd = str_replace($getHalIdentifierInUrl[1],'',$rawValueLd);
+                    $rawValueLdWithoutVersion = str_replace($getHalIdentifierInUrl[1],'',$rawValueLd);
                     $versionHal = (int)str_replace('v','',$getHalIdentifierInUrl[1]);
                 }
             }
-            $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($rawValueLd,$versionHal));
+            $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($rawValueLdWithoutVersion,$versionHal));
             $arraySoftware['citationFull'] = $citationFull->response->docs[0]->citationFull_s;
             $epiDM = new Episciences_Paper_DatasetMetadata();
             $epiDM->setMetatext(json_encode($arraySoftware));
