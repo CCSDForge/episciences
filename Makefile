@@ -340,17 +340,26 @@ enrich-zb-reviews: ## Enrich zbMATH review data
 
 # --- Sitemap --------------------------------------------------------------------
 
-generate-sitemap: ## Generate XML sitemap for a journal (requires rvcode=JOURNAL_CODE; optional: pretty=1)
-	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate RVCODE [--pretty] [-q]
-	@if [ -z "$(rvcode)" ]; then \
-		echo "Error: rvcode parameter is required"; \
+generate-sitemap: ## Generate XML sitemap — use rvcode=CODE for one journal, or all=1 for all active journals (optional: pretty=1)
+	# Prod (one journal):  sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate --rvcode=RVCODE [--pretty] [-q]
+	# Prod (all journals): sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate --all [--pretty] [-q]
+	@if [ -z "$(rvcode)" ] && [ "$(all)" != "1" ]; then \
+		echo "Error: specify rvcode=JOURNAL_CODE or all=1"; \
 		echo "Usage: make generate-sitemap rvcode=JOURNAL_CODE [pretty=1]"; \
+		echo "       make generate-sitemap all=1 [pretty=1]"; \
 		exit 1; \
 	fi
-	@echo "Generating sitemap for journal '$(rvcode)'..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
-		php scripts/console.php sitemap:generate $(rvcode) \
-		$(if $(filter 1,$(pretty)),--pretty)
+	@if [ -n "$(rvcode)" ]; then \
+		echo "Generating sitemap for journal '$(rvcode)'..."; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+			php scripts/console.php sitemap:generate --rvcode=$(rvcode) \
+			$(if $(filter 1,$(pretty)),--pretty); \
+	else \
+		echo "Generating sitemaps for all active journals..."; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+			php scripts/console.php sitemap:generate --all \
+			$(if $(filter 1,$(pretty)),--pretty); \
+	fi
 
 # --- Volume / DOAJ --------------------------------------------------------------
 

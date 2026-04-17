@@ -146,10 +146,51 @@ class CoiController extends PaperDefaultController
                         $this->unssignUser($paper, [$loggedUid], $url, Episciences_User_Assignment::ROLE_COPY_EDITOR, null, $ccRecipients);
                     }
 
+                    // Get remaining editors (excluding the declarant) to determine if this was the last editor
+                    $remainingEditors = array_filter(
+                        $paper->getEditors(true, true),
+                        static fn($editor) => (int)$editor->getUid() !== (int)$loggedUid
+                    );
+
+                    $isLastEditor = empty($remainingEditors);
+
+                    // Base tags for COI emails
+                    $coiTags = [
+                        Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+                        Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle(),
+                        Episciences_Mail_Tags::TAG_PAPER_URL => $url,
+                        Episciences_Mail_Tags::TAG_COI_EDITOR_FULL_NAME => Episciences_Auth::getFullName(),
+                    ];
+
+                    $translator = Zend_Registry::get('Zend_Translate');
+
+                    // Always notify every editor-in-chief (including the declarant if they hold that role)
+                    $chiefEditors = Episciences_Review::getChiefEditors();
+                    foreach ($chiefEditors as $chiefEditor) {
+                        $recipientLangueId = $chiefEditor->getLangueid() ?? 'en';
+                        $coiTags[Episciences_Mail_Tags::TAG_COI_LAST_EDITOR_MESSAGE] = $isLastEditor
+                            ? $translator->translate('paper_coi_last_editor_warning', $recipientLangueId)
+                            : '';
+
+                        Episciences_Mail_Send::sendMailFromReview(
+                            $chiefEditor,
+                            Episciences_Mail_TemplatesManager::TYPE_PAPER_COI_UNASSIGN_CHIEF_EDITOR_COPY,
+                            $coiTags,
+                            $paper
+                        );
+                    }
+
+                    // Notify other assigned editors (if any)
+                    foreach ($remainingEditors as $editor) {
+                        Episciences_Mail_Send::sendMailFromReview(
+                            $editor,
+                            Episciences_Mail_TemplatesManager::TYPE_PAPER_COI_UNASSIGN_OTHER_EDITORS_COPY,
+                            $coiTags,
+                            $paper
+                        );
+                    }
                 }
-
             }
-
             if ($coiReport === Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']) {
                 $url = $this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $docId]);
             }

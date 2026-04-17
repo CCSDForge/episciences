@@ -216,15 +216,21 @@ php scripts/console.php enrichment:zb-reviews [options]
 
 ### `sitemap:generate`
 
-Generates a sitemap XML file for a given journal. The `rvcode` argument is required.
+Generates a sitemap XML file for one journal or for all active journals (STATUS = 1).
+Exactly one of `--rvcode` or `--all` must be provided.
 
 ```bash
-php scripts/console.php sitemap:generate <rvcode> [options]
+# One journal
+php scripts/console.php sitemap:generate --rvcode=<code> [--pretty]
+
+# All active journals
+php scripts/console.php sitemap:generate --all [--pretty]
 ```
 
-| Argument / Option | Description |
-|-------------------|-------------|
-| `rvcode` | The RV code of the journal (required) |
+| Option | Description |
+|--------|-------------|
+| `--rvcode=<code>` | RV code of the journal to process — mutually exclusive with `--all` |
+| `--all` | Process all active journals (STATUS = 1) — mutually exclusive with `--rvcode` |
 | `--pretty` | Pretty-print the XML output |
 
 ---

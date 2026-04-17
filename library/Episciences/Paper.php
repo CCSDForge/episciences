@@ -4580,9 +4580,12 @@ class Episciences_Paper
     {
         $year = date($yearFormat);
         if ($this->isPublished()) {
-            $date = DateTime::createFromFormat("Y-m-d H:i:s", $this->getPublication_date());
-            if ($date !== false) {
-                $year = $date->format($yearFormat);
+            $pubDate = $this->getPublication_date();
+            if ($pubDate !== null) {
+                $date = DateTime::createFromFormat("Y-m-d H:i:s", $pubDate);
+                if ($date !== false) {
+                    $year = $date->format($yearFormat);
+                }
             }
         }
         return $year;
@@ -4595,9 +4598,12 @@ class Episciences_Paper
     {
         $month = date('m');
         if ($this->isPublished()) {
-            $date = DateTime::createFromFormat("Y-m-d H:i:s", $this->getPublication_date());
-            if ($date !== false) {
-                $month = $date->format('m');
+            $pubDate = $this->getPublication_date();
+            if ($pubDate !== null) {
+                $date = DateTime::createFromFormat("Y-m-d H:i:s", $pubDate);
+                if ($date !== false) {
+                    $month = $date->format('m');
+                }
             }
         }
         return $month;
@@ -5534,8 +5540,15 @@ class Episciences_Paper
 
         $linkedData = $this->getLinkedDataByRelation();
 
-        if ($linkedData && strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEL) {
-            return Episciences_Repositories::getPaperUrl(Episciences_Repositories::HAL_REPO_ID, $linkedData->getValue());
+        if (
+            $linkedData &&
+            strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEL) {
+            $ldVal =$linkedData->getValue();
+            $pattern = '#v(\d+)#i';
+            preg_match($pattern, $ldVal, $matches);
+            $version = (float)($matches[1] ?? 1);
+            $identifierWithoutVersion = preg_replace($pattern, '', $ldVal);
+            return Episciences_Repositories::getPaperUrl(Episciences_Repositories::HAL_REPO_ID, $identifierWithoutVersion, $version);
         }
 
         return null;
