@@ -282,7 +282,7 @@ final class Episciences_Mail_CoiNotificationTest extends TestCase
 
     public static function provideTemplateFilePaths(): array
     {
-        $base = __DIR__ . '/../../../../../../application/languages';
+        $base = __DIR__ . '/../../../../../application/languages';
 
         return [
             'EN chief-editor'  => [$base . '/en/emails/paper_coi_unassign_chief_editor_copy.phtml'],
@@ -321,7 +321,7 @@ final class Episciences_Mail_CoiNotificationTest extends TestCase
 
     public static function provideChiefEditorTemplatePaths(): array
     {
-        $base = __DIR__ . '/../../../../../../application/languages';
+        $base = __DIR__ . '/../../../../../application/languages';
 
         return [
             'EN' => [$base . '/en/emails/paper_coi_unassign_chief_editor_copy.phtml'],
@@ -353,7 +353,7 @@ final class Episciences_Mail_CoiNotificationTest extends TestCase
 
     public static function provideOtherEditorsTemplatePaths(): array
     {
-        $base = __DIR__ . '/../../../../../../application/languages';
+        $base = __DIR__ . '/../../../../../application/languages';
 
         return [
             'EN' => [$base . '/en/emails/paper_coi_unassign_other_editors_copy.phtml'],
