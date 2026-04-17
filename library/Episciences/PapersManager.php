@@ -4297,78 +4297,69 @@ class Episciences_PapersManager
      * @param int $paperId
      * @param int $affectedRows
      * @return int
-     * @throws JsonException
-     * @throws \Psr\Cache\InvalidArgumentException
      */
     private static function updateRecordDataCallOpenAireTools(array|string $doiTrim, int $paperId, int $affectedRows): int
     {
-// CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
-        // BUT BEFORE CHECK GLOBAL CACHE
-        Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);
-        ///////////////////////////////////////////////////////////////////////////////////////////////////
-        $setsGlobalOARG = Episciences_OpenAireResearchGraphTools::getsGlobalOARGCache($doiTrim);
-        list($cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator) = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
+        $oaClient = \Episciences\Api\OpenAireApiClient::create();
+        $response = $oaClient->fetchPublication($doiTrim, $paperId);
 
-        if ($setsGlobalOARG->isHit() && !$setsOpenAireCreator->isHit()) {
-            //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
-            // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
-            try {
-                $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                Episciences_OpenAireResearchGraphTools::putCreatorInCache($decodeOpenAireResp, $doiTrim);
-                Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
-            } catch (JsonException $e) {
-
-                $eMsg = $e->getMessage() . " for PAPER " . $paperId . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json ';
-                // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
-                Episciences_OpenAireResearchGraphTools::logErrorMsg($eMsg);
-                $setsOpenAireCreator->set(json_encode([""]));
-                $cacheCreator->save($setsOpenAireCreator);
-            }
+        if ($response === null) {
+            // Network or API error — nothing was cached; skip enrichment for this paper.
+            return $affectedRows;
         }
 
-        //we need to refresh cache creator to get the new file
-        ////// CACHE CREATOR ONLY
-        [$cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator] = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
-
-        $affectedRows += Episciences_OpenAireResearchGraphTools::insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId);
-
-        ////////Funding OA and HAL
-        list($cacheFundingOA, $pathOpenAireFunding, $setOAFunding) = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
-
-        if ($setsGlobalOARG->isHit() && !$setOAFunding->isHit()) {
-            // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
-            try {
-                $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                Episciences_OpenAireResearchGraphTools::putFundingsInCache($decodeOpenAireResp, $doiTrim);
-                //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
-                Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
-
-            } catch (JsonException $e) {
-                // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
-                Episciences_OpenAireResearchGraphTools::logErrorMsg($e->getMessage() . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json');
-                $setOAFunding->set(json_encode([""]));
-                $cacheFundingOA->save($setOAFunding);
-            }
+        // --- Creator / ORCID enrichment ---
+        [, , $creatorItem] = $oaClient->getCreatorCacheItem($doiTrim);
+        if (!$creatorItem->isHit()) {
+            $oaClient->putCreatorInCache($response, $doiTrim);
+            [, , $creatorItem] = $oaClient->getCreatorCacheItem($doiTrim);
         }
-        try {
-            [$cacheFundingOA, $pathOpenAireFunding, $setOAFunding] = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
-        } catch (\Psr\Cache\InvalidArgumentException $e) {
-            trigger_error($e->getMessage());
+        $affectedRows += $oaClient->insertOrcidAuthorFromCache($creatorItem, $paperId);
+
+        // --- Funding enrichment ---
+        [, , $fundingItem] = $oaClient->getFundingCacheItem($doiTrim);
+        if (!$fundingItem->isHit()) {
+            $oaClient->putFundingInCache($response, $doiTrim);
+            [, , $fundingItem] = $oaClient->getFundingCacheItem($doiTrim);
         }
 
         try {
-            $fileFound = $setOAFunding->get() ? json_decode($setOAFunding->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) : null;
-        } catch (JsonException $jsonException) {
-            Episciences_OpenAireResearchGraphTools::logErrorMsg(sprintf('Error Code %s / Error Message %s', $jsonException->getCode(), $jsonException->getMessage()));
+            $fileFound = $fundingItem->get()
+                ? json_decode(
+                    $fundingItem->get(),
+                    true,
+                    512,
+                    JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+                )
+                : null;
+        } catch (JsonException $e) {
+            error_log(sprintf(
+                'OpenAIRE funding JSON decode error for paper %d: %s',
+                $paperId,
+                $e->getMessage()
+            ));
+            return $affectedRows;
         }
 
-        $globalfundingArray = [];
         if (!empty($fileFound[0])) {
-            $fundingArray = [];
-            $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB($fileFound, $fundingArray, $globalfundingArray);
-            $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::GRAPH_OPENAIRE_ID);
-            $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA($globalfundingArray, $rowInDBGraph, $paperId);
+            $fundingArray       = [];
+            $globalfundingArray = [];
+            $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB(
+                $fileFound,
+                $fundingArray,
+                $globalfundingArray
+            );
+            $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId(
+                $paperId,
+                (int) Episciences_Repositories::GRAPH_OPENAIRE_ID
+            );
+            $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA(
+                $globalfundingArray,
+                $rowInDBGraph,
+                $paperId
+            );
         }
+
         return $affectedRows;
     }
 
