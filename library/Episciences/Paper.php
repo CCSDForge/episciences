@@ -5514,8 +5514,15 @@ class Episciences_Paper
 
         $linkedData = $this->getLinkedDataByRelation();
 
-        if ($linkedData && strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEL) {
-            return Episciences_Repositories::getPaperUrl(Episciences_Repositories::HAL_REPO_ID, $linkedData->getValue());
+        if (
+            $linkedData &&
+            strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEL) {
+            $ldVal =$linkedData->getValue();
+            $pattern = '#v(\d+)#i';
+            preg_match($pattern, $ldVal, $matches);
+            $version = (float)($matches[1] ?? 1);
+            $identifierWithoutVersion = preg_replace($pattern, '', $ldVal);
+            return Episciences_Repositories::getPaperUrl(Episciences_Repositories::HAL_REPO_ID, $identifierWithoutVersion, $version);
         }
 
         return null;
