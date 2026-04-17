@@ -15,9 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 ### Performances
 -->
+
 ## Unreleased
-### fixed
-- Inability to change the review deadline
+### Fixed
+- The link to the new version of the data descriptor isn't working; it still points to the first version.
+
+## v1.0.54.2 - 2026-04-16
+
+### Fixed
+
+- Inability to change the review deadline (restore loading js via url).
+
+### Added
+
+- docs: add documentation index to README and update docs
+- stats:import-logs command to parse Apache logs into STAT_TEMP. Introduces ImportApacheLogsCommand (stats:import-logs), a Symfony Console command that parses Apache access logs and inserts article visits into STAT_TEMP. Replaces the legacy UpdateStatistics.php . Run src/mysql/2025-08-24-stat-processing-log-table.sql before deploying
 
 ### Added
 * [#630](https://github.com/CCSDForge/episciences/issues/630) COI (Conflict of Interest) notifications:
