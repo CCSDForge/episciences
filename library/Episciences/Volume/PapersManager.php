@@ -16,11 +16,18 @@ class Episciences_Volume_PapersManager
     }
 
     // return an array of volume/paper relations
-    public static function findPaperVolumes($docid)
+    public static function findPaperVolumes($docid): array
     {
+
+        if (!$docid) {
+            return [];
+        }
+
+        $volume_papers = array();
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()->from(T_VOLUME_PAPER)->where('docid = ?', $docid);
-        $volume_papers = array();
+
         foreach ($db->fetchAll($sql) as $data) {
             $volume_papers[$data['ID']] = new Episciences_Volume_Paper($data);
         }
