@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - The link to the new version of the data descriptor isn't working; it still points to the first version.
+- [RT#285106]: Application error when submitting
 
 ## v1.0.54.2 - 2026-04-16
 
