@@ -83,7 +83,7 @@ if ($this->results) {
                     $arrayOfAuthors[] = $tab[0];
                 }
 
-                if (count($arrayOfAuthors) > $maxNumberOfAuthors) {
+                if (count($arrayOfAuthors) > $maxNumberOfAuthors + 1) {
                     $multiArraysOfAuthors = array_chunk($arrayOfAuthors, $maxNumberOfAuthors, true);
 
                     foreach ($multiArraysOfAuthors[0] as $authorName) {
