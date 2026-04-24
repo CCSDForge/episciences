@@ -1787,7 +1787,7 @@ class Episciences_Review
         );
     }
 
-    private function enableAlternativePipeline(Ccsd_Form $form): \Ccsd_Form
+    private function addAlternativePipelineForm(Ccsd_Form $form): \Ccsd_Form
     {
         $checkboxDecorators = [
             'ViewHelper',
