@@ -3309,6 +3309,21 @@ class Episciences_Paper
             }
         }
 
+        $otherVolumes = is_array($this->_otherVolumes) ? $this->_otherVolumes : [];
+        if (!empty($otherVolumes)) {
+            $secondaryVolumesNode = $dom->createElement('secondaryVolumes');
+            foreach ($otherVolumes as $volumePaper) {
+                $oSecondaryVolume = Episciences_VolumesManager::find($volumePaper->getVid());
+                if ($oSecondaryVolume instanceof Episciences_Volume) {
+                    $secondaryVolumeNode = $dom->createElement('secondaryVolume');
+                    $secondaryVolumeNode->appendChild($dom->createElement('vid', $volumePaper->getVid()));
+                    $secondaryVolumeNode->appendChild($dom->createElement('name', $oSecondaryVolume->getNameKey()));
+                    $secondaryVolumesNode->appendChild($secondaryVolumeNode);
+                }
+            }
+            $node->appendChild($secondaryVolumesNode);
+        }
+
         // fetch section data
         if ($this->getSid()) {
             $oSection = Episciences_SectionsManager::find($this->getSid());
