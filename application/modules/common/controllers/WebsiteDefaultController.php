@@ -458,7 +458,7 @@ class WebsiteDefaultController extends Episciences_Controller_Action
                         ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)
                         ->addMessage("L'actualité a été supprimée.");
                 }
-                $this->redirect('/website/news');
+                $this->redirect($this->url(['controller' => 'website', 'action' => 'news']));
                 return;
             }
 

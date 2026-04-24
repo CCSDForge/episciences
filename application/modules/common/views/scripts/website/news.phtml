@@ -78,7 +78,7 @@ function renderLangFields($view, array $languages, array $values = [], bool $sub
                     </select>
                 </div>
                 <button type="submit" class="btn btn-primary"><?php echo $this->translate('Modifier') ?></button>
-                <a href="/website/news" class="btn btn-default"><?php echo $this->translate('Annuler') ?></a>
+                <a href="<?= $this->url(['controller' => 'website', 'action' => 'news']); ?>" class="btn btn-default"><?php echo $this->translate('Annuler') ?></a>
             </form>
         </div>
     </div>
