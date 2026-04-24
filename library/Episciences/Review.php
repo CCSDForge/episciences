@@ -137,6 +137,7 @@ class Episciences_Review
         'refusedArticleAuthorsMsgSentToReviewers';
     public const SETTING_TO_REQUIRE_REVISION_DEADLINE = 'toRequireRevisionDeadline';
     public const SETTING_START_STATS_AFTER_DATE = 'startStatsAfterDate';
+    public const SETTING_ALTERNATIVE_PIPELINE = 'alternativePipeline';
 
     /** @var int */
     public static $_currentReviewId = null;
@@ -235,6 +236,7 @@ class Episciences_Review
             self::SETTING_DISPLAY_EMPTY_VOLUMES,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
             self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE,
+            self::SETTING_ALTERNATIVE_PIPELINE,
         ];
 
 
@@ -1038,12 +1040,12 @@ class Episciences_Review
 
         $form = $this->addFinalDecisionForm($form);
         $form = $this->toRequireRevisionDeadlineForm($form);
+        $form = $this->addAlternativePipelineForm($form);
         $form = $this->addStatisticsForm($form);
 
         //redirection mail for errors
 
         $form = $this->addRedirectionMailError($form);
-
 
         // display group: publication settings
         $form->addDisplayGroup([
@@ -1125,7 +1127,8 @@ class Episciences_Review
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
             self::SETTING_DISPLAY_STATISTICS,
             self::SETTING_START_STATS_AFTER_DATE,
-            self::SETTING_CONTACT_ERROR_MAIL
+            self::SETTING_CONTACT_ERROR_MAIL,
+            self::SETTING_ALTERNATIVE_PIPELINE
         ], 'additionalParams', ['legend' => 'Paramètres supplémentaires']);
 
         $form->getDisplayGroup('additionalParams')->removeDecorator('DtDdWrapper');
@@ -1784,6 +1787,24 @@ class Episciences_Review
         );
     }
 
+    private function enableAlternativePipeline(Ccsd_Form $form): \Ccsd_Form
+    {
+        $checkboxDecorators = [
+            'ViewHelper',
+            'Description',
+            ['Label', ['placement' => 'APPEND']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'col-md-9 col-md-offset-3']],
+            ['Errors', ['placement' => 'APPEND']]
+        ];
+
+        return $form->addElement('checkbox', self::SETTING_ALTERNATIVE_PIPELINE, [
+            'label' => "Activer le pipeline éditorial alternatif",
+            'description' => "Si activé, un pipeline éditorial alternatif sera utilisé pour le traitement des soumissions",
+            'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+            'decorators' => $checkboxDecorators]
+        );
+    }
+
     private function addStatisticsForm(Ccsd_Form $form): \Ccsd_Form
     {
         $checkboxDecorators = [
@@ -1863,7 +1884,7 @@ class Episciences_Review
             self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
             self::SETTING_TO_REQUIRE_REVISION_DEADLINE, self::SETTING_START_STATS_AFTER_DATE,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, self::SETTING_DISPLAY_EMPTY_VOLUMES,
-            self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE,
+            self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE, self::SETTING_ALTERNATIVE_PIPELINE,
             self::SETTING_AUTHORS_CAN_CONTACT_EDITORS, self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS
         ];
 
