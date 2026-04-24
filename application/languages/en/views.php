@@ -1815,6 +1815,7 @@ return array(
     "Suppression de l'actualité" => 'Delete a news',
     "Souhaitez-vous supprimer l'actualité ?" => "Do you want to delete this news?",
     "Supprimer cette actualité ?" => "Delete this news?",
+    "L'actualité a été supprimée." => "The news has been deleted.",
     "Ce champ est obligatoire" => "This field is required",
     "Obligatoire" => "Required",
     // RESSOURCES

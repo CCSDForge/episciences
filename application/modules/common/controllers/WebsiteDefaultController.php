@@ -379,10 +379,18 @@ class WebsiteDefaultController extends Zend_Controller_Action
         $newsid  = (int) $this->getRequest()->getParam('newsid', 0);
 
         if ($this->getRequest()->isPost()) {
-            $post = $this->getRequest()->getParams();
+            if (!$this->_validateCsrf()) {
+                $this->_helper->FlashMessenger
+                    ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                    ->addMessage("Requête invalide.");
+                $this->redirect('/website/news');
+                return;
+            }
+
+            $post = $this->getRequest()->getPost();
 
             // Delete
-            if (!empty($post['action']) && $post['action'] === 'delete') {
+            if ($this->getRequest()->getPost('action') === 'delete') {
                 $delId = (int) ($post['newsid'] ?? 0);
                 if ($delId > 0) {
                     $newsObj->delete($delId);
@@ -392,6 +400,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
                         ->addMessage("L'actualité a été supprimée.");
                 }
                 $this->redirect('/website/news');
+                return;
             }
 
             // Add / edit
@@ -403,6 +412,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
                     ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)
                     ->addMessage("Les modifications ont bien été enregistrées.");
                 $this->redirect('/website/news');
+                return;
             }
 
             $this->view->editNewsid  = $newsid;

@@ -54,6 +54,7 @@ function renderLangFields($view, array $languages, array $values = [], bool $sub
         <div class="panel-heading"><strong><?php echo $this->translate("Modifier l'actualité") ?></strong></div>
         <div class="panel-body">
             <form method="post" action="" class="form-horizontal">
+                <input type="hidden" name="csrf_token" value="<?php echo $this->escape($this->csrfToken) ?>">
                 <input type="hidden" name="newsid" value="<?php echo (int) $editNewsid ?>">
                 <?php renderLangFields($this, $languages, empty($formValues) ? $editNews : $formValues, $submitted) ?>
                 <div class="form-group">
@@ -89,6 +90,7 @@ function renderLangFields($view, array $languages, array $values = [], bool $sub
         <div class="panel panel-default" style="margin-top:.5em">
             <div class="panel-body">
                 <form method="post" action="" class="form-horizontal">
+                    <input type="hidden" name="csrf_token" value="<?php echo $this->escape($this->csrfToken) ?>">
                     <?php renderLangFields($this, $languages, $formValues, $submitted) ?>
                     <div class="form-group">
                         <label><?php echo $this->translate('Lien') ?></label>
@@ -148,6 +150,7 @@ function renderLangFields($view, array $languages, array $values = [], bool $sub
                     </a>
                     &nbsp;
                     <form method="post" action="" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="<?php echo $this->escape($this->csrfToken) ?>">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="newsid" value="<?php echo (int) $news['NEWSID'] ?>">
                         <button type="submit" class="btn btn-danger btn-xs"
