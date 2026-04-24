@@ -1,135 +1,166 @@
-<?php $this->layout()->description = $this->translate("Ajout / modifications d'actualités pour le site") ?>
+<?php
+$this->layout()->description = $this->translate("Ajout / modifications d'actualités pour le site");
 
-<div class="form-actions">
-    <button type="button" class="btn btn-default add-news"><span
-                class="glyphicon glyphicon-plus"></span>&nbsp;<?php echo $this->translate("Ajouter une actualité") ?>
-    </button>
-</div>
+$editNewsid  = $this->editNewsid  ?? 0;
+$editNews    = $this->editNews    ?? [];
+$formValues  = $this->formValues  ?? [];
+$languages   = $this->languages   ?? ['fr'];
+$submitted   = !empty($formValues);
+
+/**
+ * Render one title input + one content textarea per language.
+ * Title inputs have an input-group-addon showing the language code.
+ * On POST with an empty title the field is highlighted with Bootstrap has-error.
+ *
+ * @param Zend_View_Interface $view
+ * @param array               $languages   e.g. ['fr', 'en']
+ * @param array               $values      ['title'=>['fr'=>'...'], 'content'=>['fr'=>'...']]
+ * @param bool                $submitted   true when the form was already POSTed (enables error highlighting)
+ */
+function renderLangFields($view, array $languages, array $values = [], bool $submitted = false): void
+{
+    foreach ($languages as $lang) {
+        $langAddon  = $view->escape(strtoupper($lang));
+        $langEsc    = $view->escape($lang);
+        $title      = $view->escape($values['title'][$lang]   ?? '');
+        $content    = $view->escape($values['content'][$lang] ?? '');
+        $titleError = $submitted && trim($values['title'][$lang] ?? '') === '';
+        $groupClass = $titleError ? ' has-error' : '';
+        $errorBlock = $titleError
+            ? '<span class="help-block">' . $view->translate('Ce champ est obligatoire') . '</span>'
+            : '';
+
+        echo '<div class="form-group' . $groupClass . '">
+            <label>' . $view->translate('Titre') . ' <span class="text-danger" title="' . $view->translate('Obligatoire') . '">*</span></label>
+            <div class="input-group">
+                <span class="input-group-addon">' . $langAddon . '</span>
+                <input type="text" name="title[' . $langEsc . ']" class="form-control" value="' . $title . '">
+            </div>
+            ' . $errorBlock . '
+        </div>
+        <div class="form-group">
+            <label>' . $view->translate('Contenu') . '</label>
+            <div class="input-group">
+                <span class="input-group-addon">' . $langAddon . '</span>
+                <textarea name="content[' . $langEsc . ']" class="form-control" rows="3">' . $content . '</textarea>
+            </div>
+        </div>';
+    }
+}
+?>
+
+<?php if ($editNewsid > 0): ?>
+    <div class="panel panel-default">
+        <div class="panel-heading"><strong><?php echo $this->translate("Modifier l'actualité") ?></strong></div>
+        <div class="panel-body">
+            <form method="post" action="" class="form-horizontal">
+                <input type="hidden" name="csrf_token" value="<?php echo $this->escape($this->csrfToken) ?>">
+                <input type="hidden" name="newsid" value="<?php echo (int) $editNewsid ?>">
+                <?php renderLangFields($this, $languages, empty($formValues) ? $editNews : $formValues, $submitted) ?>
+                <div class="form-group">
+                    <label><?php echo $this->translate('Lien') ?></label>
+                    <input type="url" name="link" class="form-control"
+                           value="<?php echo $this->escape($formValues['link'] ?? $editNews['link'] ?? '') ?>">
+                </div>
+                <div class="form-group">
+                    <label><?php echo $this->translate('Mettre à jour la date de l\'actualité') ?></label>
+                    <select name="date" class="form-control">
+                        <option value="0"><?php echo $this->translate('Non') ?></option>
+                        <option value="1"><?php echo $this->translate('Oui') ?></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><?php echo $this->translate('État') ?></label>
+                    <select name="online" class="form-control">
+                        <?php $isOnline = (int) ($formValues['online'] ?? $editNews['online'] ?? 0) ?>
+                        <option value="0"<?php echo $isOnline === 0 ? ' selected' : '' ?>><?php echo $this->translate('Invisible') ?></option>
+                        <option value="1"<?php echo $isOnline === 1 ? ' selected' : '' ?>><?php echo $this->translate('En ligne') ?></option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary"><?php echo $this->translate('Modifier') ?></button>
+                <a href="/website/news" class="btn btn-default"><?php echo $this->translate('Annuler') ?></a>
+            </form>
+        </div>
+    </div>
+<?php else: ?>
+    <details<?php echo $submitted ? ' open' : '' ?>>
+        <summary class="btn btn-default" style="display:inline-block;margin-bottom:1em">
+            <span class="glyphicon glyphicon-plus"></span>&nbsp;<?php echo $this->translate("Ajouter une actualité") ?>
+        </summary>
+        <div class="panel panel-default" style="margin-top:.5em">
+            <div class="panel-body">
+                <form method="post" action="" class="form-horizontal">
+                    <input type="hidden" name="csrf_token" value="<?php echo $this->escape($this->csrfToken) ?>">
+                    <?php renderLangFields($this, $languages, $formValues, $submitted) ?>
+                    <div class="form-group">
+                        <label><?php echo $this->translate('Lien') ?></label>
+                        <input type="url" name="link" class="form-control"
+                               value="<?php echo $this->escape($formValues['link'] ?? '') ?>">
+                    </div>
+                    <div class="form-group">
+                        <label><?php echo $this->translate('État') ?></label>
+                        <select name="online" class="form-control">
+                            <option value="0"><?php echo $this->translate('Invisible') ?></option>
+                            <option value="1"><?php echo $this->translate('En ligne') ?></option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><?php echo $this->translate('Ajouter') ?></button>
+                </form>
+            </div>
+        </div>
+    </details>
+<?php endif ?>
 
 <div class="table-responsive">
-    <table class="table table-hover table-striped table-condensed" id="news-list">
+    <table class="table table-hover table-striped table-condensed">
         <thead>
         <tr>
             <th><?php echo $this->translate('Statut') ?></th>
+            <th><?php echo $this->translate('Date') ?></th>
             <th><?php echo $this->translate('Titre') ?></th>
             <th><?php echo $this->translate('Contenu') ?></th>
             <th><?php echo $this->translate('Actions') ?></th>
         </tr>
         </thead>
-
-
         <tbody>
-        <?php if (is_array($this->errors)) {
-            $this->form->populate($this->errors);
-            $display = '';
-        } else {
-            $display = 'display:none;';
-        } ?>
-        <tr style="<?php echo $display ?>" class="form-add-news">
-            <td colspan="4">
-                <?php echo $this->form; ?>
-            </td>
-        </tr>
-        <?php foreach ($this->news as $news) { ?>
-            <tr class="news-<?php echo $news['NEWSID'] ?>">
+        <?php foreach ($this->news as $news): ?>
+            <tr>
                 <td>
-                    <?php
-                    if ($news['ONLINE'] != 0) {
-                        $class = 'label-success';
-                        $text = $this->translate('En ligne');
-                    } else {
-                        $class = '';
-                        $text = $this->translate('Invisible');
-                    }
-                    ?>
-                    <span class="label <?php echo $class ?>"><?php echo $text; ?></span>
+                    <?php if ($news['ONLINE'] != 0): ?>
+                        <span class="label label-success"><i class="fa-regular fa-newspaper"></i>&nbsp;<?php echo $this->translate('En ligne') ?></span>
+                    <?php else: ?>
+                        <span class="label label-dark"><i class="fa-solid fa-plane-slash"></i>&nbsp;<?php echo $this->translate('Invisible') ?></span>
+                    <?php endif ?>
                 </td>
-                <td><b><?php echo $this->translate($news['TITLE']); ?></b><br/>
-                    <small><?php echo $this->translate($news['DATE_POST']); ?></small>
-                </td>
+                <td><small><?php echo $this->escape($this->translate($news['DATE_POST'])) ?></small></td>
+                <td><b><?php echo $this->escape($this->translate($news['TITLE'])) ?></b></td>
                 <td>
-
                     <?php try {
                         if (Zend_Registry::get('Zend_Translate')->istranslated($news['CONTENT'])): ?>
-                            <div class="content">
-                                <div class="truncate"><?php echo $this->truncate($this->translate($news['CONTENT']))->withPostfix('&#0133; <a href="javascript:void(0);" class="more"><span class="glyphicon glyphicon-plus-sign"></span></a>'); ?></div>
-                                <div class="complete"
-                                     style="display:none;"><?php echo $this->translate($news['CONTENT']); ?></div>
-                            </div>
+                            <?php echo $this->escape($this->translate($news['CONTENT'])) ?>
                         <?php endif;
                     } catch (Zend_Exception $e) {
                         trigger_error($e->getMessage());
                     } ?>
                 </td>
-                <td style="text-align:right;">
-
-                    <a href="javascript:void(0)" class="btn btn-default btn-xs edit-news"
-                       title="<?php echo $this->translate("Modifier"); ?>"
-                       data-newsid="<?php echo $this->escape($news['NEWSID']) ?>"><span
-                                class="glyphicon glyphicon-pencil"></span>&nbsp;<?php echo $this->translate("Modifier"); ?>
+                <td style="white-space:nowrap">
+                    <a href="?newsid=<?php echo (int) $news['NEWSID'] ?>"
+                       class="btn btn-default btn-xs">
+                        <span class="glyphicon glyphicon-pencil"></span>&nbsp;<?php echo $this->translate('Modifier') ?>
                     </a>
-
                     &nbsp;
-
-                    <a href="javascript:void(0)" class="btn btn-danger btn-xs remove-news"
-                       title="<?php echo $this->translate("Supprimer"); ?>"
-                       data-newsid="<?php echo $this->escape($news['NEWSID']) ?>"><span
-                                class="glyphicon glyphicon-trash"></span>&nbsp;<?php echo $this->translate("Supprimer"); ?>
-                    </a>
+                    <form method="post" action="" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="<?php echo $this->escape($this->csrfToken) ?>">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="newsid" value="<?php echo (int) $news['NEWSID'] ?>">
+                        <button type="submit" class="btn btn-danger btn-xs"
+                                onclick="return confirm('<?php echo $this->escape($this->translate('Supprimer cette actualité ?')) ?>')">
+                            <span class="glyphicon glyphicon-trash"></span>&nbsp;<?php echo $this->translate('Supprimer') ?>
+                        </button>
+                    </form>
                 </td>
             </tr>
-        <?php } ?>
+        <?php endforeach ?>
         </tbody>
-        <tfoot style="display:none;">
-        <tr>
-            <td colspan="4">
-            </td>
-        </tr>
-        </tfoot>
     </table>
 </div>
-
-<?php echo $this->confirm("Suppression de l'actualité", "Souhaitez-vous supprimer l'actualité ?")
-    ->setTrigger('.remove-news')
-    ->setJsInit('$("#confirm-id").val($(this).attr("data-newsid"));')
-    ->setJsCallback('deleteNews();'); ?>
-
-<script>
-    $(document).ready(function () {
-        $('a.more').click(function () {
-            $(this).closest('div.content').find('.truncate').hide();
-            $(this).closest('div.content').find('.complete').toggle();
-        });
-        //Ajout d'une nouvelle actu
-        $('.add-news').click(function () {
-            $('.form-add-news').show();
-        });
-        //Récupération du formulaire rempli
-        $('.edit-news').click(function () {
-            newsid = $(this).attr('data-newsid');
-            $.ajax({
-                url: JS_PREFIX_URL + "website/ajaxnewsform",
-                type: 'post',
-                data: {'newsid': newsid},
-                success: function (result) {
-                    if (result != '') {
-                        $('#news-list tfoot td').html(result);
-                        $('.news-' + newsid).replaceWith($('#news-list tfoot').html());
-                    }
-                }
-            });
-        });
-    });
-
-    function deleteNews() {
-        $.ajax({
-            url: JS_PREFIX_URL + "website/ajaxnewsdelete",
-            type: 'post',
-            data: {'newsid': $('#confirm-id').val()},
-            success: function (result) {
-                $('.news-' + $('#confirm-id').val()).remove();
-                $('#confirmModal').modal('hide');
-            }
-        });
-    }
-</script>
