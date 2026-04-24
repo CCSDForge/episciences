@@ -371,63 +371,50 @@ class WebsiteDefaultController extends Zend_Controller_Action
     }
 
     /**
-     * Gestion des actualités
+     * News management — add, edit, delete.
      */
-    public function newsAction()
+    public function newsAction(): void
     {
-        $news = new Episciences_News();
-
-        $form = $news->getForm($this->getRequest()->getParam('newsid', 0));
+        $newsObj = new Episciences_News();
+        $newsid  = (int) $this->getRequest()->getParam('newsid', 0);
 
         if ($this->getRequest()->isPost()) {
             $post = $this->getRequest()->getParams();
-            if ($form->isValid($post)) {
-                $news->save(array_merge($form->getValues(), ['uid' => Episciences_Auth::getUid()]));
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
+
+            // Delete
+            if (!empty($post['action']) && $post['action'] === 'delete') {
+                $delId = (int) ($post['newsid'] ?? 0);
+                if ($delId > 0) {
+                    $newsObj->delete($delId);
+                    Episciences_JournalNews::deleteByLegacyId($delId);
+                    $this->_helper->FlashMessenger
+                        ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)
+                        ->addMessage("L'actualité a été supprimée.");
+                }
                 $this->redirect('/website/news');
-
-            } elseif (isset($post['newsid'])) {
-                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Erreur dans la saisie");
-                $this->view->errors = $this->getRequest()->getParams();
-
             }
+
+            // Add / edit
+            $newsid = (int) ($post['newsid'] ?? 0);
+            $form   = $newsObj->getForm($newsid);
+            if ($form->isValid($post)) {
+                $newsObj->save(array_merge($form->getValues(), ['uid' => Episciences_Auth::getUid()]));
+                $this->_helper->FlashMessenger
+                    ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)
+                    ->addMessage("Les modifications ont bien été enregistrées.");
+                $this->redirect('/website/news');
+            }
+
+            $this->view->editNewsid  = $newsid;
+            $this->view->editNews    = $newsObj->getNews($newsid);
+            $this->view->formValues  = $post;
+        } elseif ($newsid > 0) {
+            $this->view->editNewsid = $newsid;
+            $this->view->editNews   = $newsObj->getNews($newsid);
         }
 
-        $this->view->news = $news->getListNews(false);
-        $this->view->form = $news->getForm();
-    }
-
-    /**
-     * Récupération du formulaire d'ajout/édition d'une actu
-     */
-    public function ajaxnewsformAction()
-    {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-
-        $request = $this->getRequest();
-        $params = $request->getPost();
-        if ($request->isXmlHttpRequest() && $request->isPost() && isset($params['newsid'])) {
-            $news = new Episciences_News();
-            echo $news->getForm($params['newsid']);
-        }
-    }
-
-    /**
-     * Suppression d'une actualité
-     */
-    public function ajaxnewsdeleteAction()
-    {
-        $this->_helper->layout()->disableLayout();
-        $this->_helper->viewRenderer->setNoRender();
-
-        $request = $this->getRequest();
-        $params = $request->getPost();
-        if ($request->isXmlHttpRequest() && $request->isPost() && isset($params['newsid'])) {
-            $news = new Episciences_News();
-            $news->delete($params['newsid']);
-            Episciences_JournalNews::deleteByLegacyId($params['newsid']);
-        }
+        $this->view->news      = $newsObj->getListNews(false);
+        $this->view->languages = Zend_Registry::get('languages');
     }
 }
 

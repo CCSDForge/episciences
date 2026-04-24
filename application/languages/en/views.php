@@ -1802,6 +1802,7 @@ return array(
     // NEWS
     "Ajout / modifications d'actualités pour le site" => "Add / edit the website news",
     "Ajouter une actualité" => "Add news",
+    "Modifier l'actualité" => "Edit news",
     "Contenu" => "Content",
     "Lien" => "Link",
     "État" => "Status",
@@ -1813,6 +1814,9 @@ return array(
     'Ajouter/Modifier une actualité' => 'Add/update some news',
     "Suppression de l'actualité" => 'Delete a news',
     "Souhaitez-vous supprimer l'actualité ?" => "Do you want to delete this news?",
+    "Supprimer cette actualité ?" => "Delete this news?",
+    "Ce champ est obligatoire" => "This field is required",
+    "Obligatoire" => "Required",
     // RESSOURCES
     "Le tableau ci-dessous reprend l'ensemble des ressources visibles déposées sur le site. Vous pouvez les visualiser dans un nouvel onglet et repérer leur url sur le site ou les supprimer."
     => "The table below lists all visible resources stored on the website. You can view them in a new tab, locate their url or delete them.",
