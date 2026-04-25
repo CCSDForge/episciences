@@ -193,6 +193,38 @@ describe('BiblioRefParser', () => {
             expect(consoleSpy).toHaveBeenCalled();
             consoleSpy.mockRestore();
         });
+
+        it('should parse citation when ref is already an object (new API)', () => {
+            const citation = {
+                ref: { raw_reference: 'Test citation', doi: '10.1234/test' },
+                isAccepted: 1,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, true);
+
+            expect(result).toEqual({
+                rawReference: 'Test citation',
+                doi: '10.1234/test',
+                isAccepted: true,
+                showAccepted: true,
+            });
+        });
+
+        it('should parse citation when ref is already an object without DOI (new API)', () => {
+            const citation = {
+                ref: { raw_reference: 'Test citation' },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result).toEqual({
+                rawReference: 'Test citation',
+                doi: undefined,
+                isAccepted: false,
+                showAccepted: false,
+            });
+        });
     });
 
     describe('formatDoi', () => {

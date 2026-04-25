@@ -59,7 +59,8 @@ class BiblioRefParser {
         }
 
         try {
-            const parsedRef = JSON.parse(citation.ref);
+            // Handle both old API (ref is double-encoded JSON string) and new API (ref is already object)
+            const parsedRef = typeof citation.ref === 'string' ? JSON.parse(citation.ref) : citation.ref;
 
             return {
                 rawReference: parsedRef.raw_reference,

@@ -45,6 +45,16 @@ class BiblioRefApiClientTest extends TestCase
         return (string) json_encode($citations);
     }
 
+    /** Build a response body as the new API returns it (ref is a JSON object, not a string). */
+    private function makeNewApiCitationBody(array $refs): string
+    {
+        $citations = array_map(
+            static fn(array $ref): array => ['ref' => $ref],
+            $refs
+        );
+        return (string) json_encode($citations);
+    }
+
     // -------------------------------------------------------------------------
     // fetchBibRef() — URL validation (SSRF prevention)
     // -------------------------------------------------------------------------
@@ -273,5 +283,86 @@ class BiblioRefApiClientTest extends TestCase
         $this->assertCount(2, $result);
         $this->assertSame('Good 1', $result[0]['unstructured_citation']);
         $this->assertSame('10.2/y', $result[1]['doi']);
+    }
+
+    // -------------------------------------------------------------------------
+    // parseResponse() — new API format (ref is already a decoded object)
+    // -------------------------------------------------------------------------
+
+    public function testParseResponse_NewApiFormat_RefIsObject_ReturnsCitation(): void
+    {
+        $client = $this->makeApiClient('');
+        $body = $this->makeNewApiCitationBody([
+            ['raw_reference' => 'Smith et al. (2022)', 'doi' => '10.1234/abc'],
+        ]);
+        $result = $client->parseResponse($body);
+
+        $this->assertCount(1, $result);
+        $this->assertSame('Smith et al. (2022)', $result[0]['unstructured_citation']);
+        $this->assertSame('10.1234/abc', $result[0]['doi']);
+    }
+
+    public function testParseResponse_NewApiFormat_RefIsObjectWithoutDoi_DoiKeyAbsent(): void
+    {
+        $client = $this->makeApiClient('');
+        $body = $this->makeNewApiCitationBody([['raw_reference' => 'No DOI here']]);
+        $result = $client->parseResponse($body);
+
+        $this->assertCount(1, $result);
+        $this->assertSame('No DOI here', $result[0]['unstructured_citation']);
+        $this->assertArrayNotHasKey('doi', $result[0]);
+    }
+
+    public function testParseResponse_NewApiFormat_MultipleCitations_ReturnsAll(): void
+    {
+        $client = $this->makeApiClient('');
+        $body = $this->makeNewApiCitationBody([
+            ['raw_reference' => 'First'],
+            ['raw_reference' => 'Second', 'doi' => '10.1/x'],
+        ]);
+        $result = $client->parseResponse($body);
+
+        $this->assertCount(2, $result);
+        $this->assertSame('First', $result[0]['unstructured_citation']);
+        $this->assertSame('10.1/x', $result[1]['doi']);
+    }
+
+    public function testParseResponse_NewApiFormat_CslPresent_IncludesCsl(): void
+    {
+        $client = $this->makeApiClient('');
+        $csl = ['type' => 'article', 'title' => 'Test Article'];
+        $body = (string) json_encode([
+            ['ref' => ['raw_reference' => 'Title'], 'csl' => $csl],
+        ]);
+        $result = $client->parseResponse($body);
+
+        $this->assertCount(1, $result);
+        $this->assertSame($csl, $result[0]['csl']);
+    }
+
+    public function testParseResponse_NewApiFormat_RefIsScalar_CitationSkipped(): void
+    {
+        $client = $this->makeApiClient('');
+        $body = (string) json_encode([
+            ['ref' => 42],
+            ['ref' => ['raw_reference' => 'Valid']],
+        ]);
+        $result = $client->parseResponse($body);
+
+        $this->assertCount(1, $result);
+        $this->assertSame('Valid', $result[0]['unstructured_citation']);
+    }
+
+    public function testFetchBibRef_NewApiFormat_ReturnsParsedCitations(): void
+    {
+        $body = $this->makeNewApiCitationBody([
+            ['raw_reference' => 'Jones (2024)', 'doi' => '10.9999/xyz'],
+        ]);
+        $client = $this->makeApiClient($body);
+        $result = $client->fetchBibRef('https://example.com/doc/2/pdf');
+
+        $this->assertCount(1, $result);
+        $this->assertSame('Jones (2024)', $result[0]['unstructured_citation']);
+        $this->assertSame('10.9999/xyz', $result[0]['doi']);
     }
 }
