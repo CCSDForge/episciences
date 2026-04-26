@@ -95,6 +95,8 @@ class GetCreatorDataCommand extends Command
         $logger->info('Starting author enrichment for ' . count($rows) . ' papers');
         $io->progressStart(count($rows));
 
+        $oaClient = \Episciences\Api\OpenAireApiClient::create();
+
         foreach ($rows as $value) {
             $paperId = (int) $value['PAPERID'];
             $docId   = (int) $value['DOCID'];
@@ -112,24 +114,16 @@ class GetCreatorDataCommand extends Command
             Episciences_Paper_AuthorsManager::InsertAuthorsFromPapers($paper);
 
             if ($doiTrim !== '' && !$dryRun) {
-                Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);
-                $setsGlobalOARG = Episciences_OpenAireResearchGraphTools::getsGlobalOARGCache($doiTrim);
-                [$cacheCreator, , $setsOpenAireCreator] = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
+                $response = $oaClient->fetchPublication($doiTrim, $paperId);
 
-                if ($setsGlobalOARG->isHit() && !$setsOpenAireCreator->isHit()) {
-                    try {
-                        $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_THROW_ON_ERROR);
-                        Episciences_OpenAireResearchGraphTools::putCreatorInCache($decodeOpenAireResp, $doiTrim);
-                    } catch (JsonException $e) {
-                        $logger->error("JSON error for paper {$paperId} (OpenAIRE creator cache): " . $e->getMessage());
-                        $setsOpenAireCreator->set(json_encode(['']));
-                        $cacheCreator->save($setsOpenAireCreator);
+                if ($response !== null) {
+                    [, , $creatorItem] = $oaClient->getCreatorCacheItem($doiTrim);
+                    if (!$creatorItem->isHit()) {
+                        $oaClient->putCreatorInCache($response, $doiTrim);
+                        [, , $creatorItem] = $oaClient->getCreatorCacheItem($doiTrim);
                     }
-                    sleep(1);
+                    $oaClient->insertOrcidAuthorFromCache($creatorItem, $paperId);
                 }
-
-                [$cacheCreator, , $setsOpenAireCreator] = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
-                Episciences_OpenAireResearchGraphTools::insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId);
             }
 
             if ((int) $value['REPOID'] === (int) Episciences_Repositories::HAL_REPO_ID && !$dryRun) {
