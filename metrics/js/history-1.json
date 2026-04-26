@@ -7,7 +7,7 @@
         "relativeSystemComplexity": 2463.12,
         "relativeDataComplexity": 0.78,
         "relativeStructuralComplexity": 2462.33,
-        "volume": 1912.97,
+        "volume": 1913,
         "commentWeight": 27.67,
         "intelligentContent": 107.37,
         "lcom": 3.37,
@@ -24,9 +24,9 @@
         "classesPerPackage": 25.35
     },
     "sum": {
-        "loc": 94941,
+        "loc": 94944,
         "cloc": 24761,
-        "lloc": 70167,
+        "lloc": 70170,
         "nbMethods": 3962,
         "nbClasses": 559,
         "nbInterfaces": 11,
