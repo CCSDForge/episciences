@@ -193,6 +193,7 @@ download-ref-pps: ## Download PPS CSV file from IRIT (optional: force=1)
 	@echo "Downloading PPS data..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php download:ref-pps $(if $(filter 1,$(force)),--force)
+	@echo "Download complete!"
 
 # =============================================================================
 # Development Setup Commands

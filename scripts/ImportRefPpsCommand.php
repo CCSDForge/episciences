@@ -29,17 +29,22 @@ class ImportRefPpsCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $io      = new SymfonyStyle($input, $output);
         $csvFile = (string) $input->getArgument('csv-file');
+
+        // Resolve relative paths from the project root (one level above scripts/)
+        if (!str_starts_with($csvFile, '/')) {
+            $csvFile = dirname(__DIR__) . '/' . $csvFile;
+        }
 
         if (!file_exists($csvFile) || !is_readable($csvFile)) {
             $io->error("CSV file not found or not readable: {$csvFile}");
             return Command::FAILURE;
         }
 
-        $io->title("Importing PPS data from {$csvFile}");
-
         $this->bootstrap();
+
+        $io->title("Importing PPS data from {$csvFile}");
 
         $handle = fopen($csvFile, 'rb');
         if ($handle === false) {
@@ -47,101 +52,158 @@ class ImportRefPpsCommand extends Command
             return Command::FAILURE;
         }
 
-        // Detect total lines for progress bar (optional, can be slow for 1.1M lines)
-        // For now, let's use a dynamic progress bar or skip total count if it's too slow.
-        $io->note("Counting lines...");
-        $totalLines = 0;
-        $lineCountHandle = fopen($csvFile, 'rb');
-        while (!feof($lineCountHandle)) {
-            fgets($lineCountHandle);
-            $totalLines++;
+        $totalLines = $this->countDataLines($csvFile);
+        if ($totalLines === null) {
+            $io->error("Failed to count lines in CSV file: {$csvFile}");
+            fclose($handle);
+            return Command::FAILURE;
         }
-        fclose($lineCountHandle);
-        $totalLines--; // Subtract header
 
+        $io->note("Lines to import: {$totalLines}");
         $progressBar = new ProgressBar($output, $totalLines);
         $progressBar->start();
 
-        // Skip header
         $header = fgetcsv($handle);
-        
-        $solrClient = $this->getSolrClient();
+        if ($header === false) {
+            $io->error("CSV file appears empty or has no header row: {$csvFile}");
+            $progressBar->finish();
+            fclose($handle);
+            return Command::FAILURE;
+        }
+
+        $solrClient  = $this->getSolrClient();
         $updateQuery = $solrClient->createUpdate();
-        
-        $batch = [];
-        $count = 0;
-        $imported = 0;
+        $batch       = [];
+        $count       = 0;
+        $imported    = 0;
+        $skipped     = 0;
 
         while (($data = fgetcsv($handle)) !== false) {
-            if (count($data) < 6) {
+            if (!self::isValidRow($data)) {
+                $skipped++;
                 continue;
             }
 
-            // Detectors,Doi,Title,Pubpeerusers,Pubpeerurl,Status
-            $docData = [
-                'detectors'    => $data[0],
-                'doi'          => $data[1],
-                'title'        => $data[2],
-                'pubpeerusers' => $data[3],
-                'pubpeerurl'   => $data[4],
-                'status'       => $data[5],
-            ];
-
-            // Generate unique ID based on row content
-            $docData['id'] = md5(implode('|', $data));
-
-            $doc = $updateQuery->createDocument($docData);
+            $doc     = $updateQuery->createDocument(self::mapRowToDocument($data));
             $batch[] = $doc;
             $count++;
 
             if ($count >= self::BATCH_SIZE) {
                 $updateQuery->addDocuments($batch);
-                $solrClient->update($updateQuery);
-                
-                // Reset for next batch
+                try {
+                    $solrClient->update($updateQuery);
+                } catch (\Solarium\Exception\ExceptionInterface $e) {
+                    $progressBar->finish();
+                    $io->newLine(2);
+                    $io->error(sprintf('Solr update failed after %d documents: %s', $imported, $e->getMessage()));
+                    fclose($handle);
+                    return Command::FAILURE;
+                }
                 $updateQuery = $solrClient->createUpdate();
-                $batch = [];
-                $imported += $count;
-                $count = 0;
+                $batch       = [];
+                $imported   += $count;
+                $count       = 0;
                 $progressBar->advance(self::BATCH_SIZE);
             }
         }
 
-        // Last batch
         if ($count > 0) {
             $updateQuery->addDocuments($batch);
-            $solrClient->update($updateQuery);
+            try {
+                $solrClient->update($updateQuery);
+            } catch (\Solarium\Exception\ExceptionInterface $e) {
+                $progressBar->finish();
+                $io->newLine(2);
+                $io->error(sprintf('Solr update failed on final batch after %d documents: %s', $imported, $e->getMessage()));
+                fclose($handle);
+                return Command::FAILURE;
+            }
             $imported += $count;
             $progressBar->advance($count);
         }
 
-        // Commit changes
         $finalUpdate = $solrClient->createUpdate();
         $finalUpdate->addCommit();
-        $solrClient->update($finalUpdate);
+        try {
+            $solrClient->update($finalUpdate);
+        } catch (\Solarium\Exception\ExceptionInterface $e) {
+            $progressBar->finish();
+            $io->newLine(2);
+            $io->error(sprintf(
+                'Solr commit failed after sending %d documents. Data may not be fully committed: %s',
+                $imported,
+                $e->getMessage()
+            ));
+            fclose($handle);
+            return Command::FAILURE;
+        }
 
         $progressBar->finish();
         fclose($handle);
 
         $io->newLine(2);
+        if ($skipped > 0) {
+            $io->warning("Skipped {$skipped} rows with fewer than 6 fields.");
+        }
         $io->success("Import completed: {$imported} documents imported into ref_pps core.");
 
         return Command::SUCCESS;
     }
 
-    private function getSolrClient(): \Solarium\Client
+    /** @param list<string|null> $data */
+    public static function isValidRow(array $data): bool
+    {
+        return count($data) >= 6;
+    }
+
+    /**
+     * Maps a CSV data row to a Solr document array.
+     *
+     * @param list<string> $data
+     * @return array<string, string>
+     */
+    public static function mapRowToDocument(array $data): array
+    {
+        return [
+            'id'           => strtolower(trim($data[1])), // DOI as stable unique key
+            'detectors'    => $data[0],
+            'doi'          => $data[1],
+            'title'        => $data[2],
+            'pubpeerusers' => $data[3],
+            'pubpeerurl'   => $data[4],
+            'status'       => $data[5],
+        ];
+    }
+
+    public function countDataLines(string $csvFile): ?int
+    {
+        $handle = fopen($csvFile, 'rb');
+        if ($handle === false) {
+            return null;
+        }
+        $lines = 0;
+        while (fgets($handle) !== false) {
+            $lines++;
+        }
+        fclose($handle);
+        return max(0, $lines - 1); // subtract header
+    }
+
+    protected function getSolrClient(): \Solarium\Client
     {
         $adapter = new \Solarium\Core\Client\Adapter\Curl();
-        // Adjust timeout for large updates
-        $adapter->setTimeout(300); 
+        $adapter->setTimeout(ENDPOINTS_SEARCH_TIMEOUT);
         $eventDispatcher = new \Symfony\Component\EventDispatcher\EventDispatcher();
-        
+
         $config = [
             'endpoint' => [
                 'localhost' => [
-                    'host' => ENDPOINTS_SEARCH_HOST,
-                    'port' => ENDPOINTS_SEARCH_PORT,
-                    'core' => 'ref_pps',
+                    'host'     => ENDPOINTS_SEARCH_HOST,
+                    'port'     => ENDPOINTS_SEARCH_PORT,
+                    'timeout'  => ENDPOINTS_SEARCH_TIMEOUT,
+                    'username' => ENDPOINTS_SEARCH_USERNAME,
+                    'password' => ENDPOINTS_SEARCH_PASSWORD,
+                    'core'     => 'ref_pps',
                 ]
             ]
         ];
@@ -157,7 +219,15 @@ class ImportRefPpsCommand extends Command
         require_once __DIR__ . '/../public/const.php';
         require_once __DIR__ . '/../public/bdd_const.php';
 
+        defineProtocol();
+        defineSimpleConstants();
         defineApplicationConstants();
-        // Load additional constants if needed
+
+        $libraries = [realpath(APPLICATION_PATH . '/../library')];
+        set_include_path(implode(PATH_SEPARATOR, array_merge($libraries, [get_include_path()])));
+        require_once 'Zend/Application.php';
+
+        $autoloader = Zend_Loader_Autoloader::getInstance();
+        $autoloader->setFallbackAutoloader(true);
     }
 }
