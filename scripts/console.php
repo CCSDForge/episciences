@@ -18,6 +18,8 @@ require_once __DIR__ . '/CreateDoajVolumeExportsCommand.php';
 require_once __DIR__ . '/ZbjatsZipperCommand.php';
 require_once __DIR__ . '/ImportSectionsCommand.php';
 require_once __DIR__ . '/ImportVolumesCommand.php';
+require_once __DIR__ . '/ImportRefPpsCommand.php';
+require_once __DIR__ . '/DownloadRefPpsCommand.php';
 require_once __DIR__ . '/UpdateCounterRobotsListCommand.php';
 require_once __DIR__ . '/ProcessStatTempCommand.php';
 require_once __DIR__ . '/ImportApacheLogsCommand.php';
@@ -59,6 +61,8 @@ $application->add(new ZbjatsZipperCommand());
 // Import commands
 $application->add(new ImportSectionsCommand());
 $application->add(new ImportVolumesCommand());
+$application->add(new ImportRefPpsCommand());
+$application->add(new DownloadRefPpsCommand());
 
 // Stats commands
 $application->add(new UpdateCounterRobotsListCommand());

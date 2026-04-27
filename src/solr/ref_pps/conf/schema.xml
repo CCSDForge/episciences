@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<schema name="ref_pps" version="1.6">
+    <fields>
+        <!-- Unique identifier for each document -->
+        <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+
+        <field name="detectors" type="string" indexed="true" stored="true" multiValued="false"/>
+        <field name="doi" type="stringCaseInsensitive" indexed="true" stored="true" multiValued="false"/>
+        <field name="title" type="text" indexed="true" stored="true" multiValued="false"/>
+        <field name="pubpeerusers" type="string" indexed="false" stored="true" multiValued="false"/>
+        <field name="pubpeerurl" type="string" indexed="false" stored="true" multiValued="false"/>
+        <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
+
+        <!-- catchall field -->
+        <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
+
+        <field name="_version_" type="long" indexed="true" stored="true"/>
+    </fields>
+
+    <uniqueKey>id</uniqueKey>
+
+    <copyField source="doi" dest="text"/>
+    <copyField source="title" dest="text"/>
+    <copyField source="detectors" dest="text"/>
+    <copyField source="status" dest="text"/>
+
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="inc-fieldtype-schema.xml"/>
+</schema>
