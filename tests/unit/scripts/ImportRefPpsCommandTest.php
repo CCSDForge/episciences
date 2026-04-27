@@ -105,6 +105,54 @@ class ImportRefPpsCommandTest extends TestCase
         $this->assertArrayHasKey('status', $doc);
     }
 
+    public function testMapRowToDocument_DetectorsIsAlwaysArray(): void
+    {
+        $data = ['det1', '10.1234/test', 'Title', 'user', 'url', 'ok'];
+        $doc  = ImportRefPpsCommand::mapRowToDocument($data);
+
+        $this->assertIsArray($doc['detectors']);
+    }
+
+    public function testMapRowToDocument_SingleDetector(): void
+    {
+        $data = ['clayFeet', '10.1234/test', 'Title', 'user', 'url', 'ok'];
+        $doc  = ImportRefPpsCommand::mapRowToDocument($data);
+
+        $this->assertSame(['clayFeet'], $doc['detectors']);
+    }
+
+    public function testMapRowToDocument_MultipleDetectorsSplitByComma(): void
+    {
+        $data = ['annulled, problematic-cell-lines', '10.1234/test', 'Title', 'user', 'url', 'ok'];
+        $doc  = ImportRefPpsCommand::mapRowToDocument($data);
+
+        $this->assertSame(['annulled', 'problematic-cell-lines'], $doc['detectors']);
+    }
+
+    public function testMapRowToDocument_ThreeDetectors(): void
+    {
+        $data = ['annulled, clayFeet, mathgen', '10.1234/test', 'Title', 'user', 'url', 'ok'];
+        $doc  = ImportRefPpsCommand::mapRowToDocument($data);
+
+        $this->assertSame(['annulled', 'clayFeet', 'mathgen'], $doc['detectors']);
+    }
+
+    public function testMapRowToDocument_DashDetectorYieldsEmptyArray(): void
+    {
+        $data = ['-', '10.1234/test', 'Title', 'user', 'url', 'ok'];
+        $doc  = ImportRefPpsCommand::mapRowToDocument($data);
+
+        $this->assertSame([], $doc['detectors']);
+    }
+
+    public function testMapRowToDocument_EmptyDetectorYieldsEmptyArray(): void
+    {
+        $data = ['', '10.1234/test', 'Title', 'user', 'url', 'ok'];
+        $doc  = ImportRefPpsCommand::mapRowToDocument($data);
+
+        $this->assertSame([], $doc['detectors']);
+    }
+
     public function testMapRowToDocument_IdIsLowercasedDoi(): void
     {
         $data = ['det', '10.1234/TEST.DOI', 'Title', 'user', 'url', 'ok'];
@@ -134,12 +182,36 @@ class ImportRefPpsCommandTest extends TestCase
         $data = ['DETECTOR_VAL', 'DOI_VAL', 'TITLE_VAL', 'USERS_VAL', 'URL_VAL', 'STATUS_VAL'];
         $doc  = ImportRefPpsCommand::mapRowToDocument($data);
 
-        $this->assertSame('DETECTOR_VAL', $doc['detectors']);
+        $this->assertSame(['DETECTOR_VAL'], $doc['detectors']);
         $this->assertSame('DOI_VAL', $doc['doi']);
         $this->assertSame('TITLE_VAL', $doc['title']);
-        $this->assertSame('USERS_VAL', $doc['pubpeerusers']);
+        $this->assertSame(['USERS_VAL'], $doc['pubpeerusers']);
         $this->assertSame('URL_VAL', $doc['pubpeerurl']);
         $this->assertSame('STATUS_VAL', $doc['status']);
+    }
+
+    public function testMapRowToDocument_PubpeerusersIsAlwaysArray(): void
+    {
+        $data = ['det', '10.1234/test', 'Title', 'user1', 'url', 'ok'];
+        $doc  = ImportRefPpsCommand::mapRowToDocument($data);
+
+        $this->assertIsArray($doc['pubpeerusers']);
+    }
+
+    public function testMapRowToDocument_MultiplePubpeerusersSplitByComma(): void
+    {
+        $data = ['det', '10.1234/test', 'Title', 'Parashorea Tomentella, Hoya Camphorifolia', 'url', 'ok'];
+        $doc  = ImportRefPpsCommand::mapRowToDocument($data);
+
+        $this->assertSame(['Parashorea Tomentella', 'Hoya Camphorifolia'], $doc['pubpeerusers']);
+    }
+
+    public function testMapRowToDocument_DashPubpeerusersYieldsEmptyArray(): void
+    {
+        $data = ['det', '10.1234/test', 'Title', '-', 'url', 'ok'];
+        $doc  = ImportRefPpsCommand::mapRowToDocument($data);
+
+        $this->assertSame([], $doc['pubpeerusers']);
     }
 
     public function testMapRowToDocument_SameDoiProducesSameId(): void

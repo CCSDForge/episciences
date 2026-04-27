@@ -160,19 +160,28 @@ class ImportRefPpsCommand extends Command
      * Maps a CSV data row to a Solr document array.
      *
      * @param list<string> $data
-     * @return array<string, string>
+     * @return array<string, string|list<string>>
      */
     public static function mapRowToDocument(array $data): array
     {
         return [
             'id'           => strtolower(trim($data[1])), // DOI as stable unique key
-            'detectors'    => $data[0],
+            'detectors'    => self::splitMultiValue($data[0]),
             'doi'          => $data[1],
             'title'        => $data[2],
-            'pubpeerusers' => $data[3],
+            'pubpeerusers' => self::splitMultiValue($data[3]),
             'pubpeerurl'   => $data[4],
             'status'       => $data[5],
         ];
+    }
+
+    /** @return list<string> */
+    private static function splitMultiValue(string $value): array
+    {
+        if (trim($value) === '' || trim($value) === '-') {
+            return [];
+        }
+        return array_values(array_filter(array_map('trim', explode(',', $value))));
     }
 
     public function countDataLines(string $csvFile): ?int
