@@ -35,6 +35,8 @@ php scripts/console.php <command> --help
 | [`zbjats:zip`](#zbjatszip) | Package PDF + zbJATS XML into a ZIP archive per volume |
 | [`import:sections`](#importsections) | Import journal sections from a CSV file |
 | [`import:volumes`](#importvolumes) | Import journal volumes from a CSV file |
+| [`import:ref-pps`](#importref-pps) | Import PPS data from a CSV file into Solr |
+| [`download:ref-pps`](#downloadref-pps) | Download the PPS CSV file from IRIT |
 | [`stats:import-logs`](#statsimport-logs) | Parse Apache access logs and insert article visits into `STAT_TEMP` |
 | [`stats:download-kpi`](#statsdownload-kpi) | Aggregate download KPIs for all published articles and write a JSON file |
 | [`stats:update-robots-list`](#statsupdate-robots-list) | Download the COUNTER Robots list for bot detection |
@@ -321,6 +323,34 @@ php scripts/console.php import:volumes [options]
 | `--rvid <id>` | Journal RVID (integer) |
 | `--csv-file <path>` | Path to the CSV file containing volumes data |
 | `--dry-run` | Simulate the import without writing to the database |
+
+---
+
+### `import:ref-pps`
+
+Imports PPS data from a CSV file into the `ref_pps` Solr core.
+
+```bash
+php scripts/console.php import:ref-pps [csv-file]
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `csv-file` | `data/ref_pps/pps-current.csv` | Path to the CSV file to import |
+
+---
+
+### `download:ref-pps`
+
+Downloads the PPS CSV file from IRIT. Includes a 48h limit check and keeps timestamped backups of previous versions.
+
+```bash
+php scripts/console.php download:ref-pps [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--force` / `-f` | Force download even if the 48h limit is not reached |
 
 ---
 
