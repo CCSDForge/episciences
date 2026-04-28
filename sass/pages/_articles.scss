@@ -102,3 +102,8 @@ input#affiliations{
 .panel-warning > .panel-heading {
   color: #5c4100;
 }
+
+// Offset anchor scroll for fixed navbar (navbar-fixed-top ~50px + breathing room)
+#manage-linked-data {
+  scroll-margin-top: 70px;
+}
