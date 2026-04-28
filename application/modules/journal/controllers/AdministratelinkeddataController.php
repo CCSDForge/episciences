@@ -13,7 +13,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
             return;
         }
-        $inputTypeLd = filter_var(trim($this->getRequest()->getPost('typeld')), FILTER_SANITIZE_SPECIAL_CHARS);
+        $inputTypeLd = filter_var(trim($this->getRequest()->getPost('typeld') ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
         $rawValueLd = str_replace(' ','',trim($this->getRequest()->getPost('valueld')));
         $docId = (int)$this->getRequest()->getPost('docId');
         $paperId = filter_var(trim($this->getRequest()->getPost('paperId')), FILTER_SANITIZE_SPECIAL_CHARS);
@@ -163,11 +163,15 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         }
 
         $docId = (int)$request->getPost('docId');
-        $paperId = filter_var(trim($request->getPost('paperId')), FILTER_SANITIZE_SPECIAL_CHARS);
+        $paperId = filter_var(trim($request->getPost('paperId') ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
         $idLd = filter_var($request->getPost('id'), FILTER_SANITIZE_NUMBER_INT);
-        /** @var Episciences_Paper_Dataset $datasetInDb */
         $datasetInDb = Episciences_Paper_DatasetsManager::findById($idLd);
-        $typeLd = htmlspecialchars($datasetInDb->getName(), ENT_QUOTES, 'UTF-8');
+        if (!$datasetInDb instanceof Episciences_Paper_Dataset) {
+            ob_clean();
+            echo json_encode([false], JSON_THROW_ON_ERROR);
+            return;
+        }
+        $typeLd = htmlspecialchars($datasetInDb->getName() ?? '', ENT_QUOTES, 'UTF-8');
         $valueLd = htmlspecialchars($datasetInDb->getValue(), ENT_QUOTES, 'UTF-8');
         if (($ds = $datasetInDb->getIdPaperDatasetsMeta()) !== null){
             $isDeleted = Episciences_Paper_DatasetsMetadataManager::deleteMetaDataAndDatasetsByIdMd((int)$ds);
@@ -229,7 +233,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             
             // Sanitize all input parameters
             $ldId = filter_var($request->getPost('ldId'), FILTER_SANITIZE_NUMBER_INT);
-            $relationship = htmlspecialchars(trim($request->getPost('relationship')), ENT_QUOTES, 'UTF-8');
+            $relationship = htmlspecialchars(trim($request->getPost('relationship') ?? ''), ENT_QUOTES, 'UTF-8');
             $typeLd = filter_var(trim($request->getPost('typeld')), FILTER_SANITIZE_SPECIAL_CHARS);
             $valueLd = htmlspecialchars(trim($request->getPost('valueLd')), ENT_QUOTES, 'UTF-8');
             $docId = filter_var($request->getPost('docId'), FILTER_SANITIZE_NUMBER_INT);

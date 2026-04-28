@@ -11,7 +11,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  * Symfony Console command: import PPS data from a CSV file into Solr.
  *
- * Expected CSV format (with header row):
+ * Expected CSV format (with header row). Column order is detected from the header,
+ * so extra columns in the source file are ignored gracefully:
  *   Detectors,Doi,Title,Pubpeerusers,Pubpeerurl,Status
  */
 class ImportRefPpsCommand extends Command
@@ -19,6 +20,8 @@ class ImportRefPpsCommand extends Command
     protected static $defaultName = 'import:ref-pps';
 
     private const BATCH_SIZE = 1000;
+
+    private const REQUIRED_COLUMNS = ['detectors', 'doi', 'title', 'pubpeerusers', 'pubpeerurl', 'status'];
 
     protected function configure(): void
     {
@@ -71,6 +74,19 @@ class ImportRefPpsCommand extends Command
             return Command::FAILURE;
         }
 
+        $columnMap = self::buildColumnMap($header);
+        if (!self::validateColumnMap($columnMap)) {
+            $progressBar->finish();
+            $io->newLine(2);
+            $io->error(sprintf(
+                'CSV header is missing required columns. Found: [%s]. Required: [%s]',
+                implode(', ', array_keys($columnMap)),
+                implode(', ', self::REQUIRED_COLUMNS)
+            ));
+            fclose($handle);
+            return Command::FAILURE;
+        }
+
         $solrClient  = $this->getSolrClient();
         $updateQuery = $solrClient->createUpdate();
         $batch       = [];
@@ -79,12 +95,12 @@ class ImportRefPpsCommand extends Command
         $skipped     = 0;
 
         while (($data = fgetcsv($handle)) !== false) {
-            if (!self::isValidRow($data)) {
+            if (!self::isValidRow($data, $columnMap)) {
                 $skipped++;
                 continue;
             }
 
-            $doc     = $updateQuery->createDocument(self::mapRowToDocument($data));
+            $doc     = $updateQuery->createDocument(self::mapRowToDocument($data, $columnMap));
             $batch[] = $doc;
             $count++;
 
@@ -143,35 +159,71 @@ class ImportRefPpsCommand extends Command
 
         $io->newLine(2);
         if ($skipped > 0) {
-            $io->warning("Skipped {$skipped} rows with fewer than 6 fields.");
+            $io->warning("Skipped {$skipped} rows with insufficient fields.");
         }
         $io->success("Import completed: {$imported} documents imported into ref_pps core.");
 
         return Command::SUCCESS;
     }
 
-    /** @param list<string|null> $data */
-    public static function isValidRow(array $data): bool
+    /**
+     * Builds a lowercase name→index map from the CSV header row.
+     *
+     * @param list<string|null> $header
+     * @return array<string, int>
+     */
+    public static function buildColumnMap(array $header): array
     {
-        return count($data) >= 6;
+        $map = [];
+        foreach ($header as $index => $name) {
+            $map[strtolower(trim((string) $name))] = $index;
+        }
+        return $map;
+    }
+
+    /** @param array<string, int> $columnMap */
+    public static function validateColumnMap(array $columnMap): bool
+    {
+        foreach (self::REQUIRED_COLUMNS as $col) {
+            if (!isset($columnMap[$col])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @param list<string|null> $data
+     * @param array<string, int> $columnMap
+     */
+    public static function isValidRow(array $data, array $columnMap): bool
+    {
+        foreach ($columnMap as $index) {
+            if (!array_key_exists($index, $data)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
      * Maps a CSV data row to a Solr document array.
      *
-     * @param list<string> $data
+     * @param list<string|null> $data
+     * @param array<string, int> $columnMap
      * @return array<string, string|list<string>>
      */
-    public static function mapRowToDocument(array $data): array
+    public static function mapRowToDocument(array $data, array $columnMap): array
     {
+        $doi = trim((string) ($data[$columnMap['doi']] ?? ''));
         return [
-            'id'           => strtolower(trim($data[1])), // DOI as stable unique key
-            'detectors'    => self::splitMultiValue($data[0]),
-            'doi'          => $data[1],
-            'title'        => $data[2],
-            'pubpeerusers' => self::splitMultiValue($data[3]),
-            'pubpeerurl'   => $data[4],
-            'status'       => $data[5],
+            'id'           => strtolower($doi),
+            'detectors'    => self::splitMultiValue((string) ($data[$columnMap['detectors']] ?? '')),
+            'doi'          => $doi,
+            'title'        => trim((string) ($data[$columnMap['title']] ?? '')),
+            'pubpeerusers' => self::splitMultiValue((string) ($data[$columnMap['pubpeerusers']] ?? '')),
+            'pubpeerurl'   => trim((string) ($data[$columnMap['pubpeerurl']] ?? '')),
+            'status'       => trim((string) ($data[$columnMap['status']] ?? '')),
         ];
     }
 
