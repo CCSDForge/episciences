@@ -3,6 +3,7 @@ $(function () {
 
     function callAddForm(typeld, option = []) {
         removeFormLd();
+        $('#container-manager-linkeddatas').collapse('show');
 
         $.ajax({
             type: 'POST',
