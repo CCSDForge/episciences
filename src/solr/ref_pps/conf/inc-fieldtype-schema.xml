@@ -1,0 +1,27 @@
+<types>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true" indexed="true" stored="true"/>
+    
+    <fieldType name="text" class="solr.TextField" positionIncrementGap="100" indexed="true" stored="false">
+      <analyzer>
+        <charFilter class="solr.HTMLStripCharFilterFactory"/>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.WordDelimiterGraphFilterFactory" preserveOriginal="1" generateWordParts="1"
+                generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="0"
+                splitOnCaseChange="0"/>
+        <filter class="solr.ICUFoldingFilterFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
+    <fieldType name="stringCaseInsensitive" class="solr.TextField" sortMissingLast="true" omitNorms="true"
+               indexed="true" stored="true">
+        <analyzer>
+            <charFilter class="solr.HTMLStripCharFilterFactory"/>
+            <tokenizer class="solr.KeywordTokenizerFactory"/>
+            <filter class="solr.TrimFilterFactory"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+        </analyzer>
+    </fieldType>
+
+    <fieldType name="long" class="solr.LongPointField" docValues="true"/>
+</types>
