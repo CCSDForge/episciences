@@ -16,10 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performances
 -->
 
-## Unreleased
+## v1.0.54.3 - 2026-04-23
+
 ### Fixed
+
 - The link to the new version of the data descriptor isn't working; it still points to the first version.
-- [RT#285106]: Application error when submitting
+- [RT#285106]: Application error when submitting with 'display secondary volume' option enabled
+- Always SELECT RECORD so Paper::getMetadata() / toJson() can resolve titles and abstracts
+- Log parser: extract IP from syslog-prefixed Apache log lines
 
 ## v1.0.54.2 - 2026-04-16
 
