@@ -149,12 +149,14 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         }
     }
     public function removeldAction(){
+        ob_start();
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         if ((!$request->isXmlHttpRequest() || !$request->isPost()) && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
+            ob_clean();
             echo json_encode([false], JSON_THROW_ON_ERROR);
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
             return;
@@ -175,9 +177,10 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         if ($isDeleted) {
             Episciences_PapersManager::updateJsonDocumentData($docId);
             Episciences_Paper_Logger::log($paperId,$docId,Episciences_Paper_Logger::CODE_LD_REMOVED,Episciences_Auth::getUid(), json_encode(['typeLd' => $typeLd,'valueLd' => $valueLd,'docId'=>$docId,'paperId' => $paperId,'username' => Episciences_Auth::getFullName()]));
-
+            ob_clean();
             echo json_encode([true], JSON_THROW_ON_ERROR);
         } else {
+            ob_clean();
             echo json_encode([false], JSON_THROW_ON_ERROR);
         }
     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage('Suppression de la donnée liée bien prise en compte');
