@@ -1,0 +1,48 @@
+<ul id="languages_tabs" class="nav nav-tabs">
+    <?php
+    try {
+        $locale = Zend_Registry::get("Zend_Translate")->getLocale();
+    } catch (Zend_Exception $e) {
+        $locale = 'fr';
+        trigger_error($e->getMessage());
+    }
+    $defaultLang = (array_key_exists($locale, $this->langs)) ? $locale : 'fr';
+    ?>
+    <?php foreach ($this->langs as $code => $lang) : ?>
+        <?php $isChecked = count($this->langs) === 1 || $code === $defaultLang; ?>
+        <li class="<?= $isChecked ? 'active' : '' ?>"
+            data-toggle="tooltip"
+            data-placement="bottom"
+            title="<?= ucfirst(Zend_Locale::getTranslation($code, 'language', $locale)) ?>">
+            <a href="<?= '#' . $code . '_form' ?>" data-toggle="tab">
+                <?= strtoupper($code )?>
+                <img class="<?= 'flag_' . $code ?> <?= $isChecked ? '_selected' : '' ?>" src='/img/spacer.gif' alt="language"/>
+            </a>
+        </li>
+    <?php endforeach; ?>
+</ul>
+
+<?= $this->form ?>
+
+<script>
+    var options = {
+        convert_urls: false,
+        menubar: false,
+        height: 400,
+        plugins: "link image code fullscreen table",
+        toolbar1: "bold italic underline | styleselect | undo redo | alignleft aligncenter alignright alignjustify | bullist numlist | link image | code"
+    };
+    __initMCE("textarea", undefined, options);
+</script>
+<script>
+    $(document).ready(function () {
+        $('a[data-toggle="tab"]').on('shown', function (e) {
+            $('a[data-toggle="tab"] img').each(function () {
+                var currentClass = $(this).attr('class');
+                $(this).attr('class', currentClass.replace('_selected', ''));
+            });
+            var currentClass = $(this).find('img').attr('class');
+            $(this).find('img').attr('class', currentClass + '_selected');
+        });
+    });
+</script>

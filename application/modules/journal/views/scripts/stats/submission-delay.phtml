@@ -1,0 +1,36 @@
+<?php if (
+        isset($this->submissionAcceptanceTime) ||
+        isset($this->submissionPublicationTime) ||
+        isset($this->submissionPublicationTimeMedian) ||
+        isset($this->submissionAcceptanceTimeMedian)
+) : ?>
+    <div>
+        <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Délai')?></h1>
+
+        <table class="delay table table-striped">
+
+            <thead>
+            <tr>
+                <th scope="col"></th>
+                <th scope="col" class="stat-label"><?= sprintf($this->translate('Moyenne [en %s]'), $this->translate(strtolower($this->submissionAcceptanceTimeUnit))) ?></th>
+                <th scope="col" class="stat-label"><?= sprintf($this->translate('Médiane [en %s]'), $this->translate(strtolower($this->submissionAcceptanceTimeMedianUnit))) ?></th>
+            </tr>
+            </thead>
+            <tbody>
+
+            <tr>
+                <th class="stat-label"><?= ucfirst($this->translate('délai soumission-publication')) ?></th>
+                <td class="stat-value"><?= $this->submissionPublicationTime ?></td>
+                <td class="stat-value"><?= $this->submissionPublicationTimeMedian ?></td>
+            </tr>
+
+            <tr>
+                <th class="stat-label"><?= ucfirst($this->translate('délai soumission-acceptation')) ?></th>
+                <td class="stat-value"><?= $this->submissionAcceptanceTime ?></td>
+                <td class="stat-value"><?= $this->submissionAcceptanceTimeMedian ?></td>
+            </tr>
+            </tbody>
+        </table>
+
+    </div>
+<?php endif; ?>

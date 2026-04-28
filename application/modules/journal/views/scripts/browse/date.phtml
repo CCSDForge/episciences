@@ -1,0 +1,30 @@
+<div class="row">
+    <div class="col-md-5">
+
+        <?php
+        if (empty($this->yearsArray)) {
+            echo '<div class="alert alert-info" role="alert">' . $this->translate('Aucun article pour le moment') . '</div>';
+            return;
+        }
+        ?>
+
+        <ul class="list-group">
+            <?php
+            $searchParams['controller'] = 'search';
+            $searchParams['action'] = 'index';
+            $url = $this->url($searchParams, null, true);
+            foreach ($this->yearsArray as $year => $count) {
+                $yearClean = $this->escape($year);
+                $searchParams['q'] = 'publication_date_year_fs:' . $yearClean;
+                $url = $this->url($searchParams, null, true);
+
+                echo '<li class="list-group-item">';
+                echo '<span class="label label-default pull-right">' . $this->escape($count) . '</span>';
+                printf('<a href="%s">%s</a>', $url,$yearClean);
+                echo '</li>';
+            }
+            ?>
+        </ul>
+
+    </div>
+</div>

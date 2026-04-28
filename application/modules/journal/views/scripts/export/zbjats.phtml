@@ -1,0 +1,357 @@
+<?php
+/** @var Episciences_Paper $paper */
+
+$paper = $this->paper;
+$authors = $paper->getMetadata('authors');
+$subjects = $paper->getMetadata('subjects');
+
+$titles = $paper->getAllTitles();
+
+$abstracts = $paper->getAllAbstracts();
+$classifications = $paper->getClassifications();
+
+
+$dateSubmitted = new DateTime($paper->getSubmission_date());
+$dateUpdated = new DateTime($paper->getModification_date());
+$dateIssued = new DateTime($paper->getPublication_date());
+$publicationYear = new DateTime($paper->getPublication_date());
+
+/** @var $journal Episciences_Review */
+$journal = $this->journal;
+
+$journalSettings = $journal->getSettings();
+$enrichmentAuthors = $paper->getAuthors();
+
+// bibliographical ref
+$bibRefList = $this->bibRef;
+
+$timestamp = time();
+?><!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.1d2 20140930//EN"
+        "http://jats.nlm.nih.gov/publishing/1.1d2/JATS-journalpublishing1.dtd">
+<article xml:lang="<?php echo $this->escape($this->paperLanguage); ?>" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <front>
+        <journal-meta>
+            <journal-id journal-id-type="publisher"><?php echo DOMAIN; ?></journal-id>
+
+            <?php $journalSettingsIssn = $journalSettings[Episciences_Review::SETTING_ISSN];
+            $journalIssnFormatted = Episciences_View_Helper_FormatIssn::FormatIssn($journalSettingsIssn);
+            if (isset($journalSettingsIssn) && $journalSettingsIssn !== '') : ?>
+                <journal-id journal-id-type="issn"
+                            specific-use="electronic"><?php echo $journalIssnFormatted; ?></journal-id>
+            <?php endif; ?>
+
+            <?php
+            $journalSettingsIssnPrint = $journalSettings[Episciences_Review::SETTING_ISSN_PRINT];
+            $journalIssnPrintFormatted = Episciences_View_Helper_FormatIssn::FormatIssn($journalSettingsIssnPrint);
+            if (isset($journalSettingsIssnPrint) && $journalSettingsIssnPrint !== '') : ?>
+                <journal-id journal-id-type="issn"
+                            specific-use="print"><?php echo $journalIssnPrintFormatted; ?></journal-id>
+            <?php endif; ?>
+
+            <journal-title-group>
+                <journal-title><?php echo $this->escape($journal->getName()); ?></journal-title>
+                <abbrev-journal-title><?php echo mb_strtoupper($this->escape($journal->getCode())); ?></abbrev-journal-title>
+            </journal-title-group>
+
+            <?php if (isset($journalSettingsIssn) && $journalSettingsIssn !== '') : ?>
+                <issn specific-use="electronic"><?php echo $journalIssnFormatted; ?></issn>
+            <?php endif; ?>
+
+            <?php if (isset($journalSettingsIssnPrint) && $journalSettingsIssnPrint !== '') : ?>
+                <issn specific-use="print"><?php echo $journalIssnPrintFormatted; ?></issn>
+            <?php endif; ?>
+
+            <publisher>
+                <?php if (isset($journalSettings[Episciences_Review::SETTING_JOURNAL_PUBLISHER]) && $journalSettings[Episciences_Review::SETTING_JOURNAL_PUBLISHER] !== '') : ?>
+                    <publisher-name><?php echo $this->escape($journalSettings[Episciences_Review::SETTING_JOURNAL_PUBLISHER]); ?></publisher-name>
+                <?php endif; ?>
+                <publisher-loc>
+                    <?php if (isset($journalSettings[Episciences_Review::SETTING_JOURNAL_PUBLISHER_LOC]) && $journalSettings[Episciences_Review::SETTING_JOURNAL_PUBLISHER_LOC] !== '') : ?>
+                        <?= $this->escape(htmlspecialchars($journalSettings[Episciences_Review::SETTING_JOURNAL_PUBLISHER_LOC])) ?>
+                    <?php endif; ?>
+                    <email>support@<?php echo DOMAIN; ?></email>
+                    <uri><?php echo $this->escape('https://www.' . DOMAIN); ?></uri>
+                    <uri><?php echo $this->escape('https://' . $this->journal->getCode() . '.' . DOMAIN); ?></uri>
+                </publisher-loc>
+            </publisher>
+        </journal-meta>
+
+        <article-meta>
+            <article-id pub-id-type="doi"><?php echo htmlentities($this->doi, ENT_XML1); ?></article-id>
+
+            <?php if ($paper->getRepoid() === 2): ?>
+                <article-id
+                        pub-id-type="arxiv"><?php echo htmlentities($paper->getIdentifier(), ENT_XML1); ?></article-id>
+            <?php elseif ($paper->getRepoid() === 1): ?>
+                <article-id
+                        pub-id-type="hal"><?php echo htmlentities($paper->getIdentifier(), ENT_XML1); ?></article-id>
+            <?php endif; ?>
+
+            <?php $applicationUrl = sprintf("%s://%s.%s", SERVER_PROTOCOL, $this->journal->getCode(), DOMAIN); ?>
+            <article-id pub-id-type="publisher-id"><?= $applicationUrl . '/' . $paper->getPaperid(); ?></article-id>
+
+
+            <?php if ($this->section !== '') : ?>
+                <article-catgories>
+                    <series-text content-type="text"><?php echo $this->escape($this->section); ?></series-text>
+                </article-catgories>
+            <?php endif; ?>
+
+
+
+
+            <title-group>
+                <?php $titleCount = 0; ?>
+                <?php foreach ($titles as $lang => $title) : ?>
+                    <?php
+
+                    if (!$lang || !Zend_Locale::isLocale($lang)) {
+                        $lang = $this->paperLanguage;
+                        //default to paper language
+                    }
+
+
+                    if ($titleCount == 0): ?>
+                        <article-title
+                                xml:lang="<?php echo $this->escape($lang) ?>"><?php echo $this->escape($title) ?></article-title>
+                        <?php $titleCount++; ?>
+                    <?php elseif ($titleCount == 1) : ?>
+                        <trans-title-group xml:lang="<?php echo $this->escape($lang) ?>">
+                            <trans-title><?php echo $this->escape($title) ?></trans-title>
+                        </trans-title-group>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </title-group>
+
+            <contrib-group>
+
+                <?php
+                if (is_array($authors)) {
+                    foreach ($authors as $order => $creatorName) {
+                        $givenName = '';
+                        $familyName = '';
+                        if (str_contains($creatorName, ',')) {
+                            [$familyName, $givenName] = explode(', ', $creatorName);
+                            $givenName = trim($givenName, ',');
+                        } else {
+                            $familyName = $creatorName;
+                        }
+                        ?>
+                        <contrib contrib-type="author">
+                            <?php if (isset($enrichmentAuthors[$order]['orcid'])): ?>
+                                <contrib-id
+                                        contrib-id-type="orcid"><?= strtoupper($this->escape($enrichmentAuthors[$order]['orcid'])) ?></contrib-id><?php endif; ?>
+                            <name>
+                                <surname><?php echo $this->escape($familyName) ?></surname>
+                                <?php if ($givenName !== '') : ?>
+                                    <given-names><?php echo $this->escape($givenName) ?></given-names>
+                                <?php endif; ?>
+                            </name>
+                            <?php if (!empty($enrichmentAuthors)): ?><?php if (!empty($enrichmentAuthors[$order]['affiliation'])): ?>
+                                <institution-wrap><?php foreach ($enrichmentAuthors[$order]['affiliation'] as $affiliationAuthor): ?>
+                                        <institution>
+                                            <?php if (isset($affiliationAuthor['id'])): ?>
+                                                <?php foreach ($affiliationAuthor['id'] as $values): ?>
+                                                    <?php if (isset($values['id'])): ?>
+                                                        <institution_id
+                                                                type="ror"><?= $this->escape($values['id']) ?></institution_id>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                            <?php if (isset($affiliationAuthor['name'])): ?>
+                                                <institution_name><?= $this->escape($affiliationAuthor['name']) ?></institution_name>
+                                            <?php endif; ?>
+                                        </institution>
+                                    <?php endforeach; ?>
+                                </institution-wrap>
+                            <?php endif; ?>
+                            <?php endif; ?>
+                        </contrib>
+                        <?php
+                    }
+                }
+                ?>
+            </contrib-group>
+
+
+            <pub-date pub-type="epub">
+                <day><?php echo $publicationYear->format('d'); ?></day>
+                <month><?php echo $publicationYear->format('m'); ?></month>
+                <year><?php echo $publicationYear->format('Y'); ?></year>
+            </pub-date>
+
+            <?php if (isset($this->volume['volume']) && $this->volume['volume'] !== null && $this->volume['volume'] !== '') : ?>
+
+                <volume><?php echo $this->escape($this->volume['volume']); ?></volume>
+
+            <?php endif; ?>
+            <?php
+            // Priority to parsed issue from volume
+            $issueValue = '';
+            if (isset($this->volume['issue']) && $this->volume['issue'] !== null && $this->volume['issue'] !== '') {
+                $issueValue = $this->volume['issue'];
+            }
+            ?>
+            <?php if ($issueValue !== '') : ?>
+                <issue><?php echo $this->escape($issueValue); ?></issue>
+            <?php endif; ?>
+
+
+            <uri specific-use="for-review"><?php echo $applicationUrl . '/' . $paper->getPaperid(); ?>/pdf</uri>
+
+            <self-uri><?php echo $applicationUrl . '/' . $paper->getPaperid(); ?></self-uri>
+
+
+            <?php if ($abstracts): ?>
+                <?php $abstractCount = 0; ?>
+                <?php foreach ($abstracts as $lang => $abstract) {
+
+                    if (!$lang || !Zend_Locale::isLocale($lang)) {
+                        $lang = $this->paperLanguage;
+                        //default to paper language
+                    }
+                    $abstract = trim($abstract);
+                    if (($abstract === 'International audience') || $abstract === 'soumission à Episciences' || (str_starts_with($abstract, 'Comment:'))) {
+                        continue;
+                    }
+                    if ($abstractCount === 0): ?>
+                        <abstract xml:lang="<?php echo $this->escape($lang) ?>">
+                            <p><?php echo $this->escape($abstract) ?></p>
+                        </abstract>
+                        <?php $abstractCount++; ?>
+                    <?php elseif ($abstractCount == 1) : ?>
+                        <trans-abstract xml:lang="<?php echo $this->escape($lang) ?>">
+                            <p><?php echo $this->escape($abstract) ?></p>
+                        </trans-abstract>
+                    <?php endif; ?>
+                <?php } ?>
+            <?php endif; ?>
+
+            <?php if (is_array($subjects)): ?>
+
+                <?php
+                $keywordByLang = [];
+                foreach ($subjects as $keyword) {
+
+                    if (is_array($keyword)) {
+                        foreach ($keyword as $kwdLang => $kwd) {
+                            if (!Zend_Locale::isLocale($kwdLang)) {
+                                $kwdLang = $this->paperLanguage;
+                                //default to paper language
+                            }
+                            $keywordByLang[$kwdLang][] = '<kwd>' . $this->escape($kwd) . '</kwd>';
+                        }
+                    } else {
+                        $keywordByLang[$this->paperLanguage][] = '<kwd>' . $this->escape($keyword) . '</kwd>';
+                    }
+                }
+
+                if (!empty($keywordByLang)) {
+                    foreach ($keywordByLang as $keywordByLangIndex => $keywordByLangValue) {
+                        printf('<kwd-group kwd-group-type="author" xml:lang="%s">', $keywordByLangIndex);
+                        echo implode(PHP_EOL, $keywordByLangValue);
+                        echo '</kwd-group>';
+                    }
+                }
+                ?>
+            <?php endif; ?>
+
+            <?php if(!empty($classifications)): ?>
+            <?php foreach ($classifications as $classificationType => $classification): ?>
+                <?php if($classificationType ===  'msc2020'): ?>
+                    <kwd-group kwd-group-type="MSC2020">
+                    <?php foreach ($classification as $msc): ?>
+                        <kwd><?= $this->escape($msc->getCode()) ?></kwd>
+                    <?php endforeach; ?>
+                    </kwd-group>
+                    <?php endif; ?>
+            <?php endforeach; ?>
+
+            <?php endif; ?>
+            <permissions>
+                <copyright-year><?php echo $publicationYear->format('Y'); ?></copyright-year>
+                <copyright-holder>The Author(s)</copyright-holder>
+                <license license-type="open-access"<?= $this->licenceUrlString; ?>></license>
+            </permissions>
+
+            <?php if ($this->nbPages > 0): ?>
+                <counts>
+                    <page-count count="<?= $this->nbPages ?>"/>
+                </counts>
+            <?php endif; ?>
+
+        </article-meta>
+    </front>
+
+    <body></body>
+    <?php if (!empty($bibRefList)): ?>
+        <back>
+            <ref-list>
+                <?php foreach ($bibRefList as $ref): ?>
+                    <ref>
+                        <?php if (!isset($ref['mixed-citation'])) {
+                            echo "<element-citation>";
+                        } else {
+                            echo "<mixed-citation>" . $this->escape($ref['mixed-citation']) . "</mixed-citation>";
+                        } ?>
+                        <?php if (isset($ref['authors'])) {
+                            foreach ($ref['authors'] as $author) {
+                                echo "<name>";
+                                if (isset($author['surname'])) {
+                                    echo "<surname>" . $this->escape($author['surname']) . "</surname>";
+                                }
+                                if (isset($author['given-names'])) {
+                                    echo "<given-names>" . $this->escape($author['given-names']) . "</given-names>";
+                                }
+                                echo "</name>";
+                            }
+                        } ?>
+                        <?php if (isset($ref['article-title'])) {
+                            if (isset($ref['lang-article'])) {
+                                echo "<article-title xml:lang='" . $this->escape($ref['lang-article']) . "'>" . $this->escape($ref['article-title']) . "</article-title>";
+                            } else {
+                                echo "<article-title>" . $this->escape($ref['article-title']) . "</article-title>";
+                            }
+
+                        } ?>
+                        <?php if (isset($ref['doi'])) {
+                            echo "<object-id pub-id-type='doi'>" . $this->escape($ref['doi']) . "</object-id>";
+                        } ?>
+                        <?php if (isset($ref['source'])) {
+                            echo "<source>" . $this->escape($ref['source']) . "</source>";
+                        } ?>
+                        <?php if (isset($ref['issn'])) {
+                            echo "<issn>" . $this->escape($ref['issn']) . "</issn>";
+                        } ?>
+                        <?php if (isset($ref['eissn'])) {
+                            echo "<issn specific-use='electronic'>" . $this->escape($ref['eissn']) . "</issn>";
+                        } ?>
+                        <?php if (isset($ref['isbn'])) {
+                            echo "<isbn>" . $this->escape($ref['isbn']) . "</isbn>";
+                        } ?>
+                        <?php if (isset($ref['year'])) {
+                            echo "<year>" . $this->escape($ref['year']) . "</year>";
+                        } ?>
+                        <?php if (isset($ref['volume'])) {
+                            echo "<volume>" . $this->escape($ref['volume']) . "</volume>";
+                        } ?>
+                        <?php if (isset($ref['issue'])) {
+                            echo "<issue>" . $this->escape($ref['issue']) . "</issue>";
+                        } ?>
+                        <?php if (isset($ref['fpage']) && isset($ref['lpage'])) {
+                            echo "<fpage>" . $this->escape($ref['fpage']) . "</fpage>";
+                        } elseif (isset($ref['fpage']) && !isset($ref['lpage'])) {
+                            echo "<size units='pages'>" . $this->escape($ref['fpage']) . "</size>";
+                        } ?>
+                        <?php if (isset($ref['lpage'])) {
+                            echo "<lpage>" . $this->escape($ref['lpage']) . "</lpage>";
+                        } ?>
+                        <?php if (!isset($ref['mixed-citation'])) {
+                            echo "</element-citation>";
+                        } ?>
+                    </ref>
+                <?php endforeach; ?>
+            </ref-list>
+        </back>
+    <?php endif; ?>
+</article>

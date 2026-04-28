@@ -1,0 +1,28 @@
+<table class="log-details">
+    <tr>
+        <td class="td-label"><?= $this->translate($this->tableTitle); ?></td>
+        <td class="small"><?= $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT); ?></td>
+    </tr>
+    <tr>
+        <td class="td-label"><?= $this->translate($this->uidTitle); ?></td>
+        <td class="small">
+            <?php if ($this->log['uid'] == EPISCIENCES_UID) : ?>
+                <?= "Episciences"; ?>
+            <?php else : ?>
+                <?= $this->user['fullname']; ?>
+            <?php endif; ?>
+        </td>
+    </tr>
+    <tr>
+        <td class="td-label"><?= $this->translate("Nom"); ?></td>
+        <td class="small"><?= $this->log['detail']['user']['fullname']; ?></td>
+    </tr>
+    <tr>
+        <td class="td-label"><?= $this->translate("Identifiant"); ?></td>
+        <td class="small"><?= $this->log['detail']['user']['username']; ?></td>
+    </tr>
+    <tr>
+        <td class="td-label"><?= $this->translate("Adresse e-mail"); ?></td>
+        <td class="small"><?= $this->log['detail']['user']['email']; ?></td>
+    </tr>
+</table>

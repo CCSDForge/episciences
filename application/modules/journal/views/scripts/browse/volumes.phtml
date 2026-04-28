@@ -1,0 +1,45 @@
+<?php $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName(); ?>
+<?php $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName(); ?>
+<div id="volumes-list">
+    <?php if (count($this->volumes)) : ?>
+
+        <?php foreach ($this->volumes as $volume) : ?>
+            <?= $this->partial('partials/volume.phtml', ['volume' => $volume]) ?>
+        <?php endforeach; ?>
+
+        <?php if ($this->total > count($this->volumes)) : ?>
+            <?php $nbpages = ceil($this->total / $this->limit); ?>
+            <nav>
+                <ul class="pagination">
+
+                    <?php if ($this->page - 1 > 0) : ?>
+                        <li><a href="<?= '/' . $controller . '/' . $action ?>/page/<?php echo $this->page - 1; ?>"
+                               aria-label="Previous"><span
+                                        aria-hidden="true">&laquo;</span></a></li>
+                    <?php else: ?>
+                        <li class="disabled"><span aria-hidden="true">&laquo;</span></li>
+                    <?php endif; ?>
+
+                    <?php for ($i = 1; $i <= $nbpages; $i++) : ?>
+                        <li<?php if ($this->page == $i) echo ' class="active"' ?>><a
+                                    href="<?php echo '/' . $controller . '/' . $action; ?>/page/<?php echo $i; ?>"><?php echo $i; ?></a>
+                        </li>
+                    <?php endfor; ?>
+
+                    <?php if ($this->page < $this->total) : ?>
+                        <li><a href="<?= '/' . $controller . '/' . $action ?>/page/<?php echo $this->page + 1; ?>"
+                               aria-label="Next"><span
+                                        aria-hidden="true">&raquo;</span></a></li>
+                    <?php else: ?>
+                        <li class="disabled"><span aria-hidden="true">&raquo;</span></li>
+                    <?php endif; ?>
+
+                </ul>
+            </nav>
+        <?php endif; ?>
+
+    <?php else : ?>
+        <?php echo $this->translate('Aucun volume pour le moment'); ?>
+
+    <?php endif; ?>
+</div>

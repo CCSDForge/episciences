@@ -1,0 +1,28 @@
+.tree ul{    
+    list-style: none;   
+    margin-left: 0px;
+    padding-left: 0px;
+}
+
+.tree label {
+    display: inline-block;
+}
+
+.tree ul {
+    opacity: 0; 
+    height: 0px;
+    overflow: hidden;
+    margin-left: 20px;
+}
+                
+%%CARET%%
+
+.tree label .libelle {      
+    cursor: pointer;
+}
+                
+.tree label .libelle:hover {      
+    font-weight: bold;
+}               
+
+%%ICONS%% 

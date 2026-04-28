@@ -1,0 +1,20 @@
+<style>
+    .alert-banner {
+        background-color: rgb(255, 106, 0);
+        color: white;
+        font-family: Montserrat, sans-serif;
+        font-size: 18px;
+        font-weight: 500;
+        margin-top: 5px;
+    }
+</style>
+<?php
+$message = EPISCIENCES_RENDER_ALERT_BANNER['MESSAGE']['FR'];
+
+if (Episciences_Tools::getLocale() === Episciences_Review::DEFAULT_LANG) {
+    $message = EPISCIENCES_RENDER_ALERT_BANNER['MESSAGE']['DEFAULT_LANG'];
+}
+?>
+<div class="alert alert-warning text-center alert-banner">
+    <?= $this->translate($message) ?>
+</div>

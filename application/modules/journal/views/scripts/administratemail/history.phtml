@@ -1,0 +1,37 @@
+<?php
+/** @var Zend_Controller_Request_Http $request */
+$request = Zend_Controller_Front::getInstance()->getRequest();
+$controller = $request->getControllerName();
+$action = $request->getActionName();
+?>
+
+<?php //if ($this->history) : ?>
+<table class="table table-striped table-bordered dataTable" id="history" style="width: 100%;">
+    <thead>
+    <th><?php echo $this->translate('Sujet'); ?></th>
+    <th><?php echo $this->translate('Destinataires'); ?></th>
+    <th><?php echo $this->translate('Pièce(s) jointe(s)'); ?></th>
+    <th><?php echo $this->translate('Date d\'envoi'); ?></th>
+    </thead>
+
+    <tbody></tbody>
+</table>
+
+<script type="text/javascript">
+
+    let selfController = <?php echo "'$controller'"; ?>;
+    let selfAction = <?php echo "'$action'"; ?>;
+
+</script>
+
+<?php //else : ?>
+<!--p><?php //echo $this->translate('Aucun mail envoyé pour le moment')?></p-->
+<?php //endif; ?>
+
+<?php
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
+$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->jQuery()->addJavascriptFile('/js/paper/submitted.js');
+
+$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+?>

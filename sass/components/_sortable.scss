@@ -1,0 +1,27 @@
+.sortable {
+  margin: 0 0 10px 0;
+  padding: 0;
+}
+
+.sortable > li {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: #fff;
+  margin: 0 0 5px 0;
+  padding: 0;
+}
+
+.sortable li > span {
+  position: absolute;
+  margin-left: -1.3em;
+}
+
+.sortable-placeholder {
+  width: 100%;
+  height: 35px;
+  background: #ddd !important;
+}
+
+.sortable-handle, .sortable-handle .glyphicon {
+  cursor: move;
+}

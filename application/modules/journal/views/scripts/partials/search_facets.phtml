@@ -1,0 +1,123 @@
+<!-- <div id="facets"> -->
+<?php
+$this->jQuery()->addJavascriptFile('/js/vendor/jquery.fastLiveFilter.js');
+
+// supprime le nombre de page dans l'url si c'est le meme que par défaut
+if ((isset($this->parsedSearchParams['rpp'])) and ($this->parsedSearchParams['rpp'] == Episciences_Settings_Search::DEFAULT_NUMBER_SEARCH_RESULTS)) {
+    unset($this->parsedSearchParams['rpp']);
+}
+?>
+
+<?php /* ?>
+<?php $url = Episciences_Search_Solr_Search::buildActiveFiltersUrl($this->activeFilters, $this->parsedSearchParams); ?>
+<?php if (is_array($this->activeFilters)) : ?>
+<ul class="list-unstyled">
+	<li>
+		<strong><?php echo $this->translate('Filtres'); ?></strong>
+	</li>
+	<?php foreach ($url as $filterName => $urlParams) : ?>
+    <li>
+    	<a 	data-toggle="tooltip" data-placement="right"
+			title="<?php echo $this->translate('Supprimer ce filtre'); ?>" 
+			class="label label-default"
+			href="<?php echo $this->url($urlParams, null, true);?> ">
+            <?php echo $this->translate($filterName); ?> &nbsp;&times;
+		</a>
+	</li>
+	<?php endforeach; ?>
+</ul>
+<?php endif; ?>
+<?php unset($url); ?>
+<?php */ ?>
+
+
+<?php if (($this->facets) and ($this->numFound > 0)) : ?>
+	<?php foreach ($this->facets as $facet) : ?>
+		<?php if ($facet['values']) : ?>
+		
+		<div class="facet widget" id="<?php echo $facet['fieldName']; ?>-facet" >
+			<h3 class="widget-header"><?php echo $this->translate($this->escape($facet['displayName'])); ?>
+				<a data-toggle="collapse" data-parent="<?php echo $facet['fieldName']; ?>-facet" href="#<?php echo $facet['fieldName']; ?>-facet-content" style="float:right"><i class="glyphicon glyphicon-chevron-up gray"></i></a>
+			</h3>
+			<div class="widget-content collapse in" id="<?php echo $facet['fieldName']; ?>-facet-content">
+				
+				<?php if (count($facet['values']) > 10): ?>
+				<input id="<?php echo $facet['fieldName']; ?>-facet-input" type="text" name="filter"
+					class="facet-input input-sm" placeholder="<?php echo $this->translate('Filtrer'); ?>" />
+				<?php endif; ?>
+				
+				<div class="facet-content">
+					<ul class="list-unstyled <?php echo $facet['fieldName']; ?>-facet-list">
+					<?php
+						$i = 1;
+						foreach ($facet['values'] as $facetValueLabel => $valueCount) {
+							// la valeur de la facette a un separateur eg
+				            // ID_FacetSep_Libellé
+				            if ($facet['hasSepInValue'] == true) {
+				            	$facetValueLabelArray = explode(Ccsd_Search_Solr::SOLR_FACET_SEPARATOR, $facetValueLabel);
+				                $facetValueLabel = $facetValueLabelArray[1];
+				                $facetValueCode = $facetValueLabelArray[0];
+							} else {
+				        	   	$facetValueCode = $facetValueLabel;
+							}
+				
+							// Traduction du libellé
+				            if ($facet['translated'] == true) {
+								if ($facet['translationPrefix'] != '') {
+				                	$facetValueLabel = $facet['translationPrefix'] . $facetValueLabel;
+								}
+								$facetValueLabel = $this->translate($facetValueLabel);
+							}
+							
+							$urlParams = Episciences_Search_Solr_Search::buildFacetUrl($facet['searchMapping'], $this->parsedSearchParams, $facetValueCode, $valueCount);
+							
+							if ($urlParams['checked'] != true) {
+								$indexOfArray = $i;
+				                // echo $indexOfArray . '<br>';
+								$facetList[$indexOfArray] = '<input data-target="' . $this->url($urlParams['url'], null, TRUE) . '" type="checkbox" value="" />';
+								$facetList[$indexOfArray] .= '<div style="float: left; max-width: 75%; margin-bottom: 10px"><a href="' . $this->url($urlParams['url'], null, TRUE) . '">' . $this->escape($facetValueLabel) . '</a></div> ';
+				                $facetList[$indexOfArray] .= '<span class="result-count badge badge-default pull-right">' . $this->escape($valueCount) . '</span>';
+							} else {
+								// prefixe _ pour trier par clé du tableau
+								$indexOfArray = '_' . $i;
+								// echo $indexOfArray . '<br>';
+								
+								$facetList[$indexOfArray] = '<input data-target="' . $this->url($urlParams['url'], null, TRUE) . '" type="checkbox" value="" checked="checked"/>';
+								$facetList[$indexOfArray] .= $this->escape($facetValueLabel);
+								$facetList[$indexOfArray] .= ' <span class="result-count badge badge-default pull-right">' . $this->escape($valueCount) . '</span>';
+							}
+			
+							$i ++;
+				            
+						} // foreach facets
+				
+				        // tri par clé du tableau
+				        ksort($facetList); 
+					?>
+				    <?php foreach ($facetList as $value) : ?>
+						<li class="facet-item">
+							<label class="checkbox"><?php echo $value; ?></label>
+						</li>
+					<?php endforeach; ?>	
+					<?php unset($facetList, $value); ?>
+				
+					</ul>
+				
+				</div>
+			</div>
+			
+		    <script>
+		        $(document).ready(function(){
+		            $('#<?php echo $facet['fieldName']; ?>-facet').on('hide.bs.collapse', function () {
+		                $(this).find('a[data-toggle="collapse"] i').attr('class', 'glyphicon glyphicon-chevron-down gray');
+		            }).on('show.bs.collapse', function () {
+		                $(this).find('a[data-toggle="collapse"] i').attr('class', 'glyphicon glyphicon-chevron-up gray');
+		            });
+		        });
+		    </script>
+		</div>
+		<?php endif; ?>
+	<?php endforeach; ?>
+<?php endif; ?>
+	
+

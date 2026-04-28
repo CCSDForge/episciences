@@ -1,0 +1,49 @@
+<?php if (!empty($this->socialMedias)) : ?>
+    <?php foreach ($this->socialMedias as $socialMedia): ?>
+        <?php if (!empty($socialMedia)) : ?>
+            <?php $socialMedia = $this->escape($socialMedia) ?>
+            <?php $socialMediaTruncated = Ccsd_Tools_String::truncate($socialMedia, 40, "&hellip;") ?>
+            <p style="margin-bottom: 0.5em;">
+                <small>
+                    <?php if (substr_count($socialMedia, "@") > 1) : ?>
+                        <span class="fa-brands fa-mastodon" style="margin-left: 10px;"></span>
+                        <a rel="noopener" class="mastodon" href="<?= Episciences_Tools::getMastodonUrl($socialMedia) ?>"
+                           target="_blank">
+                            <?= $socialMediaTruncated ?>
+                        </a>
+                    <?php elseif (str_contains($socialMedia, '.')): ?>
+                            <a rel="noopener" class="bluesky" href="<?= Episciences_Tools::getBlueskyUrl($socialMedia) ?>"
+                                    target="_blank"> <span
+                                    class="fa-brands fa-bluesky" style="margin-left: 10px;"></span>
+                                    <?= $socialMediaTruncated ?>
+                            </a>
+                    <?php else: ?>
+                        <a rel="noopener" class="twitter" href="https://x.com/<?= $socialMedia ?>"
+                           target="_blank"> <span
+                                    class="fa-brands fa-x-twitter" style="margin-left: 10px;"></span>
+                            <?= $socialMediaTruncated ?>
+                        </a>
+
+                    <?php endif; ?>
+                </small>
+            </p>
+
+        <?php endif; ?>
+    <?php endforeach; ?>
+<?php endif; ?>
+
+<?php if (!empty($this->webSites)) : ?>
+    <p>
+
+        <?php foreach ($this->webSites as $webSite): ?>
+
+            &nbsp;<small> <a href="<?= $this->escape($webSite) ?>" target="_blank"> <span class="fas fa-link"
+                                                                                          style="margin-right: 5px;"></span><?= $this->escape($webSite) ?>
+                </a></small>
+
+        <?php endforeach; ?>
+    </p>
+
+<?php endif; ?>
+
+

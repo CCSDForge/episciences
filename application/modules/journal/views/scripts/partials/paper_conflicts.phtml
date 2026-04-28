@@ -1,0 +1,148 @@
+<?php
+$displayConflictsSection = isset($this->paperConflicts) && Episciences_Auth::isAllowedToManagePaper();
+?>
+
+<?php if ($displayConflictsSection) : ?>
+    <?php
+    /** @var array $paperConflicts */
+    $paperConflicts = $this->paperConflicts;
+    ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Gestion des conflits') ?></h2>
+        </div>
+        <div class="panel-body in" id="conflict-content">
+
+            <ul class="list-group">
+                <?php if (
+                !empty($paperConflicts[Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']]) ||
+                !empty($paperConflicts[Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']])
+                ) : ?>
+
+                <?php
+                /**
+                 * @var  $key string
+                 * @var  $aConflicts Episciences_Paper_Conflict
+                 */
+                foreach ($paperConflicts as $key => $aConflicts): ?>
+
+                    <?php $count = count($aConflicts); ?>
+
+                    <?php if ($count > 0): ?>
+
+                        <div id="coi-<?= $key ?>">
+
+                            <?php
+                            $list = '<code id="nb-' . $key . '">' . $count . '</code>';
+                            $list .= ' ';
+                            ?>
+
+
+                            <?php if ($key === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes']) : ?>
+
+                                <?php $list .= $count > 1 ? $this->translate("conflits d'intérêt confirmés") : $this->translate("conflit d'intérêt confirmé"); ?>
+
+                            <?php elseif ($key === Episciences_Paper_Conflict::AVAILABLE_ANSWER['no']) : ?>
+
+                                <?php $list .= $count > 1 ? $this->translate("réponses : absence d'un conflit d'intérêt") : $this->translate("réponse : absence d'un conflit d'intérêt"); ?>
+
+                            <?php endif; ?>
+
+                            <li class="list-group-item text-center help-block"
+                                id="answers-wrapper-<?= $key ?>"><?= $list ?></li>
+
+
+                            <?= $this->partial('partials/paper_conflicts_table.phtml', [
+                                'docId' => $this->paper->getDocid(),
+                                'answer' => $key,
+                                'aConflicts' => $aConflicts
+                            ]) ?>
+
+                        </div>
+
+                    <?php endif; ?>
+
+
+                <?php endforeach; ?>
+
+            </ul>
+
+
+            <?php else : ?>
+
+                <p><?= $this->translate('Aucun conflit pour le moment.') ?></p>
+
+            <?php endif; ?>
+
+        </div>
+    </div>
+
+    <script>
+
+
+        $('.dataTable').on('click', 'a[id^="delete-"]', function (){
+
+        let data = $(this).attr('id').substring(7).split('_');
+
+        let answer = data[1];
+
+        let $currentTable = $('#' + data[0] + '_' + answer);
+
+        let cId = data[2]; // current conflict ID
+
+        let docId = $(this).attr('data-docId');
+
+
+        bootbox.setDefaults({locale: locale});
+        bootbox.confirm(translate("Êtes-vous sûr ?"), function (isConfirmed) {
+            if (isConfirmed) {
+                $.post(
+                    '/coi/delete/',
+                    {ajax: 1, conflictId: cId, docId: docId},
+                    function (respond) {
+                        if (parseInt(respond) === 1) {
+
+                            let updatedNb = getNbConflictsByAnswer(answer) - 1;
+                            let allAnswersNb = updatedNb;
+
+                            if (answer === 'yes') {
+                                allAnswersNb += getNbConflictsByAnswer('no');
+
+                            } else {
+                                allAnswersNb += getNbConflictsByAnswer('yes');
+                            }
+
+                            $('#nb-' + answer).text(updatedNb);
+
+                            $currentTable.dataTable().fnDeleteRow($('#tr-' + cId));
+
+                            if (updatedNb === 0) {
+                                $('#coi-' + answer).remove();
+                            }
+
+                            if (allAnswersNb === 0) {
+
+                                $('<p>' + translate('Aucun conflit pour le moment.') + '</p>').appendTo('#conflict-content');
+
+                            }
+
+                            refreshPaperHistory(docId);
+
+                        } else {
+                            bootbox.alert(translate("La suppression a échoué : ") + respond);
+                        }
+                    }
+                );
+            }
+        });
+        });
+
+
+        function getNbConflictsByAnswer(answer) {
+            let $answerElement = $('#nb-' + answer);
+            return $answerElement.length ? parseInt($answerElement.text()) : 0;
+        }
+
+    </script>
+
+<?php endif; ?>

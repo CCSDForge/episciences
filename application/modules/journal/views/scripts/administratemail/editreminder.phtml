@@ -1,0 +1,79 @@
+<script>
+    let js_recipient_options = <?= $this->js_recipient_options?>;
+    <?php if ($this->js_reminder) : ?>
+    var reminder = <?php echo $this->js_reminder ?>;
+    var edit = true;
+    <?php else : ?>
+    var edit = false;
+    <?php endif; ?>
+
+    $(document).ready(function () {
+        let $reminderType = $('#type');
+        let $delayInfo = $('#delay-info');
+        let $recipient = $("#recipient");
+
+        // Language tabs
+        $('a[data-toggle="tab"]').on('shown', function (e) {
+            $('a[data-toggle="tab"] img').each(function () {
+                var currentClass = $(this).attr('class');
+                $(this).attr('class', currentClass.replace('_selected', ''));
+            });
+            var currentClass = $(this).find('img').attr('class');
+            $(this).find('img').attr('class', currentClass + '_selected');
+        });
+
+        let description = buildReminderMessage($reminderType.val());
+        $delayInfo.attr('title', description);
+        $('#delay-element').find('.help-block').text(description);
+
+        // Type de relance
+        $reminderType.on('change', function () {
+            let selectedType = $(this).val();
+            clearErrors();
+            setReminderType(selectedType, null);
+            description = buildReminderMessage($reminderType.val());
+            $delayInfo.attr('title', description);
+            $('#delay-element').find('.help-block').text(description);
+            $recipient.empty(); // remove old options
+            $.each(js_recipient_options[selectedType], function (key, value) {
+                $recipient.append($("<option></option>").attr("value", value).text(translate(key)));
+                setRecipient($recipient.val());
+            });
+        });
+
+        // Destinataire
+        $('#recipient').on('change', function () {
+            clearErrors();
+            setRecipient($(this).val());
+        });
+
+        // Template custom ou par défaut
+        var select_name = '_custom_template';
+        for (i in langs) {
+            $('#' + i + select_name).on('change', function () {
+                var lang = $(this).attr('id').substring(0, $(this).attr('id').indexOf(select_name));
+                if ($(this).val() == 1) {
+                    custom_template(lang);
+                } else {
+                    default_template(lang);
+                }
+            });
+        }
+
+        let recipient = (edit) ? reminder.recipient : null;
+        setReminderType($('#type').val(), recipient);
+
+        // Textareas
+        __initMCE("textarea[id$='_custom_body']", null, {
+            theme: 'silver',
+            plugins: "link image code fullscreen table",
+            toolbar1: "bold italic underline | forecolor backcolor | styleselect | undo redo | alignleft aligncenter alignright alignjustify | bullist numlist | link image  | fullscreen | code",
+            menubar: false,
+        });
+    });
+
+</script>
+
+<?php
+echo $this->reminderForm;
+?>

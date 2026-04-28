@@ -1,0 +1,84 @@
+<?php
+/** @var Ccsd_Form $form */
+$form = $this->form;
+$form->removeDecorator('Form');
+
+// We MUST ensure metadata is present in the HTML for the JS to work
+foreach ($form->getElements() as $el) {
+    $attribs = $el->getAttribs();
+    
+    // In ZF1, custom attributes from config are in the attribs array
+    $link = isset($attribs['elem-link']) ? $attribs['elem-link'] : null;
+    $val  = isset($attribs['elem-value']) ? $attribs['elem-value'] : null;
+    
+    if ($link) {
+        // Force them as standard attributes
+        $el->setAttrib('elem-link', $link);
+        $el->setAttrib('data-elem-link', $link);
+    }
+    if ($val) {
+        $el->setAttrib('elem-value', $val);
+        $el->setAttrib('data-elem-value', $val);
+    }
+}
+
+// Explicitly setup the 'type' element
+if ($typeEl = $form->getElement('type')) {
+    $typeEl->setAttrib('elem', 'type');
+    $typeEl->setAttrib('class', ($typeEl->getAttrib('class') ?: '') . ' elem-link');
+}
+
+$textEl = $form->getElement('text');
+$form->removeElement('text');
+
+if ($textEl !== null) {
+    $belongsTo = $textEl->getBelongsTo();
+    $textValues = (array)$textEl->getValue();
+    $labelText = $this->escape($this->translate('Libellé'));
+    $errors = $textEl->getMessages();
+    $hasErrors = !empty($errors);
+    $languages = Zend_Registry::get('languages');
+    
+    // Retrieve link info for the manual text block
+    $tAttribs = $textEl->getAttribs();
+    $elemLink = isset($tAttribs['elem-link']) ? $tAttribs['elem-link'] : 'type';
+    $elemValue = isset($tAttribs['elem-value']) ? $tAttribs['elem-value'] : 'text';
+    ?>
+    <fieldset class="form-group <?php echo $hasErrors ? 'has-error' : '' ?>" 
+              elem-link="<?php echo $this->escape($elemLink) ?>" 
+              elem-value="<?php echo $this->escape($elemValue) ?>"
+              data-elem-link="<?php echo $this->escape($elemLink) ?>"
+              data-elem-value="<?php echo $this->escape($elemValue) ?>">
+        <legend class="control-label"><?php echo $labelText ?> <span class="text-danger">*</span></legend>
+        <div>
+            <?php foreach ($languages as $lang) { ?>
+                <div class="input-group" style="margin-bottom:4px">
+                    <span class="input-group-addon" aria-hidden="true">
+                        <?php echo $this->escape(strtoupper($lang)) ?>
+                    </span>
+                    <input type="text"
+                           name="<?php echo $this->escape($belongsTo) ?>[text][<?php echo $this->escape($lang) ?>]"
+                           id="<?php echo $this->escape($belongsTo) ?>-text-<?php echo $this->escape($lang) ?>"
+                           value="<?php echo $this->escape($textValues[$lang] ?? '') ?>"
+                           class="form-control input-sm header-label-input"
+                           lang="<?php echo $this->escape($lang) ?>"
+                           required="required"
+                           elem-link="<?php echo $this->escape($elemLink) ?>"
+                           elem-value="<?php echo $this->escape($elemValue) ?>"
+                           aria-label="<?php echo $labelText ?> (<?php echo $this->escape(strtoupper($lang)) ?>)">
+                </div>
+            <?php } ?>
+            <?php if ($hasErrors): ?>
+                <ul class="help-block list-unstyled">
+                    <?php foreach ($errors as $error): ?>
+                        <li><strong><?php echo $this->escape($error) ?></strong></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </div>
+    </fieldset>
+    <?php
+}
+
+echo $form;
+?>

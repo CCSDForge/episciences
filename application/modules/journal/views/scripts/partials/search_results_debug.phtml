@@ -1,0 +1,33 @@
+<?php
+
+
+                // show documents using the resultset iterator
+                foreach ($resultset as $document) {
+
+                    echo '<table style="width:100%;border:1px solid #CCCCCC;">';
+
+                    // the documents are also iterable, to get all fields
+                    foreach ($document as $field => $value) {
+                        // this converts multivalue fields to a comma-separated
+                        // string
+                        if (is_array($value))
+                            $value = implode(', ', $value);
+
+                        echo '<tr>';
+                        echo '<th style="width:20%;border:1px solid #CCCCCC;">' .
+                                 $field . '</th>';
+
+                        echo '<td style="border:1px solid #CCCCCC;">';
+                        if ($field == 'pdf_fulltext') {
+                            echo substr($value, 0, 400) . "[...]";
+                        } else {
+                            echo $value;
+                        }
+                        echo '</td>';
+
+                        echo '</tr>';
+                    }
+
+                    echo '</table>';
+                }
+

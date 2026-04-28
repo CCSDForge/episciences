@@ -1,0 +1,28 @@
+#sidebar {
+  font-size: 11px;
+}
+
+#sidebar li {
+  list-style: none;
+}
+
+#sidebar li a {
+  color: #777;
+}
+
+#sidebar li.header {
+  font-size: 11px;
+  color: $dark-grey;
+  font-weight: bold;
+  padding: 3px 0;
+  text-transform: uppercase;
+}
+
+/*Bootstrap reecriture*/
+.input-append, .input-prepend {
+  display: block;
+}
+
+.table-striped > tbody > tr:nth-child(2n) > td, .table-striped > tbody > tr:nth-child(2n) > th {
+  background-color: $white;
+}

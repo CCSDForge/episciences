@@ -1,0 +1,332 @@
+<?php
+/** @var Zend_Controller_Request_Http $request */
+$request = Zend_Controller_Front::getInstance()->getRequest();
+$controller = $request->getControllerName();
+$action = $request->getActionName();
+$isSecretary = Episciences_Auth::isSecretary();
+$loggedUid = Episciences_Auth::getUid();
+$isCoiEnabled = $this->isCoiEnabled;
+?>
+<?php /** @var Episciences_Paper $paper */
+foreach ($this->list as $paper) : ?>
+
+    <?php
+
+    $href ='/' . $controller . '/view?id=' . $paper->getDocid();
+    $canBeReviewed = (Episciences_Auth::isSecretary() || $paper->getEditor(Episciences_Auth::getUid())) && (Episciences_Auth::getUid() !== $paper->getUid()) && $paper->canBeReviewed();
+
+    try {
+        $editors = $paper->getEditors();
+    } catch (Zend_Db_Statement_Exception $e) {
+        $editors = [];
+        trigger_error($e->getMessage());
+    }
+
+    $isNoneEditorsDetected = empty($editors) && $paper->isEditable() && !$paper->isRefused();
+
+    /** @var Episciences_CopyEditor $copyEditors [] */
+    try {
+        $copyEditors = $paper->getCopyEditors();
+    } catch (Zend_Db_Statement_Exception $e) {
+        trigger_error($e->getMessage());
+    }
+
+    $isTmp = $paper->isTmp();
+
+    $isConflictDetected = DefaultController::isConflictDetected($paper, $this->review);
+
+    try {
+        $isAllowed = (
+            ($isSecretary || $paper->getEditor($loggedUid)) &&
+            ($loggedUid !== $paper->getUid())
+        );
+    } catch (Zend_Db_Statement_Exception $e) {
+        $isAllowed = false;
+        trigger_error($e->getMessage());
+    }
+
+    $disabled = '';
+    $ariaDisabled = 'aria-disabled="false"';
+
+    if (!$isAllowed) {
+
+        $disabled = 'disabled';
+        $ariaDisabled = 'aria-disabled="true"';
+    }
+    $confirmedConflictsNb = count($paper->getConflicts(true));
+    $coiTitle = ($confirmedConflictsNb > 1) ? 'conflits signalés' : 'conflit signalé';
+    ?>
+
+    <tr id="paper_<?= $paper->getDocid() ?>">
+        <?php // permanent Id  ******************************************* ?>
+        <td class="text-center"><span data-toggle="tooltip"
+                                      title="<?= $isNoneEditorsDetected ? $this->translate('Aucun rédacteur assigné pour le moment') : '' ?>"
+                                      class="label label-<?= !$isNoneEditorsDetected ? 'default' : 'warning' ?>">
+                 <?php if ($confirmedConflictsNb > 0): ?>
+                     <a href="<?= $href ?>#coi-answers-<?= Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'] ?>">
+                         <span data-toggle="tooltip"
+                               title="<?= $confirmedConflictsNb . ' ' . $this->translate($coiTitle) ?>"
+                               class="fas fa-exclamation-circle" style="margin-right: 5px; color: chocolate"></span>
+                </a>
+                 <?php endif; ?>
+                <?php if ($paper->_revisionDeadline) : ?>
+                    <a href="<?= $href ?>#answer">
+                    <span data-toggle="tooltip"
+                          title="<?= $this->translate('Version révisée attendue avant le :') ?><?= ' ' . $this->Date($paper->_revisionDeadline) ?>"
+                          class="fas fa-clock" style="margin-right: 5px;"></span>
+                    </a>
+                <?php endif; ?>
+                <?= $paper->getPaperid() ?></span>
+        </td>
+        <?php // article id ******************************************* ?>
+        <td class="text-center"><span data-toggle="tooltip" title="<?= $isNoneEditorsDetected ? $this->translate('Aucun rédacteur assigné pour le moment') : '' ?>" class="label label-<?= !$isNoneEditorsDetected ? 'default' : 'warning' ?>"><?= $paper->getDocid() ?></span></td>
+        <?php // article status icon ******************************************* ?>
+        <td class="text-center">
+            <?php if (!$isConflictDetected) : ?>
+                <?php $paperStatusLabel =  mb_ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper->getStatus()))); ?>
+                <?= $isTmp ? ('<div>' . '<span data-toggle="tooltip" class="label label-status-' . $paper->getStatus() . '" title="' . ucfirst($this->translate('version temporaire')) . '">TMP</span>') : '' ?>
+                <span data-toggle="tooltip" title="<?= $paperStatusLabel ?>">
+                    <img src="<?= Episciences_View_Helper_GetAvatar::asPaperStatusSvg($paperStatusLabel, $paper->getStatus()) ?>" alt="statusSvg"/>
+                </span>
+                <?= $isTmp ? '</div>' : '' ?>
+            <?php endif; ?>
+        </td>
+        <?php
+        // article title *******************************************
+        try {
+            $title = $paper->getTitle();
+        } catch (Zend_Exception $e) {
+            $title = '';
+            trigger_error($e->getMessage());
+        }
+        ?>
+
+        <td>
+            <a href="<?= $href ?>"
+               data-toggle="tooltip"
+               title="<?= Episciences_Tools::decodeLatex($title) ?>"
+            >
+                <strong><?= Ccsd_Tools::truncate(Episciences_Tools::decodeLatex($title), 75) ?></strong>
+                <?php if ($paper->getMetadata('version') && (int)$paper->getMetadata('version') !== 1) : ?>
+                    (v<?= $paper->getMetadata('version') ?>)
+                <?php endif; ?>
+            </a>
+        </td>
+        <?php // article volume ***************************************** ?>
+        <td<?php if ($paper->getUid() === $loggedUid) :
+            ?> style="background: #fcfcfc"
+            data-toggle="tooltip"
+            data-original-title="<?= $this->translate("Vous ne pouvez pas voir le volume d'un article que vous avez déposé vous-même") ?>"
+        <?php endif; ?>>
+            <?php
+            if ($paper->getUid() !== $loggedUid) {
+                echo $this->partial('partials/paper_volumes.phtml',
+                    [
+                        'article' => $paper,
+                        'volumes' => $this->volumes,
+                        'isPartial' => true,
+                        'disabled' => $disabled,
+                        'ariaDisabled' => $ariaDisabled
+                    ]);
+            }
+            ?>
+        </td>
+        <?php // article section ******************************************* ?>
+        <td
+            <?php if ($paper->getUid() === $loggedUid) {
+                echo " style='background: #fcfcfc' data-toggle='tooltip' data-original-title=\"" . $this->translate("Vous ne pouvez pas voir la rubrique d'un article que vous avez déposé vous-même") . '"';
+            }
+            ?>
+        >
+            <?php
+            if ($paper->getUid() !== $loggedUid) {
+                echo $this->partial('partials/paper_section.phtml',
+                    [
+                        'article' => $paper,
+                        'sections' => $this->sections,
+                        'isPartial' => true,
+                        'isAllowed' => $isAllowed
+                    ]);
+            }
+            ?>
+        </td>
+        <?php // article reviewers ***************************************** ?>
+        <td>
+
+<!--            --><?php //if ($isConflictDetected || $paper->getUid() === $loggedUid ) {
+//                $message = $isConflictDetected ? "Vous ne pouvez pas voir le statut d' un article pour lequel vous auriez un conflit d'intérêt" : "Vous ne pouvez pas voir les relecteurs d'un article que vous avez déposé vous-même";
+//                echo " style='background: #fcfcfc' data-toggle='tooltip' data-original-title=\"" . $this->translate($message) . '"';
+//            } ?>
+
+            <?php // echo $this->partial('partials/paper_reviewers.phtml', array('article'=>$paper, 'isPartial'=>true)); ?>
+            <?php // user can't see reviewers for his own submissions ?>
+            <?php if (!$isConflictDetected && $paper->getUid() !== $loggedUid ) : ?>
+                <?php
+                try {
+                    $reviewers = $paper->getReviewers();
+                } catch (Zend_Db_Statement_Exception $e) {
+                    trigger_error($e->getMessage());
+                    $reviewers = [];
+                }
+                try {
+                    $ratings = $paper->getRatings();
+                } catch (Zend_Db_Statement_Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+                ?>
+                <div id="reviewers_<?= $paper->getDocid() ?>">
+                    <?php if (count($reviewers)) : ?>
+                        <div style="margin-bottom: 5px">
+                            <?php foreach ($reviewers as $uid => $reviewer) : ?>
+                                <?php
+                                $msg = '';
+                                // L'utilisateur a reçu une invitation à relire l'article, mais n'a pas encore donné de réponse
+                                if ($reviewer instanceof Episciences_User_Tmp ||
+                                    $reviewer->getStatus() === Episciences_Reviewer::STATUS_PENDING) {
+                                    $msg = $this->translate("Une invitation de relecture a été envoyée à cet utilisateur, mais il n'a pas encore répondu");
+                                    $userColor = 'lightgrey';
+                                    $tipColor = 'lightergrey';
+
+                                } elseif ($reviewer->getStatus() === Episciences_Reviewer::STATUS_DECLINED) {
+                                    $msg = $this->translate("Invitation déclinée le : ");
+                                    $msg .= $this->Date($reviewer->getWhen());
+                                    $userColor = 'orange';
+                                    $tipColor = 'orange';
+
+                                } else {
+                                    $reviewing = $reviewer->getReviewing($paper->getDocid());
+                                    $status = $reviewing->getStatus();
+
+                                    if ($status === Episciences_Reviewer_Reviewing::STATUS_COMPLETE) {
+                                        // Le relecteur a terminé sa relecture
+                                        $msg = ucfirst($this->translate(Episciences_Reviewer_Reviewing::getStatusLabel($status))) . ' ';
+                                        $msg .= $this->translate('le') . ' ';
+                                        $msg .= $this->Date($reviewing->getUpdateDate());
+                                    } elseif ($status === Episciences_Reviewer_Reviewing::STATUS_WIP || $status === Episciences_Reviewer_Reviewing::STATUS_NOT_NEED_REVIEWING) {
+                                        // Le relecteur a commencé sa relecture, mais ne l'a pas terminée
+                                        $msg =  ucfirst($this->translate(Episciences_Reviewer_Reviewing::getStatusLabel($status))) . '. ';
+                                        $msg .= ucfirst($this->translate('dernière action :')) . ' ';
+                                        $msg .= $this->Date($reviewing->getUpdateDate());
+                                    } elseif ($status === Episciences_Reviewer_Reviewing::STATUS_PENDING) {
+                                        // Le relecture n'a pas commencé sa relecture
+                                        $msg = ucfirst($this->translate(Episciences_Reviewer_Reviewing::getStatusLabel($status))) . ' ';
+                                        $msg .= $this->translate('depuis le ');
+                                        $msg .= $this->Date($reviewing->getAssignmentDate());
+                                    }
+
+                                    $userColor = 'inherit';
+                                    $tipColor = Episciences_Reviewer_Reviewing::getStatusColor($status);
+
+                                }
+
+                                ?>
+                                <?php // contact reviewer button *********************************************** ?>
+                                <?php if (($isSecretary) && $reviewer instanceof Episciences_Reviewer) : ?>
+                                    <div class="smaller"
+                                         style="float: left; margin-right: 10px; cursor: pointer">
+                                        <a class="modal-opener"
+                                           title="<?= $this->translate('Envoyer un message au relecteur') ?>"
+                                           href="/administratepaper/contactreviewer?docid=<?= $paper->getDocid() ?>&id=<?= $reviewer->getUid() ?>">
+                                                    <span data-toggle="tooltip"
+                                                          data-original-title="<?= $this->translate('Envoyer un message au relecteur') ?>"
+                                                          class="icon-envelope"></span>
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php // reviewer status icon *********************************************** ?>
+                                <a data-toggle="tooltip" title="<?= strip_tags($msg) ?>">
+                                    <span class="glyphicon glyphicon glyphicon-info-sign <?= $tipColor ?>"></span></a>
+
+                                <?php // reviewer name *********************************************** ?>
+                                <span style="margin-left: 5px;" class="<?= $userColor ?>">
+                                    <?php
+                                    if (!$reviewer->getScreenName()) {
+                                        try {
+                                            $reviewer->findWithCAS($uid); // not local data : warning: $reviewer->getUid is null
+                                        } catch (Exception $e) {
+                                            trigger_error($e->getMessage());
+                                        }
+                                        echo $reviewer->getFullName();
+                                    } else {
+                                        echo $reviewer->getScreenName();
+                                    }
+                                    ?>
+                                </span>
+                                <?php if ($alias = $reviewer->getAlias($paper->getDocid())) : ?>
+                                    <a data-toggle="tooltip" title="<?= $this->translate('Relecteur <code>n</code>') ?>">
+                                        <span class="label label-status-<?= $paper->getStatus() ?>"><?= $alias ?></span>
+                                    </a>
+                                <?php endif; ?>
+                                <br/>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; // endif(count($reviewers)) ?>
+
+                    <?php // reviewer invitation button *********************************************** ?>
+                    <?=
+                    $this->partial('partials/reviewer_invitation_button.phtml', [
+                        'paper' => $paper,
+                        'controller' => $controller,
+                        'action' => $action,
+                        'volume' => ($paper->getVid()) ? $this->volumes[$paper->getVid()] : null,
+                        'canBeReviewed' => $canBeReviewed
+                    ])
+                    ?>
+                </div>
+            <?php endif; ?>
+
+        </td>
+        <?php // article editors ******************************************* ?>
+        <?php if ($paper->getUid() === $loggedUid) : ?>
+            <td style="background: #fcfcfc" data-toggle="tooltip"
+                data-original-title="<?= $this->translate("Vous ne pouvez pas voir les rédacteurs d'un article que vous avez déposé vous-même") ?>">
+            </td>
+        <?php else : ?>
+            <td>
+                <?= $this->partial('partials/partial_paper_editors.phtml', ['paper' => $paper, 'users' => $editors]) ?>
+            </td>
+        <?php endif; // endif (Episciences_Auth::getUid() != $paper->getUid()) ?>
+
+        <?php // Copy editors column : do not hide them from the author, no secret here ?>
+        <td>
+            <div class="copy-editor">
+                <?= $this->partial('partials/paper_assigned_editors_copyeditors.phtml', ['paper' => $paper, 'users' => $copyEditors, 'userRole' => Episciences_User_Assignment::ROLE_COPY_EDITOR]) ?>
+                <?php //copy editors assignment button ********************************************** ?>
+                <?php
+                if ($isSecretary && $paper->isEditable() && $paper->getStatus() >= Episciences_Paper::STATUS_ACCEPTED) : ?>
+                    <?php
+                    // Possibilité d'assigner des préparateurs de copie
+                    $btnName = 'Assigner des préparateurs de copie';
+                    $btnId = 'copyeditors';
+
+                    echo $this->partial('partials/paper_editors_copyeditors_assign_button.phtml', [
+                        'paper' => $paper, 'btnName' => $btnName, 'btnId' => $btnId, 'isPartial' => true
+                    ]);
+                    ?>
+                <?php endif; ?>
+            </div>
+        </td>
+
+
+        <?php // contributor name ************************************************** ?>
+        <td>
+            <?php if ($paper->getSubmitter()) {
+                echo ($paper->getSubmitter()->getFullname()) ?: $paper->getSubmitter()->getScreenName();
+            }
+            ?>
+        </td>
+
+        <?php // submission date ************************************************ ?>
+        <td>
+            <span style="display: none"><?= $paper->getWhen() ?></span>
+            <?= $paper->getWhen() ?>
+        </td>
+
+        <?php // publication date ************************************************ ?>
+        <td>
+            <span style="display: none"><?= $paper->getPublication_date() ?></span>
+            <?= ($paper->getPublication_date()) ?: '' ?>
+        </td>
+    </tr>
+<?php endforeach; ?>

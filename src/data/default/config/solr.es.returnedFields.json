@@ -1,0 +1,3 @@
+{
+  "returnedFields": "docid, paper_title_t, *_paper_title_t, abstract_t, *_abstract_t, author_fullname_s, publication_date_tdate, revue_id_i, revue_title_t, volume_id_i, *_volume_title_t, section_id_i, *_section_title_t, language_s, keyword_t"
+}

@@ -1,0 +1,50 @@
+name: Weekly Code Metrics
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Every Sunday at midnight
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+jobs:
+  metrics:
+    name: Generate and Deploy PhpMetrics
+    runs-on: ubuntu-latest
+    
+    # Permissions needed to push to gh-pages branch
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: dom, curl, libxml, mbstring, zip, pdo, mysql, xsl
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: |
+          composer config platform.php 8.1
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Setup build directory
+        run: mkdir -p build phpmetrics/report
+
+      - name: Run PHPUnit for JUnit logs
+        # We use --do-not-cache-result and ignore-errors to ensure metrics run even if some tests fail
+        run: ./vendor/bin/phpunit --logging-junit build/junit.xml || true
+
+      - name: Run PhpMetrics
+        run: |
+          ./vendor/bin/phpmetrics --config=phpmetrics.json --report-html=phpmetrics/report .
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./phpmetrics/report
+          destination_dir: metrics
+          commit_message: "docs(quality): update weekly phpmetrics report [skip ci]"

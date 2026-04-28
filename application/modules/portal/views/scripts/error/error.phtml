@@ -1,0 +1,27 @@
+<div class="alert alert-block alert-error fixed">
+	<h1 class="alert-heading"><?php echo $this->translate($this->message) ?></h1>
+	<p>
+		<?php if (isset($this->description)){ ?>
+			<h2><?php echo $this->translate($this->description); ?></h2>
+		<?php } ?>
+		<?php if (isset($this->exception)){ ?>
+			<?php echo $this->translate($this->exception->getMessage()); ?>
+		<?php } ?>
+	</p>
+	<p><a href="/" class="btn btn-danger"><?php echo $this->translate('Retourner à l\'accueil') ?></a></p>
+		
+</div>
+
+
+<?php if (isset($this->sql)){ ?>
+	<h2><?php echo $this->translate('Erreur SQL')?> : </h2>
+	<pre><?php echo $this->sql ?></pre>
+<?php } ?>
+
+<?php if (isset($this->exception)){ ?>
+	<h2>Stack trace:</h2>
+	<pre><?php echo $this->exception->getTraceAsString() ?></pre>
+
+	<h2>Request Parameters:</h2>
+	<pre><?php echo $this->escape(var_export($this->request->getParams(), true)) ?></pre>
+<?php } ?>

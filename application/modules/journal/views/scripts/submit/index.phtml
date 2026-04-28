@@ -1,0 +1,55 @@
+<?php
+$zSubmitStatus = (boolean)EPISCIENCES_Z_SUBMIT['STATUS'];
+$zSubmitUrl = EPISCIENCES_Z_SUBMIT['URL'];
+
+$isFromZSubmitJson = Zend_Json::encode($this->isFromZSubmit);
+
+try {
+    $zSubmitUrl .= '/' . Episciences_Tools::getLocale();
+} catch (Zend_Exception $e) {
+    trigger_error($e->getMessage());
+}
+
+$zSubmitUrl .= '/deposit?epi-rvcode=' . RVCODE;
+
+?>
+<!-- Guideline -->
+<div id="stats" class="panel panel-default collapsable">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?php echo $this->translate('Comment proposer un document :'); ?></h2>
+    </div>
+    <div class="panel-body in">
+        <p><?php echo $this->translate("Vous êtes sur le point de proposer un document à la revue. Veuillez vérifier que :"); ?></p>
+        <ol>
+            <li>
+                <?php echo $this->translate("Votre document est en ligne sur une des archives ouvertes ou entrepôts suivants : %s", $this->repositories); ?>
+            </li>
+            <li><?php echo $this->translate("Vous connaissez son identifiant et son numéro de version"); ?></li>
+        </ol>
+        <p><?php echo $this->translate("L'identifiant du document, sa version et l'archive ouverte dont il provient sont les seules informations nécessaires pour remplir le formulaire ci-dessous. Les métadonnées seront automatiquement récupérées, et vous verrez un résumé de votre document avant de confirmer sa soumission - veuillez vérifier qu'il s'agit bien du document que vous souhaitez soumettre à la revue.") ?></p>
+        <p><?php echo $this->translate("Si cela s'applique à votre document, vous pourrez dans un second temps compléter votre proposition avec des identifiants de jeux de données et logiciels que vous avez déposés dans un entrepôt dédié.") ?></p>
+    </div>
+</div>
+
+
+<div id="showResult" style="display:none"></div>
+<?php echo $this->form; ?>
+
+<?php $this->jQuery()->addJavascriptFile('/js/submit/functions.js'); ?>
+<?php $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js'); ?>
+<?php $this->jQuery()->addJavascriptFile('/js/submit/index.js'); ?>
+<?php $this->jQuery()->addJavascriptFile('/js/submit/insertZSubmitElement.js'); ?>
+
+<?php if ($this->error) : ?>
+    <script type="text/javascript">error();</script>
+<?php endif; ?>
+
+<script>
+    let examples = <?= $this->examples ?>;
+    let hasHook = false;
+    let isRequiredVersion = true;
+    let isFromZSubmit = <?= $isFromZSubmitJson ?>;
+    let zSubmitUrl = '<?= $this->zSubmitUrl ?>';
+    let zenodoRepoId = '<?= $this->zenodoRepoId ?>';
+    let zSubmitStatus = <?= json_encode($zSubmitStatus)?> ;
+</script>

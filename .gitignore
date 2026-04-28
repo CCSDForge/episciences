@@ -1,0 +1,87 @@
+# See : https://git-scm.com/docs/gitignore
+/.env.local*
+.run/
+/.settings
+/.buildpath
+/.project
+/.idea/
+/.sass-cache/
+/sass/.sass-cache/
+/sass/components/.sass-cache/
+/.php_cs.cache/
+/.claude/
+
+# Test coverage reports
+/coverage/
+coverage-*.xml
+*.lcov
+
+# /data/
+/data/
+
+
+/public/css/templates/
+# libraries
+/vendor/
+
+# Private configs
+/config/pwd.json
+/tests/config/env-test.php
+# Mappings of Episicences journals Id HAL referential Ids
+/config/halJournalMappings.json
+
+# composer
+/composer.phar
+
+
+# logs and errors
+/scripts/imports/*
+/scripts/importData/*
+!/scripts/importData/README.md
+/scripts/*.log
+/errors/
+
+#webpack
+public/build/
+assets/node_modules/
+
+/node_modules/
+/scripts/archives/
+
+/phpcbf.phar
+/phpcs.phar
+/.php_cs.cache
+# yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+/version.php
+/log/
+/phpmetrics/
+/.php-cs-fixer.cache
+
+#Cache
+/cache/*
+
+#geoip
+/scripts/geoip/*
+
+#PHPunit
+/.phpunit.result.cache
+
+/tmp/
+/docker-compose.override.yml
+/.user.ini
+/logs/
+/config/translationUpdater-config.yaml
+
+/scripts/stats/stats.conf
+/scripts/stats/sites_config.csv
+/tools/
+/.gemini/
+/scripts/checkcasusers.php
+/scripts/checkDoi.php
+/build/

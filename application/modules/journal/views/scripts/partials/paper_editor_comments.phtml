@@ -1,0 +1,18 @@
+<?php
+// Display comment form
+echo $this->editor_comment_form;
+
+// Add JavaScript for file deletion
+$this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
+?>
+
+<?php if (!empty($this->editor_comments)) : ?>
+    <div id="editor_comments" class="editor-comments-timeline" role="feed"
+         aria-label="<?php echo $this->translate('Commentaires de l\'éditeur'); ?>">
+        <div class="timeline-track">
+            <?php foreach ($this->editor_comments as $comment) : ?>
+                <?= $this->partial('partials/timeline_item.phtml', ['comment' => $comment]) ?>
+            <?php endforeach; ?>
+        </div><!-- /.timeline-track -->
+    </div>
+<?php endif; ?>

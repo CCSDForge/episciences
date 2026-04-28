@@ -1,0 +1,23 @@
+<?php
+/* @var $section Episciences_Section */
+/* @var $editor Episciences_Editor */
+?>
+
+<?php if (count($this->section->getEditors()) > 0) : ?>
+    <p>
+        <?php echo $this->translate(['Rédacteur : ', 'Rédacteurs : ', count($this->section->getEditors())]); ?>
+
+        <?php
+        foreach ($this->section->getEditors() as $editorId => $editor) {
+            //sort by lastname, display with screen name
+            $editorList[$this->escape($editor->getLastname())] = '<a href="' . $this->url(['controller' => 'user', 'action' => 'view', 'userid' => $editorId]) . '">' . $this->escape($editor->getScreenName()) . '</a>';
+        }
+
+        //sort by lastname
+        ksort($editorList);
+
+        echo implode(' ; ', $editorList);
+        ?>
+
+    </p>
+<?php endif; ?>

@@ -1,0 +1,67 @@
+<?php
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
+$this->jQuery()->addJavascriptFile('/js/library/es.fileupload.js');
+
+// Attached file description
+$description = Episciences_Tools::buildAttachedFilesDescription();
+// Le bloc fichiers joints présent plusieurs fois dans le DOM, donc attribuer un ID unique pour chaque bloc.
+$attribsForm = $this->element->getAttribs();
+$suffix = (isset($attribsForm['id'])) ? '_' . $attribsForm['id'] : '';
+?>
+<form data-library="ccsd"
+      role="form"<?php foreach ($this->element->getAttribs() as $name => $value) {
+    echo ' ' . $name . '="' . $value . '"';
+} ?>>
+
+    <?php foreach ($this->element->getElements() as $name => $element) : ?>
+        <?php
+        if ($element->getName() === 'submit') {
+            continue;
+        }
+        ?>
+        <?php if ($element->helper === 'formHidden') : ?>
+            <?= $element ?>
+        <?php else: ?>
+            <div id="<?= str_replace(['-'], '', $name) ?>-element" class="form-group row">
+                <?= $element ?>
+            </div>
+        <?php endif; ?>
+    <?php endforeach; ?>
+
+    <div id="attachments-element<?= $suffix ?>" class="form-group row">
+        <div class="col-md-9 col-md-offset-3" style="padding-left: 10px">
+            <div id="upload_widget<?= $suffix ?>" class="upload_widget" data-upload-container="test">
+                <span id = "help-block<?= $suffix ?>" class="help-block text-info"><?= $description ?></span>
+                <div id="upload_button<?= $suffix ?>" class="upload_button btn btn-default">
+                    <span class="glyphicon glyphicon-file"></span>
+                    <?= $this->translate('Fichiers joints') ?>
+                </div>
+                <input id="upload_input<?= $suffix ?>" class="upload_input" type="file" multiple/>
+                <div class="uploads_container"></div>
+            </div>
+        </div>
+    </div>
+
+    <?php if (isset($this->element->submit)) : ?>
+        <div class="form-actions text-center">
+            <?= $this->element->submit ?>
+        </div>
+    <?php endif; ?>
+</form>
+<?php // à l'ouverture d'une modal : Charger un fichier JavaScript à partir du serveur?>
+<script>
+
+    $(document).ready(function () {
+
+        if (modalStructureExists()) {
+            $.ajaxSetup({
+                cache: true
+            });
+
+            $.getScript('/js/library/es.fileupload.js?_=v<?= APPLICATION_VERSION ?>').fail(function (xhr, status, error) {
+                console.log('loading failed:' + error);
+            });
+        }
+    });
+
+</script>

@@ -1,0 +1,201 @@
+<?php
+
+$style = new Episciences_Website_Style();
+$this->containerClass = $style->getContainerClass();
+$this->navigation = $style->getNavigationOrientation();
+$this->cssFile = $style->getCssFile();
+
+$controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
+$action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+echo $this->doctype('HTML5');
+
+?>
+<html lang="<?= Zend_Registry::get('lang') ?>" xmlns="http://www.w3.org/1999/xhtml">
+
+<head <?php if ($controller === "paper" || $controller === "administratepaper"): ?>prefix="og: https://ogp.me/ns# article: http://ogp.me/ns/article# profile: http://ogp.me/ns/profile#"<?php endif;?>>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php if (APPLICATION_ENV != ENV_PROD) : ?>
+        <meta name="robots" content="noindex">
+    <?php endif; ?>
+    <?php
+    // set head title **********************
+    if ($this->headTitle()->getContainer() == '' && $this->layout()->pageTitle) {
+        // if there is no headtitle but a pagetitle, use it as headtitle
+        $this->headTitle(RVNAME . ' - ' . $this->layout()->pageTitle);
+    } elseif ($this->headTitle()->getContainer() == '' && $this->nav()->findActive($this->nav()->getContainer())) {
+        // if possible, create a head title from navigation title
+        $active = $this->nav()->findActive($this->nav()->getContainer());
+        $this->headTitle(RVNAME . ' - ' . $this->translate($active['page']->getLabel()));
+    }
+    ?>
+    <?php echo $this->headMeta(); ?>
+    <?php echo $this->headTitle(); ?>
+    <link href="https://cdnjs.cloudflare.com" rel="preconnect" crossorigin>
+    <link href="https://cdnjs.cloudflare.com" rel="dns-prefetch">
+    <link href="https://cas.ccsd.cnrs.fr" rel="dns-prefetch">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20211124">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=20211124">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=20211124">
+    <link rel="manifest" href="/site.webmanifest?v=20211124">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg?v=20211124" color="#5bbad5">
+    <link rel="shortcut icon" href="/favicon.ico?v=20211124">
+    <meta name="msapplication-TileColor" content="#2b5797">
+    <meta name="theme-color" content="#ffffff">
+    <link href="<?= INBOX_URL ?>" rel="http://www.w3.org/ns/ldp#inbox">
+    <?php
+
+    // journal's CSS
+    if ($this->cssFile) {
+        $this->jQuery()->addStylesheet($this->cssFile);
+    }
+    // Episciences Main CSS
+    $this->jQuery()->addStylesheet("/css/main.css");
+
+    $this->jQuery()->addStylesheet(VENDOR_BOOTSTRAP);
+    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME);
+    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_SOLID);
+    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_BRAND);
+    $this->jQuery()->addStylesheet(VENDOR_COOKIE_CONSENT_CSS);
+
+
+    // JS
+    $this->jQuery()->addJavascriptFile("/js/translation.php?lang=" . Zend_Registry::get('lang'));
+    $this->jQuery()->addJavascriptFile(VENDOR_BOOTBOX);
+    $this->jQuery()->addJavascriptFile("/js/functions.js");
+    $this->jQuery()->addJavascriptFile("/js/form.js");
+    $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_URL_PARSER);
+    $this->jQuery()->setLocalPath(VENDOR_JQUERY)->enable();
+    $this->jQuery()->setUiLocalPath(VENDOR_JQUERY_UI)->UiEnable();
+    $this->jQuery()->addJavascriptFile(VENDOR_BOOTSTRAP_JS);
+    echo $this->jQuery();
+    ?>
+    <script src="<?php echo VENDOR_MATHJAX ?>" async></script>
+    <script type='text/x-mathjax-config'>MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['$$','$$']]}});</script>
+</head>
+
+<body>
+
+
+<?php $this->navbar(true, ['languages' => Zend_Registry::get('languages'), 'lang' => Zend_Registry::get('lang')], true, ['isLogged' => Episciences_Auth::isLogged(), 'userRenderScript' => 'commons/user.phtml']); ?>
+<div id="container" class="container<?php echo $this->containerClass; ?>">
+
+
+    <div class="logo">
+        <?php
+        if (is_file(REVIEW_PATH . 'layout/' . 'header.' . Zend_Registry::get('lang') . '.html')) {
+            //Header prédéfini du portail
+            echo file_get_contents(REVIEW_PATH . 'layout/' . 'header.' . Zend_Registry::get('lang') . '.html');
+        } ?>
+    </div>
+
+    <?php if (EPISCIENCES_RENDER_ALERT_BANNER['STATUS']): ?>
+
+        <?= $this->render('commons/alert-banner.phtml') ?>
+
+    <?php endif; ?>
+
+    <?php ?>
+
+
+    <div class="row<?php echo $this->containerClass; ?>">
+        <?php if ($this->navigation == Ccsd_Website_Style::MENU_LIST || $this->navigation == Ccsd_Website_Style::MENU_ACCORDION) { ?>
+        <div class="col-md-2">
+            <?php } else { ?>
+            <div class="col-md-12">
+                <?php } ?>
+                <?php echo $this->sidebar($this->navigation, $this->nav()); ?>
+
+                <?php if ($this->navigation == Ccsd_Website_Style::MENU_LIST || $this->navigation == Ccsd_Website_Style::MENU_ACCORDION) { ?>
+            </div>
+            <div class="col-md-10">
+                <?php } ?>
+                <div class="corps">
+                    <?php
+                    if ($style->displayBreadCrumbs()) {
+                        echo $this->render('commons/breadcrumbs.phtml');
+                    }
+
+                    if ($this->layout()->pageTitle != '') {
+                        $title = $this->layout()->pageTitle;
+                    } else {
+                        $active = $this->nav()->findActive($this->nav()->getContainer());
+                        $title = $active ? $active['page']->getLabel() : '';
+                    }
+                    ?>
+                    <?php if (trim($title) != '') : ?>
+                        <h1><?php echo $this->translate($title); ?></h1>
+                    <?php endif; ?>
+
+                    <?php if ($this->layout()->description != '') { ?>
+                        <blockquote><?php echo $this->translate($this->layout()->description); ?></blockquote>
+                        <hr/>
+                    <?php } ?>
+
+                    <?php
+                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_ERROR, false);
+                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_WARNING, false);
+                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_SUCCESS, false);
+                    echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_INFO, true);
+                    ?>
+
+                    <?php
+                    //Développement : affichage des mails
+                    if (APPLICATION_ENV == ENV_DEV) {
+                        $session = new Zend_Session_Namespace();
+                        if (isset($session->mail) && $session->mail instanceof Episciences_Mail) {
+                            $this->mail = $session->mail;
+                            echo $this->render('commons/mail.phtml');
+                            unset($session->mail);
+                        }
+                    } ?>
+
+                    <?php echo $this->layout()->content; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <?php
+
+
+    if (APPLICATION_MODULE === 'portal') {
+        echo $this->render('commons/footer-portal.phtml');
+    } elseif (APPLICATION_MODULE === 'journal') {
+        echo $this->render('commons/footer.phtml');
+    }
+
+    if (APPLICATION_ENV == ENV_PROD) {
+        echo $this->render('commons/matomo.phtml');
+    }
+    ?>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.js"
+            data-cfasync="false"></script>
+    <script>
+        window.cookieconsent.initialise({
+            "palette": {
+                "popup": {
+                    "background": "#efefef",
+                    "text": "#404040"
+                },
+                "button": {
+                    "background": "#8ec760",
+                    "text": "#ffffff"
+                }
+            },
+            "theme": "edgeless",
+            "content": {
+                "message": "<?php echo $this->translate('Ce site utilise des cookies et collecte des informations personnelles vous concernant') ?>",
+                "dismiss": "<?php echo $this->translate('Fermer')?>",
+                "href": "//www.<?php echo DOMAIN; ?>/page/privacy"
+            }
+        });
+    </script>
+    <?php
+    if (APPLICATION_ENV == ENV_DEV) {
+    echo $this->render('commons/debug.phtml');
+    }
+    ?>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<?php 
+	$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+	$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+	$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+	$this->jQuery()->addJavascriptFile("/js/administratemail/reminders.js");
+	
+	echo $this->partial('partials/modal.phtml');
+?>
+
+<script>
+	var langs = <?php echo Zend_Json::encode($this->langs)?>;
+	var locale = '<?php echo $this->locale?>';
+	var templates = <?php echo Zend_Json::encode($this->templates)?>;
+</script>
+
+<?php echo $this->partial('administratemail/reminders_list.phtml', array('reminders'=>$this->reminders)); ?>
+
+<div style="margin-top: 30px">
+	<a 	class="modal-opener"
+		title="<?php echo $this->translate('Créer une relance automatique'); ?>"
+		href="/administratemail/editreminder"
+		data-callback="submit"
+		data-width="50%">
+	<button id="addreminder" name="addreminder" type="button" class="btn btn-default" aria-label="<?php echo $this->translate('Créer une relance automatique'); ?>">
+		<?php echo $this->translate('Créer une relance automatique'); ?>
+	</button>
+	</a>
+</div>

@@ -1,0 +1,92 @@
+<?php
+$title = $this->translate('TAGS disponibles');
+$title .= ' [<code>' . count($this->allTags) . '</code>]';
+$title .= '  |  ';
+$title .= $this->translate('Templates');
+$title .= '  |  ';
+$title .= ' [<code>' . count($this->oTemplates) . '</code>]';
+
+$this->layout()->pageTitle = $title
+
+?>
+
+<div id="tags-list">
+
+    <?php
+    $previousGroup = '';
+    $current_group = '';
+    /** @var Episciences_Mail_Template $oTemplate */
+    foreach ($this->oTemplates as $oTemplate) : ?>
+        <?php $current_group = $oTemplate->getType() ?>
+        <?php if ($current_group !== $previousGroup) : ?>
+            <h3><?= $this->translate($current_group . '_tpl_group') ?></h3>
+        <?php endif; ?>
+        <?php $key = $oTemplate->getKey(); ?>
+        <p id="<?= $key ?>">
+            <strong>
+                <?= $this->translate($key . Episciences_Mail_TemplatesManager::SUFFIX_TPL_NAME) ?> </strong>
+            <em>(<?= $key ?>)</em>
+            <?php if ($oTemplate->isAutomatic()): ?>
+                <span class="badge"><?= $this->translate('Mail automatique') ?> </span><br>
+            <?php endif; ?>
+            <?php
+
+            if (array_key_exists($key, $tab = Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT)) :?>
+
+                <?php if ($recipient = $tab[$key][Episciences_Mail_TemplatesManager::RECIPIENT]): ?>
+                    <br>
+                    <?= $this->translate('Destinataire(s) :') . ' ' . $this->translate($recipient) ?>
+                <?php endif; ?>
+
+                <?php if ($description = $tab[$key][Episciences_Mail_TemplatesManager::DESCRIPTION]): ?>
+                    <br>
+                    <?= $this->translate('Description :') . ' ' . $this->translate($description) ?>
+                <?php endif; ?>
+
+            <?php else: ?>
+                <?php trigger_error('Please remember to add ' . $key . ' in Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT') ?>
+            <?php endif; ?>
+
+        </p>
+
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th scope="col"><?= $this->translate('TAG') ?></th>
+                    <th scope="col"><?= $this->translate('Description') ?></th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($oTemplate->getTags() as $tag): ?>
+
+                    <tr>
+                        <td><?= $tag ?></td>
+                        <td><?= isset(Episciences_Mail_Tags::TAG_DESCRIPTION[$tag]) ? ucfirst($this->translate(Episciences_Mail_Tags::TAG_DESCRIPTION[$tag])) : trigger_error(sprintf('Please remember to add %s in Episciences_Mail_Tags::TAG_DESCRIPTION', $tag)) ?></td>
+                    </tr>
+
+                <?php endforeach; ?>
+
+                </tbody>
+            </table>
+        </div>
+        <?php $previousGroup = $oTemplate->getType(); ?>
+    <?php endforeach; ?>
+    <?php ?>
+
+</div>
+
+<div class="form-actions">
+    <a href="#tags-list" class="btn btn-default btn-sm form-control" aria-label="Back to Top">
+        <span class="fa-solid fa-arrow-up" style="margin-right: 5px;"></span>
+        <?= $this->translate('Retour en haut')?>
+    </a>
+</div>
+
+
+
+
+
+
+
+

@@ -1,0 +1,87 @@
+<?php $this->jQuery()->addStylesheet('/css/editorial-staff.css'); ?>
+
+<div id="editorial_staff">
+    <?php foreach ($this->staff as $role => $members) : ?>
+        <?php if ($count = count($members)) : ?>
+            <?php
+            $name = "Episciences_Acl::ROLE_" . mb_strtoupper($role);
+            $name = $count > 1 ? $name . "_PLURAL" : $name
+            ?>
+            <h2 style="clear: both"><?= $this->translate(constant($name)) ?></h2>
+        <?php /** @var Episciences_User $member */?>
+            <?php foreach ($members as $member) : ?>
+                <div class="staff_member col-sm-12">
+
+                    <div class="col-sm-2">
+                        <?php if ($this->isDisplayPhotos !== 0) : ?>
+                            <img style="width: 128px"
+                                 src="/user/photo/uid/<?= $this->escape($member->getUid()) ?>/size/large<?php
+                                 if (Episciences_Auth::getUid() === $member->getUid()) {
+                                     echo '?v=' . Episciences_Auth::getPhotoVersion();
+                                 } ?>"
+                                 class="user-photo-thumbnail img-responsive" alt="Photo"/>
+                        <?php endif; ?>
+
+                    </div>
+
+                    <div class="details col-sm-10">
+                        <div style="margin-top: 0.5em;">
+                            <?= $this->partial('user/user_orcid.phtml', ['orcid' => $member->getOrcid()]) ?>
+                            <h2 style="display: inline;"><a href="/user/view/userid/<?= $this->escape($member->getUid()) ?>"><?= $this->escape($member->getScreenName()) ?></a></h2>
+                        </div>
+
+                        <div><?= $this->partial('user/user_affiliations.phtml', ['affiliations' => $member->getAffiliations()]) ?></div>
+                        <div><?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => $member->getWebSites(), 'socialMedias' => (array)$member->getSocialMedias()]) ?></div>
+
+                        <div class="fullname">
+
+                            <?php if ((Episciences_Auth::isLogged()) && (Episciences_Auth::isAllowedToSendMail())): ?>
+                                <p>
+                                    <a title="<?= $this->translate('Contacter') . ' ' . $this->escape($member->getScreenName()) ?>"
+                                       href="/administratemail/send/recipient/<?= $this->escape($member->getUid()) ?>"
+                                       data-width="50%" class="modal-opener">
+                                        <button class="btn btn-default btn-sm" style="margin-top: 5px;"><span
+                                                    class="glyphicon glyphicon-envelope grey" ></span> <?= $this->translate('Contacter') ?>
+                                        </button>
+                                    </a>
+                                </p>
+                            <?php endif; ?>
+
+                        </div>
+
+                        <?php if ($role === Episciences_Acl::ROLE_EDITOR && count($member->getAssignedSections())) : ?>
+                            <div class="sections">
+                                <span class="title">
+                                    <?= $this->translate(["Rédacteur de la rubrique : ", "Rédacteur des rubriques : ", count($member->getAssignedSections())]) ?>
+                                </span>
+                                <span>
+                                    <?php
+                                    foreach ($member->getAssignedSections() as $section) {
+                                        $memberSections[] = '<a href="' . $this->url(['controller' => 'section', 'action' => 'view', 'id' => $section->getSid()]) . '">' . $this->escape($section->getNameKey()) . '</a>';
+                                    }
+                                    echo implode(' ; ', $memberSections);
+                                    unset($memberSections);
+                                    ?>
+                                </span>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    <?php endforeach; ?>
+</div>
+
+<?php
+
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+$this->jQuery()->addJavascriptFile('/js/library/es.fileupload.js');
+$this->jQuery()->addJavascriptFile('/js/library/es.mail.js');
+// Security: DOMPurify for XSS prevention (needed by es.contacts-list.js)
+$this->jQuery()->addJavascriptFile("https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js");
+$this->jQuery()->addJavascriptFile("/js/utils/sanitizer.js");
+$this->jQuery()->addJavascriptFile("/js/library/es.contacts-list.js");
+
+?>

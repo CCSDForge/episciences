@@ -1,0 +1,20 @@
+<?php
+/**
+ * Log Detail Partial: Linked Data
+ * Handles: CODE_LD_ADDED, CODE_LD_CHANGED, CODE_LD_REMOVED
+ * Display: par username : typeLd => valueLd [relation => relationship]
+ */
+?>
+<span class="log-linked-data">
+    <?= $this->translate('par') . ' ' ?>
+    <span class="log-user-name"><?= $this->username ?></span>
+    <?= $this->translate(' :') ?>
+    <span class="log-ld-type"><?= $this->escape($this->typeLd) ?></span>
+    <?= " =>" ?>
+    <span class="log-ld-value"><?= $this->escape($this->valueLd) ?></span>
+    <?php if(isset($this->relationship)):?>
+        <span class="log-ld-relationship">
+            <?= 'relation => '.$this->escape($this->relationship) ?>
+        </span>
+    <?php endif; ?>
+</span>

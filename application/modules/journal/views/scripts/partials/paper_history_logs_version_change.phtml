@@ -1,0 +1,14 @@
+<?php
+/**
+ * Log Detail Partial: Version Change
+ * Handles: CODE_PAPER_UPDATED, CODE_VERSION_REPOSITORY_UPDATED
+ * Display: (V{old} > V{new}) : fullName
+ */
+?>
+<span class="log-version-change" aria-label="<?= $this->translate('Version change') ?>">
+    <?= '(V' . $this->escape($this->oldVersion) . ' > ' . 'V' . $this->escape($this->newVersion) . ')' ?>
+</span>
+<?= $this->translate(' :') ?>
+<span class="log-user-name">
+    <?= $this->fullName ?>
+</span>

@@ -1,0 +1,138 @@
+{
+  "EPISCIENCES": {
+    "UID": 666,
+    "USER_PHOTO_PATH": "../data/user_photo/",
+    "MAIL_PATH": "../data/mails/episciences/",
+    "LOG_PATH": "/var/www/htdocs/logs/",
+    "SOLR_LOG_PATH": "/var/www/htdocs/logs/",
+    "EXCEPTIONS_LOG_PATH": "/var/www/htdocs/logs/",
+    "HAL_API": "https://halapi.example.org",
+    "SECRET_KEY": "four random common words",
+    "AUTH_TYPE": "DB",
+    "USER_AGENT": "Episciences - contact@example.org",
+    "API_URL": "https://api-dev.episciences.org/api/",
+    "API_SECRET_KEY": "four random common words",
+    "USE_NEW_FRONT" : true,
+    "Z_SUBMIT": {
+      "URL": "https://deprecated.example.org",
+      "STATUS": 0
+    },
+    "AUTH_ADAPTER_NAME": "MYSQL",
+    "BIBLIOREF": {
+      "URL":"https://citations-dev.episciences.org",
+      "ENABLE" : true,
+      "SSL_VERIFY": false
+    },
+    "SUPPORT": "support@example.org",
+    "CONTACT": "contact@example.org",
+    "IGNORED_EMAILS_WHEN_INVITING_REVIEWER":  [
+      "ccsd-tech@example.org",
+      "hal@example.org",
+      "contact@example.org"
+    ],
+    "RENDER_ALERT_BANNER": {
+      "STATUS" : 0,
+      "MESSAGE": {
+        "FR": "Arrêt de service {date} de {h1} à {h2}, la plateforme EPIsciences sera inaccessible ({plus d'informations}).",
+        "DEFAULT_LANG": "Service interruption on {date} from {1} to {h2}, EPIsciences platform will be inaccessible ({for more information})"
+      }
+    }
+  },
+  "CAS": {
+    "HOST": "db-auth",
+    "PORT": 3306,
+    "NAME": "cas_users",
+    "USER": "root",
+    "PWD": "root"
+  },
+   "SOLR": {
+    "HOST": "db-indexing",
+    "PORT": 3306,
+    "NAME": "solr_index",
+    "USER": "root",
+    "PWD": "root"
+  },
+  "EPI": {
+    "HOST": "db-episciences",
+    "PORT": 3306,
+    "NAME": "episciences",
+    "USER": "root",
+    "PWD": "root"
+  },
+  "CAPTCHA": {
+    "BRAND": ""
+  },
+  "RECAPTCHA": {
+    "PUBKEY": "",
+    "PRIVKEY": ""
+  },
+  "HCAPTCHA": {
+    "SITEKEY": "",
+    "SECRETKEY": ""
+  },
+  "ENDPOINTS": {
+    "INDEXING_HOST": "solr",
+    "INDEXING_PROTOCOL": "http",
+    "INDEXING_PORT": 8983,
+    "INDEXING_PATH": "/solr",
+    "INDEXING_TIMEOUT": 666,
+    "INDEXING_USERNAME": "",
+    "INDEXING_PASSWORD": "",
+    "SEARCH_HOST": "solr",
+    "SEARCH_PROTOCOL": "http",
+    "SEARCH_PORT": 8983,
+    "SEARCH_PATH": "/solr",
+    "SEARCH_TIMEOUT": 666,
+    "SEARCH_USERNAME": "",
+    "SEARCH_PASSWORD": "",
+    "CORENAME": "episciences"
+  },
+  "GROBID": {
+    "HOST": "http://grobid.example.org",
+    "PORT": 8080
+  },
+  "GHOSTSCRIPT": {
+    "PATH": "/pathTo/ghostscript",
+    "CACHE": "/pathTo/cache/ghostscript"
+  },
+  "DOI": {
+    "AGENCY": "CROSSREF",
+    "PREFIX": "10.00000",
+    "LOGIN": "login",
+    "PASSWORD": "four random common words",
+    "TESTAPI": "https://test.crossref.org/servlet/deposit",
+    "API": "https://doi.crossref.org/servlet/deposit",
+    "EMAIL_CONTACT": "feedback@example.org"
+  },
+  "NOTIFY_TARGET_HAL": {
+    "INBOX": "https://inbox.example.org/",
+    "URL": "https://hal.example.org/",
+    "LINKED_REPOSITORY": "HAL_ENV"
+  },
+  "INBOX": {
+    "URL": "https://inbox.example.org/",
+    "DB_HOST": "db.example.org",
+    "DB_DRIVER": "pdo_mysql",
+    "DB_NAME": "inbox",
+    "DB_USER": "inbox",
+    "DB_PASSWORD": "four random common words",
+    "DB_PORT": 3306
+  },
+  "GEO_IP": {
+    "DATABASE_PATH": "/fullPathTo/scripts/geoip/",
+    "DATABASE": "GeoLite2-City.mmdb"
+  },
+  "OPENCITATIONS": {
+    "TOKEN" : "YOUR-OPENCITATIONS-ACCESS-TOKEN",
+    "APIURL": "https://opencitations.net/index/api/v1/citations/"
+  },
+  "OPENALEX": {
+    "MAILTO": "YOUR-MAIL-TO",
+    "APIURL": "https://api.openalex.org/works/"
+  },
+  "CROSSREF": {
+    "MAILTO": "YOUR-MAIL-TO",
+    "APIURL": "https://api.crossref.org/works/",
+    "PLUS_API_TOKEN": "four random common words"
+  }
+}

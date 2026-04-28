@@ -1,0 +1,54 @@
+.facet-label {
+  font-weight: bold;
+  font-size: 100%;
+  cursor: pointer;
+}
+
+.facet-label:hover {
+  color: #999;
+}
+
+li.facet-item {
+  list-style-type: none;
+  font-size: 75%;
+  clear: both;
+}
+
+.facet-control {
+  display: inline;
+}
+
+.facet-content ul {
+  max-height: 300px;
+  overflow: auto;
+  margin-bottom: 0.5em;
+  padding-left: 0;
+}
+
+input.facet-input {
+  font-size: 90%;
+  margin: 5px 0;
+}
+
+#search-results h3 {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+#search-results h3 a {
+  color: #5c94e8;
+}
+
+#search-results .abstract {
+  margin-top: 10px;
+  font-size: 90%;
+  color: #999;
+}
+
+#search-results .publication-date {
+  font-size: 90%;
+}
+
+#search-facets h3 {
+  font-weight: bold;
+}

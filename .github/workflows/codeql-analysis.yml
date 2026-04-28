@@ -1,0 +1,60 @@
+# IMPORTANT: This workflow conflicts with GitHub's default CodeQL setup.
+# If you get the error "CodeQL analyses from advanced configurations cannot be processed when the default setup is enabled",
+# you must disable the default setup in: Repository Settings → Code security and analysis → CodeQL analysis → Configure → Advanced → Disable
+#
+# This custom workflow provides more control over:
+# - Branch targeting (runs on specific branches)
+# - Scheduling (Sundays at 22:00 UTC)
+# - Language selection (JavaScript/TypeScript and GitHub Actions workflows)
+#
+name: "CodeQL advanced configuration"
+
+on:
+  push:
+    branches: [ main, preprod, preprod-epi-manager, main-epi-manager, staging ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ main, preprod, preprod-epi-manager, main-epi-manager, staging ]
+  schedule:
+    - cron: '0 22 * * 0'
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript-typescript', 'actions' ]
+        # CodeQL supports: 'cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift', 'actions'
+        # Note: PHP is NOT supported by CodeQL
+        # 'actions' analyzes GitHub Actions workflows for security issues
+        # Documentation: https://docs.github.com/en/code-security/code-scanning/introduction-to-code-scanning/about-code-scanning-with-codeql
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v4
+      with:
+        languages: ${{ matrix.language }}
+        config-file: ./.github/codeql/codeql-config.yml
+        # Configuration includes:
+        # - Advanced security and quality queries
+        # - Exclusion of tests and dependencies
+        # - Targeted analysis of source code only
+
+    # Note: Autobuild removed as JavaScript is an interpreted language
+    # that does not require compilation for CodeQL analysis
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v4
+      with:
+        category: "/language:${{ matrix.language }}"

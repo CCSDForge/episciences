@@ -1,0 +1,140 @@
+<?php
+const PARTIALS_DEMAND_ITEM_PHTML = 'partials/demand_item.phtml';
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$paperId = $paper->getPaperId();
+?>
+
+<!-- Current demand section -->
+<?php if ($this->current_demand) : ?>
+    <div class="current-demand-section">
+        <div class="demands-section-header">
+            <?= $this->translate('Dernière demande') ?>
+        </div>
+        <div class="demands-timeline demands-timeline--scrollable">
+            <div class="demands-timeline-track">
+                <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                    'item' => $this->current_demand,
+                    'paperId' => $paperId,
+                    'isReply' => false,
+                    'cleanMessage' => true
+                ]) ?>
+
+                <!-- Replies (if any) -->
+                <?php if (isset($this->current_demand['replies'])) : ?>
+                    <div class="timeline-thread">
+                        <?php foreach ($this->current_demand['replies'] as $reply) : ?>
+                            <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                                    'item' => $reply,
+                                    'paperId' => $paperId,
+                                    'isReply' => true,
+                                    'cleanMessage' => false
+                            ]) ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
+<!-- Separator -->
+<?php if ($this->current_demand && $this->previous_demands) : ?>
+    <hr style="margin: 20px 0;" />
+<?php endif; ?>
+
+<!-- Previous demands section -->
+<?php if ($this->previous_demands) : ?>
+    <div class="previous-demands-section">
+        <div class="demands-section-header">
+            <?= $this->translate('Anciennes demandes :') ?>
+        </div>
+        <div class="demands-timeline demands-timeline--scrollable">
+            <div class="demands-timeline-track">
+                <?php foreach ($this->previous_demands as $demand) : ?>
+
+                    <!-- Main demand -->
+                    <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                        'item' => $demand,
+                        'paperId' => $paperId,
+                        'isReply' => false,
+                        'cleanMessage' => true
+                    ]) ?>
+
+                    <!-- Replies (if any) -->
+                    <?php if (isset($demand['replies'])) : ?>
+                        <div class="timeline-thread">
+                            <?php foreach ($demand['replies'] as $reply) : ?>
+                                <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                                    'item' => $reply,
+                                    'paperId' => $paperId,
+                                    'isReply' => true,
+                                    'cleanMessage' => false
+                                ]) ?>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
+<!-- Previous versions section -->
+<?php if ($this->previousVersionsDemands) : ?>
+    <?= !empty($this->current_demand) ? '<hr />' : '' ?>
+    <div class="previous-versions-section">
+        <div class="demands-section-header">
+            <?= $this->translate('Demandes des versions précédentes') ?>
+        </div>
+        <div class="demands-timeline demands-timeline--scrollable">
+            <?php foreach ($this->previousVersionsDemands as $versionId => $versionComments) : ?>
+                <?php if (!$versionComments) {
+                    continue;
+                } ?>
+
+                <!-- Version header -->
+                <div class="version-header">
+                    <?php if ($this->previousVersions[$versionId]->isTmp()) : ?>
+                        <?= $this->translate('Version temporaire du ') .
+                            $this->Date($this->previousVersions[$versionId]->getWhen()) ?>
+                    <?php else : ?>
+                        <?= $this->translate('Version') . ' ' .
+                            $this->previousVersions[$versionId]->getVersion() ?>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Version demands -->
+                <div class="demands-timeline-track">
+                    <?php foreach ($versionComments as $demand) : ?>
+
+                        <!-- Main demand -->
+                        <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                            'item' => $demand,
+                            'paperId' => $paperId,
+                            'isReply' => false,
+                            'cleanMessage' => true
+                        ]) ?>
+
+                        <!-- Replies (if any) -->
+                        <?php if (isset($demand['replies'])) : ?>
+                            <div class="timeline-thread">
+                                <?php foreach ($demand['replies'] as $reply) : ?>
+                                    <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                                        'item' => $reply,
+                                        'paperId' => $paperId,
+                                        'isReply' => true,
+                                        'cleanMessage' => false
+                                    ]) ?>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+
+                    <?php endforeach; ?>
+                </div>
+
+            <?php endforeach; ?>
+        </div>
+    </div>
+<?php endif; ?>

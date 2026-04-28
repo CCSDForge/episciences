@@ -1,0 +1,23 @@
+<?php if ($this->reviewsRequested || $this->reviewsReceived || $this->medianReviewsNumbe) : ?>
+    <div id="evaluation">
+        <h1 class="help-block" style="margin-top: 10px;"><?= $this->translate('Évaluations') ?></h1>
+        <ul class="list-unstyled">
+            <?= $this->partial('stats/stat-item.phtml', [
+                    'itemLabel' => 'Évaluations demandées',
+                    'itemValue' => $this->reviewsRequested,
+            ]) ?>
+
+            <?= $this->partial('stats/stat-item.phtml', [
+                    'itemLabel' => 'Évaluations reçues',
+                    'itemValue' => $this->reviewsReceived
+            ]) ?>
+
+            <?= $this->partial('stats/stat-item.phtml', [
+                    'itemLabel' => "Nombre médian d'évaluations d'articles de recherche",
+                    'itemValue' => $this->medianReviewsNumber
+            ]) ?>
+
+        </ul>
+
+    </div>
+<?php endif; ?>

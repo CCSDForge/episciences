@@ -1,0 +1,42 @@
+<?php
+// how many authors will fit in a column
+$authorsPerColumn = round(count($this->facets) / 3);
+echo $this->partial('partials/browse_alphabet.phtml');
+?>
+
+<div class="container-fluid">
+    <div class="row">
+
+        <?php
+        $searchParams['q'] = '*';
+        $searchParams['controller'] = 'search';
+        $searchParams['action'] = 'index';
+        $authorsCount = 0;
+        $needToCloseDiv = false;
+
+        foreach ($this->facets as $author) {
+            if (($authorsCount == 0) || ($authorsCount > $authorsPerColumn)) {
+                echo PHP_EOL . '<div class="col-xs-12 col-sm-6 col-md-4">';
+                echo '<ul class="list-group">';
+                $needToCloseDiv = true;
+            }
+
+            $searchParams[$this->urlFilterName] = $this->escape($author['name']);
+            echo '<li class="list-group-item">';
+            echo '<a href="' . $this->url($searchParams, null, true) . '">';
+            echo $this->escape($author['name']);
+            echo '<span class="label label-default pull-right">' . $author['count'] . '</span>';
+            echo '</a>';
+            echo '</li>';
+
+            if ($authorsCount >= $authorsPerColumn) {
+                echo '</ul>';
+                echo '</div>';
+                $authorsCount = 0;
+            } else {
+                $authorsCount++;
+            }
+        }
+        ?>
+    </div>
+</div>

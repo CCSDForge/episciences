@@ -1,0 +1,55 @@
+<?php
+$answer = $this->answer;
+$aConflicts = $this->aConflicts;
+$docId = $this->docId;
+$tableId = 'conflict-list_' . $answer;
+?>
+
+
+<table class="table table-striped table-hover conflict-list dataTable" id="<?= $tableId ?>" style="margin-top: 20px;">
+    <thead>
+    <tr>
+        <th scope="col" class="text-center">UID</th>
+        <th scope="col" class="text-center"><?= $this->translate("Nom d'utilisateur") ?></th>
+        <th scope="col" class="text-center"><?= $this->translate('Détails') ?></th>
+        <th scope="col" class="text-center"><?= $this->translate('Rapporté le') ?></th>
+        <th scope="col" class="text-center"><?= $this->translate('Action') ?></th>
+    </tr>
+    </thead>
+    <tbody>
+
+    <?php
+    /** @var Episciences_Paper_Conflict $conflict */
+    foreach ($aConflicts as $conflict) : ?>
+        <?php $cId = $conflict->getCid(); ?>
+        <tr id="tr-<?= $cId ?>">
+            <td class="text-center"><code><?= $conflict->getBY() ?></code></td>
+            <td class="text-center"><?= $this->escape($conflict->getScreenName()) ?></td>
+            <td><?= Episciences_Tools::epi_html_decode($conflict->getMessage()) ?></td>
+            <td class="text-center"><?= $this->Date($conflict->getDate()->format('Y-m-d')) ?></td>
+            <td class="text-center">
+
+                <?php if (Episciences_Auth::isSecretary()) : ?>
+
+                    <a id="delete-<?= $tableId ?>_<?= $conflict->getCid() ?>"
+                       data-docId="<?= $docId ?>">
+                        <small class="darkgrey fas fa-trash" data-toggle="tooltip"
+                               title="<?= $this->translate('Supprimer ce conflit') ?>"></small>
+                    </a>
+                <?php endif ?>
+
+            </td>
+        </tr>
+
+    <?php endforeach; ?>
+
+    </tbody>
+</table>
+
+<?php
+
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
+$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->jQuery()->addJavascriptFile('/js/common/datatableInit.js');
+
+

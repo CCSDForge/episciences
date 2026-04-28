@@ -1,0 +1,334 @@
+<?php
+$this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
+
+/** @var Episciences_Paper $paper */
+$paper = $this->article;
+/** @var Zend_Controller_Request_Http $request */
+$request = Zend_Controller_Front::getInstance()->getRequest();
+$controller = $request->getControllerName();
+$action = $request->getActionName();
+$url = $request->getScheme() . '://' . $request->getHttpHost() . $request->getRequestUri();
+$reviewers = $paper->getReviewers();
+$ratings = $paper->getRatings();
+$canBeReviewed =
+    (Episciences_Auth::isSecretary() || $paper->getEditor(Episciences_Auth::getUid())) &&
+    (Episciences_Auth::getUid() !== $paper->getUid()) &&
+    $paper->canBeReviewed();
+try {
+    $jsonCanBeReviewed = json_encode($canBeReviewed, JSON_THROW_ON_ERROR);
+} catch (JsonException $e) {
+    trigger_error($e->getMessage());
+    $jsonCanBeReviewed = false;
+}
+?>
+
+<style>
+    .context-menu {
+        list-style: outside none none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .context-menu > li > a {
+        clear: both;
+        color: #333;
+        display: block;
+        font-weight: normal;
+        line-height: 1.42857;
+        padding: 3px 5px;
+        white-space: nowrap;
+    }
+
+    .context-menu > li > a:hover,
+    .context-menu > li > a:focus {
+        background-color: #f5f5f5;
+        color: #262626;
+        text-decoration: none;
+    }
+
+    .context-button:hover {
+        cursor: pointer;
+    }
+
+    #invitations .panel-body {
+        max-height: 300px;
+        overflow: auto;
+    }
+
+</style>
+
+<div id="reviewers">
+
+    <div style="margin-bottom: 5px">
+        <?php if (count($this->invitations)) : ?>
+
+            <div id="invitations" class="panel-group">
+                <?php foreach ($this->invitations as $status => $invitations) : ?>
+                    <?php if (!$invitations) {
+                        continue;
+                    } ?>
+                    <div class="panel panel-warning">
+                        <div class="panel-heading" data-target="#<?= $status ?>-invitations"
+                             data-toggle="collapse" data-parent="#invitations">
+                            <h4 class="panel-title">
+                                <?php
+                                $title = count($invitations) . ' ';
+                                switch ($status) {
+                                    case Episciences_Reviewer::STATUS_ACTIVE:
+                                        $title .= (count($invitations) > 1) ? $this->translate('invitations acceptées') : $this->translate('invitation acceptée');
+                                        break;
+                                    case Episciences_Reviewer::STATUS_PENDING:
+                                        $title .= (count($invitations) > 1) ? $this->translate('invitations en attente') : $this->translate('invitation en attente');
+                                        break;
+                                    case Episciences_Reviewer::STATUS_DECLINED:
+                                        $title .= (count($invitations) > 1) ? $this->translate('invitations refusées') : $this->translate('invitation refusée');
+                                        break;
+                                    case Episciences_Reviewer::STATUS_EXPIRED:
+                                        $title .= (count($invitations) > 1) ? $this->translate('invitations expirées') : $this->translate('invitation expirée');
+                                        break;
+                                    case Episciences_Reviewer::STATUS_CANCELLED:
+                                        $title .= (count($invitations) > 1) ? $this->translate('invitations annulées') : $this->translate('invitation annulée');
+                                        break;
+                                    case Episciences_Reviewer::STATUS_UNINVITED:
+                                        $title .= (count($invitations) > 1) ? $this->translate('rapports de relecture supplémentaires') : $this->translate('rapport de relecture supplémentaire');
+                                        break;
+                                    case Episciences_Reviewer::STATUS_INACTIVE: // when a paper is obsolete, reviewers are disabled
+                                        $title .= (count($invitations) > 1) ? $this->translate('invitations obsolètes') : $this->translate('invitation obsolète');
+                                        $title .= '&nbsp';
+                                        $title .= '<i data-toggle="tooltip" title="';
+                                        $title .= $this->translate("Lorsqu'un article est obsolète, les relecteurs sont désactivés") . '" class="fas fa-info-circle pull-right"></i>';
+                                        break;
+                                    default:
+                                        $title .= 'Undefined invitation status';
+                                }
+                                ?>
+                                <?= $title ?>
+                            </h4>
+                        </div>
+                        <div id="<?php echo $status ?>-invitations"
+                             class="panel-collapse collapse<?php if ($status === Episciences_Reviewer::STATUS_ACTIVE || $status === Episciences_Reviewer::STATUS_UNINVITED) {
+                                 echo ' in';
+                             } ?>">
+                            <div class="panel-body">
+
+                                <?php foreach ($invitations as $i => $invitation) :
+
+                                    if (isset($invitation['INVITATION_DATE']) && isset($invitation['ASSIGNMENT_DATE'])) {
+
+                                        $maxDate = Date(max([$invitation['INVITATION_DATE'], $invitation['ASSIGNMENT_DATE']]));
+                                        $minDate = Date(min([$invitation['INVITATION_DATE'], $invitation['ASSIGNMENT_DATE']]));
+
+                                    }
+
+                                    ?>
+
+                                    <div id="invitation-<?php echo $invitation['ASSIGNMENT_ID'] ?>">
+                                        <div class="reviewer">
+                                            <button
+                                                class="btn btn-default fas fa-ellipsis-v popover-link context-button"
+                                                role="button"
+                                                data-paper_status="<?= $paper->getStatus() ?>"
+                                                data-can_be_reviewed="<?= $jsonCanBeReviewed ?>"
+                                                data-docid="<?= $paper->getDocid() ?>"
+                                                data-status="<?= $status ?>"
+                                                data-rating="<?= (array_key_exists('rating', $invitation['reviewer'])) ? $invitation['reviewer']['rating']['status'] : 0 ?>"
+                                                data-uid="<?= $invitation['UID'] ?>"
+                                                data-by_uid="<?= Episciences_Auth::getUid() ?>"
+                                                data-aid="<?= $invitation['ASSIGNMENT_ID'] ?>"
+                                                data-tmp="<?= $invitation['TMP_USER'] ?>">
+                                            </button>
+
+                                            <img
+                                                    src="/user/photo/name/<?= urlencode($this->escape($invitation['reviewer']['fullname'])) ?>/uid/<?= $invitation['UID'] ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
+                                                    class="user-photo-small" alt="avatar">
+
+                                            <span style="margin-left: 0.5em;"><strong><?= $this->escape($invitation['reviewer']['fullname']) ?></strong>
+                                                <?php if ($invitation['TMP_USER']) {
+                                                    echo '(' . $this->translate("compte temporaire") . ')';
+                                                } else {
+                                                    $userTag = ' [ <mark>';
+                                                    $userTag .= ' UID';
+                                                    $userTag .= $this->translate(' :');
+                                                    $userTag .= ' ';
+                                                    $userTag .= '<code>';
+                                                    $userTag .= $invitation['UID'];
+                                                    $userTag .= '</code>';
+
+                                                    if (isset($invitation['reviewer']['hasRoles']) && !$invitation['reviewer']['hasRoles']) {
+                                                        $userTag .= ' (<small><em>';
+                                                        $userTag .= $this->translate("cet utilisateur n'a pas encore de profil");
+                                                        if (isset($invitation['reviewer']['isCasUserValid']) && !$invitation['reviewer']['isCasUserValid']) {
+                                                            $userTag .= ', ';
+                                                            $userTag .= $this->translate("son compte n'a pas encore été activé");
+                                                        }
+
+                                                        $userTag .= '</em></em></small>)';
+                                                    }
+
+                                                    $userTag .= '</mark>';
+                                                    $userTag .= ' ]';
+
+                                                    echo $userTag;
+                                                }
+                                                ?>
+                                                <?php if ($invitation['reviewer']['alias']) : ?>
+                                                    - <?php echo $this->translate('relecteur') . ' ' . $this->escape($invitation['reviewer']['alias']) ?>
+                                                <?php endif; ?>
+                                                </span>
+
+                                        </div>
+
+                                        <?php if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_ACTIVE) : ?>
+
+                                            <?php if(isset($invitation['reviewer']['rating'])):?>
+                                            <div>
+                                                <?php echo $this->translate("Progression : "); ?>
+                                                <span>
+                                                    <?php if ($invitation['reviewer']['rating']['status'] === Episciences_Reviewer_Reviewing::STATUS_COMPLETE) : ?>
+                                                    <a class="go_to_rating" data-uid="<?php echo $invitation['UID'] ?>" href="#ratings">
+                                                    <?php endif; ?>
+                                                    <?php $statusLabel = $this->translate(Episciences_Reviewer_Reviewing::getStatusLabel($invitation['reviewer']['rating']['status']));
+                                                    echo ucfirst($statusLabel); ?>
+                                                    <?php if ($invitation['reviewer']['rating']['status'] === Episciences_Reviewer_Reviewing::STATUS_COMPLETE) : ?></a><?php endif; ?>
+
+                                                    <?php if ($invitation['reviewer']['rating']['last_update']) {
+                                                        echo '(' . $this->translate('dernière action :') . ' ' . $this->Date($invitation['reviewer']['rating']['last_update']) . ')';
+                                                    } ?>
+                                                </span>
+                                            </div>
+
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+
+                                        <?php if (!array_key_exists(Episciences_Reviewer::STATUS_UNINVITED, $invitation)) : ?>
+                                            <div>
+                                                <?= $this->translate("Date d'envoi de l'invitation :") ?>
+                                                <?= $this->Date($minDate) ?>
+                                            </div>
+
+                                            <?php if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_ACTIVE || $invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_INACTIVE) : ?>
+                                                <div>
+                                                    <?= $this->translate("Date de réponse à l'invitation :") ?>
+                                                    <?= $this->Date($invitation['ANSWER_DATE']) ?>
+                                                </div>
+                                            <?php elseif (($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_PENDING || $invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_EXPIRED) &&
+                                                $invitation['EXPIRATION_DATE']) : ?>
+                                                <div>
+                                                    <?php echo $this->translate("Date d'expiration de l'invitation :"); ?>
+                                                    <?php echo $this->Date($invitation['EXPIRATION_DATE']); ?>
+                                                </div>
+                                            <?php endif; ?>
+
+                                            <?php if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_ACTIVE || $invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_PENDING) : ?>
+                                                <div>
+                                                    <?php echo $this->translate("Relecture attendue avant le :"); ?>
+                                                    <span
+                                                        class="rating_deadline"><?php echo $this->Date($invitation['ASSIGNMENT_DEADLINE']); ?></span>
+                                                </div>
+                                            <?php endif; ?>
+
+                                            <?php if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_CANCELLED) : ?>
+                                                <div>
+                                                    <?php echo $this->translate("Date de l'annulation :"); ?>
+                                                    <span class="cancellation_date"><?= $this->Date($maxDate) ?></span>
+                                                </div>
+                                            <?php endif; ?>
+
+                                            <?php if ($invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_DECLINED) : ?>
+                                                <div>
+                                                    <?php echo $this->translate("Date de refus :"); ?>
+                                                    <span
+                                                        class="rejection_date"><?= $this->Date($invitation['ANSWER_DATE']) ?></span>
+                                                </div>
+                                            <?php endif; ?>
+
+                                        <?php endif; ?>
+
+                                    </div>
+
+                                    <hr/>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+
+
+        <?php else : ?>
+            <?php echo $this->translate('Aucun relecteur pour le moment'); ?>
+        <?php endif; // fin du if(count($reviewers)) ?>
+    </div>
+
+    <?php if (
+        $paper->isEditable() &&
+        !$paper->isRevisionRequested() &&
+        !$paper->isAccepted() &&
+        !$paper->isCopyEditingProcessStarted() &&
+        !$paper->isReadyToPublish() &&
+        (Episciences_Auth::isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid()))
+    ) : ?>
+        <div id="upload_paper_report">
+            <!-- Bouton de relecture  -->
+            <?php try {
+                $isCompleted = $request->getParam('is_completed') && json_decode($request->getParam('is_completed'), false, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                $isCompleted = false;
+            } ?>
+            <button id="allowed_to_upload_paper_report" class="btn btn-default btn-sm pull-right"
+                <?php if ($isCompleted) {
+                    echo "disabled=\"\"";
+                } ?>
+            >
+                <?php if ($isCompleted) : ?>
+                    <span class="glyphicon glyphicon-ok-sign"></span>
+                    <?php echo $this->translate('Votre rapport a été déjà renseigné.'); ?>
+                <?php else : ?>
+                    <span class="glyphicon glyphicon-edit"></span>
+                    <?php echo $this->translate('Relire cet article'); ?>
+                <?php endif; ?>
+            </button>
+
+        </div>
+        <?php
+
+        ?>
+
+        <?= $this->confirm("Confirmation", "Souhaitez-vous relire cet article ?")
+            ->setTrigger('#allowed_to_upload_paper_report')
+            ->setJsCallback("confirmRating();");
+
+        ?>
+
+
+    <?php endif; ?>
+
+    <?php // Bouton d'invitation de relecteur  *********************************************** ?>
+    <?= $this->partial('partials/reviewer_invitation_button.phtml', [
+        'paper' => $paper,
+        'controller' => $controller,
+        'action' => $action,
+        'volume' => $this->volume,
+        'canBeReviewed' => $canBeReviewed
+    ]);
+    ?>
+</div>
+
+<script>
+    //Initialisation du menu des relecteurs
+    $('#reviewers .reviewer .popover-link').each(function () {
+        $(this).on('click', function (e) {
+            getReviewerMenu(this);
+        });
+    });
+
+    // Initialisation du lien de relecture
+    $('.go_to_rating').on('click', function () {
+        let uid = $(this).data('uid');
+        $("#rating-" + uid).collapse('show');
+    });
+
+    function confirmRating() {
+        location.href = "/paper/rating?id=<?= $paper->getDocId() ?>&reviewer_uid=<?= Episciences_Auth::getUid() ?>";
+    }
+</script>

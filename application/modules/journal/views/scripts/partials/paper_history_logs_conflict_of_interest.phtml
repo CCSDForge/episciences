@@ -1,0 +1,22 @@
+<?php
+/**
+ * Log Detail Partial: Conflict of Interest
+ * Handles: CODE_COI_REPORTED, CODE_COI_REVERTED
+ * Display: ANSWER > fullName (for COI_REPORTED)
+ *          : fullName (for COI_REVERTED)
+ */
+?>
+<?php if (isset($this->conflictAnswer)) : ?>
+    <?= $this->translate(' :') ?>
+    <span class="log-coi-answer" aria-label="<?= $this->translate('Conflict of interest answer') ?>">
+        <?= $this->escape(strtoupper($this->translate($this->conflictAnswer))) . ' > ' ?>
+    </span>
+    <span class="log-user-name">
+        <?= $this->fullName ?>
+    </span>
+<?php else : ?>
+    <?= $this->translate(' :') ?>
+    <span class="log-user-name">
+        <?= $this->fullName ?>
+    </span>
+<?php endif; ?>

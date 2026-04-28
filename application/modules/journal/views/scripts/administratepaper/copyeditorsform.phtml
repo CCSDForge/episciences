@@ -1,0 +1,13 @@
+<style>
+    .copyeditors-list {
+        max-height: 150px;
+        overflow: auto;
+        margin-bottom: 10px;
+    }
+</style>
+
+<?php if ($this->copyEditors ) : ?>
+    <?php echo $this->copyEditorsForm; ?>
+<?php else : ?>
+    <?php echo $this->translate('Aucun préparateur de copie enregistré') . '.' ?>
+<?php endif;?>

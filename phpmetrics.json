@@ -1,0 +1,6 @@
+{
+    "exclude": "vendor,cache,data,log,logs,tmp,node_modules,application/resources,tests,docs,config,build,scripts/setup-logs.sh",
+    "report-html": "phpmetrics/report",
+    "extensions": ["php"],
+    "junit": "build/junit.xml"
+}

@@ -1,0 +1,14 @@
+<?php
+/**
+ * Log Detail Partial: Copy Editing
+ * Handles: CE_AUTHOR_SOURCES_REQUEST, CE_AUTHOR_FINALE_VERSION_REQUEST,
+ *          CE_READY_TO_PUBLISH, CE_REVIEW_FORMATTING_DEPOSED
+ * Display: fullName > submitterFullName
+ */
+?>
+<?= $this->translate(' :') ?>
+<span class="log-copy-editing">
+    <span class="log-user-name"><?= $this->fullName ?></span>
+    <?= ' > ' ?>
+    <span class="log-submitter-name"><?= $this->escape($this->submitterFullName) ?></span>
+</span>

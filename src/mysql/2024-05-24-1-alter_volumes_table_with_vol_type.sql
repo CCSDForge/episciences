@@ -1,0 +1,1 @@
+ALTER TABLE `VOLUME` ADD `vol_type` SET('special_issue') NULL DEFAULT NULL AFTER `vol_year`;

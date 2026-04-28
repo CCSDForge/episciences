@@ -1,0 +1,97 @@
+<section class="blog">
+
+    <?php foreach ($this->news as $i => $news) { ?>
+
+        <?php
+        $content = $this->translate($news['CONTENT']);
+        $content = $this->escape($content);
+        $content = nl2br($content);
+        $contentTruncated = $this->truncate($content)->toLength(666)->withPostfix('&hellip;');
+
+        if ($contentTruncated != $content) {
+            $contentWastruncated = true;
+        } else {
+            $contentWastruncated = false;
+        }
+
+        ?>
+
+
+        <article class="post">
+            <header>
+                <h2><?php echo $this->escape($this->translate($news['TITLE'])); ?></h2>
+            </header>
+
+            <div class="content">
+                <p class="truncate">
+                    <?php echo $contentTruncated; ?>
+                    <?php if ($contentWastruncated) { ?>
+                    <a href="javascript:void(0);" class="btn btn-default btn-xs more"
+                       title="<?php echo $this->translate('Afficher tout le contenu'); ?>">
+                        <span class="glyphicon glyphicon-plus-sign"></span>&nbsp;<?php echo $this->translate('plus'); ?>
+                        <?php } ?>
+                    </a>
+                </p>
+
+                <?php if ($contentWastruncated) { ?>
+                <p class="complete"
+                   style="display:none;">
+                    <?php echo $content; ?>
+                    <a href="javascript:void(0);" class="btn btn-default btn-xs less"
+                       title="<?php echo $this->translate('Afficher moins de contenu'); ?>">
+                        <span class="glyphicon glyphicon-minus-sign"></span>&nbsp;<?php echo $this->translate('moins'); ?>
+                    </a>
+                </p>
+            </div>
+            <?php } ?>
+            <?php if ($news['LINK']) { ?>
+
+                <aside>
+                    <a href="<?php echo $this->escape($news['LINK']); ?>" rel="noopener"
+                       target="_blank"
+                       class="btn btn-primary btn-sm"><?php echo $this->translate("En savoir plus"); ?></a>
+                </aside>
+
+            <?php } ?>
+
+            <footer>
+                <span class="datePublished"><?php echo $this->translate('posté le'); ?>&nbsp;<?php echo $news['DATE_POST'] ?></span>
+                &nbsp;<?php echo $this->translate('par'); ?>
+                &nbsp;<span class="author"><?php echo $this->escape($news['SCREEN_NAME']) ?></span>
+            </footer>
+
+        </article>
+        <hr/>
+
+        <?php
+    }
+
+    ?>
+</section>
+
+
+<script>
+    $(document).ready(function () {
+        $('a.more').click(function () {
+            $(this).closest('div.content').find('.truncate').hide();
+            $(this).closest('div.content').find('.complete').toggle();
+        });
+
+        $('a.less').click(function () {
+            $(this).closest('div.content').find('.complete').hide();
+            $(this).closest('div.content').find('.truncate').toggle();
+        });
+    });
+</script>
+
+<?php
+if ($this->canEdit) {
+    ?>
+    <div class="form-actions">
+        <button type="button" class="close" data-dismiss="alert">×</button>
+        <a class="btn btn-default" href="/website/news"><span
+                    class="glyphicon glyphicon-edit"></span>&nbsp;<?php echo $this->translate('Ajouter/Modifier une actualité') ?>
+        </a>
+    </div>
+    <?php
+}

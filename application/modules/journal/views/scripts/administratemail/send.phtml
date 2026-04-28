@@ -1,0 +1,33 @@
+<script>
+    var users = <?php echo $this->js_users; ?>;
+    var sender_uid = <?php echo Episciences_Auth::getUid(); ?>;
+    var recipient = <?php echo ($this->js_recipient) ?: "null" ?>;
+    var in_modal = <?php echo ($this->ajax) ? 'true' : 'false' ?>;
+</script>
+<?php echo $this->form; ?>
+
+<?php if ($this->ajax) : // if in ajax, js are loaded in parent page ?>
+    <div id="add_contacts_box" style="display:none"></div>
+    <script>
+        $.getScript("/js/administratemail/send.js?_=v<?= APPLICATION_VERSION ?>")
+            .fail(function (jqxhr, settings, exception) {
+                console.log(exception);
+            });
+    </script>
+    <script>__initMCE(".tinymce");</script>
+<?php else : ?>
+    <?php
+    // if not in ajax, need to load js
+    $this->jQuery()->addStylesheet('/css/ui-lightness/jquery-ui-1.10.3.custom.css');
+    $this->jQuery()->addJavascriptFile("/js/vendor/jquery.ui.autocomplete.html.js");
+
+    $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+    $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+    $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+    $this->jQuery()->addJavascriptFile("/js/administratemail/send.js");
+
+    $this->jQuery()->addJavascriptFile("/js/library/es.mail.js");
+
+    $this->jQuery()->addJavascript('__initMCE(".tinymce");');
+    ?>
+<?php endif; ?>

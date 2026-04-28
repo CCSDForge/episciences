@@ -1,0 +1,77 @@
+<?php
+$browseParams['controller'] = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
+$browseParams['action'] = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+
+$currentLetter = Zend_Controller_Front::getInstance()->getRequest()->getParam('letter', 'A');
+
+$browseParams['letter'] = $currentLetter;
+
+$typeFromUrl = Zend_Controller_Front::getInstance()->getRequest()->getParam('submitType_s');
+
+$browseTypes = array(
+        'file' => 'file',
+        'notice' => 'notice',
+        'annex' => 'annex'
+);
+
+if (! array_key_exists($typeFromUrl, $browseTypes)) {
+    $browseParams['submitType_s'] = null;
+} else {
+    $browseParams['submitType_s'] = $typeFromUrl;
+}
+
+if ($browseParams['submitType_s'] == null) {
+    unset($browseParams['submitType_s']);
+}
+
+if ($browseParams['letter'] == 'A') {
+    unset($browseParams['letter']);
+}
+
+$sortFromUrl = Zend_Controller_Front::getInstance()->getRequest()->getParam('sort', 'index');
+
+$sortTypes = array(
+        'index',
+        'count'
+);
+
+if (! array_key_exists($sortFromUrl, $sortTypes)) {
+    $browseParams['sort'] = 'count';
+} else {
+    $browseParams['sort'] = $sortFromUrl;
+}
+
+$sortIcons['count'] = 'glyphicon glyphicon-sort-by-order';
+$sortIcons['index'] = 'glyphicon glyphicon-sort-by-alphabet';
+
+echo '<li class="list-group-item">';
+
+$browseParams['sort'] = 'index';
+$url = $this->url($browseParams, null, TRUE);
+
+echo PHP_EOL . '<a ';
+echo ' data-original-title="' . $this->translate('Tri par nom') . '" data-toggle="tooltip" data-placement="bottom" ';
+if (($sortFromUrl == 'index') or ($sortFromUrl == null)) {
+    echo ' btn-primary';
+    echo ' disabled="disabled" ';
+    $class = 'btn btn-default btn-primary';
+} else {
+    $class = 'btn btn-default';
+}
+
+echo ' class="alpha-sort ' . $class . ' btn-xs" href="' . $this->escape($url) . '"><span class="' . $sortIcons['index'] . '"></span></a>';
+
+$browseParams['sort'] = 'count';
+$url = $this->url($browseParams, null, TRUE);
+
+echo '<a data-original-title="' . $this->translate('Tri par nombre') . '" data-toggle="tooltip" data-placement="bottom" ';
+if ($sortFromUrl == 'count') {
+    echo ' disabled="disabled" ';
+    $class = 'btn btn-default btn-primary';
+} else {
+    $class = 'btn btn-default';
+}
+echo PHP_EOL . ' class="num-sort pull-right ' . $class . ' btn-xs" href="' . $this->escape($url) . '"><span class="' . $sortIcons['count'] . '"></span></a>';
+
+echo '</li>';
+

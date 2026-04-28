@@ -1,0 +1,78 @@
+<?php
+/**
+ * Copy-Editing Timeline View
+ * Displays copy-editing requests and replies in chronological timeline format
+ * Reuses timeline components from demands system for consistency
+ */
+
+const PARTIALS_CE_DEMAND_ITEM = 'partials/copy_editing_demand_item.phtml';
+const PARTIALS_CE_REPLY_FORM = 'partials/copy_editing_reply_form.phtml';
+
+// Extract data from view
+$comments = $this->copyEditingDemands;
+$replyForms = $this->copyEditingReplyForms ?? [];
+$paperStatus = $this->paperStatus;
+$linkToLatestDocId = $this->linkToLatestDocId;
+$isAllowedToReply = !empty($replyForms);
+
+// Get paperId from first comment's DOCID (needed for file URLs)
+// For copy-editing files, DOCID is used, but paperId is needed for tmp_files in demand_files.phtml
+$paperId = !empty($comments) ? reset($comments)['DOCID'] : null;
+?>
+
+<?php if (!empty($comments)): ?>
+
+    <!-- Copy-editing section -->
+    <div class="copy-editing-section">
+
+        <!-- Timeline -->
+        <div class="copy-editing-timeline">
+            <div class="copy-editing-timeline-track">
+
+                <?php foreach ($comments as $id => $comment): ?>
+
+                    <!-- Main copy-editing request -->
+                    <?= $this->partial(PARTIALS_CE_DEMAND_ITEM, [
+                        'item' => $comment,
+                        'paperId' => $paperId,
+                        'isReply' => false,
+                        'cleanMessage' => false,
+                        'linkToLatestDocId' => $linkToLatestDocId
+                    ]) ?>
+
+                    <!-- Reply form (if user is allowed to reply) -->
+                    <?php if ($isAllowedToReply): ?>
+                        <?= $this->partial(PARTIALS_CE_REPLY_FORM, [
+                            'demand' => $comment,
+                            'replyForm' => $replyForms[$id] ?? null,
+                            'paperStatus' => $paperStatus,
+                            'linkToLatestDocId' => $linkToLatestDocId,
+                            'isAllowedToReply' => $isAllowedToReply,
+                            'isFromZSubmit' => $this->isFromZSubmit ?? false,
+                            'zSubmitUrl' => $this->zSubmitUrl ?? ''
+                        ]) ?>
+                    <?php endif; ?>
+
+                    <!-- Replies thread -->
+                    <?php if (!empty($comment['replies'])): ?>
+                        <div class="timeline-thread">
+                            <?php foreach ($comment['replies'] as $reply): ?>
+                                <?= $this->partial(PARTIALS_CE_DEMAND_ITEM, [
+                                    'item' => $reply,
+                                    'paperId' => $paperId,
+                                    'isReply' => true,
+                                    'cleanMessage' => false,
+                                    'linkToLatestDocId' => $linkToLatestDocId
+                                ]) ?>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
+                <?php endforeach; ?>
+
+            </div><!-- /.copy-editing-timeline-track -->
+        </div><!-- /.copy-editing-timeline -->
+
+    </div><!-- /.copy-editing-section -->
+
+<?php endif; ?>

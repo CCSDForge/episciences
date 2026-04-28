@@ -1,0 +1,14 @@
+{
+  "1": {
+    "halReferentialId": 1337,
+    "episciencesJournalId": 2
+  },
+  "2": {
+    "halReferentialId": 1984,
+    "episciencesJournalId": 13
+  },
+  "3": {
+    "halReferentialId": "etc",
+    "episciencesJournalId": "etc"
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "STATUS_ENDPOINT" : "https://exemple.org/update-rvcode-paper",
+  "API_TOKEN" : "yourToken"
+}

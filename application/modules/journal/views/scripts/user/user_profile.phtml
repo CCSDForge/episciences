@@ -1,0 +1,55 @@
+<div class="row">
+
+    <div class="col-md-2">
+        <img src="/user/photo/uid/<?= $this->escape($this->user['uid']) ?>/size/large?v=<?php echo Episciences_Auth::getPhotoVersion(); ?>"
+             class="user-photo-normal" alt="Photo"/>
+    </div>
+
+    <div class="col-md-10">
+        <div class="row">
+            <div class="col-md-5">
+
+                <ul class="list-inline">
+                    <li><?= $this->partial('user/user_orcid.phtml', ['orcid' => $this->user['orcid']]) ?></li>
+                    <?php if ($this->user['SCREEN_NAME']) : ?>
+                        <li>
+                            <?= $this->escape($this->user['SCREEN_NAME']) ?>
+                        </li>
+                    <?php else : ?>
+
+                        <li>
+                            <?php if ($this->user['civ']) {
+                                echo $this->escape($this->user['civ']) . ' ';
+                            } ?>
+                            <?php if ($this->user['firstname']) {
+                                echo $this->escape($this->user['firstname']) . ' ';
+                            } ?>
+                            <?php if ($this->user['middlename']) {
+                                echo $this->escape($this->user['middlename']) . ' ';
+                            } ?>
+                            <?php if ($this->user['lastname']) {
+                                echo $this->escape($this->user['lastname']);
+                            } ?>
+                        </li>
+                    <?php endif; ?>
+
+                </ul>
+
+                <?= $this->partial('user/user_affiliations.phtml', ['affiliations' => $this->user['affiliations']]) ?>
+
+                <?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => $this->user['web_sites'], 'socialMedias' => (array)$this->user['social_medias']]) ?>
+
+
+            </div>
+
+            <div class="col-md-5">
+                <?php if (is_array($this->user['ROLES']) && array_key_exists(RVID, $this->user['ROLES']) && count($this->user['ROLES'][RVID])) : ?>
+                    <?php echo $this->partial('user/roles_tags.phtml', ['roles' => $this->user['ROLES'][RVID], 'editorSections' => $this->user['editorSections']]); ?>
+                <?php endif; ?>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

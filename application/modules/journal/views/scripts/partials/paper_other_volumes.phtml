@@ -1,0 +1,48 @@
+<?php // Liste des volumes secondaires **********************************************
+/** @var Episciences_Paper $article */
+
+$article = $this->article;
+/** @var Episciences_Volume[] $volumes */
+$volumes = $this->volumes;
+/** @var Episciences_Volume_Paper[] $othersVolumes */
+$othersVolumes = $article->getOtherVolumes();
+?>
+
+
+<?php if (!empty($othersVolumes)) : ?>
+    <ul style="list-style-type:none">
+
+        <?php
+        /** @var Episciences_Volume $secondaryVolume */
+        foreach ($othersVolumes as $secondaryVolume) :
+
+            if ($secondaryVolume->getVid() === $article->getVid()) {
+                continue;
+            }
+
+            $volume = $volumes[$secondaryVolume->getVid()];
+            $currentVid = $volume->getVid();
+
+            ?>
+
+            <li style="margin-bottom: 5px;">
+                <span class="sv-<?= $volume->getVid() ?>">
+                      <?= $volume->getNameKey() ?>
+                      <?= $this->partial('partials/paper_volume_position.phtml', [
+                          'docId' => $article->getDocid(),
+                          'vid' => $currentVid,
+                          'position' => $volume->getAssignedPositionByPaperId($article->getPaperid()),
+                          'from' => 'view'
+                      ])
+                      ?>
+                </span>
+
+            </li>
+        <?php endforeach; ?>
+    </ul>
+
+<?php else : ?>
+    <?= $this->translate('aucun') ?>
+
+<?php endif ?>
+

@@ -1,0 +1,15 @@
+<div id="<?php echo $this->element->getName() ?>" style="display: ">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?php echo $this->translate($this->name) ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php
+            //var_dump ($this);
+            foreach ($this->element->getElements() as $element) {
+                echo $element;
+            }
+            ?>
+        </div>
+    </div>
+</div>

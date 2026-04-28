@@ -1,0 +1,17 @@
+<h1><?php echo $this->translate('Grille de relecture'); ?></h1>
+
+<?php echo $this->form; ?>
+	
+<?php if (false) : ?>
+<?php foreach ($this->grid as $key=>$criterion) : ?>
+<div><strong><?php echo $this->tmx->translate('reviewCriterion_'.$criterion['RGID']); ?></strong></div>
+<?php foreach ($criterion['OPTIONS'] as $option) : ?>
+<?php if ($this->tmx->isTranslated('reviewCriterion_'.$criterion['RGID'].'_option_'.$option)) : ?>
+<div><?php echo $this->tmx->translate('reviewCriterion_'.$criterion['RGID'].'_option_'.$option); ?></div>
+<?php elseif ($this->tmx->isTranslated('reviewCriterion_'.$criterion['RGID'].'_option_'.$option, 'fr')) : ?>
+<div><?php echo $this->tmx->translate('reviewCriterion_'.$criterion['RGID'].'_option_'.$option, 'fr'); ?></div>
+<?php else : ?>
+<?php endif;?>
+<?php endforeach; ?>
+<?php endforeach; ?>
+<?php endif;?>

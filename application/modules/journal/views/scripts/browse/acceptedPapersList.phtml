@@ -1,0 +1,40 @@
+<?php
+/**
+ * @var Episciences_Review $journal
+ */
+$journal = $this->journal;
+?>
+<div id="browse-accepted-papers">
+    <ul>
+        <?php foreach ($this->sortedPapers['time'] as $docId => $time) :
+            /** @var Episciences_Paper $acceptedPaper */
+            $acceptedPaper = $this->sortedPapers[$docId];
+            $epiUrl = $this->url(
+                [
+                    'controller' => 'administratepaper',
+                    'action' => 'view',
+                    'id' => $docId
+                ]);
+            ?>
+            <li class="accepted-papers-list">
+                <?php if ($this->isSecretary) : ?>
+                    <a class="accepted-papers-list-internal-ref"
+                       href="<?= $epiUrl ?>">[#<?= $docId ?>]</a>
+                <?php endif; ?>
+
+                <a href="<?= $this->escape($acceptedPaper->getDocUrl()) ?>" target="_blank"
+                   rel="noopener"> <em><?= $this->escape($acceptedPaper->getTitle()) ?></em></a>.&nbsp;
+                <?php $authors = $acceptedPaper->getMetadata('authors'); ?>
+                <?php if (is_array($authors)): ?>
+                    <?php $lastkey = count($authors); ?>
+                    <?php foreach ($authors as $key => $creatorName): ?>
+                        <?= $this->escape(Episciences_Tools::reformatOaiDcAuthor($creatorName)) ?>
+                        <?php if ($lastkey !== $key + 1) : ?>;<?php endif; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                    &nbsp;<span class="accepted-on">(<?= $this->translate('Accepté le : ') . date('Y-m-d', $time) ?>)</span>
+                <?php ?>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+</div>

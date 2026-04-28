@@ -1,0 +1,39 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$comments = $this->author_comments;
+$controllerName = 'comments';
+
+$isSecretaryOnAdminPage = Episciences_Auth::isSecretary() &&
+        Zend_Controller_Front::getInstance()->getRequest()->getControllerName() === PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER;
+
+$isAllowedToEditComment = !in_array($paper->getStatus(), $paper::$_noEditableStatus, true) &&
+        ($isSecretaryOnAdminPage || $paper->isOwner());
+?>
+<div id="author_comments" style="max-height: 200px; overflow: auto">
+    <?php if (empty($comments)) : ?>
+        <?php if ($isAllowedToEditComment): ?>
+            <?php $addCommentUrl = $this->url(['controller' => $controllerName, 'action' => 'addcomment', 'docid' => $paper->getDocid()]) ?>
+            <button class="btn btn-default btn-xs pull-right" style="margin-right:9px;"
+                    onclick="location.href='<?= $addCommentUrl ?>'">
+                <span class="glyphicon glyphicon-plus-sign" style="margin-right: 5px;"></span>
+                <?= $this->translate('Ajouter') ?>
+            </button>
+        <?php endif; ?>
+    <?php else : ?>
+        <div class="timeline-track">
+            <?php foreach ($comments as $comment) : ?>
+                <?= $this->partial('partials/timeline_item.phtml', ['comment' => $comment]) ?>
+
+                <?php if ($isAllowedToEditComment): ?>
+                    <?php $editCommentUrl = $this->url(['controller' => $controllerName, 'action' => 'editcomment', 'pcid' => $comment['PCID']]) ?>
+                    <button class="btn btn-default btn-xs pull-right" style="margin-right:9px;"
+                            onclick="location.href='<?= $editCommentUrl ?>'">
+                        <span class="glyphicon glyphicon-pencil" style="margin-right: 5px;"></span>
+                        <?= $this->translate('Modifier') ?>
+                    </button>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </div>
+    <?php endif ?>
+</div>

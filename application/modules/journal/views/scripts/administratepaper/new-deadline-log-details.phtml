@@ -1,0 +1,37 @@
+<?php
+$details = $this->log['detail'];
+?>
+<table class="log-details">
+    <tr>
+        <td class="td-label"><?= $this->translate("Fait le") ?></td>
+        <td class="small"><?= $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?></td>
+    </tr>
+    <tr>
+        <td class="td-label"><?= ucfirst($this->translate('par')) ?></td>
+        <td class="small">
+            <?= $this->user['SCREEN_NAME'] ?>
+        </td>
+    </tr>
+
+    <tr>
+        <td class="td-label"><?= $this->translate('Date limite actuelle') ?></td>
+        <td class="small">
+            <?= $this->Date($details['newDeadline'], Episciences_Tools::getLocale()) ?>
+        </td>
+    </tr>
+
+    <tr>
+        <td class="td-label"><?= $this->translate('Date limite antérieure') ?></td>
+        <td class="small"><?= $this->Date($details['oldDeadline'], Episciences_Tools::getLocale()) ?></td>
+    </tr>
+
+</table>
+
+
+
+
+
+
+
+
+

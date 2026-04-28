@@ -1,0 +1,152 @@
+.nav-collapse .btn-group .icon-user {
+  margin-right: 5px;
+  opacity:0.9;
+  filter: alpha(opacity=90);
+}
+
+// user button
+.nav-collapse .btn-primary {
+
+  color: $white;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+  background-repeat: repeat-x;
+
+  background-color: #444;
+  background-image: -moz-linear-gradient(top, #555, $darker-grey);
+  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#555), to($darker-grey));
+  background-image: -webkit-linear-gradient(top, #555, $darker-grey);
+  background-image: -o-linear-gradient(top, #555, $darker-grey);
+  background-image: linear-gradient(to bottom, #555, $darker-grey);
+  border-color: $darker-grey $darker-grey #444;
+  border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff0088cc', endColorstr='#ff0044cc', GradientType=0);
+  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+}
+
+.nav-collapse .btn-primary:hover,
+.nav-collapse .btn-primary:active,
+.nav-collapse .btn-primary.active,
+.nav-collapse .btn-primary.disabled,
+.nav-collapse .btn-primary[disabled] {
+  color: $white;
+  background-color: $almost-black;
+}
+
+.nav-collapse .btn-primary:active,
+.nav-collapse .btn-primary.active {
+  background-color: $almost-black \9;
+}
+
+.nav-collapse .btn-group.open .btn-primary.dropdown-toggle {
+  background-color: $darker-grey;
+  border-color: $black $almost-black;
+}
+/* Navbar de services */
+#nav-services > .navbar-nav > .active > a {
+  font-weight: bold;
+}
+
+#nav-services > .navbar-nav > li > button {
+  padding: 15px;
+  line-height: 20px;
+  border: none;
+  color: #999;
+  background-color: transparent;
+}
+
+#nav-services > .navbar-nav > li > button:hover, #nav-services > .navbar-nav > li > button:focus {
+  color: #fff;
+}
+
+.dropdown:hover > .dropdown-menu {
+  display: block;
+}
+
+#nav-services > .navbar-nav > .active > button {
+  /*background-color: #080808;*/
+  color: #fff;
+  font-weight: bold;
+}
+
+#formLang > div::after {
+  content: "\25bc";
+  color: $darker-grey;
+  margin-left: -5px;
+  font-size: 10px;
+  float: right;
+  margin-top: 18px;
+}
+#select-lang {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  text-indent: 1px;
+  text-overflow: '';
+  margin: 15px 0 15px 15px;
+  padding: 2px;
+  cursor: pointer;
+  font-weight: bold;
+  line-height: 1;
+  color: $darker-grey;
+  background-color: transparent;
+  border:0;
+  width: 35px;
+  text-transform: uppercase;
+}
+#select-lang > option{
+  /*background-color: #101010;*/
+}
+
+.skip-link-top:focus {
+  position: relative;
+  display: inline-block;
+  background-color: #292063;
+  width: 100%;
+  height: 3.5rem;
+  z-index: 1040;
+  font-size: 2rem;
+  text-decoration: none;
+  text-align: center;
+  color: white;
+}
+
+#q {
+  background-color: transparent;
+}
+#q:hover {
+  background-color: white;
+}
+
+#search-simple-form-navbar {
+  display:none;
+}
+
+/** Sert à gérer la visibilité d’un élément—souvent un lien d’évitement (« skip link ») pour qu’il soit caché visuellement par défaut,
+ tout en restant accessible aux technologies d’assistance et pouvant apparaître dès qu’il reçoit le focus clavier.
+ */
+
+ .visually-hidden-focusable:not(:focus):not(:focus-within) {
+   position: absolute !important;
+   width: 1px !important;
+   height: 1px !important;
+   padding: 0 !important;
+   margin: -1px !important;
+   overflow: hidden !important;
+   clip: rect(0, 0, 0, 0) !important;
+   white-space: nowrap !important;
+   border: 0 !important;
+ }
+.visually-hidden-focusable:focus,
+.visually-hidden-focusable:focus-within {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 1em 0 !important;
+  padding: 0.8em 1em !important;
+  background: #fffbe7 !important;
+  color: #222 !important;
+  border: 2px solid #3b82f6 !important;
+  border-radius: 6px;
+  z-index: 1000;
+}
+
+

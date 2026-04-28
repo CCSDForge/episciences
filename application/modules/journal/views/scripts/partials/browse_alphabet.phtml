@@ -1,0 +1,77 @@
+
+<div class="col-md-12">
+	<ul class="pagination">
+<?php
+$browseParams['controller'] = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
+$browseParams['action'] = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+
+$currentLetter = Zend_Controller_Front::getInstance()->getRequest()->getParam('letter', 'all');
+
+
+$letterValues = range('A', 'Z');
+$letterValues[] = 'other';
+$letterValues[] = 'all';
+
+$typeFromUrl = Zend_Controller_Front::getInstance()->getRequest()->getParam('submitType_s');
+
+$browseTypes = array(
+        'file' => 'file',
+        'notice' => 'notice',
+        'annex' => 'annex'
+);
+
+if (! array_key_exists($typeFromUrl, $browseTypes)) {
+    $browseParams['submitType_s'] = null;
+} else {
+    $browseParams['submitType_s'] = $typeFromUrl;
+}
+
+if ($browseParams['submitType_s'] == null) {
+    unset($browseParams['submitType_s']);
+}
+
+
+$sortFromUrl = Zend_Controller_Front::getInstance()->getRequest()->getParam('sort', 'count');
+
+$sortTypes = array(
+        'index',
+        'count'
+);
+
+if (! array_key_exists($sortFromUrl, $sortTypes)) {
+    $browseParams['sort'] = 'count';
+} else {
+    $browseParams['sort'] = $sortFromUrl;
+}
+
+if ($browseParams['sort'] == 'count') {
+    unset($browseParams['sort']);
+}
+
+foreach ($letterValues as $char) {
+    $browseParams['letter'] = $char;
+    $url = $this->url($browseParams, null, TRUE);
+
+    if ($currentLetter == $char) {
+        echo '<li class="active">';
+    } else {
+        echo '<li>';
+    }
+
+    echo '<a href="' . $this->escape($url) . '">';
+    switch ($char) {
+        case 'other':
+        case 'all':
+            echo $this->translate($char);
+            break;
+        default:
+            echo $char;
+            break;
+    }
+    echo '</a>';
+    echo '</li>';
+}
+
+?>
+</ul>
+</div>

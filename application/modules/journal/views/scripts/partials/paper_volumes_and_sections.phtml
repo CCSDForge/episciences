@@ -1,0 +1,39 @@
+<?php
+
+$this->jQuery()->addJavascriptFile('/js/administratepaper/volume-assignment.js');
+$this->jQuery()->addJavascriptFile('/js/administratepaper/section-assignment.js');
+
+$controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
+$action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+$vid = $this->article->getVid();
+
+$disabled = '';
+$ariaDisabled = 'aria-disabled="false"';
+
+$isAllowed = (
+    (Episciences_Auth::isSecretary() || $this->article->getEditor(Episciences_Auth::getUid())) &&
+    (Episciences_Auth::getUid() != $this->article->getUid() || APPLICATION_ENV === 'development')
+);
+
+if (!$isAllowed) {
+    $disabled = 'disabled';
+    $ariaDisabled = 'aria-disabled="true"';
+}
+
+?>
+
+<?= $this->partial('partials/paper_volumes.phtml', [
+        'article' => $this->article,
+        'volumes' => $this->volumes,
+        'isPartial' => false,
+        'disabled' => $disabled,
+        'ariaDisabled' => $ariaDisabled
+    ]
+); ?>
+    <hr/>
+<?= $this->partial('partials/paper_section.phtml', [
+    'article' => $this->article,
+    'sections' => $this->sections,
+    'isPartial' => false,
+    'isAllowed' => $isAllowed,
+]); ?>

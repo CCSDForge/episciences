@@ -1,0 +1,88 @@
+<?php
+
+$this->jQuery()->addJavascriptFile('/js/administratepaper/editorsAndCopyEditors-assignment.js');
+
+$controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
+$action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
+/** @var Episciences_Paper $paper */
+$paper = $this->article;
+$copyEditors = $this->copyEditors;
+$editors = $this->editors;
+?>
+
+<div id="<?= $this->id; ?>" class="copyeditors">
+    <?php if (count($copyEditors)) : ?>
+        <?php /** @var Episciences_CopyEditor $copyEditor */
+        foreach ($copyEditors as $copyEditor) : ?>
+            <div class="copy-editor" style="margin-bottom: 5px;">
+
+                <?= $this->userAvatar($copyEditor, 'initials')->addClass('user-photo-small') ?>
+
+
+                <a class="btn btn-default" href="/user/view/userid/<?= $copyEditor->getUid(); ?>" target="_blank">
+                    <span data-toggle="tooltip"
+                          class="fa-regular fa-address-card"
+                          style="margin: 0.2rem"
+                          title="<?php echo $this->translate("Voir le profil") ?>">
+                    </span>
+                </a>
+                <a class="modal-opener btn btn-default"
+                   href="/administratemail/send/recipient/<?= $copyEditor->getUid(); ?>/paper/<?= $paper->getDocid(); ?>">
+                    <span data-toggle="tooltip"
+                          class="glyphicon glyphicon-envelope"
+                          style="margin: 0.2rem"
+                          title="<?php echo $this->translate("Contacter ce préparateur de copie") ?>">
+                    </span>
+                </a>
+                <?php if (Episciences_Auth::isSecretary()) : ?>
+                    <a class="btn btn-default" href="/user/su/uid/<?php echo $copyEditor->getUid(); ?>">
+                        <span data-toggle="tooltip"
+                              style="margin: 0.2rem"
+                              title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
+                              class="fas fa-user-secret">
+
+                        </span>
+                    </a>&nbsp;
+                <?php endif; ?>
+
+
+                <span style="margin-left: 0.5em;"><strong><?= $copyEditor->getScreenName() ?></strong></span>
+
+                <?php
+                $sections = $copyEditor->getAssignedSections();
+
+                if ($sections) {
+                    $msg = $this->translate(array("Préparateur de copie de la rubrique ", "Préparateur de copie des rubriques : ", count($sections)));
+                    $sectionNames = [];
+                    /** @var Episciences_Section $section */
+                    foreach ($sections as $section) {
+                        $sectionNames[] = '"' . $section->getNameKey() . '"';
+                    }
+                    $msg .= implode(', ', $sectionNames);
+                } else {
+                    $msg = '';
+                }
+                ?>
+                <?php if ($msg) : ?><span class="lightgrey" style="margin-left: 5px;">(<?= $msg ?>
+                    )</span><?php endif; ?>
+
+            </div>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <p>
+            <?= $this->translate("Aucun préparateur de copie pour le moment") . '.' ?>
+        </p>
+    <?php endif; // endif(count($copyEditors)) ?>
+
+    <?php if (Episciences_Auth::isSecretary() || array_key_exists(Episciences_Auth::getUid(), $editors)) : ?>
+        <?php
+        $btnName = 'Assigner des préparateurs de copie';
+        $btnId = 'copyeditors';
+        ?>
+        <?= $this->partial('partials/paper_editors_copyeditors_assign_button.phtml', [
+            'paper' => $paper, 'btnName' => $btnName, 'btnId' => $btnId, 'isPartial' => $this->isPartial
+        ]);
+        ?>
+    <?php endif; ?>
+</div>
+

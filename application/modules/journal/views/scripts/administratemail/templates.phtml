@@ -1,0 +1,79 @@
+<?php if ($this->templates) : ?>
+    <?php
+    $editTemplateTitle = "Vous n'avez pas les autorisations nécessaires pour modifier ce template";
+    $deleteTemplateTitle = "Vous n'avez pas les autorisations nécessaires pour supprimer le template personnalisé";
+
+    $tagsListUrl = '/administratemail/tagslist';
+
+    ?>
+
+    <div id="templates">
+        <?php
+        $previous_group = '';
+        $current_group = '';
+        ?>
+        <?php foreach ($this->templates as $template) : ?>
+            <?php $current_group = $template['TYPE']; ?>
+            <?php if ($current_group !== $previous_group) : ?>
+                <h3><strong><?= $this->translate($current_group . '_tpl_group') ?></strong></h3>
+            <?php endif; ?>
+            <div style="border-bottom: 1px solid #aaa; padding-bottom: 6px; margin-bottom: 5px;  margin-left: 15px; margin-top: 5px; clear: both">
+
+                <?php if ($this->editorsCanEditTmplates): ?>
+
+                    <?php
+                    $editTemplateTitle = 'Modifier ce template';
+                    $deleteTemplateTitle = 'Supprimer le template personnalisé';
+                    ?>
+                    <a class="modal-opener"
+                       title="<?= $this->translate($editTemplateTitle) ?>"
+                       href="/administratemail/edittemplate?id=<?= $template['ID'] ?>">
+                        <?= $this->translate($template['KEY'] . Episciences_Mail_TemplatesManager::SUFFIX_TPL_NAME) ?>
+                    </a>
+                <?php else: ?>
+                    <span class="text-info"><?= $this->translate($template['KEY'] . Episciences_Mail_TemplatesManager::SUFFIX_TPL_NAME) ?></span>
+                <?php endif; ?>
+                <a href="<?= $tagsListUrl?>#<?= str_replace('custom_', '', $template['KEY']) ?>" target="_blank"><span class="fa-solid fa-circle-question" style="margin-left: 5px;"></span></a>
+
+                <div style="float: right">
+                    <?php if ($this->editorsCanEditTmplates): ?>
+                        <a class="modal-opener"
+                           href="/administratemail/edittemplate?id=<?= $template['ID'] ?>"
+                           title="<?= $this->translate($editTemplateTitle) ?>">
+                            <button class="btn btn-default btn-xs" data-toggle="tooltip"
+                                    title="<?= $this->translate($editTemplateTitle) ?>"
+                                    role="button" >
+                                <span class="glyphicon glyphicon-edit"></span>&nbsp;<?= $this->translate('Modifier') ?>
+                            </button>
+                        </a>
+                        <?php if ($template['PARENTID']) : ?>
+                            <a class="delete-template"
+                               href="/administratemail/deletetemplate?id=<?= $template['ID'] ?>"
+                               title="<?= $this->translate($deleteTemplateTitle) ?>">
+                                <button class="btn btn-default btn-xs" data-toggle="tooltip"
+                                        title="<?= $this->translate($deleteTemplateTitle) ?>"
+                                        role="button" >
+                                    <span class="glyphicon glyphicon-trash"></span>&nbsp;<?= $this->translate('Rétablir') ?>
+                                </button>
+                            </a>
+
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php $previous_group = $template['TYPE']; ?>
+        <?php endforeach; ?>
+    </div>
+    <?php
+    // Modal box (contient le formulaire de modification de template)
+    $this->jQuery()->addJavascriptFile('/js/administratemail/templates.js');
+    $style = ['width' => '50%'];
+    echo $this->partial('partials/modal.phtml', ['style' => $style]);
+    ?>
+
+<?php endif; ?>
+<?php
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+?>

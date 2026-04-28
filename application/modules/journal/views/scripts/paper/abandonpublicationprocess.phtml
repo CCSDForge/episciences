@@ -1,0 +1,24 @@
+<?php
+/** @var Zend_Controller_Request_Http $request */
+$request = Zend_Controller_Front::getInstance()->getRequest();
+$action = $request->getActionName();
+$controller = $request->getControllerName();
+?>
+<?php if ($this->errors) : ?>
+    <div class="alert alert-danger" role="alert">
+        <?php foreach ($this->errors as $error) : ?>
+            <div id="errors" class="red"><?php echo $error; ?></div>
+        <?php endforeach; ?>
+    </div>
+<?php else : ?>
+    <div id="message">
+        <?php echo $this->message; ?>
+    </div>
+
+<script type="text/javascript">
+    var controller = <?php echo "'$controller'"; ?>;
+    var action = <?php echo "'$action'"; ?>;
+    var docId = <?php echo $this->docid; ?>;
+    $.getScript('/js/paper/abandon_continue_publication_process.js?_=v<?php echo APPLICATION_VERSION; ?>');
+</script>
+<?php endif; ?>

@@ -1,0 +1,46 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://inbox.episciences.org/",
+      "service-doc": [
+        {
+          "href": "https://www.w3.org/TR/ldn/",
+          "type": "text/html",
+          "title": "Linked Data Notifications"
+        }
+      ]
+    },
+    {
+      "anchor": "https://oai.episciences.org/",
+      "service-doc": [
+        {
+          "href": "https://www.openarchives.org/OAI/openarchivesprotocol.html",
+          "type": "text/html",
+          "title": "Open Archives Initiative - Protocol for Metadata Harvesting - v.2.0"
+        }
+      ],
+      "service-meta": [
+        {
+          "href": "https://oai.episciences.org/?verb=Identify",
+          "type": "application/xml"
+        }
+      ]
+    },
+    {
+      "anchor": "https://api.episciences.org/",
+      "service-desc": [
+        {
+          "href": "https://api.episciences.org/api/docs.yamlopenapi",
+          "type": "application/yaml"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://api.episciences.org/api/docs.html",
+          "type": "text/html",
+          "title": "Episciences API"
+        }
+      ]
+    }
+  ]
+}

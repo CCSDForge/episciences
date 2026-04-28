@@ -1,0 +1,32 @@
+table.dataTable td {
+  padding: 8px;
+}
+
+table.dataTable .handle {
+  cursor: move;
+}
+
+table.dataTable .handle.disabled {
+  cursor: default;
+  color: $lighter-grey;
+}
+
+div.dataTables_length label,
+div.dataTables_length select,
+div.dataTables_filter label,
+div.dataTables_filter input,
+div.dataTables_info {
+  font-size: 11px;
+}
+
+div.dataTables_length select {
+  width: 60px;
+}
+
+div.dataTables_filter input {
+  padding: 2px 5px;
+}
+
+.dt-columns label {
+  font-weight: normal;
+}

@@ -1,0 +1,47 @@
+<style>
+    .editors-list {
+        max-height: 150px;
+        overflow: auto;
+        margin-bottom: 10px;
+    }
+</style>
+<?php if ($this->suggestedEditors) : ?>
+<div class="alert alert-info">
+    <p><i>
+            <?= $this->translate(array("L'auteur a suggéré un rédacteur", "L'auteur a suggéré des rédacteurs", count($this->suggestedEditors)))?>
+            :
+            <?php
+
+            $lastItem = end($this->suggestedEditors);
+            foreach ($this->suggestedEditors as $editorId) {
+
+                if (is_array($this->editors) && array_key_exists($editorId, $this->editors)) {
+                    echo $this->editors[$editorId]->getFullname();
+                }
+
+                if (current($this->suggestedEditors) != $lastItem) {
+                    echo ', ';
+                }
+            }
+            ?>
+            .</i>
+    </p>
+</div>
+<?php endif; ?>
+
+<?php if ($this->editorsForm) : ?>
+    <?php echo $this->editorsForm; ?>
+    <script type="text/javascript">
+        var unavailableEditors = <?= isset($this->unavailableEditors) ? json_encode($this->unavailableEditors) : '[]' ?>;
+        console.log('Unavailable editors from PHP:', unavailableEditors);
+
+        // Initialize editor availability immediately
+        if (typeof initializeEditorAvailability === 'function') {
+            setTimeout(function() {
+                initializeEditorAvailability();
+            }, 100);
+        }
+    </script>
+<?php else : ?>
+    <?php echo $this->translate('Aucun rédacteur enregistré') . '.' ?>
+<?php endif; ?>

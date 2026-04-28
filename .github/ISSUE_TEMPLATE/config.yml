@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Frequently asked questions 📃
+    url: https://doc.episciences.org/faq/
+    about: Questions regarding Episciences? Take a look at our FAQs
+  - name: Documentation 💻
+    url: https://doc.episciences.org/
+    about: Take a look at our documentation
+  - name: Contact 💬
+    url: https://www.episciences.org/contact-2/
+    about: Other type of issue? Ask for support

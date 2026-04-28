@@ -1,0 +1,28 @@
+<?php /** @var Episciences_Paper $paper */
+$paper = $this->paper; ?>
+<div class="panel panel-default collapsable">
+    <div class="panel-heading" role="button" data-toggle="collapse" data-target="#add-coauthor-content" style="cursor: pointer;">
+        <h2 class="panel-title"><?php echo $this->translate('Ajouter un co-auteur'); ?></h2>
+    </div>
+    <div id="add-coauthor-content" class="panel-body collapse">
+        <form action="/administratepaper/addcoauthor" enctype="multipart/form-data" class="form-inline" method="post">
+            <div class="ui-widget form-group">
+
+                <label for="autocompletedUserSelection"><?= $this->translate("Co-auteur") ?></label>
+                <div class="input-group">
+                    <div class="input-group-addon"><span class="glyphicon glyphicon-user" aria-hidden="true"></span>
+                    </div>
+                    <input class="form-control"
+                           id="autocompletedUserSelection">
+                </div>
+                <button class="btn btn-default btn-sm" type="submit" id="select_user"
+                        disabled><?= $this->translate("Ajouter un co-auteur") ?></button>
+
+
+                <input id="selectedUserId" name="selectedUserId" value="0" hidden>
+                <input id="docId" name="docId" value="<?= $paper->getDocid() ?>" hidden>
+
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,56 @@
+<?php $metadatas = $this->metadatas; ?>
+
+<?php
+/**
+ * @var Episciences_Volume $volume
+ */
+$volume = $this->volume;
+?>
+<?php
+/** @var Episciences_Volume_Metadata $metadata */
+foreach ($metadatas as $metadata) :
+$content = $metadata->getContent();
+$metaId = $metadata->getId();
+$hasFile = $metadata->hasFile();
+$hasContent = !empty($content);
+?>
+
+<div id="meta-<?= $metaId ?>">
+
+    <?php if ($hasFile): ?>
+
+    <div class="row">
+        <div class="col-sm-2">
+            <?php if ($metadata->isPicture()) :
+                $mTitles = $metadata->getTitles();
+                $locale = Episciences_Tools::getLocale();
+                $alt = array_key_exists($locale, $mTitles) ? $mTitles[$locale] : $mTitles[array_key_first($mTitles)];
+
+                ?>
+                <img class="attachment-metadata-volume" src="<?= $metadata->getFileUrl() ?>" alt="<?= $alt ?>"
+                     data-toggle="tooltip" title="<?= $alt ?>"/>
+
+            <?php else: ?>
+
+                <?php $download = !$metadata->isPDF() ? 'download="' . $metadata->getFile() . '"' : ''; ?>
+
+                <a class="metadata-file" href="<?= $metadata->getFileUrl() ?>" <?= $download ?> target="_blank">
+                    <span class="glyphicon glyphicon-file"></span>
+                    <?= $metadata->getTitle() ?>
+                </a>
+
+            <?php endif; ?>
+            <?php endif; ?>
+
+        </div>
+
+        <div class="col-sm-10">
+
+            <?php if ($hasContent) : ?>
+                <p class="attachment-metadata-volume small"><?= nl2br($content) ?></p>
+            <?php endif; ?>
+        </div>
+
+    </div>
+
+    <?php endforeach; ?>

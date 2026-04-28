@@ -1,0 +1,116 @@
+<?php
+$this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
+$this->jQuery()
+    ->addJavascriptFile('/js/search/autocomplete.js')
+    ->addJavascriptFile('/js/search/search.js')
+    ->addJavascriptFile('/js/vendor/jquery.fastLiveFilter.js');
+?>
+
+
+
+
+<?php
+
+echo $this->partial('partials/search_navbar.phtml');
+
+if ((isset($this->parsedSearchParams['rpp'])) && ($this->parsedSearchParams['rpp'] == $this->paginatordefaultNumberOfResults)) {
+    unset($this->parsedSearchParams['rpp']);
+}
+?>
+
+
+<div
+        id="search-form"
+        class="row"
+>
+
+    <?php echo $this->partial('partials/search_affiliation_form.phtml', array('parsedSearchParams' => $this->parsedSearchParams, 'paginatorNumberOfResultsArray' => $this->paginatorNumberOfResultsArray)); ?>
+
+</div>
+
+
+<div class="row">
+
+    <?php if ($this->paginator): ?>
+        <div class="span12">
+
+            <?php
+            echo $this->paginationControl($this->paginator, 'Sliding', 'partials/search_pagination.phtml', array(
+                'parsedSearchParams' => $this->parsedSearchParams
+            ));
+            ?>
+        </div>
+    <?php endif; ?>
+
+
+
+    <?php if ($this->results) : ?>
+        <div class="span12">
+
+
+            <table class="table table-striped table-hover table-condensed">
+                <caption><?php echo $this->numFound . '&nbsp;' . $this->translate('affiliations'); ?></caption>
+                <thead>
+                <tr>
+                    <th><?php echo $this->translate('Affiliation'); ?></th>
+                </tr>
+                </thead>
+
+                <tbody>
+
+
+                <?php
+                foreach ($this->results as $doc) {
+
+                    $this->parsedSearchParams['affiid'] = $doc->docid;
+
+                    ?>
+                    <tr
+                        <?php if ($doc->current_bool == (bool)true): ?>
+                            class="success"
+                        <?php endif; ?>
+                    >
+
+                        <td><a data-toggle="tooltip"
+                                    title="<?php echo $this->translate('Recherche de formes similaires'); ?>"
+                                    href="<?php echo $this->url(array('controller' => 'search', 'action' => 'affiliation', 'q' => $this->escape($doc->aff_label_s)), null, true); ?>"
+                            ><span class="glyphicon glyphicon-search"></span></a> &nbsp;
+
+                            <a data-toggle="tooltip"
+                                    title="<?php echo $this->translate('Documents liés à cette affiliation'); ?>"
+                                    href="<?php echo $this->url(array('controller' => 'search', 'action' => 'index', 'q' => 'affiliation_id_i:' . $this->escape($doc->docid)), null, true); ?>">
+
+                                <span class="glyphicon glyphicon-file"></span></span></a> &nbsp;
+                                <a data-toggle="tooltip"
+                                        title="<?php echo $this->translate('Fiche affiliation'); ?>"
+                                        href="<?php echo $this->url(array('controller' => 'search', 'action' => 'affiliation', 'q' => $this->escape($doc->aff_label_s), 'affiid' => $doc->docid), null, true); ?>"
+                                ><span class="glyphicon glyphicon-user"></span>&nbsp;<?php echo $this->escape($doc->aff_label_s); ?>
+                                </a>
+
+                        </td>
+
+
+                    </tr>
+                    <?php
+                }
+                ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+
+
+
+    <?php if ($this->paginator): ?>
+        <div class="span12">
+
+            <?php
+            echo $this->paginationControl($this->paginator, 'Sliding', 'partials/search_pagination.phtml', array(
+                'parsedSearchParams' => $this->parsedSearchParams
+            ));
+            ?>
+        </div>
+    <?php endif; ?>
+
+</div>
+<!-- div class row -->

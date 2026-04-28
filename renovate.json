@@ -1,0 +1,32 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    ":dependencyDashboard",
+    ":semanticPrefixFixDepsChoreOthers",
+    ":ignoreModulesAndTests",
+    "group:monorepos",
+    "group:recommended",
+    "replacements:all",
+    "workarounds:all"
+  ],
+  "baseBranchPatterns": ["staging"],
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchBaseBranches": ["staging"],
+      "labels": ["staging-update"]
+    },
+    {
+      "matchManagers": ["composer"],
+      "matchDepTypes": ["require", "require-dev"],
+      "constraintsFiltering": "strict",
+      "ignoreUnstable": false,
+      "composerIgnorePlatformReqs": null,
+      "constraints": {
+        "php": "8.1"
+      }
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+// Volume assignment popover — 10% narrower than Bootstrap default (276px)
+.popover.volume-form-popover {
+  max-width: 248px;
+}
+
+// Secondary volumes checkbox list
+.multicheckbox_option {
+  display: inline-block;
+  width: 100%;
+  cursor: pointer;
+  margin-bottom: 1px;
+  line-height: 25px;
+  padding-left: 3px;
+
+  input[type="checkbox"] {
+    margin: 0 3px 0 0;
+    position: relative;
+    vertical-align: text-bottom;
+  }
+
+  &:hover {
+    background-color: #357ebd;
+    color: #fff;
+  }
+}
+
+.status-flag {
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.article-block {
+  background-color: $white;
+  border: 1px solid $lighter-grey;
+  border-radius: 4px;
+  margin: 15px 0;
+  padding: 14px 19px 14px 19px;
+  position: relative;
+}
+
+.article-block > .article-title {
+  font-weight: bold;
+}
+
+.article-block > .authors {
+  font-style: italic;
+}
+
+.article-block > .authors > .authors-label {
+  font-weight: bold;
+}
+
+// paper history
+.history-filters a, .history-filters a:hover {
+  text-decoration: none;
+}
+
+.history-filters {
+  margin-bottom: 10px;
+}
+
+.datepicker-button {
+  cursor: pointer;
+}
+
+.history-datepicker-input,
+.history-datepicker-button,
+.history-search {
+  display: inline-block;
+}
+
+.history-logs {
+  clear: both;
+  max-height: 300px;
+  overflow: auto;
+}
+
+// articles list - editors list
+.editors-list{
+  max-height: 150px;
+  overflow: auto;
+  margin-bottom: 10px;
+}
+
+.modal-orcid{
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+input#affiliations{
+  position: relative;
+}
+
+#biblio-refs-container > li {
+  margin-bottom:0.5em;
+}

@@ -1,0 +1,466 @@
+<?php
+
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$metadata = $this->metadata;
+$status = $paper->getStatus();
+$isSecretary = Episciences_Auth::isSecretary();
+$loggedUid = Episciences_Auth::getUid();
+$isAllowedToSeeNoPublicDetails = $this->isAllowedToSeeNoPublicDetails;
+$isAllowedToAnswerNewVersion = $this->isAllowedToAnswerNewVersion;
+
+
+$language = $paper->getMetadata('language') ?? 'en';
+
+if ($paper->isPublished()) {
+    $this->headLink(['rel' => 'schema.DC', 'href' => 'http://purl.org/dc/elements/1.1/']);
+    $headMeta = Episciences_PapersManager::headMetaData($paper);
+    foreach ($headMeta['citation'] as $citationKey => $citationMeta) {
+        switch ($citationKey) {
+            case "volume":
+            case "doi":
+            case "abstract":
+                if ($citationMeta) {
+                    $this->headMeta()->appendName('citation_' . $citationKey, $citationMeta);
+                }
+                break;
+            case "author":
+                foreach ($citationMeta as $authors) {
+                    $this->headMeta()->appendName('citation_author', $authors['citation_author']);
+                    if (array_key_exists('citation_author_institution', $authors)) {
+                        foreach ($authors['citation_author_institution'] as $affiliation) {
+                            $this->headMeta()->appendName('citation_author_institution', $affiliation);
+                        }
+                    }
+                    if (array_key_exists('citation_author_orcid', $authors)) {
+                        $this->headMeta()->appendName('citation_author_orcid', $authors['citation_author_orcid']);
+                    }
+                }
+                break;
+            case "keywords":
+                foreach ($citationMeta as $meta) {
+                    $this->headMeta()->appendName("citation_" . $citationKey, $meta);
+                }
+                break;
+            case "publication_date":
+                if ($citationMeta) {
+                    $date = $this->Date($paper->getPublication_date(), $language, Zend_Date::YEAR . '-' . Zend_Date::MONTH . '-' . Zend_Date::DAY);
+                    $this->headMeta()->appendName('citation_' . $citationKey, $date);
+                }
+                break;
+            case "arxiv_id":
+            case "issue":
+                if ($citationMeta !== "") {
+                    $this->headMeta()->appendName('citation_' . $citationKey, $citationMeta);
+                }
+                break;
+            case "issn":
+                foreach ($citationMeta as $meta) {
+                    if ($meta !== "") {
+                        $this->headMeta()->appendName("citation_" . $citationKey, $this->FormatIssn($meta));
+                    }
+                }
+                break;
+            case "fundings":
+                if (!empty($citationMeta)) {
+                    foreach ($citationMeta as $project) {
+                        if (isset($project['funderName']) && $project['funderName'] !== Episciences_Paper_ProjectsManager::UNIDENTIFIED) {
+                            $strFunding = "citation_funder=" . $project['funderName'] . ";";
+                            if ($project['code'] !== Episciences_Paper_ProjectsManager::UNIDENTIFIED) {
+                                $strFunding .= " citation_grant_number=" . $project['code'] . ";";
+                            }
+                            $this->headMeta()->appendName('citation_funder_source', $strFunding);
+                        }
+                    }
+                }
+                break;
+            default :
+                $this->headMeta()->appendName('citation_' . $citationKey, $citationMeta);
+                break;
+        }
+    }
+    foreach ($headMeta['dc'] as $dcKey => $dcMeta) {
+        switch ($dcKey) {
+            case "creator":
+                foreach ($dcMeta as $author) {
+                    $this->headMeta()->appendName('DC.' . $dcKey, $author['citation_author']);
+                }
+                break;
+            case "date":
+                if ($dcMeta) {
+                    $date = $this->Date($paper->getPublication_date(), $language, Zend_Date::YEAR . '-' . Zend_Date::MONTH . '-' . Zend_Date::DAY);
+                    $this->headMeta()->appendName('DC.' . $dcKey, $date);
+                }
+                break;
+            case "abstract":
+                if ($dcMeta) {
+                    $this->headMeta()->appendName('DC.description', $dcMeta);
+                }
+                break;
+            case "keywords":
+                foreach ($dcMeta as $meta) {
+                    $this->headMeta()->appendName('DC.subject', $meta);
+                }
+                break;
+            case "volume":
+                if ($dcMeta !== '') {
+                    $this->headMeta()->appendName('DC.citation.volume', $dcMeta);
+                }
+                break;
+            case "identifier":
+                foreach ($dcMeta as $key => $meta) {
+                    if (($key === 'doi') && !empty($meta)) {
+                        $this->headMeta()->appendName('DC.identifier', $meta);
+                        continue;
+                    }
+                    $this->headMeta()->appendName('DC.identifier', $meta);
+                }
+                break;
+            case "relation":
+                $this->headMeta()->appendName("DC.relation.ispartof", $dcMeta);
+                break;
+            default :
+                $this->headMeta()->appendName('DC.' . $dcKey, $dcMeta);
+                break;
+        }
+    }
+    foreach ($headMeta['og'] as $ogKey => $ogMeta) {
+        switch ($ogKey) {
+            case 'article':
+                foreach ($ogMeta as $key => $meta) {
+                    if ($key === 'tag') {
+                        foreach ($meta as $tag) {
+                            $this->headMeta()->appendProperty('og:' . $ogKey . ':' . $key, $tag);
+                        }
+                        continue;
+                    }
+                    if ($key === 'author') {
+                        foreach ($meta as $profile) {
+                            $this->headMeta()->appendProperty('og:' . $ogKey . ':' . 'author', $profile['citation_author']);
+                        }
+                        continue;
+                    }
+                    $this->headMeta()->appendProperty('og:' . $ogKey . ':' . $key, $meta);
+
+                }
+                break;
+            case 'description':
+                if ($ogMeta) {
+                    $this->headMeta()->appendProperty('og:' . $ogKey, $ogMeta);
+                }
+                break;
+            case 'locale':
+                foreach ($ogMeta as $index => $meta) {
+                    if ($meta !== '') {
+                        if ($index === 0) {
+                            $this->headMeta()->appendProperty('og:locale', $meta);
+                        } else {
+                            $this->headMeta()->appendProperty('og:locale:alternate', $meta);
+                        }
+                    }
+                }
+                break;
+            default:
+                $this->headMeta()->appendProperty('og:' . $ogKey, $ogMeta);
+        }
+    }
+    foreach ($headMeta['socialMedia']['twitter'] as $twitterKey => $twitterMeta) {
+        if ($twitterKey === "creator" && !empty($twitterMeta)) {
+            foreach ($twitterMeta as $creator) {
+                if (!is_null($creator)) {
+                    $this->headMeta()->appendName("twitter:" . $twitterKey, $creator);
+                }
+            }
+            continue;
+        }
+        $this->headMeta()->appendName("twitter:" . $twitterKey, $twitterMeta);
+    }
+    foreach ($headMeta['header'] as $hKey => $headerMeta) {
+        switch ($hKey) {
+            case 'description':
+                if ($hKey) {
+                    $this->headMeta()->appendName($hKey, $headerMeta);
+                }
+                break;
+            case "keywords":
+                foreach ($headerMeta as $meta) {
+                    $this->headMeta()->appendName($hKey, $meta);
+                }
+                break;
+            default:
+                $this->headMeta()->appendName($hKey, $headerMeta);
+        }
+    }
+
+}
+?>
+
+
+<?php
+$this->headTitle("#" . $paper->getDocid() . ' - ' . $paper->getTitle($language, true));
+$this->jQuery()->addJavascriptFile('/js/paper/view.js');
+
+?>
+
+<?php if ($this->isAllowedToBackToAdminPage): ?>
+    <?= $this->partial('partials/paper_controller_link_switch.phtml', ['paper' => $paper]) ?>
+<?php endif; ?>
+
+<?php // obsolete paper notice ****************************************************** ?>
+<?php if ($paper->isObsolete()) : ?>
+    <?php if ($paper->isObsolete()) : ?>
+        <?= $this->partial('partials/old_version.phtml', ['url' => $this->linkToLatestDocId]) ?>
+    <?php endif; ?>
+<?php endif; ?>
+
+<?php // paper ************************************************************************* ?>
+<div>
+    <?= $paper->getXslt() ?>
+    <?php // Data Descriptor ?>
+    <?= $this->render('partials/paper_data_descriptor_bloc.phtml') ?>
+
+
+    <?php // author's comments and cover letter ************************************************************************* ?>
+    <?php if (!$paper->isPublished() || $paper->isOwner()) : ?>
+        <?php // Author comments  *****************************************?>
+        <?= $this->render('partials/paper_author_comments_bloc.phtml') ?>
+    <?php endif; ?>
+
+    <?php
+
+    if (!empty($this->classifications)) {
+        echo $this->partial('paper/paper_classifications.phtml', ['classifications' => $this->classifications]);
+    }
+    ?>
+    <?php $graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId())) ?>
+    <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor() || $graphAbs) : ?>
+        <?= $this->partial('paper/paper_graphical_abstract.phtml', ['paper' => $paper]) ?>
+    <?php endif; ?>
+    <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
+    <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper, 'metadata' => $metadata]) ?>
+    <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
+
+</div>
+
+<?php if ($isAllowedToSeeNoPublicDetails): ?>
+
+    <?php // paper status ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate("Statut de l'article") ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php $statusMsg = $this->translate('Statut actuel') . $this->translate(' :') . ' '; ?>
+            <p>
+                <strong><?= $statusMsg ?></strong> <span
+                        class="label label-status-<?= $status ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
+                <?= $this->partial('partials/paper-revision-deadline.phtml', ['paper' => $paper]) ?>
+            </p>
+        </div>
+    </div>
+
+    <?php // préparation de copie?>
+
+    <?php if ($this->copyEditingDemands && !$paper->isPublished()) : ?>
+        <div id="copy-editing" class="panel panel-default collapsable">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?= $this->translate('Préparation de copie') ?></h2>
+            </div>
+            <div class="panel-body in" style="overflow: visible">
+                <?= $this->partial('partials/paper_copy_editing.phtml', [
+                        'copyEditingDemands' => $this->copyEditingDemands,
+                        'copyEditingReplyForms' => $this->copyEditingReplyForms,
+                        'paperStatus' => $status,
+                        'latestDocId' => $this->latestDocId,
+                        'linkToLatestDocId' => $this->linkToLatestDocId,
+                        'isFromZSubmit' => $this->isFromZSubmit,
+                        'zSubmitUrl' => $this->zSubmitUrl
+                    ]
+                ) ?>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php // versions *****************************************************
+    if (
+        Episciences_Auth::isLogged() &&
+        (
+            array_key_exists($loggedUid, $paper->getReviewers()) || // nor reviewer
+            $paper->getUid() === $loggedUid
+        )
+    ) {
+        echo $this->partial('partials/paper_versions.phtml', ['paper' => $paper, 'versions' => $this->versions]);
+    }
+    ?>
+
+    <?php // rating reports ************************************************************************* ?>
+    <?php if ($this->reports) : ?>
+        <div id="ratings" class="panel panel-default collapsable">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?= $this->translate('Evaluations') ?></h2>
+            </div>
+            <div class="panel-body in" style="max-height: 350px; overflow: auto;">
+                <?= $this->partial('partials/paper_reports.phtml', ['paper' => $paper, 'reports' => $this->reports, 'isAllowedToSeeReportDetails' => $this->isAllowedToSeeReportDetails]) ?>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php // reviewer comments ************************************** ?>
+    <?php if ($this->comments && !$paper->isPublished()) : ?>
+        <div id="comments" class="panel panel-default collapsable">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?= $this->translate('Commentaires des relecteurs') ?></h2>
+            </div>
+            <div class="panel-body in" style="max-height: 350px; overflow: auto;">
+                <?= $this->partial('partials/paper_reviewer_comments.phtml', [
+                        'comments' => $this->comments,
+                        'replyForms' => $this->replyForms,
+                        'paper' => $this->paper
+                ]) ?>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php // assigned editors section (visible if names disclosed) **************** ?>
+    <?php if ($paper->isOwnerOrCoAuthor() && Episciences_Auth::isLogged()) : ?>
+        <?php
+        $review = Episciences_ReviewsManager::find($paper->getRvid());
+        $discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
+        if ($discloseEditorNames && !empty($this->editors)) :
+        ?>
+            <?= $this->partial('partials/paper_editors_for_authors.phtml', [
+                'editors' => $this->editors,
+                'paper' => $paper
+            ]) ?>
+        <?php endif; ?>
+    <?php endif; ?>
+
+    <?php // author to editor communication ************************************** ?>
+    <?= $this->partial('partials/author_editor_communication.phtml', [
+        'paper' => $paper,
+        'review' => $this->review,
+        'authorToEditorForm' => $this->authorToEditorForm ?? null,
+        'editorReplyForms' => null,
+        'authorToEditorComments' => $this->authorToEditorComments,
+        'editors' => $this->editors ?? [],
+        'isAuthor' => $this->isAuthor ?? false,
+        'authorReplyForms' => $this->authorReplyForms ?? []
+    ]) ?>
+
+    <?php // revision requests ***************************************************** ?>
+    <?php if ($isAllowedToAnswerNewVersion && ($this->revision_requests || $this->currentDemand || $this->previousVersionsDemands) && !$paper->isPublished()) : ?>
+        <div id="answer" class="panel panel-default collapsable">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?= $this->translate('Demandes de modifications') ?></h2>
+            </div>
+            <div class="panel-body in" style="overflow: visible">
+                <?= $this->partial('partials/answer_revision_request_form.phtml', [
+                    'paper' => $paper,
+                    'review' => $this->review,
+                    'current_demand' => $this->currentDemand,
+                    'zIdentifier' => $this->zIdentifier,
+                    'doNotDisplayContactOption' => $this->doNotDisplayContactChoice
+                ])
+                ?>
+
+                <?= !empty($this->currentDemand) ? '<hr>' : '' ?>
+
+                <?= $this->partial('partials/paper_demands.phtml', [
+                    'paper' => $paper,
+                    'review' => $this->review,
+                    'current_demand' => $this->currentDemand,
+                    'previous_demands' => $this->revision_requests,
+                    'previousVersions' => $this->previousVersions,
+                    'previousVersionsDemands' => $this->previousVersionsDemands
+                ])
+                ?>
+            </div>
+
+        </div>
+    <?php endif; ?>
+
+<?php endif; // end if $isAllowedToSeeNoPublicDetails ?>
+
+<?php if ($this->enabledBib): ?>
+    <div id="biblio-refs" class="panel panel-default collapsable" <?php if (!$this->enabledManageFromPublicPage) {
+        echo 'style="display: none;"';
+    } ?>>
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Références bibliographiques') ?></h2>
+        </div>
+        <div class="panel-body in" style="max-height: 350px; overflow: auto;">
+            <?php
+            //REFERENCES EPI CITATIONS ****************************************************************
+            echo $this->partial('partials/paper_biblio_refs.phtml', ['paper' => $paper, 'urlcallapibib' => $this->urlcallapibib, 'apiEpiBibCitation' => $this->apiEpiBibCitation, 'enabledManageFromPublicPage' => $this->enabledManageFromPublicPage, 'repoId' => $paper->getRepoid()]);
+            ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php // Citations *****************************************************
+if ($this->citations !== '') {
+    echo $this->partial('partials/paper_citations.phtml', ['citations' => $this->citations, 'counterCitations' => $this->counterCitations]);
+}
+?>
+
+<?php // export options ***************************************************** ?>
+
+<?php if ($paper->isPublished()) : ?>
+
+
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Partager et exporter') ?></h2>
+        </div>
+        <?php echo $this->partial('partials/paper_share.phtml', ['paper' => $paper]); ?>
+    </div>
+
+<?php endif; ?>
+
+<?php if ($this->page_count || $this->file_count) : ?>
+    <!-- stats -->
+    <div id="stats" class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Statistiques de consultation') ?></h2>
+        </div>
+        <div class="panel-body in">
+            <?php if ($this->page_count) : ?>
+                <div><?= $this->translate("Cette page a été consultée %s fois.", $this->page_count) ?></div>
+            <?php endif; ?>
+            <?php if ($this->file_count) : ?>
+                <div><?= $this->translate("Le PDF de cet article a été téléchargé %s fois.", $this->file_count) ?></div>
+            <?php endif; ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php if ($this->isAllowedToBackToAdminPage): ?>
+    <?= $this->partial('partials/paper_controller_link_switch.phtml', ['paper' => $paper]) ?>
+<?php endif; ?>
+
+
+<?php
+// modal (for revision request answer forms)
+$style = ['width' => '50%'];
+echo $this->partial('partials/modal.phtml', ['style' => $style]);
+?>
+
+<?php
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+$this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
+$this->jQuery()->addJavascriptFile('/js/paper/copy_editing_form.js');
+$this->jQuery()->addJavascriptFile('/js/components/collapsible-message.js');
+$this->jQuery()->addJavascriptFile('/js/paper/updateOrcidAuthors.js');
+$this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');
+$this->jQuery()->addJavascriptFile('/js/user/affiliations.js');
+$this->jQuery()->addJavascriptFile('/js/paper/biblioRef.js');
+$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
+?>
+<script>
+    let hasHook = <?= json_encode($this->hasHook) ?>;
+    let isRequiredVersion = <?= json_encode($this->isRequiredVersion) ?>;
+    let isFromZSubmit = <?= $this->isFromZSubmit ?>;
+    let zSubmitStatus = <?= json_encode($this->zSubmitStatus) ?>;
+</script>

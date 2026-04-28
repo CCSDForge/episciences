@@ -1,0 +1,60 @@
+<?php
+const PARTIALS_DEMAND_ITEM_PHTML = 'partials/demand_item.phtml';
+
+// Extract data from view
+$comments = $this->comments;
+$replyForms = $this->replyForms ?? [];
+$isAllowedToReply = !empty($replyForms);
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$paperId = $this->paper->getPaperId();
+?>
+
+<?php if (!empty($comments)): ?>
+
+    <!-- Timeline -->
+    <div class="demands-timeline demands-timeline--scrollable">
+        <div class="demands-timeline-track">
+
+            <?php foreach ($comments as $pcId => $comment): ?>
+
+                <?php
+                $isAllowedToReply = ($paper->getReviewer(Episciences_Auth::getUid()) || $paper->isOwner());
+                $hasReply = isset($comment['replies']);
+                $showReplyButtonAndForm = $isAllowedToReply && !$this->hasReply && Episciences_Auth::getUid() !== (int)$comment['UID']
+                ?>
+
+                <?php $replyForm = $replyForms[$pcId] ?? null; ?>
+
+                <!-- Main demand -->
+                <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                        'item' => $comment,
+                        'paperId' => $paperId,
+                        'isReply' => false,
+                        'cleanMessage' => true,
+                        'replyForm' => $replyForm,
+                        'showReplyButtonAndForm' => $showReplyButtonAndForm
+                ]) ?>
+
+
+                <!-- Replies (if any) -->
+                <?php if (isset($comment['replies'])) : ?>
+                    <div class="timeline-thread">
+                        <?php foreach ($comment['replies'] as $reply) : ?>
+                            <?= $this->partial(PARTIALS_DEMAND_ITEM_PHTML, [
+                                    'item' => $reply,
+                                    'paperId' => $paperId,
+                                    'isReply' => true,
+                                    'cleanMessage' => false,
+                                    'replyForm' => $replyForm,
+                                    'showReplyButtonAndForm' => $showReplyButtonAndForm
+                            ]) ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+            <?php endforeach; ?>
+
+        </div>
+    </div>
+<?php endif; ?>

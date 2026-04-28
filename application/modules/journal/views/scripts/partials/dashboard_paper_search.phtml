@@ -1,0 +1,31 @@
+<?php
+$suffix = isset($this->from) ? '_'. $this->from : '';
+$title = $this->title ?? 'Accès à un article';
+?>
+<div class="col-md-11" data-component="dashboard-paper-search" data-suffix="<?= $suffix ?>" data-from="<?= $this->from ?? '' ?>">
+    <div class="panel-heading">
+        <h2 class="panel-title"><?= $this->translate($title) ?></h2>
+    </div>
+    <div>
+        <div class="row">
+            <div class="input-group">
+                <input data-role="paper-identifier" class="form-control"
+                       style="border-right:0; border-color:#ccc;"
+                       placeholder="<?= $this->translate("Identifiant de l'article") ?>">
+                <span class="input-group-addon">
+                        <button data-role="submit-btn" type="submit" style="border:0; background:transparent;">
+                            <span class="glyphicon glyphicon-arrow-right"></span>
+                        </button>
+                    </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php $this->jQuery()->addJavascriptFile("/js/user/dashboard-paper-search.js"); ?>
+
+
+
+
+
+

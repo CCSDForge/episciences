@@ -1,0 +1,97 @@
+<?php
+$hasHook = $this->hasHook ?? false;
+$label = $this->label ?? 'Your label';
+$type = $this->type ?? 'text';
+$options = ($type === 'select' && isset($this->options)) ? $this->options : [];
+$docId = $this->docId ?? '';
+$action = $this->action ?? '#';
+$prefix = $this->prefix ?? 'prefix';
+$min = $this->min ?? '';
+$max = $this->max ?? '';
+?>
+<div id="<?= $prefix ?>">
+
+    <?php if (!empty($options)) : ?>
+
+        <div id="in-progress" class="col-sm-4 col-sm-offset-4 col-sm-4"></div>
+        <div class="col-sm-12">
+
+            <form action="<?= $action ?>" id="<?= $prefix ?>-form-<?= $docId ?>">
+
+                <div class="row">
+
+                    <div class="col-sm-6">
+                        <small><?= $this->translate($label) ?></small>
+                    </div>
+
+
+                    <div class="col-sm-6">
+
+                        <?php if ($type === 'select'): ?>
+                            <label>
+                                <select name="<?= $prefix ?>" id="<?= $prefix ?>" class="form-control">
+
+                                    <?php foreach ($options as $index => $value): ?>
+                                        <option value="<?= $value ?>" <?= (array_key_first($options) === $index) ? 'selected' : '' ?>><?= $value ?></option>
+                                    <?php endforeach; ?>
+
+                                </select>
+                            </label>
+                        <?php else: ?>
+
+                            <label>
+                                <input type=<?= $type ?> id="<?= $prefix ?>" class="form-control"
+                                       name="<?= $prefix ?>" min="<?= $min ?>" max="<?= $max ?>"/>
+                            </label>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+
+                <?php if (!$this->isPublished) : ?>
+                    <div class="col-sm-12">
+
+
+                        <div class="checkbox col-sm-12">
+                            <input type="checkbox" id="ready-to-publish" name="ready-to-publish">
+                            <label for="ready-to-publish">
+                                <small>
+                                    <?= $this->translate('Modifier le statut en <mark>Prêt à publier</mark>') ?>
+                                </small>
+                            </label>
+                        </div>
+
+                    </div>
+
+
+                <?php endif; ?>
+
+
+                <div class="col-sm-12 text-center" style="margin-bottom: 5px;">
+                    <button type="submit" class="btn btn-primary"><?= $this->translate("Enregistrer") ?></button>
+                    <a class="btn btn-default" role="button" aria-hidden="true"
+                       onclick="$('.popover').hide();">&times;</a>
+                </div>
+
+
+            </form>
+        </div>
+
+    <?php else : ?>
+
+        <p class="text-warning"><?= $this->translate('La version actuelle est la version la plus récente.') ?>
+            <a class="btn btn-default btn-xs pull-right close" role="button" aria-hidden="true"
+               onclick="$('.popover').hide();">
+                &times;
+            </a>
+        </p>
+
+    <?php endif; ?>
+
+
+</div>
+
+
+
+
+

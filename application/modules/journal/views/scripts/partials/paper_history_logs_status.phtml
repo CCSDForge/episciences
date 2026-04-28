@@ -1,0 +1,11 @@
+<?php
+/**
+ * Log Detail Partial: Status
+ * Handles: CODE_STATUS, CODE_RESTORATION_OF_STATUS
+ * Display: translated status label
+ */
+?>
+<?= $this->translate(' :') ?>
+<span class="log-status" aria-label="<?= $this->translate('Status') ?>">
+    <?= $this->status ?>
+</span>

@@ -1,0 +1,51 @@
+// compass-mixins has been removed - modern CSS properties are used directly instead
+
+// variables (available colors)
+@import "abstracts/variables";
+// theme configuration (text colors, size, backgrounds...)
+@import "themes/theme";
+
+@import "base/base";
+// color classes
+@import "base/colors";
+// titles, texts...
+@import "base/typography";
+@import "layout/ccsd";
+@import "layout/navbar";
+@import "layout/sidebar";
+@import "layout/forms";
+
+// components
+@import "components/datatables";
+@import "components/autocomplete";
+@import "components/progress-bar";
+@import "components/modals";
+@import "components/sortable";
+@import "components/user-role-colors";
+@import "components/paper-status-colors";
+@import "components/flags";
+@import "components/footer";
+@import "components/badges";
+@import "components/labels";
+@import "components/timeline-base";
+@import "components/timeline-editor-comments";
+@import "components/timeline-demands";
+@import "components/timeline-copy-editing";
+@import "components/timeline-author-editor";
+@import "components/collapsible-message";
+@import "components/stats";
+
+// pages
+@import "pages/userconfirmation";
+@import "pages/search";
+@import "pages/share";
+@import "pages/articles";
+@import "pages/volumes-and-sections";
+@import "pages/rating-grids";
+@import "pages/editorial-staff";
+@import "pages/reminders-list";
+
+
+
+//attachments files
+@import "components/fileupload";

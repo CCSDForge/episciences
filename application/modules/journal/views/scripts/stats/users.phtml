@@ -1,0 +1,15 @@
+<?php
+$tooltipInfo = "Un utilisateur peut avoir plusieurs rôles."
+?>
+<div class="panel panel-default collapsable">
+    <div class="panel-heading"><h2 class="panel-title"><?= $this->chart5Title ?><span class="fas fa-info-circle" data-toggle="tooltip" title="<?= $this->translate($tooltipInfo) ?>"></span></h2></div>
+    <div class="panel-body in">
+        <div style="padding-top: 10px; text-align: center; ">
+            <p><?= $this->translate("Nombre total d'utilisateurs : ")  ?>
+                <span class="stat-value"><?= $this->allUsers ?></span>
+            </p>
+        </div>
+        <canvas id="users-by-roles-chart" style="height: auto; width: auto;"></canvas>
+    </div>
+</div>
+<?php
