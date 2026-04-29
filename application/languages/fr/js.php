@@ -37,4 +37,22 @@ return [
     // Delete confirmations
     "Voulez-vous supprimer ce fichier ?" => "Voulez-vous supprimer ce fichier ?",
     "Voulez-vous supprimer votre fichier attaché ?" => "Voulez-vous supprimer votre fichier attaché ?",
+
+    // PPS (Problematic Paper Screener) — bibliographic reference badge labels
+    'Retracted'                    => 'Rétracté',
+    'Expression of Concern'        => 'Expression de préoccupation',
+    'Feet of Clay'                 => "Pieds d'argile",
+    'Tortured Phrases'             => 'Expressions torturées',
+    'Suspect'                      => 'Suspect',
+    'SCIgen-generated'             => 'Généré par SCIgen',
+    'Mathgen-generated'            => 'Généré par Mathgen',
+    'Citejacked'                   => 'Citation détournée',
+    'Suspect Biological Sequences' => 'Séquences biologiques suspectes',
+    'Problematic Cell Lines'       => 'Lignées cellulaires problématiques',
+    'Deindexed'                    => 'Désindexé',
+    'Problematic Journal'          => 'Revue problématique',
+    'SBIR flagged'                 => 'Signalé SBIR',
+    'Problematic'                  => 'Problématique',
+    'Genuine'                      => 'Authentique',
+    'More information'             => "Plus d'information",
 ];
