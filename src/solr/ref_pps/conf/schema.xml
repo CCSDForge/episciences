@@ -2,7 +2,7 @@
 <schema name="ref_pps" version="1.6">
     <fields>
         <!-- Unique identifier for each document -->
-        <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+        <field name="id" type="uuid" indexed="true" stored="true" required="true" multiValued="false" />
 
         <field name="detectors" type="string" indexed="true" stored="true" multiValued="true"/>
         <field name="doi" type="stringCaseInsensitive" indexed="true" stored="true" multiValued="false"/>
