@@ -4,6 +4,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/GenerateUsersCommand.php';
 require_once __DIR__ . '/InitDevUsersCommand.php';
 require_once __DIR__ . '/CreateBotUserCommand.php';
+require_once __DIR__ . '/ExtractBiblioRefsCommand.php';
 require_once __DIR__ . '/GetCitationsDataCommand.php';
 require_once __DIR__ . '/GetCreatorDataCommand.php';
 require_once __DIR__ . '/GetLicenceDataCommand.php';
@@ -37,6 +38,7 @@ $application->add(new InitDevUsersCommand());
 $application->add(new CreateBotUserCommand());
 
 // Enrichment commands
+$application->add(new ExtractBiblioRefsCommand());
 $application->add(new GetCitationsDataCommand());
 $application->add(new GetCreatorDataCommand());
 $application->add(new GetLicenceDataCommand());
