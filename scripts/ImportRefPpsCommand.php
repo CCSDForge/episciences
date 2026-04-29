@@ -100,7 +100,13 @@ class ImportRefPpsCommand extends Command
                 continue;
             }
 
-            $doc     = $updateQuery->createDocument(self::mapRowToDocument($data, $columnMap));
+            $docData = self::mapRowToDocument($data, $columnMap);
+            if ($docData === null) {
+                $skipped++;
+                continue;
+            }
+
+            $doc     = $updateQuery->createDocument($docData);
             $batch[] = $doc;
             $count++;
 
@@ -211,20 +217,53 @@ class ImportRefPpsCommand extends Command
      *
      * @param list<string|null> $data
      * @param array<string, int> $columnMap
-     * @return array<string, string|list<string>>
+     * @return array<string, string|list<string>>|null
      */
-    public static function mapRowToDocument(array $data, array $columnMap): array
+    public static function mapRowToDocument(array $data, array $columnMap): ?array
     {
-        $doi = trim((string) ($data[$columnMap['doi']] ?? ''));
-        return [
-            'id'           => strtolower($doi),
-            'detectors'    => self::splitMultiValue((string) ($data[$columnMap['detectors']] ?? '')),
-            'doi'          => $doi,
-            'title'        => trim((string) ($data[$columnMap['title']] ?? '')),
-            'pubpeerusers' => self::splitMultiValue((string) ($data[$columnMap['pubpeerusers']] ?? '')),
-            'pubpeerurl'   => trim((string) ($data[$columnMap['pubpeerurl']] ?? '')),
-            'status'       => trim((string) ($data[$columnMap['status']] ?? '')),
+        $doi   = trim((string) ($data[$columnMap['doi']] ?? ''));
+        $title = trim((string) ($data[$columnMap['title']] ?? ''));
+
+        // We need at least a DOI or a Title to have a meaningful document
+        if (($doi === '' || $doi === '-') && ($title === '' || $title === '-')) {
+            return null;
+        }
+
+        // Generate a deterministic UUID
+        // If DOI is present, use it as the seed for stability even if other fields change
+        // If DOI is absent, use the serialized row content as a fallback
+        $namespace = \Ramsey\Uuid\Uuid::NAMESPACE_DNS;
+        if ($doi !== '' && $doi !== '-') {
+            $id = \Ramsey\Uuid\Uuid::uuid5($namespace, 'doi:' . strtolower($doi))->toString();
+        } else {
+            $id = \Ramsey\Uuid\Uuid::uuid5($namespace, 'row:' . serialize($data))->toString();
+        }
+
+        $doc = [
+            'id' => $id,
         ];
+
+        if ($doi !== '' && $doi !== '-') {
+            $doc['doi'] = $doi;
+        }
+
+        // Non-multi fields
+        foreach (['title', 'pubpeerurl', 'status'] as $field) {
+            $val = trim((string) ($data[$columnMap[$field]] ?? ''));
+            if ($val !== '' && $val !== '-') {
+                $doc[$field] = $val;
+            }
+        }
+
+        // Multi fields
+        foreach (['detectors', 'pubpeerusers'] as $field) {
+            $val = self::splitMultiValue((string) ($data[$columnMap[$field]] ?? ''));
+            if (!empty($val)) {
+                $doc[$field] = $val;
+            }
+        }
+
+        return $doc;
     }
 
     /** @return list<string> */

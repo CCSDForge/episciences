@@ -240,36 +240,64 @@ class ImportRefPpsCommandTest extends TestCase
         $this->assertSame(['annulled', 'clayFeet', 'mathgen'], $doc['detectors']);
     }
 
-    public function testMapRowToDocument_DashDetectorYieldsEmptyArray(): void
+    public function testMapRowToDocument_DashDetectorIsAbsent(): void
     {
         $data = ['-', '10.1234/test', 'Title', 'user', 'url', 'ok'];
         $doc  = ImportRefPpsCommand::mapRowToDocument($data, self::sixColumnMap());
 
-        $this->assertSame([], $doc['detectors']);
+        $this->assertArrayNotHasKey('detectors', $doc);
     }
 
-    public function testMapRowToDocument_EmptyDetectorYieldsEmptyArray(): void
+    public function testMapRowToDocument_EmptyDetectorIsAbsent(): void
     {
         $data = ['', '10.1234/test', 'Title', 'user', 'url', 'ok'];
         $doc  = ImportRefPpsCommand::mapRowToDocument($data, self::sixColumnMap());
 
-        $this->assertSame([], $doc['detectors']);
+        $this->assertArrayNotHasKey('detectors', $doc);
     }
 
-    public function testMapRowToDocument_IdIsLowercasedDoi(): void
+    public function testMapRowToDocument_IdIsUuid(): void
     {
-        $data = ['det', '10.1234/TEST.DOI', 'Title', 'user', 'url', 'ok'];
+        $data = ['det', '10.1234/test', 'Title', 'user', 'url', 'ok'];
         $doc  = ImportRefPpsCommand::mapRowToDocument($data, self::sixColumnMap());
 
-        $this->assertSame('10.1234/test.doi', $doc['id']);
+        $this->assertTrue(\Ramsey\Uuid\Uuid::isValid($doc['id']));
     }
 
-    public function testMapRowToDocument_IdTrimsWhitespaceFromDoi(): void
+    public function testMapRowToDocument_SameDoiProducesSameUuidEvenIfDataChanges(): void
     {
-        $data = ['det', '  10.1234/abc  ', 'Title', 'user', 'url', 'ok'];
+        $data1 = ['det1', '10.1234/test', 'Title 1', 'user1', 'url1', 'ok'];
+        $data2 = ['det2', '10.1234/test', 'Title 2', 'user2', 'url2', 'retracted'];
+        $doc1  = ImportRefPpsCommand::mapRowToDocument($data1, self::sixColumnMap());
+        $doc2  = ImportRefPpsCommand::mapRowToDocument($data2, self::sixColumnMap());
+
+        $this->assertSame($doc1['id'], $doc2['id'], 'UUID must be stable based on DOI');
+    }
+
+    public function testMapRowToDocument_DifferentDataWithoutDoiProducesDifferentUuid(): void
+    {
+        $data1 = ['det', '-', 'Title 1', 'user', 'url', 'ok'];
+        $data2 = ['det', '-', 'Title 2', 'user', 'url', 'ok'];
+        $doc1  = ImportRefPpsCommand::mapRowToDocument($data1, self::sixColumnMap());
+        $doc2  = ImportRefPpsCommand::mapRowToDocument($data2, self::sixColumnMap());
+
+        $this->assertNotSame($doc1['id'], $doc2['id']);
+    }
+
+    public function testMapRowToDocument_ReturnsNullIfDoiAndTitleAreMissing(): void
+    {
+        $data = ['det', '-', '-', 'user', 'url', 'ok'];
+        $this->assertNull(ImportRefPpsCommand::mapRowToDocument($data, self::sixColumnMap()));
+    }
+
+    public function testMapRowToDocument_ImportWithoutDoiPossibleIfTitlePresent(): void
+    {
+        $data = ['det', '-', 'Some Title', 'user', 'url', 'Genuine'];
         $doc  = ImportRefPpsCommand::mapRowToDocument($data, self::sixColumnMap());
 
-        $this->assertSame('10.1234/abc', $doc['id']);
+        $this->assertNotNull($doc);
+        $this->assertArrayNotHasKey('doi', $doc);
+        $this->assertSame('Some Title', $doc['title']);
     }
 
     public function testMapRowToDocument_PreservesOriginalDoiCasing(): void
@@ -316,14 +344,14 @@ class ImportRefPpsCommandTest extends TestCase
 
         $this->assertSame(['clayFeet'], $doc['detectors']);
         $this->assertSame('10.1109/cvpr52688.2022.02022', $doc['doi']);
-        $this->assertSame('10.1109/cvpr52688.2022.02022', $doc['id']);
+        $this->assertTrue(\Ramsey\Uuid\Uuid::isValid($doc['id']));
         $this->assertSame(
             'Surpassing the Human Accuracy: Detecting Gallbladder Cancer from USG Images with Curriculum Learning',
             $doc['title']
         );
-        $this->assertSame([], $doc['pubpeerusers']);
-        $this->assertSame('-', $doc['pubpeerurl']);
-        $this->assertSame('-', $doc['status']);
+        $this->assertArrayNotHasKey('pubpeerusers', $doc);
+        $this->assertArrayNotHasKey('pubpeerurl', $doc);
+        $this->assertArrayNotHasKey('status', $doc);
     }
 
     public function testMapRowToDocument_PubpeerusersIsAlwaysArray(): void
@@ -342,35 +370,12 @@ class ImportRefPpsCommandTest extends TestCase
         $this->assertSame(['Parashorea Tomentella', 'Hoya Camphorifolia'], $doc['pubpeerusers']);
     }
 
-    public function testMapRowToDocument_DashPubpeerusersYieldsEmptyArray(): void
+    public function testMapRowToDocument_DashPubpeerusersIsAbsent(): void
     {
         $data = ['det', '10.1234/test', 'Title', '-', 'url', 'ok'];
         $doc  = ImportRefPpsCommand::mapRowToDocument($data, self::sixColumnMap());
 
-        $this->assertSame([], $doc['pubpeerusers']);
-    }
-
-    public function testMapRowToDocument_SameDoiProducesSameId(): void
-    {
-        $data1 = ['det1', '10.1234/abc', 'Title A', 'user1', 'url1', 'ok'];
-        $data2 = ['det2', '10.1234/abc', 'Title B', 'user2', 'url2', 'retracted'];
-
-        $this->assertSame(
-            ImportRefPpsCommand::mapRowToDocument($data1, self::sixColumnMap())['id'],
-            ImportRefPpsCommand::mapRowToDocument($data2, self::sixColumnMap())['id'],
-            'Same DOI must produce the same document ID regardless of other fields'
-        );
-    }
-
-    public function testMapRowToDocument_DifferentDoisProduceDifferentIds(): void
-    {
-        $data1 = ['det', '10.1234/first', 'T', 'u', 'url', 'ok'];
-        $data2 = ['det', '10.1234/second', 'T', 'u', 'url', 'ok'];
-
-        $this->assertNotSame(
-            ImportRefPpsCommand::mapRowToDocument($data1, self::sixColumnMap())['id'],
-            ImportRefPpsCommand::mapRowToDocument($data2, self::sixColumnMap())['id']
-        );
+        $this->assertArrayNotHasKey('pubpeerusers', $doc);
     }
 
     // -------------------------------------------------------------------------
@@ -423,20 +428,6 @@ class ImportRefPpsCommandTest extends TestCase
     // -------------------------------------------------------------------------
     // Batch boundary: isValidRow + mapRowToDocument contract
     // -------------------------------------------------------------------------
-
-    public function testMapRowToDocument_StatusChangeSameDoiUpdatesDoc(): void
-    {
-        // When a DOI status changes, the document ID is the same → Solr updates the existing doc
-        $original = ['det', '10.1234/doi', 'Title', 'user', 'url', 'peer_review'];
-        $updated  = ['det', '10.1234/doi', 'Title', 'user', 'url', 'retracted'];
-
-        $docOriginal = ImportRefPpsCommand::mapRowToDocument($original, self::sixColumnMap());
-        $docUpdated  = ImportRefPpsCommand::mapRowToDocument($updated, self::sixColumnMap());
-
-        $this->assertSame($docOriginal['id'], $docUpdated['id']);
-        $this->assertSame('peer_review', $docOriginal['status']);
-        $this->assertSame('retracted', $docUpdated['status']);
-    }
 
     // -------------------------------------------------------------------------
     // Helpers
