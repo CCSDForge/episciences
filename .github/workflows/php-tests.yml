@@ -91,7 +91,7 @@ jobs:
         DB_NAME: test_episciences
         
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v6
       if: matrix.php-version == '8.2'
       with:
         file: ./coverage.xml
