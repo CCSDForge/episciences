@@ -868,7 +868,7 @@ class Episciences_Submit
                 $paper->setVersion(null);
             }
 
-            $docId = $paper->alreadyExists();
+            $docId = $paper->findExistingDocId();
 
             if ($docId) {
                 $oldPaper = Episciences_PapersManager::partialGet($docId, $rvId);
@@ -1397,7 +1397,7 @@ class Episciences_Submit
     private function paperAlreadyExists(array $paperData): bool
     {
         $paper = $this->createPaperInstance($paperData);
-        return (bool)$paper->alreadyExists();
+        return $paper->alreadyExists();
     }
 
     /**
