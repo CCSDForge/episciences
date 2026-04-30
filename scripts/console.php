@@ -27,6 +27,7 @@ require_once __DIR__ . '/ImportApacheLogsCommand.php';
 require_once __DIR__ . '/UpdateGeoIpCommand.php';
 require_once __DIR__ . '/GenerateDownloadKpiCommand.php';
 require_once __DIR__ . '/UpdatePapersDocumentCommand.php';
+require_once __DIR__ . '/UpdateTranslationsCommand.php';
 
 use Symfony\Component\Console\Application;
 
@@ -77,5 +78,8 @@ $application->add(new UpdateGeoIpCommand());
 
 // Papers commands
 $application->add(new UpdatePapersDocumentCommand());
+
+// Translation commands
+$application->add(new UpdateTranslationsCommand());
 
 $application->run();
