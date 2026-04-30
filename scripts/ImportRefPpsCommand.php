@@ -11,7 +11,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  * Symfony Console command: import PPS data from a CSV file into Solr.
  *
- * Expected CSV format (with header row):
+ * Expected CSV format (with header row). Column order is detected from the header,
+ * so extra columns in the source file are ignored gracefully:
  *   Detectors,Doi,Title,Pubpeerusers,Pubpeerurl,Status
  */
 class ImportRefPpsCommand extends Command
@@ -19,6 +20,8 @@ class ImportRefPpsCommand extends Command
     protected static $defaultName = 'import:ref-pps';
 
     private const BATCH_SIZE = 1000;
+
+    private const REQUIRED_COLUMNS = ['detectors', 'doi', 'title', 'pubpeerusers', 'pubpeerurl', 'status'];
 
     protected function configure(): void
     {
@@ -71,6 +74,19 @@ class ImportRefPpsCommand extends Command
             return Command::FAILURE;
         }
 
+        $columnMap = self::buildColumnMap($header);
+        if (!self::validateColumnMap($columnMap)) {
+            $progressBar->finish();
+            $io->newLine(2);
+            $io->error(sprintf(
+                'CSV header is missing required columns. Found: [%s]. Required: [%s]',
+                implode(', ', array_keys($columnMap)),
+                implode(', ', self::REQUIRED_COLUMNS)
+            ));
+            fclose($handle);
+            return Command::FAILURE;
+        }
+
         $solrClient  = $this->getSolrClient();
         $updateQuery = $solrClient->createUpdate();
         $batch       = [];
@@ -79,12 +95,18 @@ class ImportRefPpsCommand extends Command
         $skipped     = 0;
 
         while (($data = fgetcsv($handle)) !== false) {
-            if (!self::isValidRow($data)) {
+            if (!self::isValidRow($data, $columnMap)) {
                 $skipped++;
                 continue;
             }
 
-            $doc     = $updateQuery->createDocument(self::mapRowToDocument($data));
+            $docData = self::mapRowToDocument($data, $columnMap);
+            if ($docData === null) {
+                $skipped++;
+                continue;
+            }
+
+            $doc     = $updateQuery->createDocument($docData);
             $batch[] = $doc;
             $count++;
 
@@ -143,36 +165,105 @@ class ImportRefPpsCommand extends Command
 
         $io->newLine(2);
         if ($skipped > 0) {
-            $io->warning("Skipped {$skipped} rows with fewer than 6 fields.");
+            $io->warning("Skipped {$skipped} rows with insufficient fields.");
         }
         $io->success("Import completed: {$imported} documents imported into ref_pps core.");
 
         return Command::SUCCESS;
     }
 
-    /** @param list<string|null> $data */
-    public static function isValidRow(array $data): bool
+    /**
+     * Builds a lowercase name→index map from the CSV header row.
+     *
+     * @param list<string|null> $header
+     * @return array<string, int>
+     */
+    public static function buildColumnMap(array $header): array
     {
-        return count($data) >= 6;
+        $map = [];
+        foreach ($header as $index => $name) {
+            $map[strtolower(trim((string) $name))] = $index;
+        }
+        return $map;
+    }
+
+    /** @param array<string, int> $columnMap */
+    public static function validateColumnMap(array $columnMap): bool
+    {
+        foreach (self::REQUIRED_COLUMNS as $col) {
+            if (!isset($columnMap[$col])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @param list<string|null> $data
+     * @param array<string, int> $columnMap
+     */
+    public static function isValidRow(array $data, array $columnMap): bool
+    {
+        foreach ($columnMap as $index) {
+            if (!array_key_exists($index, $data)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
      * Maps a CSV data row to a Solr document array.
      *
-     * @param list<string> $data
-     * @return array<string, string|list<string>>
+     * @param list<string|null> $data
+     * @param array<string, int> $columnMap
+     * @return array<string, string|list<string>>|null
      */
-    public static function mapRowToDocument(array $data): array
+    public static function mapRowToDocument(array $data, array $columnMap): ?array
     {
-        return [
-            'id'           => strtolower(trim($data[1])), // DOI as stable unique key
-            'detectors'    => self::splitMultiValue($data[0]),
-            'doi'          => $data[1],
-            'title'        => $data[2],
-            'pubpeerusers' => self::splitMultiValue($data[3]),
-            'pubpeerurl'   => $data[4],
-            'status'       => $data[5],
+        $doi   = trim((string) ($data[$columnMap['doi']] ?? ''));
+        $title = trim((string) ($data[$columnMap['title']] ?? ''));
+
+        // We need at least a DOI or a Title to have a meaningful document
+        if (($doi === '' || $doi === '-') && ($title === '' || $title === '-')) {
+            return null;
+        }
+
+        // Generate a deterministic UUID
+        // If DOI is present, use it as the seed for stability even if other fields change
+        // If DOI is absent, use the serialized row content as a fallback
+        $namespace = \Ramsey\Uuid\Uuid::NAMESPACE_DNS;
+        if ($doi !== '' && $doi !== '-') {
+            $id = \Ramsey\Uuid\Uuid::uuid5($namespace, 'doi:' . strtolower($doi))->toString();
+        } else {
+            $id = \Ramsey\Uuid\Uuid::uuid5($namespace, 'row:' . serialize($data))->toString();
+        }
+
+        $doc = [
+            'id' => $id,
         ];
+
+        if ($doi !== '' && $doi !== '-') {
+            $doc['doi'] = $doi;
+        }
+
+        // Non-multi fields
+        foreach (['title', 'pubpeerurl', 'status'] as $field) {
+            $val = trim((string) ($data[$columnMap[$field]] ?? ''));
+            if ($val !== '' && $val !== '-') {
+                $doc[$field] = $val;
+            }
+        }
+
+        // Multi fields
+        foreach (['detectors', 'pubpeerusers'] as $field) {
+            $val = self::splitMultiValue((string) ($data[$columnMap[$field]] ?? ''));
+            if (!empty($val)) {
+                $doc[$field] = $val;
+            }
+        }
+
+        return $doc;
     }
 
     /** @return list<string> */

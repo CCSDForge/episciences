@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performances
 -->
 
+## Unreleased
+### Fixed
+- Panel not opening when updating linked data
+
 ## v1.0.54.3 - 2026-04-23
 
 ### Fixed

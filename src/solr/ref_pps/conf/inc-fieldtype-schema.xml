@@ -24,4 +24,5 @@
     </fieldType>
 
     <fieldType name="long" class="solr.LongPointField" docValues="true"/>
+    <fieldType name="uuid" class="solr.UUIDField" indexed="true" />
 </types>

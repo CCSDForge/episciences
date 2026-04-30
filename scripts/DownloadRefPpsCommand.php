@@ -18,7 +18,7 @@ class DownloadRefPpsCommand extends Command
 {
     protected static $defaultName = 'download:ref-pps';
 
-    private const URL = 'https://dbrech.irit.fr/pls/apex/f?p=9999:3::CSV::::';
+    private const URL = 'https://dbrech.irit.fr/pls/apex/f?p=9999:300::IR[allproblematicpapers]_CSV';
     private const LIMIT_HOURS = 48;
 
     protected function configure(): void

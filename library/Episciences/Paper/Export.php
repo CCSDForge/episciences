@@ -266,7 +266,7 @@ class Export
     {
 
         $collection = [];
-        $items = $paper->$method();
+        $items = $paper->$method() ?? [];
         foreach ($items as $language => $content) {
 
             // Validate or set default language
