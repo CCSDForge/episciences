@@ -118,7 +118,7 @@ final class Episciences_Paper_DatasetTest extends TestCase
     /**
      * Data provider for removeFirstLevel tests
      */
-    public function removeFirstLevelProvider(): array
+    public static function removeFirstLevelProvider(): array
     {
         return [
             'basic_structure' => [

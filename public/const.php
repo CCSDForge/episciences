@@ -397,7 +397,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
 
         // Other configuration
         define('EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER', []);
-        define('EPISCIENCES_BIBLIOREF', []);
+        define('EPISCIENCES_BIBLIOREF', ['URL' => '', 'ENABLE' => false, 'SSL_VERIFY' => true, 'TOKEN' => '']);
 
         // ========================================
         // Protocol constants

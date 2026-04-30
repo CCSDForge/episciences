@@ -531,13 +531,12 @@ class PaperController extends PaperDefaultController
          */
         $enabledBib = false;
         $enabledManageFromPublicPage = false;
-        if (EPISCIENCES_BIBLIOREF['ENABLE'] &&
-            ($paper->getStatus() === Episciences_Paper::STATUS_CE_READY_TO_PUBLISH ||
-                $paper->getStatus() === Episciences_Paper::STATUS_PUBLISHED)) {
+        if (EPISCIENCES_BIBLIOREF['ENABLE']) {
             $this->view->urlcallapibib = APPLICATION_URL . '/' . $docId . '/pdf';
             $this->view->apiEpiBibCitation = EPISCIENCES_BIBLIOREF['URL'];
             $enabledBib = true;
             if (
+                $paper->getStatus() === Episciences_Paper::STATUS_PUBLISHED &&
                 Episciences_Auth::isLogged() &&
                 (
                     $paper->isOwner() ||

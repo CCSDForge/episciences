@@ -4,6 +4,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/GenerateUsersCommand.php';
 require_once __DIR__ . '/InitDevUsersCommand.php';
 require_once __DIR__ . '/CreateBotUserCommand.php';
+require_once __DIR__ . '/ExtractBiblioRefsCommand.php';
 require_once __DIR__ . '/GetCitationsDataCommand.php';
 require_once __DIR__ . '/GetCreatorDataCommand.php';
 require_once __DIR__ . '/GetLicenceDataCommand.php';
@@ -18,11 +19,14 @@ require_once __DIR__ . '/CreateDoajVolumeExportsCommand.php';
 require_once __DIR__ . '/ZbjatsZipperCommand.php';
 require_once __DIR__ . '/ImportSectionsCommand.php';
 require_once __DIR__ . '/ImportVolumesCommand.php';
+require_once __DIR__ . '/ImportRefPpsCommand.php';
+require_once __DIR__ . '/DownloadRefPpsCommand.php';
 require_once __DIR__ . '/UpdateCounterRobotsListCommand.php';
 require_once __DIR__ . '/ProcessStatTempCommand.php';
 require_once __DIR__ . '/ImportApacheLogsCommand.php';
 require_once __DIR__ . '/UpdateGeoIpCommand.php';
 require_once __DIR__ . '/GenerateDownloadKpiCommand.php';
+require_once __DIR__ . '/UpdatePapersDocumentCommand.php';
 require_once __DIR__ . '/GetDoiCommand.php';
 
 use Symfony\Component\Console\Application;
@@ -35,6 +39,7 @@ $application->add(new InitDevUsersCommand());
 $application->add(new CreateBotUserCommand());
 
 // Enrichment commands
+$application->add(new ExtractBiblioRefsCommand());
 $application->add(new GetCitationsDataCommand());
 $application->add(new GetCreatorDataCommand());
 $application->add(new GetLicenceDataCommand());
@@ -59,6 +64,8 @@ $application->add(new ZbjatsZipperCommand());
 // Import commands
 $application->add(new ImportSectionsCommand());
 $application->add(new ImportVolumesCommand());
+$application->add(new ImportRefPpsCommand());
+$application->add(new DownloadRefPpsCommand());
 
 // Stats commands
 $application->add(new UpdateCounterRobotsListCommand());
@@ -71,5 +78,8 @@ $application->add(new GetDoiCommand());
 
 // GeoIP commands
 $application->add(new UpdateGeoIpCommand());
+
+// Papers commands
+$application->add(new UpdatePapersDocumentCommand());
 
 $application->run();

@@ -170,59 +170,48 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
     {
         $docId = 42;
         $result = ['hookVersion' => 2.0];
-        $this->invoke('assertDspaceVersion', [&$docId, null, $result]);
+        $this->invoke('assertVersion', [&$docId, null, &$result, false]);
         self::assertSame(42, $docId);
+        self::assertArrayNotHasKey('status', $result);
     }
 
     /**
-     * previousPaper version (1.0) < hookVersion (2.0) → docId set to null, return.
+     * previousPaper version (1.0) < hookVersion (2.0) and isNewVersion=true → docId set to null, return.
      */
     public function testAssertDspaceVersionResetsDocIdWhenNewVersionIsHigher(): void
     {
-        $this->setUpFakeDspaceRepo();
-        try {
-            $docId = 42;
-            $result = ['hookVersion' => 2.0];
-            $paper = $this->mockPaper(1.0, '', self::FAKE_DSPACE_REPOID);
-            $this->invoke('assertDspaceVersion', [&$docId, $paper, $result]);
-            self::assertNull($docId);
-        } finally {
-            $this->tearDownFakeDspaceRepo();
-        }
+        $docId = 42;
+        $result = ['hookVersion' => 2.0];
+        $paper = $this->mockPaper(1.0);
+        $this->invoke('assertVersion', [&$docId, $paper, &$result, true]);
+        self::assertNull($docId);
+        self::assertArrayNotHasKey('status', $result);
     }
 
     /**
-     * previousPaper version (2.0) equal to hookVersion (2.0) → throws Ccsd_Error.
+     * previousPaper version (2.0) equal to hookVersion (2.0) and isNewVersion=true → sets status=2 (no throw).
      */
     public function testAssertDspaceVersionThrowsWhenVersionNotHigherThanPrevious(): void
     {
-        $this->setUpFakeDspaceRepo();
-        try {
-            $this->expectException(Ccsd_Error::class);
-            $docId = 42;
-            $result = ['hookVersion' => 2.0];
-            $paper = $this->mockPaper(2.0, '', self::FAKE_DSPACE_REPOID);
-            $this->invoke('assertDspaceVersion', [&$docId, $paper, $result]);
-        } finally {
-            $this->tearDownFakeDspaceRepo();
-        }
+        $docId = 42;
+        $result = ['hookVersion' => 2.0];
+        $paper = $this->mockPaper(2.0);
+        $this->invoke('assertVersion', [&$docId, $paper, &$result, true]);
+        self::assertSame(42, $docId);
+        self::assertSame(2, $result['status']);
     }
 
     /**
-     * previousPaper version (3.0) > hookVersion (2.0) → throws Ccsd_Error.
+     * previousPaper version (3.0) > hookVersion (2.0) and isNewVersion=true → sets status=2 (no throw).
      */
     public function testAssertDspaceVersionThrowsWhenVersionLowerThanPrevious(): void
     {
-        $this->setUpFakeDspaceRepo();
-        try {
-            $this->expectException(Ccsd_Error::class);
-            $docId = 42;
-            $result = ['hookVersion' => 2.0];
-            $paper = $this->mockPaper(3.0, '', self::FAKE_DSPACE_REPOID);
-            $this->invoke('assertDspaceVersion', [&$docId, $paper, $result]);
-        } finally {
-            $this->tearDownFakeDspaceRepo();
-        }
+        $docId = 42;
+        $result = ['hookVersion' => 2.0];
+        $paper = $this->mockPaper(3.0);
+        $this->invoke('assertVersion', [&$docId, $paper, &$result, true]);
+        self::assertSame(42, $docId);
+        self::assertSame(2, $result['status']);
     }
 
     // =========================================================================

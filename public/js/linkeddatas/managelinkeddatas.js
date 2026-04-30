@@ -1,8 +1,13 @@
 $(function () {
     let flagError = 0;
 
+    if (window.location.hash === '#manage-linked-data') {
+        $('#container-manager-linkeddatas').collapse('show');
+    }
+
     function callAddForm(typeld, option = []) {
         removeFormLd();
+        $('#container-manager-linkeddatas').collapse('show');
 
         $.ajax({
             type: 'POST',
@@ -128,15 +133,8 @@ $(function () {
                     ldId: ldId,
                     relationship: newRelationship,
                 },
-                beforeSend: function () {
-                    window.scroll({
-                        top: 0,
-                        left: 0,
-                        behavior: 'smooth',
-                    });
-                },
             }).success(function () {
-                window.location.hash = '';
+                window.location.hash = 'manage-linked-data';
                 window.location.reload();
             });
         });
@@ -217,15 +215,8 @@ $(function () {
                     paperId: paperId,
                     relationship: relationship,
                 },
-                beforeSend: function () {
-                    window.scroll({
-                        top: 0,
-                        left: 0,
-                        behavior: 'smooth',
-                    });
-                },
-            }).success(function (response) {
-                window.location.hash = '';
+            }).success(function () {
+                window.location.hash = 'manage-linked-data';
                 window.location.reload();
             });
         });
@@ -237,7 +228,7 @@ $(function () {
         }
     }
 
-    $('a#edit-ld').on('click', function () {
+    $('a.edit-ld').on('click', function () {
         const option = {};
         option.relationship = $(this).data('relationship');
         option.valueLd = $(this).data('ldval');

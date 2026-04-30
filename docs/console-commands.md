@@ -21,6 +21,7 @@ php scripts/console.php <command> --help
 | [`app:generate-users`](#appgenerate-users) | Generate random test users |
 | [`app:init-dev-users`](#appinit-dev-users) | Seed the dev journal with 30 predefined users |
 | [`app:create-bot-user`](#appcreate-bot-user) | Create the `episciences-bot` service account |
+| [`enrichment:extract-biblio-refs`](#enrichmentextract-biblio-refs) | Pre-extract bibliographic references via the Biblioref API (designed for cron) |
 | [`enrichment:citations`](#enrichmentcitations) | Enrich citation metadata from OpenCitations, OpenAlex, and Crossref |
 | [`enrichment:creators`](#enrichmentcreators) | Enrich author ORCID data from OpenAIRE Research Graph and HAL |
 | [`enrichment:licences`](#enrichmentlicences) | Enrich licence data from repository APIs |
@@ -35,6 +36,8 @@ php scripts/console.php <command> --help
 | [`zbjats:zip`](#zbjatszip) | Package PDF + zbJATS XML into a ZIP archive per volume |
 | [`import:sections`](#importsections) | Import journal sections from a CSV file |
 | [`import:volumes`](#importvolumes) | Import journal volumes from a CSV file |
+| [`import:ref-pps`](#importref-pps) | Import PPS data from a CSV file into Solr |
+| [`download:ref-pps`](#downloadref-pps) | Download the PPS CSV file from IRIT |
 | [`stats:import-logs`](#statsimport-logs) | Parse Apache access logs and insert article visits into `STAT_TEMP` |
 | [`stats:download-kpi`](#statsdownload-kpi) | Aggregate download KPIs for all published articles and write a JSON file |
 | [`stats:update-robots-list`](#statsupdate-robots-list) | Download the COUNTER Robots list for bot detection |
@@ -85,6 +88,53 @@ php scripts/console.php app:create-bot-user
 ## Enrichment
 
 All enrichment commands accept `--dry-run` (preview changes without writing to the database) and most accept `--rvcode` to restrict processing to a single journal.
+
+### `enrichment:extract-biblio-refs`
+
+Pre-extracts bibliographic references for papers by calling the Biblioref `GET /api/extract` endpoint. The API runs GROBID on the paper's PDF and caches the result server-side; already-processed papers return immediately. Skips execution entirely when `EPISCIENCES_BIBLIOREF['ENABLE']` is false.
+
+Designed to run as a cron job so that references are ready before users request them.
+
+**Prerequisites:** configure `EPISCIENCES_BIBLIOREF` in `config/pwd.json`:
+
+```json
+"EPISCIENCES": {
+  "BIBLIOREF": {
+    "URL": "https://citations.episciences.org",
+    "ENABLE": true,
+    "SSL_VERIFY": true,
+    "TOKEN": "your-bearer-token"
+  }
+}
+```
+
+```bash
+php scripts/console.php enrichment:extract-biblio-refs [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--docid <id>` | Process only this DOCID (any status) |
+| `--rvcode <code>` | Restrict processing to one journal |
+| `--dry-run` | Log what would be sent without calling the API |
+| `--published` | Also include `STATUS_PUBLISHED` papers (default: `STATUS_SUBMITTED` only) |
+| `--accepted` | Also include `STATUS_ACCEPTED` papers (default: `STATUS_SUBMITTED` only) |
+| `--api-url <url>` | Override `EPISCIENCES_BIBLIOREF[URL]` at runtime (e.g. Docker-internal address) |
+
+By default the command targets papers with `STATUS_SUBMITTED`. Use `--published` and/or `--accepted` to broaden the scope. When `--docid` is given, no status filter is applied.
+
+Each API call has a 360-second timeout (GROBID extraction can take several minutes). The command returns exit code 1 if any calls fail, so cron alerts fire on partial failures.
+
+> **Docker note:** if the script runs inside a Docker container that cannot resolve the public hostname configured in `pwd.json`, use `--api-url` to point to the Docker-internal service address:
+> ```bash
+> php scripts/console.php enrichment:extract-biblio-refs \
+>   --api-url=http://citations-php-fpm \
+>   --published
+> ```
+
+Recommended cron schedule: daily (e.g. every night at 00:30).
+
+---
 
 ### `enrichment:citations`
 
@@ -321,6 +371,34 @@ php scripts/console.php import:volumes [options]
 | `--rvid <id>` | Journal RVID (integer) |
 | `--csv-file <path>` | Path to the CSV file containing volumes data |
 | `--dry-run` | Simulate the import without writing to the database |
+
+---
+
+### `import:ref-pps`
+
+Imports PPS data from a CSV file into the `ref_pps` Solr core.
+
+```bash
+php scripts/console.php import:ref-pps [csv-file]
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `csv-file` | `data/ref_pps/pps-current.csv` | Path to the CSV file to import |
+
+---
+
+### `download:ref-pps`
+
+Downloads the PPS CSV file from IRIT. Includes a 48h limit check and keeps timestamped backups of previous versions.
+
+```bash
+php scripts/console.php download:ref-pps [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--force` / `-f` | Force download even if the 48h limit is not reached |
 
 ---
 

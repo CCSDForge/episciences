@@ -2587,11 +2587,17 @@ class Episciences_Paper
     }
 
     /**
-     * check if paper already exists in database
-     * @param bool $strict
-     * @return int
+     * Return the DOCID of an existing non-deleted paper that matches this
+     * paper's identifier (or concept identifier) and optional version/journal,
+     * or 0 when no match is found.
+     *
+     * When $strict is true the search is scoped to the current journal (RVID).
+     * When several versions exist the most recent one is returned.
+     *
+     * @param bool $strict Restrict the lookup to the current journal.
+     * @return int DOCID of the matching paper, or 0 if none exists.
      */
-    public function alreadyExists(bool $strict = true): int
+    public function findExistingDocId(bool $strict = true): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -2616,6 +2622,18 @@ class Episciences_Paper
         $sql->order('WHEN DESC');
 
         return (int)($db->fetchOne($sql));
+    }
+
+    /**
+     * Return true when a non-deleted paper matching this paper's identifier
+     * (or concept identifier) already exists in the database.
+     *
+     * @param bool $strict Restrict the lookup to the current journal (RVID).
+     * @return bool
+     */
+    public function alreadyExists(bool $strict = true): bool
+    {
+        return $this->findExistingDocId($strict) !== 0;
     }
 
     /**
@@ -4562,9 +4580,12 @@ class Episciences_Paper
     {
         $year = date($yearFormat);
         if ($this->isPublished()) {
-            $date = DateTime::createFromFormat("Y-m-d H:i:s", $this->getPublication_date());
-            if ($date !== false) {
-                $year = $date->format($yearFormat);
+            $pubDate = $this->getPublication_date();
+            if ($pubDate !== null) {
+                $date = DateTime::createFromFormat("Y-m-d H:i:s", $pubDate);
+                if ($date !== false) {
+                    $year = $date->format($yearFormat);
+                }
             }
         }
         return $year;
@@ -4577,9 +4598,12 @@ class Episciences_Paper
     {
         $month = date('m');
         if ($this->isPublished()) {
-            $date = DateTime::createFromFormat("Y-m-d H:i:s", $this->getPublication_date());
-            if ($date !== false) {
-                $month = $date->format('m');
+            $pubDate = $this->getPublication_date();
+            if ($pubDate !== null) {
+                $date = DateTime::createFromFormat("Y-m-d H:i:s", $pubDate);
+                if ($date !== false) {
+                    $month = $date->format('m');
+                }
             }
         }
         return $month;
@@ -5514,8 +5538,15 @@ class Episciences_Paper
 
         $linkedData = $this->getLinkedDataByRelation();
 
-        if ($linkedData && strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEL) {
-            return Episciences_Repositories::getPaperUrl(Episciences_Repositories::HAL_REPO_ID, $linkedData->getValue());
+        if (
+            $linkedData &&
+            strtoupper($linkedData->getName()) === Episciences_Repositories::HAL_LABEL) {
+            $ldVal =$linkedData->getValue();
+            $pattern = '#v(\d+)#i';
+            preg_match($pattern, $ldVal, $matches);
+            $version = (float)($matches[1] ?? 1);
+            $identifierWithoutVersion = preg_replace($pattern, '', $ldVal);
+            return Episciences_Repositories::getPaperUrl(Episciences_Repositories::HAL_REPO_ID, $identifierWithoutVersion, $version);
         }
 
         return null;
