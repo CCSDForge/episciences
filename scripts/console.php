@@ -73,6 +73,9 @@ $application->add(new ImportApacheLogsCommand());
 $application->add(new ProcessStatTempCommand());
 $application->add(new GenerateDownloadKpiCommand());
 
+// DOI commands
+$application->add(new GetDoiCommand());
+
 // GeoIP commands
 $application->add(new UpdateGeoIpCommand());
 
