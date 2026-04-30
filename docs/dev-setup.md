@@ -119,6 +119,8 @@ docker compose exec -u www-data php php scripts/console.php enrichment:creators 
 | **zbjats** | `zbjats:zip` | Package PDF + zbJATS XML files into a ZIP archive |
 | **import** | `import:sections` | Import journal sections from a CSV file |
 | | `import:volumes` | Import journal volumes from a CSV file |
+| | `import:ref-pps` | Import PPS data from a CSV file into Solr |
+| | `download:ref-pps` | Download the PPS CSV file from IRIT |
 | **stats** | `stats:import-logs` | Parse Apache access logs into `STAT_TEMP` |
 | | `stats:download-kpi` | Aggregate download KPIs and write `data/kpi_downloads.json` |
 | | `stats:update-robots-list` | Download the COUNTER Robots list for bot detection |

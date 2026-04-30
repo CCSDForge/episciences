@@ -101,7 +101,7 @@ final class Episciences_Paper_ProjectsManagerTest extends TestCase {
      * Open Aire sample ANR funding (same thing for European)
      * @return array
      */
-    public function sampleOaProjects(): array {
+    public static function sampleOaProjects(): array {
         return [[json_decode('{
   "0": {
     "@inferred": true,
@@ -321,7 +321,7 @@ final class Episciences_Paper_ProjectsManagerTest extends TestCase {
      * Hal sample European Funding (same thing for ANR)
      * @return array
      */
-    public function sampleHalEuProjects():array {
+    public static function sampleHalEuProjects():array {
         return [[json_decode('{
     "response": {
         "numFound": 1,
@@ -344,7 +344,7 @@ final class Episciences_Paper_ProjectsManagerTest extends TestCase {
      * Hal sample ANR Funding (same thing for Eu)
      * @return array
      */
-    public function sampleHalAnrProjects():array {
+    public static function sampleHalAnrProjects():array {
         return [[json_decode('{
     "response": {
         "numFound": 1,

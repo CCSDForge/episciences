@@ -36,6 +36,7 @@ return array(
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_DOI] => "article's DOI: DOI_prefix/DOI_format (e.g. 10.46298/jdmdh.9251)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_EDITOR_SCREEN_NAME] => "editor's Screen Name at the origin of the action (add a comment / suggestion)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_EDITOR_FULL_NAME] => "editor's First Name and Last Name at the origin of the action (add a comment / suggestion)",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_COI_EDITOR_FULL_NAME] => "full name of the editor who declared a conflict of interest",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_EXPIRATION_DATE] => "expiration date of invitation",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITATION_DATE] => "date of sending the invitation",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_INVITATION_DEADLINE] => "expiration date of invitation",
@@ -234,6 +235,12 @@ return array(
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUGGEST_REFUSAL][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial committee that an editor suggests the rejection of the article",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_SUGGEST_NEW_VERSION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification informing the editorial board that an editor suggests the request for revision (modifications) of the article",
+
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COI_UNASSIGN_CHIEF_EDITOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification sent to each editor-in-chief when an assigned editor declares a conflict of interest and is automatically unassigned from the article",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COI_UNASSIGN_CHIEF_EDITOR_COPY][Episciences_Mail_TemplatesManager::RECIPIENT] => "each editor-in-chief of the journal",
+
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COI_UNASSIGN_OTHER_EDITORS_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification sent to each remaining assigned editor when another editor declares a conflict of interest and is automatically unassigned",
+    Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_COI_UNASSIGN_OTHER_EDITORS_COPY][Episciences_Mail_TemplatesManager::RECIPIENT] => "each editor still assigned to the article, except the one who declared the conflict of interest",
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_PAPER_ABANDON_PUBLICATION_AUTHOR_COPY][Episciences_Mail_TemplatesManager::DESCRIPTION] => "confirmation of the interruption of the publication process",
 

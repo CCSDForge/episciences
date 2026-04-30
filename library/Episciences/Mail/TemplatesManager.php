@@ -23,6 +23,9 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_EDITOR_UNASSIGN = 'paper_editor_unassign';
     public const TYPE_PAPER_ASK_OTHER_EDITORS = 'paper_ask_other_editors';
 
+    // COI unassignment notifications
+    public const TYPE_PAPER_COI_UNASSIGN_CHIEF_EDITOR_COPY = 'paper_coi_unassign_chief_editor_copy';
+    public const TYPE_PAPER_COI_UNASSIGN_OTHER_EDITORS_COPY = 'paper_coi_unassign_other_editors_copy';
     public const TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY = 'paper_comment_answer_reviewer_copy';
     public const TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY = 'paper_comment_answer_editor_copy';
     public const TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY = 'paper_comment_author_copy';
@@ -138,6 +141,7 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION = 'reminder_reviewed_article_editors_copy';
     public const TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION = 'reminder_submitted_article_editors_copy';
     public const TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY = 'paper_author_comment_editor_copy';
+
 
     /**
      * /!\
@@ -491,6 +495,34 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_URL
     ];
+
+    /** @see CoiController::conflictProcessing() */
+    public const paper_coi_unassign_chief_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_COI_EDITOR_FULL_NAME,
+        Episciences_Mail_Tags::TAG_COI_LAST_EDITOR_MESSAGE,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+    ];
+
+    /** @see CoiController::conflictProcessing() */
+    public const paper_coi_unassign_other_editors_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_COI_EDITOR_FULL_NAME,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+    ];
+
     public const paper_new_version_reviewer_reassign_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
@@ -1570,6 +1602,8 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_UPDATED_RATING_DEADLINE => [self::DESCRIPTION => 'notification informant le relecteur de la nouvelle date limite de relecture', self::RECIPIENT => 'relecteur'],
         self::TYPE_PAPER_EDITOR_ASSIGN => [self::DESCRIPTION => "notification informant le rédacteur qu'il a été assigné à un article", self::RECIPIENT => "rédacteur assigné à l'article"],
         self::TYPE_PAPER_EDITOR_UNASSIGN => [self::DESCRIPTION => 'notification informant le rédacteur que son assignation à un article a été retirée', self::RECIPIENT => "le rédacteur dont l'assignation a été supprimée"],
+        self::TYPE_PAPER_COI_UNASSIGN_CHIEF_EDITOR_COPY => [self::DESCRIPTION => "notification informant chaque rédacteur en chef qu'un éditeur assigné a déclaré un conflit d'intérêts et a été désassigné de l'article", self::RECIPIENT => 'chaque rédacteur en chef de la revue'],
+        self::TYPE_PAPER_COI_UNASSIGN_OTHER_EDITORS_COPY => [self::DESCRIPTION => "notification informant chaque autre éditeur encore assigné à l'article qu'un éditeur a déclaré un conflit d'intérêts et a été désassigné", self::RECIPIENT => "chaque éditeur assigné à l'article, autre que celui ou celle ayant déclaré le conflit"],
         self::TYPE_PAPER_ASK_OTHER_EDITORS => [self::DESCRIPTION => "demande d'avis d'un rédacteur sur l'article", self::RECIPIENT => 'rédacteurs'],
         self::TYPE_PAPER_COMMENT_ANSWER_REVIEWER_COPY => [self::DESCRIPTION => "notification informant le relecteur de la réponse de l'auteur suite à son commentaire", self::RECIPIENT => "relecteur (demandeur)"],
         self::TYPE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR_AUTHOR_COPY => [self::DESCRIPTION => "notification informant l'auteur d'un message de l'éditeur", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
@@ -1978,6 +2012,8 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_PAPER_EDITOR_ASSIGN => self::paper_editor_assign_tags,
             self::TYPE_PAPER_EDITOR_REFUSED_MONITORING => self::paper_editor_refused_monitoring_tags,
             self::TYPE_PAPER_EDITOR_UNASSIGN => self::paper_editor_unassign_tags,
+            self::TYPE_PAPER_COI_UNASSIGN_CHIEF_EDITOR_COPY => self::paper_coi_unassign_chief_editor_copy_tags,
+            self::TYPE_PAPER_COI_UNASSIGN_OTHER_EDITORS_COPY => self::paper_coi_unassign_other_editors_copy_tags,
             self::TYPE_PAPER_MAJOR_REVISION_REQUEST => self::paper_major_revision_request_tags,
             self::TYPE_PAPER_MINOR_REVISION_REQUEST => self::paper_minor_revision_request_tags,
             self::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION => self::paper_new_version_reviewer_re_invitation,

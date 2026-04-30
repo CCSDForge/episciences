@@ -381,7 +381,10 @@ class ImportApacheLogsCommand extends Command
 
     private function extractIP(string $line): string
     {
-        if (preg_match('/^(\d{1,3}(?:\.\d{1,3}){3})/', $line, $m)) {
+        // Logs may have a syslog prefix before the Apache combined-log fields:
+        //   Dec 15 12:36:46 hostname httpd: example.org 1.2.3.4 - - [...]
+        // Match the client IP by its position just before the "- -" ident/auth tokens.
+        if (preg_match('/(\d{1,3}(?:\.\d{1,3}){3}) - -/', $line, $m)) {
             return $m[1];
         }
         return '';
