@@ -51,6 +51,8 @@ class BiblioRefParser {
      * Human-readable labels for PPS Solr status values.
      * Each entry: { label: string, color: string, desc: string }
      * color maps to Bootstrap 3 label variant (label-{color}).
+     * Note: `desc` is intentionally kept in English — it is used as a tooltip and is too long to be a translation key.
+     * Only `label` is passed through translate() at render time.
      */
     static STATUS_LABELS = {
         'Problematic': {
@@ -69,6 +71,8 @@ class BiblioRefParser {
      * Human-readable labels and descriptions for PPS Solr detectors.
      * Each entry: { label: string, color: string, desc: string }
      * color maps to Bootstrap 3 label variant (label-{color}).
+     * Note: `desc` is intentionally kept in English — it is used as a tooltip and is too long to be a translation key.
+     * Only `label` is passed through translate() at render time.
      */
     static DETECTOR_LABELS = {
         'annulled':               { label: "Retracted",                   color: "info", desc: "Article officially retracted or subject to an editorial notice of concern." },
@@ -292,7 +296,7 @@ class BiblioRefRenderer {
             link.rel = 'noopener noreferrer';
             link.target = '_blank';
             link.className = 'biblio-ref-pubpeer-link';
-            link.setAttribute('aria-label', 'View on PubPeer');
+            link.setAttribute('aria-label', typeof translate === 'function' ? translate('View on PubPeer') : 'View on PubPeer');
             link.title = typeof translate === 'function' ? translate('More information') : 'More information';
             link.appendChild(this._makeIcon('fa-solid fa-circle-info'));
             fragment.appendChild(document.createTextNode(' '));

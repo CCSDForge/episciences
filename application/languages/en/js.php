@@ -265,7 +265,7 @@ return [
     "Voir plus" => "Show more",
     "Voir moins" => "Show less",
     'Demander un DOI'=> 'Request a DOI',
-    'Annuler le DOI'=> 'Cancel theDOI',
+    'Annuler le DOI'=> 'Cancel the DOI',
     'not-assigned' => 'Not assigned',
     'orcid-duplicate' => 'Each ORCID must be unique.',
 
@@ -286,4 +286,5 @@ return [
     'Problematic'                  => 'Problematic',
     'Genuine'                      => 'Genuine',
     'More information'             => 'More information',
+    'View on PubPeer'              => 'View on PubPeer',
 ];

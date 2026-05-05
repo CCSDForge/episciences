@@ -224,8 +224,10 @@ class ImportRefPpsCommand extends Command
         $doi   = trim((string) ($data[$columnMap['doi']] ?? ''));
         $title = trim((string) ($data[$columnMap['title']] ?? ''));
 
+        $isBlank = static fn(string $v): bool => $v === '' || $v === '-';
+
         // We need at least a DOI or a Title to have a meaningful document
-        if (($doi === '' || $doi === '-') && ($title === '' || $title === '-')) {
+        if ($isBlank($doi) && $isBlank($title)) {
             return null;
         }
 
@@ -233,7 +235,7 @@ class ImportRefPpsCommand extends Command
         // If DOI is present, use it as the seed for stability even if other fields change
         // If DOI is absent, use the serialized row content as a fallback
         $namespace = \Ramsey\Uuid\Uuid::NAMESPACE_DNS;
-        if ($doi !== '' && $doi !== '-') {
+        if (!$isBlank($doi)) {
             $id = \Ramsey\Uuid\Uuid::uuid5($namespace, 'doi:' . strtolower($doi))->toString();
         } else {
             $id = \Ramsey\Uuid\Uuid::uuid5($namespace, 'row:' . serialize($data))->toString();
@@ -243,14 +245,14 @@ class ImportRefPpsCommand extends Command
             'id' => $id,
         ];
 
-        if ($doi !== '' && $doi !== '-') {
+        if (!$isBlank($doi)) {
             $doc['doi'] = $doi;
         }
 
         // Non-multi fields
         foreach (['title', 'pubpeerurl', 'status'] as $field) {
             $val = trim((string) ($data[$columnMap[$field]] ?? ''));
-            if ($val !== '' && $val !== '-') {
+            if (!$isBlank($val)) {
                 $doc[$field] = $val;
             }
         }

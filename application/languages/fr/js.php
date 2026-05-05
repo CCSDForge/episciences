@@ -55,4 +55,5 @@ return [
     'Problematic'                  => 'Problématique',
     'Genuine'                      => 'Authentique',
     'More information'             => "Plus d'information",
+    'View on PubPeer'              => 'Voir sur PubPeer',
 ];
