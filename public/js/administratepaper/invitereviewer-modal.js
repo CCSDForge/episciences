@@ -85,6 +85,7 @@ $(document).ready(function () {
                     full_name: user.full_name,
                     user_name: user.user_name || '',
                     label: user.label || user.full_name,
+                    locale: user.locale,
                 },
                 2
             );
