@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 ### Performances
 -->
-
+### Changed
+- Sending the invitation in the user’s language, including when using the autocomplete input field for CAS users who already have a profile on the site.
 ## v1.0.54.3 - 2026-04-23
 
 ### Fixed
