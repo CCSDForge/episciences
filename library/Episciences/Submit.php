@@ -1475,16 +1475,18 @@ class Episciences_Submit
         $result = ['code' => 1, 'message' => '', 'docId' => (int)$paper->getDocid()];
 
         $this->initializePaperAfterSave($paper, Ccsd_Tools::ifsetor($data['can_replace'], false));
-        $this->logPaperAction($paper, $data);
-        $this->cleanupOldData($paper, $data);
-        $this->processRepositoryHooks($paper, $enrichment);
-        $this->handlePostSaveProcessing($paper, $enrichment);
-
         $this->processCoverLetterAndDataDescriptor($paper, $data);
         $this->saveAllAuthorSuggestions($data, $result);
 
         $recipients = $this->handleNotifications($paper, $data);
         $this->sendNotifications($paper, $recipients, $data);
+        $this->logPaperAction($paper, $data);
+
+        // Enrichments
+        $this->cleanupOldData($paper, $data);
+        $this->processRepositoryHooks($paper, $enrichment);
+        $this->handlePostSaveProcessing($paper, $enrichment);
+
 
         $result['message'] = '<strong>' . $this->translate('Votre article a bien été enregistré.') . '</strong>';
         return $result;
