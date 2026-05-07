@@ -50,12 +50,11 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
             $tmpData = [];
 
             $explodedChecksum = explode(':', $file['checksum']);
-            $explodedFileName = explode('.', $file['key']);
 
             $tmpData['doc_id'] = $hookParams['docId'];
             $tmpData['source'] = $hookParams['repoId'];
             $tmpData['file_name'] = $file['key'];
-            $tmpData['file_type'] = $explodedFileName[array_key_last($explodedFileName)] ?? 'undefined';
+            $tmpData['file_type'] = pathinfo($file['key'], PATHINFO_EXTENSION);
             $tmpData['file_size'] = $file['size'];
             $tmpData['checksum'] = $explodedChecksum[array_key_last($explodedChecksum)] ?? null;
             $tmpData['checksum_type'] = $explodedChecksum[array_key_first($explodedChecksum)] ?? null;

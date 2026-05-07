@@ -17,10 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 ### Changed
 - Sending the invitation in the user’s language, including when using the autocomplete input field for CAS users who already have a profile on the site.
+### Fixed
+- Submission of a dataset without a data descriptor due to an error while uploading attached files (one of the file types exceeded the maximum allowed size for that field type)
 ## v1.0.54.3 - 2026-04-23
 
 ### Fixed
-
+- 
 - The link to the new version of the data descriptor isn't working; it still points to the first version.
 - [RT#285106]: Application error when submitting with 'display secondary volume' option enabled
 - Always SELECT RECORD so Paper::getMetadata() / toJson() can resolve titles and abstracts
