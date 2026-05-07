@@ -15,18 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 ### Performances
 -->
-
 ## Unreleased
+### Added
+### Added
+- [#630](https://github.com/CCSDForge/episciences/issues/630) COI (Conflict of Interest) notifications:
+    - Email notification to the editor-in-chief when an editor declares a positive COI (answered "yes")
+    - Email notification to other assigned editors (if any) when an editor declares a COI
 ### Changed
 - Sending the invitation in the user’s language, including when using the autocomplete input field for CAS users who already have a profile on the site.
-
 ### Fixed
 - Panel not opening when updating linked data
-
+- Submission of a dataset without a data descriptor due to an error while uploading attached files (one of the file types exceeded the maximum allowed size for that field type)
 ## v1.0.54.3 - 2026-04-23
 
 ### Fixed
-
+- 
 - The link to the new version of the data descriptor isn't working; it still points to the first version.
 - [RT#285106]: Application error when submitting with 'display secondary volume' option enabled
 - Always SELECT RECORD so Paper::getMetadata() / toJson() can resolve titles and abstracts
@@ -43,11 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - docs: add documentation index to README and update docs
 - stats:import-logs command to parse Apache logs into STAT_TEMP. Introduces ImportApacheLogsCommand (stats:import-logs), a Symfony Console command that parses Apache access logs and inserts article visits into STAT_TEMP. Replaces the legacy UpdateStatistics.php . Run src/mysql/2025-08-24-stat-processing-log-table.sql before deploying
 
-### Added
-* [#630](https://github.com/CCSDForge/episciences/issues/630) COI (Conflict of Interest) notifications:
-  - Email notification to the editor-in-chief when an editor declares a positive COI (answered "yes")
-  - Email notification to other assigned editors (if any) when an editor declares a COI
-
 ## v1.0.54.1 - 2026-04-14
 
 ### Changed
@@ -55,9 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored English email templates, grammar only, no new features, no new tags
 
 ### Fixed
-
 - [#962](https://github.com/CCSDForge/episciences/issues/962) Fixed double HTML encoding bug in volume metadata titles where special
-  characters like `<`, `>`, and `'` were displayed as `&lt;`, `&gt;`, `&#039;`
+    characters like `<`, `>`, and `'` were displayed as `&lt;`, `&gt;`, `&#039;`
 - TypeError in enrichment:creators on non-sequential affiliation keys
 - isImported detection for published papers when the the publication date has been fixed after publication
 - [#985](https://github.com/CCSDForge/episciences/issues/985) Impossible to submit a final version
