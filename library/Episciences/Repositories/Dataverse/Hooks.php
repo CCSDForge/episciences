@@ -18,7 +18,7 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
     public static function hookFilesProcessing(array $hookParams): array
     {
 
-        $files = $hookParams['files'];
+        $files = $hookParams['files'] ?? [];
         $docId = $hookParams['docId'];
         $repoId = $hookParams['repoId'];
 
