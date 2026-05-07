@@ -452,10 +452,9 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
             $dataFile = $val['dataFile'];
 
             $fileName = $dataFile['filename'] ?? $dataFile['label'];
-            $explodedFileName = explode('.', $fileName);
 
             $tmp['file_name'] = $fileName;
-            $tmp['file_type'] = $explodedFileName[array_key_last($explodedFileName)] ?? 'undefined';
+            $tmp['file_type'] = pathinfo($fileName, PATHINFO_EXTENSION);
             $tmp['file_size'] = $dataFile['filesize'];
             $tmp['checksum'] = $dataFile['checksum']['value'];
             $tmp['checksum_type'] = $dataFile['checksum']['type'];
