@@ -4,6 +4,7 @@ namespace unit\library\Ccsd\Form\Validate;
 
 use Ccsd_Form_Validate_BeginsWith;
 use Ccsd_Form_Validate_NotBeginsWith;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -11,6 +12,7 @@ use PHPUnit\Framework\TestCase;
  *
  * Exercises all three adapters: String, Array, Multi.
  */
+#[IgnoreDeprecations]
 class Ccsd_Form_Validate_BeginsWithTest extends TestCase
 {
     // ------------------------------------------------------------------

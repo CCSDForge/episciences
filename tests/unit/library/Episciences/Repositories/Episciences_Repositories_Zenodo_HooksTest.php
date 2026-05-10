@@ -283,4 +283,53 @@ final class Episciences_Repositories_Zenodo_HooksTest extends TestCase
             'Bug Z2 not fixed: safeDateFormat() call not found in source'
         );
     }
+
+    // =========================================================================
+    // hookFilesProcessing() — file_type via pathinfo() regression
+    // =========================================================================
+
+    /**
+     * Verify that the old explode('.', $file['key']) pattern has been replaced
+     * by pathinfo($file['key'], PATHINFO_EXTENSION).
+     *
+     * The old approach returned the wrong result for files without extensions
+     * (full filename instead of ''). pathinfo() is the canonical fix.
+     */
+    public function testFileTypeExtractedWithPathinfo(): void
+    {
+        $source = file_get_contents(
+            (new \ReflectionClass(Episciences_Repositories_Zenodo_Hooks::class))->getFileName()
+        );
+
+        self::assertStringContainsString(
+            "pathinfo(\$file['key'], PATHINFO_EXTENSION)",
+            $source,
+            "hookFilesProcessing() must use pathinfo() for file_type extraction."
+        );
+
+        self::assertStringNotContainsString(
+            "explode('.', \$file['key'])",
+            $source,
+            "Old explode() file_type extraction must have been removed."
+        );
+    }
+
+    /**
+     * pathinfo() returns only the last segment after the last dot.
+     * For 'archive.tar.gz' it returns 'gz', not 'tar' or 'tar.gz'.
+     * This mirrors the behaviour expected in hookFilesProcessing().
+     */
+    public function testPathinfoReturnsLastExtensionForMultiDot(): void
+    {
+        self::assertSame('gz', pathinfo('archive.tar.gz', PATHINFO_EXTENSION));
+    }
+
+    /**
+     * pathinfo() returns '' for a filename with no extension.
+     * The old explode() approach returned the full filename — pathinfo() fixes that.
+     */
+    public function testPathinfoReturnsEmptyStringForNoExtension(): void
+    {
+        self::assertSame('', pathinfo('README', PATHINFO_EXTENSION));
+    }
 }

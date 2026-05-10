@@ -3,6 +3,7 @@
 namespace unit\library\Ccsd\Auth\Asso;
 
 use Ccsd_Auth_Asso_Ext;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -12,6 +13,7 @@ use ReflectionMethod;
  * DB-dependent methods (save, load) are not tested here.
  * All constructor/getter/setter logic is pure.
  */
+#[IgnoreDeprecations]
 class Ccsd_Auth_Asso_ExtTest extends TestCase
 {
     private Ccsd_Auth_Asso_Ext $ext;
