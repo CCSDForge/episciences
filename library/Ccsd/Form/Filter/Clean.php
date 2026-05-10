@@ -9,6 +9,17 @@ class Ccsd_Form_Filter_Clean implements Zend_Filter_Interface
 	 * @throws Zend_Filter_Exception If filtering $value is impossible
 	 * @return mixed
 	 */
+    public function __construct()
+    {
+        trigger_error(
+            '[DEAD CODE AUDIT 2026-05-08] ' . __CLASS__ . ' is scheduled for removal.'
+            . ' Do NOT use this class in new code. If this message appears in production logs,'
+            . ' report it to the development team immediately.',
+            E_USER_DEPRECATED
+        );
+
+    }
+
 	public function filter($value)
 	{
 		if (is_string ($value))
