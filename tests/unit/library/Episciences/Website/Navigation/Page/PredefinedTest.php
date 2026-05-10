@@ -249,15 +249,15 @@ class PredefinedTest extends TestCase
         }
     }
 
-    public function testGetAllPermaliens_ReturnsExactly17PredefinedPages(): void
+    public function testGetAllPermaliens_ReturnsExactly19PredefinedPages(): void
     {
         $result = Episciences_Website_Navigation_Page_Predefined::getAllPermaliens();
 
-        // Based on current codebase, there should be exactly 18 predefined pages
+        // Based on current codebase, there should be exactly 19 predefined pages
         $this->assertCount(
-            18,
+            19,
             $result,
-            'Expected exactly 18 predefined pages'
+            'Expected exactly 19 predefined pages'
         );
     }
 
