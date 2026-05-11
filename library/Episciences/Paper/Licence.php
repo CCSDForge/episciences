@@ -25,9 +25,11 @@ class Episciences_Paper_Licence
     protected int $_sourceId;
 
     /**
-     * @var datetime
+     * @var datetime|null
      */
-    protected $_updatedAt = 'CURRENT_TIMESTAMP';
+    protected ?datetime $_updatedAt = null;
+
+    protected $_uid;
 
     /**
      * Episciences_Paper_Licence constructor.
@@ -65,9 +67,10 @@ class Episciences_Paper_Licence
         return [
             'id' => $this->getId(),
             'licence'=> $this->getLicence(),
-            'docId' => $this->getDocId(),
+            'docId' => $this->getDocid(),
             'sourceId' => $this->getSourceId(),
             'updatedAt' => $this->getUpdatedAt(),
+            'udi' => $this->getUid()
         ];
     }
 
@@ -90,9 +93,9 @@ class Episciences_Paper_Licence
     }
 
     /**
-     * @return int
+     * @return int|null
      */
-    public function getDocId(): ?int
+    public function getDocid(): ?int
     {
         return $this->_docId;
     }
@@ -100,7 +103,7 @@ class Episciences_Paper_Licence
     /**
      * @param int $docId
      */
-    public function setDocId(int $docId): void
+    public function setDocid(int $docId): void
     {
         $this->_docId = $docId;
     }
@@ -123,28 +126,29 @@ class Episciences_Paper_Licence
         return $this;
     }
 
-
     /**
      * @return DateTime
      */
+
     public function getUpdatedAt(): DateTime
     {
-        return $this->_updatedAt;
+        return $this->_updatedAt ?? new DateTime();
     }
 
     /**
-     * @param string $updatedAt
-     * @return Episciences_Paper_Licence
+     * @param string|null $updatedAt
+     * @return $this
      * @throws Exception
      */
-    public function setUpdatedAt(string $updatedAt): self
+
+    public function setUpdatedAt(?string $updatedAt = null): self
     {
-        $this->_updatedAt = new DateTime($updatedAt);
+        $this->_updatedAt = !$updatedAt ? new DateTime() : new DateTime($updatedAt);
         return $this;
     }
 
     /**
-     * @return string
+     * @return string|null
      */
 
     public function getLicence(): ?string
@@ -162,6 +166,25 @@ class Episciences_Paper_Licence
         return $this;
     }
 
+    /**
+     * @return int|null
+     */
+    public function getUid() : ?int
+    {
+        return $this->_uid;
+    }
 
+    /**
+     * @param mixed $uid
+     */
+    public function setUid(int $uid = null): self
+    {
+        $this->_uid = $uid;
+        return $this;
+    }
 
+    public function save(): int
+    {
+        return Episciences_Paper_LicenceManager::insert($this);
+    }
 }

@@ -14,10 +14,10 @@ function getTags() {
     }
 
     let tags = [
-        { text: translate('Code de la revue'), value: review['code'] },
-        { text: translate('Nom de la revue'), value: review['name'] },
-        { text: translate("Id de l'article"), value: paper.id.toString() },
-        { text: translate("Titre de l'article"), value: paper_title },
+        {text: translate('Code de la revue'), value: review['code']},
+        {text: translate('Nom de la revue'), value: review['name']},
+        {text: translate("Id de l'article"), value: paper.id.toString()},
+        {text: translate("Titre de l'article"), value: paper_title},
     ];
 
     if (paper_ratings) {
@@ -681,7 +681,7 @@ function getCommunForm(
     $(button).popover(popoverParams).popover('show');
 
     // Récupération du formulaire
-    return ajaxRequest(url, { docid: docId });
+    return ajaxRequest(url, {docid: docId});
 }
 
 /**
@@ -690,53 +690,15 @@ function getCommunForm(
  * @param docId
  */
 function getPublicationDateForm(button, docId) {
-    let request = getCommunForm(
+
+    getEditingPopover(
         button,
         docId,
-        '/administratepaper/publicationdateform'
+        '/administratepaper/publicationdateform',
+        '/administratepaper/savepublicationdate',
+        'publication-date'
     );
 
-    let popoverParams = {
-        placement: 'bottom',
-        container: 'body',
-        html: true,
-        content: getLoader(),
-    };
-
-    request.done(function (result) {
-        // Destruction du popup de chargement
-        $(button).popover('destroy');
-        openedPopover = null;
-        // Affichage du formulaire dans le popover
-        popoverParams.content = result;
-        $(button).popover(popoverParams).popover('show');
-
-        $('form[action^="/administratepaper/savepublicationdate"]').on(
-            'submit',
-            function () {
-                let $publicationDate = $('#publication-date');
-                // Traitement AJAX du formulaire
-                let sRequest = ajaxRequest(
-                    '/administratepaper/savepublicationdate',
-                    $(this).serialize() + '&docid=' + docId,
-                    'POST',
-                    'json'
-                );
-                sRequest.done(function (response) {
-                    // Destruction du popup
-                    $(button).popover('destroy');
-
-                    if (response) {
-                        $publicationDate.html(response);
-                        refreshPaperHistory(docId);
-                    } else {
-                        alert(translate('Veuillez indiquer une date valide'));
-                    }
-                });
-                return false;
-            }
-        );
-    });
 }
 
 /** DOI regex pattern — must match the pattern used in savedoiAction PHP. */
@@ -752,7 +714,7 @@ const DOI_PATTERN = /^10\.\d{4,9}\/[-._;()/:A-Z0-9]+$/i;
  */
 function validateDoiInput(value) {
     if (!value) {
-        return { valid: false, error: 'DOI cannot be empty.' };
+        return {valid: false, error: 'DOI cannot be empty.'};
     }
     if (!DOI_PATTERN.test(value)) {
         return {
@@ -760,7 +722,7 @@ function validateDoiInput(value) {
             error: 'Invalid DOI format. Expected: 10.XXXX/suffix',
         };
     }
-    return { valid: true, error: '' };
+    return {valid: true, error: ''};
 }
 
 /**
@@ -988,8 +950,8 @@ function reinviteReviewer(docid, uid) {
     let $formId = $('#invitereviewer_form_' + docid);
     $formId.append(
         '<input id = "reinvite_uid" type="hidden" name="reinvite_uid" value="' +
-            uid +
-            '">'
+        uid +
+        '">'
     );
     $formId.submit();
 }
@@ -1124,9 +1086,9 @@ function getVersionEditingForm(button, docId) {
                 sRequest.fail(function () {
                     alert(
                         '<span class="fas fa-exclamation-triangle fa-lg" style="margin-right: 5px"></span>' +
-                            translate(
-                                "Une erreur interne s'est produite, veuillez recommencer."
-                            )
+                        translate(
+                            "Une erreur interne s'est produite, veuillez recommencer."
+                        )
                     );
                 });
             });
@@ -1331,10 +1293,10 @@ function getRevisionDeadlineForm(button, docId, commentId = null) {
                 let sRequest = ajaxRequest(
                     '/administratepaper/updaterevisiondeadline',
                     $(this).serialize() +
-                        '&docid=' +
-                        docId +
-                        '&pcid=' +
-                        commentId,
+                    '&docid=' +
+                    docId +
+                    '&pcid=' +
+                    commentId,
                     'POST',
                     'json'
                 );
@@ -1366,7 +1328,104 @@ function valide($target) {
     }
 }
 
+function getlicencesForm(button, docId) {
+
+    getEditingPopover(
+        button,
+        docId,
+        '/administratepaper/getlicenselistform',
+        '/administratepaper/savespdxlicense',
+        'paper-license-link'
+    );
+
+}
+
+/**
+ *
+ * @param button
+ * @param docId
+ * @param preAction
+ * @param postAction
+ * @param targetToRefreshId
+ * @param forceHistoryRefresh
+ */
+function getEditingPopover(button, docId, preAction, postAction, targetToRefreshId, forceHistoryRefresh = true) {
+    let request = getCommunForm(
+        button,
+        docId,
+        preAction
+    );
+
+    let popoverParams = {
+        placement: 'bottom',
+        container: 'body',
+        html: true,
+        content: getLoader(),
+    };
+
+    request.done(function (result) {
+        // Destruction du popup de chargement
+        $(button).popover('destroy');
+        openedPopover = null;
+        // Affichage du formulaire dans le popover
+        popoverParams.content = result;
+        $(button).popover(popoverParams).popover('show');
+
+        $('form[action^="' + postAction + '"]').on(
+            'submit',
+            function () {
+                let $target = $('#' + targetToRefreshId);
+                // Traitement AJAX du formulaire
+                let sRequest = ajaxRequest(
+                    postAction,
+                    $(this).serialize() + '&docid=' + docId,
+                    'POST',
+                    'json'
+                );
+                sRequest.done(function (response) {
+                    // Destruction du popup
+                    $(button).popover('destroy');
+
+                    if (response) {
+
+                        console.log(response);
+
+
+                        if (targetToRefreshId === 'paper-license-link' && response !== '') {
+
+                            response = JSON.parse(response);
+
+                            console.log(response.name);
+                            console.log(response.href);
+                            $target
+                                .text(response.name)
+                                .attr("href", response.href);
+
+                        } else {
+                            $target.html(response);
+                        }
+
+                        if (forceHistoryRefresh) {
+                            refreshPaperHistory(docId);
+                        }
+
+                    } else {
+
+                        if (targetToRefreshId === 'publication-date') {
+                            alert(translate('Veuillez indiquer une date valide'));
+                        }
+
+                    }
+                });
+                return false;
+            }
+        );
+    });
+
+}
+
+
 // Expose pure helpers for unit testing only.
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { validateDoiInput, updateDoiDisplay, DOI_PATTERN };
+    module.exports = {validateDoiInput, updateDoiDisplay, DOI_PATTERN};
 }

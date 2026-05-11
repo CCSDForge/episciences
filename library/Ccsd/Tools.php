@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Paper\Spdx\LicenseCode;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -606,11 +607,14 @@ class Ccsd_Tools
 
     /**
      * @param string $str
-     * @param string $lang
+     * @param string|null $lang
      * @return string
      */
-    public static function translate($str, $lang = null)
+    public static function translate(string $str, string $lang = null): string
     {
+
+        LicenseCode::prepareToTranslation($str);
+
         try {
             /** @var Zend_Translate_Adapter $translator */
             $translator = Zend_Registry::get('Zend_Translate');
@@ -619,13 +623,13 @@ class Ccsd_Tools
             }
 
             if ($lang !== 'fr' && !$translator->isTranslated($str)) { // log missing translations unless and only if the language is not French
-                error_log('Missing translation: ' . $str);
+                Episciences_View_Helper_Log::log(sprintf('Missing translation for string: %s',  $str));
                 return $str;
             }
 
             return $translator->translate($str, $lang);
         } catch (Zend_Exception $e) {
-            Ccsd_Tools::panicMsg(__FILE__, __LINE__, "Zend registry: Zend_Translate not defined\n" . $e->getMessage());
+            self::panicMsg(__FILE__, __LINE__, "Zend registry: Zend_Translate not defined\n" . $e->getMessage());
             return $str;
         }
     }
