@@ -91,8 +91,8 @@ final class LicenseSpdxResolver
         $this->loadSpdxIndex();
         $key = strtolower($norm);
 
-        if (isset($this->spdxIndex[$key])) {
-            return $this->spdxIndex[$key];
+        if (isset($this->spdxIndex[$key][self::CODE_KEY])) {
+            return $this->spdxIndex[$key][self::CODE_KEY];
         }
 
         $key = $this->urlToSpdx($norm);
