@@ -5617,7 +5617,12 @@ class Episciences_Paper
     private function completeInfoLicense(array &$target): void
     {
 
-        $licenseRefs = &$target[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY ]['program'][0]['license_ref'];
+        if (!isset($target[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'][0]['license_ref'])) {
+            return;
+        }
+
+        $licenseRefs = &$target[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY]['program'][0]['license_ref'];
+
         if (!is_array($licenseRefs)) {
             return;
         }
@@ -5627,7 +5632,7 @@ class Episciences_Paper
                 $license['name'] = '';
                 $string = $license['#'];
                 LicenseCode::prepareToAddSpdxInfo($string);
-                if($string !== ''){
+                if ($string !== '') {
                     $license['name'] = (new LicenseCode(['code' => $string, 'name' => null]))->getName();
                 }
                 return;
