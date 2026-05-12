@@ -46,12 +46,12 @@ class LicenseManager
         $result = $tmp;
     }
 
-    public static function loadSpdxCode(): ?array
+    public static function loadSpdxCodeAndName(): ?array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $query = self::allQuery('code');
+        $query = self::allQuery(['code', 'name']);
         $query->order('recommended DESC');
-        return $db?->fetchCol($query);
+        return $db?->fetchAssoc($query);
 
     }
 }

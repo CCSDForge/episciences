@@ -5,7 +5,10 @@ namespace Episciences\Paper\Spdx;
 final class LicenseSpdxResolver
 {
     public const NO_ASSERTION = 'NOASSERTION';
+    public const CODE_KEY = 'code';
+    public const NAME_KEY = 'name';
     private ?array $spdxIndex = null;
+
     public const LICENSE_SEPARATOR = '-';
 
     public function __construct()
@@ -39,9 +42,9 @@ final class LicenseSpdxResolver
         }
 
         $index = [];
-        $licenseList = LicenseManager::loadSpdxCode();
-        foreach ($licenseList as $code) {
-            $index[strtolower($code)] = $code;
+        $licenseList = LicenseManager::loadSpdxCodeAndName();
+        foreach ($licenseList as $data) {
+            $index[strtolower($data['code'])] = $data;
         }
 
         $this->spdxIndex = $index;
@@ -93,7 +96,7 @@ final class LicenseSpdxResolver
         }
 
         $key = $this->urlToSpdx($norm);
-        return $this->spdxIndex[strtolower($key)] ?? null;
+        return $this->spdxIndex[strtolower($key)][self::CODE_KEY] ?? null;
     }
 
     private function resolveCc($matches): ?string
@@ -187,5 +190,10 @@ final class LicenseSpdxResolver
     {
         usort($itemsToSort, static fn($a, $b) => array_search($a, $order, true) <=> array_search($b, $order, true)
         );
+    }
+
+    public function getSpdxIndex(): ?array
+    {
+        return $this->spdxIndex;
     }
 }

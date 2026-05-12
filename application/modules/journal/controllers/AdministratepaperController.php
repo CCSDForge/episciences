@@ -3,6 +3,7 @@
 use Episciences\Paper\Spdx\LicenseCode;
 use Episciences\Paper\Spdx\LicenseCodeManager;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
+use Psr\Log\LogLevel;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
@@ -4512,17 +4513,24 @@ class AdministratepaperController extends PaperDefaultController
                     $paperLicenceObject->save();
                 }
 
-                (new LicenseCode([
+                $spdxLicense =  new LicenseCode([
                         'code' => $currentSpdxCode,
                         'docid' => $docId
-                ]))->save();
+                ]);
 
+                $spdxLicense->save();
+                
+                try {
+                    $paper->save();
+                } catch (InvalidArgumentExceptionAlias|Zend_Db_Adapter_Exception  $e) {
+                    Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
+                }
 
                 $newLicense = $paper->getLicence();
 
                 $license = [
                         'href' => $paper->getLicence(),
-                        'name' =>  Ccsd_Tools::translate($paper->getLicence())
+                        'name' =>  $spdxLicense->getName()
                 ];
 
                 $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'previousLicense' => $oldLicense, 'newLicense' => $newLicense];

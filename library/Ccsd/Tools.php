@@ -613,8 +613,6 @@ class Ccsd_Tools
     public static function translate(string $str, string $lang = null): string
     {
 
-        LicenseCode::prepareToTranslation($str);
-
         try {
             /** @var Zend_Translate_Adapter $translator */
             $translator = Zend_Registry::get('Zend_Translate');

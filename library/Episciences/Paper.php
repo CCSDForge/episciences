@@ -4,6 +4,7 @@ use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\Export;
+use Episciences\Paper\Spdx\LicenseCode;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
@@ -1335,6 +1336,8 @@ class Episciences_Paper
         $crossRefXml = Episciences_Paper_XmlExportManager::getXmlCleaned(Episciences_Paper_XmlExportManager::xmlExport($this, Episciences_Paper_XmlExportManager::CROSSREF_FORMAT));
         $crossRefXml = str_replace(array("jats:p", "jats:"), array("value", ""), Episciences_Tools::spaceCleaner($crossRefXml));
         $xmlToArray = $serializer->decode($crossRefXml, "xml");
+
+        $this->completeInfoLicense($xmlToArray);
 
         if ($this->isTmp()) {
             $this->processTmpVersion($this);
@@ -5609,6 +5612,27 @@ class Episciences_Paper
         ]);
 
         $queue->send();
+    }
+
+    private function completeInfoLicense(array &$target): void
+    {
+
+        $licenseRefs = &$target[Episciences_Paper_XmlExportManager::BODY_KEY][Episciences_Paper_XmlExportManager::JOURNAL_KEY][Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY ]['program'][0]['license_ref'];
+        if (!is_array($licenseRefs)) {
+            return;
+        }
+
+        foreach ($licenseRefs as &$license) {
+            if ((($license['@applies_to'] ?? null) === 'vor') && isset($license['#'])) {
+                $license['name'] = '';
+                $string = $license['#'];
+                LicenseCode::prepareToAddSpdxInfo($string);
+                if($string !== ''){
+                    $license['name'] = (new LicenseCode(['code' => $string, 'name' => null]))->getName();
+                }
+                return;
+            }
+        }
     }
 }
 

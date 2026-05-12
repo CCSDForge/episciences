@@ -426,7 +426,8 @@ class Episciences_Paper_LicenceManager
     }
 
 
-    private static function isPreviouslyUpdatedManually($docId): bool{
+    private static function isPreviouslyUpdatedManually($docId): bool
+    {
         return self::getLicenceObjectByDocId($docId)?->getUid() > 0;
     }
 }
