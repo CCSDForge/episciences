@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Paper\Spdx\License;
 use Episciences\Paper\Spdx\LicenseManager;
 
 
@@ -41,10 +42,10 @@ class Episciences_View_Helper_LicenseFormSelect extends Zend_View_Helper_FormSel
     {
         $licenses = LicenseManager::fetchRecommended();
         $options = ['' => $this->view->translate(self::EMPTY_LABEL)];
-        /** @var \Episciences\Paper\Spdx\LicenseCode$license */
+        /** @var License $license */
         foreach ($licenses as $license) {
             $code = $license->getCode();
-            $options[$code] = sprintf('%s (%s)', $this->view->translate($code), $code);
+            $options[$code] = $license->getName();
         }
 
         ksort($options);

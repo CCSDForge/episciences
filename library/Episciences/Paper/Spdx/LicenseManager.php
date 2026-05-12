@@ -23,7 +23,7 @@ class LicenseManager
         return $db?->fetchAssoc($query);
     }
 
-    public static function fetchRecommended(string|array $cols = ['code'], $fetch = 'object'): ?array
+    public static function fetchRecommended(string|array $cols = ['code', 'name'], $fetch = 'object'): ?array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $query = self::allQuery($cols)->where('recommended = ?', self::RECOMMENDED);
