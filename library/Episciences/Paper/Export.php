@@ -804,16 +804,20 @@ class Export
             $csl = self::getConferenceInfo($jsonDb, $csl);
         }
 
-        $vol            = $current['volume'];
-        $csl['volume']  = $vol !== null ? self::selectTitle($vol['titles'] ?? []) : null;
-        if ($vol !== null && isset($vol['position'])) {
-            $csl['number'] = $vol['position'];
+        $vol = $current['volume'];
+        if ($vol !== null) {
+            $csl['volume'] = self::selectTitle($vol['titles'] ?? []);
         }
 
-        $sect          = $current['section'];
-        $csl['issue']  = $sect !== null ? self::selectTitle($sect['titles'] ?? []) : null;
+        $positionInVolume = $current['position_in_volume'] ?? null;
+        if ($positionInVolume !== null) {
+            $csl['number'] = $positionInVolume;
+        }
 
-        $csl['version'] = $current['version'];
+        $sect = $current['section'];
+        if ($sect !== null) {
+            $csl['issue'] = self::selectTitle($sect['titles'] ?? []);
+        }
 
         return $csl;
     }

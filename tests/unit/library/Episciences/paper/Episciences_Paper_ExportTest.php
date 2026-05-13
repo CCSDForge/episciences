@@ -259,12 +259,12 @@ class Episciences_Paper_ExportTest extends TestCase
             ],
             XmlExportManager::DATABASE_KEY => [
                 'current' => [
-                    'type'    => ['title' => 'article'],
-                    'version' => '1',
-                    'volume'  => [
-                        'id'       => 42,
-                        'position' => 3,
-                        'titles'   => ['en' => 'Volume One', 'fr' => 'Tome Un'],
+                    'type'               => ['title' => 'article'],
+                    'version'            => '1',
+                    'position_in_volume' => 3,
+                    'volume'             => [
+                        'id'     => 42,
+                        'titles' => ['en' => 'Volume One', 'fr' => 'Tome Un'],
                     ],
                     'section' => [
                         'id'     => 7,
@@ -296,10 +296,11 @@ class Episciences_Paper_ExportTest extends TestCase
             ],
             XmlExportManager::DATABASE_KEY => [
                 'current' => [
-                    'type'    => ['title' => 'conferencepaper'],
-                    'version' => '2',
-                    'volume'  => null,
-                    'section' => null,
+                    'type'               => ['title' => 'conferencepaper'],
+                    'version'            => '2',
+                    'position_in_volume' => null,
+                    'volume'             => null,
+                    'section'            => null,
                 ],
             ],
         ];
@@ -445,18 +446,18 @@ class Episciences_Paper_ExportTest extends TestCase
         self::assertSame(3, $csl['number']);
     }
 
-    public function testBuildCslNumberAbsentWhenVolumeHasNoPosition(): void
+    public function testBuildCslNumberAbsentWhenPositionInVolumeNull(): void
     {
         $doc = $this->journalDoc();
-        unset($doc[XmlExportManager::DATABASE_KEY]['current']['volume']['position']);
+        $doc[XmlExportManager::DATABASE_KEY]['current']['position_in_volume'] = null;
         $csl = Export::buildCslFromDocumentArray($doc);
         self::assertArrayNotHasKey('number', $csl);
     }
 
-    public function testBuildCslNumberAbsentWhenNoVolume(): void
+    public function testBuildCslNumberAbsentWhenPositionInVolumeNotSet(): void
     {
         $doc = $this->journalDoc();
-        $doc[XmlExportManager::DATABASE_KEY]['current']['volume'] = null;
+        unset($doc[XmlExportManager::DATABASE_KEY]['current']['position_in_volume']);
         $csl = Export::buildCslFromDocumentArray($doc);
         self::assertArrayNotHasKey('number', $csl);
     }
@@ -527,10 +528,10 @@ class Episciences_Paper_ExportTest extends TestCase
     // buildCslFromDocumentArray — version
     // -----------------------------------------------------------------------
 
-    public function testBuildCslVersionPassedThrough(): void
+    public function testBuildCslVersionNotPresent(): void
     {
         $csl = Export::buildCslFromDocumentArray($this->journalDoc());
-        self::assertSame('1', $csl['version']);
+        self::assertArrayNotHasKey('version', $csl);
     }
 
     // -----------------------------------------------------------------------
