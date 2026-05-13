@@ -612,6 +612,12 @@ class Ccsd_Tools
      */
     public static function translate(string $str, string $lang = null): string
     {
+        //No translation file is available for this type of license (SPDX); replaced with the official license names
+        $code = LicenseCode::urlToSpdxCode($str);
+
+        if ($code !== ''){
+            return (new LicenseCode(['code' => $code]))->getName();
+        }
 
         try {
             /** @var Zend_Translate_Adapter $translator */

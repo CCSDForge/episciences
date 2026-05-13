@@ -15,15 +15,6 @@ class LicenseCode extends AbstractCommon
     private string $code;
     private ?string $name = null;
 
-    public function __construct(array $options)
-    {
-        if (!isset($options['name'])) {
-            $options['name'] = null;
-        }
-
-        parent::__construct($options);
-    }
-
     public function getId(): int
     {
         return $this->id;
@@ -56,18 +47,21 @@ class LicenseCode extends AbstractCommon
 
     public function getName(): ?string
     {
+        if ($this->name === null) {
+
+            $name = LicenseManager::getNameByIdentifier($this->code);
+
+            if ($name) {
+                $this->name = $name;
+            }
+        }
+
         return $this->name;
     }
 
     public function setName(?string $name = null): void
     {
-        if (!$name) {
-            $resolver = new LicenseSpdxResolver();
-            $this->name = $resolver->getSpdxIndex()[strtolower($this->getCode())][LicenseSpdxResolver::NAME_KEY] ?? '';
-        } else {
-            $this->name = $name;
-        }
-
+        $this->name = $name;
     }
 
     public function save(): self
@@ -76,6 +70,10 @@ class LicenseCode extends AbstractCommon
         return $this;
     }
 
+    /**
+     * Code to spdx URL
+     * @return string
+     */
 
     public function getReference(): string
     {
@@ -86,19 +84,17 @@ class LicenseCode extends AbstractCommon
         return self::NO_ASSERTION;
     }
 
-    public static function prepareToAddSpdxInfo(&$reference): void
+    public static function urlToSpdxCode(string $str): ?string
     {
         if (preg_match(
                 '#^' . preg_quote(self::SPDX_LICENSE_LIST_URL, '#') . '([^/]+)\.html$#',
-                $reference,
+                $str,
                 $matches
         )
         ) {
-            $reference = $matches[1];
-        } else {
-            $reference = '';
+            return $matches[1];
         }
 
+        return '';
     }
-
 }

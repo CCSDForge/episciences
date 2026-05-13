@@ -5631,9 +5631,9 @@ class Episciences_Paper
             if ((($license['@applies_to'] ?? null) === 'vor') && isset($license['#'])) {
                 $license['name'] = '';
                 $string = $license['#'];
-                LicenseCode::prepareToAddSpdxInfo($string);
-                if ($string !== '') {
-                    $license['name'] = (new LicenseCode(['code' => $string, 'name' => null]))->getName();
+                $code = LicenseCode::urlToSpdxCode($string);
+                if ($code !== '') {
+                    $license['name'] = (new LicenseCode(['code' => $code, 'name' => null]))->getName();
                 }
                 return;
             }

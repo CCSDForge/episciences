@@ -10,6 +10,7 @@ class LicenseManager
 {
 
     public const RECOMMENDED = 1;
+
     public static function allQuery(string|array $cols = '*'): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -46,12 +47,21 @@ class LicenseManager
         $result = $tmp;
     }
 
-    public static function loadSpdxCodeAndName(): ?array
+    public static function loadSpdxCode(): ?array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $query = self::allQuery(['code', 'name']);
+        $query = self::allQuery('code');
         $query->order('recommended DESC');
-        return $db?->fetchAssoc($query);
+        return $db?->fetchCol($query);
+
+    }
+
+    public static function getNameByIdentifier(string $code): ?string
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $query = self::allQuery('name');
+        $query->where('code = ?', $code);
+        return $db?->fetchOne($query);
 
     }
 }
