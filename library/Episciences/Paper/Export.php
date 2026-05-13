@@ -11,6 +11,7 @@ use Episciences_BibliographicalsReferencesTools;
 use Episciences_Paper;
 use Episciences_Paper_DocumentBackup;
 use Episciences_Paper_Tei;
+use Episciences_Paper_XmlExportManager as XmlExportManager;
 use Episciences_Repositories;
 use Episciences_Review;
 use Episciences_ReviewsManager;
@@ -741,61 +742,91 @@ class Export
         return $result;
     }
 
-    /**
-     * @param $docid
-     * @return string
-     * @throws JsonException
-     */
-    public static function getCsl($docid): string
+    public static function getCsl(int $docid): string
     {
-
         try {
-            $jsonDb = json_decode(\Episciences_PapersManager::getJsonDocumentByDocId($docid), true, 512, JSON_THROW_ON_ERROR);
+            $jsonDb = json_decode(
+                json: \Episciences_PapersManager::getJsonDocumentByDocId($docid),
+                associative: true,
+                flags: JSON_THROW_ON_ERROR
+            );
+            return json_encode(self::buildCslFromDocumentArray($jsonDb), JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
-            return json_encode([], JSON_THROW_ON_ERROR);
+            return '[]';
         }
+    }
 
-        $jsonCsl = [];
-        $isJournal = array_key_exists('journal', $jsonDb);
-        $jsonCsl['type'] = $jsonDb['database']['current']['type']['title'];
-        $jsonCsl['id'] = $isJournal
-            ? "https://doi.org/" . $jsonDb['journal']['journal_article']['doi_data']['doi']
-            : "https://doi.org/" . $jsonDb['conference']['conference_paper']['doi_data']['doi'];
+    /**
+     * Build a CSL-JSON array from the document's stored JSON structure.
+     *
+     * Extracted from getCsl() to be testable without a database.
+     */
+    public static function buildCslFromDocumentArray(array $jsonDb): array
+    {
+        $isJournal = array_key_exists(XmlExportManager::JOURNAL_KEY, $jsonDb);
+        $current   = $jsonDb[XmlExportManager::DATABASE_KEY]['current'];
+
+        $csl = [
+            'type' => match ($current['type']['title']) {
+                Episciences_Paper::ARTICLE_TYPE_TITLE => 'article-journal',
+                default => $current['type']['title'],
+            },
+            'id' => 'https://doi.org/' . ($isJournal
+                ? $jsonDb[XmlExportManager::JOURNAL_KEY][XmlExportManager::JOURNAL_ARTICLE_KEY]['doi_data']['doi']
+                : $jsonDb[XmlExportManager::CONFERENCE_KEY][XmlExportManager::CONFERENCE_PAPER_KEY]['doi_data']['doi']),
+            'author' => [],
+        ];
+
+        $contributors = $isJournal
+            ? $jsonDb[XmlExportManager::JOURNAL_KEY][XmlExportManager::JOURNAL_ARTICLE_KEY]['contributors']
+            : $jsonDb[XmlExportManager::CONFERENCE_KEY][XmlExportManager::CONFERENCE_PAPER_KEY]['contributors'];
+        $csl = self::getAuthorsCsl($contributors, $csl, 0);
 
         $publicationYear = $isJournal
-            ? ($jsonDb['journal']['journal_article']['publication_date']['year'] ?? null)
-            : ($jsonDb['conference']['conference_paper']['conference_paper']['year'] ?? null);
-
-
-        $jsonCsl['author'] = [];
-        $arrayContrib = $isJournal
-            ? $jsonDb['journal']['journal_article']['contributors']
-            : $jsonDb['conference']['conference_paper']['contributors'];
-        $jsonCsl = self::getAuthorsCsl($arrayContrib, $jsonCsl, 0);
-
-
-        $jsonCsl['issued']["date-parts"][][] = $publicationYear;
+            ? ($jsonDb[XmlExportManager::JOURNAL_KEY][XmlExportManager::JOURNAL_ARTICLE_KEY]['publication_date']['year'] ?? null)
+            : ($jsonDb[XmlExportManager::CONFERENCE_KEY][XmlExportManager::CONFERENCE_PAPER_KEY][XmlExportManager::CONFERENCE_PAPER_KEY]['year'] ?? null);
+        $csl['issued'] = ['date-parts' => [[$publicationYear]]];
 
         if ($isJournal) {
-            $jsonCsl['DOI'] = $jsonDb['journal']['journal_article']['doi_data']['doi'];
-            $jsonCsl['publisher'] = $jsonDb['journal']['journal_metadata']['full_title'];
-            $jsonCsl['title'] = $jsonDb['journal']['journal_article']['titles']['title'];
+            $csl['DOI']             = $jsonDb[XmlExportManager::JOURNAL_KEY][XmlExportManager::JOURNAL_ARTICLE_KEY]['doi_data']['doi'];
+            $csl['container-title'] = $jsonDb[XmlExportManager::JOURNAL_KEY][XmlExportManager::JOURNAL_METADATA_KEY]['full_title'];
+            $csl['title']           = $jsonDb[XmlExportManager::JOURNAL_KEY][XmlExportManager::JOURNAL_ARTICLE_KEY]['titles']['title'];
+            $issn = $jsonDb[XmlExportManager::JOURNAL_KEY][XmlExportManager::JOURNAL_METADATA_KEY]['issn']['value'] ?? null;
+            if ($issn !== null) {
+                $csl['ISSN'] = $issn;
+            }
+            $language = $jsonDb[XmlExportManager::JOURNAL_KEY][XmlExportManager::JOURNAL_ARTICLE_KEY]['@language'] ?? null;
+            if ($language !== null) {
+                $csl['language'] = $language;
+            }
         } else {
-            $jsonCsl = self::getConferenceInfo($jsonDb, $jsonCsl);
+            $csl = self::getConferenceInfo($jsonDb, $csl);
         }
 
-        $jsonCsl['volume'] = !is_null($vol = $jsonDb['database']['current']['volume']) ? $vol['id'] : null;
-        $jsonCsl['issue'] = !is_null($section = $jsonDb['database']['current']['section']) ? $section['id'] : null;
-        $jsonCsl['version'] = $jsonDb['database']['current']['version'];
-        try {
-            $jsonString = json_encode($jsonCsl, JSON_THROW_ON_ERROR);
-        } catch (JsonException $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
-            return json_encode([], JSON_THROW_ON_ERROR);
+        $vol            = $current['volume'];
+        $csl['volume']  = $vol !== null ? self::selectTitle($vol['titles'] ?? []) : null;
+        if ($vol !== null && isset($vol['position'])) {
+            $csl['number'] = $vol['position'];
         }
 
-        return $jsonString;
+        $sect          = $current['section'];
+        $csl['issue']  = $sect !== null ? self::selectTitle($sect['titles'] ?? []) : null;
+
+        $csl['version'] = $current['version'];
+
+        return $csl;
+    }
+
+    /**
+     * Return the English title from a multilingual map, or the first available, or null.
+     */
+    private static function selectTitle(array $titles): ?string
+    {
+        if (empty($titles)) {
+            return null;
+        }
+        return $titles['en'] ?? $titles[array_key_first($titles)];
     }
 
     /**
@@ -831,10 +862,11 @@ class Export
      */
     public static function getConferenceInfo($public_properties, array $jsonCsl): array
     {
-        if (array_key_exists('conference', $public_properties)) {
-            $jsonCsl['event-title'] = $public_properties['conference']['event_metadata']['conference_name'];
-            $jsonCsl['event-place'] = !is_null($public_properties['conference']['event_metadata']['conference_location']) ? $public_properties['conference']['event_metadata']['conference_location'] : null;
-            $jsonCsl['event-date'] = $public_properties['conference']['event_metadata']['conference_date']['@start_year'];
+        if (array_key_exists(XmlExportManager::CONFERENCE_KEY, $public_properties)) {
+            $eventMeta = $public_properties[XmlExportManager::CONFERENCE_KEY]['event_metadata'];
+            $jsonCsl['event-title'] = $eventMeta['conference_name'];
+            $jsonCsl['event-place'] = $eventMeta['conference_location'] ?? null;
+            $jsonCsl['event-date']  = $eventMeta['conference_date']['@start_year'];
         }
         return $jsonCsl;
     }
