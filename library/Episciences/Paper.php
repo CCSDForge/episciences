@@ -5,6 +5,7 @@ use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\Export;
 use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
@@ -4981,7 +4982,10 @@ class Episciences_Paper
      */
     public function getLicence(): string
     {
-        $this->_licence = Episciences_Paper_LicenceManager::getLicenceByDocId($this->getDocid());
+        if (!$this->_licence) {
+            $this->_licence = Episciences_Paper_LicenceManager::getLicenceByDocId($this->getDocid());
+        }
+
         return $this->_licence;
     }
 
@@ -5631,13 +5635,25 @@ class Episciences_Paper
             if ((($license['@applies_to'] ?? null) === 'vor') && isset($license['#'])) {
                 $license['name'] = '';
                 $string = $license['#'];
-                $code = LicenseCode::urlToSpdxCode($string);
+                $code = LicenseSpdxResolver::urlToSpdxCode($string);
                 if ($code !== '') {
                     $license['name'] = (new LicenseCode(['code' => $code, 'name' => null]))->getName();
                 }
                 return;
             }
         }
+    }
+
+    public function licenseCanBeResolved() : bool{
+        return (new LicenseSpdxResolver())->resolve($this->getLicence()) !== LicenseSpdxResolver::NO_ASSERTION;
+    }
+
+    public function ignoreLicenseCheck(): bool
+    {
+        return
+                $this->isTmp() ||
+                !$this->getAcceptanceDate() ||
+                $this->licenseCanBeResolved();
     }
 }
 

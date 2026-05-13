@@ -443,6 +443,9 @@ return array(
     "Si le papier est retiré du volume cela n’entraîne pas le réordonnancement automatique des autres articles." => "If the article is removed from the volume this does not cause the other articles to be reordered automatically.",
     "Il est toujours possible de modifier cet ordre manuellement via l’édition du volume." => "It is always possible to change this order manually by editing the volume.",
     'Licence mise à jour' => 'License updated',
+    'Information importante' => 'Important Information',
+    'La licence choisie ne correspond pas à la licence choisie par la revue.' => 'The license selected does not match the license selected by the journal.',
+    'Merci de préciser la licence pour cette publication avant sa mise en ligne.' => 'Kindly indicate the license for this publication before it is published.',
     // proceedings
     "Nom de la conférence" => 'Conference title',
     "Thème de la conférence" => "Conference theme",
