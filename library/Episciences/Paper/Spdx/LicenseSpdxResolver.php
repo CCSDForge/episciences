@@ -5,6 +5,7 @@ namespace Episciences\Paper\Spdx;
 final class LicenseSpdxResolver
 {
     public const NO_ASSERTION = 'NOASSERTION';
+    public const SPDX_LICENSE_LIST_URL = 'https://spdx.org/licenses/';
     private ?array $spdxIndex = null;
 
     public const LICENSE_SEPARATOR = '-';
@@ -12,6 +13,20 @@ final class LicenseSpdxResolver
     public function __construct()
     {
         $this->loadSpdxIndex();
+    }
+
+    public static function urlToSpdxCode(string $str): ?string
+    {
+        if (preg_match(
+                '#^' . preg_quote(self::SPDX_LICENSE_LIST_URL, '#') . '([^/]+)\.html$#',
+                $str,
+                $matches
+        )
+        ) {
+            return $matches[1];
+        }
+
+        return '';
     }
 
     /**
@@ -25,9 +40,15 @@ final class LicenseSpdxResolver
             return self::NO_ASSERTION;
         }
 
-        $spdx = $this->matchSpdx($norm);
+        $spdxCode = self::urlToSpdxCode($input);
 
-        return $spdx ?: self::NO_ASSERTION;
+        if($spdxCode !== ''){
+            return $spdxCode;
+        }
+
+        $spdxCode = $this->matchSpdx($norm);
+
+        return $spdxCode ?: self::NO_ASSERTION;
     }
 
     /**

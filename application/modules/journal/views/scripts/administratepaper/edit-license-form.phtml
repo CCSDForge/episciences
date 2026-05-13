@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Paper\Spdx\LicenseSpdxResolver;
 
 $id = 'license-value-' . $this->docId;
 ?>
@@ -14,7 +15,7 @@ $id = 'license-value-' . $this->docId;
 
         <div class="input-group">
             <?= $this->licenseFormSelect(
-                    'license',  LicenseCode::urlToSpdxCode($this->licence),
+                    'license', LicenseSpdxResolver::urlToSpdxCode($this->licence),
                     [
                     'class' => 'form-control',
                     'data-license-family' => 'creative-commons'

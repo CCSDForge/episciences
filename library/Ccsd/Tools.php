@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Paper\Spdx\LicenseCode;
+use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -613,7 +614,7 @@ class Ccsd_Tools
     public static function translate(string $str, string $lang = null): string
     {
         //No translation file is available for this type of license (SPDX); replaced with the official license names
-        $code = LicenseCode::urlToSpdxCode($str);
+        $code = LicenseSpdxResolver::urlToSpdxCode($str);
 
         if ($code !== ''){
             return (new LicenseCode(['code' => $code]))->getName();

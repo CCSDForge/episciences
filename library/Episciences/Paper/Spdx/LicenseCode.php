@@ -7,9 +7,6 @@ use Episciences\common\AbstractCommon;
 class LicenseCode extends AbstractCommon
 {
 
-    public const SPDX_LICENSE_LIST_URL = 'https://spdx.org/licenses/';
-    public const NO_ASSERTION = 'NOASSERTION';
-
     private int $id;
     private int $docid;
     private string $code;
@@ -78,23 +75,10 @@ class LicenseCode extends AbstractCommon
     public function getReference(): string
     {
         if($this->getCode()){
-            return sprintf('%s%s.html', self::SPDX_LICENSE_LIST_URL, $this->getCode());
+            return sprintf('%s%s.html', LicenseSpdxResolver::SPDX_LICENSE_LIST_URL, $this->getCode());
         }
 
-        return self::NO_ASSERTION;
+        return LicenseSpdxResolver::NO_ASSERTION;
     }
 
-    public static function urlToSpdxCode(string $str): ?string
-    {
-        if (preg_match(
-                '#^' . preg_quote(self::SPDX_LICENSE_LIST_URL, '#') . '([^/]+)\.html$#',
-                $str,
-                $matches
-        )
-        ) {
-            return $matches[1];
-        }
-
-        return '';
-    }
 }
