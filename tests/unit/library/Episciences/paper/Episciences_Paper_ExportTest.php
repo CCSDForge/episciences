@@ -261,7 +261,7 @@ class Episciences_Paper_ExportTest extends TestCase
                 'current' => [
                     'type'               => ['title' => 'article'],
                     'version'            => '1',
-                    'position_in_volume' => 3,
+                    'position_in_volume' => 2, // 0-based (DB value); CSL number = +1
                     'volume'             => [
                         'id'     => 42,
                         'titles' => ['en' => 'Volume One', 'fr' => 'Tome Un'],

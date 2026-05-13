@@ -811,7 +811,8 @@ class Export
 
         $positionInVolume = $current['position_in_volume'] ?? null;
         if ($positionInVolume !== null) {
-            $csl['number'] = $positionInVolume;
+            // position_in_volume is 0-based in the database; CSL number is 1-based.
+            $csl['number'] = $positionInVolume + 1;
         }
 
         $sect = $current['section'];
