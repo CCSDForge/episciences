@@ -94,7 +94,12 @@ final class LicenseSpdxResolver
         }
 
         $key = $this->urlToSpdx($norm);
-        return $this->spdxIndex[strtolower($key)] ?? null;
+
+        if ($key) {
+            return $this->spdxIndex[strtolower($key)] ?? null;
+        }
+
+        return null;
     }
 
     private function resolveCc($matches): ?string
