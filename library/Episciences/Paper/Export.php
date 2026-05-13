@@ -218,7 +218,7 @@ class Export
         $paperLanguage = (string)$paper->getMetadata('language');
 
         $paperLanguagelength = strlen($paperLanguage);
-        $docid = (string)$paper->getDocid();
+
         if ($paperLanguagelength > 3 || $paperLanguagelength < 2) {
             $paperLanguage = $default;
         }
