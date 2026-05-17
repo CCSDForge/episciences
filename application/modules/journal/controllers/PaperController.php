@@ -1516,7 +1516,7 @@ class PaperController extends PaperDefaultController
      * @return array
      */
 
-    private function dataProcessing(array &$post): array
+        private function dataProcessing(array &$post): array
     {
 
         $paperPwdDetails = [
@@ -1533,6 +1533,126 @@ class PaperController extends PaperDefaultController
         }
 
         return $paperPwdDetails;
+    }
+
+    private function isFinalVersionDepositAllowed(?Episciences_Paper $paper, Episciences_Comment $requestComment): bool
+    {
+        return $paper instanceof Episciences_Paper
+            && $requestComment->getPcid()
+            && (int)$requestComment->getDocid() === $paper->getDocid()
+            && $paper->isOwner()
+            && $paper->getStatus() === Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION
+            && $requestComment->getType() === Episciences_CommentsManager::TYPE_REVISION_REQUEST;
+    }
+
+    private function getCopyEditingCommentPath(int $docId, int $commentId): string
+    {
+        return Episciences_PapersManager::buildDocumentPath($docId)
+            . DIRECTORY_SEPARATOR
+            . Episciences_CommentsManager::COPY_EDITING_SOURCES
+            . DIRECTORY_SEPARATOR
+            . $commentId
+            . DIRECTORY_SEPARATOR;
+    }
+
+    private function createFinalVersionDepositRevisionAnswer(
+        Episciences_Paper $paper,
+        Episciences_Comment $requestComment,
+        array $post
+    ): ?Episciences_Comment {
+        $message = trim((string)($post[self::COMMENT_STR] ?? ''));
+
+        if ($message === '') {
+            $message = "La version finale et le mot de passe arXiv ont été déposés.";
+        }
+
+        $revisionAnswerComment = new Episciences_Comment();
+        $revisionAnswerComment->setParentid($requestComment->getPcid());
+        $revisionAnswerComment->setType(Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT);
+        $revisionAnswerComment->setDocid($paper->getDocid());
+        $revisionAnswerComment->setUid($paper->getUid());
+        $revisionAnswerComment->setMessage($message);
+
+        if (!$revisionAnswerComment->save(false, $paper->getUid(), true)) {
+            return null;
+        }
+
+        return $revisionAnswerComment;
+    }
+
+    /**
+     * Uploaded files are first stored in the request comment directory because
+     * the final deposit copy-editing comment ID does not exist yet. Once the
+     * deposit comment is saved, move them to the normal copy-editing directory
+     * for that comment so the existing UI can resolve:
+     * `/docfiles/ce/{docId}/{filename}/{depositPcid}`.
+     */
+    private function moveFinalVersionDepositFiles(
+        Episciences_Paper $paper,
+        Episciences_Comment $requestComment,
+        Episciences_Comment $depositComment,
+        array $attachments
+    ): bool {
+        $sourcePath = $this->getCopyEditingCommentPath($paper->getDocid(), $requestComment->getPcid());
+        $destinationPath = $this->getCopyEditingCommentPath($paper->getDocid(), $depositComment->getPcid());
+
+        if (!Episciences_Tools::cpFiles($attachments, $sourcePath, $destinationPath)) {
+            return false;
+        }
+
+        foreach ($attachments as $file) {
+            $sourceFile = $sourcePath . $file;
+            if (is_file($sourceFile)) {
+                unlink($sourceFile);
+            }
+        }
+
+        return true;
+    }
+
+    private function validateFinalVersionDeposit(
+        Episciences_Paper $paper,
+        Episciences_Comment $requestComment,
+        array $post,
+        array $attachments
+    ): array {
+        $errors = [];
+        $passwordDetails = $this->dataProcessing($post);
+
+        if (!$passwordDetails['isValid']) {
+            if ($passwordDetails['isEmpty']) {
+                $errors[] = "Veuillez indiquer le mot de passe arXiv du document.";
+            } elseif (!$passwordDetails['isValidStrlen']) {
+                $errors[] = sprintf(
+                    "Le mot de passe arXiv ne doit pas dépasser %u caractères.",
+                    MAX_PWD_INPUT_SIZE
+                );
+            }
+        }
+
+        if (count($attachments) !== 1) {
+            $errors[] = "Veuillez déposer exactement un fichier pour la version finale.";
+            return $errors;
+        }
+
+        $filename = $attachments[0];
+        if (basename($filename) !== $filename) {
+            $errors[] = "Le nom du fichier déposé n'est pas valide.";
+            return $errors;
+        }
+
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        $allowedExtensions = array_map('strtolower', ALLOWED_EXTENSIONS);
+        if (!in_array($extension, $allowedExtensions, true)) {
+            $errors[] = "Le type du fichier déposé n'est pas autorisé.";
+        }
+
+        $filePath = $this->getCopyEditingCommentPath($paper->getDocid(), $requestComment->getPcid()) . $filename;
+        if (!is_file($filePath)) {
+            $errors[] = "Le fichier de la version finale n'a pas été correctement téléversé. Merci de le déposer à nouveau.";
+        }
+
+        return $errors;
     }
 
     /**
