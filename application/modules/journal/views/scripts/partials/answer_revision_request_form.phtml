@@ -56,7 +56,7 @@ $isAlternativeFinalVersionUploadExpected = $paper->getStatus() === Episciences_P
 
                 <?php endif; ?>
 
-                <?php if ($paper->getStatus() !== Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED) : ?>
+                <?php if (!$isAlternativeFinalVersionUploadExpected && $paper->getStatus() !== Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED) : ?>
                     <li>
                         <a href="/paper/answerrequest?id=<?php echo $this->current_demand['PCID']; ?>"
                            title="<?php echo $this->translate('Répondre sans faire de modifications'); ?>"
