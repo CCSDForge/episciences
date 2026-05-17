@@ -28,11 +28,19 @@ $isAlternativeFinalVersionUploadExpected = $paper->getStatus() === Episciences_P
                     }
 
                     ?>
-                    <a id="new-version" href="<?= $newVersionHref ?>"
-                       title="<?= $this->translate('Proposer une nouvelle version') ?>"
-                       class="modal-opener"
-                       data-target="#"><?= $this->translate('Proposer une nouvelle version') ?>
-                    </a>
+                    <?php if ($isAlternativeFinalVersionUploadExpected): ?>
+                        <a id="final-version-deposit"
+                           href="/paper/finalversiondeposit?id=<?= $this->current_demand['PCID']; ?>"
+                           title="<?= $this->translate('Déposer la version finale et le mot de passe arXiv') ?>">
+                            <?= $this->translate('Déposer la version finale et le mot de passe arXiv') ?>
+                        </a>
+                    <?php else: ?>
+                        <a id="new-version" href="<?= $newVersionHref ?>"
+                           title="<?= $this->translate('Proposer une nouvelle version') ?>"
+                           class="modal-opener"
+                           data-target="#"><?= $this->translate('Proposer une nouvelle version') ?>
+                        </a>
+                    <?php endif; ?>
                 </li>
 
                 <?php if (!$this->doNotDisplayContactChoice) : ?>
