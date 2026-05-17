@@ -3,6 +3,7 @@ $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerN
 $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
+$isAlternativeFinalVersionUploadExpected = $paper->getStatus() === Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION;
 ?>
 <div>
     <?php
