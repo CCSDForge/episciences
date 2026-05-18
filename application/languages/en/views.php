@@ -2387,7 +2387,6 @@ return array(
     "Chargement" => "Loading",
     "Masquer les références bibliographique" => "Hide bibliographical references",
     "Gérer" => "Manage",
-    "Import BibTeX" => "BibTeX import",
     "Type de volume non pris en charge pour l'export Crossref." => 'Volume type not supported for Crossref export.',
 
     // relationships linked data
