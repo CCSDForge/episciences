@@ -1009,7 +1009,7 @@ class Episciences_Volume
             $sanitized['title'] = [];
             foreach ($values['title'] as $lang => $title) {
                 if (is_string($title)) {
-                    $sanitized['title'][$lang] = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+                    $sanitized['title'][$lang] = htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
                 }
             }
         }
@@ -1019,7 +1019,7 @@ class Episciences_Volume
             $sanitized['content'] = [];
             foreach ($values['content'] as $lang => $content) {
                 if (is_string($content)) {
-                    $sanitized['content'][$lang] = htmlspecialchars($content, ENT_QUOTES, 'UTF-8');
+                    $sanitized['content'][$lang] = htmlspecialchars($content, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
                 }
             }
         }

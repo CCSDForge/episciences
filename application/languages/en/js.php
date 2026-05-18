@@ -265,7 +265,26 @@ return [
     "Voir plus" => "Show more",
     "Voir moins" => "Show less",
     'Demander un DOI'=> 'Request a DOI',
-    'Annuler le DOI'=> 'Cancel theDOI',
+    'Annuler le DOI'=> 'Cancel the DOI',
     'not-assigned' => 'Not assigned',
-    'orcid-duplicate' => 'Each ORCID must be unique.'
+    'orcid-duplicate' => 'Each ORCID must be unique.',
+
+    // PPS (Problematic Paper Screener) — bibliographic reference badge labels
+    'Retracted'                    => 'Retracted',
+    'Expression of Concern'        => 'Expression of Concern',
+    'Feet of Clay'                 => 'Feet of Clay',
+    'Tortured Phrases'             => 'Tortured Phrases',
+    'Suspect'                      => 'Suspect',
+    'SCIgen-generated'             => 'SCIgen-generated',
+    'Mathgen-generated'            => 'Mathgen-generated',
+    'Citejacked'                   => 'Citejacked',
+    'Suspect Biological Sequences' => 'Suspect Biological Sequences',
+    'Problematic Cell Lines'       => 'Problematic Cell Lines',
+    'Deindexed'                    => 'Deindexed',
+    'Problematic Journal'          => 'Problematic Journal',
+    'SBIR flagged'                 => 'SBIR flagged',
+    'Problematic'                  => 'Problematic',
+    'Genuine'                      => 'Genuine',
+    'More information'             => 'More information',
+    'View on PubPeer'              => 'View on PubPeer',
 ];

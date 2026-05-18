@@ -10,7 +10,7 @@
         <strong><i class="fas fa-exclamation-circle"></i></strong> <?= $alert?>
     </div>
     <?php endif; ?>
-    <form action="<?= $this->url(['controller' => 'administratepaper', 'action' => 'savemastervolume'])?>" id="volume-form-<?= $this->docid ?>" style="height : 34px;">
+    <form action="<?= $this->url(['controller' => 'administratepaper', 'action' => 'savemastervolume'])?>" id="volume-form-<?= $this->docid ?>">
 
         <div style="margin-bottom: 5px;">
             <label for="volume_search_input" class="sr-only"><?= $this->translate('Rechercher un volume') ?></label>

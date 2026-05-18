@@ -18,15 +18,17 @@ function %%FCT_NAME%% (btn, name) {
 
     	$(input).val(value);
 
-		if (!$.isEmptyObject($(name).contents().first()[0])) {
-			value = $(name).contents().text();
-		}
+		// Extract plain text safely — DOMParser avoids innerHTML XSS and jQuery selector misuse
+		// Note: was incorrectly using $(name) instead of $(value); fixed here
+		value = new DOMParser()
+			.parseFromString(value, 'text/html')
+			.body.textContent;
 
 		if (%%LENGTH%%) {
         	value = value.substring(0,%%LENGTH%%) + (value.length > %%LENGTH%% ? '...' : '')
         }
 
-    	textNode.replaceWith(value + " (" + libelle + ")");
+    	textNode.replaceWith(document.createTextNode(value + " (" + libelle + ")"));
 
     	$(input).attr('name', name + "[" + lang + "]");
     	$(input).attr('lang', lang);
@@ -45,7 +47,13 @@ function %%FCT_NAME%% (btn, name) {
 
     	$(btn).closest('.textarea-group').parent().find(".glyphicon-plus").closest("span").show();
 
-		$(inputGroup).find('ul li a[val=' + lang + ']').closest('li').addClass('disabled');
+		$(inputGroup)
+			.find('ul li a')
+			.filter(function () {
+				return $(this).attr('val') === lang;
+			})
+			.closest('li')
+			.addClass('disabled');
 
 		let elm = $(inputGroup).find('ul li[class!="disabled"]:first a');
 		if (typeof $(elm).html() != 'undefined') {

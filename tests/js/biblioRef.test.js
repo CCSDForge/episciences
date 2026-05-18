@@ -140,6 +140,11 @@ describe('BiblioRefParser', () => {
                 doi: '10.1234/test',
                 isAccepted: true,
                 showAccepted: true,
+                detectors: [],
+                status: [],
+                pubpeerurl: [],
+                isSuspect: false,
+                isGenuine: false,
             });
         });
 
@@ -156,6 +161,11 @@ describe('BiblioRefParser', () => {
                 doi: undefined,
                 isAccepted: false,
                 showAccepted: false,
+                detectors: [],
+                status: [],
+                pubpeerurl: [],
+                isSuspect: false,
+                isGenuine: false,
             });
         });
 
@@ -192,6 +202,166 @@ describe('BiblioRefParser', () => {
             expect(result).toBeNull();
             expect(consoleSpy).toHaveBeenCalled();
             consoleSpy.mockRestore();
+        });
+
+        it('should parse citation when ref is already an object (new API)', () => {
+            const citation = {
+                ref: { raw_reference: 'Test citation', doi: '10.1234/test' },
+                isAccepted: 1,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, true);
+
+            expect(result).toEqual({
+                rawReference: 'Test citation',
+                doi: '10.1234/test',
+                isAccepted: true,
+                showAccepted: true,
+                detectors: [],
+                status: [],
+                pubpeerurl: [],
+                isSuspect: false,
+                isGenuine: false,
+            });
+        });
+
+        it('should parse citation when ref is already an object without DOI (new API)', () => {
+            const citation = {
+                ref: { raw_reference: 'Test citation' },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result).toEqual({
+                rawReference: 'Test citation',
+                doi: undefined,
+                isAccepted: false,
+                showAccepted: false,
+                detectors: [],
+                status: [],
+                pubpeerurl: [],
+                isSuspect: false,
+                isGenuine: false,
+            });
+        });
+
+        it('should mark citation as suspect when detectors are present', () => {
+            const citation = {
+                ref: {
+                    raw_reference: 'Suspect paper',
+                    doi: '10.1234/suspect',
+                    detectors: ['tortured', 'citejacked'],
+                    status: ['Problematic'],
+                    pubpeerurl: ['https://pubpeer.com/publications/ABC'],
+                },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.isSuspect).toBe(true);
+            expect(result.isGenuine).toBe(false);
+            expect(result.detectors).toEqual(['tortured', 'citejacked']);
+            expect(result.status).toEqual(['Problematic']);
+            expect(result.pubpeerurl).toEqual(['https://pubpeer.com/publications/ABC']);
+        });
+
+        it('should mark citation as suspect when only detectors present (no status)', () => {
+            const citation = {
+                ref: { raw_reference: 'Paper', detectors: ['scigen'] },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.isSuspect).toBe(true);
+            expect(result.isGenuine).toBe(false);
+        });
+
+        it('should mark citation as suspect when status is Problematic (no detectors)', () => {
+            const citation = {
+                ref: { raw_reference: 'Paper', status: ['Problematic'] },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.isSuspect).toBe(true);
+            expect(result.isGenuine).toBe(false);
+        });
+
+        it('should mark citation as genuine when status is Genuine and no detectors', () => {
+            const citation = {
+                ref: { raw_reference: 'Genuine paper', status: ['Genuine'] },
+                isAccepted: 1,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, true);
+
+            expect(result.isSuspect).toBe(false);
+            expect(result.isGenuine).toBe(true);
+        });
+
+        it('should let isSuspect override isGenuine when both signals are present', () => {
+            const citation = {
+                ref: {
+                    raw_reference: 'Contradictory paper',
+                    detectors: ['annulled'],
+                    status: ['Genuine'],
+                },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.isSuspect).toBe(true);
+            expect(result.isGenuine).toBe(false);
+        });
+
+        it('should default to empty arrays when Solr fields are absent', () => {
+            const citation = {
+                ref: { raw_reference: 'Normal paper' },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.detectors).toEqual([]);
+            expect(result.status).toEqual([]);
+            expect(result.pubpeerurl).toEqual([]);
+            expect(result.isSuspect).toBe(false);
+            expect(result.isGenuine).toBe(false);
+        });
+
+        it('should wrap pubpeerurl string as single-element array (Solr single-value)', () => {
+            const citation = {
+                ref: {
+                    raw_reference: 'Paper',
+                    pubpeerurl: 'https://pubpeer.com/publications/ABC',
+                },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.pubpeerurl).toEqual(['https://pubpeer.com/publications/ABC']);
+            expect(result.isSuspect).toBe(true);
+        });
+
+        it('should mark citation as suspect when only pubpeerurl is present', () => {
+            const citation = {
+                ref: {
+                    raw_reference: 'Paper',
+                    pubpeerurl: ['https://pubpeer.com/publications/ABC'],
+                },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.isSuspect).toBe(true);
+            expect(result.isGenuine).toBe(false);
         });
     });
 
@@ -374,7 +544,7 @@ describe('BiblioRefRenderer', () => {
             expect(li.innerHTML).not.toContain('<script>');
         });
 
-        it('should escape HTML in DOI', () => {
+        it('should not render a link for unsafe DOI URLs', () => {
             const citation = {
                 rawReference: 'Test',
                 doi: '"><script>alert("xss")</script>',
@@ -383,7 +553,260 @@ describe('BiblioRefRenderer', () => {
 
             const li = renderer.renderCitation(citation);
 
-            expect(li.innerHTML).not.toContain('<script>');
+            // Invalid DOI URL must not produce a link at all
+            expect(li.querySelector('a')).toBeNull();
+            // Reference text is still rendered
+            expect(li.textContent).toContain('Test');
+        });
+    });
+
+    describe('renderSuspectBadges', () => {
+        it('should add suspect class to list item', () => {
+            const citation = {
+                rawReference: 'Suspect paper',
+                doi: '10.1234/s',
+                showAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: ['tortured'],
+                status: [],
+                pubpeerurl: [],
+            };
+
+            const li = renderer.renderCitation(citation);
+
+            expect(li.classList.contains('biblio-ref-item--suspect')).toBe(true);
+        });
+
+        it('should render detector as Bootstrap label badge', () => {
+            const citation = {
+                rawReference: 'Suspect paper',
+                showAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: ['tortured'],
+                status: [],
+                pubpeerurl: [],
+            };
+
+            const li = renderer.renderCitation(citation);
+            const badge = li.querySelector('.label');
+
+            expect(badge).not.toBeNull();
+            expect(badge.textContent).toContain('Tortured Phrases');
+            expect(badge.classList.contains('label-info')).toBe(true);
+        });
+
+        it('should render multiple detector badges', () => {
+            const citation = {
+                rawReference: 'Paper',
+                showAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: ['tortured', 'annulled'],
+                status: [],
+                pubpeerurl: [],
+            };
+
+            const li = renderer.renderCitation(citation);
+            const badges = li.querySelectorAll('.label');
+
+            expect(badges.length).toBe(2);
+            expect(badges[0].textContent).toContain('Tortured Phrases');
+            expect(badges[1].textContent).toContain('Retracted');
+        });
+
+        it('should render status as badge (excluding Genuine)', () => {
+            const citation = {
+                rawReference: 'Paper',
+                showAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: [],
+                status: ['Problematic'],
+                pubpeerurl: [],
+            };
+
+            const li = renderer.renderCitation(citation);
+            const badge = li.querySelector('.label-danger');
+
+            expect(badge).not.toBeNull();
+            expect(badge.textContent).toBe('Problematic');
+        });
+
+        it('should not render Genuine as a status badge in suspect list', () => {
+            const citation = {
+                rawReference: 'Paper',
+                showAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: ['tortured'],
+                status: ['Genuine'],
+                pubpeerurl: [],
+            };
+
+            const li = renderer.renderCitation(citation);
+
+            // Only one badge: the detector, not the Genuine status
+            const badges = li.querySelectorAll('.label');
+            expect(badges.length).toBe(1);
+            expect(badges[0].textContent).toContain('Tortured Phrases');
+        });
+
+        it('should set tooltip (title) from description', () => {
+            const citation = {
+                rawReference: 'Paper',
+                showAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: ['annulled'],
+                status: [],
+                pubpeerurl: [],
+            };
+
+            const li = renderer.renderCitation(citation);
+            const badge = li.querySelector('.label');
+
+            expect(badge.title).toBeTruthy();
+            expect(badge.title).toContain('retracted');
+        });
+
+        it('should fall back to raw key and info color for unknown detector', () => {
+            const citation = {
+                rawReference: 'Paper',
+                showAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: ['unknown-future-detector'],
+                status: [],
+                pubpeerurl: [],
+            };
+
+            const li = renderer.renderCitation(citation);
+            const badge = li.querySelector('.label');
+
+            expect(badge.textContent).toContain('unknown-future-detector');
+            expect(badge.classList.contains('label-info')).toBe(true);
+        });
+
+        it('should render PubPeer link when pubpeerurl is present', () => {
+            const citation = {
+                rawReference: 'Paper',
+                showAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: [],
+                status: [],
+                pubpeerurl: ['https://pubpeer.com/publications/ABC123'],
+            };
+
+            const li = renderer.renderCitation(citation);
+            const link = li.querySelector('.biblio-ref-pubpeer-link');
+
+            expect(link).not.toBeNull();
+            expect(link.href).toBe('https://pubpeer.com/publications/ABC123');
+            expect(link.rel).toContain('noopener');
+            expect(link.rel).toContain('noreferrer');
+            expect(link.target).toBe('_blank');
+            expect(link.getAttribute('aria-label')).toBe('View on PubPeer');
+            expect(link.title).toBe('More information');
+            expect(link.querySelector('.fa-circle-info')).not.toBeNull();
+        });
+
+        it('should add warning icon to detector badges with aria-hidden', () => {
+            const citation = {
+                rawReference: 'Paper',
+                showAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: ['annulled'],
+                status: [],
+                pubpeerurl: [],
+            };
+
+            const li = renderer.renderCitation(citation);
+            const badge = li.querySelector('.label');
+            const icon = badge.querySelector('.fa-triangle-exclamation');
+
+            expect(icon).not.toBeNull();
+            expect(icon.getAttribute('aria-hidden')).toBe('true');
+        });
+
+        it('should not render PubPeer link for non-http URL', () => {
+            const citation = {
+                rawReference: 'Paper',
+                showAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: [],
+                status: ['Problematic'],
+                pubpeerurl: ['javascript:alert(1)'],
+            };
+
+            const li = renderer.renderCitation(citation);
+            const link = li.querySelector('.biblio-ref-pubpeer-link');
+
+            expect(link).toBeNull();
+        });
+
+        it('should render no toggle button and no hidden panel', () => {
+            const citation = {
+                rawReference: 'Paper',
+                showAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: ['scigen'],
+                status: [],
+                pubpeerurl: [],
+            };
+
+            const li = renderer.renderCitation(citation);
+
+            expect(li.querySelector('button')).toBeNull();
+            expect(li.querySelector('.biblio-ref-details')).toBeNull();
+        });
+    });
+
+    describe('renderGenuineBadge', () => {
+        it('should render genuine badge as Bootstrap label-success', () => {
+            const citation = {
+                rawReference: 'Genuine paper',
+                showAccepted: false,
+                isSuspect: false,
+                isGenuine: true,
+            };
+
+            const li = renderer.renderCitation(citation);
+            const badge = li.querySelector('.label-success');
+
+            expect(badge).not.toBeNull();
+            expect(badge.textContent).toBe('Genuine');
+        });
+
+        it('should not add suspect class to genuine citation', () => {
+            const citation = {
+                rawReference: 'Genuine paper',
+                showAccepted: false,
+                isSuspect: false,
+                isGenuine: true,
+            };
+
+            const li = renderer.renderCitation(citation);
+
+            expect(li.classList.contains('biblio-ref-item--suspect')).toBe(false);
+        });
+
+        it('should show no badge for normal citation', () => {
+            const citation = {
+                rawReference: 'Normal paper',
+                showAccepted: false,
+                isSuspect: false,
+                isGenuine: false,
+            };
+
+            const li = renderer.renderCitation(citation);
+
+            expect(li.querySelector('.label')).toBeNull();
         });
     });
 

@@ -66,11 +66,11 @@
     "fakerphp/faker": "^1.23",
     "phpmd/phpmd": "@stable",
     "squizlabs/php_codesniffer": "@stable",
-    "roave/security-advisories": "dev-latest",
     "phpmetrics/phpmetrics": "^2.7",
     "rector/rector": "^2.3",
     "phpstan/phpstan": "^2.1",
-    "symfony/test-pack": "^1.0"
+    "symfony/test-pack": "^1.0",
+    "phpunit/phpunit": "^10.5"
   },
   "license": "GNU GENERAL PUBLIC LICENSE Version 3",
   "support": {
