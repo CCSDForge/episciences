@@ -579,7 +579,6 @@ describe('BiblioRefRenderer', () => {
 
             expect(li.innerHTML).toContain('fa-square-xmark');
             expect(li.innerHTML).not.toContain('fa-square-check');
-            expect(li.innerHTML).not.toContain('fa-regular fa-square');
         });
 
         it('should render fa-square icon for not-accepted citation', () => {
