@@ -140,6 +140,7 @@ describe('BiblioRefParser', () => {
                 doi: '10.1234/test',
                 isAccepted: true,
                 showAccepted: true,
+                showNotAccepted: false,
                 detectors: [],
                 status: [],
                 pubpeerurl: [],
@@ -161,6 +162,7 @@ describe('BiblioRefParser', () => {
                 doi: undefined,
                 isAccepted: false,
                 showAccepted: false,
+                showNotAccepted: false,
                 detectors: [],
                 status: [],
                 pubpeerurl: [],
@@ -217,6 +219,7 @@ describe('BiblioRefParser', () => {
                 doi: '10.1234/test',
                 isAccepted: true,
                 showAccepted: true,
+                showNotAccepted: false,
                 detectors: [],
                 status: [],
                 pubpeerurl: [],
@@ -238,6 +241,7 @@ describe('BiblioRefParser', () => {
                 doi: undefined,
                 isAccepted: false,
                 showAccepted: false,
+                showNotAccepted: false,
                 detectors: [],
                 status: [],
                 pubpeerurl: [],
@@ -504,7 +508,7 @@ describe('BiblioRefRenderer', () => {
 
             expect(li.tagName).toBe('LI');
             expect(li.innerHTML).toContain('Test citation');
-            expect(li.innerHTML).toContain('fa-check');
+            expect(li.innerHTML).toContain('fa-square-check');
             expect(li.innerHTML).toContain('https://doi.org/10.1234/test');
         });
 
@@ -516,7 +520,7 @@ describe('BiblioRefRenderer', () => {
 
             const li = renderer.renderCitation(citation);
 
-            expect(li.innerHTML).not.toContain('fa-check');
+            expect(li.innerHTML).not.toContain('fa-square-check');
             expect(li.innerHTML).toContain('Test citation');
         });
 
@@ -557,6 +561,44 @@ describe('BiblioRefRenderer', () => {
             expect(li.querySelector('a')).toBeNull();
             // Reference text is still rendered
             expect(li.textContent).toContain('Test');
+        });
+
+        it('should render fa-square-xmark icon for suspect citation', () => {
+            const citation = {
+                rawReference: 'Suspect paper',
+                showAccepted: false,
+                showNotAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: [],
+                status: ['Problematic'],
+                pubpeerurl: [],
+            };
+
+            const li = renderer.renderCitation(citation);
+
+            expect(li.innerHTML).toContain('fa-square-xmark');
+            expect(li.innerHTML).not.toContain('fa-square-check');
+            expect(li.innerHTML).not.toContain('fa-square-full');
+        });
+
+        it('should render fa-square-full icon for not-accepted citation', () => {
+            const citation = {
+                rawReference: 'Not accepted paper',
+                showAccepted: false,
+                showNotAccepted: true,
+                isSuspect: false,
+                isGenuine: false,
+                detectors: [],
+                status: [],
+                pubpeerurl: [],
+            };
+
+            const li = renderer.renderCitation(citation);
+
+            expect(li.innerHTML).toContain('fa-square-full');
+            expect(li.innerHTML).not.toContain('fa-square-check');
+            expect(li.innerHTML).not.toContain('fa-square-xmark');
         });
     });
 

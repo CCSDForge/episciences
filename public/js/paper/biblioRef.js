@@ -118,8 +118,9 @@ class BiblioRefParser {
             return {
                 rawReference: parsedRef.raw_reference,
                 doi:          parsedRef.doi,
-                isAccepted:   citation.isAccepted === 1,
-                showAccepted: isAuthorizedToSeeAcc && citation.isAccepted === 1,
+                isAccepted:      citation.isAccepted === 1,
+                showAccepted:    isAuthorizedToSeeAcc && citation.isAccepted === 1,
+                showNotAccepted: isAuthorizedToSeeAcc && citation.isAccepted !== 1,
                 detectors,
                 status,
                 pubpeerurl,
@@ -191,10 +192,19 @@ class BiblioRefRenderer {
             li.classList.add('biblio-ref-item--suspect');
         }
 
-        // Add acceptance icon if authorized and accepted
-        if (citation.showAccepted) {
-            const icon = this._makeIcon('fa-sharp fa-solid fa-check');
+        // Add suspect / accepted / not-accepted icon
+        if (citation.isSuspect) {
+            const icon = this._makeIcon('fa-solid fa-square-xmark');
+            icon.style.color = '#c0392b';
+            li.appendChild(icon);
+            li.appendChild(document.createTextNode(' '));
+        } else if (citation.showAccepted) {
+            const icon = this._makeIcon('fa-solid fa-square-check');
             icon.style.color = '#009527';
+            li.appendChild(icon);
+            li.appendChild(document.createTextNode(' '));
+        } else if (citation.showNotAccepted) {
+            const icon = this._makeIcon('fa-regular fa-square-full');
             li.appendChild(icon);
             li.appendChild(document.createTextNode(' '));
         }
