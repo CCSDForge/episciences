@@ -46,7 +46,7 @@ class GenerateSitemapCommand extends Command
             $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
         }
 
-        $client = new Client();
+        $client = new Client(['base_uri' => EPISCIENCES_API_URL]);
 
         try {
             $this->generate($rvcode, $prettyPrint, $client, $logger);
@@ -112,7 +112,7 @@ class GenerateSitemapCommand extends Command
                 $url = $data['hydra:view']['hydra:next'] ?? null;
             } while ($url !== null);
         } catch (GuzzleException $e) {
-            $logger->error('Error fetching papers from API', ['rvcode' => $rvcode, 'error' => $e->getMessage()]);
+            $logger->error('Error fetching papers from API', ['rvcode' => $rvcode, 'url' => $url, 'error' => $e->getMessage()]);
         }
 
         return $entries;
