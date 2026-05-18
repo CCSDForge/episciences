@@ -22,6 +22,8 @@ class Episciences_Submit
     public const DD_FILE_ELEMENT_NAME = 'file_data_descriptor';
     public const DD_PREVIOUS_VERSION_STR = 'previous_dataset_version_number';
     protected $_db = null;
+    public const POSTED_VOLUME_KEY = 'volumes';
+    public const POSTED_SECTION_KEY = 'sections';
 
     public function __construct()
     {
@@ -872,7 +874,7 @@ class Episciences_Submit
                 $paper->setVersion(null);
             }
 
-            $docId = $paper->alreadyExists();
+            $docId = $paper->findExistingDocId();
 
             if ($docId) {
                 $oldPaper = Episciences_PapersManager::partialGet($docId, $rvId);
@@ -1401,7 +1403,7 @@ class Episciences_Submit
     private function paperAlreadyExists(array $paperData): bool
     {
         $paper = $this->createPaperInstance($paperData);
-        return (bool)$paper->alreadyExists();
+        return $paper->alreadyExists();
     }
 
     /**
@@ -1479,16 +1481,18 @@ class Episciences_Submit
         $result = ['code' => 1, 'message' => '', 'docId' => (int)$paper->getDocid()];
 
         $this->initializePaperAfterSave($paper, Ccsd_Tools::ifsetor($data['can_replace'], false));
-        $this->logPaperAction($paper, $data);
-        $this->cleanupOldData($paper, $data);
-        $this->processRepositoryHooks($paper, $enrichment);
-        $this->handlePostSaveProcessing($paper, $enrichment);
-
         $this->processCoverLetterAndDataDescriptor($paper, $data);
         $this->saveAllAuthorSuggestions($data, $result);
 
         $recipients = $this->handleNotifications($paper, $data);
         $this->sendNotifications($paper, $recipients, $data);
+        $this->logPaperAction($paper, $data);
+
+        // Enrichments
+        $this->cleanupOldData($paper, $data);
+        $this->processRepositoryHooks($paper, $enrichment);
+        $this->handlePostSaveProcessing($paper, $enrichment);
+
 
         $result['message'] = '<strong>' . $this->translate('Votre article a bien été enregistré.') . '</strong>';
         return $result;
@@ -1629,7 +1633,7 @@ class Episciences_Submit
 
         if (!$canReplace) {
             $suggestedEditors = $this->getSuggestedEditorsFromPost($data);
-            return $this->assignEditors($paper, $suggestedEditors, $data['SID'] ?? null, $data['VID'] ?? null);
+            return $this->assignEditors($paper, $suggestedEditors, $data[self::POSTED_SECTION_KEY] ?? null, $data[self::POSTED_VOLUME_KEY] ?? null);
         }
 
         return $paper->getEditors(true, true);
@@ -2126,8 +2130,8 @@ class Episciences_Submit
         $values['REPOID'] = $data['search_doc']['repoId'];
         $values['RVID'] = RVID;
         $values['VERSION'] = is_numeric($data['search_doc']['version']) ? $data['search_doc']['version'] : 1;
-        $values['VID'] = Ccsd_Tools::ifsetor($data['volumes'], 0);
-        $values['SID'] = Ccsd_Tools::ifsetor($data['sections'], 0);
+        $values['VID'] = Ccsd_Tools::ifsetor($data[self::POSTED_VOLUME_KEY], 0);
+        $values['SID'] = Ccsd_Tools::ifsetor($data[self::POSTED_SECTION_KEY], 0);
         $values['UID'] = Episciences_Auth::getUid();
 
         // Default submission status and date

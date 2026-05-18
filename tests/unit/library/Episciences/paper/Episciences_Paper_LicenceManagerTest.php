@@ -53,7 +53,7 @@ final class Episciences_Paper_LicenceManagerTest extends TestCase {
         }
     }
 
-    public function getApiResponseByRepoIdDataProvider(): array
+    public static function getApiResponseByRepoIdDataProvider(): array
     {
         return [
             'HAL repository' => [
@@ -130,7 +130,7 @@ final class Episciences_Paper_LicenceManagerTest extends TestCase {
         $this->assertEquals($expected, $result);
     }
 
-    public function shouldRateLimitDataProvider(): array
+    public static function shouldRateLimitDataProvider(): array
     {
         return [
             'HAL - no rate limit' => [Episciences_Repositories::HAL_REPO_ID, false],

@@ -109,18 +109,24 @@ class BiblioRefApiClient extends AbstractApiClient
 
         $result = [];
         foreach ($decoded as $citation) {
-            if (!is_array($citation) || !isset($citation['ref']) || !is_string($citation['ref'])) {
+            if (!is_array($citation) || !isset($citation['ref'])) {
                 continue;
             }
 
-            try {
-                $reference = json_decode($citation['ref'], true, 512, JSON_THROW_ON_ERROR);
-            } catch (\JsonException $e) {
-                $this->logger->warning(sprintf('BiblioRef: skipping citation with invalid ref JSON: %s', $e->getMessage()));
-                continue;
-            }
-
-            if (!is_array($reference)) {
+            // Handle both old API (ref is a JSON-encoded string) and new API (ref is already decoded)
+            if (is_string($citation['ref'])) {
+                try {
+                    $reference = json_decode($citation['ref'], true, 512, JSON_THROW_ON_ERROR);
+                } catch (\JsonException $e) {
+                    $this->logger->warning(sprintf('BiblioRef: skipping citation with invalid ref JSON: %s', $e->getMessage()));
+                    continue;
+                }
+                if (!is_array($reference)) {
+                    continue;
+                }
+            } elseif (is_array($citation['ref'])) {
+                $reference = $citation['ref'];
+            } else {
                 continue;
             }
 

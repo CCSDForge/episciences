@@ -50,12 +50,11 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
             $tmpData = [];
 
             $explodedChecksum = explode(':', $file['checksum']);
-            $explodedFileName = explode('.', $file['key']);
 
             $tmpData['doc_id'] = $hookParams['docId'];
             $tmpData['source'] = $hookParams['repoId'];
             $tmpData['file_name'] = $file['key'];
-            $tmpData['file_type'] = $explodedFileName[array_key_last($explodedFileName)] ?? 'undefined';
+            $tmpData['file_type'] = pathinfo($file['key'], PATHINFO_EXTENSION);
             $tmpData['file_size'] = $file['size'];
             $tmpData['checksum'] = $explodedChecksum[array_key_last($explodedChecksum)] ?? null;
             $tmpData['checksum_type'] = $explodedChecksum[array_key_first($explodedChecksum)] ?? null;
@@ -323,7 +322,7 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
         $creatorsDc = [];
         $type = []; // title, type & subtype;
         $authors = []; // enrichment
-        $metadata = $data['metadata'];
+        $metadata = $data['metadata'] ?? [];
 
         if (isset($metadata['resource_type'])) {
             $type = array_values($metadata['resource_type']);
@@ -340,7 +339,8 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
 
         $dcType = mb_strtolower($type[Episciences_Paper::TITLE_TYPE_INDEX] ??
             $type[Episciences_Paper::TYPE_TYPE_INDEX] ??
-            $type[Episciences_Paper::TYPE_SUBTYPE_INDEX]);
+            $type[Episciences_Paper::TYPE_SUBTYPE_INDEX] ??
+            '');
 
 
         if (isset($metadata['creators']) && is_array($metadata['creators'])) {

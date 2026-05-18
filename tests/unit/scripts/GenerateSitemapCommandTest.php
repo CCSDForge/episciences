@@ -5,7 +5,6 @@ namespace unit\scripts;
 use GenerateSitemapCommand;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputDefinition;
 
 require_once __DIR__ . '/../../../scripts/GenerateSitemapCommand.php';
@@ -33,12 +32,19 @@ class GenerateSitemapCommandTest extends TestCase
         $this->assertSame('sitemap:generate', $this->command->getName());
     }
 
-    public function testCommandHasRvcodeArgument(): void
+    public function testCommandHasRvcodeOption(): void
     {
         $definition = $this->command->getDefinition();
         $this->assertInstanceOf(InputDefinition::class, $definition);
-        $this->assertTrue($definition->hasArgument('rvcode'));
-        $this->assertSame(InputArgument::REQUIRED, $definition->getArgument('rvcode')->isRequired() ? InputArgument::REQUIRED : InputArgument::OPTIONAL);
+        $this->assertTrue($definition->hasOption('rvcode'));
+        $this->assertTrue($definition->getOption('rvcode')->isValueRequired(), '--rvcode must require a value');
+    }
+
+    public function testCommandHasAllOption(): void
+    {
+        $definition = $this->command->getDefinition();
+        $this->assertTrue($definition->hasOption('all'));
+        $this->assertFalse($definition->getOption('all')->acceptValue(), '--all must be a flag');
     }
 
     public function testCommandHasPrettyOption(): void

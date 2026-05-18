@@ -80,6 +80,13 @@ class Ccsd_Auth_Asso_Ext
      */
     function __construct($uidCcsd, $uidExt, $serverId, $serverName, $serverUrl, $serverType, $serverOrder, $valid = true)
     {
+        trigger_error(
+            '[DEAD CODE AUDIT 2026-05-08] ' . __CLASS__ . ' is scheduled for removal.'
+            . ' Do NOT use this class in new code. If this message appears in production logs,'
+            . ' report it to the development team immediately.',
+            E_USER_DEPRECATED
+        );
+
 
         $this->setUidCcsd($uidCcsd);
         $this->setUidExt($uidExt);

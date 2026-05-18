@@ -69,7 +69,7 @@
                                     class="glyphicon glyphicon-trash"></span></button>
 					</span>
                                 <input type="hidden"
-                                       value="<?= htmlspecialchars(Zend_Json::encode(['id' => $metadata->getId(), 'title' => $metadata->getTitles(), 'content' => $metadata->getContents(), 'file' => $metadata->getFile()])) ?>">
+                                       value="<?= htmlspecialchars(Zend_Json::encode(['id' => $metadata->getId(), 'title' => $metadata->getTitles(), 'content' => $metadata->getContents(), 'file' => $metadata->getFile()]), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false) ?>">
                             </div>
                         <?php endforeach; ?>
 

@@ -184,7 +184,7 @@ class Episciences_Paper_Dataset
     /**
      * @param string $metatextCitation
      */
-    public function setMetatextCitation(string $metatextCitation): void
+    public function setMetatextCitation(string $metatextCitation = ''): void
     {
         $this->metatextCitation = $metatextCitation;
     }
