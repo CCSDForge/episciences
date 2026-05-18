@@ -15,9 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 ### Performances
 -->
-## Unreleased
+## v1.0.55 - 2026-05-18
+
 ### Added
-### Added
+- Automatic detection of problematic papers cited in the references of the papers. This is heavily based on the huge work provided by the Problematic Paper Screener https://dbrech.irit.fr/pls/apex/f?p=9999:1::::::
+For more information: Cabanac, G., Labbé, C., & Magazinov, A. (2022). The ‘Problematic Paper Screener’ automatically selects suspect publications for post-publication (re)assessment.
+                      Presented at WCRI 2022: 7th World Conference on Research Integrity. arXiv preprint. https://doi.org/10.48550/arXiv.2210.04895
+
 - [#630](https://github.com/CCSDForge/episciences/issues/630) COI (Conflict of Interest) notifications:
     - Email notification to the editor-in-chief when an editor declares a positive COI (answered "yes")
     - Email notification to other assigned editors (if any) when an editor declares a COI
@@ -27,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A bug that likely appeared in the latest update: section and/or volume editors are not assigned automatically, even if the relevant settings are enabled.
 - Panel not opening when updating linked data
 - Submission of a dataset without a data descriptor due to an error while uploading attached files (one of the file types exceeded the maximum allowed size for that field type)
+
 ## v1.0.54.3 - 2026-04-23
 
 ### Fixed
@@ -192,7 +197,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `DoiAsLink::DoiAsLink()`: fixed label when no text provided.
 - `Ccsd\Auth\Adapter\Idp::filterEmail()`: fixed regex bypass with `preg_quote()` and anchors.
 - Fixed RT#277365: added TinyMCE configuration options to handle `<br>` and `<p>` correctly.
-- [#886](https://github.com/CCSDForge/episciences/issues/886): reminder A bug that likely appeared in the latest update: section and/or volume editors are not assigned automatically, even if the relevant settings are enabled. logic for lack of reviewers fixed.
+- [#886](https://github.com/CCSDForge/episciences/issues/886): reminder logic for lack of reviewers fixed.
 - `convertToBytes()`: fixed handling of pure numeric strings and added validation.
 - `isHal()`, `isHalUrl()`, `isArxiv()`: fixed regex anchors.
 - Added comprehensive test coverage for `Episciences_Tools`.
@@ -239,7 +244,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Escaped output in `volume/editors_list.phtml` to prevent potential XSS.
 - Fixed XSS vulnerability in `Projects/ViewFormatter`: funding URL was interpolated unescaped into `href` attribute and link text.
 - Fixed XSS in `Citations_ViewFormatter`: `href=` attributes for DOI and OA links were unquoted.
-- Fixed XSS vulnerability in `ViewFormatter::buildAuthorHtml()` and `buildAffiliationListHtml()` regarding user-controlled values in HTML attributes.A bug that likely appeared in the latest update: section and/or volume editors are not assigned automatically, even if the relevant settings are enabled. 
+- Fixed XSS vulnerability in `ViewFormatter::buildAuthorHtml()` and `buildAffiliationListHtml()` regarding user-controlled values in HTML attributes.
 - Fixed potential Solr query injection in `TeiCacheManager::buildApiUrl()`.
 - `GetAvatar::asPaperStatusSvg()`: fixed two path traversal vectors ($lang sanitization and $paperStatus casting).
 - `DoiAsLink::DoiAsLink()`: added `rel="noopener noreferrer"` to prevent tab-napping.
