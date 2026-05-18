@@ -2386,7 +2386,7 @@ return array(
     "Afficher les references bibliographiques" => "Show bibliographical references",
     "Chargement" => "Loading",
     "Masquer les références bibliographique" => "Hide bibliographical references",
-    "Gérer" => "Manage",
+    "Gérer les références" => "Manage References",
     "Type de volume non pris en charge pour l'export Crossref." => 'Volume type not supported for Crossref export.',
 
     // relationships linked data
