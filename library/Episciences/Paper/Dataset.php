@@ -195,13 +195,13 @@ class Episciences_Paper_Dataset
         // handling URLs for which we know we have an unstructured text to produce a citation
         if ($this->getMetatext() !== null && (Episciences_Tools::isHal($this->getValue())  || ($this->getName() === 'zbmath'))    ) {
             $metadataHal = json_decode($this->getMetatext(), true);
-            $metatextCitation = $metadataHal['citationFull'];
+            $metatextCitation = $metadataHal['citationFull'] ?? '';
         } elseif ($this->getMetatext() !== null) {
             $metatextRaw = sprintf("[%s]", $this->getMetatext());
             try {
                 $style = StyleSheet::loadStyleSheet("apa");
                 $citeProc = new CiteProc($style, "en-US", self::getMetatextCitationAdditionalMarkup());
-                $metatextCitation = $citeProc->render(json_decode($metatextRaw));
+                $metatextCitation = $citeProc->render(json_decode($metatextRaw)) ?? '';
             } catch (CiteProcException $e) {
                 trigger_error($e->getMessage());
             }
