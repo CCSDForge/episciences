@@ -10,6 +10,11 @@
                     </a>
                 <?php endif; ?>
                 <ol id="biblio-refs-container"></ol>
+                <div class="biblio-ref-legend">
+                    <small>
+                        <i class="fa-solid fa-square-xmark" style="color:#c0392b;"></i> <?= $this->translate('Référence problématique') ?>
+                    </small>
+                </div>
                 <div id="visualize-biblio-refs" data-value="<?= $this->urlcallapibib ?>"
                      data-api="<?= $this->apiEpiBibCitation ?>"
                      <?php if ($this->enabledManageFromPublicPage === true) : ?>data-all="1" <?php endif; ?>

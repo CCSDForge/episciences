@@ -579,10 +579,10 @@ describe('BiblioRefRenderer', () => {
 
             expect(li.innerHTML).toContain('fa-square-xmark');
             expect(li.innerHTML).not.toContain('fa-square-check');
-            expect(li.innerHTML).not.toContain('fa-square-full');
+            expect(li.innerHTML).not.toContain('fa-regular fa-square');
         });
 
-        it('should render fa-square-full icon for not-accepted citation', () => {
+        it('should render fa-square icon for not-accepted citation', () => {
             const citation = {
                 rawReference: 'Not accepted paper',
                 showAccepted: false,
@@ -596,7 +596,7 @@ describe('BiblioRefRenderer', () => {
 
             const li = renderer.renderCitation(citation);
 
-            expect(li.innerHTML).toContain('fa-square-full');
+            expect(li.innerHTML).toContain('fa-square');
             expect(li.innerHTML).not.toContain('fa-square-check');
             expect(li.innerHTML).not.toContain('fa-square-xmark');
         });

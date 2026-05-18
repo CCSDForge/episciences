@@ -204,7 +204,7 @@ class BiblioRefRenderer {
             li.appendChild(icon);
             li.appendChild(document.createTextNode(' '));
         } else if (citation.showNotAccepted) {
-            const icon = this._makeIcon('fa-regular fa-square-full');
+            const icon = this._makeIcon('fa-regular fa-square');
             li.appendChild(icon);
             li.appendChild(document.createTextNode(' '));
         }
