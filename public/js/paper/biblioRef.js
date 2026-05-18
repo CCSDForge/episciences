@@ -1,6 +1,6 @@
 /**
  * BiblioRef - Modern bibliographic references visualization
- * Handles fetching and displaying citations from Semantic Scholar API
+ * Handles fetching and displaying citations from external API
  */
 
 /**
@@ -317,17 +317,6 @@ class BiblioRefRenderer {
     }
 
     /**
-     * Render source attribution
-     * @returns {HTMLElement} Source element
-     */
-    renderSource() {
-        const source = document.createElement('small');
-        source.className = 'label label-default';
-        source.textContent = 'Sources : Semantic Scholar';
-        return source;
-    }
-
-    /**
      * Render error message
      * @param {string} message - Error message
      * @returns {HTMLLIElement} List item with error
@@ -350,9 +339,6 @@ class BiblioRefRenderer {
         citations.forEach(citation => {
             fragment.appendChild(this.renderCitation(citation));
         });
-
-        // Add source attribution
-        fragment.appendChild(this.renderSource());
 
         // Clear and append all at once
         this.container.textContent = '';

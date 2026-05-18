@@ -810,16 +810,6 @@ describe('BiblioRefRenderer', () => {
         });
     });
 
-    describe('renderSource', () => {
-        it('should render source attribution', () => {
-            const source = renderer.renderSource();
-
-            expect(source.tagName).toBe('SMALL');
-            expect(source.className).toBe('label label-default');
-            expect(source.textContent).toBe('Sources : Semantic Scholar');
-        });
-    });
-
     describe('renderError', () => {
         it('should render error message', () => {
             const error = renderer.renderError('Test error');
@@ -844,11 +834,10 @@ describe('BiblioRefRenderer', () => {
 
             renderer.renderCitations(citations);
 
-            expect(container.children.length).toBe(4); // 3 citations + 1 source
+            expect(container.children.length).toBe(3);
             expect(container.innerHTML).toContain('Citation 1');
             expect(container.innerHTML).toContain('Citation 2');
             expect(container.innerHTML).toContain('Citation 3');
-            expect(container.innerHTML).toContain('Semantic Scholar');
         });
 
         it('should clear existing content', () => {
@@ -1159,8 +1148,7 @@ describe('BiblioRefManager', () => {
             await manager.initialize();
 
             const container = document.getElementById('biblio-refs-container');
-            // Should only have 1 valid citation + source
-            expect(container.children.length).toBe(2);
+            expect(container.children.length).toBe(1);
             expect(container.innerHTML).toContain('Valid citation');
 
             consoleSpy.mockRestore();
