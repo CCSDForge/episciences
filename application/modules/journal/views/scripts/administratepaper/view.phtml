@@ -42,6 +42,7 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
 <?php // Bloc "Papier" ***************************************************** ?>
     <div>
         <?= $paper->getXslt() ?>
+        <?= $this->render('paper/info-license-box.phtml') ?>
         <?php // Data Descriptor ?>
         <?= $this->render('partials/paper_data_descriptor_bloc.phtml') ?>
         <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
