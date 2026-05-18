@@ -892,6 +892,35 @@ describe('BiblioRefRenderer', () => {
             expect(container.innerHTML).toContain('New citation');
         });
 
+        it('should reveal public legend when at least one citation is suspect', () => {
+            const legend = document.createElement('div');
+            legend.id = 'biblio-ref-legend-public';
+            legend.setAttribute('hidden', '');
+            document.body.appendChild(legend);
+
+            renderer.renderCitations([
+                { rawReference: 'Normal', showAccepted: false, isSuspect: false },
+                { rawReference: 'Suspect', showAccepted: false, isSuspect: true, detectors: [], status: [], pubpeerurl: [] },
+            ]);
+
+            expect(legend.hasAttribute('hidden')).toBe(false);
+            document.body.removeChild(legend);
+        });
+
+        it('should keep public legend hidden when no suspect citation', () => {
+            const legend = document.createElement('div');
+            legend.id = 'biblio-ref-legend-public';
+            legend.setAttribute('hidden', '');
+            document.body.appendChild(legend);
+
+            renderer.renderCitations([
+                { rawReference: 'Normal', showAccepted: false, isSuspect: false },
+            ]);
+
+            expect(legend.hasAttribute('hidden')).toBe(true);
+            document.body.removeChild(legend);
+        });
+
         it('should use document fragment for performance', () => {
             const createFragmentSpy = jest.spyOn(
                 document,

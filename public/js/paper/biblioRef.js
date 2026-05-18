@@ -344,16 +344,19 @@ class BiblioRefRenderer {
      * @param {Array} citations - Array of formatted citations
      */
     renderCitations(citations) {
-        // Create fragment for better performance
         const fragment = document.createDocumentFragment();
 
         citations.forEach(citation => {
             fragment.appendChild(this.renderCitation(citation));
         });
 
-        // Clear and append all at once
         this.container.textContent = '';
         this.container.appendChild(fragment);
+
+        const publicLegend = document.getElementById('biblio-ref-legend-public');
+        if (publicLegend && citations.some(c => c.isSuspect)) {
+            publicLegend.removeAttribute('hidden');
+        }
     }
 
     /**
