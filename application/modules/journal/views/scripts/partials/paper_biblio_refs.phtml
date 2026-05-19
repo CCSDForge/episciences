@@ -2,23 +2,48 @@
     <div class="panel-body in">
         <div class="row">
             <div class="col-md-12">
-                <?php if ($this->enabledManageFromPublicPage === true) : ?>
-                    <a id="epi-citation-app-enabled-public" style="margin-bottom: 8px;" class="btn btn-default btn-sm"
-                       target="_blank"
-                       href="<?= $this->apiEpiBibCitation ?>/login?repoid=<?= $this->repoId ?>&url=<?= $this->urlcallapibib ?>"><i
-                                class="fas fa-edit"></i> <?= $this->translate('Gérer') ?>
-                    </a>
-                    <a id="epi-citation-app-bibtex-enabled-public" style="margin-bottom: 8px;"
-                       class="btn btn-default btn-sm"
-                       target="_blank"
-                       href="<?= $this->apiEpiBibCitation ?>/login?repoid=<?= $this->repoId ?>&url=<?= $this->urlcallapibib ?>&exportbib=1">
-                        <i class="fa-solid fa-file-import"></i> <?= $this->translate('Import BibTeX') ?>
-                    </a>
+                <?php
+                $showButton     = $this->enabledManageFromPublicPage === true;
+                $showFullLegend = Episciences_Auth::isLogged();
+                ?>
+                <?php if ($showButton || $showFullLegend): ?>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <?php if ($showButton): ?>
+                            <a id="epi-citation-app-enabled-public" class="btn btn-default btn-sm" target="_blank"
+                               href="<?= $this->apiEpiBibCitation ?>/login?repoid=<?= $this->repoId ?>&url=<?= $this->urlcallapibib ?>">
+                                <i class="fas fa-edit" aria-hidden="true"></i>
+                                <?= $this->translate('Gérer les références') ?>
+                                <span class="sr-only"><?= $this->translate('(ouvre dans un nouvel onglet)') ?></span>
+                            </a>
+                        <?php else: ?>
+                            <span></span>
+                        <?php endif; ?>
+                        <?php if ($showFullLegend): ?>
+                            <div class="biblio-ref-legend" id="biblio-ref-legend-public-full" style="text-align:right;">
+                                <small>
+                                    <i class="fa-solid fa-square-xmark" aria-hidden="true" style="color:#c0392b;"></i> <?= $this->translate('Référence problématique') ?>
+                                    &nbsp;&nbsp;
+                                    <i class="fa-solid fa-square-check" aria-hidden="true" style="color:#009527;"></i> <?= $this->translate('Référence validée') ?>
+                                    &nbsp;&nbsp;
+                                    <i class="fa-solid fa-square" aria-hidden="true" style="color:#aaa;"></i> <?= $this->translate('Référence extraite automatiquement') ?>
+                                </small>
+                            </div>
+                        <?php else: ?>
+                            <span></span>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
-                <ol id="biblio-refs-container"></ol>
+                <ol id="biblio-refs-container"
+                    aria-label="<?= $this->translate('Références bibliographiques') ?>"
+                    aria-describedby="<?= $showFullLegend ? 'biblio-ref-legend-public-full' : 'biblio-ref-legend-public' ?>"></ol>
+                <div class="biblio-ref-legend" id="biblio-ref-legend-public" hidden>
+                    <small>
+                        <i class="fa-solid fa-square-xmark" aria-hidden="true" style="color:#c0392b;"></i> <?= $this->translate('Référence problématique') ?>
+                    </small>
+                </div>
                 <div id="visualize-biblio-refs" data-value="<?= $this->urlcallapibib ?>"
                      data-api="<?= $this->apiEpiBibCitation ?>"
-                     <?php if ($this->enabledManageFromPublicPage === true) : ?>data-all="1" <?php endif; ?>
+                     <?php if ($showButton): ?>data-all="1" <?php endif; ?>
                      hidden></div>
             </div>
         </div>

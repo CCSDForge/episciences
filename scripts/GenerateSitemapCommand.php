@@ -67,7 +67,7 @@ class GenerateSitemapCommand extends Command
         $io->writeln(sprintf('Journals to process: %s', implode(', ', $rvcodes)));
         $logger->info(sprintf('Journals to process: %s', implode(', ', $rvcodes)));
 
-        $client   = new Client();
+        $client = new Client(['base_uri' => EPISCIENCES_API_URL]);
         $failures = [];
 
         foreach ($rvcodes as $code) {
@@ -144,7 +144,7 @@ class GenerateSitemapCommand extends Command
                 $url = $data['hydra:view']['hydra:next'] ?? null;
             } while ($url !== null);
         } catch (GuzzleException $e) {
-            $logger->error('Error fetching papers from API', ['rvcode' => $rvcode, 'error' => $e->getMessage()]);
+            $logger->error('Error fetching papers from API', ['rvcode' => $rvcode, 'url' => $url, 'error' => $e->getMessage()]);
         }
 
         return $entries;
