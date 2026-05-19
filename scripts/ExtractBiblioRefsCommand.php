@@ -165,6 +165,11 @@ class ExtractBiblioRefsCommand extends Command
             }
 
             if ($articleUrl === '') {
+                $paper = Episciences_PapersManager::get($paperDocId);
+                $articleUrl = ($paper instanceof Episciences_Paper) ? ((string) ($paper->getMainPaperUrl() ?? '')) : '';
+            }
+
+            if ($articleUrl === '') {
                 $logger->warning(sprintf('DOCID %d — could not determine article URL (REPOID %d), skipping', $paperDocId, (int) $row['REPOID']));
                 $failed++;
                 $io->progressAdvance();
