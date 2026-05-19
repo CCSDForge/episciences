@@ -20,154 +20,154 @@ class Episciences_Tools
      * Bidirectional mapping between ISO 639-2/T and ISO 639-2/B codes
      */
     private const ISO639_BIDIRECTIONAL_MAP = [
-            'alb' => 'sqi', 'sqi' => 'alb', // Albanian
-            'arm' => 'hye', 'hye' => 'arm', // Armenian
-            'baq' => 'eus', 'eus' => 'baq', // Basque
-            'bur' => 'mya', 'mya' => 'bur', // Burmese
-            'chi' => 'zho', 'zho' => 'chi', // Chinese
-            'cze' => 'ces', 'ces' => 'cze', // Czech
-            'dut' => 'nld', 'nld' => 'dut', // Dutch
-            'fre' => 'fra', 'fra' => 'fre', // French
-            'geo' => 'kat', 'kat' => 'geo', // Georgian
-            'ger' => 'deu', 'deu' => 'ger', // German
-            'gre' => 'ell', 'ell' => 'gre', // Greek (modern)
-            'ice' => 'isl', 'isl' => 'ice', // Icelandic
-            'mac' => 'mkd', 'mkd' => 'mac', // Macedonian
-            'mao' => 'mri', 'mri' => 'mao', // Maori
-            'may' => 'msa', 'msa' => 'may', // Malay
-            'per' => 'fas', 'fas' => 'per', // Persian
-            'rum' => 'ron', 'ron' => 'rum', // Romanian
-            'slo' => 'slk', 'slk' => 'slo', // Slovak
-            'tib' => 'bod', 'bod' => 'tib', // Tibetan
-            'wel' => 'cym', 'cym' => 'wel', // Welsh
+        'alb' => 'sqi', 'sqi' => 'alb', // Albanian
+        'arm' => 'hye', 'hye' => 'arm', // Armenian
+        'baq' => 'eus', 'eus' => 'baq', // Basque
+        'bur' => 'mya', 'mya' => 'bur', // Burmese
+        'chi' => 'zho', 'zho' => 'chi', // Chinese
+        'cze' => 'ces', 'ces' => 'cze', // Czech
+        'dut' => 'nld', 'nld' => 'dut', // Dutch
+        'fre' => 'fra', 'fra' => 'fre', // French
+        'geo' => 'kat', 'kat' => 'geo', // Georgian
+        'ger' => 'deu', 'deu' => 'ger', // German
+        'gre' => 'ell', 'ell' => 'gre', // Greek (modern)
+        'ice' => 'isl', 'isl' => 'ice', // Icelandic
+        'mac' => 'mkd', 'mkd' => 'mac', // Macedonian
+        'mao' => 'mri', 'mri' => 'mao', // Maori
+        'may' => 'msa', 'msa' => 'may', // Malay
+        'per' => 'fas', 'fas' => 'per', // Persian
+        'rum' => 'ron', 'ron' => 'rum', // Romanian
+        'slo' => 'slk', 'slk' => 'slo', // Slovak
+        'tib' => 'bod', 'bod' => 'tib', // Tibetan
+        'wel' => 'cym', 'cym' => 'wel', // Welsh
     ];
     public static $bashColors = [
-            'red' => "\033[0;31m",
-            'blue' => "\033[0;34m",
-            'green' => "\033[0;32m",
-            'cyan' => "\033[0;36m",
-            'purple' => "\033[0;35m",
-            'light_gray' => "\033[0;37m",
-            'dark_gray' => "\033[1;30m",
-            'light_blue' => "\033[1;34m",
-            'light_green' => "\033[1;32m",
-            'light_cyan' => "\033[1;36m",
-            'light_red' => "\033[1;31m",
-            'light_purple' => "\033[1;35m",
-            'yellow' => "\033[1;33m",
-            'bold' => "\033[1m",
-            'default' => "\033[0m"
+        'red' => "\033[0;31m",
+        'blue' => "\033[0;34m",
+        'green' => "\033[0;32m",
+        'cyan' => "\033[0;36m",
+        'purple' => "\033[0;35m",
+        'light_gray' => "\033[0;37m",
+        'dark_gray' => "\033[1;30m",
+        'light_blue' => "\033[1;34m",
+        'light_green' => "\033[1;32m",
+        'light_cyan' => "\033[1;36m",
+        'light_red' => "\033[1;31m",
+        'light_purple' => "\033[1;35m",
+        'yellow' => "\033[1;33m",
+        'bold' => "\033[1m",
+        'default' => "\033[0m"
     ];
 
     public static $latex2utf8 = [
         //cedilla
-            "\\c{c}" => 'ç',
-            "\\c c" => 'ç',
+        "\\c{c}" => 'ç',
+        "\\c c" => 'ç',
         //ogonek
-            "\\k{a}" => 'ą',
-            "\\k a" => 'ą',
+        "\\k{a}" => 'ą',
+        "\\k a" => 'ą',
         //barred l (l with stroke)
-            "\\l{}" => 'ł',
-            "\\l " => 'ł',
+        "\\l{}" => 'ł',
+        "\\l " => 'ł',
         //dot under the letter
-            "\\d{u}" => 'ụ',
-            "\\d u" => 'ụ',
+        "\\d{u}" => 'ụ',
+        "\\d u" => 'ụ',
         //ring over the letter (for å there is also the special command \aa)
-            "\\r{a}" => 'å',
-            "\\r a" => 'å',
+        "\\r{a}" => 'å',
+        "\\r a" => 'å',
         //caron/háček ("v") over the letter
-            "\\v{s}" => 'š',
-            "\\v s" => 'š',
-            "\\v{r}" => 'ř',
-            "\\v r" => 'ř',
+        "\\v{s}" => 'š',
+        "\\v s" => 'š',
+        "\\v{r}" => 'ř',
+        "\\v r" => 'ř',
         // git #270 : (circumflex)
-            '\\^a' => 'â',
+        '\\^a' => 'â',
 
         // a
         //acute accent
-            "\\'{a}" => 'á',
-            "\\'a" => 'á',
+        "\\'{a}" => 'á',
+        "\\'a" => 'á',
         // grave accent
-            "\\`{a}" => 'à',
-            "\\`a" => 'à',
-            "\\u{a}" => 'ă',
-            "\\u a" => 'ă',
+        "\\`{a}" => 'à',
+        "\\`a" => 'à',
+        "\\u{a}" => 'ă',
+        "\\u a" => 'ă',
         // a trema
-            "\\\"{a}" => 'ä',
-            "\\\"a" => 'ä',
+        "\\\"{a}" => 'ä',
+        "\\\"a" => 'ä',
 
 
         // e
         //grave accent
-            "\\`{e}" => 'è',
-            "\\`e" => 'è',
+        "\\`{e}" => 'è',
+        "\\`e" => 'è',
 
         //acute accent
-            "\\'{e}" => 'é',
-            "\\'e" => 'é',
+        "\\'{e}" => 'é',
+        "\\'e" => 'é',
         //circumflex
-            "\\^{e}" => 'ê',
-            "\\^e" => 'ê',
+        "\\^{e}" => 'ê',
+        "\\^e" => 'ê',
         //umlaut, trema or dieresis
-            "\\\"{e}" => 'ë',
-            "\\\"e" => 'ë',
+        "\\\"{e}" => 'ë',
+        "\\\"e" => 'ë',
 
         // i
-            "\\`i" => "ì",
+        "\\`i" => "ì",
 
         // o
         //grave accent
-            "\\`{o}" => 'ò',
-            "\\`o" => 'ò',
+        "\\`{o}" => 'ò',
+        "\\`o" => 'ò',
         //acute accent
-            "\\'{o}" => 'ó',
-            "\\'o" => 'ó',
+        "\\'{o}" => 'ó',
+        "\\'o" => 'ó',
         // c with acute accent (Polish)
-            "\\'{c}" => 'ć',
-            "\\'c" => 'ć',
+        "\\'{c}" => 'ć',
+        "\\'c" => 'ć',
         // n with acute accent (Polish)
-            "\\'{n}" => 'ń',
-            "\\'n" => 'ń',
+        "\\'{n}" => 'ń',
+        "\\'n" => 'ń',
         // y with acute accent (Czech/Slovak)
-            "\\'{y}" => 'ý',
-            "\\'y" => 'ý',
+        "\\'{y}" => 'ý',
+        "\\'y" => 'ý',
         //circumflex
-            "\\^{o}" => 'ô',
-            "\\^o" => 'ô',
+        "\\^{o}" => 'ô',
+        "\\^o" => 'ô',
         //umlaut, trema or dieresis
-            "\\\"{o}" => 'ö',
-            "\\\"o" => 'ö',
+        "\\\"{o}" => 'ö',
+        "\\\"o" => 'ö',
         //long Hungarian umlaut (double acute)
-            "\\H{o}" => 'ő',
-            "\\H o" => 'ő',
+        "\\H{o}" => 'ő',
+        "\\H o" => 'ő',
         //tilde
-            "\\~{o}" => 'õ',
-            "\\~o" => 'õ',
+        "\\~{o}" => 'õ',
+        "\\~o" => 'õ',
         //macron accent (bar over the letter)
-            "\\={o}" => 'ō',
-            "\\=o" => 'ō',
+        "\\={o}" => 'ō',
+        "\\=o" => 'ō',
         //bar under the letter
-            "\\b{o}" => 'o',
-            "\\b o" => 'o',
+        "\\b{o}" => 'o',
+        "\\b o" => 'o',
         //dot over the letter
-            "\\.{o}" => 'ȯ',
-            "\\.o" => 'ȯ',
+        "\\.{o}" => 'ȯ',
+        "\\.o" => 'ȯ',
         //breve over the letter
-            "\\u{o}" => 'ŏ',
-            "\\u o" => 'ŏ',
+        "\\u{o}" => 'ŏ',
+        "\\u o" => 'ŏ',
         //"tie" (inverted u) over the two letters
-            "\\t{oo}" => 'o͡o',
-            "\\t oo" => 'o͡o',
+        "\\t{oo}" => 'o͡o',
+        "\\t oo" => 'o͡o',
         //slashed o (o with stroke)
         //"\\o" => 'ø',
 
         // u
         //long Hungarian umlaut (double acute)
-            "\\H{u}" => "ű",
-            "\\H u" => "ű",
+        "\\H{u}" => "ű",
+        "\\H u" => "ű",
         //umlaut, trema or dieresis
-            "\\\"{u}" => 'ü',
-            "\\\"u" => 'ü',
+        "\\\"{u}" => 'ü',
+        "\\\"u" => 'ü',
 
     ];
 
@@ -1092,12 +1092,12 @@ class Episciences_Tools
         }
 
         return json_encode(
-                [
-                        'draw' => $draw,
-                        'recordsTotal' => $recordsTotal,
-                        'recordsFiltered' => $recordsFiltred,
-                        'data' => $data
-                ]
+            [
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltred,
+                'data' => $data
+            ]
         );
 
     }
@@ -1180,10 +1180,10 @@ class Episciences_Tools
      * @return bool
      */
     public static function cpFiles(
-            array  $filesList,
-            string $source,
-            string $dest,
-            bool   $storeDestinationPathInSession = false
+        array  $filesList,
+        string $source,
+        string $dest,
+        bool   $storeDestinationPathInSession = false
     ): bool
     {
 
@@ -1384,8 +1384,8 @@ class Episciences_Tools
         }
 
         $unitMap = [
-                'b' => 0, 'k' => 1, 'm' => 2,
-                'g' => 3, 't' => 4, 'p' => 5, 'e' => 6,
+            'b' => 0, 'k' => 1, 'm' => 2,
+            'g' => 3, 't' => 4, 'p' => 5, 'e' => 6,
         ];
 
         $lastChar = strtolower($humanReadableVal[strlen($humanReadableVal) - 1]);
@@ -1789,10 +1789,10 @@ class Episciences_Tools
      * @throws Exception
      */
     public static function getAttachmentsPath(
-            string $root = null,
-            bool   $forceMkDir = false,
-            int    $randomBytesLength = 6,
-            int    $strSplitLength = 2
+        string $root = null,
+        bool   $forceMkDir = false,
+        int    $randomBytesLength = 6,
+        int    $strSplitLength = 2
     ): string
     {
 
@@ -1863,15 +1863,15 @@ class Episciences_Tools
      * @return \League\CommonMark\Output\RenderedContentInterface|string
      */
     public static function convertMarkdownToHtml(
-            string $markdown,
-            array  $options = [],
-            string $converterType = 'commonMark'
+        string $markdown,
+        array  $options = [],
+        string $converterType = 'commonMark'
     )
     {
 
         $options = empty($options) ? [
-                'html_input' => 'strip',
-                'allow_unsafe_links' => false,
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
         ] : $options;
 
 
@@ -2076,9 +2076,9 @@ class Episciences_Tools
 
         // Clean Handle.net URLs (with or without protocol)
         return preg_replace(
-                '~^(https?:\/\/)?hdl\.handle\.net\/~i',
-                '',
-                $input
+            '~^(https?:\/\/)?hdl\.handle\.net\/~i',
+            '',
+            $input
         );
     }
 
@@ -2119,7 +2119,7 @@ class Episciences_Tools
     {
         $matches = [];
         preg_match("/^https?:\/\/arxiv\.org\/abs\/((?:\d{4}.\d{4,5}|[a-z\-]+(?:\.[A-Z]{2})?\/\d{7})(?:v\d+)?)/"
-                , $url, $matches);
+            , $url, $matches);
         return $matches;
     }
 
@@ -2143,12 +2143,12 @@ class Episciences_Tools
         }
 
         $checks = [
-                'hal' => fn($val) => self::isHalUrl($val) || self::isHal($val),
-                'doi' => fn($val) => self::isDoi($val),
-                'software' => fn($val) => self::isSoftwareHeritageId($val),
-                'arxiv' => fn($val) => self::isArxiv($val),
-                'handle' => fn($val) => self::isHandle($val),
-                'url' => fn($val) => Zend_Uri::check($val)
+            'hal' => fn($val) => self::isHalUrl($val) || self::isHal($val),
+            'doi' => fn($val) => self::isDoi($val),
+            'software' => fn($val) => self::isSoftwareHeritageId($val),
+            'arxiv' => fn($val) => self::isArxiv($val),
+            'handle' => fn($val) => self::isHandle($val),
+            'url' => fn($val) => Zend_Uri::check($val)
         ];
 
         foreach ($checks as $type => $checkFunction) {
@@ -2282,9 +2282,9 @@ class Episciences_Tools
      * spaceCleaner(null, true, false) // Returns: ""
      */
     public static function spaceCleaner(
-            string|array|null $input,
-            bool              $stripBr = true,
-            bool              $allUtf8 = false
+        string|array|null $input,
+        bool              $stripBr = true,
+        bool              $allUtf8 = false
     ): string|array
     {
         // Handle null input
@@ -2375,13 +2375,13 @@ class Episciences_Tools
         });
 
         $options = [
-                'http' => [
-                        'method' => 'GET',
-                        'timeout' => $timeout // timeout en secondes
-                ],
-                'header' => [
-                        'User-Agent' => EPISCIENCES_USER_AGENT
-                ]
+            'http' => [
+                'method' => 'GET',
+                'timeout' => $timeout // timeout en secondes
+            ],
+            'header' => [
+                'User-Agent' => EPISCIENCES_USER_AGENT
+            ]
         ];
 
         $context = stream_context_create($options);
