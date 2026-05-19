@@ -2408,13 +2408,19 @@ class Episciences_Tools
         if ($date instanceof DateTime) {
             $result = clone $date; // We clone so as not to alter the original
         } else {
-            $result = new DateTime($date);
+            try {
+                $result = new DateTime($date);
+
+            } catch (\Exception $e) {
+                throw new \InvalidArgumentException("Invalid date format: '{$date}'", 0, $e);
+            }
+
         }
 
-        try {
-            $dateInterval = DateInterval::createFromDateString($interval);
-        } catch (Exception $e) {
-            throw new \RuntimeException("Invalid interval format: {$interval}", 0, $e);
+        $dateInterval = DateInterval::createFromDateString($interval);
+
+        if ($dateInterval === false) {
+            throw new \InvalidArgumentException("Invalid interval format: {$interval}", 0, $e);
         }
 
         $result->sub($dateInterval);
