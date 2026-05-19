@@ -111,6 +111,7 @@ class ExtractBiblioRefsCommand extends Command
             $select->where('p.DOCID = ?', (int) $docid);
         } else {
             $select->where('p.STATUS IN (?)', $statuses);
+            $select->where('p.REPOID != 0'); // exclude temporary versions (no external repository)
         }
 
         if ($rvid !== null) {
@@ -135,6 +136,7 @@ class ExtractBiblioRefsCommand extends Command
         $extracted        = 0;
         $alreadyExtracted = 0;
         $failed           = 0;
+        $skipped          = 0;
 
         $io->progressStart($total);
 
@@ -143,6 +145,13 @@ class ExtractBiblioRefsCommand extends Command
             $rvCode     = (string) $row['CODE'];
             $newFront   = $row['is_new_front_switched'] === 'yes';
             $isPublished = (int) $row['STATUS'] === Episciences_Paper::STATUS_PUBLISHED;
+
+            if ((int) $row['REPOID'] === 0) {
+                $logger->info(sprintf('DOCID %d — temporary version, skipped', $paperDocId));
+                $skipped++;
+                $io->progressAdvance();
+                continue;
+            }
 
             if ($isPublished) {
                 $path       = $newFront ? '/articles/' . $paperDocId : '/' . $paperDocId;
@@ -191,9 +200,10 @@ class ExtractBiblioRefsCommand extends Command
 
         if (!$dryRun) {
             $logger->info(sprintf(
-                'Extraction complete — extracted: %d, already done: %d, failed: %d (total: %d)',
+                'Extraction complete — extracted: %d, already done: %d, skipped: %d, failed: %d (total: %d)',
                 $extracted,
                 $alreadyExtracted,
+                $skipped,
                 $failed,
                 $total
             ));

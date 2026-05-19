@@ -2401,8 +2401,10 @@ return array(
     "Afficher les references bibliographiques" => "Show bibliographical references",
     "Chargement" => "Loading",
     "Masquer les références bibliographique" => "Hide bibliographical references",
-    "Gérer" => "Manage",
-    "Import BibTeX" => "BibTeX import",
+    "Gérer les références" => "Manage References",
+    "Référence problématique" => "Problematic reference",
+    "Référence validée" => "Validated reference",
+    "Référence extraite automatiquement" => "Automatically extracted reference",
     "Type de volume non pris en charge pour l'export Crossref." => 'Volume type not supported for Crossref export.',
 
     // relationships linked data
