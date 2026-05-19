@@ -118,6 +118,7 @@ class Episciences_Paper_LicenceManager
         $metadata = simplexml_load_string($xmlString);
         if ($metadata === false) {
             trigger_error('Invalid XML', E_USER_WARNING);
+            return '';
         }
 
         // Register namespaces for OAI-PMH and DataCite
