@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Sending the invitation in the user’s language, including when using the autocomplete input field for CAS users who already have a profile on the site.
+- [#1010](https://github.com/CCSDForge/episciences/issues/1010) Sending the invitation in the user’s language, including when using the autocomplete input field for CAS users who already have a profile on the site.
 - Simplified news add/edit form for a better user experience.
 - Refactored OpenAIRE integration into a dedicated `OpenAireApiClient`.
 - Improved PHP 8.1 compatibility and robustness across the codebase (removed deprecations and warnings).
