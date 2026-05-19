@@ -2432,11 +2432,11 @@ class Episciences_Tools
      * @param string $date
      * @param string $interval
      * @param string $format
-     * @return string|null
+     * @return string
      * @throws Exception
      */
 
-    public static function subDateInterval(string $date, string $interval, string $format = 'Y-m-d'): ?string
+    public static function subDateInterval(string $date, string $interval, string $format = 'Y-m-d'): string
     {
         return self::subDateIntervalDateTime($date, $interval)->format($format);
     }
