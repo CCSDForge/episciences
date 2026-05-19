@@ -605,21 +605,32 @@ class Ccsd_Tools
         return $proc->transformToXML($xml);
     }
 
-
     /**
      * @param string $str
      * @param string|null $lang
      * @return string
      */
-    public static function translate(string $str, string $lang = null): string
+    public static function translateLicense(string $str, string $lang = null): string
     {
         //No translation file is available for this type of license (SPDX); replaced with the official license names
         $code = LicenseSpdxResolver::urlToSpdxCode($str);
 
         if ($code !== ''){
-            return (new LicenseCode(['code' => $code]))->getName();
+            return (new LicenseCode(['code' => $code]))->getName() ?? '';
         }
 
+        return self::translate($str);
+
+    }
+
+
+    /**
+     * @param string $str
+     * @param ?string $lang
+     * @return string
+     */
+    public static function translate(string $str, ?string $lang = null): string
+    {
         try {
             /** @var Zend_Translate_Adapter $translator */
             $translator = Zend_Registry::get('Zend_Translate');
@@ -628,7 +639,7 @@ class Ccsd_Tools
             }
 
             if ($lang !== 'fr' && !$translator->isTranslated($str)) { // log missing translations unless and only if the language is not French
-                Episciences_View_Helper_Log::log(sprintf('Missing translation for string: %s',  $str));
+                error_log(sprintf('Missing translation for string: %s',  $str));
                 return $str;
             }
 

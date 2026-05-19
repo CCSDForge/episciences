@@ -326,7 +326,7 @@
                                     <xsl:value-of select="episciences/paperLicence/text()"/>
                                 </xsl:attribute>
                                 <xsl:value-of
-                                        select="php:function('Ccsd_Tools::translate', string(episciences/paperLicence))"/>
+                                        select="php:function('Ccsd_Tools::translateLicense', string(episciences/paperLicence))"/>
                             </a>
 
                             <button class="btn btn-default btn-xs popover-link edit-license" style="margin-left: 5px">
