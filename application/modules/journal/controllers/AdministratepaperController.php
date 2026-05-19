@@ -1582,7 +1582,7 @@ class AdministratepaperController extends PaperDefaultController
 
         //init invitation form
         $params = [
-                'rating_deadline_min' => $this->getMinEffectiveDeadlineExtension($deadline, $oReview->getSetting('rating_deadline_min')),
+                'rating_deadline_min' => Episciences_Tools::subDateInterval($deadline,$oReview->getSetting('rating_deadline_min')),
                 'rating_deadline_max' => Episciences_Tools::addDateInterval($deadline, $oReview->getSetting('rating_deadline_max'))
         ];
 
@@ -1674,7 +1674,7 @@ class AdministratepaperController extends PaperDefaultController
         // Retrieving time stamps from today's date
         $deadline = date('Y-m-d', strtotime($assignment->getDeadline()));
 
-        $minDeadline = $this->getMinEffectiveDeadlineExtension($deadline,  $journal->getSetting('rating_deadline_min'));
+        $minDeadline = Episciences_Tools::subDateInterval($deadline, $journal->getSetting('rating_deadline_min'));
         $maxDeadline = Episciences_Tools::addDateInterval($deadline, $journal->getSetting('rating_deadline_max'));
 
         $minTimestamp = strtotime($minDeadline);
