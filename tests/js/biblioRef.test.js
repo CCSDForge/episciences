@@ -140,6 +140,7 @@ describe('BiblioRefParser', () => {
                 doi: '10.1234/test',
                 isAccepted: true,
                 showAccepted: true,
+                showNotAccepted: false,
                 detectors: [],
                 status: [],
                 pubpeerurl: [],
@@ -161,6 +162,7 @@ describe('BiblioRefParser', () => {
                 doi: undefined,
                 isAccepted: false,
                 showAccepted: false,
+                showNotAccepted: false,
                 detectors: [],
                 status: [],
                 pubpeerurl: [],
@@ -217,6 +219,7 @@ describe('BiblioRefParser', () => {
                 doi: '10.1234/test',
                 isAccepted: true,
                 showAccepted: true,
+                showNotAccepted: false,
                 detectors: [],
                 status: [],
                 pubpeerurl: [],
@@ -238,6 +241,7 @@ describe('BiblioRefParser', () => {
                 doi: undefined,
                 isAccepted: false,
                 showAccepted: false,
+                showNotAccepted: false,
                 detectors: [],
                 status: [],
                 pubpeerurl: [],
@@ -504,7 +508,7 @@ describe('BiblioRefRenderer', () => {
 
             expect(li.tagName).toBe('LI');
             expect(li.innerHTML).toContain('Test citation');
-            expect(li.innerHTML).toContain('fa-check');
+            expect(li.innerHTML).toContain('fa-square-check');
             expect(li.innerHTML).toContain('https://doi.org/10.1234/test');
         });
 
@@ -516,7 +520,7 @@ describe('BiblioRefRenderer', () => {
 
             const li = renderer.renderCitation(citation);
 
-            expect(li.innerHTML).not.toContain('fa-check');
+            expect(li.innerHTML).not.toContain('fa-square-check');
             expect(li.innerHTML).toContain('Test citation');
         });
 
@@ -557,6 +561,43 @@ describe('BiblioRefRenderer', () => {
             expect(li.querySelector('a')).toBeNull();
             // Reference text is still rendered
             expect(li.textContent).toContain('Test');
+        });
+
+        it('should render fa-square-xmark icon for suspect citation', () => {
+            const citation = {
+                rawReference: 'Suspect paper',
+                showAccepted: false,
+                showNotAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: [],
+                status: ['Problematic'],
+                pubpeerurl: [],
+            };
+
+            const li = renderer.renderCitation(citation);
+
+            expect(li.innerHTML).toContain('fa-square-xmark');
+            expect(li.innerHTML).not.toContain('fa-square-check');
+        });
+
+        it('should render fa-square icon for not-accepted citation', () => {
+            const citation = {
+                rawReference: 'Not accepted paper',
+                showAccepted: false,
+                showNotAccepted: true,
+                isSuspect: false,
+                isGenuine: false,
+                detectors: [],
+                status: [],
+                pubpeerurl: [],
+            };
+
+            const li = renderer.renderCitation(citation);
+
+            expect(li.innerHTML).toContain('fa-square');
+            expect(li.innerHTML).not.toContain('fa-square-check');
+            expect(li.innerHTML).not.toContain('fa-square-xmark');
         });
     });
 
@@ -631,7 +672,7 @@ describe('BiblioRefRenderer', () => {
             const badge = li.querySelector('.label-danger');
 
             expect(badge).not.toBeNull();
-            expect(badge.textContent).toBe('Problematic');
+            expect(badge.textContent).toContain('Problematic');
         });
 
         it('should not render Genuine as a status badge in suspect list', () => {
@@ -780,7 +821,7 @@ describe('BiblioRefRenderer', () => {
             const badge = li.querySelector('.label-success');
 
             expect(badge).not.toBeNull();
-            expect(badge.textContent).toBe('Genuine');
+            expect(badge.textContent).toContain('Genuine');
         });
 
         it('should not add suspect class to genuine citation', () => {
@@ -810,16 +851,6 @@ describe('BiblioRefRenderer', () => {
         });
     });
 
-    describe('renderSource', () => {
-        it('should render source attribution', () => {
-            const source = renderer.renderSource();
-
-            expect(source.tagName).toBe('SMALL');
-            expect(source.className).toBe('label label-default');
-            expect(source.textContent).toBe('Sources : Semantic Scholar');
-        });
-    });
-
     describe('renderError', () => {
         it('should render error message', () => {
             const error = renderer.renderError('Test error');
@@ -844,11 +875,10 @@ describe('BiblioRefRenderer', () => {
 
             renderer.renderCitations(citations);
 
-            expect(container.children.length).toBe(4); // 3 citations + 1 source
+            expect(container.children.length).toBe(3);
             expect(container.innerHTML).toContain('Citation 1');
             expect(container.innerHTML).toContain('Citation 2');
             expect(container.innerHTML).toContain('Citation 3');
-            expect(container.innerHTML).toContain('Semantic Scholar');
         });
 
         it('should clear existing content', () => {
@@ -860,6 +890,35 @@ describe('BiblioRefRenderer', () => {
 
             expect(container.innerHTML).not.toContain('Old content');
             expect(container.innerHTML).toContain('New citation');
+        });
+
+        it('should reveal public legend when at least one citation is suspect', () => {
+            const legend = document.createElement('div');
+            legend.id = 'biblio-ref-legend-public';
+            legend.setAttribute('hidden', '');
+            document.body.appendChild(legend);
+
+            renderer.renderCitations([
+                { rawReference: 'Normal', showAccepted: false, isSuspect: false },
+                { rawReference: 'Suspect', showAccepted: false, isSuspect: true, detectors: [], status: [], pubpeerurl: [] },
+            ]);
+
+            expect(legend.hasAttribute('hidden')).toBe(false);
+            document.body.removeChild(legend);
+        });
+
+        it('should keep public legend hidden when no suspect citation', () => {
+            const legend = document.createElement('div');
+            legend.id = 'biblio-ref-legend-public';
+            legend.setAttribute('hidden', '');
+            document.body.appendChild(legend);
+
+            renderer.renderCitations([
+                { rawReference: 'Normal', showAccepted: false, isSuspect: false },
+            ]);
+
+            expect(legend.hasAttribute('hidden')).toBe(true);
+            document.body.removeChild(legend);
         });
 
         it('should use document fragment for performance', () => {
@@ -1159,8 +1218,7 @@ describe('BiblioRefManager', () => {
             await manager.initialize();
 
             const container = document.getElementById('biblio-refs-container');
-            // Should only have 1 valid citation + source
-            expect(container.children.length).toBe(2);
+            expect(container.children.length).toBe(1);
             expect(container.innerHTML).toContain('Valid citation');
 
             consoleSpy.mockRestore();

@@ -1,6 +1,6 @@
 /**
  * BiblioRef - Modern bibliographic references visualization
- * Handles fetching and displaying citations from Semantic Scholar API
+ * Handles fetching and displaying citations from external API
  */
 
 /**
@@ -118,8 +118,9 @@ class BiblioRefParser {
             return {
                 rawReference: parsedRef.raw_reference,
                 doi:          parsedRef.doi,
-                isAccepted:   citation.isAccepted === 1,
-                showAccepted: isAuthorizedToSeeAcc && citation.isAccepted === 1,
+                isAccepted:      citation.isAccepted === 1,
+                showAccepted:    isAuthorizedToSeeAcc && citation.isAccepted === 1,
+                showNotAccepted: isAuthorizedToSeeAcc && citation.isAccepted !== 1,
                 detectors,
                 status,
                 pubpeerurl,
@@ -179,6 +180,13 @@ class BiblioRefRenderer {
         return icon;
     }
 
+    _makeSrOnly(text) {
+        const span = document.createElement('span');
+        span.className = 'sr-only';
+        span.textContent = text;
+        return span;
+    }
+
     /**
      * Render a single citation as list item
      * @param {Object} citation - Formatted citation object
@@ -191,10 +199,23 @@ class BiblioRefRenderer {
             li.classList.add('biblio-ref-item--suspect');
         }
 
-        // Add acceptance icon if authorized and accepted
-        if (citation.showAccepted) {
-            const icon = this._makeIcon('fa-sharp fa-solid fa-check');
+        // Add suspect / accepted / not-accepted icon
+        if (citation.isSuspect) {
+            const icon = this._makeIcon('fa-solid fa-square-xmark');
+            icon.style.color = '#c0392b';
+            li.appendChild(this._makeSrOnly(typeof translate === 'function' ? translate('Référence problématique') : 'Problematic reference'));
+            li.appendChild(icon);
+            li.appendChild(document.createTextNode(' '));
+        } else if (citation.showAccepted) {
+            const icon = this._makeIcon('fa-solid fa-square-check');
             icon.style.color = '#009527';
+            li.appendChild(this._makeSrOnly(typeof translate === 'function' ? translate('Référence validée') : 'Validated reference'));
+            li.appendChild(icon);
+            li.appendChild(document.createTextNode(' '));
+        } else if (citation.showNotAccepted) {
+            const icon = this._makeIcon('fa-solid fa-square');
+            icon.style.color = '#aaa';
+            li.appendChild(this._makeSrOnly(typeof translate === 'function' ? translate('Référence extraite automatiquement') : 'Automatically extracted reference'));
             li.appendChild(icon);
             li.appendChild(document.createTextNode(' '));
         }
@@ -210,7 +231,8 @@ class BiblioRefRenderer {
                 a.href = formattedDoi.url;
                 a.rel = 'noopener';
                 a.target = '_blank';
-                a.textContent = formattedDoi.text;
+                a.appendChild(document.createTextNode(formattedDoi.text));
+                a.appendChild(this._makeSrOnly(typeof translate === 'function' ? ` (${translate('(ouvre dans un nouvel onglet)')})` : ' (opens in new tab)'));
                 li.appendChild(document.createTextNode(' '));
                 li.appendChild(a);
             }
@@ -238,9 +260,6 @@ class BiblioRefRenderer {
     _makeBadge(label, color, desc, iconClasses) {
         const badge = document.createElement('span');
         badge.className = `label label-${color || 'default'}`;
-        if (desc) {
-            badge.title = desc;
-        }
         if (iconClasses) {
             badge.appendChild(this._makeIcon(iconClasses));
             badge.appendChild(document.createTextNode(' '));
@@ -248,6 +267,10 @@ class BiblioRefRenderer {
         // translate() is a global provided by translation.php; fall back to English label when unavailable
         const text = typeof translate === 'function' ? translate(label) : label;
         badge.appendChild(document.createTextNode(text));
+        if (desc) {
+            badge.title = desc;
+            badge.appendChild(this._makeSrOnly(`, ${desc}`));
+        }
         return badge;
     }
 
@@ -317,17 +340,6 @@ class BiblioRefRenderer {
     }
 
     /**
-     * Render source attribution
-     * @returns {HTMLElement} Source element
-     */
-    renderSource() {
-        const source = document.createElement('small');
-        source.className = 'label label-default';
-        source.textContent = 'Sources : Semantic Scholar';
-        return source;
-    }
-
-    /**
      * Render error message
      * @param {string} message - Error message
      * @returns {HTMLLIElement} List item with error
@@ -336,6 +348,7 @@ class BiblioRefRenderer {
         const li = document.createElement('li');
         li.textContent = message;
         li.className = 'biblio-ref-error';
+        li.setAttribute('role', 'alert');
         return li;
     }
 
@@ -344,19 +357,19 @@ class BiblioRefRenderer {
      * @param {Array} citations - Array of formatted citations
      */
     renderCitations(citations) {
-        // Create fragment for better performance
         const fragment = document.createDocumentFragment();
 
         citations.forEach(citation => {
             fragment.appendChild(this.renderCitation(citation));
         });
 
-        // Add source attribution
-        fragment.appendChild(this.renderSource());
-
-        // Clear and append all at once
         this.container.textContent = '';
         this.container.appendChild(fragment);
+
+        const publicLegend = document.getElementById('biblio-ref-legend-public');
+        if (publicLegend && citations.some(c => c.isSuspect)) {
+            publicLegend.removeAttribute('hidden');
+        }
     }
 
     /**
