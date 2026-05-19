@@ -6,8 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!--
-## Unreleased
-### Fixed
 ### Added
 ### Changed
 ### Deprecated
@@ -15,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 ### Performances
 -->
+
+## v1.0.55.2 - 2026-05-19
+
+### Fixed
+
+- Improved article URL resolution in `ExtractBiblioRefsCommand` by adding fallbacks to `getMainPaperUrl()` and `getDocUrl()` when the repository template is empty (e.g., for Zenodo).
+- Added debug logging for resolved article URLs and included raw response snippets in JSON decode error messages in `ExtractBiblioRefsCommand`.
 
 ## v1.0.55.1 - 2026-05-19
 
