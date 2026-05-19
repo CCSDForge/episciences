@@ -2420,7 +2420,7 @@ class Episciences_Tools
         $dateInterval = DateInterval::createFromDateString($interval);
 
         if ($dateInterval === false) {
-            throw new \InvalidArgumentException("Invalid interval format: {$interval}", 0, $e);
+            throw new \InvalidArgumentException("Invalid interval format: {$interval}");
         }
 
         $result->sub($dateInterval);
