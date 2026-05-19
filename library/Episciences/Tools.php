@@ -2402,7 +2402,7 @@ class Episciences_Tools
      * @return DateTime The modified DateTime object
      * @throws Exception If the date or time range is invalid
      */
-    public static function subDateIntervalDateTime(string|DateTime $date, string $interval): DateTime
+    private static function subDateIntervalDateTime(string|DateTime $date, string $interval): DateTime
     {
 
         if ($date instanceof DateTime) {
