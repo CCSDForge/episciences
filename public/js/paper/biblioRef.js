@@ -180,6 +180,13 @@ class BiblioRefRenderer {
         return icon;
     }
 
+    _makeSrOnly(text) {
+        const span = document.createElement('span');
+        span.className = 'sr-only';
+        span.textContent = text;
+        return span;
+    }
+
     /**
      * Render a single citation as list item
      * @param {Object} citation - Formatted citation object
@@ -196,16 +203,19 @@ class BiblioRefRenderer {
         if (citation.isSuspect) {
             const icon = this._makeIcon('fa-solid fa-square-xmark');
             icon.style.color = '#c0392b';
+            li.appendChild(this._makeSrOnly(typeof translate === 'function' ? translate('Référence problématique') : 'Problematic reference'));
             li.appendChild(icon);
             li.appendChild(document.createTextNode(' '));
         } else if (citation.showAccepted) {
             const icon = this._makeIcon('fa-solid fa-square-check');
             icon.style.color = '#009527';
+            li.appendChild(this._makeSrOnly(typeof translate === 'function' ? translate('Référence validée') : 'Validated reference'));
             li.appendChild(icon);
             li.appendChild(document.createTextNode(' '));
         } else if (citation.showNotAccepted) {
             const icon = this._makeIcon('fa-solid fa-square');
             icon.style.color = '#aaa';
+            li.appendChild(this._makeSrOnly(typeof translate === 'function' ? translate('Référence extraite automatiquement') : 'Automatically extracted reference'));
             li.appendChild(icon);
             li.appendChild(document.createTextNode(' '));
         }
@@ -221,7 +231,8 @@ class BiblioRefRenderer {
                 a.href = formattedDoi.url;
                 a.rel = 'noopener';
                 a.target = '_blank';
-                a.textContent = formattedDoi.text;
+                a.appendChild(document.createTextNode(formattedDoi.text));
+                a.appendChild(this._makeSrOnly(typeof translate === 'function' ? ` (${translate('(ouvre dans un nouvel onglet)')})` : ' (opens in new tab)'));
                 li.appendChild(document.createTextNode(' '));
                 li.appendChild(a);
             }
@@ -249,9 +260,6 @@ class BiblioRefRenderer {
     _makeBadge(label, color, desc, iconClasses) {
         const badge = document.createElement('span');
         badge.className = `label label-${color || 'default'}`;
-        if (desc) {
-            badge.title = desc;
-        }
         if (iconClasses) {
             badge.appendChild(this._makeIcon(iconClasses));
             badge.appendChild(document.createTextNode(' '));
@@ -259,6 +267,10 @@ class BiblioRefRenderer {
         // translate() is a global provided by translation.php; fall back to English label when unavailable
         const text = typeof translate === 'function' ? translate(label) : label;
         badge.appendChild(document.createTextNode(text));
+        if (desc) {
+            badge.title = desc;
+            badge.appendChild(this._makeSrOnly(`, ${desc}`));
+        }
         return badge;
     }
 
@@ -336,6 +348,7 @@ class BiblioRefRenderer {
         const li = document.createElement('li');
         li.textContent = message;
         li.className = 'biblio-ref-error';
+        li.setAttribute('role', 'alert');
         return li;
     }
 

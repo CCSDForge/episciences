@@ -672,7 +672,7 @@ describe('BiblioRefRenderer', () => {
             const badge = li.querySelector('.label-danger');
 
             expect(badge).not.toBeNull();
-            expect(badge.textContent).toBe('Problematic');
+            expect(badge.textContent).toContain('Problematic');
         });
 
         it('should not render Genuine as a status badge in suspect list', () => {
@@ -821,7 +821,7 @@ describe('BiblioRefRenderer', () => {
             const badge = li.querySelector('.label-success');
 
             expect(badge).not.toBeNull();
-            expect(badge.textContent).toBe('Genuine');
+            expect(badge.textContent).toContain('Genuine');
         });
 
         it('should not add suspect class to genuine citation', () => {
