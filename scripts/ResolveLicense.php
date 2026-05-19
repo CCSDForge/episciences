@@ -11,6 +11,8 @@ require_once "AbstractScript.php";
 use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use scripts\AbstractScript;
 
+// todo to be converted to a console command
+
 class ResolveLicense extends AbstractScript
 {
 
@@ -62,7 +64,11 @@ class ResolveLicense extends AbstractScript
             $db->query($sqlDump);
             $db->commit();
         } catch (\Exception $e) {
+            $message = 'Transaction failed: ' . $e->getMessage();
             $db->rollBack();
+            $this->logger->error($message);
+            echo $message;
+            return;
         }
 
         echo PHP_EOL;
