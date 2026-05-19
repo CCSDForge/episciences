@@ -2,23 +2,30 @@
     <div class="panel-body in">
         <div class="row">
             <div id="container-processing-biblio-refs" class="col-md-12">
-                <?php if ($this->paper->isPublished()): ?>
-                    <a id="epi-citation-app" class="btn btn-default btn-sm" target="_blank"
-                       href="<?= $this->apiEpiBibCitation ?>/login?repoid=<?= $this->repoId ?>&url=<?= $this->urlcallapibib ?>"
-                       style="margin-bottom: 8px;"><i
-                                class="fas fa-edit"></i> <?= $this->translate('Gérer les références') ?>
-                    </a>
-                <?php endif; ?>
-                <ol id="biblio-refs-container"></ol>
-                <div class="biblio-ref-legend">
-                    <small>
-                        <i class="fa-solid fa-square-xmark" style="color:#c0392b;"></i> <?= $this->translate('Référence problématique') ?>
-                        &nbsp;&nbsp;
-                        <i class="fa-solid fa-square-check" style="color:#009527;"></i> <?= $this->translate('Référence validée') ?>
-                        &nbsp;&nbsp;
-                        <i class="fa-solid fa-square" style="color:#aaa;"></i> <?= $this->translate('Référence extraite automatiquement') ?>
-                    </small>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <?php if ($this->paper->isPublished()): ?>
+                        <a id="epi-citation-app" class="btn btn-default btn-sm" target="_blank"
+                           href="<?= $this->apiEpiBibCitation ?>/login?repoid=<?= $this->repoId ?>&url=<?= $this->urlcallapibib ?>">
+                            <i class="fas fa-edit" aria-hidden="true"></i>
+                            <?= $this->translate('Gérer les références') ?>
+                            <span class="sr-only"><?= $this->translate('(ouvre dans un nouvel onglet)') ?></span>
+                        </a>
+                    <?php else: ?>
+                        <span></span>
+                    <?php endif; ?>
+                    <div class="biblio-ref-legend" id="biblio-ref-legend-admin" style="text-align:right;">
+                        <small>
+                            <i class="fa-solid fa-square-xmark" aria-hidden="true" style="color:#c0392b;"></i> <?= $this->translate('Référence problématique') ?>
+                            &nbsp;&nbsp;
+                            <i class="fa-solid fa-square-check" aria-hidden="true" style="color:#009527;"></i> <?= $this->translate('Référence validée') ?>
+                            &nbsp;&nbsp;
+                            <i class="fa-solid fa-square" aria-hidden="true" style="color:#aaa;"></i> <?= $this->translate('Référence extraite automatiquement') ?>
+                        </small>
+                    </div>
                 </div>
+                <ol id="biblio-refs-container"
+                    aria-label="<?= $this->translate('Références bibliographiques') ?>"
+                    aria-describedby="biblio-ref-legend-admin"></ol>
                 <div id="visualize-biblio-refs" data-value="<?= $this->urlcallapibib ?>"
                      data-api="<?= $this->apiEpiBibCitation ?>" data-all="1" hidden></div>
             </div>
