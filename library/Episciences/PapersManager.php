@@ -1801,6 +1801,140 @@ class Episciences_PapersManager
         return $form;
     }
 
+    public static function getAltSendProofToAuthorForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-send-proof-to-author-form',
+            '/administratepaper/altsendprooftoauthor/id/' . $default['id'],
+            'csrf_altsendprooftoauthor_' . (int)$default['id'],
+            'altproof-subject',
+            'altproof-message'
+        );
+    }
+
+    public static function getAltReturnToLayoutEditingForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-return-to-layout-editing-form',
+            '/administratepaper/altreturntolayoutediting/id/' . $default['id'],
+            'csrf_altreturntolayoutediting_' . (int)$default['id'],
+            'altreturn-subject',
+            'altreturn-message'
+        );
+    }
+
+    public static function getAltApproveForPublicationForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-approve-for-publication-form',
+            '/administratepaper/altapproveforpublication/id/' . $default['id'],
+            'csrf_altapproveforpublication_' . (int)$default['id'],
+            'altapprove-subject',
+            'altapprove-message'
+        );
+    }
+
+    private static function buildAlternativePipelineForm(
+        array $default,
+        string $formId,
+        string $action,
+        string $csrfName,
+        string $subjectName,
+        string $messageName
+    ): \Ccsd_Form
+    {
+        $form = new Ccsd_Form([
+            'class' => 'form-horizontal',
+            'action' => $action,
+            'id' => $formId
+        ]);
+
+        $form->addElement('hash', $csrfName, ['salt' => 'unique']);
+        $form->getElement($csrfName)->setTimeout(3600);
+
+        $form->setDecorators([[
+            'ViewScript', [
+                'viewScript' => '/administratemail/form.phtml'
+            ]],
+            'FormActions',
+            'Form',
+            'FormCss',
+            'FormJavascript',
+            'FormRequired'
+        ]);
+
+        $author = $default['author'] ?? null;
+        $toValue = ($author instanceof Episciences_User)
+            ? $author->getFullName() . ' <' . $author->getEmail() . '>'
+            : '';
+
+        $form->addElement('text', 'to', [
+            'id' => $formId . '-to',
+            'label' => 'À',
+            'disabled' => true,
+            'value' => $toValue,
+        ]);
+
+        $existingMails = '';
+        if (!empty($default['coAuthor'])) {
+            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
+        }
+        $translator = Zend_Registry::get('Zend_Translate');
+        $title = $translator->translate('Ajouter des destinataires');
+        $form->addElement('text', 'cc', [
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'id' => $formId . '-cc',
+            'value' => $existingMails,
+            'class' => 'autocomplete'
+        ]);
+
+        $form->addElement('text', 'bcc', [
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'id' => $formId . '-bcc',
+            'class' => 'autocomplete'
+        ]);
+
+        $form->addElement('text', 'from', [
+            'id' => $formId . '-from',
+            'label' => 'De',
+            'disabled' => true,
+            'placeholder' => RVCODE . '@' . DOMAIN,
+            'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>',
+        ]);
+
+        $form->addElement('text', 'reply-to', [
+            'id' => $formId . '-reply-to',
+            'label' => 'Répondre à',
+            'disabled' => true,
+            'placeholder' => RVCODE . '@' . DOMAIN,
+            'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>',
+        ]);
+
+        $form->addElement(new Ccsd_Form_Element_Text([
+            'name' => $subjectName,
+            'label' => 'Sujet',
+            'value' => $default['subject'] ?? '',
+        ]));
+
+        $form->addElement(new Ccsd_Form_Element_Textarea([
+            'name' => $messageName,
+            'class' => 'full_mce',
+            'label' => 'Message',
+            'value' => $default['body'] ?? '',
+        ]));
+
+        self::addHiddenDocIdElement($form, $formId, $default['id']);
+
+        if (!empty($default['coAuthor'])) {
+            self::getCoAuthorsForm($default['coAuthor'], $form);
+        }
+
+        return $form;
+    }
+
     /**
      * @param $default
      * @return Ccsd_Form

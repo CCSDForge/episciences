@@ -65,6 +65,23 @@ if (Episciences_Auth::isSecretary()) : ?>
             <?= $this->translate($changeStatusMsg) ?> <span class="caret" style="margin-left: 5px"></span>
         </button>
         <ul class="status-menu dropdown-menu" role="menu">
+            <?php if ((int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1): ?>
+                <?php if ($paper->isLayoutEditingInProgress()) : ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-send-proof-to-author-modal"><?= $this->translate("Envoyer l'épreuve à l'auteur") ?></a>
+                    </li>
+                <?php elseif ($paper->isAltProofSentToAuthor()) : ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-approve-for-publication-modal"><?= $this->translate("Approuver pour publication") ?></a>
+                    </li>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-return-to-layout-editing-modal"><?= $this->translate("Renvoyer en mise en page") ?></a>
+                    </li>
+                <?php endif; ?>
+            <?php endif; ?>
             <?php if ($paper->isReadyToPublish()) : ?>
                 <!-- publication request -->
                 <li>
@@ -242,6 +259,23 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             <?= $this->translate($changeStatusMsg) ?> <span class="caret" style="margin-left: 5px"></span>
         </button>
         <ul class="status-menu dropdown-menu" role="menu">
+            <?php if ((int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1): ?>
+                <?php if ($paper->isLayoutEditingInProgress()) : ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-send-proof-to-author-modal"><?= $this->translate("Envoyer l'épreuve à l'auteur") ?></a>
+                    </li>
+                <?php elseif ($paper->isAltProofSentToAuthor()) : ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-approve-for-publication-modal"><?= $this->translate("Approuver pour publication") ?></a>
+                    </li>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-return-to-layout-editing-modal"><?= $this->translate("Renvoyer en mise en page") ?></a>
+                    </li>
+                <?php endif; ?>
+            <?php endif; ?>
 
             <?php if ($paper->isAccepted()) : ?>
 
@@ -626,6 +660,34 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             'withoutFooter' => true
         ]) ?>
 
+    <?php endif; ?>
+
+    <?php // Alternative editorial pipeline modals (gated by SETTING_ALTERNATIVE_PIPELINE) ?>
+    <?php if (isset($this->altSendProofToAuthorForm) && $paper->isLayoutEditingInProgress()) : ?>
+        <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'alt-send-proof-to-author-modal',
+            'title' => "Envoyer l'épreuve à l'auteur",
+            'body' => $this->altSendProofToAuthorForm
+        ]) ?>
+    <?php endif; ?>
+    <?php if ($paper->isAltProofSentToAuthor()) : ?>
+        <?php if (isset($this->altReturnToLayoutEditingForm)) : ?>
+            <?=
+            $this->partial('partials/paper-status-modal.phtml', [
+                'target' => 'alt-return-to-layout-editing-modal',
+                'title' => "Renvoyer en mise en page",
+                'body' => $this->altReturnToLayoutEditingForm
+            ]) ?>
+        <?php endif; ?>
+        <?php if (isset($this->altApproveForPublicationForm)) : ?>
+            <?=
+            $this->partial('partials/paper-status-modal.phtml', [
+                'target' => 'alt-approve-for-publication-modal',
+                'title' => "Approuver pour publication",
+                'body' => $this->altApproveForPublicationForm
+            ]) ?>
+        <?php endif; ?>
     <?php endif; ?>
 <?php endif; ?>
 

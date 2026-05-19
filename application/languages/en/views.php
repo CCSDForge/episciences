@@ -2421,6 +2421,11 @@ return array(
     "Le lieu de publication a été saisi. Veuillez également indiquer le nom de l'éditeur." => "The place of publication has been entered. Please also indicate the name of the publisher.",
     "Activer le pipeline éditorial alternatif" => "Enable alternative editorial pipeline",
     "Si activé, un pipeline éditorial alternatif sera utilisé pour le traitement des soumissions" => "If enabled, an alternative editorial pipeline will be used for processing submissions",
+    "Envoyer l'épreuve à l'auteur" => "Send proof to author",
+    "Renvoyer en mise en page" => "Return to layout editing",
+    "Approuver pour publication" => "Approve for publication",
+    "Le pipeline alternatif n'est pas activé pour cette revue." => "The alternative pipeline is not enabled for this journal.",
+    "Le statut actuel de l'article ne permet pas cette action." => "The current paper status does not allow this action.",
     // graphical abstract
     "Fichier non accepté" => "File not accepted",
     'Fichier trop volumineux 100 ko max autorisé' => "File size too large 100 ko max authorized",

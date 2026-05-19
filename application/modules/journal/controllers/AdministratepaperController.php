@@ -836,6 +836,26 @@ class AdministratepaperController extends PaperDefaultController
             }
         }
 
+        if (
+            (int)$review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1
+            && Episciences_Auth::isAllowedToManagePaper()
+        ) {
+            $altDefault = [
+                'id' => $paper->getDocid(),
+                'subject' => '',
+                'body' => '',
+                'author' => $contributor,
+                'coAuthor' => $paper->getCoAuthors(),
+            ];
+            if ($paper->isLayoutEditingInProgress()) {
+                $this->view->altSendProofToAuthorForm = Episciences_PapersManager::getAltSendProofToAuthorForm($altDefault);
+            }
+            if ($paper->isAltProofSentToAuthor()) {
+                $this->view->altReturnToLayoutEditingForm = Episciences_PapersManager::getAltReturnToLayoutEditingForm($altDefault);
+                $this->view->altApproveForPublicationForm = Episciences_PapersManager::getAltApproveForPublicationForm($altDefault);
+            }
+        }
+
         $suggestionsStatusForm = $this->getSuggestStatusForm($docId);
         $this->view->suggestionsStatusForm = $suggestionsStatusForm;
 
@@ -2204,6 +2224,131 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+    }
+
+    public function altsendprooftoauthorAction(): void
+    {
+        $this->processAlternativePipelineTransition(
+            'altsendprooftoauthor',
+            Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
+            Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
+            'altproofsubject',
+            'altproofmessage',
+            'author'
+        );
+    }
+
+    public function altreturntolayouteditingAction(): void
+    {
+        $this->processAlternativePipelineTransition(
+            'altreturntolayoutediting',
+            Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
+            Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
+            'altreturnsubject',
+            'altreturnmessage',
+            'copyEditors'
+        );
+    }
+
+    public function altapproveforpublicationAction(): void
+    {
+        $this->processAlternativePipelineTransition(
+            'altapproveforpublication',
+            Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
+            Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION,
+            'altapprovesubject',
+            'altapprovemessage',
+            'author'
+        );
+    }
+
+    private function processAlternativePipelineTransition(
+        string $actionKey,
+        int $expectedStatus,
+        int $targetStatus,
+        string $subjectField,
+        string $messageField,
+        string $recipientType
+    ): void
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $docId = $request->getParam('id');
+
+        $journal = Episciences_ReviewsManager::find(RVID);
+        $journal->loadSettings();
+        $paper = Episciences_PapersManager::get($docId);
+
+        $this->checkPermissions($journal, $paper);
+
+        if (!$request->isPost()) {
+            $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+            return;
+        }
+
+        $csrfName = 'csrf_' . $actionKey . '_' . (int)$docId;
+        $csrfSession = new Zend_Session_Namespace('Zend_Form_Element_Hash_unique_' . $csrfName);
+        $post = $request->getPost();
+        if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
+            $csrfSession->hash = null;
+            $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+            return;
+        }
+        $csrfSession->hash = null;
+
+        if (!$journal->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE)) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Le pipeline alternatif n'est pas activé pour cette revue.");
+            $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+            return;
+        }
+
+        if ($paper->getStatus() !== $expectedStatus) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Le statut actuel de l'article ne permet pas cette action.");
+            $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+            return;
+        }
+
+        $data = $request->getPost();
+        $subject = $data[$subjectField] ?? '';
+        $message = $data[$messageField] ?? '';
+
+        $paper->setStatus($targetStatus);
+        if (!$paper->save()) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti !");
+            $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+            return;
+        }
+
+        $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
+
+        $recipients = $this->resolveAlternativePipelineRecipients($paper, $recipientType);
+        foreach ($recipients as $recipient) {
+            $this->sendMailFromModal($recipient, $paper, $subject, $message, $data);
+        }
+
+        $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
+        $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+    }
+
+    /**
+     * @return Episciences_User[]
+     */
+    private function resolveAlternativePipelineRecipients(Episciences_Paper $paper, string $recipientType): array
+    {
+        if ($recipientType === 'author') {
+            $author = new Episciences_User();
+            if ($author->findWithCAS($paper->getUid())) {
+                return [$author];
+            }
+            return [];
+        }
+
+        // copyEditors with fallback to editors
+        $recipients = $paper->getCopyEditors(true, true);
+        if (empty($recipients)) {
+            $recipients = $paper->getEditors(true, true);
+        }
+        return array_values($recipients);
     }
 
     /**
