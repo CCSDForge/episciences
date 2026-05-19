@@ -165,8 +165,16 @@ class ExtractBiblioRefsCommand extends Command
             }
 
             if ($articleUrl === '') {
-                $paper = Episciences_PapersManager::get($paperDocId);
+                $paper      = Episciences_PapersManager::get($paperDocId);
                 $articleUrl = ($paper instanceof Episciences_Paper) ? ((string) ($paper->getMainPaperUrl() ?? '')) : '';
+            }
+
+            if ($articleUrl === '') {
+                $articleUrl = (string) (Episciences_Repositories::getDocUrl(
+                    (int) $row['REPOID'],
+                    (string) $row['IDENTIFIER'],
+                    $row['VERSION'] !== null ? (float) $row['VERSION'] : null
+                ) ?? '');
             }
 
             if ($articleUrl === '') {
@@ -183,6 +191,7 @@ class ExtractBiblioRefsCommand extends Command
                 continue;
             }
 
+            $logger->info(sprintf('DOCID %d — article URL: %s', $paperDocId, $articleUrl));
             $apiUrl = $baseUrl . '/api/extract?docid=' . $paperDocId . '&url=' . rawurlencode($articleUrl);
             if ($io->isVerbose()) {
                 $io->writeln(sprintf('GET %s', $apiUrl));
@@ -259,7 +268,12 @@ class ExtractBiblioRefsCommand extends Command
         try {
             $data = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
-            $logger->error(sprintf('JSON decode error for %s: %s', $articleUrl, $e->getMessage()));
+            $logger->error(sprintf(
+                'JSON decode error for %s: %s — raw response: %s',
+                $articleUrl,
+                $e->getMessage(),
+                substr($body, 0, 500)
+            ));
             return null;
         }
 
