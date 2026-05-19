@@ -331,7 +331,7 @@
 
                             <button class="btn btn-default btn-xs popover-link edit-license" style="margin-left: 5px">
                                 <xsl:attribute name="onclick">
-                                    <xsl:value-of select="concat('getlicencesForm(this, ', episciences/id,')')"/>
+                                    <xsl:value-of select="concat('getLicensesForm(this, ', episciences/id,')')"/>
                                 </xsl:attribute>
                                 <span class="fa-solid fa-pen-to-square" style="margin-right: 5px"/>
                                 <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Modifier')"/>

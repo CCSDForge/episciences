@@ -4530,18 +4530,18 @@ class AdministratepaperController extends PaperDefaultController
 
                 $license = [
                         'href' => $paper->getLicence(),
-                        'name' =>  $spdxLicense->getName()
+                        'name' =>  $spdxLicense->getName(),
+                        'reloadPage' => true // todo Do this if necessary; see when this applies
                 ];
 
                 $details = ['user' => ['uid' => Episciences_Auth::getUid(), 'fullname' => Episciences_Auth::getFullName()], 'previousLicense' => $oldLicense, 'newLicense' => $newLicense];
-
 
                 try {
                     echo json_encode($license, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     $paper->log(Episciences_Paper_Logger::CODE_LICENSE_UPDATED, Episciences_Auth::getUid(), $details);
                 } catch (JsonException|Zend_Db_Adapter_Exception $e) {
                     trigger_error($e->getMessage());
-                    echo '';
+                    echo 'Failed to save new licence.';
                 }
             }
         }

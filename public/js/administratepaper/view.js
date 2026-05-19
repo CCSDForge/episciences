@@ -1328,7 +1328,7 @@ function valide($target) {
     }
 }
 
-function getlicencesForm(button, docId) {
+function getLicensesForm(button, docId) {
 
     getEditingPopover(
         button,
@@ -1388,18 +1388,21 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
 
                     if (response) {
 
-                        console.log(response);
-
-
                         if (targetToRefreshId === 'paper-license-link' && response !== '') {
 
                             response = JSON.parse(response);
 
-                            console.log(response.name);
-                            console.log(response.href);
-                            $target
-                                .text(response.name)
-                                .attr("href", response.href);
+                            if (!response.error) {
+                                $target
+                                    .text(response.name)
+                                    .attr("href", response.href);
+
+                                if(response.reloadPage){
+                                    location.reload();
+                                }
+                            } else {
+                                console.error(response.error);
+                            }
 
                         } else {
                             $target.html(response);
