@@ -4543,13 +4543,14 @@ class AdministratepaperController extends PaperDefaultController
 
     /**
      * revision request (can be minor or major)
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function revisionAction(): void
     {
@@ -4558,7 +4559,7 @@ class AdministratepaperController extends PaperDefaultController
         $docId = $request->getParam('id');
         $type = $request->getParam('type');
 
-        $allowedTypes = ['minor', 'major', 'acceptedAskAuthorsFinalVersion'];
+        $allowedTypes = ['minor', 'major', Episciences_PapersManager::ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE];
 
         if (!in_array($type, $allowedTypes, true)) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : type incorrect !");
@@ -4568,7 +4569,7 @@ class AdministratepaperController extends PaperDefaultController
 
         $isMinorRevision = ($type === 'minor');
         $isMajorRevision = ($type === 'major');
-        $isAcceptedAskAuthorsFinalVersion = ($type === 'acceptedAskAuthorsFinalVersion');
+        $isAcceptedAskAuthorsFinalVersion = ($type === Episciences_PapersManager::ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE);
 
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
@@ -4584,8 +4585,8 @@ class AdministratepaperController extends PaperDefaultController
         $this->checkPermissions($review, $paper);
 
         if ($request->isPost()) {
-
-            $csrfName = 'csrf_revision_' . $type . '_' . (int)$docId;
+            $csrfPrefix = $isAcceptedAskAuthorsFinalVersion ? '' : 'revision_';
+            $csrfName = sprintf('csrf_%s%s_%s', $csrfPrefix, $type, (int)$docId);
             $csrfSession = new Zend_Session_Namespace('Zend_Form_Element_Hash_unique_' . $csrfName);
             $post = $request->getPost();
             if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
