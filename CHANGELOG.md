@@ -6,8 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!--
-## Unreleased
-### Fixed
 ### Added
 ### Changed
 ### Deprecated
@@ -15,10 +13,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 ### Performances
 -->
-
 ## Unreleased
 ### Changed
 - [#1010](https://github.com/CCSDForge/episciences/issues/1010) The allowed range for modifying the deadline is now between the original deadline minus "rating_deadline_min" and the original deadline plus "rating_deadline_max".
+
+
+## v1.0.55.2 - 2026-05-19
+
+### Fixed
+
+- Improved article URL resolution in `ExtractBiblioRefsCommand` by adding fallbacks to `getMainPaperUrl()` and `getDocUrl()` when the repository template is empty (e.g., for Zenodo).
+- Added debug logging for resolved article URLs and included raw response snippets in JSON decode error messages in `ExtractBiblioRefsCommand`.
+
+## v1.0.55.1 - 2026-05-19
+
+### Added
+
+- Legend for bibliographic reference status icons in both admin and public views (publicly shown only when problematic references are detected).
+
+### Changed
+
+- Replaced bibliographic reference status indicators with standardized square icons (red `fa-square-xmark` for problematic, green `fa-square-check` for validated, and gray `fa-square` for automatically extracted references).
+- Improved accessibility of bibliographic references (added ARIA landmarks, screen-reader-only status prefixes, descriptions for status badges, and warnings for links opening in new tabs).
+- Optimized bibliographic references layout by moving the status legend inline with the action button.
+- Renamed 'Not validated reference' to 'Automatically extracted reference' for clarity.
+- Renamed 'Manage' button to 'Manage References' / 'Gérer les références' in the administration view.
+
+### Fixed
+
+- Removed obsolete BibTeX import button (feature migrated to an external application).
+- Removed hardcoded Semantic Scholar source attribution from bibliographic references display.
+- Skip temporary versions (without external repository URL) during bibliographic reference extraction.
+- Fixed a missing dependency (`require_once`) for `GetDoiCommand` in `console.php`.
 
 ## v1.0.55 - 2026-05-18
 
