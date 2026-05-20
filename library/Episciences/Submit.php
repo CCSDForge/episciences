@@ -1746,12 +1746,12 @@ class Episciences_Submit
      * Assigne automatiquement les rédacteurs à un article (git #43), selon les paramètres de la revue
      * @param Episciences_Paper $paper
      * @param array $suggestEditors : editeurs suggérés par l'auteur,
-     * @param int|null $sid : l'ID de la rubrique; Null par defaut
-     * @param int|null $vid : l'ID du volume; Null par defaut
-     * @return array : les Editeurs assignés à l'article
+     * @param int|string|null $sid : l'ID de la rubrique; Null par defaut
+     * @param int|string|null $vid : l'ID du volume; Null par defaut
+     * @return array : les Editeurs assignés à l'articles
      * @throws Zend_Db_Statement_Exception
      */
-    private function assignEditors(Episciences_Paper $paper, array $suggestEditors = [], ?int $sid = null, ?int $vid = null): array
+    private function assignEditors(Episciences_Paper $paper, array $suggestEditors = [], int|string|null $sid = null, int|string|null $vid = null): array
     {
         /** @var Episciences_Review $review */
         $review = Episciences_ReviewsManager::find(RVID);
