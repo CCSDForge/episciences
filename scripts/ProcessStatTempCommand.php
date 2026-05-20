@@ -73,7 +73,7 @@ class ProcessStatTempCommand extends Command
 
         $this->noDns = $noDns;
 
-        if ($all && !$dryRun && !$io->confirm('Process ALL records? This may take a long time.', false)) {
+        if ($all && !$dryRun && !$io->confirm('Process ALL records? This may take a long time.', !$input->isInteractive())) {
             $io->writeln('Operation cancelled.');
             return Command::SUCCESS;
         }

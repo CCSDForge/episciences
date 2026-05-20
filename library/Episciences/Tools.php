@@ -2392,4 +2392,52 @@ class Episciences_Tools
         }
         return $content;
     }
+
+
+    /**
+     * Subtract a time interval from a given date.
+     *
+     * @param string|DateTime $date The start date (string or DateTime object)
+     * @param string $interval The interval in text format (e.g., “1 day”, “2 months”)
+     * @return DateTime The modified DateTime object
+     * @throws Exception If the date or time range is invalid
+     */
+    private static function subDateIntervalDateTime(string|DateTime $date, string $interval): DateTime
+    {
+
+        if ($date instanceof DateTime) {
+            $result = clone $date; // We clone so as not to alter the original
+        } else {
+            try {
+                $result = new DateTime($date);
+
+            } catch (\Exception $e) {
+                throw new \InvalidArgumentException("Invalid date format: '{$date}'", 0, $e);
+            }
+
+        }
+
+        $dateInterval = DateInterval::createFromDateString($interval);
+
+        if ($dateInterval === false) {
+            throw new \InvalidArgumentException("Invalid interval format: {$interval}");
+        }
+
+        $result->sub($dateInterval);
+
+        return $result;
+    }
+
+    /**
+     * @param string $date
+     * @param string $interval
+     * @param string $format
+     * @return string
+     * @throws Exception
+     */
+
+    public static function subDateInterval(string $date, string $interval, string $format = 'Y-m-d'): string
+    {
+        return self::subDateIntervalDateTime($date, $interval)->format($format);
+    }
 }
