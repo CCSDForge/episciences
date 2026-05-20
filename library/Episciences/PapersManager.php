@@ -3305,20 +3305,30 @@ class Episciences_PapersManager
             'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>']);
 
         if ($displayDeadlineElement) {
+
+            $review = Episciences_ReviewsManager::find(RVID);
+            $isRequiredRevisionDeadline = (bool)$review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE);
+
             $subjectStr = '-revision-subject'; // see /public/js/administratepaper/view.js
             $messageStr = '-revision-message';
             $minDate = date('Y-m-d');
             $maxDate = Episciences_Tools::addDateInterval($minDate, Episciences_Review::DEFAULT_REVISION_DEADLINE_MAX);
 
-            $form->addElement('date', $prefix . '-revision-deadline', [
-                'id' => $prefix . '-revision-deadline',
-                'label' => 'Date limite de réponse',
-                'class' => 'form-control',
-                'pattern' => '[A-Za-z]{3}',
-                'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Optionnelle'),
-                'attr-mindate' => $minDate,
-                'attr-maxdate' => $maxDate
-            ]);
+            $deadlineFieldOptions = [
+                    'id' => $prefix . '-revision-deadline',
+                    'label' => 'Date limite de réponse',
+                    'class' => 'form-control',
+                    'pattern' => '[A-Za-z]{3}',
+                    'placeholder' => !$isRequiredRevisionDeadline ? Zend_Registry::get('Zend_Translate')->translate('Optionnelle') : Zend_Registry::get('Zend_Translate')->translate('Veuillez préciser une date limite'),
+                    'attr-mindate' => $minDate,
+                    'attr-maxdate' => $maxDate
+            ];
+
+            if ($isRequiredRevisionDeadline) {
+                $deadlineFieldOptions['required'] = true;
+            }
+
+            $form->addElement('date', $prefix . '-revision-deadline', $deadlineFieldOptions );
 
         }
 
