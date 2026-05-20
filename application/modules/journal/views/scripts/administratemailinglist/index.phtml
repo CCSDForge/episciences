@@ -29,6 +29,7 @@
                     <thead style="background: #fcfcfc;">
                         <tr>
                             <th scope="col" style="padding: 15px;"><?php echo $this->translate('Name'); ?></th>
+                            <th scope="col" style="padding: 15px;"><?php echo $this->translate('Last updated'); ?></th>
                             <th scope="col" style="padding: 15px;"><?php echo $this->translate('Type'); ?></th>
                             <th scope="col" style="padding: 15px; text-align: center;"><?php echo $this->translate('Members'); ?></th>
                             <th scope="col" style="padding: 15px; text-align: center;"><?php echo $this->translate('Status'); ?></th>
@@ -52,6 +53,20 @@
                                         <span class="copy-feedback label label-success" style="display: none; margin-left: 8px; font-weight: normal; font-size: 0.75em;"><?php echo $this->translate('Copied!'); ?></span>
                                     </div>
                                 </th>
+                                <td style="padding: 15px; vertical-align: middle;">
+                                    <?php
+                                    $updatedAt = $list->getUpdatedAt();
+                                    $dtUpdated = $updatedAt ? \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $updatedAt) : false;
+                                    ?>
+                                    <?php if ($dtUpdated): ?>
+                                        <time datetime="<?php echo $this->escape($dtUpdated->format('c')); ?>"
+                                              title="<?php echo $this->escape($dtUpdated->format('Y-m-d H:i:s')); ?>">
+                                            <?php echo $this->escape($dtUpdated->format('d M Y')); ?>
+                                        </time>
+                                    <?php else: ?>
+                                        <span class="text-muted">—</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td style="padding: 15px; vertical-align: middle;">
                                     <span class="text-muted"><?php echo $this->translate($list->getType()); ?></span>
                                 </td>

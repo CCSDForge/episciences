@@ -15,6 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performances
 -->
 
+## Unreleased
+
+### Added
+
+- Mailing lists: added `created_at` and `updated_at` columns to the `mailing_lists` table.
+- Mailing lists: four MySQL triggers propagate `updated_at` to the parent row when individual members or roles are modified.
+- Mailing lists: `v_mailing_lists_resolved` view now exposes `list_created_at` and `list_updated_at`.
+- Mailing lists: "Last updated" column displayed after "Name" in the dashboard table.
+- Mailing lists: creation date displayed (read-only) in the list edit form.
+
 ## v1.0.55.3 - 2026-05-20
 
 ### Fixed

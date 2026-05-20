@@ -1865,6 +1865,8 @@ return array(
     "Are you sure you want to delete this list?" => "Are you sure you want to delete this list?",
     "Edit Mailing List" => "Edit Mailing List",
     "Create a new Mailing List" => "Create a new Mailing List",
+    "Last updated" => "Last updated",
+    "Created" => "Created",
     "Manage members for: " => "Manage members for: ",
     "Roles" => "Roles",
     "Users with these roles will be automatically included." => "Users with these roles will be automatically included.",
