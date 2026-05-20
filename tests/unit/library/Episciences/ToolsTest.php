@@ -2010,6 +2010,64 @@ class ToolsTest extends TestCase
     }
 
     // ============================================================================
+    // Tests for subDateInterval()
+    // ============================================================================
+
+    public function testSubDateIntervalDateTime_ReturnsDateTimeObject(): void
+    {
+        $result = Episciences_Tools::subDateIntervalDateTime('2024-01-10', '5 days');
+        $this->assertInstanceOf(\DateTime::class, $result);
+        $this->assertSame('2024-01-05', $result->format('Y-m-d'));
+    }
+
+    public function testSubDateInterval_WithDays_ReturnsCorrectDate(): void
+    {
+        $this->assertSame('2024-01-05', Episciences_Tools::subDateInterval('2024-01-10', '5 days'));
+        $this->assertSame('2024-01-25', Episciences_Tools::subDateInterval('2024-02-01', '7 days'));
+    }
+
+    public function testSubDateInterval_WithMonths_ReturnsCorrectDate(): void
+    {
+        $this->assertSame('2024-01-10', Episciences_Tools::subDateInterval('2024-02-10', '1 month'));
+        $this->assertSame('2023-11-10', Episciences_Tools::subDateInterval('2024-01-10', '2 months'));
+    }
+
+    public function testSubDateInterval_WithYears_ReturnsCorrectDate(): void
+    {
+        $this->assertSame('2023-01-10', Episciences_Tools::subDateInterval('2024-01-10', '1 year'));
+        $this->assertSame('2019-01-10', Episciences_Tools::subDateInterval('2024-01-10', '5 years'));
+    }
+
+    public function testSubDateInterval_WithCustomFormat_ReturnsCorrectFormat(): void
+    {
+        $this->assertSame('05/01/2024', Episciences_Tools::subDateInterval('2024-01-10', '5 days', 'd/m/Y'));
+    }
+
+    public function testSubDateInterval_LeapYear_HandlesCorrectly(): void
+    {
+        // Leap year
+        $this->assertSame('2024-02-28', Episciences_Tools::subDateInterval('2024-02-29', '1 day'));
+        $this->assertSame('2024-02-29', Episciences_Tools::subDateInterval('2024-03-01', '1 day'));
+
+        // Non-leap year
+        $this->assertSame('2023-02-28', Episciences_Tools::subDateInterval('2023-03-01', '1 day'));
+    }
+
+    public function testSubDateInterval_WithInvalidInterval_ThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid interval format');
+        Episciences_Tools::subDateInterval('2024-01-10', 'invalid interval string');
+    }
+
+    public function testSubDateInterval_WithInvalidDate_ThrowsException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid date format');
+        Episciences_Tools::subDateInterval('not-a-date', '5 days');
+    }
+
+    // ============================================================================
     // Tests for isValidDate()
     // ============================================================================
 

@@ -1277,4 +1277,42 @@ class AdministratepaperControllerTest extends TestCase
             $this->addToAssertionCount(1);
         }
     }
+
+    /**
+     * @covers AdministratepaperController::updatedeadlineAction
+     * @covers AdministratepaperController::savenewdeadlineAction
+     *
+     * Regression #1010: The allowed range for modifying the rating deadline
+     * must be calculated relative to the original assignment deadline,
+     * not relative to today's date.
+     */
+    public function testDeadlineModificationActionsUseOriginalDeadlineInsteadOfToday(): void
+    {
+        $updatedeadline = $this->extractMethod('updatedeadlineAction');
+        $savenewdeadline = $this->extractMethod('savenewdeadlineAction');
+
+        // updatedeadlineAction check
+        $this->assertStringContainsString(
+            "\$deadline = date('Y-m-d', strtotime(\$oAssignment->getDeadline()))",
+            $updatedeadline,
+            'BUG #1010: updatedeadlineAction must use the original assignment deadline for range calculation'
+        );
+        $this->assertStringNotContainsString(
+            "Episciences_Tools::addDateInterval(date('Y-m-d')",
+            $updatedeadline,
+            'BUG #1010: updatedeadlineAction should no longer use today\'s date for range calculation'
+        );
+
+        // savenewdeadlineAction check
+        $this->assertStringContainsString(
+            "\$deadline = date('Y-m-d', strtotime(\$assignment->getDeadline()))",
+            $savenewdeadline,
+            'BUG #1010: savenewdeadlineAction must use the original assignment deadline for range calculation'
+        );
+        $this->assertStringNotContainsString(
+            "\$today = date('Y-m-d')",
+            $savenewdeadline,
+            'BUG #1010: savenewdeadlineAction should no longer use today\'s date for range calculation'
+        );
+    }
 }
