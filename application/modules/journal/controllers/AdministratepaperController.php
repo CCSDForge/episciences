@@ -1577,10 +1577,19 @@ class AdministratepaperController extends PaperDefaultController
             $body = Episciences_Tools::cleanBody($body);
         }
 
+        $deadline = date('Y-m-d', strtotime($oAssignment->getDeadline()));
+
         //init invitation form
-        $params = [
-            'rating_deadline_min' => Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting('rating_deadline_min')),
-            'rating_deadline_max' => Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting('rating_deadline_max'))];
+        try {
+            $params = [
+                    'rating_deadline_min' => Episciences_Tools::subDateInterval($deadline, $oReview->getSetting('rating_deadline_min')),
+                    'rating_deadline_max' => Episciences_Tools::addDateInterval($deadline, $oReview->getSetting('rating_deadline_max'))
+            ];
+        } catch (Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
+            return false;
+        }
+
         $form = Episciences_PapersManager::getDeadlineForm($aid, $params);
         $defaults = [
             'recipient' => $oReviewer->getFullName() . ' <' . $oReviewer->getEmail() . '>',
@@ -1666,9 +1675,17 @@ class AdministratepaperController extends PaperDefaultController
         $journal = Episciences_ReviewsManager::find(RVCODE);
 
         // Retrieving time stamps from today's date
-        $today = date('Y-m-d');
-        $minDeadline = Episciences_Tools::addDateInterval($today, $journal->getSetting('rating_deadline_min'));
-        $maxDeadline = Episciences_Tools::addDateInterval($today, $journal->getSetting('rating_deadline_max'));
+        $deadline = date('Y-m-d', strtotime($assignment->getDeadline()));
+
+        try {
+            $minDeadline = Episciences_Tools::subDateInterval($deadline, $journal->getSetting('rating_deadline_min'));
+        } catch (Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
+            $result['message'] = $e->getMessage();
+            echo Zend_Json::encode($result);
+            return;
+        }
+        $maxDeadline = Episciences_Tools::addDateInterval($deadline, $journal->getSetting('rating_deadline_max'));
 
         $minTimestamp = strtotime($minDeadline);
         $maxTimestamp = strtotime($maxDeadline);
@@ -5338,5 +5355,18 @@ class AdministratepaperController extends PaperDefaultController
 
             }
         }
+    }
+
+    /**
+     * @param string $deadline
+     * @param string $minRatingDeadlineParameter
+     * @return string
+     * @throws Exception
+     */
+
+    private function getMinEffectiveDeadlineExtension(string $deadline, string $minRatingDeadlineParameter ): string
+    {
+        return Episciences_Tools::subDateInterval($deadline,$minRatingDeadlineParameter);
+
     }
 }
