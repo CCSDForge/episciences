@@ -7,6 +7,7 @@ class Episciences_PapersManager
 
     public const NONE_FILTER = '0';
     public const WITH_FILTER = '-1';
+    public const ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE = 'acceptedAskAuthorsFinalVersion';
 
     /**
      * @return array
@@ -3216,6 +3217,13 @@ class Episciences_PapersManager
             'class' => 'form-horizontal',
             'id' => $formElementId,
         ]);
+
+        $id = $default['id'] ?? 0;
+        $csrfName = sprintf('csrf_%s_%s', $prefix,(int)$id);
+        $form->addElement('hash', $csrfName, ['salt' => 'unique']);
+        $form->getElement($csrfName)->setTimeout(3600);
+
+
         $subjectStr = 'Subject';
         $messageStr = 'Message';
 
@@ -3371,7 +3379,7 @@ class Episciences_PapersManager
      */
     public static function getAcceptedAskAuthorFinalVersionForm(array $default): \Zend_Form
     {
-        $type = 'acceptedAskAuthorsFinalVersion';
+        $type = self::ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE;
         $formId = $type . '-form';
         $formAction = '/administratepaper/acceptedaskauhorfinalversion/id/' . $default['id'] . '/type/' . $type;
         $form = self::getModalPaperStatusCommonForm($default, $type, $formId, true);
