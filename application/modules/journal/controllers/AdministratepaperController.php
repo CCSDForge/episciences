@@ -2,6 +2,7 @@
 
 use Episciences\Paper\Spdx\LicenseCode;
 use Episciences\Paper\Spdx\LicenseCodeManager;
+use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 use Psr\Log\LogLevel;
 
@@ -4448,21 +4449,28 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
-     * @return false|void
+     * @return void
+     * @throws Zend_Controller_Response_Exception
      * @throws Zend_Db_Statement_Exception
      */
 
-    public function getlicenselistformAction()
+    public function getlicenselistformAction(): void
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $docId = $request->getPost('docid');
 
         if (!$docId) {
-            return false;
+            return;
         }
 
-        $paper = Episciences_PapersManager::get($docId);
+        $paper = Episciences_PapersManager::get($docId, false);
+
+        if (!$paper instanceof Episciences_Paper) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
         $this->_helper->layout->disableLayout();
         $this->view->docId = $paper->getDocid();
         $this->view->licence = $paper->getLicence();
@@ -4500,6 +4508,13 @@ class AdministratepaperController extends PaperDefaultController
                     Episciences_Auth::isSecretary()
             ) {
 
+                $isCurrentSpdxCodeValid = (new LicenseSpdxResolver())->isValid($currentSpdxCode);
+
+                if (!isset($isCurrentSpdxCodeValid)) {
+                    echo "Failed to save new licence: invalid SPDX code: $currentSpdxCode";
+                    return;
+                }
+
                 // Old license retrieved from the repository or via an enrichment script
                 $paperLicenceObject = Episciences_Paper_LicenceManager::getLicenceObjectByDocId($paper->getDocid());
 
@@ -4513,13 +4528,13 @@ class AdministratepaperController extends PaperDefaultController
                     $paperLicenceObject->save();
                 }
 
-                $spdxLicense =  new LicenseCode([
+                $spdxLicense = new LicenseCode([
                         'code' => $currentSpdxCode,
                         'docid' => $docId
                 ]);
 
                 $spdxLicense->save();
-                
+
                 try {
                     $paper->save();
                 } catch (InvalidArgumentExceptionAlias|Zend_Db_Adapter_Exception  $e) {
@@ -4530,7 +4545,7 @@ class AdministratepaperController extends PaperDefaultController
 
                 $license = [
                         'href' => $paper->getLicence(),
-                        'name' =>  $spdxLicense->getName(),
+                        'name' => $spdxLicense->getName(),
                         'reloadPage' => true // todo Do this if necessary; see when this applies
                 ];
 

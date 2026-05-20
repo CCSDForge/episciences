@@ -70,7 +70,7 @@ class Episciences_Paper_Licence
             'docId' => $this->getDocid(),
             'sourceId' => $this->getSourceId(),
             'updatedAt' => $this->getUpdatedAt(),
-            'udi' => $this->getUid()
+            'uid' => $this->getUid()
         ];
     }
 

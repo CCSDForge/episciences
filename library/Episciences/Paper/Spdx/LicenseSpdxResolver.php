@@ -56,12 +56,12 @@ final class LicenseSpdxResolver
      */
     private function loadSpdxIndex(): void
     {
-        if ($this->spdxIndex) {
+        if (null !== $this->spdxIndex) {
             return;
         }
 
         $index = [];
-        $licenseList = LicenseManager::loadSpdxCode();
+        $licenseList = LicenseManager::loadSpdxCode() ?? [];
         foreach ($licenseList as $code) {
             $index[strtolower($code)] = $code;
         }
@@ -214,5 +214,10 @@ final class LicenseSpdxResolver
     {
         usort($itemsToSort, static fn($a, $b) => array_search($a, $order, true) <=> array_search($b, $order, true)
         );
+    }
+
+    public function isValid(string $spdXCode): bool
+    {
+        return $this->matchSpdx($spdXCode) !== null;
     }
 }
