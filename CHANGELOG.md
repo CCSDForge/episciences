@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mailing lists: "Last updated" column displayed after "Name" in the dashboard table.
 - Mailing lists: creation date displayed (read-only) in the list edit form.
 
+### Performances
+
+- Avoid repeated `REVIEW_SETTING` queries in a single request by caching loaded review settings on the current review object and sharing cached review instances between `RVID` and `RVCODE` lookups.
+
 ## v1.0.55.3 - 2026-05-20
 
 ### Fixed
