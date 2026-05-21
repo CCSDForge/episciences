@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Performances
+
+- Eliminated N+1 query patterns on paper list pages by batch-loading users and roles in chunks of 1000 and priming a request-level identity map cache before render loops (`AdministratepaperController`, `UsersManager`).
+- `loadRoles()` is now lazy: returns immediately when roles are already loaded, avoiding redundant per-user DB queries in callers such as `AdministratemailController::getcontactsAction()`.
+
 ### Added
 
 - Mailing lists: added `created_at` and `updated_at` columns to the `mailing_lists` table.
