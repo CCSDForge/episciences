@@ -46,7 +46,7 @@ class Episciences_UsersManager
         // Fetch all local user records in chunks of 1000 to prevent excessively large IN clauses
         $localRows = [];
         foreach (array_chunk($uids, 1000) as $chunk) {
-            $usersSelect = $db->select()->from(T_USERS)->where('UID IN (?)', $chunk);
+            $usersSelect = $db->select()->from(T_USERS)->where('UID IN (?)', $chunk)->where('IS_VALID = ?', self::VALID_USER);
             $chunkRows = $db->fetchAssoc($usersSelect);
             if (!empty($chunkRows)) {
                 $localRows += $chunkRows;

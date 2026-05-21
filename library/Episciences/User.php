@@ -334,6 +334,10 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     public function loadRoles(): array
     {
+        if ($this->_roles !== null) {
+            return $this->_roles;
+        }
+
         $roles = [];
 
         if ($this->getUid() == null) {
