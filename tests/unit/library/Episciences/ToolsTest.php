@@ -2015,7 +2015,9 @@ class ToolsTest extends TestCase
 
     public function testSubDateIntervalDateTime_ReturnsDateTimeObject(): void
     {
-        $result = Episciences_Tools::subDateIntervalDateTime('2024-01-10', '5 days');
+        $method = new \ReflectionMethod(Episciences_Tools::class, 'subDateIntervalDateTime');
+        $method->setAccessible(true);
+        $result = $method->invoke(null, '2024-01-10', '5 days');
         $this->assertInstanceOf(\DateTime::class, $result);
         $this->assertSame('2024-01-05', $result->format('Y-m-d'));
     }
