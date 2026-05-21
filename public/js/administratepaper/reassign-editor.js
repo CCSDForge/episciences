@@ -24,7 +24,7 @@ function set_editor(uid) {
             locale = 'en';
         } else {
             // Sinon, on sélectionne la première langue disponible
-            for (i in available_languages) {
+            for (var i in available_languages) {
                 locale = i;
                 break;
             }
@@ -101,7 +101,7 @@ function replaceTags(string, reviewer, locale) {
     if ($.type(paper.title) == 'object') {
         if (paper.title[locale]) paper_title = paper.title[locale];
         else
-            for (i in paper.title) {
+            for (var i in paper.title) {
                 paper_title = paper.title[i];
                 break;
             }

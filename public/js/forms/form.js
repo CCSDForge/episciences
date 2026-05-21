@@ -33,25 +33,20 @@ form.validate = function () {
 
             // var tag = $(element).get(0).tagName.toLowerCase();
             var message = required[i].message;
-            var validated = false;
 
             // Element TinyMCE
             if ($(element).is('textarea') && tinyMCE.editors[name]) {
                 if (tinyMCE.editors[name].getContent()) {
-                    validated = true;
                     continue;
                 }
             }
             // Autres types d'élément
             else if ($(element).val()) {
-                validated = true;
                 continue;
             }
 
             // En cas d'erreur
-            if (!validated) {
-                this.errors.push(translate(message));
-            }
+            this.errors.push(translate(message));
         }
     }
 

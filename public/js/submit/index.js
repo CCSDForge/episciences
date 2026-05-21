@@ -34,7 +34,7 @@ $(document).ready(function () {
             if (oResponse) {
                 // initialized in submit/index.phtml
                 hasHook = oResponse.hasHook;
-                isRequiredVersion = oResponse.isRequiredVersion.result;
+                let isRequiredVersion = oResponse.isRequiredVersion.result;
 
                 if (!isRequiredVersion) {
                     $versionBloc.hide();
@@ -71,7 +71,7 @@ $(document).ready(function () {
     // Extracting the ID from URL
 
     $searchDocDocId.change(function () {
-        input = $(this).val().trim();
+        let input = $(this).val().trim();
         if (!input) {
             return;
         }

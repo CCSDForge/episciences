@@ -83,13 +83,13 @@ function __initEditor(selectorName, context, options) {
 }
 
 function __pasteContentMCE() {
-    tiny = tinyMCE.activeEditor;
+    const tiny = tinyMCE.activeEditor;
 
     tiny.getElement().value = tiny.getContent({ format: 'html' });
 }
 
 function __destroyActiveMCE() {
-    tiny = tinyMCE.activeEditor;
+    const tiny = tinyMCE.activeEditor;
     $(tiny.getElement()).tinymce().remove();
 }
 

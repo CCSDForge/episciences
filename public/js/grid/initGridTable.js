@@ -2,7 +2,7 @@ $(document).ready(function () {
     $('.dataTable').each(function () {
         var nbCols = $(this).find('th').length;
         var targets = new Array();
-        for (i = 1; i < nbCols; i++) {
+        for (var i = 1; i < nbCols; i++) {
             targets.push(i);
         }
 
