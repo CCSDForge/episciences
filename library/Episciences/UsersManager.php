@@ -43,15 +43,27 @@ class Episciences_UsersManager
             return [];
         }
 
-        // Fetch all local user records in a single batch query
-        $usersSelect = $db->select()->from(T_USERS)->where('UID IN (?)', $uids);
-        $localRows = $db->fetchAssoc($usersSelect);
+        // Fetch all local user records in chunks of 1000 to prevent excessively large IN clauses
+        $localRows = [];
+        foreach (array_chunk($uids, 1000) as $chunk) {
+            $usersSelect = $db->select()->from(T_USERS)->where('UID IN (?)', $chunk);
+            $chunkRows = $db->fetchAssoc($usersSelect);
+            if (!empty($chunkRows)) {
+                $localRows += $chunkRows;
+            }
+        }
 
-        // Fetch all roles for these users in a single batch query
-        $rolesSelect = $db->select()
-            ->from(T_USER_ROLES, ['UID', 'RVID', 'ROLEID'])
-            ->where('UID IN (?)', $uids);
-        $rolesRows = $db->fetchAll($rolesSelect);
+        // Fetch all roles for these users in chunks of 1000 to prevent excessively large IN clauses
+        $rolesRows = [];
+        foreach (array_chunk($uids, 1000) as $chunk) {
+            $rolesSelect = $db->select()
+                ->from(T_USER_ROLES, ['UID', 'RVID', 'ROLEID'])
+                ->where('UID IN (?)', $chunk);
+            $chunkRoles = $db->fetchAll($rolesSelect);
+            if (!empty($chunkRoles)) {
+                $rolesRows = array_merge($rolesRows, $chunkRoles);
+            }
+        }
 
         // Map roles by user ID
         $rolesByUid = [];
@@ -146,12 +158,18 @@ class Episciences_UsersManager
             return [];
         }
 
-        // Fetch all valid local user records in a single batch query
-        $usersSelect = $db->select()
-            ->from(T_USERS)
-            ->where('UID IN (?)', $uids)
-            ->where('IS_VALID = ?', Episciences_UsersManager::VALID_USER);
-        $localRows = $db->fetchAssoc($usersSelect);
+        // Fetch valid local user records in chunks of 1000 to prevent excessively large IN clauses
+        $localRows = [];
+        foreach (array_chunk($uids, 1000) as $chunk) {
+            $usersSelect = $db->select()
+                ->from(T_USERS)
+                ->where('UID IN (?)', $chunk)
+                ->where('IS_VALID = ?', Episciences_UsersManager::VALID_USER);
+            $chunkRows = $db->fetchAssoc($usersSelect);
+            if (!empty($chunkRows)) {
+                $localRows += $chunkRows;
+            }
+        }
 
         if (empty($localRows)) {
             return [];
@@ -159,11 +177,17 @@ class Episciences_UsersManager
 
         $validUids = array_keys($localRows);
 
-        // Fetch all roles for these valid users in a single batch query
-        $rolesSelect = $db->select()
-            ->from(T_USER_ROLES, ['UID', 'RVID', 'ROLEID'])
-            ->where('UID IN (?)', $validUids);
-        $rolesRows = $db->fetchAll($rolesSelect);
+        // Fetch all roles for these valid users in chunks of 1000 to prevent excessively large IN clauses
+        $rolesRows = [];
+        foreach (array_chunk($validUids, 1000) as $chunk) {
+            $rolesSelect = $db->select()
+                ->from(T_USER_ROLES, ['UID', 'RVID', 'ROLEID'])
+                ->where('UID IN (?)', $chunk);
+            $chunkRoles = $db->fetchAll($rolesSelect);
+            if (!empty($chunkRoles)) {
+                $rolesRows = array_merge($rolesRows, $chunkRoles);
+            }
+        }
 
         // Map roles by user ID
         $rolesByUid = [];
