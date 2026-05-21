@@ -131,7 +131,7 @@ function applyMultipleFilters(controller, action, get = {}, filters = {}) {
         controller === 'administratepaper' &&
         (action === 'list' || action === 'assigned')
     ) {
-        columnDefs.push({ targets: [3, 6, 7, 8], orderable: false });
+        columnDefs.push({ targets: [3], orderable: false });
         columnDefs.push({ className: 'text-center', targets: [0, 1, 2] });
     } else if (controller === 'paper') {
         if (action === 'submitted') {

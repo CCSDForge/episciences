@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#937](https://github.com/CCSDForge/episciences/issues/937) Admin paper list (`/administratepaper/list`): columns **Reviewers**, **Editors**, **Copy editors**, and **Contributor** are now sortable server-side.
+
+### Performances
+
+- [#937](https://github.com/CCSDForge/episciences/issues/937) Sorting by Reviewers / Editors / Copy editors uses a derived-table `LEFT JOIN` with `MIN(SCREEN_NAME)` aggregation (single evaluation per query) rather than a correlated subquery.
+
 - Mailing lists: added `created_at` and `updated_at` columns to the `mailing_lists` table.
 - Mailing lists: four MySQL triggers propagate `updated_at` to the parent row when individual members or roles are modified.
 - Mailing lists: `v_mailing_lists_resolved` view now exposes `list_created_at` and `list_updated_at`.
