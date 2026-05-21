@@ -147,13 +147,13 @@ class AdministratepaperController extends PaperDefaultController
 
             if (!empty($uidsToPreload)) {
                 $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-                $preloadSelect = $db->select()
-                    ->from(T_USERS)
-                    ->where('UID IN (?)', $uidsToPreload);
-                $preloadedRows = $db->fetchAll($preloadSelect);
-
-                foreach ($preloadedRows as $row) {
-                    Episciences_User::setStaticCache((int)$row['UID'], $row);
+                foreach (array_chunk($uidsToPreload, 1000) as $chunk) {
+                    $preloadSelect = $db->select()
+                        ->from(T_USERS)
+                        ->where('UID IN (?)', $chunk);
+                    foreach ($db->fetchAll($preloadSelect) as $row) {
+                        Episciences_User::setStaticCache((int)$row['UID'], $row);
+                    }
                 }
             }
 
@@ -421,13 +421,13 @@ class AdministratepaperController extends PaperDefaultController
 
             if (!empty($uidsToPreload)) {
                 $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-                $preloadSelect = $db->select()
-                    ->from(T_USERS)
-                    ->where('UID IN (?)', $uidsToPreload);
-                $preloadedRows = $db->fetchAll($preloadSelect);
-
-                foreach ($preloadedRows as $row) {
-                    Episciences_User::setStaticCache((int)$row['UID'], $row);
+                foreach (array_chunk($uidsToPreload, 1000) as $chunk) {
+                    $preloadSelect = $db->select()
+                        ->from(T_USERS)
+                        ->where('UID IN (?)', $chunk);
+                    foreach ($db->fetchAll($preloadSelect) as $row) {
+                        Episciences_User::setStaticCache((int)$row['UID'], $row);
+                    }
                 }
             }
 
