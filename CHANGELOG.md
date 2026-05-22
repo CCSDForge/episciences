@@ -19,6 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Admin paper list: Tom Select search on all 7 filter selects (Status, Volume, Section, Editors, Reviewers, DOI, Repositories) — type to filter within long lists, animated chevron indicates dropdown, placeholder shows "All" when nothing is selected.
+
+### Changed
+
+- Admin paper list: filter panel reorganised into 3 rows — Status/Editors/Reviewers on the first row, Volume+DOI on the second, Section+Repositories on the third; Volume and Section are wider (`col-sm-8`) to accommodate long titles.
+- Admin paper list: removed redundant page description blockquote.
+
+### Fixed
+
+- Admin paper list: `checkFilterParams` crashed with `TypeError: Cannot read properties of null (reading 'length')` when clicking "Filter" with Tom Select multiselects returning `null` for empty selections; fallback to `['']` restores expected behaviour.
+
 - Mailing lists: added `created_at` and `updated_at` columns to the `mailing_lists` table.
 - Mailing lists: four MySQL triggers propagate `updated_at` to the parent row when individual members or roles are modified.
 - Mailing lists: `v_mailing_lists_resolved` view now exposes `list_created_at` and `list_updated_at`.
