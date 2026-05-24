@@ -162,6 +162,13 @@ return array(
     "Supprimer" => 'Remove',
     "Valider" => 'Submit',
     "Annuler" => 'Cancel',
+
+    // Volume list reorder feature
+    "Mode réorganisation des volumes" => 'Volume reorder mode',
+    "Mode réorganisation" => 'Reorder mode',
+    "Enregistrer l'ordre" => 'Save order',
+    "Enregistrement..." => 'Saving…',
+    "Saisissez une position et appuyez sur Entrée" => 'Enter a position and press Enter',
     "Retour" => 'Back',
     "Fax" => 'Fax',
     "isEmpty" => "This field is required.",
