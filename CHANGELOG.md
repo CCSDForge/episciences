@@ -19,15 +19,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Paper admin: volume/section assignment now uses a native `<dialog>` modal with Tom Select; `paper-assignment-modal.js` (vanilla JS) replaces `volume-assignment.js` and `section-assignment.js`.
+- Paper admin: Tom Select `dropdown_input` and `remove_button` plugins in modal selects.
 - Admin paper list: Tom Select search on all 7 filter selects (Status, Volume, Section, Editors, Reviewers, DOI, Repositories) — type to filter within long lists, animated chevron indicates dropdown, placeholder shows "All" when nothing is selected.
 
 ### Changed
 
+- Paper admin: assignment buttons replaced by pencil icon (`fa-pen-to-square`); glyphicons removed.
+- Paper admin: modal save now does a targeted AJAX refresh instead of a full page reload.
+- Paper admin: other volumes form replaced by a Tom Select `<select multiple>` (`checkbox_options` plugin).
+- Paper admin (i18n): "Master volume" renamed to "Main volume".
+- Paper admin: section edit button moved before label/name, consistent with volumes layout.
+- Paper admin: volume sort button uses `fa-arrow-down-1-9` icon with a descriptive tooltip.
 - Admin paper list: filter panel reorganised into 3 rows — Status/Editors/Reviewers on the first row, Volume+DOI on the second, Section+Repositories on the third; Volume and Section are wider (`col-sm-8`) to accommodate long titles.
 - Admin paper list: removed redundant page description blockquote.
 
 ### Fixed
 
+- Paper admin: closed modal remained visible (`display:flex` SCSS overrode native `dialog:not([open])` behaviour).
+- Paper admin: Tom Select selected items now styled as blue pills in the modal.
+- Paper admin: translation failure on volume-alert text (curly apostrophe in `views.php` vs plain ASCII in template).
+- Paper admin: "Assign editors" checkbox now disabled+unchecked when no section is selected.
+- Paper admin: article position badge wrapped in a Bootstrap `label-default` span with an accessible tooltip.
+- Paper admin: main volume cell not updated in list after remove+reassign (stale `btn.dataset.vid` + missing fallback in `refreshallmastervolumesAction` for papers without a position row).
 - Admin paper list: `checkFilterParams` crashed with `TypeError: Cannot read properties of null (reading 'length')` when clicking "Filter" with Tom Select multiselects returning `null` for empty selections; fallback to `['']` restores expected behaviour.
 
 - Mailing lists: added `created_at` and `updated_at` columns to the `mailing_lists` table.
