@@ -20,12 +20,17 @@ $(document).ready(function () {
             { searchable: false, targets: [0, 1] },
         ],
         language: {
-            lengthMenu: translate('Afficher') + ' _MENU_ ' + translate('lignes'),
+            lengthMenu:
+                translate('Afficher') + ' _MENU_ ' + translate('lignes'),
             search: translate('Rechercher') + ' :',
             zeroRecords: translate('Aucun résultat'),
             info:
-                translate('Lignes') + ' _START_ ' + translate('à') +
-                ' _END_, ' + translate('sur') + ' _TOTAL_ ',
+                translate('Lignes') +
+                ' _START_ ' +
+                translate('à') +
+                ' _END_, ' +
+                translate('sur') +
+                ' _TOTAL_ ',
             infoEmpty: translate('Aucun résultat affiché'),
             infoFiltered: '(' + translate('filtrés sur les') + ' _MAX_)',
             paginate: { sPrevious: '', sNext: '' },

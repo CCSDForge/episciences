@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Volume & section list: editable position input per row — type a number and press Enter to move a row instantly; a persistent blue highlight marks unsaved changes; a fixed Save/Cancel bar with an unsaved-changes counter appears on first interaction. Drag-and-drop is kept as a secondary option, now powered by SortableJS (touch-friendly) instead of jQuery UI Sortable.
 - Admin paper list: Tom Select search on all 7 filter selects (Status, Volume, Section, Editors, Reviewers, DOI, Repositories) — type to filter within long lists, animated chevron indicates dropdown, placeholder shows "All" when nothing is selected.
 
 ### Changed

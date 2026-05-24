@@ -15,7 +15,6 @@
  * @param {string}           config.sortUrl
  */
 function initReorderableDataTable({ $table, dt, sortUrl }) {
-
     // ── Constants ─────────────────────────────────────────────────────────────
 
     // Must match the CSS animation duration on .reorder-row--landing > td
@@ -23,9 +22,9 @@ function initReorderableDataTable({ $table, dt, sortUrl }) {
 
     // ── State ─────────────────────────────────────────────────────────────────
 
-    let reorderMode  = false;
+    let reorderMode = false;
     let savedPageLen = null;
-    let savedSearch  = null;
+    let savedSearch = null;
 
     // One active landing timer per row id — prevents stacking when the same
     // row is moved again before the previous pulse finishes.
@@ -33,12 +32,12 @@ function initReorderableDataTable({ $table, dt, sortUrl }) {
 
     // ── Cached jQuery references ──────────────────────────────────────────────
 
-    const $saveBar   = $('#reorder-bar');
-    const $saveBtn   = $('#reorder-save');
+    const $saveBar = $('#reorder-bar');
+    const $saveBtn = $('#reorder-save');
     const $cancelBtn = $('#reorder-cancel');
     const $changesEl = $('#reorder-changes');
-    const $alertEl   = $('#sort-with-search-filter-alert');
-    const $wrapper   = $table.closest('.dataTables_wrapper');
+    const $alertEl = $('#sort-with-search-filter-alert');
+    const $wrapper = $table.closest('.dataTables_wrapper');
 
     // ── Unsaved-changes indicator ─────────────────────────────────────────────
 
@@ -48,13 +47,17 @@ function initReorderableDataTable({ $table, dt, sortUrl }) {
         $changesEl.empty();
         if (count === 0) return;
 
-        const label = count === 1
-            ? count + ' ' + translate('modification non sauvegardée')
-            : count + ' ' + translate('modifications non sauvegardées');
+        const label =
+            count === 1
+                ? count + ' ' + translate('modification non sauvegardée')
+                : count + ' ' + translate('modifications non sauvegardées');
 
         $changesEl.append(
             $('<span>', { class: 'reorder-changes-badge' }).append(
-                $('<span>', { class: 'glyphicon glyphicon-exclamation-sign', 'aria-hidden': 'true' }),
+                $('<span>', {
+                    class: 'glyphicon glyphicon-exclamation-sign',
+                    'aria-hidden': 'true',
+                }),
                 document.createTextNode(' ' + label)
             )
         );
@@ -88,7 +91,8 @@ function initReorderableDataTable({ $table, dt, sortUrl }) {
     function clearAllMarkers() {
         landingTimers.forEach(clearTimeout);
         landingTimers.clear();
-        $table.find('.reorder-row--modified, .reorder-row--landing')
+        $table
+            .find('.reorder-row--modified, .reorder-row--landing')
             .removeClass('reorder-row--modified reorder-row--landing');
     }
 
@@ -96,7 +100,9 @@ function initReorderableDataTable({ $table, dt, sortUrl }) {
 
     function setControlsVisible(visible) {
         $wrapper
-            .find('.dataTables_filter, .dataTables_length, .dataTables_paginate, .dataTables_info')
+            .find(
+                '.dataTables_filter, .dataTables_length, .dataTables_paginate, .dataTables_info'
+            )
             .toggle(visible);
         $alertEl.hide();
     }
@@ -108,7 +114,7 @@ function initReorderableDataTable({ $table, dt, sortUrl }) {
         reorderMode = true;
 
         savedPageLen = dt.page.len();
-        savedSearch  = dt.search();
+        savedSearch = dt.search();
 
         dt.search('');
         dt.page.len(-1).draw();
@@ -144,7 +150,9 @@ function initReorderableDataTable({ $table, dt, sortUrl }) {
         $idle.hide();
         $busy.show();
 
-        const body = $table.find('tbody tr').toArray()
+        const body = $table
+            .find('tbody tr')
+            .toArray()
             .map(tr => 'sorted[]=' + encodeURIComponent(tr.id))
             .join('&');
 
@@ -173,10 +181,10 @@ function initReorderableDataTable({ $table, dt, sortUrl }) {
     // ── Row repositioning ─────────────────────────────────────────────────────
 
     function applyPositionChange($input) {
-        const $tr    = $input.closest('tr');
+        const $tr = $input.closest('tr');
         const $tbody = $table.find('tbody');
         const newPos = parseInt($input.val(), 10);
-        const total  = $tbody.find('tr').length;
+        const total = $tbody.find('tr').length;
 
         if (isNaN(newPos) || newPos < 1 || newPos > total) {
             $input.addClass('reorder-position-input--error');
@@ -197,7 +205,9 @@ function initReorderableDataTable({ $table, dt, sortUrl }) {
         }
 
         $tbody.find('tr').each((i, tr) => {
-            $(tr).find('.reorder-position-input').val(i + 1);
+            $(tr)
+                .find('.reorder-position-input')
+                .val(i + 1);
         });
 
         markRowModified($tr);
@@ -245,9 +255,13 @@ function initReorderableDataTable({ $table, dt, sortUrl }) {
             },
             onEnd(evt) {
                 // Renumber all position inputs to reflect the new DOM order
-                $(tbody).find('tr').each((i, tr) => {
-                    $(tr).find('.reorder-position-input').val(i + 1);
-                });
+                $(tbody)
+                    .find('tr')
+                    .each((i, tr) => {
+                        $(tr)
+                            .find('.reorder-position-input')
+                            .val(i + 1);
+                    });
                 markRowModified($(evt.item));
                 updateChangesIndicator();
             },
