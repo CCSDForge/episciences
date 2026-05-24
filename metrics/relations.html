@@ -49,7 +49,7 @@
 <div class="page">
     <div class="content content-first">
         <div class="report-details">
-            Created at 2026-05-17 03:35:16        , with PHPMetrics v2.9.1 (<a href="https://twitter.com/Halleck45">Jean-François Lépine</a>).
+            Created at 2026-05-24 03:43:11        , with PHPMetrics v2.9.1 (<a href="https://twitter.com/Halleck45">Jean-François Lépine</a>).
         </div>
 
         
@@ -93,7 +93,7 @@
                             <path d="M0 0h24v24H0z" fill="none">
                             <path d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5c-.49 0-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z">
                         </svg>
-                        Violations (564)
+                        Violations (589)
                     </a>
                 </li>
                                     <li>
@@ -420,6 +420,7 @@
             "\\Episciences_User_AssignmentsManager",
             "\\Episciences_TmpUsersManager",
             "\\Episciences_Reviewer",
+            "\\Episciences_View_Helper_Log",
             "\\Episciences_User_Tmp",
             "\\Episciences_User_Invitation",
             "\\Episciences_Mail",
@@ -442,7 +443,6 @@
             "\\DateTime",
             "\\Episciences_View_Helper_Date",
             "\\Zend_Db_Table_Abstract",
-            "\\Episciences_View_Helper_Log",
             "\\Ccsd_Tools_String",
             "\\Episciences_Repositories",
             "\\Episciences_Repositories_Zenodo_Hooks",
@@ -676,6 +676,11 @@
         "relations": []
     },
     {
+        "name": "\\Episciences_View_Helper_Log",
+        "size": 3000,
+        "relations": []
+    },
+    {
         "name": "\\Episciences_User_Tmp",
         "size": 3000,
         "relations": []
@@ -794,11 +799,6 @@
     },
     {
         "name": "\\Episciences_View_Helper_Date",
-        "size": 3000,
-        "relations": []
-    },
-    {
-        "name": "\\Episciences_View_Helper_Log",
         "size": 3000,
         "relations": []
     },
@@ -993,7 +993,9 @@
             "\\Episciences_Paper",
             "\\Episciences_HTMLPurifier",
             "\\Episciences_Paper_Conflict",
-            "\\Episciences_Review"
+            "\\Episciences_Review",
+            "\\Zend_Registry",
+            "\\Episciences_Mail_Send"
         ]
     },
     {
@@ -4636,7 +4638,17 @@
     {
         "name": "\\Episciences_OpenAireResearchGraphTools",
         "size": 3000,
-        "relations": []
+        "relations": [
+            "\\Episciences_Tools",
+            "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
+            "\\Monolog\\Logger",
+            "\\Monolog\\Handler\\StreamHandler",
+            "\\RuntimeException",
+            "\\GuzzleHttp\\Client",
+            "\\Psr\\Cache\\CacheItemInterface",
+            "\\Episciences_Paper_AuthorsManager",
+            "\\Episciences_Paper_Authors"
+        ]
     },
     {
         "name": "\\Monolog\\Handler\\StreamHandler",
@@ -4730,6 +4742,11 @@
         "relations": [
             "\\Exception"
         ]
+    },
+    {
+        "name": "\\DateInterval",
+        "size": 3000,
+        "relations": []
     },
     {
         "name": "\\Episciences_Review_Doi",
@@ -5002,6 +5019,13 @@
     },
     {
         "name": "\\Episciences_Website_Navigation_Page_ForReviewers",
+        "size": 3000,
+        "relations": [
+            "\\Episciences_Website_Navigation_Page_Predefined"
+        ]
+    },
+    {
+        "name": "\\Episciences_Website_Navigation_Page_ForEditors",
         "size": 3000,
         "relations": [
             "\\Episciences_Website_Navigation_Page_Predefined"
@@ -5420,6 +5444,16 @@
         "relations": []
     },
     {
+        "name": "\\Episciences\\Api\\CrossrefSubmissionApiClient",
+        "size": 3000,
+        "relations": []
+    },
+    {
+        "name": "\\Psr\\Http\\Message\\ResponseInterface",
+        "size": 3000,
+        "relations": []
+    },
+    {
         "name": "\\Episciences\\Api\\OpenAireApiClient",
         "size": 3000,
         "relations": []
@@ -5430,12 +5464,27 @@
         "relations": []
     },
     {
+        "name": "\\Episciences\\Api\\CrossrefDiagnosticParser",
+        "size": 3000,
+        "relations": []
+    },
+    {
+        "name": "\\Episciences\\Api\\CrossrefDiagnosticResult",
+        "size": 3000,
+        "relations": []
+    },
+    {
         "name": "\\Episciences_user",
         "size": 3000,
         "relations": []
     },
     {
         "name": "\\Episciences_Portal",
+        "size": 3000,
+        "relations": []
+    },
+    {
+        "name": "\\Episciences_Translation_Replacer",
         "size": 3000,
         "relations": []
     },
@@ -5612,6 +5661,59 @@
         ]
     },
     {
+        "name": "\\GetDoiCommand",
+        "size": 3000,
+        "relations": [
+            "\\Symfony\\Component\\Console\\Command\\Command",
+            "\\Symfony\\Component\\Console\\Input\\InputInterface",
+            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
+            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
+            "\\Monolog\\Logger",
+            "\\Monolog\\Handler\\StreamHandler",
+            "\\GuzzleHttp\\Client",
+            "\\Episciences_ReviewsManager",
+            "\\Episciences\\Api\\CrossrefSubmissionApiClient",
+            "\\Episciences_Review",
+            "\\Episciences_Review_DoiSettings",
+            "\\Episciences_PapersManager",
+            "\\Episciences_Paper_DoiQueue",
+            "\\Episciences_Paper_DoiQueueManager",
+            "\\Episciences\\Api\\CrossrefDiagnosticParser",
+            "\\Zend_Application",
+            "\\Zend_Loader_Autoloader",
+            "\\Zend_Db",
+            "\\Zend_Db_Table",
+            "\\Episciences_Paper_MetaDataSourcesManager",
+            "\\Zend_Registry",
+            "\\Zend_Locale"
+        ]
+    },
+    {
+        "name": "\\ExtractBiblioRefsCommand",
+        "size": 3000,
+        "relations": [
+            "\\Symfony\\Component\\Console\\Command\\Command",
+            "\\Symfony\\Component\\Console\\Input\\InputInterface",
+            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
+            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
+            "\\Monolog\\Logger",
+            "\\Monolog\\Handler\\StreamHandler",
+            "\\Episciences_ReviewsManager",
+            "\\Zend_Db_Table_Abstract",
+            "\\GuzzleHttp\\Client",
+            "\\Episciences_Repositories",
+            "\\Episciences_PapersManager",
+            "\\Psr\\Log\\LoggerInterface",
+            "\\Zend_Application",
+            "\\Zend_Loader_Autoloader",
+            "\\Zend_Db",
+            "\\Zend_Db_Table",
+            "\\Zend_Locale",
+            "\\Zend_Registry",
+            "\\Episciences_Paper_MetaDataSourcesManager"
+        ]
+    },
+    {
         "name": "\\GenerateDownloadKpiCommand",
         "size": 3000,
         "relations": [
@@ -5757,6 +5859,44 @@
         ]
     },
     {
+        "name": "\\UpdatePapersDocumentCommand",
+        "size": 3000,
+        "relations": [
+            "\\Symfony\\Component\\Console\\Command\\Command",
+            "\\Symfony\\Component\\Console\\Input\\InputInterface",
+            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
+            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
+            "\\Monolog\\Logger",
+            "\\Monolog\\Handler\\StreamHandler",
+            "\\Zend_Db_Table_Abstract",
+            "\\Zend_Paginator",
+            "\\Episciences_ReviewsManager",
+            "\\Episciences_Paper",
+            "\\Zend_Db_Adapter_Abstract",
+            "\\RuntimeException",
+            "\\Zend_Db_Expr",
+            "\\Episciences_PapersManager",
+            "\\Zend_Application",
+            "\\Zend_Loader_Autoloader",
+            "\\Zend_Db",
+            "\\Zend_Db_Table",
+            "\\Episciences_Paper_MetaDataSourcesManager",
+            "\\Zend_Registry",
+            "\\Zend_Locale"
+        ]
+    },
+    {
+        "name": "\\DownloadRefPpsCommand",
+        "size": 3000,
+        "relations": [
+            "\\Symfony\\Component\\Console\\Command\\Command",
+            "\\Symfony\\Component\\Console\\Input\\InputInterface",
+            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
+            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
+            "\\GuzzleHttp\\Client"
+        ]
+    },
+    {
         "name": "\\ImportApacheLogsCommand",
         "size": 3000,
         "relations": [
@@ -5842,11 +5982,6 @@
             "\\Episciences_Paper",
             "\\Psr\\Http\\Message\\ResponseInterface"
         ]
-    },
-    {
-        "name": "\\Psr\\Http\\Message\\ResponseInterface",
-        "size": 3000,
-        "relations": []
     },
     {
         "name": "\\scripts\\Queue",
@@ -5979,10 +6114,10 @@
             "\\Monolog\\Handler\\StreamHandler",
             "\\Episciences_ReviewsManager",
             "\\Zend_Db_Table_Abstract",
+            "\\Episciences\\Api\\OpenAireApiClient",
             "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
             "\\Episciences_PapersManager",
             "\\Episciences_Paper_AuthorsManager",
-            "\\Episciences_OpenAireResearchGraphTools",
             "\\Episciences_Paper_Authors",
             "\\Zend_Application",
             "\\Zend_Loader_Autoloader",
@@ -6030,6 +6165,26 @@
         ]
     },
     {
+        "name": "\\UpdateTranslationsCommand",
+        "size": 3000,
+        "relations": [
+            "\\Symfony\\Component\\Console\\Command\\Command",
+            "\\Symfony\\Component\\Console\\Input\\InputInterface",
+            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
+            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
+            "\\Episciences_Translation_Replacer",
+            "\\Monolog\\Logger",
+            "\\Monolog\\Handler\\StreamHandler",
+            "\\Monolog\\Formatter\\LineFormatter",
+            "\\Symfony\\Component\\Yaml\\Yaml"
+        ]
+    },
+    {
+        "name": "\\Symfony\\Component\\Yaml\\Yaml",
+        "size": 3000,
+        "relations": []
+    },
+    {
         "name": "\\getDumpVolumeSpeIssue",
         "size": 3000,
         "relations": [
@@ -6049,8 +6204,8 @@
             "\\Monolog\\Handler\\StreamHandler",
             "\\Episciences_ReviewsManager",
             "\\Zend_Db_Table_Abstract",
+            "\\Episciences\\Api\\OpenAireApiClient",
             "\\Symfony\\Component\\Cache\\Adapter\\FilesystemAdapter",
-            "\\Episciences_OpenAireResearchGraphTools",
             "\\Episciences_Paper_ProjectsManager",
             "\\Zend_Application",
             "\\Zend_Loader_Autoloader",
@@ -6060,23 +6215,6 @@
             "\\Zend_Registry",
             "\\Zend_Locale"
         ]
-    },
-    {
-        "name": "\\TranslationUpdaterCommand",
-        "size": 3000,
-        "relations": [
-            "\\Symfony\\Component\\Console\\Command\\Command",
-            "\\Monolog\\Logger",
-            "\\Symfony\\Component\\Console\\Input\\InputInterface",
-            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
-            "\\Symfony\\Component\\Yaml\\Yaml",
-            "\\Monolog\\Handler\\StreamHandler"
-        ]
-    },
-    {
-        "name": "\\Symfony\\Component\\Yaml\\Yaml",
-        "size": 3000,
-        "relations": []
     },
     {
         "name": "\\UpdatePapers",
@@ -6178,6 +6316,7 @@
             "\\RuntimeException",
             "\\SimpleXMLElement",
             "\\DOMDocument",
+            "\\Zend_Db_Table_Abstract",
             "\\Zend_Application",
             "\\Zend_Loader_Autoloader",
             "\\Zend_Db",
@@ -6260,6 +6399,27 @@
             "\\Zend_Registry",
             "\\Zend_Locale"
         ]
+    },
+    {
+        "name": "\\ImportRefPpsCommand",
+        "size": 3000,
+        "relations": [
+            "\\Symfony\\Component\\Console\\Command\\Command",
+            "\\Symfony\\Component\\Console\\Input\\InputInterface",
+            "\\Symfony\\Component\\Console\\Output\\OutputInterface",
+            "\\Symfony\\Component\\Console\\Style\\SymfonyStyle",
+            "\\Symfony\\Component\\Console\\Helper\\ProgressBar",
+            "\\Ramsey\\Uuid\\Uuid",
+            "\\Solarium\\Client",
+            "\\Solarium\\Core\\Client\\Adapter\\Curl",
+            "\\Symfony\\Component\\EventDispatcher\\EventDispatcher",
+            "\\Zend_Loader_Autoloader"
+        ]
+    },
+    {
+        "name": "\\Symfony\\Component\\Console\\Helper\\ProgressBar",
+        "size": 3000,
+        "relations": []
     },
     {
         "name": "\\ProcessStatTempCommand",
