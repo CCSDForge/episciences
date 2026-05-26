@@ -16,6 +16,7 @@ global.TomSelect = jest.fn().mockImplementation(function (el, opts) {
 global.translate = (s) => s;
 global.refreshPaperHistory = jest.fn();
 global.fetch = jest.fn();
+global.JS_PREFIX_URL = '/';
 
 // ---------------------------------------------------------------------------
 // Load the module under test
