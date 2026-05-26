@@ -9,6 +9,8 @@ if ($this->volumes) {
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
 $this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
 $this->jQuery()->addJavascriptFile('/js/library/es.dataTables.delete-buttons.js');
+$this->jQuery()->addJavascriptFile(VENDOR_SORTABLE_JS);
+$this->jQuery()->addJavascriptFile('/js/library/reorder-datatable.js');
 $this->jQuery()->addJavascriptFile('/js/volume/datatable.js');
 $this->jQuery()->addJavascriptFile('/js/administratepaper/editor-availability.js');
 $this->jQuery()->addJavascriptFile('/js/editors/volume-assignment.js');
@@ -26,12 +28,13 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 <?php if ($this->volumes) : ?>
 
     <?= $this->partial('partials/datatable-sort-with-search-filter-alert.phtml') ?>
-<style>th{width:auto;}</style>
+    <?= $this->partial('partials/reorder-bar.phtml') ?>
+
     <div class="table-responsive">
         <table class="table table-striped table-bordered dataTable" id="volumes">
             <thead>
             <tr>
-                <th style="display: none" scope="col"><?php echo $this->translate('Position') ?></th>
+                <th scope="col" class="reorder-col-position"><?php echo $this->translate('Position') ?></th>
                 <th scope="col"><span class="sr-only"><?php echo $this->translate('Ordre'); ?></span></th>
                 <th scope="col"><?php echo $this->translate('Titre'); ?></th>
                 <th scope="col" style="text-align:center"><?php echo $this->translate('Numéro'); ?></th>
@@ -52,7 +55,15 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                 $volumeTitle = strip_tags(Episciences_Tools::convertMarkdownToHtml($volume->getNameKey()));
                 ?>
                 <tr id="volume_<?php echo $vIdEscaped; ?>">
-                    <td style="display:none;"><?php echo $this->escape($volume->getPosition()); ?></td>
+                    <td class="reorder-col-position">
+                        <input type="number"
+                               class="reorder-position-input"
+                               value="<?php echo $this->escape($volume->getPosition()); ?>"
+                               min="1"
+                               max="<?php echo count($this->volumes); ?>"
+                               aria-label="<?php echo $this->escape($this->translate('Position') . ' — ' . $volumeTitle); ?>"
+                               title="<?php echo $this->translate('Saisissez une position et appuyez sur Entrée'); ?>">
+                    </td>
                     <td class="sortable-handle">
                         <span class="glyphicon glyphicon-move" aria-hidden="true"></span>
                         <span class="sr-only"><?php echo $this->translate('Déplacer le volume'); ?></span>
@@ -142,6 +153,7 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
             </tbody>
         </table>
     </div>
+
 <?php else : ?>
 
     <?php echo $this->translate('Aucun volume enregistré') ?>.

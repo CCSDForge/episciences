@@ -125,6 +125,13 @@ if (Episciences_Auth::isSecretary()) : ?>
                            onclick="editAttachmentDescription($(this));"><?= $this->translate($acceptedWaitingForAuthorValidation) ?></a>
                     </li>
 
+                    <?php // Préparation de copie: en attente des sources auteurs?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".waiting-for-author-sources-modal"><?= $this->translate($waitingAuthorSources) ?>
+                        </a>
+                    </li>
+
 
                     <li>
                         <a href="#" data-toggle="modal"
@@ -509,6 +516,13 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                         <a href="#" data-toggle="modal"
                            data-target=".review-formatting-accepted-ask-author-validation-modal"
                            onclick="editAttachmentDescription($(this));"><?= $this->translate($acceptedWaitingForAuthorValidation) ?></a>
+                    </li>
+
+                    <?php // Préparation de copie: en attente des sources auteurs?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".waiting-for-author-sources-modal"><?= $this->translate($waitingAuthorSources) ?>
+                        </a>
                     </li>
 
 
