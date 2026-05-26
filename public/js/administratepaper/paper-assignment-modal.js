@@ -221,12 +221,14 @@ function _initSectionAssignEditors() {
 // ---------------------------------------------------------------------------
 
 function _refreshOtherVolumes(docid) {
-    _post('/administratepaper/refreshothervolumes', new URLSearchParams({ docid: docid }))
-        .then(function (html) {
-            var container = document.getElementById('other_volumes_list_' + docid);
-            // Server-rendered list of volume names (escaped PHP output)
-            if (container) container.innerHTML = html;
-        });
+    _post(
+        JS_PREFIX_URL + 'administratepaper/refreshothervolumes',
+        new URLSearchParams({ docid: docid })
+    ).then(function (html) {
+        var container = document.getElementById('other_volumes_list_' + docid);
+        // Server-rendered list of volume names (escaped PHP output)
+        if (container) container.innerHTML = html;
+    });
 }
 
 function _refreshPaperHistory(docid) {
@@ -234,7 +236,7 @@ function _refreshPaperHistory(docid) {
 }
 
 function _refreshMasterVolumesInList(docid, newVid, oldVid) {
-    _post('/administratepaper/refreshallmastervolumes', new URLSearchParams({
+    _post(JS_PREFIX_URL + 'administratepaper/refreshallmastervolumes', new URLSearchParams({
         docid: docid,
         vid: newVid,
         old_vid: oldVid,
@@ -252,7 +254,7 @@ function _refreshMasterVolumesInList(docid, newVid, oldVid) {
 }
 
 function _refreshMasterVolumeView(docid, newVid) {
-    _post('/administratepaper/refreshmastervolume', new URLSearchParams({
+    _post(JS_PREFIX_URL + 'administratepaper/refreshmastervolume', new URLSearchParams({
         docId: docid,
         vid: newVid,
         from: 'view',
@@ -267,7 +269,7 @@ function _refreshMasterVolumeView(docid, newVid) {
 }
 
 function _refreshSectionBlock(docid, isPartial) {
-    _post('/administratepaper/displaysection', new URLSearchParams({
+    _post(JS_PREFIX_URL + 'administratepaper/displaysection', new URLSearchParams({
         docid: docid,
         partial: isPartial ? '1' : '0',
     })).then(function (html) {
@@ -280,7 +282,7 @@ function _refreshSectionBlock(docid, isPartial) {
 }
 
 function _refreshEditorsBlock(docid, isPartial) {
-    _post('/administratepaper/displayeditors', new URLSearchParams({
+    _post(JS_PREFIX_URL + 'administratepaper/displayeditors', new URLSearchParams({
         docid: docid,
         partial: isPartial ? '1' : '0',
     })).then(function (html) {
@@ -310,7 +312,7 @@ function openVolumeModal(btn) {
 
     _showLoading(title);
 
-    _post('/administratepaper/volumeform', new URLSearchParams({ docid: docid }))
+    _post(JS_PREFIX_URL + 'administratepaper/volumeform', new URLSearchParams({ docid: docid }))
         .then(function (html) {
             if (_callToken !== token) return;
             var formId = 'volume-form-' + docid;
@@ -330,7 +332,7 @@ function openVolumeModal(btn) {
                 var vidSelect = document.getElementById('master_volume_select');
                 var newVid = vidSelect ? vidSelect.value : '';
 
-                _post('/administratepaper/savemastervolume', new URLSearchParams({ docid: docid, vid: newVid }))
+                _post(JS_PREFIX_URL + 'administratepaper/savemastervolume', new URLSearchParams({ docid: docid, vid: newVid }))
                     .then(function (result) {
                         if (parseInt(result, 10) !== 1) return;
                         _closeDialog();
@@ -362,7 +364,7 @@ function openOtherVolumesModal(btn) {
 
     _showLoading(title);
 
-    _post('/administratepaper/othervolumesform', new URLSearchParams({ docid: docid }))
+    _post(JS_PREFIX_URL + 'administratepaper/othervolumesform', new URLSearchParams({ docid: docid }))
         .then(function (html) {
             if (_callToken !== token) return;
             var formId = 'volumes-form-' + docid;
@@ -382,7 +384,7 @@ function openOtherVolumesModal(btn) {
                 var data = new URLSearchParams(new FormData(form));
                 data.set('docid', docid);
 
-                _post('/administratepaper/saveothervolumes', data)
+                _post(JS_PREFIX_URL + 'administratepaper/saveothervolumes', data)
                     .then(function (result) {
                         if (result.trim() !== '1') return;
                         _closeDialog();
@@ -410,7 +412,7 @@ function openSectionModal(btn) {
 
     _showLoading(title);
 
-    _post('/administratepaper/sectionform', new URLSearchParams({ docid: docid }))
+    _post(JS_PREFIX_URL + 'administratepaper/sectionform', new URLSearchParams({ docid: docid }))
         .then(function (html) {
             if (_callToken !== token) return;
             var formId = 'section-assignment-form-' + docid;
@@ -435,7 +437,7 @@ function openSectionModal(btn) {
                 var data = new URLSearchParams(new FormData(form));
                 data.set('docid', docid);
 
-                _post('/administratepaper/savesection', data)
+                _post(JS_PREFIX_URL + 'administratepaper/savesection', data)
                     .then(function (result) {
                         var ok = result && result.trim() !== '' && result.trim() !== 'false' && result.trim() !== '0';
                         if (!ok) return;
