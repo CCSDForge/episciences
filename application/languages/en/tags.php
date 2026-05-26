@@ -98,6 +98,9 @@ return array(
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_EDITORS] => "all editors assigned to the volume of the article (e.g. Hartman Rodney, Daniel Bryan, Walls John)",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_ID] => "volume ID",
     Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_NAME] => "volume name",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_NUMBER] => "volume number",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_YEAR] => "volume year",
+    Episciences_Mail_Tags::TAG_DESCRIPTION[Episciences_Mail_Tags::TAG_VOLUME_TYPE] => "volume type",
 
 
     Episciences_Mail_TemplatesManager::TEMPLATE_DESCRIPTION_AND_RECIPIENT[Episciences_Mail_TemplatesManager::TYPE_USER_REGISTRATION][Episciences_Mail_TemplatesManager::DESCRIPTION] => "notification of confirmation and validation of a new account",
