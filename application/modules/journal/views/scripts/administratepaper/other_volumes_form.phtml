@@ -1,31 +1,14 @@
 <div style="max-width: 700px;">
-    <form action="<?= $this->url(['controller' => 'administratepaper', 'action' => 'saveothervolumes'])?>" id="volumes-form-<?php echo $this->docid ?>" role="form">
+    <form action="<?= $this->url(['controller' => 'administratepaper', 'action' => 'saveothervolumes']) ?>" id="volumes-form-<?php echo $this->docid ?>" autocomplete="off">
 
-        <div style="margin-bottom: 5px;">
-            <label for="other_volumes_search_input" class="sr-only"><?= $this->translate('Rechercher un volume') ?></label>
-            <input type="text" class="form-control input-md" id="other_volumes_search_input"
-                   placeholder="<?= $this->translate('Rechercher') ?>"
-                   autocomplete="off"
-                   aria-controls="other_volumes_list">
-        </div>
+    <label for="other_volumes_select" class="sr-only"><?= $this->translate('Volumes secondaires') ?></label>
+    <select name="vids[]" id="other_volumes_select" multiple>
+        <?php foreach ($this->volumes as $volume): ?>
+            <option value="<?= (int) $volume['vid'] ?>"
+                <?= $volume['checked'] ? 'selected' : '' ?>>
+                <?= $this->escape($volume['name']) ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
 
-        <fieldset style="border: 0; padding: 0; margin: 0;">
-            <legend class="sr-only"><?= $this->translate('Volumes secondaires') ?></legend>
-            <div id="other_volumes_list" style="max-height: 200px; overflow: auto" tabindex="0">
-                <?php foreach ($this->volumes as $volume) : ?>
-                    <label class="multicheckbox_option">
-                        <input type="checkbox" <?php if ($volume['checked']) : ?>checked="checked"<?php endif ?>
-                               id="cb_v_<?php echo $volume['vid'] ?>"
-                               name="volume_<?php echo $volume['vid'] ?>"/>
-                        <span><?php echo $volume['name']; ?></span>
-                    </label>
-                <?php endforeach; ?>
-            </div>
-        </fieldset>
-
-        <div class="text-right" style="margin-top: 10px;">
-            <button type="submit" class="btn btn-primary"><?php echo $this->translate("Enregistrer"); ?></button>
-        </div>
-
-    </form>
-</div>
+</form>

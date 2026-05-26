@@ -2051,6 +2051,9 @@ class Episciences_Submit
             $adminTags [Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
             $adminTags [Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($locale);
             $adminTags [Episciences_Mail_Tags::TAG_VOLUME_NAME] = $vTag;
+            $adminTags [Episciences_Mail_Tags::TAG_VOLUME_NUMBER] = $volume?->getVol_num() ?: $translator->translate('Aucun', $locale);
+            $adminTags [Episciences_Mail_Tags::TAG_VOLUME_YEAR] = $volume?->getVol_year() ?: $translator->translate('Aucune', $locale);
+            $adminTags [Episciences_Mail_Tags::TAG_VOLUME_TYPE] = $volume?->getVol_type() ?: $translator->translate('Aucun', $locale);
             $adminTags [Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF] = ($volume && $volume->getBib_reference()) ?: $translator->translate('Aucune', $locale);
             $adminTags [Episciences_Mail_Tags::TAG_SECTION_NAME] = $sTag;
 

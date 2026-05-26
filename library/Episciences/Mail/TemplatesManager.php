@@ -773,6 +773,9 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL,
         Episciences_Mail_Tags::TAG_SECTION_NAME,
         Episciences_Mail_Tags::TAG_VOLUME_NAME,
+        Episciences_Mail_Tags::TAG_VOLUME_NUMBER,
+        Episciences_Mail_Tags::TAG_VOLUME_YEAR,
+        Episciences_Mail_Tags::TAG_VOLUME_TYPE,
         Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF
     ];
 
@@ -1307,6 +1310,9 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_VOLUME_EDITORS,
         Episciences_Mail_Tags::TAG_SECTION_ID,
         Episciences_Mail_Tags::TAG_VOLUME_NAME,
+        Episciences_Mail_Tags::TAG_VOLUME_NUMBER,
+        Episciences_Mail_Tags::TAG_VOLUME_YEAR,
+        Episciences_Mail_Tags::TAG_VOLUME_TYPE,
         Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF,
         Episciences_Mail_Tags::TAG_SECTION_NAME,
         Episciences_Mail_Tags::TAG_PAPER_POSITION_IN_VOLUME,
@@ -1480,6 +1486,9 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_PAPER_URL,
         Episciences_Mail_Tags::TAG_VOLUME_NAME,
+        Episciences_Mail_Tags::TAG_VOLUME_NUMBER,
+        Episciences_Mail_Tags::TAG_VOLUME_YEAR,
+        Episciences_Mail_Tags::TAG_VOLUME_TYPE,
         Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF
     ];
 

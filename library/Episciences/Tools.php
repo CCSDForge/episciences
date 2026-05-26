@@ -2417,9 +2417,15 @@ class Episciences_Tools
 
         }
 
+        $warning = null;
+        set_error_handler(static function(int $errno, string $errstr) use (&$warning): bool {
+            $warning = $errstr;
+            return true;
+        });
         $dateInterval = DateInterval::createFromDateString($interval);
+        restore_error_handler();
 
-        if ($dateInterval === false) {
+        if ($dateInterval === false || $warning !== null) {
             throw new \InvalidArgumentException("Invalid interval format: {$interval}");
         }
 
