@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin paper list: Tom Select search on all 7 filter selects (Status, Volume, Section, Editors, Reviewers, DOI, Repositories) — type to filter within long lists, animated chevron indicates dropdown, placeholder shows "All" when nothing is selected.
 
 ### Changed
+
 - [RT##287093]: It is now possible to publish the article at any stage of the editorial process if it is accepted.
 - Paper admin: assignment buttons replaced by pencil icon (`fa-pen-to-square`); glyphicons removed.
 - Paper admin: modal save now does a targeted AJAX refresh instead of a full page reload.
@@ -35,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin paper list: removed redundant page description blockquote.
 
 ### Fixed
+
 - [#1030](https://github.com/CCSDForge/episciences/issues/1030): missing "Ask the author for the sources (copy editing by the journal): because the "Allow post - acceptance revisions of articles" option is used, which alters the workflow steps, as it is assumed that the journal already has the source files. At this stage, it is now possible to request the sources.
 
 - Paper admin: closed modal remained visible (`display:flex` SCSS overrode native `dialog:not([open])` behaviour).
@@ -70,8 +72,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - [#1010](https://github.com/CCSDForge/episciences/issues/1010) The allowed range for modifying the deadline is now between the original deadline minus "rating_deadline_min" and the original deadline plus "rating_deadline_max".
-- [#998](https://github.com/CCSDForge/episciences/issues/998) Improved COI declaration      
+- [#998](https://github.com/CCSDForge/episciences/issues/998) Improved COI declaration
   button labels: "Continue (No conflict of interest)" / "Stop (I have a conflict of interest)"
+
 ## v1.0.55.2 - 2026-05-19
 
 ### Fixed
