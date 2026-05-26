@@ -54,8 +54,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mailing lists: "Last updated" column displayed after "Name" in the dashboard table.
 - Mailing lists: creation date displayed (read-only) in the list edit form.
 
-### Changed
+### Performances
 
+- Avoid repeated `REVIEW_SETTING` queries in a single request by caching loaded review settings on the current review object and sharing cached review instances between `RVID` and `RVCODE` lookups.
+
+### Changed
+- [#998](https://github.com/CCSDForge/episciences/issues/998) Improved COI declaration
+  button labels: "Continue (No conflict of interest)" / "Stop (I have a conflict of interest)"
 - Modernized `Ccsd_Form_Filter_Clean` filter and `Ccsd_Form_Validate_NotSame` validator (introduced strict typing, comprehensive type hinting, and robust recursive array filtering for the `Clean` filter).
 
 ### Removed
