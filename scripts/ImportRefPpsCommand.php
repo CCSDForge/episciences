@@ -279,6 +279,9 @@ class ImportRefPpsCommand extends Command
 
     public function countDataLines(string $csvFile): ?int
     {
+        if (!is_file($csvFile)) {
+            return null;
+        }
         $handle = fopen($csvFile, 'rb');
         if ($handle === false) {
             return null;

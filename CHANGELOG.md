@@ -19,12 +19,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Paper admin: volume/section assignment now uses a native `<dialog>` modal with Tom Select; `paper-assignment-modal.js` (vanilla JS) replaces `volume-assignment.js` and `section-assignment.js`.
+- Paper admin: Tom Select `dropdown_input` and `remove_button` plugins in modal selects.
+- Admin paper list: Tom Select search on all 7 filter selects (Status, Volume, Section, Editors, Reviewers, DOI, Repositories) — type to filter within long lists, animated chevron indicates dropdown, placeholder shows "All" when nothing is selected.
+
+### Changed
+
+- Paper admin: assignment buttons replaced by pencil icon (`fa-pen-to-square`); glyphicons removed.
+- Paper admin: modal save now does a targeted AJAX refresh instead of a full page reload.
+- Paper admin: other volumes form replaced by a Tom Select `<select multiple>` (`checkbox_options` plugin).
+- Paper admin (i18n): "Master volume" renamed to "Main volume".
+- Paper admin: section edit button moved before label/name, consistent with volumes layout.
+- Paper admin: volume sort button uses `fa-arrow-down-1-9` icon with a descriptive tooltip.
+- Admin paper list: filter panel reorganised into 3 rows — Status/Editors/Reviewers on the first row, Volume+DOI on the second, Section+Repositories on the third; Volume and Section are wider (`col-sm-8`) to accommodate long titles.
+- Admin paper list: removed redundant page description blockquote.
+
+### Fixed
+
+- Paper admin: closed modal remained visible (`display:flex` SCSS overrode native `dialog:not([open])` behaviour).
+- Paper admin: Tom Select selected items now styled as blue pills in the modal.
+- Paper admin: translation failure on volume-alert text (curly apostrophe in `views.php` vs plain ASCII in template).
+- Paper admin: "Assign editors" checkbox now disabled+unchecked when no section is selected.
+- Paper admin: article position badge wrapped in a Bootstrap `label-default` span with an accessible tooltip.
+- Paper admin: main volume cell not updated in list after remove+reassign (stale `btn.dataset.vid` + missing fallback in `refreshallmastervolumesAction` for papers without a position row).
+- Admin paper list: `checkFilterParams` crashed with `TypeError: Cannot read properties of null (reading 'length')` when clicking "Filter" with Tom Select multiselects returning `null` for empty selections; fallback to `['']` restores expected behaviour.
+
 - [#930](https://github.com/CCSDForge/episciences/issues/930) New email template tags for volume metadata: `%%VOLUME_NUMBER%%`, `%%VOLUME_YEAR%%`, and `%%VOLUME_TYPE%%`.
 - Mailing lists: added `created_at` and `updated_at` columns to the `mailing_lists` table.
 - Mailing lists: four MySQL triggers propagate `updated_at` to the parent row when individual members or roles are modified.
 - Mailing lists: `v_mailing_lists_resolved` view now exposes `list_created_at` and `list_updated_at`.
 - Mailing lists: "Last updated" column displayed after "Name" in the dashboard table.
 - Mailing lists: creation date displayed (read-only) in the list edit form.
+
+### Changed
+
+- Modernized `Ccsd_Form_Filter_Clean` filter and `Ccsd_Form_Validate_NotSame` validator (introduced strict typing, comprehensive type hinting, and robust recursive array filtering for the `Clean` filter).
+
+### Removed
+
+- Removed obsolete `DEAD CODE AUDIT` deprecation warnings from `UserFtpQuota` and `UserFtpQuotaMapper` classes.
 
 ## v1.0.55.3 - 2026-05-20
 
@@ -36,7 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - [#1010](https://github.com/CCSDForge/episciences/issues/1010) The allowed range for modifying the deadline is now between the original deadline minus "rating_deadline_min" and the original deadline plus "rating_deadline_max".
-
+- [#998](https://github.com/CCSDForge/episciences/issues/998) Improved COI declaration      
+  button labels: "Continue (No conflict of interest)" / "Stop (I have a conflict of interest)"
 ## v1.0.55.2 - 2026-05-19
 
 ### Fixed

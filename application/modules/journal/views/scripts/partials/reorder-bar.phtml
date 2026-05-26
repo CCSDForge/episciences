@@ -1,0 +1,129 @@
+<style>
+/* ── Position input ──────────────────────────────────────────────────────── */
+.reorder-position-input {
+    width: 58px;
+    text-align: center;
+    padding: 2px 4px;
+    height: 28px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    cursor: text;
+    /* Hide browser-native number spinners */
+    -moz-appearance: textfield;
+}
+.reorder-position-input::-webkit-outer-spin-button,
+.reorder-position-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.reorder-position-input:hover  { border-color: #aaa; }
+.reorder-position-input:focus  {
+    outline: 2px solid #337ab7;
+    outline-offset: 1px;
+    border-color: #337ab7;
+}
+.reorder-position-input--error {
+    border-color: #a94442;
+    box-shadow: 0 0 0 2px rgba(169, 68, 66, 0.25);
+}
+.reorder-col-position {
+    width: 70px;
+    text-align: center;
+    vertical-align: middle !important;
+}
+
+/* ── Modified-row indicator ──────────────────────────────────────────────── */
+/* IMPORTANT: rules must target <td>, not <tr>.                              */
+/* In border-collapse:collapse tables, <td> is painted on top of <tr>, so   */
+/* a background set on <tr> is invisible whenever Bootstrap's .table-striped */
+/* sets a background on the <td> (odd rows → #f9f9f9).                       */
+.reorder-row--modified > td { background-color: #eaf4fe !important; }
+/* Left accent bar on the first cell, using a thick inset shadow.            */
+.reorder-row--modified > td:first-child { box-shadow: inset 3px 0 0 #337ab7; }
+
+/* Landing pulse: brief bright flash when the row first arrives at its new   */
+/* position, then settles into the persistent tint above.                    */
+@keyframes reorder-row-land {
+    0%   { background-color: #aad4f5; }
+    100% { background-color: #eaf4fe; }
+}
+/* Apply the animation to each cell, not the row — same reason as above.    */
+.reorder-row--landing > td { animation: reorder-row-land 0.5s ease-out forwards; }
+
+/* ── Spinning icon (save button busy state) ──────────────────────────────── */
+@keyframes reorder-icon-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+.reorder-spin {
+    display: inline-block;
+    animation: reorder-icon-spin 1s linear infinite;
+}
+
+/* ── Save / cancel bar ───────────────────────────────────────────────────── */
+#reorder-bar {
+    display: none; /* shown via JS */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: #fff;
+    border-top: 3px solid #337ab7;
+    box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.12);
+}
+.reorder-bar__label {
+    font-weight: 600;
+    color: #337ab7;
+    font-size: 14px;
+    white-space: nowrap;
+}
+/* Unsaved-changes badge – takes the remaining space between label and buttons */
+#reorder-changes {
+    flex: 1;
+    padding: 0 14px;
+}
+.reorder-changes-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    background: #fcf8e3;
+    border: 1px solid #f0c36d;
+    border-radius: 10px;
+    color: #8a6d3b;
+    font-size: 12px;
+    white-space: nowrap;
+}
+/* Give the page some bottom breathing room so content isn't hidden by bar */
+body.has-reorder-bar { padding-bottom: 58px; }
+</style>
+
+<!-- Save / cancel bar – shown only when in reorder mode (position input or drag) -->
+<div id="reorder-bar"
+     role="region"
+     aria-label="<?php echo $this->translate('Mode réorganisation'); ?>">
+    <span class="reorder-bar__label">
+        <span class="glyphicon glyphicon-sort" aria-hidden="true"></span>
+        <?php echo $this->translate('Mode réorganisation'); ?>
+    </span>
+    <span id="reorder-changes" aria-live="polite" aria-atomic="true"></span>
+    <button type="button" class="btn btn-default btn-sm" id="reorder-cancel">
+        <?php echo $this->translate('Annuler'); ?>
+    </button>
+    <button type="button" class="btn btn-primary btn-sm" id="reorder-save">
+        <span class="reorder-save__idle">
+            <span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span>
+            <?php echo $this->translate("Enregistrer l'ordre"); ?>
+        </span>
+        <span class="reorder-save__busy" style="display:none" aria-live="polite">
+            <span class="glyphicon glyphicon-refresh reorder-spin" aria-hidden="true"></span>
+            <?php echo $this->translate('Enregistrement...'); ?>
+        </span>
+    </button>
+</div>
