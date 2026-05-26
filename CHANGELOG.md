@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#930](https://github.com/CCSDForge/episciences/issues/930) New email template tags for volume metadata: `%%VOLUME_NUMBER%%`, `%%VOLUME_YEAR%%`, and `%%VOLUME_TYPE%%`.
 - Mailing lists: added `created_at` and `updated_at` columns to the `mailing_lists` table.
 - Mailing lists: four MySQL triggers propagate `updated_at` to the parent row when individual members or roles are modified.
 - Mailing lists: `v_mailing_lists_resolved` view now exposes `list_created_at` and `list_updated_at`.
