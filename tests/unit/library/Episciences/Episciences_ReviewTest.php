@@ -264,4 +264,190 @@ class Episciences_ReviewTest extends TestCase
         self::assertSame('test-journal', $review->getCode());
         self::assertSame('Test Journal', $review->getName());
     }
+
+    // =========================================================================
+    // loadSettings() cache
+    // =========================================================================
+
+    public function testLoadSettingsUsesInMemoryCache(): void
+    {
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = new Episciences_Review_LoadSettingsCacheTestAdapter([
+            [
+                'SETTING' => Episciences_Review::SETTING_ISSN,
+                'VALUE' => '1234-5678',
+            ],
+            [
+                'SETTING' => Episciences_Review::SETTING_REPOSITORIES,
+                'VALUE' => '[1,2]',
+            ],
+        ]);
+
+        try {
+            Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+            $review = new Episciences_Review(['rvid' => 8]);
+
+            $review->loadSettings();
+            $review->loadSettings();
+
+            self::assertSame(1, $adapter->fetchAllCount);
+            self::assertSame('1234-5678', $review->getSetting(Episciences_Review::SETTING_ISSN));
+            self::assertSame([1, 2], $review->getSetting(Episciences_Review::SETTING_REPOSITORIES));
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
+    }
+
+    public function testLoadSettingsCanForceReload(): void
+    {
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = new Episciences_Review_LoadSettingsCacheTestAdapter([
+            [
+                'SETTING' => Episciences_Review::SETTING_ISSN,
+                'VALUE' => '1234-5678',
+            ],
+            [
+                'SETTING' => Episciences_Review::SETTING_CONTACT_JOURNAL,
+                'VALUE' => '1',
+            ],
+        ]);
+
+        try {
+            Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+            $review = new Episciences_Review(['rvid' => 8]);
+
+            $review->loadSettings();
+            $adapter->setRows([
+                [
+                    'SETTING' => Episciences_Review::SETTING_ISSN,
+                    'VALUE' => '8765-4321',
+                ],
+            ]);
+
+            $review->loadSettings(true);
+
+            self::assertSame(2, $adapter->fetchAllCount);
+            self::assertSame('8765-4321', $review->getSetting(Episciences_Review::SETTING_ISSN));
+            self::assertArrayNotHasKey(Episciences_Review::SETTING_CONTACT_JOURNAL, $review->getSettings());
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
+    }
+
+    public function testGetSettingLoadsDbSettingsEvenIfManuallyPreinitialized(): void
+    {
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = new Episciences_Review_LoadSettingsCacheTestAdapter([
+            [
+                'SETTING' => Episciences_Review::SETTING_ISSN,
+                'VALUE' => '1234-5678',
+            ],
+        ]);
+
+        try {
+            Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+            $review = new Episciences_Review(['rvid' => 8]);
+
+            // Set a setting manually before any load/get
+            $review->setSetting('some_manual_setting', 'manual_val');
+
+            // Trigger getSetting for a database setting
+            $issn = $review->getSetting(Episciences_Review::SETTING_ISSN);
+
+            self::assertSame(1, $adapter->fetchAllCount);
+            self::assertSame('1234-5678', $issn);
+            self::assertSame('manual_val', $review->getSetting('some_manual_setting'));
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
+    }
+}
+
+final class Episciences_Review_LoadSettingsCacheTestAdapter extends Zend_Db_Adapter_Abstract
+{
+    public int $fetchAllCount = 0;
+
+    private array $rows;
+
+    public function __construct(array $rows)
+    {
+        parent::__construct(['dbname' => 'test', 'password' => '', 'username' => 'test']);
+        $this->rows = $rows;
+    }
+
+    public function setRows(array $rows): void
+    {
+        $this->rows = $rows;
+    }
+
+    public function fetchAll($sql, $bind = [], $fetchMode = null)
+    {
+        ++$this->fetchAllCount;
+        return $this->rows;
+    }
+
+    public function listTables()
+    {
+        return [];
+    }
+
+    public function describeTable($tableName, $schemaName = null)
+    {
+        return [];
+    }
+
+    protected function _connect()
+    {
+    }
+
+    public function isConnected()
+    {
+        return true;
+    }
+
+    public function closeConnection()
+    {
+    }
+
+    public function prepare($sql)
+    {
+        return null;
+    }
+
+    public function lastInsertId($tableName = null, $primaryKey = null)
+    {
+        return null;
+    }
+
+    protected function _beginTransaction()
+    {
+    }
+
+    protected function _commit()
+    {
+    }
+
+    protected function _rollBack()
+    {
+    }
+
+    public function setFetchMode($mode)
+    {
+        $this->_fetchMode = $mode;
+    }
+
+    public function limit($sql, $count, $offset = 0)
+    {
+        return $sql;
+    }
+
+    public function supportsParameters($type)
+    {
+        return false;
+    }
+
+    public function getServerVersion()
+    {
+        return 'test';
+    }
 }
