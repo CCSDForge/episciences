@@ -333,6 +333,34 @@ class Episciences_ReviewTest extends TestCase
             Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
         }
     }
+
+    public function testGetSettingLoadsDbSettingsEvenIfManuallyPreinitialized(): void
+    {
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = new Episciences_Review_LoadSettingsCacheTestAdapter([
+            [
+                'SETTING' => Episciences_Review::SETTING_ISSN,
+                'VALUE' => '1234-5678',
+            ],
+        ]);
+
+        try {
+            Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+            $review = new Episciences_Review(['rvid' => 8]);
+
+            // Set a setting manually before any load/get
+            $review->setSetting('some_manual_setting', 'manual_val');
+
+            // Trigger getSetting for a database setting
+            $issn = $review->getSetting(Episciences_Review::SETTING_ISSN);
+
+            self::assertSame(1, $adapter->fetchAllCount);
+            self::assertSame('1234-5678', $issn);
+            self::assertSame('manual_val', $review->getSetting('some_manual_setting'));
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
+    }
 }
 
 final class Episciences_Review_LoadSettingsCacheTestAdapter extends Zend_Db_Adapter_Abstract

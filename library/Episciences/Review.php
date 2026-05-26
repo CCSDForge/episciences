@@ -599,7 +599,7 @@ class Episciences_Review
      */
     public function getSetting($setting)
     {
-        if (count($this->_settings) === 0) {
+        if (!$this->_settingsLoaded) {
             $this->loadSettings();
         }
         return Ccsd_Tools::ifsetor($this->_settings[$setting], false);
