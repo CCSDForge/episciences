@@ -2067,19 +2067,19 @@ class Episciences_Submit
                 $adminTags[Episciences_Mail_Tags::TAG_REFUSED_ARTICLE_MESSAGE] = $message;
             }
 
-            $vTag = !$volume ? $translator->translate('Hors volume', $locale) : $volume->getName($locale);
-            $sTag = !$section ? $translator->translate('Hors rubrique', $locale) : $section->getName($locale);
+            $vName = !$volume ? $translator->translate('Hors volume', $locale) : $volume->getName($locale);
+            $sName = !$section ? $translator->translate('Hors rubrique', $locale) : $section->getName($locale);
 
             $adminTags [Episciences_Mail_Tags::TAG_SENDER_EMAIL] = Episciences_Auth::getEmail();
             $adminTags [Episciences_Mail_Tags::TAG_SENDER_FULL_NAME] = Episciences_Auth::getFullName();
             $adminTags [Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
             $adminTags [Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($locale);
-            $adminTags [Episciences_Mail_Tags::TAG_VOLUME_NAME] = $vTag;
+            $adminTags [Episciences_Mail_Tags::TAG_VOLUME_NAME] = $vName;
             $adminTags [Episciences_Mail_Tags::TAG_VOLUME_NUMBER] = $volume?->getVol_num() ?: $translator->translate('Aucun', $locale);
             $adminTags [Episciences_Mail_Tags::TAG_VOLUME_YEAR] = $volume?->getVol_year() ?: $translator->translate('Aucune', $locale);
             $adminTags [Episciences_Mail_Tags::TAG_VOLUME_TYPE] = $volume?->getVol_type() ?: $translator->translate('Aucun', $locale);
             $adminTags [Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF] = ($volume && $volume->getBib_reference()) ?: $translator->translate('Aucune', $locale);
-            $adminTags [Episciences_Mail_Tags::TAG_SECTION_NAME] = $sTag;
+            $adminTags [Episciences_Mail_Tags::TAG_SECTION_NAME] = $sName;
 
             if (!$canReplace) { // new submission only
                 $rTag = $recipient instanceof Episciences_Editor ? $recipient->getTag() : null;
