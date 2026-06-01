@@ -2414,7 +2414,11 @@ class PaperController extends PaperDefaultController
                     $paper
             );
         } else {
-            trigger_error('Answer revision with new version: mail not sent to managers: empty recipients');
+
+            Episciences_View_Helper_Log::log(
+                    'Failed to send revision notification: No valid recipients found'
+            );
+
         }
 
         $this->notifyAuthorNewVersion($newPaper, $coAuthors);
