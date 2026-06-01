@@ -2073,7 +2073,7 @@ class Episciences_Submit
             $outOfVol   = $translator->translate('Hors volume', $locale);
             $outOfSec   = $translator->translate('Hors rubrique', $locale);
 
-            $adminTags += self::resolveVolumeAndSectionTags($volume, $section, $locale, $noneFemale, $noneMale, $outOfVol, $outOfSec);
+            $adminTags = array_merge($adminTags, self::resolveVolumeAndSectionTags($volume, $section, $locale, $noneFemale, $noneMale, $outOfVol, $outOfSec));
 
             $adminTags [Episciences_Mail_Tags::TAG_SENDER_EMAIL] = Episciences_Auth::getEmail();
             $adminTags [Episciences_Mail_Tags::TAG_SENDER_FULL_NAME] = Episciences_Auth::getFullName();
@@ -2101,7 +2101,7 @@ class Episciences_Submit
      *
      * @param Episciences_Volume|bool|null    $volume
      * @param Episciences_Section|bool|null   $section
-     * @return array<string, string>
+     * @return array<string, string|int>
      */
     private static function resolveVolumeAndSectionTags(
         mixed $volume,
