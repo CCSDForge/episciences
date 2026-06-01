@@ -59,12 +59,55 @@ class GenerateSitemapCommandTest extends TestCase
     // -------------------------------------------------------------------------
 
     /** @return array<int, array<string, mixed>> */
-    private function getSitemapGenericEntries(string $rvcode): array
+    private function getSitemapGenericEntries(string $rvcode, array $languages = []): array
     {
         $method = new ReflectionMethod(GenerateSitemapCommand::class, 'getSitemapGenericEntries');
         $method->setAccessible(true);
-        return $method->invoke($this->command, $rvcode);
+        return $method->invoke($this->command, $rvcode, $languages);
     }
+
+    /** @return string[] */
+    private function buildLocUrls(string $base, string $path, array $languages): array
+    {
+        $method = new ReflectionMethod(GenerateSitemapCommand::class, 'buildLocUrls');
+        $method->setAccessible(true);
+        return $method->invoke($this->command, $base, $path, $languages);
+    }
+
+    // -------------------------------------------------------------------------
+    // buildLocUrls()
+    // -------------------------------------------------------------------------
+
+    public function testBuildLocUrls_NoLanguages_ReturnsSingleUrl(): void
+    {
+        $urls = $this->buildLocUrls('https://dmtcs.episciences.org', '/articles/123', []);
+        $this->assertSame(['https://dmtcs.episciences.org/articles/123'], $urls);
+    }
+
+    public function testBuildLocUrls_WithLanguages_ReturnsOneUrlPerLanguage(): void
+    {
+        $urls = $this->buildLocUrls('https://jtcam.episciences.org', '/articles/456', ['fr', 'en']);
+        $this->assertSame([
+            'https://jtcam.episciences.org/fr/articles/456',
+            'https://jtcam.episciences.org/en/articles/456',
+        ], $urls);
+    }
+
+    public function testBuildLocUrls_HomePath_NoLanguages(): void
+    {
+        $urls = $this->buildLocUrls('https://dmtcs.episciences.org', '/', []);
+        $this->assertSame(['https://dmtcs.episciences.org/'], $urls);
+    }
+
+    public function testBuildLocUrls_HomePath_WithLanguages(): void
+    {
+        $urls = $this->buildLocUrls('https://jtcam.episciences.org', '/', ['en']);
+        $this->assertSame(['https://jtcam.episciences.org/en/'], $urls);
+    }
+
+    // -------------------------------------------------------------------------
+    // getSitemapGenericEntries() — no language prefix (legacy behaviour)
+    // -------------------------------------------------------------------------
 
     public function testGetSitemapGenericEntries_ReturnsSixEntries(): void
     {
@@ -124,6 +167,45 @@ class GenerateSitemapCommandTest extends TestCase
     {
         foreach ($this->getSitemapGenericEntries('dmtcs') as $entry) {
             $this->assertStringStartsWith('https://', $entry['loc']);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // getSitemapGenericEntries() — with language prefixes (new sites)
+    // -------------------------------------------------------------------------
+
+    public function testGetSitemapGenericEntries_WithTwoLanguages_ReturnsTwelveEntries(): void
+    {
+        // 6 paths × 2 languages = 12
+        $entries = $this->getSitemapGenericEntries('jtcam', ['fr', 'en']);
+        $this->assertCount(12, $entries);
+    }
+
+    public function testGetSitemapGenericEntries_WithLanguages_AllLocsHaveLangPrefix(): void
+    {
+        $entries = $this->getSitemapGenericEntries('jtcam', ['fr', 'en']);
+        foreach ($entries as $entry) {
+            $this->assertMatchesRegularExpression(
+                '#https://jtcam\.[^/]+/(fr|en)/#',
+                $entry['loc'] . (str_ends_with($entry['loc'], '/') ? '' : '/')
+            );
+        }
+    }
+
+    public function testGetSitemapGenericEntries_WithOneLanguage_ReturnsSixEntries(): void
+    {
+        $entries = $this->getSitemapGenericEntries('dmtcs', ['en']);
+        $this->assertCount(6, $entries);
+    }
+
+    public function testGetSitemapGenericEntries_WithLanguages_HomeHasPriorityOne(): void
+    {
+        $entries = $this->getSitemapGenericEntries('jtcam', ['fr', 'en']);
+        $homes   = array_filter($entries, fn($e) => str_ends_with($e['loc'], '/en/') || str_ends_with($e['loc'], '/fr/'));
+        $this->assertCount(2, $homes);
+        foreach ($homes as $home) {
+            $this->assertSame('1', $home['priority']);
+            $this->assertSame('daily', $home['changefreq']);
         }
     }
 }
