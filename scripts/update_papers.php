@@ -281,6 +281,20 @@ class UpdatePapers extends JournalScript
 
     private function process_single_paper($params)
     {
+        $id = $params['identifier'];
+        $version = $params['version'];
+        $repoid = $params['repoid'];
+
+        // load paper metadata first, to resolve the exact version from repository if not specified
+        $metadata = Episciences_Submit::getDoc($repoid, $id, $version, null, false);
+        if (!$metadata || $metadata['status'] == 0) {
+            throw new Zend_Exception("metadata not found for: " . $repoid . ' - ' . $id . ' - v' . ($version ?: 'latest'));
+        }
+
+        // update identifier and version with the ones resolved by getDoc (which passes them by reference)
+        $params['identifier'] = $id;
+        $params['version'] = $version;
+
         // try to find matching papers, so we know if this is an update or a new import
         $matching_papers = $this->getMatchingPapers($params['identifier'], $params['docid'], $params['rvid'], $params['version']);
         $identifier_string = ($params['identifier']) ?: $params['docid'];
@@ -313,16 +327,8 @@ class UpdatePapers extends JournalScript
 
         // set paper options
         $paper->setOptions($params);
+        $paper->setVersion($version);
         $paper->setFlag('imported');
-        $id = $paper->getIdentifier();
-        $version = $paper->getVersion();
-
-        // load paper metadata
-        $metadata = Episciences_Submit::getDoc($paper->getRepoid(), $id, $version, null, false);
-        if (!$metadata || $metadata['status'] == 0) {
-            throw new Zend_Exception("metadata not found for: " . $paper->getRepoid() . ' - ' . $paper->getIdentifier() . ' - v' . $paper->getVersion());
-        }
-        // set paper xml record
         $paper->setRecord($metadata['record']);
 
         // if uid is undefined, set default contributor uid (pick one of the chief editors)
