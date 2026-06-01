@@ -274,6 +274,18 @@ class PaperDefaultController extends DefaultController
             $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMITTED;
         } elseif ($commentType === Episciences_CommentsManager::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED) {
             $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_EDITOR_AND_COPYEDITOR_COPY;
+        } elseif($commentType === Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT){
+            $templateKey =  Episciences_Mail_TemplatesManager::TYPE_PAPER_REVISION_ANSWER;
+        }
+
+        if ($templateKey === ''){
+
+            Episciences_View_Helper_Log::log(
+                    'Failed to send notification: No valid template found'
+            );
+
+            return false;
+
         }
 
         $requestCommentSender = new Episciences_User();

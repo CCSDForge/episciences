@@ -1281,40 +1281,10 @@ class PaperController extends PaperDefaultController
             $oAnswer->setMessage($post[self::COMMENT_STR]);
             $oAnswer->save(false, $paper->getUid()); // admin can save answer
 
-            // send mail to chief editors and editors
-            $recipients = $paper->getEditors(true, true);
-
-            foreach ($recipients as $recipient) {
-
-                $locale = $recipient->getLangueid();
-
-                $tags = [
-                    Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $recipient->getUsername(),
-                    Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $recipient->getScreenName(),
-                    Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $recipient->getFullName(),
-                    Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
-                    Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata(),
-                    Episciences_Mail_Tags::TAG_REQUEST_DATE => $this->view->Date($oComment->getWhen(), $locale),
-                    Episciences_Mail_Tags::TAG_REQUEST_MESSAGE => $oComment->getMessage(),
-                    Episciences_Mail_Tags::TAG_REQUEST_ANSWER => $oAnswer->getMessage(),
-                    Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($paper->getDocid()) //paper management page url
-                ];
-
-                Episciences_Mail_Send::sendMailFromReview(
-                    $recipient,
-                    Episciences_Mail_TemplatesManager::TYPE_PAPER_REVISION_ANSWER,
-                    $tags,
-                    $paper,
-                    Episciences_Auth::getUid(),
-                    [$oAnswer->getFile() => $oAnswer->getFilePath()],
-                    true
-                );
-            }
+            $recipients = [];
+            $this->handleManagerNotifications($oAnswer, $oComment, $paper, $recipients, true );
 
             if ($type !== Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT) {
-
 
                 $journalSettings = Zend_Registry::get('reviewSettings');
 
@@ -4167,7 +4137,9 @@ class PaperController extends PaperDefaultController
      * @param Episciences_Comment $request
      * @param Episciences_Paper $currentPaper
      * @param array $recipients
+     * @param bool $forceLoading
      * @return void
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -4176,9 +4148,15 @@ class PaperController extends PaperDefaultController
 
     private function handleManagerNotifications(Episciences_Comment $answer,
                                                 Episciences_Comment $request,
-                                                Episciences_Paper $currentPaper,
-                                                array &$recipients = []): void
+                                                Episciences_Paper   $currentPaper,
+                                                array               &$recipients = [],
+                                                bool                $forceLoading = false): void
     {
+
+
+        if ($forceLoading) {
+            $recipients = $currentPaper->getEditors(true, true);
+        }
 
         Episciences_Review::checkReviewNotifications($recipients);
         unset($recipients[$currentPaper->getUid()]);
