@@ -242,7 +242,6 @@ class PaperDefaultController extends DefaultController
 
     /**
      * @param Episciences_User $manager
-     * @param Episciences_Paper $paper1
      * @param Episciences_Paper $newPaper
      * @param Episciences_Comment $requestComment
      * @param Episciences_Comment $answerComment
@@ -258,7 +257,6 @@ class PaperDefaultController extends DefaultController
 
     protected function answerRevisionNotifyManager(
         Episciences_User $manager,
-        Episciences_Paper $paper1,
         Episciences_Paper $newPaper,
         Episciences_Comment $requestComment,
         Episciences_Comment $answerComment,
@@ -285,17 +283,21 @@ class PaperDefaultController extends DefaultController
         $locale = $manager->getLangueid();
 
         $commonTags = [
-            Episciences_Mail_Tags::TAG_ARTICLE_ID => $newPaper->getDocid(),
-            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $newPaper->getPaperid(),
-            Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
-            Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
-            Episciences_Mail_Tags::TAG_REQUEST_MESSAGE => $requestComment->getMessage(),
-            Episciences_Mail_Tags::TAG_REQUEST_ANSWER => $answerComment->getMessage(),
-            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $newPaper->getTitle($locale, true),
-            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $newPaper->formatAuthorsMetadata($locale),
-            Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => $this->view->Date($paper1->getWhen(), $locale),
-            Episciences_Mail_Tags::TAG_REQUEST_DATE => $this->view->Date($requestComment->getWhen(), $locale)
+                Episciences_Mail_Tags::TAG_ARTICLE_ID => $newPaper->getDocid(),
+                Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $newPaper->getPaperid(),
+                Episciences_Mail_Tags::TAG_SENDER_EMAIL => Episciences_Auth::getEmail(),
+                Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
+                Episciences_Mail_Tags::TAG_REQUEST_MESSAGE => $requestComment->getMessage(),
+                Episciences_Mail_Tags::TAG_REQUEST_ANSWER => $answerComment->getMessage(),
+                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $newPaper->getTitle($locale, true),
+                Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $newPaper->formatAuthorsMetadata($locale),
+                Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => $this->view->Date($newPaper->getWhen(), $locale),
+                Episciences_Mail_Tags::TAG_REQUEST_DATE => $this->view->Date($requestComment->getWhen(), $locale),
+                Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $manager->getUsername(),
+                Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $manager->getScreenName(),
+                Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $manager->getFullName(),
         ];
+
 
         if (!empty($tags)) {
             foreach ($commonTags as $key => $value) {
