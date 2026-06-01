@@ -282,7 +282,7 @@ class UpdatePapers extends JournalScript
     private function process_single_paper($params)
     {
         // try to find matching papers, so we know if this is an update or a new import
-        $matching_papers = $this->getMatchingPapers($params['identifier'], $params['docid'], $params['rvid']);
+        $matching_papers = $this->getMatchingPapers($params['identifier'], $params['docid'], $params['rvid'], $params['version']);
         $identifier_string = ($params['identifier']) ?: $params['docid'];
 
         // check if update or new import, and init paper object
@@ -357,7 +357,7 @@ class UpdatePapers extends JournalScript
      * @param $rvid
      * @return array
      */
-    private function getMatchingPapers($identifier, $docid, $rvid)
+    private function getMatchingPapers($identifier, $docid, $rvid, $version = null)
     {
         $sql = $this->getDb()->select()
             ->from(T_PAPERS, ['DOCID'])
@@ -367,6 +367,9 @@ class UpdatePapers extends JournalScript
             $sql->where('DOCID = ?', $docid);
         } elseif ($identifier) {
             $sql->where('IDENTIFIER LIKE ?', $identifier);
+            if ($version) {
+                $sql->where('VERSION = ?', $version);
+            }
         } else {
             return [];
         }
