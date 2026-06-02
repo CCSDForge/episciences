@@ -39,6 +39,28 @@ class Episciences_User extends Ccsd_User_Models_User
 
     private array $_papersNotInConflict = [];
 
+    /** @var array Request-level static identity map to cache user DB records */
+    protected static array $_identityMap = [];
+
+    /**
+     * Store user data in the static request-level memory cache.
+     *
+     * @param int $uid
+     * @param array $userData
+     */
+    public static function setStaticCache(int $uid, array $userData): void
+    {
+        self::$_identityMap[$uid] = $userData;
+    }
+
+    /**
+     * Clear the static request-level memory cache.
+     */
+    public static function clearStaticCache(): void
+    {
+        self::$_identityMap = [];
+    }
+
     protected ?string $_orcid = null;
     protected ?array $_affiliations = null;
 
@@ -312,6 +334,10 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     public function loadRoles(): array
     {
+        if ($this->_roles !== null) {
+            return $this->_roles;
+        }
+
         $roles = [];
 
         if ($this->getUid() == null) {
@@ -690,14 +716,20 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     public function find($uid): array
     {
-        $select = $this->_db->select()
-            ->from(T_USERS, '*')
-            ->where('UID = ?', $uid);
+        $uid = (int)$uid;
+        if (isset(self::$_identityMap[$uid])) {
+            $result = self::$_identityMap[$uid];
+        } else {
+            $select = $this->_db->select()
+                ->from(T_USERS, '*')
+                ->where('UID = ?', $uid);
 
-        $result = $select->query()->fetch(Zend_Db::FETCH_ASSOC);
+            $result = $select->query()->fetch(Zend_Db::FETCH_ASSOC);
 
-        if (empty($result)) {
-            return [];
+            if (empty($result)) {
+                return [];
+            }
+            self::$_identityMap[$uid] = $result;
         }
 
         if(isset($result['ADDITIONAL_PROFILE_INFORMATION']) && $result['ADDITIONAL_PROFILE_INFORMATION'] !== '' ){

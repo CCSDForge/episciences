@@ -117,6 +117,46 @@ class AdministratepaperController extends PaperDefaultController
 
             $isCoiEnabled = $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
 
+            // Prime the Episciences_User static request-level memory cache (Eager Loading)
+            $uidsToPreload = [];
+            foreach ($papers as $paper) {
+                if ($paper->getUid()) {
+                    $uidsToPreload[] = (int)$paper->getUid();
+                }
+            }
+
+            $paperIds = array_map(static function ($p) {
+                return (int)$p->getDocid();
+            }, $papers);
+
+            if (!empty($paperIds)) {
+                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                $assignSelect = $db->select()
+                    ->from(T_ASSIGNMENTS, ['UID'])
+                    ->where('ITEM = ?', 'paper')
+                    ->where('ITEMID IN (?)', $paperIds);
+                $assignedUids = $db->fetchCol($assignSelect);
+                if (!empty($assignedUids)) {
+                    foreach ($assignedUids as $uid) {
+                        $uidsToPreload[] = (int)$uid;
+                    }
+                }
+            }
+
+            $uidsToPreload = array_unique(array_filter($uidsToPreload));
+
+            if (!empty($uidsToPreload)) {
+                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                foreach (array_chunk($uidsToPreload, 1000) as $chunk) {
+                    $preloadSelect = $db->select()
+                        ->from(T_USERS)
+                        ->where('UID IN (?)', $chunk);
+                    foreach ($db->fetchAll($preloadSelect) as $row) {
+                        Episciences_User::setStaticCache((int)$row['UID'], $row);
+                    }
+                }
+            }
+
             foreach ($papers as &$paper) {
                 $paper->loadSubmitter(false);
                 $paper->getEditors();
@@ -351,6 +391,45 @@ class AdministratepaperController extends PaperDefaultController
 
             $isCoiEnabled = $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
 
+            // Prime the Episciences_User static request-level memory cache (Eager Loading)
+            $uidsToPreload = [];
+            foreach ($papers as $paper) {
+                if ($paper->getUid()) {
+                    $uidsToPreload[] = (int)$paper->getUid();
+                }
+            }
+
+            $paperIds = array_map(static function ($p) {
+                return (int)$p->getDocid();
+            }, $papers);
+
+            if (!empty($paperIds)) {
+                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                $assignSelect = $db->select()
+                    ->from(T_ASSIGNMENTS, ['UID'])
+                    ->where('ITEM = ?', 'paper')
+                    ->where('ITEMID IN (?)', $paperIds);
+                $assignedUids = $db->fetchCol($assignSelect);
+                if (!empty($assignedUids)) {
+                    foreach ($assignedUids as $uid) {
+                        $uidsToPreload[] = (int)$uid;
+                    }
+                }
+            }
+
+            $uidsToPreload = array_unique(array_filter($uidsToPreload));
+
+            if (!empty($uidsToPreload)) {
+                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                foreach (array_chunk($uidsToPreload, 1000) as $chunk) {
+                    $preloadSelect = $db->select()
+                        ->from(T_USERS)
+                        ->where('UID IN (?)', $chunk);
+                    foreach ($db->fetchAll($preloadSelect) as $row) {
+                        Episciences_User::setStaticCache((int)$row['UID'], $row);
+                    }
+                }
+            }
 
             /** @var Episciences_Paper $paper */
             foreach ($papers as &$paper) {
