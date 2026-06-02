@@ -2365,7 +2365,6 @@ class PaperController extends PaperDefaultController
      * @param Episciences_Comment $requestComment
      * @param Episciences_Comment $answerComment
      * @param array $coAuthors
-     * @param Episciences_Paper $paper
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -2376,8 +2375,7 @@ class PaperController extends PaperDefaultController
         Episciences_Paper   $newPaper,
         Episciences_Comment $requestComment,
         Episciences_Comment $answerComment,
-        array               $coAuthors,
-        Episciences_Paper   $paper
+        array               $coAuthors
     ): void
     {
         $editors = $newPaper->getEditors(true, true);
@@ -2410,8 +2408,7 @@ class PaperController extends PaperDefaultController
                     $answerComment,
                     true,
                     [Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl],
-                    $CC,
-                    $paper
+                    $CC
             );
         } else {
 
