@@ -2431,6 +2431,11 @@ return array(
     "mise en page en cours" => "layout editing in progress",
     "épreuve envoyée à l'auteur" => "proof sent to author",
     "en attente de publication" => "awaiting publication",
+    "L'épreuve de votre article est prête. Veuillez vérifier et approuver ou refuser la mise en page." => "The proof of your article is ready. Please review and approve or reject the layout.",
+    "Approuver" => "Approve",
+    "Refuser" => "Reject",
+    "L'épreuve a été approuvée." => "The proof has been approved.",
+    "L'épreuve a été refusée. L'article est renvoyé en mise en page." => "The proof has been rejected. The article has been returned to layout editing.",
     // graphical abstract
     "Fichier non accepté" => "File not accepted",
     'Fichier trop volumineux 100 ko max autorisé' => "File size too large 100 ko max authorized",

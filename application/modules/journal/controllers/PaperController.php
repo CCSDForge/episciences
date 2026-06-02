@@ -318,6 +318,7 @@ class PaperController extends PaperDefaultController
         $this->view->displayPaperPasswordBloc = $displayPaperPasswordBloc;
 
         $this->savePaperPassword($request, $paper, $displayPaperPasswordBloc);
+        $this->handleAuthorProofResponse($request, $paper, $isAltPipeline);
 
         $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
 
@@ -626,6 +627,36 @@ class PaperController extends PaperDefaultController
             }
         }
 
+    }
+
+    private function handleAuthorProofResponse(Zend_Controller_Request_Http $request, Episciences_Paper $paper, bool $isAltPipeline): void
+    {
+        if (
+            !$request->isPost() ||
+            !$isAltPipeline ||
+            !$paper->isOwner() ||
+            $paper->getStatus() !== Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR
+        ) {
+            return;
+        }
+
+        $params = $request->getPost();
+
+        if (!empty($params['approveProof'])) {
+            $paper->setStatus(Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION);
+            $paper->save();
+            $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage(
+                $this->view->translate("L'épreuve a été approuvée.")
+            );
+            $this->_helper->redirector->gotoUrl('/' . self::CONTROLLER_NAME . '/view?id=' . $paper->getDocid());
+        } elseif (!empty($params['rejectProof'])) {
+            $paper->setStatus(Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS);
+            $paper->save();
+            $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage(
+                $this->view->translate("L'épreuve a été refusée. L'article est renvoyé en mise en page.")
+            );
+            $this->_helper->redirector->gotoUrl('/' . self::CONTROLLER_NAME . '/view?id=' . $paper->getDocid());
+        }
     }
 
     /**
