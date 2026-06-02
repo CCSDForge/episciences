@@ -2856,15 +2856,16 @@ class AdministratepaperController extends PaperDefaultController
             $docid = $request->getPost('docid');
             $paper = Episciences_PapersManager::get($docid);
 
-            // process form and retrieve volume ids
+            // process form and retrieve volume ids (submitted as vids[]=1&vids[]=3 by Tom Select)
+            $rawVids = $request->getPost('vids', []);
+            if (!is_array($rawVids)) {
+                $rawVids = [];
+            }
             $paper_volumes = [];
-            foreach ($request->getPost() as $name => $value) {
-                if (!preg_match('#^volume_#', $name)) {
-                    continue;
-                }
-                $vid = filter_var($name, FILTER_SANITIZE_NUMBER_INT);
-                // master volume can't be a secondary volume
-                if ($vid == $paper->getVid()) {
+            foreach ($rawVids as $rawVid) {
+                $vid = (int) filter_var($rawVid, FILTER_SANITIZE_NUMBER_INT);
+                // skip invalid and primary volume (can't be its own secondary volume)
+                if ($vid <= 0 || $vid === (int) $paper->getVid()) {
                     continue;
                 }
                 $paper_volumes[] = new Episciences_Volume_Paper(['vid' => $vid, 'docid' => $docid]);
@@ -4418,6 +4419,11 @@ class AdministratepaperController extends PaperDefaultController
                         'referer' => $referer
                     ]);
                     $result[$docId] = $currentVolume->getName() . $htmlPosition;
+                }
+                // Fallback: the paper may have been assigned to the volume without a position
+                // entry in T_VOLUME_PAPER_POSITION yet — ensure the cell is always refreshed.
+                if (!array_key_exists($currentDocId, $result)) {
+                    $result[$currentDocId] = $currentVolume->getName();
                 }
             } else {
                 $result[$currentDocId] = $none;
