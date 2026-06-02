@@ -4183,13 +4183,18 @@ class PaperController extends PaperDefaultController
         }
 
         if (null !== $principalRecipient) {
-            $this->sendFinalNotification(
+
+            $paperUrl = $this->buildAdminPaperUrl($currentPaper->getDocid());
+            $this->answerRevisionNotifyManager(
                     $principalRecipient,
                     $currentPaper,
                     $request,
                     $answer,
+                    true,
+                    [Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl],
                     $ccRecipients
             );
+
         } else {
 
             Episciences_View_Helper_Log::log(
