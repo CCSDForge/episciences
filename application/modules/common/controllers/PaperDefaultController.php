@@ -303,7 +303,7 @@ class PaperDefaultController extends DefaultController
                 Episciences_Mail_Tags::TAG_REQUEST_ANSWER => $answerComment->getMessage(),
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $newPaper->getTitle($locale, true),
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $newPaper->formatAuthorsMetadata($locale),
-                Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => $this->view->Date($newPaper->getWhen(), $locale),
+                Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => $this->view->Date($newPaper->getSubmission_date(), $locale),
                 Episciences_Mail_Tags::TAG_REQUEST_DATE => $this->view->Date($requestComment->getWhen(), $locale),
                 Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $manager->getUsername(),
                 Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $manager->getScreenName(),
