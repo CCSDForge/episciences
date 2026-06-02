@@ -2426,6 +2426,8 @@ return array(
     "Approuver pour publication" => "Approve for publication",
     "Le pipeline alternatif n'est pas activé pour cette revue." => "The alternative pipeline is not enabled for this journal.",
     "Le statut actuel de l'article ne permet pas cette action." => "The current paper status does not allow this action.",
+    "En attente de la réponse de l'auteur : le mot de passe et la version finale ont été demandés à l'auteur" => "Waiting for author's response: the password and final version have been requested from the author",
+    "En attente de la réponse de l'auteur : l'épreuve a été envoyée à l'auteur pour vérification" => "Waiting for author's response: the proof has been sent to the author for review",
     // graphical abstract
     "Fichier non accepté" => "File not accepted",
     'Fichier trop volumineux 100 ko max autorisé' => "File size too large 100 ko max authorized",

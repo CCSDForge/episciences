@@ -53,12 +53,32 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
             <div class="panel-body in">
                 <?php
                 $isWaitingForAuthorValidation = (Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION === $status);
+                $isAltWaitingForAuthorFinalVersion = (Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION === $status);
+                $isAltProofSentToAuthor = (Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR === $status);
                 ?>
 
                 <?php if ($isWaitingForAuthorValidation): ?>
                     <?php $info = "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via Episciences"; ?>
                     <div class="alert alert-info alert-fixed">
                         <i class="fas fa-exclamation-triangle" style="color:chocolate"></i>
+                        <?= $this->translate($info) ?>
+                        <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($isAltWaitingForAuthorFinalVersion): ?>
+                    <?php $info = "En attente de la réponse de l'auteur : le mot de passe et la version finale ont été demandés à l'auteur"; ?>
+                    <div class="alert alert-warning alert-fixed">
+                        <i class="fas fa-hourglass-half" style="color:chocolate"></i>
+                        <?= $this->translate($info) ?>
+                        <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($isAltProofSentToAuthor): ?>
+                    <?php $info = "En attente de la réponse de l'auteur : l'épreuve a été envoyée à l'auteur pour vérification"; ?>
+                    <div class="alert alert-warning alert-fixed">
+                        <i class="fas fa-hourglass-half" style="color:chocolate"></i>
                         <?= $this->translate($info) ?>
                         <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>
                     </div>
