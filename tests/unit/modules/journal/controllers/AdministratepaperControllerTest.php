@@ -1278,6 +1278,73 @@ class AdministratepaperControllerTest extends TestCase
         }
     }
 
+    // -----------------------------------------------------------------------
+    // DATATABLE_COLUMNS — sortable column keys (issue #937)
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::DATATABLE_COLUMNS
+     *
+     * Columns 6–9 must carry a non-empty sort key so that DataTables can request
+     * server-side ordering and PapersManager::getListQuery() can resolve the
+     * appropriate JOIN. An empty string silently disables the sort.
+     */
+    public function testDatatableColumnsDefinesSortKeyForReviewers(): void
+    {
+        $this->assertStringContainsString(
+            "'6' => 'reviewer_sort'",
+            $this->source,
+            'Column 6 (Reviewers) must be mapped to reviewer_sort in DATATABLE_COLUMNS; empty string disables server-side ordering'
+        );
+    }
+
+    public function testDatatableColumnsDefinesSortKeyForEditors(): void
+    {
+        $this->assertStringContainsString(
+            "'7' => 'editor_sort'",
+            $this->source,
+            'Column 7 (Editors) must be mapped to editor_sort in DATATABLE_COLUMNS; empty string disables server-side ordering'
+        );
+    }
+
+    public function testDatatableColumnsDefinesSortKeyForCopyEditors(): void
+    {
+        $this->assertStringContainsString(
+            "'8' => 'copyeditor_sort'",
+            $this->source,
+            'Column 8 (Copy editors) must be mapped to copyeditor_sort in DATATABLE_COLUMNS; empty string disables server-side ordering'
+        );
+    }
+
+    public function testDatatableColumnsDefinesSortKeyForContributor(): void
+    {
+        $this->assertStringContainsString(
+            "'9' => 'contributor_sort'",
+            $this->source,
+            'Column 9 (Contributor) must be mapped to contributor_sort in DATATABLE_COLUMNS; empty string silently ignores the sort request'
+        );
+    }
+
+    /**
+     * submitted.js must not mark columns 6, 7, or 8 as orderable:false.
+     * Only the title column (3) remains non-sortable after issue #937.
+     */
+    public function testJsDoesNotBlockSortingOnColumns678(): void
+    {
+        $js = file_get_contents(dirname(APPLICATION_PATH) . '/public/js/paper/submitted.js');
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/targets\s*:\s*\[\s*3\s*,\s*6/',
+            $js,
+            'submitted.js must not declare columns 6, 7, or 8 as orderable:false — they are now sortable'
+        );
+        $this->assertMatchesRegularExpression(
+            '/targets\s*:\s*\[\s*3\s*\]\s*,\s*orderable\s*:\s*false/',
+            $js,
+            'submitted.js must use targets:[3] with orderable:false — only the title column is non-sortable for administratepaper/list'
+        );
+    }
+
     /**
      * @covers AdministratepaperController::updatedeadlineAction
      * @covers AdministratepaperController::savenewdeadlineAction

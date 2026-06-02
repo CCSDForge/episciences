@@ -2047,33 +2047,14 @@ class Episciences_Submit
             $noneFemale = $translator->translate('Aucune', $locale);
             $noneMale   = $translator->translate('Aucun', $locale);
             $outOfVol   = $translator->translate('Hors volume', $locale);
+            $outOfSec   = $translator->translate('Hors rubrique', $locale);
 
-            $sName = !$section ? $translator->translate('Hors rubrique', $locale) : $section->getName($locale);
-
-            if (!$volume) {
-                $vName = $outOfVol;
-                $vBibRef = $noneFemale;
-                $vYear = $noneFemale;
-                $vNum = $noneMale;
-                $vType = $noneMale;
-            } else {
-                $vName = $volume->getName($locale) ?: $noneMale;
-                $vBibRef = $volume->getBib_reference() ?: $noneFemale;
-                $vNum = $volume->getVol_num() ?: $noneMale;
-                $vYear = $volume->getVol_year() ?: $noneFemale;
-                $vType = $volume->getVol_type() ?: $noneMale;
-            }
+            $adminTags = array_merge($adminTags, self::resolveVolumeAndSectionTags($volume, $section, $locale, $noneFemale, $noneMale, $outOfVol, $outOfSec));
 
             $adminTags [Episciences_Mail_Tags::TAG_SENDER_EMAIL] = Episciences_Auth::getEmail();
             $adminTags [Episciences_Mail_Tags::TAG_SENDER_FULL_NAME] = Episciences_Auth::getFullName();
             $adminTags [Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
             $adminTags [Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($locale);
-            $adminTags [Episciences_Mail_Tags::TAG_VOLUME_NAME] = $vName;
-            $adminTags [Episciences_Mail_Tags::TAG_VOLUME_NUMBER] = $vNum;
-            $adminTags [Episciences_Mail_Tags::TAG_VOLUME_YEAR] = $vYear;
-            $adminTags [Episciences_Mail_Tags::TAG_VOLUME_TYPE] = $vType;
-            $adminTags [Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF] = $vBibRef;
-            $adminTags [Episciences_Mail_Tags::TAG_SECTION_NAME] = $sName;
 
             if (!$canReplace) { // new submission only
                 $rTag = $recipient instanceof Episciences_Editor ? $recipient->getTag() : null;
@@ -2088,6 +2069,46 @@ class Episciences_Submit
 
             Episciences_Mail_Send::sendMailFromReview($recipient, $templateKey, $adminTags, $paper);
         }
+    }
+
+    /**
+     * Resolves volume and section mail tags from their respective objects.
+     * Accepts false/null for $volume and $section (ZF1 find() returns false when not found).
+     *
+     * @param Episciences_Volume|bool|null    $volume
+     * @param Episciences_Section|bool|null   $section
+     * @return array<string, string|int>
+     */
+    private static function resolveVolumeAndSectionTags(
+        mixed $volume,
+        mixed $section,
+        string $locale,
+        string $noneFemale,
+        string $noneMale,
+        string $outOfVol,
+        string $outOfSection
+    ): array {
+        $sName = !$section ? $outOfSection : $section->getName($locale);
+
+        if (!$volume) {
+            return [
+                Episciences_Mail_Tags::TAG_VOLUME_NAME    => $outOfVol,
+                Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF => $noneFemale,
+                Episciences_Mail_Tags::TAG_VOLUME_YEAR    => $noneFemale,
+                Episciences_Mail_Tags::TAG_VOLUME_NUMBER  => $noneMale,
+                Episciences_Mail_Tags::TAG_VOLUME_TYPE    => $noneMale,
+                Episciences_Mail_Tags::TAG_SECTION_NAME   => $sName,
+            ];
+        }
+
+        return [
+            Episciences_Mail_Tags::TAG_VOLUME_NAME    => $volume->getName($locale) ?: $noneMale,
+            Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF => $volume->getBib_reference() ?: $noneFemale,
+            Episciences_Mail_Tags::TAG_VOLUME_NUMBER  => $volume->getVol_num() ?: $noneMale,
+            Episciences_Mail_Tags::TAG_VOLUME_YEAR    => $volume->getVol_year() ?: $noneFemale,
+            Episciences_Mail_Tags::TAG_VOLUME_TYPE    => $volume->getVol_type() ?: $noneMale,
+            Episciences_Mail_Tags::TAG_SECTION_NAME   => $sName,
+        ];
     }
 
     /**
