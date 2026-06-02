@@ -549,7 +549,12 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             <?php endif; ?>
 
             <?php if ($paper->getStatus() == Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION): ?>
-            
+                    <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'publication-modal',
+            'title' => $publishMsg,
+            'body' => $this->publicationForm
+        ]) ?>
                 <form id="rejectFinalVersionForm_<?= $paper->getDocid() ?>" method="post" style="display:none;">
                     <input type="hidden" name="rejectFinalVersion" value="1">
                 </form>
