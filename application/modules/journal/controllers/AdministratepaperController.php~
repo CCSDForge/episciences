@@ -1016,7 +1016,8 @@ class AdministratepaperController extends PaperDefaultController
      */
       
      /* 1. BEGIN: Accepted → request upload → Wait on final + password */
-
+        $paper->setStatus(Episciences_Paper::STATUS_ACCEPTED);
+        $paper->save();
         if (
             $request->isPost()
             && $request->getPost('requestFinalVersion') === '1'
