@@ -12,13 +12,13 @@ class AdministratepaperController extends PaperDefaultController
         '0' => 'paperid',
         '1' => 'docid',
         '2' => 'status',
-        '3' => '',//  ***
+        '3' => '',
         '4' => 'vid',
         '5' => 'sid',
-        '6' => '', // ***
-        '7' => '',// ***
-        '8' => '',// *** (désactiver dans js/paper/submitted.js) sinon prévoir une jointure si nécessaire
-        '9' => '',
+        '6' => 'reviewer_sort',
+        '7' => 'editor_sort',
+        '8' => 'copyeditor_sort',
+        '9' => 'contributor_sort',
         '10' => 'when',
         '11' => 'publication_date'
     ];
