@@ -1281,6 +1281,13 @@ class PaperController extends PaperDefaultController
             $oAnswer->setMessage($post[self::COMMENT_STR]);
             $oAnswer->save(false, $paper->getUid()); // admin can save answer
 
+            /**
+             * This change is intentional:
+             * The old "saveanswerAction" sent N individual emails to N editors (each with its own TAG_RECIPIENT_* tags).
+             * The new workflow sends one email to the primary recipient, with the others in CC.
+             *
+             */
+
             $recipients = [];
             $this->handleManagerNotifications($oAnswer, $oComment, $paper, $recipients, true );
 
@@ -4150,7 +4157,7 @@ class PaperController extends PaperDefaultController
     private function handleManagerNotifications(Episciences_Comment $answer,
                                                 Episciences_Comment $request,
                                                 Episciences_Paper   $currentPaper,
-                                                array               &$recipients = [],
+                                                array               $recipients = [],
                                                 bool                $forceLoading = false): void
     {
 
@@ -4213,7 +4220,7 @@ class PaperController extends PaperDefaultController
 
         // take the first valid recipient from the list
         if (!empty($recipients)) {
-            // reset() est souvent plus performant et plus lisible que array_key_first() + array access
+            // reset() is often more efficient and easier to read than "array_key_first()" + array access.
             return reset($recipients);
         }
 
