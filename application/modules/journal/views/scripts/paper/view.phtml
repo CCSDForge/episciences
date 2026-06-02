@@ -238,7 +238,10 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
     <?php endif; ?>
     <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
     <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper, 'metadata' => $metadata]) ?>
-    <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
+    <?php $isAltPipeline = (int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1; ?>
+    <?php if (!$isAltPipeline): ?>
+        <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
+    <?php endif; ?>
 
 </div>
 
@@ -256,6 +259,9 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
                         class="label label-status-<?= $status ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
                 <?= $this->partial('partials/paper-revision-deadline.phtml', ['paper' => $paper]) ?>
             </p>
+            <?php if ($isAltPipeline): ?>
+                <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
+            <?php endif; ?>
         </div>
     </div>
 

@@ -282,6 +282,8 @@ class PaperController extends PaperDefaultController
 
         // paper password bloc
 
+        $isAltPipeline = (int)$review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1;
+
         $displayPaperPasswordBloc = (
             Episciences_Auth::isLogged() &&
             in_array(Episciences_Repositories::ARXIV_REPO_ID, $review->getSetting($review::SETTING_REPOSITORIES)) &&
@@ -302,6 +304,10 @@ class PaperController extends PaperDefaultController
                 )
             )
         );
+
+        if ($isAltPipeline && Episciences_Auth::isLogged() && $paper->isOwner() && $paper->getStatus() === Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION) {
+            $displayPaperPasswordBloc = true;
+        }
 
         if ($displayPaperPasswordBloc) {
             $plainPaperPassword = $this->getPlainPaperPassword($paper);
@@ -602,6 +608,10 @@ class PaperController extends PaperDefaultController
                     $message .= $this->view->translate('car il est identique à celui déjà enregistré.');
                 } else {
                     $paper->setPassword($postedPwd, true);
+
+                    if ($paper->getStatus() === Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION) {
+                        $paper->setStatus(Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED);
+                    }
 
                     if ($paper->save()) {
                         $message = $this->view->translate("Votre mot de passe a bien été enregistré.");
