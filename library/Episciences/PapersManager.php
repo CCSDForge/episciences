@@ -1837,6 +1837,78 @@ class Episciences_PapersManager
         );
     }
 
+    public static function getAltStartLayoutEditingForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-start-layout-editing-form',
+            '/administratepaper/altstartlayoutediting/id/' . $default['id'],
+            'csrf_altstartlayoutediting_' . (int)$default['id'],
+            'altstartlayout-subject',
+            'altstartlayout-message'
+        );
+    }
+
+    public static function getAltIncorrectPasswordForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-incorrect-password-form',
+            '/administratepaper/altincorrectpassword/id/' . $default['id'],
+            'csrf_altincorrectpassword_' . (int)$default['id'],
+            'altincorrectpwd-subject',
+            'altincorrectpwd-message'
+        );
+    }
+
+    public static function getAltIncorrectLatexForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-incorrect-latex-form',
+            '/administratepaper/altincorrectlatex/id/' . $default['id'],
+            'csrf_altincorrectlatex_' . (int)$default['id'],
+            'altincorrectlatex-subject',
+            'altincorrectlatex-message'
+        );
+    }
+
+    public static function getAltPublishForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-publish-form',
+            '/administratepaper/altpublish/id/' . $default['id'],
+            'csrf_altpublish_' . (int)$default['id'],
+            'altpublish-subject',
+            'altpublish-message'
+        );
+    }
+
+    public static function getAltAuthorApproveProofForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-author-approve-proof-form',
+            '/paper/altauthorapproveproof/id/' . $default['id'],
+            'csrf_altauthorapproveproof_' . (int)$default['id'],
+            'altauthorapprove-subject',
+            'altauthorapprove-message'
+        );
+    }
+
+    public static function getAltAuthorRejectProofForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-author-reject-proof-form',
+            '/paper/altauthorrejectproof/id/' . $default['id'],
+            'csrf_altauthorrejectproof_' . (int)$default['id'],
+            'altauthorreject-subject',
+            'altauthorreject-message'
+        );
+    }
+
     private static function buildAlternativePipelineForm(
         array $default,
         string $formId,

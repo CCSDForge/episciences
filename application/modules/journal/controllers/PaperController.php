@@ -318,7 +318,24 @@ class PaperController extends PaperDefaultController
         $this->view->displayPaperPasswordBloc = $displayPaperPasswordBloc;
 
         $this->savePaperPassword($request, $paper, $displayPaperPasswordBloc);
-        $this->handleAuthorProofResponse($request, $paper, $isAltPipeline);
+
+        if (
+            $isAltPipeline
+            && $paper->isOwner()
+            && $paper->getStatus() === Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR
+        ) {
+            $contributor = new Episciences_User();
+            $contributor->findWithCAS($paper->getUid());
+            $altDefault = [
+                'id' => $paper->getDocid(),
+                'subject' => '',
+                'body' => '',
+                'author' => $contributor,
+                'coAuthor' => $paper->getCoAuthors(),
+            ];
+            $this->view->altAuthorApproveProofForm = Episciences_PapersManager::getAltAuthorApproveProofForm($altDefault);
+            $this->view->altAuthorRejectProofForm = Episciences_PapersManager::getAltAuthorRejectProofForm($altDefault);
+        }
 
         $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
 
@@ -629,34 +646,90 @@ class PaperController extends PaperDefaultController
 
     }
 
-    private function handleAuthorProofResponse(Zend_Controller_Request_Http $request, Episciences_Paper $paper, bool $isAltPipeline): void
+    public function altauthorapproveproofAction(): void
     {
+        $this->processAuthorProofAction(
+            'altauthorapproveproof',
+            Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION,
+            'altauthorapprovesubject',
+            'altauthorapprovemessage'
+        );
+    }
+
+    public function altauthorrejectproofAction(): void
+    {
+        $this->processAuthorProofAction(
+            'altauthorrejectproof',
+            Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
+            'altauthorrejectsubject',
+            'altauthorrejectmessage'
+        );
+    }
+
+    private function processAuthorProofAction(
+        string $actionKey,
+        int $targetStatus,
+        string $subjectField,
+        string $messageField
+    ): void {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $docId = $request->getParam('id');
+        $paper = Episciences_PapersManager::get($docId);
+
         if (
+            !$paper instanceof Episciences_Paper ||
             !$request->isPost() ||
-            !$isAltPipeline ||
             !$paper->isOwner() ||
             $paper->getStatus() !== Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR
         ) {
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
+                $this->view->translate("Vous n'êtes pas autorisé à effectuer cette action.")
+            );
+            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . (int)$docId);
             return;
         }
 
-        $params = $request->getPost();
-
-        if (!empty($params['approveProof'])) {
-            $paper->setStatus(Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION);
-            $paper->save();
-            $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage(
-                $this->view->translate("L'épreuve a été approuvée.")
-            );
-            $this->_helper->redirector->gotoUrl('/' . self::CONTROLLER_NAME . '/view?id=' . $paper->getDocid());
-        } elseif (!empty($params['rejectProof'])) {
-            $paper->setStatus(Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS);
-            $paper->save();
-            $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage(
-                $this->view->translate("L'épreuve a été refusée. L'article est renvoyé en mise en page.")
-            );
-            $this->_helper->redirector->gotoUrl('/' . self::CONTROLLER_NAME . '/view?id=' . $paper->getDocid());
+        $csrfName = 'csrf_' . $actionKey . '_' . (int)$docId;
+        $csrfSession = new Zend_Session_Namespace('Zend_Form_Element_Hash_unique_' . $csrfName);
+        $post = $request->getPost();
+        if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
+            $csrfSession->hash = null;
+            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+            return;
         }
+        $csrfSession->hash = null;
+
+        $subject = $post[$subjectField] ?? '';
+        $message = $post[$messageField] ?? '';
+
+        $paper->setStatus($targetStatus);
+        if (!$paper->save()) {
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
+                $this->view->translate("Les modifications n'ont pas abouti !")
+            );
+            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+            return;
+        }
+
+        $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
+
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+
+        $recipients = array_merge(
+            $paper->getEditors(true, true),
+            $paper->getCopyEditors(true, true)
+        );
+
+        foreach ($recipients as $recipient) {
+            $this->sendMailFromModal($recipient, $paper, $subject, $message, $post);
+        }
+
+        $this->_helper->FlashMessenger->setNamespace('success')->addMessage(
+            $this->view->translate('Vos modifications ont bien été prises en compte')
+        );
+        $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
     }
 
     /**

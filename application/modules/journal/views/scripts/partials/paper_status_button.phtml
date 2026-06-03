@@ -66,23 +66,34 @@ if (Episciences_Auth::isSecretary()) : ?>
         </button>
         <ul class="status-menu dropdown-menu" role="menu">
             <?php if ((int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1): ?>
-                <?php if ($paper->isLayoutEditingInProgress()) : ?>
+                <?php if ($paper->isAltFinalVersionSubmitted()) : ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-start-layout-editing-modal"><?= $this->translate('Start layout editing') ?></a>
+                    </li>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-incorrect-password-modal"><?= $this->translate('Incorrect password') ?></a>
+                    </li>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-incorrect-latex-modal"><?= $this->translate('Incorrect LaTeX') ?></a>
+                    </li>
+                <?php elseif ($paper->isLayoutEditingInProgress()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
                            data-target=".alt-send-proof-to-author-modal"><?= $this->translate("Envoyer l'épreuve à l'auteur") ?></a>
                     </li>
-                <?php elseif ($paper->isAltProofSentToAuthor()) : ?>
+                <?php elseif ($paper->isAltAwaitingPublication()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".alt-approve-for-publication-modal"><?= $this->translate("Approuver pour publication") ?></a>
-                    </li>
-                    <li>
-                        <a href="#" data-toggle="modal"
-                           data-target=".alt-return-to-layout-editing-modal"><?= $this->translate("Renvoyer en mise en page") ?></a>
+                           data-target=".alt-publish-modal"><?= $this->translate('Publish') ?></a>
                     </li>
                 <?php endif; ?>
             <?php endif; ?>
-            <?php if ($paper->isReadyToPublish()) : ?>
+            <?php if ($paper->isAlternativePipelineStatus()) : ?>
+                <?php // Alt pipeline states are fully handled above; skip legacy options ?>
+            <?php elseif ($paper->isReadyToPublish()) : ?>
                 <!-- publication request -->
                 <li>
                     <a href="#" data-toggle="modal"
@@ -230,24 +241,26 @@ if (Episciences_Auth::isSecretary()) : ?>
 
             <?php endif; ?>
 
-            <!-- ask other editors -->
-            <?php if (!empty($this->other_editors)) : ?>
+            <?php if (!$paper->isAlternativePipelineStatus()) : ?>
+                <!-- ask other editors -->
+                <?php if (!empty($this->other_editors)) : ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".ask-other-editors-modal"><?= $this->translate("Demander l'avis d'autres rédacteurs") ?></a>
+                    </li>
+                <?php else : ?>
+                    <li data-toggle="tooltip" data-placement="top"
+                        title="<?= $this->translate("Il n'y a pas d'autres rédacteurs à qui demander un avis.") ?>">
+                        <a class="disabled"><?= $this->translate("Demander l'avis d'autres rédacteurs") ?></a>
+                    </li>
+                <?php endif; ?>
+
+                <!-- reject paper -->
                 <li>
                     <a href="#" data-toggle="modal"
-                       data-target=".ask-other-editors-modal"><?= $this->translate("Demander l'avis d'autres rédacteurs") ?></a>
-                </li>
-            <?php else : ?>
-                <li data-toggle="tooltip" data-placement="top"
-                    title="<?= $this->translate("Il n'y a pas d'autres rédacteurs à qui demander un avis.") ?>">
-                    <a class="disabled"><?= $this->translate("Demander l'avis d'autres rédacteurs") ?></a>
+                       data-target=".refusal-modal"><?= $this->translate($refusalMsg) ?></a>
                 </li>
             <?php endif; ?>
-
-            <!-- reject paper -->
-            <li>
-                <a href="#" data-toggle="modal"
-                   data-target=".refusal-modal"><?= $this->translate($refusalMsg) ?></a>
-            </li>
         </ul>
     </div>
 
@@ -260,24 +273,35 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
         </button>
         <ul class="status-menu dropdown-menu" role="menu">
             <?php if ((int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1): ?>
-                <?php if ($paper->isLayoutEditingInProgress()) : ?>
+                <?php if ($paper->isAltFinalVersionSubmitted()) : ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-start-layout-editing-modal"><?= $this->translate('Start layout editing') ?></a>
+                    </li>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-incorrect-password-modal"><?= $this->translate('Incorrect password') ?></a>
+                    </li>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-incorrect-latex-modal"><?= $this->translate('Incorrect LaTeX') ?></a>
+                    </li>
+                <?php elseif ($paper->isLayoutEditingInProgress()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
                            data-target=".alt-send-proof-to-author-modal"><?= $this->translate("Envoyer l'épreuve à l'auteur") ?></a>
                     </li>
-                <?php elseif ($paper->isAltProofSentToAuthor()) : ?>
+                <?php elseif ($paper->isAltAwaitingPublication()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".alt-approve-for-publication-modal"><?= $this->translate("Approuver pour publication") ?></a>
-                    </li>
-                    <li>
-                        <a href="#" data-toggle="modal"
-                           data-target=".alt-return-to-layout-editing-modal"><?= $this->translate("Renvoyer en mise en page") ?></a>
+                           data-target=".alt-publish-modal"><?= $this->translate('Publish') ?></a>
                     </li>
                 <?php endif; ?>
             <?php endif; ?>
 
-            <?php if ($paper->isAccepted()) : ?>
+            <?php if ($paper->isAlternativePipelineStatus()) : ?>
+                <?php // Alt pipeline states are fully handled above; skip legacy options ?>
+            <?php elseif ($paper->isAccepted()) : ?>
 
                 <?php // Préparation de copie: en attente des sources auteurs?>
                 <li>
@@ -389,210 +413,118 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?php endif; ?>
             <?php endif; ?>
 
-            <?php // REJECT PAPER ************    ?>
-            <?php if ($this->review->getSetting('editorsCanRejectPapers')) :    // editors have permission to reject papers ?>
+            <?php if (!$paper->isAlternativePipelineStatus()) : ?>
+                <?php // REJECT PAPER ************    ?>
+                <?php if ($this->review->getSetting('editorsCanRejectPapers')) :    // editors have permission to reject papers ?>
 
-                <li>
-                    <a href="#" data-toggle="modal"
-                       data-target=".refusal-modal"><?= $this->translate($refusalMsg) ?>
-                    </a>
-                </li>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".refusal-modal"><?= $this->translate($refusalMsg) ?>
+                        </a>
+                    </li>
 
-            <?php else : // editors do not have permission to reject papers, but can suggest to do it?>
-                <li onclick="showForm('refuse'); return false;"
-                    data-toggle="tooltip"
-                    data-placement="right"
-                    title="<?= $this->suggestedRefuse ? $this->translate($suggestionInfoMsg) : '' ?>"
-                >
-                    <a <?= !$this->suggestedRefuse ? 'href="#" data-toggle="modal" data-target=".suggestions-status-modal"' : 'class="disabled"' ?>><?= $this->translate("Recommander de refuser l'article") ?></a>
-                </li>
-            <?php endif; ?>
-
-            <?php // ASK FOR A REVISION ************    ?>
-            <?php if ($copyEditingNotStarted && $this->review->getSetting('editorsCanAskPaperRevisions')) :    // editors have permission to ask for a revision ?>
-                <?php if (
-                    $this->isRequiredReviewersOk ||
-                    !$this->review->getSetting('requiredReviewers')  // if there is no minimum number of rating reports, or it has been matched
-
-                ) : ?>
-                    <?php if (!$isInRevision) : ?>
-                        <li>
-                            <a href="#" data-toggle="modal"
-                               data-target=".minor-revision-modal" onclick="valide($(this));"><?= $this->translate('Demander des modifications mineures') ?></a>
-                        </li>
-                        <li><a href="#" data-toggle="modal"
-                               data-target=".major-revision-modal" onclick="valide($(this));"><?= $this->translate('Demander des modifications majeures') ?></a>
-                        </li>
-                    <?php endif; ?>
-                <?php else : // if there is not enough rating reports, display a notice ?>
-                    <li data-toggle="tooltip"
+                <?php else : // editors do not have permission to reject papers, but can suggest to do it?>
+                    <li onclick="showForm('refuse'); return false;"
+                        data-toggle="tooltip"
                         data-placement="right"
-                        title="<?= $this->translate("Vous ne pouvez faire de demande de modifications, car le nombre minimum de relectures (%s) n'a pas été atteint.", $this->review->getSetting('requiredReviewers')) ?>">
-                        <a class="disabled"><?= $this->translate("Demander des modifications") ?></a>
+                        title="<?= $this->suggestedRefuse ? $this->translate($suggestionInfoMsg) : '' ?>"
+                    >
+                        <a <?= !$this->suggestedRefuse ? 'href="#" data-toggle="modal" data-target=".suggestions-status-modal"' : 'class="disabled"' ?>><?= $this->translate("Recommander de refuser l'article") ?></a>
                     </li>
                 <?php endif; ?>
-            <?php else : // editors do not have permission to reject papers, but can suggest to do it?>
-                <li onclick="showForm('newversion'); return false;"
-                    data-toggle="tooltip"
-                    data-placement="right"
-                    title="<?= $this->suggestedRevision ? $this->translate($suggestionInfoMsg) : '' ?>"
-                >
-                    <a <?= !$this->suggestedRevision ? 'href="#" data-toggle="modal" data-target=".suggestions-status-modal"' : 'class="disabled"' ?>><?= $this->translate("Suggérer de demander une nouvelle version") ?></a>
-                </li>
+
+                <?php // ASK FOR A REVISION ************    ?>
+                <?php if ($copyEditingNotStarted && $this->review->getSetting('editorsCanAskPaperRevisions')) :    // editors have permission to ask for a revision ?>
+                    <?php if (
+                        $this->isRequiredReviewersOk ||
+                        !$this->review->getSetting('requiredReviewers')  // if there is no minimum number of rating reports, or it has been matched
+
+                    ) : ?>
+                        <?php if (!$isInRevision) : ?>
+                            <li>
+                                <a href="#" data-toggle="modal"
+                                   data-target=".minor-revision-modal" onclick="valide($(this));"><?= $this->translate('Demander des modifications mineures') ?></a>
+                            </li>
+                            <li><a href="#" data-toggle="modal"
+                                   data-target=".major-revision-modal" onclick="valide($(this));"><?= $this->translate('Demander des modifications majeures') ?></a>
+                            </li>
+                        <?php endif; ?>
+                    <?php else : // if there is not enough rating reports, display a notice ?>
+                        <li data-toggle="tooltip"
+                            data-placement="right"
+                            title="<?= $this->translate("Vous ne pouvez faire de demande de modifications, car le nombre minimum de relectures (%s) n'a pas été atteint.", $this->review->getSetting('requiredReviewers')) ?>">
+                            <a class="disabled"><?= $this->translate("Demander des modifications") ?></a>
+                        </li>
+                    <?php endif; ?>
+                <?php else : // editors do not have permission to reject papers, but can suggest to do it?>
+                    <li onclick="showForm('newversion'); return false;"
+                        data-toggle="tooltip"
+                        data-placement="right"
+                        title="<?= $this->suggestedRevision ? $this->translate($suggestionInfoMsg) : '' ?>"
+                    >
+                        <a <?= !$this->suggestedRevision ? 'href="#" data-toggle="modal" data-target=".suggestions-status-modal"' : 'class="disabled"' ?>><?= $this->translate("Suggérer de demander une nouvelle version") ?></a>
+                    </li>
+                <?php endif; ?>
+
+                <!-- ask other editors -->
+
+                <?php if (!empty($this->other_editors)) : ?>
+
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".ask-other-editors-modal"><?php echo $this->translate("Demander l'avis d'autres rédacteurs"); ?></a>
+                    </li>
+                <?php else : ?>
+                    <li data-toggle="tooltip" data-placement="top"
+                        title="<?php echo $this->translate("Il n'y a pas d'autres rédacteurs à qui demander un avis."); ?>">
+                        <a class="disabled"><?php echo $this->translate("Demander l'avis d'autres rédacteurs"); ?></a>
+                    </li>
+                <?php endif; ?>
             <?php endif; ?>
 
-            <!-- ask other editors -->
+            <?php // BEGIN: Alt pipeline buttons ?>
 
-            <?php if (!empty($this->other_editors)) : ?>
-
-                <li>
-                    <a href="#" data-toggle="modal"
-                       data-target=".ask-other-editors-modal"><?php echo $this->translate("Demander l'avis d'autres rédacteurs"); ?></a>
-                </li>
-            <?php else : ?>
-                <li data-toggle="tooltip" data-placement="top"
-                    title="<?php echo $this->translate("Il n'y a pas d'autres rédacteurs à qui demander un avis."); ?>">
-                    <a class="disabled"><?php echo $this->translate("Demander l'avis d'autres rédacteurs"); ?></a>
-                </li>
-            <?php endif; ?>
-            
-            <?php // BEGIN: New Buttons?>
-            
-            <?php if ($paper->isAccepted()): ?>
+            <?php if ((int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1 && $paper->isAccepted()): ?>
                 <li>
                     <a href="#"
                        onclick="event.preventDefault(); document.getElementById('requestFinalVersionForm_<?= $paper->getDocid() ?>').submit();">
-                        Request final version + password
+                        <?= $this->translate('Request final version + password') ?>
                     </a>
                 </li>
             <?php endif; ?>
 
-
-            <?php if ($paper->getStatus() == Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION): ?>
+            <?php if ($paper->isAltFinalVersionSubmitted()): ?>
                 <li>
-                    <a href="#"
-                       onclick="event.preventDefault(); document.getElementById('rejectFinalVersionForm_<?= $paper->getDocid() ?>').submit();">
-                        Incorrect final version
-                    </a>
+                    <a href="#" data-toggle="modal"
+                       data-target=".alt-start-layout-editing-modal"><?= $this->translate('Start layout editing') ?></a>
                 </li>
-
                 <li>
-                    <a href="#"
-                       onclick="event.preventDefault(); document.getElementById('incorrectPasswordForm_<?= $paper->getDocid() ?>').submit();">
-                        Incorrect password
-                    </a>
+                    <a href="#" data-toggle="modal"
+                       data-target=".alt-incorrect-password-modal"><?= $this->translate('Incorrect password') ?></a>
                 </li>
-
                 <li>
-                    <a href="#"
-                       onclick="event.preventDefault(); document.getElementById('acceptFinalVersionForm_<?= $paper->getDocid() ?>').submit();">
-                        Accept final version
-                    </a>
-                </li>
-            <?php endif; ?>
-            
-            <?php if ($paper->getStatus() == Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED): ?>
-                <li>
-                    <a href="#"
-                       onclick="event.preventDefault(); document.getElementById('startLayoutEditingForm_<?= $paper->getDocid() ?>').submit();">
-                        Editors assigned / Start layout editing
-                    </a>
+                    <a href="#" data-toggle="modal"
+                       data-target=".alt-incorrect-latex-modal"><?= $this->translate('Incorrect LaTeX') ?></a>
                 </li>
             <?php endif; ?>
 
-
-            <?php if ($paper->getStatus() == Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS): ?>
+            <?php if ($paper->isAltAwaitingPublication()): ?>
                 <li>
-                    <a href="#"
-                       onclick="event.preventDefault(); document.getElementById('authorDisapprovesLayoutForm_<?= $paper->getDocid() ?>').submit();">
-                        Author disapproves layout
-                    </a>
-                </li>
-
-                <li>
-                    <a href="#"
-                       onclick="event.preventDefault(); document.getElementById('authorApprovesLayoutForm_<?= $paper->getDocid() ?>').submit();">
-                        Author approves layout
-                        
-                    </a>
+                    <a href="#" data-toggle="modal"
+                       data-target=".alt-publish-modal"><?= $this->translate('Publish') ?></a>
                 </li>
             <?php endif; ?>
-
-
-            <?php if ($paper->getStatus() == Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR): ?>
-                <li>
-                    <a href="#"
-                       onclick="event.preventDefault(); document.getElementById('confirmReadyToPublishForm_<?= $paper->getDocid() ?>').submit();">
-                        Confirm ready to publish
-                    </a>
-                </li>
-                
-            <?php endif; ?>
-            
-            <?php if ($paper->getStatus() == Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION): ?>
-                <li>
-                    <a href="#"
-                       onclick="event.preventDefault(); document.getElementById('publishFinalPaperForm_<?= $paper->getDocid() ?>').submit();">
-                        Publish final paper
-                    </a>
-                </li>
-            <?php endif; ?>
-
 
             </ul>
             </div>
 
-            <?php if ($paper->isAccepted()): ?>
+            <?php if ((int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1 && $paper->isAccepted()): ?>
                 <form id="requestFinalVersionForm_<?= $paper->getDocid() ?>" method="post" style="display:none;">
                     <input type="hidden" name="requestFinalVersion" value="1">
                 </form>
             <?php endif; ?>
 
-            <?php if ($paper->getStatus() == Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION): ?>
-            
-                <form id="rejectFinalVersionForm_<?= $paper->getDocid() ?>" method="post" style="display:none;">
-                    <input type="hidden" name="rejectFinalVersion" value="1">
-                </form>
-
-                <form id="incorrectPasswordForm_<?= $paper->getDocid() ?>" method="post" style="display:none;">
-                    <input type="hidden" name="incorrectPassword" value="1">
-                </form>
-
-                <form id="acceptFinalVersionForm_<?= $paper->getDocid() ?>" method="post" style="display:none;">
-                    <input type="hidden" name="acceptFinalVersion" value="1">
-                </form>
-            <?php endif; ?>
-            
-            <?php if ($paper->getStatus() == Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED): ?>            
-                <form id="startLayoutEditingForm_<?= $paper->getDocid() ?>" method="post" style="display:none;">
-                    <input type="hidden" name="startLayoutEditing" value="1">
-                </form>
-            <?php endif; ?>
- 					
-
-            <?php if ($paper->getStatus() == Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS): ?> 					
-                <form id="authorDisapprovesLayoutForm_<?= $paper->getDocid() ?>" method="post" style="display:none;">
-                    <input type="hidden" name="authorDisapprovesLayout" value="1">
-                </form>
-
-                <form id="authorApprovesLayoutForm_<?= $paper->getDocid() ?>" method="post" style="display:none;">
-                    <input type="hidden" name="authorApprovesLayout" value="1">
-                </form>
-            <?php endif; ?>
-            
-            <?php if ($paper->getStatus() == Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR): ?>            
-                <form id="confirmReadyToPublishForm_<?= $paper->getDocid() ?>" method="post" style="display:none;">
-                    <input type="hidden" name="confirmReadyToPublish" value="1">
-                </form>
-            <?php endif; ?>     
-                
-            <?php if ($paper->getStatus() == Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION): ?>
-                <form id="publishFinalPaperForm_<?= $paper->getDocid() ?>" method="post" style="display:none;">
-                    <input type="hidden" name="publishFinalPaper" value="1">
-                </form>  
-            <?php endif; ?>     
-                                 
-            <?php // END: New Buttons?>     
+            <?php // END: Alt pipeline buttons ?>     
 
     <?php // Copy editor?>
 <?php elseif (Episciences_Auth::isCopyEditor()) : ?>
@@ -807,6 +739,30 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             'body' => $this->altSendProofToAuthorForm
         ]) ?>
     <?php endif; ?>
+    <?php if (isset($this->altStartLayoutEditingForm) && $paper->isAltFinalVersionSubmitted()) : ?>
+        <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'alt-start-layout-editing-modal',
+            'title' => "Start layout editing",
+            'body' => $this->altStartLayoutEditingForm
+        ]) ?>
+    <?php endif; ?>
+    <?php if (isset($this->altIncorrectPasswordForm) && $paper->isAltFinalVersionSubmitted()) : ?>
+        <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'alt-incorrect-password-modal',
+            'title' => "Incorrect password",
+            'body' => $this->altIncorrectPasswordForm
+        ]) ?>
+    <?php endif; ?>
+    <?php if (isset($this->altIncorrectLatexForm) && $paper->isAltFinalVersionSubmitted()) : ?>
+        <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'alt-incorrect-latex-modal',
+            'title' => "Incorrect LaTeX",
+            'body' => $this->altIncorrectLatexForm
+        ]) ?>
+    <?php endif; ?>
     <?php if ($paper->isAltProofSentToAuthor()) : ?>
         <?php if (isset($this->altReturnToLayoutEditingForm)) : ?>
             <?=
@@ -824,6 +780,14 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 'body' => $this->altApproveForPublicationForm
             ]) ?>
         <?php endif; ?>
+    <?php endif; ?>
+    <?php if (isset($this->altPublishForm) && $paper->isAltAwaitingPublication()) : ?>
+        <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'alt-publish-modal',
+            'title' => "Publish",
+            'body' => $this->altPublishForm
+        ]) ?>
     <?php endif; ?>
 <?php endif; ?>
 

@@ -2741,6 +2741,11 @@ class Episciences_Paper
         return $this->getStatus() === self::STATUS_ALT_AWAITING_PUBLICATION;
     }
 
+    public function isAltFinalVersionSubmitted(): bool
+    {
+        return $this->getStatus() === self::STATUS_ALT_FINAL_VERSION_SUBMITTED;
+    }
+
     public function isAlternativePipelineStatus(): bool
     {
         return in_array($this->getStatus(), [

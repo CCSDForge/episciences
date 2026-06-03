@@ -847,12 +847,20 @@ class AdministratepaperController extends PaperDefaultController
                 'author' => $contributor,
                 'coAuthor' => $paper->getCoAuthors(),
             ];
+            if ($paper->isAltFinalVersionSubmitted()) {
+                $this->view->altStartLayoutEditingForm = Episciences_PapersManager::getAltStartLayoutEditingForm($altDefault);
+                $this->view->altIncorrectPasswordForm = Episciences_PapersManager::getAltIncorrectPasswordForm($altDefault);
+                $this->view->altIncorrectLatexForm = Episciences_PapersManager::getAltIncorrectLatexForm($altDefault);
+            }
             if ($paper->isLayoutEditingInProgress()) {
                 $this->view->altSendProofToAuthorForm = Episciences_PapersManager::getAltSendProofToAuthorForm($altDefault);
             }
             if ($paper->isAltProofSentToAuthor()) {
                 $this->view->altReturnToLayoutEditingForm = Episciences_PapersManager::getAltReturnToLayoutEditingForm($altDefault);
                 $this->view->altApproveForPublicationForm = Episciences_PapersManager::getAltApproveForPublicationForm($altDefault);
+            }
+            if ($paper->isAltAwaitingPublication()) {
+                $this->view->altPublishForm = Episciences_PapersManager::getAltPublishForm($altDefault);
             }
         }
 
@@ -1022,6 +1030,7 @@ class AdministratepaperController extends PaperDefaultController
             && $request->getPost('requestFinalVersion') === '1'
             && Episciences_Auth::isAllowedToManagePaper()
             && $paper->isAccepted()
+            && (int)$review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1
         ) {
 
         $template = Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION;
@@ -1053,219 +1062,7 @@ class AdministratepaperController extends PaperDefaultController
         );
         }
 
-     /* 1. END: Accepted → request upload → Wait on final + password */ 
-    
-     /* 2. BEGIN: Incorrect final → Wait on final + password */
-        
-        if (
-            $request->isPost()
-            && $request->getPost('rejectFinalVersion') === '1'
-            && Episciences_Auth::isAllowedToManagePaper()
-            && $paper->getStatus() == Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION
-        ) {
-
-            $template = Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION;//TYPE_PAPER_FINAL_VERSION_INCORRECT; // this needs to be added
-
-            $tags = [
-                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle(),
-            ];
-
-            Episciences_Mail_Send::sendMailFromReview(
-                $paper->getSubmitter(),
-                $template,
-                $tags,
-                $paper,
-                Episciences_Auth::getUid()
-            );
-
-            // stay in same state
-            $paper->setStatus(Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION);
-            $paper->save();
-
-            $this->_helper->FlashMessenger
-                ->setNamespace(self::SUCCESS)
-                ->addMessage(
-                    $this->view->translate("Author notified: incorrect final version.")
-                );
-
-            $this->_helper->redirector->gotoUrl(
-                'administratepaper/view?id=' . $paper->getDocid()
-            );
-        }        
-        
-     /* 2. END: Incorrect final → Wait on final + password */   
-    
-     /* 3. BEGIN: Incorrect password → Assign editors (+ manual password request) */ 
-    
-        if (
-            $request->isPost()
-            && $request->getPost('incorrectPassword') === '1'
-            && Episciences_Auth::isAllowedToManagePaper()
-            && $paper->getStatus() == Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION
-        ) {
-
-            $template = Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION;//TYPE_PAPER_REQUEST_NEW_PASSWORD; // this needs to be added
-
-            $tags = [
-                Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle(),
-            ];
-
-            Episciences_Mail_Send::sendMailFromReview(
-                $paper->getSubmitter(),
-                $template,
-                $tags,
-                $paper,
-                Episciences_Auth::getUid()
-            );
-
-            $paper->setStatus(Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED);
-            $paper->save();
-
-            $this->_helper->FlashMessenger
-                ->setNamespace(self::SUCCESS)
-                ->addMessage(
-                    $this->view->translate("New password requested from author.")
-                );
-
-            $this->_helper->redirector->gotoUrl(
-                'administratepaper/view?id=' . $paper->getDocid()
-            );
-        }    
-     /* 3. END: Incorrect password → Assign editors (+ manual password request) */ 
-     
-     /* 4. BEGIN: Proper upload → Assign editors */    
-        
-        if (
-            $request->isPost()
-            && $request->getPost('acceptFinalVersion') === '1'
-            && Episciences_Auth::isAllowedToManagePaper()
-            && $paper->getStatus() == Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION
-        ) {
-
-            $paper->setStatus(Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED);
-            $paper->save();
-
-            $this->_helper->FlashMessenger
-                ->setNamespace(self::SUCCESS)
-                ->addMessage(
-                    $this->view->translate("Final version accepted.")
-                );
-
-            $this->_helper->redirector->gotoUrl(
-                'administratepaper/view?id=' . $paper->getDocid()
-            );
-        }
-     /* 4. END: Proper upload → Assign editors */      
-     
-     /* 5. BEGIN: Assign editors → Layout editing */
-     
-      if (
-          $request->isPost()
-          && $request->getPost('startLayoutEditing') === '1'
-          && Episciences_Auth::isAllowedToManagePaper()
-          && $paper->getStatus() == Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED
-      ) {
-          $paper->setStatus(Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS);
-          $paper->save();
-
-          $this->_helper->FlashMessenger
-              ->setNamespace(self::SUCCESS)
-              ->addMessage("Paper moved to Layout Editing.");
-
-          $this->_helper->redirector->gotoUrl(
-              'administratepaper/view?id=' . $paper->getDocid()
-          );
-      }
-      
-     /* 5. END: Assign editors → Layout editing */      
-      
-     /* 6. BEGIN: Layout editing → Layout editing (author disapproves) */
-     
-      if (
-          $request->isPost()
-          && $request->getPost('authorDisapprovesLayout') === '1'
-          && Episciences_Auth::isAllowedToManagePaper()
-          && $paper->getStatus() == Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS
-      ) {
-          $paper->setStatus(Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS);
-          $paper->save();
-
-          $this->_helper->FlashMessenger
-              ->setNamespace(self::SUCCESS)
-              ->addMessage("Author disapproved layout. Staying in Layout Editing.");
-
-          $this->_helper->redirector->gotoUrl(
-              'administratepaper/view?id=' . $paper->getDocid()
-          );
-      }      
-     
-     /* 6. END: Layout editing → Layout editing (author disapproves) */ 
-     
-     /* 7. BEGIN: Layout editing → Author approved */
-     
-      if (
-          $request->isPost()
-          && $request->getPost('authorApprovesLayout') === '1'
-          && Episciences_Auth::isAllowedToManagePaper()
-          && $paper->getStatus() == Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS
-      ) {
-          $paper->setStatus(Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR);
-          $paper->save();
-
-          $this->_helper->FlashMessenger
-              ->setNamespace(self::SUCCESS)
-              ->addMessage("Author approved layout.");
-
-          $this->_helper->redirector->gotoUrl(
-              'administratepaper/view?id=' . $paper->getDocid()
-          );
-      }     
-      
-     /* 7. END: Layout editing → Author approved */
-      
-     /* 8. BEGIN: Author approved → Ready to publish */
-
-      if (
-          $request->isPost()
-          && $request->getPost('confirmReadyToPublish') === '1'
-          && Episciences_Auth::isAllowedToManagePaper()
-          && $paper->getStatus() == Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR
-      ) {
-          $paper->setStatus(Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION);
-          $paper->save();
-
-          $this->_helper->FlashMessenger
-              ->setNamespace(self::SUCCESS)
-              ->addMessage("Paper is ready to publish.");
-
-          $this->_helper->redirector->gotoUrl(
-              'administratepaper/view?id=' . $paper->getDocid()
-          );
-      }
-     
-     /* 8. END: Author approved → Ready to publish */
-      
-     /* 9. BEGIN: Ready to publish → Published */
-      
-      if (
-          $request->isPost()
-          && $request->getPost('publishFinalPaper') === '1'
-          && Episciences_Auth::isAllowedToManagePaper()
-          && $paper->getStatus() == Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION
-      ) {
-          $paper->setStatus(Episciences_Paper::STATUS_PUBLISHED);
-          $paper->save();
-
-          $this->_helper->FlashMessenger
-              ->setNamespace(self::SUCCESS)
-              ->addMessage("Paper published successfully.");
-
-          $this->_helper->redirector->gotoUrl(
-              'administratepaper/view?id=' . $paper->getDocid()
-          );
-      }  
+     /* 1. END: Accepted → request upload → Wait on final + password */
       
      /* 9. END: Ready to publish → Published */    
      
@@ -2544,6 +2341,54 @@ class AdministratepaperController extends PaperDefaultController
             Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION,
             'altapprovesubject',
             'altapprovemessage',
+            'author'
+        );
+    }
+
+    public function altstartlayouteditingAction(): void
+    {
+        $this->processAlternativePipelineTransition(
+            'altstartlayoutediting',
+            Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED,
+            Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
+            'altstartlayoutsubject',
+            'altstartlayoutmessage',
+            'copyEditors'
+        );
+    }
+
+    public function altincorrectpasswordAction(): void
+    {
+        $this->processAlternativePipelineTransition(
+            'altincorrectpassword',
+            Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED,
+            Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
+            'altincorrectpwdsubject',
+            'altincorrectpwdmessage',
+            'author'
+        );
+    }
+
+    public function altincorrectlatexAction(): void
+    {
+        $this->processAlternativePipelineTransition(
+            'altincorrectlatex',
+            Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED,
+            Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
+            'altincorrectlatexsubject',
+            'altincorrectlatexmessage',
+            'author'
+        );
+    }
+
+    public function altpublishAction(): void
+    {
+        $this->processAlternativePipelineTransition(
+            'altpublish',
+            Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION,
+            Episciences_Paper::STATUS_PUBLISHED,
+            'altpublishsubject',
+            'altpublishmessage',
             'author'
         );
     }

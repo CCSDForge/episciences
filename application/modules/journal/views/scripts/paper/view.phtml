@@ -264,15 +264,36 @@ $this->jQuery()->addJavascriptFile('/js/paper/view.js');
                 <?php if ($paper->isOwner() && $status === Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR): ?>
                     <div class="alert alert-info" style="margin-top: 10px;">
                         <p><?= $this->translate("L'épreuve de votre article est prête. Veuillez vérifier et approuver ou refuser la mise en page.") ?></p>
-                        <form method="post" style="margin-top: 10px;">
-                            <button type="submit" name="approveProof" value="1" class="btn btn-success">
-                                <i class="fas fa-check"></i> <?= $this->translate('Approuver') ?>
+                        <div class="btn-group" style="margin-top: 10px;">
+                            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                                <?= $this->translate("Répondre") ?> <span class="caret" style="margin-left: 5px"></span>
                             </button>
-                            <button type="submit" name="rejectProof" value="1" class="btn btn-danger" style="margin-left: 5px;">
-                                <i class="fas fa-times"></i> <?= $this->translate('Refuser') ?>
-                            </button>
-                        </form>
+                            <ul class="dropdown-menu" role="menu">
+                                <li>
+                                    <a href="#" data-toggle="modal"
+                                       data-target=".alt-author-approve-proof-modal"><?= $this->translate('Approuver') ?></a>
+                                </li>
+                                <li>
+                                    <a href="#" data-toggle="modal"
+                                       data-target=".alt-author-reject-proof-modal"><?= $this->translate('Refuser') ?></a>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
+                    <?php if (isset($this->altAuthorApproveProofForm)): ?>
+                        <?= $this->partial('partials/paper-status-modal.phtml', [
+                            'target' => 'alt-author-approve-proof-modal',
+                            'title' => $this->translate('Approuver la mise en page'),
+                            'body' => $this->altAuthorApproveProofForm
+                        ]) ?>
+                    <?php endif; ?>
+                    <?php if (isset($this->altAuthorRejectProofForm)): ?>
+                        <?= $this->partial('partials/paper-status-modal.phtml', [
+                            'target' => 'alt-author-reject-proof-modal',
+                            'title' => $this->translate('Refuser la mise en page'),
+                            'body' => $this->altAuthorRejectProofForm
+                        ]) ?>
+                    <?php endif; ?>
                 <?php endif; ?>
             <?php endif; ?>
         </div>
