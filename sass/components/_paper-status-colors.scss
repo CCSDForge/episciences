@@ -65,7 +65,17 @@ $status-colors: (
         // accepted - waiting for author validation
         32 : $spinach-green,
         // accepted - ready to publish
-        33 : $sage-green
+        33 : $sage-green,
+        // alt: waiting for author final version
+        34 : $burnt-orange,
+        // alt: final version submitted
+        35 : $steel-blue,
+        // alt: layout editing in progress
+        36 : $azur-blue,
+        // alt: proof sent to author
+        37 : $dark-orange,
+        // alt: awaiting publication
+        38 : $sage-green
 );
 
 @each $status-code, $status-color in $status-colors {

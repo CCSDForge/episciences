@@ -2436,6 +2436,8 @@ return array(
     "Refuser" => "Reject",
     "L'épreuve a été approuvée." => "The proof has been approved.",
     "L'épreuve a été refusée. L'article est renvoyé en mise en page." => "The proof has been rejected. The article has been returned to layout editing.",
+    "En attente de la réponse de l'auteur : le mot de passe et la version finale ont été demandés à l'auteur" => "Waiting for author's response: the password and final version have been requested from the author",
+    "En attente de la réponse de l'auteur : l'épreuve a été envoyée à l'auteur pour vérification" => "Waiting for author's response: the proof has been sent to the author for review",
     // graphical abstract
     "Fichier non accepté" => "File not accepted",
     'Fichier trop volumineux 100 ko max autorisé' => "File size too large 100 ko max authorized",

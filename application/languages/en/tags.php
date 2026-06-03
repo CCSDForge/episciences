@@ -424,5 +424,10 @@ return array(
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION] => "accepted temporary version, waiting for minor revision",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted temporary version , waiting for major revision",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_NO_REVISION] => "revision request answer: without any modifications",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION] => "password and final version requested",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED] => "password and final version submitted",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS] => "layout editing in progress",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR] => "proof sent to author",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION] => "awaiting publication",
 
 );
