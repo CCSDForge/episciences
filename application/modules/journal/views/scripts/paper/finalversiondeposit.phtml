@@ -1,0 +1,26 @@
+<?php
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$this->layout()->pageTitle = $this->translate('Déposer la version finale et le mot de passe arXiv');
+$this->layout()->description = $this->translate("Déposez le fichier final demandé par la revue et le mot de passe papier arXiv associé.");
+?>
+
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <strong><?= $this->translate('Article') ?></strong>
+    </div>
+    <div class="panel-body">
+        <p>
+            <strong>#<?= $paper->getDocid() ?></strong>
+            — <?= htmlspecialchars(Episciences_Tools::decodeLatex($paper->getTitle()), ENT_QUOTES, 'UTF-8') ?>
+        </p>
+
+        <?php if (!empty($this->comment['message'])): ?>
+            <hr>
+            <p><strong><?= $this->translate('Demande de la revue') ?></strong></p>
+            <div><?= Episciences_Tools::epi_html_decode($this->comment['message']) ?></div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<?= $this->form ?>
