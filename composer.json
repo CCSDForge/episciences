@@ -58,7 +58,8 @@
     "symfony/serializer": "^6.4",
     "symfony/yaml": "^6.4",
     "symfony/intl": "^6.4",
-    "symfony/dotenv": "^6.4"
+    "symfony/dotenv": "^6.4",
+    "symfony/mime": "^6.4"
   },
   "require-dev": {
     "fakerphp/faker": "^1.23",
