@@ -2129,7 +2129,7 @@ class PaperController extends PaperDefaultController
             $requestComment
         );
 
-        $this->notifyManagersAndAuthor($newPaper, $requestComment, $answerComment, $coAuthors, $paper);
+        $this->notifyManagersAndAuthor($newPaper, $requestComment, $answerComment, $coAuthors);
 
         $statusDetails = [self::STATUS => $newPaper->getStatus()];
         if ($requestComment->getOption('isAlreadyAccepted')) {
