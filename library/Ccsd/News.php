@@ -139,7 +139,7 @@ class Ccsd_News
                     $journalNewsExisting->setContent(json_encode($news['content'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
                 empty($news['content']) ? $journalNewsExisting->setLink(null) :
                     $journalNewsExisting->setLink(json_encode(['und' => $bind['LINK']],JSON_THROW_ON_ERROR));
-                $journalNewsExisting->setVisibility(json_encode([$visibility], JSON_THROW_ON_ERROR));
+                $journalNewsExisting->setVisibility($visibility);
                 Episciences_JournalNews::update($journalNewsExisting);
 
             } else {
@@ -311,7 +311,7 @@ class Ccsd_News
             'title' => json_encode($news['title'], JSON_THROW_ON_ERROR),
             'content' => empty($news['content']) ? new Zend_Db_Expr('NULL') : json_encode($news['content'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
             'link' => empty($news['link']) ? new Zend_Db_Expr('NULL') : json_encode(['und' => $bind['LINK']], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
-            'visibility' => json_encode([$visibility], JSON_THROW_ON_ERROR)
+            'visibility' => $visibility
         ];
         Episciences_JournalNews::insert($journalNewsInfo);
     }

@@ -206,6 +206,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
         if ($request->isPost()) {
             $valid = true;
             $pagesDisplay = [];
+            $hasPermalienError = false;
 
             foreach ($request->getPost() as $id => $options) {
 
@@ -222,6 +223,56 @@ class WebsiteDefaultController extends Zend_Controller_Action
                 //Cas particulier des filtres
                 if (isset($options['filter']) && is_array($options['filter'])) {
                     $options['filter'] = implode(';', $options['filter']);
+                }
+
+                // Validate permalink before setPage() to avoid file renaming on error
+                $pagePermalienError = false;
+                if ($options['type'] === 'Episciences_Website_Navigation_Page_Custom' && isset($options['permalien'])) {
+                    $permalien = $options['permalien'];
+
+                    // Check if permalien is reserved for predefined pages
+                    if (Episciences_Website_Navigation_Page_Predefined::isPredefinedPage($permalien)) {
+                        $message = sprintf($this->view->translate("Le permalien '%s' est réservé aux pages prédéfinies. Veuillez choisir un autre permalien."), $permalien);
+                        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                            ->addMessage($message);
+                        $pagesDisplay[$pageid] = true;
+                        $valid = false;
+                        $hasPermalienError = true;
+                        $pagePermalienError = true;
+                    }
+
+                    // Check if permalien is already used by another custom page
+                    if (!$pagePermalienError) {
+                        $currentPage = $this->_session->website->getPage($pageid);
+                        $currentPermalien = ($currentPage instanceof Episciences_Website_Navigation_Page_Custom)
+                            ? $currentPage->getPermalien()
+                            : '';
+
+                        // Only check if the permalien is different from the current one (changing permalien)
+                        if ($permalien !== $currentPermalien) {
+                            $existingPage = Episciences_Page_Manager::findByCodeAndPageCode(RVCODE, $permalien);
+                            if ($existingPage->getId() > 0) {
+                                $message = sprintf($this->view->translate("Le permalien '%s' est déjà utilisé par une autre page. Veuillez choisir un autre permalien."), $permalien);
+                                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                                    ->addMessage($message);
+                                $pagesDisplay[$pageid] = true;
+                                $valid = false;
+                                $hasPermalienError = true;
+                                $pagePermalienError = true;
+                            }
+                        }
+                    }
+
+                    // If permalink is invalid, remove it from options to preserve other fields
+                    // but don't trigger file renaming with the invalid permalink
+                    if ($pagePermalienError) {
+                        unset($options['permalien']);
+                    }
+                }
+
+                // Predefined page titles are managed by translations, ignore any submitted labels
+                if (is_a($options['type'], Episciences_Website_Navigation_Page_Predefined::class, true)) {
+                    unset($options['labels']);
                 }
 
                 $this->_session->website->setPage($pageid, $options);
@@ -247,7 +298,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
                 }
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
                 $this->redirect('/website/menu');
-            } else {
+            } elseif (!$hasPermalienError) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Erreur de saisie");
             }
             $this->view->pagesDisplay = $pagesDisplay;
