@@ -111,12 +111,12 @@ class Episciences_Page
 
     public function getVisibility(bool $deserialize = false): string|array
     {
-        return $deserialize && is_string($this->visibility) ? json_decode($this->visibility, true) : $this->visibility;
+        return $deserialize && is_string($this->visibility) ? explode(',', $this->visibility) : $this->visibility;
     }
 
     public function setVisibility(string|array $visibility, bool $serialize = true): void
     {
-        $this->visibility = $serialize && is_array($visibility) ? json_encode($visibility, JSON_UNESCAPED_UNICODE) : $visibility;
+        $this->visibility = $serialize && is_array($visibility) ? implode(',', $visibility) : $visibility;
     }
 
     public function getPageCode(): string
