@@ -25,7 +25,7 @@ class Episciences_Website_Navigation_Page extends Ccsd_Website_Navigation_Page
 
         // Gestion des droits d'accès de la page
         if (array_key_exists('visibility', $options)) {
-            $visibility = $options['visibility'];
+            $visibility = (int)$options['visibility'];
             switch ($visibility) {
                 case 0:
                     // accès libre
@@ -37,7 +37,8 @@ class Episciences_Website_Navigation_Page extends Ccsd_Website_Navigation_Page
                     break;
                 case 2:
                     // droits d'accès personnalisés
-                    $this->setAcl($options['acl']);
+                    $acl = $options['acl'] ?? [];
+                    $this->setAcl(is_array($acl) ? $acl : []);
                     break;
             }
         }
@@ -66,10 +67,24 @@ class Episciences_Website_Navigation_Page extends Ccsd_Website_Navigation_Page
     {
         parent::getForm($pageidx);
 
-        // Récupération des différents rôles
+        // Retrieve roles - only show relevant roles for page visibility
         $acl = new Episciences_Acl();
-        $roles = $acl->getRolesCodes();
-        unset($roles[$acl::ROLE_ROOT]);
+        $allRoles = $acl->getRolesCodes();
+
+        // Filter to only show these roles
+        $allowedRoles = [
+            Episciences_Acl::ROLE_CHIEF_EDITOR,
+            Episciences_Acl::ROLE_ADMIN,
+            Episciences_Acl::ROLE_SECRETARY,
+            Episciences_Acl::ROLE_EDITOR,
+            Episciences_Acl::ROLE_WEBMASTER,
+            Episciences_Acl::ROLE_GUEST_EDITOR,
+        ];
+
+        $roles = array_filter($allRoles, function($key) use ($allowedRoles) {
+            return in_array($key, $allowedRoles);
+        }, ARRAY_FILTER_USE_KEY);
+
         $selectedRoles = $this->getAcl();
 
         if (empty($selectedRoles)) {
@@ -90,22 +105,28 @@ class Episciences_Website_Navigation_Page extends Ccsd_Website_Navigation_Page
             ]);
 
         $rolesToolTip = Zend_Registry::get('Zend_Translate')->translate("Si aucun rôle n'est sélectionné, la page sera publique");
-        // Multicheckbox pour personnaliser la visibilité de la page (accès limité par rôle)
+        $visibleByLabel = Zend_Registry::get('Zend_Translate')->translate('Visible par : ');
+        // Multicheckbox for custom page visibility (access limited by role)
         $this->_form->addElement('multiCheckbox', 'acl',
-            ['label' => 'Visible par : ',
+            ['label' => $visibleByLabel,
                 'escape' => false,
-                'decorators' => [
-                    'Label' => ['decorator' => 'Label', 'options' => (['style' => 'display: inline', 'data-toggle' => 'tooltip', 'title' => $rolesToolTip])],
-                    'ViewHelper',
-                    'HtmlTag' => ['decorator' => 'HtmlTag', 'options' => (['tag' => 'div', 'class' => 'multicheckbox'])],
-                ],
                 'separator' => '',
                 'belongsTo' => 'pages_' . $pageidx,
                 'multioptions' => $roles,
                 'value' => $selectedRoles]);
 
+        // Configure decorators for inline checkboxes with proper alignment
+        $aclElement = $this->_form->getElement('acl');
+        $aclElement->setDecorators([
+            'ViewHelper',
+            ['HtmlTag', ['tag' => 'div', 'class' => 'multicheckbox col-md-9', 'id' => 'pages_' . $pageidx . '-acl-element']],
+            ['Label', ['class' => 'col-md-3 control-label', 'style' => 'padding-top: 0;', 'data-toggle' => 'tooltip', 'title' => $rolesToolTip]],
+        ]);
+        $aclElement->setSeparator(' ');
+
         if ($visibility < 2) {
-            $this->_form->getElement('acl')->getDecorator('HtmlTag')->setOption('hidden', 'hidden');
+            $aclElement->getDecorator('HtmlTag')->setOption('hidden', 'hidden');
+            $aclElement->getDecorator('Label')->setOption('style', 'display: none;');
         }
 
         return $this->_form;

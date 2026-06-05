@@ -1,8 +1,7 @@
 $(function () {
-    // Affiche ou masque la gestion détaillée des droits d'accès à la page
-    // (dépend de la valeur du select "visibility")
+    // Show or hide the detailed access rights management for the page
+    // (depends on the value of the "visibility" select)
     $('.multicheckbox').each(function () {
-        //console.log($(this).parent('div').prev('div').find("select[id$='visibility']").val());
         if (
             $(this)
                 .parent('div')
@@ -18,16 +17,17 @@ $(function () {
 });
 
 function setVisibility(id, element) {
-    var multicheckbox = $(element)
-        .parent()
-        .parent()
-        .next('div')
-        .find('.multicheckbox');
+    // Find the multicheckbox container using ID selector
+    var multicheckbox = $('#pages_' + id + '-acl-element');
+    // Find the label for "Visible par:"
+    var label = multicheckbox.prev('label');
 
-    // Si les droits d'accès à la page sont personnalisés
+    // Show checkboxes and label if custom visibility is selected
     if (element.value == 2) {
-        $(multicheckbox).fadeIn();
+        multicheckbox.removeAttr('hidden').fadeIn();
+        label.fadeIn();
     } else {
-        $(multicheckbox).hide();
+        multicheckbox.attr('hidden', 'hidden').hide();
+        label.hide();
     }
 }

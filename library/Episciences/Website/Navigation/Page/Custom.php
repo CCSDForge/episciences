@@ -295,5 +295,28 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
             }
         }
     }
+    /**
+     * Load page data including visibility from T_PAGES
+     * @return void
+     */
+    public function load(): void
+    {
+        parent::load();
+
+        // Load visibility from T_PAGES for Custom pages
+        if (!empty($this->getPermalien())) {
+            try {
+                $page = Episciences_Page_Manager::findByCodeAndPageCode(RVCODE, $this->getPermalien());
+                if ($page->getId() > 0) {
+                    $visibility = $page->getVisibility(true); // deserialize to array
+                    if (!empty($visibility) && $visibility !== ['public']) {
+                        $this->setAcl($visibility);
+                    }
+                }
+            } catch (Exception $e) {
+                trigger_error('Failed to load visibility for page ' . $this->getPermalien() . ': ' . $e->getMessage(), E_USER_WARNING);
+            }
+        }
+    }
 
 }
