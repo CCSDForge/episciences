@@ -42,6 +42,12 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
     protected $_page = '';
 
     /**
+     * Pre-loaded page data to avoid N+1 queries
+     * @var Episciences_Page|null
+     */
+    protected ?Episciences_Page $_preloadedPage = null;
+
+    /**
      * intialisation des options de la page
      * @param array $options
      * @see Ccsd_Website_Navigation_Page::setOptions($options)
@@ -54,6 +60,8 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
                 $this->setPermalien($value);
             } elseif ($option === 'page') {
                 $this->setPage($value);
+            } elseif ($option === 'preloadedpage') {
+                $this->_preloadedPage = $value;
             }
         }
         parent::setOptions($options);
@@ -297,6 +305,7 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
     }
     /**
      * Load page data including visibility from T_PAGES
+     * Uses preloaded data if available to avoid N+1 queries
      * @return void
      */
     public function load(): void
@@ -306,7 +315,14 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
         // Load visibility from T_PAGES for Custom pages
         if (!empty($this->getPermalien())) {
             try {
-                $page = Episciences_Page_Manager::findByCodeAndPageCode(RVCODE, $this->getPermalien());
+                // Use preloaded page if available (avoids N+1 queries)
+                $page = $this->_preloadedPage;
+
+                // Fallback to DB query if not preloaded
+                if ($page === null) {
+                    $page = Episciences_Page_Manager::findByCodeAndPageCode(RVCODE, $this->getPermalien());
+                }
+
                 if ($page->getId() > 0) {
                     $visibility = $page->getVisibility(true); // deserialize to array
                     if (!empty($visibility) && $visibility !== ['public']) {

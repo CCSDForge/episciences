@@ -81,6 +81,12 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             return;
         }
 
+        // Pre-load all page visibilities in one query to avoid N+1 queries
+        $preloadedPages = [];
+        if (defined('RVCODE') && RVCODE !== '') {
+            $preloadedPages = Episciences_Page_Manager::findAllByCode(RVCODE);
+        }
+
         // Pass 1: Create all page objects
         $parentMap = [];
         foreach ($rows as $row) {
@@ -94,6 +100,11 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             }
             if ($row['PARAMS'] != '') {
                 $options = array_merge($options, unserialize($row['PARAMS'], ['allowed_classes' => false]));
+            }
+
+            // Pass preloaded page data to avoid N+1 queries in Custom::load()
+            if (isset($options['permalien']) && isset($preloadedPages[$options['permalien']])) {
+                $options['preloadedPage'] = $preloadedPages[$options['permalien']];
             }
 
             // Create page instance

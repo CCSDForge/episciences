@@ -2,6 +2,30 @@
 
 class Episciences_Page_Manager
 {
+    /**
+     * Find all pages for a given review code
+     *
+     * @param string $code Review code
+     * @return array<string, Episciences_Page> Indexed by page_code
+     */
+    public static function findAllByCode(string $code): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $query = $db->select()
+            ->from(T_PAGES)
+            ->where('code = ?', $code);
+
+        $rows = $db->fetchAll($query);
+        $pages = [];
+
+        foreach ($rows as $row) {
+            $page = new Episciences_Page($row);
+            $pages[$page->getPageCode()] = $page;
+        }
+
+        return $pages;
+    }
+
     public static function findByCodeAndPageCode(string $code, string $page_code): Episciences_Page
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();

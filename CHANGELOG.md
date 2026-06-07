@@ -70,6 +70,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mailing lists: "Last updated" column displayed after "Name" in the dashboard table.
 - Mailing lists: creation date displayed (read-only) in the list edit form.
 
+- [#1042](https://github.com/CCSDForge/episciences/issues/1042) refactor: replace JSON visibility columns with enum/set types
+- Custom pages: visibility (Public/Member/Custom) is now correctly saved to database and restored after reload.
+- Custom pages: role checkboxes now display correctly when selecting "Custom" visibility.
 ### Performances
 
 - Avoid repeated `REVIEW_SETTING` queries in a single request by caching loaded review settings on the current review object and sharing cached review instances between `RVID` and `RVCODE` lookups.
