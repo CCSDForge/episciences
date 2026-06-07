@@ -666,6 +666,118 @@ class PaperController extends PaperDefaultController
         );
     }
 
+    /**
+     * Alt pipeline (state 34): show the deposit page where the author submits both
+     * the new version number and the arXiv paper password.
+     */
+    public function finalversiondepositAction(): void
+    {
+        $paper = $this->loadAltFinalVersionDepositPaperOrRedirect();
+        if (!$paper instanceof Episciences_Paper) {
+            return;
+        }
+
+        $this->view->paper = $paper;
+        $this->view->form = Episciences_PapersManager::getAltFinalVersionDepositForm($paper);
+    }
+
+    /**
+     * Alt pipeline (state 34 → 35): save the author-supplied version number and
+     * paper password, then transition the paper status.
+     */
+    public function savefinalversiondepositAction(): void
+    {
+        $this->_helper->viewRenderer->setNoRender();
+        $paper = $this->loadAltFinalVersionDepositPaperOrRedirect();
+        if (!$paper instanceof Episciences_Paper) {
+            return;
+        }
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            $this->_helper->redirector->gotoUrl('/paper/finalversiondeposit/id/' . $paper->getDocid());
+            return;
+        }
+
+        $post = $request->getPost();
+
+        $csrfName = 'csrf_finalversiondeposit_' . (int)$paper->getDocid();
+        $csrfSession = new Zend_Session_Namespace('Zend_Form_Element_Hash_unique_' . $csrfName);
+        if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
+            $csrfSession->hash = null;
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
+                $this->view->translate("Votre dépôt n'a pas pu être enregistré.")
+            );
+            $this->_helper->redirector->gotoUrl('/paper/finalversiondeposit/id/' . $paper->getDocid());
+            return;
+        }
+        $csrfSession->hash = null;
+
+        $version = trim((string)($post['version'] ?? ''));
+        $password = (string)($post['paperPassword'] ?? '');
+
+        if ($version === '' || $password === '') {
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
+                $this->view->translate("Merci de bien vouloir compléter les champs marqués d'un astérisque (*).")
+            );
+            $this->_helper->redirector->gotoUrl('/paper/finalversiondeposit/id/' . $paper->getDocid());
+            return;
+        }
+
+        if (mb_strlen($password) > MAX_PWD_INPUT_SIZE) {
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
+                sprintf($this->view->translate("le nombre maximum de caractères autorisé est de <code>%u</code>"), MAX_PWD_INPUT_SIZE)
+            );
+            $this->_helper->redirector->gotoUrl('/paper/finalversiondeposit/id/' . $paper->getDocid());
+            return;
+        }
+
+        $paper->setVersion($version);
+        $paper->setPassword($password, true);
+        $paper->setStatus(Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED);
+
+        if (!$paper->save()) {
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
+                $this->view->translate("Les modifications n'ont pas abouti !")
+            );
+            $this->_helper->redirector->gotoUrl('/paper/finalversiondeposit/id/' . $paper->getDocid());
+            return;
+        }
+
+        $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), [self::STATUS => $paper->getStatus()]);
+
+        $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage(
+            $this->view->translate("Votre dépôt a bien été enregistré.")
+        );
+        $this->_helper->redirector->gotoUrl('/' . self::CONTROLLER_NAME . '/view?id=' . $paper->getDocid());
+    }
+
+    /**
+     * Common guard for the final-version-deposit endpoints: paper must exist,
+     * the viewer must own it, and the status must be the alt-pipeline wait-state.
+     */
+    private function loadAltFinalVersionDepositPaperOrRedirect(): ?Episciences_Paper
+    {
+        $docId = (int)$this->getRequest()->getParam('id');
+        $paper = Episciences_PapersManager::get($docId);
+
+        if (
+            !$paper instanceof Episciences_Paper ||
+            !Episciences_Auth::isLogged() ||
+            !$paper->isOwner() ||
+            $paper->getStatus() !== Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION
+        ) {
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
+                $this->view->translate("Vous n'êtes pas autorisé à effectuer cette action.")
+            );
+            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
+            return null;
+        }
+
+        return $paper;
+    }
+
     private function processAuthorProofAction(
         string $actionKey,
         int $targetStatus,

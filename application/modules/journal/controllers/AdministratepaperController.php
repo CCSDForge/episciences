@@ -847,6 +847,9 @@ class AdministratepaperController extends PaperDefaultController
                 'author' => $contributor,
                 'coAuthor' => $paper->getCoAuthors(),
             ];
+            if ($paper->isAccepted()) {
+                $this->view->altRequestFinalVersionForm = Episciences_PapersManager::getAltRequestFinalVersionForm($altDefault);
+            }
             if ($paper->isAltFinalVersionSubmitted()) {
                 $this->view->altStartLayoutEditingForm = Episciences_PapersManager::getAltStartLayoutEditingForm($altDefault);
                 $this->view->altIncorrectPasswordForm = Episciences_PapersManager::getAltIncorrectPasswordForm($altDefault);
@@ -917,17 +920,25 @@ class AdministratepaperController extends PaperDefaultController
 
         // paper password bloc
 
-        $displayPaperPasswordBloc = (
+        $isAuthorizedPaperManager =
+            Episciences_Auth::isSecretary() ||
+            $paper->getEditor($loggedUid) ||
+            $paper->getCopyEditor($loggedUid);
+
+        $isStatusEditableForPassword = !in_array($paper->getStatus(), $paper::$_noEditableStatus, true);
+
+        $isArxivPaperPasswordContext =
             in_array(Episciences_Repositories::ARXIV_REPO_ID, $review->getSetting($review::SETTING_REPOSITORIES)) &&
             $review->getSetting($review::SETTING_ARXIV_PAPER_PASSWORD) &&
-            $paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID &&
-            !in_array($paper->getStatus(), $paper::$_noEditableStatus, true) &&
-            (
-                Episciences_Auth::isSecretary() ||
-                $paper->getEditor($loggedUid) ||
-                $paper->getCopyEditor($loggedUid)
-            )
-        );
+            $paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID;
+
+        $isAltPipelinePasswordContext =
+            (int)$review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1;
+
+        $displayPaperPasswordBloc =
+            $isAuthorizedPaperManager &&
+            $isStatusEditableForPassword &&
+            ($isArxivPaperPasswordContext || $isAltPipelinePasswordContext);
 
         if ($displayPaperPasswordBloc) {
             $plainPaperPassword = $this->getPlainPaperPassword($paper);
@@ -992,81 +1003,6 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->editorReplyForms = $editorReplyForms;
         $this->view->editorToAuthorForm = $editorToAuthorForm;
         $this->view->authorToEditorComments = $authorToEditorComments;
-
-
-
-
-     /* ===================== BEGIN NEW FEATURES ===================== */
-     
-     /* for now, STATUS_ACCEPTED with comments is a placeholder, 
-     I am not sure what it should actually be, 
-     it must be something along the lines of editors_assigned or so  */
-     
-     /*
-      Accepted                          1– request upload --> Wait on final + password
-
-      Wait on final + password          2– incorrect final --> Wait on final + password 
-
-                                        3– incorrect password --> Assign editors (new password manually requested)
-
-                                        4– proper upload --> Assign editors
-
-      Assign editors                    5– editors assigned --> Layout editing
-
-      Layout editing                    6– Author disapproves --> Layout editing
-
-                                        7– Author approves --> Author approved
-
-      Author approved                   8– Confirmation --> Ready to publish
-
-      Ready to publish                  9– Editor publishes new final --> Published
-     
-     */
-      
-     /* 1. BEGIN: Accepted → request upload → Wait on final + password */
-
-        if (
-            $request->isPost()
-            && $request->getPost('requestFinalVersion') === '1'
-            && Episciences_Auth::isAllowedToManagePaper()
-            && $paper->isAccepted()
-            && (int)$review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1
-        ) {
-
-        $template = Episciences_Mail_TemplatesManager::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION;
-
-        $tags = [
-            Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle(),
-        ];
-
-        Episciences_Mail_Send::sendMailFromReview(
-            $paper->getSubmitter(),
-            $template,
-            $tags,
-            $paper,
-            Episciences_Auth::getUid()
-        );
-        
-        $paper->setStatus(Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION);
-        $paper->save();
-
-        $this->_helper->FlashMessenger
-            ->setNamespace(self::SUCCESS)
-            ->addMessage(
-                $this->view->translate("Final version request has been sent.")
-            );
-
-        $this->_helper->redirector->gotoUrl(
-            'administratepaper/view?id=' . $paper->getDocid()
-        );
-        }
-
-     /* 1. END: Accepted → request upload → Wait on final + password */
-      
-     /* 9. END: Ready to publish → Published */    
-     
-     /* ===================== END NEW FEATURES ===================== */ 
     }
 
     /**
@@ -2354,6 +2290,18 @@ class AdministratepaperController extends PaperDefaultController
             'altstartlayoutsubject',
             'altstartlayoutmessage',
             'copyEditors'
+        );
+    }
+
+    public function altrequestfinalversionAction(): void
+    {
+        $this->processAlternativePipelineTransition(
+            'altrequestfinalversion',
+            Episciences_Paper::STATUS_ACCEPTED,
+            Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
+            'altrequestfinalversionsubject',
+            'altrequestfinalversionmessage',
+            'author'
         );
     }
 

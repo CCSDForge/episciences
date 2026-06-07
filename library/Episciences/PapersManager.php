@@ -1849,6 +1849,18 @@ class Episciences_PapersManager
         );
     }
 
+    public static function getAltRequestFinalVersionForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-request-final-version-form',
+            '/administratepaper/altrequestfinalversion/id/' . $default['id'],
+            'csrf_altrequestfinalversion_' . (int)$default['id'],
+            'altrequestfinalversionsubject',
+            'altrequestfinalversionmessage'
+        );
+    }
+
     public static function getAltIncorrectPasswordForm(array $default): \Ccsd_Form
     {
         return self::buildAlternativePipelineForm(
@@ -1907,6 +1919,51 @@ class Episciences_PapersManager
             'altauthorreject-subject',
             'altauthorreject-message'
         );
+    }
+
+    public static function getAltFinalVersionDepositForm(Episciences_Paper $paper): \Ccsd_Form
+    {
+        $docId = (int)$paper->getDocid();
+        $form = new \Ccsd_Form();
+        $form->setName('final_version_deposit_form_' . $docId);
+        $form->setAttrib('id', 'final_version_deposit_form_' . $docId);
+        $form->setAttrib('enctype', 'multipart/form-data');
+        $form->setMethod('post');
+        $form->setAction('/paper/savefinalversiondeposit/id/' . $docId);
+        $form->addElementPrefixPath('Episciences_Form_Decorator', 'Episciences/Form/Decorator/', 'decorator');
+
+        $form->addElement('hash', 'csrf_finalversiondeposit_' . $docId, ['salt' => 'unique']);
+
+        // Version number text input — same pattern as Episciences_Submit::getNewVersionForm()
+        $form->addElement('text', 'version', [
+            'label' => 'Version',
+            'required' => true,
+            'style' => 'width:33%;',
+        ]);
+
+        // arXiv paper password (required in the alt pipeline)
+        \Episciences_Submit::addPaperArxivPwdElement($form, true);
+
+        // The decorator template inspects a hidden element for pcId/docId attributes;
+        // pcId is unused here (no parent comment) but kept for compatibility.
+        $form->addElement('hidden', 'attachments_path_type', [
+            'value' => 'final_version_deposit',
+            'docId' => $docId,
+            'pcId' => 0,
+        ]);
+
+        $form->addElement('submit', 'submitFinalVersionDeposit', [
+            'label' => 'Déposer',
+            'class' => 'btn btn-primary',
+            'decorators' => [['ViewHelper']],
+        ]);
+
+        $form->setDecorators([
+            ['ViewScript', ['viewScript' => '/paper/final_version_deposit_form.phtml']],
+            $form->getDecorator('FormRequired'),
+        ]);
+
+        return $form;
     }
 
     private static function buildAlternativePipelineForm(

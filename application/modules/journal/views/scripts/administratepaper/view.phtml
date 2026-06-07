@@ -71,7 +71,6 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
                     <div class="alert alert-warning alert-fixed">
                         <i class="fas fa-hourglass-half" style="color:chocolate"></i>
                         <?= $this->translate($info) ?>
-                        <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>
                     </div>
                 <?php endif; ?>
 
@@ -80,7 +79,6 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
                     <div class="alert alert-warning alert-fixed">
                         <i class="fas fa-hourglass-half" style="color:chocolate"></i>
                         <?= $this->translate($info) ?>
-                        <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>
                     </div>
                 <?php endif; ?>
 

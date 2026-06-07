@@ -2467,5 +2467,18 @@ return array(
     "Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés" => "If enabled, a volume's title can be modified even if it contains published articles",
     "Afficher les volumes secondaires sur la page publique de l'article" => "Display secondary volumes on the public article page",
     "Si activé, les volumes secondaires seront visibles sur la page publique de l'article" => "If enabled, secondary volumes will be visible on the public article page",
-    "Volumes secondaires: " => "Secondary volumes: "
+    "Volumes secondaires: " => "Secondary volumes: ",
+
+    // Alt pipeline: final-version deposit (state 34)
+    'Déposer la version finale et le mot de passe arXiv' => 'Deposit final version and arXiv paper password',
+    "Déposez le fichier final demandé par la revue et le mot de passe papier arXiv associé." => "Deposit the final file requested by the journal and the associated arXiv paper password.",
+    "La revue vous demande de déposer la version finale de votre article ainsi que le mot de passe papier arXiv." => "The journal asks you to deposit the final version of your article along with the arXiv paper password.",
+    'Demande de la revue' => 'Journal request',
+    'Fichier final' => 'Final file',
+    'Choisir le fichier final' => 'Choose the final file',
+    'Déposer' => 'Deposit',
+    "Votre dépôt a bien été enregistré." => "Your deposit has been saved.",
+    "Votre dépôt n'a pas pu être enregistré." => "Your deposit could not be saved.",
+    "Vous n'êtes pas autorisé à effectuer cette action." => "You are not allowed to perform this action.",
+    "Merci de bien vouloir compléter les champs marqués d'un astérisque (*)." => "Please fill in the fields marked with a star (*)."
 );

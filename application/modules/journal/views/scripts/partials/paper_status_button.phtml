@@ -30,6 +30,7 @@ try {
 }
 $copyEditingNotStarted = !$paper->isCopyEditingProcessStarted();
 $isInRevision = $paper->isRevisionRequested();
+$isAltPipelineOn = (int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1;
 $askSourcesAgainMsg = "Redemander à l'auteur ses sources (À mettre en forme par la revue)";
 $askFinalVersionAgainMsg = "Demander à nouveau la version finale à l'auteur";
 $acceptedWaitingForAuthorValidation = "Accepté - en attente de validation par l'auteur";
@@ -65,8 +66,13 @@ if (Episciences_Auth::isSecretary()) : ?>
             <?= $this->translate($changeStatusMsg) ?> <span class="caret" style="margin-left: 5px"></span>
         </button>
         <ul class="status-menu dropdown-menu" role="menu">
-            <?php if ((int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1): ?>
-                <?php if ($paper->isAltFinalVersionSubmitted()) : ?>
+            <?php if ($isAltPipelineOn): ?>
+                <?php if ($paper->isAccepted()) : ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-request-final-version-modal"><?= $this->translate('Request final version + password') ?></a>
+                    </li>
+                <?php elseif ($paper->isAltFinalVersionSubmitted()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
                            data-target=".alt-start-layout-editing-modal"><?= $this->translate('Start layout editing') ?></a>
@@ -113,34 +119,36 @@ if (Episciences_Auth::isSecretary()) : ?>
                 </li>
 
             <?php elseif ($paper->isAccepted()) : ?>
-                <?php // Ask author's final version  ?>
-                <?php if ($isAskAuthorsFinalVersionEnabled) : ?>
+                <?php if (!$isAltPipelineOn) : ?>
+                    <?php // Ask author's final version  ?>
+                    <?php if ($isAskAuthorsFinalVersionEnabled) : ?>
+                        <li>
+                            <a href="#" data-toggle="modal"
+                               data-target=".accepted-ask-author-final-version-modal"><?= $this->translate($acceptedAskAuthorFinalVersion) ?></a>
+                        </li>
+                    <?php endif; ?>
+
+                    <?php // Préparation de copie: en attente des sources auteurs?>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".accepted-ask-author-final-version-modal"><?= $this->translate($acceptedAskAuthorFinalVersion) ?></a>
-                    </li>
-                <?php endif; ?>
-
-                <?php // Préparation de copie: en attente des sources auteurs?>
-                <li>
-                    <a href="#" data-toggle="modal"
-                       data-target=".waiting-for-author-sources-modal"><?= $this->translate($waitingAuthorSources) ?>
-                    </a>
-                </li>
-                <?php // Préparation de copie: en attente de de la mise en forme auteur ?>
-                <li>
-                    <a href="#" data-toggle="modal"
-                       data-target=".waiting-for-author-formatting-modal"><?= $this->translate($waitingFinalVersion) ?>
-                    </a>
-                </li>
-
-                <!-- publish paper -->
-                <?php if ($copyEditingNotStarted && !$paper->isTmp()) : ?>
-                    <li>
-                        <a href="#" data-toggle="modal"
-                           data-target=".publication-modal"><?= $this->translate($publishMsg) ?>
+                           data-target=".waiting-for-author-sources-modal"><?= $this->translate($waitingAuthorSources) ?>
                         </a>
                     </li>
+                    <?php // Préparation de copie: en attente de de la mise en forme auteur ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".waiting-for-author-formatting-modal"><?= $this->translate($waitingFinalVersion) ?>
+                        </a>
+                    </li>
+
+                    <!-- publish paper -->
+                    <?php if ($copyEditingNotStarted && !$paper->isTmp()) : ?>
+                        <li>
+                            <a href="#" data-toggle="modal"
+                               data-target=".publication-modal"><?= $this->translate($publishMsg) ?>
+                            </a>
+                        </li>
+                    <?php endif; ?>
                 <?php endif; ?>
 
             <?php elseif ($status === Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING) : ?>
@@ -241,7 +249,7 @@ if (Episciences_Auth::isSecretary()) : ?>
 
             <?php endif; ?>
 
-            <?php if (!$paper->isAlternativePipelineStatus()) : ?>
+            <?php if (!$paper->isAlternativePipelineStatus() && !($isAltPipelineOn && $paper->isAccepted())) : ?>
                 <!-- ask other editors -->
                 <?php if (!empty($this->other_editors)) : ?>
                     <li>
@@ -302,42 +310,44 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             <?php if ($paper->isAlternativePipelineStatus()) : ?>
                 <?php // Alt pipeline states are fully handled above; skip legacy options ?>
             <?php elseif ($paper->isAccepted()) : ?>
+                <?php if (!$isAltPipelineOn) : ?>
 
-                <?php // Préparation de copie: en attente des sources auteurs?>
-                <li>
-                    <a href="#" data-toggle="modal"
-                       data-target=".waiting-for-author-sources-modal"><?= $this->translate($waitingAuthorSources) ?>
-                    </a>
-                </li>
+                    <?php // Préparation de copie: en attente des sources auteurs?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".waiting-for-author-sources-modal"><?= $this->translate($waitingAuthorSources) ?>
+                        </a>
+                    </li>
 
-                <?php // Préparation de copie: en attente de de la mise en forme auteur ?>
-                <li>
-                    <a href="#" data-toggle="modal"
-                       data-target=".waiting-for-author-formatting-modal"><?= $this->translate($waitingFinalVersion) ?>
-                    </a>
-                </li>
+                    <?php // Préparation de copie: en attente de de la mise en forme auteur ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".waiting-for-author-formatting-modal"><?= $this->translate($waitingFinalVersion) ?>
+                        </a>
+                    </li>
 
-                <?php if ($copyEditingNotStarted && $this->review->getSetting('editorsCanPublishPapers')) :    // editors have permission to publish papers ?>
-                    <?php if (
-                        $this->isRequiredReviewersOk ||
-                        !$this->review->getSetting('requiredReviewers')  // if there is no minimum number of rating reports, or it has been matched
-                    ) : ?>
+                    <?php if ($copyEditingNotStarted && $this->review->getSetting('editorsCanPublishPapers')) :    // editors have permission to publish papers ?>
+                        <?php if (
+                            $this->isRequiredReviewersOk ||
+                            !$this->review->getSetting('requiredReviewers')  // if there is no minimum number of rating reports, or it has been matched
+                        ) : ?>
 
-                        <?php // PUBLISH PAPER?>
-                        <li>
-                            <a href="#" data-toggle="modal"
-                               data-target=".publication-modal"><?= $this->translate($publishMsg) ?></a>
-                        </li>
+                            <?php // PUBLISH PAPER?>
+                            <li>
+                                <a href="#" data-toggle="modal"
+                                   data-target=".publication-modal"><?= $this->translate($publishMsg) ?></a>
+                            </li>
 
-                    <?php else : // if there is not enough rating reports, display a notice ?>
-                        <li data-toggle="tooltip"
-                            data-placement="right"
-                            title="<?= $this->translate("Vous ne pouvez pas publier cet article, car le nombre minimum de relectures (%s) n'a pas été atteint.", $this->review->getSetting('requiredReviewers')) ?>">
-                            <a class="disabled"><?= $this->translate($publishMsg) ?></a>
-                        </li>
+                        <?php else : // if there is not enough rating reports, display a notice ?>
+                            <li data-toggle="tooltip"
+                                data-placement="right"
+                                title="<?= $this->translate("Vous ne pouvez pas publier cet article, car le nombre minimum de relectures (%s) n'a pas été atteint.", $this->review->getSetting('requiredReviewers')) ?>">
+                                <a class="disabled"><?= $this->translate($publishMsg) ?></a>
+                            </li>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <?php // recommandation de publier l'article?>
                     <?php endif; ?>
-                <?php else: ?>
-                    <?php // recommandation de publier l'article?>
                 <?php endif; ?>
 
             <?php elseif ($status === Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED) : ?>
@@ -413,7 +423,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?php endif; ?>
             <?php endif; ?>
 
-            <?php if (!$paper->isAlternativePipelineStatus()) : ?>
+            <?php if (!$paper->isAlternativePipelineStatus() && !($isAltPipelineOn && $paper->isAccepted())) : ?>
                 <?php // REJECT PAPER ************    ?>
                 <?php if ($this->review->getSetting('editorsCanRejectPapers')) :    // editors have permission to reject papers ?>
 
@@ -484,12 +494,10 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
 
             <?php // BEGIN: Alt pipeline buttons ?>
 
-            <?php if ((int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1 && $paper->isAccepted()): ?>
+            <?php if ($isAltPipelineOn && $paper->isAccepted()): ?>
                 <li>
-                    <a href="#"
-                       onclick="event.preventDefault(); document.getElementById('requestFinalVersionForm_<?= $paper->getDocid() ?>').submit();">
-                        <?= $this->translate('Request final version + password') ?>
-                    </a>
+                    <a href="#" data-toggle="modal"
+                       data-target=".alt-request-final-version-modal"><?= $this->translate('Request final version + password') ?></a>
                 </li>
             <?php endif; ?>
 
@@ -518,13 +526,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             </ul>
             </div>
 
-            <?php if ((int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1 && $paper->isAccepted()): ?>
-                <form id="requestFinalVersionForm_<?= $paper->getDocid() ?>" method="post" style="display:none;">
-                    <input type="hidden" name="requestFinalVersion" value="1">
-                </form>
-            <?php endif; ?>
-
-            <?php // END: Alt pipeline buttons ?>     
+            <?php // END: Alt pipeline buttons ?>
 
     <?php // Copy editor?>
 <?php elseif (Episciences_Auth::isCopyEditor()) : ?>
@@ -534,25 +536,27 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?= $this->translate($changeStatusMsg) ?> <span class="caret" style="margin-left: 5px"></span>
             </button>
             <ul class="status-menu dropdown-menu" role="menu">
-                <?php // ask author's final version  ?>
-                <?php if ($isAskAuthorsFinalVersionEnabled) : ?>
+                <?php if (!$isAltPipelineOn) : ?>
+                    <?php // ask author's final version  ?>
+                    <?php if ($isAskAuthorsFinalVersionEnabled) : ?>
+                        <li>
+                            <a href="#" data-toggle="modal"
+                               data-target=".accepted-ask-author-final-version-modal"><?= $this->translate($acceptedAskAuthorFinalVersion) ?></a>
+                        </li>
+                    <?php endif; ?>
+
+                    <?php // Préparation de copie: en attente des sources auteurs?>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".accepted-ask-author-final-version-modal"><?= $this->translate($acceptedAskAuthorFinalVersion) ?></a>
+                           data-target=".waiting-for-author-sources-modal"><?= $this->translate($waitingAuthorSources) ?></a>
+                    </li>
+
+                    <?php // Préparation de copie: en attente de de la mise en forme auteur ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".waiting-for-author-formatting-modal"><?= $this->translate($waitingFinalVersion) ?></a>
                     </li>
                 <?php endif; ?>
-
-                <?php // Préparation de copie: en attente des sources auteurs?>
-                <li>
-                    <a href="#" data-toggle="modal"
-                       data-target=".waiting-for-author-sources-modal"><?= $this->translate($waitingAuthorSources) ?></a>
-                </li>
-
-                <?php // Préparation de copie: en attente de de la mise en forme auteur ?>
-                <li>
-                    <a href="#" data-toggle="modal"
-                       data-target=".waiting-for-author-formatting-modal"><?= $this->translate($waitingFinalVersion) ?></a>
-                </li>
             </ul>
 
         <?php elseif ($status === Episciences_Paper::STATUS_CE_AUTHOR_SOURCES_DEPOSED) : ?>
@@ -731,6 +735,14 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
     <?php endif; ?>
 
     <?php // Alternative editorial pipeline modals (gated by SETTING_ALTERNATIVE_PIPELINE) ?>
+    <?php if (isset($this->altRequestFinalVersionForm) && $paper->isAccepted()) : ?>
+        <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'alt-request-final-version-modal',
+            'title' => 'Request final version + password',
+            'body' => $this->altRequestFinalVersionForm
+        ]) ?>
+    <?php endif; ?>
     <?php if (isset($this->altSendProofToAuthorForm) && $paper->isLayoutEditingInProgress()) : ?>
         <?=
         $this->partial('partials/paper-status-modal.phtml', [
