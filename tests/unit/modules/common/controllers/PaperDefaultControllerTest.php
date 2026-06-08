@@ -184,6 +184,90 @@ final class PaperDefaultControllerTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
+    // PR #1040 — answerRevisionNotifyManager()
+    // -----------------------------------------------------------------------
+
+    /**
+     * Regression: $paper1 was removed from the signature (BUG 1 fix).
+     * The parameter must not reappear.
+     */
+    public function testAnswerRevisionNotifyManagerHasNoPaper1Parameter(): void
+    {
+        $method = $this->extractMethod('answerRevisionNotifyManager');
+
+        self::assertStringNotContainsString(
+            '$paper1',
+            $method,
+            'answerRevisionNotifyManager() must not declare $paper1 — it was removed in PR #1040'
+        );
+    }
+
+    /**
+     * Regression: TAG_PAPER_SUBMISSION_DATE must use getSubmission_date() (the
+     * initial submission date), not getWhen() of the old paper object (BUG 2 fix).
+     */
+    public function testAnswerRevisionNotifyManagerUsesSubmissionDate(): void
+    {
+        $method = $this->extractMethod('answerRevisionNotifyManager');
+
+        self::assertStringContainsString(
+            'getSubmission_date()',
+            $method,
+            'TAG_PAPER_SUBMISSION_DATE must use getSubmission_date() to return the initial submission date'
+        );
+
+        self::assertStringNotContainsString(
+            '$paper1->getWhen()',
+            $method,
+            'TAG_PAPER_SUBMISSION_DATE must not use $paper1->getWhen() — $paper1 was removed'
+        );
+    }
+
+    /**
+     * PR #1040 adds handling for TYPE_REVISION_ANSWER_COMMENT to trigger the
+     * paper_revision_answer template. The elseif branch must be present.
+     */
+    public function testAnswerRevisionNotifyManagerHandlesRevisionAnswerCommentType(): void
+    {
+        $method = $this->extractMethod('answerRevisionNotifyManager');
+
+        self::assertStringContainsString(
+            'TYPE_REVISION_ANSWER_COMMENT',
+            $method,
+            'answerRevisionNotifyManager() must handle TYPE_REVISION_ANSWER_COMMENT to select the correct template'
+        );
+
+        self::assertStringContainsString(
+            'TYPE_PAPER_REVISION_ANSWER',
+            $method,
+            'answerRevisionNotifyManager() must assign TYPE_PAPER_REVISION_ANSWER for comment-only answers'
+        );
+    }
+
+    /**
+     * When no template is matched (unknown comment type), the method must log
+     * and return false rather than sending a mail with an empty template key.
+     */
+    public function testAnswerRevisionNotifyManagerGuardsEmptyTemplateKey(): void
+    {
+        $method = $this->extractMethod('answerRevisionNotifyManager');
+
+        self::assertStringContainsString(
+            "\$templateKey === ''",
+            $method,
+            'answerRevisionNotifyManager() must guard against an empty template key'
+        );
+
+        // The guard must short-circuit the method — return false, not continue.
+        $guardPos   = strpos($method, "\$templateKey === ''");
+        $returnPos  = strpos($method, 'return false;', (int) $guardPos);
+
+        self::assertNotFalse($returnPos,
+            'answerRevisionNotifyManager() must return false when no template is found'
+        );
+    }
+
+    // -----------------------------------------------------------------------
     // Episciences_Tools::postMailValidation() — behaviour contract
     // -----------------------------------------------------------------------
 
