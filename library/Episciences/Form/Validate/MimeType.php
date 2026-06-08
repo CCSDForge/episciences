@@ -81,11 +81,11 @@ class Episciences_Form_Validate_MimeType extends Zend_Validate_Abstract
             $type = $guesser->guessMimeType($value);
 
         } catch (LogicException $e) {
-            error_log("Erreur MIME Guesser LogicException: " . $e->getMessage());
+            error_log("MIME Guesser LogicException: " . $e->getMessage());
             return $this->_throw($file, self::NOT_DETECTED);
 
         } catch (InvalidArgumentException $e) {
-            error_log("Erreur MIME Guesser InvalidArgumentException: " . $e->getMessage());
+            error_log("MIME Guesser InvalidArgumentException: " . $e->getMessage());
             return $this->_throw($file, self::NOT_READABLE);
         }
 
