@@ -77,18 +77,18 @@ class Episciences_Form_Validate_MimeType extends Zend_Validate_Abstract
 
         $guesser = new FileBinaryMimeTypeGuesser();
 
+        if (!$guesser->isGuesserSupported()) {
+            error_log("FileBinaryMimeTypeGuesser is not supported on this system (missing 'file' binary)");
+            return $this->_throw($file, self::NOT_DETECTED);
+        }
+
         try {
             $type = $guesser->guessMimeType($value);
-
-        } catch (LogicException $e) {
-            error_log("MIME Guesser LogicException: " . $e->getMessage());
-            return $this->_throw($file, self::NOT_DETECTED);
 
         } catch (InvalidArgumentException $e) {
             error_log("MIME Guesser InvalidArgumentException: " . $e->getMessage());
             return $this->_throw($file, self::NOT_READABLE);
         }
-
 
 
         if (!$type) {
