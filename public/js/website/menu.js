@@ -17,17 +17,17 @@ $(function () {
 });
 
 function setVisibility(id, element) {
-    // Find the multicheckbox container using ID selector
-    var multicheckbox = $('#pages_' + id + '-acl-element');
-    // Find the label for "Visible par:"
-    var label = multicheckbox.prev('label');
+    // Find the multicheckbox container by explicit ID (avoids conflict with auto-generated form-group ID)
+    var multicheckbox = $('#pages_' + id + '-acl-options');
+    var label = multicheckbox.siblings('label');
 
     // Show checkboxes and label if custom visibility is selected
     if (element.value == 2) {
-        multicheckbox.removeAttr('hidden').fadeIn();
-        label.fadeIn();
+        // Remove hidden attribute AND clear inline display style
+        multicheckbox.removeAttr('hidden').css('display', '');
+        label.css('display', '');
     } else {
-        multicheckbox.attr('hidden', 'hidden').hide();
-        label.hide();
+        multicheckbox.attr('hidden', 'hidden').css('display', 'none');
+        label.css('display', 'none');
     }
 }

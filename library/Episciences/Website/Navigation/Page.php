@@ -116,10 +116,11 @@ class Episciences_Website_Navigation_Page extends Ccsd_Website_Navigation_Page
                 'value' => $selectedRoles]);
 
         // Configure decorators for inline checkboxes with proper alignment
+        // Use '-acl-options' suffix to avoid ID conflict with form-group wrapper (auto-generated as '-acl-element')
         $aclElement = $this->_form->getElement('acl');
         $aclElement->setDecorators([
             'ViewHelper',
-            ['HtmlTag', ['tag' => 'div', 'class' => 'multicheckbox col-md-9', 'id' => 'pages_' . $pageidx . '-acl-element']],
+            ['HtmlTag', ['tag' => 'div', 'class' => 'multicheckbox col-md-9', 'id' => 'pages_' . $pageidx . '-acl-options']],
             ['Label', ['class' => 'col-md-3 control-label', 'style' => 'padding-top: 0;', 'data-toggle' => 'tooltip', 'title' => $rolesToolTip]],
         ]);
         $aclElement->setSeparator(' ');
