@@ -44,7 +44,7 @@ class LicenseCodeManager
         return (int)$db->lastInsertId();
     }
 
-    private static function getLicenceCodeQuery(?int $docId = null): ?Zend_Db_Select
+    private static function getLicenseCodeQuery(?int $docId = null): ?Zend_Db_Select
     {
         if (!$docId) {
             return null;
@@ -62,10 +62,9 @@ class LicenseCodeManager
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = self::getLicenceCodeQuery($docId);
+        $sql = self::getLicenseCodeQuery($docId);
 
         return $db?->fetchOne($sql);
-
 
     }
 }

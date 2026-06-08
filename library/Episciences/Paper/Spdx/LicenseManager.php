@@ -11,7 +11,7 @@ class LicenseManager
 
     public const RECOMMENDED = 1;
 
-    public static function allQuery(string|array $cols = '*'): Zend_Db_Select
+    private static function allQuery(string|array $cols = '*'): Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         return $db?->select()->from(T_LICENSE, $cols);

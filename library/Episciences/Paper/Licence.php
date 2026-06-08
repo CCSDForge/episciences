@@ -1,7 +1,9 @@
 <?php
 
 
-class Episciences_Paper_Licence
+use Episciences\common\AbstractCommon;
+
+class Episciences_Paper_Licence extends AbstractCommon
 {
 
     /**
@@ -30,34 +32,6 @@ class Episciences_Paper_Licence
     protected ?datetime $_updatedAt = null;
 
     protected $_uid;
-
-    /**
-     * Episciences_Paper_Licence constructor.
-     * @param array|null $options
-     */
-    public function __construct(array $options = null)
-    {
-        if (is_array($options)) {
-            $this->setOptions($options);
-        }
-    }
-
-    /**
-     * set paper options
-     * @param array $options
-     */
-    public function setOptions(array $options): void
-    {
-        $classMethods = get_class_methods($this);
-        foreach ($options as $key => $value) {
-            $key = Episciences_Tools::convertToCamelCase($key, '_', true);
-            $method = 'set' . $key;
-            if (in_array($method, $classMethods, true)) {
-                $this->$method($value);
-            }
-        }
-    }
-
 
     /**
      * @return array

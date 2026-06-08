@@ -45,12 +45,7 @@ class LicenseCode extends AbstractCommon
     public function getName(): ?string
     {
         if ($this->name === null) {
-
-            $name = LicenseManager::getNameByIdentifier($this->code);
-
-            if ($name) {
-                $this->name = $name;
-            }
+            $this->name = $this->resolveName();
         }
 
         return $this->name;
@@ -79,6 +74,10 @@ class LicenseCode extends AbstractCommon
         }
 
         return LicenseSpdxResolver::NO_ASSERTION;
+    }
+
+    private function resolveName() : ?string{
+        return LicenseManager::getNameByIdentifier($this->code);
     }
 
 }
