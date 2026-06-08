@@ -12,13 +12,13 @@ class AdministratepaperController extends PaperDefaultController
         '0' => 'paperid',
         '1' => 'docid',
         '2' => 'status',
-        '3' => '',//  ***
+        '3' => '',
         '4' => 'vid',
         '5' => 'sid',
-        '6' => '', // ***
-        '7' => '',// ***
-        '8' => '',// *** (désactiver dans js/paper/submitted.js) sinon prévoir une jointure si nécessaire
-        '9' => '',
+        '6' => 'reviewer_sort',
+        '7' => 'editor_sort',
+        '8' => 'copyeditor_sort',
+        '9' => 'contributor_sort',
         '10' => 'when',
         '11' => 'publication_date'
     ];
@@ -116,6 +116,46 @@ class AdministratepaperController extends PaperDefaultController
             $papers = $review->getPapers($settings, true);
 
             $isCoiEnabled = $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+
+            // Prime the Episciences_User static request-level memory cache (Eager Loading)
+            $uidsToPreload = [];
+            foreach ($papers as $paper) {
+                if ($paper->getUid()) {
+                    $uidsToPreload[] = (int)$paper->getUid();
+                }
+            }
+
+            $paperIds = array_map(static function ($p) {
+                return (int)$p->getDocid();
+            }, $papers);
+
+            if (!empty($paperIds)) {
+                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                $assignSelect = $db->select()
+                    ->from(T_ASSIGNMENTS, ['UID'])
+                    ->where('ITEM = ?', 'paper')
+                    ->where('ITEMID IN (?)', $paperIds);
+                $assignedUids = $db->fetchCol($assignSelect);
+                if (!empty($assignedUids)) {
+                    foreach ($assignedUids as $uid) {
+                        $uidsToPreload[] = (int)$uid;
+                    }
+                }
+            }
+
+            $uidsToPreload = array_unique(array_filter($uidsToPreload));
+
+            if (!empty($uidsToPreload)) {
+                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                foreach (array_chunk($uidsToPreload, 1000) as $chunk) {
+                    $preloadSelect = $db->select()
+                        ->from(T_USERS)
+                        ->where('UID IN (?)', $chunk);
+                    foreach ($db->fetchAll($preloadSelect) as $row) {
+                        Episciences_User::setStaticCache((int)$row['UID'], $row);
+                    }
+                }
+            }
 
             foreach ($papers as &$paper) {
                 $paper->loadSubmitter(false);
@@ -351,6 +391,45 @@ class AdministratepaperController extends PaperDefaultController
 
             $isCoiEnabled = $review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
 
+            // Prime the Episciences_User static request-level memory cache (Eager Loading)
+            $uidsToPreload = [];
+            foreach ($papers as $paper) {
+                if ($paper->getUid()) {
+                    $uidsToPreload[] = (int)$paper->getUid();
+                }
+            }
+
+            $paperIds = array_map(static function ($p) {
+                return (int)$p->getDocid();
+            }, $papers);
+
+            if (!empty($paperIds)) {
+                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                $assignSelect = $db->select()
+                    ->from(T_ASSIGNMENTS, ['UID'])
+                    ->where('ITEM = ?', 'paper')
+                    ->where('ITEMID IN (?)', $paperIds);
+                $assignedUids = $db->fetchCol($assignSelect);
+                if (!empty($assignedUids)) {
+                    foreach ($assignedUids as $uid) {
+                        $uidsToPreload[] = (int)$uid;
+                    }
+                }
+            }
+
+            $uidsToPreload = array_unique(array_filter($uidsToPreload));
+
+            if (!empty($uidsToPreload)) {
+                $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+                foreach (array_chunk($uidsToPreload, 1000) as $chunk) {
+                    $preloadSelect = $db->select()
+                        ->from(T_USERS)
+                        ->where('UID IN (?)', $chunk);
+                    foreach ($db->fetchAll($preloadSelect) as $row) {
+                        Episciences_User::setStaticCache((int)$row['UID'], $row);
+                    }
+                }
+            }
 
             /** @var Episciences_Paper $paper */
             foreach ($papers as &$paper) {
@@ -918,9 +997,7 @@ class AdministratepaperController extends PaperDefaultController
          * Bibliographical References
          */
         $enabledBib = false;
-        if (EPISCIENCES_BIBLIOREF['ENABLE'] &&
-            ($paper->getStatus() === Episciences_Paper::STATUS_CE_READY_TO_PUBLISH ||
-                $paper->getStatus() === Episciences_Paper::STATUS_PUBLISHED)) {
+        if (EPISCIENCES_BIBLIOREF['ENABLE']) {
             $this->view->urlcallapibib = APPLICATION_URL . '/' . $docId . '/pdf';
             $this->view->apiEpiBibCitation = EPISCIENCES_BIBLIOREF['URL'];
             $enabledBib = true;
@@ -1579,10 +1656,19 @@ class AdministratepaperController extends PaperDefaultController
             $body = Episciences_Tools::cleanBody($body);
         }
 
+        $deadline = date('Y-m-d', strtotime($oAssignment->getDeadline()));
+
         //init invitation form
-        $params = [
-            'rating_deadline_min' => Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting('rating_deadline_min')),
-            'rating_deadline_max' => Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting('rating_deadline_max'))];
+        try {
+            $params = [
+                    'rating_deadline_min' => Episciences_Tools::subDateInterval($deadline, $oReview->getSetting('rating_deadline_min')),
+                    'rating_deadline_max' => Episciences_Tools::addDateInterval($deadline, $oReview->getSetting('rating_deadline_max'))
+            ];
+        } catch (Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
+            return false;
+        }
+
         $form = Episciences_PapersManager::getDeadlineForm($aid, $params);
         $defaults = [
             'recipient' => $oReviewer->getFullName() . ' <' . $oReviewer->getEmail() . '>',
@@ -1668,9 +1754,17 @@ class AdministratepaperController extends PaperDefaultController
         $journal = Episciences_ReviewsManager::find(RVCODE);
 
         // Retrieving time stamps from today's date
-        $today = date('Y-m-d');
-        $minDeadline = Episciences_Tools::addDateInterval($today, $journal->getSetting('rating_deadline_min'));
-        $maxDeadline = Episciences_Tools::addDateInterval($today, $journal->getSetting('rating_deadline_max'));
+        $deadline = date('Y-m-d', strtotime($assignment->getDeadline()));
+
+        try {
+            $minDeadline = Episciences_Tools::subDateInterval($deadline, $journal->getSetting('rating_deadline_min'));
+        } catch (Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage());
+            $result['message'] = $e->getMessage();
+            echo Zend_Json::encode($result);
+            return;
+        }
+        $maxDeadline = Episciences_Tools::addDateInterval($deadline, $journal->getSetting('rating_deadline_max'));
 
         $minTimestamp = strtotime($minDeadline);
         $maxTimestamp = strtotime($maxDeadline);
@@ -2841,15 +2935,16 @@ class AdministratepaperController extends PaperDefaultController
             $docid = $request->getPost('docid');
             $paper = Episciences_PapersManager::get($docid);
 
-            // process form and retrieve volume ids
+            // process form and retrieve volume ids (submitted as vids[]=1&vids[]=3 by Tom Select)
+            $rawVids = $request->getPost('vids', []);
+            if (!is_array($rawVids)) {
+                $rawVids = [];
+            }
             $paper_volumes = [];
-            foreach ($request->getPost() as $name => $value) {
-                if (!preg_match('#^volume_#', $name)) {
-                    continue;
-                }
-                $vid = filter_var($name, FILTER_SANITIZE_NUMBER_INT);
-                // master volume can't be a secondary volume
-                if ($vid == $paper->getVid()) {
+            foreach ($rawVids as $rawVid) {
+                $vid = (int) filter_var($rawVid, FILTER_SANITIZE_NUMBER_INT);
+                // skip invalid and primary volume (can't be its own secondary volume)
+                if ($vid <= 0 || $vid === (int) $paper->getVid()) {
                     continue;
                 }
                 $paper_volumes[] = new Episciences_Volume_Paper(['vid' => $vid, 'docid' => $docid]);
@@ -2910,6 +3005,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($request->isPost()) {
 
+            $oldSid = $paper->getSid();
             $sid = (int)$request->getPost('sid');
             $paper->setSid($sid);
             $paper->save();
@@ -2917,6 +3013,19 @@ class AdministratepaperController extends PaperDefaultController
                 Episciences_Paper_Logger::CODE_SECTION_SELECTION,
                 Episciences_Auth::getUid(),
                 ['sid' => $sid]);
+
+            if (defined('RVCODE')) {
+                $tagsToInvalidate = [];
+                if ($sid > 0) {
+                    $tagsToInvalidate[] = "section-articles-{$sid}-" . RVCODE;
+                }
+                if ($oldSid > 0 && $oldSid !== $sid) {
+                    $tagsToInvalidate[] = "section-articles-{$oldSid}-" . RVCODE;
+                }
+                if (!empty($tagsToInvalidate)) {
+                    \Episciences\Next\RevalidationService::enqueueTags(RVCODE, $tagsToInvalidate);
+                }
+            }
 
             // if checkbox is checked,
             if ($request->getPost('assignEditors')) {
@@ -4404,6 +4513,11 @@ class AdministratepaperController extends PaperDefaultController
                     ]);
                     $result[$docId] = $currentVolume->getName() . $htmlPosition;
                 }
+                // Fallback: the paper may have been assigned to the volume without a position
+                // entry in T_VOLUME_PAPER_POSITION yet — ensure the cell is always refreshed.
+                if (!array_key_exists($currentDocId, $result)) {
+                    $result[$currentDocId] = $currentVolume->getName();
+                }
             } else {
                 $result[$currentDocId] = $none;
             }
@@ -4528,13 +4642,14 @@ class AdministratepaperController extends PaperDefaultController
 
     /**
      * revision request (can be minor or major)
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function revisionAction(): void
     {
@@ -4543,7 +4658,7 @@ class AdministratepaperController extends PaperDefaultController
         $docId = $request->getParam('id');
         $type = $request->getParam('type');
 
-        $allowedTypes = ['minor', 'major', 'acceptedAskAuthorsFinalVersion'];
+        $allowedTypes = ['minor', 'major', Episciences_PapersManager::ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE];
 
         if (!in_array($type, $allowedTypes, true)) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti : type incorrect !");
@@ -4553,7 +4668,7 @@ class AdministratepaperController extends PaperDefaultController
 
         $isMinorRevision = ($type === 'minor');
         $isMajorRevision = ($type === 'major');
-        $isAcceptedAskAuthorsFinalVersion = ($type === 'acceptedAskAuthorsFinalVersion');
+        $isAcceptedAskAuthorsFinalVersion = ($type === Episciences_PapersManager::ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE);
 
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
@@ -4569,8 +4684,8 @@ class AdministratepaperController extends PaperDefaultController
         $this->checkPermissions($review, $paper);
 
         if ($request->isPost()) {
-
-            $csrfName = 'csrf_revision_' . $type . '_' . (int)$docId;
+            $csrfPrefix = $isAcceptedAskAuthorsFinalVersion ? '' : 'revision_';
+            $csrfName = sprintf('csrf_%s%s_%s', $csrfPrefix, $type, (int)$docId);
             $csrfSession = new Zend_Session_Namespace('Zend_Form_Element_Hash_unique_' . $csrfName);
             $post = $request->getPost();
             if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
@@ -5340,5 +5455,18 @@ class AdministratepaperController extends PaperDefaultController
 
             }
         }
+    }
+
+    /**
+     * @param string $deadline
+     * @param string $minRatingDeadlineParameter
+     * @return string
+     * @throws Exception
+     */
+
+    private function getMinEffectiveDeadlineExtension(string $deadline, string $minRatingDeadlineParameter ): string
+    {
+        return Episciences_Tools::subDateInterval($deadline,$minRatingDeadlineParameter);
+
     }
 }

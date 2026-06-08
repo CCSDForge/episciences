@@ -88,6 +88,9 @@ class Episciences_Mail_Tags
 
     public const TAG_EDITOR_SCREEN_NAME = '%%EDITOR_SCREEN_NAME%%';
     public const TAG_EDITOR_FULL_NAME = '%%EDITOR_FULL_NAME%%';
+    // COI - Conflict of Interest
+    public const TAG_COI_EDITOR_FULL_NAME = '%%COI_EDITOR_FULL_NAME%%';
+    public const TAG_COI_LAST_EDITOR_MESSAGE = '%%COI_LAST_EDITOR_MESSAGE%%';
     //git #180
     public const TAG_AUTHORS_NAMES = '%%AUTHORS_NAMES%%';
 
@@ -97,6 +100,9 @@ class Episciences_Mail_Tags
     // Présent encore dans ceux déjà personnalisés
     public const TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN = '%%RECIPIENT_USERNAME_LOST_LOGIN%%';
     public const TAG_VOLUME_NAME = '%%VOLUME_NAME%%';
+    public const TAG_VOLUME_NUMBER = '%%VOLUME_NUMBER%%';
+    public const TAG_VOLUME_YEAR = '%%VOLUME_YEAR%%';
+    public const TAG_VOLUME_TYPE = '%%VOLUME_TYPE%%';
     public const TAG_SECTION_NAME = '%%SECTION_NAME%%';
     // date d'acceptation d'un article
     public const TAG_ACCEPTANCE_DATE = '%%ACCEPTANCE_DATE%%';
@@ -176,6 +182,8 @@ class Episciences_Mail_Tags
         self::TAG_DOI => "DOI de l'article : DOI_prefix/DOI_format (e.g. : 10.46298/jdmdh.9251)",
         self::TAG_EDITOR_SCREEN_NAME => "nom d’affichage du rédacteur à l'origine de l'action (ajouter un commentaire / suggestion)",
         self::TAG_EDITOR_FULL_NAME => "nom complet du rédacteur à l'origine de l'action (ajouter un commentaire / suggestion)",
+        self::TAG_COI_EDITOR_FULL_NAME => "nom complet de l'éditeur ayant déclaré un conflit d'intérêts",
+        self::TAG_COI_LAST_EDITOR_MESSAGE => "message affiché si l'éditeur déclarant le COI était le dernier assigné",
         self::TAG_EXPIRATION_DATE => "date d'expiration de l'invitation",
         self::TAG_INVITATION_DATE => "date d'envoi de l'invitation",
         self::TAG_INVITATION_DEADLINE => "date d'expiration de l'invitation",
@@ -237,6 +245,9 @@ class Episciences_Mail_Tags
         self::TAG_VOLUME_EDITORS => "tous les rédacteurs assignés au volume de l'article (e.g. : Hartman Rodney, Daniel Bryan, Walls John)",
         self::TAG_VOLUME_ID => "identifiant du volume de l'article",
         self::TAG_VOLUME_NAME => "nom du volume de l'article",
+        self::TAG_VOLUME_NUMBER => "numéro du volume de l'article",
+        self::TAG_VOLUME_YEAR => "année du volume de l'article",
+        self::TAG_VOLUME_TYPE => "type du volume de l'article",
         self::TAG_AUTHOR_FULL_NAME => "nom d'affichage de l'auteur",
         self::TAG_AUTHOR_SCREEN_NAME => "nom d'affichage de l'auteur",
         self::TAG_EDITOR_ACTION => "action de l'éditeur (envoie/répond)",

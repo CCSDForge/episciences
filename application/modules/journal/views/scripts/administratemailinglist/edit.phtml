@@ -7,6 +7,26 @@
             <div class="panel-body" style="padding: 30px;">
                 <form method="post" class="form-horizontal">
                     <input type="hidden" name="<?php echo $this->escape($this->csrfToken['name']); ?>" value="<?php echo $this->escape($this->csrfToken['value']); ?>">
+                    <?php if ($this->list->getId()): ?>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label"><?php echo $this->escape($this->translate('Created')); ?></label>
+                        <div class="col-sm-9">
+                            <?php
+                            $createdAt = $this->list->getCreatedAt();
+                            $dtCreated = $createdAt ? \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $createdAt) : false;
+                            ?>
+                            <p class="form-control-static">
+                                <?php if ($dtCreated): ?>
+                                    <time datetime="<?php echo $this->escape($dtCreated->format('c')); ?>">
+                                        <?php echo $this->escape($dtCreated->format('d M Y, H:i')); ?>
+                                    </time>
+                                <?php else: ?>
+                                    <span class="text-muted">—</span>
+                                <?php endif; ?>
+                            </p>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                     <div class="form-group">
                         <label for="name-input" class="col-sm-3 control-label"><?php echo $this->translate('Name'); ?> <span class="text-danger" aria-hidden="true">*</span></label>
                         <div class="col-sm-9">

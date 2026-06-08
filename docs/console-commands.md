@@ -21,6 +21,7 @@ php scripts/console.php <command> --help
 | [`app:generate-users`](#appgenerate-users) | Generate random test users |
 | [`app:init-dev-users`](#appinit-dev-users) | Seed the dev journal with 30 predefined users |
 | [`app:create-bot-user`](#appcreate-bot-user) | Create the `episciences-bot` service account |
+| [`enrichment:extract-biblio-refs`](#enrichmentextract-biblio-refs) | Pre-extract bibliographic references via the Biblioref API (designed for cron) |
 | [`enrichment:citations`](#enrichmentcitations) | Enrich citation metadata from OpenCitations, OpenAlex, and Crossref |
 | [`enrichment:creators`](#enrichmentcreators) | Enrich author ORCID data from OpenAIRE Research Graph and HAL |
 | [`enrichment:licences`](#enrichmentlicences) | Enrich licence data from repository APIs |
@@ -35,9 +36,14 @@ php scripts/console.php <command> --help
 | [`zbjats:zip`](#zbjatszip) | Package PDF + zbJATS XML into a ZIP archive per volume |
 | [`import:sections`](#importsections) | Import journal sections from a CSV file |
 | [`import:volumes`](#importvolumes) | Import journal volumes from a CSV file |
+| [`import:ref-pps`](#importref-pps) | Import PPS data from a CSV file into Solr |
+| [`download:ref-pps`](#downloadref-pps) | Download the PPS CSV file from IRIT |
+| [`stats:import-logs`](#statsimport-logs) | Parse Apache access logs and insert article visits into `STAT_TEMP` |
+| [`stats:download-kpi`](#statsdownload-kpi) | Aggregate download KPIs for all published articles and write a JSON file |
 | [`stats:update-robots-list`](#statsupdate-robots-list) | Download the COUNTER Robots list for bot detection |
 | [`stats:process`](#statsprocess) | Process raw visit records from `STAT_TEMP` into `PAPER_STAT` |
 | [`geoip:update`](#geoipupdate) | Download or update the GeoLite2-City.mmdb database |
+| [`next:revalidate-cache`](#nextrevalidate-cache) | Immediately trigger Next.js cache revalidation for a journal and tag (bypasses queue) |
 
 ---
 
@@ -83,6 +89,53 @@ php scripts/console.php app:create-bot-user
 ## Enrichment
 
 All enrichment commands accept `--dry-run` (preview changes without writing to the database) and most accept `--rvcode` to restrict processing to a single journal.
+
+### `enrichment:extract-biblio-refs`
+
+Pre-extracts bibliographic references for papers by calling the Biblioref `GET /api/extract` endpoint. The API runs GROBID on the paper's PDF and caches the result server-side; already-processed papers return immediately. Skips execution entirely when `EPISCIENCES_BIBLIOREF['ENABLE']` is false.
+
+Designed to run as a cron job so that references are ready before users request them.
+
+**Prerequisites:** configure `EPISCIENCES_BIBLIOREF` in `config/pwd.json`:
+
+```json
+"EPISCIENCES": {
+  "BIBLIOREF": {
+    "URL": "https://citations.episciences.org",
+    "ENABLE": true,
+    "SSL_VERIFY": true,
+    "TOKEN": "your-bearer-token"
+  }
+}
+```
+
+```bash
+php scripts/console.php enrichment:extract-biblio-refs [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--docid <id>` | Process only this DOCID (any status) |
+| `--rvcode <code>` | Restrict processing to one journal |
+| `--dry-run` | Log what would be sent without calling the API |
+| `--published` | Also include `STATUS_PUBLISHED` papers (default: `STATUS_SUBMITTED` only) |
+| `--accepted` | Also include `STATUS_ACCEPTED` papers (default: `STATUS_SUBMITTED` only) |
+| `--api-url <url>` | Override `EPISCIENCES_BIBLIOREF[URL]` at runtime (e.g. Docker-internal address) |
+
+By default the command targets papers with `STATUS_SUBMITTED`. Use `--published` and/or `--accepted` to broaden the scope. When `--docid` is given, no status filter is applied.
+
+Each API call has a 360-second timeout (GROBID extraction can take several minutes). The command returns exit code 1 if any calls fail, so cron alerts fire on partial failures.
+
+> **Docker note:** if the script runs inside a Docker container that cannot resolve the public hostname configured in `pwd.json`, use `--api-url` to point to the Docker-internal service address:
+> ```bash
+> php scripts/console.php enrichment:extract-biblio-refs \
+>   --api-url=http://citations-php-fpm \
+>   --published
+> ```
+
+Recommended cron schedule: daily (e.g. every night at 00:30).
+
+---
 
 ### `enrichment:citations`
 
@@ -214,15 +267,21 @@ php scripts/console.php enrichment:zb-reviews [options]
 
 ### `sitemap:generate`
 
-Generates a sitemap XML file for a given journal. The `rvcode` argument is required.
+Generates a sitemap XML file for one journal or for all active journals (STATUS = 1).
+Exactly one of `--rvcode` or `--all` must be provided.
 
 ```bash
-php scripts/console.php sitemap:generate <rvcode> [options]
+# One journal
+php scripts/console.php sitemap:generate --rvcode=<code> [--pretty]
+
+# All active journals
+php scripts/console.php sitemap:generate --all [--pretty]
 ```
 
-| Argument / Option | Description |
-|-------------------|-------------|
-| `rvcode` | The RV code of the journal (required) |
+| Option | Description |
+|--------|-------------|
+| `--rvcode=<code>` | RV code of the journal to process — mutually exclusive with `--all` |
+| `--all` | Process all active journals (STATUS = 1) — mutually exclusive with `--rvcode` |
 | `--pretty` | Pretty-print the XML output |
 
 ---
@@ -316,7 +375,98 @@ php scripts/console.php import:volumes [options]
 
 ---
 
+### `import:ref-pps`
+
+Imports PPS data from a CSV file into the `ref_pps` Solr core.
+
+```bash
+php scripts/console.php import:ref-pps [csv-file]
+```
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `csv-file` | `data/ref_pps/pps-current.csv` | Path to the CSV file to import |
+
+---
+
+### `download:ref-pps`
+
+Downloads the PPS CSV file from IRIT. Includes a 48h limit check and keeps timestamped backups of previous versions.
+
+```bash
+php scripts/console.php download:ref-pps [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--force` / `-f` | Force download even if the 48h limit is not reached |
+
+---
+
 ## Statistics
+
+### `stats:import-logs`
+
+Parses Apache Combined Log Format access logs for one or all journals and bulk-inserts raw article
+visits into `STAT_TEMP`. Supports plain and `.gz`-compressed log files. Duplicate runs are skipped
+via the `STAT_PROCESSING_LOG` table (use `--force` to reprocess).
+
+> **Prerequisite:** run `src/mysql/2025-08-24-stat-processing-log-table.sql` before the first use.
+> See [docs/STATISTICS_UPDATE_README.md](./STATISTICS_UPDATE_README.md) for the full pipeline overview.
+
+```bash
+php scripts/console.php stats:import-logs [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--rvcode <code>` | Journal to process — mutually exclusive with `--all` |
+| `--all` | Process all journals with `is_new_front_switched = yes` |
+| `--date <YYYY-MM-DD>` | Single day (default: yesterday) |
+| `--month <YYYY-MM>` | Entire month |
+| `--year <YYYY>` | Entire year |
+| `--start-date <YYYY-MM-DD>` | Start of custom range (requires `--end-date`) |
+| `--end-date <YYYY-MM-DD>` | End of custom range (requires `--start-date`) |
+| `--force` | Reprocess dates already in `STAT_PROCESSING_LOG` |
+| `--logs-path <path>` | Override the base Apache log directory (default: `../logs/httpd`) |
+
+```bash
+# Via Make (recommended)
+make import-apache-logs rvcode=epiga              # yesterday's logs
+make import-apache-logs all=1                     # all journals, yesterday
+make import-apache-logs rvcode=epiga month=2025-06
+make import-apache-logs rvcode=epiga start-date=2025-06-01 end-date=2025-06-30
+make import-apache-logs rvcode=epiga force=1      # reprocess already-processed dates
+```
+
+Recommended cron schedule: daily at 01:00, before `stats:process`.
+
+---
+
+### `stats:download-kpi`
+
+Aggregates download and page-view statistics for all published papers (those with a DOI and `STATUS = 16`) and writes the result to `data/kpi_downloads.json`. The output is keyed by journal `rvcode` and includes per-year breakdowns and per-country geographic data. See [docs/kpi-downloads-format.md](./kpi-downloads-format.md) for the full JSON schema.
+
+```bash
+php scripts/console.php stats:download-kpi [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--output <path>` | Destination path for the JSON file (default: `data/kpi_downloads.json`) |
+| `--rvcode <code>` | Restrict to one journal |
+| `--pretty` | Pretty-print the JSON output |
+| `--dry-run` | Print a summary without writing any file |
+
+```bash
+# Via Make (recommended)
+make stats-download-kpi pretty=1           # all journals, pretty-printed
+make stats-download-kpi rvcode=epiga       # one journal only
+make stats-download-kpi output=/srv/kpi.json  # custom output path
+make stats-download-kpi dry-run=1          # summary only, no file written
+```
+
+---
 
 `stats:process` depends on two external data files that must be present before the first run:
 
@@ -408,3 +558,35 @@ Recommended cron schedule: daily (e.g. every day at 02:00).
 > ```
 
 > **Note:** Run `stats:update-robots-list` at least once before the first execution of `stats:process`.
+
+---
+
+## Next.js Cache Revalidation
+
+### `next:revalidate-cache`
+
+Immediately sends a revalidation request for a specific cache tag to the Next.js frontend, bypassing the async queue. Use for urgent manual invalidation or smoke testing. Requires `NEXT_BASE_URL` and a valid token to be configured in `config/pwd.json` or `data/{rvcode}/config/pwd.json`.
+
+See [docs/next-revalidation.md](./next-revalidation.md) for the full feature documentation (architecture, tag reference, cron setup, configuration).
+
+```bash
+php scripts/console.php next:revalidate-cache <rvcode> <tag>
+```
+
+| Argument | Description |
+|----------|-------------|
+| `rvcode` | Journal code (e.g. `epijinfo`) |
+| `tag` | Cache tag to invalidate (e.g. `article-42`, `news-epijinfo`, `volumes-epiga`) |
+
+Returns exit code `0` on HTTP 200, `1` otherwise.
+
+```bash
+# Invalidate the news list for epijinfo
+php scripts/console.php next:revalidate-cache epijinfo news-epijinfo
+
+# Force-refresh the article list for epiga
+php scripts/console.php next:revalidate-cache epiga articles-epiga
+
+# Invalidate a specific article
+php scripts/console.php next:revalidate-cache epijinfo article-1234
+```

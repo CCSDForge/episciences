@@ -6,7 +6,6 @@ use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -24,18 +23,30 @@ class GenerateSitemapCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setDescription('Generate a sitemap for the specified journal (rvcode).')
-            ->addArgument('rvcode', InputArgument::REQUIRED, 'The RV code for which the sitemap should be generated.')
-            ->addOption('pretty', null, InputOption::VALUE_NONE, 'Pretty-print the XML sitemap.');
+            ->setDescription('Generate a sitemap for one journal or all active journals.')
+            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'The RV code of the journal — mutually exclusive with --all.')
+            ->addOption('all',    null, InputOption::VALUE_NONE,     'Process all active journals (STATUS = 1) — mutually exclusive with --rvcode.')
+            ->addOption('pretty', null, InputOption::VALUE_NONE,     'Pretty-print the XML sitemap.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io          = new SymfonyStyle($input, $output);
-        $rvcode      = (string) $input->getArgument('rvcode');
-        $prettyPrint = (bool)   $input->getOption('pretty');
+        $rvcode      = $input->getOption('rvcode');
+        $all         = (bool) $input->getOption('all');
+        $prettyPrint = (bool) $input->getOption('pretty');
 
-        $io->title("Sitemap generation for journal: {$rvcode}");
+        if ($rvcode && $all) {
+            $io->error('--rvcode and --all are mutually exclusive.');
+            return Command::FAILURE;
+        }
+
+        if (!$rvcode && !$all) {
+            $io->error('Specify either --rvcode=CODE or --all.');
+            return Command::FAILURE;
+        }
+
+        $io->title('Sitemap generation');
         $this->bootstrap();
 
         $logger = new Logger('sitemapGeneration');
@@ -46,17 +57,38 @@ class GenerateSitemapCommand extends Command
             $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
         }
 
-        $client = new Client();
+        $rvcodes = $all ? $this->fetchActiveRvcodes($logger) : [$rvcode];
 
-        try {
-            $this->generate($rvcode, $prettyPrint, $client, $logger);
-            $io->success('Sitemap generation completed.');
+        if (empty($rvcodes)) {
+            $io->warning('No active journal found (STATUS = 1).');
             return Command::SUCCESS;
-        } catch (\Throwable $e) {
-            $logger->error('Sitemap generation failed: ' . $e->getMessage());
-            $io->error($e->getMessage());
+        }
+
+        $io->writeln(sprintf('Journals to process: %s', implode(', ', $rvcodes)));
+        $logger->info(sprintf('Journals to process: %s', implode(', ', $rvcodes)));
+
+        $client = new Client(['base_uri' => EPISCIENCES_API_URL]);
+        $failures = [];
+
+        foreach ($rvcodes as $code) {
+            $io->section("Journal: {$code}");
+            try {
+                $this->generate($code, $prettyPrint, $client, $logger);
+                $io->writeln("<info>Sitemap generated for {$code}.</info>");
+            } catch (\Throwable $e) {
+                $logger->error("Sitemap generation failed for {$code}: " . $e->getMessage());
+                $io->error("[{$code}] " . $e->getMessage());
+                $failures[] = $code;
+            }
+        }
+
+        if (!empty($failures)) {
+            $io->warning('Failed journals: ' . implode(', ', $failures));
             return Command::FAILURE;
         }
+
+        $io->success('Sitemap generation completed.');
+        return Command::SUCCESS;
     }
 
     private function generate(string $rvcode, bool $prettyPrint, Client $client, Logger $logger): void
@@ -68,9 +100,12 @@ class GenerateSitemapCommand extends Command
 
         $logger->info('Starting sitemap generation', ['rvcode' => $rvcode]);
 
+        ['rvid' => $rvid, 'languages' => $languages] = $this->fetchJournalInfo($rvcode);
+
         $entries = array_merge(
-            $this->getSitemapGenericEntries($rvcode),
-            $this->getSitemapArticleEntries($rvcode, $client, $logger)
+            $this->getSitemapGenericEntries($rvcode, $languages),
+            $this->getSitemapVolumeAndSectionEntries($rvcode, $rvid, $languages),
+            $this->getSitemapArticleEntries($rvcode, $client, $logger, $languages)
         );
 
         if (empty($entries)) {
@@ -87,13 +122,14 @@ class GenerateSitemapCommand extends Command
     /**
      * Fetch article entries from the Episciences API (paginated).
      *
+     * @param string[] $languages
      * @return array<int, array<string, mixed>>
      */
-    private function getSitemapArticleEntries(string $rvcode, Client $client, Logger $logger): array
+    private function getSitemapArticleEntries(string $rvcode, Client $client, Logger $logger, array $languages): array
     {
-        $journalBaseUrl = $rvcode . '.' . DOMAIN;
-        $url            = EPISCIENCES_API_URL . "papers/?rvcode={$rvcode}&itemsPerPage=30&pagination=true";
-        $entries        = [];
+        $base    = sprintf('https://%s.%s', $rvcode, DOMAIN);
+        $url     = EPISCIENCES_API_URL . "papers/?rvcode={$rvcode}&itemsPerPage=30&pagination=true";
+        $entries = [];
 
         try {
             do {
@@ -101,18 +137,20 @@ class GenerateSitemapCommand extends Command
                 $data     = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
 
                 foreach ($data['hydra:member'] as $paper) {
-                    $entries[] = [
-                        'loc'        => sprintf('https://%s/articles/%s', $journalBaseUrl, $paper['docid']),
-                        'lastmod'    => null,
-                        'changefreq' => 'weekly',
-                        'priority'   => '0.9',
-                    ];
+                    foreach ($this->buildLocUrls($base, '/articles/' . $paper['docid'], $languages) as $loc) {
+                        $entries[] = [
+                            'loc'        => $loc,
+                            'lastmod'    => null,
+                            'changefreq' => 'weekly',
+                            'priority'   => '0.9',
+                        ];
+                    }
                 }
 
                 $url = $data['hydra:view']['hydra:next'] ?? null;
             } while ($url !== null);
         } catch (GuzzleException $e) {
-            $logger->error('Error fetching papers from API', ['rvcode' => $rvcode, 'error' => $e->getMessage()]);
+            $logger->error('Error fetching papers from API', ['rvcode' => $rvcode, 'url' => $url, 'error' => $e->getMessage()]);
         }
 
         return $entries;
@@ -121,44 +159,96 @@ class GenerateSitemapCommand extends Command
     /**
      * Build static generic URL entries (home, articles, authors, volumes, sections, about).
      *
+     * @param string[] $languages
      * @return array<int, array<string, mixed>>
      */
-    private function getSitemapGenericEntries(string $rvcode): array
+    private function getSitemapGenericEntries(string $rvcode, array $languages): array
     {
-        $journalBaseUrl = sprintf('%s.%s', $rvcode, DOMAIN);
+        $base = sprintf('https://%s.%s', $rvcode, DOMAIN);
 
-        $createEntry = static fn(string $path, string $changefreq, string $priority): array => [
-            'loc'        => sprintf('https://%s%s', $journalBaseUrl, $path),
-            'lastmod'    => null,
-            'changefreq' => $changefreq,
-            'priority'   => $priority,
-        ];
-
-        // Keys encode the changefreq as the first underscore-delimited segment.
-        $urlCollections = [
-            'daily' => [
-                'priority' => '1',
-                'paths'    => ['/'],
-            ],
-            'daily_articles_authors' => [
-                'priority' => '0.8',
-                'paths'    => ['/articles', '/authors'],
-            ],
-            'weekly' => [
-                'priority' => '0.8',
-                'paths'    => ['/volumes', '/sections', '/about'],
-            ],
+        $specs = [
+            ['path' => '/',         'changefreq' => 'daily',  'priority' => '1'],
+            ['path' => '/articles', 'changefreq' => 'daily',  'priority' => '0.8'],
+            ['path' => '/authors',  'changefreq' => 'daily',  'priority' => '0.8'],
+            ['path' => '/volumes',  'changefreq' => 'weekly', 'priority' => '0.8'],
+            ['path' => '/sections', 'changefreq' => 'weekly', 'priority' => '0.8'],
+            ['path' => '/about',    'changefreq' => 'weekly', 'priority' => '0.8'],
         ];
 
         $entries = [];
-        foreach ($urlCollections as $key => $data) {
-            $changefreq = explode('_', $key, 2)[0];
-            foreach ($data['paths'] as $path) {
-                $entries[] = $createEntry($path, $changefreq, $data['priority']);
+        foreach ($specs as $spec) {
+            foreach ($this->buildLocUrls($base, $spec['path'], $languages) as $loc) {
+                $entries[] = [
+                    'loc'        => $loc,
+                    'lastmod'    => null,
+                    'changefreq' => $spec['changefreq'],
+                    'priority'   => $spec['priority'],
+                ];
             }
         }
 
         return $entries;
+    }
+
+    /**
+     * Build individual volume and section URL entries.
+     *
+     * @param string[] $languages
+     * @return array<int, array<string, mixed>>
+     */
+    private function getSitemapVolumeAndSectionEntries(string $rvcode, int $rvid, array $languages): array
+    {
+        $base    = sprintf('https://%s.%s', $rvcode, DOMAIN);
+        $db      = \Zend_Db_Table_Abstract::getDefaultAdapter();
+        $entries = [];
+
+        $vids = $db->fetchCol($db->select()->from(T_VOLUMES, 'VID')->where('RVID = ?', $rvid));
+        foreach ($vids as $vid) {
+            foreach ($this->buildLocUrls($base, '/volumes/' . $vid, $languages) as $loc) {
+                $entries[] = ['loc' => $loc, 'lastmod' => null, 'changefreq' => 'weekly', 'priority' => '0.8'];
+            }
+        }
+
+        $sids = $db->fetchCol($db->select()->from(T_SECTIONS, 'SID')->where('RVID = ?', $rvid));
+        foreach ($sids as $sid) {
+            foreach ($this->buildLocUrls($base, '/sections/' . $sid, $languages) as $loc) {
+                $entries[] = ['loc' => $loc, 'lastmod' => null, 'changefreq' => 'weekly', 'priority' => '0.8'];
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Resolve RVID and interface languages for a journal.
+     *
+     * @return array{rvid: int, languages: string[]}
+     */
+    private function fetchJournalInfo(string $rvcode): array
+    {
+        $review = \Episciences_ReviewsManager::findByRvcode($rvcode);
+        if (!$review) {
+            throw new \RuntimeException("Journal '{$rvcode}' not found.");
+        }
+        $rvid      = $review->getRvid();
+        $website   = new \Ccsd_Website_Common($rvid, ['sidField' => 'SID']);
+        $languages = $website->getLanguages();
+
+        return ['rvid' => $rvid, 'languages' => $languages];
+    }
+
+    /**
+     * Build one URL per language (with prefix) or a single URL (no prefix for legacy sites).
+     *
+     * @param string[] $languages
+     * @return string[]
+     */
+    private function buildLocUrls(string $base, string $path, array $languages): array
+    {
+        if (empty($languages)) {
+            return [$base . $path];
+        }
+        return array_map(static fn(string $lang) => $base . '/' . $lang . $path, $languages);
     }
 
     /**
@@ -194,6 +284,22 @@ class GenerateSitemapCommand extends Command
         } else {
             $xml->asXML($filePath);
         }
+    }
+
+    /**
+     * Return all rvcode values for active journals (STATUS = 1).
+     *
+     * @return string[]
+     */
+    private function fetchActiveRvcodes(Logger $logger): array
+    {
+        $db     = \Zend_Db_Table_Abstract::getDefaultAdapter();
+        $sql    = 'SELECT CODE FROM REVIEW WHERE STATUS = 1 ORDER BY CODE';
+        $stmt   = $db->prepare($sql);
+        $stmt->execute();
+        $codes  = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+        $logger->info(sprintf('Found %d active journal(s) (STATUS = 1).', count($codes)));
+        return $codes;
     }
 
     private function bootstrap(): void

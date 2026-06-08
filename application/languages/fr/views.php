@@ -79,6 +79,7 @@ return [
     "Episciences_Website_Navigation_Page_PrepareSubmission" => "Preparer votre soumission",
     "Episciences_Website_Navigation_Page_ForReviewers" => "Pour les relecteurs",
     "Episciences_Website_Navigation_Page_ForConferenceOrganisers" => "Pour les organisateurs de conférences",
+    "Episciences_Website_Navigation_Page_ForEditors" => "Pour les rédacteurs/rédactrices",
     "Episciences_Website_Navigation_Page_ProposingSpecialIssues" => "Proposer des numéros spéciaux",
 
     "Episciences_Website_Navigation_Page_AcceptedPapersList" => "Articles acceptés à publier",
@@ -154,6 +155,8 @@ return [
     "Are you sure you want to delete this list?" => "Êtes-vous sûr de vouloir supprimer cette liste ?",
     "Edit Mailing List" => "Modifier la liste de diffusion",
     "Create a new Mailing List" => "Créer une nouvelle liste de diffusion",
+    "Last updated" => "Dernière mise à jour",
+    "Created" => "Créée le",
     "Save" => "Enregistrer",
     "Cancel" => "Annuler",
     "Manage members for: " => "Gérer les membres pour : ",

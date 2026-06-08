@@ -263,4 +263,59 @@ class AdministratemailinglistControllerTest extends TestCase
             'manageAction() must call setStatus(0) to disable the list when it has no members'
         );
     }
+
+    // ---------------------------------------------------------------
+    // created_at / updated_at — entity contract regression guards
+    // ---------------------------------------------------------------
+
+    /**
+     * MailingList must expose getCreatedAt() and getUpdatedAt() so that
+     * controllers and views can read the timestamps populated by getList()
+     * and getById() without any additional query.
+     */
+    public function testMailingListEntityHasDateGetters(): void
+    {
+        $list = new \Episciences\MailingList\MailingList();
+
+        $this->assertTrue(
+            method_exists($list, 'getCreatedAt'),
+            'MailingList must expose getCreatedAt() to allow views to display the creation date'
+        );
+        $this->assertTrue(
+            method_exists($list, 'getUpdatedAt'),
+            'MailingList must expose getUpdatedAt() to allow views to display the last-updated date'
+        );
+    }
+
+    /**
+     * created_at and updated_at must NOT appear in toArray() — MySQL manages
+     * these columns automatically (DEFAULT / ON UPDATE / triggers). Including
+     * them in save() data would override MySQL's values on UPDATE and break
+     * the "members change → updated_at refreshed" invariant.
+     */
+    public function testMailingListToArrayExcludesDateColumns(): void
+    {
+        $list = new \Episciences\MailingList\MailingList([
+            'id'         => 1,
+            'rvid'       => 2,
+            'name'       => 'test@episciences.org',
+            'type'       => 'mailing_list_type_open',
+            'status'     => 1,
+            'created_at' => '2026-01-01 00:00:00',
+            'updated_at' => '2026-05-20 12:00:00',
+        ]);
+
+        $array = $list->toArray();
+
+        $this->assertArrayNotHasKey(
+            'created_at',
+            $array,
+            'toArray() must not include created_at — Manager::save() would then override MySQL\'s automatic timestamp'
+        );
+        $this->assertArrayNotHasKey(
+            'updated_at',
+            $array,
+            'toArray() must not include updated_at — Manager::save() would then override MySQL\'s automatic timestamp and triggers'
+        );
+    }
 }

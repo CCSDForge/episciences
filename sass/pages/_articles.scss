@@ -97,8 +97,27 @@ input#affiliations{
   margin-bottom:0.5em;
 }
 
+.biblio-ref-item--suspect {
+}
+
+// Spacing between PPS badges on a suspect reference
+.biblio-ref-item--suspect .label {
+  margin-left: 0.2em;
+  vertical-align: middle;
+}
+
+.biblio-ref-pubpeer-link {
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
 // Bootstrap panel-warning heading: default color #8a6d3b on #fcf8e3 = ~3.0:1 (fails WCAG AA 4.5:1)
 // #5c4100 on #fcf8e3 = ~8.7:1
 .panel-warning > .panel-heading {
   color: #5c4100;
+}
+
+// Offset anchor scroll for fixed navbar (navbar-fixed-top ~50px + breathing room)
+#manage-linked-data {
+  scroll-margin-top: 70px;
 }

@@ -283,4 +283,319 @@ final class Episciences_Repositories_Zenodo_HooksTest extends TestCase
             'Bug Z2 not fixed: safeDateFormat() call not found in source'
         );
     }
+
+    // =========================================================================
+    // hookFilesProcessing() — file_type via pathinfo() regression
+    // =========================================================================
+
+    /**
+     * Verify that the old explode('.', $file['key']) pattern has been replaced
+     * by pathinfo($file['key'], PATHINFO_EXTENSION).
+     *
+     * The old approach returned the wrong result for files without extensions
+     * (full filename instead of ''). pathinfo() is the canonical fix.
+     */
+    public function testFileTypeExtractedWithPathinfo(): void
+    {
+        $source = file_get_contents(
+            (new \ReflectionClass(Episciences_Repositories_Zenodo_Hooks::class))->getFileName()
+        );
+
+        self::assertStringContainsString(
+            "pathinfo(\$file['key'], PATHINFO_EXTENSION)",
+            $source,
+            "hookFilesProcessing() must use pathinfo() for file_type extraction."
+        );
+
+        self::assertStringNotContainsString(
+            "explode('.', \$file['key'])",
+            $source,
+            "Old explode() file_type extraction must have been removed."
+        );
+    }
+
+    /**
+     * pathinfo() returns only the last segment after the last dot.
+     * For 'archive.tar.gz' it returns 'gz', not 'tar' or 'tar.gz'.
+     * This mirrors the behaviour expected in hookFilesProcessing().
+     */
+    public function testPathinfoReturnsLastExtensionForMultiDot(): void
+    {
+        self::assertSame('gz', pathinfo('archive.tar.gz', PATHINFO_EXTENSION));
+    }
+
+    /**
+     * pathinfo() returns '' for a filename with no extension.
+     * The old explode() approach returned the full filename — pathinfo() fixes that.
+     */
+    public function testPathinfoReturnsEmptyStringForNoExtension(): void
+    {
+        self::assertSame('', pathinfo('README', PATHINFO_EXTENSION));
+    }
+
+    // =========================================================================
+    // hookVersion()
+    // =========================================================================
+
+    /**
+     * When the API response contains metadata.version, hookVersion() must return it.
+     */
+    public function testHookVersionFromMetadata(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'checkResponse');
+        // checkResponse needs DB (calls hookApiRecords). Test hookVersion directly.
+        // Pass 'response' already built to bypass the API call.
+        $result = Episciences_Repositories_Zenodo_Hooks::hookVersion([
+            'response' => ['metadata' => ['version' => '3']],
+        ]);
+
+        self::assertSame(['version' => '3'], $result);
+    }
+
+    /**
+     * When metadata.version is absent but previousVersion is set, use previousVersion + 1.
+     */
+    public function testHookVersionFallbackToPreviousVersionPlusOne(): void
+    {
+        $result = Episciences_Repositories_Zenodo_Hooks::hookVersion([
+            'response' => ['metadata' => []],
+            'context'  => ['previousVersion' => 2],
+        ]);
+
+        self::assertSame(['version' => 3], $result);
+    }
+
+    /**
+     * When neither metadata.version nor previousVersion is set, hookVersion() returns [].
+     */
+    public function testHookVersionReturnsEmptyWhenNoVersionInfo(): void
+    {
+        $result = Episciences_Repositories_Zenodo_Hooks::hookVersion([
+            'response' => ['metadata' => []],
+        ]);
+
+        self::assertSame([], $result);
+    }
+
+    // =========================================================================
+    // hookIsOpenAccessRight()
+    // =========================================================================
+
+    public function testHookIsOpenAccessRightOpenAccess(): void
+    {
+        $record = '<metadata><dc:rights>info:eu-repo/semantics/openAccess</dc:rights></metadata>';
+        $result = Episciences_Repositories_Zenodo_Hooks::hookIsOpenAccessRight(['record' => $record]);
+
+        self::assertSame(['isOpenAccessRight' => true], $result);
+    }
+
+    public function testHookIsOpenAccessRightClosedAccess(): void
+    {
+        $record = '<metadata><dc:rights>info:eu-repo/semantics/closedAccess</dc:rights></metadata>';
+        $result = Episciences_Repositories_Zenodo_Hooks::hookIsOpenAccessRight(['record' => $record]);
+
+        self::assertSame(['isOpenAccessRight' => false], $result);
+    }
+
+    // =========================================================================
+    // enrichmentProcessCreators() — edge cases
+    // =========================================================================
+
+    /**
+     * Creator with an empty 'name' string must be silently skipped.
+     */
+    public function testEnrichmentProcessCreatorsSkipsEmptyName(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'enrichmentProcessCreators'
+        );
+        $method->setAccessible(true);
+
+        $creators = [['name' => '']];
+
+        [$creatorsDc, $authors] = $method->invoke(null, $creators, [], []);
+
+        self::assertSame([], $creatorsDc);
+        self::assertSame([], $authors);
+    }
+
+    /**
+     * Multiple creators are all added; creatorsDc receives all names.
+     */
+    public function testEnrichmentProcessCreatorsMultipleCreators(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'enrichmentProcessCreators'
+        );
+        $method->setAccessible(true);
+
+        $creators = [
+            ['name' => 'Dupont, Alice'],
+            ['name' => 'Martin, Bob'],
+        ];
+
+        [$creatorsDc, $authors] = $method->invoke(null, $creators, [], []);
+
+        self::assertCount(2, $creatorsDc);
+        self::assertCount(2, $authors);
+        self::assertContains('Dupont, Alice', $creatorsDc);
+        self::assertContains('Martin, Bob', $creatorsDc);
+    }
+
+    // =========================================================================
+    // extractDescriptions() — private, tested via ReflectionMethod
+    // =========================================================================
+
+    /**
+     * extractDescriptions() falls back to the document language when a description
+     * node has no xml:lang attribute.
+     */
+    public function testExtractDescriptionsFallbackLanguage(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'extractDescriptions'
+        );
+        $method->setAccessible(true);
+
+        $xmlStr = <<<'XML'
+<?xml version="1.0"?>
+<root xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:descriptions>
+        <datacite:description descriptionType="Abstract">Simple abstract</datacite:description>
+    </datacite:descriptions>
+</root>
+XML;
+        $metadata = simplexml_load_string($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = $method->invoke(null, $metadata, 'fr');
+
+        self::assertNotEmpty($result);
+        self::assertSame('Simple abstract', $result[0]['value']);
+        self::assertSame('fr', $result[0]['language']);
+    }
+
+    /**
+     * extractDescriptions() filters out descriptions with empty/whitespace-only content.
+     */
+    public function testExtractDescriptionsFiltersEmpty(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'extractDescriptions'
+        );
+        $method->setAccessible(true);
+
+        $xmlStr = <<<'XML'
+<?xml version="1.0"?>
+<root xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:descriptions>
+        <datacite:description descriptionType="Abstract"></datacite:description>
+        <datacite:description descriptionType="Abstract" xml:lang="en">Real content</datacite:description>
+    </datacite:descriptions>
+</root>
+XML;
+        $metadata = simplexml_load_string($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = $method->invoke(null, $metadata, 'en');
+
+        self::assertCount(1, $result);
+        self::assertSame('Real content', $result[0]['value']);
+    }
+
+    // =========================================================================
+    // Bug Z4/Z5: enrichmentProcess() with missing/empty metadata — no crash
+    // =========================================================================
+
+    /**
+     * Bug Z4 (fixed): enrichmentProcess() used to crash with
+     * "Undefined array key 'metadata'" when $data has no 'metadata' key.
+     * After fix ($data['metadata'] ?? []), it must complete without error.
+     *
+     * Bug Z5 (fixed): mb_strtolower(null) when $type is empty was a PHP 8.1
+     * deprecation. After fix (?? ''), it must produce '' cleanly.
+     */
+    public function testEnrichmentProcessWithoutMetadataKeyDoesNotCrash(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'enrichmentProcess'
+        );
+        $method->setAccessible(true);
+
+        // Non-empty data but no 'metadata' key
+        $data = [
+            'doi_url' => 'https://doi.org/10.5281/zenodo.12345',
+            'created' => '2024-01-15T10:00:00',
+        ];
+
+        $method->invokeArgs(null, [&$data]);
+
+        // Must reach here without exception; TO_COMPILE_OAI_DC should be set
+        self::assertIsArray($data);
+    }
+
+    /**
+     * Bug Z5 (fixed): when metadata has no resource_type / upload_type / publication_type,
+     * mb_strtolower(null) must not happen. The dcType must default to empty string ''.
+     */
+    public function testEnrichmentProcessWithEmptyTypeDoesNotCrash(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'enrichmentProcess'
+        );
+        $method->setAccessible(true);
+
+        $data = [
+            'doi_url'  => 'https://doi.org/10.5281/zenodo.99999',
+            'metadata' => [
+                'title'   => 'Test without type',
+                'creators' => [],
+            ],
+        ];
+
+        // Must not emit a PHP 8.1 deprecation for mb_strtolower(null)
+        $method->invokeArgs(null, [&$data]);
+
+        self::assertIsArray($data);
+        self::assertArrayHasKey(Episciences_Repositories_Common::TO_COMPILE_OAI_DC, $data);
+    }
+
+    /**
+     * enrichmentProcess() with a minimal valid metadata block correctly populates
+     * TO_COMPILE_OAI_DC with title and body.
+     */
+    public function testEnrichmentProcessPopulatesOaiDc(): void
+    {
+        $method = new ReflectionMethod(
+            Episciences_Repositories_Zenodo_Hooks::class,
+            'enrichmentProcess'
+        );
+        $method->setAccessible(true);
+
+        $data = [
+            'doi_url'  => 'https://doi.org/10.5281/zenodo.123',
+            'modified' => '2024-06-01T00:00:00',
+            'metadata' => [
+                'title'       => 'My Article',
+                'upload_type' => 'publication',
+                'creators'    => [
+                    ['name' => 'Doe, Jane'],
+                ],
+                'language' => 'en',
+                'keywords' => ['science', 'data'],
+            ],
+        ];
+
+        $method->invokeArgs(null, [&$data]);
+
+        self::assertArrayHasKey(Episciences_Repositories_Common::TO_COMPILE_OAI_DC, $data);
+        $body = $data[Episciences_Repositories_Common::TO_COMPILE_OAI_DC]['body'] ?? [];
+        self::assertSame('My Article', $body['title'] ?? '');
+    }
 }

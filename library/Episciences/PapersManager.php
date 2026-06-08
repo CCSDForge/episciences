@@ -7,6 +7,7 @@ class Episciences_PapersManager
 
     public const NONE_FILTER = '0';
     public const WITH_FILTER = '-1';
+    public const ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE = 'acceptedAskAuthorsFinalVersion';
 
     /**
      * @return array
@@ -76,18 +77,53 @@ class Episciences_PapersManager
 
         // order
         if (array_key_exists('order', $settings)) {
-            if (is_array($settings['order'])) {
-                foreach ($settings['order'] as $value) {
-                    $select->order(strtoupper($value));
-                }
-            } else {
-                $select->order(strtoupper($settings['order']));
+            $orders = is_array($settings['order']) ? $settings['order'] : [$settings['order']];
+            foreach ($orders as $value) {
+                $select = self::applyOrderExpression($select, $value);
             }
         } else {
             $select->order('WHEN DESC');
         }
 
         return $select;
+    }
+
+    private static function applyOrderExpression(Zend_Db_Select $select, string $value): Zend_Db_Select
+    {
+        $parts = preg_split('/\s+/', trim($value), 2);
+        $col = strtoupper($parts[0]);
+        $dir = isset($parts[1]) && strtoupper($parts[1]) === 'DESC' ? 'DESC' : 'ASC';
+
+        return match ($col) {
+            'CONTRIBUTOR_SORT' => $select
+                ->joinLeft(['sort_contributor' => T_USERS], 'papers.UID = sort_contributor.UID', [])
+                ->order("sort_contributor.SCREEN_NAME $dir"),
+            'REVIEWER_SORT'   => self::applyAssignmentSortJoin($select, 'reviewer', $dir),
+            'EDITOR_SORT'     => self::applyAssignmentSortJoin($select, 'editor', $dir),
+            'COPYEDITOR_SORT' => self::applyAssignmentSortJoin($select, 'copyeditor', $dir),
+            default           => $select->order("$col $dir"),
+        };
+    }
+
+    private static function applyAssignmentSortJoin(Zend_Db_Select $select, string $role, string $dir): Zend_Db_Select
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $alias = 'sort_' . $role;
+
+        $subQuery = $db->select()
+            ->from(
+                ['ua' => T_ASSIGNMENTS],
+                ['ITEMID', 'sort_name' => new Zend_Db_Expr('MIN(u.SCREEN_NAME)')]
+            )
+            ->join(['u' => T_USERS], 'ua.UID = u.UID', [])
+            ->where('ua.ITEM = ?', 'paper')
+            ->where('ua.ROLEID = ?', $role)
+            ->where('ua.RVID = ?', RVID)
+            ->where('ua.STATUS != ?', Episciences_User_Assignment::STATUS_INACTIVE)
+            ->group('ua.ITEMID');
+
+        $select->joinLeft([$alias => $subQuery], "papers.DOCID = {$alias}.ITEMID", []);
+        return $select->order("{$alias}.sort_name $dir");
     }
 
     /**
@@ -2816,6 +2852,9 @@ class Episciences_PapersManager
                     Episciences_Mail_Tags::TAG_DOI => $doi ?: $translator->translate('Aucun', $locale),
                     Episciences_Mail_Tags::TAG_VOLUME_ID => $volumeId,
                     Episciences_Mail_Tags::TAG_VOLUME_NAME => $volumeName,
+                    Episciences_Mail_Tags::TAG_VOLUME_NUMBER => $volume?->getVol_num() ?: $translator->translate('Aucun', $locale),
+                    Episciences_Mail_Tags::TAG_VOLUME_YEAR => $volume?->getVol_year() ?: $translator->translate('Aucune', $locale),
+                    Episciences_Mail_Tags::TAG_VOLUME_TYPE => $volume?->getVol_type() ?: $translator->translate('Aucun', $locale),
                     Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF => $volBiblioRef,
                     Episciences_Mail_Tags::TAG_SECTION_ID => $paper->getSid(),
                     Episciences_Mail_Tags::TAG_SECTION_NAME => $sectionName,
@@ -3234,6 +3273,13 @@ class Episciences_PapersManager
             'class' => 'form-horizontal',
             'id' => $formElementId,
         ]);
+
+        $id = $default['id'] ?? 0;
+        $csrfName = sprintf('csrf_%s_%s', $prefix,(int)$id);
+        $form->addElement('hash', $csrfName, ['salt' => 'unique']);
+        $form->getElement($csrfName)->setTimeout(3600);
+
+
         $subjectStr = 'Subject';
         $messageStr = 'Message';
 
@@ -3290,20 +3336,30 @@ class Episciences_PapersManager
             'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>']);
 
         if ($displayDeadlineElement) {
+
+            $review = Episciences_ReviewsManager::find(RVID);
+            $isRequiredRevisionDeadline = (bool)$review->getSetting(Episciences_Review::SETTING_TO_REQUIRE_REVISION_DEADLINE);
+
             $subjectStr = '-revision-subject'; // see /public/js/administratepaper/view.js
             $messageStr = '-revision-message';
             $minDate = date('Y-m-d');
             $maxDate = Episciences_Tools::addDateInterval($minDate, Episciences_Review::DEFAULT_REVISION_DEADLINE_MAX);
 
-            $form->addElement('date', $prefix . '-revision-deadline', [
-                'id' => $prefix . '-revision-deadline',
-                'label' => 'Date limite de réponse',
-                'class' => 'form-control',
-                'pattern' => '[A-Za-z]{3}',
-                'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Optionnelle'),
-                'attr-mindate' => $minDate,
-                'attr-maxdate' => $maxDate
-            ]);
+            $deadlineFieldOptions = [
+                    'id' => $prefix . '-revision-deadline',
+                    'label' => 'Date limite de réponse',
+                    'class' => 'form-control',
+                    'pattern' => '[A-Za-z]{3}',
+                    'placeholder' => !$isRequiredRevisionDeadline ? Zend_Registry::get('Zend_Translate')->translate('Optionnelle') : Zend_Registry::get('Zend_Translate')->translate('Veuillez préciser une date limite'),
+                    'attr-mindate' => $minDate,
+                    'attr-maxdate' => $maxDate
+            ];
+
+            if ($isRequiredRevisionDeadline) {
+                $deadlineFieldOptions['required'] = true;
+            }
+
+            $form->addElement('date', $prefix . '-revision-deadline', $deadlineFieldOptions );
 
         }
 
@@ -3389,7 +3445,7 @@ class Episciences_PapersManager
      */
     public static function getAcceptedAskAuthorFinalVersionForm(array $default): \Zend_Form
     {
-        $type = 'acceptedAskAuthorsFinalVersion';
+        $type = self::ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE;
         $formId = $type . '-form';
         $formAction = '/administratepaper/acceptedaskauhorfinalversion/id/' . $default['id'] . '/type/' . $type;
         $form = self::getModalPaperStatusCommonForm($default, $type, $formId, true);
@@ -4315,78 +4371,69 @@ class Episciences_PapersManager
      * @param int $paperId
      * @param int $affectedRows
      * @return int
-     * @throws JsonException
-     * @throws \Psr\Cache\InvalidArgumentException
      */
     private static function updateRecordDataCallOpenAireTools(array|string $doiTrim, int $paperId, int $affectedRows): int
     {
-// CHECK IF FILE EXIST TO KNOW IF WE CALL OPENAIRE OR NOT
-        // BUT BEFORE CHECK GLOBAL CACHE
-        Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);
-        ///////////////////////////////////////////////////////////////////////////////////////////////////
-        $setsGlobalOARG = Episciences_OpenAireResearchGraphTools::getsGlobalOARGCache($doiTrim);
-        list($cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator) = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
+        $oaClient = \Episciences\Api\OpenAireApiClient::create();
+        $response = $oaClient->fetchPublication($doiTrim, $paperId);
 
-        if ($setsGlobalOARG->isHit() && !$setsOpenAireCreator->isHit()) {
-            //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
-            // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
-            try {
-                $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                Episciences_OpenAireResearchGraphTools::putCreatorInCache($decodeOpenAireResp, $doiTrim);
-                Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
-            } catch (JsonException $e) {
-
-                $eMsg = $e->getMessage() . " for PAPER " . $paperId . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json ';
-                // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
-                Episciences_OpenAireResearchGraphTools::logErrorMsg($eMsg);
-                $setsOpenAireCreator->set(json_encode([""]));
-                $cacheCreator->save($setsOpenAireCreator);
-            }
+        if ($response === null) {
+            // Network or API error — nothing was cached; skip enrichment for this paper.
+            return $affectedRows;
         }
 
-        //we need to refresh cache creator to get the new file
-        ////// CACHE CREATOR ONLY
-        [$cacheCreator, $pathOpenAireCreator, $setsOpenAireCreator] = Episciences_OpenAireResearchGraphTools::getCreatorCacheOA($doiTrim);
-
-        $affectedRows += Episciences_OpenAireResearchGraphTools::insertOrcidAuthorFromOARG($setsOpenAireCreator, $paperId);
-
-        ////////Funding OA and HAL
-        list($cacheFundingOA, $pathOpenAireFunding, $setOAFunding) = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
-
-        if ($setsGlobalOARG->isHit() && !$setOAFunding->isHit()) {
-            // WE PUT EMPTY ARRAY IF RESPONSE IS NOT OK
-            try {
-                $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-                Episciences_OpenAireResearchGraphTools::putFundingsInCache($decodeOpenAireResp, $doiTrim);
-                //create cache with the global cache of OpenAire Research Graph created or not before -> ("checkOpenAireGlobalInfoByDoi")
-                Episciences_OpenAireResearchGraphTools::logErrorMsg('Create Cache from Global openAireResearchGraph cache file for ' . $doiTrim);
-
-            } catch (JsonException $e) {
-                // OPENAIRE CAN RETURN MALFORMED JSON SO WE LOG URL OPENAIRE
-                Episciences_OpenAireResearchGraphTools::logErrorMsg($e->getMessage() . ' URL called https://api.openaire.eu/search/publications/?doi=' . $doiTrim . '&format=json');
-                $setOAFunding->set(json_encode([""]));
-                $cacheFundingOA->save($setOAFunding);
-            }
+        // --- Creator / ORCID enrichment ---
+        [, , $creatorItem] = $oaClient->getCreatorCacheItem($doiTrim);
+        if (!$creatorItem->isHit()) {
+            $oaClient->putCreatorInCache($response, $doiTrim);
+            [, , $creatorItem] = $oaClient->getCreatorCacheItem($doiTrim);
         }
-        try {
-            [$cacheFundingOA, $pathOpenAireFunding, $setOAFunding] = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
-        } catch (\Psr\Cache\InvalidArgumentException $e) {
-            trigger_error($e->getMessage());
+        $affectedRows += $oaClient->insertOrcidAuthorFromCache($creatorItem, $paperId);
+
+        // --- Funding enrichment ---
+        [, , $fundingItem] = $oaClient->getFundingCacheItem($doiTrim);
+        if (!$fundingItem->isHit()) {
+            $oaClient->putFundingInCache($response, $doiTrim);
+            [, , $fundingItem] = $oaClient->getFundingCacheItem($doiTrim);
         }
 
         try {
-            $fileFound = $setOAFunding->get() ? json_decode($setOAFunding->get(), true, 512, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) : null;
-        } catch (JsonException $jsonException) {
-            Episciences_OpenAireResearchGraphTools::logErrorMsg(sprintf('Error Code %s / Error Message %s', $jsonException->getCode(), $jsonException->getMessage()));
+            $fileFound = $fundingItem->get()
+                ? json_decode(
+                    $fundingItem->get(),
+                    true,
+                    512,
+                    JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+                )
+                : null;
+        } catch (JsonException $e) {
+            error_log(sprintf(
+                'OpenAIRE funding JSON decode error for paper %d: %s',
+                $paperId,
+                $e->getMessage()
+            ));
+            return $affectedRows;
         }
 
-        $globalfundingArray = [];
         if (!empty($fileFound[0])) {
-            $fundingArray = [];
-            $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB($fileFound, $fundingArray, $globalfundingArray);
-            $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, Episciences_Repositories::GRAPH_OPENAIRE_ID);
-            $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA($globalfundingArray, $rowInDBGraph, $paperId);
+            $fundingArray       = [];
+            $globalfundingArray = [];
+            $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB(
+                $fileFound,
+                $fundingArray,
+                $globalfundingArray
+            );
+            $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId(
+                $paperId,
+                (int) Episciences_Repositories::GRAPH_OPENAIRE_ID
+            );
+            $affectedRows += Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA(
+                $globalfundingArray,
+                $rowInDBGraph,
+                $paperId
+            );
         }
+
         return $affectedRows;
     }
 

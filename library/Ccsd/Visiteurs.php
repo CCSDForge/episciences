@@ -274,6 +274,13 @@ class Ccsd_Visiteurs
 
     public function __construct($ip = null, $ua = null)
     {
+        trigger_error(
+            '[DEAD CODE AUDIT 2026-05-08] ' . __CLASS__ . ' is scheduled for removal.'
+            . ' Do NOT use this class in new code. If this message appears in production logs,'
+            . ' report it to the development team immediately.',
+            E_USER_DEPRECATED
+        );
+
         if ($ip != null && (is_int($ip) || filter_var($ip, FILTER_VALIDATE_IP))) {
             $this->_ip = $ip;
         }

@@ -146,4 +146,148 @@ class Episciences_ReviewsManagerTest extends TestCase
         self::assertArrayHasKey('rvcode_myjournal', $cache);
         self::assertArrayHasKey('rvcode_myjournal_enabled', $cache);
     }
+
+    public function testFindByRvidAlsoCachesRvcode(): void
+    {
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = new Episciences_ReviewsManager_CacheTestAdapter([
+            'RVID' => 8,
+            'CODE' => 'demo',
+            'NAME' => 'Demo',
+            'STATUS' => Episciences_Review::ENABLED,
+        ]);
+
+        try {
+            Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+
+            $review = Episciences_ReviewsManager::findByRvid(8);
+            $sameReview = Episciences_ReviewsManager::findByRvcode('demo');
+
+            self::assertInstanceOf(Episciences_Review::class, $review);
+            self::assertSame($review, $sameReview);
+            self::assertSame(1, $adapter->fetchRowCount);
+
+            $cache = $this->getCache();
+            self::assertSame($review, $cache['rvid_8']);
+            self::assertSame($review, $cache['rvcode_demo']);
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
+    }
+
+    public function testFindByRvcodeAlsoCachesRvid(): void
+    {
+        $previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $adapter = new Episciences_ReviewsManager_CacheTestAdapter([
+            'RVID' => 8,
+            'CODE' => 'demo',
+            'NAME' => 'Demo',
+            'STATUS' => Episciences_Review::ENABLED,
+        ]);
+
+        try {
+            Zend_Db_Table_Abstract::setDefaultAdapter($adapter);
+
+            $review = Episciences_ReviewsManager::findByRvcode('demo');
+            $sameReview = Episciences_ReviewsManager::findByRvid(8);
+
+            self::assertInstanceOf(Episciences_Review::class, $review);
+            self::assertSame($review, $sameReview);
+            self::assertSame(1, $adapter->fetchRowCount);
+
+            $cache = $this->getCache();
+            self::assertSame($review, $cache['rvcode_demo']);
+            self::assertSame($review, $cache['rvid_8']);
+        } finally {
+            Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
+        }
+    }
+
+    private function getCache(): array
+    {
+        $prop = new ReflectionProperty(Episciences_ReviewsManager::class, '_cache');
+        $prop->setAccessible(true);
+        return $prop->getValue(null);
+    }
+}
+
+final class Episciences_ReviewsManager_CacheTestAdapter extends Zend_Db_Adapter_Abstract
+{
+    public int $fetchRowCount = 0;
+
+    public function __construct(private readonly array $row)
+    {
+        parent::__construct(['dbname' => 'test', 'password' => '', 'username' => 'test']);
+    }
+
+    public function fetchRow($sql, $bind = [], $fetchMode = null)
+    {
+        ++$this->fetchRowCount;
+        return $this->row;
+    }
+
+    public function listTables()
+    {
+        return [];
+    }
+
+    public function describeTable($tableName, $schemaName = null)
+    {
+        return [];
+    }
+
+    protected function _connect()
+    {
+    }
+
+    public function isConnected()
+    {
+        return true;
+    }
+
+    public function closeConnection()
+    {
+    }
+
+    public function prepare($sql)
+    {
+        return null;
+    }
+
+    public function lastInsertId($tableName = null, $primaryKey = null)
+    {
+        return null;
+    }
+
+    protected function _beginTransaction()
+    {
+    }
+
+    protected function _commit()
+    {
+    }
+
+    protected function _rollBack()
+    {
+    }
+
+    public function setFetchMode($mode)
+    {
+        $this->_fetchMode = $mode;
+    }
+
+    public function limit($sql, $count, $offset = 0)
+    {
+        return $sql;
+    }
+
+    public function supportsParameters($type)
+    {
+        return false;
+    }
+
+    public function getServerVersion()
+    {
+        return 'test';
+    }
 }

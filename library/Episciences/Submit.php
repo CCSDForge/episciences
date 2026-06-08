@@ -18,6 +18,8 @@ class Episciences_Submit
     public const DD_FILE_ELEMENT_NAME = 'file_data_descriptor';
     public const DD_PREVIOUS_VERSION_STR = 'previous_dataset_version_number';
     protected $_db = null;
+    public const POSTED_VOLUME_KEY = 'volumes';
+    public const POSTED_SECTION_KEY = 'sections';
 
     public function __construct()
     {
@@ -802,6 +804,12 @@ class Episciences_Submit
 
         if ($isNewVersionOf) {
             $oldPaper = Episciences_PapersManager::partialGet((int)$latestObsoleteDocId, $rvId);
+
+            if ($oldPaper->isTmp()) {
+                $previousVersions = $oldPaper->getPreviousVersions(false, false);
+                $oldPaper = $previousVersions[array_key_first($previousVersions)];
+            }
+
         }
 
         $id = self::cleanIdentifier($id, $repoId);
@@ -815,11 +823,18 @@ class Episciences_Submit
             ]);
 
             if (!empty($hookApiRecord)) {
-                $hookVersion = Episciences_Repositories::callHook('hookVersion', [
+
+                $parms = [
                     'identifier' => $id,
                     'repoId' => $repoId,
                     'response' => $hookApiRecord,
-                ]);
+                ];
+
+                if ($isNewVersionOf) {
+                    self::addContext($oldPaper, $parms);
+                }
+
+                $hookVersion = Episciences_Repositories::callHook('hookVersion', $parms);
             }
 
             if (isset($hookVersion['version'])) {
@@ -855,7 +870,7 @@ class Episciences_Submit
                 $paper->setVersion(null);
             }
 
-            $docId = $paper->alreadyExists();
+            $docId = $paper->findExistingDocId();
 
             if ($docId) {
                 $oldPaper = Episciences_PapersManager::partialGet($docId, $rvId);
@@ -865,7 +880,7 @@ class Episciences_Submit
             self::assertDateTimeVersion($docId, $oldPaper, $result, $isNewVersionOf);
             $paper->setVersion($result['hookVersion']);
             self::assertNewVersionConsistency($oldPaper, $paper);
-            self::assertDspaceVersion($docId, $oldPaper, $result);
+            self::assertVersion($docId, $oldPaper, $result, $isNewVersionOf);
 
             $result['status'] = $result['status'] ?? ($docId ? 2 : 1);
 
@@ -939,25 +954,26 @@ class Episciences_Submit
      * @param $docId
      * @param Episciences_Paper|null $previousPaper
      * @param array $result
+     * @param bool $isNewVersion
      * @return void
-     * @throws Ccsd_Error
      */
 
-    private static function assertDspaceVersion(&$docId, ?Episciences_Paper $previousPaper, array $result): void
+    private static function assertVersion(&$docId, ?Episciences_Paper $previousPaper, array &$result, bool $isNewVersion): void
     {
 
+        if (!$previousPaper) {
+            return;
+        }
+
         if (
-            !$previousPaper ||
-            !Episciences_Repositories::isDspace($previousPaper->getRepoid())) {
+            $isNewVersion &&
+            $previousPaper->getVersion() < $result['hookVersion']) {
+            $docId = null; // confirm check
             return;
         }
 
-        if ($previousPaper->getVersion() < $result['hookVersion']) {
-            $docId = null;
-            return;
-        }
+        $result['status'] = 2; // force error handling :  replace the current version if necessary
 
-        self::handleError();
     }
 
     /**
@@ -1155,7 +1171,6 @@ class Episciences_Submit
      * @param Episciences_Paper|null $oldPaper
      * @param Episciences_Paper $submissionInProgress
      * @throws Ccsd_Error
-     * @throws Zend_Db_Statement_Exception
      */
     private static function assertNewVersionConsistency(
         ?Episciences_Paper $oldPaper,
@@ -1168,17 +1183,12 @@ class Episciences_Submit
 
         $conceptChanged = $submissionInProgress->getConcept_identifier() !== $oldPaper->getConcept_identifier();
         $noOldConcept = !$oldPaper->getConcept_identifier();
+        $identifierChanged = $oldPaper->getIdentifier() !== $submissionInProgress->getIdentifier();
 
-        $originalIdentifier = $oldPaper->getIdentifier();
-
-        if ($oldPaper->isTmp()) {
-            $firstPaper = Episciences_PapersManager::get($oldPaper->getPaperid(), false);
-            $originalIdentifier = $firstPaper->getIdentifier();
-        }
-
-        $identifierChanged = $noOldConcept && ($originalIdentifier !== $submissionInProgress->getIdentifier());
-
-        if ($conceptChanged || $identifierChanged) {
+        if (
+            $conceptChanged ||
+            ($noOldConcept && $identifierChanged)
+        ) {
             self::handleError();
         }
     }
@@ -1389,7 +1399,7 @@ class Episciences_Submit
     private function paperAlreadyExists(array $paperData): bool
     {
         $paper = $this->createPaperInstance($paperData);
-        return (bool)$paper->alreadyExists();
+        return $paper->alreadyExists();
     }
 
     /**
@@ -1467,16 +1477,18 @@ class Episciences_Submit
         $result = ['code' => 1, 'message' => '', 'docId' => (int)$paper->getDocid()];
 
         $this->initializePaperAfterSave($paper, Ccsd_Tools::ifsetor($data['can_replace'], false));
-        $this->logPaperAction($paper, $data);
-        $this->cleanupOldData($paper, $data);
-        $this->processRepositoryHooks($paper, $enrichment);
-        $this->handlePostSaveProcessing($paper, $enrichment);
-
         $this->processCoverLetterAndDataDescriptor($paper, $data);
         $this->saveAllAuthorSuggestions($data, $result);
 
         $recipients = $this->handleNotifications($paper, $data);
         $this->sendNotifications($paper, $recipients, $data);
+        $this->logPaperAction($paper, $data);
+
+        // Enrichments
+        $this->cleanupOldData($paper, $data);
+        $this->processRepositoryHooks($paper, $enrichment);
+        $this->handlePostSaveProcessing($paper, $enrichment);
+
 
         $result['message'] = '<strong>' . $this->translate('Votre article a bien été enregistré.') . '</strong>';
         return $result;
@@ -1617,7 +1629,7 @@ class Episciences_Submit
 
         if (!$canReplace) {
             $suggestedEditors = $this->getSuggestedEditorsFromPost($data);
-            return $this->assignEditors($paper, $suggestedEditors, $data['SID'] ?? null, $data['VID'] ?? null);
+            return $this->assignEditors($paper, $suggestedEditors, $data[self::POSTED_SECTION_KEY] ?? null, $data[self::POSTED_VOLUME_KEY] ?? null);
         }
 
         return $paper->getEditors(true, true);
@@ -1739,12 +1751,12 @@ class Episciences_Submit
      * Assigne automatiquement les rédacteurs à un article (git #43), selon les paramètres de la revue
      * @param Episciences_Paper $paper
      * @param array $suggestEditors : editeurs suggérés par l'auteur,
-     * @param int|null $sid : l'ID de la rubrique; Null par defaut
-     * @param int|null $vid : l'ID du volume; Null par defaut
+     * @param int|string|null $sid : l'ID de la rubrique; Null par defaut
+     * @param int|string|null $vid : l'ID du volume; Null par defaut
      * @return array : les Editeurs assignés à l'articles
      * @throws Zend_Db_Statement_Exception
      */
-    private function assignEditors(Episciences_Paper $paper, array $suggestEditors = [], ?int $sid = null, ?int $vid = null): array
+    private function assignEditors(Episciences_Paper $paper, array $suggestEditors = [], int|string|null $sid = null, int|string|null $vid = null): array
     {
         /** @var Episciences_Review $review */
         $review = Episciences_ReviewsManager::find(RVID);
@@ -2055,16 +2067,18 @@ class Episciences_Submit
                 $adminTags[Episciences_Mail_Tags::TAG_REFUSED_ARTICLE_MESSAGE] = $message;
             }
 
-            $vTag = !$volume ? $translator->translate('Hors volume', $locale) : $volume->getName($locale);
-            $sTag = !$section ? $translator->translate('Hors rubrique', $locale) : $section->getName($locale);
+            // default translations
+            $noneFemale = $translator->translate('Aucune', $locale);
+            $noneMale   = $translator->translate('Aucun', $locale);
+            $outOfVol   = $translator->translate('Hors volume', $locale);
+            $outOfSec   = $translator->translate('Hors rubrique', $locale);
+
+            $adminTags = array_merge($adminTags, self::resolveVolumeAndSectionTags($volume, $section, $locale, $noneFemale, $noneMale, $outOfVol, $outOfSec));
 
             $adminTags [Episciences_Mail_Tags::TAG_SENDER_EMAIL] = Episciences_Auth::getEmail();
             $adminTags [Episciences_Mail_Tags::TAG_SENDER_FULL_NAME] = Episciences_Auth::getFullName();
             $adminTags [Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
             $adminTags [Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($locale);
-            $adminTags [Episciences_Mail_Tags::TAG_VOLUME_NAME] = $vTag;
-            $adminTags [Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF] = ($volume && $volume->getBib_reference()) ?: $translator->translate('Aucune', $locale);
-            $adminTags [Episciences_Mail_Tags::TAG_SECTION_NAME] = $sTag;
 
             if (!$canReplace) { // new submission only
                 $rTag = $recipient instanceof Episciences_Editor ? $recipient->getTag() : null;
@@ -2079,6 +2093,46 @@ class Episciences_Submit
 
             Episciences_Mail_Send::sendMailFromReview($recipient, $templateKey, $adminTags, $paper);
         }
+    }
+
+    /**
+     * Resolves volume and section mail tags from their respective objects.
+     * Accepts false/null for $volume and $section (ZF1 find() returns false when not found).
+     *
+     * @param Episciences_Volume|bool|null    $volume
+     * @param Episciences_Section|bool|null   $section
+     * @return array<string, string|int>
+     */
+    private static function resolveVolumeAndSectionTags(
+        mixed $volume,
+        mixed $section,
+        string $locale,
+        string $noneFemale,
+        string $noneMale,
+        string $outOfVol,
+        string $outOfSection
+    ): array {
+        $sName = !$section ? $outOfSection : $section->getName($locale);
+
+        if (!$volume) {
+            return [
+                Episciences_Mail_Tags::TAG_VOLUME_NAME    => $outOfVol,
+                Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF => $noneFemale,
+                Episciences_Mail_Tags::TAG_VOLUME_YEAR    => $noneFemale,
+                Episciences_Mail_Tags::TAG_VOLUME_NUMBER  => $noneMale,
+                Episciences_Mail_Tags::TAG_VOLUME_TYPE    => $noneMale,
+                Episciences_Mail_Tags::TAG_SECTION_NAME   => $sName,
+            ];
+        }
+
+        return [
+            Episciences_Mail_Tags::TAG_VOLUME_NAME    => $volume->getName($locale) ?: $noneMale,
+            Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF => $volume->getBib_reference() ?: $noneFemale,
+            Episciences_Mail_Tags::TAG_VOLUME_NUMBER  => $volume->getVol_num() ?: $noneMale,
+            Episciences_Mail_Tags::TAG_VOLUME_YEAR    => $volume->getVol_year() ?: $noneFemale,
+            Episciences_Mail_Tags::TAG_VOLUME_TYPE    => $volume->getVol_type() ?: $noneMale,
+            Episciences_Mail_Tags::TAG_SECTION_NAME   => $sName,
+        ];
     }
 
     /**
@@ -2142,8 +2196,8 @@ class Episciences_Submit
         $values['REPOID'] = $data['search_doc']['repoId'];
         $values['RVID'] = RVID;
         $values['VERSION'] = is_numeric($data['search_doc']['version']) ? $data['search_doc']['version'] : 1;
-        $values['VID'] = Ccsd_Tools::ifsetor($data['volumes'], 0);
-        $values['SID'] = Ccsd_Tools::ifsetor($data['sections'], 0);
+        $values['VID'] = Ccsd_Tools::ifsetor($data[self::POSTED_VOLUME_KEY], 0);
+        $values['SID'] = Ccsd_Tools::ifsetor($data[self::POSTED_SECTION_KEY], 0);
         $values['UID'] = Episciences_Auth::getUid();
 
         // Default submission status and date
@@ -2880,6 +2934,11 @@ class Episciences_Submit
         }
         throw new Ccsd_Error($error);
 
+    }
+
+    private static function addContext(Episciences_Paper $context, array &$parms = [],): void
+    {
+        $parms['context']['previousVersion'] = $context->getVersion();
     }
 
 }

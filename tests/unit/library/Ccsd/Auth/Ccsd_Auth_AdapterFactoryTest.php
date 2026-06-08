@@ -8,6 +8,7 @@ use Ccsd\Auth\Adapter\Idp;
 use Ccsd\Auth\Adapter\Mysql;
 use Ccsd_Auth_Adapter_Cas;
 use Ccsd_Auth_Adapter_Orcid;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -18,6 +19,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \Ccsd\Auth\AdapterFactory
  */
+#[IgnoreDeprecations]
 class Ccsd_Auth_AdapterFactoryTest extends TestCase
 {
     // -------------------------------------------------------------------------

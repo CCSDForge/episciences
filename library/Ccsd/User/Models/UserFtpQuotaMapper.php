@@ -30,6 +30,11 @@ class Ccsd_User_Models_UserFtpQuotaMapper
      */
     protected $_dbTable;
 
+    public function __construct()
+    {
+
+    }
+
     public function save(Ccsd_User_Models_UserFtpQuota $ufq)
     {
         if ('' == $ufq->getId()) {

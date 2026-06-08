@@ -33,7 +33,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 # PHONY Targets
 # =============================================================================
 .PHONY: help build up down status logs restart clean clean-mysql
-.PHONY: collection index dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir yarn-encore-dev
+.PHONY: collection collection-ref-pps index import-ref-pps download-ref-pps dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir yarn-encore-dev
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
@@ -55,7 +55,7 @@ help: ## Display this help message
 	@grep -h -E '^(wait-for-db|load-db.*|generate-users|shell-mysql.*|backup-db):.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No database commands found"
 	@echo ""
 	@echo "Solr Commands:"
-	@grep -E '^(collection|index):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(collection|collection-ref-pps|index|import-ref-pps|download-ref-pps):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Development Commands:"
 	@grep -E '^(dev-setup|composer|yarn|enter):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
@@ -73,7 +73,7 @@ help: ## Display this help message
 	@grep -h -E '^deploy.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No deployment commands found"
 	@echo ""
 	@echo "Other Commands:"
-	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use|import-apache-logs):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 
 # =============================================================================
 # Core Docker Commands
@@ -151,8 +151,8 @@ clean-mysql: down ## Remove all MySQL volumes (WARNING: This will delete all dat
 # =============================================================================
 # Solr Commands
 # =============================================================================
-collection: up ## Create Solr collection after starting containers
-	@echo "Setting up Solr collection..."
+collection: up ## Create Solr collection 'episciences' after starting containers
+	@echo "Setting up Solr collection 'episciences'..."
 	@echo "Waiting for Solr container to be ready..."
 	@until $(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
 		echo "Waiting for Solr..."; \
@@ -163,10 +163,37 @@ collection: up ## Create Solr collection after starting containers
 		echo "Collection may already exist, continuing..."
 	@echo "Solr collection setup complete!"
 
+collection-ref-pps: up ## Create Solr core 'ref_pps'
+	@echo "Setting up Solr core 'ref_pps'..."
+	@echo "Waiting for Solr container to be ready..."
+	@until $(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
+		echo "Waiting for Solr..."; \
+		sleep 2; \
+	done
+	@echo "Solr is ready. Creating 'ref_pps' core..."
+	@# We need to ensure the config directory exists in the container or use a configset
+	@$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_SOLR) mkdir -p /opt/solr/server/solr/configsets/ref_pps
+	@$(DOCKER_COMPOSE) cp src/solr/ref_pps/conf $(CNTR_NAME_SOLR):/opt/solr/server/solr/configsets/ref_pps/
+	@$(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) solr create_core -c ref_pps -d /opt/solr/server/solr/configsets/ref_pps/conf -s http://localhost:8983 || \
+		echo "Core may already exist, continuing..."
+	@echo "Solr core ref_pps setup complete!"
+
 index: ## Index content into Solr  [V=1 verbose] [D=1 debug]
 	@echo "Indexing content into Solr..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/solr/solrJob.php -D % $(if $(V),-v) $(if $(D),-d)
 	@echo "Indexing complete!"
+
+import-ref-pps: ## Import PPS data from CSV into Solr core ref_pps (optional: csv-file=PATH)
+	@echo "Importing PPS data into Solr..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php import:ref-pps $(if $(csv-file),$(csv-file))
+	@echo "Import complete!"
+
+download-ref-pps: ## Download PPS CSV file from IRIT (optional: force=1)
+	@echo "Downloading PPS data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php download:ref-pps $(if $(filter 1,$(force)),--force)
+	@echo "Download complete!"
 
 # =============================================================================
 # Development Setup Commands
@@ -340,17 +367,26 @@ enrich-zb-reviews: ## Enrich zbMATH review data
 
 # --- Sitemap --------------------------------------------------------------------
 
-generate-sitemap: ## Generate XML sitemap for a journal (requires rvcode=JOURNAL_CODE; optional: pretty=1)
-	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate RVCODE [--pretty] [-q]
-	@if [ -z "$(rvcode)" ]; then \
-		echo "Error: rvcode parameter is required"; \
+generate-sitemap: ## Generate XML sitemap — use rvcode=CODE for one journal, or all=1 for all active journals (optional: pretty=1)
+	# Prod (one journal):  sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate --rvcode=RVCODE [--pretty] [-q]
+	# Prod (all journals): sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate --all [--pretty] [-q]
+	@if [ -z "$(rvcode)" ] && [ "$(all)" != "1" ]; then \
+		echo "Error: specify rvcode=JOURNAL_CODE or all=1"; \
 		echo "Usage: make generate-sitemap rvcode=JOURNAL_CODE [pretty=1]"; \
+		echo "       make generate-sitemap all=1 [pretty=1]"; \
 		exit 1; \
 	fi
-	@echo "Generating sitemap for journal '$(rvcode)'..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
-		php scripts/console.php sitemap:generate $(rvcode) \
-		$(if $(filter 1,$(pretty)),--pretty)
+	@if [ -n "$(rvcode)" ]; then \
+		echo "Generating sitemap for journal '$(rvcode)'..."; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+			php scripts/console.php sitemap:generate --rvcode=$(rvcode) \
+			$(if $(filter 1,$(pretty)),--pretty); \
+	else \
+		echo "Generating sitemaps for all active journals..."; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+			php scripts/console.php sitemap:generate --all \
+			$(if $(filter 1,$(pretty)),--pretty); \
+	fi
 
 # --- Volume / DOAJ --------------------------------------------------------------
 
@@ -469,6 +505,44 @@ stats-download-kpi: ## Generate download KPI JSON for all published articles (op
 can-i-use-update: ## Update browserslist database when caniuse-lite is outdated
 	@echo "Updating browserslist database..."
 	@$(NPX) update-browserslist-db@latest
+
+import-apache-logs: ## Parse Apache logs into STAT_TEMP (rvcode=JOURNAL|all=1 [date=YYYY-MM-DD|month=YYYY-MM|year=YYYY|start-date=…+end-date=…] [logs-path=PATH] [force=1])
+	@if [ -z "$(rvcode)" ] && [ "$(all)" != "1" ]; then \
+		echo "Error: specify rvcode=JOURNAL_CODE or all=1"; \
+		echo "Usage: make import-apache-logs rvcode=JOURNAL_CODE [options]"; \
+		echo "       make import-apache-logs all=1 [options]"; \
+		echo "Options:"; \
+		echo "  date=YYYY-MM-DD          Process a specific day"; \
+		echo "  month=YYYY-MM            Process entire month"; \
+		echo "  year=YYYY                Process entire year"; \
+		echo "  start-date=YYYY-MM-DD    Start date for custom range"; \
+		echo "  end-date=YYYY-MM-DD      End date for custom range"; \
+		echo "  logs-path=PATH           Base path to Apache log directory"; \
+		echo "  force=1                  Force reprocessing of already-processed dates"; \
+		exit 1; \
+	fi
+	@cmd="php scripts/console.php stats:import-logs"; \
+	if [ "$(all)" = "1" ]; then \
+		cmd="$$cmd --all"; \
+	else \
+		cmd="$$cmd --rvcode=$(rvcode)"; \
+	fi; \
+	if [ -n "$(date)" ]; then \
+		cmd="$$cmd --date=$(date)"; \
+	elif [ -n "$(month)" ]; then \
+		cmd="$$cmd --month=$(month)"; \
+	elif [ -n "$(year)" ]; then \
+		cmd="$$cmd --year=$(year)"; \
+	elif [ -n "$(start-date)" ] && [ -n "$(end-date)" ]; then \
+		cmd="$$cmd --start-date=$(start-date) --end-date=$(end-date)"; \
+	fi; \
+	if [ -n "$(logs-path)" ]; then \
+		cmd="$$cmd --logs-path=$(logs-path)"; \
+	fi; \
+	if [ "$(force)" = "1" ]; then \
+		cmd="$$cmd --force"; \
+	fi; \
+	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) $$cmd
 
 # =============================================================================
 # Code Formatting Commands (Prettier)

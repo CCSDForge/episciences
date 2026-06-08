@@ -29,6 +29,19 @@ $(document).ready(function () {
     $modal_button = $('#submit-modal');
     $modal_form = $modal_box.find('form');
 
+    // ARIA: avoid "aria-hidden" warning by blurring focused elements on hide
+    if ($modal_box && $modal_box.length) {
+        $modal_box.on('hide.bs.modal', function () {
+            if (
+                document.activeElement &&
+                this.contains(document.activeElement) &&
+                typeof document.activeElement.blur === 'function'
+            ) {
+                document.activeElement.blur();
+            }
+        });
+    }
+
     // fix for making TinyMCE dialog boxes work with bootstrap modals
     $(document).on('focusin', function (e) {
         if ($(e.target).closest('.tox-dialog').length) {
@@ -819,7 +832,17 @@ function openModal(url, title, params, source) {
     } else if (params['content']) {
         $modal_body.html(params['content']);
     } else if (params['source']) {
-        $(params['source']).appendTo('#modal-box .modal-body');
+        if (
+            typeof params['source'] === 'string' &&
+            isValidCSSSelector(params['source'])
+        ) {
+            $(params['source']).appendTo('#modal-box .modal-body');
+        } else {
+            console.warn(
+                'Ignoring invalid modal source selector:',
+                params['source']
+            );
+        }
     }
 
     // run init method (if there is one)

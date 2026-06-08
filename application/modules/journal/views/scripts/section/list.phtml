@@ -5,6 +5,8 @@ if ($this->sections) {
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
 $this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
 $this->jQuery()->addJavascriptFile('/js/library/es.dataTables.delete-buttons.js');
+$this->jQuery()->addJavascriptFile(VENDOR_SORTABLE_JS);
+$this->jQuery()->addJavascriptFile('/js/library/reorder-datatable.js');
 $this->jQuery()->addJavascriptFile('/js/section/datatable.js');
 $this->jQuery()->addJavascriptFile('/js/editors/section-assignment.js');
 
@@ -20,41 +22,56 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 
 <?php if ($this->sections) : ?>
     <?= $this->partial('partials/datatable-sort-with-search-filter-alert.phtml') ?>
-    <div>
+    <?= $this->partial('partials/reorder-bar.phtml') ?>
+
+    <div class="table-responsive">
         <table class="table table-striped table-bordered dataTable" id="sections">
             <thead>
             <tr>
-                <th class="hidden"><?php echo $this->translate('Position') ?></th>
-                <th style="width:5%"></th>
-                <th><?php echo $this->translate('Titre'); ?></th>
-                <th><?php echo $this->translate('Rédacteurs'); ?></th>
-                <th style="width:10%;text-align:center"><?php echo $this->translate("Statut"); ?></th>
-                <th style="width:10%;text-align:center"><?php echo $this->translate('Actions'); ?></th>
+                <th scope="col" class="reorder-col-position"><?php echo $this->translate('Position') ?></th>
+                <th scope="col"><span class="sr-only"><?php echo $this->translate('Ordre'); ?></span></th>
+                <th scope="col"><?php echo $this->translate('Titre'); ?></th>
+                <th scope="col"><?php echo $this->translate('Rédacteurs'); ?></th>
+                <th scope="col" style="width:10%;text-align:center"><?php echo $this->translate("Statut"); ?></th>
+                <th scope="col" style="width:10%;text-align:center"><?php echo $this->translate('Actions'); ?></th>
             </tr>
             </thead>
             <tbody class="sortable">
-            <?php foreach ($this->sections as $section) : ?>
-                <tr id="section_<?php echo $section->getSid(); ?>">
-                    <td class="hidden"><?php echo $section->getPosition(); ?></td>
-                    <td class="sortable-handle"><span class="glyphicon glyphicon-move"></span></td>
+            <?php foreach ($this->sections as $section) :
+                $sIdEscaped = $this->escape($section->getSid());
+                $sectionTitle = strip_tags(Episciences_Tools::convertMarkdownToHtml($section->getNameKey()));
+            ?>
+                <tr id="section_<?php echo $sIdEscaped; ?>">
+                    <td class="reorder-col-position">
+                        <input type="number"
+                               class="reorder-position-input"
+                               value="<?php echo $this->escape($section->getPosition()); ?>"
+                               min="1"
+                               max="<?php echo count($this->sections); ?>"
+                               aria-label="<?php echo $this->escape($this->translate('Position') . ' — ' . $sectionTitle); ?>"
+                               title="<?php echo $this->translate('Saisissez une position et appuyez sur Entrée'); ?>">
+                    </td>
+                    <td class="sortable-handle">
+                        <span class="glyphicon glyphicon-move" aria-hidden="true"></span>
+                        <span class="sr-only"><?php echo $this->translate('Déplacer la rubrique'); ?></span>
+                    </td>
                     <td><?= Episciences_Tools::convertMarkdownToHtml($section->getNameKey()) ?></td>
                     <td>
+                        <button id="popover-link-<?php echo $sIdEscaped ?>"
+                                style="float: right; font-size: 10px"
+                                class="btn btn-xs btn-default popover-link"
+                                aria-label="<?php echo $this->translate('Voir les rédacteurs pour la rubrique %s', $sectionTitle); ?>"
+                                onclick="getEditors(this, <?php echo $sIdEscaped ?>)">
+                            <span class="caret" aria-hidden="true"></span>
+                        </button>
                         <div class="editors">
                             <?php if ($section->getEditors()) : ?>
                                 <?php echo $this->partial('section/editors_list.phtml', array('editors' => $section->getEditors())) ?>
                             <?php endif; ?>
                         </div>
-                        <button id="popover-link-<?php echo $section->getSid() ?>"
-                                style="float: right;
-							font-size: 10px"
-                                class="btn btn-xs btn-default popover-link"
-                                onclick="getEditors(this, <?php echo $section->getSid() ?>)">
-                            <span class="caret"></span>
-                        </button>
                     </td>
                     <td style="text-align:center">
                         <?php
-                        $status = '-';
                         if ($section->getSetting('status') == 0) {
                             $status = "Fermé";
                             $class = "label-danger";
@@ -67,18 +84,24 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                     </td>
                     <td style="text-align:center;">
                         <a title="<?php echo $this->translate('Modifier'); ?>"
-                           href="/section/edit?id=<?php echo $section->getSid(); ?>"> <span
-                                    class="btn btn-default btn-xs darkgrey glyphicon glyphicon-edit"></span></a> <a
-                                class="delete btn btn-danger btn-xs"
-                                title="<?php echo $this->translate('Supprimer'); ?>"
-                                href="/section/delete?id=<?php echo $section->getSid(); ?>"> <span
-                                    class="glyphicon glyphicon-trash"></span></a>
+                           href="/section/edit?id=<?php echo $sIdEscaped; ?>"
+                           class="btn btn-default btn-xs">
+                            <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+                            <span class="sr-only"><?php echo $this->translate("Modifier la rubrique %s", $sectionTitle); ?></span>
+                        </a>
+                        <a class="delete btn btn-danger btn-xs"
+                           title="<?php echo $this->translate('Supprimer'); ?>"
+                           href="/section/delete?id=<?php echo $sIdEscaped; ?>">
+                            <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                            <span class="sr-only"><?php echo $this->translate("Supprimer la rubrique %s", $sectionTitle); ?></span>
+                        </a>
                     </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
         </table>
     </div>
+
 <?php else : ?>
 
     <?php echo $this->translate('Aucune rubrique enregistrée') ?>.

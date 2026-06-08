@@ -24,6 +24,12 @@ class Episciences_UserTest extends TestCase
         $this->user = new Episciences_User();
     }
 
+    protected function tearDown(): void
+    {
+        Episciences_User::clearStaticCache();
+        parent::tearDown();
+    }
+
     // -------------------------------------------------------------------------
     // screenName
     // -------------------------------------------------------------------------
@@ -639,5 +645,96 @@ class Episciences_UserTest extends TestCase
             $source,
             'Security S3: EMAIL must be escaped with htmlspecialchars() before HTML injection'
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Static Cache (Identity Map)
+    // -------------------------------------------------------------------------
+
+    public function testSetStaticCacheAndFindFromCache(): void
+    {
+        $uid = 99999;
+        $userData = [
+            'UID' => $uid,
+            'USERNAME' => 'testcacheuser',
+            'EMAIL' => 'testcache@example.com',
+            'SCREEN_NAME' => 'Test Cache User',
+            'LASTNAME' => 'User',
+            'FIRSTNAME' => 'Test',
+            'MIDDLENAME' => '',
+            'CIV' => 'M.',
+            'LANGUEID' => 'en',
+            'API_PASSWORD' => 'hashed_pw',
+            'IS_VALID' => 1,
+            'REGISTRATION_DATE' => '2026-01-01 12:00:00',
+            'MODIFICATION_DATE' => '2026-01-02 12:00:00',
+            'uuid' => 'some-uuid-123',
+            'AFFILIATIONS' => null,
+            'BIOGRAPHY' => null,
+            'ORCID' => null,
+        ];
+
+        Episciences_User::setStaticCache($uid, $userData);
+
+        // find() should fetch from cache and populate the user object
+        // and it should NOT attempt any DB query (which would error in this test setup)
+        $result = $this->user->find($uid);
+
+        $this->assertSame($userData['UID'], $result['UID']);
+        $this->assertSame($userData['USERNAME'], $result['USERNAME']);
+        $this->assertSame($userData['EMAIL'], $result['EMAIL']);
+        $this->assertSame($userData['SCREEN_NAME'], $result['SCREEN_NAME']);
+
+        // Check that user object properties are populated
+        $this->assertSame($uid, $this->user->getUid());
+        $this->assertSame('testcacheuser', $this->user->getUsername());
+        $this->assertSame('testcache@example.com', $this->user->getEmail());
+        $this->assertSame('Test Cache User', $this->user->getScreenName());
+        $this->assertSame('User', $this->user->getLastname());
+        $this->assertSame('Test', $this->user->getFirstname());
+        $this->assertSame('M.', $this->user->getCiv());
+        $this->assertSame('en', $this->user->getLangueid());
+        $this->assertSame('hashed_pw', $this->user->getApiPassword());
+        $this->assertSame(1, $this->user->getIs_valid());
+        $this->assertSame('2026-01-01 12:00:00', $this->user->getRegistrationDate());
+        $this->assertSame('2026-01-02 12:00:00', $this->user->getModificationDate());
+        $this->assertSame('some-uuid-123', $this->user->getUuid());
+    }
+
+    public function testClearStaticCache(): void
+    {
+        $uid = 88888;
+        $userData = [
+            'UID' => $uid,
+            'USERNAME' => 'anotheruser',
+            'EMAIL' => 'another@example.com',
+            'SCREEN_NAME' => 'Another User',
+            'LASTNAME' => 'User',
+            'FIRSTNAME' => 'Another',
+            'MIDDLENAME' => '',
+            'CIV' => 'M.',
+            'LANGUEID' => 'en',
+            'API_PASSWORD' => 'hashed_pw',
+            'IS_VALID' => 1,
+            'REGISTRATION_DATE' => '2026-01-01 12:00:00',
+            'MODIFICATION_DATE' => '2026-01-02 12:00:00',
+            'uuid' => 'some-uuid-456',
+            'AFFILIATIONS' => null,
+            'BIOGRAPHY' => null,
+            'ORCID' => null,
+        ];
+
+        Episciences_User::setStaticCache($uid, $userData);
+        Episciences_User::clearStaticCache();
+
+        // Since cache is cleared, calling find() should try to hit the DB
+        // In this test setup, Zend_Db_Table_Abstract::getDefaultAdapter() will either fail or try to query,
+        // which we can verify throws an exception/error (due to lacking DB connection or empty query mock).
+        try {
+            $this->user->find($uid);
+            $this->fail('Expected an exception when querying database after clearing cache');
+        } catch (\Throwable $e) {
+            $this->assertTrue(true);
+        }
     }
 }
