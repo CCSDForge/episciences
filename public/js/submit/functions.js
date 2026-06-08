@@ -47,7 +47,6 @@ $(function () {
 
 
     $fileDescriptor.on('change', function () {
-        console.log($isRequiredDescriptor.val());
         activateDeactivateSubmitButton();
     });
 
