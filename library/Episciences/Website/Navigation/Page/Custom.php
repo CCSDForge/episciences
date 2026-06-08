@@ -325,8 +325,14 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
 
                 if ($page->getId() > 0) {
                     $visibility = $page->getVisibility(true); // deserialize to array
+
+                    // T_PAGES is the source of truth for custom pages
+                    // Always override ACL from parent::load() (navigation.json)
                     if (!empty($visibility) && $visibility !== ['public']) {
                         $this->setAcl($visibility);
+                    } else {
+                        // Explicitly set to public (clears any ACL from navigation.json)
+                        $this->setAcl([]);
                     }
                 }
             } catch (Exception $e) {
