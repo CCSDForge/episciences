@@ -58,11 +58,7 @@ class Episciences_Page_Manager
         if ($resInsert > 0) {
             $tag = self::resolvePageTag($page->getPageCode(), $page->getCode());
             if ($tag !== null) {
-                try {
-                    \Episciences\Next\RevalidationService::revalidateOrEnqueue($page->getCode(), $tag);
-                } catch (\Throwable $e) {
-                    error_log('[Page/Manager] Revalidation failed after add: ' . $e->getMessage());
-                }
+                self::tryRevalidate($page->getCode(), $tag, 'add');
             }
         }
 
@@ -95,11 +91,7 @@ class Episciences_Page_Manager
         if ($resUpdate > 0) {
             $tag = self::resolvePageTag($page->getPageCode(), $page->getCode());
             if ($tag !== null) {
-                try {
-                    \Episciences\Next\RevalidationService::revalidateOrEnqueue($page->getCode(), $tag);
-                } catch (\Throwable $e) {
-                    error_log('[Page/Manager] Revalidation failed after update: ' . $e->getMessage());
-                }
+                self::tryRevalidate($page->getCode(), $tag, 'update');
             }
         }
 
@@ -124,11 +116,7 @@ class Episciences_Page_Manager
         if ($resDelete > 0) {
             $tag = self::resolvePageTag($page_code, $code);
             if ($tag !== null) {
-                try {
-                    \Episciences\Next\RevalidationService::revalidateOrEnqueue($code, $tag);
-                } catch (\Throwable $e) {
-                    error_log('[Page/Manager] Revalidation failed after delete: ' . $e->getMessage());
-                }
+                self::tryRevalidate($code, $tag, 'delete');
             }
         }
 
@@ -150,5 +138,14 @@ class Episciences_Page_Manager
         }
 
         return 'page-' . $pageCode . '-' . $rvcode;
+    }
+
+    private static function tryRevalidate(string $rvcode, string $tag, string $context): void
+    {
+        try {
+            \Episciences\Next\RevalidationService::revalidateOrEnqueue($rvcode, $tag);
+        } catch (\Throwable $e) {
+            error_log("[Page/Manager] Revalidation failed after {$context}: " . $e->getMessage());
+        }
     }
 }

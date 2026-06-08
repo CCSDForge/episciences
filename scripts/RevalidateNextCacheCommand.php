@@ -2,8 +2,6 @@
 declare(strict_types=1);
 
 use Episciences\Next\RevalidationService;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -43,41 +41,19 @@ class RevalidateNextCacheCommand extends Command
             return Command::FAILURE;
         }
 
-        $token    = RevalidationService::resolveToken($rvcode);
-        $endpoint = rtrim(NEXT_BASE_URL, '/') . '/api/revalidate';
-
         $io->text("Revalidating tag <info>{$tag}</info> for journal <info>{$rvcode}</info>");
-        $io->text("Endpoint: {$endpoint}");
+        $io->text('Endpoint: ' . rtrim(NEXT_BASE_URL, '/') . '/api/revalidate');
 
-        try {
-            $client   = new Client(['timeout' => self::HTTP_TIMEOUT, 'http_errors' => false]);
-            $response = $client->post($endpoint, [
-                'headers' => [
-                    'Content-Type'        => 'application/json',
-                    'x-episciences-token' => $token,
-                ],
-                'json' => [
-                    'journalId' => $rvcode,
-                    'tag'       => $tag,
-                ],
-            ]);
+        $status = RevalidationService::postRevalidation($rvcode, $tag, self::HTTP_TIMEOUT);
 
-            if ($response->getStatusCode() === 200) {
-                $io->success('Revalidation succeeded: ' . $response->getBody()->getContents());
-                return Command::SUCCESS;
-            }
-
-            $io->warning(sprintf(
-                'Non-200 response: HTTP %d — %s',
-                $response->getStatusCode(),
-                substr($response->getBody()->getContents(), 0, 200)
-            ));
-            return Command::FAILURE;
-
-        } catch (GuzzleException $e) {
-            $io->error('HTTP request failed: ' . $e->getMessage());
-            return Command::FAILURE;
+        if ($status === 200) {
+            $io->success('Revalidation succeeded.');
+            return Command::SUCCESS;
         }
+
+        $statusLabel = $status > 0 ? "HTTP {$status}" : 'network/timeout error';
+        $io->warning("Non-200 response: {$statusLabel} (see error log for details)");
+        return Command::FAILURE;
     }
 
     private function bootstrap(): void

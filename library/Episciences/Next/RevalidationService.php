@@ -5,7 +5,6 @@ namespace Episciences\Next;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
 
 /**
@@ -20,6 +19,11 @@ use GuzzleHttp\Exception\GuzzleException;
 class RevalidationService
 {
     private const HTTP_TIMEOUT = 3.0;
+
+    private static function isEnabled(): bool
+    {
+        return defined('EPISCIENCES_ENABLE_NEXT_FRONT') && (bool) EPISCIENCES_ENABLE_NEXT_FRONT;
+    }
 
     /**
      * Enqueue multiple cache revalidation tags for a journal (async, queue-first).
@@ -36,13 +40,10 @@ class RevalidationService
 
     /**
      * Enqueue a single cache revalidation tag for a journal (async, queue-first).
-     *
-     * @param string $rvcode Journal code (e.g. "epijinfo")
-     * @param string $tag    Cache tag to invalidate (e.g. "article-42")
      */
     public static function enqueueTag(string $rvcode, string $tag): void
     {
-        if (!defined('EPISCIENCES_ENABLE_NEXT_FRONT') || !EPISCIENCES_ENABLE_NEXT_FRONT) {
+        if (!self::isEnabled()) {
             return;
         }
 
@@ -70,15 +71,11 @@ class RevalidationService
 
     /**
      * Try an immediate HTTP POST to Next.js; fall back to queue only on transient failures.
-     * 4xx responses (wrong token, IP not whitelisted) are logged but NOT enqueued — retrying
-     * a permanent client error is pointless.
-     *
-     * @param string $rvcode Journal code (e.g. "epijinfo")
-     * @param string $tag    Cache tag to invalidate (e.g. "about-epijinfo")
+     * 4xx responses (wrong token, IP not whitelisted) are logged but NOT enqueued.
      */
     public static function revalidateOrEnqueue(string $rvcode, string $tag): void
     {
-        if (!defined('EPISCIENCES_ENABLE_NEXT_FRONT') || !EPISCIENCES_ENABLE_NEXT_FRONT) {
+        if (!self::isEnabled()) {
             return;
         }
 
@@ -87,11 +84,32 @@ class RevalidationService
             return;
         }
 
+        $status = self::postRevalidation($rvcode, $tag);
+
+        if ($status === 200 || ($status >= 400 && $status < 500)) {
+            return; // 200 = success; 4xx = permanent error, do not enqueue
+        }
+
+        // 5xx or 0 (network / timeout) — enqueue for retry
+        self::enqueueTag($rvcode, $tag);
+    }
+
+    /**
+     * Execute a single HTTP POST to the Next.js revalidation endpoint.
+     * Logs HTTP errors and network failures internally.
+     * Returns the HTTP status code, or 0 on network / timeout error.
+     */
+    public static function postRevalidation(string $rvcode, string $tag, float $timeout = self::HTTP_TIMEOUT): int
+    {
+        if (!defined('NEXT_BASE_URL') || NEXT_BASE_URL === '') {
+            return 0;
+        }
+
         $endpoint = rtrim(NEXT_BASE_URL, '/') . '/api/revalidate';
         $token    = self::resolveToken($rvcode);
 
         try {
-            $client   = new Client(['timeout' => self::HTTP_TIMEOUT, 'http_errors' => false]);
+            $client   = new Client(['timeout' => $timeout, 'http_errors' => false]);
             $response = $client->post($endpoint, [
                 'headers' => [
                     'Content-Type'        => 'application/json',
@@ -105,23 +123,17 @@ class RevalidationService
 
             $status = $response->getStatusCode();
 
-            if ($status === 200) {
-                return;
+            if ($status !== 200) {
+                error_log(sprintf(
+                    '[RevalidationService] Non-200 response for tag "%s" (journal: %s): HTTP %d — %s',
+                    $tag,
+                    $rvcode,
+                    $status,
+                    substr($response->getBody()->getContents(), 0, 200)
+                ));
             }
 
-            error_log(sprintf(
-                '[RevalidationService] Non-200 response for tag "%s" (journal: %s): HTTP %d — %s',
-                $tag,
-                $rvcode,
-                $status,
-                substr($response->getBody()->getContents(), 0, 200)
-            ));
-
-            // 4xx = permanent client error (wrong token, IP not whitelisted) — do not retry
-            if ($status >= 400 && $status < 500) {
-                return;
-            }
-
+            return $status;
         } catch (GuzzleException $e) {
             error_log(sprintf(
                 '[RevalidationService] HTTP error for tag "%s" (journal: %s): %s',
@@ -129,10 +141,8 @@ class RevalidationService
                 $rvcode,
                 $e->getMessage()
             ));
+            return 0;
         }
-
-        // Fallback: enqueue for retry by cron (5xx / network errors only reach here)
-        self::enqueueTag($rvcode, $tag);
     }
 
     /**

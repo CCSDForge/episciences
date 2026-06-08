@@ -3,8 +3,6 @@
 use Episciences\Next\RevalidationService;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use scripts\Queue;
 
 include_once __DIR__ . '/Queue.php';
@@ -33,9 +31,6 @@ class NextRevalidationQueue extends Queue
             return;
         }
 
-        $client   = new Client(['timeout' => self::NEXT_HTTP_TIMEOUT, 'http_errors' => false]);
-        $endpoint = rtrim(NEXT_BASE_URL, '/') . '/api/revalidate';
-
         /** @var QueueMessage $queueMsg */
         foreach ($queueMessages as $queueMsg) {
             $rvcode = $queueMsg->getRvcode();
@@ -56,48 +51,23 @@ class NextRevalidationQueue extends Queue
                 continue;
             }
 
-            $token = RevalidationService::resolveToken($rvcode);
+            $tag    = $message['tag'];
+            $status = RevalidationService::postRevalidation($rvcode, $tag, self::NEXT_HTTP_TIMEOUT);
 
-            try {
-                $response = $client->post($endpoint, [
-                    'headers' => [
-                        'Content-Type'        => 'application/json',
-                        'x-episciences-token' => $token,
-                    ],
-                    'json' => [
-                        'journalId' => $message['journalId'] ?? $rvcode,
-                        'tag'       => $message['tag'],
-                    ],
-                ]);
-
-                $status = $response->getStatusCode();
-
-                if ($status === 200) {
-                    $queueMsg->delete((bool) $this->getParam('delProcessed'));
-                } elseif ($status >= 400 && $status < 500) {
-                    // 4xx: permanent client error (wrong token, IP) — discard to avoid endless retry
-                    $this->logger->warning('Next.js revalidation permanent client error, discarding message', [
-                        'status'  => $status,
-                        'journal' => $rvcode,
-                        'tag'     => $message['tag'],
-                        'body'    => substr($response->getBody()->getContents(), 0, 200),
-                    ]);
-                    $queueMsg->delete(true);
-                } else {
-                    // 5xx or other: transient — leave in queue for next cron run
-                    $this->logger->warning('Next.js revalidation transient error, will retry', [
-                        'status'  => $status,
-                        'journal' => $rvcode,
-                        'tag'     => $message['tag'],
-                        'body'    => substr($response->getBody()->getContents(), 0, 200),
-                    ]);
-                }
-            } catch (GuzzleException $e) {
-                // Network / timeout: transient — leave in queue for next cron run
-                $this->logger->error('Next.js revalidation HTTP error, will retry', [
+            if ($status === 200) {
+                $queueMsg->delete((bool) $this->getParam('delProcessed'));
+            } elseif ($status >= 400 && $status < 500) {
+                $this->logger->warning('Permanent client error, discarding revalidation message', [
+                    'status'  => $status,
                     'journal' => $rvcode,
-                    'tag'     => $message['tag'],
-                    'error'   => $e->getMessage(),
+                    'tag'     => $tag,
+                ]);
+                $queueMsg->delete(true);
+            } else {
+                $this->logger->warning('Transient error, revalidation message will be retried', [
+                    'status'  => $status,
+                    'journal' => $rvcode,
+                    'tag'     => $tag,
                 ]);
             }
         }
