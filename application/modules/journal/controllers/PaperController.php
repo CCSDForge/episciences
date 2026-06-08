@@ -4177,31 +4177,23 @@ class PaperController extends PaperDefaultController
                 $principalRecipient?->getUid()
         );
 
-        if (empty($recipients)) {
-            $recipients = $ccRecipients;
-            $ccRecipients = [];
-        }
-
-        if (null !== $principalRecipient) {
-
-            $paperUrl = $this->buildAdminPaperUrl($currentPaper->getDocid());
-            $this->answerRevisionNotifyManager(
-                    $principalRecipient,
-                    $currentPaper,
-                    $request,
-                    $answer,
-                    true,
-                    [Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl],
-                    $ccRecipients
+        if (null === $principalRecipient) {
+            Episciences_View_Helper_Log::log('Failed to send revision notification: No valid recipients found'
             );
 
-        } else {
-
-            Episciences_View_Helper_Log::log(
-                    'Failed to send revision notification: No valid recipients found'
-            );
-
+            return;
         }
+
+        $paperUrl = $this->buildAdminPaperUrl($currentPaper->getDocid());
+        $this->answerRevisionNotifyManager(
+                $principalRecipient,
+                $currentPaper,
+                $request,
+                $answer,
+                true,
+                [Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl],
+                $ccRecipients
+        );
 
     }
 
