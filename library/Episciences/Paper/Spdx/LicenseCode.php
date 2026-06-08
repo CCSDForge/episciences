@@ -7,9 +7,9 @@ use Episciences\common\AbstractCommon;
 class LicenseCode extends AbstractCommon
 {
 
-    private int $id;
-    private int $docid;
-    private string $code;
+    private ?int $id = null;
+    private int $docid = 0;
+    private ?string $code = null;
     private ?string $name = null;
 
     public function getId(): int

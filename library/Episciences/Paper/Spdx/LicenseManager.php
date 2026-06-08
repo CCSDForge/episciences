@@ -36,13 +36,14 @@ class LicenseManager
     private static function fetchProcess(?array &$result, $fetch = 'array'): void
     {
 
-        $tmp = [];
-        if ($fetch === 'object') {
-            foreach ($result as $code => $data) {
-                $tmp[$code] = new License($data);
-            }
-
+        if ($fetch !== 'object') {
+            return;
         }
+
+        $array_map = array_map(static function ($data) {
+            return new License($data);
+        }, $result);
+        $tmp = $array_map;
 
         $result = $tmp;
     }
