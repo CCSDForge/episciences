@@ -19,6 +19,13 @@ class Episciences_Form_Validate_MimeType extends Zend_Validate_Abstract
     public const NOT_READABLE = 'fileMimeTypeNotReadable';
     public const ALLOWED_MIME_TYPE_KEY = 'allowedMimeTypes';
 
+    protected string $_type = '';
+
+    protected $_messageVariables = [
+            'type' => '_type',
+    ];
+
+
     protected array $_allowedMimeTypes = [];
 
     protected $_messageTemplates = [
@@ -83,9 +90,12 @@ class Episciences_Form_Validate_MimeType extends Zend_Validate_Abstract
         }
 
 
+
         if (!$type) {
             return $this->_throw($file, self::NOT_DETECTED);
         }
+
+        $this->_type = $type ;
 
         if (!in_array($type, $this->_allowedMimeTypes, true)) {
             return $this->_throw($file, self::FALSE_TYPE);
@@ -94,7 +104,7 @@ class Episciences_Form_Validate_MimeType extends Zend_Validate_Abstract
         return true;
 
     }
-    
+
     protected function _throw($file, $errorType): bool
     {
         $this->_value = is_array($file) ? $file['name'] : $file ?? '';
