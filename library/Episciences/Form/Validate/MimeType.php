@@ -94,10 +94,10 @@ class Episciences_Form_Validate_MimeType extends Zend_Validate_Abstract
         return true;
 
     }
-
+    
     protected function _throw($file, $errorType): bool
     {
-        $this->_value = $file['name'];
+        $this->_value = is_array($file) ? $file['name'] : $file ?? '';
         $this->_error($errorType);
         return false;
     }
