@@ -19,6 +19,8 @@ $(function () {
     let $searchDocVersion = $('#' + subform + '-version');
     let $searchPaperPassword = $('#' + subform + '-paperPassword');
     let $searchRequiredPwd = $('#' + subform + '-h_requiredPwd');
+    let $fileDescriptor = $("#file_data_descriptor");
+    let $isRequiredDescriptor = $("#file_data_descriptor_is_required");
 
     // if it is a modal, disable submit button
     disableModalSubmitButton();
@@ -42,6 +44,13 @@ $(function () {
     $secondDisclaimersDisclaimer.on('change', function () {
         activateDeactivateSubmitButton();
     });
+
+
+    $fileDescriptor.on('change', function () {
+        console.log($isRequiredDescriptor.val());
+        activateDeactivateSubmitButton();
+    });
+
 
     $search_button.on('click', function () {
         doSearching();
@@ -466,28 +475,56 @@ $(function () {
     }
 
     /**
-     * Check if all required fields are not completed
+     * Check if all required fields are completed
+     * returns false if an error occurs, true if the check ok
      * @returns {boolean}
      */
-    function isRequiredFieldsNotCompleted() {
-        return !(
-            ($sectionsElement.is(':visible') &&
-                $sectionsElement.find('label').hasClass('required') &&
-                $sections.val() === '0') ||
-            ($suggestEditorsElement.is(':visible') &&
-                $suggestEditorsElement.find('label').hasClass('required') &&
-                ($suggest_editors.val() === '0' ||
-                    null === $suggest_editors.val())) ||
+    function isFormValid() {
+
+        // Sections check
+        if (
+            $sectionsElement.is(':visible') &&
+            $sectionsElement.find('label').hasClass('required') &&
+            $sections.val() === '0'
+
+        ) {
+            return false;
+        }
+
+        // Editors check
+        if (
+            $suggestEditorsElement.is(':visible') &&
+            $suggestEditorsElement.find('label').hasClass('required')
+        ) {
+            const suggestedEditors = $suggest_editors.val();
+            if (
+                suggestedEditors === '0' ||
+                null === suggestedEditors
+            ) {
+                return false;
+            }
+        }
+
+        //Disclaimers check
+        if (
             !$firstDisclaimersDisclaimer.is(':checked') ||
             !$secondDisclaimersDisclaimer.is(':checked')
-        );
+        ) {
+            return false;
+        }
+
+        // data/software descriptor check
+        return !(
+            $isRequiredDescriptor.length > 0 &&
+            $isRequiredDescriptor.val() === 'true' &&
+            $fileDescriptor.val() === '');
     }
 
     /**
      * Deactivate / ACTIVATE  the "Submit" button.
      */
     function activateDeactivateSubmitButton() {
-        if (isRequiredFieldsNotCompleted()) {
+        if (isFormValid()) {
             $submit_button.attr('disabled', false);
             $submit_button.attr('aria-disabled', false);
         } else {
