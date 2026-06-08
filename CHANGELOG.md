@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin paper list: removed redundant page description blockquote.
 
 ### Fixed
-- [#1039]: (https://github.com/CCSDForge/episciences/issues/1039) The MIME type for docx files is detected as "application/octet-stream"
+- [#1039](https://github.com/CCSDForge/episciences/issues/1039) The MIME type for docx files is detected as "application/octet-stream"
 - Application error: Call to a member function getVol_num() on bool
 
 - `scripts/update_papers.php` : fixed issue where importing a new version (e.g. version 2) of an existing paper (e.g. version 1) overwrote the version 1 entry in the database instead of creating a new version record.
