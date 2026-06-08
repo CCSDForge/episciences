@@ -327,8 +327,6 @@ $(function () {
                         }
 
                         if (newVersionErrors.oldConceptIdentifier) {
-                            console.log(newVersionErrors.oldConceptIdentifier);
-
                             $('<input>', {
                                 type: 'hidden',
                                 name: 'old_conceptIdentifier',

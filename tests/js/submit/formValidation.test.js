@@ -168,7 +168,26 @@ describe('Test the "isFormValid" function to check whether all required fields h
         expect(isFormValid()).toBe(true);
     });
 
-    // Test 9: Invisible section (Ignored)
+    // Test 9: SUCCESS File Descriptor (Required + File selected)
+    test('Returns TRUE if the descriptor file is required and a file is selected', () => {
+        setMockGlobals({
+            $sectionsElement: createMock({isVisible: true, isRequired: true}),
+            $sections: createMock({val: '1'}),
+
+            $suggestEditorsElement: createMock({isVisible: true, isRequired: true}),
+            $suggest_editors: createMock({val: 'id'}),
+
+            $firstDisclaimersDisclaimer: createMock({isChecked: true}),
+            $secondDisclaimersDisclaimer: createMock({isChecked: true}),
+
+            $isRequiredDescriptor: createMock({length: 1, val: 'true'}), // required
+            $fileDescriptor: createMock({val: 'descriptor.zip'}) // file selected -> OK
+        });
+
+        expect(isFormValid()).toBe(true);
+    });
+
+    // Test 10: Invisible section (Ignored)
     test('Returns TRUE if the section is invisible even when the value is "0"', () => {
         setMockGlobals({
             $sectionsElement: createMock({isVisible: false, isRequired: true}), // Invisible
