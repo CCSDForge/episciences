@@ -58,7 +58,11 @@ class Episciences_Page_Manager
         if ($resInsert > 0) {
             $tag = self::resolvePageTag($page->getPageCode(), $page->getCode());
             if ($tag !== null) {
-                \Episciences\Next\RevalidationService::revalidateOrEnqueue($page->getCode(), $tag);
+                try {
+                    \Episciences\Next\RevalidationService::revalidateOrEnqueue($page->getCode(), $tag);
+                } catch (\Throwable $e) {
+                    error_log('[Page/Manager] Revalidation failed after add: ' . $e->getMessage());
+                }
             }
         }
 
@@ -91,7 +95,11 @@ class Episciences_Page_Manager
         if ($resUpdate > 0) {
             $tag = self::resolvePageTag($page->getPageCode(), $page->getCode());
             if ($tag !== null) {
-                \Episciences\Next\RevalidationService::revalidateOrEnqueue($page->getCode(), $tag);
+                try {
+                    \Episciences\Next\RevalidationService::revalidateOrEnqueue($page->getCode(), $tag);
+                } catch (\Throwable $e) {
+                    error_log('[Page/Manager] Revalidation failed after update: ' . $e->getMessage());
+                }
             }
         }
 
@@ -116,7 +124,11 @@ class Episciences_Page_Manager
         if ($resDelete > 0) {
             $tag = self::resolvePageTag($page_code, $code);
             if ($tag !== null) {
-                \Episciences\Next\RevalidationService::revalidateOrEnqueue($code, $tag);
+                try {
+                    \Episciences\Next\RevalidationService::revalidateOrEnqueue($code, $tag);
+                } catch (\Throwable $e) {
+                    error_log('[Page/Manager] Revalidation failed after delete: ' . $e->getMessage());
+                }
             }
         }
 

@@ -810,7 +810,11 @@ class Episciences_Volume
             // Enqueue Next.js cache revalidation for updated volume
             $rvcode = defined('RVCODE') ? RVCODE : null;
             if ($rvcode !== null) {
-                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "volume-{$vid}");
+                \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                    "volume-{$vid}",
+                    "volumes-{$rvcode}",
+                    "sitemap-{$rvcode}",
+                ]);
             }
 
         }

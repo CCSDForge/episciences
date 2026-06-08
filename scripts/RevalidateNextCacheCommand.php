@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Next\RevalidationService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\Console\Command\Command;
@@ -42,14 +43,14 @@ class RevalidateNextCacheCommand extends Command
             return Command::FAILURE;
         }
 
-        $token    = $this->resolveToken($rvcode);
+        $token    = RevalidationService::resolveToken($rvcode);
         $endpoint = rtrim(NEXT_BASE_URL, '/') . '/api/revalidate';
 
         $io->text("Revalidating tag <info>{$tag}</info> for journal <info>{$rvcode}</info>");
         $io->text("Endpoint: {$endpoint}");
 
         try {
-            $client   = new Client(['timeout' => self::HTTP_TIMEOUT]);
+            $client   = new Client(['timeout' => self::HTTP_TIMEOUT, 'http_errors' => false]);
             $response = $client->post($endpoint, [
                 'headers' => [
                     'Content-Type'        => 'application/json',
@@ -77,27 +78,6 @@ class RevalidateNextCacheCommand extends Command
             $io->error('HTTP request failed: ' . $e->getMessage());
             return Command::FAILURE;
         }
-    }
-
-    private function resolveToken(string $rvcode): string
-    {
-        $configPath = sprintf('%s/../data/%s/config/pwd.json', __DIR__, $rvcode);
-
-        if (file_exists($configPath)) {
-            $fileContent = file_get_contents($configPath);
-            if ($fileContent !== false) {
-                try {
-                    $config = json_decode($fileContent, true, 512, JSON_THROW_ON_ERROR);
-                    if (is_array($config) && isset($config['NEXT_REVALIDATION_TOKEN']) && $config['NEXT_REVALIDATION_TOKEN'] !== '') {
-                        return (string) $config['NEXT_REVALIDATION_TOKEN'];
-                    }
-                } catch (\JsonException) {
-                    // Fall through to global secret
-                }
-            }
-        }
-
-        return defined('NEXT_REVALIDATION_SECRET') ? (string) NEXT_REVALIDATION_SECRET : '';
     }
 
     private function bootstrap(): void

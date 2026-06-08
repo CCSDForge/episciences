@@ -2347,7 +2347,9 @@ class Episciences_PapersManager
         $db->delete(T_PAPERS, ['DOCID = ?' => $docid]);
         $db->delete(T_VOLUME_PAPER, ['DOCID = ?' => $docid]);
         $db->delete(T_PAPER_LICENCES, ['docid = ?' => $docid]);
-        $db->delete(T_VOLUME_PAPER_POSITION, ['PAPERID = ?' => $paper->getPaperid()]);
+        if ($paper !== false && $paper !== null) {
+            $db->delete(T_VOLUME_PAPER_POSITION, ['PAPERID = ?' => $paper->getPaperid()]);
+        }
 
         // delete paper folder and content
         if (defined('RVCODE') && defined('REVIEW_FILES_PATH') && $docid) {

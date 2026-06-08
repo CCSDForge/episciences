@@ -2910,6 +2910,14 @@ class AdministratepaperController extends PaperDefaultController
                 // deleting the volume from T_VOLUME_PAPER
                 Episciences_Volume_PapersManager::deletePaperVolume($docId, $vid);
 
+                if (defined('RVCODE') && RVCODE !== '') {
+                    $tagsToInvalidate = ["volume-{$vid}", 'volumes-' . RVCODE, 'sitemap-' . RVCODE];
+                    if ($oldVid > 0) {
+                        $tagsToInvalidate[] = "volume-{$oldVid}";
+                    }
+                    \Episciences\Next\RevalidationService::enqueueTags(RVCODE, $tagsToInvalidate);
+                }
+
             }
 
             echo true;
