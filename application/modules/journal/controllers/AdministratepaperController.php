@@ -25,49 +25,6 @@ class AdministratepaperController extends PaperDefaultController
 
 
     /**
-     * Controller-wide access guard.
-     *
-     * This controller is dedicated to editorial paper management; every action
-     * is meant for journal staff only (authors use PaperController, reviewers use
-     * ReviewerController, both with their own JS/partials). Since there is no
-     * dispatch-level ACL, enforce an editorial-staff role here so that individual
-     * actions cannot be reached anonymously or by ordinary members.
-     *
-     * Per-paper granularity (encapsulation / assigned-only) remains handled by the
-     * existing per-action checks where present.
-     */
-    public function preDispatch(): void
-    {
-        parent::preDispatch();
-
-        $isEditorialStaff = Episciences_Auth::isSecretary()
-            || Episciences_Auth::isEditor()
-            || Episciences_Auth::isGuestEditor()
-            || Episciences_Auth::isCopyEditor()
-            || Episciences_Auth::isChiefEditor()
-            || Episciences_Auth::isAdministrator()
-            || Episciences_Auth::isRoot();
-
-        if ($isEditorialStaff) {
-            return;
-        }
-
-        if (!Episciences_Auth::isLogged()) {
-            // Not authenticated: send to the login page.
-            $this->redirect('/user/login');
-            return;
-        }
-
-        // Authenticated but without an editorial role: deny access.
-        $this->getResponse()->setHttpResponseCode(403);
-        $this->_helper->FlashMessenger
-            ->setNamespace('warning')
-            ->addMessage($this->view->translate("Vous n'avez pas accès à cette page."));
-        // gotoUrl() exits, which stops the requested action from running.
-        $this->_helper->redirector->gotoUrl('/');
-    }
-
-    /**
      * @throws Zend_Exception
      */
     public function indexAction(): void

@@ -8,44 +8,6 @@ class AdministratemailController extends Zend_Controller_Action
      */
     private $_allowedToEdit;
 
-    /**
-     * Controller-wide access guard.
-     *
-     * Every action of the mail tool exposes the journal user directory (recipient
-     * and contact lookups), mail history, reminders or the send form. None of this
-     * may be reached anonymously or by ordinary members. The allowed set is the
-     * union of the roles that legitimately use the tool:
-     *  - isAllowedToSendMail() (secretary / editor / guest editor / reviewer) — the
-     *    same predicate that gates the "contact" links in the UI;
-     *  - webmaster / administrator / chief editor / root — for template management.
-     */
-    public function preDispatch(): void
-    {
-        parent::preDispatch();
-
-        $allowed = Episciences_Auth::isAllowedToSendMail()
-            || Episciences_Auth::isWebmaster()
-            || Episciences_Auth::isAdministrator()
-            || Episciences_Auth::isChiefEditor()
-            || Episciences_Auth::isRoot();
-
-        if ($allowed) {
-            return;
-        }
-
-        if (!Episciences_Auth::isLogged()) {
-            $this->redirect('/user/login');
-            return;
-        }
-
-        $this->getResponse()->setHttpResponseCode(403);
-        $this->_helper->FlashMessenger
-            ->setNamespace('warning')
-            ->addMessage($this->view->translate("Vous n'avez pas accès à cette page."));
-        // gotoUrl() exits, which stops the requested action from running.
-        $this->_helper->redirector->gotoUrl('/');
-    }
-
     public function init(): void
     {
         $isAllowed = Episciences_Auth::isSecretary() || Episciences_Auth::isWebmaster();
