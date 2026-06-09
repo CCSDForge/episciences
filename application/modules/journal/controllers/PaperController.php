@@ -17,7 +17,7 @@ class PaperController extends PaperDefaultController
 
     /**
      *  display paper pdf
-     * @throws GuzzleExceptio
+     * @throws GuzzleException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -2854,6 +2854,7 @@ class PaperController extends PaperDefaultController
      * @param Episciences_Paper $paper
      * @param int|null $reviewerUid
      * @return array
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
@@ -2985,9 +2986,10 @@ class PaperController extends PaperDefaultController
      * @param Episciences_Paper $paper
      * @param int $reviewerUid
      * @return Episciences_Rating_Report|null
+     * @throws InvalidArgumentExceptionAlias
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception|JsonException
+     * @throws Zend_Exception
      */
     private function reviewFromEditor(Episciences_Paper $paper, int $reviewerUid): ?Episciences_Rating_Report
     {
@@ -3191,11 +3193,11 @@ class PaperController extends PaperDefaultController
     /**
      * @param Episciences_Rating_Report $report
      * @param Episciences_Paper $paper
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
      */
     private function completedRatingSendNotification(Episciences_Rating_Report $report, Episciences_Paper $paper): void
     {
@@ -3555,7 +3557,11 @@ class PaperController extends PaperDefaultController
     }
 
     /**
+     * @throws InvalidArgumentExceptionAlias
+     * @throws JsonException
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
@@ -3729,7 +3735,11 @@ class PaperController extends PaperDefaultController
     }
 
     /**
+     * @throws InvalidArgumentExceptionAlias
+     * @throws JsonException
+     * @throws Zend_Date_Exception
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
