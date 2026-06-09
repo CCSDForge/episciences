@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - [#952](https://github.com/CCSDForge/episciences/issues/952) Add EiC, Editorial Sec and Administrators to receipients of "New answer to your revision request: comment" (paper_revision_answer)
 - [#1038](https://github.com/CCSDForge/episciences/issues/1038) It is now possible to publish the article at any stage of the editorial process if it is accepted[RT##287093].
+- [RT##287093]: It is now possible to publish the article at any stage of the editorial process if it is accepted.
 - Paper admin: assignment buttons replaced by pencil icon (`fa-pen-to-square`); glyphicons removed.
 - Paper admin: modal save now does a targeted AJAX refresh instead of a full page reload.
 - Paper admin: other volumes form replaced by a Tom Select `<select multiple>` (`checkbox_options` plugin).
@@ -45,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Prevent the submission of a dataset or software that does not include a descriptor.
+- [#1048](https://github.com/CCSDForge/episciences/issues/1048) Volume metadata: quotes in preface/content caused JSON parsing error when editing. Removed `double_encode=false` from `form.phtml` display while keeping it in `Volume.php` save to prevent double-encoding (#962).
 - [#1039](https://github.com/CCSDForge/episciences/issues/1039) The MIME type for docx files is detected as "application/octet-stream"
 - Application error: Call to a member function getVol_num() on bool
 
