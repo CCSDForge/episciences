@@ -19,7 +19,9 @@ class PaperController extends PaperDefaultController
 
     /**
      *  display paper pdf
+     * @throws DOMException
      * @throws GuzzleException
+     * @throws Zend_Controller_Response_Exception
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -995,6 +997,7 @@ class PaperController extends PaperDefaultController
     }
 
     /**
+     * @throws DOMException
      * @throws JsonException
      */
     public function postorcidauthorAction(): void
@@ -1187,10 +1190,11 @@ class PaperController extends PaperDefaultController
 
     /**
      * revision request answer form: answer without any modifications
-     * @throws Zend_Form_Exception
-     * @throws Zend_Json_Exception
+     * @throws DOMException
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     * @throws Zend_Json_Exception
      */
     public function answerrequestAction(): void
     {
@@ -1221,6 +1225,7 @@ class PaperController extends PaperDefaultController
 
     /**
      * save author's answer to a revision request (comment only)
+     * @throws DOMException
      * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
@@ -1393,6 +1398,7 @@ class PaperController extends PaperDefaultController
      * update previous version status
      * reassign editors to new version
      * optional: reassign reviewers to new version
+     * @throws DOMException
      * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
@@ -1717,6 +1723,8 @@ class PaperController extends PaperDefaultController
 
     /**
      * new version form (revision request answer)
+     * @throws DOMException
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Json_Exception
      */
@@ -1881,6 +1889,7 @@ class PaperController extends PaperDefaultController
     /**
      * @param Zend_Controller_Request_Http $request
      * @return Episciences_Paper
+     * @throws DOMException
      * @throws Zend_Db_Statement_Exception
      */
 
@@ -2544,8 +2553,9 @@ class PaperController extends PaperDefaultController
 
     /**
      * reviewer ratings reports and pending invitations
+     * @throws DOMException
      * @throws Zend_Db_Select_Exception
-     * @throws Zend_Db_Statement_Exception|JsonException
+     * @throws Zend_Db_Statement_Exception
      */
     public function ratingsAction(): void
     {
@@ -2652,6 +2662,7 @@ class PaperController extends PaperDefaultController
 
     /**
      * reviewer rating report
+     * @throws DOMException
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -2908,11 +2919,11 @@ class PaperController extends PaperDefaultController
      * save reviewer comment (from reviewer to contributor)
      * @param Episciences_Paper $paper
      * @return bool
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
      */
     private function save_reviewer_comment(Episciences_Paper $paper): bool
     {
@@ -3157,12 +3168,11 @@ class PaperController extends PaperDefaultController
      * save reviewer rating report
      * @param Episciences_Rating_Report $report
      * @param Episciences_Paper $paper
+     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
-     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
      */
     private function save_rating(Episciences_Rating_Report $report, Episciences_Paper $paper): void
     {
@@ -3199,6 +3209,7 @@ class PaperController extends PaperDefaultController
     /**
      * @param Episciences_Rating_Report $report
      * @param Episciences_Paper $paper
+     * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -3330,6 +3341,7 @@ class PaperController extends PaperDefaultController
 
     /**
      * Supprimer le fichier joint à un rapport de relecture
+     * @throws DOMException
      * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
@@ -3384,6 +3396,7 @@ class PaperController extends PaperDefaultController
 
     /**
      * remove contributor paper (done by the contributor himself)
+     * @throws DOMException
      * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Date_Exception
@@ -3564,6 +3577,7 @@ class PaperController extends PaperDefaultController
     }
 
     /**
+     * @throws DOMException
      * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Date_Exception
@@ -3742,6 +3756,7 @@ class PaperController extends PaperDefaultController
     }
 
     /**
+     * @throws DOMException
      * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Date_Exception
@@ -4216,6 +4231,7 @@ class PaperController extends PaperDefaultController
      * @param Episciences_Comment $request
      * @param array $recipients
      * @return Episciences_User|null
+     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
 
