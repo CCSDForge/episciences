@@ -10,12 +10,17 @@ final class LicenseSpdxResolver
 
     public const LICENSE_SEPARATOR = '-';
 
-    public function __construct()
+    public function __construct(private ?LicenseProviderInterface $licenseProvider = null)
     {
+        if (null === $licenseProvider) {
+            $licenseProvider = new LicenseManagerWrapper();
+        }
+
+        $this->licenseProvider = $licenseProvider;
         $this->loadSpdxIndex();
     }
 
-    public static function urlToSpdxCode(string $str): ?string
+    public static function urlToSpdxCode(string $str): string
     {
         if (preg_match(
                 '#^' . preg_quote(self::SPDX_LICENSE_LIST_URL, '#') . '([^/]+)\.html$#',
@@ -30,21 +35,18 @@ final class LicenseSpdxResolver
     }
 
     /**
-     * Entry point
+     * Convert license to SPDX code
      */
     public function resolve($input)
     {
-        $norm = $this->normalize($input);
-
-        if ($norm === null) {
-            return self::NO_ASSERTION;
-        }
 
         $spdxCode = self::urlToSpdxCode($input);
 
-        if($spdxCode !== ''){
+        if ($spdxCode !== '') {
             return $spdxCode;
         }
+
+        $norm = $this->normalize($input);
 
         $spdxCode = $this->matchSpdx($norm);
 
@@ -61,7 +63,7 @@ final class LicenseSpdxResolver
         }
 
         $index = [];
-        $licenseList = LicenseManager::loadSpdxCode() ?? [];
+        $licenseList = $this->licenseProvider?->loadSpdxCode();
         foreach ($licenseList as $code) {
             $index[strtolower($code)] = $code;
         }
@@ -69,8 +71,9 @@ final class LicenseSpdxResolver
         $this->spdxIndex = $index;
     }
 
-    private function normalize(string $input): ?string
+    private function normalize(string $input): string
     {
+        // Note that the normalization process converts strings to lowercase.
         $input = $this->normalizeUrl($input);
 
         // MIT direct
@@ -86,7 +89,6 @@ final class LicenseSpdxResolver
             return $processed;
         }
 
-
         // opensource.org
         if (preg_match('#opensource\.org/licenses/([a-z0-9.\-]+)#', $input, $matches)) {
             return strtolower($matches[1]);
@@ -100,6 +102,14 @@ final class LicenseSpdxResolver
         // GNU GPL
         if (str_contains($input, 'gnu.org/licenses') && str_contains($input, 'gpl-3.0')) {
             return 'gpl-3.0';
+        }
+
+        // apache.org
+
+        if (str_contains($input, 'apache.org') && str_contains($input, 'license') && preg_match('#license-([0-9.]+)(?:\.\w+)?$#', $input, $matches)) {
+            // [0-9.]+ will automatically stop before ".xxx"
+            $version = $matches[1];
+            return 'Apache-' . $version;
         }
 
         return $input;
@@ -127,19 +137,31 @@ final class LicenseSpdxResolver
     {
 
         $license = $matches[1] ?? '';
-        $version = $matches[2] ?? 1;
+
+        if (isset($matches[2]) && $matches[2] === '') {
+            $version = 4.0;
+        } else {
+            $version = $matches[2];
+        }
+
+        if(!str_contains($version, '.')){
+            $version .= '.0';
+        }
+
 
         $parts = explode(self::LICENSE_SEPARATOR, $license);
 
-        if (($parts[0] ?? null) !== 'by') {
+        if (empty($parts) || $parts[0] !== 'by') {
             return null;
         }
 
+        // remove 'by'
         array_shift($parts);
 
+        // Licence order
         $order = ['nc', 'nd', 'sa'];
 
-        // remettre les parties dans l’ordre officiel
+        // sort the remaining parts
         $this->sortByPositionInOrder($parts, $order);
 
         $suffix = $parts
@@ -160,6 +182,7 @@ final class LicenseSpdxResolver
     private function specialSpdxMap(): array
     {
         return [
+            // public Domain
                 'https://creativecommons.org/choose/mark'
                 => 'CC-PDDC',
 
@@ -168,6 +191,8 @@ final class LicenseSpdxResolver
 
                 'https://creativecommons.org/publicdomain/zero/1.0'
                 => 'CC0-1.0',
+
+            // Fonts
 
                 'https://scripts.sil.org/cms/scripts/page.php?item_id=ofl_web'
                 => 'OFL-1.1',
@@ -186,13 +211,15 @@ final class LicenseSpdxResolver
         return $map[$url] ?? null;
     }
 
-
     private function processCreativeCommons(string $input): ?string
     {
 
-        if (preg_match('#creativecommons\.org/licenses/([^/]+)/([^/]+)#', $input, $matches)) {
+
+
+        if (preg_match('#creativecommons\.org/licenses/([^/]+)/?([^/]*)#', $input, $matches)) {
             return $this->resolveCc($matches);
         }
+
 
         // CC0
         if (preg_match('#creativecommons\.org/publicdomain/zero/([^/]+)#', $input, $matches)) {
@@ -219,5 +246,12 @@ final class LicenseSpdxResolver
     public function isValid(string $spdXCode): bool
     {
         return $this->matchSpdx($spdXCode) !== null;
+    }
+
+
+    // for test if necessary
+    public function getSpdxIndex(array $index): ?array
+    {
+        return $this->spdxIndex;
     }
 }
