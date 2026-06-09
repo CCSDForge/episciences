@@ -4223,34 +4223,4 @@ class PaperController extends PaperDefaultController
 
         return null;
     }
-
-    /**
-     * Send the final notification with the prepared settings
-     *
-     * @param Episciences_User $principalRecipient
-     * @param Episciences_Paper $currentPaper
-     * @param Episciences_Comment $request
-     * @param Episciences_Comment $answer
-     * @param array $ccRecipients
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
-     * @throws Zend_Mail_Exception
-     */
-    private function sendFinalNotification(Episciences_User $principalRecipient, Episciences_Paper $currentPaper, Episciences_Comment $request, Episciences_Comment $answer, array $ccRecipients): void
-    {
-        $paperUrl = $this->buildAdminPaperUrl($currentPaper->getDocid());
-
-        $this->answerRevisionNotifyManager(
-                $principalRecipient,
-                $currentPaper,
-                $request,
-                $answer,
-                true,
-                [Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl],
-                $ccRecipients
-        );
-
-    }
-
 }
