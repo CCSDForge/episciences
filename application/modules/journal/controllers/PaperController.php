@@ -3335,9 +3335,11 @@ class PaperController extends PaperDefaultController
         $docid = (int)$request->getParam(self::DOC_ID_STR);
         $itemId = $request->getParam('cid');
         $uid = (int)$request->getParam('uid'); // Reviewer UID
-        $file = $request->getParam('file');
+        $file = (string)$request->getParam('file');
 
-        if (!$docid || !$uid) {
+        // Only a plain file name is expected: reject any directory component to
+        // prevent path traversal when building $report_path below.
+        if (!$docid || !$uid || $file === '' || !preg_match('/^[a-zA-Z0-9._-]+$/', $file)) {
             $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME);
             return;
         }

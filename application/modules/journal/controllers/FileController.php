@@ -62,6 +62,13 @@ class FileController extends DefaultController
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
+
+        // E-mail attachments are not public: require an authenticated user.
+        if (!Episciences_Auth::isLogged()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
         $params = $this->getRequest()->getParams();
 
         $subDirectories = $params['sub_directories'];
@@ -120,6 +127,25 @@ class FileController extends DefaultController
         // check if report exists
         $report = Episciences_Rating_Report::findById($id);
         if (!$report) {
+            $this->getResponse()->setHttpResponseCode(404);
+            $this->view->message = "Fichier introuvable";
+            $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
+            $this->renderScript('error/error.phtml');
+            return;
+        }
+
+        // Rating reports are confidential: only editorial staff, the paper's editor
+        // or the reviewer who authored the report may access the attachment.
+        // (Mirrors the display gate in partials/remove_report_file_attachment.phtml.)
+        $paper = Episciences_PapersManager::get($report->getDocid());
+        $isAllowed = Episciences_Auth::isLogged() && $paper && (
+                Episciences_Auth::isAllowedToUploadPaperReport()
+                || $paper->getEditor(Episciences_Auth::getUid())
+                || (int)$report->getUid() === Episciences_Auth::getUid()
+            );
+
+        if (!$isAllowed) {
+            // Return 404 rather than 403 to avoid disclosing the report's existence.
             $this->getResponse()->setHttpResponseCode(404);
             $this->view->message = "Fichier introuvable";
             $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
@@ -205,6 +231,15 @@ class FileController extends DefaultController
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
+
+        // Uploading files is reserved to authenticated users (submission /
+        // paper-management flows). Anonymous uploads are rejected.
+        if (!Episciences_Auth::isLogged()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo Zend_Json::encode(['status' => 'error']);
+            return;
+        }
+
         $result = [];
 
         if ($this->isPostMaxSizeReached()) {

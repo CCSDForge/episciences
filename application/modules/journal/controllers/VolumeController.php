@@ -229,6 +229,13 @@ class VolumeController extends Zend_Controller_Action
     {
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
+
+        // Volume management is reserved to editorial staff (secretary / admin).
+        if (!Episciences_Auth::isSecretary()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
         $upload = new Zend_File_Transfer_Adapter_Http();
         $file = $upload->getFileInfo();
         $response = ['file' => $file[0]];
