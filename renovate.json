@@ -25,7 +25,7 @@
       "ignoreUnstable": false,
       "composerIgnorePlatformReqs": null,
       "constraints": {
-        "php": "8.1"
+        "php": "8.5.7"
       }
     }
   ]
