@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adapt "acceptedAskAuthorsFinalVersion" form to the requirements for setting a deadline for requesting a revision after acceptance
 
 ### Changed
-
+- [#952](https://github.com/CCSDForge/episciences/issues/952) Add EiC, Editorial Sec and Administrators to receipients of "New answer to your revision request: comment" (paper_revision_answer)
 - [#1010](https://github.com/CCSDForge/episciences/issues/1010) The allowed range for modifying the deadline is now between the original deadline minus "rating_deadline_min" and the original deadline plus "rating_deadline_max".
 
 ## v1.0.55.2 - 2026-05-19
