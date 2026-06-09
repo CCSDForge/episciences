@@ -18,10 +18,8 @@ class FileController extends DefaultController
         $filename = $params['filename'];
         $extension = $params['extension'];
         $file = $filename . '.' . $extension;
-        $path = REVIEW_FILES_PATH;
-        $filepath = $path . $file;
 
-        $this->loadFile($filepath);
+        $this->loadFile(REVIEW_FILES_PATH, $file);
     }
 
     public function docfilesAction(): void
@@ -32,7 +30,7 @@ class FileController extends DefaultController
 
         $folder = ($params['folder'] === 'ce') ? Episciences_CommentsManager::COPY_EDITING_SOURCES : $params['folder'];
         $parentCommentId = $params['parentCommentId'] ?? null;
-        $docId = $params['docId'];
+        $docId = (int)$params['docId'];
         $filename = $params['filename'];
         $extension = $params['extension'] ?? null;
 
@@ -42,15 +40,17 @@ class FileController extends DefaultController
             $file .= '.' . $extension;
         }
 
-        $path = Episciences_PapersManager::buildDocumentPath($docId) . '/' . $folder . '/';
+        // Trusted base: the document directory. The folder / parentCommentId / file
+        // segments are user-influenced and confined under it by resolveSafePath().
+        $relativePath = $folder . '/';
 
         if (null !== $parentCommentId) {
-            $path .= $parentCommentId . '/';
+            $relativePath .= $parentCommentId . '/';
         }
 
-        $filepath = $path . $file;
+        $relativePath .= $file;
 
-        $this->loadFile($filepath);
+        $this->loadFile(Episciences_PapersManager::buildDocumentPath($docId), $relativePath);
     }
 
     // load an e-mail attached file
@@ -68,10 +68,13 @@ class FileController extends DefaultController
         $filename = $params['filename'];
         $extension = $params['extension'];
         $file = $filename . '.' . $extension;
-        $path = REVIEW_FILES_PATH . Episciences_Mail_Send::ATTACHMENTS . DIRECTORY_SEPARATOR . $subDirectories;
-        $filepath = $path . $file;
 
-        $this->loadFile($filepath, true);
+        // Trusted base: the attachments directory. sub_directories and file are
+        // user-influenced and confined under it by resolveSafePath().
+        $baseDir = REVIEW_FILES_PATH . Episciences_Mail_Send::ATTACHMENTS;
+        $relativePath = DIRECTORY_SEPARATOR . $subDirectories . $file;
+
+        $this->loadFile($baseDir, $relativePath, true);
     }
 
     // Accès à la version temporaire d'un document
@@ -81,15 +84,12 @@ class FileController extends DefaultController
         $this->_helper->viewRenderer->setNoRender();
         $params = $this->getRequest()->getParams();
 
-        $docId = $params['docId'];
+        $docId = (int)$params['docId'];
         $filename = $params['filename'];
         $extension = $params['extension'];
         $file = $filename . '.' . $extension;
 
-        $path = Episciences_PapersManager::buildDocumentPath($docId) . '/tmp/';
-        $filepath = $path . $file;
-
-        $this->loadFile($filepath);
+        $this->loadFile(Episciences_PapersManager::buildDocumentPath($docId) . '/tmp', $file);
     }
 
     // Accès aux fichiers joints d'un document
@@ -99,14 +99,12 @@ class FileController extends DefaultController
         $this->_helper->viewRenderer->setNoRender();
         $params = $this->getRequest()->getParams();
 
-        $docId = $params['docId'];
+        $docId = (int)$params['docId'];
         $filename = $params['filename'];
         $extension = $params['extension'];
         $file = $filename . '.' . $extension;
-        $path = Episciences_PapersManager::buildDocumentPath($docId) . '/ratings/';
-        $filepath = $path . $file;
 
-        $this->loadFile($filepath);
+        $this->loadFile(Episciences_PapersManager::buildDocumentPath($docId) . '/ratings', $file);
     }
 
     // access to a rating report attachment
@@ -114,7 +112,6 @@ class FileController extends DefaultController
     {
         $params = $this->getRequest()->getParams();
 
-        $docid = $params['docid'];
         $id = $params['id'];
         $filename = $params['filename'];
         $extension = $params['extension'];
@@ -130,8 +127,12 @@ class FileController extends DefaultController
             return;
         }
 
-        $filepath = REVIEW_FILES_PATH . $report->getDocid() . '/reports/' . $report->getUid() . '/' . $file;
-        if (!file_exists($filepath)) {
+        // Trusted base derived from the persisted report (docid/uid), the file name is
+        // user-influenced and confined under it by resolveSafePath().
+        $baseDir = REVIEW_FILES_PATH . $report->getDocid() . '/reports/' . $report->getUid();
+        $filepath = $this->resolveSafePath($baseDir, $file);
+
+        if ($filepath === null) {
             $this->getResponse()->setHttpResponseCode(404);
             $this->view->message = "Fichier introuvable";
             $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
@@ -141,16 +142,22 @@ class FileController extends DefaultController
 
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
-        $this->loadFile($filepath);
+        $this->openFile($filepath);
     }
 
     /**
-     * @param string $filepath
+     * Resolves a user-influenced relative path under a trusted base directory
+     * (preventing path traversal) and streams the file if it is readable.
+     *
+     * @param string $baseDir Trusted base directory
+     * @param string $relativePath User-influenced path, relative to $baseDir
      * @param bool $forceDownload
      */
-    protected function loadFile(string $filepath, bool $forceDownload = false): void
+    protected function loadFile(string $baseDir, string $relativePath, bool $forceDownload = false): void
     {
-        if (is_readable($filepath)) {
+        $filepath = $this->resolveSafePath($baseDir, $relativePath);
+
+        if ($filepath !== null && is_readable($filepath)) {
             $this->openFile($filepath, $forceDownload);
         } else {
             $message = '<strong>' . $this->view->translate("Le fichier n'existe pas.") . '</strong>';
@@ -279,17 +286,33 @@ class FileController extends DefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
+        // Mutating action: require POST and an authenticated user.
+        // (Anonymous access previously allowed arbitrary file deletion.)
+        if (!$request->isPost() || !Episciences_Auth::isLogged()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
         // attachments path
         $path = (string)$request->getPost('path');
-        $filename = $request->getPost('file');
-        $docId = (int)$request->get('docId');
+        $filename = (string)$request->getPost('file');
+        $docId = (int)$request->getPost('docId');
         $pcId = (int)$request->getPost('pcId');
-        $paperId = (int)$request->getpost('paperId');
+        $paperId = (int)$request->getPost('paperId');
 
-        $path = $this->buildStorageFolder($path, $paperId, $docId, $pcId, true);
-        $filepath = $path . $filename;
+        // Only a flat file name is expected here; strip any directory component
+        // to neutralise path traversal (e.g. "../../somefile").
+        $filename = basename($filename);
 
-        if ($filename && is_file($filepath)) {
+        if ($filename === '' || $filename === '.' || $filename === '..') {
+            $this->getResponse()->setHttpResponseCode(400);
+            return;
+        }
+
+        $baseDir = $this->buildStorageFolder($path, $paperId, $docId, $pcId);
+        $filepath = $this->resolveSafePath($baseDir, $filename);
+
+        if ($filepath !== null && is_file($filepath)) {
             unlink($filepath);
         }
     }
