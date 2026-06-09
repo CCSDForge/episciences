@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin paper list: removed redundant page description blockquote.
 
 ### Fixed
+- [#1048](https://github.com/CCSDForge/episciences/issues/1048) Volume metadata: quotes in preface/content caused JSON parsing error when editing. Removed `double_encode=false` from `form.phtml` display while keeping it in `Volume.php` save to prevent double-encoding (#962).
 - [#1039](https://github.com/CCSDForge/episciences/issues/1039) The MIME type for docx files is detected as "application/octet-stream"
 - Application error: Call to a member function getVol_num() on bool
 
