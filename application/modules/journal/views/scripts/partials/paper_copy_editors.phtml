@@ -46,7 +46,7 @@ $editors = $this->editors;
                 <?php endif; ?>
 
 
-                <span style="margin-left: 0.5em;"><strong><?= $copyEditor->getScreenName() ?></strong></span>
+                <span style="margin-left: 0.5em;"><strong><?= $this->escape($copyEditor->getScreenName()) ?></strong></span>
 
                 <?php
                 $sections = $copyEditor->getAssignedSections();
