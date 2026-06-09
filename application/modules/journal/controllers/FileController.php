@@ -217,7 +217,7 @@ class FileController extends DefaultController
                 $adapter->addValidators([
                     ['FilesSize', false, MAX_FILE_SIZE],
                     ['Extension', false, ALLOWED_EXTENSIONS],
-                    ['MimeType', false, ALLOWED_MIMES_TYPES]
+                    new Episciences_Form_Validate_MimeType()
                 ]);
 
                 $files = $adapter->getFileInfo();
