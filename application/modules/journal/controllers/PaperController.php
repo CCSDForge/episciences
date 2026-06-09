@@ -1282,48 +1282,24 @@ class PaperController extends PaperDefaultController
             $oAnswer->setMessage($post[self::COMMENT_STR]);
             $oAnswer->save(false, $paper->getUid()); // admin can save answer
 
-            // send mail to chief editors and editors
-            $recipients = $paper->getEditors(true, true);
+            /**
+             * This change is intentional:
+             * The old "saveanswerAction" sent N individual emails to N editors (each with its own TAG_RECIPIENT_* tags).
+             * The new workflow sends one email to the primary recipient, with the others in CC.
+             *
+             */
 
-            foreach ($recipients as $recipient) {
-
-                $locale = $recipient->getLangueid();
-
-                $tags = [
-                    Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $recipient->getUsername(),
-                    Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $recipient->getScreenName(),
-                    Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $recipient->getFullName(),
-                    Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-                    Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-                    Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
-                    Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata(),
-                    Episciences_Mail_Tags::TAG_REQUEST_DATE => $this->view->Date($oComment->getWhen(), $locale),
-                    Episciences_Mail_Tags::TAG_REQUEST_MESSAGE => $oComment->getMessage(),
-                    Episciences_Mail_Tags::TAG_REQUEST_ANSWER => $oAnswer->getMessage(),
-                    Episciences_Mail_Tags::TAG_PAPER_URL => $this->adminPaperUrl($paper->getDocid()) //paper management page url
-                ];
-
-                Episciences_Mail_Send::sendMailFromReview(
-                    $recipient,
-                    Episciences_Mail_TemplatesManager::TYPE_PAPER_REVISION_ANSWER,
-                    $tags,
-                    $paper,
-                    Episciences_Auth::getUid(),
-                    [$oAnswer->getFile() => $oAnswer->getFilePath()],
-                    true
-                );
-            }
+            $recipients = [];
+            $this->handleManagerNotifications($oAnswer, $oComment, $paper, $recipients, true );
 
             if ($type !== Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT) {
-
 
                 $journalSettings = Zend_Registry::get('reviewSettings');
 
                 if (
-                    isset($journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION]) &&
-                    $journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] &&
-                    $paper->getStatus() === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION
-
+                        isset($journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION]) &&
+                        $journalSettings[Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION] &&
+                        $paper->getStatus() === Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_FINAL_VERSION
                 ) {
                     $newStatus = Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING;
                 } else {
@@ -1583,46 +1559,7 @@ class PaperController extends PaperDefaultController
             Episciences_User_AssignmentsManager::reassignPaperCoAuthors($coAuthors, $tmpPaper);
         }
 
-        //Mail aux rédacteurs + selon les paramètres de la revue, aux admins et secrétaires de rédactions.
-
-        Episciences_Review::checkReviewNotifications($recipients);
-        unset($recipients[$paper->getUid()]);
-        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
-
-        if ($tmpPaper->isEditor($requestComment->getUid())) {
-
-            $revisionInitiator = new Episciences_User();
-            $revisionInitiator->find($requestComment->getUid());
-            $principalRecipient = $revisionInitiator;
-        } else {
-            $principalRecipient = !empty($recipients) ? $recipients[array_key_first($recipients)] : null;
-        }
-
-        $CC = $paper->extractCCRecipients($recipients, $principalRecipient ? $principalRecipient->getUid() : null);
-
-        if (empty($recipients)) {
-            $recipients = $CC;
-            $CC = [];
-        }
-
-        if (null !== $principalRecipient) {
-
-            // link to manage article page
-            $paper_url = $this->adminPaperUrl($tmpPaper->getDocid());
-
-            $this->answerRevisionNotifyManager(
-                $principalRecipient,
-                $paper, $tmpPaper,
-                $requestComment,
-                $answerComment,
-                true,
-                [Episciences_Mail_Tags::TAG_PAPER_URL => $paper_url],
-                $CC
-            );
-
-        } else {
-            trigger_error('Answer revision with tmp version: mail not sent to managers: empty recipients');
-        }
+        $this->handleManagerNotifications($answerComment, $requestComment, $tmpPaper, $recipients );
 
         // link to public article page
         $publicUrl = $this->view->url([
@@ -2193,7 +2130,7 @@ class PaperController extends PaperDefaultController
             $requestComment
         );
 
-        $this->notifyManagersAndAuthor($paper, $newPaper, $requestComment, $answerComment, $coAuthors);
+        $this->notifyManagersAndAuthor($newPaper, $requestComment, $answerComment, $coAuthors);
 
         $statusDetails = [self::STATUS => $newPaper->getStatus()];
         if ($requestComment->getOption('isAlreadyAccepted')) {
@@ -2435,7 +2372,6 @@ class PaperController extends PaperDefaultController
     }
 
     /**
-     * @param Episciences_Paper $paper
      * @param Episciences_Paper $newPaper
      * @param Episciences_Comment $requestComment
      * @param Episciences_Comment $answerComment
@@ -2447,7 +2383,6 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Mail_Exception
      */
     private function notifyManagersAndAuthor(
-        Episciences_Paper   $paper,
         Episciences_Paper   $newPaper,
         Episciences_Comment $requestComment,
         Episciences_Comment $answerComment,
@@ -2460,9 +2395,9 @@ class PaperController extends PaperDefaultController
         $recipients = $editors + $copyEditors;
 
         Episciences_Review::checkReviewNotifications($recipients);
-        unset($recipients[$paper->getUid()]);
+        unset($recipients[$newPaper->getUid()]);
 
-        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($newPaper->getPaperid(), $recipients);
 
         if ($newPaper->isEditor($requestComment->getUid())) {
             $principalRecipient = new Episciences_User();
@@ -2473,22 +2408,25 @@ class PaperController extends PaperDefaultController
                 : null;
         }
 
-        $CC = $paper->extractCCRecipients($recipients, $principalRecipient?->getUid());
+        $CC = $newPaper->extractCCRecipients($recipients, $principalRecipient?->getUid());
 
         if ($principalRecipient) {
             $paperUrl = $this->adminPaperUrl($newPaper->getDocid());
             $this->answerRevisionNotifyManager(
-                $principalRecipient,
-                $paper,
-                $newPaper,
-                $requestComment,
-                $answerComment,
-                true,
-                [Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl],
-                $CC
+                    $principalRecipient,
+                    $newPaper,
+                    $requestComment,
+                    $answerComment,
+                    true,
+                    [Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl],
+                    $CC
             );
         } else {
-            trigger_error('Answer revision with new version: mail not sent to managers: empty recipients');
+
+            Episciences_View_Helper_Log::log(
+                    'Failed to send revision notification: No valid recipients found'
+            );
+
         }
 
         $this->notifyAuthorNewVersion($newPaper, $coAuthors);
@@ -4210,5 +4148,91 @@ class PaperController extends PaperDefaultController
 
             $comment['SCREEN_NAME'] = $formName;
         }
+    }
+
+    /**
+     * mail to all editors assigned to the article and, depending on the journal's settings, editors, administrators and editorial secretaries
+     *
+     * @param Episciences_Comment $answer
+     * @param Episciences_Comment $request
+     * @param Episciences_Paper $currentPaper
+     * @param array $recipients
+     * @param bool $forceLoading
+     * @return void
+     * @throws JsonException
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Mail_Exception
+     */
+
+    private function handleManagerNotifications(Episciences_Comment $answer,
+                                                Episciences_Comment $request,
+                                                Episciences_Paper   $currentPaper,
+                                                array               $recipients = [],
+                                                bool                $forceLoading = false): void
+    {
+
+
+        if ($forceLoading) {
+            $recipients = $currentPaper->getEditors(true, true);
+        }
+
+        Episciences_Review::checkReviewNotifications($recipients);
+        unset($recipients[$currentPaper->getUid()]);
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($currentPaper->getPaperid(), $recipients);
+
+        $principalRecipient = $this->determinePrincipalRecipient($currentPaper, $request, $recipients);
+
+        $ccRecipients = $currentPaper->extractCCRecipients(
+                $recipients,
+                $principalRecipient?->getUid()
+        );
+
+        if (null === $principalRecipient) {
+            Episciences_View_Helper_Log::log('Failed to send revision notification: No valid recipients found'
+            );
+
+            return;
+        }
+
+        $paperUrl = $this->buildAdminPaperUrl($currentPaper->getDocid());
+        $this->answerRevisionNotifyManager(
+                $principalRecipient,
+                $currentPaper,
+                $request,
+                $answer,
+                true,
+                [Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl],
+                $ccRecipients
+        );
+
+    }
+
+    /**
+     *
+     * @param Episciences_Paper $currentPaper
+     * @param Episciences_Comment $request
+     * @param array $recipients
+     * @return Episciences_User|null
+     * @throws Zend_Db_Statement_Exception
+     */
+
+    private function determinePrincipalRecipient(Episciences_Paper $currentPaper, Episciences_Comment $request, array $recipients): ?Episciences_User
+    {
+        // initiator of the request
+        if ($currentPaper->isEditor($request->getUid())) {
+            $revisionInitiator = new Episciences_User();
+            $revisionInitiator->find($request->getUid());
+            return $revisionInitiator;
+        }
+
+        // take the first valid recipient from the list
+        if (!empty($recipients)) {
+            // reset() is often more efficient and easier to read than "array_key_first()" + array access.
+            return reset($recipients);
+        }
+
+        return null;
     }
 }

@@ -27,14 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performances
 
 - [#937](https://github.com/CCSDForge/episciences/issues/937) Sorting by Reviewers / Editors / Copy editors uses a derived-table `LEFT JOIN` with `MIN(SCREEN_NAME)` aggregation (single evaluation per query) rather than a correlated subquery.
-
-
-
 - Paper admin: volume/section assignment now uses a native `<dialog>` modal with Tom Select; `paper-assignment-modal.js` (vanilla JS) replaces `volume-assignment.js` and `section-assignment.js`.
 - Paper admin: Tom Select `dropdown_input` and `remove_button` plugins in modal selects.
 - Admin paper list: Tom Select search on all 7 filter selects (Status, Volume, Section, Editors, Reviewers, DOI, Repositories) — type to filter within long lists, animated chevron indicates dropdown, placeholder shows "All" when nothing is selected.
 
 ### Changed
+- [#952](https://github.com/CCSDForge/episciences/issues/952) Add EiC, Editorial Sec and Administrators to receipients of "New answer to your revision request: comment" (paper_revision_answer)
 - [#1038](https://github.com/CCSDForge/episciences/issues/1038) It is now possible to publish the article at any stage of the editorial process if it is accepted[RT##287093].
 - [RT##287093]: It is now possible to publish the article at any stage of the editorial process if it is accepted.
 - Paper admin: assignment buttons replaced by pencil icon (`fa-pen-to-square`); glyphicons removed.
@@ -47,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin paper list: removed redundant page description blockquote.
 
 ### Fixed
+- Prevent the submission of a dataset or software that does not include a descriptor.
+- [#1048](https://github.com/CCSDForge/episciences/issues/1048) Volume metadata: quotes in preface/content caused JSON parsing error when editing. Removed `double_encode=false` from `form.phtml` display while keeping it in `Volume.php` save to prevent double-encoding (#962).
 - [#1039](https://github.com/CCSDForge/episciences/issues/1039) The MIME type for docx files is detected as "application/octet-stream"
 - Application error: Call to a member function getVol_num() on bool
 
