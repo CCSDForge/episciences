@@ -5,16 +5,15 @@ namespace unit\modules\journal\controllers;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Regression guards for the access-control fix in AdministrategraphabstractController
- * (audit finding F-3): the request guard logic was inverted, letting an
- * unauthorised user through a well-formed AJAX POST, and $docId was used unsanitised
- * in filesystem paths.
+ * Regression guards for the request handling in AdministrategraphabstractController.
  *
- * Source-analysis tests (ZF1 controllers are not instantiable in isolation).
+ * Source-analysis tests (ZF1 controllers are not instantiable in isolation):
+ * they assert the request guard keeps its corrected form and that the document id
+ * is cast to int before being used to build filesystem paths.
  *
  * @covers AdministrategraphabstractController
  */
-final class AdministrategraphabstractControllerSecurityTest extends TestCase
+final class AdministrategraphabstractControllerRequestTest extends TestCase
 {
     private string $source;
 
@@ -36,33 +35,30 @@ final class AdministrategraphabstractControllerSecurityTest extends TestCase
     }
 
     /**
-     * The corrected guard must DENY when the user is not authorised, i.e. the
-     * negated-and form: (... ) || (!isAllowedToManagePaper() && !isAuthor()).
-     * The previous (buggy) form used a non-negated AND that let unauthorised
-     * users pass.
+     * The request guard must reject when the user is not allowed, i.e. the
+     * negated-and form: (...) || (!isAllowedToManagePaper() && !isAuthor()).
      */
-    public function testRejectionGuardUsesNegatedAuthorisation(): void
+    public function testRequestGuardUsesNegatedAuthorisation(): void
     {
         foreach (['addgraphabsAction', 'deletegraphabsAction'] as $action) {
             $method = $this->extractMethod($action);
 
             self::assertStringContainsString('!Episciences_Auth::isAllowedToManagePaper()', $method,
-                "$action must deny when the user cannot manage the paper");
+                "$action must reject when the user cannot manage the paper");
             self::assertStringContainsString('!Episciences_Auth::isAuthor()', $method,
-                "$action must deny when the user is not an author");
+                "$action must reject when the user is not an author");
 
-            // Must NOT use the old positive form inside the guard.
             self::assertStringNotContainsString(
                 '&& (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())',
                 $method,
-                "$action must not use the inverted (buggy) authorisation condition"
+                "$action must not use the earlier guard condition"
             );
         }
     }
 
     /**
-     * $docId must be cast to int before being used in filesystem paths
-     * (move_uploaded_file / unlink), preventing path traversal via the docId.
+     * $docId must be cast to int before being used to build filesystem paths
+     * (move_uploaded_file / unlink).
      */
     public function testDocIdIsCastToInt(): void
     {
@@ -74,10 +70,10 @@ final class AdministrategraphabstractControllerSecurityTest extends TestCase
     }
 
     /**
-     * The deleted file name must be passed through basename() to neutralise any
+     * The deleted file name must be passed through basename() to drop any
      * directory component.
      */
-    public function testDeleteSanitisesFileName(): void
+    public function testDeleteUsesBasenameOnFileName(): void
     {
         $method = $this->extractMethod('deletegraphabsAction');
         self::assertStringContainsString('basename(', $method,

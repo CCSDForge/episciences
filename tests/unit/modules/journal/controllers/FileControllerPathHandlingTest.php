@@ -5,18 +5,16 @@ namespace unit\modules\journal\controllers;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Regression guards for the security fixes in FileController (audit findings
- * F-1, F-2, F-4).
+ * Regression guards for path handling and request handling in FileController.
  *
  * ZF1 module controllers are not Composer-autoloaded and need the full request
  * stack to instantiate, so — like the other controller tests in this suite — we
- * analyse the source to assert the security guards remain wired. The actual
- * path-confinement behaviour is covered behaviourally by
- * DefaultControllerResolveSafePathTest.
+ * analyse the source to assert the expected handling stays in place. The actual
+ * path-confinement behaviour is covered by DefaultControllerResolveSafePathTest.
  *
  * @covers FileController
  */
-final class FileControllerSecurityTest extends TestCase
+final class FileControllerPathHandlingTest extends TestCase
 {
     private string $source;
 
@@ -42,14 +40,14 @@ final class FileControllerSecurityTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // F-1 — path confinement wired through loadFile()
+    // loadFile() resolves paths under a trusted base
     // -----------------------------------------------------------------------
 
-    public function testLoadFileConfinesViaResolveSafePath(): void
+    public function testLoadFileResolvesPathThroughResolveSafePath(): void
     {
         $method = $this->extractMethod('loadFile');
         self::assertStringContainsString('resolveSafePath', $method,
-            'loadFile() must confine the path through resolveSafePath()');
+            'loadFile() must resolve the path through resolveSafePath()');
     }
 
     public function testReadActionsPassATrustedBaseToLoadFile(): void
@@ -67,47 +65,47 @@ final class FileControllerSecurityTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // F-2 — deleteAction: authenticated POST + sanitisation + confinement
+    // deleteAction(): authenticated POST + name sanitisation + confinement
     // -----------------------------------------------------------------------
 
-    public function testDeleteActionRequiresPostAndAuthentication(): void
+    public function testDeleteActionRequiresAuthenticatedPost(): void
     {
         $method = $this->extractMethod('deleteAction');
 
         self::assertStringContainsString('isPost()', $method,
             'deleteAction() must require a POST request');
         self::assertStringContainsString('Episciences_Auth::isLogged()', $method,
-            'deleteAction() must require an authenticated user (it was reachable anonymously via XHR)');
+            'deleteAction() must require an authenticated user');
         self::assertStringContainsString('403', $method,
-            'deleteAction() must reject unauthorised access with HTTP 403');
+            'deleteAction() must answer 403 when the request is not an authenticated POST');
     }
 
-    public function testDeleteActionSanitisesFilename(): void
+    public function testDeleteActionSanitisesFileName(): void
     {
         $method = $this->extractMethod('deleteAction');
         self::assertStringContainsString('basename(', $method,
             'deleteAction() must strip any directory component from the file name');
     }
 
-    public function testDeleteActionConfinesTargetBeforeUnlink(): void
+    public function testDeleteActionResolvesTargetBeforeUnlink(): void
     {
         $method = $this->extractMethod('deleteAction');
         self::assertStringContainsString('resolveSafePath', $method,
-            'deleteAction() must confine the deletion target via resolveSafePath()');
+            'deleteAction() must resolve the target through resolveSafePath()');
 
-        // The unlink must happen on the confined path, not the raw concatenation.
+        // The unlink must happen on the resolved path, not the raw concatenation.
         $resolvePos = strpos($method, 'resolveSafePath');
         $unlinkPos  = strpos($method, 'unlink(');
         self::assertNotFalse($unlinkPos, 'deleteAction() must call unlink()');
         self::assertLessThan($unlinkPos, $resolvePos,
-            'The path must be confined before unlink() is called');
+            'The path must be resolved before unlink() is called');
     }
 
     // -----------------------------------------------------------------------
-    // F-4 — reportAction: access control on confidential rating reports
+    // reportAction(): permission check before serving a report attachment
     // -----------------------------------------------------------------------
 
-    public function testReportActionEnforcesAccessControl(): void
+    public function testReportActionChecksPermissions(): void
     {
         $method = $this->extractMethod('reportAction');
 
@@ -121,10 +119,10 @@ final class FileControllerSecurityTest extends TestCase
             'reportAction() must allow the reviewer who authored the report');
     }
 
-    public function testReportActionHidesExistenceWith404(): void
+    public function testReportActionUses404WhenNotPermitted(): void
     {
         $method = $this->extractMethod('reportAction');
         self::assertStringContainsString('404', $method,
-            'reportAction() must return 404 (not 403) so it does not disclose the report existence');
+            'reportAction() must answer 404 when the report is missing or not permitted');
     }
 }
