@@ -150,8 +150,18 @@ class FileController extends DefaultController
      */
     protected function loadFile(string $filepath, bool $forceDownload = false): void
     {
-        if (is_readable($filepath)) {
-            $this->openFile($filepath, $forceDownload);
+        // Confine the resolved file to REVIEW_FILES_PATH to prevent path traversal
+        // (e.g. "../../application/configs/application.ini") via the user-supplied
+        // filename/extension parameters.
+        $realBase = realpath(REVIEW_FILES_PATH);
+        $realPath = realpath($filepath);
+
+        $isConfined = $realBase !== false
+            && $realPath !== false
+            && ($realPath === $realBase || str_starts_with($realPath, $realBase . DIRECTORY_SEPARATOR));
+
+        if ($isConfined && is_readable($realPath)) {
+            $this->openFile($realPath, $forceDownload);
         } else {
             $message = '<strong>' . $this->view->translate("Le fichier n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
