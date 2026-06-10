@@ -1751,12 +1751,12 @@ class Episciences_Submit
      * Assigne automatiquement les rédacteurs à un article (git #43), selon les paramètres de la revue
      * @param Episciences_Paper $paper
      * @param array $suggestEditors : editeurs suggérés par l'auteur,
-     * @param int|null $sid : l'ID de la rubrique; Null par defaut
-     * @param int|null $vid : l'ID du volume; Null par defaut
+     * @param int|string|null $sid : l'ID de la rubrique; Null par defaut
+     * @param int|string|null $vid : l'ID du volume; Null par defaut
      * @return array : les Editeurs assignés à l'articles
      * @throws Zend_Db_Statement_Exception
      */
-    private function assignEditors(Episciences_Paper $paper, array $suggestEditors = [], ?int $sid = null, ?int $vid = null): array
+    private function assignEditors(Episciences_Paper $paper, array $suggestEditors = [], int|string|null $sid = null, int|string|null $vid = null): array
     {
         /** @var Episciences_Review $review */
         $review = Episciences_ReviewsManager::find(RVID);
@@ -2067,16 +2067,18 @@ class Episciences_Submit
                 $adminTags[Episciences_Mail_Tags::TAG_REFUSED_ARTICLE_MESSAGE] = $message;
             }
 
-            $vTag = !$volume ? $translator->translate('Hors volume', $locale) : $volume->getName($locale);
-            $sTag = !$section ? $translator->translate('Hors rubrique', $locale) : $section->getName($locale);
+            // default translations
+            $noneFemale = $translator->translate('Aucune', $locale);
+            $noneMale   = $translator->translate('Aucun', $locale);
+            $outOfVol   = $translator->translate('Hors volume', $locale);
+            $outOfSec   = $translator->translate('Hors rubrique', $locale);
+
+            $adminTags = array_merge($adminTags, self::resolveVolumeAndSectionTags($volume, $section, $locale, $noneFemale, $noneMale, $outOfVol, $outOfSec));
 
             $adminTags [Episciences_Mail_Tags::TAG_SENDER_EMAIL] = Episciences_Auth::getEmail();
             $adminTags [Episciences_Mail_Tags::TAG_SENDER_FULL_NAME] = Episciences_Auth::getFullName();
             $adminTags [Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
             $adminTags [Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($locale);
-            $adminTags [Episciences_Mail_Tags::TAG_VOLUME_NAME] = $vTag;
-            $adminTags [Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF] = ($volume && $volume->getBib_reference()) ?: $translator->translate('Aucune', $locale);
-            $adminTags [Episciences_Mail_Tags::TAG_SECTION_NAME] = $sTag;
 
             if (!$canReplace) { // new submission only
                 $rTag = $recipient instanceof Episciences_Editor ? $recipient->getTag() : null;
@@ -2091,6 +2093,46 @@ class Episciences_Submit
 
             Episciences_Mail_Send::sendMailFromReview($recipient, $templateKey, $adminTags, $paper);
         }
+    }
+
+    /**
+     * Resolves volume and section mail tags from their respective objects.
+     * Accepts false/null for $volume and $section (ZF1 find() returns false when not found).
+     *
+     * @param Episciences_Volume|bool|null    $volume
+     * @param Episciences_Section|bool|null   $section
+     * @return array<string, string|int>
+     */
+    private static function resolveVolumeAndSectionTags(
+        mixed $volume,
+        mixed $section,
+        string $locale,
+        string $noneFemale,
+        string $noneMale,
+        string $outOfVol,
+        string $outOfSection
+    ): array {
+        $sName = !$section ? $outOfSection : $section->getName($locale);
+
+        if (!$volume) {
+            return [
+                Episciences_Mail_Tags::TAG_VOLUME_NAME    => $outOfVol,
+                Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF => $noneFemale,
+                Episciences_Mail_Tags::TAG_VOLUME_YEAR    => $noneFemale,
+                Episciences_Mail_Tags::TAG_VOLUME_NUMBER  => $noneMale,
+                Episciences_Mail_Tags::TAG_VOLUME_TYPE    => $noneMale,
+                Episciences_Mail_Tags::TAG_SECTION_NAME   => $sName,
+            ];
+        }
+
+        return [
+            Episciences_Mail_Tags::TAG_VOLUME_NAME    => $volume->getName($locale) ?: $noneMale,
+            Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF => $volume->getBib_reference() ?: $noneFemale,
+            Episciences_Mail_Tags::TAG_VOLUME_NUMBER  => $volume->getVol_num() ?: $noneMale,
+            Episciences_Mail_Tags::TAG_VOLUME_YEAR    => $volume->getVol_year() ?: $noneFemale,
+            Episciences_Mail_Tags::TAG_VOLUME_TYPE    => $volume->getVol_type() ?: $noneMale,
+            Episciences_Mail_Tags::TAG_SECTION_NAME   => $sName,
+        ];
     }
 
     /**

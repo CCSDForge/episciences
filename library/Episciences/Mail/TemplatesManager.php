@@ -773,6 +773,9 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL,
         Episciences_Mail_Tags::TAG_SECTION_NAME,
         Episciences_Mail_Tags::TAG_VOLUME_NAME,
+        Episciences_Mail_Tags::TAG_VOLUME_NUMBER,
+        Episciences_Mail_Tags::TAG_VOLUME_YEAR,
+        Episciences_Mail_Tags::TAG_VOLUME_TYPE,
         Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF
     ];
 
@@ -1307,6 +1310,9 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_VOLUME_EDITORS,
         Episciences_Mail_Tags::TAG_SECTION_ID,
         Episciences_Mail_Tags::TAG_VOLUME_NAME,
+        Episciences_Mail_Tags::TAG_VOLUME_NUMBER,
+        Episciences_Mail_Tags::TAG_VOLUME_YEAR,
+        Episciences_Mail_Tags::TAG_VOLUME_TYPE,
         Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF,
         Episciences_Mail_Tags::TAG_SECTION_NAME,
         Episciences_Mail_Tags::TAG_PAPER_POSITION_IN_VOLUME,
@@ -1480,6 +1486,9 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_PAPER_URL,
         Episciences_Mail_Tags::TAG_VOLUME_NAME,
+        Episciences_Mail_Tags::TAG_VOLUME_NUMBER,
+        Episciences_Mail_Tags::TAG_VOLUME_YEAR,
+        Episciences_Mail_Tags::TAG_VOLUME_TYPE,
         Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF
     ];
 
@@ -1610,7 +1619,10 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY => [self::DESCRIPTION => "notification informant le comité éditorial quand un rédacteur commente un article", self::RECIPIENT => self::MANAGERS_COPY_EDITORS_EXCEPTED_EXP],
         self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY => [self::DESCRIPTION => "notification informant l'auteur quand un relecteur poste un commentaire sur la page de son article", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY => [self::DESCRIPTION => "notification informant le comité éditorial quand un relecteur poste un commentaire sur la page de l'article", self::RECIPIENT => self::MANAGERS_COPY_EDITORS_EXCEPTED_EXP],
-        self::TYPE_PAPER_REVISION_ANSWER => [self::DESCRIPTION => "réponse de l'auteur à une demande de modifications émise par le comité éditorial : l'auteur ne veut pas apporter de modifications", self::RECIPIENT => self::EDITORS_RECEP_EXP],
+        self::TYPE_PAPER_REVISION_ANSWER => [
+                self::DESCRIPTION => "réponse de l'auteur à une demande de modifications émise par le comité éditorial : l'auteur ne veut pas apporter de modifications",
+                self::RECIPIENT => self::MANAGERS_RECEP_EXP
+        ],
         self::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION => [self::DESCRIPTION => "notification informant le relecteur de sa réassignation à la nouvelle version de l'article", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN => [self::DESCRIPTION => "notification informant le relecteur de sa réassignation à la version temporaire de l'article", self::RECIPIENT => "tous les relecteurs assignés à l'article si l'option 'Réassigner automatiquement les mêmes relecteurs quand une nouvelle version est soumise' est activée"],
         self::TYPE_PAPER_TMP_VERSION_SUBMITTED => [self::DESCRIPTION => "réponse de l'auteur à une demande de modifications émise par le comité éditorial : l’auteur propose une version temporaire", self::RECIPIENT => self::MANAGERS_COPY_EDITORS_EXCEPTED_EXP],

@@ -36,21 +36,62 @@ class Episciences_UsersManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $users = [];
 
-      $select = self::getUsersWithRolesQuery($with, $without);
+        $select = self::getUsersWithRolesQuery($with, $without);
+        $uids = $db->fetchCol($select);
 
-        $result = $db->fetchCol($select);
+        if (empty($uids)) {
+            return [];
+        }
 
-        foreach ($result as $uid) {
+        // Fetch all local user records in chunks of 1000 to prevent excessively large IN clauses
+        $localRows = [];
+        foreach (array_chunk($uids, 1000) as $chunk) {
+            $usersSelect = $db->select()->from(T_USERS)->where('UID IN (?)', $chunk)->where('IS_VALID = ?', self::VALID_USER);
+            $chunkRows = $db->fetchAssoc($usersSelect);
+            if (!empty($chunkRows)) {
+                $localRows += $chunkRows;
+            }
+        }
 
+        // Fetch all roles for these users in chunks of 1000 to prevent excessively large IN clauses
+        $rolesRows = [];
+        foreach (array_chunk($uids, 1000) as $chunk) {
+            $rolesSelect = $db->select()
+                ->from(T_USER_ROLES, ['UID', 'RVID', 'ROLEID'])
+                ->where('UID IN (?)', $chunk);
+            $chunkRoles = $db->fetchAll($rolesSelect);
+            if (!empty($chunkRoles)) {
+                $rolesRows = array_merge($rolesRows, $chunkRoles);
+            }
+        }
+
+        // Map roles by user ID
+        $rolesByUid = [];
+        foreach ($rolesRows as $roleRow) {
+            $uid = (int)$roleRow['UID'];
+            $rolesByUid[$uid][$roleRow['RVID']][] = $roleRow['ROLEID'];
+        }
+
+        // Instantiate and populate Episciences_User objects without individual queries
+        foreach ($uids as $uid) {
             $uid = (int)$uid;
-
-            $oUser = new Episciences_User();
-
-            if (!$oUser->findWithCAS($uid)) {
+            if (!isset($localRows[$uid])) {
                 continue;
             }
 
-            $oUser->loadRoles();
+            // Prime the identity map cache
+            Episciences_User::setStaticCache($uid, $localRows[$uid]);
+
+            $oUser = new Episciences_User();
+            $oUser->find($uid);
+
+            // Set preloaded roles
+            $userRoles = $rolesByUid[$uid] ?? [];
+            if (defined('RVID') && !isset($userRoles[RVID])) {
+                $userRoles[RVID] = [Episciences_Acl::ROLE_MEMBER];
+            }
+            $oUser->setRoles($userRoles);
+
             $users[$uid] = $oUser;
         }
 
@@ -111,20 +152,69 @@ class Episciences_UsersManager
         $users = [];
 
         $select = $db->select()->distinct()->from(T_USER_ROLES, 'UID')->where('RVID = ?', RVID);
-        $result = $db->fetchCol($select);
+        $uids = $db->fetchCol($select);
 
-        foreach ($result as $uid) {
+        if (empty($uids)) {
+            return [];
+        }
+
+        // Fetch valid local user records in chunks of 1000 to prevent excessively large IN clauses
+        $localRows = [];
+        foreach (array_chunk($uids, 1000) as $chunk) {
+            $usersSelect = $db->select()
+                ->from(T_USERS)
+                ->where('UID IN (?)', $chunk)
+                ->where('IS_VALID = ?', Episciences_UsersManager::VALID_USER);
+            $chunkRows = $db->fetchAssoc($usersSelect);
+            if (!empty($chunkRows)) {
+                $localRows += $chunkRows;
+            }
+        }
+
+        if (empty($localRows)) {
+            return [];
+        }
+
+        $validUids = array_keys($localRows);
+
+        // Fetch all roles for these valid users in chunks of 1000 to prevent excessively large IN clauses
+        $rolesRows = [];
+        foreach (array_chunk($validUids, 1000) as $chunk) {
+            $rolesSelect = $db->select()
+                ->from(T_USER_ROLES, ['UID', 'RVID', 'ROLEID'])
+                ->where('UID IN (?)', $chunk);
+            $chunkRoles = $db->fetchAll($rolesSelect);
+            if (!empty($chunkRoles)) {
+                $rolesRows = array_merge($rolesRows, $chunkRoles);
+            }
+        }
+
+        // Map roles by user ID
+        $rolesByUid = [];
+        foreach ($rolesRows as $roleRow) {
+            $uid = (int)$roleRow['UID'];
+            $rolesByUid[$uid][$roleRow['RVID']][] = $roleRow['ROLEID'];
+        }
+
+        // Instantiate, populate, and convert to array
+        foreach ($validUids as $uid) {
+            // Prime the identity map cache
+            Episciences_User::setStaticCache($uid, $localRows[$uid]);
 
             $oUser = new Episciences_User();
-            if (!$oUser->find($uid) || !$oUser->getIs_valid()) {
-                continue;
-            }
+            $oUser->find($uid);
 
-            $oUser->loadRoles();
+            // Set preloaded roles
+            $userRoles = $rolesByUid[$uid] ?? [];
+            if (defined('RVID') && !isset($userRoles[RVID])) {
+                $userRoles[RVID] = [Episciences_Acl::ROLE_MEMBER];
+            }
+            $oUser->setRoles($userRoles);
+
             $users[$uid] = $oUser->toArray();
         }
 
-        return ($users);
+        return $users;
     }
 
     /**

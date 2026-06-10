@@ -154,6 +154,7 @@ class Episciences_Review
     protected $_jsonSettings = []; // Noms des paramètres autorisés
     protected $_settingsKeys = []; // Paramètres de la revue
     protected $_settings = [];
+    protected bool $_settingsLoaded = false;
     protected $_issn = null;
     protected $_repositories = [];
     /**
@@ -598,7 +599,7 @@ class Episciences_Review
      */
     public function getSetting($setting)
     {
-        if (count($this->_settings) === 0) {
+        if (!$this->_settingsLoaded) {
             $this->loadSettings();
         }
         return Ccsd_Tools::ifsetor($this->_settings[$setting], false);
@@ -607,17 +608,25 @@ class Episciences_Review
     /**
      * load review settings from database
      */
-    public function loadSettings(): void
+    public function loadSettings(bool $forceReload = false): void
     {
+        if ($this->_settingsLoaded && !$forceReload) {
+            return;
+        }
+
+        if ($forceReload) {
+            $this->_settings = [];
+        }
+
         // review configuration
-        $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from(T_REVIEW_SETTINGS)->where('RVID = ' . $this->_rvid);
+        $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from(T_REVIEW_SETTINGS)->where('RVID = ?', $this->_rvid);
 
         $journalDoiSettings = [];
         foreach (Zend_Db_Table_Abstract::getDefaultAdapter()->fetchAll($select) as $row) {
-            if (in_array($row['SETTING'], $this->_jsonSettings, false)) {
+            if (in_array($row['SETTING'], $this->_jsonSettings, true)) {
                 $value = json_decode($row['VALUE'], true);
                 $this->setSetting($row['SETTING'], $value);
-            } elseif (in_array($row['SETTING'], Episciences_Review_DoiSettings::getDoiSettings(), false)) {
+            } elseif (in_array($row['SETTING'], Episciences_Review_DoiSettings::getDoiSettings(), true)) {
                 $journalDoiSettings[$row['SETTING']] = $row['VALUE'];
             } else {
                 $this->setSetting($row['SETTING'], $row['VALUE']);
@@ -627,6 +636,7 @@ class Episciences_Review
 
         $doiSettings = new Episciences_Review_DoiSettings($journalDoiSettings);
         $this->setDoiSettings($doiSettings);
+        $this->_settingsLoaded = true;
 
     }
 

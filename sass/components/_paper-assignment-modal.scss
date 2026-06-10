@@ -1,0 +1,174 @@
+dialog.paper-modal {
+  width: min(640px, 92vw);
+  max-height: 88vh;
+  border: none;
+  border-radius: 6px;
+  padding: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+  flex-direction: column;
+  overflow: visible;
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  // Browsers natively hide dialog:not([open]) via display:none in the UA
+  // stylesheet. Setting display:flex on the root selector would override that
+  // and make a closed dialog visible in the normal document flow. We only
+  // apply display:flex when the dialog is actually open so the flex layout is
+  // preserved while still letting the browser hide it when closed.
+  &[open] {
+    display: flex;
+  }
+
+  .paper-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e5e5;
+    border-radius: 6px 6px 0 0;
+    background: #fff;
+    flex-shrink: 0;
+  }
+
+  .paper-modal__title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .paper-modal__close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    color: #888;
+    padding: 2px 6px;
+    border-radius: 3px;
+    transition: color 0.1s, background 0.1s;
+
+    &:hover {
+      color: #333;
+      background: #f4f4f4;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #337ab7;
+      outline-offset: 2px;
+    }
+  }
+
+  .paper-modal__body {
+    padding: 20px;
+    overflow: visible;
+    flex: 1 1 auto;
+    background: #fff;
+    min-height: 80px;
+
+    .form-group {
+      margin-bottom: 0;
+    }
+
+    // Same fixes as list.phtml's inline <style> block
+    select.tomselected,
+    select.ts-hidden-accessible {
+      display: none !important;
+    }
+
+    .ts-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    // Strip Bootstrap's form-control styles from the Tom Select wrapper
+    .ts-wrapper.form-control {
+      height: auto !important;
+      padding: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
+    }
+
+    // Multi-select control box
+    .ts-wrapper.multi .ts-control {
+      min-height: 34px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 4px 28px 4px 8px;
+      cursor: pointer;
+      background: #fff;
+      position: relative;
+    }
+
+    // Dropdown chevron (↓) positioned at the right edge of the control
+    .ts-wrapper.multi .ts-control::after {
+      content: '▾';
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #777;
+      pointer-events: none;
+      font-size: 14px;
+      line-height: 1;
+      transition: transform 0.15s;
+    }
+
+    // Rotate chevron when the dropdown is open
+    .ts-wrapper.multi.focus .ts-control::after {
+      transform: translateY(-50%) rotate(180deg);
+    }
+
+    // Selected items: blue pill matching the list page
+    // Multi-select: all items get the pill treatment
+    // Single-select: only non-empty values (skip "Hors volume" / "Hors rubrique")
+    .ts-wrapper.multi .ts-control > .item,
+    .ts-wrapper.single .ts-control > .item:not([data-value=""]) {
+      background-color: #337ab7;
+      color: #fff;
+      border-color: #2e6da4;
+      border-radius: 3px;
+      padding: 2px 6px;
+    }
+
+    .ts-wrapper.multi .ts-control > .item .remove {
+      color: rgba(255, 255, 255, 0.7);
+      border-left-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .ts-wrapper.multi .ts-control > .item .remove:hover {
+      color: #fff;
+    }
+
+    .ts-dropdown {
+      position: absolute !important;
+      z-index: 10 !important;
+    }
+
+    .ts-dropdown .option {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ts-dropdown .option.active,
+    .ts-dropdown .option:hover {
+      background-color: #337ab7;
+      color: #fff;
+    }
+  }
+
+  .paper-modal__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid #e5e5e5;
+    border-radius: 0 0 6px 6px;
+    background: #fff;
+    flex-shrink: 0;
+  }
+}

@@ -108,6 +108,10 @@ class Episciences_ReviewsManager
         // Cache the result
         self::$_cache[$cacheKey] = $review;
 
+        if ($review instanceof Episciences_Review && $review->getCode() !== '') {
+            self::$_cache['rvcode_' . $review->getCode()] = $review;
+        }
+
         return $review;
     }
 
@@ -149,6 +153,11 @@ class Episciences_ReviewsManager
 
         // Cache the result
         self::$_cache[$cacheKey] = $review;
+
+        self::$_cache['rvid_' . $review->getRvid()] = $review;
+        if ($enabledOnly) {
+            self::$_cache['rvcode_' . $rvcode] = $review;
+        }
 
         return $review;
     }
