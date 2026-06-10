@@ -44,7 +44,8 @@ class RobotsDefaultController extends Zend_Controller_Action
             echo 'Disallow: /' . PHP_EOL;
 
             echo "# Sitemap\n";
-            echo "Sitemap: " . $this->getRequest()->getScheme() . '://' . $_SERVER['HTTP_HOST'] . "/sitemap\n";
+            // Use the configured application base rather than the request host.
+            echo "Sitemap: " . rtrim(APPLICATION_URL, '/') . "/sitemap\n";
         } else {
             echo "Disallow: *\n";
         }

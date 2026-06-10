@@ -1077,6 +1077,11 @@ class Episciences_User extends Ccsd_User_Models_User
         $acl = new Episciences_Acl();
         $editableRoles = $acl->getEditableRoles();
 
+        // Keep only the roles the current user is allowed to assign. The form already
+        // limits the choices to the editable roles; this re-applies the same rule on
+        // the submitted values.
+        $roles = array_values(array_intersect((array)$roles, array_keys($editableRoles)));
+
         foreach ($editableRoles as $role) {
             $this->_db->delete(T_USER_ROLES, ['RVID = ?' => $rvId, 'UID = ?' => $uid, 'ROLEID = ?' => $role]);
         }

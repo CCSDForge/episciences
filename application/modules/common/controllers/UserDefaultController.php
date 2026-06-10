@@ -309,8 +309,6 @@ class UserDefaultController extends Zend_Controller_Action
     public function logoutAction(): void
     {
 
-        $scheme = SERVER_PROTOCOL . '://';
-
         $urlParams = ['controller' => 'user', 'action' => 'logoutfromcas'];
 
         if ($this->getParam('reason') == 'passwordupdated') {
@@ -321,7 +319,9 @@ class UserDefaultController extends Zend_Controller_Action
             $urlParams = array_merge($urlParams, ['lang' => Episciences_Auth::getLangueid()]);
         }
 
-        $url = $scheme . $_SERVER['HTTP_HOST'] . $this->view->url($urlParams);
+        // Build the return URL from the configured application base, not from the
+        // incoming request host.
+        $url = rtrim(APPLICATION_URL, '/') . $this->view->url($urlParams);
 
         $auth = null;
         $adapterName = strtoupper(defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? (string)EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS');
@@ -870,7 +870,17 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function deleteAction()
     {
+        $this->_helper->viewRenderer->setNoRender();
+        $this->_helper->getHelper('layout')->disableLayout();
+
         $request = $this->getRequest();
+
+        // This action only handles POST submissions from a secretary.
+        if (!$request->isPost() || !Episciences_Auth::isSecretary()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo 0;
+            return;
+        }
 
         $userId = $request->getPost('userId');
         $table = $request->getPost('table');
@@ -883,8 +893,6 @@ class UserDefaultController extends Zend_Controller_Action
             $respond = Episciences_User::deleteFromCAS($userId);
         }
 
-        $this->_helper->viewRenderer->setNoRender();
-        $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;
 
     }
@@ -1490,7 +1498,19 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function saverolesAction()
     {
+        $this->_helper->viewRenderer->setNoRender();
+        $this->_helper->layout->disableLayout();
+
         $request = $this->getRequest();
+
+        // This action only handles POST submissions from an authenticated user.
+        // The set of assignable roles is enforced by Episciences_User::saveUserRoles().
+        if (!$request->isPost() || !Episciences_Auth::isLogged()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo 0;
+            return;
+        }
+
         $params = $request->getPost();
         $uid = $params['uid'];
 
@@ -1501,8 +1521,6 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
         $user = new Episciences_User();
-        $this->_helper->viewRenderer->setNoRender();
-        $this->_helper->layout->disableLayout();
 
         // Save roles
         $rolesSaved = $user->saveUserRoles($uid, $roles);
