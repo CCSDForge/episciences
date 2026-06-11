@@ -650,7 +650,7 @@ class PaperController extends PaperDefaultController
     {
         $this->processAuthorProofAction(
             'altauthorapproveproof',
-            Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION,
+            Episciences_Paper::STATUS_ALT_AUTHOR_PROOF_APPROVED,
             'altauthorapprovesubject',
             'altauthorapprovemessage'
         );

@@ -75,7 +75,9 @@ $status-colors: (
         // alt: proof sent to author
         37 : $dark-orange,
         // alt: awaiting publication
-        38 : $sage-green
+        38 : $sage-green,
+        // alt: author proof approved
+        39 : $spinach-green
 );
 
 @each $status-code, $status-color in $status-colors {

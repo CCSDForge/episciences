@@ -151,4 +151,8 @@ document.addEventListener('DOMContentLoaded', function () {
             show(btnShowCitations);
         });
     });
+
+    $(document).on('click', '.submit-modal', function () {
+        $(this).closest('.modal-content').find('form').trigger('submit');
+    });
 });

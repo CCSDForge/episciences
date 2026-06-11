@@ -93,6 +93,7 @@ class Episciences_Paper
     public const STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS = 36;
     public const STATUS_ALT_PROOF_SENT_TO_AUTHOR = 37;
     public const STATUS_ALT_AWAITING_PUBLICATION = 38;
+    public const STATUS_ALT_AUTHOR_PROOF_APPROVED = 39;
 
     // paper settings
     public const SETTING_UNWANTED_REVIEWER = 'unwantedReviewer';
@@ -132,7 +133,8 @@ class Episciences_Paper
         self::STATUS_ALT_FINAL_VERSION_SUBMITTED,
         self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
         self::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
-        self::STATUS_ALT_AWAITING_PUBLICATION
+        self::STATUS_ALT_AWAITING_PUBLICATION,
+        self::STATUS_ALT_AUTHOR_PROOF_APPROVED
     ];
 
     // Non présents dans le filtre de recherche
@@ -198,6 +200,7 @@ class Episciences_Paper
         self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS => 'altLayoutEditingInProgress',
         self::STATUS_ALT_PROOF_SENT_TO_AUTHOR => 'altProofSentToAuthor',
         self::STATUS_ALT_AWAITING_PUBLICATION => 'altAwaitingPublication',
+        self::STATUS_ALT_AUTHOR_PROOF_APPROVED => 'altAuthorProofApproved',
     ];
 
     // status order (for sorting)
@@ -234,7 +237,8 @@ class Episciences_Paper
         self::STATUS_ALT_FINAL_VERSION_SUBMITTED,
         self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
         self::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
-        self::STATUS_ALT_AWAITING_PUBLICATION
+        self::STATUS_ALT_AWAITING_PUBLICATION,
+        self::STATUS_ALT_AUTHOR_PROOF_APPROVED
     ];
     public const NOT_LISTED_STATUS = [
         Episciences_Paper::STATUS_OBSOLETE,
@@ -372,6 +376,7 @@ class Episciences_Paper
         self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS => 'mise en page en cours',
         self::STATUS_ALT_PROOF_SENT_TO_AUTHOR => "épreuve envoyée à l'auteur",
         self::STATUS_ALT_AWAITING_PUBLICATION => 'en attente de publication',
+        self::STATUS_ALT_AUTHOR_PROOF_APPROVED => "épreuve approuvée par l'auteur",
     ];
     public static array $_noEditableStatus = [
         self::STATUS_PUBLISHED,
@@ -398,7 +403,8 @@ class Episciences_Paper
         self::STATUS_TMP_VERSION_ACCEPTED,
         self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
         self::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
-        self::STATUS_ALT_AWAITING_PUBLICATION
+        self::STATUS_ALT_AWAITING_PUBLICATION,
+        self::STATUS_ALT_AUTHOR_PROOF_APPROVED
     ];
     public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'openaire', 'crossref', 'doaj', 'zbjats', 'json'];
     public $hasHook;
@@ -2741,6 +2747,11 @@ class Episciences_Paper
         return $this->getStatus() === self::STATUS_ALT_AWAITING_PUBLICATION;
     }
 
+    public function isAltAuthorProofApproved(): bool
+    {
+        return $this->getStatus() === self::STATUS_ALT_AUTHOR_PROOF_APPROVED;
+    }
+
     public function isAltFinalVersionSubmitted(): bool
     {
         return $this->getStatus() === self::STATUS_ALT_FINAL_VERSION_SUBMITTED;
@@ -2754,6 +2765,7 @@ class Episciences_Paper
             self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
             self::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
             self::STATUS_ALT_AWAITING_PUBLICATION,
+            self::STATUS_ALT_AUTHOR_PROOF_APPROVED,
         ], true);
     }
 

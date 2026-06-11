@@ -90,6 +90,11 @@ if (Episciences_Auth::isSecretary()) : ?>
                         <a href="#" data-toggle="modal"
                            data-target=".alt-send-proof-to-author-modal"><?= $this->translate("Envoyer l'épreuve à l'auteur") ?></a>
                     </li>
+                <?php elseif ($paper->isAltAuthorProofApproved()) : ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-approve-for-publication-modal"><?= $this->translate('Approuver pour publication') ?></a>
+                    </li>
                 <?php elseif ($paper->isAltAwaitingPublication()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
@@ -298,6 +303,11 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
                            data-target=".alt-send-proof-to-author-modal"><?= $this->translate("Envoyer l'épreuve à l'auteur") ?></a>
+                    </li>
+                <?php elseif ($paper->isAltAuthorProofApproved()) : ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-approve-for-publication-modal"><?= $this->translate('Approuver pour publication') ?></a>
                     </li>
                 <?php elseif ($paper->isAltAwaitingPublication()) : ?>
                     <li>
@@ -775,23 +785,21 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             'body' => $this->altIncorrectLatexForm
         ]) ?>
     <?php endif; ?>
-    <?php if ($paper->isAltProofSentToAuthor()) : ?>
-        <?php if (isset($this->altReturnToLayoutEditingForm)) : ?>
-            <?=
-            $this->partial('partials/paper-status-modal.phtml', [
-                'target' => 'alt-return-to-layout-editing-modal',
-                'title' => "Renvoyer en mise en page",
-                'body' => $this->altReturnToLayoutEditingForm
-            ]) ?>
-        <?php endif; ?>
-        <?php if (isset($this->altApproveForPublicationForm)) : ?>
-            <?=
-            $this->partial('partials/paper-status-modal.phtml', [
-                'target' => 'alt-approve-for-publication-modal',
-                'title' => "Approuver pour publication",
-                'body' => $this->altApproveForPublicationForm
-            ]) ?>
-        <?php endif; ?>
+    <?php if ($paper->isAltProofSentToAuthor() && isset($this->altReturnToLayoutEditingForm)) : ?>
+        <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'alt-return-to-layout-editing-modal',
+            'title' => "Renvoyer en mise en page",
+            'body' => $this->altReturnToLayoutEditingForm
+        ]) ?>
+    <?php endif; ?>
+    <?php if ($paper->isAltAuthorProofApproved() && isset($this->altApproveForPublicationForm)) : ?>
+        <?=
+        $this->partial('partials/paper-status-modal.phtml', [
+            'target' => 'alt-approve-for-publication-modal',
+            'title' => "Approuver pour publication",
+            'body' => $this->altApproveForPublicationForm
+        ]) ?>
     <?php endif; ?>
     <?php if (isset($this->altPublishForm) && $paper->isAltAwaitingPublication()) : ?>
         <?=

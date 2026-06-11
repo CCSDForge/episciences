@@ -860,6 +860,8 @@ class AdministratepaperController extends PaperDefaultController
             }
             if ($paper->isAltProofSentToAuthor()) {
                 $this->view->altReturnToLayoutEditingForm = Episciences_PapersManager::getAltReturnToLayoutEditingForm($altDefault);
+            }
+            if ($paper->isAltAuthorProofApproved()) {
                 $this->view->altApproveForPublicationForm = Episciences_PapersManager::getAltApproveForPublicationForm($altDefault);
             }
             if ($paper->isAltAwaitingPublication()) {
@@ -2273,7 +2275,7 @@ class AdministratepaperController extends PaperDefaultController
     {
         $this->processAlternativePipelineTransition(
             'altapproveforpublication',
-            Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
+            Episciences_Paper::STATUS_ALT_AUTHOR_PROOF_APPROVED,
             Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION,
             'altapprovesubject',
             'altapprovemessage',
