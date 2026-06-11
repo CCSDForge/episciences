@@ -885,6 +885,14 @@ class UserDefaultController extends Zend_Controller_Action
         $userId = $request->getPost('userId');
         $table = $request->getPost('table');
 
+        // Each delete control carries its own per-user request token.
+        $tokenName = 'user_delete_' . (int)$userId;
+        if (!Episciences_Csrf_Helper::validateToken($tokenName, (string)$request->getPost($tokenName, ''))) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo 0;
+            return;
+        }
+
         $respond = 0;
 
         if ($table == 'localUsers') {
@@ -1489,6 +1497,7 @@ class UserDefaultController extends Zend_Controller_Action
             $this->_helper->layout->disableLayout();
             $this->view->form = $form;
             $this->view->uid = $uid;
+            $this->view->csrfToken = Episciences_Csrf_Helper::generateToken('user_saveroles_' . (int)$uid);
             $this->renderScript('user/roles_form.phtml');
         }
     }
@@ -1513,6 +1522,14 @@ class UserDefaultController extends Zend_Controller_Action
 
         $params = $request->getPost();
         $uid = $params['uid'];
+
+        // The form rendered by rolesformAction carries a per-user request token.
+        $tokenName = 'user_saveroles_' . (int)$uid;
+        if (!Episciences_Csrf_Helper::validateToken($tokenName, $params[$tokenName] ?? '')) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo 0;
+            return;
+        }
 
         if (array_key_exists('roles_' . $uid, $params)) {
             $roles = $params['roles_' . $uid];

@@ -94,6 +94,46 @@ final class UserDefaultControllerRequestGuardTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
+    // Request tokens (Episciences_Csrf_Helper)
+    // -----------------------------------------------------------------------
+
+    public function testDeleteActionValidatesPerUserToken(): void
+    {
+        $method = $this->extractMethod('deleteAction');
+        self::assertStringContainsString("'user_delete_' . (int)\$userId", $method,
+            'deleteAction must build the token name from the target user id');
+        self::assertStringContainsString('Episciences_Csrf_Helper::validateToken', $method,
+            'deleteAction must validate the request token');
+    }
+
+    public function testSaveRolesActionValidatesPerUserToken(): void
+    {
+        $method = $this->extractMethod('saverolesAction');
+        self::assertStringContainsString("'user_saveroles_' . (int)\$uid", $method,
+            'saverolesAction must build the token name from the target user id');
+        self::assertStringContainsString('Episciences_Csrf_Helper::validateToken', $method,
+            'saverolesAction must validate the request token');
+    }
+
+    public function testSaveRolesTokenIsCheckedBeforeSaving(): void
+    {
+        $method = $this->extractMethod('saverolesAction');
+        $tokenPos = strpos($method, 'validateToken');
+        $savePos = strpos($method, '$user->saveUserRoles(');
+        self::assertNotFalse($tokenPos, 'saverolesAction must validate the token');
+        self::assertNotFalse($savePos, 'saverolesAction must call saveUserRoles()');
+        self::assertLessThan($savePos, $tokenPos,
+            'the token must be validated before the roles are saved');
+    }
+
+    public function testRolesFormActionGeneratesPerUserToken(): void
+    {
+        $method = $this->extractMethod('rolesformAction');
+        self::assertStringContainsString("Episciences_Csrf_Helper::generateToken('user_saveroles_'", $method,
+            'rolesformAction must generate the token consumed by saverolesAction');
+    }
+
+    // -----------------------------------------------------------------------
     // logoutAction — return URL from the application base
     // -----------------------------------------------------------------------
 
