@@ -126,6 +126,9 @@ class Episciences_Review
 
     public const SETTING_JOURNAL_PUBLISHER = 'journalPublisher';
     public const SETTING_JOURNAL_PUBLISHER_LOC = 'journalPublisherLoc';
+    public const SETTING_JOURNAL_DESCRIPTION = 'journalDescription';
+    public const SETTING_JOURNAL_KEYWORDS = 'journalKeywords';
+    public const SETTING_JOURNAL_CREATION_YEAR = 'journalCreationYear';
     #git 303
     public const DEFAULT_REVISION_DEADLINE_MAX = '12 month';
 
