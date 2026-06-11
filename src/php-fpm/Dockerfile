@@ -28,7 +28,8 @@ RUN apt-get install -y --no-install-recommends --no-install-suggests \
      poppler-utils \
      jq \
      less \
-    iputils-ping \
+     iputils-ping \
+     file \
     && apt-get clean
 
 RUN docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/
