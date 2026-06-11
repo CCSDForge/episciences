@@ -332,7 +332,7 @@ function openVolumeModal(btn) {
 
                 _post('/administratepaper/savemastervolume', new URLSearchParams({ docid: docid, vid: newVid }))
                     .then(function (result) {
-                        if (parseInt(result, 10) !== 1) return;
+                        if (parseInt(result, 10) !== 1) { delete form.dataset.submitting; return; }
                         _closeDialog();
                         if (isPartial) {
                             // Keep data-vid in sync so the next modal open has the correct oldVid
@@ -384,7 +384,7 @@ function openOtherVolumesModal(btn) {
 
                 _post('/administratepaper/saveothervolumes', data)
                     .then(function (result) {
-                        if (result.trim() !== '1') return;
+                        if (result.trim() !== '1') { delete form.dataset.submitting; return; }
                         _closeDialog();
                         _refreshOtherVolumes(docid);
                         _refreshPaperHistory(docid);
@@ -438,7 +438,7 @@ function openSectionModal(btn) {
                 _post('/administratepaper/savesection', data)
                     .then(function (result) {
                         var ok = result && result.trim() !== '' && result.trim() !== 'false' && result.trim() !== '0';
-                        if (!ok) return;
+                        if (!ok) { delete form.dataset.submitting; return; }
                         _closeDialog();
                         _refreshSectionBlock(docid, isPartial);
                         if (shouldRefreshEditors) _refreshEditorsBlock(docid, isPartial);

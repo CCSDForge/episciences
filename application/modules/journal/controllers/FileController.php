@@ -79,7 +79,7 @@ class FileController extends DefaultController
         // Trusted base: the attachments directory. sub_directories and file are
         // user-influenced and confined under it by resolveSafePath().
         $baseDir = REVIEW_FILES_PATH . Episciences_Mail_Send::ATTACHMENTS;
-        $relativePath = DIRECTORY_SEPARATOR . $subDirectories . $file;
+        $relativePath = DIRECTORY_SEPARATOR . rtrim($subDirectories, '/\\') . DIRECTORY_SEPARATOR . $file;
 
         $this->loadFile($baseDir, $relativePath, true);
     }
