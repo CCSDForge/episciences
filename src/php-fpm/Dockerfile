@@ -18,18 +18,15 @@ RUN apt-get update  \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
     libpng-dev \
-    && apt-get clean
-
-RUN apt-get install -y --no-install-recommends --no-install-suggests \
-     zip \
-     unzip \
-     git \
-     vim \
-     poppler-utils \
-     jq \
-     less \
-     iputils-ping \
-     file \
+    zip \
+    unzip \
+    git \
+    vim \
+    poppler-utils \
+    jq \
+    less \
+    iputils-ping \
+    file \
     && apt-get clean
 
 RUN docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/
