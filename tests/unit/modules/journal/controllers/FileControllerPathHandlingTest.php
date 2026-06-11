@@ -125,4 +125,56 @@ final class FileControllerPathHandlingTest extends TestCase
         self::assertStringContainsString('404', $method,
             'reportAction() must answer 404 when the report is missing or not permitted');
     }
+
+    // -----------------------------------------------------------------------
+    // upload/delete: request token + relation to the targeted document
+    // -----------------------------------------------------------------------
+
+    public function testUploadAndDeleteValidateTheRequestToken(): void
+    {
+        foreach (['uploadAction', 'deleteAction'] as $action) {
+            $method = $this->extractMethod($action);
+            self::assertStringContainsString(
+                'Episciences_Csrf_Helper::validateRequestToken(',
+                $method,
+                "$action() must validate the per-session request token"
+            );
+        }
+    }
+
+    public function testUploadAndDeleteCheckTheRelationToTheDocument(): void
+    {
+        foreach (['uploadAction', 'deleteAction'] as $action) {
+            $method = $this->extractMethod($action);
+
+            $guardPos = strpos($method, 'isAllowedToHandleDocumentFiles(');
+            self::assertNotFalse($guardPos,
+                "$action() must check the user's relation to the targeted document");
+
+            // The check must come before the storage folder is built / used.
+            $folderPos = strpos($method, 'buildStorageFolder(');
+            self::assertNotFalse($folderPos, "$action() must build the storage folder");
+            self::assertLessThan($folderPos, $guardPos,
+                "$action() must check the relation before resolving the storage folder");
+        }
+    }
+
+    public function testDocumentRelationGuardCoversTheExpectedRelations(): void
+    {
+        $method = $this->extractMethod('isAllowedToHandleDocumentFiles');
+
+        self::assertStringContainsString('isOwnerOrCoAuthor()', $method,
+            'the guard must accept the contributor (owner or co-author)');
+        self::assertStringContainsString('Episciences_Auth::isAllowedToManagePaper()', $method,
+            'the guard must accept the users allowed to manage papers');
+
+        foreach (['getEditor(', 'getCopyEditor(', 'getReviewer('] as $relation) {
+            self::assertStringContainsString($relation, $method,
+                "the guard must accept the paper relation $relation)");
+        }
+
+        // No document targeted: the session-scoped directory needs no relation.
+        self::assertStringContainsString('if (!$docId && !$paperId)', $method,
+            'the guard must keep allowing the session-scoped attachments directory');
+    }
 }

@@ -232,9 +232,12 @@ class FileController extends DefaultController
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
         // Uploading files is reserved to authenticated users (submission /
-        // paper-management flows). Anonymous uploads are rejected.
-        if (!Episciences_Auth::isLogged()) {
+        // paper-management flows) and requires a valid request token.
+        if (!Episciences_Auth::isLogged() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
             $this->getResponse()->setHttpResponseCode(403);
             echo Zend_Json::encode(['status' => 'error']);
             return;
@@ -246,13 +249,17 @@ class FileController extends DefaultController
             $result ['status'] = 'error';
             $result ['messages'][] = $this->buildReachedMessage();
         } else {
-            /** @var Zend_Controller_Request_Http $request */
-            $request = $this->getRequest();
             // Copy editing : modifier le path
             $path = (string)$request->getPost('path');
             $pcId = (int)$request->getPost('pcId');
             $docId = (int)$request->getPost('docId');
             $paperId = (int)$request->getPost('paperId');
+
+            if (!$this->isAllowedToHandleDocumentFiles($docId, $paperId)) {
+                $this->getResponse()->setHttpResponseCode(403);
+                echo Zend_Json::encode(['status' => 'error']);
+                return;
+            }
 
             try {
                 $adapter = new Zend_File_Transfer_Adapter_Http();
@@ -321,9 +328,14 @@ class FileController extends DefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        // Mutating action: require POST and an authenticated user.
-        // (Anonymous access previously allowed arbitrary file deletion.)
+        // Mutating action: require POST, an authenticated user and a valid
+        // request token.
         if (!$request->isPost() || !Episciences_Auth::isLogged()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
+        if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
             $this->getResponse()->setHttpResponseCode(403);
             return;
         }
@@ -341,6 +353,11 @@ class FileController extends DefaultController
 
         if ($filename === '' || $filename === '.' || $filename === '..') {
             $this->getResponse()->setHttpResponseCode(400);
+            return;
+        }
+
+        if (!$this->isAllowedToHandleDocumentFiles($docId, $paperId)) {
+            $this->getResponse()->setHttpResponseCode(403);
             return;
         }
 
@@ -380,7 +397,7 @@ class FileController extends DefaultController
 
         // check if paper exists
         if (!$paper || !$paper->hasHook || ($paper->getRvid() !== RVID) || ($paper->getRepoid() === 0)) {
-            $this->getResponse()?->setHttpResponseCode(404);
+            $this->getResponse()->setHttpResponseCode(404);
             $this->renderScript('index/notfound.phtml');
             return;
         }
@@ -411,6 +428,39 @@ class FileController extends DefaultController
 
         echo $mainDocumentContent;
 
+    }
+
+    /**
+     * When an upload or a removal targets a document's storage (docId or paperId
+     * given), the user must be related to the paper: contributor, reviewer,
+     * copy editor or editor of the paper, or allowed to manage it.
+     */
+    private function isAllowedToHandleDocumentFiles(int $docId, int $paperId): bool
+    {
+        if (!$docId && !$paperId) {
+            // session-scoped attachments directory: no document involved
+            return true;
+        }
+
+        try {
+            $paper = $docId
+                ? Episciences_PapersManager::get($docId, false)
+                : Episciences_PapersManager::getLastPaper($paperId, true);
+        } catch (Exception $e) {
+            return false;
+        }
+
+        if (!$paper) {
+            return false;
+        }
+
+        $uid = Episciences_Auth::getUid();
+
+        return $paper->isOwnerOrCoAuthor()
+            || Episciences_Auth::isAllowedToManagePaper()
+            || $paper->getEditor($uid)
+            || $paper->getCopyEditor($uid)
+            || $paper->getReviewer($uid);
     }
 
     /**

@@ -311,4 +311,111 @@ class Episciences_Csrf_HelperTest extends TestCase
         $constant = $reflection->getReflectionConstant('DEFAULT_TIMEOUT');
         $this->assertSame(3600, $constant->getValue());
     }
+
+    // =========================================================================
+    // Per-session request token (getSessionToken / validateRequestToken)
+    // =========================================================================
+
+    /**
+     * Creates the session namespace used by the request token, skipping the
+     * test when no session is available in the current environment.
+     */
+    private function sessionNamespaceOrSkip(): \Zend_Session_Namespace
+    {
+        if (!class_exists('Zend_Session')) {
+            $this->markTestSkipped('Zend_Session not available');
+        }
+
+        try {
+            return new \Zend_Session_Namespace(SESSION_NAMESPACE);
+        } catch (\Exception $e) {
+            $this->markTestSkipped('Session not available: ' . $e->getMessage());
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        // Zend_Controller_Request_Http::setPost() writes into the superglobal.
+        unset($_SERVER['HTTP_X_CSRF_TOKEN'], $_POST['csrf_token']);
+        parent::tearDown();
+    }
+
+    /**
+     * getSessionToken() must create the token on first use and then return the
+     * same value for the whole session (it is reused across AJAX calls).
+     */
+    public function testGetSessionTokenIsStableWithinTheSession(): void
+    {
+        $session = $this->sessionNamespaceOrSkip();
+        unset($session->csrfToken);
+
+        $token = Episciences_Csrf_Helper::getSessionToken();
+
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $token,
+            'the token must be 32 random bytes rendered as hex');
+        $this->assertSame($token, Episciences_Csrf_Helper::getSessionToken(),
+            'the token must not change between two calls in the same session');
+    }
+
+    /**
+     * validateRequestToken() must accept the session token submitted through
+     * the X-CSRF-Token header (AJAX calls).
+     */
+    public function testValidateRequestTokenAcceptsHeaderToken(): void
+    {
+        $this->sessionNamespaceOrSkip();
+        $token = Episciences_Csrf_Helper::getSessionToken();
+
+        $_SERVER['HTTP_X_CSRF_TOKEN'] = $token;
+        $request = new \Zend_Controller_Request_Http();
+
+        $this->assertTrue(Episciences_Csrf_Helper::validateRequestToken($request));
+    }
+
+    /**
+     * validateRequestToken() must accept the session token submitted through
+     * the csrf_token POST field (regular forms).
+     */
+    public function testValidateRequestTokenAcceptsPostToken(): void
+    {
+        $this->sessionNamespaceOrSkip();
+        $token = Episciences_Csrf_Helper::getSessionToken();
+
+        $request = new \Zend_Controller_Request_Http();
+        $request->setPost('csrf_token', $token);
+
+        $this->assertTrue(Episciences_Csrf_Helper::validateRequestToken($request));
+    }
+
+    /**
+     * validateRequestToken() must reject a wrong or missing token.
+     */
+    public function testValidateRequestTokenRejectsWrongOrMissingToken(): void
+    {
+        $this->sessionNamespaceOrSkip();
+        Episciences_Csrf_Helper::getSessionToken();
+
+        $request = new \Zend_Controller_Request_Http();
+        $this->assertFalse(Episciences_Csrf_Helper::validateRequestToken($request),
+            'a request without token must be rejected');
+
+        $request->setPost('csrf_token', 'not-the-session-token');
+        $this->assertFalse(Episciences_Csrf_Helper::validateRequestToken($request),
+            'a request with a wrong token must be rejected');
+    }
+
+    /**
+     * validateRequestToken() must reject every request while no token exists in
+     * the session (e.g. an anonymous session).
+     */
+    public function testValidateRequestTokenRejectsWhenSessionHasNoToken(): void
+    {
+        $session = $this->sessionNamespaceOrSkip();
+        unset($session->csrfToken);
+
+        $request = new \Zend_Controller_Request_Http();
+        $request->setPost('csrf_token', 'anything');
+
+        $this->assertFalse(Episciences_Csrf_Helper::validateRequestToken($request));
+    }
 }

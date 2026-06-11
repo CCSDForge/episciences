@@ -79,4 +79,24 @@ final class AdministrategraphabstractControllerRequestTest extends TestCase
         self::assertStringContainsString('basename(', $method,
             'deletegraphabsAction must strip any directory component from the file name');
     }
+
+    /**
+     * Both mutating actions must validate the per-session request token inside
+     * the request guard, before any POST parameter is used.
+     */
+    public function testActionsValidateTheRequestToken(): void
+    {
+        foreach (['addgraphabsAction', 'deletegraphabsAction'] as $action) {
+            $method = $this->extractMethod($action);
+
+            $tokenPos = strpos($method, 'Episciences_Csrf_Helper::validateRequestToken(');
+            self::assertNotFalse($tokenPos,
+                "$action must validate the per-session request token");
+
+            $postPos = strpos($method, "getPost('docId')");
+            self::assertNotFalse($postPos, "$action must read docId from POST");
+            self::assertLessThan($postPos, $tokenPos,
+                "$action must validate the token before reading POST parameters");
+        }
+    }
 }

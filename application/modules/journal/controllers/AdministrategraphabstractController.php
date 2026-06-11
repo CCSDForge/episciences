@@ -32,8 +32,13 @@ class AdministrategraphabstractController extends Zend_Controller_Action
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        // Reject the request if it is not a proper AJAX POST OR the user is not authorised.
-        if ((!$request->isXmlHttpRequest() || !$request->isPost()) || (!Episciences_Auth::isAllowedToManagePaper() && !Episciences_Auth::isAuthor())) {
+        // Reject the request if it is not a proper AJAX POST with a valid request
+        // token, OR the user is not authorised.
+        if (
+            (!$request->isXmlHttpRequest() || !$request->isPost())
+            || !Episciences_Csrf_Helper::validateRequestToken($request)
+            || (!Episciences_Auth::isAllowedToManagePaper() && !Episciences_Auth::isAuthor())
+        ) {
             echo json_encode([false], JSON_THROW_ON_ERROR);
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
             exit();
@@ -91,8 +96,13 @@ class AdministrategraphabstractController extends Zend_Controller_Action
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        // Reject the request if it is not a proper AJAX POST OR the user is not authorised.
-        if ((!$request->isXmlHttpRequest() || !$request->isPost()) || (!Episciences_Auth::isAllowedToManagePaper() && !Episciences_Auth::isAuthor())) {
+        // Reject the request if it is not a proper AJAX POST with a valid request
+        // token, OR the user is not authorised.
+        if (
+            (!$request->isXmlHttpRequest() || !$request->isPost())
+            || !Episciences_Csrf_Helper::validateRequestToken($request)
+            || (!Episciences_Auth::isAllowedToManagePaper() && !Episciences_Auth::isAuthor())
+        ) {
             echo json_encode([false], JSON_THROW_ON_ERROR);
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
             exit();
