@@ -105,7 +105,7 @@ class Episciences_Website_Navigation_Page extends Ccsd_Website_Navigation_Page
             ]);
 
         $rolesToolTip = Zend_Registry::get('Zend_Translate')->translate("Si aucun rôle n'est sélectionné, la page sera publique");
-        $visibleByLabel = Zend_Registry::get('Zend_Translate')->translate('Visible par : ');
+        $visibleByLabel = Zend_Registry::get('Zend_Translate')->translate('Visible pour : ');
         // Multicheckbox for custom page visibility (access limited by role)
         $this->_form->addElement('multiCheckbox', 'acl',
             ['label' => $visibleByLabel,

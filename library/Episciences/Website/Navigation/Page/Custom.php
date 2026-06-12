@@ -123,10 +123,12 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
     public function getForm($pageidx)
     {
         parent::getForm($pageidx);
+        $translator = Zend_Registry::get('Zend_Translate');
         if (!$this->_form->getElement(self::PERMALIEN)) {
             $this->_form->addElement('text', self::PERMALIEN, [
                 'required' => true,
-                'label' => 'Lien permanent',
+                'label' => $translator->translate('Permalien'),
+                'description' => $translator->translate('e.g. contact, about-us'),
                 'value' => $this->getPermalien(),
                 'belongsTo' => 'pages_' . $pageidx,
                 'class' => 'permalien',

@@ -3,6 +3,18 @@
 class Episciences_Page_Manager
 {
     /**
+     * Convert visibility SET value to JSON format for legacy column synchronization
+     * Example: "editor,chief_editor" -> '["editor","chief_editor"]'
+     */
+    private static function visibilityToJson(string $visibility): string
+    {
+        if (empty($visibility)) {
+            return '["public"]';
+        }
+        $values = explode(',', $visibility);
+        return json_encode($values, JSON_UNESCAPED_UNICODE);
+    }
+    /**
      * Find all pages for a given review code
      *
      * @param string $code Review code
@@ -12,7 +24,11 @@ class Episciences_Page_Manager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $query = $db->select()
-            ->from(T_PAGES)
+            ->from(T_PAGES, [
+                'id', 'code', 'uid', 'date_creation', 'date_updated',
+                'title', 'content', 'page_code',
+                'visibility' => 'visibility_set'
+            ])
             ->where('code = ?', $code);
 
         $rows = $db->fetchAll($query);
@@ -30,7 +46,11 @@ class Episciences_Page_Manager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $query = $db->select()
-            ->from(T_PAGES)
+            ->from(T_PAGES, [
+                'id', 'code', 'uid', 'date_creation', 'date_updated',
+                'title', 'content', 'page_code',
+                'visibility' => 'visibility_set'
+            ])
             ->where('code = ?', $code)
             ->where('page_code = ?', $page_code);
 
@@ -45,6 +65,7 @@ class Episciences_Page_Manager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $nowDb = new Zend_DB_Expr('NOW()');
+        $visibilityValue = $page->getVisibility();
         $values = [
             'id' => $page->getId(),
             'code' => $page->getCode(),
@@ -53,7 +74,8 @@ class Episciences_Page_Manager
             'date_updated' => $nowDb,
             'title' => $page->getTitle(),
             'content' => $page->getContent(),
-            'visibility' => $page->getVisibility(),
+            'visibility_set' => $visibilityValue,
+            'visibility' => self::visibilityToJson($visibilityValue),
             'page_code' => $page->getPageCode()
         ];
 
@@ -71,6 +93,7 @@ class Episciences_Page_Manager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $where = ['code = ?' => $page->getCode(), 'page_code = ?' => $page->getPageCode()];
+        $visibilityValue = $page->getVisibility();
 
         $values = [
             'id' => $page->getId(),
@@ -79,7 +102,8 @@ class Episciences_Page_Manager
             'date_updated' => new Zend_DB_Expr('NOW()'),
             'title' => $page->getTitle(),
             'content' => $page->getContent(),
-            'visibility' => $page->getVisibility(),
+            'visibility_set' => $visibilityValue,
+            'visibility' => self::visibilityToJson($visibilityValue),
             'page_code' => $page->getPageCode()
         ];
 
