@@ -395,6 +395,64 @@ class Episciences_Submit
     }
 
     /**
+     * Final version + arXiv paper password deposit form for the alternative workflow.
+     *
+     * @throws Zend_Exception
+     * @throws Zend_Form_Exception
+     */
+    public static function getFinalVersionDepositForm(Episciences_Comment $comment, Episciences_Paper $paper): \Ccsd_Form
+    {
+        $form = new Ccsd_Form();
+        $form->setName('final_version_deposit');
+        $form->setAttrib('id', 'final_version_deposit');
+        $form->setAttrib('class', 'form-horizontal');
+        $form->setAttrib('enctype', 'multipart/form-data');
+        $form->setMethod('post');
+
+        $form->addElement('textarea', 'comment', [
+            'label' => 'Commentaire',
+            'rows' => 5,
+            'required' => false,
+            'validators' => [[
+                'StringLength', false, ['max' => MAX_INPUT_TEXTAREA]
+            ]]
+        ]);
+
+        $form = self::addPaperArxivPwdElement($form, true);
+
+        $paperId = $paper->getPaperid() ?: $paper->getDocid();
+        $commentId = $comment->getPcid();
+
+        // The AJAX upload has to use the request PCID because the final deposit
+        // copy-editing comment PCID does not exist until the form is submitted.
+        // The controller moves the file to the final deposit comment directory
+        // after saving that comment.
+        $form->addElement('hidden', 'attachments_path_type_' . $commentId, [
+            'id' => 'attachments_path_type_' . $commentId,
+            'value' => 'ce_attachments',
+            'docId' => $paper->getDocid(),
+            'paperId' => $paperId,
+            'pcId' => $commentId
+        ]);
+
+        $form->addElement('button', 'submitFinalVersionDeposit', [
+            'id' => 'submit-modal-final-version-deposit',
+            'type' => 'submit',
+            'label' => 'Soumettre la version finale',
+            'class' => 'btn btn-primary'
+        ]);
+
+        $form->setDecorators([[
+            'ViewScript', [
+                'viewScript' => '/paper/final_version_deposit_form.phtml'
+            ]],
+            $form->getDecorator('FormRequired'),
+        ]);
+
+        return $form;
+    }
+
+    /**
      * Retourne le formulaire de réponse avec une version temporaire (réponse à une demande de modification)
      * @param Episciences_Comment|null $comment
      * @return Ccsd_Form

@@ -32,13 +32,7 @@ foreach ($selfElement->getElements() as $element) {
         <?php if ($name === 'submitFinalVersionDeposit') {
             continue;
         } ?>
-        <?php if ($element->helper === 'formHidden') : ?>
-            <?= $element; ?>
-        <?php else : ?>
-            <div id="<?= str_replace(['_', '-'], '', $name) ?>-element" class="form-group row">
-                <?= $element; ?>
-            </div>
-        <?php endif; ?>
+        <?= $element; ?>
     <?php endforeach; ?>
 
     <div id="final-version-upload-<?= $pcId; ?>" class="form-group row">
