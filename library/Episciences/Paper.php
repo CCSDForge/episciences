@@ -1979,7 +1979,7 @@ class Episciences_Paper
             $metadata['subjects'] = Episciences_Tools::xpath($xml, '//dc:subject', true, false);
             $metadata['language'] = Episciences_Tools::xpath($xml, '//dc:language');
             $metadata['type'] = Episciences_Tools::xpath($xml, '//dc:type');
-            $metadata['licenses'] = $metadata['type'] = Episciences_Tools::xpath($xml, '//dc:rights');
+            $metadata['licenses'] = Episciences_Tools::xpath($xml, '//dc:rights');
         } catch (Exception $e) {
             $metadata['title'] = 'Erreur : la source XML de ce document semble corrompue. Les métadonnées ne sont pas utilisables.';
             $metadata['description'] = 'Merci de contacter le support pour vérifier le document et ses métadonnées';

@@ -4298,7 +4298,7 @@ class Episciences_PapersManager
      * @param $docId
      * @return string
      */
-    public static function buildDocumentPath($docId): string
+    public static function buildDocumentPath(int $docId): string
     {
         return REVIEW_FILES_PATH . $docId;
     }
