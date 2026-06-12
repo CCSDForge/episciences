@@ -36,9 +36,19 @@ const VolumeSpecial = {
         const code = this.escapeHtml(accessCode || '');
         const label = translateFn("Code d'accès");
 
+        const copyButton = code
+            ? `<button type="button" class="btn btn-link btn-xs copy-btn"
+                data-copy-value="${code}"
+                title="${this.escapeHtml(translateFn("Copier le code d'accès"))}"
+                aria-label="${this.escapeHtml(translateFn("Copier le code d'accès"))}">
+                <span class="fa-regular fa-copy" aria-hidden="true"></span>
+            </button>
+            <span class="copy-feedback label label-success" style="display: none;">${this.escapeHtml(translateFn('Copié !'))}</span>`
+            : '';
+
         return `<div id="access_code-element" class="form-group row">
             <label class='col-md-3' style='text-align: right'>${label}</label>
-            <div class='col-md-9'>${code}</div>
+            <div class='col-md-9'>${code}${copyButton}</div>
             <input id='access_code' name='access_code' type='hidden' value='${code}'>
         </div>`;
     },
@@ -65,6 +75,11 @@ const VolumeSpecial = {
         const html = this.createAccessCodeElement(accessCode, translate);
 
         specialIssueElement.insertAdjacentHTML('afterend', html);
+
+        const el = document.getElementById('access_code-element');
+        if (el && typeof CopyToClipboard !== 'undefined') {
+            CopyToClipboard.init(el);
+        }
     },
 
     /**
