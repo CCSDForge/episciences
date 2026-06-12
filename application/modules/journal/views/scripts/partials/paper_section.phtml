@@ -6,7 +6,7 @@ $sid = $this->article->getSid();
 
 ?>
 
-<div class="section">
+<div class="section" id="section_block_<?= (int) $this->article->getDocid() ?>">
 
     <?php // Section assignment button ?>
     <?php if ($this->isAllowed && !$this->article->isRefused() && !$this->article->isObsolete() && !$this->article->isDeleted()): ?>

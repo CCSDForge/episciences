@@ -271,11 +271,9 @@ function _refreshSectionBlock(docid, isPartial) {
         docid: docid,
         partial: isPartial ? '1' : '0',
     })).then(function (html) {
-        // Update all .section containers visible on screen
-        document.querySelectorAll('.section').forEach(function (c) {
-            // Server-rendered section block (escaped PHP output)
-            c.innerHTML = html;
-        });
+        var container = document.getElementById('section_block_' + docid);
+        // Server-rendered section block (escaped PHP output)
+        if (container) container.innerHTML = html; // eslint-disable-line no-unsanitized/property
     });
 }
 
