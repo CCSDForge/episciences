@@ -5191,7 +5191,7 @@ class AdministratepaperController extends PaperDefaultController
 
     public function addcoauthorAction()
     {
-        if (!Episciences_Auth::isAdministrator() && !Episciences_Auth::isSecretary() && !Episciences_Auth::isEditor()) {
+        if (!Episciences_Auth::isAdministrator() && !Episciences_Auth::isSecretary() && !Episciences_Auth::isEditor() && !Episciences_Auth::isGuestEditor()) {
             return;
         }
 
