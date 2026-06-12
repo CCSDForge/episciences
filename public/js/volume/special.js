@@ -15,8 +15,25 @@ const VolumeSpecial = {
      * @param {Function} [translateFn=(text => text)] - Translation function (defaults to identity function)
      * @returns {string} HTML string for the access code element
      */
+    /**
+     * Encodes a value for safe inclusion in HTML text and attribute contexts.
+     * Entity-encoded attribute values are decoded by the browser on read, so
+     * form submission of the access code is unaffected.
+     *
+     * @param {string} value
+     * @returns {string}
+     */
+    escapeHtml(value) {
+        return String(value === undefined || value === null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    },
+
     createAccessCodeElement(accessCode = '', translateFn = text => text) {
-        const code = accessCode || '';
+        const code = this.escapeHtml(accessCode || '');
         const label = translateFn("Code d'accès");
 
         return `<div id="access_code-element" class="form-group row">
