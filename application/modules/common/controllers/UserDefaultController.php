@@ -1513,7 +1513,6 @@ class UserDefaultController extends Zend_Controller_Action
         $request = $this->getRequest();
 
         // This action only handles POST submissions from an authenticated user.
-        // The set of assignable roles is enforced by Episciences_User::saveUserRoles().
         if (!$request->isPost() || !Episciences_Auth::isLogged()) {
             $this->getResponse()->setHttpResponseCode(403);
             echo 0;
@@ -1536,6 +1535,11 @@ class UserDefaultController extends Zend_Controller_Action
         } else {
             $roles = [];
         }
+
+        // Restrict submitted roles to those the current user is allowed to assign.
+        $acl = new Episciences_Acl();
+        $editableRoles = $acl->getEditableRoles();
+        $roles = array_values(array_intersect((array)$roles, array_keys($editableRoles)));
 
         $user = new Episciences_User();
 
