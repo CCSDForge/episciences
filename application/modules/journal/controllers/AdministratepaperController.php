@@ -2253,6 +2253,7 @@ class AdministratepaperController extends PaperDefaultController
             'altsendprooftoauthor',
             Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
             Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_SEND_PROOF_TO_AUTHOR_AUTHOR_COPY,
             'altproofsubject',
             'altproofmessage',
             'author'
@@ -2265,6 +2266,7 @@ class AdministratepaperController extends PaperDefaultController
             'altreturntolayoutediting',
             Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
             Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_RETURN_TO_LAYOUT_EDITING_COPYEDITOR_COPY,
             'altreturnsubject',
             'altreturnmessage',
             'copyEditors'
@@ -2277,6 +2279,7 @@ class AdministratepaperController extends PaperDefaultController
             'altapproveforpublication',
             Episciences_Paper::STATUS_ALT_AUTHOR_PROOF_APPROVED,
             Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION,
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_APPROVE_FOR_PUBLICATION_AUTHOR_COPY,
             'altapprovesubject',
             'altapprovemessage',
             'author'
@@ -2289,6 +2292,7 @@ class AdministratepaperController extends PaperDefaultController
             'altstartlayoutediting',
             Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED,
             Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_START_LAYOUT_EDITING_COPYEDITOR_COPY,
             'altstartlayoutsubject',
             'altstartlayoutmessage',
             'copyEditors'
@@ -2301,6 +2305,7 @@ class AdministratepaperController extends PaperDefaultController
             'altrequestfinalversion',
             Episciences_Paper::STATUS_ACCEPTED,
             Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_REQUEST_FINAL_VERSION_AUTHOR_COPY,
             'altrequestfinalversionsubject',
             'altrequestfinalversionmessage',
             'author'
@@ -2313,6 +2318,7 @@ class AdministratepaperController extends PaperDefaultController
             'altincorrectpassword',
             Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED,
             Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_INCORRECT_PASSWORD_AUTHOR_COPY,
             'altincorrectpwdsubject',
             'altincorrectpwdmessage',
             'author'
@@ -2325,6 +2331,7 @@ class AdministratepaperController extends PaperDefaultController
             'altincorrectlatex',
             Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED,
             Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_INCORRECT_LATEX_AUTHOR_COPY,
             'altincorrectlatexsubject',
             'altincorrectlatexmessage',
             'author'
@@ -2337,6 +2344,7 @@ class AdministratepaperController extends PaperDefaultController
             'altpublish',
             Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION,
             Episciences_Paper::STATUS_PUBLISHED,
+            Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_AUTHOR_COPY,
             'altpublishsubject',
             'altpublishmessage',
             'author'
@@ -2347,6 +2355,7 @@ class AdministratepaperController extends PaperDefaultController
         string $actionKey,
         int $expectedStatus,
         int $targetStatus,
+        string $templateType,
         string $subjectField,
         string $messageField,
         string $recipientType
@@ -2404,11 +2413,34 @@ class AdministratepaperController extends PaperDefaultController
 
         $recipients = $this->resolveAlternativePipelineRecipients($paper, $recipientType);
         foreach ($recipients as $recipient) {
-            $this->sendMailFromModal($recipient, $paper, $subject, $message, $data);
+            $tags = $this->buildAlternativePipelineMailTags($paper, $recipient, $message, $recipientType);
+            $this->sendMailFromModal($recipient, $paper, $subject, $message, $data, $tags, $templateType);
         }
 
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
         $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+    }
+
+    private function buildAlternativePipelineMailTags(Episciences_Paper $paper, Episciences_User $recipient, string $message, string $recipientType): array
+    {
+        $locale = $recipient->getLangueid();
+        $submitter = $paper->getSubmitter();
+        $docId = $paper->getDocid();
+
+        return [
+            Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
+            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
+            Episciences_Mail_Tags::TAG_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paper->getSubmission_date(), $locale),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $recipientType === 'author'
+                ? $this->buildPublicPaperUrl($docId)
+                : $this->buildAdminPaperUrl($docId),
+            Episciences_Mail_Tags::TAG_COMMENT => $message,
+            Episciences_Mail_Tags::TAG_ACTION_DATE => Episciences_View_Helper_Date::Date(Zend_Date::now()->toString('dd-MM-yyy'), $locale),
+            Episciences_Mail_Tags::TAG_ACTION_TIME => Zend_Date::now()->get(Zend_Date::TIME_MEDIUM),
+            Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $submitter?->getFullName(),
+        ];
     }
 
     /**

@@ -133,6 +133,20 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_SUBMISSION_OTHERS_RECIPIENT_COPY = 'paper_submission_other_recipient_copy';
     public const TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION = 'paper_accepted_ask_authors_final_version';
     public const TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION = 'paper_formatted_by_journal_waiting_author_validation';
+
+    // Alternative editorial pipeline
+    public const TYPE_PAPER_ALT_REQUEST_FINAL_VERSION_AUTHOR_COPY = 'paper_alt_request_final_version_author_copy';
+    public const TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_AUTHOR_COPY = 'paper_alt_final_version_deposit_author_copy';
+    public const TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_EDITOR_COPY = 'paper_alt_final_version_deposit_editor_copy';
+    public const TYPE_PAPER_ALT_START_LAYOUT_EDITING_COPYEDITOR_COPY = 'paper_alt_start_layout_editing_copyeditor_copy';
+    public const TYPE_PAPER_ALT_INCORRECT_PASSWORD_AUTHOR_COPY = 'paper_alt_incorrect_password_author_copy';
+    public const TYPE_PAPER_ALT_INCORRECT_LATEX_AUTHOR_COPY = 'paper_alt_incorrect_latex_author_copy';
+    public const TYPE_PAPER_ALT_SEND_PROOF_TO_AUTHOR_AUTHOR_COPY = 'paper_alt_send_proof_to_author_author_copy';
+    public const TYPE_PAPER_ALT_RETURN_TO_LAYOUT_EDITING_COPYEDITOR_COPY = 'paper_alt_return_to_layout_editing_copyeditor_copy';
+    public const TYPE_PAPER_ALT_AUTHOR_APPROVED_PROOF_EDITOR_COPY = 'paper_alt_author_approved_proof_editor_copy';
+    public const TYPE_PAPER_ALT_AUTHOR_REJECTED_PROOF_EDITOR_COPY = 'paper_alt_author_rejected_proof_editor_copy';
+    public const TYPE_PAPER_ALT_APPROVE_FOR_PUBLICATION_AUTHOR_COPY = 'paper_alt_approve_for_publication_author_copy';
+
     public const TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY = 'inbox_paper_submission_author_copy';
     // git #513
     public const TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION = 'reminder_reviewed_article_editors_copy';
@@ -1495,6 +1509,41 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN
     ];
 
+    public const paper_alt_pipeline_author_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_COMMENT,
+        Episciences_Mail_Tags::TAG_ACTION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_TIME,
+    ];
+
+    public const paper_alt_pipeline_editor_copy_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
+        Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_COMMENT,
+        Episciences_Mail_Tags::TAG_ACTION_DATE,
+        Episciences_Mail_Tags::TAG_ACTION_TIME,
+    ];
+
     public const paper_formatted_by_journal_waiting_author_validation_tags = [
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
         Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
@@ -1735,7 +1784,18 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION,
         self::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY,
         self::TYPE_PAPER_NEW_VERSION_SUBMISSION_AUTHOR,
-        self::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR
+        self::TYPE_PAPER_NEW_VERSION_TEMPORARY_SUBMISSION_AUTHOR,
+        self::TYPE_PAPER_ALT_REQUEST_FINAL_VERSION_AUTHOR_COPY,
+        self::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_AUTHOR_COPY,
+        self::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_EDITOR_COPY,
+        self::TYPE_PAPER_ALT_START_LAYOUT_EDITING_COPYEDITOR_COPY,
+        self::TYPE_PAPER_ALT_INCORRECT_PASSWORD_AUTHOR_COPY,
+        self::TYPE_PAPER_ALT_INCORRECT_LATEX_AUTHOR_COPY,
+        self::TYPE_PAPER_ALT_SEND_PROOF_TO_AUTHOR_AUTHOR_COPY,
+        self::TYPE_PAPER_ALT_RETURN_TO_LAYOUT_EDITING_COPYEDITOR_COPY,
+        self::TYPE_PAPER_ALT_AUTHOR_APPROVED_PROOF_EDITOR_COPY,
+        self::TYPE_PAPER_ALT_AUTHOR_REJECTED_PROOF_EDITOR_COPY,
+        self::TYPE_PAPER_ALT_APPROVE_FOR_PUBLICATION_AUTHOR_COPY
     ];
 
     /**
@@ -2058,6 +2118,17 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_REMINDER_ARTICLE_BLOCKED_IN_ACCEPTED_STATE_EDITOR_VERSION => self::reminder_article_blocked_in_accepted_state_editor_version_tags,
             self::TYPE_PAPER_ACCEPTED_TMP_VERSION_MANAGERS_COPY => self::paper_accepted_tmp_version_managers_copy_tags,
             self::TYPE_PAPER_ACCEPTED_ASK_FINAL_AUTHORS_VERSION => self::paper_accepted_ask_authors_final_version_tags,
+            self::TYPE_PAPER_ALT_REQUEST_FINAL_VERSION_AUTHOR_COPY => self::paper_alt_pipeline_author_copy_tags,
+            self::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_AUTHOR_COPY => self::paper_alt_pipeline_author_copy_tags,
+            self::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_EDITOR_COPY => self::paper_alt_pipeline_editor_copy_tags,
+            self::TYPE_PAPER_ALT_START_LAYOUT_EDITING_COPYEDITOR_COPY => self::paper_alt_pipeline_editor_copy_tags,
+            self::TYPE_PAPER_ALT_INCORRECT_PASSWORD_AUTHOR_COPY => self::paper_alt_pipeline_author_copy_tags,
+            self::TYPE_PAPER_ALT_INCORRECT_LATEX_AUTHOR_COPY => self::paper_alt_pipeline_author_copy_tags,
+            self::TYPE_PAPER_ALT_SEND_PROOF_TO_AUTHOR_AUTHOR_COPY => self::paper_alt_pipeline_author_copy_tags,
+            self::TYPE_PAPER_ALT_RETURN_TO_LAYOUT_EDITING_COPYEDITOR_COPY => self::paper_alt_pipeline_editor_copy_tags,
+            self::TYPE_PAPER_ALT_AUTHOR_APPROVED_PROOF_EDITOR_COPY => self::paper_alt_pipeline_editor_copy_tags,
+            self::TYPE_PAPER_ALT_AUTHOR_REJECTED_PROOF_EDITOR_COPY => self::paper_alt_pipeline_editor_copy_tags,
+            self::TYPE_PAPER_ALT_APPROVE_FOR_PUBLICATION_AUTHOR_COPY => self::paper_alt_pipeline_author_copy_tags,
             self::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION => self::paper_formatted_by_journal_waiting_author_validation_tags,
             self::TYPE_INBOX_PAPER_SUBMISSION_AUTHOR_COPY => self::paper_submission_author_copy_tags,
             self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION => self::reminder_submitted_article_editor_version_tags,

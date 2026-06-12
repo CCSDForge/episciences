@@ -84,25 +84,41 @@ class PaperDefaultController extends DefaultController
      * @param string $message
      * @param array $data
      * @param array $tags
+     * @param string|null $templateKey
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Mail_Exception
      * @throws Exception
      */
-    protected function sendMailFromModal(Episciences_User $submitter, Episciences_Paper $paper, string $subject, string $message, array $data, array $tags = []): void
+    protected function sendMailFromModal(Episciences_User $submitter, Episciences_Paper $paper, string $subject, string $message, array $data, array $tags = [], ?string $templateKey = null): void
     {
 
         $mail = new Episciences_Mail('UTF-8');
         $mail->setDocid($paper->getDocid());
 
         foreach ($tags as $tag => $value) {
-            if (!array_key_exists($tag, $mail->getTags())) {
+            if (!array_key_exists($tag, $mail->getTags()) || Episciences_Mail_Tags::isOverridable($tag)) {
                 $mail->addTag($tag, $value);
             }
         }
 
         $mail->setTo($submitter);
-        $mail->setSubject($subject);
-        $mail->setRawBody(Ccsd_Tools::clear_nl($message));
+
+        if ($templateKey !== null) {
+            $template = new Episciences_Mail_Template();
+            $template->setRvcode(RVCODE);
+
+            if (!$template->findByKey($templateKey)) {
+                trigger_error(sprintf('Template key [%s] was not found in [MAIL_TEMPLATE]: Empty mail sent to: [%s<%s>]', $templateKey, $submitter->getScreenName(), $submitter->getEmail()));
+            }
+
+            $template->loadTranslations(null, RVCODE);
+            $template->setLocale($submitter->getLangueid());
+            $mail->setSubject($template->getSubject());
+            $mail->setTemplate($template->getPath(null, RVCODE), $template->getKey() . self::TEMPLATE_EXTENSION);
+        } else {
+            $mail->setSubject($subject);
+            $mail->setRawBody(Ccsd_Tools::clear_nl($message));
+        }
         if (isset($data[Episciences_Mail_Send::ATTACHMENTS])) {
             $path = Episciences_Tools::getAttachmentsPath();
             $attachments = Episciences_Tools::arrayFilterEmptyValues($data[Episciences_Mail_Send::ATTACHMENTS]);
