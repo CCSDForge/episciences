@@ -1921,6 +1921,115 @@ class Episciences_PapersManager
         );
     }
 
+    public static function getAlternativePipelineFormDefault(
+        Episciences_Paper $paper,
+        Episciences_User $contributor,
+        string $templateKey,
+        string $recipientType = 'author'
+    ): array {
+        $languages = Episciences_Tools::getLanguages();
+        $contributorLocale = $contributor->getLangueid(true);
+        $locale = (Episciences_Tools::getLocale() !== $contributorLocale)
+            ? Episciences_Review::getDefaultLanguage()
+            : $contributorLocale;
+
+        if (!array_key_exists($locale, $languages)) {
+            $locale = key($languages);
+        }
+
+        $template = new Episciences_Mail_Template();
+        $template->setLocale($locale);
+        $template->findByKey($templateKey);
+        $template->loadTranslations();
+
+        $mail = new Episciences_Mail('UTF-8');
+        $mail->setDocid($paper->getDocid());
+
+        $urlHelper = new Zend_View_Helper_Url();
+        $site = SERVER_PROTOCOL . '://' . ($_SERVER['SERVER_NAME'] ?? DOMAIN);
+        $publicUrl = $site . $urlHelper->url([
+                'controller' => 'paper',
+                'action' => 'view',
+                'id' => $paper->getDocid()
+            ]);
+        $adminUrl = $site . $urlHelper->url([
+                'controller' => 'administratepaper',
+                'action' => 'view',
+                'id' => $paper->getDocid()
+            ]);
+
+        $toValue = $contributor->getFullName() . ' <' . $contributor->getEmail() . '>';
+        $paperUrl = $publicUrl;
+        $recipientTags = [
+            Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $contributor->getScreenName(),
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $contributor->getUsername(),
+            Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $contributor->getFullName(),
+        ];
+
+        if ($recipientType !== 'author') {
+            $paperUrl = $adminUrl;
+            $toValue = self::formatAlternativePipelineRecipientsForDisplay($paper);
+            $recipientTags = [
+                Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+                Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+                Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+            ];
+        }
+
+        $tags = array_merge($mail->getTags(), [
+            Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
+            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
+            Episciences_Mail_Tags::TAG_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paper->getSubmission_date(), $locale),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
+            Episciences_Mail_Tags::TAG_COMMENT => '',
+            Episciences_Mail_Tags::TAG_ACTION_DATE => Episciences_View_Helper_Date::Date(date('Y-m-d'), $locale),
+            Episciences_Mail_Tags::TAG_ACTION_TIME => Zend_Date::now()->get(Zend_Date::TIME_MEDIUM),
+            Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $contributor->getFullName(),
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => $site . '/user/lostlogin',
+            Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $site . '/user/lostlogin',
+        ], $recipientTags);
+
+        $subject = $template->getSubject();
+        if ($subject) {
+            $subject = str_replace(array_keys($tags), array_values($tags), $subject);
+            $subject = Ccsd_Tools::clear_nl($subject);
+        }
+
+        $body = $template->getBody();
+        if ($body) {
+            $body = str_replace(array_keys($tags), array_values($tags), $body);
+            $body = nl2br($body);
+            $body = Ccsd_Tools::clear_nl($body);
+        }
+
+        return [
+            'id' => $paper->getDocid(),
+            'subject' => $subject,
+            'body' => $body,
+            'author' => $contributor,
+            'coAuthor' => $paper->getCoAuthors(),
+            'to' => $toValue,
+        ];
+    }
+
+    private static function formatAlternativePipelineRecipientsForDisplay(Episciences_Paper $paper): string
+    {
+        $recipients = $paper->getCopyEditors(true, true);
+        if (empty($recipients)) {
+            $recipients = $paper->getEditors(true, true);
+        }
+
+        if (empty($recipients)) {
+            return '';
+        }
+
+        return implode('; ', array_map(static function (Episciences_User $recipient): string {
+            return $recipient->getFullName() . ' <' . $recipient->getEmail() . '>';
+        }, $recipients));
+    }
+
     public static function getAltFinalVersionDepositForm(Episciences_Paper $paper): \Ccsd_Form
     {
         $docId = (int)$paper->getDocid();
@@ -1996,9 +2105,9 @@ class Episciences_PapersManager
         ]);
 
         $author = $default['author'] ?? null;
-        $toValue = ($author instanceof Episciences_User)
+        $toValue = $default['to'] ?? (($author instanceof Episciences_User)
             ? $author->getFullName() . ' <' . $author->getEmail() . '>'
-            : '';
+            : '');
 
         $form->addElement('text', 'to', [
             'id' => $formId . '-to',

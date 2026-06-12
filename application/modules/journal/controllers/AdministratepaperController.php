@@ -840,32 +840,81 @@ class AdministratepaperController extends PaperDefaultController
             (int)$review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1
             && Episciences_Auth::isAllowedToManagePaper()
         ) {
-            $altDefault = [
-                'id' => $paper->getDocid(),
-                'subject' => '',
-                'body' => '',
-                'author' => $contributor,
-                'coAuthor' => $paper->getCoAuthors(),
-            ];
             if ($paper->isAccepted()) {
-                $this->view->altRequestFinalVersionForm = Episciences_PapersManager::getAltRequestFinalVersionForm($altDefault);
+                $this->view->altRequestFinalVersionForm = Episciences_PapersManager::getAltRequestFinalVersionForm(
+                    Episciences_PapersManager::getAlternativePipelineFormDefault(
+                        $paper,
+                        $contributor,
+                        Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_REQUEST_FINAL_VERSION_AUTHOR_COPY,
+                        'author'
+                    )
+                );
             }
             if ($paper->isAltFinalVersionSubmitted()) {
-                $this->view->altStartLayoutEditingForm = Episciences_PapersManager::getAltStartLayoutEditingForm($altDefault);
-                $this->view->altIncorrectPasswordForm = Episciences_PapersManager::getAltIncorrectPasswordForm($altDefault);
-                $this->view->altIncorrectLatexForm = Episciences_PapersManager::getAltIncorrectLatexForm($altDefault);
+                $this->view->altStartLayoutEditingForm = Episciences_PapersManager::getAltStartLayoutEditingForm(
+                    Episciences_PapersManager::getAlternativePipelineFormDefault(
+                        $paper,
+                        $contributor,
+                        Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_START_LAYOUT_EDITING_COPYEDITOR_COPY,
+                        'copyEditors'
+                    )
+                );
+                $this->view->altIncorrectPasswordForm = Episciences_PapersManager::getAltIncorrectPasswordForm(
+                    Episciences_PapersManager::getAlternativePipelineFormDefault(
+                        $paper,
+                        $contributor,
+                        Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_INCORRECT_PASSWORD_AUTHOR_COPY,
+                        'author'
+                    )
+                );
+                $this->view->altIncorrectLatexForm = Episciences_PapersManager::getAltIncorrectLatexForm(
+                    Episciences_PapersManager::getAlternativePipelineFormDefault(
+                        $paper,
+                        $contributor,
+                        Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_INCORRECT_LATEX_AUTHOR_COPY,
+                        'author'
+                    )
+                );
             }
             if ($paper->isLayoutEditingInProgress()) {
-                $this->view->altSendProofToAuthorForm = Episciences_PapersManager::getAltSendProofToAuthorForm($altDefault);
+                $this->view->altSendProofToAuthorForm = Episciences_PapersManager::getAltSendProofToAuthorForm(
+                    Episciences_PapersManager::getAlternativePipelineFormDefault(
+                        $paper,
+                        $contributor,
+                        Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_SEND_PROOF_TO_AUTHOR_AUTHOR_COPY,
+                        'author'
+                    )
+                );
             }
             if ($paper->isAltProofSentToAuthor()) {
-                $this->view->altReturnToLayoutEditingForm = Episciences_PapersManager::getAltReturnToLayoutEditingForm($altDefault);
+                $this->view->altReturnToLayoutEditingForm = Episciences_PapersManager::getAltReturnToLayoutEditingForm(
+                    Episciences_PapersManager::getAlternativePipelineFormDefault(
+                        $paper,
+                        $contributor,
+                        Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_RETURN_TO_LAYOUT_EDITING_COPYEDITOR_COPY,
+                        'copyEditors'
+                    )
+                );
             }
             if ($paper->isAltAuthorProofApproved()) {
-                $this->view->altApproveForPublicationForm = Episciences_PapersManager::getAltApproveForPublicationForm($altDefault);
+                $this->view->altApproveForPublicationForm = Episciences_PapersManager::getAltApproveForPublicationForm(
+                    Episciences_PapersManager::getAlternativePipelineFormDefault(
+                        $paper,
+                        $contributor,
+                        Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_APPROVE_FOR_PUBLICATION_AUTHOR_COPY,
+                        'author'
+                    )
+                );
             }
             if ($paper->isAltAwaitingPublication()) {
-                $this->view->altPublishForm = Episciences_PapersManager::getAltPublishForm($altDefault);
+                $this->view->altPublishForm = Episciences_PapersManager::getAltPublishForm(
+                    Episciences_PapersManager::getAlternativePipelineFormDefault(
+                        $paper,
+                        $contributor,
+                        Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_AUTHOR_COPY,
+                        'author'
+                    )
+                );
             }
         }
 
@@ -2253,9 +2302,8 @@ class AdministratepaperController extends PaperDefaultController
             'altsendprooftoauthor',
             Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
             Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_SEND_PROOF_TO_AUTHOR_AUTHOR_COPY,
-            'altproofsubject',
-            'altproofmessage',
+            'altproof-subject',
+            'altproof-message',
             'author'
         );
     }
@@ -2266,9 +2314,8 @@ class AdministratepaperController extends PaperDefaultController
             'altreturntolayoutediting',
             Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
             Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_RETURN_TO_LAYOUT_EDITING_COPYEDITOR_COPY,
-            'altreturnsubject',
-            'altreturnmessage',
+            'altreturn-subject',
+            'altreturn-message',
             'copyEditors'
         );
     }
@@ -2279,9 +2326,8 @@ class AdministratepaperController extends PaperDefaultController
             'altapproveforpublication',
             Episciences_Paper::STATUS_ALT_AUTHOR_PROOF_APPROVED,
             Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_APPROVE_FOR_PUBLICATION_AUTHOR_COPY,
-            'altapprovesubject',
-            'altapprovemessage',
+            'altapprove-subject',
+            'altapprove-message',
             'author'
         );
     }
@@ -2292,9 +2338,8 @@ class AdministratepaperController extends PaperDefaultController
             'altstartlayoutediting',
             Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED,
             Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_START_LAYOUT_EDITING_COPYEDITOR_COPY,
-            'altstartlayoutsubject',
-            'altstartlayoutmessage',
+            'altstartlayout-subject',
+            'altstartlayout-message',
             'copyEditors'
         );
     }
@@ -2305,7 +2350,6 @@ class AdministratepaperController extends PaperDefaultController
             'altrequestfinalversion',
             Episciences_Paper::STATUS_ACCEPTED,
             Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_REQUEST_FINAL_VERSION_AUTHOR_COPY,
             'altrequestfinalversionsubject',
             'altrequestfinalversionmessage',
             'author'
@@ -2318,9 +2362,8 @@ class AdministratepaperController extends PaperDefaultController
             'altincorrectpassword',
             Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED,
             Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_INCORRECT_PASSWORD_AUTHOR_COPY,
-            'altincorrectpwdsubject',
-            'altincorrectpwdmessage',
+            'altincorrectpwd-subject',
+            'altincorrectpwd-message',
             'author'
         );
     }
@@ -2331,9 +2374,8 @@ class AdministratepaperController extends PaperDefaultController
             'altincorrectlatex',
             Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED,
             Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_INCORRECT_LATEX_AUTHOR_COPY,
-            'altincorrectlatexsubject',
-            'altincorrectlatexmessage',
+            'altincorrectlatex-subject',
+            'altincorrectlatex-message',
             'author'
         );
     }
@@ -2344,9 +2386,8 @@ class AdministratepaperController extends PaperDefaultController
             'altpublish',
             Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION,
             Episciences_Paper::STATUS_PUBLISHED,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_AUTHOR_COPY,
-            'altpublishsubject',
-            'altpublishmessage',
+            'altpublish-subject',
+            'altpublish-message',
             'author'
         );
     }
@@ -2355,7 +2396,6 @@ class AdministratepaperController extends PaperDefaultController
         string $actionKey,
         int $expectedStatus,
         int $targetStatus,
-        string $templateType,
         string $subjectField,
         string $messageField,
         string $recipientType
@@ -2414,7 +2454,7 @@ class AdministratepaperController extends PaperDefaultController
         $recipients = $this->resolveAlternativePipelineRecipients($paper, $recipientType);
         foreach ($recipients as $recipient) {
             $tags = $this->buildAlternativePipelineMailTags($paper, $recipient, $message, $recipientType);
-            $this->sendMailFromModal($recipient, $paper, $subject, $message, $data, $tags, $templateType);
+            $this->sendMailFromModal($recipient, $paper, $subject, $message, $data, $tags);
         }
 
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
@@ -2436,7 +2476,6 @@ class AdministratepaperController extends PaperDefaultController
             Episciences_Mail_Tags::TAG_PAPER_URL => $recipientType === 'author'
                 ? $this->buildPublicPaperUrl($docId)
                 : $this->buildAdminPaperUrl($docId),
-            Episciences_Mail_Tags::TAG_COMMENT => $message,
             Episciences_Mail_Tags::TAG_ACTION_DATE => Episciences_View_Helper_Date::Date(Zend_Date::now()->toString('dd-MM-yyy'), $locale),
             Episciences_Mail_Tags::TAG_ACTION_TIME => Zend_Date::now()->get(Zend_Date::TIME_MEDIUM),
             Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $submitter?->getFullName(),

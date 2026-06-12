@@ -326,15 +326,22 @@ class PaperController extends PaperDefaultController
         ) {
             $contributor = new Episciences_User();
             $contributor->findWithCAS($paper->getUid());
-            $altDefault = [
-                'id' => $paper->getDocid(),
-                'subject' => '',
-                'body' => '',
-                'author' => $contributor,
-                'coAuthor' => $paper->getCoAuthors(),
-            ];
-            $this->view->altAuthorApproveProofForm = Episciences_PapersManager::getAltAuthorApproveProofForm($altDefault);
-            $this->view->altAuthorRejectProofForm = Episciences_PapersManager::getAltAuthorRejectProofForm($altDefault);
+            $this->view->altAuthorApproveProofForm = Episciences_PapersManager::getAltAuthorApproveProofForm(
+                Episciences_PapersManager::getAlternativePipelineFormDefault(
+                    $paper,
+                    $contributor,
+                    Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_AUTHOR_APPROVED_PROOF_EDITOR_COPY,
+                    'copyEditors'
+                )
+            );
+            $this->view->altAuthorRejectProofForm = Episciences_PapersManager::getAltAuthorRejectProofForm(
+                Episciences_PapersManager::getAlternativePipelineFormDefault(
+                    $paper,
+                    $contributor,
+                    Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_AUTHOR_REJECTED_PROOF_EDITOR_COPY,
+                    'copyEditors'
+                )
+            );
         }
 
         $this->view->isAllowedToAnswerNewVersion = $isAllowedToAnswerNewVersion;
@@ -651,9 +658,8 @@ class PaperController extends PaperDefaultController
         $this->processAuthorProofAction(
             'altauthorapproveproof',
             Episciences_Paper::STATUS_ALT_AUTHOR_PROOF_APPROVED,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_AUTHOR_APPROVED_PROOF_EDITOR_COPY,
-            'altauthorapprovesubject',
-            'altauthorapprovemessage'
+            'altauthorapprove-subject',
+            'altauthorapprove-message'
         );
     }
 
@@ -662,16 +668,14 @@ class PaperController extends PaperDefaultController
         $this->processAuthorProofAction(
             'altauthorrejectproof',
             Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_AUTHOR_REJECTED_PROOF_EDITOR_COPY,
-            'altauthorrejectsubject',
-            'altauthorrejectmessage'
+            'altauthorreject-subject',
+            'altauthorreject-message'
         );
     }
 
     private function processAuthorProofAction(
         string $actionKey,
         int $targetStatus,
-        string $templateType,
         string $subjectField,
         string $messageField
     ): void {
@@ -734,12 +738,11 @@ class PaperController extends PaperDefaultController
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
                 Episciences_Mail_Tags::TAG_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paper->getSubmission_date(), $locale),
                 Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildAdminPaperUrl($paper->getDocid()),
-                Episciences_Mail_Tags::TAG_COMMENT => $message,
                 Episciences_Mail_Tags::TAG_ACTION_DATE => Episciences_View_Helper_Date::Date(Zend_Date::now()->toString('dd-MM-yyy'), $locale),
                 Episciences_Mail_Tags::TAG_ACTION_TIME => Zend_Date::now()->get(Zend_Date::TIME_MEDIUM),
                 Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $paper->getSubmitter()?->getFullName(),
             ];
-            $this->sendMailFromModal($recipient, $paper, $subject, $message, $post, $tags, $templateType);
+            $this->sendMailFromModal($recipient, $paper, $subject, $message, $post, $tags);
         }
 
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage(
