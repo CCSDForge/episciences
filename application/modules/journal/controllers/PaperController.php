@@ -3437,27 +3437,32 @@ class PaperController extends PaperDefaultController
 
         if (Episciences_Auth::isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid()) || Episciences_Auth::getUid() == $uid) {
             $report = Episciences_Rating_Report::find($docid, $uid);
-            $report_path = $report->getPath() . $file;
-            if ($file && is_file($report_path) && !$report->isCompleted()) {
-                unlink($report_path);
-                // update XML report file
-                $id = substr($itemId, -1);
-                /** @var Episciences_Rating_Criterion $criterion */
-                $criterion = $report->getCriterion($id);
-                $criterion->setAttachment('');
-                $report->save();
-                $message = $this->view->translate("Le fichier a bien été supprimé.");
-                $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
-            } else {
+            if (!$report) {
                 $message = $this->view->translate("Erreur lors de la suppression du fichier.");
                 $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+            } else {
+                $report_path = $report->getPath() . $file;
+                // Extract numeric criterion id from "item_N" — supports multi-digit ids.
+                $id = preg_replace('/^.*?(\d+)$/', '$1', (string)$itemId);
+                /** @var Episciences_Rating_Criterion|null $criterion */
+                $criterion = $report->getCriterion($id);
+                if (is_file($report_path) && !$report->isCompleted() && $criterion !== null) {
+                    unlink($report_path);
+                    $criterion->setAttachment('');
+                    $report->save();
+                    $message = $this->view->translate("Le fichier a bien été supprimé.");
+                    $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
+                } else {
+                    $message = $this->view->translate("Erreur lors de la suppression du fichier.");
+                    $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+                }
             }
 
         } else {
             $message = $this->view->translate("Vous n'avez pas les autorisations nécessaires pour supprimer ce fichier.");
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
         }
-        $url = '/paper/rating?id=' . $docid . '&reviewer_uid=' . $uid;
+        $url = '/paper/rating?id=' . $docid;
         $this->redirect($url);
     }
 
