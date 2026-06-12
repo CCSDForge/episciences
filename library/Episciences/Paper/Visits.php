@@ -33,10 +33,10 @@ class Episciences_Paper_Visits
         if ($request instanceof Zend_Controller_Request_Http) {
             $clientIp = $request->getClientIp();
             if (Episciences_Tools::isIPv6($clientIp)) {
+                // Log only what is needed to diagnose IPv6/proxy handling — not the full header set.
                 Episciences_View_Helper_Log::log('Paper visits with IPv6 client: ', LogLevel::INFO, [
                     'checkProxy' => true,
                     'clientIp'   => $clientIp,
-                    'server'     => $request->getServer(),
                 ]);
             }
         }

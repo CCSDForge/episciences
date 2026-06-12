@@ -2161,4 +2161,48 @@ class Episciences_Paper_AuthorEditorCommunicationServiceTest extends TestCase
             $method->invoke($service)
         );
     }
+
+    // =========================================================================
+    // hasAllowedExtension(): attachment extension allow list
+    // =========================================================================
+
+    private static function invokeHasAllowedExtension(string $filename, array $allowed): bool
+    {
+        $method = new \ReflectionMethod(
+            Episciences_Paper_AuthorEditorCommunicationService::class,
+            'hasAllowedExtension'
+        );
+        $method->setAccessible(true);
+
+        return (bool) $method->invoke(null, $filename, $allowed);
+    }
+
+    public function testHasAllowedExtensionAcceptsListedExtension(): void
+    {
+        $this->assertTrue(self::invokeHasAllowedExtension('report.pdf', ['pdf', 'png']));
+    }
+
+    public function testHasAllowedExtensionIsCaseInsensitive(): void
+    {
+        $this->assertTrue(self::invokeHasAllowedExtension('REPORT.PDF', ['pdf']));
+        $this->assertTrue(self::invokeHasAllowedExtension('report.pdf', ['PDF']));
+    }
+
+    public function testHasAllowedExtensionRejectsUnlistedExtension(): void
+    {
+        $this->assertFalse(self::invokeHasAllowedExtension('evil.php', ['pdf', 'png']));
+        $this->assertFalse(self::invokeHasAllowedExtension('archive.zip', ['pdf']));
+    }
+
+    public function testHasAllowedExtensionRejectsMissingExtension(): void
+    {
+        $this->assertFalse(self::invokeHasAllowedExtension('noextension', ['pdf']));
+    }
+
+    public function testHasAllowedExtensionUsesOnlyTheFinalExtension(): void
+    {
+        // A double extension is judged on the trailing segment only.
+        $this->assertFalse(self::invokeHasAllowedExtension('evil.pdf.php', ['pdf']));
+        $this->assertTrue(self::invokeHasAllowedExtension('paper.final.pdf', ['pdf']));
+    }
 }

@@ -667,6 +667,12 @@ class Episciences_Paper_AuthorEditorCommunicationService
                 return;
             }
 
+            $allowedExtensions = defined('ALLOWED_EXTENSIONS') ? (array) ALLOWED_EXTENSIONS : ['pdf'];
+            if (!self::hasAllowedExtension((string) $originalName, $allowedExtensions)) {
+                trigger_error('Rejected file upload with unsupported extension: ' . basename((string) $originalName));
+                return;
+            }
+
             if (!is_dir($commentPath)) {
                 mkdir($commentPath, 0755, true);
             }
@@ -677,6 +683,24 @@ class Episciences_Paper_AuthorEditorCommunicationService
                 $comment->setFile($safeName);
             }
         }
+    }
+
+    /**
+     * Whether the file name ends with an extension present in the allowed list.
+     * The comparison is case-insensitive; a missing extension is not allowed.
+     *
+     * @param string $filename original (already basename-checked) file name
+     * @param array $allowedExtensions list of accepted extensions
+     */
+    private static function hasAllowedExtension(string $filename, array $allowedExtensions): bool
+    {
+        $extension = strtolower((string) pathinfo($filename, PATHINFO_EXTENSION));
+        if ($extension === '') {
+            return false;
+        }
+
+        $allowed = array_map(static fn($ext): string => strtolower((string) $ext), $allowedExtensions);
+        return in_array($extension, $allowed, true);
     }
 
     /**
