@@ -841,20 +841,35 @@ class Episciences_Volume
     }
 
     /**
+     * Get processed volume data for saving.
+     *
+     * @return array
+     */
+    private function getVolumeDataForSave(): array
+    {
+        $data = [
+            'BIB_REFERENCE' => $this->getBib_reference(),
+            'titles' => $this->preProcess($this->getTitles()),
+            'descriptions' => $this->preProcess($this->getDescriptions()),
+            'vol_type' => $this->getVol_type(),
+            'vol_year' => $this->getVol_year(),
+            'vol_num' => $this->getVol_num(),
+        ];
+
+        Episciences_VolumesAndSectionsManager::dataProcess($data);
+
+        return $data;
+    }
+
+    /**
      * Add a new volume, return a New volume VID
      * @return int the New volume id OR 0 if we fail
      */
     private function addNewVolume(): int
     {
+        $values = $this->getVolumeDataForSave();
         $values['RVID'] = RVID;
         $values['POSITION'] = 0;
-        $values['BIB_REFERENCE'] = $this->getBib_reference();
-        $values['titles'] = $this->preProcess($this->getTitles());
-        $values['descriptions'] = $this->preProcess($this->getDescriptions());
-        $values['vol_type'] = $this->getVol_type();
-        $values['vol_year'] = $this->getVol_year();
-        $values['vol_num'] = $this->getVol_num();
-        Episciences_VolumesAndSectionsManager::dataProcess($values);
 
         try {
             $affectedRows = $this->_db->insert(T_VOLUMES, $values);
@@ -1376,14 +1391,7 @@ class Episciences_Volume
     private function updateVolume(): ?int
     {
         $where = 'VID = ' . $this->getVid();
-
-        $data['BIB_REFERENCE'] = $this->getBib_reference();
-        $data['titles'] = $this->preProcess($this->getTitles());
-        $data['descriptions'] = $this->preProcess($this->getDescriptions());
-        $data['vol_type'] = $this->getVol_type();
-        $data['vol_year'] = $this->getVol_year();
-        $data['vol_num'] = $this->getVol_num();
-        Episciences_VolumesAndSectionsManager::dataProcess($data);
+        $data = $this->getVolumeDataForSave();
 
         try {
             return $this->_db->update(T_VOLUMES, $data, $where);
