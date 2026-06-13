@@ -43,7 +43,7 @@ const VolumeSpecial = {
                 aria-label="${this.escapeHtml(translateFn("Copier le code d'accès"))}">
                 <span class="fa-regular fa-copy" aria-hidden="true"></span>
             </button>
-            <span class="copy-feedback label label-success" style="display: none;">${this.escapeHtml(translateFn('Copié !'))}</span>`
+            <span class="copy-feedback label label-success" style="display: none; font-weight: normal; font-size: 0.75em;">${this.escapeHtml(translateFn('Copié !'))}</span>`
             : '';
 
         return `<div id="access_code-element" class="form-group row">
