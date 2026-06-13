@@ -1,5 +1,6 @@
 <?php
 
+use Ccsd\Auth\AdapterFactory;
 use Episciences\Trait\LocaleByCookieTrait;
 use neverbehave\Hcaptcha;
 use ReCaptcha\ReCaptcha;
@@ -13,6 +14,8 @@ class UserDefaultController extends Zend_Controller_Action
     public const ERROR = 'error';
 
     public const DEFAULT_IMG_PATH = '/../public/img/user.svg';
+    private const ERROR_ERROR_PHTML = 'error/error.phtml';
+    private const IMAGE_SVG_XML = 'image/svg+xml';
 
     public function indexAction(): void
     {
@@ -40,7 +43,7 @@ class UserDefaultController extends Zend_Controller_Action
             if (count($epiUserData) === 0) {
                 $this->view->message = "Utilisateur inconnu";
                 $this->view->description = "Cet utilisateur est inconnu.";
-                $this->renderScript('error/error.phtml');
+                $this->renderScript(self::ERROR_ERROR_PHTML);
                 return;
             }
 
@@ -59,7 +62,7 @@ class UserDefaultController extends Zend_Controller_Action
         } else {
             $this->view->message = "Vous n'êtes pas connecté";
             $this->view->description = "<a href='/user/login'>Connectez-vous</a>, ou <a href='/user/create'>créez votre compte</a>.";
-            $this->renderScript('error/error.phtml');
+            $this->renderScript(self::ERROR_ERROR_PHTML);
             return;
         }
 
@@ -164,8 +167,8 @@ class UserDefaultController extends Zend_Controller_Action
         if ($adapterType === 'LemonLDAP') {
             $adapter = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
         } else {
-            // Use Factory for standard adapters (CAS, MYSQL, DB, IDP, ORCID)
-            $adapter = \Ccsd\Auth\AdapterFactory::getTypedAdapter($adapterType);
+            // Use Factory for standard adapters (CAS, MYSQL)
+            $adapter = AdapterFactory::getTypedAdapter($adapterType);
         }
 
         $adapter->setIdentityStructure($localUser);
@@ -205,7 +208,7 @@ class UserDefaultController extends Zend_Controller_Action
                     // For other adapters (CAS, etc.), show generic error
                     $this->view->message = "Erreur d'authentification";
                     $this->view->description = "L'authentification a échoué";
-                    $this->renderScript('error/error.phtml');
+                    $this->renderScript(self::ERROR_ERROR_PHTML);
                 }
                 break;
 
@@ -240,7 +243,7 @@ class UserDefaultController extends Zend_Controller_Action
                             trigger_error(sprintf('Profile #%s [rvCode = %s] not identified.', $localUser->getUid(), RVCODE), E_USER_WARNING);
                             $this->view->message = 'Actuellement connecté en tant que :';
                             $this->view->description = 'Profil non identifié !';
-                            $this->renderScript('error/error.phtml');
+                            $this->renderScript(self::ERROR_ERROR_PHTML);
                             return;
                         }
                     } catch (Zend_Db_Statement_Exception $e) {
@@ -330,7 +333,7 @@ class UserDefaultController extends Zend_Controller_Action
             $auth = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
         } elseif ($adapterName === 'MYSQL') {
             Episciences_Auth::getInstance()->clearIdentity();
-            $this->_redirect($url);
+            $this->redirect($url);
             return;
         } else {
             $auth = new Ccsd_Auth_Adapter_Cas();
@@ -924,7 +927,7 @@ class UserDefaultController extends Zend_Controller_Action
         if (empty($tokenData) || 'VALID' !== $userTokens->getUsage()) {
             $this->view->message = "Erreur lors de l'activation du compte";
             $this->view->description = "Erreur le jeton d'activation de ce compte n'est pas valable";
-            $this->renderScript('error/error.phtml');
+            $this->renderScript(self::ERROR_ERROR_PHTML);
             return;
         }
 
@@ -1645,7 +1648,7 @@ class UserDefaultController extends Zend_Controller_Action
         echo $res;
     }
 
-    public function photoAction()
+    public function photoAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender(true);
@@ -1663,7 +1666,7 @@ class UserDefaultController extends Zend_Controller_Action
                 $screenName = $this->getParam('name');
                 $screenName = urldecode($screenName);
                 $screenName = filter_var($screenName, FILTER_DEFAULT, FILTER_FLAG_NO_ENCODE_QUOTES);
-                $imageMimeType = 'image/svg+xml';
+                $imageMimeType = self::IMAGE_SVG_XML;
                 break;
             case Ccsd_User_Models_User::IMG_NAME_THUMB:
             case Ccsd_User_Models_User::IMG_NAME_NORMAL:
@@ -1700,7 +1703,7 @@ class UserDefaultController extends Zend_Controller_Action
                 ->setHeader('Expires', $expires, true)
                 ->setHeader('Pragma', '', true)
                 ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
-                ->setHeader('Content-Type', 'image/svg+xml', true)
+                ->setHeader('Content-Type', self::IMAGE_SVG_XML, true)
                 ->setHeader('Content-Length', $contentSize, true)
                 ->setBody($data);
             return;
@@ -1722,7 +1725,7 @@ class UserDefaultController extends Zend_Controller_Action
                 file_put_contents($photoPathName, $data);
 
             } else {
-                $imageMimeType = 'image/svg+xml';
+                $imageMimeType = self::IMAGE_SVG_XML;
                 $photoPathName = APPLICATION_PATH . self::DEFAULT_IMG_PATH;
             }
         }

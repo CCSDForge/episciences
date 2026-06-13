@@ -1,43 +1,14 @@
 <?php
+declare(strict_types=1);
 
-
-/**
- * Factory to return an Adapter for authentication
- *
- */
 namespace Ccsd\Auth;
-/**
- * Class AdapterFactory
- * @package Ccsd\Auth
- */
-class AdapterFactory  {
-    /**
-     * Liste des authentifications autorisées
-     *
-     * @var array
-     */
-    protected $_accepted_auth_list = ['DB', 'CAS', 'IDP', 'MYSQL'];
-    /**
-     * @param $authType
-     * @return \Ccsd_Auth_Adapter_Cas|Adapter\Idp|Adapter\DbTable
-     */
-
-    static public function getTypedAdapter($authType) {
-        switch (strtoupper((string)$authType))
-        {
-            case 'DB':    $authAdapter = new Adapter\DbTable();
-                break;
-            case 'CAS':   $authAdapter = new \Ccsd_Auth_Adapter_Cas();
-                break;
-            case 'IDP':   $authAdapter = new Adapter\Idp();
-                break;
-            case 'MYSQL': $authAdapter = new Adapter\Mysql();
-                break;
-
-            default : $authAdapter = new \Ccsd_Auth_Adapter_Cas();
-        }
-
-        return $authAdapter;
+class AdapterFactory
+{
+    public static function getTypedAdapter($authType): Adapter\Mysql|\Ccsd_Auth_Adapter_Cas
+    {
+        return match (strtoupper((string)$authType)) {
+            'MYSQL' => new Adapter\Mysql(),
+            default => new \Ccsd_Auth_Adapter_Cas(),
+        };
     }
-
 }

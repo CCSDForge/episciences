@@ -3,11 +3,10 @@
 namespace unit\library\Ccsd\Auth;
 
 use Ccsd\Auth\AdapterFactory;
-use Ccsd\Auth\Adapter\DbTable;
-use Ccsd\Auth\Adapter\Idp;
 use Ccsd\Auth\Adapter\Mysql;
 use Ccsd_Auth_Adapter_Cas;
 use PHPUnit\Framework\TestCase;
+use Ccsd\Db\Adapter\DbTable; // @phpstan-ignore-line
 
 /**
  * Unit tests for Ccsd\Auth\AdapterFactory
@@ -47,10 +46,10 @@ class Ccsd_Auth_AdapterFactoryTest extends TestCase
         $this->assertInstanceOf(Ccsd_Auth_Adapter_Cas::class, $adapter);
     }
 
-    public function testGetTypedAdapterIdpReturnsIdpInstance(): void
+    public function testGetTypedAdapterIdpFallsBackToCas(): void
     {
         $adapter = AdapterFactory::getTypedAdapter('IDP');
-        $this->assertInstanceOf(Idp::class, $adapter);
+        $this->assertInstanceOf(Ccsd_Auth_Adapter_Cas::class, $adapter);
     }
 
     public function testGetTypedAdapterMysqlReturnsMysqlInstance(): void
@@ -74,12 +73,6 @@ class Ccsd_Auth_AdapterFactoryTest extends TestCase
     {
         $adapter = AdapterFactory::getTypedAdapter('cas');
         $this->assertInstanceOf(Ccsd_Auth_Adapter_Cas::class, $adapter);
-    }
-
-    public function testGetTypedAdapterIsCaseInsensitiveForIdp(): void
-    {
-        $adapter = AdapterFactory::getTypedAdapter('idp');
-        $this->assertInstanceOf(Idp::class, $adapter);
     }
 
     // -------------------------------------------------------------------------
@@ -126,7 +119,7 @@ class Ccsd_Auth_AdapterFactoryTest extends TestCase
 
     public function testActiveAdaptersImplementAdapterInterface(): void
     {
-        $types = ['CAS', 'IDP', 'MYSQL'];
+        $types = ['CAS', 'MYSQL'];
         foreach ($types as $type) {
             $adapter = AdapterFactory::getTypedAdapter($type);
             $this->assertInstanceOf(
