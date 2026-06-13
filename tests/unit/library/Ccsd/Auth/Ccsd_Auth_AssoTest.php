@@ -73,34 +73,31 @@ class Ccsd_Auth_AssoTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // valid() — BUG: always returns true
+    // valid()
     // -------------------------------------------------------------------------
 
-    public function testValidAlwaysReturnsTrueRegardlessOfSetValid(): void
+    public function testValidReturnsTrueWhenConstructedWithTrue(): void
     {
-        // Valid=true in constructor → valid() returns true (expected)
         $this->assertTrue($this->asso->valid());
     }
 
-    /**
-     * @note BUG: valid() always returns `true` (hardcoded), ignoring $this->valid.
-     *       Calling setValid(false) stores the value in $this->valid, but
-     *       valid() never reads it — it always returns `return true`.
-     *       This means it's impossible to mark an Asso as invalid; the guard
-     *       in save() can never be triggered by application code.
-     */
-    public function testValidReturnsTrueEvenAfterSetValidFalse(): void
+    public function testValidReturnsFalseWhenConstructedWithFalse(): void
     {
         $asso = new Asso('uid', 'fed', 'fedId', 1, 'last', 'first', 'a@b.com', false);
-        // BUG: should return false after setValid(false), but always returns true
-        $this->assertTrue($asso->valid());
+        $this->assertFalse($asso->valid());
     }
 
-    public function testSetValidDoesNotAffectValidReturnValue(): void
+    public function testSetValidFalseIsReflectedByValid(): void
     {
         $this->asso->setValid(false);
-        // BUG: valid() always returns true regardless of $this->valid
-        $this->assertTrue($this->asso->valid());
+        $this->assertFalse($this->asso->valid());
+    }
+
+    public function testSetValidTrueIsReflectedByValid(): void
+    {
+        $asso = new Asso('uid', 'fed', 'fedId', 1, 'last', 'first', 'a@b.com', false);
+        $asso->setValid(true);
+        $this->assertTrue($asso->valid());
     }
 
     // -------------------------------------------------------------------------
@@ -162,10 +159,15 @@ class Ccsd_Auth_AssoTest extends TestCase
         $this->assertSame('orcid@test.org', $orcid->getEmail());
     }
 
-    public function testOrcidAssoValidAlwaysReturnsTrue(): void
+    public function testOrcidAssoValidReturnsFalseWhenConstructedWithFalse(): void
     {
-        // Inherits the same BUG as Asso::valid()
         $orcid = new AssoOrcid('0000-0005-0000-0000', 1, 'Name', '', false);
+        $this->assertFalse($orcid->valid());
+    }
+
+    public function testOrcidAssoValidReturnsTrueWhenConstructedWithTrue(): void
+    {
+        $orcid = new AssoOrcid('0000-0005-0000-0000', 1, 'Name', '');
         $this->assertTrue($orcid->valid());
     }
 }

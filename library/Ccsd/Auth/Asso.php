@@ -27,13 +27,13 @@ class Asso
 
     /** @var boolean */
 
-    protected $valid;
+    protected $valid = false;
 
     /**
      * @var string $uid unique identifier from identity provider
      */
 
-    protected $uid;
+    protected $uid = null;
 
 
     /**
@@ -113,7 +113,7 @@ class Asso
             'nom'=> $this->getLastName(),
             'prenom'=> $this->getFirstname(),
             'email'=> $this->getEmail(),
-            'valid'=> 0
+            'valid'=> (int) $this->valid
         ];
         return $bind;
     }
@@ -131,8 +131,9 @@ class Asso
     /**
      * @return bool
      */
-    public function valid() {
-        return true;
+    public function valid(): bool
+    {
+        return (bool) $this->valid;
     }
 
     /**

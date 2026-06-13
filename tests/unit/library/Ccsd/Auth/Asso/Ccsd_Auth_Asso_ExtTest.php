@@ -121,17 +121,28 @@ class Ccsd_Auth_Asso_ExtTest extends TestCase
     // valid() / setValid()
     // ------------------------------------------------------------------
 
-    public function testValidAlwaysReturnsTrue(): void
+    public function testValidReturnsTrueWhenConstructedWithTrue(): void
     {
-        // valid() is hardcoded to return true regardless of setValid()
         $this->assertTrue($this->ext->valid());
     }
 
-    public function testSetValidDoesNotAffectValid(): void
+    public function testValidReturnsFalseWhenConstructedWithFalse(): void
     {
-        // setValid(false) does NOT make valid() return false — it's a no-op on the result
+        $ext = new Ccsd_Auth_Asso_Ext(1, 'id', 7, 'name', 'http://x', 'type', 1, false);
+        $this->assertFalse($ext->valid());
+    }
+
+    public function testSetValidFalseIsReflectedByValid(): void
+    {
         $this->ext->setValid(false);
-        $this->assertTrue($this->ext->valid(), 'valid() is hardcoded true, setValid() does not change the guard');
+        $this->assertFalse($this->ext->valid());
+    }
+
+    public function testSetValidTrueIsReflectedByValid(): void
+    {
+        $ext = new Ccsd_Auth_Asso_Ext(1, 'id', 7, 'name', 'http://x', 'type', 1, false);
+        $ext->setValid(true);
+        $this->assertTrue($ext->valid());
     }
 
     // ------------------------------------------------------------------

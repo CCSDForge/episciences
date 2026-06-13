@@ -84,7 +84,7 @@ class Ccsd_Auth_Adapter_Orcid implements Ccsd\Auth\Adapter\AdapterInterface {
         $request = $controller->getRequest();
         $params = $request->getParams();
         $token = $this->token = $request->getParam('code', null);
-        $urlRetour = $params['url'];
+        $urlRetour = $params['url'] ?? '';
         if (isset($params['forceCreate']) && (bool) $params['forceCreate'] === true ){
             $urlForceCreate = '&forceCreate=true';
         }
@@ -119,7 +119,7 @@ class Ccsd_Auth_Adapter_Orcid implements Ccsd\Auth\Adapter\AdapterInterface {
      * @return string|NULL
      */
     private function getRedirection($params){
-        $url = $params['url'];
+        $url = $params['url'] ?? '';
         $hostPortail  = parse_url(Hal_Site::getCurrentPortail()->getUrl(), PHP_URL_HOST); //Portail Local
         //$hostPortail = 'halv3-local.ccsd.cnrs.fr';
         $hostSouhaite = parse_url($url, PHP_URL_HOST); //Portal of redirection
@@ -214,26 +214,22 @@ class Ccsd_Auth_Adapter_Orcid implements Ccsd\Auth\Adapter\AdapterInterface {
             "code" => $token);
 
         $curl = curl_init(ORCID_ENDPOINT);
-        curl_setopt($curl, CURLOPT_HEADER, true);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt($curl, CURLOPT_HEADER,'Content-Type: application/json');
+        curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
 
-        $postData = "";
-
-        foreach($params as $k => $v) {
-            $postData .= $k . '='.urlencode($v).'&';
-        }
-
-        $postData = rtrim($postData, '&');
+        $postData = http_build_query($params);
 
         curl_setopt($curl, CURLOPT_POSTFIELDS, $postData);
 
         $json_response = curl_exec($curl);
-
-        $data = json_decode($json_response, true);
         curl_close($curl);
-        return $data;
+
+        if ($json_response === false) {
+            return [];
+        }
+
+        return json_decode($json_response, true) ?? [];
     }
 
     /**

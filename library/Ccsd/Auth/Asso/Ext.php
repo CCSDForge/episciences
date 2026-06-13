@@ -137,7 +137,7 @@ class Ccsd_Auth_Asso_Ext
         return ['SERVERID'=>$row['serverid'],
                 'NAME'=>$row['name'],
                 'URL'=>$row['url'],
-                'TYPE'=>$row['order']];
+                'TYPE'=>$row['type']];
     }
 
     private static function mapToAsso($row){
@@ -312,8 +312,9 @@ class Ccsd_Auth_Asso_Ext
     /**
      * @return bool
      */
-    public function valid() {
-        return true;
+    public function valid(): bool
+    {
+        return (bool) $this->valid;
     }
 
     /**
