@@ -426,8 +426,17 @@ class Episciences_View_Helper_UserAvatar extends Ccsd_View_Helper_Abstract
     {
         $classes = [];
 
-        // Add default size class
-        if (isset(self::$sizeClasses[$this->size])) {
+        // Check if any custom class starts with 'user-photo-'
+        $hasCustomUserPhotoClass = false;
+        foreach ($this->classes as $class) {
+            if (str_starts_with($class, 'user-photo-')) {
+                $hasCustomUserPhotoClass = true;
+                break;
+            }
+        }
+
+        // Add default size class only if no custom user-photo class is provided
+        if (!$hasCustomUserPhotoClass && isset(self::$sizeClasses[$this->size])) {
             $classes[] = self::$sizeClasses[$this->size];
         }
 
