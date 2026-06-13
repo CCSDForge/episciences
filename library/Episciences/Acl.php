@@ -47,7 +47,7 @@ class Episciences_Acl extends Ccsd_Acl
     public const CONFIGURABLE_RESOURCE = true; // configurable by review
     public const NOT_CONFIGURABLE_RESOURCE = false; //  public resource but restricted to certain roles
 
-    /** @var array : see Episciences_User::Permissions */
+    /** @var list<string> : see Episciences_User::Permissions */
     public const TYPE_OF_RESOURCES_NOT_TO_BE_DISPLAYED = [
         'feed-rss',
         'user-dashboard',
@@ -258,11 +258,12 @@ class Episciences_Acl extends Ccsd_Acl
         $this->_defaultAcl = $config->toArray();
     }
 
-    public static function getCode($rightid): void
+    public static function getCode(mixed $rightid): void
     {
         //return self::$_rolesCodes[$rightid];
     }
 
+    /** @return array<string, string> */
     public function getRolesCodes(): array
     {
         $rolesKeys = array_keys($this->_roles);
@@ -272,6 +273,7 @@ class Episciences_Acl extends Ccsd_Acl
         return array_combine($rolesKeys, $rolesKeys);
     }
 
+    /** @return array<string, string> */
     public function getEditableRoles(): array
     {
         $acl = new Episciences_Acl();
