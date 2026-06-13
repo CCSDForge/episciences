@@ -226,12 +226,9 @@ class Episciences_Volume
     }
 
     /**
-     * Renvoie les rédacteurs assignés au volume
-     * @param bool $active
-     * @return mixed
-     * @throws Zend_Db_Statement_Exception
+     * Returns editors assigned to the volume
      */
-    public function getEditors($active = true)
+    public function getEditors(bool $active = true): array
     {
         if (!isset($this->_editors)) {
             $this->loadEditors($active);
@@ -244,16 +241,12 @@ class Episciences_Volume
      * @param $editors
      * @return $this
      */
-    public function setEditors($editors)
+    public function setEditors($editors): static
     {
         $this->_editors = $editors;
         return $this;
     }
 
-    /**
-     * @param bool $active
-     * @throws Zend_Db_Statement_Exception
-     */
     public function loadEditors(bool $active = true): void
     {
         $select = $this->loadVolumeAssignmentsForRoleQuery(Episciences_User_Assignment::ROLE_EDITOR);
@@ -271,7 +264,12 @@ class Episciences_Volume
 
             foreach ($result as $uid => $user) {
                 $editor = new Episciences_Editor();
-                $editor->findWithCAS($uid);
+                try {
+                    $editor->findWithCAS($uid);
+                } catch (Zend_Db_Statement_Exception $e) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                    continue;
+                }
                 $editor->setWhen($user['WHEN']);
                 $editor->setStatus($user['STATUS']);
                 $editors[$uid] = $editor;
