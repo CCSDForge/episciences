@@ -45,6 +45,7 @@ class Episciences_Volume
     private $_indexedPapers = null;
     private $_paperPositions = [];
     private $_editors;
+    private ?bool $_editorsActiveState = null;
     // Copy Editors
     private $_copyEditors = [];
     private $_bib_reference = null;
@@ -230,7 +231,7 @@ class Episciences_Volume
      */
     public function getEditors(bool $active = true): array
     {
-        if (!isset($this->_editors)) {
+        if (!isset($this->_editors) || $this->_editorsActiveState !== $active) {
             $this->loadEditors($active);
         }
         return $this->_editors;
@@ -277,6 +278,7 @@ class Episciences_Volume
         }
 
         $this->setEditors($editors);
+        $this->_editorsActiveState = $active;
 
     }
 
