@@ -104,4 +104,51 @@ final class Episciences_Paper_Authors_ViewFormatterTest extends TestCase
         // Author 2 superscripts: 2,3
         $this->assertStringContainsString('<sup>2,</sup><sup>3</sup>', $result['template']);
     }
+
+    // -----------------------------------------------------------------------
+    // Affiliation URL: link emitted only for http(s)/mailto schemes
+    // -----------------------------------------------------------------------
+
+    private static function authorsWithAffiliationUrl(string $url): array
+    {
+        return [
+            [
+                'fullname' => 'Alice',
+                'affiliation' => [
+                    ['name' => 'Some Lab', 'id' => [['id' => $url, 'id-type' => 'ROR']]],
+                ],
+            ],
+        ];
+    }
+
+    public function testHttpAffiliationUrlIsRenderedAsLink(): void
+    {
+        $result = Episciences_Paper_Authors_ViewFormatter::formatAuthors(
+            self::authorsWithAffiliationUrl('https://ror.org/0123abcd')
+        );
+
+        self::assertStringContainsString('<a href="https://ror.org/0123abcd"', $result['listAffi']);
+        self::assertStringContainsString('Some Lab', $result['listAffi']);
+    }
+
+    public function testJavascriptAffiliationUrlIsNotRenderedAsLink(): void
+    {
+        $result = Episciences_Paper_Authors_ViewFormatter::formatAuthors(
+            self::authorsWithAffiliationUrl('javascript:alert(1)')
+        );
+
+        self::assertStringNotContainsString('href="javascript', $result['listAffi']);
+        // The affiliation name is still shown, as plain text.
+        self::assertStringContainsString('Some Lab', $result['listAffi']);
+    }
+
+    public function testDataAffiliationUrlIsNotRenderedAsLink(): void
+    {
+        $result = Episciences_Paper_Authors_ViewFormatter::formatAuthors(
+            self::authorsWithAffiliationUrl('data:text/html,<script>alert(1)</script>')
+        );
+
+        self::assertStringNotContainsString('href="data:', $result['listAffi']);
+        self::assertStringNotContainsString('<script>', $result['listAffi']);
+    }
 }

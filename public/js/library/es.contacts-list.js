@@ -4,6 +4,37 @@
     }
     window.__epContactsListBound = true;
 
+    // Read "var <name> = <json>;" assignments from the inline <script> blocks of
+    // the response and assign parsed JSON values (objects/arrays/numbers) to the
+    // matching globals. Values are parsed as data via JSON.parse — no script is
+    // executed, so the contacts payload is consumed without code evaluation.
+    function applyContactsData(markup) {
+        const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script[^>]*>/gi;
+        let scriptMatch;
+        while ((scriptMatch = scriptRegex.exec(markup)) !== null) {
+            scriptMatch[1].split('\n').forEach(line => {
+                const assignment = line.match(
+                    /^\s*var\s+([A-Za-z_$][\w$]*)\s*=\s*(.+);\s*$/
+                );
+                if (!assignment) {
+                    return;
+                }
+                let value;
+                try {
+                    value = JSON.parse(assignment[2]);
+                } catch (e) {
+                    return; // Non-JSON assignment (e.g. a quoted string) is ignored.
+                }
+                if (
+                    value !== null &&
+                    (typeof value === 'object' || typeof value === 'number')
+                ) {
+                    window[assignment[1]] = value;
+                }
+            });
+        }
+    }
+
     function ensureGetContactsCssLoaded() {
         // DOMPurify removes <link> tags, so load the stylesheet manually
         const id = 'ep-get-contacts-css';
@@ -32,7 +63,9 @@
         const modalBody = modal.querySelector('.modal-body');
         if (!modalBody) return;
 
-        const contactsContainer = modalBody.querySelector('.contacts-container');
+        const contactsContainer = modalBody.querySelector(
+            '.contacts-container'
+        );
         const form = modalBody.querySelector('form');
 
         // Clear __epContactsForm if it belongs to this modal
@@ -74,11 +107,15 @@
         }
 
         // Clear added contacts hidden input and tags
-        const hiddenAddedContacts = document.getElementById('hidden_added_contacts');
+        const hiddenAddedContacts = document.getElementById(
+            'hidden_added_contacts'
+        );
         if (hiddenAddedContacts) {
             hiddenAddedContacts.value = '[]';
         }
-        const addedContactsTags = document.getElementById('added_contacts_tags');
+        const addedContactsTags = document.getElementById(
+            'added_contacts_tags'
+        );
         if (addedContactsTags) {
             addedContactsTags.innerHTML = '';
         }
@@ -236,24 +273,14 @@
 
                 const content = await response.text();
 
-                // Extract and execute scripts before sanitizing HTML
-                // (DOMPurify will remove <script> tags, but contact data variables are needed)
-                const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script[^>]*>/gi;
-                let match;
-                const scriptsToExecute = [];
-                while ((match = scriptRegex.exec(content)) !== null) {
-                    scriptsToExecute.push(match[1]);
-                }
+                // Read the contacts data objects from the response without
+                // executing embedded script. Only JSON value assignments are read.
+                applyContactsData(content);
+                // target is known from the request URL (the response sets it via
+                // a quoted, non-JSON assignment we intentionally skip below).
+                window.target = target;
 
-                scriptsToExecute.forEach(scriptContent => {
-                    const scriptElement = document.createElement('script');
-                    scriptElement.textContent = scriptContent;
-                    document.head.appendChild(scriptElement);
-                    // Remove after execution to keep DOM clean
-                    document.head.removeChild(scriptElement);
-                });
-
-                // Sanitize HTML before injection to prevent XSS
+                // Sanitize HTML before injection
                 contactsContainer.innerHTML = sanitizeHTML(content);
 
                 // Load get-contacts.js for filter functionality

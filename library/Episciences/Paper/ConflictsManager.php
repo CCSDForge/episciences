@@ -49,14 +49,6 @@ class Episciences_Paper_ConflictsManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $sql = $db->select()
-            ->from(self::TABLE)
-            ->where("`by` = ?", $uid);
-
-        if ($answer) {
-            $sql->where('answer = ?', $answer);
-        }
-
         $rows = $db->fetchAll(self::findByUidAndAnswerQuery($uid, $answer, $paperId));
 
         if ($mode !== self::DEFAULT_MODE) {

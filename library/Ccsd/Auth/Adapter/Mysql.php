@@ -106,6 +106,28 @@ class Mysql implements AdapterInterface
     }
 
     /**
+     * Set username for authentication
+     *
+     * @param string $username
+     * @return $this
+     * @throws \Zend_Auth_Exception
+     */
+    protected function setUsername(string $username): self
+    {
+        // A2 fix: strip UTF-8 non-breaking space (\xC2\xA0) before trim() so that
+        // whitespace-only usernames (including NBSP) are correctly rejected.
+        $username = trim(str_replace("\xC2\xA0", ' ', $username));
+        if (empty($username)) {
+            throw new \Zend_Auth_Exception(
+                "No username provided",
+                \Zend_Auth_Result::FAILURE_IDENTITY_NOT_FOUND
+            );
+        }
+        $this->_username = $username;
+        return $this;
+    }
+
+    /**
      * Pre-authentication processing
      * Displays login form if credentials are not provided
      *
@@ -136,6 +158,27 @@ class Mysql implements AdapterInterface
     }
 
     /**
+     * Set password for authentication
+     *
+     * @param string $password
+     * @return $this
+     * @throws \Zend_Auth_Exception
+     */
+    protected function setCredential(string $password): self
+    {
+        // A2 fix: same NBSP-aware trimming as setUsername()
+        $password = trim(str_replace("\xC2\xA0", ' ', $password));
+        if (empty($password)) {
+            throw new \Zend_Auth_Exception(
+                "No password provided",
+                \Zend_Auth_Result::FAILURE_CREDENTIAL_INVALID
+            );
+        }
+        $this->_password = $password;
+        return $this;
+    }
+
+    /**
      * Post-authentication processing
      * Returns user object from authentication result
      *
@@ -148,6 +191,28 @@ class Mysql implements AdapterInterface
         // Return user object from authentication result
         // It already contains CAS database data
         return $authinfo->getIdentity();
+    }
+
+    /**
+     * Get user identity
+     *
+     * @return \Ccsd_User_Models_User|null
+     */
+    public function getIdentity(): ?\Ccsd_User_Models_User
+    {
+        return $this->_identity;
+    }
+
+    /**
+     * Set user identity
+     *
+     * @param \Ccsd_User_Models_User $_identity
+     * @return $this
+     */
+    public function setIdentity(\Ccsd_User_Models_User $_identity): self
+    {
+        $this->_identity = $_identity;
+        return $this;
     }
 
     /**
@@ -196,46 +261,11 @@ class Mysql implements AdapterInterface
      * @param array $params
      * @return bool
      */
-    public function  logout($params): bool
+    public function logout($params): bool
     {
         \Zend_Auth::getInstance()->clearIdentity();
         \Zend_Session::destroy();
         return true;
-    }
-
-    /**
-     * Set user identity
-     *
-     * @param \Ccsd_User_Models_User $_identity
-     * @return $this
-     */
-    public function setIdentity(\Ccsd_User_Models_User $_identity): self
-    {
-        $this->_identity = $_identity;
-        return $this;
-    }
-
-    /**
-     * Get user identity
-     *
-     * @return \Ccsd_User_Models_User|null
-     */
-    public function getIdentity(): ?\Ccsd_User_Models_User
-    {
-        return $this->_identity;
-    }
-
-    /**
-     * Set identity structure (compatibility with CAS adapter)
-     *
-     * @param \Ccsd_User_Models_User $identity
-     * @return $this
-     */
-    public function setIdentityStructure(\Ccsd_User_Models_User $identity): self
-    {
-        $this->_identity = $identity;
-        $this->_identityStructure = $identity;
-        return $this;
     }
 
     /**
@@ -249,45 +279,15 @@ class Mysql implements AdapterInterface
     }
 
     /**
-     * Set username for authentication
+     * Set identity structure (compatibility with CAS adapter)
      *
-     * @param string $username
+     * @param \Ccsd_User_Models_User $identity
      * @return $this
-     * @throws \Zend_Auth_Exception
      */
-    protected function setUsername(string $username): self
+    public function setIdentityStructure(\Ccsd_User_Models_User $identity): self
     {
-        // A2 fix: strip UTF-8 non-breaking space (\xC2\xA0) before trim() so that
-        // whitespace-only usernames (including NBSP) are correctly rejected.
-        $username = trim(str_replace("\xC2\xA0", ' ', $username));
-        if (empty($username)) {
-            throw new \Zend_Auth_Exception(
-                "No username provided",
-                \Zend_Auth_Result::FAILURE_IDENTITY_NOT_FOUND
-            );
-        }
-        $this->_username = $username;
-        return $this;
-    }
-
-    /**
-     * Set password for authentication
-     *
-     * @param string $password
-     * @return $this
-     * @throws \Zend_Auth_Exception
-     */
-    protected function setCredential(string $password): self
-    {
-        // A2 fix: same NBSP-aware trimming as setUsername()
-        $password = trim(str_replace("\xC2\xA0", ' ', $password));
-        if (empty($password)) {
-            throw new \Zend_Auth_Exception(
-                "No password provided",
-                \Zend_Auth_Result::FAILURE_CREDENTIAL_INVALID
-            );
-        }
-        $this->_password = $password;
+        $this->_identity = $identity;
+        $this->_identityStructure = $identity;
         return $this;
     }
 

@@ -45,6 +45,7 @@ class Episciences_Volume
     private $_indexedPapers = null;
     private $_paperPositions = [];
     private $_editors;
+    private ?bool $_editorsActiveState = null;
     // Copy Editors
     private $_copyEditors = [];
     private $_bib_reference = null;
@@ -226,14 +227,11 @@ class Episciences_Volume
     }
 
     /**
-     * Renvoie les rédacteurs assignés au volume
-     * @param bool $active
-     * @return mixed
-     * @throws Zend_Db_Statement_Exception
+     * Returns editors assigned to the volume
      */
-    public function getEditors($active = true)
+    public function getEditors(bool $active = true): array
     {
-        if (!isset($this->_editors)) {
+        if (!isset($this->_editors) || $this->_editorsActiveState !== $active) {
             $this->loadEditors($active);
         }
         return $this->_editors;
@@ -244,16 +242,12 @@ class Episciences_Volume
      * @param $editors
      * @return $this
      */
-    public function setEditors($editors)
+    public function setEditors($editors): static
     {
         $this->_editors = $editors;
         return $this;
     }
 
-    /**
-     * @param bool $active
-     * @throws Zend_Db_Statement_Exception
-     */
     public function loadEditors(bool $active = true): void
     {
         $select = $this->loadVolumeAssignmentsForRoleQuery(Episciences_User_Assignment::ROLE_EDITOR);
@@ -271,7 +265,12 @@ class Episciences_Volume
 
             foreach ($result as $uid => $user) {
                 $editor = new Episciences_Editor();
-                $editor->findWithCAS($uid);
+                try {
+                    $editor->findWithCAS($uid);
+                } catch (Zend_Db_Statement_Exception $e) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                    continue;
+                }
                 $editor->setWhen($user['WHEN']);
                 $editor->setStatus($user['STATUS']);
                 $editors[$uid] = $editor;
@@ -279,6 +278,7 @@ class Episciences_Volume
         }
 
         $this->setEditors($editors);
+        $this->_editorsActiveState = $active;
 
     }
 
@@ -843,20 +843,35 @@ class Episciences_Volume
     }
 
     /**
+     * Get processed volume data for saving.
+     *
+     * @return array
+     */
+    private function getVolumeDataForSave(): array
+    {
+        $data = [
+            'BIB_REFERENCE' => $this->getBib_reference(),
+            'titles' => $this->preProcess($this->getTitles()),
+            'descriptions' => $this->preProcess($this->getDescriptions()),
+            'vol_type' => $this->getVol_type(),
+            'vol_year' => $this->getVol_year(),
+            'vol_num' => $this->getVol_num(),
+        ];
+
+        Episciences_VolumesAndSectionsManager::dataProcess($data);
+
+        return $data;
+    }
+
+    /**
      * Add a new volume, return a New volume VID
      * @return int the New volume id OR 0 if we fail
      */
     private function addNewVolume(): int
     {
+        $values = $this->getVolumeDataForSave();
         $values['RVID'] = RVID;
         $values['POSITION'] = 0;
-        $values['BIB_REFERENCE'] = $this->getBib_reference();
-        $values['titles'] = $this->preProcess($this->getTitles());
-        $values['descriptions'] = $this->preProcess($this->getDescriptions());
-        $values['vol_type'] = $this->getVol_type();
-        $values['vol_year'] = $this->getVol_year();
-        $values['vol_num'] = $this->getVol_num();
-        Episciences_VolumesAndSectionsManager::dataProcess($values);
 
         try {
             $affectedRows = $this->_db->insert(T_VOLUMES, $values);
@@ -1378,14 +1393,7 @@ class Episciences_Volume
     private function updateVolume(): ?int
     {
         $where = 'VID = ' . $this->getVid();
-
-        $data['BIB_REFERENCE'] = $this->getBib_reference();
-        $data['titles'] = $this->preProcess($this->getTitles());
-        $data['descriptions'] = $this->preProcess($this->getDescriptions());
-        $data['vol_type'] = $this->getVol_type();
-        $data['vol_year'] = $this->getVol_year();
-        $data['vol_num'] = $this->getVol_num();
-        Episciences_VolumesAndSectionsManager::dataProcess($data);
+        $data = $this->getVolumeDataForSave();
 
         try {
             return $this->_db->update(T_VOLUMES, $data, $where);

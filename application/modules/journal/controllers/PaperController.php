@@ -1,7 +1,5 @@
 <?php
 
-use Episciences\Files\File;
-use Episciences\Files\FileManager;
 use Episciences\Files\Uploader;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
@@ -19,9 +17,7 @@ class PaperController extends PaperDefaultController
 
     /**
      *  display paper pdf
-     * @throws DOMException
      * @throws GuzzleException
-     * @throws Zend_Controller_Response_Exception
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -67,18 +63,18 @@ class PaperController extends PaperDefaultController
 
     /**
      * display paper public page
-     * @throws DOMException
-     * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Controller_Exception
      * @throws Zend_Controller_Response_Exception
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
+     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Form_Exception
      * @throws Zend_Json_Exception
      * @throws Zend_Mail_Exception
      * @throws Zend_Session_Exception
+     * @throws InvalidArgumentExceptionAlias
      */
     public function viewAction(): void
     {
@@ -130,8 +126,8 @@ class PaperController extends PaperDefaultController
 
                 $uploader = new Uploader(sprintf('%s/dd/', REVIEW_FILES_PATH . $paper->getDocid()));
                 try {
-                    $allMd5 = FileManager::findByMd5($paper->getDocid());
-                    /** @var File $dFile */
+                    $allMd5 = \Episciences\Files\FileManager::findByMd5($paper->getDocid());
+                    /** @var \Episciences\Files\File $dFile */
                     $dFile = $uploader->upload(true)->getInfo()[$uploader::UPLOADED_FILES_KEY][Episciences_Submit::DD_FILE_ELEMENT_NAME];
                     if (in_array($dFile->getMd5(), $allMd5, true)) {
                         $message = $this->view->translate("La version que vous essayez d'envoyer existe déjà.");
@@ -572,11 +568,7 @@ class PaperController extends PaperDefaultController
     {
 
 
-        if (
-            $displayPaperPasswordBloc &&
-            $request->isPost() &&
-            $paper->isOwner()
-        ) {
+        if ($request->isPost() && $displayPaperPasswordBloc && $paper->isOwner()) {
 
             $params = $request->getPost();
 
@@ -625,7 +617,6 @@ class PaperController extends PaperDefaultController
      * @param Episciences_Paper $paper
      * @return bool
      * @throws InvalidArgumentExceptionAlias
-     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -899,7 +890,7 @@ class PaperController extends PaperDefaultController
     {
         $requester = new Episciences_User();
         $requester->find($commentRequest->getUid());
-        $commentFiles = Episciences_Tools::isJson($commentAnswer->getFile()) ? json_decode($commentAnswer->getFile(), true, 512, JSON_THROW_ON_ERROR) : (array)$commentAnswer->getFile();
+        $commentFiles = Episciences_Tools::isJson($commentAnswer->getFile()) ? json_decode($commentAnswer->getFile(), true) : (array)$commentAnswer->getFile();
 
         $attachmentsMail = [];
 
@@ -917,7 +908,8 @@ class PaperController extends PaperDefaultController
 
         // Tous les rédacteurs
         $allEditors = $this->getAllEditors($paper);
-        //Tous les copy editors
+
+        // tous les corrceteurs
         $assignedCopyEditors = $this->getAllCopyEditors($paper);
 
         // autres
@@ -996,10 +988,6 @@ class PaperController extends PaperDefaultController
         return Episciences_Mail_Send::sendMailFromReview($contributor, $templateType, $tags, $paper, $senderUid, $attachments);
     }
 
-    /**
-     * @throws DOMException
-     * @throws JsonException
-     */
     public function postorcidauthorAction(): void
     {
 
@@ -1041,7 +1029,10 @@ class PaperController extends PaperDefaultController
             }
 
 
-            $dbAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($data['paperid']);
+            // Use the paper id of the authorised document (not a free request value).
+            $paperId = (int)$paper->getPaperid();
+
+            $dbAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
             $arrayAuthorDb = [];
             foreach ($dbAuthor as $value) {
                 $arrayAuthorDb = json_decode($value['authors'], true, JSON_UNESCAPED_UNICODE);
@@ -1066,7 +1057,7 @@ class PaperController extends PaperDefaultController
             }
             $newAuthorInfos = new Episciences_Paper_Authors();
             $newAuthorInfos->setAuthors(json_encode($arrayAuthorDb, JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT));
-            $newAuthorInfos->setPaperId($data['paperid']);
+            $newAuthorInfos->setPaperId($paperId);
             $updateAuthor = Episciences_Paper_AuthorsManager::update($newAuthorInfos);
             if ($updateAuthor > 0) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage('Vos modifications ont bien été prises en compte');
@@ -1190,11 +1181,10 @@ class PaperController extends PaperDefaultController
 
     /**
      * revision request answer form: answer without any modifications
-     * @throws DOMException
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      * @throws Zend_Json_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
      */
     public function answerrequestAction(): void
     {
@@ -1206,12 +1196,18 @@ class PaperController extends PaperDefaultController
         $oComment = new Episciences_Comment;
         $oComment->find($id);
 
-
-        $form = Episciences_CommentsManager::answerRevisionForm();
-
         $papersManager = new Episciences_PapersManager();
 
         $paper = $papersManager::get($oComment->getDocid(), false);
+
+        // The request form discloses the revision request: contributor or staff only.
+        if (!$paper || !$this->isPaperContributorOrManager($paper)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
+
+        $form = Episciences_CommentsManager::answerRevisionForm();
 
         if ($paper->isContributorCanShareArXivPaperPwd()) {
             $form = Episciences_Submit::addPaperArxivPwdElement($form, $paper->isRequiredPaperPwd());
@@ -1225,7 +1221,6 @@ class PaperController extends PaperDefaultController
 
     /**
      * save author's answer to a revision request (comment only)
-     * @throws DOMException
      * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
@@ -1248,6 +1243,12 @@ class PaperController extends PaperDefaultController
 
         // get paper object
         $paper = Episciences_PapersManager::get($docId, false);
+
+        // Answers are recorded on the contributor's paper: contributor or staff only.
+        if (!$paper || !$this->isPaperContributorOrManager($paper)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
 
         $type = !Ccsd_Tools::ifsetor($post['type'], null) ?
             Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT :
@@ -1384,6 +1385,15 @@ class PaperController extends PaperDefaultController
         $oComment = new Episciences_Comment;
         $oComment->find($id);
 
+        $paper = Episciences_PapersManager::get($oComment->getDocid(), false);
+
+        // The form discloses the revision request: contributor or staff only.
+        if (!$paper || !$this->isPaperContributorOrManager($paper)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
+
         $form = Episciences_Submit::getTmpVersionForm($oComment);
         $form->setAction($this->url(['controller' => 'paper', 'action' => 'savetmpversion', 'docid' => $oComment->getDocid(), 'pcid' => $oComment->getPcid()]));
         $form->setAttrib('method', 'post');
@@ -1398,7 +1408,6 @@ class PaperController extends PaperDefaultController
      * update previous version status
      * reassign editors to new version
      * optional: reassign reviewers to new version
-     * @throws DOMException
      * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
@@ -1421,6 +1430,13 @@ class PaperController extends PaperDefaultController
         // previous version detail
         $docId = $request->getQuery(self::DOC_ID_STR);
         $paper = Episciences_PapersManager::get($docId, false);
+
+        // Temporary versions are recorded on the contributor's paper: contributor or staff only.
+        if (!$paper || !$this->isPaperContributorOrManager($paper)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
         $paper->loadOtherVolumes();
         $paperId = ($paper->getPaperid()) ?: $paper->getDocid();
         $reviewers = $paper->getReviewers(null, true);
@@ -1638,7 +1654,7 @@ class PaperController extends PaperDefaultController
         $template->loadTranslations();
 
         // link to previous version page
-        $paper1_url = self::buildPublicPaperUrl($paper1->getDocid());
+        $paper1_url = $this->buildPublicPaperUrl($paper1->getDocid());
 
         // settings for new invitation / assignment
         $oReview = Episciences_ReviewsManager::find(RVID);
@@ -1697,7 +1713,7 @@ class PaperController extends PaperDefaultController
             if ($submissionType === self::TMP_VERSION_TYPE) {
 
                 // link to tmp version page
-                $tmpUrl = self::buildPublicPaperUrl($paper2->getDocid());
+                $tmpUrl = $this->buildPublicPaperUrl($paper2->getDocid());
 
                 $mail->addTag(Episciences_Mail_Tags::TAG_TMP_PAPER_URL, $tmpUrl);
             }
@@ -1723,8 +1739,6 @@ class PaperController extends PaperDefaultController
 
     /**
      * new version form (revision request answer)
-     * @throws DOMException
-     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Json_Exception
      */
@@ -1739,10 +1753,18 @@ class PaperController extends PaperDefaultController
         // fetch revision request
         $oComment = new Episciences_Comment();
         $oComment->find($id);
-        $this->view->comment = $oComment->toArray();
 
         // fetch paper
         $paper = Episciences_PapersManager::get($oComment->getDocid());
+
+        // The form discloses the revision request: contributor or staff only.
+        if (!$paper || !$this->isPaperContributorOrManager($paper)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
+
+        $this->view->comment = $oComment->toArray();
 
         $options = ['newVersionOf' => $paper->getDocid()];
 
@@ -1804,6 +1826,12 @@ class PaperController extends PaperDefaultController
         $post = $request->getPost();
 
         $paper = $this->loadPaper($request);
+
+        // New versions are recorded on the contributor's paper: contributor or staff only.
+        if (!$this->isPaperContributorOrManager($paper)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
 
         $form = $this->buildNewVersionForm($paper);
         if (!$form?->isValid($post)) {
@@ -1889,7 +1917,6 @@ class PaperController extends PaperDefaultController
     /**
      * @param Zend_Controller_Request_Http $request
      * @return Episciences_Paper
-     * @throws DOMException
      * @throws Zend_Db_Statement_Exception
      */
 
@@ -1902,6 +1929,45 @@ class PaperController extends PaperDefaultController
         $paper->loadDataDescriptors();
 
         return $paper;
+    }
+
+    /**
+     * The contributor endpoints operate on a paper chosen by request parameter:
+     * restrict them to the paper's contributor (owner or co-author) and to the
+     * users allowed to manage the paper, within the current journal.
+     */
+    private function isPaperContributorOrManager(Episciences_Paper $paper): bool
+    {
+        return $paper->getRvid() === RVID
+            && ($paper->isOwnerOrCoAuthor() || Episciences_Auth::isAllowedToManagePaper());
+    }
+
+    /**
+     * Mirrors the display conditions of the abandon button (Episciences_Paper):
+     * editorial staff, the paper's owner (when the journal setting allows it) or
+     * one of the paper's editors (when the dedicated setting allows it).
+     */
+    private function isAllowedToAbandonPublicationProcess(Episciences_Paper $paper): bool
+    {
+        if (Episciences_Auth::isSecretary()) {
+            return true;
+        }
+
+        $review = Episciences_ReviewsManager::find(RVID);
+
+        if (!$review) {
+            return false;
+        }
+
+        if (
+            $review->getSetting(Episciences_Review::SETTING_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS)
+            && $paper->isOwner()
+        ) {
+            return true;
+        }
+
+        return (bool)$review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS)
+            && array_key_exists(Episciences_Auth::getUid(), $paper->getEditors());
     }
 
     /**
@@ -2159,9 +2225,6 @@ class PaperController extends PaperDefaultController
 
     //Post-save sub-helpers
 
-    /**
-     * @throws Zend_File_Transfer_Exception
-     */
     private function processEnrichmentAndFiles(Episciences_Paper $newPaper, array $post): void
     {
         $isEnrichment = !empty($post['h_enrichment']);
@@ -2553,9 +2616,8 @@ class PaperController extends PaperDefaultController
 
     /**
      * reviewer ratings reports and pending invitations
-     * @throws DOMException
      * @throws Zend_Db_Select_Exception
-     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Db_Statement_Exception|JsonException
      */
     public function ratingsAction(): void
     {
@@ -2662,7 +2724,6 @@ class PaperController extends PaperDefaultController
 
     /**
      * reviewer rating report
-     * @throws DOMException
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -2824,9 +2885,7 @@ class PaperController extends PaperDefaultController
 
             $report = Episciences_Rating_Report::find($paper->getDocid(), Episciences_Auth::getUid());
 
-            if (
-                $report &&
-                $report->isCompleted()) {
+            if ($report && $report->isCompleted()) {
                 return $result;
             }
         }
@@ -2919,11 +2978,11 @@ class PaperController extends PaperDefaultController
      * save reviewer comment (from reviewer to contributor)
      * @param Episciences_Paper $paper
      * @return bool
-     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
+     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Mail_Exception
+     * @throws Zend_Session_Exception
      */
     private function save_reviewer_comment(Episciences_Paper $paper): bool
     {
@@ -2943,7 +3002,7 @@ class PaperController extends PaperDefaultController
 
         // send mail to contributor
         // paper page url
-        $paper_url = self::buildPublicPaperUrl($docId);
+        $paper_url = $this->buildPublicPaperUrl($docId);
 
         $contributorTags = [
             Episciences_Mail_Tags::TAG_SENDER_EMAIL => null,
@@ -3168,11 +3227,12 @@ class PaperController extends PaperDefaultController
      * save reviewer rating report
      * @param Episciences_Rating_Report $report
      * @param Episciences_Paper $paper
-     * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
+     * @throws Zend_File_Transfer_Exception
      * @throws Zend_Mail_Exception
+     * @throws Zend_Session_Exception
      */
     private function save_rating(Episciences_Rating_Report $report, Episciences_Paper $paper): void
     {
@@ -3209,7 +3269,6 @@ class PaperController extends PaperDefaultController
     /**
      * @param Episciences_Rating_Report $report
      * @param Episciences_Paper $paper
-     * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -3341,8 +3400,6 @@ class PaperController extends PaperDefaultController
 
     /**
      * Supprimer le fichier joint à un rapport de relecture
-     * @throws DOMException
-     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function deleteattachmentreportAction(): void
@@ -3354,9 +3411,11 @@ class PaperController extends PaperDefaultController
         $docid = (int)$request->getParam(self::DOC_ID_STR);
         $itemId = $request->getParam('cid');
         $uid = (int)$request->getParam('uid'); // Reviewer UID
-        $file = $request->getParam('file');
+        $file = (string)$request->getParam('file');
 
-        if (!$docid || !$uid) {
+        // Only a plain file name is expected: reject any directory component to
+        // prevent path traversal when building $report_path below.
+        if (!$docid || !$uid || $file === '' || !preg_match('/^[a-zA-Z0-9._-]+$/', $file)) {
             $this->_helper->redirector(self::RATINGS_ACTION, self::CONTROLLER_NAME, null, [PREFIX_ROUTE => RVCODE]);
             return;
         }
@@ -3370,20 +3429,25 @@ class PaperController extends PaperDefaultController
 
         if (Episciences_Auth::isAllowedToUploadPaperReport() || $paper->getEditor(Episciences_Auth::getUid()) || Episciences_Auth::getUid() == $uid) {
             $report = Episciences_Rating_Report::find($docid, $uid);
-            $report_path = $report->getPath() . $file;
-            if ($file && is_file($report_path) && !$report->isCompleted()) {
-                unlink($report_path);
-                // update XML report file
-                $id = substr($itemId, -1);
-                /** @var Episciences_Rating_Criterion $criterion */
-                $criterion = $report->getCriterion($id);
-                $criterion->setAttachment('');
-                $report->save();
-                $message = $this->view->translate("Le fichier a bien été supprimé.");
-                $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
-            } else {
+            if (!$report) {
                 $message = $this->view->translate("Erreur lors de la suppression du fichier.");
                 $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+            } else {
+                $report_path = $report->getPath() . $file;
+                // Extract numeric criterion id from "item_N" — supports multi-digit ids.
+                $id = preg_replace('/^.*?(\d+)$/', '$1', (string)$itemId);
+                /** @var Episciences_Rating_Criterion|null $criterion */
+                $criterion = $report->getCriterion($id);
+                if (is_file($report_path) && !$report->isCompleted() && $criterion !== null) {
+                    unlink($report_path);
+                    $criterion->setAttachment('');
+                    $report->save();
+                    $message = $this->view->translate("Le fichier a bien été supprimé.");
+                    $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
+                } else {
+                    $message = $this->view->translate("Erreur lors de la suppression du fichier.");
+                    $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+                }
             }
 
         } else {
@@ -3396,7 +3460,6 @@ class PaperController extends PaperDefaultController
 
     /**
      * remove contributor paper (done by the contributor himself)
-     * @throws DOMException
      * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Date_Exception
@@ -3577,7 +3640,6 @@ class PaperController extends PaperDefaultController
     }
 
     /**
-     * @throws DOMException
      * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Date_Exception
@@ -3602,8 +3664,17 @@ class PaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($docId);
 
-        if (!$paper) {
-            $errors[] = $translator->translate("Impossible de trouver l'article");
+        // Restoring an abandoned publication process is an editorial-staff action
+        // on an abandoned paper of the current journal.
+        if (
+            !$paper
+            || $paper->getRvid() !== RVID
+            || !$paper->isAbandoned()
+            || !Episciences_Auth::isSecretary()
+        ) {
+            $this->getResponse()->setHttpResponseCode(403);
+            $this->_helper->viewRenderer->setNoRender();
+            return;
         }
 
         if ($request->getPost('docid') && $doAction) {// confirmation de l'action
@@ -3659,7 +3730,7 @@ class PaperController extends PaperDefaultController
 
         $this->view->message = $this->buildAlertMessage($message, $messagePanel);
         $this->view->errors = $errors;
-        $this->view->docid = !$paper ? $docId : $paper->getDocid();
+        $this->view->docid = $paper->getDocid();
 
         $this->render('abandonpublicationprocess');
     }
@@ -3756,7 +3827,6 @@ class PaperController extends PaperDefaultController
     }
 
     /**
-     * @throws DOMException
      * @throws InvalidArgumentExceptionAlias
      * @throws JsonException
      * @throws Zend_Date_Exception
@@ -3784,8 +3854,16 @@ class PaperController extends PaperDefaultController
 
         $paper = Episciences_PapersManager::get($docId);
 
-        if (!$paper) {
-            $errors[] = $translator->translate("Impossible de trouver l'article");
+        // Same conditions as the abandon button display: staff, owner or paper
+        // editor (depending on the journal settings), within the current journal.
+        if (
+            !$paper
+            || $paper->getRvid() !== RVID
+            || !$this->isAllowedToAbandonPublicationProcess($paper)
+        ) {
+            $this->getResponse()->setHttpResponseCode(403);
+            $this->_helper->viewRenderer->setNoRender();
+            return;
         }
 
         if ($request->getPost('docid') && $doAction) {// confirmation de l'action
@@ -3829,7 +3907,7 @@ class PaperController extends PaperDefaultController
 
         $this->view->message = $this->buildAlertMessage($message, $messagePanel);
         $this->view->errors = $errors;
-        $this->view->docid = !$paper ? $docId : $paper->getDocid();
+        $this->view->docid = $paper->getDocid();
     }
 
     /**
@@ -4028,6 +4106,13 @@ class PaperController extends PaperDefaultController
 
             try {
                 $paper = Episciences_PapersManager::get($docId);
+
+                // Refreshing the record metadata is reserved to the contributor and staff.
+                if (!$paper || !$this->isPaperContributorOrManager($paper)) {
+                    $this->getResponse()->setHttpResponseCode(403);
+                    return;
+                }
+
                 $result = Episciences_PapersManager::updateRecordData($paper);
 
                 if ($result !== 0) {
@@ -4067,6 +4152,16 @@ class PaperController extends PaperDefaultController
         $id = $request->getParam('id');
         $oComment = new Episciences_Comment;
         $oComment->find($id);
+
+        $paper = Episciences_PapersManager::get($oComment->getDocid(), false);
+
+        // The request form discloses the comment: contributor or staff only.
+        if (!$paper || !$this->isPaperContributorOrManager($paper)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
+
         $form = Episciences_CommentsManager::answerRevisionForm('contactRequest');
         $form->setAction($this->url(['controller' => 'paper', 'action' => 'saveanswer', 'docid' => $oComment->getDocid(), 'pcid' => $oComment->getPcid()]));
         $form->addElement('hidden', 'type', [
@@ -4231,7 +4326,6 @@ class PaperController extends PaperDefaultController
      * @param Episciences_Comment $request
      * @param array $recipients
      * @return Episciences_User|null
-     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
 

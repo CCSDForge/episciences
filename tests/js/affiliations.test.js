@@ -1,5 +1,5 @@
 /**
- * Tests for affiliations.js - ROR API integration and autocomplete functionality
+ * Tests for affiliations.js - ROR API v2 integration and autocomplete functionality
  */
 
 // Load the affiliations.js file
@@ -10,56 +10,43 @@ const affiliationsJs = fs.readFileSync(
     'utf8'
 );
 
-// Mock data similar to ROR API response
+// Mock data matching ROR API v2 response format
 const mockRorResponse = {
     number_of_results: 2,
     items: [
         {
-            substring: 'Centre pour la Communication Scientifique Directe',
-            score: 1.0,
-            matching_type: 'EXACT',
-            chosen: true,
-            organization: {
-                id: 'https://ror.org/00680hx61',
-                names: [
-                    {
-                        lang: 'fr',
-                        types: ['acronym'],
-                        value: 'CCSD',
-                    },
-                    {
-                        lang: 'fr',
-                        types: ['label', 'ror_display'],
-                        value: 'Centre pour la Communication Scientifique Directe',
-                    },
-                ],
-                domains: ['ccsd.cnrs.fr'],
-                status: 'active',
-            },
+            id: 'https://ror.org/00680hx61',
+            names: [
+                {
+                    lang: 'fr',
+                    types: ['acronym'],
+                    value: 'CCSD',
+                },
+                {
+                    lang: 'fr',
+                    types: ['label', 'ror_display'],
+                    value: 'Centre pour la Communication Scientifique Directe',
+                },
+            ],
+            domains: ['ccsd.cnrs.fr'],
+            status: 'active',
         },
         {
-            substring: 'Massachusetts Institute of Technology',
-            score: 0.9,
-            matching_type: 'ACRONYM',
-            chosen: false,
-            organization: {
-                id: 'https://ror.org/042nb2s44',
-                names: [
-                    {
-                        lang: 'en',
-                        types: ['label'],
-                        value: 'Massachusetts Institute of Technology',
-                    },
-                    {
-                        lang: 'en',
-                        types: ['acronym'],
-                        value: 'MIT',
-                    },
-                ],
-                acronyms: ['MIT'],
-                domains: ['mit.edu'],
-                status: 'active',
-            },
+            id: 'https://ror.org/042nb2s44',
+            names: [
+                {
+                    lang: 'en',
+                    types: ['label'],
+                    value: 'Massachusetts Institute of Technology',
+                },
+                {
+                    lang: 'en',
+                    types: ['acronym'],
+                    value: 'MIT',
+                },
+            ],
+            domains: ['mit.edu'],
+            status: 'active',
         },
     ],
 };
@@ -192,69 +179,58 @@ describe('Affiliations Autocomplete', function () {
     });
 
     describe('Display Name Extraction', function () {
-        it('should extract ror_display name when available', function (done) {
-            const affiliationsInput = document.getElementById('affiliations');
+        it('should extract ror_display name when available', function () {
+            const testItem = mockRorResponse.items[0];
+            const names = testItem.names || [];
 
-            // Wait for initialization
-            setTimeout(() => {
-                // Simulate API response processing
-                const testItem = mockRorResponse.items[0];
+            const rorDisplayName = names.find(
+                n => n.types && n.types.includes('ror_display')
+            );
+            const labelName = names.find(
+                n => n.types && n.types.includes('label')
+            );
 
-                // Extract display name logic (copied from the actual code)
-                let displayName = '';
-                if (testItem.organization.names) {
-                    const rorDisplayName = testItem.organization.names.find(
-                        n => n.types && n.types.includes('ror_display')
-                    );
-                    const labelName = testItem.organization.names.find(
-                        n => n.types && n.types.includes('label')
-                    );
+            let displayName = '';
+            if (rorDisplayName) {
+                displayName = rorDisplayName.value;
+            } else if (labelName) {
+                displayName = labelName.value;
+            } else if (names.length > 0) {
+                displayName = names[0].value;
+            }
 
-                    if (rorDisplayName) {
-                        displayName = rorDisplayName.value;
-                    } else if (labelName) {
-                        displayName = labelName.value;
-                    } else if (testItem.organization.names.length > 0) {
-                        displayName = testItem.organization.names[0].value;
-                    }
-                }
-
-                expect(displayName).toBe(
-                    'Centre pour la Communication Scientifique Directe'
-                );
-                done();
-            }, 50);
+            expect(displayName).toBe(
+                'Centre pour la Communication Scientifique Directe'
+            );
         });
 
         it('should fallback to label name when ror_display not available', function () {
             const testItem = {
-                organization: {
-                    names: [
-                        {
-                            lang: 'en',
-                            types: ['label'],
-                            value: 'Test Organization',
-                        },
-                    ],
-                },
+                id: 'https://ror.org/test001',
+                names: [
+                    {
+                        lang: 'en',
+                        types: ['label'],
+                        value: 'Test Organization',
+                    },
+                ],
             };
 
-            let displayName = '';
-            if (testItem.organization.names) {
-                const rorDisplayName = testItem.organization.names.find(
-                    n => n.types && n.types.includes('ror_display')
-                );
-                const labelName = testItem.organization.names.find(
-                    n => n.types && n.types.includes('label')
-                );
+            const names = testItem.names || [];
+            const rorDisplayName = names.find(
+                n => n.types && n.types.includes('ror_display')
+            );
+            const labelName = names.find(
+                n => n.types && n.types.includes('label')
+            );
 
-                if (rorDisplayName) {
-                    displayName = rorDisplayName.value;
-                } else if (labelName) {
-                    displayName = labelName.value;
-                } else if (testItem.organization.names.length > 0) {
-                    displayName = testItem.organization.names[0].value;
-                }
+            let displayName = '';
+            if (rorDisplayName) {
+                displayName = rorDisplayName.value;
+            } else if (labelName) {
+                displayName = labelName.value;
+            } else if (names.length > 0) {
+                displayName = names[0].value;
             }
 
             expect(displayName).toBe('Test Organization');
@@ -262,33 +238,31 @@ describe('Affiliations Autocomplete', function () {
 
         it('should use first available name as last resort', function () {
             const testItem = {
-                organization: {
-                    names: [
-                        {
-                            lang: null,
-                            types: ['alias'],
-                            value: 'Fallback Name',
-                        },
-                    ],
-                },
+                id: 'https://ror.org/test002',
+                names: [
+                    {
+                        lang: null,
+                        types: ['alias'],
+                        value: 'Fallback Name',
+                    },
+                ],
             };
 
-            let displayName = '';
-            if (testItem.organization.names) {
-                const rorDisplayName = testItem.organization.names.find(
-                    n => n.types && n.types.includes('ror_display')
-                );
-                const labelName = testItem.organization.names.find(
-                    n => n.types && n.types.includes('label')
-                );
+            const names = testItem.names || [];
+            const rorDisplayName = names.find(
+                n => n.types && n.types.includes('ror_display')
+            );
+            const labelName = names.find(
+                n => n.types && n.types.includes('label')
+            );
 
-                if (rorDisplayName) {
-                    displayName = rorDisplayName.value;
-                } else if (labelName) {
-                    displayName = labelName.value;
-                } else if (testItem.organization.names.length > 0) {
-                    displayName = testItem.organization.names[0].value;
-                }
+            let displayName = '';
+            if (rorDisplayName) {
+                displayName = rorDisplayName.value;
+            } else if (labelName) {
+                displayName = labelName.value;
+            } else if (names.length > 0) {
+                displayName = names[0].value;
             }
 
             expect(displayName).toBe('Fallback Name');
@@ -315,7 +289,7 @@ describe('Affiliations Autocomplete', function () {
                 // Wait for debounce (300ms) + some buffer
                 setTimeout(() => {
                     expect(capturedUrl).toContain(
-                        'https://api.ror.org/organizations?affiliation='
+                        'https://api.ror.org/v2/organizations?query='
                     );
                     expect(capturedUrl).toContain(
                         encodeURIComponent(searchTerm)
@@ -418,7 +392,7 @@ describe('Affiliations Autocomplete', function () {
     });
 
     describe('Acronym Handling', function () {
-        it('should cache acronyms from ACRONYM matching type', function (done) {
+        it('should cache acronyms found in names array', function (done) {
             const affiliationsInput = document.getElementById('affiliations');
 
             setTimeout(() => {
@@ -532,68 +506,64 @@ describe('Affiliations Autocomplete', function () {
     });
 
     describe('Results Display', function () {
-        it('should format results correctly', function (done) {
-            const affiliationsInput = document.getElementById('affiliations');
-
-            // Reset mock fetch to ensure proper response
-            global.fetch = mockFetch;
-
-            // Test the processing logic directly with mock data
+        it('should format results correctly from v2 API response', function (done) {
             const testResults = [];
 
-            if (mockRorResponse.items) {
-                mockRorResponse.items.forEach(item => {
-                    let additionalInfo = '';
-                    if (
-                        item.matching_type === 'ACRONYM' &&
-                        item.organization.acronyms &&
-                        item.organization.acronyms.length > 0
-                    ) {
-                        additionalInfo = `[${item.organization.acronyms[0]}]`;
-                    }
+            mockRorResponse.items.forEach(item => {
+                let additionalInfo = '';
+                const names = item.names || [];
 
-                    // Get the display name from the names array
-                    let displayName = '';
-                    if (item.organization.names) {
-                        const rorDisplayName = item.organization.names.find(
-                            n => n.types && n.types.includes('ror_display')
-                        );
-                        const labelName = item.organization.names.find(
-                            n => n.types && n.types.includes('label')
-                        );
+                const acronymEntry = names.find(
+                    n => n.types && n.types.includes('acronym')
+                );
+                if (acronymEntry) {
+                    additionalInfo = `[${acronymEntry.value}]`;
+                }
 
-                        if (rorDisplayName) {
-                            displayName = rorDisplayName.value;
-                        } else if (labelName) {
-                            displayName = labelName.value;
-                        } else if (item.organization.names.length > 0) {
-                            displayName = item.organization.names[0].value;
-                        }
-                    }
+                const rorDisplayName = names.find(
+                    n => n.types && n.types.includes('ror_display')
+                );
+                const labelName = names.find(
+                    n => n.types && n.types.includes('label')
+                );
 
-                    const label =
-                        `${displayName} ${additionalInfo} #${item.organization.id}`.trim();
-                    testResults.push({
-                        label: label,
-                        identifier: item.organization.id,
-                        acronym: additionalInfo,
-                    });
+                let displayName = '';
+                if (rorDisplayName) {
+                    displayName = rorDisplayName.value;
+                } else if (labelName) {
+                    displayName = labelName.value;
+                } else if (names.length > 0) {
+                    displayName = names[0].value;
+                }
+
+                const label =
+                    `${displayName} ${additionalInfo} #${item.id}`.trim();
+                testResults.push({
+                    label,
+                    identifier: item.id,
+                    acronym: additionalInfo,
                 });
-            }
+            });
 
-            // Test the formatted results
-            expect(testResults.length).toBeGreaterThan(0);
+            expect(testResults.length).toBe(2);
 
             const firstResult = testResults[0];
             expect(firstResult).toHaveProperty('label');
             expect(firstResult).toHaveProperty('identifier');
             expect(firstResult).toHaveProperty('acronym');
-
-            expect(firstResult.label).toContain('#https://ror.org/');
-            expect(firstResult.identifier).toContain('https://ror.org/');
             expect(firstResult.label).toContain(
                 'Centre pour la Communication Scientifique Directe'
             );
+            expect(firstResult.label).toContain('[CCSD]');
+            expect(firstResult.label).toContain('#https://ror.org/');
+            expect(firstResult.identifier).toBe('https://ror.org/00680hx61');
+
+            const secondResult = testResults[1];
+            expect(secondResult.label).toContain(
+                'Massachusetts Institute of Technology'
+            );
+            expect(secondResult.label).toContain('[MIT]');
+            expect(secondResult.acronym).toBe('[MIT]');
 
             done();
         }, 10000);
@@ -707,27 +677,24 @@ describe('Affiliations Autocomplete', function () {
     describe('Edge Cases', function () {
         it('should handle organizations with no names array', function () {
             const testItem = {
-                organization: {
-                    id: 'https://ror.org/test123',
-                },
+                id: 'https://ror.org/test123',
             };
 
-            let displayName = '';
-            if (testItem.organization.names) {
-                const rorDisplayName = testItem.organization.names.find(
-                    n => n.types && n.types.includes('ror_display')
-                );
-                const labelName = testItem.organization.names.find(
-                    n => n.types && n.types.includes('label')
-                );
+            const names = testItem.names || [];
+            const rorDisplayName = names.find(
+                n => n.types && n.types.includes('ror_display')
+            );
+            const labelName = names.find(
+                n => n.types && n.types.includes('label')
+            );
 
-                if (rorDisplayName) {
-                    displayName = rorDisplayName.value;
-                } else if (labelName) {
-                    displayName = labelName.value;
-                } else if (testItem.organization.names.length > 0) {
-                    displayName = testItem.organization.names[0].value;
-                }
+            let displayName = '';
+            if (rorDisplayName) {
+                displayName = rorDisplayName.value;
+            } else if (labelName) {
+                displayName = labelName.value;
+            } else if (names.length > 0) {
+                displayName = names[0].value;
             }
 
             expect(displayName).toBe('');

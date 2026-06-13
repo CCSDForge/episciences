@@ -1,3 +1,11 @@
+// Per-session request token, sent with every mutating call
+function appendRequestToken(formData) {
+    let csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    if (csrfMeta) {
+        formData.append('csrf_token', csrfMeta.content);
+    }
+}
+
 $(function () {
     let actualBtn = document.getElementById('upload-gabs');
     let fileChosen = document.getElementById('file-chosen');
@@ -23,6 +31,7 @@ $(function () {
         form_data.append('file', file_data);
         form_data.append('docId', $('#paper_docId').val());
         form_data.append('paperId', $('#paper_id').val());
+        appendRequestToken(form_data);
         $.ajax({
             url: JS_PREFIX_URL + 'administrategraphabstract/addgraphabs/',
             dataType: 'text',
@@ -43,6 +52,7 @@ $(function () {
             let form_data = new FormData();
             form_data.append('file', file_data);
             form_data.append('docId', $('#paper_docId').val());
+            appendRequestToken(form_data);
             $.ajax({
                 url:
                     JS_PREFIX_URL + 'administrategraphabstract/deletegraphabs/',

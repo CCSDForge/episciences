@@ -97,10 +97,14 @@ class Episciences_PapersManager
         $col = strtoupper($parts[0]);
         $dir = isset($parts[1]) && strtoupper($parts[1]) === 'DESC' ? 'DESC' : 'ASC';
 
+        $fromParts = $select->getPart(Zend_Db_Select::FROM);
+
         return match ($col) {
-            'CONTRIBUTOR_SORT' => $select
-                ->joinLeft(['sort_contributor' => T_USERS], 'papers.UID = sort_contributor.UID', [])
-                ->order("sort_contributor.SCREEN_NAME $dir"),
+            'CONTRIBUTOR_SORT' => isset($fromParts['sort_contributor'])
+                ? $select->order("sort_contributor.SCREEN_NAME $dir")
+                : $select
+                    ->joinLeft(['sort_contributor' => T_USERS], 'papers.UID = sort_contributor.UID', [])
+                    ->order("sort_contributor.SCREEN_NAME $dir"),
             'REVIEWER_SORT'   => self::applyAssignmentSortJoin($select, 'reviewer', $dir),
             'EDITOR_SORT'     => self::applyAssignmentSortJoin($select, 'editor', $dir),
             'COPYEDITOR_SORT' => self::applyAssignmentSortJoin($select, 'copyeditor', $dir),
@@ -125,7 +129,10 @@ class Episciences_PapersManager
             ->where('ua.STATUS != ?', Episciences_User_Assignment::STATUS_INACTIVE)
             ->group('ua.ITEMID');
 
-        $select->joinLeft([$alias => $subQuery], "papers.DOCID = {$alias}.ITEMID", []);
+        $fromParts = $select->getPart(Zend_Db_Select::FROM);
+        if (!isset($fromParts[$alias])) {
+            $select->joinLeft([$alias => $subQuery], "papers.DOCID = {$alias}.ITEMID", []);
+        }
         return $select->order("{$alias}.sort_name $dir");
     }
 
@@ -4316,7 +4323,7 @@ class Episciences_PapersManager
      * @param $docId
      * @return string
      */
-    public static function buildDocumentPath($docId): string
+    public static function buildDocumentPath(int $docId): string
     {
         return REVIEW_FILES_PATH . $docId;
     }

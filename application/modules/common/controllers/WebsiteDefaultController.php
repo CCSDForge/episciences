@@ -115,36 +115,41 @@ class WebsiteDefaultController extends Episciences_Controller_Action
 
         if (isset($params['method']) && $request->isPost()) {
             if ($params['method'] === 'remove') {
-                // Suppression d'un fichier
-                if (isset($params['name'])) {
-                    $fileName = basename($params['name']);
-                    $filePath = $dir . $fileName;
-                    if (is_file($filePath)) {
-                        unlink($filePath);
-                    }
+                //Suppression d'un fichier
+                // Keep only the file name so the removal stays within $dir.
+                $fileToRemove = isset($params['name']) ? basename((string)$params['name']) : '';
+                if ($fileToRemove !== '' && is_file($dir . $fileToRemove)) {
+                    unlink($dir . $fileToRemove);
                 }
-            } elseif (isset($_FILES['file']['tmp_name']) && $_FILES['file']['tmp_name'] !== '') {
-                // Ajout d'un fichier
+            } else if (isset($_FILES['file']['tmp_name']) && $_FILES['file']['tmp_name'] !== '') {
+
+                //Ajout d'un fichier
+
                 $isOverwritten = isset($params['overwriteFile']) && $params['overwriteFile'] === 'on';
-                preg_match('/[^a-z0-9_\.-]/i', $_FILES['file']['name'], $matches);
+
+                preg_match('/[^a-z0-9_\.-\/\\\\]/i', $_FILES['file']['name'], $matches);
+
                 $renamedFile = Ccsd_File::renameFile($_FILES['file']['name'], $dir, !$isOverwritten);
-                move_uploaded_file($_FILES['file']['tmp_name'], $dir . $renamedFile);
-                if ($translator) {
-                    $message = $translator->translate('Le fichier a été déposé.');
-                    if ($renamedFile !== $_FILES['file']['name']) {
-                        $message = sprintf(
-                            '%s "%s" %s "%s" %s',
-                            $translator->translate('Le fichier a été téléchargé et a été renommé'),
-                            $renamedFile,
-                            $translator->translate('car'),
-                            $_FILES['file']['name'],
-                            empty($matches) ? $translator->translate('existe déjà.') : $translator->translate('contient des caractères non valides')
-                        );
-                    }
+
+                copy($_FILES['file']['tmp_name'], $dir . $renamedFile);
+
+                $message = $translator->translate('Le fichier a été déposé.');
+
+                if ($renamedFile !== $_FILES['file']['name']) {
+                    $message = $translator->translate('Le fichier a été téléchargé et a été renommé');
+                    $message .= ' "';
+                    $message .= $renamedFile;
+                    $message .= '"';
+                    $message .= ' ';
+                    $message .= $translator->translate('car');
+                    $message .= ' "';
+                    $message .= $_FILES['file']['name'];
+                    $message .= '" ';
+                    $message .= empty($matches) ? $translator->translate('existe déjà.') : $translator->translate('contient des caractères non valides');
                 }
 
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage($message);
-                // Prevent the file from being saved repeatedly each time the page is refreshed.
+                //Prevent the file from being saved repeatedly each time the page is refreshed.
                 $this->_helper->redirector->goToUrl($request->getRequestUri());
             }
         }
@@ -430,7 +435,7 @@ class WebsiteDefaultController extends Episciences_Controller_Action
     }
 
     /**
-     * Gestion des actualités
+     * News management — add, edit, delete.
      */
     public function newsAction(): void
     {

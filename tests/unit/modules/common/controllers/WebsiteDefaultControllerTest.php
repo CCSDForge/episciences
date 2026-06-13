@@ -138,4 +138,51 @@ class WebsiteDefaultControllerTest extends TestCase
             "header.phtml should use a translated key for missing languages error"
         );
     }
+
+    // -----------------------------------------------------------------------
+    // publicAction — file removal stays within the public directory
+    // -----------------------------------------------------------------------
+
+    /**
+     * The remove branch must reduce the posted name to its base file name before
+     * unlink(), so the removal stays within the directory being listed.
+     *
+     * @covers WebsiteDefaultController::publicAction
+     */
+    public function testPublicActionRemovalUsesBasename(): void
+    {
+        $method = $this->extractMethod('publicAction');
+
+        $this->assertMatchesRegularExpression(
+            '/basename\(\s*\(string\)\s*\$params\[\'name\'\]\s*\)/',
+            $method,
+            'publicAction must reduce the posted name with basename() before unlink()'
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            "/unlink\(\\\$dir \. \\\$params\['name'\]\)/",
+            $method,
+            'publicAction must not unlink the raw posted name'
+        );
+    }
+
+    /**
+     * `$dir . basename($name)` always stays within `$dir`, whatever the input name.
+     */
+    public function testBasenameKeepsRemovalWithinDirectory(): void
+    {
+        $dir = '/var/data/review/public/';
+
+        $names = [
+            '../../config/file.ini',
+            '../../../../some/path',
+            'sub/dir/../../name.txt',
+            '/another/path',
+        ];
+
+        foreach ($names as $name) {
+            $resolved = $dir . basename((string) $name);
+            $this->assertStringStartsWith($dir, $resolved, "name resolved outside the dir: $name");
+            $this->assertStringNotContainsString('/../', $resolved, "name kept directory segments: $name");
+        }
+    }
 }

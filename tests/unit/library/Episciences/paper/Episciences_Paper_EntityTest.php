@@ -290,4 +290,40 @@ final class Episciences_Paper_EntityTest extends TestCase
         $type = $paper->getType();
         self::assertSame(Episciences_Paper::DEFAULT_TYPE_TITLE, $type[Episciences_Paper::TITLE_TYPE]);
     }
+
+    // -----------------------------------------------------------------------
+    // setMetadata / getMetadata: type and licenses are read from distinct nodes
+    // -----------------------------------------------------------------------
+
+    private const RECORD_WITH_TYPE_AND_RIGHTS = <<<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<episciences xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:type>Journal article</dc:type>
+    <dc:rights>https://creativecommons.org/licenses/by/4.0</dc:rights>
+</episciences>
+XML;
+
+    public function testGetMetadataTypeReadsDcType(): void
+    {
+        $this->paper->setMetadata(self::RECORD_WITH_TYPE_AND_RIGHTS);
+        self::assertSame('Journal article', $this->paper->getMetadata('type'));
+    }
+
+    public function testGetMetadataLicensesReadsDcRights(): void
+    {
+        $this->paper->setMetadata(self::RECORD_WITH_TYPE_AND_RIGHTS);
+        self::assertSame(
+            'https://creativecommons.org/licenses/by/4.0',
+            $this->paper->getMetadata('licenses')
+        );
+    }
+
+    public function testGetMetadataTypeIsNotOverwrittenByRights(): void
+    {
+        $this->paper->setMetadata(self::RECORD_WITH_TYPE_AND_RIGHTS);
+        self::assertNotSame(
+            $this->paper->getMetadata('licenses'),
+            $this->paper->getMetadata('type')
+        );
+    }
 }

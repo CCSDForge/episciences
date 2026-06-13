@@ -276,8 +276,9 @@ class PaperDefaultController extends DefaultController
             $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_VERSION_SUBMITTED;
         } elseif ($commentType === Episciences_CommentsManager::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED) {
             $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_CE_AUTHOR_VERSION_FINALE_DEPOSED_EDITOR_AND_COPYEDITOR_COPY;
-        } elseif($commentType === Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT){
-            $templateKey =  Episciences_Mail_TemplatesManager::TYPE_PAPER_REVISION_ANSWER;
+        } elseif ($commentType === Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT
+                || $commentType === Episciences_CommentsManager::TYPE_REVISION_CONTACT_COMMENT) {
+            $templateKey = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVISION_ANSWER;
         }
 
         if ($templateKey === ''){

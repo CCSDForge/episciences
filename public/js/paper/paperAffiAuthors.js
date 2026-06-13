@@ -111,8 +111,7 @@ class PaperAffiAuthorsManager {
 
         if (this.affiBody) {
             this.affiBody.innerHTML = '';
-            // Insert HTML and execute any scripts it contains
-            this.insertHTMLWithScripts(this.affiBody, html);
+            this.insertHtml(this.affiBody, html);
         }
 
         // Initialize affiliations autocomplete
@@ -120,34 +119,20 @@ class PaperAffiAuthorsManager {
     }
 
     /**
-     * Inserts HTML content and executes any script tags within it
-     * innerHTML doesn't execute scripts for security reasons, so we need to do it manually
+     * Renders returned markup into the container.
+     * The markup is passed through the shared sanitizer when available; any
+     * behaviour (autocomplete setup) is wired separately via
+     * loadAffiliationsScript(), so embedded <script> tags are not needed.
      * @param {HTMLElement} container - Container element
-     * @param {string} html - HTML content with potential script tags
+     * @param {string} html - HTML content
      */
-    insertHTMLWithScripts(container, html) {
-        // Create a temporary container
-        const temp = document.createElement('div');
-        temp.innerHTML = html;
-
-        // Extract and remove script tags
-        const scripts = temp.querySelectorAll('script');
-        const scriptContents = [];
-
-        scripts.forEach(script => {
-            scriptContents.push(script.textContent);
-            script.remove();
-        });
-
-        // Insert the HTML without scripts
-        container.innerHTML = temp.innerHTML;
-
-        // Execute each script
-        scriptContents.forEach(scriptContent => {
-            const script = document.createElement('script');
-            script.textContent = scriptContent;
-            document.head.appendChild(script);
-        });
+    insertHtml(container, html) {
+        if (typeof sanitizeHTML === 'function') {
+            container.innerHTML = sanitizeHTML(html);
+            return;
+        }
+        // Fallback when the sanitizer is unavailable.
+        container.innerHTML = html;
     }
 
     /**

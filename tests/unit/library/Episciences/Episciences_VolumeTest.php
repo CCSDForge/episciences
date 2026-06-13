@@ -338,4 +338,33 @@ class Episciences_VolumeTest extends TestCase
         // (Actual DB call is skipped because $paper_positions ends up empty)
         $v->savePaperPositionsInVolume(1, 'paper-abc,paper-xyz');
     }
+
+    // =========================================================================
+    // getVolumeDataForSave() — private, tested via reflection
+    // =========================================================================
+
+    public function testGetVolumeDataForSaveAggregatesAndEncodesData(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setBib_reference('BibRef123');
+        $v->setTitles(['en' => 'English title', 'fr' => 'Titre français']);
+        $v->setDescriptions(['en' => 'English description']);
+        $v->setVol_type('proceedings');
+        $v->setVol_year('2026');
+        $v->setVol_num(3);
+
+        $method = new ReflectionMethod(Episciences_Volume::class, 'getVolumeDataForSave');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($v);
+
+        $this->assertIsArray($result);
+        $this->assertSame('BibRef123', $result['BIB_REFERENCE']);
+        $this->assertSame(json_encode(['en' => 'English title', 'fr' => 'Titre français']), $result['titles']);
+        $this->assertSame(json_encode(['en' => 'English description']), $result['descriptions']);
+        $this->assertSame('proceedings', $result['vol_type']);
+        $this->assertSame('2026', $result['vol_year']);
+        $this->assertSame(3, $result['vol_num']);
+    }
 }
+

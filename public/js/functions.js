@@ -779,7 +779,9 @@ function openModal(url, title, params, source) {
 
     // run callback method (if there is one)
     if (params['callback']) {
-        $modal_button.off('click.callback');
+        // Remove all existing click handlers (including the generic one from modal.phtml)
+        // so only the AJAX callback fires and the form is not submitted natively.
+        $modal_button.off('click').off('click.callback');
         $modal_button.on(
             'click.callback',
             { callback: params['callback'] },
@@ -791,7 +793,7 @@ function openModal(url, title, params, source) {
             }
         );
     } else {
-        $modal_button.on('click', function (e) {
+        $modal_button.off('click').on('click', function (e) {
             // submit form if necessary
             if ($modal_form.length && $modal_form.data('submission') != false) {
                 $modal_form.submit();
