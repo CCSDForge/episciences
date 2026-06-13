@@ -79,15 +79,15 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
                             $volume->getSetting(Episciences_Volume::SETTING_ACCESS_CODE)
                         ) : ?>
                             <span class="access_code">
-                                (<?php echo $this->translate("code d'accès :") ?>
-                                <?php echo $this->escape($volume->getSetting(Episciences_Volume::SETTING_ACCESS_CODE)); ?>
+                                <?php echo $this->translate("code d'accès :") ?>
+                                <code><?php echo $this->escape($volume->getSetting(Episciences_Volume::SETTING_ACCESS_CODE)); ?></code>
                                 <button type="button" class="btn btn-link btn-xs copy-btn"
                                         data-copy-value="<?php echo $this->escape($volume->getSetting(Episciences_Volume::SETTING_ACCESS_CODE)); ?>"
                                         title="<?php echo $this->translate("Copier le code d'accès"); ?>"
                                         aria-label="<?php echo $this->translate("Copier le code d'accès"); ?>">
                                     <span class="fa-regular fa-copy" aria-hidden="true"></span>
                                 </button>
-                                <span class="copy-feedback label label-success" style="display: none; font-weight: normal; font-size: 0.75em;"><?php echo $this->translate('Copié !'); ?></span>)
+                                <span class="copy-feedback label label-success" style="display: none; font-weight: normal; font-size: 0.75em;"><?php echo $this->translate('Copié !'); ?></span>
                             </span>
                         <?php endif; ?>
                     </td>
