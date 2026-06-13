@@ -5,34 +5,42 @@ namespace unit\library\Episciences;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Behavioural rule for Episciences_User::saveUserRoles(): it persists only the roles
- * the current user is allowed to assign (its "editable roles").
+ * Behavioural rule: only the roles the current user is allowed to assign
+ * ("editable roles") may reach the database.
  *
- * saveUserRoles() hits the database (DELETE/INSERT), so it cannot be exercised
- * end-to-end without a real connection. Instead we:
- *   1. assert, by source analysis, that the submitted roles are intersected with the
- *      caller's editable roles before the INSERT, and
- *   2. exercise that exact expression to document the resulting behaviour.
+ * History:
+ *   - The filter lived in saveUserRoles() until commit 7c585452, which removed
+ *     it because getEditableRoles() returns [] for non-secretary callers, causing
+ *     programmatic calls (e.g. invitation acceptance) to silently drop roles.
+ *   - The filter was moved to saverolesAction() — the only untrusted entry point
+ *     where form-submitted roles need to be constrained.
+ *
+ * Tests 1 & 2: source analysis — the filter is wired in the controller action.
+ * Test 3: behavioural — the filtering expression itself is correct.
  *
  * @coversNothing
  */
 final class Episciences_UserSaveRolesFilterTest extends TestCase
 {
-    private string $source;
+    private string $controllerSource;
 
     protected function setUp(): void
     {
-        $this->source = (string) file_get_contents(
-            realpath(__DIR__ . '/../../../../library/Episciences/User.php')
+        $this->controllerSource = (string) file_get_contents(
+            realpath(__DIR__ . '/../../../../application/modules/common/controllers/UserDefaultController.php')
         );
     }
 
-    private function extractSaveUserRoles(): string
+    private function extractSaverolesAction(): string
     {
-        $start = strpos($this->source, 'function saveUserRoles(');
-        self::assertNotFalse($start, 'saveUserRoles() not found in Episciences_User');
-        $end = strpos($this->source, "\n    public function ", $start + 1);
-        return substr($this->source, $start, ($end === false ? strlen($this->source) : $end) - $start);
+        $start = strpos($this->controllerSource, 'function saverolesAction(');
+        self::assertNotFalse($start, 'saverolesAction() not found in UserDefaultController');
+        $end = strpos($this->controllerSource, "\n    public function ", $start + 1);
+        return substr(
+            $this->controllerSource,
+            $start,
+            ($end === false ? strlen($this->controllerSource) : $end) - $start
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -41,23 +49,23 @@ final class Episciences_UserSaveRolesFilterTest extends TestCase
 
     public function testRolesAreIntersectedWithEditableRoles(): void
     {
-        $method = $this->extractSaveUserRoles();
+        $method = $this->extractSaverolesAction();
         self::assertMatchesRegularExpression(
             '/array_intersect\(.*\$roles.*array_keys\(\$editableRoles\)\)/s',
             $method,
-            'saveUserRoles() must intersect the submitted roles with the editable roles'
+            'saverolesAction() must intersect the submitted roles with the editable roles'
         );
     }
 
     public function testFilterRunsBeforeTheInsert(): void
     {
-        $method = $this->extractSaveUserRoles();
+        $method = $this->extractSaverolesAction();
         $filterPos = strpos($method, 'array_intersect');
-        $insertPos = stripos($method, 'INSERT IGNORE');
-        self::assertNotFalse($filterPos, 'saveUserRoles() must filter the roles');
-        self::assertNotFalse($insertPos, 'saveUserRoles() must still perform the INSERT');
-        self::assertLessThan($insertPos, $filterPos,
-            'the role filter must run before the INSERT');
+        $savePos   = strpos($method, 'saveUserRoles(');
+        self::assertNotFalse($filterPos, 'saverolesAction() must filter the roles');
+        self::assertNotFalse($savePos,   'saverolesAction() must still call saveUserRoles()');
+        self::assertLessThan($savePos, $filterPos,
+            'the role filter must run before saveUserRoles()');
     }
 
     // -----------------------------------------------------------------------
@@ -65,7 +73,7 @@ final class Episciences_UserSaveRolesFilterTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * Replicates the expression used in saveUserRoles():
+     * Replicates the expression used in saverolesAction():
      *   array_values(array_intersect((array)$roles, array_keys($editableRoles)))
      *
      * @param list<string> $submitted
@@ -84,8 +92,6 @@ final class Episciences_UserSaveRolesFilterTest extends TestCase
      */
     public static function filteringCases(): iterable
     {
-        // getEditableRoles() returns [reviewer => reviewer] when the caller may only
-        // manage reviewers.
         $reviewerOnly = ['reviewer' => 'reviewer'];
 
         yield 'roles outside the editable set are dropped' => [
@@ -98,7 +104,6 @@ final class Episciences_UserSaveRolesFilterTest extends TestCase
             ['reviewer'], $reviewerOnly, ['reviewer'],
         ];
 
-        // A wider editable set keeps the corresponding roles untouched.
         $wide = [
             'epiadmin' => 'epiadmin', 'chief_editor' => 'chief_editor',
             'administrator' => 'administrator', 'secretary' => 'secretary',
