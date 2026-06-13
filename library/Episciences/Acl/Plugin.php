@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Vérifications des droits d'accès à une ressource
+ * Access rights verification for a resource
  *
  */
 class Episciences_Acl_Plugin extends Ccsd_Acl_Plugin

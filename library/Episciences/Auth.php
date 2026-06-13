@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Authentification sur Episciences
+ * Authentication on Episciences
  *
  */
 class Episciences_Auth extends Ccsd_Auth
@@ -13,7 +13,7 @@ class Episciences_Auth extends Ccsd_Auth
     public const ANONYMOUS_UID = 0;
 
     /**
-     * Récupération des privilèges de l'utilisateur pour le site actuel
+     * Retrieve user privileges for the current site
      * @return list<string>
      */
     public static function getRoles(): array
@@ -177,7 +177,7 @@ class Episciences_Auth extends Ccsd_Auth
     }
 
     /**
-     * Possibilité de déposer un rapport de relecture
+     * Ability to upload a peer review report
      * @return bool
      */
     public static function isAllowedToUploadPaperReport(): bool
@@ -186,7 +186,7 @@ class Episciences_Auth extends Ccsd_Auth
     }
 
     /**
-     * Autorise de lister les papiers assignés à un utilisateur
+     * Authorizes listing papers assigned to a user
      * @return bool
      */
 

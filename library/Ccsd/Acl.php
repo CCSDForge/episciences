@@ -13,7 +13,7 @@ class Ccsd_Acl extends Zend_Acl
     }
 
     /**
-     * Chargement des ACL à partir d'un fichier
+     * Loading ACLs from a file
      */
     public function loadFromFile($filename)
     {
@@ -60,7 +60,7 @@ class Ccsd_Acl extends Zend_Acl
     }
 
     /**
-     * Chargement des Acl à partir du menu du site
+     * Loading Acls from the website menu
      * @param array $filenames
      */
     public function loadFromNavigation($filenames): void
@@ -82,7 +82,7 @@ class Ccsd_Acl extends Zend_Acl
 
         $this->loadDefaultAcl();
 
-        //Ajout des ressources par défaut
+        // Adding default resources
         foreach ($this->_defaultResources as $resource) {
             $this->addResource(new Zend_Acl_Resource($resource));
             $this->allow(self::DEFAULT_ROLE, new Zend_Acl_Resource($resource));
@@ -134,13 +134,13 @@ class Ccsd_Acl extends Zend_Acl
 
                 foreach ($this->getRoles() as $role) {
                     $rule = 'deny';
-                    /* On regarde d'abord si le droit est direct sans heritage (plus rapide)
-                    in_array moins couteux que getRoleRegistry()->inherits
+                    /* We first check if the right is direct without inheritance (faster)
+                    in_array is less expensive than getRoleRegistry()->inherits
                     */
                     if (in_array($role, $privileges)) {
                         $rule = 'allow';
                     } else {
-                        /* Pas trouve en direct, on essaye l'heritage */
+                        /* Not found directly, trying inheritance */
                         foreach ($privileges as $priv) {
                             if ($role == $priv || $this->_getRoleRegistry()->inherits($role, $priv)) {
                                 $rule = 'allow';
@@ -155,12 +155,12 @@ class Ccsd_Acl extends Zend_Acl
     }
 
     /**
-     * Chargement des Acl par défaut (règles pour les actions non présentes dans
-     * la navigation du site
+     * Loading default Acls (rules for actions not present in the
+     * website navigation)
      */
     public function loadDefaultAcl(): void
     {
-        //Initialisation des ACL par défaut
+        // Initializing default ACLs
         if (is_array($this->_defaultAcl)) {
             foreach ($this->_defaultAcl as $role => $rules) {
                 if (isset($rules['allow']) && is_array($rules['allow'])) {
@@ -182,7 +182,7 @@ class Ccsd_Acl extends Zend_Acl
         $config->roles = array();
         $config->resources = array();
 
-        //Section Role
+        // Role Section
         foreach ($this->getRoles() as $role) {
             $parents = is_array($this->_getRoleRegistry()->getParents($role)) ? implode(',', $this->_getRoleRegistry()->getParents($role)) : null;
             $config->roles->$role = $parents;
@@ -191,12 +191,12 @@ class Ccsd_Acl extends Zend_Acl
             $config->$role->deny = array();
         }
 
-        //Section Resources
+        // Resources Section
         $config->resources = array();
         foreach ($this->getResources() as $resource) {
             if ($resource != '') {
                 $config->resources->$resource = null;
-                //Sections Droits
+                // Rights Sections
                 foreach ($this->getRoles() as $role) {
                     $action = 'deny';
                     if ($this->isAllowed($role, $resource)) {
