@@ -65,9 +65,6 @@ abstract class Ccsd_Auth_Adapter  implements Zend_Auth_Adapter_Interface {
                 break;
             case 'IDP': $authAdapter = new Ccsd_Auth_Adapter_Idp();
                 break;
-            case 'ORCID': $authAdapter = new Ccsd_Auth_Adapter_Orcid();
-                break;
-
             default : $authAdapter = new Ccsd_Auth_Adapter_Cas();
         }
 

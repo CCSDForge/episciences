@@ -7,8 +7,6 @@ use Ccsd\Auth\Adapter\DbTable;
 use Ccsd\Auth\Adapter\Idp;
 use Ccsd\Auth\Adapter\Mysql;
 use Ccsd_Auth_Adapter_Cas;
-use Ccsd_Auth_Adapter_Orcid;
-use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -19,7 +17,6 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \Ccsd\Auth\AdapterFactory
  */
-#[IgnoreDeprecations]
 class Ccsd_Auth_AdapterFactoryTest extends TestCase
 {
     // -------------------------------------------------------------------------
@@ -56,12 +53,6 @@ class Ccsd_Auth_AdapterFactoryTest extends TestCase
         $this->assertInstanceOf(Idp::class, $adapter);
     }
 
-    public function testGetTypedAdapterOrcidReturnsOrcidInstance(): void
-    {
-        $adapter = AdapterFactory::getTypedAdapter('ORCID');
-        $this->assertInstanceOf(Ccsd_Auth_Adapter_Orcid::class, $adapter);
-    }
-
     public function testGetTypedAdapterMysqlReturnsMysqlInstance(): void
     {
         $adapter = AdapterFactory::getTypedAdapter('MYSQL');
@@ -91,18 +82,6 @@ class Ccsd_Auth_AdapterFactoryTest extends TestCase
         $this->assertInstanceOf(Idp::class, $adapter);
     }
 
-    public function testGetTypedAdapterIsCaseInsensitiveForOrcid(): void
-    {
-        $adapter = AdapterFactory::getTypedAdapter('orcid');
-        $this->assertInstanceOf(Ccsd_Auth_Adapter_Orcid::class, $adapter);
-    }
-
-    public function testGetTypedAdapterMixedCaseOrCid(): void
-    {
-        $adapter = AdapterFactory::getTypedAdapter('OrCiD');
-        $this->assertInstanceOf(Ccsd_Auth_Adapter_Orcid::class, $adapter);
-    }
-
     // -------------------------------------------------------------------------
     // Default / unknown type
     // -------------------------------------------------------------------------
@@ -115,7 +94,6 @@ class Ccsd_Auth_AdapterFactoryTest extends TestCase
     public function testGetTypedAdapterUnknownTypeDefaultsToCas(): void
     {
         $adapter = AdapterFactory::getTypedAdapter('UNKNOWN');
-        // Default case returns CAS — silent fallback may hide misconfiguration
         $this->assertInstanceOf(Ccsd_Auth_Adapter_Cas::class, $adapter);
     }
 
@@ -127,18 +105,28 @@ class Ccsd_Auth_AdapterFactoryTest extends TestCase
 
     public function testGetTypedAdapterNullCoercedToEmptyStringDefaultsToCas(): void
     {
-        // getTypedAdapter performs (string) cast: null → '' → default CAS
         $adapter = AdapterFactory::getTypedAdapter(null);
         $this->assertInstanceOf(Ccsd_Auth_Adapter_Cas::class, $adapter);
     }
 
     // -------------------------------------------------------------------------
-    // Return type: all adapters implement AdapterInterface
+    // ORCID no longer supported — falls back to CAS
     // -------------------------------------------------------------------------
 
-    public function testAllAdaptersImplementAdapterInterface(): void
+    public function testGetTypedAdapterOrcidFallsBackToCas(): void
     {
-        $types = ['CAS', 'IDP', 'ORCID', 'MYSQL'];
+        // ORCID authentication was removed; unknown type defaults to CAS
+        $adapter = AdapterFactory::getTypedAdapter('ORCID');
+        $this->assertInstanceOf(Ccsd_Auth_Adapter_Cas::class, $adapter);
+    }
+
+    // -------------------------------------------------------------------------
+    // Return type: active adapters implement AdapterInterface
+    // -------------------------------------------------------------------------
+
+    public function testActiveAdaptersImplementAdapterInterface(): void
+    {
+        $types = ['CAS', 'IDP', 'MYSQL'];
         foreach ($types as $type) {
             $adapter = AdapterFactory::getTypedAdapter($type);
             $this->assertInstanceOf(
@@ -147,6 +135,5 @@ class Ccsd_Auth_AdapterFactoryTest extends TestCase
                 "Adapter for type '$type' must implement AdapterInterface"
             );
         }
-        // DB requires Ccsd\Db\Adapter\DbTable which is absent from this test env
     }
 }

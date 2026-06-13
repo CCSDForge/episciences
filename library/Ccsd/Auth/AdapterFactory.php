@@ -16,10 +16,10 @@ class AdapterFactory  {
      *
      * @var array
      */
-    protected $_accepted_auth_list = ['DB', 'CAS', 'IDP', 'ORCID', 'MYSQL'];
+    protected $_accepted_auth_list = ['DB', 'CAS', 'IDP', 'MYSQL'];
     /**
      * @param $authType
-     * @return \Ccsd_Auth_Adapter_Cas|Adapter\Idp|\Ccsd_Auth_Adapter_Orcid|Adapter\DbTable
+     * @return \Ccsd_Auth_Adapter_Cas|Adapter\Idp|Adapter\DbTable
      */
 
     static public function getTypedAdapter($authType) {
@@ -30,8 +30,6 @@ class AdapterFactory  {
             case 'CAS':   $authAdapter = new \Ccsd_Auth_Adapter_Cas();
                 break;
             case 'IDP':   $authAdapter = new Adapter\Idp();
-                break;
-            case 'ORCID': $authAdapter = new \Ccsd_Auth_Adapter_Orcid();
                 break;
             case 'MYSQL': $authAdapter = new Adapter\Mysql();
                 break;

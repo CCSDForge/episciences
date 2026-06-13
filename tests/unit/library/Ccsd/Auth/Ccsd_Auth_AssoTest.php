@@ -3,20 +3,16 @@
 namespace unit\library\Ccsd\Auth;
 
 use Ccsd\Auth\Asso;
-use Ccsd\Auth\Asso\Orcid as AssoOrcid;
-use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for Ccsd\Auth\Asso and Ccsd\Auth\Asso\Orcid
+ * Unit tests for Ccsd\Auth\Asso
  *
- * Tests constructor, getters, and logic bugs.
+ * Tests constructor, getters, setters, and valid() logic.
  * save(), load(), exists() require DB and are not tested here.
  *
  * @covers \Ccsd\Auth\Asso
- * @covers \Ccsd\Auth\Asso\Orcid
  */
-#[IgnoreDeprecations]
 class Ccsd_Auth_AssoTest extends TestCase
 {
     private Asso $asso;
@@ -75,99 +71,30 @@ class Ccsd_Auth_AssoTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // valid() — BUG: always returns true
+    // valid()
     // -------------------------------------------------------------------------
 
-    public function testValidAlwaysReturnsTrueRegardlessOfSetValid(): void
+    public function testValidReturnsTrueWhenConstructedWithTrue(): void
     {
-        // Valid=true in constructor → valid() returns true (expected)
         $this->assertTrue($this->asso->valid());
     }
 
-    /**
-     * @note BUG: valid() always returns `true` (hardcoded), ignoring $this->valid.
-     *       Calling setValid(false) stores the value in $this->valid, but
-     *       valid() never reads it — it always returns `return true`.
-     *       This means it's impossible to mark an Asso as invalid; the guard
-     *       in save() can never be triggered by application code.
-     */
-    public function testValidReturnsTrueEvenAfterSetValidFalse(): void
+    public function testValidReturnsFalseWhenConstructedWithFalse(): void
     {
         $asso = new Asso('uid', 'fed', 'fedId', 1, 'last', 'first', 'a@b.com', false);
-        // BUG: should return false after setValid(false), but always returns true
-        $this->assertTrue($asso->valid());
+        $this->assertFalse($asso->valid());
     }
 
-    public function testSetValidDoesNotAffectValidReturnValue(): void
+    public function testSetValidFalseIsReflectedByValid(): void
     {
         $this->asso->setValid(false);
-        // BUG: valid() always returns true regardless of $this->valid
-        $this->assertTrue($this->asso->valid());
+        $this->assertFalse($this->asso->valid());
     }
 
-    // -------------------------------------------------------------------------
-    // Asso\Orcid — constructor, constants, field mapping
-    // -------------------------------------------------------------------------
-
-    public function testOrcidAssoFedeFederationConstant(): void
+    public function testSetValidTrueIsReflectedByValid(): void
     {
-        $this->assertSame('Orcid', AssoOrcid::ASSOFEDE);
-    }
-
-    public function testOrcidAssoFedeidConstant(): void
-    {
-        $this->assertSame('Orcid', AssoOrcid::ASSOFEDEID);
-    }
-
-    public function testOrcidAssoConstructorSetsOrcidAsUid(): void
-    {
-        $orcid = new AssoOrcid('0000-0001-2345-6789', 42, 'Jane Doe', 'jane@example.com');
-        $this->assertSame('0000-0001-2345-6789', $orcid->getUid());
-    }
-
-    public function testOrcidAssoConstructorSetsUidCcsd(): void
-    {
-        $orcid = new AssoOrcid('0000-0001-0000-0000', 77, 'Bob Smith', 'bob@example.com');
-        $this->assertSame(77, $orcid->getUidCcsd());
-    }
-
-    public function testOrcidAssoConstructorSetsFederationNameToOrcid(): void
-    {
-        $orcid = new AssoOrcid('0000-0001-0000-0000', 1, 'Name', '');
-        $this->assertSame('Orcid', $orcid->getFederationName());
-    }
-
-    public function testOrcidAssoConstructorSetsFederationIdToOrcid(): void
-    {
-        $orcid = new AssoOrcid('0000-0001-0000-0000', 1, 'Name', '');
-        $this->assertSame('Orcid', $orcid->getFederationId());
-    }
-
-    public function testOrcidAssoConstructorMapsNameToLastname(): void
-    {
-        // parent::__construct() called with ($orcid, 'Orcid', 'Orcid', $uidCcsd, $name, '', $email)
-        // $name goes to $lastName, firstName is always ''
-        $orcid = new AssoOrcid('0000-0002-0000-0000', 1, 'Full Name', 'mail@x.com');
-        $this->assertSame('Full Name', $orcid->getLastName());
-    }
-
-    public function testOrcidAssoConstructorFirstNameIsAlwaysEmpty(): void
-    {
-        // ORCID doesn't split first/last name — firstName hardcoded as ''
-        $orcid = new AssoOrcid('0000-0003-0000-0000', 1, 'Full Name', 'mail@x.com');
-        $this->assertSame('', $orcid->getFirstName());
-    }
-
-    public function testOrcidAssoConstructorSetsEmail(): void
-    {
-        $orcid = new AssoOrcid('0000-0004-0000-0000', 1, 'Name', 'orcid@test.org');
-        $this->assertSame('orcid@test.org', $orcid->getEmail());
-    }
-
-    public function testOrcidAssoValidAlwaysReturnsTrue(): void
-    {
-        // Inherits the same BUG as Asso::valid()
-        $orcid = new AssoOrcid('0000-0005-0000-0000', 1, 'Name', '', false);
-        $this->assertTrue($orcid->valid());
+        $asso = new Asso('uid', 'fed', 'fedId', 1, 'last', 'first', 'a@b.com', false);
+        $asso->setValid(true);
+        $this->assertTrue($asso->valid());
     }
 }
