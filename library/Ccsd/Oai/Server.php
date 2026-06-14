@@ -266,14 +266,102 @@ abstract class Ccsd_Oai_Server
             return false;
         }
         $sets = $this->_xml->createElement(self::OAI_VERB_LIST_SETS);
-        foreach ($this->getSets() as $code => $name) {
+        foreach ($this->getSets() as $code => $setData) {
             $set = $this->_xml->createElement('set');
             $set->appendChild($this->_xml->createElement('setSpec', $code));
-            $set->appendChild($this->_xml->createElement('setName', $name));
+
+            if (is_array($setData)) {
+                // New format: array with metadata
+                $setName = $setData['name'] ?? $code;
+                $set->appendChild($this->_xml->createElement('setName', $setName));
+
+                // Add setDescription if metadata exists
+                if ($this->hasSetDescriptionData($setData)) {
+                    $setDescription = $this->createSetDescription($setData);
+                    if ($setDescription !== null) {
+                        $set->appendChild($setDescription);
+                    }
+                }
+            } else {
+                // Old format: simple string (backward compatibility)
+                $set->appendChild($this->_xml->createElement('setName', $setData));
+            }
+
             $sets->appendChild($set);
         }
         $this->_oaipmh->appendChild($sets);
         return true;
+    }
+
+    /**
+     * Check if set data contains any meaningful metadata for setDescription
+     *
+     * @param array $setData
+     * @return bool
+     */
+    private function hasSetDescriptionData(array $setData): bool
+    {
+        return !empty($setData['description'])
+            || !empty($setData['publisher'])
+            || !empty($setData['date'])
+            || !empty($setData['subjects']);
+    }
+
+    /**
+     * Create a setDescription element with Dublin Core metadata
+     *
+     * @param array $setData
+     * @return \DOMElement|null
+     */
+    private function createSetDescription(array $setData): ?\DOMElement
+    {
+        $setDescription = $this->_xml->createElement('setDescription');
+
+        $oaiDc = $this->_xml->createElement('oai_dc:dc');
+        $oaiDc->setAttribute('xmlns:oai_dc', 'http://www.openarchives.org/OAI/2.0/oai_dc/');
+        $oaiDc->setAttribute('xmlns:dc', 'http://purl.org/dc/elements/1.1/');
+        $oaiDc->setAttribute('xml:lang', 'en');
+
+        // dc:title - always present from set name
+        if (!empty($setData['name'])) {
+            $title = $this->_xml->createElement('dc:title', htmlspecialchars($setData['name'], ENT_XML1, 'UTF-8'));
+            $oaiDc->appendChild($title);
+        }
+
+        // dc:publisher
+        if (!empty($setData['publisher'])) {
+            $publisher = $this->_xml->createElement('dc:publisher', htmlspecialchars($setData['publisher'], ENT_XML1, 'UTF-8'));
+            $oaiDc->appendChild($publisher);
+        }
+
+        // dc:date
+        if (!empty($setData['date'])) {
+            $date = $this->_xml->createElement('dc:date', htmlspecialchars($setData['date'], ENT_XML1, 'UTF-8'));
+            $oaiDc->appendChild($date);
+        }
+
+        // dc:description
+        if (!empty($setData['description'])) {
+            $description = $this->_xml->createElement('dc:description', htmlspecialchars($setData['description'], ENT_XML1, 'UTF-8'));
+            $oaiDc->appendChild($description);
+        }
+
+        // dc:subject (multiple)
+        if (!empty($setData['subjects']) && is_array($setData['subjects'])) {
+            foreach ($setData['subjects'] as $subject) {
+                if (!empty($subject)) {
+                    $subjectElement = $this->_xml->createElement('dc:subject', htmlspecialchars($subject, ENT_XML1, 'UTF-8'));
+                    $oaiDc->appendChild($subjectElement);
+                }
+            }
+        }
+
+        // dc:type - always "Journal" for Episciences
+        $type = $this->_xml->createElement('dc:type', 'Journal');
+        $oaiDc->appendChild($type);
+
+        $setDescription->appendChild($oaiDc);
+        return $setDescription;
     }
 
     /**
