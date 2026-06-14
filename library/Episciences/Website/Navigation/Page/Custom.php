@@ -42,6 +42,12 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
     protected $_page = '';
 
     /**
+     * Pre-loaded page data to avoid N+1 queries
+     * @var Episciences_Page|null
+     */
+    protected ?Episciences_Page $_preloadedPage = null;
+
+    /**
      * intialisation des options de la page
      * @param array $options
      * @see Ccsd_Website_Navigation_Page::setOptions($options)
@@ -54,6 +60,8 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
                 $this->setPermalien($value);
             } elseif ($option === 'page') {
                 $this->setPage($value);
+            } elseif ($option === 'preloadedpage') {
+                $this->_preloadedPage = $value;
             }
         }
         parent::setOptions($options);
@@ -115,10 +123,12 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
     public function getForm($pageidx)
     {
         parent::getForm($pageidx);
+        $translator = Zend_Registry::get('Zend_Translate');
         if (!$this->_form->getElement(self::PERMALIEN)) {
             $this->_form->addElement('text', self::PERMALIEN, [
                 'required' => true,
-                'label' => 'Lien permanent',
+                'label' => $translator->translate('Permalien'),
+                'description' => $translator->translate('e.g. contact, about-us'),
                 'value' => $this->getPermalien(),
                 'belongsTo' => 'pages_' . $pageidx,
                 'class' => 'permalien',
@@ -292,6 +302,43 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
             $filename = $this->getPagePath($lang, $old);
             if (file_exists($filename)) {
                 rename($filename, $this->getPagePath($lang, $new));
+            }
+        }
+    }
+    /**
+     * Load page data including visibility from T_PAGES
+     * Uses preloaded data if available to avoid N+1 queries
+     * @return void
+     */
+    public function load(): void
+    {
+        parent::load();
+
+        // Load visibility from T_PAGES for Custom pages
+        if (!empty($this->getPermalien())) {
+            try {
+                // Use preloaded page if available (avoids N+1 queries)
+                $page = $this->_preloadedPage;
+
+                // Fallback to DB query if not preloaded
+                if ($page === null) {
+                    $page = Episciences_Page_Manager::findByCodeAndPageCode(RVCODE, $this->getPermalien());
+                }
+
+                if ($page->getId() > 0) {
+                    $visibility = $page->getVisibility(true); // deserialize to array
+
+                    // T_PAGES is the source of truth for custom pages
+                    // Always override ACL from parent::load() (navigation.json)
+                    if (!empty($visibility) && $visibility !== ['public']) {
+                        $this->setAcl($visibility);
+                    } else {
+                        // Explicitly set to public (clears any ACL from navigation.json)
+                        $this->setAcl([]);
+                    }
+                }
+            } catch (Exception $e) {
+                trigger_error('Failed to load visibility for page ' . $this->getPermalien() . ': ' . $e->getMessage(), E_USER_WARNING);
             }
         }
     }

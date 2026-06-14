@@ -70,7 +70,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 
         // Ensure we see the latest changes on disk
         clearstatcache();
-        
+
         $reader = new Ccsd_Lang_Reader('menu', REVIEW_LANG_PATH, $this->_languages, true);
         $rows = $this->_db->fetchAll($sql);
 
@@ -81,12 +81,18 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             return;
         }
 
+        // Pre-load all page visibilities in one query to avoid N+1 queries
+        $preloadedPages = [];
+        if (defined('RVCODE') && RVCODE !== '') {
+            $preloadedPages = Episciences_Page_Manager::findAllByCode(RVCODE);
+        }
+
         // Pass 1: Create all page objects
         $parentMap = [];
         foreach ($rows as $row) {
             $pageId = (int)$row['PAGEID'];
             $parentId = (int)$row['PARENT_PAGEID'];
-            
+
             // Collect info for the page
             $options = array_merge(['languages' => $this->_languages], $row);
             foreach ($this->_languages as $lang) {
@@ -95,7 +101,12 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             if ($row['PARAMS'] != '') {
                 $options = array_merge($options, unserialize($row['PARAMS'], ['allowed_classes' => false]));
             }
-            
+
+            // Pass preloaded page data to avoid N+1 queries in Custom::load()
+            if (isset($options['permalien']) && isset($preloadedPages[$options['permalien']])) {
+                $options['preloadedPage'] = $preloadedPages[$options['permalien']];
+            }
+
             // Create page instance
             $this->_pages[$pageId] = new $row['TYPE_PAGE']($options);
             /** @var Episciences_Website_Navigation_Page $currentPage */
@@ -105,7 +116,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             if ($pageId > $this->_idx) {
                 $this->_idx = $pageId;
             }
-            
+
             $parentMap[$pageId] = $parentId;
         }
 
@@ -130,9 +141,9 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
                             break;
                         }
                     }
-                    
+
                     if (!$found) {
-                        // If parent not yet found in the tree (should not happen with NAVIGATIONID ASC), 
+                        // If parent not yet found in the tree (should not happen with NAVIGATIONID ASC),
                         // create a placeholder in _order to keep the structure.
                         if (!isset($this->_order[$parentId])) {
                             $this->_order[$parentId] = [];
@@ -232,6 +243,16 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             return;
         }
 
+        // Determine visibility
+        // For Custom pages: use defined ACL
+        // For Predefined pages: always 'public'
+        if ($page->isCustom()) {
+            $acl = $page->getAcl();
+            $visibility = !empty($acl) ? $acl : ['public'];
+        } else {
+            $visibility = ['public'];
+        }
+
         $existingPage = Episciences_Page_Manager::findByCodeAndPageCode($reviewCode, $pageCode);
 
         if ($existingPage->getId() > 0) {
@@ -239,6 +260,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             $existingPage->setCode($reviewCode);
             $existingPage->setPageCode($pageCode);
             $existingPage->setTitle($labels);
+            $existingPage->setVisibility($visibility);
             $existingPage->setUid(Episciences_Auth::getUid());
             Episciences_Page_Manager::update($existingPage);
         } else {
@@ -247,9 +269,9 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             $newPage->setCode($reviewCode);
             $newPage->setPageCode($pageCode);
             $newPage->setTitle($labels);
+            $newPage->setVisibility($visibility);
             $newPage->setUid(Episciences_Auth::getUid());
             $newPage->setContent([]);
-            $newPage->setVisibility(['public']);
             Episciences_Page_Manager::add($newPage);
         }
     }

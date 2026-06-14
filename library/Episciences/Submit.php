@@ -294,7 +294,7 @@ class Episciences_Submit
             $allowedToSeeCoverLetterTranslated[] = Zend_Registry::get('Zend_Translate')->translate($roleAllowedToSee);
         }
 
-        $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
+        $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible pour : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
 
 
         $form->addElement('textarea', self::COVER_LETTER_COMMENT_ELEMENT_NAME, [
@@ -660,7 +660,7 @@ class Episciences_Submit
                 $allowedToSeeCoverLetterTranslated[] = Zend_Registry::get('Zend_Translate')->translate($roleAllowedToSee);
             }
 
-            $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
+            $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible pour : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
 
             $form->addElement('textarea', self::COVER_LETTER_COMMENT_ELEMENT_NAME, [
                 'label' => Zend_Registry::get('Zend_Translate')->translate('Commentaire') . '<br><em style="font-weight: normal;">' . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>', 'rows' => 5,
