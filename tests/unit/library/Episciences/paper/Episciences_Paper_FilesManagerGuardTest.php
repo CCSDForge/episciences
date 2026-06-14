@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace unit\library\Episciences\paper;
 
 use PHPUnit\Framework\TestCase;

@@ -85,6 +85,12 @@
                 <td class="td-label"><?= $this->translate("Adresse e-mail") ?></td>
                 <td class="small"><?= $this->log['detail']['user']['email'] ?></td>
             </tr>
+            <?php if (!empty($this->log['detail']['accepted_by']['fullname'])): ?>
+                <tr>
+                    <td class="td-label"><?= $this->translate("Acceptée pour le compte du relecteur par") ?></td>
+                    <td class="small"><?= $this->escape($this->log['detail']['accepted_by']['fullname']) ?></td>
+                </tr>
+            <?php endif; ?>
         </table>
         <?php break; ?>
     <?php case Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED: ?>

@@ -457,6 +457,24 @@ function getReviewerMenu(button) {
             '</a></li>';
     }
 
+    if (canBeReviewed && (status === 'pending' || status === 'expired')) {
+        content += '<li>';
+        content +=
+            '<a class="modal-opener" href="/administratepaper/acceptreviewerinvitation/aid/' +
+            aid +
+            '" ';
+        content += 'data-width="50%" ';
+        content += 'data-callback="submit" ';
+        content +=
+            'title="' +
+            translate("Accepter l'invitation à la place du relecteur") +
+            '">';
+        content +=
+            '<span class="glyphicon glyphicon-ok" style="margin-right: 5px"></span> ' +
+            translate("Accepter l'invitation à la place du relecteur") +
+            '</a></li>';
+    }
+
     if (
         status === 'pending' ||
         ((status === 'active' || status === 'uninvited') && rating === 0)
