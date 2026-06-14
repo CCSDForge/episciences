@@ -412,14 +412,13 @@ final class PaperControllerTest extends TestCase
      */
     public function testSendFinalNotificationIsNeverCalled(): void
     {
-        // substr_count returns 1 for the declaration itself; any call would add more occurrences.
+        // The method has been completely removed. It must not be declared or invoked.
         $occurrences = substr_count($this->source, 'sendFinalNotification');
 
         self::assertSame(
-            1,
+            0,
             $occurrences,
-            'sendFinalNotification() is declared but never called — it is dead code. ' .
-            'Found more than one occurrence, meaning it was called somewhere.'
+            'sendFinalNotification() has been deleted and must not be reintroduced or called.'
         );
     }
 
