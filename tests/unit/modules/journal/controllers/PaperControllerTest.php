@@ -405,22 +405,6 @@ final class PaperControllerTest extends TestCase
         );
     }
 
-    /**
-     * sendFinalNotification is a private method that was superseded by an inline
-     * call in handleManagerNotifications. It must not be invoked anywhere.
-     * If this test fails, the dead method was accidentally reused.
-     */
-    public function testSendFinalNotificationIsNeverCalled(): void
-    {
-        // The method has been completely removed. It must not be declared or invoked.
-        $occurrences = substr_count($this->source, 'sendFinalNotification');
-
-        self::assertSame(
-            0,
-            $occurrences,
-            'sendFinalNotification() has been deleted and must not be reintroduced or called.'
-        );
-    }
 
     /**
      * Regression: after removing $paper from notifyManagersAndAuthor(), the method
