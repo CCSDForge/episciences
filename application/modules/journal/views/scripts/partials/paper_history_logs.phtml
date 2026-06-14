@@ -5,39 +5,39 @@
 $this->jQuery()->addStylesheet("/css/log-history.css");
 // Define which log actions open a modal with detailed information
 $logs_with_details = [
-    Episciences_Paper_Logger::CODE_MAIL_SENT,
-    Episciences_Paper_Logger::CODE_REMINDER_SENT,
-    Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT,
-    Episciences_Paper_Logger::CODE_EDITOR_UNASSIGNMENT,
-    Episciences_Paper_Logger::CODE_REVIEWER_INVITATION,
-    Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED,
-    Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED,
-    Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS,
-    Episciences_Paper_Logger::CODE_CONTINUE_PUBLICATION_PROCESS,
-    Episciences_Paper_Logger::CODE_COPY_EDITOR_ASSIGNMENT,
-    Episciences_Paper_Logger::CODE_COPY_EDITOR_UNASSIGNMENT,
-    Episciences_Paper_Logger::CODE_CE_AUTHOR_SOURCES_REQUEST,
-    Episciences_Paper_Logger::CODE_CE_AUTHOR_SOURCES_DEPOSED,
-    Episciences_Paper_Logger::CODE_NEW_PAPER_COMMENT,
-    Episciences_Paper_Logger::CODE_CE_AUTHOR_FINALE_VERSION_REQUEST,
-    Episciences_Paper_Logger::CODE_CE_AUTHOR_FINALE_VERSION_DEPOSED,
-    Episciences_Paper_Logger::CODE_CE_REVIEW_FORMATTING_DEPOSED,
-    Episciences_Paper_Logger::CODE_CE_AUTHOR_FINAL_VERSION_SUBMITTED,
-    Episciences_Paper_Logger::CODE_CE_READY_TO_PUBLISH,
-    Episciences_Paper_Logger::CODE_AUTHOR_COMMENT_COVER_LETTER,
-    Episciences_Paper_Logger::CODE_EDITOR_COMMENT,
-    Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION,
-    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR,
-    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER,
-    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR,
-    Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR,
-    Episciences_Paper_Logger::CODE_COI_REPORTED,
-    Episciences_Paper_Logger::CODE_COI_REVERTED,
-    Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION,
-    Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE,
-    Episciences_Paper_Logger::CODE_LD_ADDED,
-    Episciences_Paper_Logger::CODE_LD_CHANGED,
-    Episciences_Paper_Logger::CODE_LD_REMOVED,
+        Episciences_Paper_Logger::CODE_MAIL_SENT,
+        Episciences_Paper_Logger::CODE_REMINDER_SENT,
+        Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT,
+        Episciences_Paper_Logger::CODE_EDITOR_UNASSIGNMENT,
+        Episciences_Paper_Logger::CODE_REVIEWER_INVITATION,
+        Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED,
+        Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_DECLINED,
+        Episciences_Paper_Logger::CODE_ABANDON_PUBLICATION_PROCESS,
+        Episciences_Paper_Logger::CODE_CONTINUE_PUBLICATION_PROCESS,
+        Episciences_Paper_Logger::CODE_COPY_EDITOR_ASSIGNMENT,
+        Episciences_Paper_Logger::CODE_COPY_EDITOR_UNASSIGNMENT,
+        Episciences_Paper_Logger::CODE_CE_AUTHOR_SOURCES_REQUEST,
+        Episciences_Paper_Logger::CODE_CE_AUTHOR_SOURCES_DEPOSED,
+        Episciences_Paper_Logger::CODE_NEW_PAPER_COMMENT,
+        Episciences_Paper_Logger::CODE_CE_AUTHOR_FINALE_VERSION_REQUEST,
+        Episciences_Paper_Logger::CODE_CE_AUTHOR_FINALE_VERSION_DEPOSED,
+        Episciences_Paper_Logger::CODE_CE_REVIEW_FORMATTING_DEPOSED,
+        Episciences_Paper_Logger::CODE_CE_AUTHOR_FINAL_VERSION_SUBMITTED,
+        Episciences_Paper_Logger::CODE_CE_READY_TO_PUBLISH,
+        Episciences_Paper_Logger::CODE_AUTHOR_COMMENT_COVER_LETTER,
+        Episciences_Paper_Logger::CODE_EDITOR_COMMENT,
+        Episciences_Paper_Logger::CODE_REVISION_REQUEST_TMP_VERSION,
+        Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR,
+        Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER,
+        Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR,
+        Episciences_Paper_Logger::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR,
+        Episciences_Paper_Logger::CODE_COI_REPORTED,
+        Episciences_Paper_Logger::CODE_COI_REVERTED,
+        Episciences_Paper_Logger::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION,
+        Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE,
+        Episciences_Paper_Logger::CODE_LD_ADDED,
+        Episciences_Paper_Logger::CODE_LD_CHANGED,
+        Episciences_Paper_Logger::CODE_LD_REMOVED,
 ]; ?>
 
 <?php foreach ($this->logs as $log) : ?>
@@ -55,8 +55,8 @@ $logs_with_details = [
 
     // Extract status once (used by multiple cases)
     $status = isset($detail['status']) && in_array($detail['status'], array_merge(Episciences_Paper::STATUS_CODES, Episciences_Paper::OTHER_STATUS_CODE), false) ?
-        $this->translate(Episciences_Paper::$_statusLabel[$detail['status']]) :
-        $this->translate('undefined status');
+            $this->translate(Episciences_Paper::$_statusLabel[$detail['status']]) :
+            $this->translate('undefined status');
 
     // Extract user fullname once (used by multiple cases)
     $fullName = 'undefined';
@@ -68,7 +68,7 @@ $logs_with_details = [
 
     // Extract tag once (used by multiple cases)
     $tag = (!empty($detail['user']['tag'])) ?
-        (' [ ' . $this->translate($detail['user']['tag']) . ' ]') : '';
+            (' [ ' . $this->translate($detail['user']['tag']) . ' ]') : '';
 
     // Check if this log has detailed modal view
     $hasDetails = in_array($log['ACTION'], $logs_with_details, false);
@@ -77,10 +77,10 @@ $logs_with_details = [
     <?php if ($hasDetails) : ?>
         <?php $logHref = '/administratepaper/log?id=' . $log['LOGID']; ?>
         <a class="modal-opener" href="<?= $logHref ?>"
-           data-width="50%"
-           data-hidesubmit="true"
-           title="<?= isset(Episciences_Paper_Logger::$_label[$log['ACTION']]) ? $this->translate(Episciences_Paper_Logger::$_label[$log['ACTION']]) : $this->translate($log['ACTION']) ?>"
-           aria-label="<?= $this->translate('View details for') . ' ' . (isset(Episciences_Paper_Logger::$_label[$log['ACTION']]) ? $this->translate(Episciences_Paper_Logger::$_label[$log['ACTION']]) : $this->translate($log['ACTION'])) ?>">
+        data-width="50%"
+        data-hidesubmit="true"
+        title="<?= isset(Episciences_Paper_Logger::$_label[$log['ACTION']]) ? $this->translate(Episciences_Paper_Logger::$_label[$log['ACTION']]) : $this->translate($log['ACTION']) ?>"
+        aria-label="<?= $this->translate('View details for') . ' ' . (isset(Episciences_Paper_Logger::$_label[$log['ACTION']]) ? $this->translate(Episciences_Paper_Logger::$_label[$log['ACTION']]) : $this->translate($log['ACTION'])) ?>">
     <?php endif; ?>
 
     <div class="log-entry <?= $log['ACTION'] ?> alert alert-<?= Episciences_Paper_Logger::$_css[$log['ACTION']] ?> alert-fixed"
@@ -108,9 +108,9 @@ $logs_with_details = [
                 case Episciences_Paper_Logger::CODE_PAPER_UPDATED:
                 case Episciences_Paper_Logger::CODE_VERSION_REPOSITORY_UPDATED:
                     echo $this->partial('partials/paper_history_logs_version_change.phtml', [
-                        'oldVersion' => $detail['version']['old'],
-                        'newVersion' => $detail['version']['new'],
-                        'fullName' => $fullName
+                            'oldVersion' => $detail['version']['old'],
+                            'newVersion' => $detail['version']['new'],
+                            'fullName' => $fullName
                     ]);
                     break;
 
@@ -118,24 +118,24 @@ $logs_with_details = [
                 case Episciences_Paper_Logger::CODE_MAIL_SENT:
                 case Episciences_Paper_Logger::CODE_REMINDER_SENT:
                     echo $this->partial('partials/paper_history_logs_mail.phtml', [
-                        'recipients' => $detail['mail']['To'] ?? [],
-                        'subject' => $detail['mail']['Subject']
+                            'recipients' => $detail['mail']['To'] ?? [],
+                            'subject' => $detail['mail']['Subject']
                     ]);
                     break;
 
                 // Section selection
                 case Episciences_Paper_Logger::CODE_SECTION_SELECTION:
                     $selectionLabel = $detail['sid'] !== 0 ?
-                        Episciences_SectionsManager::translateSectionKey('section_' . $detail['sid'] . '_title') :
-                        $this->translate('Hors rubrique');
+                            Episciences_SectionsManager::translateSectionKey('section_' . $detail['sid'] . '_title') :
+                            $this->translate('Hors rubrique');
                     echo $this->partial('partials/paper_history_logs_selection.phtml', ['selectionLabel' => $selectionLabel]);
                     break;
 
                 // Volume selection
                 case Episciences_Paper_Logger::CODE_VOLUME_SELECTION:
                     $selectionLabel = ($detail['vid'] !== 0) ?
-                        Episciences_VolumesManager::translateVolumeKey('volume_' . $detail['vid'] . '_title') :
-                        $this->translate('Hors volume');
+                            Episciences_VolumesManager::translateVolumeKey('volume_' . $detail['vid'] . '_title') :
+                            $this->translate('Hors volume');
                     echo $this->partial('partials/paper_history_logs_selection.phtml', ['selectionLabel' => $selectionLabel]);
                     break;
 
@@ -155,22 +155,22 @@ $logs_with_details = [
                 case Episciences_Paper_Logger::CODE_CE_REVIEW_FORMATTING_DEPOSED:
                 case Episciences_Paper_Logger::CODE_CE_AUTHOR_SOURCES_REQUEST:
                     echo $this->partial('partials/paper_history_logs_copy_editing.phtml', [
-                        'fullName' => $fullName,
-                        'submitterFullName' => $detail['submitter']['fullname']
+                            'fullName' => $fullName,
+                            'submitterFullName' => $detail['submitter']['fullname']
                     ]);
                     break;
 
                 // Conflict of Interest (2 cases)
                 case Episciences_Paper_Logger::CODE_COI_REPORTED:
                     echo $this->partial('partials/paper_history_logs_conflict_of_interest.phtml', [
-                        'fullName' => $fullName,
-                        'conflictAnswer' => $detail['conflict']['answer']
+                            'fullName' => $fullName,
+                            'conflictAnswer' => $detail['conflict']['answer']
                     ]);
                     break;
 
                 case Episciences_Paper_Logger::CODE_COI_REVERTED:
                     echo $this->partial('partials/paper_history_logs_conflict_of_interest.phtml', [
-                        'fullName' => $fullName
+                            'fullName' => $fullName
                     ]);
                     break;
 
@@ -179,38 +179,38 @@ $logs_with_details = [
                 case Episciences_Paper_Logger::CODE_LD_CHANGED:
                 case Episciences_Paper_Logger::CODE_LD_REMOVED:
                     echo $this->partial('partials/paper_history_logs_linked_data.phtml', [
-                        'username' => $detail['username'],
-                        'typeLd' => $detail['typeLd'],
-                        'valueLd' => $detail['valueLd'],
-                        'relationship' => $detail['relationship'] ?? null
+                            'username' => $detail['username'],
+                            'typeLd' => $detail['typeLd'],
+                            'valueLd' => $detail['valueLd'],
+                            'relationship' => $detail['relationship'] ?? null
                     ]);
                     break;
 
                 // Reviewing deadline
                 case Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE:
                     echo $this->partial('partials/paper_history_logs_reviewing_deadline.phtml', [
-                        'newDeadline' => $detail['newDeadline'],
-                        'screenName' => $detail['screenName']
+                            'newDeadline' => $detail['newDeadline'],
+                            'screenName' => $detail['screenName']
                     ]);
                     break;
 
                 // Reviewer unassignment (special case with uninvited flag)
                 case Episciences_Paper_Logger::CODE_REVIEWER_UNASSIGNMENT:
                     $uninvitedFlag = array_key_exists(Episciences_Reviewer::STATUS_UNINVITED, $detail) &&
-                                     $detail[Episciences_Reviewer::STATUS_UNINVITED] === Episciences_Reviewer::STATUS_UNINVITED;
+                            $detail[Episciences_Reviewer::STATUS_UNINVITED] === Episciences_Reviewer::STATUS_UNINVITED;
                     echo $this->partial('partials/paper_history_logs_user_action.phtml', [
-                        'fullName' => $fullName,
-                        'tag' => '',
-                        'uninvitedFlag' => $uninvitedFlag
+                            'fullName' => $fullName,
+                            'tag' => '',
+                            'uninvitedFlag' => $uninvitedFlag
                     ]);
                     break;
 
                 // Alter report status (special case without colon prefix)
                 case Episciences_Paper_Logger::CODE_ALTER_REPORT_STATUS:
                     echo $this->partial('partials/paper_history_logs_user_action.phtml', [
-                        'fullName' => $fullName,
-                        'tag' => '',
-                        'noPrefix' => true
+                            'fullName' => $fullName,
+                            'tag' => '',
+                            'noPrefix' => true
                     ]);
                     break;
 
@@ -219,6 +219,12 @@ $logs_with_details = [
                 case Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED:
                     echo $this->translate(' :');
                     echo $this->escape($detail['newDate']) . ' > ';
+                    echo $fullName;
+                    break;
+
+                case Episciences_Paper_Logger::CODE_LICENSE_UPDATED:
+                    echo $this->translate(' :');
+                    echo ' ' . $this->escape($detail['newLicense']) . ' > ';
                     echo $fullName;
                     break;
 
@@ -259,8 +265,8 @@ $logs_with_details = [
                 case Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT:
                 case Episciences_Paper_Logger::CODE_EDITOR_UNASSIGNMENT:
                     echo $this->partial('partials/paper_history_logs_user_action.phtml', [
-                        'fullName' => $fullName,
-                        'tag' => $tag
+                            'fullName' => $fullName,
+                            'tag' => $tag
                     ]);
                     break;
 
