@@ -101,9 +101,16 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
     }
 
     /**
+     * Returns OAI sets with metadata for setDescription.
+     * Each set is an array with 'name' and optional metadata fields:
+     * - description: journal description
+     * - publisher: journal publisher
+     * - date: creation year
+     * - subjects: array of subject keywords
+     *
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    protected function getSets()
+    protected function getSets(): array
     {
         $cache = new FilesystemAdapter(self::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA);
         $sets = $cache->getItem(__FUNCTION__);
@@ -115,17 +122,58 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
             $out = [];
             // revues
             $sql = $db->select()
-                ->from(T_REVIEW, ['CODE', 'NAME'])
+                ->from(T_REVIEW)
                 ->where('RVID != 0')
                 ->where('STATUS = 1')
                 ->order('CREATION DESC');
-            foreach ($db->fetchAll($sql) as $row) {
-                $out[self::SET_JOURNAL_PREFIX . $row['CODE']] = $row['NAME'];
+
+            $rows = $db->fetchAll($sql);
+
+            // Create Review objects and batch-load all settings in a single query
+            $reviews = [];
+            foreach ($rows as $row) {
+                $review = new Episciences_Review($row);
+                $reviews[$review->getRvid()] = $review;
             }
+
+            Episciences_ReviewsManager::loadSettingsForReviews($reviews);
+
+            // Build set data from loaded reviews
+            foreach ($rows as $row) {
+                $setData = [
+                    'name' => $row['NAME'],
+                ];
+
+                $review = $reviews[(int)$row['RVID']] ?? null;
+                if ($review) {
+                    $description = $review->getSetting(Episciences_Review::SETTING_JOURNAL_DESCRIPTION);
+                    if (!empty($description)) {
+                        $setData['description'] = trim(strip_tags($description));
+                    }
+
+                    $publisher = $review->getSetting(Episciences_Review::SETTING_JOURNAL_PUBLISHER);
+                    if (!empty($publisher)) {
+                        $setData['publisher'] = trim(strip_tags($publisher));
+                    }
+
+                    $creationYear = $review->getSetting(Episciences_Review::SETTING_JOURNAL_CREATION_YEAR);
+                    if (!empty($creationYear)) {
+                        $setData['date'] = $creationYear;
+                    }
+
+                    $keywords = $review->getSetting(Episciences_Review::SETTING_JOURNAL_KEYWORDS);
+                    if (!empty($keywords)) {
+                        $setData['subjects'] = $this->parseSubjects($keywords);
+                    }
+                }
+
+                $out[self::SET_JOURNAL_PREFIX . $row['CODE']] = $setData;
+            }
+
             if (count($out)) {
-                $out[self::SET_OPENAIRE] = 'OpenAIRE';
-                $out[self::SET_DRIVER] = 'Open Access DRIVERset';
-                $out = [self::SET_JOURNAL => 'All ' . DOMAIN] + $out;
+                $out[self::SET_OPENAIRE] = ['name' => 'OpenAIRE'];
+                $out[self::SET_DRIVER] = ['name' => 'Open Access DRIVERset'];
+                $out = [self::SET_JOURNAL => ['name' => 'All ' . DOMAIN]] + $out;
             }
 
             $sets->set($out);
@@ -134,6 +182,18 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
             $out = $sets->get();
         }
         return $out;
+    }
+
+    /**
+     * Parse subjects from semicolon-separated string
+     *
+     * @param string $value Non-empty keyword string (caller must validate)
+     * @return array
+     */
+    private function parseSubjects(string $value): array
+    {
+        $subjects = array_map('trim', explode(';', $value));
+        return array_filter($subjects);
     }
 
     /**

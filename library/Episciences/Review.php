@@ -126,6 +126,9 @@ class Episciences_Review
 
     public const SETTING_JOURNAL_PUBLISHER = 'journalPublisher';
     public const SETTING_JOURNAL_PUBLISHER_LOC = 'journalPublisherLoc';
+    public const SETTING_JOURNAL_DESCRIPTION = 'journalDescription';
+    public const SETTING_JOURNAL_KEYWORDS = 'journalKeywords';
+    public const SETTING_JOURNAL_CREATION_YEAR = 'journalCreationYear';
     #git 303
     public const DEFAULT_REVISION_DEADLINE_MAX = '12 month';
 
@@ -621,8 +624,21 @@ class Episciences_Review
         // review configuration
         $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from(T_REVIEW_SETTINGS)->where('RVID = ?', $this->_rvid);
 
+        $rows = Zend_Db_Table_Abstract::getDefaultAdapter()->fetchAll($select);
+        $this->applySettingsFromRows($rows);
+    }
+
+    /**
+     * Apply settings from an array of database rows.
+     * Used by loadSettings() and batch loading in ReviewsManager::loadSettingsForReviews().
+     *
+     * @param array $rows Array of rows with 'SETTING' and 'VALUE' keys
+     * @return void
+     */
+    public function applySettingsFromRows(array $rows): void
+    {
         $journalDoiSettings = [];
-        foreach (Zend_Db_Table_Abstract::getDefaultAdapter()->fetchAll($select) as $row) {
+        foreach ($rows as $row) {
             if (in_array($row['SETTING'], $this->_jsonSettings, true)) {
                 $value = json_decode($row['VALUE'], true);
                 $this->setSetting($row['SETTING'], $value);
