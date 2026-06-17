@@ -73,6 +73,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1042](https://github.com/CCSDForge/episciences/issues/1042) refactor: replace JSON visibility columns with enum/set types
 - Custom pages: visibility (Public/Member/Custom) is now correctly saved to database and restored after reload.
 - Custom pages: role checkboxes now display correctly when selecting "Custom" visibility.
+- Custom pages: changing permalien now updates existing entry instead of creating duplicate (preserves ID).
+- Custom pages: permalien field now displays list of reserved codes that cannot be used.
+- Custom pages: validation prevents using predefined page codes (about, credits, editorial-board, etc.) as permalien.
+- Custom pages: delete button now correctly removes entry from database.
+
 ### Performances
 
 - Avoid repeated `REVIEW_SETTING` queries in a single request by caching loaded review settings on the current review object and sharing cached review instances between `RVID` and `RVCODE` lookups.

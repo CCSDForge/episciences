@@ -36,6 +36,13 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
     protected $_permalien = '';
 
     /**
+     * Previous permalien (before rename)
+     * Used to find existing pages table entry when permalien changes
+     * @var string|null
+     */
+    protected ?string $_previousPermalien = null;
+
+    /**
      * Nom de la page
      * @var string
      */
@@ -100,11 +107,22 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
      */
     public function setPermalien($permalien)
     {
-        if ($this->_permalien != '' && $this->_permalien != $permalien) {
+        if ($this->_permalien !== '' && $this->_permalien !== $permalien) {
+            // Conserver l'ancien permalien pour la mise à jour en base de données
+            $this->_previousPermalien = $this->_permalien;
             //L'utilisateur a changé le nom du permalien, on déplace les fichiers s'il y en a
             $this->renamePage($this->_permalien, $permalien);
         }
         $this->_permalien = $permalien;
+    }
+
+    /**
+     * Get the previous permalien (before rename)
+     * @return string|null
+     */
+    public function getPreviousPermalien(): ?string
+    {
+        return $this->_previousPermalien;
     }
 
     /**
@@ -125,10 +143,14 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
         parent::getForm($pageidx);
         $translator = Zend_Registry::get('Zend_Translate');
         if (!$this->_form->getElement(self::PERMALIEN)) {
+            // Build description with reserved codes
+            $reservedCodes = array_values(Episciences_Website_Navigation_Page_Predefined::getAllPermaliens());
+            $description = $translator->translate('Codes réservés (non utilisables) :') . ' ' . implode(', ', $reservedCodes);
+
             $this->_form->addElement('text', self::PERMALIEN, [
                 'required' => true,
                 'label' => $translator->translate('Permalien'),
-                'description' => $translator->translate('e.g. contact, about-us'),
+                'description' => $description,
                 'value' => $this->getPermalien(),
                 'belongsTo' => 'pages_' . $pageidx,
                 'class' => 'permalien',
@@ -306,7 +328,7 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
         }
     }
     /**
-     * Load page data including visibility from T_PAGES
+     * Load page data including visibility from pages table
      * Uses preloaded data if available to avoid N+1 queries
      * @return void
      */
@@ -314,7 +336,7 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
     {
         parent::load();
 
-        // Load visibility from T_PAGES for Custom pages
+        // Load visibility from pages table for Custom pages
         if (!empty($this->getPermalien())) {
             try {
                 // Use preloaded page if available (avoids N+1 queries)
@@ -328,7 +350,7 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
                 if ($page->getId() > 0) {
                     $visibility = $page->getVisibility(true); // deserialize to array
 
-                    // T_PAGES is the source of truth for custom pages
+                    // pages table is the source of truth for custom pages
                     // Always override ACL from parent::load() (navigation.json)
                     if (!empty($visibility) && $visibility !== ['public']) {
                         $this->setAcl($visibility);

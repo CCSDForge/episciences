@@ -1804,7 +1804,6 @@ return array(
     "Personnalisée" => "Custom",
 
     "Permalien" => "Permalink",
-    "ex: contact, à-propos" => "e.g. contact, about-us",
 
     "Afficher les volumes vides" => "Show empty volumes",
     'Ce volume ne contient pas encore de documents.' => 'This volume does not yet contain any documents.',
@@ -2478,5 +2477,9 @@ return array(
     "Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés" => "If enabled, a volume's title can be modified even if it contains published articles",
     "Afficher les volumes secondaires sur la page publique de l'article" => "Display secondary volumes on the public article page",
     "Si activé, les volumes secondaires seront visibles sur la page publique de l'article" => "If enabled, secondary volumes will be visible on the public article page",
-    "Volumes secondaires: " => "Secondary volumes: "
+    "Volumes secondaires: " => "Secondary volumes: ",
+
+    // Website pages
+    "Le permalien '%s' est réservé aux pages prédéfinies. Veuillez choisir un autre permalien." => "The permalink '%s' is reserved for predefined pages. Please choose a different permalink.",
+    "Codes réservés (non utilisables) :" => "Reserved codes (cannot be used):"
 );

@@ -117,6 +117,36 @@ class Episciences_Page_Manager
         return $resUpdate;
     }
 
+    /**
+     * Update a page with a new page_code (permalien change)
+     * Uses the old page_code in where clause to find the entry
+     */
+    public static function updateWithNewPageCode(Episciences_Page $page, string $oldPageCode): int
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $where = ['code = ?' => $page->getCode(), 'page_code = ?' => $oldPageCode];
+        $visibilityValue = $page->getVisibility();
+
+        $values = [
+            'uid' => $page->getUid(),
+            'date_updated' => new Zend_DB_Expr('NOW()'),
+            'title' => $page->getTitle(),
+            'content' => $page->getContent(),
+            'visibility_set' => $visibilityValue,
+            'visibility' => self::visibilityToJson($visibilityValue),
+            'page_code' => $page->getPageCode() // New page_code
+        ];
+
+        try {
+            $resUpdate = $db->update(T_PAGES, $values, $where);
+        } catch (Zend_Db_Adapter_Exception $exception) {
+            error_log($exception->getMessage());
+            $resUpdate = 0;
+        }
+
+        return $resUpdate;
+    }
+
     public static function delete(string $page_code, string $code): bool
     {
         if (!$page_code || !$code) {

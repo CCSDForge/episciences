@@ -204,6 +204,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
         if ($request->isPost()) {
             $valid = true;
             $pagesDisplay = [];
+            $hasPermalienError = false;
 
             foreach ($request->getPost() as $id => $options) {
 
@@ -220,6 +221,20 @@ class WebsiteDefaultController extends Zend_Controller_Action
                 //Cas particulier des filtres
                 if (isset($options['filter']) && is_array($options['filter'])) {
                     $options['filter'] = implode(';', $options['filter']);
+                }
+
+                // Validation du permalien avant setPage() pour éviter le renommage des fichiers
+                if ($options['type'] === 'Episciences_Website_Navigation_Page_Custom' && isset($options['permalien'])) {
+                    $permalien = $options['permalien'];
+                    if (Episciences_Website_Navigation_Page_Predefined::isPredefinedPage($permalien)) {
+                         $message = sprintf($this->view->translate("Le permalien '%s' est réservé aux pages prédéfinies. Veuillez choisir un autre permalien."), $permalien);
+                        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                            ->addMessage($message);
+                        $pagesDisplay[$pageid] = true;
+                        $valid = false;
+                        $hasPermalienError = true;
+                        continue; // Ne pas appeler setPage() si le permalien est réservé
+                    }
                 }
 
                 $this->_session->website->setPage($pageid, $options);
@@ -245,7 +260,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
                 }
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_SUCCESS)->addMessage("Les modifications ont bien été enregistrées.");
                 $this->redirect('/website/menu');
-            } else {
+            } elseif (!$hasPermalienError) {
                 $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage("Erreur de saisie");
             }
             $this->view->pagesDisplay = $pagesDisplay;

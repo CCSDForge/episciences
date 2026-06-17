@@ -200,7 +200,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             $key = $this->_pages[$pageId]->getLabelKey();
             $lang[$key] = $this->_pages[$pageId]->getLabels();
 
-            // Synchronize title with T_PAGES for predefined pages
+            // Synchronize title with pages table for predefined pages
             $this->syncPageTitleToDatabase($this->_pages[$pageId]);
 
             $pageIdCounter++;
@@ -208,20 +208,19 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     }
 
     /**
-     * Synchronize page title with T_PAGES table for predefined pages
+     * Synchronize page title with pages table
      *
      * @param Episciences_Website_Navigation_Page $page
      * @return void
      */
     private function syncPageTitleToDatabase(Episciences_Website_Navigation_Page $page): void
     {
-        // Only pages with a permalien need title synchronization with T_PAGES
+        // Only pages with a permalien need title synchronization with pages table
         if (!method_exists($page, 'getPermalien') || empty($page->getPermalien())) {
             return;
         }
 
-        // Get the review code from database using SID (RVID) → REVIEW table → code
-        // This ensures we use the same code as in T_PAGES table
+        // Get the review code from database
         $reviewCode = null;
         try {
             $review = Episciences_ReviewsManager::find($this->_sid);
@@ -243,28 +242,117 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             return;
         }
 
-        // Determine visibility
-        // For Custom pages: use defined ACL
-        // For Predefined pages: always 'public'
+        // Determine visibility (same logic for both custom and predefined pages)
+        $acl = $page->getAcl();
+        $visibility = !empty($acl) ? $acl : ['public'];
+
         if ($page->isCustom()) {
-            $acl = $page->getAcl();
-            $visibility = !empty($acl) ? $acl : ['public'];
+            $this->syncCustomPageToDatabase($page, $reviewCode, $pageCode, $labels, $visibility);
         } else {
-            $visibility = ['public'];
+            $this->syncPredefinedPageToDatabase($reviewCode, $pageCode, $labels, $visibility);
+        }
+    }
+
+    /**
+     * Synchronise une page personnalisée avec pages table
+     */
+    private function syncCustomPageToDatabase(
+        Episciences_Website_Navigation_Page $page,
+        string $reviewCode,
+        string $pageCode,
+        array $labels,
+        array $visibility
+    ): void {
+        // Vérifier si le pageCode est réservé (page prédéfinie)
+        if (Episciences_Website_Navigation_Page_Predefined::isPredefinedPage($pageCode)) {
+            trigger_error(
+                "Cannot use '$pageCode' as permalien: reserved for predefined pages",
+                E_USER_WARNING
+            );
+            return;
         }
 
+        // Vérifier si le permalien a changé
+        $previousPermalien = null;
+        if (method_exists($page, 'getPreviousPermalien')) {
+            $previousPermalien = $page->getPreviousPermalien();
+        }
+
+        if (!empty($previousPermalien)) {
+            // Le permalien a changé
+            $oldEntry = Episciences_Page_Manager::findByCodeAndPageCode($reviewCode, $previousPermalien);
+
+            // Vérifier si le nouveau pageCode existe déjà (autre custom page)
+            $existingWithNewCode = Episciences_Page_Manager::findByCodeAndPageCode($reviewCode, $pageCode);
+            if ($existingWithNewCode->getId() > 0) {
+                trigger_error(
+                    "Cannot change permalien to '$pageCode': already exists in AGES",
+                    E_USER_WARNING
+                );
+                return;
+            }
+
+            if ($oldEntry->getId() > 0) {
+                // Mettre à jour l'entrée existante avec le nouveau page_code (conserve l'ID)
+                $oldEntry->setPageCode($pageCode);
+                $oldEntry->setTitle($labels);
+                $oldEntry->setVisibility($visibility);
+                $oldEntry->setUid(Episciences_Auth::getUid());
+                Episciences_Page_Manager::updateWithNewPageCode($oldEntry, $previousPermalien);
+            } else {
+                // L'ancienne entrée n'existe pas, créer une nouvelle
+                $newPage = new Episciences_Page();
+                $newPage->setCode($reviewCode);
+                $newPage->setPageCode($pageCode);
+                $newPage->setTitle($labels);
+                $newPage->setVisibility($visibility);
+                $newPage->setUid(Episciences_Auth::getUid());
+                $newPage->setContent([]);
+                Episciences_Page_Manager::add($newPage);
+            }
+        } else {
+            // Le permalien n'a pas changé - chercher l'entrée existante pour cette custom page
+            $existingEntry = Episciences_Page_Manager::findByCodeAndPageCode($reviewCode, $pageCode);
+
+            if ($existingEntry->getId() > 0) {
+                // Mettre à jour l'entrée existante
+                $existingEntry->setTitle($labels);
+                $existingEntry->setVisibility($visibility);
+                $existingEntry->setUid(Episciences_Auth::getUid());
+                Episciences_Page_Manager::update($existingEntry);
+            } else {
+                // Créer une nouvelle entrée
+                $newPage = new Episciences_Page();
+                $newPage->setCode($reviewCode);
+                $newPage->setPageCode($pageCode);
+                $newPage->setTitle($labels);
+                $newPage->setVisibility($visibility);
+                $newPage->setUid(Episciences_Auth::getUid());
+                $newPage->setContent([]);
+                Episciences_Page_Manager::add($newPage);
+            }
+        }
+    }
+
+    /**
+     * Synchronise une page prédéfinie avec pages table
+     */
+    private function syncPredefinedPageToDatabase(
+        string $reviewCode,
+        string $pageCode,
+        array $labels,
+        array $visibility
+    ): void {
         $existingPage = Episciences_Page_Manager::findByCodeAndPageCode($reviewCode, $pageCode);
 
         if ($existingPage->getId() > 0) {
-            // Update existing page
-            $existingPage->setCode($reviewCode);
-            $existingPage->setPageCode($pageCode);
+            // Mettre à jour l'entrée existante
             $existingPage->setTitle($labels);
             $existingPage->setVisibility($visibility);
             $existingPage->setUid(Episciences_Auth::getUid());
             Episciences_Page_Manager::update($existingPage);
         } else {
-            // Create new entry in T_PAGES
+            // Créer une nouvelle entrée
             $newPage = new Episciences_Page();
             $newPage->setCode($reviewCode);
             $newPage->setPageCode($pageCode);
