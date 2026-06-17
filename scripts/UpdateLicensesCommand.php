@@ -21,7 +21,7 @@ class UpdateLicensesCommand extends AbstractCommand
         $this
                 ->addOption('document', 'd', InputOption::VALUE_REQUIRED, 'Document ID')
                 ->addOption('new-license', null, InputOption::VALUE_REQUIRED, 'The SPDX identifier for the new license')
-                ->addOption('license', null, InputOption::VALUE_REQUIRED, 'Code | URL of the existing license to target')
+                ->addOption('license', null, InputOption::VALUE_REQUIRED, 'Code of the existing license to target')
                 ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)')
                 ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simulation mode (Dry Run)')
                 ->addOption('resolve', 'r', InputOption::VALUE_NONE, 'Convert licenses to the SPDX standard')
@@ -75,7 +75,7 @@ class UpdateLicensesCommand extends AbstractCommand
         }
 
         if ($update && !$filterLicense) {
-            $this->io->error("You must specify --licence option option.");
+            $this->io->error("You must specify --licence option.");
             return Command::FAILURE;
         }
 
@@ -101,6 +101,7 @@ class UpdateLicensesCommand extends AbstractCommand
 
     private function resolveLicenses(array $options = []): int
     {
+        $tableName = T_PAPER_LICENSE_CODE;
         $sqlDump = '';
         $isVerbose = $options['verbose'];
         $isDryRun = $options['dry-run'];
@@ -110,6 +111,8 @@ class UpdateLicensesCommand extends AbstractCommand
         $query = $this->buildQuery($options);
         $licenses = $this->db->fetchPairs($query);
 
+        $this->io->progressStart(count($licenses));
+
         foreach ($licenses as $docId => $url) {
 
             $spdxResolver = new LicenseSpdxResolver();
@@ -118,7 +121,8 @@ class UpdateLicensesCommand extends AbstractCommand
             $isResolved = $resolved !== LicenseSpdxResolver::NO_ASSERTION;
 
             if ($isResolved) {
-                $this->preSqlInsert($docId, $resolved, $sqlDump);
+                $sqlDump .= "INSERT INTO `$tableName` (`docid`, `code`) VALUES ($docId, '$resolved') ON DUPLICATE KEY UPDATE `code`= '$resolved';";
+                $sqlDump .= PHP_EOL;
             }
 
             $result[] = [
@@ -127,13 +131,22 @@ class UpdateLicensesCommand extends AbstractCommand
                     $isResolved ? sprintf('%s%s.html', LicenseSpdxResolver::SPDX_LICENSE_LIST_URL, $resolved) : LicenseSpdxResolver::NO_ASSERTION
             ];
 
+            $this->io->progressAdvance();
+
         }
 
         if ($isVerbose) {
             $this->io->info('Building query: ' . $query->__toString());
+            if ($sqlDump !== '') {
+                $this->io->info('Building query: ' . $sqlDump);
+            } else {
+                $this->io->info('The SQL script for normalization is empty: there is no match with the SPDX standard.');
+            }
         }
 
         $res = $this->applyTransaction($isDryRun, $sqlDump);
+
+        $this->io->progressFinish();
 
         if ($isDryRun || $isVerbose) {
 
@@ -275,40 +288,43 @@ class UpdateLicensesCommand extends AbstractCommand
         if ($action === 'resolve') {
             $query->where('plc.docid IS NULL');  // to retrieve only those records from table T_PAPER_LICENCES that have no match in tableT_PAPER_LICENSE_CODE
         } elseif ($action === 'update' && !$isForced) {
-            $query->where('pl.uid IS NOT NULL');
+            $query->where('pl.uid IS NULL'); // so as not to overwrite a manual change
         }
 
         if ($docId) {
-
             $query->where('pl.docid = ?', $docId);
 
-        } elseif ($rvCode) {
-            $query->join(
-                    ['p' => T_PAPERS],
-                    'p.DOCID = pl.docid',
-                    ['p.RVID'],
-            );
+        } else {
 
-            $query->join(
-                    ['r' => T_REVIEW],
-                    'r.rvid = p.RVID',
-                    ['r.CODE'],
+            if ($rvCode) {
+                $query->join(
+                        ['p' => T_PAPERS],
+                        'p.DOCID = pl.docid',
+                        ['p.RVID'],
+                );
 
-            );
+                $query->join(
+                        ['r' => T_REVIEW],
+                        'r.rvid = p.RVID',
+                        ['r.CODE'],
 
-            $query->where('r.code = ?', $rvCode);
+                );
 
-        }
+                $query->where('r.code = ?', $rvCode);
 
-        if ($licenseFilter) {
-            $query->where('pl.licence = ?', $licenseFilter);
-
-            if ($action === 'update') {
-                $query->orWhere('plc.code = ?', $licenseFilter);
             }
 
-        } else {
-            $query->order('pl.licence ASC');
+            if ($licenseFilter) {
+                $query->where('pl.licence = ?', $licenseFilter);
+
+                if ($action === 'update') {
+                    $query->orWhere('plc.code = ?', $licenseFilter);
+                }
+
+            } else {
+                $query->order('pl.licence ASC');
+            }
+
         }
 
         return $query;
@@ -316,14 +332,14 @@ class UpdateLicensesCommand extends AbstractCommand
 
     private function updateLicences(array $options = []): int
     {
-
+        $tableName = T_PAPER_LICENSE_CODE;
         $sqlDump = '';
         $isVerbose = $options['verbose'];
         $isDryRun = $options['dry-run'];
 
         $spdxResolver = new LicenseSpdxResolver();
 
-        $newLicense = str_replace(LicenseSpdxResolver::SPDX_LICENSE_LIST_URL, '',$options['new-license']);
+        $newLicense =$options['new-license'];
 
         if (!$spdxResolver->isValid($newLicense)) {
             $this->io->error(sprintf('The license code [%s] is invalid', $newLicense));
@@ -331,19 +347,35 @@ class UpdateLicensesCommand extends AbstractCommand
             return Command::FAILURE;
         }
 
-        $query = $this->buildQuery($options, 'update');
-        $docIds = $this->db->fetchCol($query);
-
-
-        foreach ($docIds as $docId) {
-            $this->preSqlInsert($docId, $newLicense, $sqlDump);
+        if ($newLicense === $options['license']) {
+            $this->io->warning(sprintf('Nothing to update: the new licence [%s] is identical to the previous one.', $newLicense));
+            return Command::FAILURE;
         }
 
-        if ($isVerbose) {
-            $this->io->info('SQL query for the update: ' . $sqlDump);
+        $query = $this->buildQuery($options, 'update');
+
+
+        if ($isVerbose){
+            $this->io->info($query->__toString());
+        }
+
+        $docIds = $this->db->fetchCol($query);
+
+        if (empty($docIds)) {
+            $this->io->success("Nothing to update.");
+            return Command::SUCCESS;
+        }
+
+        $this->io->progressStart(count($docIds));
+
+        foreach ($docIds as $docId) {
+            $sqlDump .= "INSERT INTO `$tableName` (`docid`, `code`) VALUES ($docId, '$newLicense') ON DUPLICATE KEY UPDATE `code`= '$newLicense';";
+            $sqlDump .= PHP_EOL;
+            $this->io->progressAdvance();
         }
 
         $res = $this->applyTransaction($isDryRun, $sqlDump);
+        $this->io->progressFinish();
 
         if ($res === Command::SUCCESS) {
             $this->io->success('The Update process is complete');
@@ -373,12 +405,5 @@ class UpdateLicensesCommand extends AbstractCommand
             $this->io->error($message);
             return Command::FAILURE;
         }
-    }
-
-    private function preSqlInsert(int $docId, string $licenseCode, string &$sql): void
-    {
-        $tableName = T_PAPER_LICENSE_CODE;
-        $sql .= "INSERT INTO `$tableName` (`docid`, `code`) VALUES ($docId, '$licenseCode') ON DUPLICATE KEY UPDATE `code`= '$licenseCode';";
-        $sql .= PHP_EOL;
     }
 }
