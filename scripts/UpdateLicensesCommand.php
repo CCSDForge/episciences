@@ -9,11 +9,10 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Helper\ProgressBar;
 
 #[AsCommand(
         name: 'papers:licenses',
-        description: 'Updates [mode: all] | resolve licenses in batches (batch processing) with traceability.'
+        description: 'This command automatically normalizes licenses to SPDX format using `paper_licences` table. Individual or batch updates are also supported'
 )]
 class UpdateLicensesCommand extends AbstractCommand
 {
@@ -22,7 +21,7 @@ class UpdateLicensesCommand extends AbstractCommand
         $this
                 ->addOption('document', 'd', InputOption::VALUE_REQUIRED, 'Document ID')
                 ->addOption('new-license', null, InputOption::VALUE_REQUIRED, 'The SPDX identifier for the new license')
-                ->addOption('license', null, InputOption::VALUE_REQUIRED, 'Code of the existing license to target')
+                ->addOption('license', null, InputOption::VALUE_REQUIRED, 'Code | URL of the existing license to target')
                 ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)')
                 ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simulation mode (Dry Run)')
                 ->addOption('resolve', 'r', InputOption::VALUE_NONE, 'Convert licenses to the SPDX standard')
@@ -103,7 +102,6 @@ class UpdateLicensesCommand extends AbstractCommand
     private function resolveLicenses(array $options = []): int
     {
         $sqlDump = '';
-        $tableName = T_PAPER_LICENSE_CODE;
         $isVerbose = $options['verbose'];
         $isDryRun = $options['dry-run'];
 
@@ -120,8 +118,7 @@ class UpdateLicensesCommand extends AbstractCommand
             $isResolved = $resolved !== LicenseSpdxResolver::NO_ASSERTION;
 
             if ($isResolved) {
-                $sqlDump .= "INSERT INTO `$tableName` (`docid`, `code`) VALUES ($docId, '$resolved') ON DUPLICATE KEY UPDATE `code`= '$resolved';";
-                $sqlDump .= PHP_EOL;
+                $this->preSqlInsert($docId, $resolved, $sqlDump);
             }
 
             $result[] = [
@@ -321,12 +318,12 @@ class UpdateLicensesCommand extends AbstractCommand
     {
 
         $sqlDump = '';
-        $tableName = T_PAPER_LICENSE_CODE;
         $isVerbose = $options['verbose'];
         $isDryRun = $options['dry-run'];
 
         $spdxResolver = new LicenseSpdxResolver();
-        $newLicense = $options['new-license'];
+
+        $newLicense = str_replace(LicenseSpdxResolver::SPDX_LICENSE_LIST_URL, '',$options['new-license']);
 
         if (!$spdxResolver->isValid($newLicense)) {
             $this->io->error(sprintf('The license code [%s] is invalid', $newLicense));
@@ -339,9 +336,7 @@ class UpdateLicensesCommand extends AbstractCommand
 
 
         foreach ($docIds as $docId) {
-
-            $sqlDump .= "INSERT INTO `$tableName` (`docid`, `code`) VALUES ($docId, '$newLicense') ON DUPLICATE KEY UPDATE `code`= '$newLicense';";
-            $sqlDump .= PHP_EOL;
+            $this->preSqlInsert($docId, $newLicense, $sqlDump);
         }
 
         if ($isVerbose) {
@@ -380,4 +375,10 @@ class UpdateLicensesCommand extends AbstractCommand
         }
     }
 
+    private function preSqlInsert(int $docId, string $licenseCode, string &$sql): void
+    {
+        $tableName = T_PAPER_LICENSE_CODE;
+        $sql .= "INSERT INTO `$tableName` (`docid`, `code`) VALUES ($docId, '$licenseCode') ON DUPLICATE KEY UPDATE `code`= '$licenseCode';";
+        $sql .= PHP_EOL;
+    }
 }
