@@ -6,7 +6,7 @@
  */
 class Episciences_Review
 {
-
+    public const IS_NEW_FRONT_SWITCHED = 'is_new_front_switched';
     public const STATUS_NOTVALID = 0;
     public const STATUS_VALID = 1;
     public const STATUS_REFUSED = 2;
