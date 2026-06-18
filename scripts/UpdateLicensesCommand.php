@@ -177,7 +177,7 @@ class UpdateLicensesCommand extends AbstractCommand
             $maxPage = $totalLines > 0 ? (int)ceil($totalLines / $pageSize) : 0;
 
             if ($maxPage === 0) {
-                $this->io->success("No results found.");
+                $this->io->success("No results found; it is likely that all licenses have an SPDX match.");
                 return Command::SUCCESS;
             }
 
@@ -247,7 +247,7 @@ class UpdateLicensesCommand extends AbstractCommand
 
         if ($res === Command::SUCCESS) {
             $this->io->success('The standardization process is complete.');
-            $this->standardizationAudit($resolvedLicences, $noAssertion);
+            $this->standardizationAudit(array_keys($resolvedLicences), array_keys($noAssertion));
         }
 
         return $res;
@@ -410,6 +410,7 @@ class UpdateLicensesCommand extends AbstractCommand
 
         if ($res === Command::SUCCESS) {
             $this->io->success('The Update process is complete');
+            $this->standardizationAudit($this->fetchLicensesFromPaperLicenceCode(), $this->fetchLicensesNoYetNormalized());
         }
 
         return $res;
@@ -441,14 +442,46 @@ class UpdateLicensesCommand extends AbstractCommand
     private function standardizationAudit(array $licensesResolved, array $noAssertion): void
     {
         $this->io->writeln('List of Licenses Available After Standardization:');
-        $this->showTable(['Licenses'], array_map(static fn($key) => [$key], array_keys($licensesResolved)));
+        $this->showTable(['Licenses'], array_map(static fn($key) => [$key], $licensesResolved));
 
         if (!empty($noAssertion)) {
             $this->io->writeln('Licences identified with no SPDX match:');
-            $this->showTable(['No SPDX Match'], array_map(static fn($key) => [$key], array_keys($noAssertion)));
+            $this->showTable(['No SPDX Match'], array_map(static fn($key) => [$key], $noAssertion));
 
         } else {
             $this->io->writeln('<comment>All licenses have an SPDX match.</comment>');
         }
+    }
+
+    private function fetchLicensesFromPaperLicenceCode(): array
+    {
+
+        $query = $this->db
+                ?->select()
+                ->distinct()
+                ->from(['pc' => T_PAPER_LICENSE_CODE], ['pc.code']);
+
+        return $this->db->fetchCol($query);
+
+    }
+
+    private function fetchLicensesNoYetNormalized(): array
+    {
+
+        $query = $this->db
+                ?->select()
+                ->distinct()
+                ->from(['pl' => T_PAPER_LICENCES], ['pl.licence']);
+
+        $query->joinLeft(
+                ['plc' => T_PAPER_LICENSE_CODE],
+                'plc.docid = pl.docid',
+                []
+        );
+
+        $query->where('plc.docid IS NULL');
+
+        return $this->db->fetchCol($query);
+
     }
 }
