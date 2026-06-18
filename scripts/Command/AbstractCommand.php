@@ -6,6 +6,7 @@ namespace scripts\Command;
 use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -89,8 +90,12 @@ abstract class AbstractCommand extends Command
 
     protected function showTable($headers, array $rows): void
     {
+        $table = new Table($this->io);
 
-        $this->io->table($headers, $rows);
+        $table
+                ->setHeaders($headers)
+                ->setRows($rows)
+                ->render();
     }
 
 }

@@ -10,6 +10,13 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ *
+ * To run the normalization command in dry-run mode: php console.php papers:licenses --resolve --dry-run
+ * To update license(s):
+ * php console.php papers:licenses --update  --license CC0-1.0   --new-license cc-by-1.0
+ * php console.php papers:licenses --update  --license https://about.hal.science/hal-authorisation-v1   --new-license cc-by-1.0
+ */
 #[AsCommand(
         name: 'papers:licenses',
         description: 'This command automatically normalizes licenses to SPDX format using `paper_licences` table. Individual or batch updates are also supported'
@@ -111,42 +118,57 @@ class UpdateLicensesCommand extends AbstractCommand
         $query = $this->buildQuery($options);
         $licenses = $this->db->fetchPairs($query);
 
-        $this->io->progressStart(count($licenses));
+        $count = count($licenses);
+        $isProgressBarStarted = $count > 0;
 
-        foreach ($licenses as $docId => $url) {
+        $noAssertion = [];
+        $resolvedLicences = [];
 
-            $spdxResolver = new LicenseSpdxResolver();
+        if ($isProgressBarStarted) {
 
-            $resolved = $spdxResolver->resolve($url);
-            $isResolved = $resolved !== LicenseSpdxResolver::NO_ASSERTION;
+            $this->io->progressStart($count);
 
-            if ($isResolved) {
-                $sqlDump .= "INSERT INTO `$tableName` (`docid`, `code`) VALUES ($docId, '$resolved') ON DUPLICATE KEY UPDATE `code`= '$resolved';";
-                $sqlDump .= PHP_EOL;
+            foreach ($licenses as $docId => $url) {
+
+                $spdxResolver = new LicenseSpdxResolver();
+
+                $resolved = $spdxResolver->resolve($url);
+                $isResolved = $resolved !== LicenseSpdxResolver::NO_ASSERTION;
+
+                if ($isResolved) {
+                    $resolvedLicences[$resolved][] = $docId;
+                    $sqlDump .= "INSERT INTO `$tableName` (`docid`, `code`) VALUES ($docId, '$resolved') ON DUPLICATE KEY UPDATE `code`= '$resolved';";
+                    $sqlDump .= PHP_EOL;
+                } else {
+                    $noAssertion[$url][] = $docId;
+                }
+
+                $result[] = [
+                        $docId,
+                        $url,
+                        $isResolved ? sprintf('%s%s.html', LicenseSpdxResolver::SPDX_LICENSE_LIST_URL, $resolved) : LicenseSpdxResolver::NO_ASSERTION
+                ];
+
+                $this->io->progressAdvance();
+
             }
-
-            $result[] = [
-                    $docId,
-                    $url,
-                    $isResolved ? sprintf('%s%s.html', LicenseSpdxResolver::SPDX_LICENSE_LIST_URL, $resolved) : LicenseSpdxResolver::NO_ASSERTION
-            ];
-
-            $this->io->progressAdvance();
 
         }
 
         if ($isVerbose) {
+            $this->io->info('The relevant documents:');
             $this->io->info('Building query: ' . $query->__toString());
-            if ($sqlDump !== '') {
-                $this->io->info('Building query: ' . $sqlDump);
-            } else {
+
+            if ($sqlDump === '') {
                 $this->io->info('The SQL script for normalization is empty: there is no match with the SPDX standard.');
             }
         }
 
         $res = $this->applyTransaction($isDryRun, $sqlDump);
 
-        $this->io->progressFinish();
+        if ($isProgressBarStarted) {
+            $this->io->progressFinish();
+        }
 
         if ($isDryRun || $isVerbose) {
 
@@ -225,6 +247,7 @@ class UpdateLicensesCommand extends AbstractCommand
 
         if ($res === Command::SUCCESS) {
             $this->io->success('The standardization process is complete.');
+            $this->standardizationAudit($resolvedLicences, $noAssertion);
         }
 
         return $res;
@@ -339,7 +362,7 @@ class UpdateLicensesCommand extends AbstractCommand
 
         $spdxResolver = new LicenseSpdxResolver();
 
-        $newLicense =$options['new-license'];
+        $newLicense = $options['new-license'];
 
         if (!$spdxResolver->isValid($newLicense)) {
             $this->io->error(sprintf('The license code [%s] is invalid', $newLicense));
@@ -355,7 +378,8 @@ class UpdateLicensesCommand extends AbstractCommand
         $query = $this->buildQuery($options, 'update');
 
 
-        if ($isVerbose){
+        if ($isVerbose) {
+            $this->io->info('The relevant documents:');
             $this->io->info($query->__toString());
         }
 
@@ -366,16 +390,23 @@ class UpdateLicensesCommand extends AbstractCommand
             return Command::SUCCESS;
         }
 
-        $this->io->progressStart(count($docIds));
+        $count = count($docIds);
+        $isProgressBarStarted = $count > 0;
 
-        foreach ($docIds as $docId) {
-            $sqlDump .= "INSERT INTO `$tableName` (`docid`, `code`) VALUES ($docId, '$newLicense') ON DUPLICATE KEY UPDATE `code`= '$newLicense';";
-            $sqlDump .= PHP_EOL;
-            $this->io->progressAdvance();
+        if ($isProgressBarStarted) {
+            $this->io->progressStart($count);
+            foreach ($docIds as $docId) {
+                $sqlDump .= "INSERT INTO `$tableName` (`docid`, `code`) VALUES ($docId, '$newLicense') ON DUPLICATE KEY UPDATE `code`= '$newLicense';";
+                $sqlDump .= PHP_EOL;
+                $this->io->progressAdvance();
+            }
         }
 
         $res = $this->applyTransaction($isDryRun, $sqlDump);
-        $this->io->progressFinish();
+
+        if ($isProgressBarStarted) {
+            $this->io->progressFinish();
+        }
 
         if ($res === Command::SUCCESS) {
             $this->io->success('The Update process is complete');
@@ -404,6 +435,20 @@ class UpdateLicensesCommand extends AbstractCommand
             $this->logger->error($message);
             $this->io->error($message);
             return Command::FAILURE;
+        }
+    }
+
+    private function standardizationAudit(array $licensesResolved, array $noAssertion): void
+    {
+        $this->io->writeln('List of Licenses Available After Standardization:');
+        $this->showTable(['Licenses'], array_map(static fn($key) => [$key], array_keys($licensesResolved)));
+
+        if (!empty($noAssertion)) {
+            $this->io->writeln('Licences identified with no SPDX match:');
+            $this->showTable(['No SPDX Match'], array_map(static fn($key) => [$key], array_keys($noAssertion)));
+
+        } else {
+            $this->io->writeln('<comment>All licenses have an SPDX match.</comment>');
         }
     }
 }
