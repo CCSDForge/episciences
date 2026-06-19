@@ -193,7 +193,7 @@
 
     <?php if ($enrichmentLicence !== ""): ?>
         <oaire:licenseCondition startDate="<?= $paper->getPublication_date() ?>"
-                                uri="<?= $enrichmentLicence ?>"><?= $this->escape(Ccsd_Tools::translate($enrichmentLicence)) ?></oaire:licenseCondition>
+                                uri="<?= $enrichmentLicence ?>"><?= $this->escape(Ccsd_Tools::translateLicense($enrichmentLicence)) ?></oaire:licenseCondition>
     <?php endif; ?>
     <datacite:dates>
         <?php if ($dateAccepted) : ?>

@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `loadRoles()` is now lazy: returns immediately when roles are already loaded, avoiding redundant per-user DB queries in callers such as `AdministratemailController::getcontactsAction()`.
 
 ### Added
+- [#893](https://github.com/CCSDForge/episciences/issues/893) Allow to select the license of the document use spdx.
 - [#937](https://github.com/CCSDForge/episciences/issues/937) Admin paper list (`/administratepaper/list`): columns **Reviewers**, **Editors**, **Copy editors**, and **Contributor** are now sortable server-side.
 ### Performances
 

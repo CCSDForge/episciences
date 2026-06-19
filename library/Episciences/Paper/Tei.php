@@ -138,7 +138,7 @@ class Episciences_Paper_Tei
         $headeravailability->setAttribute('status', 'restricted');
         $enrichmentLicence = $this->getPaper()->getLicence();
         if ($enrichmentLicence !== "") {
-            $headerlicence = $xml->createElement('licence', Ccsd_Tools::translate($enrichmentLicence));
+            $headerlicence = $xml->createElement('licence', Ccsd_Tools::translateLicense($enrichmentLicence));
             $headerlicence->setAttribute('target', $enrichmentLicence);
             $headeravailability->appendChild($headerlicence);
         }
@@ -402,7 +402,7 @@ class Episciences_Paper_Tei
         $enrichmentLicence = $this->getPaper()->getLicence();
 
         if ($enrichmentLicence !== "") {
-            $licence = $xml->createElement('licence', Ccsd_Tools::translate($enrichmentLicence));
+            $licence = $xml->createElement('licence', Ccsd_Tools::translateLicense($enrichmentLicence));
             $licence->setAttribute('target', $enrichmentLicence);
             $ps->appendChild($licence);
         }

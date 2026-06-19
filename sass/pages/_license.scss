@@ -1,0 +1,29 @@
+.info-license-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9375em;
+  padding: 1.125em 1.25em;
+  border-left: 0.3125em solid #f39c12;
+  background: #fff8e6;
+  border-radius: 0.625em;
+  margin: 1.25em 0;
+  box-shadow: 0 0.125em 0.5em rgba(0, 0, 0, 0.05);
+  font-family: Arial, sans-serif;
+}
+
+.info-icon {
+  font-size: 1.5em;
+  line-height: 1;
+}
+
+.info-content h4 {
+  margin: 0 0 0.444em;
+  color: #b26a00;
+  font-size: 1.125em;
+}
+
+.info-content p {
+  margin: 0;
+  color: #444;
+  line-height: 1.6;
+}

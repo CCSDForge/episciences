@@ -405,7 +405,6 @@ final class PaperControllerTest extends TestCase
         );
     }
 
-
     /**
      * Regression: after removing $paper from notifyManagersAndAuthor(), the method
      * must use $newPaper (not a stale $paper variable) when filtering for conflicts.
