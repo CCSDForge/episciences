@@ -2499,7 +2499,7 @@ class AdministratepaperController extends PaperDefaultController
             ]);
         }
 
-        echo ($volume) ? ($volume->getName() . $htmlPosition) : Zend_Registry::get('Zend_Translate')->translate('aucun');
+        echo ($volume) ? ($this->view->escape($volume->getName()) . $htmlPosition) : Zend_Registry::get('Zend_Translate')->translate('aucun');
     }
 
     /**
@@ -5313,7 +5313,7 @@ class AdministratepaperController extends PaperDefaultController
 
     public function addcoauthorAction()
     {
-        if (!Episciences_Auth::isAdministrator() && !Episciences_Auth::isSecretary() && !Episciences_Auth::isEditor()) {
+        if (!Episciences_Auth::isAdministrator() && !Episciences_Auth::isSecretary() && !Episciences_Auth::isEditor() && !Episciences_Auth::isGuestEditor()) {
             return;
         }
 

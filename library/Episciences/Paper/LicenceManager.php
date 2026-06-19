@@ -115,7 +115,9 @@ class Episciences_Paper_LicenceManager
         }
 
         $xmlString = $response->getBody()->getContents();
+        libxml_use_internal_errors(true);
         $metadata = simplexml_load_string($xmlString);
+        libxml_clear_errors();
         if ($metadata === false) {
             trigger_error('Invalid XML', E_USER_WARNING);
             return '';

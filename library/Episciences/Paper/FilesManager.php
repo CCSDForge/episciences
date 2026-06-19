@@ -125,7 +125,7 @@ class Episciences_Paper_FilesManager
 
         foreach ($files as $file) {
 
-            if (!($files instanceof Episciences_Paper_File)) {
+            if (!($file instanceof Episciences_Paper_File)) {
                 $file = new Episciences_Paper_File($file);
             }
 
@@ -165,7 +165,7 @@ class Episciences_Paper_FilesManager
             'checksumType' => $file->getChecksumType(),
             'selfLink' => $file->getSelfLink(),
             'fileSize' => $file->getFileSize(),
-            'fileType' => $file->getFileSize()
+            'fileType' => $file->getFileType()
         ];
 
         try {

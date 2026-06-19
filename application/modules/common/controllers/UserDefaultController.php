@@ -1,5 +1,6 @@
 <?php
 
+use Ccsd\Auth\AdapterFactory;
 use Episciences\Trait\LocaleByCookieTrait;
 use neverbehave\Hcaptcha;
 use ReCaptcha\ReCaptcha;
@@ -13,6 +14,8 @@ class UserDefaultController extends Zend_Controller_Action
     public const ERROR = 'error';
 
     public const DEFAULT_IMG_PATH = '/../public/img/user.svg';
+    private const ERROR_ERROR_PHTML = 'error/error.phtml';
+    private const IMAGE_SVG_XML = 'image/svg+xml';
 
     public function indexAction(): void
     {
@@ -40,7 +43,7 @@ class UserDefaultController extends Zend_Controller_Action
             if (count($epiUserData) === 0) {
                 $this->view->message = "Utilisateur inconnu";
                 $this->view->description = "Cet utilisateur est inconnu.";
-                $this->renderScript('error/error.phtml');
+                $this->renderScript(self::ERROR_ERROR_PHTML);
                 return;
             }
 
@@ -59,7 +62,7 @@ class UserDefaultController extends Zend_Controller_Action
         } else {
             $this->view->message = "Vous n'êtes pas connecté";
             $this->view->description = "<a href='/user/login'>Connectez-vous</a>, ou <a href='/user/create'>créez votre compte</a>.";
-            $this->renderScript('error/error.phtml');
+            $this->renderScript(self::ERROR_ERROR_PHTML);
             return;
         }
 
@@ -164,8 +167,8 @@ class UserDefaultController extends Zend_Controller_Action
         if ($adapterType === 'LemonLDAP') {
             $adapter = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
         } else {
-            // Use Factory for standard adapters (CAS, MYSQL, DB, IDP, ORCID)
-            $adapter = \Ccsd\Auth\AdapterFactory::getTypedAdapter($adapterType);
+            // Use Factory for standard adapters (CAS, MYSQL)
+            $adapter = AdapterFactory::getTypedAdapter($adapterType);
         }
 
         $adapter->setIdentityStructure($localUser);
@@ -205,7 +208,7 @@ class UserDefaultController extends Zend_Controller_Action
                     // For other adapters (CAS, etc.), show generic error
                     $this->view->message = "Erreur d'authentification";
                     $this->view->description = "L'authentification a échoué";
-                    $this->renderScript('error/error.phtml');
+                    $this->renderScript(self::ERROR_ERROR_PHTML);
                 }
                 break;
 
@@ -240,7 +243,7 @@ class UserDefaultController extends Zend_Controller_Action
                             trigger_error(sprintf('Profile #%s [rvCode = %s] not identified.', $localUser->getUid(), RVCODE), E_USER_WARNING);
                             $this->view->message = 'Actuellement connecté en tant que :';
                             $this->view->description = 'Profil non identifié !';
-                            $this->renderScript('error/error.phtml');
+                            $this->renderScript(self::ERROR_ERROR_PHTML);
                             return;
                         }
                     } catch (Zend_Db_Statement_Exception $e) {
@@ -309,8 +312,6 @@ class UserDefaultController extends Zend_Controller_Action
     public function logoutAction(): void
     {
 
-        $scheme = SERVER_PROTOCOL . '://';
-
         $urlParams = ['controller' => 'user', 'action' => 'logoutfromcas'];
 
         if ($this->getParam('reason') == 'passwordupdated') {
@@ -321,7 +322,9 @@ class UserDefaultController extends Zend_Controller_Action
             $urlParams = array_merge($urlParams, ['lang' => Episciences_Auth::getLangueid()]);
         }
 
-        $url = $scheme . $_SERVER['HTTP_HOST'] . $this->view->url($urlParams);
+        // Build the return URL from the configured application base, not from the
+        // incoming request host.
+        $url = rtrim(APPLICATION_URL, '/') . $this->view->url($urlParams);
 
         $auth = null;
         $adapterName = strtoupper(defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? (string)EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS');
@@ -330,7 +333,7 @@ class UserDefaultController extends Zend_Controller_Action
             $auth = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
         } elseif ($adapterName === 'MYSQL') {
             Episciences_Auth::getInstance()->clearIdentity();
-            $this->_redirect($url);
+            $this->redirect($url);
             return;
         } else {
             $auth = new Ccsd_Auth_Adapter_Cas();
@@ -870,10 +873,28 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function deleteAction()
     {
+        $this->_helper->viewRenderer->setNoRender();
+        $this->_helper->getHelper('layout')->disableLayout();
+
         $request = $this->getRequest();
+
+        // This action only handles POST submissions from a secretary.
+        if (!$request->isPost() || !Episciences_Auth::isSecretary()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo 0;
+            return;
+        }
 
         $userId = $request->getPost('userId');
         $table = $request->getPost('table');
+
+        // Each delete control carries its own per-user request token.
+        $tokenName = 'user_delete_' . (int)$userId;
+        if (!Episciences_Csrf_Helper::validateToken($tokenName, (string)$request->getPost($tokenName, ''))) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo 0;
+            return;
+        }
 
         $respond = 0;
 
@@ -883,8 +904,6 @@ class UserDefaultController extends Zend_Controller_Action
             $respond = Episciences_User::deleteFromCAS($userId);
         }
 
-        $this->_helper->viewRenderer->setNoRender();
-        $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;
 
     }
@@ -908,7 +927,7 @@ class UserDefaultController extends Zend_Controller_Action
         if (empty($tokenData) || 'VALID' !== $userTokens->getUsage()) {
             $this->view->message = "Erreur lors de l'activation du compte";
             $this->view->description = "Erreur le jeton d'activation de ce compte n'est pas valable";
-            $this->renderScript('error/error.phtml');
+            $this->renderScript(self::ERROR_ERROR_PHTML);
             return;
         }
 
@@ -1481,6 +1500,7 @@ class UserDefaultController extends Zend_Controller_Action
             $this->_helper->layout->disableLayout();
             $this->view->form = $form;
             $this->view->uid = $uid;
+            $this->view->csrfToken = Episciences_Csrf_Helper::generateToken('user_saveroles_' . (int)$uid);
             $this->renderScript('user/roles_form.phtml');
         }
     }
@@ -1490,9 +1510,28 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function saverolesAction()
     {
+        $this->_helper->viewRenderer->setNoRender();
+        $this->_helper->layout->disableLayout();
+
         $request = $this->getRequest();
+
+        // This action only handles POST submissions from an authenticated user.
+        if (!$request->isPost() || !Episciences_Auth::isLogged()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo 0;
+            return;
+        }
+
         $params = $request->getPost();
         $uid = $params['uid'];
+
+        // The form rendered by rolesformAction carries a per-user request token.
+        $tokenName = 'user_saveroles_' . (int)$uid;
+        if (!Episciences_Csrf_Helper::validateToken($tokenName, $params[$tokenName] ?? '')) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo 0;
+            return;
+        }
 
         if (array_key_exists('roles_' . $uid, $params)) {
             $roles = $params['roles_' . $uid];
@@ -1500,9 +1539,12 @@ class UserDefaultController extends Zend_Controller_Action
             $roles = [];
         }
 
+        // Restrict submitted roles to those the current user is allowed to assign.
+        $acl = new Episciences_Acl();
+        $editableRoles = $acl->getEditableRoles();
+        $roles = array_values(array_intersect((array)$roles, array_keys($editableRoles)));
+
         $user = new Episciences_User();
-        $this->_helper->viewRenderer->setNoRender();
-        $this->_helper->layout->disableLayout();
 
         // Save roles
         $rolesSaved = $user->saveUserRoles($uid, $roles);
@@ -1606,7 +1648,7 @@ class UserDefaultController extends Zend_Controller_Action
         echo $res;
     }
 
-    public function photoAction()
+    public function photoAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender(true);
@@ -1624,7 +1666,7 @@ class UserDefaultController extends Zend_Controller_Action
                 $screenName = $this->getParam('name');
                 $screenName = urldecode($screenName);
                 $screenName = filter_var($screenName, FILTER_DEFAULT, FILTER_FLAG_NO_ENCODE_QUOTES);
-                $imageMimeType = 'image/svg+xml';
+                $imageMimeType = self::IMAGE_SVG_XML;
                 break;
             case Ccsd_User_Models_User::IMG_NAME_THUMB:
             case Ccsd_User_Models_User::IMG_NAME_NORMAL:
@@ -1661,7 +1703,7 @@ class UserDefaultController extends Zend_Controller_Action
                 ->setHeader('Expires', $expires, true)
                 ->setHeader('Pragma', '', true)
                 ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
-                ->setHeader('Content-Type', 'image/svg+xml', true)
+                ->setHeader('Content-Type', self::IMAGE_SVG_XML, true)
                 ->setHeader('Content-Length', $contentSize, true)
                 ->setBody($data);
             return;
@@ -1683,7 +1725,7 @@ class UserDefaultController extends Zend_Controller_Action
                 file_put_contents($photoPathName, $data);
 
             } else {
-                $imageMimeType = 'image/svg+xml';
+                $imageMimeType = self::IMAGE_SVG_XML;
                 $photoPathName = APPLICATION_PATH . self::DEFAULT_IMG_PATH;
             }
         }

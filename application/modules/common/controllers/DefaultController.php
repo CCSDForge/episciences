@@ -396,4 +396,43 @@ class DefaultController extends Zend_Controller_Action
         $message .= $this->view->translate('Merci de les corriger.');
         return $message;
     }
+
+    /**
+     * Safely resolves a user-influenced relative path under a trusted base directory.
+     *
+     * Prevents path traversal (e.g. "../../etc/passwd") by canonicalizing both the
+     * base directory and the candidate path with realpath(), then verifying that the
+     * resolved path is the base itself or strictly contained within it.
+     *
+     * Returns the canonical absolute path when it exists and is confined to $baseDir,
+     * or null otherwise (non-existent file, traversal attempt, or path outside base).
+     *
+     * @param string $baseDir Trusted base directory (must be a real, existing directory)
+     * @param string $relativePath User-influenced path, relative to $baseDir
+     * @return string|null Canonical path inside $baseDir, or null if invalid/outside
+     */
+    protected function resolveSafePath(string $baseDir, string $relativePath): ?string
+    {
+        // Reject empty input and any NUL byte / control character
+        if ($relativePath === '' || preg_match('/[\x00-\x1f]/', $relativePath)) {
+            return null;
+        }
+
+        $realBase = realpath($baseDir);
+        if ($realBase === false) {
+            return null;
+        }
+
+        $real = realpath($realBase . DIRECTORY_SEPARATOR . $relativePath);
+        if ($real === false) {
+            return null;
+        }
+
+        // The resolved path must be the base directory itself or strictly inside it
+        if ($real !== $realBase && !str_starts_with($real, $realBase . DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return $real;
+    }
 }

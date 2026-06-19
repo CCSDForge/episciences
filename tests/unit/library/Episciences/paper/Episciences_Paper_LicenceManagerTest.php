@@ -192,10 +192,35 @@ final class Episciences_Paper_LicenceManagerTest extends TestCase {
         
         // Whitespace-only identifier should return empty string
         $result = Episciences_Paper_LicenceManager::getApiResponseByRepoId(
-            Episciences_Repositories::HAL_REPO_ID, 
-            '   ', 
+            Episciences_Repositories::HAL_REPO_ID,
+            '   ',
             1
         );
         $this->assertEquals('', $result);
+    }
+
+    /**
+     * getLicenceFromArcheDatacite() must stop when the XML cannot be parsed,
+     * otherwise it would call a method on a false value. Verified at source
+     * level since the method performs a live HTTP request.
+     */
+    public function testArcheDataciteStopsOnInvalidXml(): void
+    {
+        $source = (string) file_get_contents(
+            APPLICATION_PATH . '/../library/Episciences/Paper/LicenceManager.php'
+        );
+
+        $start = strpos($source, 'function getLicenceFromArcheDatacite(');
+        self::assertNotFalse($start);
+        $body = substr($source, $start, 1200);
+
+        // The false branch returns before any further use of $metadata.
+        self::assertMatchesRegularExpression(
+            '/\$metadata === false\)\s*\{\s*trigger_error\([^;]*\);\s*return\s+\'\';/s',
+            $body
+        );
+        // The parse is wrapped to avoid surfacing libxml warnings.
+        self::assertStringContainsString('libxml_use_internal_errors(true)', $body);
+        self::assertStringContainsString('libxml_clear_errors()', $body);
     }
 }
