@@ -37,7 +37,7 @@ final class LicenseSpdxResolver
     /**
      * Convert license to SPDX code
      */
-    public function resolve($input)
+    public function resolve($input): string
     {
 
         $spdxCode = self::urlToSpdxCode($input);
@@ -115,13 +115,19 @@ final class LicenseSpdxResolver
         return $input;
     }
 
-    private function matchSpdx($norm)
+    private function matchSpdx($norm, bool $strict = false): ?string
     {
         $this->loadSpdxIndex();
         $key = strtolower($norm);
 
         if (isset($this->spdxIndex[$key])) {
-            return $this->spdxIndex[$key];
+
+            if (!$strict) {
+                return $this->spdxIndex[$key];
+            }
+
+            return ($this->spdxIndex[$key] !== $norm) ? null : $this->spdxIndex[$key];
+
         }
 
         $key = $this->urlToSpdx($norm);
@@ -243,9 +249,9 @@ final class LicenseSpdxResolver
         );
     }
 
-    public function isValid(string $spdXCode): bool
+    public function isValid(string $spdXCode, bool $strict = false): bool
     {
-        return $this->matchSpdx($spdXCode) !== null;
+        return $this->matchSpdx($spdXCode, $strict) !== null;
     }
 
 

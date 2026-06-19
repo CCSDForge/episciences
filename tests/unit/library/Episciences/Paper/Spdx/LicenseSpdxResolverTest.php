@@ -181,6 +181,16 @@ class LicenseSpdxResolverTest extends TestCase
         $this->assertEquals($expected, $result);
     }
 
+    /**
+     * @covers ::isValid
+     * @dataProvider isStrictValidProvider
+     */
+    public function testStrictIsValid(string $code, bool $expected): void
+    {
+        $result = $this->resolver->isValid($code, true);
+        $this->assertEquals($expected, $result);
+    }
+
     public static function isValidProvider(): array
     {
         return [
@@ -191,6 +201,16 @@ class LicenseSpdxResolverTest extends TestCase
                 ['CC-BY-4.0', true], // The original value is in the index
                 [LicenseSpdxResolver::NO_ASSERTION, false], // is not a valid license
                 ['', false],
+        ];
+    }
+
+    public static function isStrictValidProvider(): array
+    {
+        return [
+                ['mit', false],
+                ['APACHE-2.0', false],
+                ['CC-BY-4.0', true],
+                ['CC-by-4.0', false],
         ];
     }
     

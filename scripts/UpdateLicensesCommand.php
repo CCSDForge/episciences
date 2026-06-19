@@ -28,7 +28,7 @@ class UpdateLicensesCommand extends AbstractCommand
         $this
                 ->addOption('document', 'd', InputOption::VALUE_REQUIRED, 'Document ID')
                 ->addOption('new-license', null, InputOption::VALUE_REQUIRED, 'The SPDX identifier for the new license')
-                ->addOption('license', null, InputOption::VALUE_REQUIRED, 'Code of the existing license to target')
+                ->addOption('license', null, InputOption::VALUE_REQUIRED, 'Code of the existing license to target [In --resolve mode, the unnormalized license URL]')
                 ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)')
                 ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simulation mode (Dry Run)')
                 ->addOption('resolve', 'r', InputOption::VALUE_NONE, 'Convert licenses to the SPDX standard')
@@ -247,7 +247,7 @@ class UpdateLicensesCommand extends AbstractCommand
 
         if ($res === Command::SUCCESS) {
             $this->io->success('The standardization process is complete.');
-            $this->standardizationAudit(array_keys($resolvedLicences), array_keys($noAssertion));
+            $this->standardizationAudit(array_keys($resolvedLicences), array_keys($noAssertion), 'resolve');
         }
 
         return $res;
@@ -278,6 +278,7 @@ class UpdateLicensesCommand extends AbstractCommand
                 [
                         ['Environment', $this->env],
                         ['Action', $options['update'] ? 'Licenses updating' : 'SPDX standardisation'],
+                        ['Journal', $options['rvcode'] ?? 'ALL'],
                         ['Verbose', isset($options['verbose']) && $options['verbose'] ? 'YES' : 'NO'],
                         ['Mode Dry Run', isset($options['dry-run']) && $options['dry-run'] ? 'YES' : 'NO'],
                         ['New License', $options['new-license'] ?? 'NONE'],
@@ -359,19 +360,26 @@ class UpdateLicensesCommand extends AbstractCommand
         $sqlDump = '';
         $isVerbose = $options['verbose'];
         $isDryRun = $options['dry-run'];
+        $rvCode = $options['rvcode'];
 
         $spdxResolver = new LicenseSpdxResolver();
 
         $newLicense = $options['new-license'];
 
-        if (!$spdxResolver->isValid($newLicense)) {
+        if (!$spdxResolver->isValid($newLicense, true)) {
             $this->io->error(sprintf('The license code [%s] is invalid', $newLicense));
             $this->io->info(sprintf('@see %s to select a valid Identifier', LicenseSpdxResolver::SPDX_LICENSE_LIST_URL));
+            if($isVerbose){
+                $this->standardizationAudit($this->fetchLicensesFromPaperLicenceCode($rvCode), $this->fetchLicensesNoYetNormalized($rvCode));
+            }
             return Command::FAILURE;
         }
 
         if ($newLicense === $options['license']) {
             $this->io->warning(sprintf('Nothing to update: the new licence [%s] is identical to the previous one.', $newLicense));
+            if($isVerbose){
+                $this->standardizationAudit($this->fetchLicensesFromPaperLicenceCode($rvCode), $this->fetchLicensesNoYetNormalized($rvCode));
+            }
             return Command::FAILURE;
         }
 
@@ -387,6 +395,9 @@ class UpdateLicensesCommand extends AbstractCommand
 
         if (empty($docIds)) {
             $this->io->success("Nothing to update.");
+            if($isVerbose){
+                $this->standardizationAudit($this->fetchLicensesFromPaperLicenceCode($rvCode), $this->fetchLicensesNoYetNormalized($rvCode));
+            }
             return Command::SUCCESS;
         }
 
@@ -410,7 +421,10 @@ class UpdateLicensesCommand extends AbstractCommand
 
         if ($res === Command::SUCCESS) {
             $this->io->success('The Update process is complete');
-            $this->standardizationAudit($this->fetchLicensesFromPaperLicenceCode(), $this->fetchLicensesNoYetNormalized());
+        }
+
+        if($isVerbose){
+            $this->standardizationAudit($this->fetchLicensesFromPaperLicenceCode($rvCode), $this->fetchLicensesNoYetNormalized($rvCode));
         }
 
         return $res;
@@ -439,9 +453,9 @@ class UpdateLicensesCommand extends AbstractCommand
         }
     }
 
-    private function standardizationAudit(array $licensesResolved, array $noAssertion): void
+    private function standardizationAudit(array $licensesResolved, array $noAssertion, string $action = null): void
     {
-        $this->io->writeln('List of Licenses Available After Standardization:');
+        $this->io->writeln($action === 'resolve' ? 'Resolved Licenses list:' : 'Available licences list:');
         $this->showTable(['Licenses'], array_map(static fn($key) => [$key], $licensesResolved));
 
         if (!empty($noAssertion)) {
@@ -453,19 +467,21 @@ class UpdateLicensesCommand extends AbstractCommand
         }
     }
 
-    private function fetchLicensesFromPaperLicenceCode(): array
+    private function fetchLicensesFromPaperLicenceCode(string $rvCode = null): array
     {
 
         $query = $this->db
                 ?->select()
                 ->distinct()
-                ->from(['pc' => T_PAPER_LICENSE_CODE], ['pc.code']);
+                ->from(['plc' => T_PAPER_LICENSE_CODE], ['plc.code']);
+
+        $this->joinPapersReview($query, $rvCode); // ignored if $rvCode is null
 
         return $this->db->fetchCol($query);
 
     }
 
-    private function fetchLicensesNoYetNormalized(): array
+    private function fetchLicensesNoYetNormalized(string $rvCode = null): array
     {
 
         $query = $this->db
@@ -479,9 +495,35 @@ class UpdateLicensesCommand extends AbstractCommand
                 []
         );
 
+        $this->joinPapersReview($query, $rvCode); // ignored if $rvCode is null
+
         $query->where('plc.docid IS NULL');
 
         return $this->db->fetchCol($query);
+
+    }
+
+
+    private function joinPapersReview(Zend_Db_Select $query, string $rvCode = null): void
+    {
+        if(!$rvCode){
+            return;
+        }
+
+        $query->join(
+                ['p' => T_PAPERS],
+                'p.DOCID = plc.docid',
+                [],
+        );
+
+        $query->join(
+                ['r' => T_REVIEW],
+                'r.rvid = p.RVID',
+                [],
+
+        );
+
+        $query->where('r.code = ?', $rvCode);
 
     }
 }
