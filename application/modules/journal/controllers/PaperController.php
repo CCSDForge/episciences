@@ -1351,165 +1351,90 @@ class PaperController extends PaperDefaultController
     }
 
     /**
-     * Final version + arXiv paper password deposit page for the alternative workflow.
-     *
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
-     * @throws Zend_Form_Exception
+     * Alt pipeline (state 34): show the deposit page where the author submits both
+     * the new version number and the arXiv paper password.
      */
     public function finalversiondepositAction(): void
     {
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
-        $commentId = (int)$request->getParam('id');
-
-        $requestComment = new Episciences_Comment();
-        $requestComment->find($commentId);
-
-        $paper = Episciences_PapersManager::get($requestComment->getDocid(), false);
-
-        if (!$this->isFinalVersionDepositAllowed($paper, $requestComment)) {
-            $this->_helper->FlashMessenger
-                ->setNamespace(self::ERROR)
-                ->addMessage($this->view->translate("Vous n'êtes pas autorisé à déposer la version finale de cet article."));
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . (int)$requestComment->getDocid());
+        $paper = $this->loadAltFinalVersionDepositPaperOrRedirect();
+        if (!$paper instanceof Episciences_Paper) {
             return;
         }
 
-        $form = Episciences_Submit::getFinalVersionDepositForm($requestComment, $paper);
-        $form->setAction(
-            '/paper/savefinalversiondeposit?docid=' . $paper->getDocid() . self::AND_PC_ID_STR . $requestComment->getPcid()
-        );
-
         $this->view->paper = $paper;
-        $this->view->comment = $requestComment->toArray();
-        $this->view->form = $form;
+        $this->view->form = Episciences_PapersManager::getAltFinalVersionDepositForm($paper);
     }
 
     /**
-     * Save the deposited final version file and arXiv paper password.
-     *
-     * This action intentionally does not perform the later alternative-workflow
-     * state transitions; it only persists the deposit data for task1.
-     *
-     * @throws JsonException
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
-     * @throws Zend_Form_Exception
+     * Alt pipeline (state 34 → 35): save the author-supplied version number and
+     * paper password, then transition the paper status.
      */
     public function savefinalversiondepositAction(): void
     {
-        $this->disableView();
-
-        /** @var Zend_Controller_Request_Http $request */
-        $request = $this->getRequest();
-        $docId = (int)$request->getQuery(self::DOC_ID_STR);
-        $commentId = (int)$request->getQuery('pcid');
-
-        $paper = Episciences_PapersManager::get($docId, false);
-
+        $this->_helper->viewRenderer->setNoRender();
+        $paper = $this->loadAltFinalVersionDepositPaperOrRedirect();
         if (!$paper instanceof Episciences_Paper) {
-            $this->_helper->FlashMessenger
-                ->setNamespace(self::ERROR)
-                ->addMessage($this->view->translate("Le document demandé n’existe pas."));
-            $this->_helper->redirector->gotoUrl('/paper/submitted');
             return;
         }
 
-        $requestComment = new Episciences_Comment();
-        $requestComment->find($commentId);
-
-        if (!$request->isPost() || !$this->isFinalVersionDepositAllowed($paper, $requestComment)) {
-            $this->redirectWithError(
-                "Vous n'êtes pas autorisé à déposer la version finale de cet article.",
-                $paper
-            );
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        if (!$request->isPost()) {
+            $this->_helper->redirector->gotoUrl('/paper/finalversiondeposit/id/' . $paper->getDocid());
             return;
         }
 
         $post = $request->getPost();
-        $form = Episciences_Submit::getFinalVersionDepositForm($requestComment, $paper);
 
-        if (!$form->isValid($post)) {
-            $this->renderFormErrors($form);
-            $this->_helper->redirector->gotoUrl('/paper/finalversiondeposit?id=' . $requestComment->getPcid());
-            return;
-        }
-
-        $attachments = $post[Episciences_Mail_Send::ATTACHMENTS] ?? [];
-        $attachments = is_array($attachments) ? Episciences_Tools::arrayFilterEmptyValues($attachments) : [];
-        $attachments = array_values($attachments);
-
-        $errors = $this->validateFinalVersionDeposit($paper, $requestComment, $post, $attachments);
-        if (!empty($errors)) {
-            foreach ($errors as $error) {
-                $this->_helper->FlashMessenger
-                    ->setNamespace(self::ERROR)
-                    ->addMessage($this->view->translate($error));
-            }
-            $this->_helper->redirector->gotoUrl('/paper/finalversiondeposit?id=' . $requestComment->getPcid());
-            return;
-        }
-
-        $paper->setPassword(trim($post['paperPassword']), true);
-        if (!$paper->save()) {
-            $this->redirectWithError("Le mot de passe n'a pas été enregistré.", $paper);
-            return;
-        }
-
-        $revisionAnswerComment = $this->createFinalVersionDepositRevisionAnswer($paper, $requestComment, $post);
-        if (!$revisionAnswerComment instanceof Episciences_Comment) {
-            $this->redirectWithError("La réponse à la demande de version finale n'a pas été enregistrée.", $paper);
-            return;
-        }
-
-        $depositComment = new Episciences_Comment();
-        $depositComment->setParentid(null);
-        $depositComment->setType(Episciences_CommentsManager::TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED);
-        $depositComment->setDocid($paper->getDocid());
-        $depositComment->setUid($paper->getUid());
-        $depositComment->setMessage($post[self::COMMENT_STR] ?? '');
-        $depositComment->setFile(json_encode($attachments, JSON_THROW_ON_ERROR));
-        $depositComment->setOptions([
-            'source_revision_request_pcid' => (int)$requestComment->getPcid(),
-            'source_revision_answer_pcid' => (int)$revisionAnswerComment->getPcid()
-        ]);
-        $depositComment->setCopyEditingComment(true);
-
-        if (!$depositComment->save(false, $paper->getUid(), true)) {
-            $revisionAnswerComment->delete();
-            $this->redirectWithError("La version finale n'a pas été enregistrée.", $paper);
-            return;
-        }
-
-        if (!$this->moveFinalVersionDepositFiles($paper, $requestComment, $depositComment, $attachments)) {
-            $depositComment->delete();
-            $revisionAnswerComment->delete();
-
-            $this->redirectWithError(
-                "La version finale a été enregistrée, mais le fichier déposé n'a pas pu être déplacé vers son emplacement définitif.",
-                $paper
+        $csrfName = 'csrf_finalversiondeposit_' . (int)$paper->getDocid();
+        $csrfSession = new Zend_Session_Namespace('Zend_Form_Element_Hash_unique_' . $csrfName);
+        if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
+            $csrfSession->hash = null;
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
+                $this->view->translate("Votre dépôt n'a pas pu être enregistré.")
             );
+            $this->_helper->redirector->gotoUrl('/paper/finalversiondeposit/id/' . $paper->getDocid());
+            return;
+        }
+        $csrfSession->hash = null;
+
+        $version = trim((string)($post['version'] ?? ''));
+        $password = (string)($post['paperPassword'] ?? '');
+
+        if ($version === '' || $password === '') {
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
+                $this->view->translate("Merci de bien vouloir compléter les champs marqués d'un astérisque (*).")
+            );
+            $this->_helper->redirector->gotoUrl('/paper/finalversiondeposit/id/' . $paper->getDocid());
             return;
         }
 
-        $depositComment->setFilePath($this->getCopyEditingCommentPath($paper->getDocid(), $depositComment->getPcid()));
-        $depositComment->logComment();
+        if (mb_strlen($password) > MAX_PWD_INPUT_SIZE) {
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
+                sprintf($this->view->translate("le nombre maximum de caractères autorisé est de <code>%u</code>"), MAX_PWD_INPUT_SIZE)
+            );
+            $this->_helper->redirector->gotoUrl('/paper/finalversiondeposit/id/' . $paper->getDocid());
+            return;
+        }
 
+        $paper->setVersion($version);
+        $paper->setPassword($password, true);
         $paper->setStatus(Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED);
+
         if (!$paper->save()) {
-            $this->redirectWithError("Le nouveau statut de l'article n'a pas été enregistré.", $paper);
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
+                $this->view->translate("Les modifications n'ont pas abouti !")
+            );
+            $this->_helper->redirector->gotoUrl('/paper/finalversiondeposit/id/' . $paper->getDocid());
             return;
         }
+
         $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), [self::STATUS => $paper->getStatus()]);
 
-        $this->notifyAltFinalVersionDeposit($paper, $depositComment, $attachments);
-
-        $this->redirectWithSuccess(
-            "La version finale et le mot de passe ont bien été enregistrés.",
-            self::PAPER_URL_STR . $paper->getDocid()
+        $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage(
+            $this->view->translate("Votre dépôt a bien été enregistré.")
         );
+        $this->_helper->redirector->gotoUrl('/' . self::CONTROLLER_NAME . '/view?id=' . $paper->getDocid());
     }
 
     /**
@@ -1677,198 +1602,29 @@ class PaperController extends PaperDefaultController
         return $paperPwdDetails;
     }
 
-    private function isFinalVersionDepositAllowed(?Episciences_Paper $paper, Episciences_Comment $requestComment): bool
+    /**
+     * Common guard for the final-version-deposit endpoints: paper must exist,
+     * the viewer must own it, and the status must be the alt-pipeline wait-state.
+     */
+    private function loadAltFinalVersionDepositPaperOrRedirect(): ?Episciences_Paper
     {
-        return $paper instanceof Episciences_Paper
-            && $requestComment->getPcid()
-            && (int)$requestComment->getDocid() === $paper->getDocid()
-            && $paper->isOwner()
-            && $paper->getStatus() === Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION
-            && $requestComment->getType() === Episciences_CommentsManager::TYPE_REVISION_REQUEST;
-    }
+        $docId = (int)$this->getRequest()->getParam('id');
+        $paper = Episciences_PapersManager::get($docId);
 
-    private function getCopyEditingCommentPath(int $docId, int $commentId): string
-    {
-        return Episciences_PapersManager::buildDocumentPath($docId)
-            . DIRECTORY_SEPARATOR
-            . Episciences_CommentsManager::COPY_EDITING_SOURCES
-            . DIRECTORY_SEPARATOR
-            . $commentId
-            . DIRECTORY_SEPARATOR;
-    }
-
-    private function createFinalVersionDepositRevisionAnswer(
-        Episciences_Paper $paper,
-        Episciences_Comment $requestComment,
-        array $post
-    ): ?Episciences_Comment {
-        $message = trim((string)($post[self::COMMENT_STR] ?? ''));
-
-        if ($message === '') {
-            $message = "La version finale et le mot de passe arXiv ont été déposés.";
-        }
-
-        $revisionAnswerComment = new Episciences_Comment();
-        $revisionAnswerComment->setParentid($requestComment->getPcid());
-        $revisionAnswerComment->setType(Episciences_CommentsManager::TYPE_REVISION_ANSWER_COMMENT);
-        $revisionAnswerComment->setDocid($paper->getDocid());
-        $revisionAnswerComment->setUid($paper->getUid());
-        $revisionAnswerComment->setMessage($message);
-
-        if (!$revisionAnswerComment->save(false, $paper->getUid(), true)) {
+        if (
+            !$paper instanceof Episciences_Paper ||
+            !Episciences_Auth::isLogged() ||
+            !$paper->isOwner() ||
+            $paper->getStatus() !== Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION
+        ) {
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
+                $this->view->translate("Vous n'êtes pas autorisé à effectuer cette action.")
+            );
+            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $docId);
             return null;
         }
 
-        return $revisionAnswerComment;
-    }
-
-    /**
-     * Uploaded files are first stored in the request comment directory because
-     * the final deposit copy-editing comment ID does not exist yet. Once the
-     * deposit comment is saved, move them to the normal copy-editing directory
-     * for that comment so the existing UI can resolve:
-     * `/docfiles/ce/{docId}/{filename}/{depositPcid}`.
-     */
-    private function moveFinalVersionDepositFiles(
-        Episciences_Paper $paper,
-        Episciences_Comment $requestComment,
-        Episciences_Comment $depositComment,
-        array $attachments
-    ): bool {
-        $sourcePath = $this->getCopyEditingCommentPath($paper->getDocid(), $requestComment->getPcid());
-        $destinationPath = $this->getCopyEditingCommentPath($paper->getDocid(), $depositComment->getPcid());
-
-        if (!Episciences_Tools::cpFiles($attachments, $sourcePath, $destinationPath)) {
-            return false;
-        }
-
-        foreach ($attachments as $file) {
-            $sourceFile = $sourcePath . $file;
-            if (is_file($sourceFile)) {
-                unlink($sourceFile);
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
-     * @throws Zend_Mail_Exception
-     */
-    private function notifyAltFinalVersionDeposit(Episciences_Paper $paper, Episciences_Comment $depositComment, array $attachments): void
-    {
-        $attachmentFiles = [];
-        foreach ($attachments as $attachment) {
-            $attachmentFiles[$attachment] = $depositComment->getFilePath();
-        }
-
-        $submitter = $paper->getSubmitter();
-        Episciences_Mail_Send::sendMailFromReview(
-            $submitter,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_AUTHOR_COPY,
-            $this->buildAltFinalVersionDepositMailTags($paper, $submitter, $depositComment, true),
-            $paper,
-            $paper->getUid(),
-            $attachmentFiles,
-            false,
-            $paper->getCoAuthors()
-        );
-
-        $recipients = $paper->getEditors(true, true) + $paper->getCopyEditors(true, true);
-        Episciences_Review::checkReviewNotifications($recipients);
-        unset($recipients[$paper->getUid()]);
-        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
-
-        if (empty($recipients)) {
-            trigger_error('Alt final version deposit: mail not sent to managers: empty recipients');
-            return;
-        }
-
-        $principalRecipient = $recipients[array_key_first($recipients)];
-        $CC = $paper->extractCCRecipients($recipients, $principalRecipient->getUid());
-
-        Episciences_Mail_Send::sendMailFromReview(
-            $principalRecipient,
-            Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_EDITOR_COPY,
-            $this->buildAltFinalVersionDepositMailTags($paper, $principalRecipient, $depositComment, false),
-            $paper,
-            $paper->getUid(),
-            $attachmentFiles,
-            false,
-            $CC
-        );
-    }
-
-    private function buildAltFinalVersionDepositMailTags(
-        Episciences_Paper $paper,
-        Episciences_User $recipient,
-        Episciences_Comment $depositComment,
-        bool $publicUrl
-    ): array {
-        $locale = $recipient->getLangueid();
-
-        return [
-            Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
-            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
-            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
-            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
-            Episciences_Mail_Tags::TAG_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paper->getSubmission_date(), $locale),
-            Episciences_Mail_Tags::TAG_PAPER_URL => $publicUrl
-                ? $this->buildPublicPaperUrl($paper->getDocid())
-                : $this->buildAdminPaperUrl($paper->getDocid()),
-            Episciences_Mail_Tags::TAG_COMMENT => $depositComment->getMessage(),
-            Episciences_Mail_Tags::TAG_ACTION_DATE => Episciences_View_Helper_Date::Date(Zend_Date::now()->toString('dd-MM-yyy'), $locale),
-            Episciences_Mail_Tags::TAG_ACTION_TIME => Zend_Date::now()->get(Zend_Date::TIME_MEDIUM),
-            Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $paper->getSubmitter()?->getFullName(),
-        ];
-    }
-
-    private function validateFinalVersionDeposit(
-        Episciences_Paper $paper,
-        Episciences_Comment $requestComment,
-        array $post,
-        array $attachments
-    ): array {
-        $errors = [];
-        $passwordDetails = $this->dataProcessing($post);
-
-        if (!$passwordDetails['isValid']) {
-            if ($passwordDetails['isEmpty']) {
-                $errors[] = "Veuillez indiquer le mot de passe arXiv du document.";
-            } elseif (!$passwordDetails['isValidStrlen']) {
-                $errors[] = sprintf(
-                    "Le mot de passe arXiv ne doit pas dépasser %u caractères.",
-                    MAX_PWD_INPUT_SIZE
-                );
-            }
-        }
-
-        if (count($attachments) !== 1) {
-            $errors[] = "Veuillez déposer exactement un fichier pour la version finale.";
-            return $errors;
-        }
-
-        $filename = $attachments[0];
-        if (basename($filename) !== $filename) {
-            $errors[] = "Le nom du fichier déposé n'est pas valide.";
-            return $errors;
-        }
-
-        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-        $allowedExtensions = array_map('strtolower', ALLOWED_EXTENSIONS);
-        if (!in_array($extension, $allowedExtensions, true)) {
-            $errors[] = "Le type du fichier déposé n'est pas autorisé.";
-        }
-
-        $filePath = $this->getCopyEditingCommentPath($paper->getDocid(), $requestComment->getPcid()) . $filename;
-        if (!is_file($filePath)) {
-            $errors[] = "Le fichier de la version finale n'a pas été correctement téléversé. Merci de le déposer à nouveau.";
-        }
-
-        return $errors;
+        return $paper;
     }
 
     /**

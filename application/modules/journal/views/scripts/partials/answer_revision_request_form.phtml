@@ -30,7 +30,7 @@ $isAlternativeFinalVersionUploadExpected = $paper->getStatus() === Episciences_P
                     ?>
                     <?php if ($isAlternativeFinalVersionUploadExpected): ?>
                         <a id="final-version-deposit"
-                           href="/paper/finalversiondeposit?id=<?= $this->current_demand['PCID']; ?>"
+                           href="/paper/finalversiondeposit?id=<?= (int)$paper->getDocid(); ?>"
                            title="<?= $this->translate('Déposer la version finale et le mot de passe arXiv') ?>">
                             <?= $this->translate('Déposer la version finale et le mot de passe arXiv') ?>
                         </a>
