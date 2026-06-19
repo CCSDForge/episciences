@@ -24,22 +24,14 @@ if ($labelsEl !== null) {
                     <span class="input-group-addon" aria-hidden="true">
                         <?php echo $this->escape(strtoupper($lang)) ?>
                     </span>
-                    <?php if ($isPredefined): ?>
-                    <!-- Hidden field to submit the value since disabled inputs are not sent -->
-                    <input type="hidden"
-                           name="<?php echo $this->escape($pageName) ?>[labels][<?php echo $this->escape($lang) ?>]"
-                           value="<?php echo $this->escape($labelsValues[$lang] ?? '') ?>">
-                    <?php endif; ?>
                     <input type="text"
-                           <?php if (!$isPredefined): ?>
                            name="<?php echo $this->escape($pageName) ?>[labels][<?php echo $this->escape($lang) ?>]"
-                           <?php endif; ?>
                            id="<?php echo $this->escape($pageName) ?>-labels-<?php echo $this->escape($lang) ?>"
                            value="<?php echo $this->escape($labelsValues[$lang] ?? '') ?>"
                            class="form-control input-sm<?php echo $isPredefined ? ' predefined-title-disabled' : '' ?>"
                            lang="<?php echo $this->escape($lang) ?>"
                            <?php if ($isPredefined): ?>
-                           disabled="disabled"
+                           readonly="readonly"
                            title="<?php echo $this->escape($this->translate('Le titre des pages prédéfinies ne peut pas être modifié')) ?>"
                            <?php else: ?>
                            required="required"

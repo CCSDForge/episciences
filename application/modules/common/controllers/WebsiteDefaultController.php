@@ -268,6 +268,11 @@ class WebsiteDefaultController extends Zend_Controller_Action
                     }
                 }
 
+                // Predefined page titles are managed by translations, ignore any submitted labels
+                if (is_a($options['type'], Episciences_Website_Navigation_Page_Predefined::class, true)) {
+                    unset($options['labels']);
+                }
+
                 $this->_session->website->setPage($pageid, $options);
                 $this->_session->website->getPage($pageid)->initForm();
 
