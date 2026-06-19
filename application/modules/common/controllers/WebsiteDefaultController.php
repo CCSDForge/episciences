@@ -223,17 +223,48 @@ class WebsiteDefaultController extends Zend_Controller_Action
                     $options['filter'] = implode(';', $options['filter']);
                 }
 
-                // Validation du permalien avant setPage() pour éviter le renommage des fichiers
+                // Validate permalink before setPage() to avoid file renaming on error
+                $pagePermalienError = false;
                 if ($options['type'] === 'Episciences_Website_Navigation_Page_Custom' && isset($options['permalien'])) {
                     $permalien = $options['permalien'];
+
+                    // Check if permalien is reserved for predefined pages
                     if (Episciences_Website_Navigation_Page_Predefined::isPredefinedPage($permalien)) {
-                         $message = sprintf($this->view->translate("Le permalien '%s' est réservé aux pages prédéfinies. Veuillez choisir un autre permalien."), $permalien);
+                        $message = sprintf($this->view->translate("Le permalien '%s' est réservé aux pages prédéfinies. Veuillez choisir un autre permalien."), $permalien);
                         $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
                             ->addMessage($message);
                         $pagesDisplay[$pageid] = true;
                         $valid = false;
                         $hasPermalienError = true;
-                        continue; // Ne pas appeler setPage() si le permalien est réservé
+                        $pagePermalienError = true;
+                    }
+
+                    // Check if permalien is already used by another custom page
+                    if (!$pagePermalienError) {
+                        $currentPage = $this->_session->website->getPage($pageid);
+                        $currentPermalien = ($currentPage instanceof Episciences_Website_Navigation_Page_Custom)
+                            ? $currentPage->getPermalien()
+                            : '';
+
+                        // Only check if the permalien is different from the current one (changing permalien)
+                        if ($permalien !== $currentPermalien) {
+                            $existingPage = Episciences_Page_Manager::findByCodeAndPageCode(RVCODE, $permalien);
+                            if ($existingPage->getId() > 0) {
+                                $message = sprintf($this->view->translate("Le permalien '%s' est déjà utilisé par une autre page. Veuillez choisir un autre permalien."), $permalien);
+                                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                                    ->addMessage($message);
+                                $pagesDisplay[$pageid] = true;
+                                $valid = false;
+                                $hasPermalienError = true;
+                                $pagePermalienError = true;
+                            }
+                        }
+                    }
+
+                    // If permalink is invalid, remove it from options to preserve other fields
+                    // but don't trigger file renaming with the invalid permalink
+                    if ($pagePermalienError) {
+                        unset($options['permalien']);
                     }
                 }
 

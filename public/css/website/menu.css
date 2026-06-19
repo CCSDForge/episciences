@@ -255,3 +255,12 @@ div.multicheckbox > label input[type="checkbox"] {
     white-space: nowrap;
     border: 0;
 }
+
+/* ---- Predefined page title (read-only) ---------------------- */
+input.predefined-title-disabled,
+.predefined-title-disabled input {
+    background-color: #e9ecef !important;
+    color: #6c757d !important;
+    cursor: not-allowed !important;
+    border-color: #ced4da !important;
+}

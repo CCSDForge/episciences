@@ -158,10 +158,37 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     }
 
 
+    /**
+     * @var string|null Preloaded review code for current save operation (bulk loading)
+     */
+    private ?string $preloadedReviewCode = null;
+
+    /**
+     * @var array<string, Episciences_Page> Preloaded pages indexed by page_code for current save operation (bulk loading)
+     */
+    private array $preloadedPages = [];
+
     public function save()
     {
         // Suppression de l'ancien menu
         $this->_db->delete($this->_table, 'SID = ' . $this->_sid);
+
+        // Préchargement du code de la revue pour éviter les requêtes N+1
+        $this->preloadedReviewCode = null;
+        try {
+            $review = Episciences_ReviewsManager::find($this->_sid);
+            if ($review) {
+                $this->preloadedReviewCode = $review->getCode();
+            }
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+
+        // Préchargement de toutes les pages existantes pour éviter les requêtes N+1
+        $this->preloadedPages = [];
+        if (!empty($this->preloadedReviewCode)) {
+            $this->preloadedPages = Episciences_Page_Manager::findAllByCode($this->preloadedReviewCode);
+        }
 
         $lang = [];
         $pageIdCounter = 1;
@@ -182,6 +209,10 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
                 }
             }
         }
+
+        // Nettoyage des données préchargées après la sauvegarde
+        $this->preloadedReviewCode = null;
+        $this->preloadedPages = [];
 
         // Enregistrement des traductions dans des fichiers
         $writer = new Ccsd_Lang_Writer($lang);
@@ -220,18 +251,8 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             return;
         }
 
-        // Get the review code from database
-        $reviewCode = null;
-        try {
-            $review = Episciences_ReviewsManager::find($this->_sid);
-            if ($review) {
-                $reviewCode = $review->getCode();
-            }
-        } catch (Exception $e) {
-            trigger_error($e->getMessage(), E_USER_WARNING);
-        }
-
-        if (empty($reviewCode)) {
+        // Use preloaded review code (bulk loaded in save())
+        if (empty($this->preloadedReviewCode)) {
             return;
         }
 
@@ -242,19 +263,19 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             return;
         }
 
-        // Determine visibility (same logic for both custom and predefined pages)
-        $acl = $page->getAcl();
-        $visibility = !empty($acl) ? $acl : ['public'];
-
         if ($page->isCustom()) {
-            $this->syncCustomPageToDatabase($page, $reviewCode, $pageCode, $labels, $visibility);
+            // Custom pages can have any visibility
+            $acl = $page->getAcl();
+            $visibility = !empty($acl) ? $acl : ['public'];
+            $this->syncCustomPageToDatabase($page, $this->preloadedReviewCode, $pageCode, $labels, $visibility);
         } else {
-            $this->syncPredefinedPageToDatabase($reviewCode, $pageCode, $labels, $visibility);
+            // Predefined pages are always public
+            $this->syncPredefinedPageToDatabase($this->preloadedReviewCode, $pageCode, $labels, ['public']);
         }
     }
 
     /**
-     * Synchronise une page personnalisée avec pages table
+     * Sync a custom page with pages table
      */
     private function syncCustomPageToDatabase(
         Episciences_Website_Navigation_Page $page,
@@ -263,44 +284,29 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         array $labels,
         array $visibility
     ): void {
-        // Vérifier si le pageCode est réservé (page prédéfinie)
-        if (Episciences_Website_Navigation_Page_Predefined::isPredefinedPage($pageCode)) {
-            trigger_error(
-                "Cannot use '$pageCode' as permalien: reserved for predefined pages",
-                E_USER_WARNING
-            );
-            return;
-        }
-
-        // Vérifier si le permalien a changé
+        // Check if the permalien has changed
         $previousPermalien = null;
         if (method_exists($page, 'getPreviousPermalien')) {
             $previousPermalien = $page->getPreviousPermalien();
         }
 
         if (!empty($previousPermalien)) {
-            // Le permalien a changé
-            $oldEntry = Episciences_Page_Manager::findByCodeAndPageCode($reviewCode, $previousPermalien);
+            // The permalien has changed - find the old entry to update it (use preloaded data)
+            $oldEntry = $this->preloadedPages[$previousPermalien] ?? null;
 
-            // Vérifier si le nouveau pageCode existe déjà (autre custom page)
-            $existingWithNewCode = Episciences_Page_Manager::findByCodeAndPageCode($reviewCode, $pageCode);
-            if ($existingWithNewCode->getId() > 0) {
-                trigger_error(
-                    "Cannot change permalien to '$pageCode': already exists in AGES",
-                    E_USER_WARNING
-                );
-                return;
-            }
-
-            if ($oldEntry->getId() > 0) {
-                // Mettre à jour l'entrée existante avec le nouveau page_code (conserve l'ID)
+            if ($oldEntry && $oldEntry->getId() > 0) {
+                // Update existing entry with the new page_code (preserves the ID)
                 $oldEntry->setPageCode($pageCode);
                 $oldEntry->setTitle($labels);
                 $oldEntry->setVisibility($visibility);
                 $oldEntry->setUid(Episciences_Auth::getUid());
                 Episciences_Page_Manager::updateWithNewPageCode($oldEntry, $previousPermalien);
+
+                // Update preloaded data: remove old key, add new key
+                unset($this->preloadedPages[$previousPermalien]);
+                $this->preloadedPages[$pageCode] = $oldEntry;
             } else {
-                // L'ancienne entrée n'existe pas, créer une nouvelle
+                // Old entry does not exist, create a new one
                 $newPage = new Episciences_Page();
                 $newPage->setCode($reviewCode);
                 $newPage->setPageCode($pageCode);
@@ -309,19 +315,22 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
                 $newPage->setUid(Episciences_Auth::getUid());
                 $newPage->setContent([]);
                 Episciences_Page_Manager::add($newPage);
+
+                // Add to preloaded data
+                $this->preloadedPages[$pageCode] = $newPage;
             }
         } else {
-            // Le permalien n'a pas changé - chercher l'entrée existante pour cette custom page
-            $existingEntry = Episciences_Page_Manager::findByCodeAndPageCode($reviewCode, $pageCode);
+            // Permalink has not changed - find existing entry for this custom page (use preloaded data)
+            $existingEntry = $this->preloadedPages[$pageCode] ?? null;
 
-            if ($existingEntry->getId() > 0) {
-                // Mettre à jour l'entrée existante
+            if ($existingEntry && $existingEntry->getId() > 0) {
+                // Update existing entry
                 $existingEntry->setTitle($labels);
                 $existingEntry->setVisibility($visibility);
                 $existingEntry->setUid(Episciences_Auth::getUid());
                 Episciences_Page_Manager::update($existingEntry);
             } else {
-                // Créer une nouvelle entrée
+                // Create a new entry
                 $newPage = new Episciences_Page();
                 $newPage->setCode($reviewCode);
                 $newPage->setPageCode($pageCode);
@@ -330,12 +339,15 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
                 $newPage->setUid(Episciences_Auth::getUid());
                 $newPage->setContent([]);
                 Episciences_Page_Manager::add($newPage);
+
+                // Add to preloaded data
+                $this->preloadedPages[$pageCode] = $newPage;
             }
         }
     }
 
     /**
-     * Synchronise une page prédéfinie avec pages table
+     * Sync a predefined page with pages table
      */
     private function syncPredefinedPageToDatabase(
         string $reviewCode,
@@ -343,16 +355,17 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         array $labels,
         array $visibility
     ): void {
-        $existingPage = Episciences_Page_Manager::findByCodeAndPageCode($reviewCode, $pageCode);
+        // Use preloaded pages (bulk loaded in save())
+        $existingPage = $this->preloadedPages[$pageCode] ?? null;
 
-        if ($existingPage->getId() > 0) {
-            // Mettre à jour l'entrée existante
+        if ($existingPage && $existingPage->getId() > 0) {
+            // Update existing entry
             $existingPage->setTitle($labels);
             $existingPage->setVisibility($visibility);
             $existingPage->setUid(Episciences_Auth::getUid());
             Episciences_Page_Manager::update($existingPage);
         } else {
-            // Créer une nouvelle entrée
+            // Create a new entry
             $newPage = new Episciences_Page();
             $newPage->setCode($reviewCode);
             $newPage->setPageCode($pageCode);
@@ -361,6 +374,9 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             $newPage->setUid(Episciences_Auth::getUid());
             $newPage->setContent([]);
             Episciences_Page_Manager::add($newPage);
+
+            // Add to preloaded data
+            $this->preloadedPages[$pageCode] = $newPage;
         }
     }
 

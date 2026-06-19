@@ -2481,5 +2481,7 @@ return array(
 
     // Website pages
     "Le permalien '%s' est réservé aux pages prédéfinies. Veuillez choisir un autre permalien." => "The permalink '%s' is reserved for predefined pages. Please choose a different permalink.",
-    "Codes réservés (non utilisables) :" => "Reserved codes (cannot be used):"
+    "Le permalien '%s' est déjà utilisé par une autre page. Veuillez choisir un autre permalien." => "The permalink '%s' is already used by another page. Please choose a different permalink.",
+    "Codes réservés (non utilisables) :" => "Reserved codes (cannot be used):",
+    "Le titre des pages prédéfinies ne peut pas être modifié" => "The title of predefined pages cannot be modified"
 );

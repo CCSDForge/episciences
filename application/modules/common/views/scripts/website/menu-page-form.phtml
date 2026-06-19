@@ -14,6 +14,7 @@ if ($labelsEl !== null) {
     $labelText = $this->escape($this->translate($this->page->isFolder() ? 'Titre du répertoire' : 'Titre de la page'));
     $errors = $labelsEl->getMessages();
     $hasErrors = !empty($errors);
+    $isPredefined = $this->page instanceof Episciences_Website_Navigation_Page_Predefined;
     ?>
     <fieldset class="form-group <?php echo $hasErrors ? 'has-error' : '' ?>">
         <legend class="control-label col-sm-3"><?php echo $labelText ?> <span class="text-danger">*</span></legend>
@@ -23,13 +24,26 @@ if ($labelsEl !== null) {
                     <span class="input-group-addon" aria-hidden="true">
                         <?php echo $this->escape(strtoupper($lang)) ?>
                     </span>
-                    <input type="text"
+                    <?php if ($isPredefined): ?>
+                    <!-- Hidden field to submit the value since disabled inputs are not sent -->
+                    <input type="hidden"
                            name="<?php echo $this->escape($pageName) ?>[labels][<?php echo $this->escape($lang) ?>]"
+                           value="<?php echo $this->escape($labelsValues[$lang] ?? '') ?>">
+                    <?php endif; ?>
+                    <input type="text"
+                           <?php if (!$isPredefined): ?>
+                           name="<?php echo $this->escape($pageName) ?>[labels][<?php echo $this->escape($lang) ?>]"
+                           <?php endif; ?>
                            id="<?php echo $this->escape($pageName) ?>-labels-<?php echo $this->escape($lang) ?>"
                            value="<?php echo $this->escape($labelsValues[$lang] ?? '') ?>"
-                           class="form-control input-sm"
+                           class="form-control input-sm<?php echo $isPredefined ? ' predefined-title-disabled' : '' ?>"
                            lang="<?php echo $this->escape($lang) ?>"
+                           <?php if ($isPredefined): ?>
+                           disabled="disabled"
+                           title="<?php echo $this->escape($this->translate('Le titre des pages prédéfinies ne peut pas être modifié')) ?>"
+                           <?php else: ?>
                            required="required"
+                           <?php endif; ?>
                            aria-label="<?php echo $labelText ?> (<?php echo $this->escape(strtoupper($lang)) ?>)">
                 </div>
             <?php } ?>

@@ -77,6 +77,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom pages: permalien field now displays list of reserved codes that cannot be used.
 - Custom pages: validation prevents using predefined page codes (about, credits, editorial-board, etc.) as permalien.
 - Custom pages: delete button now correctly removes entry from database.
+- Custom pages: validation prevents using a permalien already in use by another custom page.
+- Predefined pages: title field is now read-only (disabled) in the menu editor.
+- Predefined pages: visibility selection is now disabled (always public).
 
 ### Performances
 
