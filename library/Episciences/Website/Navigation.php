@@ -161,12 +161,12 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     /**
      * @var string|null Preloaded review code for current save operation (bulk loading)
      */
-    private ?string $preloadedReviewCode = null;
+    private ?string $_preloadedReviewCode = null;
 
     /**
      * @var array<string, Episciences_Page> Preloaded pages indexed by page_code for current save operation (bulk loading)
      */
-    private array $preloadedPages = [];
+    private array $_preloadedPages = [];
 
     public function save()
     {
@@ -174,20 +174,20 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         $this->_db->delete($this->_table, 'SID = ' . $this->_sid);
 
         // Préchargement du code de la revue pour éviter les requêtes N+1
-        $this->preloadedReviewCode = null;
+        $this->_preloadedReviewCode = null;
         try {
             $review = Episciences_ReviewsManager::find($this->_sid);
             if ($review) {
-                $this->preloadedReviewCode = $review->getCode();
+                $this->_preloadedReviewCode = $review->getCode();
             }
         } catch (Exception $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
         }
 
         // Préchargement de toutes les pages existantes pour éviter les requêtes N+1
-        $this->preloadedPages = [];
-        if (!empty($this->preloadedReviewCode)) {
-            $this->preloadedPages = Episciences_Page_Manager::findAllByCode($this->preloadedReviewCode);
+        $this->_preloadedPages = [];
+        if (!empty($this->_preloadedReviewCode)) {
+            $this->_preloadedPages = Episciences_Page_Manager::findAllByCode($this->_preloadedReviewCode);
         }
 
         $lang = [];
@@ -211,8 +211,8 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         }
 
         // Nettoyage des données préchargées après la sauvegarde
-        $this->preloadedReviewCode = null;
-        $this->preloadedPages = [];
+        $this->_preloadedReviewCode = null;
+        $this->_preloadedPages = [];
 
         // Enregistrement des traductions dans des fichiers
         $writer = new Ccsd_Lang_Writer($lang);
@@ -252,7 +252,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         }
 
         // Use preloaded review code (bulk loaded in save())
-        if (empty($this->preloadedReviewCode)) {
+        if (empty($this->_preloadedReviewCode)) {
             return;
         }
 
@@ -267,10 +267,10 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             // Custom pages can have any visibility
             $acl = $page->getAcl();
             $visibility = !empty($acl) ? $acl : ['public'];
-            $this->syncCustomPageToDatabase($page, $this->preloadedReviewCode, $pageCode, $labels, $visibility);
+            $this->syncCustomPageToDatabase($page, $this->_preloadedReviewCode, $pageCode, $labels, $visibility);
         } else {
             // Predefined pages are always public
-            $this->syncPredefinedPageToDatabase($this->preloadedReviewCode, $pageCode, $labels, ['public']);
+            $this->syncPredefinedPageToDatabase($this->_preloadedReviewCode, $pageCode, $labels, ['public']);
         }
     }
 
@@ -292,7 +292,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 
         if (!empty($previousPermalien)) {
             // The permalien has changed - find the old entry to update it (use preloaded data)
-            $oldEntry = $this->preloadedPages[$previousPermalien] ?? null;
+            $oldEntry = $this->_preloadedPages[$previousPermalien] ?? null;
 
             if ($oldEntry && $oldEntry->getId() > 0) {
                 // Update existing entry with the new page_code (preserves the ID)
@@ -303,8 +303,8 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
                 Episciences_Page_Manager::updateWithNewPageCode($oldEntry, $previousPermalien);
 
                 // Update preloaded data: remove old key, add new key
-                unset($this->preloadedPages[$previousPermalien]);
-                $this->preloadedPages[$pageCode] = $oldEntry;
+                unset($this->_preloadedPages[$previousPermalien]);
+                $this->_preloadedPages[$pageCode] = $oldEntry;
             } else {
                 // Old entry does not exist, create a new one
                 $newPage = new Episciences_Page();
@@ -317,11 +317,11 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
                 Episciences_Page_Manager::add($newPage);
 
                 // Add to preloaded data
-                $this->preloadedPages[$pageCode] = $newPage;
+                $this->_preloadedPages[$pageCode] = $newPage;
             }
         } else {
             // Permalink has not changed - find existing entry for this custom page (use preloaded data)
-            $existingEntry = $this->preloadedPages[$pageCode] ?? null;
+            $existingEntry = $this->_preloadedPages[$pageCode] ?? null;
 
             if ($existingEntry && $existingEntry->getId() > 0) {
                 // Update existing entry
@@ -341,7 +341,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
                 Episciences_Page_Manager::add($newPage);
 
                 // Add to preloaded data
-                $this->preloadedPages[$pageCode] = $newPage;
+                $this->_preloadedPages[$pageCode] = $newPage;
             }
         }
     }
@@ -356,7 +356,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         array $visibility
     ): void {
         // Use preloaded pages (bulk loaded in save())
-        $existingPage = $this->preloadedPages[$pageCode] ?? null;
+        $existingPage = $this->_preloadedPages[$pageCode] ?? null;
 
         if ($existingPage && $existingPage->getId() > 0) {
             // Update existing entry
@@ -376,7 +376,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
             Episciences_Page_Manager::add($newPage);
 
             // Add to preloaded data
-            $this->preloadedPages[$pageCode] = $newPage;
+            $this->_preloadedPages[$pageCode] = $newPage;
         }
     }
 
