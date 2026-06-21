@@ -7,13 +7,21 @@ class Episciences_Paper_Authors_Repository
     private const JSON_MAX_DEPTH = 512;
 
     /**
+     * @var array<int, array> Static query cache for getAuthorByPaperId
+     */
+    private static array $_cache = [];
+
+    /**
      * @return array raw rows from the paper_authors table
      */
     public static function getAuthorByPaperId(int $paperId): array
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_PAPER_AUTHORS)->where('PAPERID = ?', $paperId);
-        return $db->fetchAssoc($select);
+        if (!isset(self::$_cache[$paperId])) {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $select = $db->select()->from(T_PAPER_AUTHORS)->where('PAPERID = ?', $paperId);
+            self::$_cache[$paperId] = $db->fetchAssoc($select);
+        }
+        return self::$_cache[$paperId];
     }
 
     /**
@@ -84,6 +92,17 @@ class Episciences_Paper_Authors_Repository
                 /** @var Zend_Db_Statement_Interface $result */
                 $result = $db->query($sql . implode(', ', $quotedValues));
                 $affectedRows = $result->rowCount();
+                // Invalidate cache for inserted papers
+                foreach ($authors as $authorData) {
+                    if ($authorData instanceof Episciences_Paper_Authors) {
+                        $pId = $authorData->getPaperId();
+                    } else {
+                        $pId = $authorData['paperId'] ?? $authorData['paperid'] ?? null;
+                    }
+                    if ($pId !== null) {
+                        unset(self::$_cache[(int)$pId]);
+                    }
+                }
             } catch (Exception $e) {
                 trigger_error($e->getMessage(), E_USER_ERROR);
             }
@@ -114,6 +133,10 @@ class Episciences_Paper_Authors_Repository
 
         try {
             $affectedRows = $db->update(T_PAPER_AUTHORS, $values, $where);
+            $pId = $authorEntity->getPaperId();
+            if ($pId !== null) {
+                unset(self::$_cache[$pId]);
+            }
         } catch (Zend_Db_Adapter_Exception $exception) {
             $affectedRows = 0;
             trigger_error($exception->getMessage(), E_USER_ERROR);
@@ -134,6 +157,7 @@ class Episciences_Paper_Authors_Repository
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        unset(self::$_cache[$paperId]);
         return ($db->delete(T_PAPER_AUTHORS, ['paperid = ?' => $paperId]) > 0);
     }
 
