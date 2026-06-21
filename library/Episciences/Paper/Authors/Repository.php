@@ -32,7 +32,7 @@ class Episciences_Paper_Authors_Repository
     }
 
     /**
-     * @return array raw rows from the paper_authors table
+     * @return array<int|string, array<string, mixed>> raw rows from the paper_authors table
      */
     public static function getAuthorByPaperId(int $paperId): array
     {
@@ -54,7 +54,7 @@ class Episciences_Paper_Authors_Repository
     /**
      * Decode the authors JSON for a given paper
      *
-     * @return array decoded authors data
+     * @return array<int, array<string, mixed>> decoded authors data
      * @throws JsonException
      */
     public static function getDecodedAuthors(int $paperId): array
@@ -73,7 +73,7 @@ class Episciences_Paper_Authors_Repository
      * Find the affiliations of a specific author within a paper
      *
      * @param int $authorIndex 0-based index of the author in the JSON array
-     * @return array|string affiliations array, or empty string if not found
+     * @return array<int, mixed>|string affiliations array, or empty string if not found
      * @throws JsonException
      */
     public static function findAffiliationsOneAuthorByPaperId(int $paperId, int $authorIndex): array|string
@@ -96,7 +96,7 @@ class Episciences_Paper_Authors_Repository
     /**
      * Insert one or more author records
      *
-     * @param array $authors array of Episciences_Paper_Authors instances or associative arrays
+     * @param array<int, array<string, mixed>|Episciences_Paper_Authors> $authors array of Episciences_Paper_Authors instances or associative arrays
      * @return int number of affected rows
      */
     public static function insert(array $authors): int
@@ -212,7 +212,7 @@ class Episciences_Paper_Authors_Repository
             $formattedAuthors[] = [
                 'fullname' => $fullname,
                 'given' => $nameParts[1] ?? null,
-                'family' => $nameParts[0] ?? null
+                'family' => $nameParts[0]
             ];
         }
 

@@ -37,6 +37,8 @@ class Episciences_Paper_Projects_Repository
 
     /**
      * Retrieve all projects for a given paper ID, with source name joined.
+     *
+     * @return array<int|string, array<string, mixed>> raw rows
      */
     public static function getByPaperId(int $paperId): array
     {
@@ -64,6 +66,8 @@ class Episciences_Paper_Projects_Repository
 
     /**
      * Retrieve projects for a given paper ID and source ID.
+     *
+     * @return array<int|string, array<string, mixed>> raw rows
      */
     public static function getByPaperIdAndSourceId(int $paperId, int $sourceId): array
     {
@@ -88,6 +92,7 @@ class Episciences_Paper_Projects_Repository
     /**
      * Retrieve de-duplicated projects for a given paper ID.
      *
+     * @return array<int, array<string, mixed>> de-duplicated projects
      * @throws JsonException
      */
     public static function getWithDuplicateRemoved(int $paperId): array
