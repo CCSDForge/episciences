@@ -491,7 +491,7 @@ class Episciences_OpenAireResearchGraphTools
             }
 
             $apiData = self::normalizeApiData($fileFound);
-            $authorRecords = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
+            $authorRecords = Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId);
 
             return self::updatePaperAuthors($authorRecords, $apiData, $paperId);
         } catch (JsonException $e) {
