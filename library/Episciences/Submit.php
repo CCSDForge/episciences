@@ -2479,7 +2479,7 @@ class Episciences_Submit
 
             if ($key === Episciences_Repositories_Common::CONTRIB_ENRICHMENT) {
 
-                $authors = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
+                $authors = Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId);
 
                 if (empty($authors)) { // to prevent manual changes being overwritten.
 
