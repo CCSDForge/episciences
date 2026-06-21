@@ -109,4 +109,25 @@ class Episciences_User_AssignmentsManagerTest extends TestCase
         $result = Episciences_User_AssignmentsManager::updateUid();
         $this->assertSame(0, $result);
     }
+
+    // -------------------------------------------------------------------------
+    // Cache pool tests
+    // -------------------------------------------------------------------------
+
+    public function testGetCachePoolReturnsArrayAdapterByDefault(): void
+    {
+        $pool = Episciences_User_AssignmentsManager::getCachePool();
+        $this->assertInstanceOf(\Symfony\Component\Cache\Adapter\ArrayAdapter::class, $pool);
+    }
+
+    public function testSetCachePoolChangesPoolInstance(): void
+    {
+        $mockPool = $this->createMock(\Psr\Cache\CacheItemPoolInterface::class);
+        Episciences_User_AssignmentsManager::setCachePool($mockPool);
+
+        $this->assertSame($mockPool, Episciences_User_AssignmentsManager::getCachePool());
+
+        // Reset to default pool for other tests
+        Episciences_User_AssignmentsManager::setCachePool(new \Symfony\Component\Cache\Adapter\ArrayAdapter());
+    }
 }

@@ -509,4 +509,25 @@ class Episciences_CommentsManagerTest extends TestCase
         // This test documents the design; the DB-reaching path is an integration concern.
         $this->assertTrue(true); // assertion to avoid risky-test warning
     }
+
+    // ---------------------------------------------------------------
+    // Cache pool tests
+    // ---------------------------------------------------------------
+
+    public function testGetCachePoolReturnsArrayAdapterByDefault(): void
+    {
+        $pool = Episciences_CommentsManager::getCachePool();
+        $this->assertInstanceOf(\Symfony\Component\Cache\Adapter\ArrayAdapter::class, $pool);
+    }
+
+    public function testSetCachePoolChangesPoolInstance(): void
+    {
+        $mockPool = $this->createMock(\Psr\Cache\CacheItemPoolInterface::class);
+        Episciences_CommentsManager::setCachePool($mockPool);
+
+        $this->assertSame($mockPool, Episciences_CommentsManager::getCachePool());
+
+        // Reset to default pool for other tests
+        Episciences_CommentsManager::setCachePool(new \Symfony\Component\Cache\Adapter\ArrayAdapter());
+    }
 }
