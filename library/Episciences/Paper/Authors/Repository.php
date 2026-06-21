@@ -186,7 +186,7 @@ class Episciences_Paper_Authors_Repository
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         self::getCachePool()->deleteItem('authors_paper_' . $paperId);
-        return ($db->delete(T_PAPER_AUTHORS, ['paperid = ?' => $paperId]) > 0);
+        return $db->delete(T_PAPER_AUTHORS, ['paperid = ?' => $paperId]) > 0;
     }
 
     /**
