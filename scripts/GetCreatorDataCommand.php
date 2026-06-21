@@ -130,7 +130,7 @@ class GetCreatorDataCommand extends Command
                 $identifier = trim($value['IDENTIFIER']);
                 $version    = (int) $value['VERSION'];
 
-                $selectAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
+                $selectAuthor = Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId);
                 $decodeAuthor = [];
                 foreach ($selectAuthor as $authorsDb) {
                     $decodeAuthor = json_decode($authorsDb['authors'], true, 512, JSON_THROW_ON_ERROR);
