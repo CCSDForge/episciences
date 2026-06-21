@@ -7,10 +7,9 @@ class Episciences_Paper_Authors_Repository
     private const JSON_MAX_DEPTH = 512;
 
     /**
-     * @param int|string $paperId
      * @return array raw rows from the paper_authors table
      */
-    public static function getAuthorByPaperId($paperId): array
+    public static function getAuthorByPaperId(int $paperId): array
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->from(T_PAPER_AUTHORS)->where('PAPERID = ?', $paperId);
