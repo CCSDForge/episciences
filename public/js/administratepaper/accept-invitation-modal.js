@@ -63,7 +63,7 @@ function submit() {
                 }),
             ]).then(function (results) {
                 // Server-rendered HTML from same-origin PHP views; user data is escaped via $this->escape().
-                reviewers.innerHTML = results[0]; // eslint-disable-line no-unsanitized/property
+                reviewers.outerHTML = results[0]; // eslint-disable-line no-unsanitized/property
                 logs.innerHTML = results[1]; // eslint-disable-line no-unsanitized/property
             });
         })

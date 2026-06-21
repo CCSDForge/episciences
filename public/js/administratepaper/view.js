@@ -159,6 +159,16 @@ $(document).ready(function () {
             });
         });
 
+    // Reviewer context menu — event delegation survives AJAX replacement of #reviewers
+    $(document).on('click', '#reviewers .reviewer .popover-link', function () {
+        getReviewerMenu(this);
+    });
+
+    $(document).on('click', '#reviewers .go_to_rating', function () {
+        var uid = $(this).data('uid');
+        $('#rating-' + uid).collapse('show');
+    });
+
     // logs ******************************
 
     // search in logs (input)
