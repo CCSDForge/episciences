@@ -152,11 +152,13 @@ class Episciences_User_Assignment
         // Enregistrement en BDD
         if ($this->getId()) {
             $db->update(T_ASSIGNMENTS, $values, array('ID = ?' => $this->getId()));
+            Episciences_User_AssignmentsManager::getCachePool()->clear();
             return true;
         }
 
         if ($db->insert(T_ASSIGNMENTS, $values)) {
             $this->setId((int)$db->lastInsertId());
+            Episciences_User_AssignmentsManager::getCachePool()->clear();
             return true;
         }
 
