@@ -1,7 +1,31 @@
 <?php
 
+use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+
 class Episciences_User_AssignmentsManager
 {
+    private static ?CacheItemPoolInterface $_cachePool = null;
+
+    /**
+     * Set the cache pool (useful for dependency injection in tests)
+     */
+    public static function setCachePool(CacheItemPoolInterface $cachePool): void
+    {
+        self::$_cachePool = $cachePool;
+    }
+
+    /**
+     * Get the cache pool (ArrayAdapter by default)
+     */
+    public static function getCachePool(): CacheItemPoolInterface
+    {
+        if (self::$_cachePool === null) {
+            self::$_cachePool = new ArrayAdapter();
+        }
+        return self::$_cachePool;
+    }
+
     /**
      * fetch user assignments list (default: only fetch most recent assignment for each user)
      * @param array $params
@@ -10,43 +34,52 @@ class Episciences_User_AssignmentsManager
      */
     public static function getList(array $params, $fetchLastOnly = true)
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $cachePool = self::getCachePool();
+        $cacheKey = 'assignments_list_' . md5(serialize($params) . '_' . ($fetchLastOnly ? '1' : '0'));
+        $cacheItem = $cachePool->getItem($cacheKey);
 
-        $subquery = $db->select()
-            ->from(T_ASSIGNMENTS, array('ITEMID', 'MAX(`WHEN`) AS WHEN'))
-            ->group('ITEMID');
+        if (!$cacheItem->isHit()) {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $select = $db->select()
-            ->from(array('a' => T_ASSIGNMENTS), '*');
+            $subquery = $db->select()
+                ->from(T_ASSIGNMENTS, array('ITEMID', 'MAX(`WHEN`) AS WHEN'))
+                ->group('ITEMID');
+
+            $select = $db->select()
+                ->from(array('a' => T_ASSIGNMENTS), '*');
 
 
-        foreach ($params as $param => $value) {
-            if (is_array($value)) {
-                if (strtolower($param) !== 'status') {
-                    $subquery->where("$param IN (?)", $value);
+            foreach ($params as $param => $value) {
+                if (is_array($value)) {
+                    if (strtolower($param) !== 'status') {
+                        $subquery->where("$param IN (?)", $value);
+                    }
+                    $select->where("$param IN (?)", $value);
+                } else {
+                    if (strtolower($param) !== 'status') {
+                        $subquery->where("$param = ?", $value);
+                    }
+                    $select->where("$param = ?", $value);
                 }
-                $select->where("$param IN (?)", $value);
-            } else {
-                if (strtolower($param) !== 'status') {
-                    $subquery->where("$param = ?", $value);
-                }
-                $select->where("$param = ?", $value);
             }
+
+            if ($fetchLastOnly) {
+                $select->join(array('b' => $subquery), 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', array());
+            }
+
+            $result = array();
+            $data = $db->fetchAssoc($select);
+
+            foreach ($data as $assignment) {
+                $oAssignment = new Episciences_User_Assignment($assignment);
+                $result[$oAssignment->getItemid()] = $oAssignment;
+            }
+
+            $cacheItem->set($result);
+            $cachePool->save($cacheItem);
         }
 
-        if ($fetchLastOnly) {
-            $select->join(array('b' => $subquery), 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', array());
-        }
-
-        $result = array();
-        $data = $db->fetchAssoc($select);
-
-        foreach ($data as $assignment) {
-            $oAssignment = new Episciences_User_Assignment($assignment);
-            $result[$oAssignment->getItemid()] = $oAssignment;
-        }
-
-        return $result;
+        return $cacheItem->get();
     }
 
     /**
@@ -68,18 +101,28 @@ class Episciences_User_AssignmentsManager
      */
     public static function find(array $params)
     {
+        $cachePool = self::getCachePool();
+        $cacheKey = 'assignments_find_' . md5(serialize($params));
+        $cacheItem = $cachePool->getItem($cacheKey);
 
-        if (null == $sql = self::findQuery($params, $db = Zend_Db_Table_Abstract::getDefaultAdapter())) {
-            return false;
+        if (!$cacheItem->isHit()) {
+            if (null == $sql = self::findQuery($params, $db = Zend_Db_Table_Abstract::getDefaultAdapter())) {
+                return false;
+            }
+
+            $data = $db->fetchRow($sql);
+
+            if (empty($data)) {
+                $result = false;
+            } else {
+                $result = new Episciences_User_Assignment($data);
+            }
+
+            $cacheItem->set($result);
+            $cachePool->save($cacheItem);
         }
 
-        $data = $db->fetchRow($sql);
-
-        if (empty($data)) {
-            return false;
-        }
-
-        return new Episciences_User_Assignment($data);
+        return $cacheItem->get();
     }
 
     /**
@@ -99,7 +142,11 @@ class Episciences_User_AssignmentsManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $data['UID'] = $newUid;
         $where['UID = ?'] = $oldUid;
-        return $db->update(T_ASSIGNMENTS, $data, $where);
+        $affected = $db->update(T_ASSIGNMENTS, $data, $where);
+        if ($affected > 0) {
+            self::getCachePool()->clear();
+        }
+        return $affected;
     }
 
     /**
@@ -109,20 +156,28 @@ class Episciences_User_AssignmentsManager
      */
     public static function findAll($params)
     {
-        $sql = self::findQuery($params, $db = Zend_Db_Table_Abstract::getDefaultAdapter());
+        $cachePool = self::getCachePool();
+        $cacheKey = 'assignments_findall_' . md5(serialize($params));
+        $cacheItem = $cachePool->getItem($cacheKey);
 
-        /** @var  Episciences_User_Assignment[] $assignments */
-        $assignments = [];
+        if (!$cacheItem->isHit()) {
+            $sql = self::findQuery($params, $db = Zend_Db_Table_Abstract::getDefaultAdapter());
 
-        if (null === $sql) {
-            return false;
+            if (null === $sql) {
+                return false;
+            }
+
+            /** @var  Episciences_User_Assignment[] $assignments */
+            $assignments = [];
+            foreach ($db->fetchAll($sql) as $value) {
+                $assignments[] = new Episciences_User_Assignment($value);
+            }
+
+            $cacheItem->set($assignments);
+            $cachePool->save($cacheItem);
         }
 
-        foreach ($db->fetchAll($sql) as $value) {
-            $assignments[] = new Episciences_User_Assignment($value);
-        }
-
-        return $assignments;
+        return $cacheItem->get();
     }
 
     /**
@@ -184,8 +239,11 @@ class Episciences_User_AssignmentsManager
             $where = $criteria;
         }
 
-        // Returns true if at least one row was deleted
-        return $db->delete(T_ASSIGNMENTS, $where) > 0;
+        $affected = $db->delete(T_ASSIGNMENTS, $where) > 0;
+        if ($affected) {
+            self::getCachePool()->clear();
+        }
+        return $affected;
     }
 
     public static function reassignPaperCoAuthors(array $coAuthors, $newPaper) {
