@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+
 /**
  * DB read/write layer for the paper_projects table.
  * No HTTP, no HTML, no cache — single responsibility.
@@ -11,21 +14,52 @@ class Episciences_Paper_Projects_Repository
     private const JSON_DECODE_FLAGS = JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
     private const JSON_MAX_DEPTH    = 512;
 
+    private static ?CacheItemPoolInterface $_cachePool = null;
+
+    /**
+     * Set the cache pool (useful for dependency injection in tests)
+     */
+    public static function setCachePool(CacheItemPoolInterface $cachePool): void
+    {
+        self::$_cachePool = $cachePool;
+    }
+
+    /**
+     * Get the cache pool (ArrayAdapter by default)
+     */
+    public static function getCachePool(): CacheItemPoolInterface
+    {
+        if (self::$_cachePool === null) {
+            self::$_cachePool = new ArrayAdapter();
+        }
+        return self::$_cachePool;
+    }
+
     /**
      * Retrieve all projects for a given paper ID, with source name joined.
      */
     public static function getByPaperId(int $paperId): array
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()
-            ->from(['project' => T_PAPER_PROJECTS])
-            ->joinLeft(
-                ['source_paper' => T_PAPER_METADATA_SOURCES],
-                'project.source_id = source_paper.id',
-                ['source_id_name' => 'source_paper.name']
-            )
-            ->where('PAPERID = ?', $paperId);
-        return $db->fetchAssoc($select);
+        $cachePool = self::getCachePool();
+        $cacheKey = 'projects_paper_' . $paperId;
+        $cacheItem = $cachePool->getItem($cacheKey);
+
+        if (!$cacheItem->isHit()) {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $select = $db->select()
+                ->from(['project' => T_PAPER_PROJECTS])
+                ->joinLeft(
+                    ['source_paper' => T_PAPER_METADATA_SOURCES],
+                    'project.source_id = source_paper.id',
+                    ['source_id_name' => 'source_paper.name']
+                )
+                ->where('PAPERID = ?', $paperId);
+            $data = $db->fetchAssoc($select);
+            $cacheItem->set($data);
+            $cachePool->save($cacheItem);
+        }
+
+        return $cacheItem->get();
     }
 
     /**
@@ -33,12 +67,22 @@ class Episciences_Paper_Projects_Repository
      */
     public static function getByPaperIdAndSourceId(int $paperId, int $sourceId): array
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()
-            ->from(T_PAPER_PROJECTS)
-            ->where('PAPERID = ?', $paperId)
-            ->where('source_id = ?', $sourceId);
-        return $db->fetchAssoc($select);
+        $cachePool = self::getCachePool();
+        $cacheKey = 'projects_paper_' . $paperId . '_source_' . $sourceId;
+        $cacheItem = $cachePool->getItem($cacheKey);
+
+        if (!$cacheItem->isHit()) {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $select = $db->select()
+                ->from(T_PAPER_PROJECTS)
+                ->where('PAPERID = ?', $paperId)
+                ->where('source_id = ?', $sourceId);
+            $data = $db->fetchAssoc($select);
+            $cacheItem->set($data);
+            $cachePool->save($cacheItem);
+        }
+
+        return $cacheItem->get();
     }
 
     /**
@@ -90,7 +134,20 @@ class Episciences_Paper_Projects_Repository
 
         /** @var Zend_Db_Statement_Interface $result */
         $result = $db->query($sql);
-        return $result->rowCount();
+        $rowCount = $result->rowCount();
+
+        // Invalidate cache
+        $pId = $project->getPaperId();
+        if ($pId !== null) {
+            $cachePool = self::getCachePool();
+            $cachePool->deleteItem('projects_paper_' . $pId);
+            $sId = $project->getSourceId();
+            if ($sId !== null) {
+                $cachePool->deleteItem('projects_paper_' . $pId . '_source_' . $sId);
+            }
+        }
+
+        return $rowCount;
     }
 
     /**
@@ -107,6 +164,19 @@ class Episciences_Paper_Projects_Repository
         ];
         $values = ['funding' => $project->getFunding()];
 
-        return (int) $db->update(T_PAPER_PROJECTS, $values, $where);
+        $affectedRows = (int) $db->update(T_PAPER_PROJECTS, $values, $where);
+
+        // Invalidate cache
+        $pId = $project->getPaperId();
+        if ($pId !== null) {
+            $cachePool = self::getCachePool();
+            $cachePool->deleteItem('projects_paper_' . $pId);
+            $sId = $project->getSourceId();
+            if ($sId !== null) {
+                $cachePool->deleteItem('projects_paper_' . $pId . '_source_' . $sId);
+            }
+        }
+
+        return $affectedRows;
     }
 }
