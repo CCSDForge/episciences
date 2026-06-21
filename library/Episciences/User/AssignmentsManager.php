@@ -106,16 +106,13 @@ class Episciences_User_AssignmentsManager
         $cacheItem = $cachePool->getItem($cacheKey);
 
         if (!$cacheItem->isHit()) {
-            if (null == $sql = self::findQuery($params, $db = Zend_Db_Table_Abstract::getDefaultAdapter())) {
-                return false;
-            }
+            $sql = self::findQuery($params, $db = Zend_Db_Table_Abstract::getDefaultAdapter());
 
-            $data = $db->fetchRow($sql);
-
-            if (empty($data)) {
+            if ($sql === null) {
                 $result = false;
             } else {
-                $result = new Episciences_User_Assignment($data);
+                $data = $db->fetchRow($sql);
+                $result = empty($data) ? false : new Episciences_User_Assignment($data);
             }
 
             $cacheItem->set($result);
@@ -163,17 +160,17 @@ class Episciences_User_AssignmentsManager
         if (!$cacheItem->isHit()) {
             $sql = self::findQuery($params, $db = Zend_Db_Table_Abstract::getDefaultAdapter());
 
-            if (null === $sql) {
-                return false;
+            if ($sql === null) {
+                $result = false;
+            } else {
+                /** @var Episciences_User_Assignment[] $result */
+                $result = [];
+                foreach ($db->fetchAll($sql) as $value) {
+                    $result[] = new Episciences_User_Assignment($value);
+                }
             }
 
-            /** @var  Episciences_User_Assignment[] $assignments */
-            $assignments = [];
-            foreach ($db->fetchAll($sql) as $value) {
-                $assignments[] = new Episciences_User_Assignment($value);
-            }
-
-            $cacheItem->set($assignments);
+            $cacheItem->set($result);
             $cachePool->save($cacheItem);
         }
 
