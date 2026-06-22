@@ -49,7 +49,8 @@ $enrichmentFundings = $paper->getFundings();
 $enrichmentLinkedData = $paper->getLinkedData();
 $bibliographicalRef = $paper->getBibRef();
 
-$interWorkRelationship = Episciences_Paper_Dataset::getFlattenedRelationships();
+$interWorkRelationship = \Episciences\Paper\Relationship::getFlattenedRelationships();
+$intraWorkRelationship = \Episciences\Paper\Relationship::getFlattenedRelationshipsIntraWorkRelation();
 
 $issn = Ccsd_View_Helper_FormatIssn::FormatIssn($journal->getSetting(Episciences_Review::SETTING_ISSN));
 
@@ -317,9 +318,12 @@ $paperLanguageRaw = $this->paperLanguage;
                         if (!isset($linkedData['relationship'])) {
                             $linkedData['relationship'] = 'references';
                         }
+                        $relationshipType = lcfirst($linkedData['relationship']);
+                        $isIntra = in_array($relationshipType, $intraWorkRelationship, true);
+                        $isInter = in_array($relationshipType, $interWorkRelationship, true);
                         ?>
 
-                        <?php if (in_array(lcfirst($linkedData['relationship']), $interWorkRelationship, true)) : ?>
+                        <?php if ($isIntra || $isInter) : ?>
                             <related_item>
                                 <?php
                                 $identifierType = strtolower($linkedData['link']);
@@ -339,9 +343,15 @@ $paperLanguageRaw = $this->paperLanguage;
                                     $linkedData['value'] = Episciences_DoiTools::cleanDoi( $linkedData['value']);
                                 }
                                 ?>
-                                <inter_work_relation
-                                        identifier-type="<?= $this->escape($identifierType) ?>"
-                                        relationship-type="<?= $this->escape(lcfirst($linkedData['relationship'])) ?>"><?php echo $this->escape($linkedData['value']) ?></inter_work_relation>
+                                <?php if ($isIntra) : ?>
+                                    <intra_work_relation
+                                            identifier-type="<?= $this->escape($identifierType) ?>"
+                                            relationship-type="<?= $this->escape($relationshipType) ?>"><?php echo $this->escape($linkedData['value']) ?></intra_work_relation>
+                                <?php else : ?>
+                                    <inter_work_relation
+                                            identifier-type="<?= $this->escape($identifierType) ?>"
+                                            relationship-type="<?= $this->escape($relationshipType) ?>"><?php echo $this->escape($linkedData['value']) ?></inter_work_relation>
+                                <?php endif; ?>
                             </related_item>
                         <?php endif; ?>
                     <?php } ?>

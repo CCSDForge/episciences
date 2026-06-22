@@ -39,65 +39,7 @@ class Episciences_Paper_Dataset
         self::DOI_CODE => self::DOI_CODE,
         self::HAL_LINKED_DATA_SOFTWARE_HERITAGE_CODE => 'SWHID'
     ];
-    protected static array $supportedRelationShips = [
-        "Basis" => [
-            "isBasedOn",
-            "isBasisFor",
-            "basedOnData",
-            "isDataBasisFor"
-        ],
-        "Comment" => [
-            "isCommentOn",
-            "hasComment"
-        ],
-        "Continuation" => [
-            "isContinuedBy",
-            "continues"
-        ],
-        "Derivation" => [
-            "isDerivedFrom",
-            "hasDerivation"
-        ],
-        "Documentation" => [
-            "isDocumentedBy",
-            "documents"
-        ],
-        "Funding" => [
-            "isFinancedBy"
-        ],
-        "Part" => [
-            "isPartOf",
-            "hasPart"
-        ],
-        "Peer review" => [
-            "isReviewOf",
-            "hasReview"
-        ],
-        "References" => [
-            "references",
-            "isReferencedBy"
-        ],
-        "Related material" => [
-            "hasRelatedMaterial",
-            "isRelatedMaterial"
-        ],
-        "Reply" => [
-            "isReplyTo",
-            "hasReply"
-        ],
-        "Requirement" => [
-            "requires",
-            "isRequiredBy"
-        ],
-        "Software compilation" => [
-            "isCompiledBy",
-            "compiles"
-        ],
-        "Supplement" => [
-            "isSupplementTo",
-            "isSupplementedBy"
-        ]
-    ];
+
     /**
      * @var int
      */
@@ -161,11 +103,27 @@ class Episciences_Paper_Dataset
     }
 
     /**
-     * @return array
+     * @return array<string, array<int, string>>
      */
     public static function getSupportedRelationShips(): array
     {
-        return self::$supportedRelationShips;
+        return \Episciences\Paper\Relationship::getSupportedRelationShips();
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    public static function getSupportedRelationsShipsIntraWorkRelation(): array
+    {
+        return \Episciences\Paper\Relationship::getSupportedRelationsShipsIntraWorkRelation();
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    public static function getDisplayedRelationsShipsIntraWorkRelation(): array
+    {
+        return \Episciences\Paper\Relationship::getDisplayedRelationsShipsIntraWorkRelation();
     }
 
     public function getMetatextCitation($format = 'rawText'): string
@@ -482,13 +440,29 @@ class Episciences_Paper_Dataset
         return $metaDataSource->getName();
     }
 
-    public static function removeFirstLevel(array $inputArray): array {
-        // Flatten the first level, only keeping the sub-level values
-        return array_merge(...array_values($inputArray));
+    /**
+     * @param array<string|int, array<int, string>> $inputArray
+     * @return array<int, string>
+     */
+    public static function removeFirstLevel(array $inputArray): array
+    {
+        return \Episciences\Paper\Relationship::removeFirstLevel($inputArray);
     }
 
-    public static function getFlattenedRelationships(): array {
-        return self::removeFirstLevel(self::$supportedRelationShips);
+    /**
+     * @return array<int, string>
+     */
+    public static function getFlattenedRelationships(): array
+    {
+        return \Episciences\Paper\Relationship::getFlattenedRelationships();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function getFlattenedRelationshipsIntraWorkRelation(): array
+    {
+        return \Episciences\Paper\Relationship::getFlattenedRelationshipsIntraWorkRelation();
     }
 
 }
