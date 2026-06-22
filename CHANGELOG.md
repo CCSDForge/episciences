@@ -17,46 +17,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Performances
-
-- Eliminated N+1 query patterns on paper list pages by batch-loading users and roles in chunks of 1000 and priming a request-level identity map cache before render loops (`AdministratepaperController`, `UsersManager`).
-- `loadRoles()` is now lazy: returns immediately when roles are already loaded, avoiding redundant per-user DB queries in callers such as `AdministratemailController::getcontactsAction()`.
-
 ### Added
+
+- [#1061](https://github.com/CCSDForge/episciences/pull/1061) Allow secretaries and editors to accept a review invitation on behalf of the reviewer.
 - [#937](https://github.com/CCSDForge/episciences/issues/937) Admin paper list (`/administratepaper/list`): columns **Reviewers**, **Editors**, **Copy editors**, and **Contributor** are now sortable server-side.
 - [#1058](https://github.com/CCSDForge/episciences/pull/1058) OAI-PMH ListSets: add `<setDescription>` with Dublin Core metadata (title, publisher, date, description, subjects) for journal sets.
+- Volume and section reordering: added editable position inputs to reorder them directly by typing numbers.
+- Volume settings: added copy-to-clipboard buttons for volume access codes in the volumes list and edit pages.
+- Website settings: added support for journal description, keywords, and creation year fields.
+- MIME type: added support check for `file` binary presence on the system in `FileBinaryMimeTypeGuesser`.
+
+### Changed
+
+- Migrated ROR (Research Organization Registry) API integration to v2.
+- Upgraded `symfony/cache` to `^6.4` and updated `shardj/zf1-future` dependencies.
+- Sitemap generation:
+  - Added per-language URL prefixes based on the `WEBSITE_SETTINGS` configuration.
+  - Added individual volume and section pages (`/volumes/{vid}` and `/sections/{sid}`) to the sitemap.
+  - Replaced static `changefreq` and `priority` elements with real last modification dates (`lastmod`).
+- Replaced jQuery UI sortable with SortableJS for better volume and section reordering behavior and touch support.
+- Modernized section list datatable from DataTables 1.9 to 1.10 API.
+- [#952](https://github.com/CCSDForge/episciences/issues/952) Add EiC, Editorial Sec and Administrators to recipients of "New answer to your revision request: comment" (paper_revision_answer).
+- [#1038](https://github.com/CCSDForge/episciences/issues/1038) It is now possible to publish the article at any stage of the editorial process if it is accepted.
+- Paper admin: modal save now does a targeted AJAX refresh instead of a full page reload.
+- Paper admin: other volumes form replaced by a Tom Select `<select multiple>` (`checkbox_options` plugin).
+- Paper admin (i18n): "Master volume" renamed to "Main volume".
+- Admin paper list: filter panel reorganised into 3 rows — Status/Editors/Reviewers on the first row, Volume+DOI on the second, Section+Repositories on the third; Volume and Section are wider (`col-sm-8`) to accommodate long titles.
+- Admin paper list: removed redundant page description blockquote.
+- [#998](https://github.com/CCSDForge/episciences/issues/998) Improved COI declaration button labels: "Continue (No conflict of interest)" / "Stop (I have a conflict of interest)".
+- Modernized `Ccsd_Form_Filter_Clean` filter and `Ccsd_Form_Validate_NotSame` validator (introduced strict typing, comprehensive type hinting, and robust recursive array filtering for the `Clean` filter).
+
 ### Performances
 
+- Implemented PSR-6 request-scoped caching for database entities (authors, projects, comments, and user assignments repositories) to reduce database queries.
+- Eliminated N+1 query patterns on paper list pages by batch-loading users and roles in chunks of 1000 and priming a request-level identity map cache before render loops (`AdministratepaperController`, `UsersManager`).
+- `loadRoles()` is now lazy: returns immediately when roles are already loaded, avoiding redundant per-user DB queries in callers such as `AdministratemailController::getcontactsAction()`.
 - [#937](https://github.com/CCSDForge/episciences/issues/937) Sorting by Reviewers / Editors / Copy editors uses a derived-table `LEFT JOIN` with `MIN(SCREEN_NAME)` aggregation (single evaluation per query) rather than a correlated subquery.
 - Paper admin: volume/section assignment now uses a native `<dialog>` modal with Tom Select; `paper-assignment-modal.js` (vanilla JS) replaces `volume-assignment.js` and `section-assignment.js`.
 - Paper admin: Tom Select `dropdown_input` and `remove_button` plugins in modal selects.
 - Admin paper list: Tom Select search on all 7 filter selects (Status, Volume, Section, Editors, Reviewers, DOI, Repositories) — type to filter within long lists, animated chevron indicates dropdown, placeholder shows "All" when nothing is selected.
-
-### Changed
-- [#952](https://github.com/CCSDForge/episciences/issues/952) Add EiC, Editorial Sec and Administrators to receipients of "New answer to your revision request: comment" (paper_revision_answer)
-- [#1038](https://github.com/CCSDForge/episciences/issues/1038) It is now possible to publish the article at any stage of the editorial process if it is accepted[RT##287093].
-- [RT##287093]: It is now possible to publish the article at any stage of the editorial process if it is accepted.
-- Paper admin: assignment buttons replaced by pencil icon (`fa-pen-to-square`); glyphicons removed.
-- Paper admin: modal save now does a targeted AJAX refresh instead of a full page reload.
-- Paper admin: other volumes form replaced by a Tom Select `<select multiple>` (`checkbox_options` plugin).
-- Paper admin (i18n): "Master volume" renamed to "Main volume".
-- Paper admin: section edit button moved before label/name, consistent with volumes layout.
-- Paper admin: volume sort button uses `fa-arrow-down-1-9` icon with a descriptive tooltip.
-- Admin paper list: filter panel reorganised into 3 rows — Status/Editors/Reviewers on the first row, Volume+DOI on the second, Section+Repositories on the third; Volume and Section are wider (`col-sm-8`) to accommodate long titles.
-- Admin paper list: removed redundant page description blockquote.
+- Avoid repeated `REVIEW_SETTING` queries in a single request by caching loaded review settings on the current review object and sharing cached review instances between `RVID` and `RVCODE` lookups.
 
 ### Fixed
+
+- [#1035](https://github.com/CCSDForge/episciences/issues/1035) Fixed an issue where editors were unable to proceed to the "copy editing" stage because the transition button was hidden behind an incorrect conditional block in the status dropdown menu.
 - Prevent the submission of a dataset or software that does not include a descriptor.
 - [#1048](https://github.com/CCSDForge/episciences/issues/1048) Volume metadata: quotes in preface/content caused JSON parsing error when editing. Removed `double_encode=false` from `form.phtml` display while keeping it in `Volume.php` save to prevent double-encoding (#962).
-- [#1039](https://github.com/CCSDForge/episciences/issues/1039) The MIME type for docx files is detected as "application/octet-stream"
-- Application error: Call to a member function getVol_num() on bool
-
-- `scripts/update_papers.php` : fixed issue where importing a new version (e.g. version 2) of an existing paper (e.g. version 1) overwrote the version 1 entry in the database instead of creating a new version record.
-
+- [#1039](https://github.com/CCSDForge/episciences/issues/1039) The MIME type for docx files is detected as "application/octet-stream".
+- Fixed crash (`TypeError`) in PHP 8.1 in `Episciences_Form_Validate_MimeType` when the file parameter is not an array.
+- Fixed the `%type%` placeholder not being included in validation error messages when file upload failed due to incorrect MIME type.
+- Fixed the `%%SUBMISSION_DATE%%` email tag using the paper creation/update timestamp instead of the actual initial submission date.
+- Fixed volume editor list not refreshing after save in volume settings.
+- Fixed section refresh updating all rows instead of only the changed paper row in the section list.
+- Fixed deadline modal submitting form natively instead of via AJAX.
+- Fixed report attachment deletion redirecting reviewers away from the rating page.
+- Fixed reviewer role not being saved when accepting a review invitation.
+- Validated comment attachment extensions to reject disallowed file types.
+- Trimmed visit log entries by keeping only client IP and proxy checks to reduce IPv6 log entry size.
+- Fixed Application Error when calling `Episciences_Submit::assignEditors()` where `$sid` or `$vid` arguments were passed as string instead of integer or null.
+- Application error: Call to a member function getVol_num() on bool.
+- `scripts/update_papers.php`: fixed issue where importing a new version (e.g. version 2) of an existing paper (e.g. version 1) overwrote the version 1 entry in the database instead of creating a new version record.
 - BibTeX export: month field was rendered in the user's UI locale (e.g. `mai` for French users) instead of English (`May`); locale is now forced to `en` in the BibTeX template.
-
 - [#1030](https://github.com/CCSDForge/episciences/issues/1030): missing "Ask the author for the sources (copy editing by the journal): because the "Allow post - acceptance revisions of articles" option is used, which alters the workflow steps, as it is assumed that the journal already has the source files. At this stage, it is now possible to request the sources.
-
 - Paper admin: closed modal remained visible (`display:flex` SCSS overrode native `dialog:not([open])` behaviour).
 - Paper admin: Tom Select selected items now styled as blue pills in the modal.
 - Paper admin: translation failure on volume-alert text (curly apostrophe in `views.php` vs plain ASCII in template).
@@ -64,7 +86,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Paper admin: article position badge wrapped in a Bootstrap `label-default` span with an accessible tooltip.
 - Paper admin: main volume cell not updated in list after remove+reassign (stale `btn.dataset.vid` + missing fallback in `refreshallmastervolumesAction` for papers without a position row).
 - Admin paper list: `checkFilterParams` crashed with `TypeError: Cannot read properties of null (reading 'length')` when clicking "Filter" with Tom Select multiselects returning `null` for empty selections; fallback to `['']` restores expected behaviour.
-
 - [#930](https://github.com/CCSDForge/episciences/issues/930) New email template tags for volume metadata: `%%VOLUME_NUMBER%%`, `%%VOLUME_YEAR%%`, and `%%VOLUME_TYPE%%`.
 - Mailing lists: added `created_at` and `updated_at` columns to the `mailing_lists` table.
 - Mailing lists: four MySQL triggers propagate `updated_at` to the parent row when individual members or roles are modified.
@@ -72,18 +93,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mailing lists: "Last updated" column displayed after "Name" in the dashboard table.
 - Mailing lists: creation date displayed (read-only) in the list edit form.
 
-### Performances
-
-- Avoid repeated `REVIEW_SETTING` queries in a single request by caching loaded review settings on the current review object and sharing cached review instances between `RVID` and `RVCODE` lookups.
-
-### Changed
-- [#998](https://github.com/CCSDForge/episciences/issues/998) Improved COI declaration
-  button labels: "Continue (No conflict of interest)" / "Stop (I have a conflict of interest)"
-- Modernized `Ccsd_Form_Filter_Clean` filter and `Ccsd_Form_Validate_NotSame` validator (introduced strict typing, comprehensive type hinting, and robust recursive array filtering for the `Clean` filter).
-
 ### Removed
 
+- Removed obsolete, unused, and deprecated authentication adapters: `Asso`, `DbTable`, `Idp`, `Asso/Ext`, and `Orcid` (`Ccsd/Auth`).
 - Removed obsolete `DEAD CODE AUDIT` deprecation warnings from `UserFtpQuota` and `UserFtpQuotaMapper` classes.
+
+### Security
+
+- Restructured ACL and CSRF usage
+- Cleaned up and restructured CAS and MySQL authentication adapters (`Ccsd/Auth/Adapter/Mysql`, `Ccsd/Auth/Adapter/Cas`).
+- Removed obsolete, unused, and deprecated authentication adapters: `Asso`, `DbTable`, `Idp`, `Asso/Ext`, and `Orcid` (`Ccsd/Auth`).
+- Translated ACL and Auth comments to English and enforced strict typing on plugins.
 
 ## v1.0.55.3 - 2026-05-20
 
