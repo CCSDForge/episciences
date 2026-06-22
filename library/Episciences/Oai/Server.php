@@ -165,6 +165,11 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
                     if (!empty($keywords)) {
                         $setData['subjects'] = $this->parseSubjects($keywords);
                     }
+
+                    $issn = $review->getSetting(Episciences_Review::SETTING_ISSN);
+                    if (!empty($issn)) {
+                        $setData['issn'] = trim($issn);
+                    }
                 }
 
                 $out[self::SET_JOURNAL_PREFIX . $row['CODE']] = $setData;
