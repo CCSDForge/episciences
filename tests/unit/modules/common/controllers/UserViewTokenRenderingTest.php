@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace unit\modules\common\controllers;
 
 use PHPUnit\Framework\TestCase;

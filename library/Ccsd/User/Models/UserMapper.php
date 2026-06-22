@@ -232,6 +232,61 @@ class Ccsd_User_Models_UserMapper {
     }
 
     /**
+     * Returns the most recently modified VALID account matching the given email.
+     *
+     * When several valid accounts share the same email, the one with the most
+     * recent TIME_MODIFIED is returned.
+     *
+     * @param string $email
+     * @return array{UID: int, USERNAME: string, EMAIL: string, CIV: ?string, FIRSTNAME: ?string, LASTNAME: ?string}|null
+     * @throws Exception
+     */
+    public function findMostRecentValidByEmail(string $email): ?array
+    {
+        $select = $this->getDbTable()->select()
+            ->from($this->getDbTable(), ['UID', 'USERNAME', 'EMAIL', 'CIV', 'FIRSTNAME', 'LASTNAME'])
+            ->where('EMAIL = ?', $email)
+            ->where('VALID = ?', 1)
+            ->order('TIME_MODIFIED DESC')
+            ->limit(1);
+
+        $row = $this->getDbTable()->fetchRow($select);
+
+        if (!$row) {
+            return null;
+        }
+
+        $data = $row->toArray();
+
+        return [
+            'UID' => (int)$data['UID'],
+            'USERNAME' => (string)$data['USERNAME'],
+            'EMAIL' => (string)$data['EMAIL'],
+            'CIV' => isset($data['CIV']) ? (string)$data['CIV'] : null,
+            'FIRSTNAME' => isset($data['FIRSTNAME']) ? (string)$data['FIRSTNAME'] : null,
+            'LASTNAME' => isset($data['LASTNAME']) ? (string)$data['LASTNAME'] : null,
+        ];
+    }
+
+    /**
+     * Checks whether a username already exists, regardless of the VALID flag
+     * (a username is globally unique in the CAS users table).
+     *
+     * @param string $username
+     * @return bool
+     * @throws Exception
+     */
+    public function usernameExists(string $username): bool
+    {
+        $select = $this->getDbTable()->select()
+            ->from($this->getDbTable(), ['UID'])
+            ->where('USERNAME = ?', $username)
+            ->limit(1);
+
+        return (bool)$this->getDbTable()->fetchRow($select);
+    }
+
+    /**
      * Trouve un utilisateur avec un compte actif, par son login, sinon renvoi
      * null
      *
