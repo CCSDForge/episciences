@@ -272,12 +272,15 @@ abstract class Ccsd_Oai_Server
         $sets = $this->_xml->createElement(self::OAI_VERB_LIST_SETS);
         foreach ($this->getSets() as $code => $setData) {
             $set = $this->_xml->createElement('set');
-            $set->appendChild($this->_xml->createElement('setSpec', $code));
+            $setSpec = $this->_xml->createElement('setSpec');
+            $setSpec->appendChild($this->_xml->createTextNode($code));
+            $set->appendChild($setSpec);
 
             if (is_array($setData)) {
                 // New format: array with metadata
-                $setName = $setData['name'] ?? $code;
-                $set->appendChild($this->_xml->createElement('setName', $setName));
+                $setName = $this->_xml->createElement('setName');
+                $setName->appendChild($this->_xml->createTextNode($setData['name'] ?? $code));
+                $set->appendChild($setName);
 
                 // Add setDescription if metadata exists
                 if ($this->hasSetDescriptionData($setData)) {
@@ -288,7 +291,9 @@ abstract class Ccsd_Oai_Server
                 }
             } else {
                 // Old format: simple string (backward compatibility)
-                $set->appendChild($this->_xml->createElement('setName', $setData));
+                $setName = $this->_xml->createElement('setName');
+                $setName->appendChild($this->_xml->createTextNode($setData));
+                $set->appendChild($setName);
             }
 
             $sets->appendChild($set);
@@ -308,7 +313,8 @@ abstract class Ccsd_Oai_Server
         return !empty($setData['description'])
             || !empty($setData['publisher'])
             || !empty($setData['date'])
-            || !empty($setData['subjects']);
+            || !empty($setData['subjects'])
+            || !empty($setData['issn']);
     }
 
     /**
@@ -329,34 +335,46 @@ abstract class Ccsd_Oai_Server
 
         // dc:title - always present from set name
         if (!empty($setData['name'])) {
-            $title = $this->_xml->createElement('dc:title', $setData['name']);
+            $title = $this->_xml->createElement('dc:title');
+            $title->appendChild($this->_xml->createTextNode($setData['name']));
             $oaiDc->appendChild($title);
         }
 
         // dc:publisher
         if (!empty($setData['publisher'])) {
-            $publisher = $this->_xml->createElement('dc:publisher', $setData['publisher']);
+            $publisher = $this->_xml->createElement('dc:publisher');
+            $publisher->appendChild($this->_xml->createTextNode($setData['publisher']));
             $oaiDc->appendChild($publisher);
         }
 
         // dc:date
         if (!empty($setData['date'])) {
-            $date = $this->_xml->createElement('dc:date', $setData['date']);
+            $date = $this->_xml->createElement('dc:date');
+            $date->appendChild($this->_xml->createTextNode($setData['date']));
             $oaiDc->appendChild($date);
         }
 
         // dc:description
         if (!empty($setData['description'])) {
-            $description = $this->_xml->createElement('dc:description', $setData['description']);
+            $description = $this->_xml->createElement('dc:description');
+            $description->appendChild($this->_xml->createTextNode($setData['description']));
             $oaiDc->appendChild($description);
         }
 
         // dc:subject (multiple)
         if (!empty($setData['subjects'])) {
             foreach ($setData['subjects'] as $subject) {
-                $subjectElement = $this->_xml->createElement('dc:subject', $subject);
+                $subjectElement = $this->_xml->createElement('dc:subject');
+                $subjectElement->appendChild($this->_xml->createTextNode($subject));
                 $oaiDc->appendChild($subjectElement);
             }
+        }
+
+        // dc:identifier (ISSN)
+        if (!empty($setData['issn'])) {
+            $identifier = $this->_xml->createElement('dc:identifier');
+            $identifier->appendChild($this->_xml->createTextNode('urn:ISSN:' . $setData['issn']));
+            $oaiDc->appendChild($identifier);
         }
 
         $setDescription->appendChild($oaiDc);
