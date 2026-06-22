@@ -322,10 +322,10 @@ abstract class Ccsd_Oai_Server
         $setDescription = $this->_xml->createElement('setDescription');
 
         $oaiDc = $this->_xml->createElement('oai_dc:dc');
-        $oaiDc->setAttribute('xmlns:oai_dc', self::XMLNS_OAI_DC);
-        $oaiDc->setAttribute('xmlns:dc', self::XMLNS_DC);
-        $oaiDc->setAttribute('xmlns:xsi', self::XMLNS_XSI);
-        $oaiDc->setAttribute('xsi:schemaLocation', self::XMLNS_OAI_DC . ' ' . self::XSD_OAI_DC);
+        $oaiDc->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:oai_dc', self::XMLNS_OAI_DC);
+        $oaiDc->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:dc', self::XMLNS_DC);
+        $oaiDc->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', self::XMLNS_XSI);
+        $oaiDc->setAttributeNS(self::XMLNS_XSI, 'xsi:schemaLocation', self::XMLNS_OAI_DC . ' ' . self::XSD_OAI_DC);
 
         // dc:title - always present from set name
         if (!empty($setData['name'])) {

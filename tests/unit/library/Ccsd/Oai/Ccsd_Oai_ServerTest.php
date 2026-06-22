@@ -133,4 +133,28 @@ class Ccsd_Oai_ServerTest extends TestCase
             'ListIdentifiers limit should be larger than ListRecords limit'
         );
     }
+
+    // ------------------------------------------------------------------
+    // DC namespace constants
+    // ------------------------------------------------------------------
+
+    public function testXmlnsOaiDcConstant(): void
+    {
+        self::assertSame('http://www.openarchives.org/OAI/2.0/oai_dc/', Ccsd_Oai_Server::XMLNS_OAI_DC);
+    }
+
+    public function testXmlnsDcConstant(): void
+    {
+        self::assertSame('http://purl.org/dc/elements/1.1/', Ccsd_Oai_Server::XMLNS_DC);
+    }
+
+    public function testXmlnsXsiConstant(): void
+    {
+        self::assertSame('http://www.w3.org/2001/XMLSchema-instance', Ccsd_Oai_Server::XMLNS_XSI);
+    }
+
+    public function testXsdOaiDcConstant(): void
+    {
+        self::assertSame('http://www.openarchives.org/OAI/2.0/oai_dc.xsd', Ccsd_Oai_Server::XSD_OAI_DC);
+    }
 }

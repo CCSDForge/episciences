@@ -629,9 +629,6 @@ class Episciences_Review
     }
 
     /**
-     * Apply settings from an array of database rows.
-     * Used by loadSettings() and batch loading in ReviewsManager::loadSettingsForReviews().
-     *
      * @param array $rows Array of rows with 'SETTING' and 'VALUE' keys
      * @return void
      */

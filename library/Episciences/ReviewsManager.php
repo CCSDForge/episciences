@@ -274,14 +274,7 @@ class Episciences_ReviewsManager
             return;
         }
 
-        // Deduplicate RVIDs to avoid redundant in values
-        $rvids = array_values(array_unique(
-            array_map(fn($review) => $review->getRvid(), $reviews)
-        ));
-
-        if (empty($rvids)) {
-            return;
-        }
+        $rvids = array_keys($reviews);
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()

@@ -122,7 +122,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
             $out = [];
             // revues
             $sql = $db->select()
-                ->from(T_REVIEW)
+                ->from(T_REVIEW, ['RVID', 'CODE', 'NAME'])
                 ->where('RVID != 0')
                 ->where('STATUS = 1')
                 ->order('CREATION DESC');
@@ -148,12 +148,12 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
                 if ($review) {
                     $description = $review->getSetting(Episciences_Review::SETTING_JOURNAL_DESCRIPTION);
                     if (!empty($description)) {
-                        $setData['description'] = trim(strip_tags($description));
+                        $setData['description'] = trim(html_entity_decode(strip_tags($description), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
                     }
 
                     $publisher = $review->getSetting(Episciences_Review::SETTING_JOURNAL_PUBLISHER);
                     if (!empty($publisher)) {
-                        $setData['publisher'] = trim(strip_tags($publisher));
+                        $setData['publisher'] = trim(html_entity_decode(strip_tags($publisher), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
                     }
 
                     $creationYear = $review->getSetting(Episciences_Review::SETTING_JOURNAL_CREATION_YEAR);
@@ -193,7 +193,7 @@ class Episciences_Oai_Server extends Ccsd_Oai_Server
     private function parseSubjects(string $value): array
     {
         $subjects = array_map('trim', explode(';', $value));
-        return array_filter($subjects);
+        return array_values(array_filter($subjects));
     }
 
     /**
