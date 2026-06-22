@@ -143,11 +143,11 @@ final class RelationshipTest extends TestCase
     }
 
     /**
-     * Test getSupportedRelationsShipsIntraWorkRelation
+     * Test getSupportedRelationShipsIntraWorkRelation
      */
-    public function testGetSupportedRelationsShipsIntraWorkRelation(): void
+    public function testGetSupportedRelationShipsIntraWorkRelation(): void
     {
-        $result = Relationship::getSupportedRelationsShipsIntraWorkRelation();
+        $result = Relationship::getSupportedRelationShipsIntraWorkRelation();
         
         self::assertNotEmpty($result);
         
@@ -187,11 +187,11 @@ final class RelationshipTest extends TestCase
     }
 
     /**
-     * Test getDisplayedRelationsShipsIntraWorkRelation
+     * Test getDisplayedRelationShipsIntraWorkRelation
      */
-    public function testGetDisplayedRelationsShipsIntraWorkRelation(): void
+    public function testGetDisplayedRelationShipsIntraWorkRelation(): void
     {
-        $result = Relationship::getDisplayedRelationsShipsIntraWorkRelation();
+        $result = Relationship::getDisplayedRelationShipsIntraWorkRelation();
         
         self::assertNotEmpty($result);
         

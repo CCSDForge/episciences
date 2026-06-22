@@ -153,11 +153,11 @@ final class Episciences_Paper_DatasetTest extends TestCase
     }
 
     /**
-     * Test getSupportedRelationsShipsIntraWorkRelation
+     * Test getSupportedRelationShipsIntraWorkRelation
      */
-    public function testGetSupportedRelationsShipsIntraWorkRelation(): void
+    public function testGetSupportedRelationShipsIntraWorkRelation(): void
     {
-        $result = Episciences_Paper_Dataset::getSupportedRelationsShipsIntraWorkRelation();
+        $result = Episciences_Paper_Dataset::getSupportedRelationShipsIntraWorkRelation();
         
         self::assertIsArray($result);
         self::assertNotEmpty($result);
@@ -198,11 +198,11 @@ final class Episciences_Paper_DatasetTest extends TestCase
     }
 
     /**
-     * Test getDisplayedRelationsShipsIntraWorkRelation
+     * Test getDisplayedRelationShipsIntraWorkRelation
      */
-    public function testGetDisplayedRelationsShipsIntraWorkRelation(): void
+    public function testGetDisplayedRelationShipsIntraWorkRelation(): void
     {
-        $result = Episciences_Paper_Dataset::getDisplayedRelationsShipsIntraWorkRelation();
+        $result = Episciences_Paper_Dataset::getDisplayedRelationShipsIntraWorkRelation();
         
         self::assertIsArray($result);
         self::assertNotEmpty($result);

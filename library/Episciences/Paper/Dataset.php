@@ -113,17 +113,17 @@ class Episciences_Paper_Dataset
     /**
      * @return array<string, array<int, string>>
      */
-    public static function getSupportedRelationsShipsIntraWorkRelation(): array
+    public static function getSupportedRelationShipsIntraWorkRelation(): array
     {
-        return \Episciences\Paper\Relationship::getSupportedRelationsShipsIntraWorkRelation();
+        return \Episciences\Paper\Relationship::getSupportedRelationShipsIntraWorkRelation();
     }
 
     /**
      * @return array<string, array<int, string>>
      */
-    public static function getDisplayedRelationsShipsIntraWorkRelation(): array
+    public static function getDisplayedRelationShipsIntraWorkRelation(): array
     {
-        return \Episciences\Paper\Relationship::getDisplayedRelationsShipsIntraWorkRelation();
+        return \Episciences\Paper\Relationship::getDisplayedRelationShipsIntraWorkRelation();
     }
 
     public function getMetatextCitation($format = 'rawText'): string

@@ -215,7 +215,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             }
             $this->view->supportedRelationShips = array_merge(
                 \Episciences\Paper\Relationship::getSupportedRelationShips(),
-                \Episciences\Paper\Relationship::getDisplayedRelationsShipsIntraWorkRelation()
+                \Episciences\Paper\Relationship::getDisplayedRelationShipsIntraWorkRelation()
             );
             $this->view->disabledValue = $disabledValue;
             $this->view->valueLd = $valueLd;

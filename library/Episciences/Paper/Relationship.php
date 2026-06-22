@@ -72,7 +72,7 @@ class Relationship
     /**
      * @var array<string, array<int, string>>
      */
-    protected static array $supportedRelationsShips_intra_work_relation = [
+    protected static array $supportedRelationShips_intra_work_relation = [
         "Translation" => [
             "isTranslationOf",
             "hasTranslation"
@@ -154,19 +154,19 @@ class Relationship
     /**
      * @return array<string, array<int, string>>
      */
-    public static function getSupportedRelationsShipsIntraWorkRelation(): array
+    public static function getSupportedRelationShipsIntraWorkRelation(): array
     {
-        return self::$supportedRelationsShips_intra_work_relation;
+        return self::$supportedRelationShips_intra_work_relation;
     }
 
     /**
      * @return array<string, array<int, string>>
      */
-    public static function getDisplayedRelationsShipsIntraWorkRelation(): array
+    public static function getDisplayedRelationShipsIntraWorkRelation(): array
     {
         $displayed = [];
-        foreach (self::$supportedRelationsShips_intra_work_relation as $group => $relations) {
-            $filteredRelations = array_filter($relations, function($relation) {
+        foreach (self::$supportedRelationShips_intra_work_relation as $group => $relations) {
+            $filteredRelations = array_filter($relations, function(string $relation) {
                 return !in_array($relation, self::$hiddenRelations, true);
             });
             if (!empty($filteredRelations)) {
@@ -189,6 +189,6 @@ class Relationship
      */
     public static function getFlattenedRelationshipsIntraWorkRelation(): array
     {
-        return self::removeFirstLevel(self::$supportedRelationsShips_intra_work_relation);
+        return self::removeFirstLevel(self::$supportedRelationShips_intra_work_relation);
     }
 }
