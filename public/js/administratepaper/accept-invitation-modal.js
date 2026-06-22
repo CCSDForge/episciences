@@ -47,14 +47,17 @@ function submit() {
             logs.innerHTML = getLoader(); // eslint-disable-line no-unsanitized/property -- static markup
 
             return Promise.all([
-                fetch('/administratepaper/displayinvitations', {
+                fetch(JS_PREFIX_URL + 'administratepaper/displayinvitations', {
                     method: 'POST',
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    body: new URLSearchParams({ docid: docid, partial: 'false' }),
+                    body: new URLSearchParams({
+                        docid: docid,
+                        partial: 'false',
+                    }),
                 }).then(function (r) {
                     return r.text();
                 }),
-                fetch('/administratepaper/displaylogs', {
+                fetch(JS_PREFIX_URL + 'administratepaper/displaylogs', {
                     method: 'POST',
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     body: new URLSearchParams({ docid: docid }),
