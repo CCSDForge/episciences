@@ -222,6 +222,12 @@ return array(
     'Page de contact du support technique' => 'Journal technical contact URL',
     'Courriel de contact du support technique' => 'Journal technical contact email',
     "Nom de l'éditeur de la revue" => "Journal's publisher name",
+    'Description de la revue' => 'Journal description',
+    'Courte description (utilisée dans les flux OAI-PMH)' => 'Short description (used in OAI-PMH feeds)',
+    'Mots-clés' => 'Keywords',
+    'Séparés par des points-virgules (ex. : mathématiques ; physique)' => 'Semicolon-separated (e.g.: mathematics; physics)',
+    'Année de création' => 'Year of creation',
+    'Année de création de la revue (format : AAAA)' => 'Year the journal was created (format: YYYY)',
 
 
     //Assignation automatique des rédacteurs,

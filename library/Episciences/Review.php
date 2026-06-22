@@ -236,6 +236,9 @@ class Episciences_Review
             self::SETTING_START_STATS_AFTER_DATE,
             self::SETTING_JOURNAL_PUBLISHER,
             self::SETTING_JOURNAL_PUBLISHER_LOC,
+            self::SETTING_JOURNAL_DESCRIPTION,
+            self::SETTING_JOURNAL_KEYWORDS,
+            self::SETTING_JOURNAL_CREATION_YEAR,
             self::SETTING_DISPLAY_EMPTY_VOLUMES,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
             self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE,
@@ -1015,6 +1018,30 @@ class Episciences_Review
             ]
         );
 
+        $form->addElement('textarea', self::SETTING_JOURNAL_DESCRIPTION, [
+                'label' => 'Description de la revue',
+                'description' => 'Courte description (utilisée dans les flux OAI-PMH)',
+                'rows' => 4,
+                'validators' => [new Zend_Validate_StringLength(['max' => 2000])]
+            ]
+        );
+
+        $form->addElement('text', self::SETTING_JOURNAL_KEYWORDS, [
+                'label' => 'Mots-clés',
+                'description' => 'Séparés par des points-virgules (ex. : mathématiques ; physique)',
+                'validators' => [new Zend_Validate_StringLength(['max' => 1000])]
+            ]
+        );
+
+        $form->addElement('text', self::SETTING_JOURNAL_CREATION_YEAR, [
+                'label' => 'Année de création',
+                'description' => 'Année de création de la revue (format : AAAA)',
+                'validators' => [
+                    new Zend_Validate_Digits(),
+                    new Zend_Validate_StringLength(['min' => 4, 'max' => 4]),
+                ],
+            ]
+        );
 
         $form->getElement(self::SETTING_ISSN)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_ISSN_PRINT)->getDecorator('label')->setOption('class', 'col-md-2');
@@ -1025,9 +1052,12 @@ class Episciences_Review
         $form->getElement(self::SETTING_JOURNAL_NOTICE)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_JOURNAL_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_TECH_SUPPORT_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_JOURNAL_DESCRIPTION)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_JOURNAL_KEYWORDS)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_JOURNAL_CREATION_YEAR)->getDecorator('label')->setOption('class', 'col-md-2');
 
         // display group: global settings
-        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
+        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL, self::SETTING_JOURNAL_DESCRIPTION, self::SETTING_JOURNAL_KEYWORDS, self::SETTING_JOURNAL_CREATION_YEAR], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
         $form->getDisplayGroup('global')->removeDecorator('DtDdWrapper');
 
         // publication settings **********************************************
@@ -1893,7 +1923,7 @@ class Episciences_Review
             self::SETTING_TO_REQUIRE_REVISION_DEADLINE, self::SETTING_START_STATS_AFTER_DATE,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, self::SETTING_DISPLAY_EMPTY_VOLUMES,
             self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE, self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS,
-            self::SETTING_AUTHOR_EDITOR_COMMUNICATION, 
+            self::SETTING_AUTHOR_EDITOR_COMMUNICATION,
         ];
 
         foreach ($settings as $setting) {
@@ -1920,6 +1950,11 @@ class Episciences_Review
         if ($allSettings[self::SETTING_JOURNAL_PUBLISHER] === '' && $allSettings[self::SETTING_JOURNAL_PUBLISHER_LOC] !== '') {
             return false;
         }
+
+        // OAI-PMH metadata — plain text only
+        $allSettings[self::SETTING_JOURNAL_DESCRIPTION] = trim(strip_tags((string)$this->getSetting(self::SETTING_JOURNAL_DESCRIPTION)));
+        $allSettings[self::SETTING_JOURNAL_KEYWORDS] = trim(strip_tags((string)$this->getSetting(self::SETTING_JOURNAL_KEYWORDS)));
+        $allSettings[self::SETTING_JOURNAL_CREATION_YEAR] = trim((string)$this->getSetting(self::SETTING_JOURNAL_CREATION_YEAR));
 
         // DOI settings
 
