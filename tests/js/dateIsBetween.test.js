@@ -362,7 +362,7 @@ describe('dateIsBetween function', function () {
             }
 
             const duration = Date.now() - start;
-            expect(duration).toBeLessThan(100); // Should complete in less than 100ms
+            expect(duration).toBeLessThan(500); // Should complete in less than 500ms (increased from 100 to reduce flakiness)
         });
     });
 

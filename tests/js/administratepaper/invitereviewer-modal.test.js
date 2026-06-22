@@ -48,6 +48,7 @@ global.allAuthors = 'Author A, Author B';
 global.editor = { full_name: 'Editor Name', email: 'editor@example.com' };
 global.contributor = { full_name: 'Contributor Name', email: 'contributor@example.com', user_name: 'contrib_user', screen_name: 'ContribScreen' };
 global.ignore_list = [];
+global.JS_PREFIX_URL = '/';
 
 // ---------------------------------------------------------------------------
 // JQuery Mock linked to real JSDOM tree
