@@ -50,6 +50,8 @@ $enrichmentLinkedData = $paper->getLinkedData();
 $bibliographicalRef = $paper->getBibRef();
 
 $interWorkRelationship = \Episciences\Paper\Relationship::getFlattenedRelationships();
+// Use the full intra list (including UI-hidden types) so that records stored via import
+// (e.g. isVersionOf, isFormatOf from HAL) are correctly classified in CrossRef XML.
 $intraWorkRelationship = \Episciences\Paper\Relationship::getFlattenedRelationshipsIntraWorkRelation();
 
 $issn = Ccsd_View_Helper_FormatIssn::FormatIssn($journal->getSetting(Episciences_Review::SETTING_ISSN));

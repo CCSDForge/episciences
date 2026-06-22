@@ -118,6 +118,10 @@ class Relationship
     ];
 
     /**
+     * Relations excluded from the UI form dropdown but still valid in CrossRef XML exports.
+     * Use getFlattenedRelationshipsIntraWorkRelation() (full list) for export classification,
+     * and getDisplayedRelationShipsIntraWorkRelation() (filtered list) for form rendering.
+     *
      * @var array<int, string>
      */
     protected static array $hiddenRelations = [

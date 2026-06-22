@@ -103,6 +103,7 @@ class Episciences_Paper_Dataset
     }
 
     /**
+     * @deprecated Use \Episciences\Paper\Relationship::getSupportedRelationShips() directly.
      * @return array<string, array<int, string>>
      */
     public static function getSupportedRelationShips(): array
@@ -111,6 +112,7 @@ class Episciences_Paper_Dataset
     }
 
     /**
+     * @deprecated Use \Episciences\Paper\Relationship::getSupportedRelationShipsIntraWorkRelation() directly.
      * @return array<string, array<int, string>>
      */
     public static function getSupportedRelationShipsIntraWorkRelation(): array
@@ -119,6 +121,7 @@ class Episciences_Paper_Dataset
     }
 
     /**
+     * @deprecated Use \Episciences\Paper\Relationship::getDisplayedRelationShipsIntraWorkRelation() directly.
      * @return array<string, array<int, string>>
      */
     public static function getDisplayedRelationShipsIntraWorkRelation(): array
@@ -441,6 +444,7 @@ class Episciences_Paper_Dataset
     }
 
     /**
+     * @deprecated Use \Episciences\Paper\Relationship::removeFirstLevel() directly.
      * @param array<string|int, array<int, string>> $inputArray
      * @return array<int, string>
      */
@@ -450,6 +454,7 @@ class Episciences_Paper_Dataset
     }
 
     /**
+     * @deprecated Use \Episciences\Paper\Relationship::getFlattenedRelationships() directly.
      * @return array<int, string>
      */
     public static function getFlattenedRelationships(): array
@@ -458,6 +463,7 @@ class Episciences_Paper_Dataset
     }
 
     /**
+     * @deprecated Use \Episciences\Paper\Relationship::getFlattenedRelationshipsIntraWorkRelation() directly.
      * @return array<int, string>
      */
     public static function getFlattenedRelationshipsIntraWorkRelation(): array
