@@ -16,6 +16,10 @@ abstract class Ccsd_Oai_Server
     const OAI_VERB_LIST_METADATA_FORMATS = "ListMetadataFormats";
     const OAI_VERB_GET_RECORD = "GetRecord";
 
+    public const XMLNS_OAI_DC = 'http://www.openarchives.org/OAI/2.0/oai_dc/';
+    public const XMLNS_DC = 'http://purl.org/dc/elements/1.1/';
+    public const XMLNS_XSI = 'http://www.w3.org/2001/XMLSchema-instance';
+    public const XSD_OAI_DC = 'http://www.openarchives.org/OAI/2.0/oai_dc.xsd';
 
     protected $_config = array();
     protected $_params = array();
@@ -266,14 +270,97 @@ abstract class Ccsd_Oai_Server
             return false;
         }
         $sets = $this->_xml->createElement(self::OAI_VERB_LIST_SETS);
-        foreach ($this->getSets() as $code => $name) {
+        foreach ($this->getSets() as $code => $setData) {
             $set = $this->_xml->createElement('set');
             $set->appendChild($this->_xml->createElement('setSpec', $code));
-            $set->appendChild($this->_xml->createElement('setName', $name));
+
+            if (is_array($setData)) {
+                // New format: array with metadata
+                $setName = $setData['name'] ?? $code;
+                $set->appendChild($this->_xml->createElement('setName', $setName));
+
+                // Add setDescription if metadata exists
+                if ($this->hasSetDescriptionData($setData)) {
+                    $setDescription = $this->createSetDescription($setData);
+                    if ($setDescription !== null) {
+                        $set->appendChild($setDescription);
+                    }
+                }
+            } else {
+                // Old format: simple string (backward compatibility)
+                $set->appendChild($this->_xml->createElement('setName', $setData));
+            }
+
             $sets->appendChild($set);
         }
         $this->_oaipmh->appendChild($sets);
         return true;
+    }
+
+    /**
+     * Check if set data contains any meaningful metadata for setDescription
+     *
+     * @param array $setData
+     * @return bool
+     */
+    private function hasSetDescriptionData(array $setData): bool
+    {
+        return !empty($setData['description'])
+            || !empty($setData['publisher'])
+            || !empty($setData['date'])
+            || !empty($setData['subjects']);
+    }
+
+    /**
+     * Create a setDescription element with Dublin Core metadata
+     *
+     * @param array $setData
+     * @return \DOMElement|null
+     */
+    private function createSetDescription(array $setData): ?\DOMElement
+    {
+        $setDescription = $this->_xml->createElement('setDescription');
+
+        $oaiDc = $this->_xml->createElement('oai_dc:dc');
+        $oaiDc->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:oai_dc', self::XMLNS_OAI_DC);
+        $oaiDc->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:dc', self::XMLNS_DC);
+        $oaiDc->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xsi', self::XMLNS_XSI);
+        $oaiDc->setAttributeNS(self::XMLNS_XSI, 'xsi:schemaLocation', self::XMLNS_OAI_DC . ' ' . self::XSD_OAI_DC);
+
+        // dc:title - always present from set name
+        if (!empty($setData['name'])) {
+            $title = $this->_xml->createElement('dc:title', $setData['name']);
+            $oaiDc->appendChild($title);
+        }
+
+        // dc:publisher
+        if (!empty($setData['publisher'])) {
+            $publisher = $this->_xml->createElement('dc:publisher', $setData['publisher']);
+            $oaiDc->appendChild($publisher);
+        }
+
+        // dc:date
+        if (!empty($setData['date'])) {
+            $date = $this->_xml->createElement('dc:date', $setData['date']);
+            $oaiDc->appendChild($date);
+        }
+
+        // dc:description
+        if (!empty($setData['description'])) {
+            $description = $this->_xml->createElement('dc:description', $setData['description']);
+            $oaiDc->appendChild($description);
+        }
+
+        // dc:subject (multiple)
+        if (!empty($setData['subjects'])) {
+            foreach ($setData['subjects'] as $subject) {
+                $subjectElement = $this->_xml->createElement('dc:subject', $subject);
+                $oaiDc->appendChild($subjectElement);
+            }
+        }
+
+        $setDescription->appendChild($oaiDc);
+        return $setDescription;
     }
 
     /**
