@@ -227,6 +227,12 @@ return array(
     'Page de contact du support technique' => 'Journal technical contact URL',
     'Courriel de contact du support technique' => 'Journal technical contact email',
     "Nom de l'éditeur de la revue" => "Journal's publisher name",
+    'Description de la revue' => 'Journal description',
+    'Courte description (utilisée dans les flux OAI-PMH)' => 'Short description (used in OAI-PMH feeds)',
+    'Mots-clés' => 'Keywords',
+    'Séparés par des points-virgules (ex. : mathématiques ; physique)' => 'Semicolon-separated (e.g.: mathematics; physics)',
+    'Année de création' => 'Year of creation',
+    'Année de création de la revue (format : AAAA)' => 'Year the journal was created (format: YYYY)',
 
 
     //Assignation automatique des rédacteurs,
@@ -2100,6 +2106,19 @@ return array(
     "rapports de relecture supplémentaires" => "additional review reports",
     "rapport de relecture supplémentaire" => "additional review report",
     "Vous êtes sur le point de supprimer un rapport de relecture." => "You are about to delete a review report.",
+
+    // Accept a review invitation on behalf of the reviewer
+    "Vous êtes sur le point d'accepter l'invitation de relecture à la place du relecteur. Les mêmes effets qu'une acceptation par le relecteur seront appliqués (e-mails, journalisation, assignation)." => "You are about to accept the review invitation on behalf of the reviewer. The same effects as a reviewer's own acceptance will be applied (e-mails, logging, assignment).",
+    "Relecteur" => "Reviewer",
+    "Compte" => "Account",
+    "Un nouveau compte sera créé avec l'identifiant :" => "A new account will be created with the username:",
+    "La relecture sera rattachée au compte existant :" => "The review will be attached to the existing account:",
+    "Jeton de sécurité invalide, veuillez recharger la page." => "Invalid security token, please reload the page.",
+    "Cette invitation a déjà reçu une réponse ou a été annulée" => "This invitation has already been answered or cancelled",
+    "Cet article ne peut plus être relu" => "This article can no longer be reviewed",
+    "Impossible de retrouver ou créer le compte du relecteur" => "Unable to find or create the reviewer's account",
+    "Une erreur s'est produite lors de l'acceptation de l'invitation" => "An error occurred while accepting the invitation",
+    "Acceptée pour le compte du relecteur par" => "Accepted on behalf of the reviewer by",
     "Lorsqu'un article est obsolète, les relecteurs sont désactivés" => 'When a paper is obsolete, reviewers are disabled',
 
     "Relire les articles" => 'Review articles',

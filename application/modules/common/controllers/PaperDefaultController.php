@@ -1121,6 +1121,211 @@ class PaperDefaultController extends DefaultController
         return $report;
     }
 
+    /**
+     * Applies all the side effects of a reviewer accepting an invitation:
+     * invitation answer, invitation status, active assignment, alias, rating
+     * report, log entry, paper-status refresh and the acceptance e-mails.
+     *
+     * This is shared between the reviewer self-acceptance flow
+     * (ReviewerController) and the editor "accept on behalf" flow
+     * (AdministratepaperController). The user account must already be resolved by
+     * the caller; this method never touches the session identity.
+     *
+     * @param Episciences_User_Invitation $oInvitation
+     * @param Episciences_User_Assignment $assignment Original (pending/expired) assignment.
+     * @param Episciences_Paper $paper
+     * @param Episciences_Reviewer $user Resolved reviewer account.
+     * @param int|null $acceptedByUid UID of the editor acting on behalf, null for a self-acceptance.
+     * @return Episciences_User_Assignment The newly created active assignment.
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Mail_Exception
+     */
+    protected function performReviewerInvitationAcceptance(
+        Episciences_User_Invitation $oInvitation,
+        Episciences_User_Assignment $assignment,
+        Episciences_Paper           $paper,
+        Episciences_Reviewer        $user,
+        ?int                        $acceptedByUid = null
+    ): Episciences_User_Assignment
+    {
+        // save invitation answer
+        $oInvitationAnswer = new Episciences_User_InvitationAnswer();
+        $oInvitationAnswer->setId($oInvitation->getId());
+        $oInvitationAnswer->setAnswer(Episciences_User_InvitationAnswer::ANSWER_YES);
+        $oInvitationAnswer->save();
+
+        // update invitation status
+        $oInvitation->setStatus($oInvitation::STATUS_ACCEPTED);
+        $oInvitation->save();
+
+        // paper assignment
+        /** @var Episciences_User_Assignment $newAssignment */
+        $newAssignment = $user->assign($assignment->getItemid(), ['deadline' => $assignment->getDeadline()])[0];
+        $newAssignment->setInvitation_id($oInvitation->getId());
+        $newAssignment->save();
+        $itemId = $assignment->getItemid();
+
+        // if needed, create an alias
+        if ($paper->getPaperid() !== $itemId) { // new version
+            if ($user->hasAlias($itemId, false)) { // already has an alias for at least one version
+                $user->createAlias($itemId, $user->getAlias($itemId, false));
+            } else {
+                $user->createAlias($itemId);
+            }
+        } elseif (!$user->hasAlias($itemId)) { // first version
+            $user->createAlias($itemId);
+        }
+
+        $uid = $user->getUid();
+
+        // create rating report
+        $this->createRatingReport($paper, $uid);
+
+        // log reviewer assignment to paper
+        $logDetail = [
+            'invitation_answer_id' => $oInvitationAnswer->getId(),
+            'invitation_id' => $oInvitation->getId(),
+            'assignment_id' => $newAssignment->getId(),
+            'user' => array_merge($user->toArray(), ['alias' => $user->getAlias($assignment->getItemid())]),
+        ];
+
+        if ($acceptedByUid !== null) {
+            // acceptance performed by an editor on behalf of the reviewer:
+            // record who did it so it appears in the paper history.
+            $logDetail['accepted_by'] = [
+                'uid' => $acceptedByUid,
+                'fullname' => Episciences_Auth::getFullName(),
+                'screen_name' => Episciences_Auth::getScreenName(),
+            ];
+        }
+
+        $paper->log(Episciences_Paper_Logger::CODE_REVIEWER_INVITATION_ACCEPTED, $uid, $logDetail);
+
+        // update paper status
+        $paper->ratingRefreshPaperStatus();
+
+        $this->emailSendingProcessing($user, $paper, $newAssignment);
+
+        return $newAssignment;
+    }
+
+    /**
+     * Send e-mails for reviewer and editorial committee following an invitation answer.
+     *
+     * @param Episciences_User $user
+     * @param Episciences_paper $paper
+     * @param Episciences_User_Assignment $assignment
+     * @param string $reviewerAnswer
+     * @param array $data
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     * @throws Zend_Exception
+     * @throws Zend_Mail_Exception
+     */
+    protected function emailSendingProcessing(Episciences_User $user, Episciences_paper $paper, Episciences_User_Assignment $assignment, string $reviewerAnswer = Episciences_User_InvitationAnswer::ANSWER_YES, array $data = []): void
+    {
+        $locale = $user->getLangueid(true);
+
+        $docId = $paper->getDocid();
+        $reviewerUid = $user->getUid();
+
+        $ratingUrl = $this->view->url(['controller' => 'paper', 'action' => 'rating', 'id' => $docId]);
+        $ratingUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $ratingUrl;
+
+        $adminPaperUrl = $this->view->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $docId]);
+        $adminPaperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $adminPaperUrl;
+
+        $reviewerTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY;
+        $editorialCommitteeTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY;
+
+        $commonTags = [
+            Episciences_Mail_Tags::TAG_ARTICLE_ID => $docId,
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata()
+        ];
+
+        $editorialCommitteeTags = [
+            Episciences_Mail_Tags::TAG_REVIEWER_FULLNAME => $user->getScreenName(),
+            Episciences_Mail_Tags::TAG_REVIEWER_SCREEN_NAME => $user->getScreenName(),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $adminPaperUrl
+        ];
+
+        $reviewerTags = [Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true)];
+
+        if ($reviewerAnswer === Episciences_User_InvitationAnswer::ANSWER_NO) { // declined
+
+            $reviewerTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REFUSAL_REVIEWER_COPY;
+            $editorialCommitteeTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_REFUSAL_EDITOR_COPY;
+
+            if (isset($data['suggestreviewer'])) {
+                $commonTags[Episciences_Mail_Tags::TAG_REVIEWER_SUGGESTION] = $data['suggestreviewer'];
+            }
+
+            if (isset($data['comment'])) {
+                $commonTags[Episciences_Mail_Tags::TAG_REFUSAL_REASON] = $data['comment'];
+
+            }
+
+        } else {
+
+            $reviewerTags = array_merge(
+                $reviewerTags, [
+                Episciences_Mail_Tags::TAG_PAPER_URL => $ratingUrl,
+                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale),
+                Episciences_Mail_Tags::TAG_RATING_DEADLINE => $this->view->Date($assignment->getDeadline(), $locale)
+            ]);
+
+        }
+
+        $reviewerTags = array_merge($commonTags, $reviewerTags);
+
+        $editorialCommitteeTags = array_merge($commonTags, $editorialCommitteeTags);
+
+        Episciences_Mail_Send::sendMailFromReview($user, $reviewerTemplateType, $reviewerTags, $paper);
+
+        //  > editors + admins + secretaries + chief editors notifications
+        $recipients = $paper->getEditors(true, true);
+        Episciences_Review::checkReviewNotifications($recipients);
+
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+
+        $CC = $paper->extractCCRecipients($recipients);
+
+        if (empty($recipients)) {
+            $recipients = $CC;
+            $CC = [];
+        }
+
+        /** @var Episciences_User $recipient */
+        foreach ($recipients as $recipient) {
+
+            if ($reviewerUid === $recipient->getUid()) { // has already been notified as a reviewer
+                continue;
+            }
+
+            $locale = $recipient->getLangueid(true);
+
+            if ($reviewerAnswer === Episciences_User_InvitationAnswer::ANSWER_YES) {
+                $editorialCommitteeTags [Episciences_Mail_Tags::TAG_RATING_DEADLINE] = $this->view->Date($assignment->getDeadline(), $locale);
+            }
+
+            $editorialCommitteeTags += [
+                Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
+                Episciences_Mail_Tags::TAG_SUBMISSION_DATE => $this->view->Date($paper->getSubmission_date(), $locale)
+            ];
+
+            Episciences_Mail_Send::sendMailFromReview($recipient, $editorialCommitteeTemplateType, $editorialCommitteeTags,
+                $paper, null, [], false, $CC, null
+            );
+            //reset $CC
+            $CC = [];
+
+        }
+
+    }
+
 
     /**
      * @param Episciences_Paper $paper

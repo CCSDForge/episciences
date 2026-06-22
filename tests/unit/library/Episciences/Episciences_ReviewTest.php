@@ -361,6 +361,66 @@ class Episciences_ReviewTest extends TestCase
             Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
         }
     }
+
+    // =========================================================================
+    // New OAI metadata setting constants
+    // =========================================================================
+
+    public function testNewOaiMetadataSettingConstants(): void
+    {
+        self::assertSame('journalDescription', Episciences_Review::SETTING_JOURNAL_DESCRIPTION);
+        self::assertSame('journalKeywords', Episciences_Review::SETTING_JOURNAL_KEYWORDS);
+        self::assertSame('journalCreationYear', Episciences_Review::SETTING_JOURNAL_CREATION_YEAR);
+    }
+
+    // =========================================================================
+    // applySettingsFromRows()
+    // =========================================================================
+
+    public function testApplySettingsFromRowsWithEmptyRowsReturnsFalseForUnsetSetting(): void
+    {
+        $this->review->applySettingsFromRows([]);
+        self::assertFalse($this->review->getSetting(Episciences_Review::SETTING_JOURNAL_DESCRIPTION));
+    }
+
+    public function testApplySettingsFromRowsSetsPlainSetting(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_DESCRIPTION, 'VALUE' => 'A great journal'],
+        ]);
+        self::assertSame('A great journal', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_DESCRIPTION));
+    }
+
+    public function testApplySettingsFromRowsSetsMultipleSettings(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_DESCRIPTION, 'VALUE' => 'Some description'],
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_KEYWORDS, 'VALUE' => 'math; physics'],
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_CREATION_YEAR, 'VALUE' => '2010'],
+        ]);
+        self::assertSame('Some description', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_DESCRIPTION));
+        self::assertSame('math; physics', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_KEYWORDS));
+        self::assertSame('2010', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_CREATION_YEAR));
+    }
+
+    public function testApplySettingsFromRowsMarksSettingsAsLoaded(): void
+    {
+        // After applySettingsFromRows(), getSetting() must NOT trigger a DB load
+        // (_settingsLoaded = true), so calling it without a DB adapter must not throw.
+        $this->review->applySettingsFromRows([]);
+        self::assertFalse($this->review->getSetting('nonexistent_setting'));
+    }
+
+    public function testApplySettingsFromRowsSecondCallOverwritesFirst(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_CREATION_YEAR, 'VALUE' => '2000'],
+        ]);
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_CREATION_YEAR, 'VALUE' => '2020'],
+        ]);
+        self::assertSame('2020', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_CREATION_YEAR));
+    }
 }
 
 final class Episciences_Review_LoadSettingsCacheTestAdapter extends Zend_Db_Adapter_Abstract

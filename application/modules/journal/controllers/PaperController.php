@@ -1030,9 +1030,9 @@ class PaperController extends PaperDefaultController
 
 
             // Use the paper id of the authorised document (not a free request value).
-            $paperId = (int)$paper->getPaperid();
+            $paperId = $paper->getPaperid();
 
-            $dbAuthor = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
+            $dbAuthor = Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId);
             $arrayAuthorDb = [];
             foreach ($dbAuthor as $value) {
                 $arrayAuthorDb = json_decode($value['authors'], true, JSON_UNESCAPED_UNICODE);
@@ -1119,8 +1119,8 @@ class PaperController extends PaperDefaultController
         // the authors in the html selection and the database are sorted in the same way, so we just need to get the index of the chosen author.
 
         $authorKeyJson = $request->getPost('ideditedaffiauthor');
-        $paperId = $request->getPost('paperidauthors');
-        $authorsInfo = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
+        $paperId = (int) $request->getPost('paperidauthors');
+        $authorsInfo = Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId);
         foreach ($authorsInfo as $key => $value) {
             $jsonAuthorDecoded = json_decode($value['authors'], true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
         }

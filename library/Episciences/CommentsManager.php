@@ -1,9 +1,32 @@
 <?php
 
 use Episciences\AppRegistry;
+use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 class Episciences_CommentsManager
 {
+    private static ?CacheItemPoolInterface $_cachePool = null;
+
+    /**
+     * Set the cache pool (useful for dependency injection in tests)
+     */
+    public static function setCachePool(CacheItemPoolInterface $cachePool): void
+    {
+        self::$_cachePool = $cachePool;
+    }
+
+    /**
+     * Get the cache pool (ArrayAdapter by default)
+     */
+    public static function getCachePool(): CacheItemPoolInterface
+    {
+        if (self::$_cachePool === null) {
+            self::$_cachePool = new ArrayAdapter();
+        }
+        return self::$_cachePool;
+    }
+
     // possible comment types
     public const TYPE_INFO_REQUEST = 0; // Request for clarification (Reviewer to author)
     // comment from contributor
@@ -146,57 +169,66 @@ class Episciences_CommentsManager
      */
     public static function getList(int $docId, array $settings = [], bool $fetchReviewer = true): array
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = self::findByQuery($db, $docId);
-        if (isset($settings['UID'])) {
-            $select->where('UID = ? ', $settings['UID']);
-        }
+        $cachePool = self::getCachePool();
+        $cacheKey = 'comments_list_' . $docId . '_' . md5(serialize($settings) . '_' . ($fetchReviewer ? '1' : '0'));
+        $cacheItem = $cachePool->getItem($cacheKey);
 
-        // fetch unanswered comments
-        if (isset($settings['unanswered'])) {
-            self::fetchUnansweredComments($db, $docId, $select);
-        }
-
-        // fetch comments of given types
-        if (isset($settings['types']) && is_array($settings['types'])) {
-            $select->where('TYPE IN (?)', $settings['types']);
-        }
-
-        if (isset($settings['type'])) {
-            $select->where('TYPE = ?', $settings['type']);
-        }
-
-        // exclude comments of given types
-        if (isset($settings['excludeTypes'])) {
-            foreach ($settings['excludeTypes'] as $typeId) {
-                $select->where('TYPE != ?', $typeId);
+        if (!$cacheItem->isHit()) {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $select = self::findByQuery($db, $docId);
+            if (isset($settings['UID'])) {
+                $select->where('UID = ? ', $settings['UID']);
             }
+
+            // fetch unanswered comments
+            if (isset($settings['unanswered'])) {
+                self::fetchUnansweredComments($db, $docId, $select);
+            }
+
+            // fetch comments of given types
+            if (isset($settings['types']) && is_array($settings['types'])) {
+                $select->where('TYPE IN (?)', $settings['types']);
+            }
+
+            if (isset($settings['type'])) {
+                $select->where('TYPE = ?', $settings['type']);
+            }
+
+            // exclude comments of given types
+            if (isset($settings['excludeTypes'])) {
+                foreach ($settings['excludeTypes'] as $typeId) {
+                    $select->where('TYPE != ?', $typeId);
+                }
+            }
+
+            $select->order('WHEN DESC');
+
+            if ($fetchReviewer) {
+                self::fetchReviewersAlias($select);
+            }
+
+            $result = $db->fetchAssoc($select);
+
+            if (!$result) {
+                $comments = [];
+            } else {
+                $filteredResult = array_filter($result, static function ($value): bool {
+                    $isEmptyCommentsAccepted = in_array((int)$value['TYPE'], self::$suggestionTypes, true);
+                    return
+                        $isEmptyCommentsAccepted ||
+                        ($value['MESSAGE'] ?? '') !== '' ||
+                        ($value['FILE'] ?? '') !== '';
+                });
+
+                // sort comment array
+                $comments = self::sortComments($filteredResult);
+            }
+
+            $cacheItem->set($comments);
+            $cachePool->save($cacheItem);
         }
 
-        $select->order('WHEN DESC');
-
-        if ($fetchReviewer) {
-            self::fetchReviewersAlias($select);
-        }
-
-        $result = $db->fetchAssoc($select);
-
-        if (!$result) {
-            return [];
-        }
-
-        $result = array_filter($result, static function ($value): bool {
-
-            $isEmptyCommentsAccepted = in_array((int)$value['TYPE'], self::$suggestionTypes, true);
-
-            return
-                $isEmptyCommentsAccepted ||
-                ($value['MESSAGE'] ?? '') !== '' ||
-                ($value['FILE'] ?? '') !== '';
-        });
-
-        // sort comment array
-        return self::sortComments($result);
+        return $cacheItem->get();
     }
 
     /**
@@ -473,10 +505,11 @@ class Episciences_CommentsManager
             'MESSAGE' => $data['comment'],
             'FILE' => $file['name'] ?? $file,
             'DEADLINE' => $deadline,
-            'WHEN' => new Zend_DB_Expr('NOW()')
+            'WHEN' => new Zend_Db_Expr('NOW()')
         ];
 
         if ($db->insert(T_PAPER_COMMENTS, $values)) {
+            self::getCachePool()->clear();
             return $db->lastInsertId();
         }
 
@@ -500,7 +533,11 @@ class Episciences_CommentsManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $data['UID'] = (int)$newUid;
         $where['UID = ?'] = (int)$oldUid;
-        return $db->update(T_PAPER_COMMENTS, $data, $where);
+        $affected = $db->update(T_PAPER_COMMENTS, $data, $where);
+        if ($affected > 0) {
+            self::getCachePool()->clear();
+        }
+        return $affected;
     }
 
     /**
@@ -593,6 +630,7 @@ class Episciences_CommentsManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $db->delete(T_PAPER_COMMENTS, ['DOCID = ?' => $docid]);
+        self::getCachePool()->clear();
         return true;
     }
 
@@ -831,7 +869,11 @@ class Episciences_CommentsManager
     public static function deleteByIdentifier(int $identifier): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        return ($db->delete(T_PAPER_COMMENTS, ['PCID = ?' => $identifier]) > 0);
+        $affected = ($db->delete(T_PAPER_COMMENTS, ['PCID = ?' => $identifier]) > 0);
+        if ($affected) {
+            self::getCachePool()->clear();
+        }
+        return $affected;
     }
 
 
