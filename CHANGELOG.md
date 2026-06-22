@@ -60,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#1059](https://github.com/CCSDForge/episciences/issues/1059) Fixed method naming inconsistency (`RelationsShips` → `RelationShips`) in `Episciences\Paper\Relationship` and its callers; added missing `string` type hint on closure parameter to comply with PHPStan level 6.
 - [#1035](https://github.com/CCSDForge/episciences/issues/1035) Fixed an issue where editors were unable to proceed to the "copy editing" stage because the transition button was hidden behind an incorrect conditional block in the status dropdown menu.
 - Prevent the submission of a dataset or software that does not include a descriptor.
 - [#1048](https://github.com/CCSDForge/episciences/issues/1048) Volume metadata: quotes in preface/content caused JSON parsing error when editing. Removed `double_encode=false` from `form.phtml` display while keeping it in `Volume.php` save to prevent double-encoding (#962).
