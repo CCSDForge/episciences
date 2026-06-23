@@ -203,7 +203,7 @@ class BiblioRefRenderer {
         if (citation.isSuspect) {
             const icon = this._makeIcon('fa-solid fa-square-xmark');
             icon.style.color = '#c0392b';
-            li.appendChild(this._makeSrOnly(typeof translate === 'function' ? translate('Référence problématique') : 'Problematic reference'));
+            li.appendChild(this._makeSrOnly(typeof translate === 'function' ? translate('Référence problématique détectée automatiquement') : 'Detected problematic reference'));
             li.appendChild(icon);
             li.appendChild(document.createTextNode(' '));
         } else if (citation.showAccepted) {
@@ -487,6 +487,26 @@ class BiblioRefManager {
                 // Show section if available
                 if (section) {
                     section.style.display = 'block';
+                }
+
+                // Badge + hover hint for problematic references count
+                const suspectCount = citations.filter(c => c.isSuspect).length;
+                if (suspectCount > 0) {
+                    const hintText = typeof translate === 'function'
+                        ? translate('Références problématiques détectées automatiquement')
+                        : 'Automatically detected problematic references';
+
+                    const badge = document.getElementById('biblio-refs-problematic-count');
+                    if (badge) {
+                        badge.textContent = String(suspectCount);
+                        badge.setAttribute('aria-label', suspectCount + ' ' + hintText);
+                        badge.removeAttribute('hidden');
+                    }
+
+                    const hint = section ? section.querySelector('.biblio-refs-hint') : null;
+                    if (hint) {
+                        hint.textContent = hintText;
+                    }
                 }
             }
         } catch (error) {

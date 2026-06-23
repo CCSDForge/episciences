@@ -140,7 +140,13 @@ if ($this->citations !== '') {
 <?php if ($this->enabledBib): ?>
     <div id="biblio-refs" class="panel panel-default collapsable" <?php if (!$paper->isPublished()) echo 'style="display: none;"'; ?>>
         <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Références bibliographiques') ?></h2>
+            <h2 class="panel-title">
+                <?= $this->translate('Références bibliographiques') ?>
+                <span id="biblio-refs-problematic-count"
+                      class="label label-danger"
+                      hidden></span>
+                <span class="biblio-refs-hint" aria-hidden="true"></span>
+            </h2>
         </div>
         <div class="panel-body in" style="max-height: 350px; overflow: auto;">
             <?php
