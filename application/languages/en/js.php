@@ -300,4 +300,6 @@ return [
     'Genuine'                      => 'Genuine',
     'More information'             => 'More information',
     'View on PubPeer'              => 'View on PubPeer',
+    'Référence problématique détectée automatiquement'    => 'Detected problematic reference',
+    'Références problématiques détectées automatiquement' => 'Automatically detected problematic references',
 ];
