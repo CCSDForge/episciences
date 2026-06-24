@@ -20,6 +20,10 @@ class VolumeController extends Zend_Controller_Action
         $review->loadSettings();
         $this->view->review = $review;
         $volumes = $review->getVolumes();
+        if (!empty($volumes)) {
+            Episciences_VolumesManager::loadSettingsForVolumes($volumes);
+            Episciences_VolumesManager::loadEditorsForVolumes($volumes);
+        }
         $this->view->volumes = $volumes;
     }
 
