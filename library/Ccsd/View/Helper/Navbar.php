@@ -5,6 +5,23 @@
  */
 class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
 {
+    private const LANGUAGE_NAMES = [
+        'en' => 'English',
+        'fr' => 'Français',
+        'es' => 'Español',
+        'de' => 'Deutsch',
+        'it' => 'Italiano',
+        'pt' => 'Português',
+        'zh' => '中文',
+        'ar' => 'العربية',
+        'ru' => 'Русский',
+        'ja' => '日本語',
+        'ko' => '한국어',
+        'nl' => 'Nederlands',
+        'pl' => 'Polski',
+        'tr' => 'Türkçe',
+        'sv' => 'Svenska',
+    ];
     /**
      * UI languages display
      *
@@ -90,6 +107,11 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
             $this->defineEnvironmentLabel();
         }
         $this->render();
+    }
+
+    private function getLanguageName(string $code): string
+    {
+        return self::LANGUAGE_NAMES[$code] ?? strtoupper($code);
     }
 
     private function defineEnvironmentLabel()
@@ -219,26 +241,101 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                     <?php
                 } ?>
 
-                <form action="#" method="post" id="formLang" class="nav navbar-nav navbar-right navbar-lang">
-                    <input type="hidden" name="lang" id="lang" value="<?= $this->_lang ?>"/>
-                    <?php if (count($this->_languages) > 1) : ?>
-                        <div>
-                            <select id="select-lang" name="Langues" onchange="changeLang(this)">
-                                <?php foreach ($this->_languages as $l): ?>
-                                    <option value="<?= $l ?>" <?= (($l === $this->_lang) ? 'selected' : '') ?>>  <?= $l ?>  </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    <?php endif; ?>
+                <?php if (count($this->_languages) > 1) : ?>
+                <form action="#" method="post"
+                      id="lang-switcher"
+                      class="lang-switcher navbar-right">
+                    <input type="hidden" name="lang" id="lang" value="<?= htmlspecialchars($this->_lang) ?>"/>
+                    <button
+                        type="button"
+                        class="lang-switcher__btn"
+                        id="lang-switcher-btn"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                        aria-controls="lang-switcher-list"
+                        aria-label="<?= $view->translate('Interface language') ?>: <?= htmlspecialchars(strtoupper($this->_lang)) ?>">
+                        <i class="fas fa-language" aria-hidden="true"></i>
+                        <span class="lang-switcher__code"><?= htmlspecialchars(strtoupper($this->_lang)) ?></span>
+                        <i class="fas fa-chevron-down lang-switcher__chevron" aria-hidden="true"></i>
+                    </button>
+                    <ul
+                        class="lang-switcher__list"
+                        id="lang-switcher-list"
+                        role="listbox"
+                        aria-label="<?= $view->translate('Available languages') ?>">
+                        <?php foreach ($this->_languages as $l):
+                            $selected = ($l === $this->_lang);
+                            $code = htmlspecialchars(strtoupper($l));
+                            $name = htmlspecialchars($this->getLanguageName($l));
+                        ?>
+                            <li
+                                class="lang-switcher__option<?= $selected ? ' lang-switcher__option--selected' : '' ?>"
+                                role="option"
+                                aria-selected="<?= $selected ? 'true' : 'false' ?>"
+                                tabindex="-1"
+                                data-lang="<?= htmlspecialchars($l) ?>">
+                                <span class="lang-switcher__option-code"><?= $code ?></span>
+                                <span aria-hidden="true"> &ndash; </span>
+                                <span class="lang-switcher__option-name"><?= $name ?></span>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
                 </form>
+                <?php endif; ?>
             </div>
         </nav>
         <script>
-            function changeLang(select) {
-                let selectedLang = select.options[select.selectedIndex].value;
-                $('#lang').val(selectedLang);
-                $('#formLang').submit();
-            }
+            (function () {
+                var switcher = document.getElementById('lang-switcher');
+                if (!switcher) return;
+                var btn = document.getElementById('lang-switcher-btn');
+                var list = document.getElementById('lang-switcher-list');
+                var langInput = document.getElementById('lang');
+                if (!btn || !list) return;
+
+                function isOpen() { return list.classList.contains('lang-switcher__list--open'); }
+
+                function open() {
+                    btn.setAttribute('aria-expanded', 'true');
+                    list.classList.add('lang-switcher__list--open');
+                    var active = list.querySelector('[aria-selected="true"]') || list.querySelector('[role="option"]');
+                    if (active) active.focus();
+                }
+
+                function close() {
+                    btn.setAttribute('aria-expanded', 'false');
+                    list.classList.remove('lang-switcher__list--open');
+                }
+
+                function selectLang(lang) {
+                    langInput.value = lang;
+                    switcher.submit();
+                }
+
+                btn.addEventListener('click', function () { isOpen() ? close() : open(); });
+
+                btn.addEventListener('keydown', function (e) {
+                    if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+                    else if (e.key === 'Escape') { close(); }
+                });
+
+                list.addEventListener('keydown', function (e) {
+                    var options = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+                    var idx = options.indexOf(document.activeElement);
+                    if (e.key === 'ArrowDown') { e.preventDefault(); if (idx < options.length - 1) options[idx + 1].focus(); }
+                    else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx > 0) options[idx - 1].focus(); else { close(); btn.focus(); } }
+                    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); var el = document.activeElement; if (el && el.dataset && el.dataset.lang) selectLang(el.dataset.lang); }
+                    else if (e.key === 'Escape') { close(); btn.focus(); }
+                    else if (e.key === 'Tab') { close(); }
+                });
+
+                list.querySelectorAll('[role="option"]').forEach(function (opt) {
+                    opt.addEventListener('click', function () { selectLang(opt.dataset.lang); });
+                });
+
+                document.addEventListener('click', function (e) { if (!switcher.contains(e.target)) close(); });
+                document.addEventListener('focusin', function (e) { if (!switcher.contains(e.target)) close(); });
+            })();
         </script>
         <?php
     }
