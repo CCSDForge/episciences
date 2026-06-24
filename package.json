@@ -12,7 +12,7 @@
     "lint:prettier": "prettier --check \"public/js/**/*.js\" \"tests/js/**/*.js\""
   },
   "devDependencies": {
-    "@babel/core": "^7.29.0",
+    "@babel/core": "^7.29.6",
     "@babel/preset-env": "^7.29.0",
     "@symfony/webpack-encore": "^5.3.1",
     "jest": "^30.2.0",
