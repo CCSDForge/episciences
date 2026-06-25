@@ -78,23 +78,19 @@ $(function () {
     $('button#add-linkdata').on('click', function () {
         removeFormLd();
         callAddForm('dataset');
-        changePlaceholder('dataset');
     });
 
     $('#anchor-dataset-add').on('click', function () {
         removeFormLd();
         callAddForm('dataset');
-        changePlaceholder('dataset');
     });
     $('#anchor-software-add').on('click', function () {
         removeFormLd();
         callAddForm('software');
-        changePlaceholder('software');
     });
     $('#anchor-publication-add').on('click', function () {
         removeFormLd();
         callAddForm('publication');
-        changePlaceholder('publication');
     });
 
     function ajaxModifyLd() {
