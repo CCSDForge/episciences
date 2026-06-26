@@ -737,4 +737,56 @@ class Episciences_UserTest extends TestCase
             $this->assertTrue(true);
         }
     }
+
+    // -------------------------------------------------------------------------
+    // hasLocalData() via identity map — no DB required
+    // -------------------------------------------------------------------------
+
+    public function testHasLocalDataReturnsTrueWhenIdentityMapHasUuidRow(): void
+    {
+        $uid = 42;
+        Episciences_User::setStaticCache($uid, ['UID' => $uid, 'uuid' => 'some-uuid-value']);
+
+        $user = new Episciences_User();
+        $result = $user->hasLocalData($uid);
+
+        $this->assertTrue($result);
+        $this->assertTrue($user->getHasAccountData());
+        $this->assertSame('some-uuid-value', $user->getUuid());
+    }
+
+    public function testHasLocalDataReturnsFalseWhenIdentityMapHasEmptyRow(): void
+    {
+        $uid = 43;
+        Episciences_User::setStaticCache($uid, []);
+
+        $user = new Episciences_User();
+        $result = $user->hasLocalData($uid);
+
+        $this->assertFalse($result);
+        $this->assertFalse($user->getHasAccountData());
+    }
+
+    public function testHasLocalDataThrowsWhenIdentityMapRowHasNullUuid(): void
+    {
+        $uid = 44;
+        Episciences_User::setStaticCache($uid, ['UID' => $uid]);  // no 'uuid' key → null
+
+        $user = new Episciences_User();
+        $this->expectException(\InvalidArgumentException::class);
+        $user->hasLocalData($uid);
+    }
+
+    public function testHasLocalDataUsesUidFromObjectWhenParamIsNull(): void
+    {
+        $uid = 99;
+        Episciences_User::setStaticCache($uid, ['UID' => $uid, 'uuid' => 'uid-from-object']);
+
+        $user = new Episciences_User();
+        $user->setUid($uid);
+        $result = $user->hasLocalData();  // no param → uses getUid()
+
+        $this->assertTrue($result);
+        $this->assertSame('uid-from-object', $user->getUuid());
+    }
 }

@@ -633,16 +633,19 @@ class Episciences_User extends Ccsd_User_Models_User
      */
     public function hasLocalData(int $uid = null): bool
     {
-
         if (!$uid) {
             $uid = $this->getUid();
         }
 
+        // Reuse data already fetched by find() — avoids a second T_USERS query.
+        if (isset(self::$_identityMap[$uid])) {
+            return $this->applyLocalDataFromRow(self::$_identityMap[$uid]);
+        }
+
         $select = $this->_db->select()
-            ->from(T_USERS, ['uuid','nombre' => new Zend_Db_Expr('COUNT(*)')])
+            ->from(T_USERS, ['uuid', 'nombre' => new Zend_Db_Expr('COUNT(*)')])
             ->where('`UID` = ?', (int)$uid)
             ->group('uuid');
-
 
         $result = $select->query()->fetch();
 
@@ -651,15 +654,26 @@ class Episciences_User extends Ccsd_User_Models_User
             return false;
         }
 
+        return $this->applyLocalDataFromRow($result);
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function applyLocalDataFromRow(array $row): bool
+    {
+        if (empty($row)) {
+            $this->setHasAccountData(false);
+            return false;
+        }
+
         $this->setHasAccountData(true);
 
-
-        if (!isset($result['uuid'])){
+        if (!isset($row['uuid'])) {
             throw new InvalidArgumentException("UUID must not be null");
         }
 
-        $this->setUuid($result['uuid']);
-
+        $this->setUuid($row['uuid']);
         return true;
     }
 

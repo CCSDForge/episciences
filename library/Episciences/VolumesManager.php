@@ -84,6 +84,172 @@ class Episciences_VolumesManager
     }
 
     /**
+     * Batch-loads editors for all given volumes in a single SQL query,
+     * replacing N per-volume USER_ASSIGNMENT queries with one.
+     *
+     * @param Episciences_Volume[] $volumes  Array keyed by VID
+     */
+    public static function loadEditorsForVolumes(array $volumes, bool $active = true): void
+    {
+        if (empty($volumes)) {
+            return;
+        }
+
+        $rows = self::fetchVolumeEditorRows(array_keys($volumes));
+        $groupedRows = self::groupAssignmentRowsByVid($rows, $active);
+        $uids = self::extractUniqueUids($groupedRows);
+        self::preloadUserCaches($uids);
+        $editorsByVid = self::buildEditorsByVid($groupedRows);
+
+        foreach ($volumes as $vid => $volume) {
+            $volume->setEditors($editorsByVid[$vid] ?? []);
+            $volume->markEditorsLoaded($active);
+        }
+    }
+
+    /**
+     * Groups raw assignment rows by VID, applying the active filter.
+     * Mirrors Volume::loadEditors() deduplication: last row for same (vid, uid) wins.
+     *
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array<int, array<string, mixed>>>  [vid => [uid => row]]
+     */
+    private static function groupAssignmentRowsByVid(array $rows, bool $active): array
+    {
+        $grouped = [];
+        foreach ($rows as $row) {
+            if ($active && $row['STATUS'] !== Episciences_User_Assignment::STATUS_ACTIVE) {
+                continue;
+            }
+            $vid = (int) $row['ITEMID'];
+            $uid = (int) $row['UID'];
+            $grouped[$vid][$uid] = $row;
+        }
+        return $grouped;
+    }
+
+    /**
+     * @param int[] $vids
+     * @return array<int, array<string, mixed>>
+     */
+    private static function fetchVolumeEditorRows(array $vids): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $subquery = $db->select()
+            ->from(T_ASSIGNMENTS, ['UID', 'ITEMID', 'MAX(`WHEN`) AS WHEN'])
+            ->where('ITEM = ?', Episciences_User_Assignment::ITEM_VOLUME)
+            ->where('ITEMID IN (?)', $vids)
+            ->where('ROLEID = ?', Episciences_User_Assignment::ROLE_EDITOR)
+            ->group(['ITEMID', 'UID']);
+
+        $roles = [
+            Episciences_Acl::ROLE_GUEST_EDITOR,
+            Episciences_Acl::ROLE_EDITOR,
+            Episciences_Acl::ROLE_CHIEF_EDITOR,
+        ];
+
+        $select = $db->select()
+            ->from(['a' => T_ASSIGNMENTS], ['UID', 'STATUS', 'WHEN', 'ITEMID'])
+            ->joinUsing(T_USERS, 'UID', [])
+            ->join(['b' => $subquery], 'a.UID = b.UID AND a.`WHEN` = b.`WHEN` AND a.ITEMID = b.ITEMID')
+            ->join(['ur' => T_USER_ROLES], 'ur.UID = a.UID')
+            ->where('ur.ROLEID IN (?)', $roles)
+            ->where('ur.RVID = ?', RVID);
+
+        try {
+            return $db->fetchAll($select);
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return [];
+        }
+    }
+
+    /**
+     * Extracts all unique UIDs across all grouped rows.
+     *
+     * @param array<int, array<int, array<string, mixed>>> $groupedRows  [vid => [uid => row]]
+     * @return int[]
+     */
+    private static function extractUniqueUids(array $groupedRows): array
+    {
+        $uids = [];
+        foreach ($groupedRows as $rows) {
+            foreach (array_keys($rows) as $uid) {
+                $uids[$uid] = true;
+            }
+        }
+        return array_keys($uids);
+    }
+
+    /**
+     * Batch-fetches T_USERS and T_UTILISATEURS for the given UIDs and
+     * pre-populates the per-request caches used by findWithCAS().
+     *
+     * @param int[] $uids
+     */
+    private static function preloadUserCaches(array $uids): void
+    {
+        if (empty($uids)) {
+            return;
+        }
+
+        foreach (self::batchFetchLocalUsers($uids) as $row) {
+            Episciences_User::setStaticCache((int) $row['UID'], $row);
+        }
+    }
+
+    /**
+     * @param int[] $uids
+     * @return array<int, array<string, mixed>>
+     */
+    private static function batchFetchLocalUsers(array $uids): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        try {
+            return $db->fetchAll($db->select()->from(T_USERS, '*')->where('UID IN (?)', $uids));
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return [];
+        }
+    }
+
+    /**
+     * @param array<int, array<int, array<string, mixed>>> $groupedRows  [vid => [uid => row]]
+     * @return array<int, array<int, Episciences_Editor>>  [vid => [uid => editor]]
+     */
+    private static function buildEditorsByVid(array $groupedRows): array
+    {
+        $editorsByVid = [];
+        foreach ($groupedRows as $vid => $rows) {
+            foreach ($rows as $uid => $row) {
+                $editor = self::createEditorFromRow($uid, $row);
+                if ($editor !== null) {
+                    $editorsByVid[$vid][$uid] = $editor;
+                }
+            }
+        }
+        return $editorsByVid;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private static function createEditorFromRow(int $uid, array $row): ?Episciences_Editor
+    {
+        $editor = new Episciences_Editor();
+        try {
+            $editor->find($uid);
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return null;
+        }
+        $editor->setWhen($row['WHEN']);
+        $editor->setStatus($row['STATUS']);
+        return $editor;
+    }
+
+    /**
      * Renvoie le formulaire d'assignation de rédacteurs à un volume
      * @param null $currentEditors
      * @return bool|array ['form' => Ccsd_Form, 'unavailableEditors' => array]

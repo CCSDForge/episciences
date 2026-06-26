@@ -291,7 +291,7 @@ class Ccsd_View_Helper_Navbar extends Zend_View_Helper_Abstract
                 var btn = document.getElementById('lang-switcher-btn');
                 var list = document.getElementById('lang-switcher-list');
                 var langInput = document.getElementById('lang');
-                if (!btn || !list) return;
+                if (!btn || !list || !langInput) return;
 
                 function isOpen() { return list.classList.contains('lang-switcher__list--open'); }
 
