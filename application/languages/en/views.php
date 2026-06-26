@@ -216,6 +216,12 @@ return array(
     "L'auteur ne peut pas choisir la rubrique" => "Contributors can't choose a section",
     "L'auteur peut choisir la rubrique" => "Contributors can choose a section",
     "L'auteur doit choisir la rubrique" => "Contributors have to choose a section",
+    // Cover letter requirement
+    "Lettre de motivation" => "Cover letter",
+    "Désactivée" => "Disabled",
+    "Facultative" => "Optional",
+    "Requise (commentaire ou fichier)" => "Required (comment or file)",
+    "Une lettre de motivation est requise. Veuillez fournir un commentaire ou joindre un fichier." => "A cover letter is required. Please provide a comment or attach a file.",
     'Page de contact de la revue' => 'Journal contact URL',
     'Page de la notice dans le catalogue' => 'Catalogue notice URL',
     'Courriel de contact de la revue' => 'Journal contact email',

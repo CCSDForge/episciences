@@ -288,40 +288,68 @@ class Episciences_Submit
 
         // Author's comments and Cover Letter
         // Keep in sync with paper views where these roles have access to the comments and cover letter
-        $allowedToSeeCoverLetterTranslated = [];
+        $coverLetterRequirement = (int)$review->getSetting(Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT);
 
-        foreach ([Episciences_Acl::ROLE_CHIEF_EDITOR_PLURAL, Episciences_Acl::ROLE_EDITOR_PLURAL, Episciences_Acl::ROLE_REVIEWER_PLURAL] as $roleAllowedToSee) {
-            $allowedToSeeCoverLetterTranslated[] = Zend_Registry::get('Zend_Translate')->translate($roleAllowedToSee);
+        // Hidden field to pass cover letter requirement to JavaScript
+        $form->addElement('hidden', 'cover_letter_requirement', [
+            'value' => $coverLetterRequirement,
+            'decorators' => ['ViewHelper']
+        ]);
+
+        // Only display cover letter fields if not disabled (0 = disabled, 1 = optional, 2 = required)
+        if ($coverLetterRequirement !== 0) {
+            $allowedToSeeCoverLetterTranslated = [];
+
+            foreach ([Episciences_Acl::ROLE_CHIEF_EDITOR_PLURAL, Episciences_Acl::ROLE_EDITOR_PLURAL, Episciences_Acl::ROLE_REVIEWER_PLURAL] as $roleAllowedToSee) {
+                $allowedToSeeCoverLetterTranslated[] = Zend_Registry::get('Zend_Translate')->translate($roleAllowedToSee);
+            }
+
+            $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
+
+            // Build label based on requirement setting
+            $isRequired = $coverLetterRequirement === 2;
+            $optionalSuffix = $coverLetterRequirement === 1
+                ? '<br><em style="font-weight: normal;">' . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>'
+                : '';
+
+            $commentElementOptions = [
+                'label' => Zend_Registry::get('Zend_Translate')->translate('Commentaire') . $optionalSuffix,
+                'rows' => 5,
+                'description' => $descriptionAllowedToSeeCoverLetterTranslated,
+                'validators' => [['StringLength', false, ['max' => MAX_INPUT_TEXTAREA]]]
+            ];
+
+            $form->addElement('textarea', self::COVER_LETTER_COMMENT_ELEMENT_NAME, $commentElementOptions);
+            $group[] = self::COVER_LETTER_COMMENT_ELEMENT_NAME;
+
+            // Attached file
+            $extensions = ALLOWED_EXTENSIONS;
+            $implode_extensions = implode(',', $extensions);
+            $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
+
+            $fileElementOptions = [
+                'label' => Zend_Registry::get('Zend_Translate')->translate("Lettre d'accompagnement") . $optionalSuffix,
+                'description' => $description,
+                'valueDisabled' => true,
+                'maxFileSize' => MAX_FILE_SIZE,
+                'validators' => [
+                    'Count' => [false, 1],
+                    'Extension' => [false, $implode_extensions],
+                    'Size' => [false, MAX_FILE_SIZE]
+                ]
+            ];
+
+            $form->addElement('file', self::COVER_LETTER_FILE_ELEMENT_NAME, $fileElementOptions);
+
+            // Add required class to label when cover letter is required
+            if ($isRequired) {
+                $form->getElement(self::COVER_LETTER_FILE_ELEMENT_NAME)
+                    ->getDecorator('label')
+                    ->setOption('class', 'col-md-3 control-label required');
+            }
+
+            $group[] = self::COVER_LETTER_FILE_ELEMENT_NAME;
         }
-
-        $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
-
-
-        $form->addElement('textarea', self::COVER_LETTER_COMMENT_ELEMENT_NAME, [
-            'label' => Zend_Registry::get('Zend_Translate')->translate('Commentaire') . '<br><em style="font-weight: normal;">' . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>', 'rows' => 5,
-            'description' => $descriptionAllowedToSeeCoverLetterTranslated,
-            'validators' => [['StringLength', false, ['max' => MAX_INPUT_TEXTAREA]]]
-        ]);
-        $group[] = self::COVER_LETTER_COMMENT_ELEMENT_NAME;
-
-        // Attached file
-        $extensions = ALLOWED_EXTENSIONS;
-        $implode_extensions = implode(',', $extensions);
-        $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
-
-        $form->addElement('file', self::COVER_LETTER_FILE_ELEMENT_NAME, [
-            'label' => Zend_Registry::get('Zend_Translate')->translate("Lettre d'accompagnement") . "<br><em style=\"font-weight: normal;\">" . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>',
-            'description' => $description,
-            'valueDisabled' => true,
-            'maxFileSize' => MAX_FILE_SIZE,
-            'validators' => [
-                'Count' => [false, 1],
-                'Extension' => [false, $implode_extensions],
-                'Size' => [false, MAX_FILE_SIZE]
-            ]
-        ]);
-
-        $group[] = self::COVER_LETTER_FILE_ELEMENT_NAME;
 
         $form = self::addDdElement($form, $group);
 
@@ -655,40 +683,66 @@ class Episciences_Submit
 
             // Author's comments and Cover Letter [new version]
             // Keep in sync with paper views where these roles have access to the comments and cover letter
-            $allowedToSeeCoverLetterTranslated = [];
-            foreach ([Episciences_Acl::ROLE_CHIEF_EDITOR_PLURAL, Episciences_Acl::ROLE_EDITOR_PLURAL, Episciences_Acl::ROLE_REVIEWER_PLURAL] as $roleAllowedToSee) {
-                $allowedToSeeCoverLetterTranslated[] = Zend_Registry::get('Zend_Translate')->translate($roleAllowedToSee);
+            $review = Episciences_ReviewsManager::find(RVID);
+            $review->loadSettings();
+            $coverLetterRequirement = (int)$review->getSetting(Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT);
+
+            // Hidden field to pass cover letter requirement to JavaScript
+            $form->addElement('hidden', 'cover_letter_requirement', [
+                'value' => $coverLetterRequirement,
+                'decorators' => ['ViewHelper']
+            ]);
+
+            // Only display cover letter fields if not disabled (0 = disabled, 1 = optional, 2 = required)
+            if ($coverLetterRequirement !== 0) {
+                $allowedToSeeCoverLetterTranslated = [];
+                foreach ([Episciences_Acl::ROLE_CHIEF_EDITOR_PLURAL, Episciences_Acl::ROLE_EDITOR_PLURAL, Episciences_Acl::ROLE_REVIEWER_PLURAL] as $roleAllowedToSee) {
+                    $allowedToSeeCoverLetterTranslated[] = Zend_Registry::get('Zend_Translate')->translate($roleAllowedToSee);
+                }
+
+                $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
+
+                // Build label based on requirement setting
+                $isRequired = $coverLetterRequirement === 2;
+                $optionalSuffix = $coverLetterRequirement === 1
+                    ? '<br><em style="font-weight: normal;">' . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>'
+                    : '';
+
+                $form->addElement('textarea', self::COVER_LETTER_COMMENT_ELEMENT_NAME, [
+                    'label' => Zend_Registry::get('Zend_Translate')->translate('Commentaire') . $optionalSuffix,
+                    'rows' => 5,
+                    'description' => $descriptionAllowedToSeeCoverLetterTranslated,
+                    'validators' => [[
+                        'StringLength', false, ['max' => MAX_INPUT_TEXTAREA]
+                    ]]
+                ]);
+                $group[] = self::COVER_LETTER_COMMENT_ELEMENT_NAME;
+
+                // Attached file [new version]
+                $extensions = ALLOWED_EXTENSIONS;
+                $implode_extensions = implode(',', $extensions);
+                $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
+                $form->addElement('file', self::COVER_LETTER_FILE_ELEMENT_NAME, [
+                    'label' => Zend_Registry::get('Zend_Translate')->translate("Lettre d'accompagnement") . $optionalSuffix,
+                    'description' => $description,
+                    'valueDisabled' => true,
+                    'maxFileSize' => MAX_FILE_SIZE,
+                    'validators' => [
+                        'Count' => [false, 1],
+                        'Extension' => [false, $implode_extensions],
+                        'Size' => [false, MAX_FILE_SIZE]
+                    ]
+                ]);
+
+                // Add required class to label when cover letter is required
+                if ($isRequired) {
+                    $form->getElement(self::COVER_LETTER_FILE_ELEMENT_NAME)
+                        ->getDecorator('label')
+                        ->setOption('class', 'col-md-3 control-label required');
+                }
+
+                $group[] = self::COVER_LETTER_FILE_ELEMENT_NAME;
             }
-
-            $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
-
-            $form->addElement('textarea', self::COVER_LETTER_COMMENT_ELEMENT_NAME, [
-                'label' => Zend_Registry::get('Zend_Translate')->translate('Commentaire') . '<br><em style="font-weight: normal;">' . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>', 'rows' => 5,
-                'description' => $descriptionAllowedToSeeCoverLetterTranslated,
-                'validators' => [[
-                    'StringLength', false, ['max' => MAX_INPUT_TEXTAREA]
-                ]]
-            ]);
-            $group[] = self::COVER_LETTER_COMMENT_ELEMENT_NAME;
-
-
-            // Attached file [new version]
-            $extensions = ALLOWED_EXTENSIONS;
-            $implode_extensions = implode(',', $extensions);
-            $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
-            $form->addElement('file', self::COVER_LETTER_FILE_ELEMENT_NAME, [
-                'label' => Zend_Registry::get('Zend_Translate')->translate("Lettre d'accompagnement") . "<br><em style=\"font-weight: normal;\">" . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>',
-                'description' => $description,
-                'valueDisabled' => true,
-                'maxFileSize' => MAX_FILE_SIZE,
-                'validators' => [
-                    'Count' => [false, 1],
-                    'Extension' => [false, $implode_extensions],
-                    'Size' => [false, MAX_FILE_SIZE]
-                ]
-            ]);
-
-            $group[] = self::COVER_LETTER_FILE_ELEMENT_NAME;
 
             if (isset($settings['dataType'])) {
                 self::addDdElement($form, $group, $settings['dataType']);

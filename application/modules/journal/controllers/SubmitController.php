@@ -162,6 +162,10 @@ class SubmitController extends DefaultController
         $this->adjustFormForReplacementOrSuggestions($request, $form, $canReplace);
         $this->setDdFileRequiredFlag($form, $post);
 
+        if (!$this->validateCoverLetterRequirement($form, $post)) {
+            return;
+        }
+
         if (!$form->isValid($post)) {
             $this->renderFormErrors($form);
             return;
@@ -213,6 +217,44 @@ class SubmitController extends DefaultController
 
         $form->getElement(Episciences_Submit::DD_FILE_ELEMENT_NAME)
             ?->setRequired($post[$requiredDdKey] === 'true');
+    }
+
+    /**
+     * Validate cover letter requirement.
+     * When required, at least one of comment or file must be provided.
+     *
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function validateCoverLetterRequirement(Zend_Form $form, array $post): bool
+    {
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+        $coverLetterRequirement = (int)$review->getSetting(Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT);
+
+        // Only validate if cover letter is required (value = 2)
+        if ($coverLetterRequirement !== 2) {
+            return true;
+        }
+
+        $comment = trim($post[Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME] ?? '');
+        $file = $_FILES[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME]['name'] ?? '';
+
+        // At least one must be provided
+        if (empty($comment) && empty($file)) {
+            $translator = Zend_Registry::get('Zend_Translate');
+            $errorMessage = $translator->translate('Une lettre de motivation est requise. Veuillez fournir un commentaire ou joindre un fichier.');
+
+            // Add error to form element
+            $element = $form->getElement(Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME);
+            if ($element) {
+                $element->addError($errorMessage);
+            }
+
+            $this->renderFormErrors($form);
+            return false;
+        }
+
+        return true;
     }
 
     /**

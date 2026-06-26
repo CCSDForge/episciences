@@ -21,6 +21,9 @@ $(function () {
     let $searchRequiredPwd = $('#' + subform + '-h_requiredPwd');
     let $fileDescriptor = $("#file_data_descriptor");
     let $isRequiredDescriptor = $("#file_data_descriptor_is_required");
+    let $coverLetterComment = $("#author_comment");
+    let $coverLetterFile = $("#file_comment_author");
+    let $coverLetterRequirement = $("#cover_letter_requirement");
 
     // if it is a modal, disable submit button
     disableModalSubmitButton();
@@ -50,6 +53,14 @@ $(function () {
         activateDeactivateSubmitButton();
     });
 
+    // Cover letter fields validation
+    $coverLetterComment.on('input', function () {
+        activateDeactivateSubmitButton();
+    });
+
+    $coverLetterFile.on('change', function () {
+        activateDeactivateSubmitButton();
+    });
 
     $search_button.on('click', function () {
         doSearching();
@@ -508,6 +519,18 @@ $(function () {
             !$secondDisclaimersDisclaimer.is(':checked')
         ) {
             return false;
+        }
+
+        // Cover letter check (required = 2 means at least one of comment or file must be provided)
+        if (
+            $coverLetterRequirement.length > 0 &&
+            $coverLetterRequirement.val() === '2'
+        ) {
+            const hasComment = $coverLetterComment.length > 0 && $coverLetterComment.val().trim() !== '';
+            const hasFile = $coverLetterFile.length > 0 && $coverLetterFile.val() !== '';
+            if (!hasComment && !hasFile) {
+                return false;
+            }
         }
 
         // data/software descriptor check
