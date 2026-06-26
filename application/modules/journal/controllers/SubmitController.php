@@ -162,6 +162,10 @@ class SubmitController extends DefaultController
         $this->adjustFormForReplacementOrSuggestions($request, $form, $canReplace);
         $this->setDdFileRequiredFlag($form, $post);
 
+        if (!$this->handleCoverLetterValidation($form, $post)) {
+            return;
+        }
+
         if (!$form->isValid($post)) {
             $this->renderFormErrors($form);
             return;
@@ -213,6 +217,29 @@ class SubmitController extends DefaultController
 
         $form->getElement(Episciences_Submit::DD_FILE_ELEMENT_NAME)
             ?->setRequired($post[$requiredDdKey] === 'true');
+    }
+
+    /**
+     * Validate cover letter requirement.
+     * When required, at least one of comment or file must be provided.
+     *
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function handleCoverLetterValidation(Zend_Form $form, array $post): bool
+    {
+        $validation = Episciences_Submit::validateCoverLetterRequirement($post);
+
+        if ($validation !== true) {
+            $element = $form->getElement(Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME);
+            if ($element) {
+                $element->addError($validation);
+            }
+
+            $this->renderFormErrors($form);
+            return false;
+        }
+
+        return true;
     }
 
     /**
