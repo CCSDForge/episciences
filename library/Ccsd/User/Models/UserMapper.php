@@ -10,18 +10,6 @@ class Ccsd_User_Models_UserMapper {
     /** @var array<int, array<string, mixed>> Request-level cache keyed by UID */
     private static array $_cache = [];
 
-    /**
-     * Pre-populate the cache from a batch-fetched result set.
-     *
-     * @param array<int, array<string, mixed>> $rows  Rows from T_UTILISATEURS (must include UID key)
-     */
-    public static function preloadCache(array $rows): void
-    {
-        foreach ($rows as $row) {
-            self::$_cache[(int) $row['UID']] = $row;
-        }
-    }
-
     /** @var Zend_Db_Table_Abstract */
     protected $_dbTable;
 

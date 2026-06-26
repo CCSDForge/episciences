@@ -114,7 +114,7 @@ class Episciences_VolumesManager
      * @param array<int, array<string, mixed>> $rows
      * @return array<int, array<int, array<string, mixed>>>  [vid => [uid => row]]
      */
-    public static function groupAssignmentRowsByVid(array $rows, bool $active): array
+    private static function groupAssignmentRowsByVid(array $rows, bool $active): array
     {
         $grouped = [];
         foreach ($rows as $row) {
@@ -171,7 +171,7 @@ class Episciences_VolumesManager
      * @param array<int, array<int, array<string, mixed>>> $groupedRows  [vid => [uid => row]]
      * @return int[]
      */
-    public static function extractUniqueUids(array $groupedRows): array
+    private static function extractUniqueUids(array $groupedRows): array
     {
         $uids = [];
         foreach ($groupedRows as $rows) {
