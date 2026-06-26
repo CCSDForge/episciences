@@ -12,6 +12,19 @@
   color: #fff;
 }
 
+.biblio-refs-hint {
+  visibility: hidden;
+  font-size: 12px;
+  font-weight: normal;
+  color: #777;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.panel-heading:hover .biblio-refs-hint {
+  visibility: visible;
+}
+
 .editor-availability-checkbox {
   float: right;
   padding: 2px 6px;

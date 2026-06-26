@@ -238,6 +238,10 @@ class Episciences_Comment
             $this->logComment();
         }
 
+        if ($result) {
+            Episciences_CommentsManager::getCachePool()->clear();
+        }
+
         return $result;
     }
 
@@ -251,6 +255,7 @@ class Episciences_Comment
 
         try {
             $db->delete(T_PAPER_COMMENTS, ['PCID = ?' => $this->getPcid()]);
+            Episciences_CommentsManager::getCachePool()->clear();
         } catch (Zend_Db_Statement_Exception $exception) {
             return false;
         }

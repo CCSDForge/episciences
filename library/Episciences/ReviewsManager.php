@@ -261,4 +261,38 @@ class Episciences_ReviewsManager
         return $db->fetchAll($select);
     }
 
+    /**
+     * Batch-load settings for multiple reviews in a single query.
+     * Avoids N+1 queries when loading settings for many journals at once.
+     *
+     * @param Episciences_Review[] $reviews Array of Review objects indexed by RVID
+     * @return void
+     */
+    public static function loadSettingsForReviews(array $reviews): void
+    {
+        if (empty($reviews)) {
+            return;
+        }
+
+        $rvids = array_keys($reviews);
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_REVIEW_SETTINGS, ['RVID', 'SETTING', 'VALUE'])
+            ->where('RVID IN (?)', $rvids);
+
+        $rows = $db->fetchAll($select);
+
+        // Group settings by RVID
+        $settingsByRvid = [];
+        foreach ($rows as $row) {
+            $settingsByRvid[(int)$row['RVID']][] = $row;
+        }
+
+        // Apply settings to each review
+        foreach ($reviews as $review) {
+            $review->applySettingsFromRows($settingsByRvid[$review->getRvid()] ?? []);
+        }
+    }
+
 }

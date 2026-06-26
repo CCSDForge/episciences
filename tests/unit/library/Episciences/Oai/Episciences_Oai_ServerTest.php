@@ -2,12 +2,15 @@
 
 namespace unit\library\Episciences\Oai;
 
+use Ccsd_DOMDocument;
+use Ccsd_Oai_Server;
 use Episciences_Oai_Server;
 use Episciences_Paper;
 use PHPUnit\Framework\TestCase;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use ReflectionMethod;
+use ReflectionProperty;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
@@ -699,6 +702,197 @@ class Episciences_Oai_ServerTest extends TestCase
      *
      * @throws \ReflectionException|\Psr\Cache\InvalidArgumentException
      */
+    // -----------------------------------------------------------------------
+    // parseSubjects()
+    // -----------------------------------------------------------------------
+
+    public function testParseSubjectsWithSemicolonSeparatedTerms(): void
+    {
+        $server = $this->buildServerNoConstructor();
+        $result = $this->invokeMethod($server, 'parseSubjects', 'math; physics; computer science');
+        self::assertSame(['math', 'physics', 'computer science'], $result);
+    }
+
+    public function testParseSubjectsSingleTerm(): void
+    {
+        $server = $this->buildServerNoConstructor();
+        $result = $this->invokeMethod($server, 'parseSubjects', 'mathematics');
+        self::assertSame(['mathematics'], $result);
+    }
+
+    public function testParseSubjectsTrimsWhitespace(): void
+    {
+        $server = $this->buildServerNoConstructor();
+        $result = $this->invokeMethod($server, 'parseSubjects', '  math  ;  physics  ');
+        self::assertSame(['math', 'physics'], $result);
+    }
+
+    public function testParseSubjectsFiltersEmptySegments(): void
+    {
+        $server = $this->buildServerNoConstructor();
+        $result = $this->invokeMethod($server, 'parseSubjects', 'math;; physics');
+        self::assertSame(['math', 'physics'], $result);
+    }
+
+    public function testParseSubjectsReturnsSequentiallyIndexedArray(): void
+    {
+        // Consecutive separators create holes — result must be reindexed (0, 1, …)
+        $server = $this->buildServerNoConstructor();
+        $result = $this->invokeMethod($server, 'parseSubjects', 'a;;b');
+        self::assertSame([0, 1], array_keys($result));
+    }
+
+    // -----------------------------------------------------------------------
+    // hasSetDescriptionData()  (private in Ccsd_Oai_Server)
+    // -----------------------------------------------------------------------
+
+    private function invokeHasSetDescriptionData(object $server, array $setData): bool
+    {
+        $rm = new ReflectionMethod(Ccsd_Oai_Server::class, 'hasSetDescriptionData');
+        $rm->setAccessible(true);
+        return $rm->invoke($server, $setData);
+    }
+
+    public function testHasSetDescriptionDataReturnsFalseForEmptyArray(): void
+    {
+        $server = $this->buildServerNoConstructor();
+        self::assertFalse($this->invokeHasSetDescriptionData($server, []));
+    }
+
+    public function testHasSetDescriptionDataReturnsFalseWithOnlyName(): void
+    {
+        $server = $this->buildServerNoConstructor();
+        self::assertFalse($this->invokeHasSetDescriptionData($server, ['name' => 'Journal']));
+    }
+
+    /** @dataProvider setDataWithMetadataProvider */
+    public function testHasSetDescriptionDataReturnsTrueWhenMetadataPresent(array $setData): void
+    {
+        $server = $this->buildServerNoConstructor();
+        self::assertTrue($this->invokeHasSetDescriptionData($server, $setData));
+    }
+
+    public static function setDataWithMetadataProvider(): array
+    {
+        return [
+            'description only' => [['name' => 'J', 'description' => 'Desc']],
+            'publisher only'   => [['name' => 'J', 'publisher' => 'Pub']],
+            'date only'        => [['name' => 'J', 'date' => '2020']],
+            'subjects only'    => [['name' => 'J', 'subjects' => ['math']]],
+            'all fields'       => [['name' => 'J', 'description' => 'D', 'publisher' => 'P', 'date' => '2020', 'subjects' => ['math']]],
+        ];
+    }
+
+    // -----------------------------------------------------------------------
+    // createSetDescription()  (private in Ccsd_Oai_Server)
+    // -----------------------------------------------------------------------
+
+    private function buildServerWithXml(): Episciences_Oai_Server
+    {
+        $server = $this->getMockBuilder(Episciences_Oai_Server::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $prop = new ReflectionProperty(Ccsd_Oai_Server::class, '_xml');
+        $prop->setAccessible(true);
+        $prop->setValue($server, new Ccsd_DOMDocument('1.0', 'utf-8'));
+
+        return $server;
+    }
+
+    private function invokeCreateSetDescription(object $server, array $setData): ?\DOMElement
+    {
+        $rm = new ReflectionMethod(Ccsd_Oai_Server::class, 'createSetDescription');
+        $rm->setAccessible(true);
+        return $rm->invoke($server, $setData);
+    }
+
+    public function testCreateSetDescriptionReturnsSetDescriptionElement(): void
+    {
+        $server = $this->buildServerWithXml();
+        $el = $this->invokeCreateSetDescription($server, ['name' => 'Journal', 'description' => 'A journal']);
+        self::assertInstanceOf(\DOMElement::class, $el);
+        self::assertSame('setDescription', $el->nodeName);
+    }
+
+    public function testCreateSetDescriptionContainsOaiDcChild(): void
+    {
+        $server = $this->buildServerWithXml();
+        $el = $this->invokeCreateSetDescription($server, ['name' => 'Journal', 'description' => 'Desc']);
+        $xml = $el->ownerDocument->saveXML($el);
+        self::assertStringContainsString('oai_dc:dc', $xml);
+    }
+
+    public function testCreateSetDescriptionIncludesDcTitle(): void
+    {
+        $server = $this->buildServerWithXml();
+        $el = $this->invokeCreateSetDescription($server, ['name' => 'My Journal']);
+        $xml = $el->ownerDocument->saveXML($el);
+        self::assertStringContainsString('<dc:title>My Journal</dc:title>', $xml);
+    }
+
+    public function testCreateSetDescriptionIncludesDcDescription(): void
+    {
+        $server = $this->buildServerWithXml();
+        $el = $this->invokeCreateSetDescription($server, ['name' => 'J', 'description' => 'Great journal']);
+        $xml = $el->ownerDocument->saveXML($el);
+        self::assertStringContainsString('<dc:description>Great journal</dc:description>', $xml);
+    }
+
+    public function testCreateSetDescriptionIncludesDcPublisher(): void
+    {
+        $server = $this->buildServerWithXml();
+        $el = $this->invokeCreateSetDescription($server, ['name' => 'J', 'publisher' => 'CNRS Editions']);
+        $xml = $el->ownerDocument->saveXML($el);
+        self::assertStringContainsString('<dc:publisher>CNRS Editions</dc:publisher>', $xml);
+    }
+
+    public function testCreateSetDescriptionIncludesDcDate(): void
+    {
+        $server = $this->buildServerWithXml();
+        $el = $this->invokeCreateSetDescription($server, ['name' => 'J', 'date' => '2015']);
+        $xml = $el->ownerDocument->saveXML($el);
+        self::assertStringContainsString('<dc:date>2015</dc:date>', $xml);
+    }
+
+    public function testCreateSetDescriptionIncludesMultipleDcSubjects(): void
+    {
+        $server = $this->buildServerWithXml();
+        $el = $this->invokeCreateSetDescription($server, ['name' => 'J', 'subjects' => ['math', 'physics']]);
+        $xml = $el->ownerDocument->saveXML($el);
+        self::assertStringContainsString('<dc:subject>math</dc:subject>', $xml);
+        self::assertStringContainsString('<dc:subject>physics</dc:subject>', $xml);
+    }
+
+    public function testCreateSetDescriptionUsesNamespaceAwareDeclarations(): void
+    {
+        $server = $this->buildServerWithXml();
+        $el = $this->invokeCreateSetDescription($server, ['name' => 'J', 'description' => 'D']);
+        $oaiDc = $el->firstChild;
+        self::assertNotNull($oaiDc);
+        // setAttributeNS registers proper namespace bindings readable via getAttributeNS
+        self::assertSame(
+            Ccsd_Oai_Server::XMLNS_OAI_DC,
+            $oaiDc->getAttributeNS('http://www.w3.org/2000/xmlns/', 'oai_dc')
+        );
+        self::assertSame(
+            Ccsd_Oai_Server::XMLNS_DC,
+            $oaiDc->getAttributeNS('http://www.w3.org/2000/xmlns/', 'dc')
+        );
+        self::assertSame(
+            Ccsd_Oai_Server::XMLNS_XSI,
+            $oaiDc->getAttributeNS('http://www.w3.org/2000/xmlns/', 'xsi')
+        );
+    }
+
+    public function testCreateSetDescriptionOmitsDcTitleWhenNameMissing(): void
+    {
+        $server = $this->buildServerWithXml();
+        $el = $this->invokeCreateSetDescription($server, ['description' => 'Desc']);
+        $xml = $el->ownerDocument->saveXML($el);
+        self::assertStringNotContainsString('dc:title', $xml);
+    }
+
     public function testGetIdsPropagatesFormatInReturnedArrayWhenFormatComesFromToken(): void
     {
         $cache = new ArrayAdapter();

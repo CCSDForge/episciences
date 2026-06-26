@@ -204,6 +204,17 @@ class Episciences_Mail_Template
     }
 
     /**
+     * Create a Template instance from a raw DB row.
+     * @param array $row associative row from T_MAIL_TEMPLATES
+     */
+    public static function fromRow(array $row): self
+    {
+        $template = new self();
+        $template->populate($row);
+        return $template;
+    }
+
+    /**
      * populate Template object from a given array of data
      * @param array $data
      * @return bool

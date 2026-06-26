@@ -1,0 +1,64 @@
+<?php
+/** @var Zend_View $this */
+
+if ($this->errorMessage !== null) {
+    echo '<p class="text-danger">' . $this->escape($this->translate((string)$this->errorMessage)) . '</p>';
+    return;
+}
+
+$aid = (int)$this->aid;
+$docId = (int)$this->docId;
+$fullName = (string)$this->reviewerFullName;
+$email = (string)$this->reviewerEmail;
+$mode = (string)$this->accountMode; // 'attach' | 'create'
+$login = (string)$this->accountLogin;
+
+$action = '/administratepaper/saveacceptreviewerinvitation?aid=' . $aid . '&docid=' . $docId;
+?>
+
+<style>
+    .accept-invitation-errors {
+        display: none;
+        margin-top: 20px;
+        color: red;
+    }
+
+    .accept-invitation-summary dt {
+        font-weight: bold;
+    }
+</style>
+
+<form id="accept-invitation-form" class="form-horizontal" action="<?= $this->escape($action) ?>" method="post">
+    <?= $this->csrfInput /* trusted HTML built server-side by Episciences_Csrf_Helper */ ?>
+    <input type="hidden" name="preferred_login" value="<?= $this->escape($login) ?>">
+
+    <p>
+        <?= $this->translate("Vous êtes sur le point d'accepter l'invitation de relecture à la place du relecteur. Les mêmes effets qu'une acceptation par le relecteur seront appliqués (e-mails, journalisation, assignation).") ?>
+    </p>
+
+    <dl class="dl-horizontal accept-invitation-summary">
+        <dt><?= $this->translate('Relecteur') ?></dt>
+        <dd><?= $this->escape($fullName) ?></dd>
+
+        <dt><?= $this->translate('E-mail') ?></dt>
+        <dd><?= $this->escape($email) ?></dd>
+
+        <dt><?= $this->translate('Compte') ?></dt>
+        <dd>
+            <?php if ($mode === 'create'): ?>
+                <?= $this->translate("Un nouveau compte sera créé avec l'identifiant :") ?>
+                <strong><?= $this->escape($login) ?></strong>
+            <?php else: ?>
+                <?= $this->translate('La relecture sera rattachée au compte existant :') ?>
+                <strong><?= $this->escape($login) ?></strong>
+            <?php endif; ?>
+        </dd>
+    </dl>
+
+    <div class="row accept-invitation-errors">
+        <span class="col-md-3" style="font-weight: bold; text-align: right;"><?= $this->translate('Erreurs') ?></span>
+        <span class="col-md-9 errors-message" style="padding-left: 20px;"></span>
+    </div>
+</form>
+
+<script src="/js/administratepaper/accept-invitation-modal.js?_=v<?= APPLICATION_VERSION ?>"></script>

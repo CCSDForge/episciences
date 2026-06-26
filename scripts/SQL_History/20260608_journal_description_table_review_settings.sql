@@ -1,0 +1,15 @@
+-- ============================================================================
+-- Migration: Add Journal Backoffice Settings
+-- Date: 2026-06-08
+-- Description: Initialize backoffice settings for all existing journals
+-- ============================================================================
+
+-- No SQL migration needed.
+--
+-- Settings 'journalDescription', 'journalKeywords', and 'journalCreationYear'
+-- do not require pre-initialization because:
+--   - getSetting() returns false for missing rows (via Ccsd_Tools::ifsetor)
+--   - getSetting() also returns false for rows with VALUE = NULL (null ?? false = false)
+--   - Both cases are equivalent, so inserting NULL values adds no benefit
+--
+-- Settings will be created on first save via saveSettings() by the interface episciences-manager (for editor).

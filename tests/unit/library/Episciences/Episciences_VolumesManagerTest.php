@@ -4,6 +4,7 @@ namespace unit\library\Episciences;
 
 use Episciences_VolumesManager;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 /**
  * Unit tests for Episciences_VolumesManager
@@ -14,6 +15,12 @@ use PHPUnit\Framework\TestCase;
  */
 class Episciences_VolumesManagerTest extends TestCase
 {
+    private function callPrivate(string $method, array $args): mixed
+    {
+        $ref = new ReflectionMethod(Episciences_VolumesManager::class, $method);
+        $ref->setAccessible(true);
+        return $ref->invokeArgs(null, $args);
+    }
     // =========================================================================
     // revertVolumeTitleToTextArray()
     // =========================================================================
@@ -127,5 +134,151 @@ class Episciences_VolumesManagerTest extends TestCase
         // We can't test the DB path here; just confirm the non-numeric guard works.
         // For 'abc', the result is 0 → empty string.
         $this->assertSame('', Episciences_VolumesManager::translateVolumeKey('not-a-number!@#'));
+    }
+
+    // =========================================================================
+    // groupAssignmentRowsByVid() — pure logic, no DB
+    // =========================================================================
+
+    private function makeRow(int $vid, int $uid, string $status, string $when = '2024-01-01'): array
+    {
+        return ['ITEMID' => $vid, 'UID' => $uid, 'STATUS' => $status, 'WHEN' => $when];
+    }
+
+    public function testGroupAssignmentRowsByVidReturnsEmptyOnEmptyInput(): void
+    {
+        $this->assertSame([], $this->callPrivate('groupAssignmentRowsByVid', [[], true]));
+        $this->assertSame([], $this->callPrivate('groupAssignmentRowsByVid', [[], false]));
+    }
+
+    public function testGroupAssignmentRowsByVidGroupsByItemId(): void
+    {
+        $rows = [
+            $this->makeRow(10, 1, 'active'),
+            $this->makeRow(20, 2, 'active'),
+        ];
+        $result = $this->callPrivate('groupAssignmentRowsByVid', [$rows, true]);
+
+        $this->assertArrayHasKey(10, $result);
+        $this->assertArrayHasKey(20, $result);
+        $this->assertArrayHasKey(1, $result[10]);
+        $this->assertArrayHasKey(2, $result[20]);
+    }
+
+    public function testGroupAssignmentRowsByVidFiltersNonActiveWhenActive(): void
+    {
+        $rows = [
+            $this->makeRow(10, 1, 'active'),
+            $this->makeRow(10, 2, 'inactive'),
+        ];
+        $result = $this->callPrivate('groupAssignmentRowsByVid', [$rows, true]);
+
+        $this->assertArrayHasKey(1, $result[10]);
+        $this->assertArrayNotHasKey(2, $result[10] ?? []);
+    }
+
+    public function testGroupAssignmentRowsByVidIncludesNonActiveWhenNotActive(): void
+    {
+        $rows = [
+            $this->makeRow(10, 1, 'active'),
+            $this->makeRow(10, 2, 'inactive'),
+        ];
+        $result = $this->callPrivate('groupAssignmentRowsByVid', [$rows, false]);
+
+        $this->assertArrayHasKey(1, $result[10]);
+        $this->assertArrayHasKey(2, $result[10]);
+    }
+
+    public function testGroupAssignmentRowsByVidLastRowWinsForSameVidAndUid(): void
+    {
+        $rows = [
+            $this->makeRow(10, 1, 'active', '2023-01-01'),
+            $this->makeRow(10, 1, 'active', '2024-06-01'),
+        ];
+        $result = $this->callPrivate('groupAssignmentRowsByVid', [$rows, true]);
+
+        $this->assertCount(1, $result[10]);
+        $this->assertSame('2024-06-01', $result[10][1]['WHEN']);
+    }
+
+    public function testGroupAssignmentRowsByVidHandlesMultipleEditorsPerVolume(): void
+    {
+        $rows = [
+            $this->makeRow(5, 100, 'active'),
+            $this->makeRow(5, 101, 'active'),
+            $this->makeRow(5, 102, 'inactive'),
+        ];
+        $result = $this->callPrivate('groupAssignmentRowsByVid', [$rows, true]);
+
+        $this->assertCount(2, $result[5]);
+        $this->assertArrayHasKey(100, $result[5]);
+        $this->assertArrayHasKey(101, $result[5]);
+    }
+
+    public function testGroupAssignmentRowsByVidReturnsRowData(): void
+    {
+        $row = $this->makeRow(7, 42, 'active', '2025-03-15');
+        $result = $this->callPrivate('groupAssignmentRowsByVid', [[$row], true]);
+
+        $this->assertSame('active', $result[7][42]['STATUS']);
+        $this->assertSame('2025-03-15', $result[7][42]['WHEN']);
+    }
+
+    public function testGroupAssignmentRowsByVidCastsVidAndUidToInt(): void
+    {
+        $row = ['ITEMID' => '10', 'UID' => '42', 'STATUS' => 'active', 'WHEN' => '2024-01-01'];
+        $result = $this->callPrivate('groupAssignmentRowsByVid', [[$row], true]);
+
+        $this->assertArrayHasKey(10, $result);
+        $this->assertArrayHasKey(42, $result[10]);
+    }
+
+    // =========================================================================
+    // extractUniqueUids() — pure logic, no DB
+    // =========================================================================
+
+    public function testExtractUniqueUidsReturnsEmptyOnEmptyInput(): void
+    {
+        $this->assertSame([], $this->callPrivate('extractUniqueUids', [[]]));
+    }
+
+    public function testExtractUniqueUidsSingleVolumeMultipleEditors(): void
+    {
+        $grouped = [
+            10 => [100 => [], 101 => []],
+        ];
+        $uids = $this->callPrivate('extractUniqueUids', [$grouped]);
+        sort($uids);
+
+        $this->assertSame([100, 101], $uids);
+    }
+
+    public function testExtractUniqueUidsDeduplicatesAcrossVolumes(): void
+    {
+        $grouped = [
+            10 => [100 => [], 101 => []],
+            20 => [100 => [], 102 => []],
+        ];
+        $uids = $this->callPrivate('extractUniqueUids', [$grouped]);
+        sort($uids);
+
+        $this->assertSame([100, 101, 102], $uids);
+        $this->assertCount(3, $uids);
+    }
+
+    public function testExtractUniqueUidsSingleEditor(): void
+    {
+        $grouped = [42 => [7 => []]];
+        $uids = $this->callPrivate('extractUniqueUids', [$grouped]);
+
+        $this->assertSame([7], $uids);
+    }
+
+    public function testExtractUniqueUidsReturnsIntKeys(): void
+    {
+        $grouped = [10 => [99 => []]];
+        $uids = $this->callPrivate('extractUniqueUids', [$grouped]);
+
+        $this->assertIsInt($uids[0]);
     }
 }

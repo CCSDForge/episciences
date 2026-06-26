@@ -370,7 +370,7 @@ class OpenAireApiClient extends AbstractApiClient
         // Normalize: API sometimes returns a single associative object instead of a list.
         $apiData = array_key_exists(0, $fileFound) ? $fileFound : [$fileFound];
 
-        $authorRecords = \Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
+        $authorRecords = \Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId);
         $affectedRows  = 0;
 
         foreach ($authorRecords as $recordKey => $authorInfo) {

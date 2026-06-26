@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Front Controller Plugin to add SQL profiler stats to HTTP headers
  * This makes profiler data visible in browser DevTools for AJAX requests
@@ -31,7 +33,7 @@ class Episciences_Controller_Plugin_SqlProfiler extends Zend_Controller_Plugin_A
             try {
                 $casAdapter = Ccsd_Db_Adapter_Cas::getAdapter();
                 $casProfiler = $casAdapter->getProfiler();
-                if ($casProfiler && $casProfiler->getEnabled()) {
+                if ($casProfiler->getEnabled()) {
                     $casQueries = $casProfiler->getTotalNumQueries();
                     $casTime = round($casProfiler->getTotalElapsedSecs(), 4);
                 }
@@ -45,15 +47,15 @@ class Episciences_Controller_Plugin_SqlProfiler extends Zend_Controller_Plugin_A
 
             // Add custom headers (visible in browser DevTools Network tab)
             $response = $this->getResponse();
-            $response->setHeader('X-SQL-Queries-Main', $mainQueries, true);
+            $response->setHeader('X-SQL-Queries-Main', (string) $mainQueries, true);
             $response->setHeader('X-SQL-Time-Main', $mainTime . 's', true);
 
             if ($casQueries > 0) {
-                $response->setHeader('X-SQL-Queries-CAS', $casQueries, true);
+                $response->setHeader('X-SQL-Queries-CAS', (string) $casQueries, true);
                 $response->setHeader('X-SQL-Time-CAS', $casTime . 's', true);
             }
 
-            $response->setHeader('X-SQL-Queries-Total', $totalQueries, true);
+            $response->setHeader('X-SQL-Queries-Total', (string) $totalQueries, true);
             $response->setHeader('X-SQL-Time-Total', $totalTime . 's', true);
 
             // Add a summary header for quick view

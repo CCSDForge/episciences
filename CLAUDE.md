@@ -26,9 +26,9 @@
 - `yarn format` - Format JS with Prettier
 
 ## Code
-- Write comments in English
+- Write comments, documentation in English
 - Do not use Jquery for JavaScript
-- 
+
 ## Key Files
 - `application/configs/application.ini` - Main config
 - `config/pwd.json` - Credentials (not in repo)
@@ -36,12 +36,12 @@
 
 # General information
 - writing outside the project directory is forbidden, even in /tmp
-- write your plans in the ./tmp/ directory of the project
-- when creating files, chmod 644
+- when asked to write a plan, write it in the ./tmp/ directory of the project
+- when creating new code files, chmod 644
 
 # Directories to ignore
 - `data/`
 - `cache/`
 - `tmp/`
 - `log/`
-- `logs/` 
+- `logs/`

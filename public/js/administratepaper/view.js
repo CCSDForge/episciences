@@ -159,6 +159,16 @@ $(document).ready(function () {
             });
         });
 
+    // Reviewer context menu — event delegation survives AJAX replacement of #reviewers
+    $(document).on('click', '#reviewers .reviewer .popover-link', function () {
+        getReviewerMenu(this);
+    });
+
+    $(document).on('click', '#reviewers .go_to_rating', function () {
+        var uid = $(this).data('uid');
+        $('#rating-' + uid).collapse('show');
+    });
+
     // logs ******************************
 
     // search in logs (input)
@@ -454,6 +464,24 @@ function getReviewerMenu(button) {
         content +=
             '<span class="glyphicon glyphicon-calendar" style="margin-right: 5px"></span> ' +
             translate('Modifier la date limite de rendu de la relecture') +
+            '</a></li>';
+    }
+
+    if (canBeReviewed && (status === 'pending' || status === 'expired')) {
+        content += '<li>';
+        content +=
+            '<a class="modal-opener" href="/administratepaper/acceptreviewerinvitation/aid/' +
+            aid +
+            '" ';
+        content += 'data-width="50%" ';
+        content += 'data-callback="submit" ';
+        content +=
+            'title="' +
+            translate("Accepter l'invitation à la place du relecteur") +
+            '">';
+        content +=
+            '<span class="glyphicon glyphicon-ok" style="margin-right: 5px"></span> ' +
+            translate("Accepter l'invitation à la place du relecteur") +
             '</a></li>';
     }
 

@@ -213,7 +213,10 @@ class AdministratelinkeddataController extends Zend_Controller_Action
                     $idLd = $ldOptions['idLd'];
                 }
             }
-            $this->view->supportedRelationShips = Episciences_Paper_Dataset::getSupportedRelationShips();
+            $this->view->supportedRelationShips = array_merge(
+                \Episciences\Paper\Relationship::getSupportedRelationShips(),
+                \Episciences\Paper\Relationship::getDisplayedRelationShipsIntraWorkRelation()
+            );
             $this->view->disabledValue = $disabledValue;
             $this->view->valueLd = $valueLd;
             $this->view->formId = $idForm;

@@ -3,6 +3,10 @@
 namespace unit\scripts;
 
 use GenerateSitemapCommand;
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 use Symfony\Component\Console\Input\InputDefinition;
@@ -17,6 +21,16 @@ require_once __DIR__ . '/../../../scripts/GenerateSitemapCommand.php';
 class GenerateSitemapCommandTest extends TestCase
 {
     private GenerateSitemapCommand $command;
+
+    public static function setUpBeforeClass(): void
+    {
+        if (!defined('DOMAIN')) {
+            define('DOMAIN', 'episciences.org');
+        }
+        if (!defined('EPISCIENCES_API_URL')) {
+            define('EPISCIENCES_API_URL', 'https://api.episciences.org/api/');
+        }
+    }
 
     protected function setUp(): void
     {
@@ -55,7 +69,7 @@ class GenerateSitemapCommandTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // getSitemapGenericEntries() — tested via reflection (pure, no HTTP/DB)
+    // Helpers
     // -------------------------------------------------------------------------
 
     /** @return array<int, array<string, mixed>> */
@@ -72,6 +86,20 @@ class GenerateSitemapCommandTest extends TestCase
         $method = new ReflectionMethod(GenerateSitemapCommand::class, 'buildLocUrls');
         $method->setAccessible(true);
         return $method->invoke($this->command, $base, $path, $languages);
+    }
+
+    private function makeClient(array $responses): Client
+    {
+        $mock    = new MockHandler($responses);
+        $handler = HandlerStack::create($mock);
+        return new Client(['handler' => $handler]);
+    }
+
+    private function callPrivate(string $method, array $args): mixed
+    {
+        $ref = new ReflectionMethod(GenerateSitemapCommand::class, $method);
+        $ref->setAccessible(true);
+        return $ref->invokeArgs($this->command, $args);
     }
 
     // -------------------------------------------------------------------------
@@ -116,12 +144,12 @@ class GenerateSitemapCommandTest extends TestCase
         $this->assertCount(6, $entries);
     }
 
-    public function testGetSitemapGenericEntries_AllEntriesHaveRequiredKeys(): void
+    public function testGetSitemapGenericEntries_AllEntriesHaveLocOnly(): void
     {
         foreach ($this->getSitemapGenericEntries('dmtcs') as $entry) {
             $this->assertArrayHasKey('loc', $entry);
-            $this->assertArrayHasKey('changefreq', $entry);
-            $this->assertArrayHasKey('priority', $entry);
+            $this->assertArrayNotHasKey('changefreq', $entry);
+            $this->assertArrayNotHasKey('priority', $entry);
         }
     }
 
@@ -132,35 +160,22 @@ class GenerateSitemapCommandTest extends TestCase
         }
     }
 
-    public function testGetSitemapGenericEntries_HomePageHasPriorityOneAndDailyFreq(): void
+    public function testGetSitemapGenericEntries_HomePageIsPresent(): void
     {
         $entries = $this->getSitemapGenericEntries('dmtcs');
-        $home    = array_filter($entries, fn($e) => str_ends_with($e['loc'], '/'));
-        $this->assertCount(1, $home);
-
-        $home = array_values($home)[0];
-        $this->assertSame('1', $home['priority']);
-        $this->assertSame('daily', $home['changefreq']);
+        $homes   = array_filter($entries, fn($e) => str_ends_with($e['loc'], '/'));
+        $this->assertCount(1, $homes);
     }
 
-    public function testGetSitemapGenericEntries_ArticlesAndAuthorsHaveDailyFreq(): void
+    public function testGetSitemapGenericEntries_AllExpectedPathsPresent(): void
     {
         $entries = $this->getSitemapGenericEntries('dmtcs');
-        $daily   = array_filter($entries, fn($e) => $e['changefreq'] === 'daily' && $e['priority'] === '0.8');
-        $locs    = array_column(array_values($daily), 'loc');
+        $locs    = array_column($entries, 'loc');
 
-        $this->assertCount(2, $daily);
-        $hasArticles = (bool) array_filter($locs, fn($l) => str_ends_with($l, '/articles'));
-        $hasAuthors  = (bool) array_filter($locs, fn($l) => str_ends_with($l, '/authors'));
-        $this->assertTrue($hasArticles, '/articles should have daily changefreq');
-        $this->assertTrue($hasAuthors,  '/authors should have daily changefreq');
-    }
-
-    public function testGetSitemapGenericEntries_VolumesHaveWeeklyFreq(): void
-    {
-        $entries = $this->getSitemapGenericEntries('dmtcs');
-        $weekly  = array_filter($entries, fn($e) => $e['changefreq'] === 'weekly');
-        $this->assertCount(3, $weekly);
+        foreach (['/articles', '/authors', '/volumes', '/sections', '/about'] as $path) {
+            $found = array_filter($locs, fn($l) => str_ends_with($l, $path));
+            $this->assertCount(1, $found, "Missing path {$path}");
+        }
     }
 
     public function testGetSitemapGenericEntries_AllLocsStartWithHttps(): void
@@ -198,14 +213,151 @@ class GenerateSitemapCommandTest extends TestCase
         $this->assertCount(6, $entries);
     }
 
-    public function testGetSitemapGenericEntries_WithLanguages_HomeHasPriorityOne(): void
+    public function testGetSitemapGenericEntries_WithLanguages_NoChangefreqOrPriority(): void
     {
         $entries = $this->getSitemapGenericEntries('jtcam', ['fr', 'en']);
-        $homes   = array_filter($entries, fn($e) => str_ends_with($e['loc'], '/en/') || str_ends_with($e['loc'], '/fr/'));
-        $this->assertCount(2, $homes);
-        foreach ($homes as $home) {
-            $this->assertSame('1', $home['priority']);
-            $this->assertSame('daily', $home['changefreq']);
+        foreach ($entries as $entry) {
+            $this->assertArrayNotHasKey('changefreq', $entry);
+            $this->assertArrayNotHasKey('priority', $entry);
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // getSitemapArticleEntries() — lastmod from modification_date
+    // -------------------------------------------------------------------------
+
+    public function testGetSitemapArticleEntries_UsesModificationDateAsLastmod(): void
+    {
+        $body = json_encode([
+            'hydra:member' => [
+                [
+                    'docid'    => 42,
+                    'document' => [
+                        'database' => [
+                            'current' => [
+                                'dates' => ['modification_date' => '2026-06-01 15:26:04'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'hydra:view' => [],
+        ]);
+
+        $client  = $this->makeClient([new Response(200, [], $body)]);
+        $logger  = $this->createMock(\Monolog\Logger::class);
+        $entries = $this->callPrivate('getSitemapArticleEntries', ['jfp', $client, $logger, []]);
+
+        $this->assertCount(1, $entries);
+        $this->assertSame('2026-06-01', $entries[0]['lastmod']);
+        $this->assertStringEndsWith('/articles/42', $entries[0]['loc']);
+        $this->assertArrayNotHasKey('changefreq', $entries[0]);
+        $this->assertArrayNotHasKey('priority', $entries[0]);
+    }
+
+    public function testGetSitemapArticleEntries_NullModificationDate_OmitsLastmod(): void
+    {
+        $body = json_encode([
+            'hydra:member' => [['docid' => 7]],
+            'hydra:view'   => [],
+        ]);
+
+        $client  = $this->makeClient([new Response(200, [], $body)]);
+        $logger  = $this->createMock(\Monolog\Logger::class);
+        $entries = $this->callPrivate('getSitemapArticleEntries', ['ops', $client, $logger, []]);
+
+        $this->assertCount(1, $entries);
+        $this->assertNull($entries[0]['lastmod']);
+    }
+
+    public function testGetSitemapArticleEntries_WithLanguages_GeneratesOneUrlPerLang(): void
+    {
+        $body = json_encode([
+            'hydra:member' => [['docid' => 5]],
+            'hydra:view'   => [],
+        ]);
+
+        $client  = $this->makeClient([new Response(200, [], $body)]);
+        $logger  = $this->createMock(\Monolog\Logger::class);
+        $entries = $this->callPrivate('getSitemapArticleEntries', ['jtcam', $client, $logger, ['fr', 'en']]);
+
+        $this->assertCount(2, $entries);
+        $this->assertStringContainsString('/fr/articles/5', $entries[0]['loc']);
+        $this->assertStringContainsString('/en/articles/5', $entries[1]['loc']);
+    }
+
+    // -------------------------------------------------------------------------
+    // getSitemapPageEntries()
+    // -------------------------------------------------------------------------
+
+    public function testGetSitemapPageEntries_ReturnsPageCodeAsPath(): void
+    {
+        $body = json_encode([
+            ['page_code' => 'about',   'date_updated' => '2026-05-25T10:30:51+02:00'],
+            ['page_code' => 'contact', 'date_updated' => null],
+        ]);
+
+        $client  = $this->makeClient([new Response(200, [], $body)]);
+        $logger  = $this->createMock(\Monolog\Logger::class);
+        $entries = $this->callPrivate('getSitemapPageEntries', ['jfp', $client, $logger, []]);
+
+        $this->assertCount(2, $entries);
+        $this->assertStringEndsWith('/about', $entries[0]['loc']);
+        $this->assertStringEndsWith('/contact', $entries[1]['loc']);
+    }
+
+    public function testGetSitemapPageEntries_UsesDateUpdatedAsLastmod(): void
+    {
+        $body = json_encode([
+            ['page_code' => 'about', 'date_updated' => '2026-05-25T10:30:51+02:00'],
+        ]);
+
+        $client  = $this->makeClient([new Response(200, [], $body)]);
+        $logger  = $this->createMock(\Monolog\Logger::class);
+        $entries = $this->callPrivate('getSitemapPageEntries', ['jfp', $client, $logger, []]);
+
+        $this->assertSame('2026-05-25', $entries[0]['lastmod']);
+    }
+
+    public function testGetSitemapPageEntries_NullDateUpdated_OmitsLastmod(): void
+    {
+        $body = json_encode([
+            ['page_code' => 'about', 'date_updated' => null],
+        ]);
+
+        $client  = $this->makeClient([new Response(200, [], $body)]);
+        $logger  = $this->createMock(\Monolog\Logger::class);
+        $entries = $this->callPrivate('getSitemapPageEntries', ['jfp', $client, $logger, []]);
+
+        $this->assertNull($entries[0]['lastmod']);
+    }
+
+    public function testGetSitemapPageEntries_WithLanguages_GeneratesOneUrlPerLang(): void
+    {
+        $body = json_encode([
+            ['page_code' => 'about', 'date_updated' => '2026-01-01T00:00:00+00:00'],
+        ]);
+
+        $client  = $this->makeClient([new Response(200, [], $body)]);
+        $logger  = $this->createMock(\Monolog\Logger::class);
+        $entries = $this->callPrivate('getSitemapPageEntries', ['jtcam', $client, $logger, ['fr', 'en']]);
+
+        $this->assertCount(2, $entries);
+        $this->assertStringContainsString('/fr/about', $entries[0]['loc']);
+        $this->assertStringContainsString('/en/about', $entries[1]['loc']);
+    }
+
+    public function testGetSitemapPageEntries_NoChangefreqOrPriority(): void
+    {
+        $body = json_encode([
+            ['page_code' => 'about', 'date_updated' => '2026-01-01T00:00:00+00:00'],
+        ]);
+
+        $client  = $this->makeClient([new Response(200, [], $body)]);
+        $logger  = $this->createMock(\Monolog\Logger::class);
+        $entries = $this->callPrivate('getSitemapPageEntries', ['jfp', $client, $logger, []]);
+
+        $this->assertArrayNotHasKey('changefreq', $entries[0]);
+        $this->assertArrayNotHasKey('priority', $entries[0]);
     }
 }

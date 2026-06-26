@@ -1,26 +1,60 @@
 <?php
 declare(strict_types=1);
+
+use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+
 class Episciences_Paper_Authors_Repository
 {
     private const JSON_DECODE_FLAGS = JSON_THROW_ON_ERROR;
     private const JSON_ENCODE_FLAGS = JSON_FORCE_OBJECT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
     private const JSON_MAX_DEPTH = 512;
 
+    private static ?CacheItemPoolInterface $_cachePool = null;
+
     /**
-     * @param int|string $paperId
-     * @return array raw rows from the paper_authors table
+     * Set the cache pool (useful for dependency injection in tests)
      */
-    public static function getAuthorByPaperId($paperId): array
+    public static function setCachePool(CacheItemPoolInterface $cachePool): void
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from(T_PAPER_AUTHORS)->where('PAPERID = ?', $paperId);
-        return $db->fetchAssoc($select);
+        self::$_cachePool = $cachePool;
+    }
+
+    /**
+     * Get the cache pool (ArrayAdapter by default)
+     */
+    public static function getCachePool(): CacheItemPoolInterface
+    {
+        if (self::$_cachePool === null) {
+            self::$_cachePool = new ArrayAdapter();
+        }
+        return self::$_cachePool;
+    }
+
+    /**
+     * @return array<int|string, array<string, mixed>> raw rows from the paper_authors table
+     */
+    public static function getAuthorByPaperId(int $paperId): array
+    {
+        $cachePool = self::getCachePool();
+        $cacheKey = 'authors_paper_' . $paperId;
+        $cacheItem = $cachePool->getItem($cacheKey);
+
+        if (!$cacheItem->isHit()) {
+            $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+            $select = $db->select()->from(T_PAPER_AUTHORS)->where('PAPERID = ?', $paperId);
+            $data = $db->fetchAssoc($select);
+            $cacheItem->set($data);
+            $cachePool->save($cacheItem);
+        }
+
+        return $cacheItem->get();
     }
 
     /**
      * Decode the authors JSON for a given paper
      *
-     * @return array decoded authors data
+     * @return array<int, array<string, mixed>> decoded authors data
      * @throws JsonException
      */
     public static function getDecodedAuthors(int $paperId): array
@@ -39,7 +73,7 @@ class Episciences_Paper_Authors_Repository
      * Find the affiliations of a specific author within a paper
      *
      * @param int $authorIndex 0-based index of the author in the JSON array
-     * @return array|string affiliations array, or empty string if not found
+     * @return array<int, mixed>|string affiliations array, or empty string if not found
      * @throws JsonException
      */
     public static function findAffiliationsOneAuthorByPaperId(int $paperId, int $authorIndex): array|string
@@ -62,7 +96,7 @@ class Episciences_Paper_Authors_Repository
     /**
      * Insert one or more author records
      *
-     * @param array $authors array of Episciences_Paper_Authors instances or associative arrays
+     * @param array<int, array<string, mixed>|Episciences_Paper_Authors> $authors array of Episciences_Paper_Authors instances or associative arrays
      * @return int number of affected rows
      */
     public static function insert(array $authors): int
@@ -85,6 +119,18 @@ class Episciences_Paper_Authors_Repository
                 /** @var Zend_Db_Statement_Interface $result */
                 $result = $db->query($sql . implode(', ', $quotedValues));
                 $affectedRows = $result->rowCount();
+                // Invalidate cache for inserted papers
+                $cachePool = self::getCachePool();
+                foreach ($authors as $authorData) {
+                    if ($authorData instanceof Episciences_Paper_Authors) {
+                        $pId = $authorData->getPaperId();
+                    } else {
+                        $pId = $authorData['paperId'] ?? $authorData['paperid'] ?? null;
+                    }
+                    if ($pId !== null) {
+                        $cachePool->deleteItem('authors_paper_' . $pId);
+                    }
+                }
             } catch (Exception $e) {
                 trigger_error($e->getMessage(), E_USER_ERROR);
             }
@@ -115,6 +161,10 @@ class Episciences_Paper_Authors_Repository
 
         try {
             $affectedRows = $db->update(T_PAPER_AUTHORS, $values, $where);
+            $pId = $authorEntity->getPaperId();
+            if ($pId !== null) {
+                self::getCachePool()->deleteItem('authors_paper_' . $pId);
+            }
         } catch (Zend_Db_Adapter_Exception $exception) {
             $affectedRows = 0;
             trigger_error($exception->getMessage(), E_USER_ERROR);
@@ -135,7 +185,11 @@ class Episciences_Paper_Authors_Repository
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        return ($db->delete(T_PAPER_AUTHORS, ['paperid = ?' => $paperId]) > 0);
+        $deleted = $db->delete(T_PAPER_AUTHORS, ['paperid = ?' => $paperId]) > 0;
+        if ($deleted) {
+            self::getCachePool()->deleteItem('authors_paper_' . $paperId);
+        }
+        return $deleted;
     }
 
     /**
@@ -161,7 +215,7 @@ class Episciences_Paper_Authors_Repository
             $formattedAuthors[] = [
                 'fullname' => $fullname,
                 'given' => $nameParts[1] ?? null,
-                'family' => $nameParts[0] ?? null
+                'family' => $nameParts[0]
             ];
         }
 

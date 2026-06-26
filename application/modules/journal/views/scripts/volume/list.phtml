@@ -2,8 +2,6 @@
 
 if ($this->volumes) {
     $this->layout()->pageTitle = $this->translate('Volumes') . '<span class="badge badge-secondary" style="margin-left: 5px;">' . count($this->volumes) . '</span>';
-    // Performance: Eager load settings for all volumes to avoid N+1 queries in the loop
-    Episciences_VolumesManager::loadSettingsForVolumes($this->volumes);
 }
 
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);

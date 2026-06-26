@@ -107,12 +107,7 @@ class BiblioRefParser {
 
             const detectors  = Array.isArray(parsedRef.detectors)  ? parsedRef.detectors  : [];
             const status     = Array.isArray(parsedRef.status)     ? parsedRef.status     : [];
-            // Solr may return a single string instead of an array when there is only one value
-            const rawPubpeer = parsedRef.pubpeerurl;
-            const pubpeerurl = Array.isArray(rawPubpeer) ? rawPubpeer
-                : (typeof rawPubpeer === 'string' && rawPubpeer) ? [rawPubpeer]
-                : [];
-            const isSuspect  = detectors.length > 0 || status.includes('Problematic') || pubpeerurl.length > 0;
+            const isSuspect  = detectors.length > 0 || status.includes('Problematic');
             const isGenuine  = !isSuspect && status.includes('Genuine');
 
             return {
@@ -123,7 +118,6 @@ class BiblioRefParser {
                 showNotAccepted: isAuthorizedToSeeAcc && citation.isAccepted !== 1,
                 detectors,
                 status,
-                pubpeerurl,
                 isSuspect,
                 isGenuine,
             };
@@ -203,7 +197,7 @@ class BiblioRefRenderer {
         if (citation.isSuspect) {
             const icon = this._makeIcon('fa-solid fa-square-xmark');
             icon.style.color = '#c0392b';
-            li.appendChild(this._makeSrOnly(typeof translate === 'function' ? translate('Référence problématique') : 'Problematic reference'));
+            li.appendChild(this._makeSrOnly(typeof translate === 'function' ? translate('Référence problématique détectée automatiquement') : 'Detected problematic reference'));
             li.appendChild(icon);
             li.appendChild(document.createTextNode(' '));
         } else if (citation.showAccepted) {
@@ -275,7 +269,7 @@ class BiblioRefRenderer {
     }
 
     /**
-     * Render all PPS signals (status + detectors + PubPeer links) as inline badges.
+     * Render all PPS signals (status + detectors) as inline badges.
      * @param {Object} citation - Formatted citation object
      * @returns {DocumentFragment}
      */
@@ -309,23 +303,6 @@ class BiblioRefRenderer {
             );
         });
 
-        // PubPeer links (icon-only, labelled for screen readers)
-        (citation.pubpeerurl || []).forEach(url => {
-            if (!/^https?:\/\/[^\s<>"]+$/.test(url)) {
-                return;
-            }
-            const link = document.createElement('a');
-            link.href = url;
-            link.rel = 'noopener noreferrer';
-            link.target = '_blank';
-            link.className = 'biblio-ref-pubpeer-link';
-            link.setAttribute('aria-label', typeof translate === 'function' ? translate('View on PubPeer') : 'View on PubPeer');
-            link.title = typeof translate === 'function' ? translate('More information') : 'More information';
-            link.appendChild(this._makeIcon('fa-solid fa-circle-info'));
-            fragment.appendChild(document.createTextNode(' '));
-            fragment.appendChild(link);
-        });
-
         return fragment;
     }
 
@@ -335,8 +312,12 @@ class BiblioRefRenderer {
      */
     renderGenuineBadge() {
         const entry = BiblioRefParser.STATUS_LABELS['Genuine'];
-        const badge = this._makeBadge('Genuine', 'success', entry ? entry.desc : undefined);
-        return badge;
+
+        return this._makeBadge(
+            'Genuine',
+            'success',
+            entry ? entry.desc : undefined
+        );
     }
 
     /**
@@ -487,6 +468,26 @@ class BiblioRefManager {
                 // Show section if available
                 if (section) {
                     section.style.display = 'block';
+                }
+
+                // Badge + hover hint for problematic references count
+                const suspectCount = citations.filter(c => c.isSuspect).length;
+                if (suspectCount > 0) {
+                    const hintText = typeof translate === 'function'
+                        ? translate('Références problématiques détectées automatiquement')
+                        : 'Automatically detected problematic references';
+
+                    const badge = document.getElementById('biblio-refs-problematic-count');
+                    if (badge) {
+                        badge.textContent = String(suspectCount);
+                        badge.setAttribute('aria-label', suspectCount + ' ' + hintText);
+                        badge.removeAttribute('hidden');
+                    }
+
+                    const hint = section ? section.querySelector('.biblio-refs-hint') : null;
+                    if (hint) {
+                        hint.textContent = hintText;
+                    }
                 }
             }
         } catch (error) {

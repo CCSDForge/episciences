@@ -2,6 +2,7 @@
 
 /**
  * Class Ccsd_Form_Element_Thesaurus
+ * @deprecated Scheduled for removal. Use newer form elements instead.
  */
 class Ccsd_Form_Element_Thesaurus extends Zend_Form_Element_Xhtml implements Ccsd_Form_Interface_Javascript, Ccsd_Form_Interface_Css
 {
@@ -54,6 +55,23 @@ class Ccsd_Form_Element_Thesaurus extends Zend_Form_Element_Xhtml implements Ccs
     protected $_option_expand_inter_msg      = "Afficher : Interdisciplinarité HAL";
     protected $_parentNode = true;
     protected $_valueTip = true;
+
+    /**
+     * Ccsd_Form_Element_Thesaurus constructor.
+     * @param $spec
+     * @param null $options
+     * @throws Zend_Form_Exception
+     */
+    public function __construct($spec, $options = null)
+    {
+        trigger_error(
+            '[DEAD CODE AUDIT 2026-06-24] ' . __CLASS__ . ' is scheduled for removal.'
+            . ' Do NOT use this class in new code. If this message appears in production logs,'
+            . ' report it to the development team immediately.',
+            E_USER_DEPRECATED
+        );
+        parent::__construct($spec, $options);
+    }
 
     /**
      * @todo translator
