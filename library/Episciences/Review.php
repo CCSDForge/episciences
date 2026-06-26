@@ -1330,14 +1330,14 @@ class Episciences_Review
             ]
         );
 
-        // Cover letter requirement
+        // Cover letter requirement (controls only the file, comment is always optional)
         $form->addElement('select', self::SETTING_COVER_LETTER_REQUIREMENT, [
-                'label' => 'Lettre de motivation',
+                'label' => "Lettre d'accompagnement",
                 'value' => 1,
                 'multioptions' => [
                     0 => 'Désactivée',
                     1 => 'Facultative',
-                    2 => 'Requise (commentaire ou fichier)',
+                    2 => 'Requise',
                 ],
             ]
         );

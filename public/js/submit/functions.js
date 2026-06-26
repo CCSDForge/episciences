@@ -521,14 +521,14 @@ $(function () {
             return false;
         }
 
-        // Cover letter check (required = 2 means at least one of comment or file must be provided)
+        // Cover letter file check (required = 2 means file must be provided)
+        // Note: The comment field is always optional and not controlled by this setting
         if (
             $coverLetterRequirement.length > 0 &&
             $coverLetterRequirement.val() === '2'
         ) {
-            const hasComment = $coverLetterComment.length > 0 && $coverLetterComment.val().trim() !== '';
             const hasFile = $coverLetterFile.length > 0 && $coverLetterFile.val() !== '';
-            if (!hasComment && !hasFile) {
+            if (!hasFile) {
                 return false;
             }
         }
