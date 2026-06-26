@@ -162,7 +162,7 @@ class SubmitController extends DefaultController
         $this->adjustFormForReplacementOrSuggestions($request, $form, $canReplace);
         $this->setDdFileRequiredFlag($form, $post);
 
-        if (!$this->validateCoverLetterRequirement($form, $post)) {
+        if (!$this->handleCoverLetterValidation($form, $post)) {
             return;
         }
 
@@ -225,29 +225,14 @@ class SubmitController extends DefaultController
      *
      * @throws Zend_Db_Statement_Exception
      */
-    private function validateCoverLetterRequirement(Zend_Form $form, array $post): bool
+    private function handleCoverLetterValidation(Zend_Form $form, array $post): bool
     {
-        $review = Episciences_ReviewsManager::find(RVID);
-        $review->loadSettings();
-        $coverLetterRequirement = (int)$review->getSetting(Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT);
+        $validation = Episciences_Submit::validateCoverLetterRequirement($post);
 
-        // Only validate if cover letter is required (value = 2)
-        if ($coverLetterRequirement !== 2) {
-            return true;
-        }
-
-        $comment = trim($post[Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME] ?? '');
-        $file = $_FILES[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME]['name'] ?? '';
-
-        // At least one must be provided
-        if (empty($comment) && empty($file)) {
-            $translator = Zend_Registry::get('Zend_Translate');
-            $errorMessage = $translator->translate('Une lettre de motivation est requise. Veuillez fournir un commentaire ou joindre un fichier.');
-
-            // Add error to form element
+        if ($validation !== true) {
             $element = $form->getElement(Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME);
             if ($element) {
-                $element->addError($errorMessage);
+                $element->addError($validation);
             }
 
             $this->renderFormErrors($form);

@@ -1844,7 +1844,7 @@ class PaperController extends PaperDefaultController
         $form = $this->buildNewVersionForm($paper);
 
         // Validate cover letter requirement before form validation
-        if (!$this->validateCoverLetterRequirement($form, $post, $paper)) {
+        if (!$this->handleCoverLetterValidation($form, $post, $paper)) {
             return;
         }
 
@@ -2019,30 +2019,16 @@ class PaperController extends PaperDefaultController
      *
      * @throws Zend_Db_Statement_Exception
      */
-    private function validateCoverLetterRequirement(?Zend_Form $form, array $post, Episciences_Paper $paper): bool
+    private function handleCoverLetterValidation(?Zend_Form $form, array $post, Episciences_Paper $paper): bool
     {
         if (!$form) {
             return true;
         }
 
-        $review = Episciences_ReviewsManager::find(RVID);
-        $review->loadSettings();
-        $coverLetterRequirement = (int)$review->getSetting(Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT);
+        $validation = Episciences_Submit::validateCoverLetterRequirement($post);
 
-        // Only validate if cover letter is required (value = 2)
-        if ($coverLetterRequirement !== 2) {
-            return true;
-        }
-
-        $comment = trim($post[Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME] ?? '');
-        $file = $_FILES[Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME]['name'] ?? '';
-
-        // At least one must be provided
-        if (empty($comment) && empty($file)) {
-            $translator = Zend_Registry::get('Zend_Translate');
-            $errorMessage = $translator->translate('Une lettre de motivation est requise. Veuillez fournir un commentaire ou joindre un fichier.');
-
-            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($errorMessage);
+        if ($validation !== true) {
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($validation);
             $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
             return false;
         }

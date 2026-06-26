@@ -21,6 +21,37 @@ class Episciences_Submit
     public const POSTED_VOLUME_KEY = 'volumes';
     public const POSTED_SECTION_KEY = 'sections';
 
+    /**
+     * Validate cover letter requirement.
+     * When required (value = 2), at least one of comment or file must be provided.
+     *
+     * @param array $post POST data
+     * @return true|string Returns true if valid, or error message string if invalid
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function validateCoverLetterRequirement(array $post): bool|string
+    {
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+        $coverLetterRequirement = (int)$review->getSetting(Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT);
+
+        // Only validate if cover letter is required (value = 2)
+        if ($coverLetterRequirement !== 2) {
+            return true;
+        }
+
+        $comment = trim($post[self::COVER_LETTER_COMMENT_ELEMENT_NAME] ?? '');
+        $file = $_FILES[self::COVER_LETTER_FILE_ELEMENT_NAME]['name'] ?? '';
+
+        // At least one must be provided
+        if (empty($comment) && empty($file)) {
+            return Zend_Registry::get('Zend_Translate')
+                ->translate('Une lettre de motivation est requise. Veuillez fournir un commentaire ou joindre un fichier.');
+        }
+
+        return true;
+    }
+
     public function __construct()
     {
         $this->_db = Zend_Db_Table_Abstract::getDefaultAdapter();
