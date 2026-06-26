@@ -802,6 +802,10 @@ return array(
     "Modifier une métadonnée" => "Edit a metadata",
     //End GIT #85
     "Ajouter un fichier (Édito, Erratum, Addendum, ...)" => "Add a file (Foreword, Erratum, Addendum, ...)",
+    'Couverture' => 'Cover',
+    'Couverture du volume' => 'Volume cover',
+    'Ajouter une couverture' => 'Add a cover image',
+    'Supprimer la couverture' => 'Remove the cover',
     "Aucun volume pour le moment" => "No volume yet",
     "Le nouveau volume a bien été créé." => "New volume has been added.",
     "Le nouveau volume n'a pas pu être créé." => "New volume could not be saved.",

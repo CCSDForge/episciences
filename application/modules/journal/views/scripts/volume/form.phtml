@@ -29,104 +29,139 @@
         </div>
         <?php endif; ?>
 
-        <?php foreach ($this->element->getElements() as $element) : ?>
-            <div id="<?= $element->getName() ?>-element" class="form-group" <?php if ($element->getAttrib('data-none')):?>style="display: none;" <?php endif;?>>
-                <?= $element ?>
+        <div class="row">
+
+            <div class="col-md-7">
+                <?php foreach ($this->element->getElements() as $element) : ?>
+                    <div id="<?= $element->getName() ?>-element" class="form-group" <?php if ($element->getAttrib('data-none')):?>style="display: none;" <?php endif;?>>
+                        <?= $element ?>
+                    </div>
+                <?php endforeach; ?>
+
+                <?= $this->partial('volume/doi_proceedings_row.phtml', [
+                        'value' => $this->element->getDecorator('ViewScript')->getOption('value')
+                ]) ?>
+
+                <?php if ($this->element->getView()->volume && $this->element->getView()->paperList) : ?>
+                    <?php
+                    if (!empty($this->element->getView()->gapsInOrderingPapers)) {
+                        echo '<div class="alert alert-warning" role="alert">';
+                        echo $this->translate('Des vides ont été détectés dans la numérotation des papiers : ');
+                        echo '<ul>';
+                        foreach ($this->element->getView()->gapsInOrderingPapers as $gapNumber) {
+                            printf('<li><span class="label label-default">%d</span></li>', $gapNumber + 1);
+                        }
+                        echo '</ul>';
+                        echo '</div>';
+                    }
+                    ?>
+                    <div id="papers-element" class="form-group row">
+                        <label class="col-md-3 control-label optional"><?= count($this->element->getView()->paperList) . ' ' . $this->translate('articles') ?></label>
+                        <div class="col-md-9" style="padding-top: 7px">
+                            <div id="papers">
+                                <?php foreach ($this->element->getView()->paperList as $paperOrder => $paper) : ?>
+                                    <?php
+                                    $title = $paper['title'];
+                                    $paperDocid = $paper['docid'];
+                                    $titleStr = $this->escape(Ccsd_Tools::truncate($title, 50));
+                                    ?>
+                                    <div id="paper-<?= $paper['paperid'] ?>" class="paper input-group">
+                                    <span class="label label-status-<?= $paper['status'] ?>" data-toggle="tooltip"
+                                          title="<?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper['status']))) ?>">
+                                   <?= (int)$paperOrder + 1 ?></span>
+                                        [<a href="/administratepaper/view?id=<?= $paperDocid ?>"># <?= $paperDocid ?></a>]&nbsp;
+                                        <?= $titleStr ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <input id="paper_positions" name="paper_positions" type="hidden" value=""/>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
-        <?php endforeach; ?>
 
-        <?= $this->partial('volume/doi_proceedings_row.phtml', [
-                'value' => $this->element->getDecorator('ViewScript')->getOption('value')
-        ]) ?>
+            <div class="col-md-5">
 
+                <?php $cover = $this->element->getView()->volume ? $this->element->getView()->volume->getCover() : null; ?>
+                <div id="cover-element" style="margin-bottom: 20px">
+                    <label style="font-weight: bold; display: block; margin-bottom: 8px"><?= $this->translate('Couverture') ?></label>
 
-        <div id="metadata-element" class="form-group row">
-            <label class="col-md-3 control-label optional"><?= $this->translate('Métadonnées') ?></label>
-            <div class="col-md-9" style="padding-top: 7px">
+                    <div id="cover-preview-container" <?= ($cover && $cover->hasFile()) ? '' : 'style="display:none"' ?>>
+                        <img id="cover-preview"
+                             src="<?= ($cover && $cover->hasFile()) ? $this->escape($cover->getFileUrl()) : '' ?>"
+                             style="width:160px;height:226px;object-fit:cover;display:block;margin-bottom:8px"
+                             alt="<?= $this->translate('Couverture du volume') ?>" />
+                        <button type="button" class="btn btn-danger btn-sm" id="remove-cover">
+                            <span class="glyphicon glyphicon-trash"></span>
+                            <?= $this->translate('Supprimer la couverture') ?>
+                        </button>
+                        <label for="cover-file" class="btn btn-default btn-sm" style="cursor:pointer;margin-left:4px">
+                            <span class="glyphicon glyphicon-repeat"></span>
+                            <?= $this->translate('Remplacer') ?>
+                        </label>
+                    </div>
 
-                <div id="metadatas">
-                    <?php if ($this->element->getView()->volume) : ?>
-                        <?php $metadatas = $this->element->getView()->volume->getMetadatas(); ?>
+                    <div id="cover-upload-zone" <?= ($cover && $cover->hasFile()) ? 'style="display:none"' : '' ?>>
+                        <label for="cover-file" class="btn btn-default btn-sm" style="cursor:pointer">
+                            <span class="glyphicon glyphicon-picture"></span>
+                            <?= $this->translate('Ajouter une couverture') ?>
+                        </label>
+                    </div>
 
+                    <input type="file" id="cover-file" accept="image/*" style="display:none" />
+                    <input type="hidden" name="cover_data" id="cover_data" value="" />
+                </div>
 
-                        <?php foreach ($metadatas as $metadata) : ?>
-                            <div class="metadata input-group" style="margin-bottom: 2px">
-					<span style="font-size: inherit; display: block; text-align: justify; white-space: normal; padding: 1px  0px 1px 10px;"
-                          class="label label-primary">
-						<?= $metadata->getTitle(); ?>
-						<a class="modal-opener"
-                           data-width="50%"
+                <div id="metadata-element" style="margin-bottom: 20px">
+                    <label style="font-weight: bold; display: block; margin-bottom: 8px"><?= $this->translate('Métadonnées') ?></label>
+
+                    <div id="metadatas">
+                        <?php if ($this->element->getView()->volume) : ?>
+                            <?php $metadatas = $this->element->getView()->volume->getMetadatas(); ?>
+
+                            <?php foreach ($metadatas as $metadata) : ?>
+                                <?php if ($metadata->isCover()) : continue; endif; ?>
+                                <div class="metadata input-group" style="margin-bottom: 2px">
+                            <span style="font-size: inherit; display: block; text-align: justify; white-space: normal; padding: 1px  0px 1px 10px;"
+                              class="label label-primary">
+                                <?= $metadata->getTitle(); ?>
+                                <a class="modal-opener"
+                                   data-width="50%"
+                                   data-init="init"
+                                   data-callback="submit"
+                                   data-onclose="onclose"
+                                   title="<?= $this->translate('Modifier une métadonnée') ?>"><button
+                                            class="btn btn-xs btn-primary edit-metadata"
+                                            type="button"><span
+                                                class="glyphicon glyphicon-pencil"></span></button></a><button
+                                        onclick="removeMetadata($(this))" data-placement="right"
+                                        style="border-radius:0; height: 20px; padding-top:0; padding-bottom: 0;"
+                                        class="btn btn-xs btn-primary" type="button"><span
+                                            class="glyphicon glyphicon-trash"></span></button>
+                            </span>
+                                    <input type="hidden"
+                                           value="<?= htmlspecialchars(Zend_Json::encode(['id' => $metadata->getId(), 'title' => $metadata->getTitles(), 'content' => $metadata->getContents(), 'file' => $metadata->getFile()]), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+                                </div>
+                            <?php endforeach; ?>
+
+                        <?php endif; ?>
+                    </div>
+
+                    <div>
+                        <a class="modal-opener"
+                           title="<?= $this->translate('Ajouter un fichier (Édito, Erratum, Addendum, ...)') ?>"
                            data-init="init"
                            data-callback="submit"
-                           data-onclose="onclose"
-                           title="<?= $this->translate('Modifier une métadonnée') ?>"><button
-                                    class="btn btn-xs btn-primary edit-metadata"
-                                    type="button"><span
-                                        class="glyphicon glyphicon-pencil"></span></button></a><button
-                                onclick="removeMetadata($(this))" data-placement="right"
-                                style="border-radius:0; height: 20px; padding-top:0; padding-bottom: 0;"
-                                class="btn btn-xs btn-primary" type="button"><span
-                                    class="glyphicon glyphicon-trash"></span></button>
-					</span>
-                                <input type="hidden"
-                                       value="<?= htmlspecialchars(Zend_Json::encode(['id' => $metadata->getId(), 'title' => $metadata->getTitles(), 'content' => $metadata->getContents(), 'file' => $metadata->getFile()]), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
-                            </div>
-                        <?php endforeach; ?>
-
-                    <?php endif; ?>
+                           data-width="50%">
+                            <button class="btn btn-default btn-sm" type="button" id="addmetadata" name="addmetadata">
+                                <?= $this->translate('Ajouter un fichier (Édito, Erratum, Addendum, ...)') ?>
+                            </button>
+                        </a>
+                    </div>
                 </div>
 
-                <div>
-                    <a class="modal-opener"
-                       title="<?= $this->translate('Ajouter un fichier (Édito, Erratum, Addendum, ...)') ?>"
-                       data-init="init"
-                       data-callback="submit"
-                       data-width="50%">
-                        <button class="btn btn-default btn-sm" type="button" id="addmetadata" name="addmetadata">
-                            <?= $this->translate('Ajouter un fichier (Édito, Erratum, Addendum, ...)') ?>
-                        </button>
-                    </a>
-                </div>
             </div>
         </div>
-
-
-        <?php if ($this->element->getView()->volume && $this->element->getView()->paperList) : ?>
-            <?php
-            if (!empty($this->element->getView()->gapsInOrderingPapers)) {
-                echo '<div class="alert alert-warning" role="alert">';
-                echo $this->translate('Des vides ont été détectés dans la numérotation des papiers : ');
-                echo '<ul>';
-                foreach ($this->element->getView()->gapsInOrderingPapers as $gapNumber) {
-                    printf('<li><span class="label label-default">%d</span></li>', $gapNumber + 1);
-                }
-                echo '</ul>';
-                echo '</div>';
-            }
-            ?>
-            <div id="papers-element" class="form-group row">
-                <label class="col-md-3 control-label optional"><?= count($this->element->getView()->paperList) . ' ' . $this->translate('articles') ?></label>
-                <div class="col-md-9" style="padding-top: 7px">
-                    <div id="papers">
-                        <?php foreach ($this->element->getView()->paperList as $paperOrder => $paper) : ?>
-                            <?php
-                            $title = $paper['title'];
-                            $paperDocid = $paper['docid'];
-                            $titleStr = $this->escape(Ccsd_Tools::truncate($title, 50));
-                            ?>
-                            <div id="paper-<?= $paper['paperid'] ?>" class="paper input-group">
-                            <span class="label label-status-<?= $paper['status'] ?>" data-toggle="tooltip"
-                                  title="<?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($paper['status']))) ?>">
-                           <?= (int)$paperOrder + 1 ?></span>
-                                [<a href="/administratepaper/view?id=<?= $paperDocid ?>"># <?= $paperDocid ?></a>]&nbsp;
-                                <?= $titleStr ?>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <input id="paper_positions" name="paper_positions" type="hidden" value=""/>
-                </div>
-            </div>
-        <?php endif; ?>
 
 
         <div class="form-actions text-center">
@@ -140,4 +175,3 @@
     </form>
 
 </div>
-
