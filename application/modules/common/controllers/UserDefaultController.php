@@ -527,21 +527,7 @@ class UserDefaultController extends Zend_Controller_Action
         ]);
 
         if ($displayCaptcha) {
-            $altchaDecorator = new Episciences_Form_Decorator_CustomHtmlTag([
-                'tag' => 'altcha-widget',
-                'challengeurl' => '/user/altcha-challenge',
-                'language' => Zend_Registry::get('lang'),
-            ]);
-            $form->addElement(
-                'hidden',
-                'a-fake-element',
-                [
-                    'required' => false,
-                    'ignore' => true,
-                    'autoInsertNotEmptyValidator' => false,
-                    'decorators' => [$altchaDecorator],
-                ]
-            );
+            $this->addAltchaWidgetToForm($form);
         }
 
         /** @var Zend_Controller_Request_Http $request */
@@ -900,6 +886,26 @@ class UserDefaultController extends Zend_Controller_Action
         $this->_helper->layout()->disableLayout();
     }
 
+    private function addAltchaWidgetToForm(Zend_Form $form): void
+    {
+        $form->addElement('hidden', 'a-fake-element', [
+            'required' => false,
+            'ignore' => true,
+            'autoInsertNotEmptyValidator' => false,
+            'decorators' => [
+                new Episciences_Form_Decorator_CustomHtmlTag([
+                    'tag' => 'altcha-widget',
+                    'challenge' => '/user/altcha-challenge',
+                    'language' => Zend_Registry::get('lang'),
+                ]),
+                new Zend_Form_Decorator_HtmlTag([
+                    'tag' => 'div',
+                    'class' => 'col-md-offset-3 col-md-9 form-group',
+                ]),
+            ],
+        ]);
+    }
+
     private function verifyAltchaToken(string $raw): bool
     {
         if ($raw === '') {
@@ -973,16 +979,7 @@ class UserDefaultController extends Zend_Controller_Action
 
         $displayCaptcha = CAPTCHA_BRAND === 'ALTCHA';
         if ($displayCaptcha) {
-            $form->addElement('hidden', 'a-fake-element', [
-                'required' => false,
-                'ignore' => true,
-                'autoInsertNotEmptyValidator' => false,
-                'decorators' => [new Episciences_Form_Decorator_CustomHtmlTag([
-                    'tag' => 'altcha-widget',
-                    'challenge' => '/user/altcha-challenge',
-                    'language' => Zend_Registry::get('lang'),
-                ])],
-            ]);
+            $this->addAltchaWidgetToForm($form);
         }
 
         if ($this->getRequest()->isPost() && $form->isValid($this->getRequest()->getPost())) {
@@ -1123,16 +1120,7 @@ class UserDefaultController extends Zend_Controller_Action
 
         $displayCaptcha = CAPTCHA_BRAND === 'ALTCHA';
         if ($displayCaptcha) {
-            $form->addElement('hidden', 'a-fake-element', [
-                'required' => false,
-                'ignore' => true,
-                'autoInsertNotEmptyValidator' => false,
-                'decorators' => [new Episciences_Form_Decorator_CustomHtmlTag([
-                    'tag' => 'altcha-widget',
-                    'challenge' => '/user/altcha-challenge',
-                    'language' => Zend_Registry::get('lang'),
-                ])],
-            ]);
+            $this->addAltchaWidgetToForm($form);
         }
 
         $request = $this->getRequest();
