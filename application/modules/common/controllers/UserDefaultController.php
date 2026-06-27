@@ -900,7 +900,8 @@ class UserDefaultController extends Zend_Controller_Action
                 ]),
                 new Zend_Form_Decorator_HtmlTag([
                     'tag' => 'div',
-                    'class' => 'col-md-offset-3 col-md-9 form-group',
+                    'class' => 'col-md-offset-3 col-md-9',
+                    'style' => 'margin-bottom:15px',
                 ]),
             ],
         ]);
