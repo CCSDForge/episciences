@@ -28,12 +28,13 @@ $this->layout()->pageDescription = $this->translate("Création d'un compte sur l
 
 <?php
 if ($this->form) {
-    if (CAPTCHA_BRAND != '') {
-        if (CAPTCHA_BRAND == 'RECAPTCHA') {
-            echo '<script src="https://www.google.com/recaptcha/api.js?hl=' . Zend_Registry::get('lang') . '" async defer></script>';
-        } elseif (CAPTCHA_BRAND == 'HCAPTCHA') {
-            echo '<script src="https://hcaptcha.com/1/api.js?hl=' . Zend_Registry::get('lang') . '" async defer></script>';
-        }
+    if (CAPTCHA_BRAND === 'ALTCHA') {
+        echo '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/altcha@3.1.0/dist/external/altcha.min.css"'
+            . ' integrity="sha256-/mz0TW+CcPNef6nkwV2G6367GtjTA34GR2bx5oBNMk0="'
+            . ' crossorigin="anonymous">';
+        echo '<script src="https://cdn.jsdelivr.net/npm/altcha@3.1.0/dist/main/altcha.min.js"'
+            . ' integrity="sha256-2MYsWfWlelQoomIYmzpiE5cZ9PwpHjXlEPmdheE5C0c="'
+            . ' crossorigin="anonymous"></script>';
     }
 
     echo $this->form;

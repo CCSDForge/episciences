@@ -1,9 +1,8 @@
 <?php
 
 use Ccsd\Auth\AdapterFactory;
+use Episciences\Altcha\ChallengeHelper;
 use Episciences\Trait\LocaleByCookieTrait;
-use neverbehave\Hcaptcha;
-use ReCaptcha\ReCaptcha;
 
 
 class UserDefaultController extends Zend_Controller_Action
@@ -518,11 +517,7 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
 
-        if (((CAPTCHA_BRAND === 'RECAPTCHA') || (CAPTCHA_BRAND === 'HCAPTCHA')) && !$isAllowedToAddUserAccounts) {
-            $displayCaptcha = true;
-        } else {
-            $displayCaptcha = false;
-        }
+        $displayCaptcha = CAPTCHA_BRAND === 'ALTCHA' && !$isAllowedToAddUserAccounts;
 
         $form = new Episciences_User_Form_Create();
         $form->setAction('/user/create');
@@ -532,13 +527,11 @@ class UserDefaultController extends Zend_Controller_Action
         ]);
 
         if ($displayCaptcha) {
-            if (CAPTCHA_BRAND === 'RECAPTCHA') {
-                $datasitekey = RECAPTCHA_PUBKEY;
-                $htmlClassId = 'g-recaptcha';
-            } elseif (CAPTCHA_BRAND === 'HCAPTCHA') {
-                $datasitekey = HCAPTCHA_SITEKEY;
-                $htmlClassId = 'h-captcha';
-            }
+            $altchaDecorator = new Episciences_Form_Decorator_CustomHtmlTag([
+                'tag' => 'altcha-widget',
+                'challengeurl' => '/user/altcha-challenge',
+                'language' => Zend_Registry::get('lang'),
+            ]);
             $form->addElement(
                 'hidden',
                 'a-fake-element',
@@ -546,16 +539,7 @@ class UserDefaultController extends Zend_Controller_Action
                     'required' => false,
                     'ignore' => true,
                     'autoInsertNotEmptyValidator' => false,
-                    'decorators' => [
-                        [
-                            'HtmlTag', [
-                            'tag' => 'div',
-                            'id' => $htmlClassId,
-                            'class' => $htmlClassId,
-                            'style' => 'margin-left:20%',
-                            'data-sitekey' => $datasitekey]
-                        ]
-                    ]
+                    'decorators' => [$altchaDecorator],
                 ]
             );
         }
@@ -622,24 +606,11 @@ class UserDefaultController extends Zend_Controller_Action
             } else {
                 // regular user: new account is not valid, a mail is sent with an activation link
 
-                if ($displayCaptcha) {
-                    if (CAPTCHA_BRAND === 'RECAPTCHA') {
-                        $recaptcha = new ReCaptcha(RECAPTCHA_PRIVKEY);
-                        $userResponse = $request->getPost('g-recaptcha-response');
-                        $resp = $recaptcha->setExpectedHostname($_SERVER['SERVER_NAME'])
-                            ->verify($userResponse, $_SERVER['REMOTE_ADDR']);
-                    } elseif (CAPTCHA_BRAND === 'HCAPTCHA') {
-                        $hcaptcha = new Hcaptcha(HCAPTCHA_SECRETKEY);
-                        $userResponse = $request->getPost('h-captcha-response');
-                        $resp = $hcaptcha->challenge($userResponse);
-                    }
-
-                    if (!$resp->isSuccess()) {
-                        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Merci de compléter le <a target="_blank" rel="noopener" href="https://fr.wikipedia.org/wiki/CAPTCHA">CAPTCHA</a>');
-                        $this->view->form = $form;
-                        $this->render('create');
-                        return;
-                    }
+                if ($displayCaptcha && !$this->verifyAltchaToken($request->getPost('altcha', ''))) {
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Merci de compléter le <a target="_blank" rel="noopener" href="https://fr.wikipedia.org/wiki/CAPTCHA">CAPTCHA</a>');
+                    $this->view->form = $form;
+                    $this->render('create');
+                    return;
                 }
 
 
@@ -909,6 +880,48 @@ class UserDefaultController extends Zend_Controller_Action
     }
 
     /**
+     * Issues a new ALTCHA proof-of-work challenge for the registration form.
+     */
+    public function altchaChallengeAction(): void
+    {
+        $challenge = ChallengeHelper::createChallenge();
+        $json = (string) json_encode([
+            'algorithm' => $challenge->algorithm,
+            'challenge' => $challenge->challenge,
+            'maxNumber' => $challenge->maxNumber,
+            'salt'      => $challenge->salt,
+            'signature' => $challenge->signature,
+        ]);
+        $this->getResponse()
+            ->setHeader('Content-Type', 'application/json')
+            ->setHeader('Cache-Control', 'no-store')
+            ->setBody($json);
+        $this->_helper->viewRenderer->setNoRender(true);
+        $this->_helper->layout()->disableLayout();
+    }
+
+    private function verifyAltchaToken(string $raw): bool
+    {
+        if ($raw === '') {
+            return false;
+        }
+        $decoded = json_decode(base64_decode($raw, true), true);
+        $salt = is_array($decoded) ? ($decoded['salt'] ?? '') : '';
+        if ($salt === '') {
+            return false;
+        }
+        $cache = ChallengeHelper::getCache();
+        if (ChallengeHelper::isReplay($salt, $cache)) {
+            return false;
+        }
+        if (!ChallengeHelper::createAltcha()->verifySolution($raw)) {
+            return false;
+        }
+        ChallengeHelper::markUsed($salt, $cache);
+        return true;
+    }
+
+    /**
      * user account activation
      * (when activation link has been clicked)
      * @throws Zend_Db_Adapter_Exception
@@ -958,7 +971,27 @@ class UserDefaultController extends Zend_Controller_Action
             'class' => 'btn btn-primary'
         ]);
 
+        $displayCaptcha = CAPTCHA_BRAND === 'ALTCHA';
+        if ($displayCaptcha) {
+            $form->addElement('hidden', 'a-fake-element', [
+                'required' => false,
+                'ignore' => true,
+                'autoInsertNotEmptyValidator' => false,
+                'decorators' => [new Episciences_Form_Decorator_CustomHtmlTag([
+                    'tag' => 'altcha-widget',
+                    'challenge' => '/user/altcha-challenge',
+                    'language' => Zend_Registry::get('lang'),
+                ])],
+            ]);
+        }
+
         if ($this->getRequest()->isPost() && $form->isValid($this->getRequest()->getPost())) {
+            if ($displayCaptcha && !$this->verifyAltchaToken($this->getRequest()->getPost('altcha', ''))) {
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Merci de compléter le <a target="_blank" rel="noopener" href="https://fr.wikipedia.org/wiki/CAPTCHA">CAPTCHA</a>');
+                $this->view->form = $form;
+                $this->render('lostpassword');
+                return;
+            }
 
             $userMapper = new Ccsd_User_Models_UserMapper();
             $userInfo = $userMapper->findByUsername($form->getValue('USERNAME'));
@@ -1088,9 +1121,29 @@ class UserDefaultController extends Zend_Controller_Action
             'class' => 'btn btn-primary'
         ]);
 
+        $displayCaptcha = CAPTCHA_BRAND === 'ALTCHA';
+        if ($displayCaptcha) {
+            $form->addElement('hidden', 'a-fake-element', [
+                'required' => false,
+                'ignore' => true,
+                'autoInsertNotEmptyValidator' => false,
+                'decorators' => [new Episciences_Form_Decorator_CustomHtmlTag([
+                    'tag' => 'altcha-widget',
+                    'challenge' => '/user/altcha-challenge',
+                    'language' => Zend_Registry::get('lang'),
+                ])],
+            ]);
+        }
+
         $request = $this->getRequest();
 
         if ($this->getRequest()->isPost() && $form->isValid($request->getPost())) {
+            if ($displayCaptcha && !$this->verifyAltchaToken($request->getPost('altcha', ''))) {
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Merci de compléter le <a target="_blank" rel="noopener" href="https://fr.wikipedia.org/wiki/CAPTCHA">CAPTCHA</a>');
+                $this->view->form = $form;
+                $this->render('lostlogin');
+                return;
+            }
 
             $user = new Episciences_User($form->getValues());
 

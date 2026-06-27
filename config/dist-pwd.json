@@ -78,15 +78,10 @@
     "TOKEN_AUTH": "exampleToken"
   },
   "CAPTCHA": {
-    "BRAND": "HCAPTCHA"
+    "BRAND": "ALTCHA"
   },
-  "RECAPTCHA": {
-    "PUBKEY": "see https://www.google.com/recaptcha/admin",
-    "PRIVKEY": "see https://www.google.com/recaptcha/admin"
-  },
-  "HCAPTCHA": {
-    "SITEKEY": "see https://www.hcaptcha.com/",
-    "SECRETKEY": "see https://www.hcaptcha.com/"
+  "ALTCHA": {
+    "HMAC_SECRET": "generate-a-long-random-secret-eg-openssl-rand-hex-32"
   },
   "ENDPOINTS": {
     "INDEXING_HOST": "solr-hostname-for-indexing.example.com",
