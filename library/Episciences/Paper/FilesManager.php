@@ -35,7 +35,6 @@ class Episciences_Paper_FilesManager
      */
     public static function findByName(int $docId, string $fileName): ?\Episciences_Paper_File
     {
-        $oFile = null;
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = $db->select()
             ->from(T_PAPER_FILES)
