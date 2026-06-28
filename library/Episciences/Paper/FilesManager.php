@@ -65,7 +65,7 @@ class Episciences_Paper_FilesManager
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = self::findByDocIdQuery($docId, ['id'], null);
+        $sql = self::findByDocIdQuery($docId, ['id']);
         $hasFiles = $db?->fetchOne($sql) > 0;
 
         if (!$hasFiles) {
@@ -176,7 +176,7 @@ class Episciences_Paper_FilesManager
     }
 
 
-    public static function findByDocIdQuery(int $docId, $cols = '*', $spec = 'file_size DESC'): ?Zend_Db_Select
+    public static function findByDocIdQuery(int $docId, string|array|Zend_Db_Expr $cols = '*', ?string $spec = null): ?Zend_Db_Select
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
