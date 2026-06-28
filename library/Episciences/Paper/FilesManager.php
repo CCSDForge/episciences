@@ -4,10 +4,9 @@ class Episciences_Paper_FilesManager
 {
     /**
      * @param int $docId
-     * @param string $fetch
      * @return array [Episciences_Paper_File]
      */
-    public static function findByDocId(int $docId, string $fetch = 'object'): array
+    public static function findByDocId(int $docId): array
     {
 
         $oResult = [];
