@@ -1808,8 +1808,8 @@ class Episciences_PapersManager
             'alt-send-proof-to-author-form',
             '/administratepaper/altsendprooftoauthor/id/' . $default['id'],
             'csrf_altsendprooftoauthor_' . (int)$default['id'],
-            'altproof-subject',
-            'altproof-message'
+            'altproofsubject',
+            'altproofmessage'
         );
     }
 
@@ -1820,8 +1820,8 @@ class Episciences_PapersManager
             'alt-return-to-layout-editing-form',
             '/administratepaper/altreturntolayoutediting/id/' . $default['id'],
             'csrf_altreturntolayoutediting_' . (int)$default['id'],
-            'altreturn-subject',
-            'altreturn-message'
+            'altreturnsubject',
+            'altreturnmessage'
         );
     }
 
@@ -1832,8 +1832,8 @@ class Episciences_PapersManager
             'alt-approve-for-publication-form',
             '/administratepaper/altapproveforpublication/id/' . $default['id'],
             'csrf_altapproveforpublication_' . (int)$default['id'],
-            'altapprove-subject',
-            'altapprove-message'
+            'altapprovesubject',
+            'altapprovemessage'
         );
     }
 
@@ -1844,8 +1844,8 @@ class Episciences_PapersManager
             'alt-start-layout-editing-form',
             '/administratepaper/altstartlayoutediting/id/' . $default['id'],
             'csrf_altstartlayoutediting_' . (int)$default['id'],
-            'altstartlayout-subject',
-            'altstartlayout-message'
+            'altstartlayoutsubject',
+            'altstartlayoutmessage'
         );
     }
 
@@ -1868,8 +1868,8 @@ class Episciences_PapersManager
             'alt-incorrect-password-form',
             '/administratepaper/altincorrectpassword/id/' . $default['id'],
             'csrf_altincorrectpassword_' . (int)$default['id'],
-            'altincorrectpwd-subject',
-            'altincorrectpwd-message'
+            'altincorrectpwdsubject',
+            'altincorrectpwdmessage'
         );
     }
 
@@ -1880,8 +1880,8 @@ class Episciences_PapersManager
             'alt-incorrect-latex-form',
             '/administratepaper/altincorrectlatex/id/' . $default['id'],
             'csrf_altincorrectlatex_' . (int)$default['id'],
-            'altincorrectlatex-subject',
-            'altincorrectlatex-message'
+            'altincorrectlatexsubject',
+            'altincorrectlatexmessage'
         );
     }
 
@@ -1892,8 +1892,8 @@ class Episciences_PapersManager
             'alt-publish-form',
             '/administratepaper/altpublish/id/' . $default['id'],
             'csrf_altpublish_' . (int)$default['id'],
-            'altpublish-subject',
-            'altpublish-message'
+            'altpublishsubject',
+            'altpublishmessage'
         );
     }
 
@@ -1904,8 +1904,8 @@ class Episciences_PapersManager
             'alt-author-approve-proof-form',
             '/paper/altauthorapproveproof/id/' . $default['id'],
             'csrf_altauthorapproveproof_' . (int)$default['id'],
-            'altauthorapprove-subject',
-            'altauthorapprove-message'
+            'altauthorapprovesubject',
+            'altauthorapprovemessage'
         );
     }
 
@@ -1916,8 +1916,8 @@ class Episciences_PapersManager
             'alt-author-reject-proof-form',
             '/paper/altauthorrejectproof/id/' . $default['id'],
             'csrf_altauthorrejectproof_' . (int)$default['id'],
-            'altauthorreject-subject',
-            'altauthorreject-message'
+            'altauthorrejectsubject',
+            'altauthorrejectmessage'
         );
     }
 

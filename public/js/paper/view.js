@@ -4,6 +4,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const submitTmpVersion = document.getElementById('submitTmpVersion');
     const commentOnly = document.getElementById('comment_only');
 
+    if (
+        typeof __initMCE === 'function' &&
+        document.querySelector('.full_mce')
+    ) {
+        __initMCE('.full_mce', undefined, {
+            convert_urls: false,
+            menubar: false,
+            height: 400,
+            plugins: 'link image code fullscreen table',
+            toolbar1:
+                'bold italic underline | undo redo | alignleft aligncenter alignright alignjustify | bullist numlist | link image | code',
+        });
+    }
+
     // Utility functions for fade animations
     function hide(element) {
         if (element) {

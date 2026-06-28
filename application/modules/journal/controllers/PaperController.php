@@ -658,8 +658,8 @@ class PaperController extends PaperDefaultController
         $this->processAuthorProofAction(
             'altauthorapproveproof',
             Episciences_Paper::STATUS_ALT_AUTHOR_PROOF_APPROVED,
-            'altauthorapprove-subject',
-            'altauthorapprove-message'
+            'altauthorapprovesubject',
+            'altauthorapprovemessage'
         );
     }
 
@@ -668,8 +668,8 @@ class PaperController extends PaperDefaultController
         $this->processAuthorProofAction(
             'altauthorrejectproof',
             Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
-            'altauthorreject-subject',
-            'altauthorreject-message'
+            'altauthorrejectsubject',
+            'altauthorrejectmessage'
         );
     }
 

@@ -2302,8 +2302,8 @@ class AdministratepaperController extends PaperDefaultController
             'altsendprooftoauthor',
             Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
             Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
-            'altproof-subject',
-            'altproof-message',
+            'altproofsubject',
+            'altproofmessage',
             'author'
         );
     }
@@ -2314,8 +2314,8 @@ class AdministratepaperController extends PaperDefaultController
             'altreturntolayoutediting',
             Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
             Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
-            'altreturn-subject',
-            'altreturn-message',
+            'altreturnsubject',
+            'altreturnmessage',
             'copyEditors'
         );
     }
@@ -2326,8 +2326,8 @@ class AdministratepaperController extends PaperDefaultController
             'altapproveforpublication',
             Episciences_Paper::STATUS_ALT_AUTHOR_PROOF_APPROVED,
             Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION,
-            'altapprove-subject',
-            'altapprove-message',
+            'altapprovesubject',
+            'altapprovemessage',
             'author'
         );
     }
@@ -2338,8 +2338,8 @@ class AdministratepaperController extends PaperDefaultController
             'altstartlayoutediting',
             Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED,
             Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
-            'altstartlayout-subject',
-            'altstartlayout-message',
+            'altstartlayoutsubject',
+            'altstartlayoutmessage',
             'copyEditors'
         );
     }
@@ -2362,8 +2362,8 @@ class AdministratepaperController extends PaperDefaultController
             'altincorrectpassword',
             Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED,
             Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
-            'altincorrectpwd-subject',
-            'altincorrectpwd-message',
+            'altincorrectpwdsubject',
+            'altincorrectpwdmessage',
             'author'
         );
     }
@@ -2374,22 +2374,93 @@ class AdministratepaperController extends PaperDefaultController
             'altincorrectlatex',
             Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED,
             Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
-            'altincorrectlatex-subject',
-            'altincorrectlatex-message',
+            'altincorrectlatexsubject',
+            'altincorrectlatexmessage',
             'author'
         );
     }
 
     public function altpublishAction(): void
     {
-        $this->processAlternativePipelineTransition(
-            'altpublish',
-            Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION,
-            Episciences_Paper::STATUS_PUBLISHED,
-            'altpublish-subject',
-            'altpublish-message',
-            'author'
-        );
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $docId = $request->getParam('id');
+
+        $journal = Episciences_ReviewsManager::find(RVID);
+        $journal->loadSettings();
+        $paper = Episciences_PapersManager::get($docId);
+
+        $this->checkPermissions($journal, $paper);
+
+        $redirectUrl = $this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]);
+
+        if (!$request->isPost()) {
+            $this->_helper->redirector->gotoUrl($redirectUrl);
+            return;
+        }
+
+        $csrfName = 'csrf_altpublish_' . (int)$docId;
+        $csrfSession = new Zend_Session_Namespace('Zend_Form_Element_Hash_unique_' . $csrfName);
+        $post = $request->getPost();
+        if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
+            $csrfSession->hash = null;
+            $this->_helper->redirector->gotoUrl($redirectUrl);
+            return;
+        }
+        $csrfSession->hash = null;
+
+        if (!$journal->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE)) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Le pipeline alternatif n'est pas activé pour cette revue.");
+            $this->_helper->redirector->gotoUrl($redirectUrl);
+            return;
+        }
+
+        if ($paper->getStatus() !== Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Le statut actuel de l'article ne permet pas cette action.");
+            $this->_helper->redirector->gotoUrl($redirectUrl);
+            return;
+        }
+
+        $data = $post;
+
+        // get contributor detail
+        $contributor = new Episciences_User();
+        $contributor->findWithCAS($paper->getUid());
+
+        $paper->setPublication_date(date('Y-m-d H:i:s'));
+        $paper->setStatus(Episciences_Paper::STATUS_PUBLISHED);
+        // delete paper password
+        $paper->setPassword();
+
+        if ($paper->isPreprint()) { // force article's type to 'article'
+            $currentType = $paper->getType();
+            $currentType[Episciences_Paper::TITLE_TYPE] = Episciences_Paper::ARTICLE_TYPE_TITLE;
+            $paper->setType($currentType);
+        }
+
+        if (!$paper->save()) {
+            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Les modifications n'ont pas abouti !");
+            $this->_helper->redirector->gotoUrl($redirectUrl);
+            return;
+        }
+
+        // log new status
+        $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
+
+        // notify the author with the alternative-pipeline modal content
+        $this->sendMailFromModal($contributor, $paper, $data['altpublishsubject'] ?? '', $data['altpublishmessage'] ?? '', $data);
+
+        // notify reviewers (stop pending reviewing)
+        $this->paperStatusChangedNotifyReviewer($paper, Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING);
+
+        // notify editors, copy editors and (per journal settings) chief editors, admins, secretaries
+        $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_EDITOR_COPY, Episciences_Auth::getUser());
+
+        $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
+
+        $this->indexAndCOARNotify($paper, $journal);
+
+        $this->_helper->redirector->gotoUrl($redirectUrl);
     }
 
     private function processAlternativePipelineTransition(
