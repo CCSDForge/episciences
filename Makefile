@@ -48,31 +48,31 @@ help: ## Display this help message
 	@echo "Episciences GPL - Development Environment"
 	@echo "========================================"
 	@echo ""
-	@echo "Core Docker Commands:"
+	@echo "🐳 Core Docker Commands:"
 	@grep -E '^(build|up|down|status|logs|restart|clean|clean-mysql):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Database Commands:"
+	@echo "🗄️  Database Commands:"
 	@grep -h -E '^(wait-for-db|load-db.*|generate-users|shell-mysql.*|backup-db):.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No database commands found"
 	@echo ""
-	@echo "Solr Commands:"
+	@echo "🔍 Solr Commands:"
 	@grep -E '^(collection|collection-ref-pps|index|import-ref-pps|download-ref-pps):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Development Commands:"
+	@echo "🛠️  Development Commands:"
 	@grep -E '^(dev-setup|composer|yarn|enter):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Testing Commands:"
+	@echo "🧪 Testing Commands:"
 	@grep -h -E '^test.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No testing commands found"
 	@echo ""
-	@echo "Linting & Quality Commands:"
+	@echo "🔎 Linting & Quality Commands:"
 	@grep -h -E '^(phpstan|rector).*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No quality commands found"
 	@echo ""
-	@echo "Formatting Commands:"
+	@echo "✨ Formatting Commands:"
 	@grep -E '^format.*:.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Deployment Commands:"
+	@echo "🚀 Deployment Commands:"
 	@grep -h -E '^deploy.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No deployment commands found"
 	@echo ""
-	@echo "Other Commands:"
+	@echo "📦 Other Commands:"
 	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use|import-apache-logs):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 
 # =============================================================================
@@ -89,7 +89,7 @@ up: ## Start all docker containers
 	@echo "Development Environment Started Successfully!"
 	@echo "====================================================================="
 	@echo "📝 Make sure you have the following in /etc/hosts:"
-	@echo "127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org manager-dev.episciences.org"
+	@echo "127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org manager-dev.episciences.org mailpit.episciences.org"
 	@echo ""
 	@echo "🌐 Available Services (via Traefik — start episciences-infrastructure first):"
 	@echo "  Journal     : https://dev.episciences.org/"
@@ -98,6 +98,7 @@ up: ## Start all docker containers
 	@echo "  Data        : https://data-dev.episciences.org/"
 	@echo "  PhpMyAdmin  : https://pma.episciences.org/"
 	@echo "  Apache Solr : http://localhost:8983/solr"
+	@echo "  Mailpit     : https://mailpit.episciences.org/"
 	@echo "====================================================================="
 
 down: ## Stop all docker containers and remove orphans
@@ -311,8 +312,7 @@ restart-php: ## Restart PHP-FPM container
 
 # --- Mail -----------------------------------------------------------------------
 
-send-mails: ## Send queued emails using the mail queue system
-	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/send_mails.php
+send-mails: ## Flush the mail queue now (without waiting for the cron)
 	@echo "Sending queued emails..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/send_mails.php

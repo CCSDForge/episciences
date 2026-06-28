@@ -53,6 +53,8 @@ services:
         - XDEBUG_MODE=debug
         - XDEBUG_CONFIG=client_host=host.docker.internal client_port=9003 start_with_request=yes
         - COMPOSER_HOME=/tmp/composer
+        - SMTP_HOST=mailpit
+        - SMTP_PORT=1025
     extra_hosts:
         - "host.docker.internal:host-gateway"
         - "api-dev.episciences.org:172.19.0.11"
