@@ -17,7 +17,7 @@ NPX := npx
 PROJECT_NAME := episciences
 
 # Container Configuration
-CNTR_NAME_SOLR := solr
+CNTR_NAME_SOLR := episciences-solr
 CNTR_NAME_PHP := php-fpm
 CNTR_NAME_HTTPD := httpd
 CNTR_APP_DIR := /var/www/htdocs
@@ -91,12 +91,12 @@ up: ## Start all docker containers
 	@echo "📝 Make sure you have the following in /etc/hosts:"
 	@echo "127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org manager-dev.episciences.org"
 	@echo ""
-	@echo "🌐 Available Services:"
-	@echo "  Journal     : http://dev.episciences.org/"
-	@echo "  Manager     : http://manager-dev.episciences.org/dev/"
-	@echo "  OAI-PMH     : http://oai-dev.episciences.org/"
-	@echo "  Data        : http://data-dev.episciences.org/"
-	@echo "  PhpMyAdmin  : http://localhost:8001/"
+	@echo "🌐 Available Services (via Traefik — start episciences-infrastructure first):"
+	@echo "  Journal     : https://dev.episciences.org/"
+	@echo "  Manager     : https://manager-dev.episciences.org/dev/"
+	@echo "  OAI-PMH     : https://oai-dev.episciences.org/"
+	@echo "  Data        : https://data-dev.episciences.org/"
+	@echo "  PhpMyAdmin  : https://pma.episciences.org/"
 	@echo "  Apache Solr : http://localhost:8983/solr"
 	@echo "====================================================================="
 
@@ -126,8 +126,6 @@ restart: down up ## Restart all containers
 clean: down ## Clean up unused docker resources
 	@echo "Cleaning up Docker resources..."
 	@$(DOCKER) system prune -f
-	@echo "Removing episciences network..."
-	@$(DOCKER) network rm epi-network 2>/dev/null || true
 
 clean-mysql: down ## Remove all MySQL volumes (WARNING: This will delete all database data!)
 	@echo "WARNING: This will permanently delete all MySQL database data!"
@@ -151,30 +149,33 @@ clean-mysql: down ## Remove all MySQL volumes (WARNING: This will delete all dat
 # =============================================================================
 # Solr Commands
 # =============================================================================
-collection: up ## Create Solr collection 'episciences' after starting containers
+collection: ## Create Solr collection 'episciences' (requires episciences-infrastructure running)
 	@echo "Setting up Solr collection 'episciences'..."
-	@echo "Waiting for Solr container to be ready..."
-	@until $(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
+	@echo "Waiting for Solr to be ready..."
+	@until $(DOCKER) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
 		echo "Waiting for Solr..."; \
 		sleep 2; \
 	done
 	@echo "Solr is ready. Creating 'episciences' collection..."
-	@$(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) solr create_collection -c episciences -d $(SOLR_COLLECTION_CONFIG) -s http://localhost:8983 >/dev/null 2>&1 || \
-		echo "Collection may already exist, continuing..."
+	@$(DOCKER) exec $(CNTR_NAME_SOLR) /opt/solr/bin/solr zk upconfig \
+		-d $(SOLR_COLLECTION_CONFIG) -n episciences -z episciences-zoo:2181
+	@$(DOCKER) exec $(CNTR_NAME_SOLR) \
+		curl -sf "http://localhost:8983/solr/admin/collections?action=CREATE&name=episciences&numShards=1&replicationFactor=1&collection.configName=episciences" \
+		>/dev/null 2>&1 || echo "Collection may already exist, continuing..."
 	@echo "Solr collection setup complete!"
 
-collection-ref-pps: up ## Create Solr core 'ref_pps'
+collection-ref-pps: ## Create Solr core 'ref_pps' (requires episciences-infrastructure running)
 	@echo "Setting up Solr core 'ref_pps'..."
-	@echo "Waiting for Solr container to be ready..."
-	@until $(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
+	@echo "Waiting for Solr to be ready..."
+	@until $(DOCKER) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
 		echo "Waiting for Solr..."; \
 		sleep 2; \
 	done
 	@echo "Solr is ready. Creating 'ref_pps' core..."
-	@# We need to ensure the config directory exists in the container or use a configset
-	@$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_SOLR) mkdir -p /opt/solr/server/solr/configsets/ref_pps
-	@$(DOCKER_COMPOSE) cp src/solr/ref_pps/conf $(CNTR_NAME_SOLR):/opt/solr/server/solr/configsets/ref_pps/
-	@$(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) solr create_core -c ref_pps -d /opt/solr/server/solr/configsets/ref_pps/conf -s http://localhost:8983 || \
+	@$(DOCKER) exec -u 0:0 $(CNTR_NAME_SOLR) mkdir -p /opt/solr/server/solr/configsets/ref_pps
+	@docker cp src/solr/ref_pps/conf $(CNTR_NAME_SOLR):/opt/solr/server/solr/configsets/ref_pps/
+	@$(DOCKER) exec $(CNTR_NAME_SOLR) solr create_core -c ref_pps \
+		-d /opt/solr/server/solr/configsets/ref_pps/conf -s http://localhost:8983 || \
 		echo "Core may already exist, continuing..."
 	@echo "Solr core ref_pps setup complete!"
 
@@ -198,8 +199,9 @@ download-ref-pps: ## Download PPS CSV file from IRIT (optional: force=1)
 # =============================================================================
 # Development Setup Commands
 # =============================================================================
-dev-setup: build copy-config setup-logs up wait-for-db init-data-dir ## Complete development environment setup with 30 generated users
+dev-setup: build copy-config setup-logs up wait-for-db init-data-dir ## Complete development environment setup (requires episciences-infrastructure running)
 	@echo "Setting up complete development environment..."
+	@echo "⚠️  Make sure episciences-infrastructure is running (cd ../episciences-infrastructure && make up)"
 	@$(MAKE) composer-install
 	@$(MAKE) yarn-encore-dev
 	@$(MAKE) load-dev-db
