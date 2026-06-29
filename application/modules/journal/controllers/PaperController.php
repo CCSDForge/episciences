@@ -217,11 +217,6 @@ class PaperController extends PaperDefaultController
         $review->loadSettings();
         $this->view->review = $review;
 
-        if ($review->getSetting(Episciences_Review::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE)) {
-            $paper->loadOtherVolumes();
-            $paper->updateXml();
-        }
-
 
         // ratings **************************************************
         //[#169]: https://github.com/CCSDForge/episciences/issues/169
@@ -1323,7 +1318,7 @@ class PaperController extends PaperDefaultController
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-        public function answerrequestAction(): void
+    public function answerrequestAction(): void
     {
         $this->_helper->layout->disableLayout();
         /** @var Zend_Controller_Request_Http $request */
@@ -1583,7 +1578,7 @@ class PaperController extends PaperDefaultController
      * @return array
      */
 
-        private function dataProcessing(array &$post): array
+    private function dataProcessing(array &$post): array
     {
 
         $paperPwdDetails = [
