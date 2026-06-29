@@ -12,15 +12,25 @@ services:
         - ./data:/var/www/data
         - ./cache:/var/www/cache
         - ./logs:/var/www/logs
-      ports:
-        - "80:80"  # Apache listens on port 80 internally, mapped to 8888 on the host
       depends_on:
         - php-fpm
-        - db-episciences
-        - db-indexing
-        - db-auth
       networks:
         - epi-network
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.services.epi-gpl-httpd.loadbalancer.server.port=80"
+        - "traefik.http.routers.epi-journal.rule=Host(`dev.episciences.org`)"
+        - "traefik.http.routers.epi-journal.entrypoints=websecure"
+        - "traefik.http.routers.epi-journal.tls=true"
+        - "traefik.http.routers.epi-journal.service=epi-gpl-httpd"
+        - "traefik.http.routers.epi-oai.rule=Host(`oai-dev.episciences.org`)"
+        - "traefik.http.routers.epi-oai.entrypoints=websecure"
+        - "traefik.http.routers.epi-oai.tls=true"
+        - "traefik.http.routers.epi-oai.service=epi-gpl-httpd"
+        - "traefik.http.routers.epi-portal.rule=Host(`data-dev.episciences.org`)"
+        - "traefik.http.routers.epi-portal.entrypoints=websecure"
+        - "traefik.http.routers.epi-portal.tls=true"
+        - "traefik.http.routers.epi-portal.service=epi-gpl-httpd"
       command: >
         /bin/sh -c "chown -R www-data:www-data /var/www/data /var/www/cache /var/www/logs && httpd-foreground"
 
@@ -43,155 +53,19 @@ services:
         - XDEBUG_MODE=debug
         - XDEBUG_CONFIG=client_host=host.docker.internal client_port=9003 start_with_request=yes
         - COMPOSER_HOME=/tmp/composer
+        - SMTP_HOST=mailpit
+        - SMTP_PORT=1025
     extra_hosts:
         - "host.docker.internal:host-gateway"
         - "api-dev.episciences.org:172.19.0.11"
     expose:
-        - "9000"  # Expose internal port 9000
+        - "9000"
     networks:
         - epi-network
     dns:
         - 8.8.8.8
         - 1.1.1.1
 
-  solr:
-    image: solr:9.9
-    container_name: episciences-solr
-    ports:
-      - "8983:8983"
-    networks:
-      - epi-network
-    environment:
-      ZK_HOST: "episciences-zoo:2181"
-      SOLR_MODULES: "analysis-extras"
-    depends_on:
-      - zoo
-    volumes:
-      - solr_data:/var/solr
-      - type: bind
-        source: ./src/solr
-        target: /opt/configsets
-        read_only: true
-
-  zoo:
-    image: zookeeper:3.9
-    container_name: episciences-zoo
-    networks:
-      - epi-network
-    environment:
-      ZOO_4LW_COMMANDS_WHITELIST: "mntr,conf,ruok"
-
-  db-episciences:
-    image: "mysql:8.0"
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-    container_name: 'episciences-db-episciences'
-    expose:
-      - "3306"
-    ports:
-      - "33060:3306"
-    volumes:
-      - mysql-db-episciences:/var/lib/mysql
-      - type: bind
-        source: ./src/mysql/docker/episciences/episciences.sql
-        target: /docker-entrypoint-initdb.d/init.sql
-      - type: bind
-        source: ./src/mysql/docker/episciences/my.cnf
-        target: /etc/mysql/conf.d/my.cnf
-    env_file:
-      - src/mysql/docker/episciences/mysql.env
-    networks:
-      - epi-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
-
-  db-indexing:
-    image: "mysql:8.0"
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-    container_name: 'episciences-db-indexing'
-    expose:
-      - "3306"
-    ports:
-      - "33061:3306"
-    volumes:
-      - mysql-db-indexing:/var/lib/mysql
-      - type: bind
-        source: ./src/mysql/docker/solr/solr_index_queue.sql
-        target: /docker-entrypoint-initdb.d/init.sql
-    env_file:
-      - src/mysql/docker/solr/mysql.env
-    networks:
-      - epi-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
-
-  db-auth:
-    image: "mysql:8.0"
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-    container_name: 'episciences-db-auth'
-    expose:
-      - "3306"
-    ports:
-      - "33062:3306"
-    volumes:
-      - mysql-db-auth:/var/lib/mysql
-      - type: bind
-        source: ./src/mysql/docker/auth/cas_users.sql
-        target: /docker-entrypoint-initdb.d/init.sql
-    env_file:
-      - src/mysql/docker/auth/mysql.env
-    networks:
-      - epi-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
-
-  pma:
-    container_name: 'episciences-db-phpmyadmin'
-    image: "phpmyadmin:latest"
-    environment:
-      - "PMA_PMADB=pma"
-      - "PMA_CONTROLUSER=root"
-      - "PMA_CONTROLPASS=root"
-      - "PMA_QUERYHISTORYDB=true"
-      - "PMA_USER=root"
-      - "PMA_PASSWORD=root"
-      - "PMA_ARBITRARY=1"
-      - "PMA_HOSTS=episciences-db-episciences,episciences-db-indexing,episciences-db-auth"
-      - "PMA_VERBOSES=episciences,indexing,auth"
-      - "UPLOAD_LIMIT=2G"
-      - "MEMORY_LIMIT=1G"
-    ports:
-      - "8001:80"
-    depends_on:
-      - db-episciences
-      - db-indexing
-      - db-auth
-    links:
-      - db-episciences
-      - db-indexing
-      - db-auth
-    networks:
-      - epi-network
-
 networks:
   epi-network:
-    name: epi-network
-    driver: bridge
-
-volumes:
-  mysql-db-episciences:
-  mysql-db-indexing:
-  mysql-db-auth:
-  solr_data:
-
+    external: true

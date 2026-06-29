@@ -7,6 +7,9 @@
  */
 class Ccsd_User_Models_UserMapper {
 
+    /** @var array<int, array<string, mixed>> Request-level cache keyed by UID */
+    private static array $_cache = [];
+
     /** @var Zend_Db_Table_Abstract */
     protected $_dbTable;
 
@@ -176,6 +179,24 @@ class Ccsd_User_Models_UserMapper {
      */
     public function find($uid, Ccsd_User_Models_User $user = null) {
 
+        $uid = (int) $uid;
+
+        if (isset(self::$_cache[$uid])) {
+            $cached = self::$_cache[$uid];
+            if ($user !== null) {
+                $user->setUid($cached['UID'])
+                    ->setUsername($cached['USERNAME'])
+                    ->setEmail($cached['EMAIL'])
+                    ->setCiv($cached['CIV'])
+                    ->setLastname($cached['LASTNAME'])
+                    ->setFirstname($cached['FIRSTNAME'])
+                    ->setMiddlename($cached['MIDDLENAME'])
+                    ->setTime_registered($cached['TIME_REGISTERED'])
+                    ->setTime_modified($cached['TIME_MODIFIED'])
+                    ->setValid($cached['VALID']);
+            }
+            return (object) $cached;
+        }
 
         $select = $this->getDbTable()->select()->where('UID = ?', $uid);
 

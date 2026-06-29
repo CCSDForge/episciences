@@ -248,6 +248,11 @@ class Episciences_Volume
         return $this;
     }
 
+    public function markEditorsLoaded(bool $active = true): void
+    {
+        $this->_editorsActiveState = $active;
+    }
+
     public function loadEditors(bool $active = true): void
     {
         $select = $this->loadVolumeAssignmentsForRoleQuery(Episciences_User_Assignment::ROLE_EDITOR);

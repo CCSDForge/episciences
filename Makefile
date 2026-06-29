@@ -17,7 +17,7 @@ NPX := npx
 PROJECT_NAME := episciences
 
 # Container Configuration
-CNTR_NAME_SOLR := solr
+CNTR_NAME_SOLR := episciences-solr
 CNTR_NAME_PHP := php-fpm
 CNTR_NAME_HTTPD := httpd
 CNTR_APP_DIR := /var/www/htdocs
@@ -48,31 +48,31 @@ help: ## Display this help message
 	@echo "Episciences GPL - Development Environment"
 	@echo "========================================"
 	@echo ""
-	@echo "Core Docker Commands:"
+	@echo "🐳 Core Docker Commands:"
 	@grep -E '^(build|up|down|status|logs|restart|clean|clean-mysql):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Database Commands:"
+	@echo "🗄️  Database Commands:"
 	@grep -h -E '^(wait-for-db|load-db.*|generate-users|shell-mysql.*|backup-db):.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No database commands found"
 	@echo ""
-	@echo "Solr Commands:"
+	@echo "🔍 Solr Commands:"
 	@grep -E '^(collection|collection-ref-pps|index|import-ref-pps|download-ref-pps):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Development Commands:"
+	@echo "🛠️  Development Commands:"
 	@grep -E '^(dev-setup|composer|yarn|enter):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Testing Commands:"
+	@echo "🧪 Testing Commands:"
 	@grep -h -E '^test.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No testing commands found"
 	@echo ""
-	@echo "Linting & Quality Commands:"
+	@echo "🔎 Linting & Quality Commands:"
 	@grep -h -E '^(phpstan|rector).*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No quality commands found"
 	@echo ""
-	@echo "Formatting Commands:"
+	@echo "✨ Formatting Commands:"
 	@grep -E '^format.*:.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Deployment Commands:"
+	@echo "🚀 Deployment Commands:"
 	@grep -h -E '^deploy.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No deployment commands found"
 	@echo ""
-	@echo "Other Commands:"
+	@echo "📦 Other Commands:"
 	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use|import-apache-logs):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 
 # =============================================================================
@@ -89,15 +89,16 @@ up: ## Start all docker containers
 	@echo "Development Environment Started Successfully!"
 	@echo "====================================================================="
 	@echo "📝 Make sure you have the following in /etc/hosts:"
-	@echo "127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org manager-dev.episciences.org"
+	@echo "127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org manager-dev.episciences.org mailpit.episciences.org"
 	@echo ""
-	@echo "🌐 Available Services:"
-	@echo "  Journal     : http://dev.episciences.org/"
-	@echo "  Manager     : http://manager-dev.episciences.org/dev/"
-	@echo "  OAI-PMH     : http://oai-dev.episciences.org/"
-	@echo "  Data        : http://data-dev.episciences.org/"
-	@echo "  PhpMyAdmin  : http://localhost:8001/"
+	@echo "🌐 Available Services (via Traefik — start episciences-infrastructure first):"
+	@echo "  Journal     : https://dev.episciences.org/"
+	@echo "  Manager     : https://manager-dev.episciences.org/dev/"
+	@echo "  OAI-PMH     : https://oai-dev.episciences.org/"
+	@echo "  Data        : https://data-dev.episciences.org/"
+	@echo "  PhpMyAdmin  : https://pma.episciences.org/"
 	@echo "  Apache Solr : http://localhost:8983/solr"
+	@echo "  Mailpit     : https://mailpit.episciences.org/"
 	@echo "====================================================================="
 
 down: ## Stop all docker containers and remove orphans
@@ -126,8 +127,6 @@ restart: down up ## Restart all containers
 clean: down ## Clean up unused docker resources
 	@echo "Cleaning up Docker resources..."
 	@$(DOCKER) system prune -f
-	@echo "Removing episciences network..."
-	@$(DOCKER) network rm epi-network 2>/dev/null || true
 
 clean-mysql: down ## Remove all MySQL volumes (WARNING: This will delete all database data!)
 	@echo "WARNING: This will permanently delete all MySQL database data!"
@@ -151,30 +150,33 @@ clean-mysql: down ## Remove all MySQL volumes (WARNING: This will delete all dat
 # =============================================================================
 # Solr Commands
 # =============================================================================
-collection: up ## Create Solr collection 'episciences' after starting containers
+collection: ## Create Solr collection 'episciences' (requires episciences-infrastructure running)
 	@echo "Setting up Solr collection 'episciences'..."
-	@echo "Waiting for Solr container to be ready..."
-	@until $(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
+	@echo "Waiting for Solr to be ready..."
+	@until $(DOCKER) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
 		echo "Waiting for Solr..."; \
 		sleep 2; \
 	done
 	@echo "Solr is ready. Creating 'episciences' collection..."
-	@$(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) solr create_collection -c episciences -d $(SOLR_COLLECTION_CONFIG) -s http://localhost:8983 >/dev/null 2>&1 || \
-		echo "Collection may already exist, continuing..."
+	@$(DOCKER) exec $(CNTR_NAME_SOLR) /opt/solr/bin/solr zk upconfig \
+		-d $(SOLR_COLLECTION_CONFIG) -n episciences -z episciences-zoo:2181
+	@$(DOCKER) exec $(CNTR_NAME_SOLR) \
+		curl -sf "http://localhost:8983/solr/admin/collections?action=CREATE&name=episciences&numShards=1&replicationFactor=1&collection.configName=episciences" \
+		>/dev/null 2>&1 || echo "Collection may already exist, continuing..."
 	@echo "Solr collection setup complete!"
 
-collection-ref-pps: up ## Create Solr core 'ref_pps'
+collection-ref-pps: ## Create Solr core 'ref_pps' (requires episciences-infrastructure running)
 	@echo "Setting up Solr core 'ref_pps'..."
-	@echo "Waiting for Solr container to be ready..."
-	@until $(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
+	@echo "Waiting for Solr to be ready..."
+	@until $(DOCKER) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
 		echo "Waiting for Solr..."; \
 		sleep 2; \
 	done
 	@echo "Solr is ready. Creating 'ref_pps' core..."
-	@# We need to ensure the config directory exists in the container or use a configset
-	@$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_SOLR) mkdir -p /opt/solr/server/solr/configsets/ref_pps
-	@$(DOCKER_COMPOSE) cp src/solr/ref_pps/conf $(CNTR_NAME_SOLR):/opt/solr/server/solr/configsets/ref_pps/
-	@$(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) solr create_core -c ref_pps -d /opt/solr/server/solr/configsets/ref_pps/conf -s http://localhost:8983 || \
+	@$(DOCKER) exec -u 0:0 $(CNTR_NAME_SOLR) mkdir -p /opt/solr/server/solr/configsets/ref_pps
+	@docker cp src/solr/ref_pps/conf $(CNTR_NAME_SOLR):/opt/solr/server/solr/configsets/ref_pps/
+	@$(DOCKER) exec $(CNTR_NAME_SOLR) solr create_core -c ref_pps \
+		-d /opt/solr/server/solr/configsets/ref_pps/conf -s http://localhost:8983 || \
 		echo "Core may already exist, continuing..."
 	@echo "Solr core ref_pps setup complete!"
 
@@ -198,8 +200,9 @@ download-ref-pps: ## Download PPS CSV file from IRIT (optional: force=1)
 # =============================================================================
 # Development Setup Commands
 # =============================================================================
-dev-setup: build copy-config setup-logs up wait-for-db init-data-dir ## Complete development environment setup with 30 generated users
+dev-setup: build copy-config setup-logs up wait-for-db init-data-dir ## Complete development environment setup (requires episciences-infrastructure running)
 	@echo "Setting up complete development environment..."
+	@echo "⚠️  Make sure episciences-infrastructure is running (cd ../episciences-infrastructure && make up)"
 	@$(MAKE) composer-install
 	@$(MAKE) yarn-encore-dev
 	@$(MAKE) load-dev-db
@@ -309,8 +312,7 @@ restart-php: ## Restart PHP-FPM container
 
 # --- Mail -----------------------------------------------------------------------
 
-send-mails: ## Send queued emails using the mail queue system
-	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/send_mails.php
+send-mails: ## Flush the mail queue now (without waiting for the cron)
 	@echo "Sending queued emails..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/send_mails.php

@@ -2759,10 +2759,14 @@ class Episciences_PapersManager
         // accepted - waiting for authors validation
         $template_keys['acceptedAskAuthorValidation'] = Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION;
 
+        $loadedTemplates = Episciences_Mail_TemplatesManager::findManyByKeys(
+            array_values($template_keys),
+            RVCODE
+        );
+
         foreach ($template_keys as $template_name => $template_key) {
-            $oTemplate = new Episciences_Mail_Template();
+            $oTemplate = $loadedTemplates[$template_key] ?? new Episciences_Mail_Template();
             $oTemplate->setLocale($locale);
-            $oTemplate->findByKey($template_key);
             $oTemplate->loadTranslations();
 
             $templates[$template_name] = [

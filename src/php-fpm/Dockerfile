@@ -22,6 +22,7 @@ RUN apt-get update  \
     unzip \
     git \
     vim \
+    cron \
     poppler-utils \
     jq \
     less \
@@ -58,6 +59,10 @@ COPY ./src/php-fpm/upload.ini /usr/local/etc/php/conf.d/
 
 # disable opcache configuration
 #COPY ./src/php-fpm/opcache.ini /usr/local/etc/php/conf.d/
+
+# Install mail queue crontab
+COPY ./src/php-fpm/crontab /etc/cron.d/episciences-mails
+RUN chmod 0644 /etc/cron.d/episciences-mails
 
 # Copy entrypoint script and set permissions
 COPY ./src/php-fpm/entrypoint.sh /usr/local/bin/entrypoint.sh

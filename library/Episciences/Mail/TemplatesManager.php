@@ -2,6 +2,8 @@
 
 class Episciences_Mail_TemplatesManager
 {
+    private const CUSTOM_KEY_PREFIX = 'custom_';
+
     public const SUFFIX_TPL_NAME = '_tpl_name';
     public const SUFFIX_TPL_SUBJECT = '_mail_subject';
     public const TPL_TRANSLATION_FILE_NAME = 'mails.php';
@@ -1898,6 +1900,71 @@ class Episciences_Mail_TemplatesManager
             $result['file'] = $result['key'] . '.phtml';
         } else {
             $result = false;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Fetch multiple templates by their base keys using two queries instead of 2×N.
+     * Custom templates take precedence over defaults; when the DB returns duplicate rows
+     * for the same key, the first row wins (consistent with findByKey/fetchRow semantics).
+     *
+     * @param array<int, string> $keys   base template keys (without 'custom_' prefix)
+     * @param string|null        $rvcode journal code
+     * @return array<string, Episciences_Mail_Template> indexed by base key
+     * @throws Zend_Exception when rvcode is empty or null
+     */
+    public static function findManyByKeys(array $keys, ?string $rvcode): array
+    {
+        if (empty($keys)) {
+            return [];
+        }
+
+        if (!$rvcode) {
+            throw new Zend_Exception("Template could not be found because rvcode is missing");
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $prefixLen = strlen(self::CUSTOM_KEY_PREFIX);
+
+        $customKeys = array_map(static fn(string $k) => self::CUSTOM_KEY_PREFIX . $k, $keys);
+        $customRows = $db->fetchAll(
+            $db->select()->from(T_MAIL_TEMPLATES)
+                ->where('`KEY` IN (?)', $customKeys)
+                ->where('RVCODE = ?', $rvcode)
+                ->order('ID ASC')
+        );
+
+        $customByKey = [];
+        foreach ($customRows as $row) {
+            $baseKey = substr($row['KEY'], $prefixLen);
+            if (!isset($customByKey[$baseKey])) {
+                $customByKey[$baseKey] = $row;
+            }
+        }
+
+        $defaultByKey = [];
+        $needsDefault = array_diff($keys, array_keys($customByKey));
+        if (!empty($needsDefault)) {
+            $defaultRows = $db->fetchAll(
+                $db->select()->from(T_MAIL_TEMPLATES)
+                    ->where('`KEY` IN (?)', array_values($needsDefault))
+                    ->order('ID ASC')
+            );
+            foreach ($defaultRows as $row) {
+                if (!isset($defaultByKey[$row['KEY']])) {
+                    $defaultByKey[$row['KEY']] = $row;
+                }
+            }
+        }
+
+        $result = [];
+        foreach ($keys as $key) {
+            $row = $customByKey[$key] ?? $defaultByKey[$key] ?? null;
+            if ($row !== null) {
+                $result[$key] = Episciences_Mail_Template::fromRow($row);
+            }
         }
 
         return $result;

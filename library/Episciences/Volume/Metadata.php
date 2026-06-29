@@ -297,6 +297,7 @@ class Episciences_Volume_Metadata
             $filename = Ccsd_Tools::getNewFileName($file['name'], $path);
             if (file_exists($file['tmp_name'])) {
                 rename($file['tmp_name'], $path . $filename);
+                chmod($path . $filename, 0644);
             }
 
             // On enregistre le nom du fichier
