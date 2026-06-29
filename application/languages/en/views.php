@@ -2468,9 +2468,6 @@ return array(
     "Si activé, les volumes sans articles seront visibles sur le site" => "If enabled, volumes without articles will be visible on the site",
     "Autoriser la modification du titre du volume avec des articles publiés" => "Allow editing volume title with published articles",
     "Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés" => "If enabled, a volume's title can be modified even if it contains published articles",
-    "Afficher les volumes secondaires sur la page publique de l'article" => "Display secondary volumes on the public article page",
-    "Si activé, les volumes secondaires seront visibles sur la page publique de l'article" => "If enabled, secondary volumes will be visible on the public article page",
-    "Volumes secondaires: " => "Secondary volumes: ",
 
     // Alt pipeline: final-version deposit (state 34)
     'Déposer la version finale et le mot de passe arXiv' => 'Deposit final version and arXiv paper password',

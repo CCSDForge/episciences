@@ -61,7 +61,6 @@ class Episciences_Review
     public const SETTING_SPECIAL_ISSUE_ACCESS_CODE = 'specialIssueAccessCode';
     public const SETTING_DISPLAY_EMPTY_VOLUMES = 'displayEmptyVolumes';
     public const SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES = 'allowEditVolumeTitleWithPublishedArticles';
-    public const SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE = 'displaySecondaryVolumesOnPublicPage';
     public const SETTING_ENCAPSULATE_REVIEWERS = 'encapsulateReviewers';
     public const SETTING_EDITORS_CAN_REASSIGN_ARTICLES = 'editorsCanReassignArticle';
     public const SETTING_AUTHORS_CAN_CONTACT_EDITORS = 'authorsCanContactEditors';
@@ -235,7 +234,6 @@ class Episciences_Review
             self::SETTING_JOURNAL_PUBLISHER_LOC,
             self::SETTING_DISPLAY_EMPTY_VOLUMES,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
-            self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE,
             self::SETTING_ALTERNATIVE_PIPELINE,
         ];
 
@@ -1108,11 +1106,9 @@ class Episciences_Review
         // display group : volume settings
         $form->addDisplayGroup([
             self::SETTING_DISPLAY_EMPTY_VOLUMES,
-            self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
-            self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE
+            self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES
         ], 'volumes', ["legend" => "Paramètres des volumes"]);
         $form->getDisplayGroup('volumes')->removeDecorator('DtDdWrapper');
-
 
         // display group : copy editors settings
         $form->addDisplayGroup([
@@ -1629,13 +1625,6 @@ class Episciences_Review
                 'decorators' => $checkboxDecorators]
         );
 
-        $form->addElement('checkbox', self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE, [
-                'label' => $translator->translate("Afficher les volumes secondaires sur la page publique de l'article"),
-                'description' => $translator->translate("Si activé, les volumes secondaires seront visibles sur la page publique de l'article"),
-                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
-                'decorators' => $checkboxDecorators]
-        );
-
         return $form;
     }
 
@@ -1884,7 +1873,7 @@ class Episciences_Review
             self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
             self::SETTING_TO_REQUIRE_REVISION_DEADLINE, self::SETTING_START_STATS_AFTER_DATE,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, self::SETTING_DISPLAY_EMPTY_VOLUMES,
-            self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE, self::SETTING_ALTERNATIVE_PIPELINE,
+            self::SETTING_ALTERNATIVE_PIPELINE,
             self::SETTING_AUTHORS_CAN_CONTACT_EDITORS, self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS
         ];
 
