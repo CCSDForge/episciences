@@ -901,7 +901,7 @@ class UserDefaultController extends Episciences_Controller_Action
             'decorators' => [
                 new Episciences_Form_Decorator_CustomHtmlTag([
                     'tag' => 'altcha-widget',
-                    'challenge' => '/user/altcha-challenge',
+                    'challenge' => $this->url(['user' => 'altcha-challengeex']),
                     'language' => Zend_Registry::get('lang'),
                 ]),
                 new Zend_Form_Decorator_HtmlTag([
