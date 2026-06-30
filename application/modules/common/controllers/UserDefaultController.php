@@ -871,17 +871,10 @@ class UserDefaultController extends Zend_Controller_Action
     public function altchaChallengeAction(): void
     {
         $challenge = ChallengeHelper::createChallenge();
-        $json = (string) json_encode([
-            'algorithm' => $challenge->algorithm,
-            'challenge' => $challenge->challenge,
-            'maxNumber' => $challenge->maxNumber,
-            'salt'      => $challenge->salt,
-            'signature' => $challenge->signature,
-        ]);
         $this->getResponse()
             ->setHeader('Content-Type', 'application/json')
             ->setHeader('Cache-Control', 'no-store')
-            ->setBody($json);
+            ->setBody($challenge->toJson());
         $this->_helper->viewRenderer->setNoRender(true);
         $this->_helper->layout()->disableLayout();
     }
@@ -911,19 +904,40 @@ class UserDefaultController extends Zend_Controller_Action
         if ($raw === '') {
             return false;
         }
-        $decoded = json_decode(base64_decode($raw, true), true);
-        $salt = is_array($decoded) ? ($decoded['salt'] ?? '') : '';
-        if ($salt === '') {
+        $decoded = json_decode(base64_decode($raw, true) ?: '', true);
+        if (!is_array($decoded)
+            || !isset($decoded['challenge']['parameters'], $decoded['solution'])
+            || !is_array($decoded['challenge']['parameters'])
+            || !is_array($decoded['solution'])
+        ) {
+            return false;
+        }
+        $nonce = $decoded['challenge']['parameters']['nonce'] ?? '';
+        if ($nonce === '') {
             return false;
         }
         $cache = ChallengeHelper::getCache();
-        if (ChallengeHelper::isReplay($salt, $cache)) {
+        if (ChallengeHelper::isReplay($nonce, $cache)) {
             return false;
         }
-        if (!ChallengeHelper::createAltcha()->verifySolution($raw)) {
+        $challenge = new \AltchaOrg\Altcha\Challenge(
+            \AltchaOrg\Altcha\ChallengeParameters::fromArray($decoded['challenge']['parameters']),
+            $decoded['challenge']['signature'] ?? null,
+        );
+        $solution = new \AltchaOrg\Altcha\Solution(
+            counter: (int) $decoded['solution']['counter'],
+            derivedKey: (string) $decoded['solution']['derivedKey'],
+        );
+        $result = ChallengeHelper::createAltcha()->verifySolution(
+            new \AltchaOrg\Altcha\VerifySolutionOptions(
+                payload: new \AltchaOrg\Altcha\Payload($challenge, $solution),
+                algorithm: new \AltchaOrg\Altcha\Algorithm\Argon2id(),
+            )
+        );
+        if (!$result->verified) {
             return false;
         }
-        ChallengeHelper::markUsed($salt, $cache);
+        ChallengeHelper::markUsed($nonce, $cache);
         return true;
     }
 

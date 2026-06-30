@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Migration of captcha system (hCaptcha/reCAPTCHA) to a self-hosted, privacy-friendly solution: **ALTCHA** (utilizing the Argon2id PoW algorithm and bundled via Webpack).
+- Export journal ISSN as `dc:identifier` (`urn:ISSN:...`) in OAI-PMH ListSets.
+- Add Cron daemon to the PHP-FPM container to automatically run the mail queue flushing command every minute in the development environment.
+- Add a visual count badge in the bibliographical references panel indicating the number of automatically detected problematic references.
 - [#1061](https://github.com/CCSDForge/episciences/pull/1061) Allow secretaries and editors to accept a review invitation on behalf of the reviewer.
 - [#937](https://github.com/CCSDForge/episciences/issues/937) Admin paper list (`/administratepaper/list`): columns **Reviewers**, **Editors**, **Copy editors**, and **Contributor** are now sortable server-side.
 - [#1058](https://github.com/CCSDForge/episciences/pull/1058) OAI-PMH ListSets: add `<setDescription>` with Dublin Core metadata (title, publisher, date, description, subjects) for journal sets.
@@ -29,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Replace native language switcher dropdown with an accessible WAI-ARIA custom dropdown.
+- Route development emails to a local Mailpit SMTP server instead of dumping them to the UI, and remove legacy UI mail dump.
+- Development Docker environment: delegate DB, Solr, ZooKeeper, and phpMyAdmin services to the centralized `episciences-infrastructure` repository, and route local traffic via Traefik with default HTTPS support.
+- Align document relationship types with HAL schema and refactor their configurations.
 - Migrated ROR (Research Organization Registry) API integration to v2.
 - Upgraded `symfony/cache` to `^6.4` and updated `shardj/zf1-future` dependencies.
 - Sitemap generation:
@@ -49,6 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Performances
 
+- Eliminate N+1 query patterns on the volume list page (reducing SQL queries from 894 to ~4).
+- Batch-load mail templates in 2 SQL queries instead of 2×N.
 - Implemented PSR-6 request-scoped caching for database entities (authors, projects, comments, and user assignments repositories) to reduce database queries.
 - Eliminated N+1 query patterns on paper list pages by batch-loading users and roles in chunks of 1000 and priming a request-level identity map cache before render loops (`AdministratepaperController`, `UsersManager`).
 - `loadRoles()` is now lazy: returns immediately when roles are already loaded, avoiding redundant per-user DB queries in callers such as `AdministratemailController::getcontactsAction()`.
@@ -60,6 +70,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Escaping of XML special characters in OAI-PMH ListSets and setDescription (by using `createTextNode`).
+- Explicitly set permission to `0644` on uploaded volume metadata files.
+- Fix linked-data: remove premature `changePlaceholder` calls before AJAX resolves.
 - [#1059](https://github.com/CCSDForge/episciences/issues/1059) Fixed method naming inconsistency (`RelationsShips` → `RelationShips`) in `Episciences\Paper\Relationship` and its callers; added missing `string` type hint on closure parameter to comply with PHPStan level 6.
 - [#1035](https://github.com/CCSDForge/episciences/issues/1035) Fixed an issue where editors were unable to proceed to the "copy editing" stage because the transition button was hidden behind an incorrect conditional block in the status dropdown menu.
 - Prevent the submission of a dataset or software that does not include a descriptor.
@@ -113,8 +126,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button labels: "Continue (No conflict of interest)" / "Stop (I have a conflict of interest)"
 - Modernized `Ccsd_Form_Filter_Clean` filter and `Ccsd_Form_Validate_NotSame` validator (introduced strict typing, comprehensive type hinting, and robust recursive array filtering for the `Clean` filter).
 
+### Deprecated
+
+- Deprecate obsolete `Ccsd_Form_Element_Thesaurus` form element (scheduled for removal).
+
 ### Removed
 
+- Remove obsolete `google/recaptcha` and `neverbehave/hcaptcha` libraries from `composer.json`.
+- Remove PubPeer link feature from bibliographic references.
 - Removed obsolete, unused, and deprecated authentication adapters: `Asso`, `DbTable`, `Idp`, `Asso/Ext`, and `Orcid` (`Ccsd/Auth`).
 - Removed obsolete `DEAD CODE AUDIT` deprecation warnings from `UserFtpQuota` and `UserFtpQuotaMapper` classes.
 

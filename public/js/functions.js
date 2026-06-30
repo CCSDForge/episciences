@@ -22,7 +22,7 @@ var $modal_form;
 
 var openedPopover;
 
-$(document).ready(function () {
+$(document).ready(function ($) {
     $modal_box = $('#modal-box');
     $modal_body = $modal_box.find('.modal-body');
     $modal_footer = $modal_box.find('.modal-footer');

@@ -193,11 +193,6 @@ class Episciences_Mail extends Zend_Mail
             $this->setReplyTo($mail, $name);
         }
 
-        if (APPLICATION_ENV === ENV_DEV && !Ccsd_Tools::isFromCli()) {
-            $session = new Zend_Session_Namespace();
-            $session->mail = $this;
-        }
-
         try {
             $this->write($debug);
         } catch (Exception $e) {

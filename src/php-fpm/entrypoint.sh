@@ -5,8 +5,6 @@ chmod -R 775 /var/www/logs
 # Run Composer as www-data
 su - www-data -c "cd /var/www/htdocs/;composer install --no-interaction --prefer-dist --optimize-autoloader"
 
-# Export container env vars so cron jobs inherit them (SMTP_HOST, SMTP_PORT, etc.)
-printenv > /etc/environment
 cron
 
 exec "$@"

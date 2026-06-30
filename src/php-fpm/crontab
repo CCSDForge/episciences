@@ -1,4 +1,6 @@
 SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+SMTP_HOST=mailpit
+SMTP_PORT=1025
 
-* * * * * www-data php /var/www/htdocs/scripts/send_mails.php >> /var/www/logs/send_mails.log 2>&1
+* * * * * www-data cd /var/www/htdocs && php scripts/send_mails.php >> /var/www/logs/send_mails.log 2>&1
