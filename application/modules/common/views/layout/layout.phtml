@@ -164,17 +164,6 @@ $this->navbar(true, [
                     echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_INFO, true);
                     ?>
 
-                    <?php
-                    //Développement : affichage des mails
-                    if (APPLICATION_ENV == ENV_DEV) {
-                        $session = new Zend_Session_Namespace();
-                        if (isset($session->mail) && $session->mail instanceof Episciences_Mail) {
-                            $this->mail = $session->mail;
-                            echo $this->render('commons/mail.phtml');
-                            unset($session->mail);
-                        }
-                    } ?>
-
                     <?php echo $this->layout()->content; ?>
                 </div>
             </div>
