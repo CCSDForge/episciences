@@ -35,6 +35,7 @@ if ($this->form) {
         echo '<script src="https://cdn.jsdelivr.net/npm/altcha@3.1.0/dist/main/altcha.min.js"'
             . ' integrity="sha256-2MYsWfWlelQoomIYmzpiE5cZ9PwpHjXlEPmdheE5C0c="'
             . ' crossorigin="anonymous"></script>';
+        echo '<script>$altcha.algorithms.set("ARGON2ID",()=>new Worker("/js/vendor/altcha/argon2id.js"));</script>';
     }
 
     echo $this->form;
