@@ -555,37 +555,45 @@ class Episciences_CommentsManager
             'required' => !isset($values['MESSAGE'])
         ]);
         $group[] = Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME;
-        // Attached file
-        $descriptions = self::getDescriptions();
-        $description = $descriptions['description'];
-        $description .= '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated;
-        $form->addElement('file', Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME, [
-            'label' => "Lettre d'accompagnement",
-            'description' => $description,
-            'valueDisabled' => true,
-            'validators' => [
-                'Count' => [false, 1],
-                'Extension' => [false, $descriptions['extensions']],
-                'Size' => [false, MAX_FILE_SIZE]
-            ]
-        ]);
 
-        $group[] = Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME;
-        if (isset($values['FILE'])) {
-            $safeFile  = htmlspecialchars((string)$values['FILE'], ENT_QUOTES, 'UTF-8');
-            $safeDocId = (int)$values['DOCID'];
-            $href = '<a href="/docfiles/comments/' . $safeDocId . '/' . $safeFile . '">' . $safeFile . '</a>';
+        // Cover letter file field: hidden if setting = 0, displayed otherwise
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+        $coverLetterRequirement = (int)$review->getSetting(Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT);
 
-            $infos = $translator->translate('Ci-dessous votre ancienne lettre d’accompagnement, son remplacement est possible en joignant un nouveau fichier à votre commentaire.')
-                . '<br>' . $translator->translate('Ces modifications seront prises en compte une fois le formulaire est validé.');
-
-            $form->addElement('note', 'note_cover_letter', [
-                'label' => $translator->translate('Note:'),
-                'value' => $href,
-                'description' => $infos,
+        if ($coverLetterRequirement !== 0) {
+            $descriptions = self::getDescriptions();
+            $description = $descriptions['description'];
+            $description .= '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated;
+            $form->addElement('file', Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME, [
+                'label' => "Lettre d'accompagnement",
+                'description' => $description,
+                'valueDisabled' => true,
+                'validators' => [
+                    'Count' => [false, 1],
+                    'Extension' => [false, $descriptions['extensions']],
+                    'Size' => [false, MAX_FILE_SIZE]
+                ]
             ]);
 
-            $group[] = 'note_cover_letter';
+            $group[] = Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME;
+
+            if (isset($values['FILE'])) {
+                $safeFile  = htmlspecialchars((string)$values['FILE'], ENT_QUOTES, 'UTF-8');
+                $safeDocId = (int)$values['DOCID'];
+                $href = '<a href="/docfiles/comments/' . $safeDocId . '/' . $safeFile . '">' . $safeFile . '</a>';
+
+                $infos = $translator->translate("Ci-dessous votre ancienne lettre d'accompagnement, son remplacement est possible en joignant un nouveau fichier à votre commentaire.")
+                    . '<br>' . $translator->translate('Ces modifications seront prises en compte une fois le formulaire est validé.');
+
+                $form->addElement('note', 'note_cover_letter', [
+                    'label' => $translator->translate('Note:'),
+                    'value' => $href,
+                    'description' => $infos,
+                ]);
+
+                $group[] = 'note_cover_letter';
+            }
         }
 
         $form->createCancelButton('exitComment', [

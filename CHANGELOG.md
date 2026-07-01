@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Volume settings: added copy-to-clipboard buttons for volume access codes in the volumes list and edit pages.
 - Website settings: added support for journal description, keywords, and creation year fields.
 - MIME type: added support check for `file` binary presence on the system in `FileBinaryMimeTypeGuesser`.
+- [#922](https://github.com/CCSDForge/episciences/issues/922) Add cover letter requirement setting for file attachments. Initial submission form supports three options: disabled (hidden), optional, or required. Author comment form on paper page supports two options: disabled (hidden) or displayed.
 
 ### Changed
 
