@@ -271,14 +271,17 @@ class WebsiteDefaultController extends Zend_Controller_Action
                 }
 
                 // Predefined page titles are managed by translations, ignore any submitted labels
-                if (is_a($options['type'], Episciences_Website_Navigation_Page_Predefined::class, true)) {
+                $isPredefinedPage = is_a($options['type'], Episciences_Website_Navigation_Page_Predefined::class, true);
+                if ($isPredefinedPage) {
                     unset($options['labels']);
                 }
 
                 $this->_session->website->setPage($pageid, $options);
                 $this->_session->website->getPage($pageid)->initForm();
 
-                if ($options['type'] !== 'Episciences_Website_Navigation_Page_File' && !$this->_session->website->getPage($pageid)->getForm($pageid)->isValid($options)) {
+                // Skip form validation for File pages and Predefined pages (labels are managed via translations)
+                $skipValidation = $options['type'] === 'Episciences_Website_Navigation_Page_File' || $isPredefinedPage;
+                if (!$skipValidation && !$this->_session->website->getPage($pageid)->getForm($pageid)->isValid($options)) {
                     $pagesDisplay[$pageid] = true;
                     $valid = false;
                 } else {
