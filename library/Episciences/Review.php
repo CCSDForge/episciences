@@ -44,6 +44,8 @@ class Episciences_Review
     // git #155
     public const SETTING_CAN_RESUBMIT_REFUSED_PAPER = 'canResubmitRefusedPaper';
     public const SETTING_ARXIV_PAPER_PASSWORD = 'canSharePaperPassword';
+    // git #922
+    public const SETTING_COVER_LETTER_REQUIREMENT = 'coverLetterRequirement';
 
     //const SETTING_EDITORS_CAN_MAKE_DECISIONS = 'editorsCanMakeDecisions';
     public const SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'editorsCanAbandonPublicationProcess';
@@ -229,6 +231,7 @@ class Episciences_Review
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
             self::SETTING_ARXIV_PAPER_PASSWORD,
+            self::SETTING_COVER_LETTER_REQUIREMENT,
             self::SETTING_CONTACT_ERROR_MAIL,
             self::SETTING_DISPLAY_STATISTICS,
             self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
@@ -1103,6 +1106,7 @@ class Episciences_Review
             self::SETTING_REPOSITORIES,
             self::SETTING_CAN_PICK_SECTION,
             self::SETTING_CAN_PICK_EDITOR,
+            self::SETTING_COVER_LETTER_REQUIREMENT,
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
             self::SETTING_CAN_SUGGEST_REVIEWERS,
             self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS,
@@ -1325,6 +1329,20 @@ class Episciences_Review
 
             ]
         );
+
+        // Cover letter requirement (controls only the file, comment is always optional)
+        $form->addElement('select', self::SETTING_COVER_LETTER_REQUIREMENT, [
+                'label' => "Lettre d'accompagnement",
+                'value' => 1,
+                'multioptions' => [
+                    0 => 'Désactivée',
+                    1 => 'Facultative',
+                    2 => 'Requise',
+                ],
+            ]
+        );
+
+        $form->getElement(self::SETTING_COVER_LETTER_REQUIREMENT)->getDecorator('label')->setOption('class', 'col-md-2');
 
         return $form;
 
@@ -1918,7 +1936,8 @@ class Episciences_Review
             self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS, self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
             self::SETTING_SYSTEM_IS_COI_ENABLED, self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED,
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION, self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
-            self::SETTING_ARXIV_PAPER_PASSWORD, self::SETTING_DISPLAY_STATISTICS, self::SETTING_CONTACT_ERROR_MAIL,
+            self::SETTING_ARXIV_PAPER_PASSWORD, self::SETTING_COVER_LETTER_REQUIREMENT,
+            self::SETTING_DISPLAY_STATISTICS, self::SETTING_CONTACT_ERROR_MAIL,
             self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
             self::SETTING_TO_REQUIRE_REVISION_DEADLINE, self::SETTING_START_STATS_AFTER_DATE,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, self::SETTING_DISPLAY_EMPTY_VOLUMES,
