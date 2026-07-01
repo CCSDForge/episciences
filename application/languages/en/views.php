@@ -869,9 +869,9 @@ return array(
     "Envoyer un message aux rédacteurs" => 'Send a message to the assigned editors',
     "Répondre à l'auteur" => 'Reply to the author',
     "Échanges avec l'auteur/autrice" => "Exchanges with the author",
-    "Visible par l'auteur/autrice" => "Visible to the author",
+    "Visible pour l'auteur/autrice" => "Visible to the author",
     "Échanges avec les rédacteurs" => "Exchanges with the editors",
-    "Visible par les rédacteurs assignés" => "Visible to assigned editors",
+    "Visible pour les rédacteurs assignés" => "Visible to assigned editors",
     "Rédacteurs assignés" => 'Assigned editors',
     "Utilisez ce formulaire pour envoyer un message aux rédacteurs assignés à votre article." => 'Use this form to send a message to the editors assigned to your article.',
     "Utilisez ce formulaire pour envoyer un message à l'auteur de cet article." => 'Use this form to send a message to the author of this article.',
@@ -1550,7 +1550,7 @@ return array(
     'La nouvelle version de votre article a bien été enregistrée.' => "Your new version has been saved.",
     "Le document n'a pas été trouvé ou n'a pas pu être chargé." => "The document could not be found, or could not be loaded.",
     "Lettre d'accompagnement" => 'Cover letter',
-    'Visible par : ' => 'Visible by: ',
+    'Visible pour : ' => 'Visible to: ',
     "Progression : " => "Progression:",
     "Dernière modification" => "Last modified",
 
@@ -1809,7 +1809,7 @@ return array(
     "Réservée aux membres" => "Members only",
     "Personnalisée" => "Custom",
 
-    "Lien permanent" => "Permanent link",
+    "Permalien" => "Permalink",
 
     "Afficher les volumes vides" => "Show empty volumes",
     'Ce volume ne contient pas encore de documents.' => 'This volume does not yet contain any documents.',
@@ -2497,5 +2497,11 @@ return array(
     "Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés" => "If enabled, a volume's title can be modified even if it contains published articles",
     "Afficher les volumes secondaires sur la page publique de l'article" => "Display secondary volumes on the public article page",
     "Si activé, les volumes secondaires seront visibles sur la page publique de l'article" => "If enabled, secondary volumes will be visible on the public article page",
-    "Volumes secondaires: " => "Secondary volumes: "
+    "Volumes secondaires: " => "Secondary volumes: ",
+
+    // Website pages
+    "Le permalien '%s' est réservé aux pages prédéfinies. Veuillez choisir un autre permalien." => "The permalink '%s' is reserved for predefined pages. Please choose a different permalink.",
+    "Le permalien '%s' est déjà utilisé par une autre page. Veuillez choisir un autre permalien." => "The permalink '%s' is already used by another page. Please choose a different permalink.",
+    "Codes réservés (non utilisables) :" => "Reserved codes (cannot be used):",
+    "Le titre des pages prédéfinies ne peut pas être modifié" => "The title of predefined pages cannot be modified"
 );
