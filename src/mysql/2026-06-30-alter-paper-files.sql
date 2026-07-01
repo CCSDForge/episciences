@@ -1,0 +1,1 @@
+ ALTER TABLE `episciences`.`paper_files` ADD UNIQUE `unique_docid_self_link` (`doc_id`, `self_link`);
