@@ -572,7 +572,10 @@ class UserDefaultController extends Zend_Controller_Action
         // create an account (CAS + Episciences)
         if ($request->getPost('submit') && $form->isValid($request->getPost())) {
 
-            $user = new Episciences_User($form->getValues());
+            $formValues = $form->getValues();
+            $formValues['AFFILIATIONS'] = $this->processAffiliations($formValues['AFFILIATIONS'] ?? []);
+
+            $user = new Episciences_User($formValues);
             $user->setTime_registered();
             $user->setRegistrationDate(); // Episciences registration
             $user->setScreenName();
