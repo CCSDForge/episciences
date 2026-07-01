@@ -67,12 +67,6 @@ class Episciences_Paper_FilesManager
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $sql = self::findByDocIdQuery($docId, ['id'], null);
-        $hasFiles = $db?->fetchOne($sql) > 0;
-
-        if (!$hasFiles) {
-            return true;
-        }
 
         $db?->beginTransaction();
 
@@ -135,10 +129,12 @@ class Episciences_Paper_FilesManager
         $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_PAPER_FILES) . ' (`doc_id`, `source`, `file_name`, `checksum`, `checksum_type`, `self_link`, `file_size`, `file_type`) VALUES ';
 
         if (!empty($values)) {
+            $sql.= implode(', ', $values);
+            $sql.= ' ON DUPLICATE KEY UPDATE `file_size` = VALUES(`file_size`), `checksum` = VALUES(`checksum`), `checksum_type` = VALUES(`checksum_type`), `file_type` = VALUES(`file_type`), `file_name` = VALUES(`file_name`)';
             try {
                 //Prepares and executes an SQL
                 /** @var Zend_Db_Statement_Interface $result */
-                $result = $db->query($sql . implode(', ', $values));
+                $result = $db->query($sql);
                 $affectedRows = $result->rowCount();
             } catch (Exception $e) {
                 trigger_error($e->getMessage(), E_USER_ERROR);
