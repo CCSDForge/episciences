@@ -97,7 +97,7 @@ class Episciences_Paper_File
      * @param int $id
      * @return Episciences_Paper_File
      */
-    public function setId(int $id): Episciences_Paper_File
+    public function setId(int $id): self
     {
         $this->_id = $id;
         return $this;
@@ -131,7 +131,7 @@ class Episciences_Paper_File
      * @param string $fileName
      * @return Episciences_Paper_File
      */
-    public function setFileName(string $fileName): Episciences_Paper_File
+    public function setFileName(string $fileName): self
     {
         $this->_fileName = $fileName;
         return $this;
@@ -149,7 +149,7 @@ class Episciences_Paper_File
      * @param int $fileSize
      * @return Episciences_Paper_File
      */
-    public function setFileSize(int $fileSize): Episciences_Paper_File
+    public function setFileSize(int $fileSize): self
     {
         $this->_fileSize = $fileSize;
         return $this;
@@ -167,7 +167,7 @@ class Episciences_Paper_File
      * @param string|null $fileType
      * @return Episciences_Paper_File
      */
-    public function setFileType(string $fileType = null): Episciences_Paper_File
+    public function setFileType(string $fileType = null): self
     {
         $this->_fileType = $fileType ?? 'pdf';
         return $this;
@@ -185,7 +185,7 @@ class Episciences_Paper_File
      * @param string $checksum
      * @return Episciences_Paper_File
      */
-    public function setChecksum(string $checksum): Episciences_Paper_File
+    public function setChecksum(string $checksum): self
     {
         $this->_checksum = $checksum;
         return $this;
@@ -203,7 +203,7 @@ class Episciences_Paper_File
      * @param string|null $checksumType
      * @return Episciences_Paper_File
      */
-    public function setChecksumType(string $checksumType = null): Episciences_Paper_File
+    public function setChecksumType(string $checksumType = null): self
     {
         $this->_checksumType = $checksumType ?? 'MD5';
         return $this;
@@ -221,7 +221,7 @@ class Episciences_Paper_File
      * @param string|null $link
      * @return Episciences_Paper_File
      */
-    public function setSelfLink(string $link = null): Episciences_Paper_File
+    public function setSelfLink(string $link = null): self
     {
         $this->_selfLink = $link ?? '#';
         return $this;
@@ -240,7 +240,7 @@ class Episciences_Paper_File
      * @return Episciences_Paper_File
      * @throws Exception
      */
-    public function setTimeModified(string $timeModified): Episciences_Paper_File
+    public function setTimeModified(string $timeModified): self
     {
         $this->_timeModified = new DateTime($timeModified);
         return $this;
