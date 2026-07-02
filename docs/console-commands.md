@@ -43,6 +43,10 @@ php scripts/console.php <command> --help
 | [`stats:update-robots-list`](#statsupdate-robots-list) | Download the COUNTER Robots list for bot detection |
 | [`stats:process`](#statsprocess) | Process raw visit records from `STAT_TEMP` into `PAPER_STAT` |
 | [`geoip:update`](#geoipupdate) | Download or update the GeoLite2-City.mmdb database |
+| [`solr:index`](#solrindex) | Enqueue (or synchronously run) Solr re-indexing for one or more papers |
+| [`solr:delete`](#solrdelete) | Enqueue (or synchronously run) a Solr deletion, by DOCID or by raw query |
+| [`solr:worker`](#solrworker) | Continuously consume the Solr indexing/deletion queue |
+| [`solr:queue`](#solrqueue) | Inspect and manage the Solr indexing queue |
 
 ---
 
@@ -557,3 +561,106 @@ Recommended cron schedule: daily (e.g. every day at 02:00).
 > ```
 
 > **Note:** Run `stats:update-robots-list` at least once before the first execution of `stats:process`.
+
+---
+
+## Solr Indexing
+
+Solr indexing pipeline built on Symfony Messenger with a Doctrine DBAL
+transport (tables `messenger_messages` / `messenger_failed` in the main
+application database). This is the **only** indexing path — paper
+publication, deletion, and import all enqueue work here via
+`Episciences\Solr\Indexing\Enqueue\SolrIndexing`. There is no synchronous
+fallback and no legacy cron.
+
+Retries and failures are handled natively by Messenger instead of being
+silently swallowed: a Solr/network failure is retried up to 5 times with
+exponential backoff (5s, 15s, 45s, ...) before landing in the failure
+transport, where it stays until inspected or retried via `solr:queue`.
+
+**`solr:worker` must run continuously, supervised (systemd/supervisord), in
+every environment.** There is no synchronous fallback and no periodic-cron
+alternative: if the worker isn't running, enqueued papers are simply never
+indexed or deleted in Solr, with no error visible anywhere else in the app.
+
+Before first use in an environment, the two transport tables must exist:
+
+```bash
+php scripts/console.php solr:queue --setup
+```
+
+### `solr:index`
+
+Enqueues (or synchronously runs) Solr re-indexing for one or more papers.
+
+```bash
+php scripts/console.php solr:index [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--docid <id>` | Index only this DOCID |
+| `--sqlwhere <clause>` | SQL `WHERE` clause to select DOCIDs (e.g. `'STATUS = 6'`). **Trusted input only.** |
+| `--file <path>` | Path to a file of DOCIDs, one per line |
+| `--priority <n>` | Message priority (informational only — the Doctrine DBAL transport does not reorder by priority, unlike legacy `INDEX_QUEUE.PRIORITY`) |
+| `--sync` | Build and send each document immediately instead of enqueuing it (bypasses Messenger entirely) |
+
+`--docid`, `--sqlwhere` and `--file` are mutually exclusive; exactly one is required.
+
+---
+
+### `solr:delete`
+
+Enqueues (or synchronously runs) a Solr deletion, by DOCID or by raw query.
+
+```bash
+php scripts/console.php solr:delete [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--docid <id>` | Delete this DOCID |
+| `--query <query>` | Raw Solr delete query, e.g. `'docid:19'`. **Trusted input only.** |
+| `--sync` | Run the deletion immediately instead of enqueuing it |
+
+Exactly one of `--docid` or `--query` is required.
+
+---
+
+### `solr:worker`
+
+Continuously consumes the Solr indexing/deletion queue. Both index and delete messages share the same transport and are routed to the correct handler automatically; there is no update/delete mode flag.
+
+```bash
+php scripts/console.php solr:worker [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--limit <n>` | Stop after processing this many messages |
+| `--time-limit <seconds>` | Stop after this many seconds |
+| `--memory-limit <size>` | Stop once memory usage exceeds this limit (e.g. `512M`) |
+
+**Must run continuously under a process supervisor (systemd/supervisord).** A
+periodic cron tick is not sufficient — this is the only path papers get
+indexed/deleted through, with no synchronous fallback.
+
+---
+
+### `solr:queue`
+
+Inspects and manages the Solr indexing queue — a minimal, hand-rolled equivalent of Symfony FrameworkBundle's `messenger:failed:*` commands (this app has no bundle system to auto-register them).
+
+```bash
+php scripts/console.php solr:queue [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--stats` | Show pending and failed message counts |
+| `--list-failed` | List failed messages (id, message class, exception, error) |
+| `--retry <id>` | Retry the failed message with this id, synchronously, in this process |
+| `--limit <n>` | Limit for `--list-failed` (default: 50) |
+| `--setup` | Create the `messenger_messages`/`messenger_failed` tables if they don't exist yet (one-time, per environment) |
+
+Exactly one of `--stats`, `--list-failed`, `--retry` or `--setup` is required.

@@ -55,7 +55,7 @@ help: ## Display this help message
 	@grep -h -E '^(wait-for-db|load-db.*|generate-users|shell-mysql.*|backup-db):.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No database commands found"
 	@echo ""
 	@echo "🔍 Solr Commands:"
-	@grep -E '^(collection|collection-ref-pps|index|import-ref-pps|download-ref-pps):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(collection|collection-ref-pps|index|import-ref-pps|download-ref-pps|solr-index|solr-delete|solr-worker|solr-queue):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "🛠️  Development Commands:"
 	@grep -E '^(dev-setup|composer|yarn|enter):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
@@ -503,6 +503,59 @@ stats-download-kpi: ## Generate download KPI JSON for all published articles (op
 		$(if $(filter 1,$(pretty)),--pretty) \
 		$(if $(filter 1,$(dry-run)),--dry-run) \
 		$(if $(output),--output=$(output))
+
+# --- Solr Indexing ---------------------------------------------------------------
+# Symfony Messenger + Doctrine DBAL transport. See docs/console-commands.md#solr-indexing.
+
+solr-index: ## Enqueue (or sync) Solr re-indexing (requires docid=N or sqlwhere=CLAUSE or file=PATH; optional: sync=1 priority=N)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:index --docid=N|--sqlwhere=CLAUSE|--file=PATH [--sync] [-q]
+	@if [ -z "$(docid)" ] && [ -z "$(sqlwhere)" ] && [ -z "$(file)" ]; then \
+		echo "Error: specify docid=N or sqlwhere=CLAUSE or file=PATH"; \
+		echo "Usage: make solr-index docid=N | sqlwhere=CLAUSE | file=PATH [sync=1] [priority=N]"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php solr:index \
+		$(if $(docid),--docid=$(docid)) \
+		$(if $(sqlwhere),--sqlwhere=$(sqlwhere)) \
+		$(if $(file),--file=$(file)) \
+		$(if $(priority),--priority=$(priority)) \
+		$(if $(filter 1,$(sync)),--sync)
+
+solr-delete: ## Enqueue (or sync) a Solr deletion (requires docid=N or query=QUERY; optional: sync=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:delete --docid=N|--query=QUERY [--sync] [-q]
+	@if [ -z "$(docid)" ] && [ -z "$(query)" ]; then \
+		echo "Error: specify docid=N or query=QUERY"; \
+		echo "Usage: make solr-delete docid=N | query=QUERY [sync=1]"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php solr:delete \
+		$(if $(docid),--docid=$(docid)) \
+		$(if $(query),--query=$(query)) \
+		$(if $(filter 1,$(sync)),--sync)
+
+solr-worker: ## Continuously consume the Solr indexing/deletion queue (optional: limit=N time-limit=SECONDS memory-limit=SIZE)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:worker [--limit=N] [--time-limit=SECONDS] [--memory-limit=SIZE] [-q]
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php solr:worker \
+		$(if $(limit),--limit=$(limit)) \
+		$(if $(time-limit),--time-limit=$(time-limit)) \
+		$(if $(memory-limit),--memory-limit=$(memory-limit))
+
+solr-queue: ## Inspect/manage the Solr indexing queue (requires stats=1 or list-failed=1 or retry=ID; optional: limit=N)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:queue --stats|--list-failed|--retry=ID [-q]
+	@if [ "$(stats)" != "1" ] && [ "$(list-failed)" != "1" ] && [ -z "$(retry)" ]; then \
+		echo "Error: specify stats=1 or list-failed=1 or retry=ID"; \
+		echo "Usage: make solr-queue stats=1 | list-failed=1 [limit=N] | retry=ID"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php solr:queue \
+		$(if $(filter 1,$(stats)),--stats) \
+		$(if $(filter 1,$(list-failed)),--list-failed) \
+		$(if $(retry),--retry=$(retry)) \
+		$(if $(limit),--limit=$(limit))
 
 can-i-use-update: ## Update browserslist database when caniuse-lite is outdated
 	@echo "Updating browserslist database..."

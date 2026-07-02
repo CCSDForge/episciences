@@ -4283,44 +4283,6 @@ class Episciences_Paper
     }
 
     /**
-     * Add or update a paper in Solr
-     * @return bool
-     */
-    public function indexUpdatePaper(): bool
-    {
-        return self::indexPaper($this->getDocid(), Ccsd_Search_Solr_Indexer::O_UPDATE);
-    }
-
-    /**
-     * Add or update or delete a papaer ins Solr
-     * @param int $docid
-     * @param string $typeOfIndex
-     * @return bool
-     */
-    public static function indexPaper(int $docid, string $typeOfIndex): bool
-    {
-
-        if (($typeOfIndex !== Ccsd_Search_Solr_Indexer::O_UPDATE) && ($typeOfIndex !== Ccsd_Search_Solr_Indexer::O_DELETE)) {
-            return false;
-        }
-
-        $options['env'] = APPLICATION_ENV;
-        $indexer = new Ccsd_Search_Solr_Indexer_Episciences($options);
-        $indexer->setOrigin($typeOfIndex);
-        $indexer->processDocid($docid);
-        return true;
-    }
-
-    /**
-     * delete a paper in Solr
-     * @return bool
-     */
-    public function indexRemovePaper(): bool
-    {
-        return self::indexPaper($this->getDocid(), Ccsd_Search_Solr_Indexer::O_DELETE);
-    }
-
-    /**
      * Returns the last known paper's status  of the last action to stop the publishing process
      * @throws Zend_Exception
      *

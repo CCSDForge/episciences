@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
 
 class Episciences_PapersManager
@@ -2353,7 +2354,7 @@ class Episciences_PapersManager
         }
 
         // remove from index
-        Ccsd_Search_Solr_Indexer::addToIndexQueue([$docid], 'episciences', 'DELETE', 'episciences');
+        SolrIndexing::enqueueDelete((int)$docid);
 
         // TODO: delete user assignments
         // TODO: delete user invitations
