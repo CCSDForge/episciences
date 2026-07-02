@@ -376,7 +376,7 @@ class SubmitController extends DefaultController
     private function extractVersion(array &$params): void
     {
         $params['version'] = (isset($params['version']) && is_numeric($params['version']))
-            ? (int)$params['version']
+            ? (float)$params['version']
             : 1;
     }
 
