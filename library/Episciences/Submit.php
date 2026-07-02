@@ -36,8 +36,8 @@ class Episciences_Submit
         $review->loadSettings();
         $coverLetterRequirement = $review->getCoverLetterRequirement();
 
-        // Only validate if cover letter is required (value = 2)
-        if ($coverLetterRequirement !== 2) {
+        // Only validate if cover letter is required
+        if ($coverLetterRequirement !== Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED) {
             return true;
         }
 
@@ -349,9 +349,8 @@ class Episciences_Submit
         $group[] = self::COVER_LETTER_COMMENT_ELEMENT_NAME;
 
         // Cover letter file field (controlled by coverLetterRequirement setting)
-        // 0 = disabled (not displayed), 1 = optional, 2 = required
-        if ($coverLetterRequirement !== 0) {
-            $isRequired = $coverLetterRequirement === 2;
+        if ($coverLetterRequirement !== Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED) {
+            $isRequired = $coverLetterRequirement === Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED;
             $fileOptionalSuffix = $isRequired ? '' : $optionalSuffix;
 
             $extensions = ALLOWED_EXTENSIONS;
@@ -745,9 +744,8 @@ class Episciences_Submit
             $group[] = self::COVER_LETTER_COMMENT_ELEMENT_NAME;
 
             // Cover letter file field (controlled by coverLetterRequirement setting)
-            // 0 = disabled (not displayed), 1 = optional, 2 = required
-            if ($coverLetterRequirement !== 0) {
-                $isRequired = $coverLetterRequirement === 2;
+            if ($coverLetterRequirement !== Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED) {
+                $isRequired = $coverLetterRequirement === Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED;
                 $fileOptionalSuffix = $isRequired ? '' : $optionalSuffix;
 
                 $extensions = ALLOWED_EXTENSIONS;

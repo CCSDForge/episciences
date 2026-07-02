@@ -46,6 +46,9 @@ class Episciences_Review
     public const SETTING_ARXIV_PAPER_PASSWORD = 'canSharePaperPassword';
     // git #922
     public const SETTING_COVER_LETTER_REQUIREMENT = 'coverLetterRequirement';
+    public const COVER_LETTER_REQUIREMENT_DISABLED = 0;
+    public const COVER_LETTER_REQUIREMENT_OPTIONAL = 1;
+    public const COVER_LETTER_REQUIREMENT_REQUIRED = 2;
 
     //const SETTING_EDITORS_CAN_MAKE_DECISIONS = 'editorsCanMakeDecisions';
     public const SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'editorsCanAbandonPublicationProcess';
@@ -615,10 +618,10 @@ class Episciences_Review
     }
 
     /**
-     * Get the cover letter requirement setting (0=disabled, 1=optional, 2=required).
+     * Get the cover letter requirement setting (see COVER_LETTER_REQUIREMENT_* constants).
      * Reviews created before this setting existed have no stored value: default to
-     * "optional" (1) so the cover letter file field keeps being displayed, matching
-     * the behavior that existed for every journal prior to git #922.
+     * COVER_LETTER_REQUIREMENT_OPTIONAL so the cover letter file field keeps being
+     * displayed, matching the behavior that existed for every journal prior to git #922.
      */
     public function getCoverLetterRequirement(): int
     {
@@ -627,7 +630,7 @@ class Episciences_Review
         }
 
         if (!array_key_exists(self::SETTING_COVER_LETTER_REQUIREMENT, $this->_settings)) {
-            return 1;
+            return self::COVER_LETTER_REQUIREMENT_OPTIONAL;
         }
 
         return (int)$this->_settings[self::SETTING_COVER_LETTER_REQUIREMENT];
@@ -1352,11 +1355,11 @@ class Episciences_Review
         // Cover letter requirement (controls only the file, comment is always optional)
         $form->addElement('select', self::SETTING_COVER_LETTER_REQUIREMENT, [
                 'label' => "Lettre d'accompagnement",
-                'value' => 1,
+                'value' => self::COVER_LETTER_REQUIREMENT_OPTIONAL,
                 'multioptions' => [
-                    0 => 'Désactivée',
-                    1 => 'Facultative',
-                    2 => 'Requise',
+                    self::COVER_LETTER_REQUIREMENT_DISABLED => 'Désactivée',
+                    self::COVER_LETTER_REQUIREMENT_OPTIONAL => 'Facultative',
+                    self::COVER_LETTER_REQUIREMENT_REQUIRED => 'Requise',
                 ],
             ]
         );

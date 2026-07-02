@@ -556,12 +556,12 @@ class Episciences_CommentsManager
         ]);
         $group[] = Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME;
 
-        // Cover letter file field: hidden if setting = 0, displayed otherwise
+        // Cover letter file field: hidden if disabled, displayed otherwise
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
         $coverLetterRequirement = $review->getCoverLetterRequirement();
 
-        if ($coverLetterRequirement !== 0) {
+        if ($coverLetterRequirement !== Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED) {
             $descriptions = self::getDescriptions();
             $description = $descriptions['description'];
             $description .= '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated;
