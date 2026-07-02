@@ -34,7 +34,7 @@ class Episciences_Submit
     {
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
-        $coverLetterRequirement = (int)$review->getSetting(Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT);
+        $coverLetterRequirement = $review->getCoverLetterRequirement();
 
         // Only validate if cover letter is required (value = 2)
         if ($coverLetterRequirement !== 2) {
@@ -319,7 +319,7 @@ class Episciences_Submit
 
         // Author's comments and Cover Letter
         // Keep in sync with paper views where these roles have access to the comments and cover letter
-        $coverLetterRequirement = (int)$review->getSetting(Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT);
+        $coverLetterRequirement = $review->getCoverLetterRequirement();
 
         // Hidden field to pass cover letter requirement to JavaScript
         $form->addElement('hidden', 'cover_letter_requirement', [
@@ -716,7 +716,7 @@ class Episciences_Submit
             // Keep in sync with paper views where these roles have access to the comments and cover letter
             $review = Episciences_ReviewsManager::find(RVID);
             $review->loadSettings();
-            $coverLetterRequirement = (int)$review->getSetting(Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT);
+            $coverLetterRequirement = $review->getCoverLetterRequirement();
 
             // Hidden field to pass cover letter requirement to JavaScript
             $form->addElement('hidden', 'cover_letter_requirement', [

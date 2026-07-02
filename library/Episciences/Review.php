@@ -615,6 +615,25 @@ class Episciences_Review
     }
 
     /**
+     * Get the cover letter requirement setting (0=disabled, 1=optional, 2=required).
+     * Reviews created before this setting existed have no stored value: default to
+     * "optional" (1) so the cover letter file field keeps being displayed, matching
+     * the behavior that existed for every journal prior to git #922.
+     */
+    public function getCoverLetterRequirement(): int
+    {
+        if (!$this->_settingsLoaded) {
+            $this->loadSettings();
+        }
+
+        if (!array_key_exists(self::SETTING_COVER_LETTER_REQUIREMENT, $this->_settings)) {
+            return 1;
+        }
+
+        return (int)$this->_settings[self::SETTING_COVER_LETTER_REQUIREMENT];
+    }
+
+    /**
      * load review settings from database
      */
     public function loadSettings(bool $forceReload = false): void

@@ -230,7 +230,7 @@ class SubmitController extends DefaultController
         $validation = Episciences_Submit::validateCoverLetterRequirement($post);
 
         if ($validation !== true) {
-            $element = $form->getElement(Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME);
+            $element = $form->getElement(Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME);
             if ($element) {
                 $element->addError($validation);
             }

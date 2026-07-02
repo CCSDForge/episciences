@@ -559,7 +559,7 @@ class Episciences_CommentsManager
         // Cover letter file field: hidden if setting = 0, displayed otherwise
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
-        $coverLetterRequirement = (int)$review->getSetting(Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT);
+        $coverLetterRequirement = $review->getCoverLetterRequirement();
 
         if ($coverLetterRequirement !== 0) {
             $descriptions = self::getDescriptions();

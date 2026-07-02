@@ -190,6 +190,51 @@ class Episciences_ReviewTest extends TestCase
     }
 
     // =========================================================================
+    // getCoverLetterRequirement (git #922)
+    // =========================================================================
+
+    public function testGetCoverLetterRequirementDefaultsToOptionalWhenUnset(): void
+    {
+        // Reviews created before this setting existed have no stored value in DB.
+        // Regression: must default to 1 (optional), not 0 (disabled), otherwise
+        // the cover letter file field silently disappears for every pre-existing journal.
+        $this->review->applySettingsFromRows([]);
+        self::assertSame(1, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsDisabledWhenExplicitlySetToZero(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '0'],
+        ]);
+        self::assertSame(0, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsOptionalWhenExplicitlySet(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '1'],
+        ]);
+        self::assertSame(1, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsRequired(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '2'],
+        ]);
+        self::assertSame(2, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementCastsStoredValueToInt(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '2'],
+        ]);
+        self::assertIsInt($this->review->getCoverLetterRequirement());
+    }
+
+    // =========================================================================
     // getRepositories (reads from $_settings)
     // =========================================================================
 
