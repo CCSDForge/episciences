@@ -2,6 +2,7 @@
 
 class Episciences_Paper_File
 {
+    public const DEFAULT_SELF_LINK_VALUE = '#';
 
     /**
      * @var int
@@ -80,7 +81,7 @@ class Episciences_Paper_File
             'checksumType' => $this->getChecksumType(),
             'selfLink' => $this->getSelfLink(),
             'fileSize' => $this->getFileSize(),
-            'fileType' => $this->getFileSize(),
+            'fileType' => $this->getFileType(),
             'timeModified' => $this->getTimeModified()
         ];
     }
@@ -223,7 +224,7 @@ class Episciences_Paper_File
      */
     public function setSelfLink(string $link = null): self
     {
-        $this->_selfLink = $link ?? '#';
+        $this->_selfLink = $link ?? self::DEFAULT_SELF_LINK_VALUE;
         return $this;
     }
 
