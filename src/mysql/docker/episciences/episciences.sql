@@ -338,13 +338,9 @@ CREATE TABLE `PAPER_STAT` (
                               `CONSULT` enum('notice','file','oai','api') NOT NULL DEFAULT 'notice',
                               `IP` int UNSIGNED NOT NULL,
                               `ROBOT` tinyint UNSIGNED NOT NULL DEFAULT '0',
-                              `AGENT` varchar(2000) DEFAULT NULL,
                               `DOMAIN` varchar(100) DEFAULT NULL,
                               `CONTINENT` varchar(100) DEFAULT NULL,
                               `COUNTRY` varchar(100) DEFAULT NULL,
-                              `CITY` varchar(100) DEFAULT NULL,
-                              `LAT` float DEFAULT NULL,
-                              `LON` float DEFAULT NULL,
                               `HIT` date NOT NULL,
                               `COUNTER` int UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
