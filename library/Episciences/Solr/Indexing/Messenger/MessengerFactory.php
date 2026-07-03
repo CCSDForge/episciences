@@ -133,6 +133,7 @@ final class MessengerFactory
         $bridgeConnection = new BridgeConnection(
             [
                 'table_name' => $tableName,
+                'queue_name' => self::TRANSPORT_NAME,
                 'redeliver_timeout' => self::REDELIVER_TIMEOUT_SECONDS,
                 'auto_setup' => $autoSetup,
             ],

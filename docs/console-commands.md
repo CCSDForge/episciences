@@ -573,6 +573,19 @@ publication, deletion, and import all enqueue work here via
 `Episciences\Solr\Indexing\Enqueue\SolrIndexing`. There is no synchronous
 fallback and no legacy cron.
 
+`messenger_messages`/`messenger_failed` are generic Doctrine Messenger
+transport tables and may end up shared with other message types in the
+future. Rows are scoped by the `queue_name` column, which `MessengerFactory`
+sets to `solr_index` (`MessengerFactory::TRANSPORT_NAME`) — the Doctrine
+bridge filters every read (`get()`, `find()`, `getMessageCount()`) by this
+column, so `solr:worker`/`solr:queue` only ever see/touch Solr's own rows,
+regardless of what else lands in the same tables. Any other producer sharing
+these tables must set its own distinct `queue_name` for the same reason.
+**Deployment note:** rows written before this was added carry the bridge's
+implicit default (`queue_name = 'default'`); drain the queue (`solr:queue
+--stats` at 0) before deploying this change, or they'll be stranded (never
+picked up again, since `default` no longer matches `solr_index`).
+
 Retries and failures are handled natively by Messenger instead of being
 silently swallowed: a Solr/network failure is retried up to 5 times with
 exponential backoff (5s, 15s, 45s, ...) before landing in the failure
