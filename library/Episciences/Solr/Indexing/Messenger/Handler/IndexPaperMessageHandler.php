@@ -45,7 +45,15 @@ final class IndexPaperMessageHandler
             );
         }
 
-        $solrDocument = $this->documentBuilder->build($paper);
+        try {
+            $solrDocument = $this->documentBuilder->build($paper);
+        } catch (\RuntimeException $e) {
+            // A missing/stale reference (e.g. the paper's journal was deleted
+            // or merged after this message was enqueued) will never resolve
+            // by retrying — fail permanently, same reasoning as the missing
+            // paper case above.
+            throw new UnrecoverableMessageHandlingException($e->getMessage(), 0, $e);
+        }
 
         $client = $this->clientFactory->getIndexingClient();
         $update = $client->createUpdate();

@@ -44,8 +44,8 @@ final class MessengerFactory
     public const MESSAGES_TABLE = 'messenger_messages';
     public const FAILED_TABLE = 'messenger_failed';
 
-    // Empêche un worker planté de bloquer un message indéfiniment (corrige le
-    // bug legacy des lignes INDEX_QUEUE bloquées en STATUS='locked' à vie).
+    // Prevents a crashed worker from blocking a message indefinitely (fixes
+    // the legacy bug where INDEX_QUEUE rows got stuck in STATUS='locked' forever).
     private const REDELIVER_TIMEOUT_SECONDS = 3600;
 
     private const RETRY_MAX_RETRIES = 5;

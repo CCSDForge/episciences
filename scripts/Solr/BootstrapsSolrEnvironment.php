@@ -13,6 +13,7 @@ use Episciences\Solr\Indexing\Build\VolumeSectionResolver;
 use Episciences\Solr\Indexing\Messenger\Dbal\DbalConnectionFactory;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -114,21 +115,25 @@ trait BootstrapsSolrEnvironment
     }
 
     /**
-     * A fresh cache scoped to this single command invocation only — unlike
+     * A cache scoped to this single command invocation by default — unlike
      * legacy's Ccsd_Search_Solr_Indexer_Episciences, which holds one
      * ArrayAdapter for the entire lifetime of a (potentially very long) bulk
-     * run. Each solr:* invocation processes a bounded batch, so the staleness
+     * run. solr:index/solr:queue process a bounded batch, so the staleness
      * window for a mid-run journal/volume/section change is bounded to that
      * batch, not to an indefinitely long-running cron process.
+     *
+     * solr:worker is the exception: it's the long-running consumer, so it
+     * passes its own cache instance in so it can clear() it between messages
+     * and get the same single-message-scoped freshness guarantee.
      */
-    private function createDocumentBuilder(): DocumentBuilder
+    private function createDocumentBuilder(?CacheItemPoolInterface $volumeSectionCache = null): DocumentBuilder
     {
         return new DocumentBuilder(
             new ExportFieldsBuilder(),
             new AuthorFieldsBuilder(),
             new DateFieldsBuilder(),
             new LocaleFieldsBuilder(),
-            new VolumeSectionResolver(new ArrayAdapter(0, false)),
+            new VolumeSectionResolver($volumeSectionCache ?? new ArrayAdapter(0, false)),
             new KeywordFieldsBuilder(),
         );
     }

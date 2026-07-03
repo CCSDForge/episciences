@@ -5,8 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/Solr/BootstrapsSolrEnvironment.php';
 
 use Doctrine\DBAL\Connection as DbalConnection;
-use Doctrine\DBAL\Schema\Table;
-use Doctrine\DBAL\Types\Types;
+use Doctrine\DBAL\Schema\Schema;
 use Episciences\Solr\Indexing\Client\SolariumClientFactory;
 use Episciences\Solr\Indexing\Messenger\Handler\DeletePaperMessageHandler;
 use Episciences\Solr\Indexing\Messenger\Handler\IndexPaperMessageHandler;
@@ -94,8 +93,8 @@ class SolrQueueCommand extends Command
             $io->error(sprintf('Automatic table creation failed: %s', $e->getMessage()));
             $io->note('This is expected if the database user lacks CREATE/ALTER privileges (common in staging/prod). Ask a DBA to run the following SQL manually, then re-run this command to confirm:');
 
-            foreach ([MessengerFactory::MESSAGES_TABLE, MessengerFactory::FAILED_TABLE] as $tableName) {
-                foreach ($this->buildCreateTableSql($connection, $tableName) as $sql) {
+            foreach ([$transport, $failureTransport] as $tableTransport) {
+                foreach ($this->buildCreateTableSql($tableTransport, $connection) as $sql) {
                     $io->writeln($sql . ';');
                 }
                 $io->newLine();
@@ -110,24 +109,17 @@ class SolrQueueCommand extends Command
     }
 
     /**
-     * Mirrors symfony/doctrine-messenger's own table schema
-     * (Connection::buildSchemaTable() — private, not reusable directly) so the
-     * manually-run DDL matches exactly what setup() would have created.
+     * Builds the DDL from the bridge's own public configureSchema() instead of
+     * a hand-typed column list, so this can never drift from what setup()
+     * actually creates on a symfony/doctrine-messenger version bump — the
+     * table shape comes from the library itself, not a copy of it.
      *
      * @return list<string>
      */
-    private function buildCreateTableSql(DbalConnection $connection, string $tableName): array
+    private function buildCreateTableSql(DoctrineTransport $transport, DbalConnection $connection): array
     {
-        $table = new Table($tableName);
-        $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true]);
-        $table->addColumn('body', Types::TEXT, ['notnull' => true]);
-        $table->addColumn('headers', Types::TEXT, ['notnull' => true]);
-        $table->addColumn('queue_name', Types::STRING, ['length' => 190, 'notnull' => true]);
-        $table->addColumn('created_at', Types::DATETIME_IMMUTABLE, ['notnull' => true]);
-        $table->addColumn('available_at', Types::DATETIME_IMMUTABLE, ['notnull' => true]);
-        $table->addColumn('delivered_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
-        $table->setPrimaryKey(['id']);
-        $table->addIndex(['queue_name', 'available_at', 'delivered_at', 'id']);
+        $schema = $transport->configureSchema(new Schema(), $connection, static fn () => true);
+        $table = current($schema->getTables());
 
         return $connection->getDatabasePlatform()->getCreateTableSQL($table);
     }

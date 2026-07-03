@@ -589,6 +589,41 @@ Before first use in an environment, the two transport tables must exist:
 php scripts/console.php solr:queue --setup
 ```
 
+### Deploying `solr:worker`
+
+A ready-to-use systemd unit ships in the repo at
+[`src/php-fpm/episciences-solr-worker.service`](../src/php-fpm/episciences-solr-worker.service)
+(it's also baked into the `php-fpm` Docker image at
+`/etc/systemd/system/episciences-solr-worker.service` at build time, so a
+`docker cp episciences-php-fpm:/etc/systemd/system/episciences-solr-worker.service .`
+against the image always gets the current version without checking out the
+repo). Install it on each server that must index into Solr:
+
+```bash
+# From a checkout, or via docker cp from a running/built php-fpm image as above:
+sudo cp src/php-fpm/episciences-solr-worker.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now episciences-solr-worker.service
+
+# Check status / logs
+sudo systemctl status episciences-solr-worker.service
+sudo journalctl -u episciences-solr-worker.service -f
+# (StandardOutput/StandardError are also appended to /var/www/logs/solrWorker.log)
+```
+
+The unit runs as `www-data`, restarts automatically on crash
+(`Restart=always`), and self-recycles hourly (`--time-limit=3600`) or past
+512M memory (`--memory-limit=512M`) so `Restart=always` periodically refreshes
+the process instead of a single PHP process running forever — edit
+`ExecStart` in the unit file to change either bound. `WorkingDirectory` and
+`ExecStart` assume the app lives at `/var/www/htdocs`, matching this repo's
+Docker/prod convention (`CNTR_APP_DIR` in the `Makefile`); adjust both paths
+if a given server checks out the app elsewhere.
+
+After editing the unit file (in the repo or on a server), re-run
+`systemctl daemon-reload && systemctl restart episciences-solr-worker.service`
+to pick up the change.
+
 ### `solr:index`
 
 Enqueues (or synchronously runs) Solr re-indexing for one or more papers.

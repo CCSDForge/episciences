@@ -25,6 +25,13 @@ class SolrDeleteCommand extends Command
 
     protected static $defaultName = 'solr:delete';
 
+    /**
+     * Matches any Solr delete query that wipes every document for a single
+     * field (docid:*, revue_id_i:*, ...) or the whole core (*:*) — any schema
+     * field name works as the wildcard target, not just docid/*.
+     */
+    private const WILDCARD_DELETE_PATTERN = '/^([A-Za-z0-9_]+:\*|\*:\*)$/';
+
     protected function configure(): void
     {
         $this
@@ -60,6 +67,25 @@ class SolrDeleteCommand extends Command
             $io->error($e->getMessage());
 
             return Command::FAILURE;
+        }
+
+        $solrQuery = $message->toSolrDeleteQuery();
+
+        if (preg_match(self::WILDCARD_DELETE_PATTERN, $solrQuery) === 1) {
+            $io->caution(sprintf(
+                'This deletes ALL documents matching "%s" from the Solr index — this cannot be undone.',
+                $solrQuery
+            ));
+
+            // Regardless of environment (dev/staging/prod): a wildcard delete
+            // is destructive everywhere, not just in prod. Default answer is
+            // "no", so --no-interaction (cron/CI) refuses instead of wiping.
+            if (!$io->confirm('Are you sure you want to proceed?', false)) {
+                $logger->warning('solr:delete: wildcard deletion aborted by operator: ' . $solrQuery);
+                $io->warning('Aborted.');
+
+                return Command::FAILURE;
+            }
         }
 
         if ((bool)$input->getOption('sync')) {

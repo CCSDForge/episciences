@@ -6,6 +6,7 @@ namespace Episciences\Solr\Indexing\Build;
 
 use Ccsd_Tools;
 use Ccsd_Tools_String;
+use Episciences\AppRegistry;
 use Episciences\Solr\Indexing\Model\SolrDocument;
 use Episciences_Paper;
 
@@ -41,7 +42,7 @@ final class DocumentBuilder
 
         $journal = $this->volumeSectionResolver->resolveJournal($paper->getRvid());
 
-        $document = $this->authorFieldsBuilder->build($document, $paper->getAuthors());
+        $document = $this->authorFieldsBuilder->build($document, $this->safeGetAuthors($paper));
         $document = $this->keywordFieldsBuilder->build($document, $paper->getMetadata('subjects'));
 
         $submissionDate = $paper->getSubmission_date();
@@ -86,5 +87,27 @@ final class DocumentBuilder
     private function cleanChars(string $inputString): string
     {
         return trim(Ccsd_Tools_String::stripCtrlChars(html_entity_decode($inputString)));
+    }
+
+    /**
+     * Port of legacy indexAuthors()'s "silently skip on any error from
+     * getAuthors()" behaviour (bad/malformed author JSON must not fail the
+     * whole document — the paper still gets indexed, minus author fields).
+     *
+     * @return list<array{family?: string, given?: string}>
+     */
+    private function safeGetAuthors(Episciences_Paper $paper): array
+    {
+        try {
+            return $paper->getAuthors();
+        } catch (\Throwable $e) {
+            AppRegistry::getMonoLogger()?->warning(sprintf(
+                'DocumentBuilder: getAuthors() failed for docid %d: %s',
+                $paper->getDocid(),
+                $e->getMessage()
+            ));
+
+            return [];
+        }
     }
 }

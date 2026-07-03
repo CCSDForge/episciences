@@ -4,9 +4,11 @@ namespace unit\library\Episciences\Solr\Indexing\Build;
 
 use Episciences\Solr\Indexing\Build\VolumeSectionResolver;
 use Episciences\Solr\Indexing\Model\SolrDocument;
+use Episciences_Review;
 use Episciences_Section;
 use Episciences_Volume;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 /**
@@ -96,5 +98,33 @@ class VolumeSectionResolverTest extends TestCase
         self::assertSame(['7_FacetSep_Section EN'], $fields['section_fs']);
         self::assertSame(['Section FR'], $fields['fr_section_title_t']);
         self::assertSame(['Section EN'], $fields['en_section_title_t']);
+    }
+
+    public function testResolveJournalReturnsCachedJournalWithoutTouchingDb(): void
+    {
+        $journal = $this->getMockBuilder(Episciences_Review::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $cache = new ArrayAdapter(0, false);
+        $item = $cache->getItem('rvid.42');
+        $cache->save($item->set($journal));
+
+        $resolver = new VolumeSectionResolver($cache);
+
+        self::assertSame($journal, $resolver->resolveJournal(42));
+    }
+
+    public function testResolveJournalThrowsWhenJournalNotFound(): void
+    {
+        // Cache miss on a RVID that does not exist in DB: getData()/findByRvid()
+        // returns false — resolveJournal() must fail predictably instead of
+        // crashing with a TypeError when constructing Episciences_Review.
+        $resolver = new VolumeSectionResolver(new ArrayAdapter(0, false));
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Journal config for RVID 999999 not found.');
+
+        $resolver->resolveJournal(999999);
     }
 }

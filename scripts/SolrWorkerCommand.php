@@ -8,11 +8,13 @@ use Episciences\Solr\Indexing\Client\SolariumClientFactory;
 use Episciences\Solr\Indexing\Messenger\Handler\DeletePaperMessageHandler;
 use Episciences\Solr\Indexing\Messenger\Handler\IndexPaperMessageHandler;
 use Episciences\Solr\Indexing\Messenger\MessengerFactory;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Messenger\Event\WorkerMessageReceivedEvent;
 use Symfony\Component\Messenger\EventListener\StopWorkerOnMemoryLimitListener;
 use Symfony\Component\Messenger\EventListener\StopWorkerOnMessageLimitListener;
 use Symfony\Component\Messenger\EventListener\StopWorkerOnTimeLimitListener;
@@ -51,11 +53,20 @@ class SolrWorkerCommand extends Command
         $transport = MessengerFactory::createTransport($connection);
         $failureTransport = MessengerFactory::createFailureTransport($connection);
 
-        $indexHandler = new IndexPaperMessageHandler($this->createDocumentBuilder(), new SolariumClientFactory());
+        // Cleared before every message below, so a long-running worker never
+        // serves a journal/volume/section snapshot older than the message
+        // currently being handled (see BootstrapsSolrEnvironment::createDocumentBuilder()).
+        $volumeSectionCache = new ArrayAdapter(0, false);
+
+        $indexHandler = new IndexPaperMessageHandler($this->createDocumentBuilder($volumeSectionCache), new SolariumClientFactory());
         $deleteHandler = new DeletePaperMessageHandler(new SolariumClientFactory());
         $handleBus = MessengerFactory::createHandleBus($indexHandler, $deleteHandler);
 
         $eventDispatcher = MessengerFactory::createWorkerEventDispatcher($transport, $failureTransport, $logger);
+        $eventDispatcher->addListener(
+            WorkerMessageReceivedEvent::class,
+            static fn () => $volumeSectionCache->clear()
+        );
 
         $limit = $input->getOption('limit');
         if ($limit !== null) {

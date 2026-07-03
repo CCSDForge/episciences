@@ -8,11 +8,13 @@ use Ccsd_Search_Solr;
 use Episciences\AppRegistry;
 use Episciences\Solr\Indexing\Model\SolrDocument;
 use Episciences_Review;
+use Episciences_ReviewsManager;
 use Episciences_SectionsManager;
 use Episciences_Volume;
 use Episciences_Volume_PapersManager;
 use Episciences_VolumesManager;
 use Psr\Cache\CacheItemPoolInterface;
+use RuntimeException;
 
 /**
  * Port of indexVolume()/indexSecondaryVolumes()/indexSection()/
@@ -40,7 +42,19 @@ final class VolumeSectionResolver
             return $item->get();
         }
 
-        $journal = new Episciences_Review(Episciences_Review::getData($rvid));
+        // Episciences_Review::getData() is declared to return array but hands
+        // back PDOStatement::fetch()'s false when the row doesn't exist,
+        // which throws a TypeError before it can even reach the constructor
+        // below. Episciences_ReviewsManager::findByRvid() is the same
+        // find()-returns-false-on-miss pattern already used for
+        // volumes/sections elsewhere in this class, so use it instead of the
+        // low-level getData() to fail predictably on a stale/deleted RVID.
+        $journal = Episciences_ReviewsManager::findByRvid($rvid);
+
+        if (!$journal) {
+            throw new RuntimeException(sprintf('Journal config for RVID %d not found.', $rvid));
+        }
+
         $this->cache->save($item->set($journal));
 
         return $journal;
