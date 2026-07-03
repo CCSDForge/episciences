@@ -84,6 +84,35 @@ services:
         - 8.8.8.8
         - 1.1.1.1
 
+  solr-worker:
+    container_name: episciences-solr-worker
+    # Reuses the php-fpm image built by the service above (same
+    # Dockerfile/context) instead of a second `build:` block, so this never
+    # drifts from php-fpm's image and compose doesn't build it twice.
+    image: episciences-php-fpm
+    restart: always
+    user: www-data
+    working_dir: /var/www/htdocs
+    entrypoint: ["php", "scripts/console.php"]
+    command: ["solr:worker", "--time-limit=3600", "--memory-limit=512M"]
+    depends_on:
+        - php-fpm
+    volumes:
+        - .:/var/www/htdocs
+        - ./data:/var/www/data
+        - ./cache:/var/www/cache
+        - ./logs:/var/www/logs
+    environment:
+        - COMPOSER_HOME=/tmp/composer
+    extra_hosts:
+        - "host.docker.internal:host-gateway"
+        - "api-dev.episciences.org:172.19.0.11"
+    networks:
+        - epi-network
+    dns:
+        - 8.8.8.8
+        - 1.1.1.1
+
 networks:
   epi-network:
     external: true

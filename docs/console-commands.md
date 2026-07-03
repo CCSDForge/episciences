@@ -578,10 +578,12 @@ silently swallowed: a Solr/network failure is retried up to 5 times with
 exponential backoff (5s, 15s, 45s, ...) before landing in the failure
 transport, where it stays until inspected or retried via `solr:queue`.
 
-**`solr:worker` must run continuously, supervised (systemd/supervisord), in
-every environment.** There is no synchronous fallback and no periodic-cron
-alternative: if the worker isn't running, enqueued papers are simply never
-indexed or deleted in Solr, with no error visible anywhere else in the app.
+**`solr:worker` must run continuously, supervised (a dedicated Docker Compose
+service, or systemd/supervisord on bare metal), in every environment.** There
+is no synchronous fallback and no periodic-cron alternative: if the worker
+isn't running, enqueued papers are simply never indexed or deleted in Solr,
+with no error visible anywhere else in the app. See
+[Deploying `solr:worker`](#deploying-solrworker) below.
 
 Before first use in an environment, the two transport tables must exist:
 
@@ -591,13 +593,34 @@ php scripts/console.php solr:queue --setup
 
 ### Deploying `solr:worker`
 
-A ready-to-use systemd unit ships in the repo at
+**Docker Compose (this repo's own stack — dev, and any environment using this
+`docker-compose.yml`):** a dedicated `solr-worker` service runs it, reusing
+the `php-fpm` image (`docker-compose.yml`). It starts with `make up` /
+`docker compose up -d` like any other service — no manual step needed.
+`restart: always` covers crash recovery, and `--time-limit=3600
+--memory-limit=512M` (same bounds as the systemd unit below) make it
+periodically recycle the process. Check it with:
+
+```bash
+docker compose logs -f solr-worker
+docker compose exec -u www-data -w /var/www/htdocs php-fpm php scripts/console.php solr:queue --stats
+```
+
+A container does **not** run systemd as PID 1 (confirmed by
+`systemctl status` failing with "not booted with systemd" inside `php-fpm`),
+so nothing under `/etc/systemd/system` inside that container is ever started
+automatically — this was the actual cause of a stuck queue after a container
+rebuild: the systemd unit below is inert unless installed on a real
+systemd-managed host.
+
+**Bare-metal / VM without this Compose stack:** a ready-to-use systemd unit
+ships in the repo at
 [`src/php-fpm/episciences-solr-worker.service`](../src/php-fpm/episciences-solr-worker.service)
 (it's also baked into the `php-fpm` Docker image at
 `/etc/systemd/system/episciences-solr-worker.service` at build time, so a
 `docker cp episciences-php-fpm:/etc/systemd/system/episciences-solr-worker.service .`
 against the image always gets the current version without checking out the
-repo). Install it on each server that must index into Solr:
+repo). Install it on each such server that must index into Solr:
 
 ```bash
 # From a checkout, or via docker cp from a running/built php-fpm image as above:
