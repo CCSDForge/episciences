@@ -31,9 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Website settings: added support for journal description, keywords, and creation year fields.
 - MIME type: added support check for `file` binary presence on the system in `FileBinaryMimeTypeGuesser`.
 - [#922](https://github.com/CCSDForge/episciences/issues/922) Add cover letter requirement setting for file attachments. Initial submission form supports three options: disabled (hidden), optional, or required. Author comment form on paper page supports two options: disabled (hidden) or displayed.
+- [#1081](https://github.com/CCSDForge/episciences/pull/1081) Add dedicated cover image upload interface to the volume edit page (`/volume/edit/`), replacing the legacy `tile` metadata naming convention.
+- [#1087](https://github.com/CCSDForge/episciences/pull/1087) Add a console command `users:normalize-affiliations` to normalize and backfill existing user affiliations data to `{label, rorId}`.
 
 ### Changed
 
+- [#1080](https://github.com/CCSDForge/episciences/pull/1080) Replace cover letter requirement magic numbers with class constants in `Episciences_Review` and related managers.
 - Replace native language switcher dropdown with an accessible WAI-ARIA custom dropdown.
 - Route development emails to a local Mailpit SMTP server instead of dumping them to the UI, and remove legacy UI mail dump.
 - Development Docker environment: delegate DB, Solr, ZooKeeper, and phpMyAdmin services to the centralized `episciences-infrastructure` repository, and route local traffic via Traefik with default HTTPS support.
@@ -71,6 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#1087](https://github.com/CCSDForge/episciences/pull/1087) Normalize user affiliations to `{label, rorId}` format during account signup to ensure shape consistency with profile edits.
+- [#1080](https://github.com/CCSDForge/episciences/pull/1080) Fix cover letter validation error target (attaching the error to the file element instead of the comments field) and default the setting value to optional (1) for older reviews.
 - Escaping of XML special characters in OAI-PMH ListSets and setDescription (by using `createTextNode`).
 - Explicitly set permission to `0644` on uploaded volume metadata files.
 - Fix linked-data: remove premature `changePlaceholder` calls before AJAX resolves.
@@ -114,6 +119,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- [#1088](https://github.com/CCSDForge/episciences/pull/1088) Remove unused `AGENT`, `CITY`, `LAT`, and `LON` columns from the `PAPER_STAT` table and delete the legacy `scripts/stat.php` script (superseded by the `stats:process` console command).
 - Remove obsolete `google/recaptcha` and `neverbehave/hcaptcha` libraries from `composer.json`.
 - Remove PubPeer link feature from bibliographic references.
 - Removed obsolete, unused, and deprecated authentication adapters: `Asso`, `DbTable`, `Idp`, `Asso/Ext`, and `Orcid` (`Ccsd/Auth`).
