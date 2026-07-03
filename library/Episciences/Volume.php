@@ -608,6 +608,16 @@ class Episciences_Volume
         return $this->_metadatas;
     }
 
+    public function getCover(): ?Episciences_Volume_Metadata
+    {
+        foreach ($this->_metadatas as $metadata) {
+            if ($metadata->isCover()) {
+                return $metadata;
+            }
+        }
+        return null;
+    }
+
     /**
      * @param $metadatas
      */
@@ -975,6 +985,55 @@ class Episciences_Volume
 
             $this->setMetadata($metadata);
             $newMetadataIds[] = $metadata->getId();
+        }
+
+        // Handle volume cover separately
+        $existingCover = $this->getCover();
+
+        if (!empty($post['cover_data'])) {
+            try {
+                $coverData = json_decode($post['cover_data'], true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                $errors[] = 'Failed to decode cover_data: ' . $e->getMessage();
+                $coverData = [];
+            }
+            $coverAction = $coverData['action'] ?? '';
+
+            if ($coverAction === 'delete') {
+                // Intentionally excluded from $newMetadataIds → deleteOldMetadata() removes it
+            } elseif ($coverAction === 'save' && !empty($coverData['tmpfile'])) {
+                try {
+                    $tmpfile = json_decode($coverData['tmpfile'], true, 512, JSON_THROW_ON_ERROR);
+                } catch (JsonException $e) {
+                    $errors[] = 'Failed to decode cover tmpfile: ' . $e->getMessage();
+                    $tmpfile = null;
+                }
+
+                if ($tmpfile !== null) {
+                    $langs = array_keys(Episciences_Tools::getLanguages());
+                    $coverTitles = array_fill_keys($langs, Episciences_Volume_Metadata::COVER_TITLE_KEY);
+
+                    $coverMetadata = new Episciences_Volume_Metadata([
+                        'id'       => $existingCover?->getId(),
+                        'vid'      => $this->getVid(),
+                        'title'    => $coverTitles,
+                        'content'  => [],
+                        'file'     => $existingCover?->getFile(),
+                        'tmpfile'  => $tmpfile,
+                        'position' => 0,
+                    ]);
+
+                    if ($coverMetadata->save()) {
+                        $this->setMetadata($coverMetadata);
+                        $newMetadataIds[] = $coverMetadata->getId();
+                    } else {
+                        $errors[] = 'Failed to save cover metadata';
+                    }
+                }
+            }
+        } elseif ($existingCover) {
+            // No cover action posted → preserve existing cover
+            $newMetadataIds[] = $existingCover->getId();
         }
 
         // Clean up old metadata
