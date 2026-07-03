@@ -189,6 +189,8 @@ $(document).ready(function () {
         .popover({
             html: true,
             placement: 'bottom',
+            template:
+                '<div class="popover history-date-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>',
             content: function () {
                 return history_popover_content.html();
             },
@@ -200,7 +202,9 @@ $(document).ready(function () {
             history_filter_start.datepicker();
             history_filter_end.datepicker();
             $('.history-filters .datepicker-button').click(function () {
-                $(this).next().datepicker('show');
+                // .next() would hit the sr-only <label> sitting between the
+                // icon and the input; target the input itself instead.
+                $(this).siblings('input').datepicker('show');
             });
 
             // default values
