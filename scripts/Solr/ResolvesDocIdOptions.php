@@ -48,8 +48,17 @@ trait ResolvesDocIdOptions
             return array_map('intval', $lines ?: []);
         }
 
+        // Only published papers belong in the Solr index (matches legacy
+        // Ccsd_Search_Solr_Indexer_Episciences::selectIds(), which always
+        // ANDed STATUS = STATUS_PUBLISHED under any caller-supplied clause).
+        // IndexPaperMessageHandler enforces this too, but filtering here
+        // avoids enqueuing (and burning worker time on) docids that will
+        // just be skipped.
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = $db->select()->from('PAPERS', 'DOCID')->where((string)$sqlWhere);
+        $select = $db->select()
+            ->from('PAPERS', 'DOCID')
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
+            ->where((string)$sqlWhere);
 
         return array_map('intval', $db->fetchCol($select));
     }

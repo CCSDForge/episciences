@@ -635,12 +635,17 @@ php scripts/console.php solr:index [options]
 | Option | Description |
 |--------|-------------|
 | `--docid <id>` | Index only this DOCID |
-| `--sqlwhere <clause>` | SQL `WHERE` clause to select DOCIDs (e.g. `'STATUS = 6'`). **Trusted input only.** |
+| `--sqlwhere <clause>` | SQL `WHERE` clause to select DOCIDs (e.g. `'RVID = 42'`), always ANDed with `STATUS = 16` (published). **Trusted input only.** |
 | `--file <path>` | Path to a file of DOCIDs, one per line |
 | `--priority <n>` | Message priority (informational only — the Doctrine DBAL transport does not reorder by priority, unlike legacy `INDEX_QUEUE.PRIORITY`) |
 | `--sync` | Build and send each document immediately instead of enqueuing it (bypasses Messenger entirely) |
 
 `--docid`, `--sqlwhere` and `--file` are mutually exclusive; exactly one is required.
+
+Only published papers (`STATUS = 16`) are ever indexed: `--sqlwhere` always ANDs
+`STATUS = 16` onto the caller-supplied clause, and `IndexPaperMessageHandler`
+re-checks status before building/sending the document — so a non-published
+docid passed via `--docid` or `--file` is silently skipped rather than indexed.
 
 ---
 

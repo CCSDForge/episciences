@@ -8,6 +8,7 @@ use Episciences\Solr\Indexing\Build\DocumentBuilder;
 use Episciences\Solr\Indexing\Client\SolariumClientFactory;
 use Episciences\Solr\Indexing\Messenger\Message\IndexPaperMessage;
 use Episciences_PapersManager;
+use Episciences_Paper;
 use LogicException;
 use Solarium\QueryType\Update\Query\Document;
 use Solarium\QueryType\Update\Query\Query;
@@ -43,6 +44,16 @@ final class IndexPaperMessageHandler
             throw new UnrecoverableMessageHandlingException(
                 sprintf('IndexPaperMessage: no paper found for docid %d.', $message->docId)
             );
+        }
+
+        if ($paper->getStatus() !== Episciences_Paper::STATUS_PUBLISHED) {
+            // Only published papers belong in the public Solr index. Enforced
+            // here — the single point every enqueue path (solr:index
+            // --sqlwhere, manual --docid/--file, future call sites) funnels
+            // through — rather than relying on each producer to filter by
+            // status, which is how legacy's selectIds()-only filtering left
+            // --sqlwhere/manual docid indexing of non-published papers possible.
+            return;
         }
 
         try {
