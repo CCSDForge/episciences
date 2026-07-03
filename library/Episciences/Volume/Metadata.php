@@ -3,6 +3,7 @@
 class Episciences_Volume_Metadata
 {
     const TRANSLATION_FILE = 'volumes.php';
+    const COVER_TITLE_KEY = 'tile';
     protected $_db = null;
     private $_id;
     private $_vid;
@@ -204,6 +205,20 @@ class Episciences_Volume_Metadata
     {
         $this->_content = $content;
         return $this;
+    }
+
+    public function isCover(): bool
+    {
+        $titles = $this->getTitles();
+        if (empty($titles)) {
+            return false;
+        }
+        foreach ($titles as $value) {
+            if ($value !== self::COVER_TITLE_KEY) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public function isPDF(): bool

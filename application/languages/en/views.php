@@ -221,6 +221,12 @@ return array(
     "L'auteur ne peut pas choisir la rubrique" => "Contributors can't choose a section",
     "L'auteur peut choisir la rubrique" => "Contributors can choose a section",
     "L'auteur doit choisir la rubrique" => "Contributors have to choose a section",
+    // Cover letter requirement
+    "Lettre de motivation" => "Cover letter",
+    "Désactivée" => "Disabled",
+    "Facultative" => "Optional",
+    "Requise" => "Required",
+    "Une lettre d'accompagnement est requise. Veuillez joindre un fichier." => "A cover letter is required. Please attach a file.",
     'Page de contact de la revue' => 'Journal contact URL',
     'Page de la notice dans le catalogue' => 'Catalogue notice URL',
     'Courriel de contact de la revue' => 'Journal contact email',
@@ -810,6 +816,10 @@ return array(
     "Modifier une métadonnée" => "Edit a metadata",
     //End GIT #85
     "Ajouter un fichier (Édito, Erratum, Addendum, ...)" => "Add a file (Foreword, Erratum, Addendum, ...)",
+    'Couverture' => 'Cover',
+    'Couverture du volume' => 'Volume cover',
+    'Ajouter une couverture' => 'Add a cover image',
+    'Supprimer la couverture' => 'Remove the cover',
     "Aucun volume pour le moment" => "No volume yet",
     "Le nouveau volume a bien été créé." => "New volume has been added.",
     "Le nouveau volume n'a pas pu être créé." => "New volume could not be saved.",
