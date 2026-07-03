@@ -1842,6 +1842,12 @@ class PaperController extends PaperDefaultController
         }
 
         $form = $this->buildNewVersionForm($paper);
+
+        // Validate cover letter requirement before form validation
+        if (!$this->handleCoverLetterValidation($form, $post, $paper)) {
+            return;
+        }
+
         if (!$form?->isValid($post)) {
             $this->handleInvalidForm($form, $paper);
             return;
@@ -2005,6 +2011,29 @@ class PaperController extends PaperDefaultController
     {
         $this->renderFormErrors($form);
         $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+    }
+
+    /**
+     * Validate cover letter requirement.
+     * When required, at least one of comment or file must be provided.
+     *
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function handleCoverLetterValidation(?Zend_Form $form, array $post, Episciences_Paper $paper): bool
+    {
+        if (!$form) {
+            return true;
+        }
+
+        $validation = Episciences_Submit::validateCoverLetterRequirement($post);
+
+        if ($validation !== true) {
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($validation);
+            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+            return false;
+        }
+
+        return true;
     }
 
     /**

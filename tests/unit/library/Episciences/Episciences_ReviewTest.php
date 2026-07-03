@@ -190,6 +190,58 @@ class Episciences_ReviewTest extends TestCase
     }
 
     // =========================================================================
+    // getCoverLetterRequirement (git #922)
+    // =========================================================================
+
+    public function testCoverLetterRequirementConstants(): void
+    {
+        self::assertSame(0, Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED);
+        self::assertSame(1, Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL);
+        self::assertSame(2, Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED);
+    }
+
+    public function testGetCoverLetterRequirementDefaultsToOptionalWhenUnset(): void
+    {
+        // Reviews created before this setting existed have no stored value in DB.
+        // Regression: must default to optional, not disabled, otherwise the cover
+        // letter file field silently disappears for every pre-existing journal.
+        $this->review->applySettingsFromRows([]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsDisabledWhenExplicitlySetToZero(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '0'],
+        ]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsOptionalWhenExplicitlySet(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '1'],
+        ]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsRequired(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '2'],
+        ]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementCastsStoredValueToInt(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '2'],
+        ]);
+        self::assertIsInt($this->review->getCoverLetterRequirement());
+    }
+
+    // =========================================================================
     // getRepositories (reads from $_settings)
     // =========================================================================
 
