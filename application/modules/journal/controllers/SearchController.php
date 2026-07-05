@@ -50,7 +50,9 @@ class SearchController extends Zend_Controller_Action
             return false;
         }
 
-        $currentPage = $this->_getParam('page', 1);
+        // Cast to int: a non-numeric ?page= value would raise a TypeError on the
+        // arithmetic below and return a 500 on this public endpoint.
+        $currentPage = max(1, (int)$this->_getParam('page', 1));
         $startParam = ($currentPage - 1) * $search->getParsedSearchParamsbyKey('rows');
 
         // create a client instance
