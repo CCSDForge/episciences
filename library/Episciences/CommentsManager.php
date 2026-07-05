@@ -546,7 +546,7 @@ class Episciences_CommentsManager
         foreach ([Episciences_Acl::ROLE_CHIEF_EDITOR_PLURAL, Episciences_Acl::ROLE_EDITOR_PLURAL, Episciences_Acl::ROLE_REVIEWER_PLURAL] as $roleAllowedToSee) {
             $allowedToSeeCoverLetterTranslated[] = $translator->translate($roleAllowedToSee);
         }
-        $descriptionAllowedToSeeCoverLetterTranslated = $translator->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
+        $descriptionAllowedToSeeCoverLetterTranslated = $translator->translate('Visible pour : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
         $form->addElement('textarea', Episciences_Submit::COVER_LETTER_COMMENT_ELEMENT_NAME, [
             'label' => 'Commentaire', 'rows' => 5,
             'value' => $values['MESSAGE'] ?? '',

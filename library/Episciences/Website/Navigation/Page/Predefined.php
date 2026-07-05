@@ -146,6 +146,22 @@ class Episciences_Website_Navigation_Page_Predefined extends Episciences_Website
             ]);
         }
         $this->_form->getElement('labels')->setOptions(['class' => 'inputlangmulti permalien-src']);
+
+        // Predefined pages are always public - disable visibility selection
+        $visibilityElement = $this->_form->getElement('visibility');
+        if ($visibilityElement) {
+            $visibilityElement->setAttrib('disabled', 'disabled');
+            $visibilityElement->setValue(0); // 0 = Publique
+        }
+
+        // Hide ACL checkboxes for predefined pages
+        $aclElement = $this->_form->getElement('acl');
+        if ($aclElement) {
+            $aclElement->setAttrib('disabled', 'disabled');
+            $aclElement->getDecorator('HtmlTag')->setOption('hidden', 'hidden');
+            $aclElement->getDecorator('Label')->setOption('style', 'display: none;');
+        }
+
         return $this->_form;
     }
 
