@@ -200,22 +200,6 @@ class Episciences_Tools
         }
     }
 
-    public static function multisort($array, $key)
-    {
-        uksort($array, static function ($a, $b) use ($key) {
-            $a = $a[$key];
-            $b = $b[$key];
-            if ($a === $b) {
-                $r = 0;
-            } else {
-                $r = ($a > $b) ? 1 : -1;
-            }
-            return $r;
-        });
-
-        return $array;
-    }
-
     public static function filter_multiarray(&$input, $filter = '')
     {
         if (is_array($input)) {
@@ -252,12 +236,6 @@ class Episciences_Tools
         }
 
         return [];
-    }
-
-    public static function preg_array_key_exists($pattern, $array): int
-    {
-        $keys = array_keys($array);
-        return (int)preg_grep($pattern, $keys);
     }
 
     /**
@@ -352,52 +330,6 @@ class Episciences_Tools
     public static function getRequiredLanguages(): array
     {
         return array_keys(static::getLanguages());
-    }
-
-    /**
-     * @param $code
-     * @param null $locale
-     * @return bool
-     * @throws Zend_Exception
-     */
-    public static function getLanguageLabel($code, $locale = null): bool
-    {
-        if (!isset($locale)) {
-            $locale = Zend_Registry::get('lang');
-        }
-
-        $languages = Zend_Locale::getTranslationList('language', $locale);
-
-        if (array_key_exists($code, $languages)) {
-            return $languages[$code];
-        }
-
-        return false;
-    }
-
-    /**
-     * @param $languages
-     * @param null $locale
-     * @return array|bool
-     * @throws Zend_Exception
-     */
-    public static function sortLanguages($languages, $locale = null)
-    {
-        if (empty($languages)) {
-            return false;
-        }
-
-        if (!isset($locale)) {
-            $locale = Zend_Registry::get('lang');
-        }
-
-        $translated = [];
-        foreach ($languages as $code) {
-            $translated[$code] = static::getLanguageLabel($code, $locale);
-        }
-        asort($translated);
-
-        return array_keys($translated);
     }
 
     /**
