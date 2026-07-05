@@ -894,26 +894,28 @@ class Episciences_Mail extends Zend_Mail
 
     public function addTo($email, $name = '')
     {
-        if (empty($email)) {
-            return false;
+        // Keep Zend_Mail's fluent contract: always return $this so chaining works,
+        // and skip empty addresses instead of returning false mid-chain.
+        if (!empty($email)) {
+            parent::addTo($email, $name);
         }
-        parent::addTo($email, $name);
+        return $this;
     }
 
     public function addCc($email, $name = '')
     {
-        if (empty($email)) {
-            return false;
+        if (!empty($email)) {
+            parent::addCc($email, $name);
         }
-        parent::addCc($email, $name);
+        return $this;
     }
 
     public function addBcc($email)
     {
-        if (empty($email)) {
-            return false;
+        if (!empty($email)) {
+            parent::addBcc($email);
         }
-        parent::addBcc($email);
+        return $this;
     }
 
     /**

@@ -543,21 +543,24 @@ class Episciences_Mail_Reminder
 
     /**
      * Returns the delay before the reminder is sent
-     * @return mixed
+     * Cast to int: this value (admin-configured, untyped) is interpolated raw into
+     * several Zend_Db_Expr SQL clauses — a non-numeric value would break the query.
+     * @return int
      */
-    public function getDelay()
+    public function getDelay(): int
     {
-        return $this->_delay;
+        return (int)$this->_delay;
     }
 
     /**
      * Returns the frequency between each reminder sending
-     * /* null: never, 1 day, 1 week, 2 week, 1 month
-     * @return mixed
+     * null/0: never, 1 day, 1 week, 2 week, 1 month
+     * Cast to int for the same SQL-interpolation safety as getDelay().
+     * @return int
      */
-    public function getRepetition()
+    public function getRepetition(): int
     {
-        return $this->_repetition;
+        return (int)$this->_repetition;
     }
 
     /**
