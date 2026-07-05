@@ -1123,9 +1123,12 @@ class Episciences_Volume
 
         foreach ($this->getMetadatas() as $oldMetadataIds => $metadata) {
             if (!in_array($oldMetadataIds, $newMetadataIds, false)) {
-                $this->_db->delete(T_VOLUME_METADATAS, 'ID = ' . $oldMetadataIds);
-                if ($metadata->hasFile() && file_exists(REVIEW_FILES_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile())) {
-                    unlink(REVIEW_FILES_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile());
+                $this->_db->delete(T_VOLUME_METADATAS, 'ID = ' . (int)$oldMetadataIds);
+                // Metadata files live under REVIEW_PUBLIC_PATH (see Metadata::save()); using
+                // REVIEW_FILES_PATH here never matched and left orphaned files on disk.
+                $metadataFilePath = REVIEW_PUBLIC_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile();
+                if ($metadata->hasFile() && file_exists($metadataFilePath)) {
+                    unlink($metadataFilePath);
                 }
             }
         }
