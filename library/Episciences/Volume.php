@@ -1632,6 +1632,10 @@ class Episciences_Volume
         }
 
 
+        if (empty($sortedPapers)) {
+            return 0;
+        }
+
         /**
          * @var int $position
          * @var  Episciences_Paper $paper
@@ -1644,7 +1648,9 @@ class Episciences_Volume
             }
         }
 
-        return $position;
+        // Not found: assign the next position after the current maximum (per the docblock),
+        // instead of returning the last, already-occupied position.
+        return max(array_keys($sortedPapers)) + 1;
     }
 
 

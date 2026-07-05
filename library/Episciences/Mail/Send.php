@@ -285,14 +285,16 @@ class Episciences_Mail_Send
 
             if($attachmentPath !== '') {
                 foreach ($attachmentsFiles as $fileName => $filePath) {
-                    if (file_exists($filePath . $fileName)) {
-                        if (!$makeACopy) {
+                    if (!$makeACopy) {
+                        // File is expected to already live in the attachments path: check the
+                        // file we actually attach, not the (possibly different) source path.
+                        if (file_exists($attachmentPath . $fileName)) {
                             $mail->addAttachedFile($attachmentPath . $fileName);
-                        } else {
-                            $newName = Episciences_Tools::filenameRotate($attachmentPath, $fileName);
-                            if (copy($filePath . $fileName, $attachmentPath . $newName)) {
-                                $mail->addAttachedFile($attachmentPath . $newName);
-                            }
+                        }
+                    } elseif (file_exists($filePath . $fileName)) {
+                        $newName = Episciences_Tools::filenameRotate($attachmentPath, $fileName);
+                        if (copy($filePath . $fileName, $attachmentPath . $newName)) {
+                            $mail->addAttachedFile($attachmentPath . $newName);
                         }
                     }
                 }
