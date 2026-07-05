@@ -1151,11 +1151,17 @@ class Episciences_User extends Ccsd_User_Models_User
 
         foreach ($roles as $roleId) {
             $roleId = $this->_db->quote($roleId);
-            $values[] = '(' . $uid . ',' . $rvId . ',' . $roleId . ')';
+            $values[] = '(' . (int)$uid . ',' . (int)$rvId . ',' . $roleId . ')';
 
         }
 
-        $sql = sprintf('INSERT INTO %s (UID, RVID, ROLEID) VALUES %s ON DUPLICATE KEY UPDATE ROLEID = VALUES(ROLEID)', T_USER_ROLES, implode(',', $values));
+        // No roles: skip instead of emitting "VALUES " with no tuple (SQL syntax error).
+        if (empty($values)) {
+            return false;
+        }
+
+        // MySQL 8.0.20+: VALUES() in ON DUPLICATE KEY UPDATE is deprecated; use a row alias.
+        $sql = sprintf('INSERT INTO %s (UID, RVID, ROLEID) VALUES %s AS new_row ON DUPLICATE KEY UPDATE ROLEID = new_row.ROLEID', T_USER_ROLES, implode(',', $values));
 
         if (!$db->getConnection()->query($sql)) {
             trigger_error(sprintf('Failed to execute SQL query: %s', $sql));
