@@ -55,6 +55,10 @@ class Episciences_Section
      * @var int number of papers in a section
      */
     private $_countOfPapers;
+    /**
+     * @var mixed indexed papers of the section
+     */
+    private $_indexedPapers;
 
     /**
      * Episciences_Section constructor.

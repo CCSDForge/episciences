@@ -44,6 +44,8 @@ class Episciences_Volume
     private array $_metadatas = [];
     private $_indexedPapers = null;
     private $_paperPositions = [];
+    /** @var array<int, Episciences_Reviewer>|null */
+    private $_reviewers;
     private $_editors;
     private ?bool $_editorsActiveState = null;
     // Copy Editors
