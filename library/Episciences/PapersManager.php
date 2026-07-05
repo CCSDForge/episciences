@@ -2764,12 +2764,13 @@ class Episciences_PapersManager
 
         $urlHelper = new Zend_View_Helper_Url();
 
-        $site = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
-        $url = $site . $urlHelper->url([
+        // Use the trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME'] to prevent Host Header Injection in mail links.
+        $relativeUrl = $urlHelper->url([
                 'controller' => 'paper',
                 'action' => 'view',
                 'id' => $paper->getDocid()
             ]);
+        $url = rtrim(APPLICATION_URL, '/') . '/' . ltrim($relativeUrl, '/');
 
         $defaultTags = [
             Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $contributor->getScreenName(),
