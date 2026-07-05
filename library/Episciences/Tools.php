@@ -667,12 +667,15 @@ class Episciences_Tools
     public static function filenameRotate($dir, $filename)
     {
         while (is_file($dir . $filename)) {
-            $filename = preg_replace_callback('/(?>_(\d*))?(\.\w*)?$/', static function ($matches) {
-                $i = (isset($matches[1])) ? '_' . ((int)$matches[1] + 1) : '';
+            // Always inject/increment a counter. The previous pattern produced an empty
+            // replacement for a name without a trailing "_N" and no extension (e.g. "foo"),
+            // leaving the filename unchanged and spinning forever.
+            $filename = preg_replace_callback('/(?:_(\d+))?(\.\w+)?$/', static function ($matches) {
+                $counter = (isset($matches[1]) && $matches[1] !== '') ? (int)$matches[1] + 1 : 1;
                 $ext = $matches[2] ?? '';
 
-                return $i . $ext;
-            }, $filename);
+                return '_' . $counter . $ext;
+            }, $filename, 1);
         }
         return $filename;
     }
@@ -858,6 +861,10 @@ class Episciences_Tools
     public static function addDateInterval($date, $interval, $format = 'Y-m-d')
     {
         $result = date_create($date);
+        // date_create() returns false on an invalid date; date_add(false, ...) is a TypeError.
+        if ($result === false) {
+            return '';
+        }
         date_add($result, date_interval_create_from_date_string($interval));
         return date_format($result, $format);
     }
@@ -2377,10 +2384,10 @@ class Episciences_Tools
         $options = [
             'http' => [
                 'method' => 'GET',
-                'timeout' => $timeout // timeout en secondes
-            ],
-            'header' => [
-                'User-Agent' => EPISCIENCES_USER_AGENT
+                'timeout' => $timeout, // timeout en secondes
+                // The header must live under 'http' and be a header line string,
+                // otherwise the User-Agent was never sent.
+                'header' => 'User-Agent: ' . EPISCIENCES_USER_AGENT
             ]
         ];
 
