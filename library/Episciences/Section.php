@@ -432,22 +432,14 @@ class Episciences_Section
 
         if ($result) {
 
-            $positions = [];
-            // $positions = $this->getPaperPositions();
-
             $response = unserialize($result, ['allowed_classes' => false])['response'];
-            $unsorted_papers = [];
+
+            // Sections are not manually ordered the way volumes are (Section has no
+            // getPaperPositions()): keep the Solr order (publication_date desc) from
+            // the query above, keyed by docid.
             $sorted_papers = [];
             foreach ($response['docs'] as $paper) {
-                $unsorted_papers[$paper['docid']] = $paper;
-            }
-
-            if (is_array($positions) && !empty($positions)) {
-                foreach ($positions as $position => $docid) {
-                    $sorted_papers[$position] = $unsorted_papers[$docid];
-                }
-            } else {
-                $sorted_papers = $unsorted_papers;
+                $sorted_papers[$paper['docid']] = $paper;
             }
 
             $this->setIndexedPapers($sorted_papers);
