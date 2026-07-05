@@ -273,7 +273,7 @@ class Episciences_Tools
         $files = $upload->getFileInfo();
 
         if (count($files) && !is_dir($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
-            trigger_error('Upload file failed: directory "%s" was not created', $path);
+            trigger_error(sprintf('Upload file failed: directory "%s" was not created', $path));
         }
 
         foreach ($files as $file => $info) {
@@ -424,7 +424,7 @@ class Episciences_Tools
             }
 
             if (!is_dir($path . $lang) && !mkdir($concurrentDirectory = $path . $lang) && !is_dir($concurrentDirectory)) {
-                trigger_error('Write translation failed: directory "%s" was not created', $concurrentDirectory);
+                trigger_error(sprintf('Write translation failed: directory "%s" was not created', $concurrentDirectory));
             }
 
             $filePath = $path . $lang . '/' . $file;
@@ -1334,7 +1334,7 @@ class Episciences_Tools
             $fileExp = $translator->translate('Fichier');
         } catch (Zend_Exception $e) {
             $fileExp = 'Fichier';
-            trigger_error('Expression "%s" was not translated', $fileExp . ': ' . $e->getMessage());
+            trigger_error(sprintf('Expression "%s" was not translated: %s', $fileExp, $e->getMessage()));
         }
 
         $paperId = (string)$paper->getPaperid();
