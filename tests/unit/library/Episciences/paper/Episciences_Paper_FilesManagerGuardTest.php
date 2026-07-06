@@ -37,7 +37,7 @@ final class Episciences_Paper_FilesManagerGuardTest extends TestCase
     public function testUpdateMapsFileTypeFromGetFileType(): void
     {
         self::assertMatchesRegularExpression(
-            "/'fileType'\s*=>\s*\\\$file->getFileType\(\)/",
+            "/'file_type'\s*=>\s*\\\$file->getFileType\(\)/",
             $this->source
         );
         self::assertDoesNotMatchRegularExpression(

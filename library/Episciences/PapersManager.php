@@ -4442,8 +4442,6 @@ class Episciences_PapersManager
     private static function updateRecordDataProcessFilesHook($record1, mixed $docId, mixed $repoId, array|string $identifier, mixed $enrichment, mixed $affectedRows): array
     {
         $record = $record1;
-        // delete all paper files
-        Episciences_Paper_FilesManager::deleteByDocId($docId);
 
         $hookParams = ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId];
 
