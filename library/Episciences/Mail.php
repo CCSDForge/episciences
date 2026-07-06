@@ -75,13 +75,20 @@ class Episciences_Mail extends Zend_Mail
             $this->addTag(Episciences_Mail_Tags::TAG_SENDER_LAST_NAME, Episciences_Auth::getLastname());
 
         }
+        // find() returns false for an unknown review code: guard before loadSettings()
+        // to avoid a fatal, falling back to the generic error return path.
         $review = Episciences_ReviewsManager::find($rvCode);
+        if (!$review instanceof Episciences_Review) {
+            $this->setReturnPath('error@' . DOMAIN);
+            return;
+        }
+
         $review->loadSettings();
         $mailError = $review->getSetting(Episciences_Review::SETTING_CONTACT_ERROR_MAIL);
         if ($mailError === false || $mailError === "0") {
             $this->setReturnPath('error@' . DOMAIN);
         } else {
-            $this->setReturnPath($review->getCode().'-error@'.DOMAIN);
+            $this->setReturnPath($review->getCode() . '-error@' . DOMAIN);
         }
     }
 
@@ -325,7 +332,9 @@ class Episciences_Mail extends Zend_Mail
                 }
                 if (is_file($filepath)) {
                     copy($filepath, $storage_path . $mailDirectory . '/' . $filename);
-                    $xmlString .= "\t\t" . '<file>' . $filename . '</file>' . PHP_EOL;
+                    // Escape: a filename containing & or < produces invalid XML, which then
+                    // fails to parse on the Sender side and silently loses the message.
+                    $xmlString .= "\t\t" . '<file>' . htmlspecialchars((string)$filename) . '</file>' . PHP_EOL;
                 }
             }
             $xmlString .= "\t" . '</files_list>' . PHP_EOL;
@@ -358,10 +367,13 @@ class Episciences_Mail extends Zend_Mail
     private function createMailDirectory(string $path)
     {
         $mailDirectory = uniqid(gethostname() . '_', true);
-        if (mkdir($concurrentDirectory = $path . $mailDirectory, 0777, true) || !is_dir($concurrentDirectory)) {
-            return $mailDirectory;
+        // Standard concurrency-tolerant guard: fail only when mkdir() failed AND the
+        // directory still does not exist. The previous condition was inverted and
+        // reported success on a genuinely failed creation, masking the real error.
+        if (!mkdir($concurrentDirectory = $path . $mailDirectory, 0777, true) && !is_dir($concurrentDirectory)) {
+            return false;
         }
-        return false;
+        return $mailDirectory;
     }
 
     /**
@@ -378,9 +390,9 @@ class Episciences_Mail extends Zend_Mail
         if ($result) {
             $result[1] = iconv_mime_decode($result[1], 0, 'UTF-8');
             $result[1] = htmlspecialchars($result[1]);
-            $xmlString .= '<' . strtolower($fieldname) . '><name>' . trim($result[1]) . '</name><mail>' . trim($result[2]) . '</mail></' . strtolower($fieldname) . '>';
+            $xmlString .= '<' . strtolower($fieldname) . '><name>' . trim($result[1]) . '</name><mail>' . htmlspecialchars(trim($result[2])) . '</mail></' . strtolower($fieldname) . '>';
         } else {
-            $xmlString .= '<' . strtolower($fieldname) . '><mail>' . trim($value) . '</mail></' . strtolower($fieldname) . '>';
+            $xmlString .= '<' . strtolower($fieldname) . '><mail>' . htmlspecialchars(trim($value)) . '</mail></' . strtolower($fieldname) . '>';
         }
 
         return $xmlString . PHP_EOL;
@@ -398,9 +410,9 @@ class Episciences_Mail extends Zend_Mail
                 if ($result) {
                     $result[1] = iconv_mime_decode($result[1], 0, 'UTF-8');
                     $result[1] = htmlspecialchars($result[1]);
-                    $tmpString .= '<' . strtolower($fieldname) . '><name>' . trim($result[1]) . '</name><mail>' . trim($result[2]) . '</mail></' . strtolower($fieldname) . '>';
+                    $tmpString .= '<' . strtolower($fieldname) . '><name>' . trim($result[1]) . '</name><mail>' . htmlspecialchars(trim($result[2])) . '</mail></' . strtolower($fieldname) . '>';
                 } else {
-                    $tmpString .= '<' . strtolower($fieldname) . '><mail>' . trim($value) . '</mail></' . strtolower($fieldname) . '>';
+                    $tmpString .= '<' . strtolower($fieldname) . '><mail>' . htmlspecialchars(trim($value)) . '</mail></' . strtolower($fieldname) . '>';
                 }
                 $tmpString .= PHP_EOL;
             }
