@@ -735,7 +735,8 @@ class AdministratemailController extends Zend_Controller_Action
         }
 
         $reminder = new Episciences_Mail_Reminder($options);
-        $reminder->save();
+        // save() returns a bool; echo it (as "1"/"0") to preserve the AJAX response body.
+        echo (int)$reminder->save();
     }
 
     /**

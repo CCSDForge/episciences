@@ -198,9 +198,10 @@ class Episciences_Mail_Reminder
     }
 
     /**
+     * @return bool true on success
      * @throws Zend_Db_Adapter_Exception
      */
-    public function save(): void
+    public function save(): bool
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -249,7 +250,7 @@ class Episciences_Mail_Reminder
         // update translation file
         Episciences_Tools::writeTranslations($translations, REVIEW_LANG_PATH, Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME);
 
-        echo true;
+        return true;
     }
 
     /**
@@ -1532,6 +1533,9 @@ class Episciences_Mail_Reminder
         foreach ($resultQuery as $item) {
             $paper = new Episciences_Paper($item);
 
+            // Default to no editors so a recipient role other than chief_editor/editor
+            // does not leave $editors undefined (or stale) for the foreach below.
+            $editors = [];
             if (Episciences_Acl::ROLE_CHIEF_EDITOR === $rRecipient) {
                 $editors = Episciences_Review::getChiefEditors();
             } elseif (Episciences_Acl::ROLE_EDITOR === $rRecipient) {
