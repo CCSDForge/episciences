@@ -47,39 +47,17 @@ class Episciences_Paper_FilesManager
 
     }
 
-    /**
-     * @param int $docId
-     * @return bool
-     */
-    public static function deleteByDocId(int $docId): bool
+    public static function deleteByDocId(int $docId): void
     {
         if ($docId < 1) {
-            return false;
+            return;
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $db?->beginTransaction();
-        $deletedRows = $db?->delete(T_PAPER_FILES, ['doc_id = ?' => $docId]);
+        $db?->delete(T_PAPER_FILES, ['doc_id = ?' => $docId]);
         $db?->commit();
-
-        return ($deletedRows > 0);
-
-    }
-
-    /**
-     * @param int $id
-     * @return bool
-     */
-    public static function deleteById(int $id): bool
-    {
-        if ($id < 1) {
-            return false;
-        }
-
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        return ($db->delete(T_PAPER_FILES, ['id = ?' => $id]) > 0);
-
     }
 
 
@@ -101,7 +79,7 @@ class Episciences_Paper_FilesManager
             }
 
         } catch (Exception $e) {
-            error_log($e->getMessage());
+            trigger_error($e->getMessage(), E_USER_WARNING);
         }
 
         return $affectedRows;
