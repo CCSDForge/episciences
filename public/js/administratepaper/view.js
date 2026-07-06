@@ -245,7 +245,7 @@ $(document).ready(function () {
         });
 
     // update deadline
-    $("[id$='-revision-deadline']").on('change keyup past', function () {
+    $("[id$='-revision-deadline']").on('change keyup paste', function () {
         let $minorSubmit = $('button[id^="submit-modal-minor-revision"]');
         let $majorSubmit = $('button[id^="submit-modal-major-revision"]');
 
@@ -377,7 +377,9 @@ function searchLogs() {
         $('.history-search').css('border', '1px solid #ccc');
     }
 
-    let re = new RegExp(input, 'i'); // "i" means it's case-insensitive
+    // Escape regex special characters: the input is a plain-text search term
+    let escapedInput = input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let re = new RegExp(escapedInput, 'i'); // "i" means it's case-insensitive
     $('.history-logs div.log-entry')
         .show()
         .filter(function () {
@@ -571,6 +573,7 @@ function getReviewerMenu(button) {
             '</a></li>';
     }
 
+    //content += '<li><a href="#"><span class="glyphicon glyphicon-remove" style="margin-right: 5px"></span> ' + translate('Supprimer ce relecteur')+'</a></li>';
     content += '</ul>';
 
     $(button)
@@ -635,9 +638,7 @@ function getUserMenu(button) {
 
     content += '<li>';
     content +=
-        '<a class="modal-opener" href="' +
-        JS_PREFIX_URL +
-        'administratemail/send/recipient/' +
+        '<a class="modal-opener" href="/administratemail/send/recipient/' +
         uid +
         '/paper/' +
         docid +
@@ -769,11 +770,11 @@ function getPublicationDateForm(button, docId) {
         $('form[action^="' + formAction + '"]').on('submit', function () {
             let $publicationDate = $('#publication-date');
             // Traitement AJAX du formulaire
+                // The action returns a localized date as plain text, not JSON
             let sRequest = ajaxRequest(
                 formAction,
                 $(this).serialize() + '&docid=' + docId,
-                'POST',
-                'json'
+                    'POST'
             );
             sRequest.done(function (response) {
                 // Destruction du popup
@@ -1160,15 +1161,13 @@ function getVersionEditingForm(button, docId) {
                 'json'
             );
 
-            popoverParams.content = getLoader;
+            popoverParams.content = getLoader();
 
             $inProgress.html(getLoader());
 
-            sRequest.done(function (response) {
+            sRequest.done(function (result) {
                 $inProgress.html('');
                 $(button).popover('destroy');
-
-                let result = JSON.parse(response);
 
                 if (result.version > 0) {
                     if (result.isDataRecordUpdated) {
@@ -1178,15 +1177,16 @@ function getVersionEditingForm(button, docId) {
                         refreshPaperHistory(docId);
                     }
                 }
+            });
 
-                sRequest.fail(function () {
-                    alert(
-                        '<span class="fas fa-exclamation-triangle fa-lg" style="margin-right: 5px"></span>' +
-                            translate(
-                                "Une erreur interne s'est produite, veuillez recommencer."
-                            )
-                    );
-                });
+            sRequest.fail(function () {
+                $inProgress.html('');
+                $(button).popover('destroy');
+                alert(
+                    translate(
+                        "Une erreur interne s'est produite, veuillez recommencer."
+                    )
+                );
             });
 
             return false;
@@ -1384,9 +1384,17 @@ function getRevisionDeadlineForm(button, docId, commentId = null) {
             JS_PREFIX_URL + 'administratepaper/updaterevisiondeadline';
 
         $('form[action^="' + actionForm + '"]').on('submit', function () {
-            let $revisionDeadline = $('#revision-deadline');
-            // Traitement AJAX du formulaire
+                let $revisionDeadline = $('#revision-deadline');
+                // Traitement AJAX du formulaire
+                // The action returns a localized date as plain text, not JSON
             let sRequest = ajaxRequest(
+                    '/administratepaper/updaterevisiondeadline',
+                    $(this).serialize() +
+                        '&docid=' +
+                        docId +
+                        '&pcid=' +
+                        commentId,
+                    'POST'
                 actionForm,
                 $(this).serialize() + '&docid=' + docId + '&pcid=' + commentId,
                 'POST',

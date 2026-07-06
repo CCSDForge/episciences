@@ -133,7 +133,6 @@ function submit() {
     $.ajax({
         url: $('#paper-reassignment-form').attr('action'),
         type: 'POST',
-        datatype: 'json',
         data: $('#modal-box form').serialize(),
         success: function (response) {
             $('#modal-box').modal('hide');

@@ -63,7 +63,6 @@ function getRoles(button, uid) {
             $.ajax({
                 url: saveRolesUrl,
                 type: 'POST',
-                datatype: 'json',
                 // data: {uid:uid, data: $(this).serialize()},
                 data: $(this).serialize() + '&uid=' + uid,
                 success: function (result) {

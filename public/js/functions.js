@@ -591,9 +591,9 @@ function activateTooltips(params = {}) {
     //params = params || {};
     params.container = params.container || 'body';
     params.placement = params.placement || 'bottom';
-    params.html = params.html || true;
-    params.show = params.show || 200;
-    params.hide = params.hide || 100;
+    params.html = params.html ?? true;
+    params.show = params.show ?? 200;
+    params.hide = params.hide ?? 100;
 
     $("[data-toggle~='tooltip']").tooltip({
         container: params.container,
@@ -948,7 +948,7 @@ function updateDeadlineTag(body, tagName, date, locale = 'en') {
  */
 function getObjectNameFromTinyMce(name) {
     let body = {};
-    if (tinymce) {
+    if (typeof tinymce !== 'undefined' && tinymce) {
         body = tinymce.get(name);
     }
     return body;
@@ -970,7 +970,7 @@ function ajaxRequest(url, jData, type = 'POST', dataType = null) {
     };
 
     if (dataType) {
-        params.datatype = dataType;
+        params.dataType = dataType;
     }
     return $.ajax(params);
 }

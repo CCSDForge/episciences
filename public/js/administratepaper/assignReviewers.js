@@ -62,7 +62,6 @@ function assignReviewers(button, docid) {
             $.ajax({
                 url: actionForm,
                 type: 'POST',
-                datatype: 'json',
                 data: $(this).serialize() + '&docid=' + docid,
                 success: function (result) {
                     if (result == 1) {
