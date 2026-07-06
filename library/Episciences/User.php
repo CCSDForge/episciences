@@ -237,7 +237,7 @@ class Episciences_User extends Ccsd_User_Models_User
         $select = $db->select()->from(T_USERS);
         $subSelect = $db->select()->from(T_USER_ROLES, ['UID'])->where('RVID = ?', RVID);
         if ($withoutRoles) {
-            $subSelect->where('ROLEID != "member');
+            $subSelect->where('ROLEID != ?', Episciences_Acl::ROLE_MEMBER);
             $select->where('UID NOT IN (' . new Zend_Db_Expr($subSelect) . ')');
         } else {
             $select->where('UID IN (' . new Zend_Db_Expr($subSelect) . ')');
