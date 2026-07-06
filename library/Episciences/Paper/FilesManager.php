@@ -60,22 +60,8 @@ class Episciences_Paper_FilesManager
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
         $db?->beginTransaction();
-
-        try {
-
-            $deletedRows = $db?->delete(T_PAPER_FILES, ['doc_id = ?' => $docId]);
-
-            if ($deletedRows < 1) {
-                throw new RuntimeException (sprintf("Failure to delete paper's files[DOCID = #%s]", $docId));
-            }
-
-            $db?->commit();
-
-        } catch (Exception $e) {
-            $deletedRows = 0;
-            Episciences_View_Helper_Log::log($e->getMessage());
-            $db?->rollBack();
-        }
+        $deletedRows = $db?->delete(T_PAPER_FILES, ['doc_id = ?' => $docId]);
+        $db?->commit();
 
         return ($deletedRows > 0);
 
@@ -227,6 +213,16 @@ class Episciences_Paper_FilesManager
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        $results = [
+                'inserted' => 0,
+                'updated' => 0,
+                'deleted' => 0
+        ];
+
+        if (empty($files)) {
+            return $results;
+        }
+
         if ($files[0] instanceof Episciences_Paper_File) {
             $docId = $files[0]->getDocId();
         } else {
@@ -236,12 +232,6 @@ class Episciences_Paper_FilesManager
         if (!$docId) {
             throw new InvalidArgumentException('Files synchronization error: Empty docId');
         }
-
-        $results = [
-                'inserted' => 0,
-                'updated' => 0,
-                'deleted' => 0
-        ];
 
         $db->beginTransaction();
 
@@ -257,11 +247,11 @@ class Episciences_Paper_FilesManager
                 }
 
                 // That wasn't supposed to happen; but since it did, here's what we'll do:
-                // Generate a unique identifier based on a checksum + name + source
+                // Generate a unique identifier based on a checksum + name + source +  type
                 // Fix the collision bug in MySQL inserts by ensuring that each file has a truly unique self_link, thereby enabling the safe use of UPSERT without silent data loss.
 
                 if ($file->getSelfLink() === Episciences_Paper_File::DEFAULT_SELF_LINK_VALUE) {
-                    $uniqueHash = hash('sha256', $file->getDocId() . '|' . $file->getChecksum());
+                    $uniqueHash = hash('sha256', $file->getDocId() . '|' . $file->getChecksum() . '|' . $file->getFileName() .'|' . $file->getFileType());
                     $file->setSelfLink(Episciences_Paper_File::DEFAULT_SELF_LINK_VALUE . substr($uniqueHash, 0, 16)); // Extend the truncate to reduce collisions
                 }
 
@@ -346,10 +336,10 @@ class Episciences_Paper_FilesManager
             } elseif ($isBoth) {
 
                 $newFile = $newIndex[$key];
-                $oldData = $existingIndex[$key];
+                $oldFile = $existingIndex[$key];
 
 
-                if (!self::hasChanged($oldData, $newFile)) {
+                if (!self::hasChanged($newFile, $oldFile)) {
                     // All values are identical: no action required (this file is silently ignored)
                     continue;
                 }
