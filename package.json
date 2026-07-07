@@ -31,7 +31,15 @@
   },
   "packageManager": "yarn@4.16.0",
   "resolutions": {
-    "find-up": "5.0.0"
+    "find-up": "5.0.0",
+    "fast-uri": "^3.1.1",
+    "tmp": "^0.2.6",
+    "serialize-javascript": "^7.0.5",
+    "ws": "^8.21.0",
+    "js-yaml": "3.15.0",
+    "postcss": "^8.5.10",
+    "undici@npm:^7.25.0": "^7.28.0",
+    "undici@npm:^6.25.0": "^6.27.0"
   },
   "dependencies": {
     "@playwright/test": "^1.60.0",
