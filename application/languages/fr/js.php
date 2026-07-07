@@ -56,4 +56,7 @@ return [
     'Genuine'                      => 'Authentique',
     'More information'             => "Plus d'information",
     'View on PubPeer'              => 'Voir sur PubPeer',
+
+    // Activity timeline filters
+    'activity_timeline_events_shown' => 'événement(s) affiché(s)',
 ];

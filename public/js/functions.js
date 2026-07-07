@@ -69,6 +69,21 @@ $(document).ready(function ($) {
                 300
             );
         }
+
+        // Same idea for a single reviewer's rating panel (Bootstrap collapse, see
+        // partials/paper_reports.phtml) — e.g. linked from the activity timeline
+        // when a review has been completed
+        var ratingPanel = document.querySelector(window.location.hash + '.rating');
+        if (ratingPanel && !ratingPanel.classList.contains('in')) {
+            var ratingToggle = document.querySelector('[data-target="' + window.location.hash + '"]');
+            if (ratingToggle) {
+                ratingToggle.click();
+            }
+            var ratingPanelContainer = ratingPanel.closest('.panel');
+            if (ratingPanelContainer) {
+                ratingPanelContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
     }
 
     $('.collapse').on({

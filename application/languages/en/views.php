@@ -2008,7 +2008,7 @@ return array(
     "Si aucun rôle n'est sélectionné, la page sera publique" => 'If no role is selected, the page will be public',
     "Nombre de résultats par page" => "Number of results per page",
     "Photos des membres" => "Members' photos",
-    'Afficher', 'Show',
+    'Afficher' => 'Show',
     'Masquer' => 'Hide',
 
 
@@ -2507,5 +2507,23 @@ return array(
     "Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés" => "If enabled, a volume's title can be modified even if it contains published articles",
     "Afficher les volumes secondaires sur la page publique de l'article" => "Display secondary volumes on the public article page",
     "Si activé, les volumes secondaires seront visibles sur la page publique de l'article" => "If enabled, secondary volumes will be visible on the public article page",
-    "Volumes secondaires: " => "Secondary volumes: "
+    "Volumes secondaires: " => "Secondary volumes: ",
+
+    // Activity timeline (ActivityController)
+    "Activité" => "Activity",
+    "Activité de l'article" => "Article activity",
+    "Retour à la gestion de l'article" => "Back to article management",
+    "Filtrer les événements de la timeline" => "Filter timeline events",
+    "Timeline de publication" => "Publication timeline",
+    "Récapitulatif des relecteurs pour cette version" => "Reviewer recap for this version",
+    "État actuel" => "Current status",
+    "Soumission & versions" => "Submission & versions",
+    "Processus éditorial" => "Editorial workflow",
+    "Messages & notifications" => "Messages & notifications",
+    "Voir la timeline complète" => "View the full timeline",
+    "Voir la relecture de" => "View the review by",
+    "Voir le rapport de relecture" => "View the review report",
+    "PDF" => "PDF",
+    "Voir le PDF de cette version" => "View the PDF of this version",
+    "Voir la page de gestion de cette version" => "View the management page for this version"
 );
