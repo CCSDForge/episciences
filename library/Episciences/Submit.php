@@ -1771,7 +1771,8 @@ class Episciences_Submit
             'action' => 'view',
             'id' => $paper->getDocid()]);
 
-        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        // Use the trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME'] to prevent Host Header Injection in mail links.
+        $paperUrl = rtrim(APPLICATION_URL, '/') . '/' . ltrim($paperUrl, '/');
 
         $authorTags = $commonTags + [
                 Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl, // lien vers l'article
@@ -2113,7 +2114,8 @@ class Episciences_Submit
             'id' => $paper->getDocid()
         ]);
 
-        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        // Use the trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME'] to prevent Host Header Injection in mail links.
+        $paperUrl = rtrim(APPLICATION_URL, '/') . '/' . ltrim($paperUrl, '/');
 
         $adminTags[Episciences_Mail_Tags::TAG_PAPER_URL] = $paperUrl; // Lien de gestion de l'article
 
@@ -2129,7 +2131,8 @@ class Episciences_Submit
 
                 ]);
 
-                $refusedPaperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $refusedPaperUrl;
+                // Use the trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME'] to prevent Host Header Injection in mail links.
+                $refusedPaperUrl = rtrim(APPLICATION_URL, '/') . '/' . ltrim($refusedPaperUrl, '/');
 
                 // Au lieu d'ajouter un template pour ce cas particulier, on ajoute ce  tags dans le template paper_submission_editor_copy
                 $adminTags[Episciences_Mail_Tags::TAG_REFUSED_PAPER_URL] = $refusedPaperUrl;

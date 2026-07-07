@@ -522,7 +522,9 @@ class Episciences_Paper_Logger
             'UID'  => $uid  ?? EPISCIENCES_UID,
             'RVID' => $rvid ?? RVID,
             'ACTION' => $action,
-            'DETAIL' => $detail,
+            // Normalise an array $detail to JSON for direct callers; callers going through
+            // Paper::log() already pass an encoded string, so no double encoding occurs.
+            'DETAIL' => is_array($detail) ? json_encode($detail) : $detail,
             'DATE' => $date ?? new Zend_Db_Expr('NOW()')
         ];
         return (bool)$db->insert(T_LOGS, $data);

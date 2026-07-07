@@ -1773,6 +1773,25 @@ class UserDefaultController extends Zend_Controller_Action
                 // Generate SVG
                 $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
 
+                if (!isset($user)) {
+                    // Anonymous request (no uid, not logged in): there is no user
+                    // directory to cache the SVG in, so serve it inline instead of
+                    // dereferencing an undefined $user (which was a fatal error).
+                    $contentSize = strlen($data);
+                    $maxAge = 300;
+                    $expires = gmdate('D, d M Y H:i:s \G\M\T', time() + $maxAge);
+
+                    $this->getResponse()
+                        ->setHeader('ETag', md5($data), true)
+                        ->setHeader('Expires', $expires, true)
+                        ->setHeader('Pragma', '', true)
+                        ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
+                        ->setHeader('Content-Type', self::IMAGE_SVG_XML, true)
+                        ->setHeader('Content-Length', $contentSize, true)
+                        ->setBody($data);
+                    return;
+                }
+
                 $userPhotoPath = $user->getPhotoPath();
 
                 if (!is_dir($userPhotoPath) && !mkdir($userPhotoPath, 0777, true) && !is_dir($userPhotoPath)) {

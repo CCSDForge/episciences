@@ -44,6 +44,8 @@ class Episciences_Volume
     private array $_metadatas = [];
     private $_indexedPapers = null;
     private $_paperPositions = [];
+    /** @var array<int, Episciences_Reviewer>|null */
+    private $_reviewers;
     private $_editors;
     private ?bool $_editorsActiveState = null;
     // Copy Editors
@@ -1123,9 +1125,12 @@ class Episciences_Volume
 
         foreach ($this->getMetadatas() as $oldMetadataIds => $metadata) {
             if (!in_array($oldMetadataIds, $newMetadataIds, false)) {
-                $this->_db->delete(T_VOLUME_METADATAS, 'ID = ' . $oldMetadataIds);
-                if ($metadata->hasFile() && file_exists(REVIEW_FILES_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile())) {
-                    unlink(REVIEW_FILES_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile());
+                $this->_db->delete(T_VOLUME_METADATAS, 'ID = ' . (int)$oldMetadataIds);
+                // Metadata files live under REVIEW_PUBLIC_PATH (see Metadata::save()); using
+                // REVIEW_FILES_PATH here never matched and left orphaned files on disk.
+                $metadataFilePath = REVIEW_PUBLIC_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile();
+                if ($metadata->hasFile() && file_exists($metadataFilePath)) {
+                    unlink($metadataFilePath);
                 }
             }
         }
@@ -1627,6 +1632,10 @@ class Episciences_Volume
         }
 
 
+        if (empty($sortedPapers)) {
+            return 0;
+        }
+
         /**
          * @var int $position
          * @var  Episciences_Paper $paper
@@ -1639,7 +1648,9 @@ class Episciences_Volume
             }
         }
 
-        return $position;
+        // Not found: assign the next position after the current maximum (per the docblock),
+        // instead of returning the last, already-occupied position.
+        return max(array_keys($sortedPapers)) + 1;
     }
 
 

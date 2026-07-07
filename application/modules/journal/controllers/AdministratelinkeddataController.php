@@ -86,16 +86,22 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
         } elseif (($inputTypeLd === 'dataset' || $inputTypeLd === 'publication') && $typeLd === 'hal') {
             $getHalIdentifierInUrl = Episciences_Tools::getHalIdInString($rawValueLd);
+            // Default to the raw value so it is defined even for a HAL id without a version.
+            $rawValueLdWithoutVersion = $rawValueLd;
             if (!empty($getHalIdentifierInUrl)) {
                 $typeLd = 'hal';
                 $rawValueLd = $getHalIdentifierInUrl[0];
+                $rawValueLdWithoutVersion = $rawValueLd;
                 if (isset($getHalIdentifierInUrl[1])) {
                     $rawValueLdWithoutVersion = str_replace($getHalIdentifierInUrl[1],'',$rawValueLd);
                     $versionHal = (int)str_replace('v','',$getHalIdentifierInUrl[1]);
                 }
             }
             $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($rawValueLdWithoutVersion,$versionHal));
-            $arraySoftware['citationFull'] = $citationFull->response->docs[0]->citationFull_s;
+            // Guard against an empty/malformed HAL response before dereferencing it.
+            if (!empty($citationFull->response->docs[0]->citationFull_s)) {
+                $arraySoftware['citationFull'] = $citationFull->response->docs[0]->citationFull_s;
+            }
             $epiDM = new Episciences_Paper_DatasetMetadata();
             $epiDM->setMetatext(json_encode($arraySoftware));
             $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);

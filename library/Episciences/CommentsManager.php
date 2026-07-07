@@ -137,6 +137,11 @@ class Episciences_CommentsManager
         $papers = $db->fetchAssoc($select);
         $papersIds = array_keys($papers);
 
+        // No matching paper: "DOCID IN ()" is invalid SQL, so return early.
+        if (empty($papersIds)) {
+            return [];
+        }
+
         $select = $db->select()->from(T_PAPER_COMMENTS)->where('DOCID IN (?)', $papersIds)->order('WHEN DESC');
 
         if (isset($settings['types']) && is_array($settings['types'])) {
