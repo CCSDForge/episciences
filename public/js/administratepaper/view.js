@@ -245,7 +245,7 @@ $(document).ready(function () {
         });
 
     // update deadline
-    $("[id$='-revision-deadline']").on('change keyup past', function () {
+    $("[id$='-revision-deadline']").on('change keyup paste', function () {
         let $minorSubmit = $('button[id^="submit-modal-minor-revision"]');
         let $majorSubmit = $('button[id^="submit-modal-major-revision"]');
 
@@ -377,7 +377,9 @@ function searchLogs() {
         $('.history-search').css('border', '1px solid #ccc');
     }
 
-    let re = new RegExp(input, 'i'); // "i" means it's case-insensitive
+    // Escape regex special characters: the input is a plain-text search term
+    let escapedInput = input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let re = new RegExp(escapedInput, 'i'); // "i" means it's case-insensitive
     $('.history-logs div.log-entry')
         .show()
         .filter(function () {
@@ -748,11 +750,11 @@ function getPublicationDateForm(button, docId) {
             function () {
                 let $publicationDate = $('#publication-date');
                 // Traitement AJAX du formulaire
+                // The action returns a localized date as plain text, not JSON
                 let sRequest = ajaxRequest(
                     '/administratepaper/savepublicationdate',
                     $(this).serialize() + '&docid=' + docId,
-                    'POST',
-                    'json'
+                    'POST'
                 );
                 sRequest.done(function (response) {
                     // Destruction du popup
@@ -1134,15 +1136,13 @@ function getVersionEditingForm(button, docId) {
                 'json'
             );
 
-            popoverParams.content = getLoader;
+            popoverParams.content = getLoader();
 
             $inProgress.html(getLoader());
 
-            sRequest.done(function (response) {
+            sRequest.done(function (result) {
                 $inProgress.html('');
                 $(button).popover('destroy');
-
-                let result = JSON.parse(response);
 
                 if (result.version > 0) {
                     if (result.isDataRecordUpdated) {
@@ -1152,15 +1152,16 @@ function getVersionEditingForm(button, docId) {
                         refreshPaperHistory(docId);
                     }
                 }
+            });
 
-                sRequest.fail(function () {
-                    alert(
-                        '<span class="fas fa-exclamation-triangle fa-lg" style="margin-right: 5px"></span>' +
-                            translate(
-                                "Une erreur interne s'est produite, veuillez recommencer."
-                            )
-                    );
-                });
+            sRequest.fail(function () {
+                $inProgress.html('');
+                $(button).popover('destroy');
+                alert(
+                    translate(
+                        "Une erreur interne s'est produite, veuillez recommencer."
+                    )
+                );
             });
 
             return false;
@@ -1360,6 +1361,7 @@ function getRevisionDeadlineForm(button, docId, commentId = null) {
             function () {
                 let $revisionDeadline = $('#revision-deadline');
                 // Traitement AJAX du formulaire
+                // The action returns a localized date as plain text, not JSON
                 let sRequest = ajaxRequest(
                     '/administratepaper/updaterevisiondeadline',
                     $(this).serialize() +
@@ -1367,8 +1369,7 @@ function getRevisionDeadlineForm(button, docId, commentId = null) {
                         docId +
                         '&pcid=' +
                         commentId,
-                    'POST',
-                    'json'
+                    'POST'
                 );
                 sRequest.done(function (response) {
                     // Destruction du popup

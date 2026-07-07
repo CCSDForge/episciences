@@ -331,8 +331,8 @@ class AdministratemailController extends Zend_Controller_Action
                             'username' => $user->getUsername(),
                             'mail' => $user->getEmail(),
                             'label' => $user->getScreenName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>',
-                            'htmlLabel' => '<div>' . $user->getScreenName() . ' <span class="darkgrey">' . '(' . mb_strtolower($user->getUsername()) . ')' . '</span>' . '</div>'
-                                . '<div class="grey">' . $user->getEmail() . '</div>'
+                            'htmlLabel' => '<div>' . htmlspecialchars((string)$user->getScreenName(), ENT_QUOTES, 'UTF-8') . ' <span class="darkgrey">' . '(' . htmlspecialchars(mb_strtolower((string)$user->getUsername()), ENT_QUOTES, 'UTF-8') . ')' . '</span>' . '</div>'
+                                . '<div class="grey">' . htmlspecialchars((string)$user->getEmail(), ENT_QUOTES, 'UTF-8') . '</div>'
                         ];
                     }
                 } else {
@@ -345,7 +345,7 @@ class AdministratemailController extends Zend_Controller_Action
                             'fullname' => $user->getFullName(),
                             'mail' => $user->getEmail(),
                             'label' => $user->getScreenName() . '<' . $user->getEmail() . '>',
-                            'htmlLabel' => '<div>' . $user->getScreenName() . '</div>' . '<div class="grey">' . $user->getEmail() . '</div>'
+                            'htmlLabel' => '<div>' . htmlspecialchars((string)$user->getScreenName(), ENT_QUOTES, 'UTF-8') . '</div>' . '<div class="grey">' . htmlspecialchars((string)$user->getEmail(), ENT_QUOTES, 'UTF-8') . '</div>'
                         ];
                     }
                 }
@@ -876,8 +876,8 @@ class AdministratemailController extends Zend_Controller_Action
                 $cUser['username'] = $user->getUsername();
                 $cUser['mail'] = $user->getEmail();
                 $cUser['label'] = $user->getFullName() . ' (' . mb_strtolower($user->getUsername()) . ') ' . '<' . $user->getEmail() . '>';
-                $cUser['htmlLabel'] = '<div>' . $user->getFullName() . ' <span class="darkgrey">' . '(' . mb_strtolower($user->getUsername()) . ')' . '</span>' . '</div>'
-                    . '<div class="grey">' . $user->getEmail() . '</div>';
+                $cUser['htmlLabel'] = '<div>' . htmlspecialchars((string)$user->getFullName(), ENT_QUOTES, 'UTF-8') . ' <span class="darkgrey">' . '(' . htmlspecialchars(mb_strtolower((string)$user->getUsername()), ENT_QUOTES, 'UTF-8') . ')' . '</span>' . '</div>'
+                    . '<div class="grey">' . htmlspecialchars((string)$user->getEmail(), ENT_QUOTES, 'UTF-8') . '</div>';
 
                 $compiledUsers[$user->getUid()] = $cUser;
             }

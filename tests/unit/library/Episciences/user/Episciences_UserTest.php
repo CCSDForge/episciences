@@ -52,6 +52,40 @@ class Episciences_UserTest extends TestCase
         $this->assertSame('A B C', $this->user->getScreenName());
     }
 
+    public function testSetScreenNameStripsHtmlTags(): void
+    {
+        $this->user->setScreenName('<script>alert(1)</script>John <b>Doe</b>');
+        $this->assertSame('alert(1)John Doe', $this->user->getScreenName());
+    }
+
+    public function testSetScreenNameRemovesControlCharacters(): void
+    {
+        $this->user->setScreenName("John\x00\x1F Doe\x7F");
+        $this->assertSame('John Doe', $this->user->getScreenName());
+    }
+
+    public function testSetScreenNameCollapsesWhitespaceAndTrims(): void
+    {
+        $this->user->setScreenName("  John \t\n  Doe  ");
+        $this->assertSame('John Doe', $this->user->getScreenName());
+    }
+
+    public function testSetScreenNameFallsBackToNamesWhenOnlyMarkup(): void
+    {
+        $this->user->setFirstname('Jane');
+        $this->user->setLastname('Roe');
+        $this->user->setScreenName('<br><hr>');
+        $this->assertSame('Jane Roe', $this->user->getScreenName());
+    }
+
+    public function testSetScreenNameFallbackCleansNamesToo(): void
+    {
+        $this->user->setFirstname('Jane<b></b>');
+        $this->user->setLastname('Roe');
+        $this->user->setScreenName(null);
+        $this->assertSame('Jane Roe', $this->user->getScreenName());
+    }
+
     // -------------------------------------------------------------------------
     // langueid
     // -------------------------------------------------------------------------
