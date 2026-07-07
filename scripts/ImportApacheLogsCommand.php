@@ -29,13 +29,6 @@ class ImportApacheLogsCommand extends Command
 {
     protected static $defaultName = 'stats:import-logs';
 
-    /** Apache combined-log patterns mapped to CONSULT type. */
-    private const PATTERNS = [
-        'notice'   => '/GET \/articles\/(\d+) HTTP/',
-        'file'     => '/GET \/articles\/(\d+)\/download HTTP/',
-        'file'     => '/GET \/articles\/(\d+)\/preview HTTP/',
-    ];
-
     private string $logsBasePath = '../logs/httpd';
 
     private ?ProgressBar $progressBar = null;
@@ -356,12 +349,12 @@ class ImportApacheLogsCommand extends Command
     /** Match a log line against article patterns; returns ['accessType', 'docId'] or null. */
     private function matchAccessPattern(string $line): ?array
     {
-        // notice pattern
-        if (preg_match('/GET \/articles\/(\d+) HTTP/', $line, $m)) {
+        // notice pattern (optional 2-letter language prefix, e.g. /fr/articles/123)
+        if (preg_match('#GET (?:/[a-z]{2})?/articles/(\d+) HTTP#', $line, $m)) {
             return ['accessType' => 'notice', 'docId' => $m[1]];
         }
         // file download or preview
-        if (preg_match('/GET \/articles\/(\d+)\/(?:download|preview) HTTP/', $line, $m)) {
+        if (preg_match('#GET (?:/[a-z]{2})?/articles/(\d+)/(?:download|preview) HTTP#', $line, $m)) {
             return ['accessType' => 'file', 'docId' => $m[1]];
         }
         return null;

@@ -253,9 +253,13 @@ class ImportApacheLogsCommandTest extends TestCase
     public static function provideMatchingLines(): array
     {
         return [
-            'notice'   => ['192.168.1.1 - - [01/Jan/2023:10:00:00 +0100] "GET /articles/123 HTTP/1.1" 200 1', 'notice', 123],
-            'download' => ['192.168.1.1 - - [01/Jan/2023:10:00:00 +0100] "GET /articles/456/download HTTP/1.1" 200 1', 'file', 456],
-            'preview'  => ['192.168.1.1 - - [01/Jan/2023:10:00:00 +0100] "GET /articles/789/preview HTTP/1.1" 200 1', 'file', 789],
+            'notice'         => ['192.168.1.1 - - [01/Jan/2023:10:00:00 +0100] "GET /articles/123 HTTP/1.1" 200 1', 'notice', 123],
+            'download'       => ['192.168.1.1 - - [01/Jan/2023:10:00:00 +0100] "GET /articles/456/download HTTP/1.1" 200 1', 'file', 456],
+            'preview'        => ['192.168.1.1 - - [01/Jan/2023:10:00:00 +0100] "GET /articles/789/preview HTTP/1.1" 200 1', 'file', 789],
+            'notice fr'      => ['192.168.1.1 - - [01/Jan/2023:10:00:00 +0100] "GET /fr/articles/123 HTTP/1.1" 200 1', 'notice', 123],
+            'notice en'      => ['192.168.1.1 - - [01/Jan/2023:10:00:00 +0100] "GET /en/articles/123 HTTP/1.1" 200 1', 'notice', 123],
+            'download fr'    => ['192.168.1.1 - - [01/Jan/2023:10:00:00 +0100] "GET /fr/articles/456/download HTTP/1.1" 200 1', 'file', 456],
+            'preview en'     => ['192.168.1.1 - - [01/Jan/2023:10:00:00 +0100] "GET /en/articles/789/preview HTTP/1.1" 200 1', 'file', 789],
         ];
     }
 
