@@ -69,6 +69,21 @@ $(document).ready(function ($) {
                 300
             );
         }
+
+        // Same idea for a single reviewer's rating panel (Bootstrap collapse, see
+        // partials/paper_reports.phtml) — e.g. linked from the activity timeline
+        // when a review has been completed
+        var ratingPanel = document.querySelector(window.location.hash + '.rating');
+        if (ratingPanel && !ratingPanel.classList.contains('in')) {
+            var ratingToggle = document.querySelector('[data-target="' + window.location.hash + '"]');
+            if (ratingToggle) {
+                ratingToggle.click();
+            }
+            var ratingPanelContainer = ratingPanel.closest('.panel');
+            if (ratingPanelContainer) {
+                ratingPanelContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
     }
 
     $('.collapse').on({
@@ -591,9 +606,9 @@ function activateTooltips(params = {}) {
     //params = params || {};
     params.container = params.container || 'body';
     params.placement = params.placement || 'bottom';
-    params.html = params.html || true;
-    params.show = params.show || 200;
-    params.hide = params.hide || 100;
+    params.html = params.html ?? true;
+    params.show = params.show ?? 200;
+    params.hide = params.hide ?? 100;
 
     $("[data-toggle~='tooltip']").tooltip({
         container: params.container,
@@ -948,7 +963,7 @@ function updateDeadlineTag(body, tagName, date, locale = 'en') {
  */
 function getObjectNameFromTinyMce(name) {
     let body = {};
-    if (tinymce) {
+    if (typeof tinymce !== 'undefined' && tinymce) {
         body = tinymce.get(name);
     }
     return body;
@@ -970,7 +985,7 @@ function ajaxRequest(url, jData, type = 'POST', dataType = null) {
     };
 
     if (dataType) {
-        params.datatype = dataType;
+        params.dataType = dataType;
     }
     return $.ajax(params);
 }

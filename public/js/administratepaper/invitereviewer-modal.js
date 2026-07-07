@@ -215,7 +215,6 @@ function submit() {
         $.ajax({
             url: $('#invitation-form').attr('action'),
             type: 'POST',
-            datatype: 'json',
             data: $('form').serialize(),
             success: function () {
                 // refresh reviewers list

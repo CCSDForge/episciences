@@ -5,7 +5,6 @@
  * Display: translated status label
  */
 ?>
-<?= $this->translate(' :') ?>
 <span class="log-status" aria-label="<?= $this->translate('Status') ?>">
-    <?= $this->status ?>
+    <?= ucfirst($this->status) ?>
 </span>

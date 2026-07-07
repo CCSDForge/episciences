@@ -58,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin paper list: removed redundant page description blockquote.
 - [#998](https://github.com/CCSDForge/episciences/issues/998) Improved COI declaration button labels: "Continue (No conflict of interest)" / "Stop (I have a conflict of interest)".
 - Modernized `Ccsd_Form_Filter_Clean` filter and `Ccsd_Form_Validate_NotSame` validator (introduced strict typing, comprehensive type hinting, and robust recursive array filtering for the `Clean` filter).
+- Display the Article status and Versions panels side by side in the paper administration view, and render the versions list as a condensed table.
 
 ### Performances
 
@@ -112,6 +113,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mailing lists: `v_mailing_lists_resolved` view now exposes `list_created_at` and `list_updated_at`.
 - Mailing lists: "Last updated" column displayed after "Name" in the dashboard table.
 - Mailing lists: creation date displayed (read-only) in the list edit form.
+- Fix an unterminated SQL string literal in `Episciences_User::filterUsers()` when filtering users without roles.
+- Fix history filter date popover sizing, correct jQuery UI datepicker positioning/z-index, and fix calendar-icon click interaction in the paper administration view.
+- Fix multiple bugs and potential XSS issues found during a public JavaScript audit (including strict tooltip option defaults, escaping regex patterns in search inputs, and removing incorrect JSON dataType requirements).
+- Improve `Episciences_Paper_FilesManager::syncFiles()`: generate unique self-link hashes to prevent database collisions when file links are empty or set to `#`, resolve argument order in file difference checking, and clean up paper file deletion logic.
 
 ### Deprecated
 
@@ -131,6 +136,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cleaned up and restructured CAS and MySQL authentication adapters (`Ccsd/Auth/Adapter/Mysql`, `Ccsd/Auth/Adapter/Cas`).
 - Removed obsolete, unused, and deprecated authentication adapters: `Asso`, `DbTable`, `Idp`, `Asso/Ext`, and `Orcid` (`Ccsd/Auth`).
 - Translated ACL and Auth comments to English and enforced strict typing on plugins.
+- Prevent potential XSS by HTML-escaping user metadata in the email autocomplete suggestions, and sanitize screen names at the source (cleaning tags, control characters, and whitespace).
 
 ## v1.0.55.3 - 2026-05-20
 
