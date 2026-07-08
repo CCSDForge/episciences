@@ -5608,6 +5608,14 @@ class Episciences_Paper
 
         $queue->send();
     }
+
+    public function isAllowedToEditMasterFile(): bool
+    {
+        return
+                Episciences_Auth::isSecretary() ||
+                $this->isOwner() ||
+                $this->isEditor(Episciences_Auth::getUid());
+    }
 }
 
 

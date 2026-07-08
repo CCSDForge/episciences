@@ -4446,17 +4446,19 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        $paper = Episciences_PapersManager::get($docId, false);
+        try {
+            $paper = Episciences_PapersManager::get($docId, false);
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return;
+        }
 
         if (!$paper) {
             $this->jsonEncodedResult($result);
             return;
         }
 
-        if (!Episciences_Auth::isSecretary()
-                && !$paper->isOwner()
-                && !$paper->isEditor(Episciences_Auth::getUid())
-        ) {
+        if (!$paper->isAllowedToEditMasterFile()) {
             $this->jsonEncodedResult($result);
             return;
         }
@@ -4464,15 +4466,13 @@ class PaperController extends PaperDefaultController
         // Retrieve the requested new master file ID
         $currentMasterFileId = (int) $request->getPost('master-file');
 
-
         if ($currentMasterFileId <= 0) {
             $this->jsonEncodedResult($result);
             return;
         }
 
         $targetFile  = Episciences_Paper_FilesManager::findById($currentMasterFileId);
-
-
+        
         if (!$targetFile || $targetFile->getDocId() !== $paper->getDocid()) {
             $this->jsonEncodedResult($result);
             return;
