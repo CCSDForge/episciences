@@ -29,8 +29,10 @@ $isAllowedToEditVersion = $currentPaper->getEditor($loggedUid) || $currentPaper-
             <?php if (Episciences_Auth::isAllowedToManagePaper()) : ?>
                 <?php // stopPropagation: the panel-heading itself toggles the collapse on click
                 // (see applyCollapse() in functions.js) — without it, following this link would
-                // also flip the panel open/closed right as the browser navigates away ?>
-                <a href="/activity/view?id=<?= $currentPaper->getDocid() ?>"
+                // also flip the panel open/closed right as the browser navigates away
+                $activityUrl = $this->url(['action' => 'view', 'controller' => 'activity', 'id' => $currentPaper->getDocid()]);
+                ?>
+                <a href="<?= $activityUrl ?>"
                    class="btn btn-default btn-xs panel-title-timeline-link"
                    onclick="event.stopPropagation()">
                     <i class="fa-solid fa-timeline" aria-hidden="true"></i>

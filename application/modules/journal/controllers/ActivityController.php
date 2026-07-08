@@ -47,7 +47,8 @@ class ActivityController extends PaperDefaultController
         if ($paper->isObsolete()) {
             // the timeline covers every version of the paper regardless of which docid it was opened from:
             // always redirect to the canonical, latest-version URL
-            $this->_helper->redirector->gotoUrl('/activity/view?id=' . $paper->getLatestVersionId());
+            $activityUrl = $this->_helper->url->url(['action' => 'view', 'controller' => 'activity', 'id' => $paper->getLatestVersionId()]);
+            $this->_helper->redirector->gotoUrl($activityUrl);
         }
 
         $this->checkPermissions($review, $paper);
