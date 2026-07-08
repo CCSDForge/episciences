@@ -2788,6 +2788,7 @@ class Episciences_PapersManager
                 'id' => $paper->getDocid()
             ]);
         $url = rtrim(APPLICATION_URL, '/') . '/' . ltrim($relativeUrl, '/');
+        $site = rtrim(APPLICATION_URL, '/');
 
         $defaultTags = [
             Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $contributor->getScreenName(),
