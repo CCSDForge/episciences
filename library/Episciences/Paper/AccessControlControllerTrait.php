@@ -126,7 +126,7 @@ trait Episciences_Paper_AccessControlControllerTrait
      */
     private function redirectWithFlashMessageIfConflictDetected(Episciences_Paper $paper, Episciences_Review $review): void
     {
-        $docId = $paper->getDocid();
+        $docId = (int) $paper->getDocid();
         $loggedUid = Episciences_Auth::getUid();
 
         $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
@@ -155,7 +155,7 @@ trait Episciences_Paper_AccessControlControllerTrait
 
 
                 $message .= $this->view->translate('Vous avez été redirigé, car vous ne pouvez pas gérer un article que vous avez vous-même déposé');
-                $url = '/paper/view?id=' . $docId;
+                $url = $this->url(['controller' => 'paper' , 'action' => 'view', 'id' => $docId]);
 
             } else {
 
@@ -198,8 +198,7 @@ trait Episciences_Paper_AccessControlControllerTrait
                 } else {
                     $message = $this->view->translate("Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission.");
                 }
-
-                $url = '/coi/report?id=' . $docId;
+                $url = $this->url(['controller' => 'coi' , 'action' => 'report', 'id' => $docId]);
 
             }
 
