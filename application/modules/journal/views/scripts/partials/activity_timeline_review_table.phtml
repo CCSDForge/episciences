@@ -82,7 +82,7 @@ $entryId = 'activity-review-table-' . $version;
                                             // via its #rating-{uid} anchor — auto-expanded, see public/js/functions.js).
                                             // Falls back to the paper's admin page for that version when the
                                             // reviewer's uid wasn't captured in this log entry's detail.
-                                            $reviewLink = '/administratepaper/view?id=' . $event['docid'];
+                                            $reviewLink = $this->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $event['docid']]);
                                             if (!empty($event['uid'])) {
                                                 $reviewLink .= '#rating-' . $event['uid'];
                                             }
@@ -95,7 +95,7 @@ $entryId = 'activity-review-table-' . $version;
                                             </a>
                                         <?php elseif (Episciences_Paper_Logger::hasDetailModal($column)) : ?>
                                             <a class="modal-opener"
-                                               href="/administratepaper/log?id=<?= $event['logid'] ?>"
+                                               href="<?= $this->url(['controller' => 'administratepaper', 'action' => 'log', 'id' => $event['logid']]) ?>"
                                                data-width="50%"
                                                data-hidesubmit="true"
                                                aria-label="<?= $this->translate('View details for') ?> <?= $this->escape($reviewer['name']) ?>">

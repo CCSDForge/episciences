@@ -28,7 +28,7 @@ $filterableCategories = [
 
 <div class="activity-page">
 
-    <a href="/administratepaper/view?id=<?= $paper->getDocid() ?>" class="activity-back-link">
+    <a href="<?= $this->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $paper->getDocid()]) ?>" class="activity-back-link">
         <span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span>
         <?= $this->translate("Retour à la gestion de l'article") ?>
     </a>

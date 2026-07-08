@@ -40,7 +40,7 @@ $pdfUrl = $this->pdfUrl;
                 </a>
             <?php endif; ?>
             <a class="btn btn-default btn-xs"
-               href="/administratepaper/view?id=<?= (int)$docId ?>"
+               href="<?= $this->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => (int)$docId]) ?>"
                aria-label="<?= $this->translate('Voir la page de gestion de cette version') ?>">
                 <span class="glyphicon glyphicon-new-window" aria-hidden="true"></span>
                 <?= $this->translate('Article') ?>

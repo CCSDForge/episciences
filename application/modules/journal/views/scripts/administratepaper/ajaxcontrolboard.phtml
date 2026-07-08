@@ -21,7 +21,7 @@ foreach ($this->papers as $i => $paper) {
             </a>';
 
     // paper title
-    $title = '<a 	href="/' . $controller . '/view?id=' . $paper->getDocid() . '"
+    $title = '<a 	href="' . $this->url(['controller' => $controller, 'action' => 'view', 'id' => $paper->getDocid()]) . '"
 					data-toggle="tooltip"
 					title="' . $paper->getTitle() . '">
 					<strong>' . Ccsd_Tools::truncate($paper->getTitle(), 75) . '</strong>';

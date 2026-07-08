@@ -37,7 +37,7 @@ class ActivityController extends PaperDefaultController
         if (!$paper || $paper->getRvid() !== RVID) {
             $actionName = Episciences_Auth::isAllowedToManagePaper() ? 'list' : 'assigned';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($this->view->translate(self::MSG_PAPER_DOES_NOT_EXIST));
-            $redirectUrl = $this->_helper->url->url(['action' => $actionName, 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER]);
+            $redirectUrl = $this->url(['action' => $actionName, 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER]);
             $this->_helper->redirector->gotoUrl($redirectUrl);
         }
 
@@ -47,7 +47,7 @@ class ActivityController extends PaperDefaultController
         if ($paper->isObsolete()) {
             // the timeline covers every version of the paper regardless of which docid it was opened from:
             // always redirect to the canonical, latest-version URL
-            $activityUrl = $this->_helper->url->url(['action' => 'view', 'controller' => 'activity', 'id' => $paper->getLatestVersionId()]);
+            $activityUrl = $this->url(['action' => 'view', 'controller' => 'activity', 'id' => $paper->getLatestVersionId()]);
             $this->_helper->redirector->gotoUrl($activityUrl);
         }
 

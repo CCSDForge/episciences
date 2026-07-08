@@ -52,7 +52,7 @@
 
                 <?php // article title ******************************************* ?>
                 <td>
-                    <a href="/<?php echo $controller ?>/view?id=<?php echo $paper->getDocid(); ?>">
+                    <a href="<?php echo $this->url(['controller' => $controller, 'action' => 'view', 'id' => $paper->getDocid()]); ?>">
                         <strong><?php echo Ccsd_Tools::truncate($paper->getTitle(), 75); ?></strong>
                         <?php if ($paper->getMetadata('version') != 1) : ?>
                             (v<?php echo $paper->getMetadata('version'); ?>)

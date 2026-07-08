@@ -178,7 +178,7 @@ class ReviewerController extends PaperDefaultController
 
             // declined invitation
             $this->decline($oInvitation, $assignment, $paper, $data);
-            $this->redirect('/');
+            $this->redirect($this->url(['controller' => 'index', 'action' => 'index']));
 
         }
     }

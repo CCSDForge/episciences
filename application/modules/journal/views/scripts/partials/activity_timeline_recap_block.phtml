@@ -67,7 +67,7 @@ $entryId = 'activity-recap-' . $category . '-' . $version;
                         <span style="font-size:1em" class="label label-status-<?= $itemStatusCode ?> activity-recap-block-status"><?= ucfirst($itemStatus) ?></span>
                     <?php elseif ($itemHasDetails) : ?>
                         <a class="activity-recap-block-status modal-opener"
-                           href="/administratepaper/log?id=<?= $log['LOGID'] ?>"
+                           href="<?= $this->url(['controller' => 'administratepaper', 'action' => 'log', 'id' => $log['LOGID']]) ?>"
                            data-width="50%"
                            data-hidesubmit="true"
                            aria-label="<?= $this->translate('View details for') ?> <?= $itemLabel ?>">
