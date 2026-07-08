@@ -340,7 +340,8 @@ class ActivityController extends PaperDefaultController
         }
 
         if ($versionPaper->getStatus() === Episciences_Paper::STATUS_PUBLISHED) {
-            return $this->pdfUrlCache[$docId] = '/paper/pdf?id=' . $docId;
+            $url = $this->url(['controller' => $docId, 'action' => 'pdf']);
+            return $this->pdfUrlCache[$docId] = $url;
         }
 
         return $this->pdfUrlCache[$docId] = $versionPaper->getMainPaperUrl();
