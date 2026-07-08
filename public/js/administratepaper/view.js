@@ -1384,21 +1384,13 @@ function getRevisionDeadlineForm(button, docId, commentId = null) {
             JS_PREFIX_URL + 'administratepaper/updaterevisiondeadline';
 
         $('form[action^="' + actionForm + '"]').on('submit', function () {
-                let $revisionDeadline = $('#revision-deadline');
-                // Traitement AJAX du formulaire
-                // The action returns a localized date as plain text, not JSON
+            let $revisionDeadline = $('#revision-deadline');
+            // Traitement AJAX du formulaire
+            // The action returns a localized date as plain text, not JSON
             let sRequest = ajaxRequest(
-                    '/administratepaper/updaterevisiondeadline',
-                    $(this).serialize() +
-                        '&docid=' +
-                        docId +
-                        '&pcid=' +
-                        commentId,
-                    'POST'
                 actionForm,
                 $(this).serialize() + '&docid=' + docId + '&pcid=' + commentId,
-                'POST',
-                'json'
+                'POST'
             );
             sRequest.done(function (response) {
                 // Destruction du popup
