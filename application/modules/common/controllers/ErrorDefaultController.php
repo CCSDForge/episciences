@@ -15,7 +15,9 @@ class ErrorDefaultController extends Episciences_Controller_Action
         if (!$errors || !$errors instanceof ArrayObject) {
             $this->view->message = $this->_getParam('error_message');
             $this->view->description = $this->_getParam('error_description');
-                       
+            if (in_array($this->view->message, ["Accès refusé", "Access denied", "Erreur d'authentification", "Erreur d'autorisation"])) {
+                $this->getResponse()->setHttpResponseCode(403);
+            }
             //return;
         } else {
         	
