@@ -340,6 +340,8 @@ class CommentsController extends PaperController
         }
 
         /** @var Zend_Controller_Request_Http $request */
+        // Defined before the try so it is still set if the form build throws below.
+        $form = null;
         try {
             $form = Episciences_CommentsManager::getEditAuthorCommentForm($oldComment);
             if (

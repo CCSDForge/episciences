@@ -2007,7 +2007,12 @@ class Episciences_Review
         ];
 
         foreach ($deadlines as $key => $unitKey) {
-            $allSettings[$key] = $this->getSetting($key) . ' ' . $this->getSetting($unitKey);
+            // Only combine value and unit when the deadline value is set, otherwise store
+            // '' rather than ' ' or ' weeks', which would break strtotime() downstream.
+            $value = trim((string)$this->getSetting($key));
+            $allSettings[$key] = ($value === '')
+                ? ''
+                : $value . ' ' . trim((string)$this->getSetting($unitKey));
         }
 
         // Publisher information
@@ -2034,18 +2039,21 @@ class Episciences_Review
         // Enregistrement des paramètres
         foreach ($allSettings as $setting => $value) {
             $setting = $this->_db->quote($setting);
-            if (is_array($value) && !empty($value)) {
+            // Encode every array, including an empty one, so [] is stored as '[]' rather
+            // than quoted to '' (which json_decode()s back to null on reload).
+            if (is_array($value)) {
                 $value = Zend_Json::encode($value);
             }
             $value = $this->_db->quote($value);
-            $values[] = '(' . $this->_rvid . ',' . $setting . ',' . $value . ')';
+            $values[] = '(' . (int)$this->_rvid . ',' . $setting . ',' . $value . ')';
         }
 
+        // MySQL 8.0.20+: VALUES() in ON DUPLICATE KEY UPDATE is deprecated; use a row alias.
         $sql = 'INSERT INTO ';
         $sql .= T_REVIEW_SETTINGS;
         $sql .= ' (RVID, SETTING, VALUE) VALUES ';
         $sql .= implode(',', $values);
-        $sql .= ' ON DUPLICATE KEY UPDATE VALUE = VALUES(VALUE)';
+        $sql .= ' AS new_row ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE';
 
         if (!$this->_db->getConnection()?->query($sql)) {
             return false;

@@ -2007,14 +2007,12 @@ class Episciences_Submit
             $value = $this->_db->quote($value);
             $values[] = '(' . $docId . ',' . $option . ',' . $value . ')';
         }
-
         $sql = 'INSERT INTO ' . T_PAPER_SETTINGS . ' (DOCID, SETTING, VALUE) VALUES ' . implode(',', $values);
 
         if (!$this->_db->query($sql)) {
             error_log('Failed to save ' . $suggestionType . ' for DOCID = ' . $docId);
             return false;
         }
-
         return true;
     }
 

@@ -7,6 +7,9 @@ class Episciences_VolumeProceeding
 
     private $_value = '';
 
+    /** @var Zend_Db_Adapter_Abstract|null */
+    private $_db;
+
 
 
     /**

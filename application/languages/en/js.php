@@ -302,4 +302,7 @@ return [
     'View on PubPeer'              => 'View on PubPeer',
     'Référence problématique détectée automatiquement'    => 'Detected problematic reference',
     'Références problématiques détectées automatiquement' => 'Automatically detected problematic references',
+
+    // Activity timeline filters
+    'activity_timeline_events_shown' => 'event(s) shown',
 ];

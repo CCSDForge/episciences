@@ -1705,7 +1705,7 @@ return array(
     "Vous avez suggéré de proposer la relecture à :" => "You suggested another reviewer:",
     "Commentaire :" => "Comment:",
 
-    "Vous avezdernière version choisi d'accepter de relire cet article" => "You've chosen to accept to review this article",
+    "Vous avez choisi d'accepter de relire cet article" => "You've chosen to accept to review this article",
     "Sous quels délais pensez-vous effectuer votre relecture ?" => "Can you give us an estimation of the time you need to review this article?",
     "jour(s)" => "day(s)",
     "semaine(s)" => "week(s)",
@@ -2022,7 +2022,7 @@ return array(
     "Si aucun rôle n'est sélectionné, la page sera publique" => 'If no role is selected, the page will be public',
     "Nombre de résultats par page" => "Number of results per page",
     "Photos des membres" => "Members' photos",
-    'Afficher', 'Show',
+    'Afficher' => 'Show',
     'Masquer' => 'Hide',
 
 
@@ -2094,7 +2094,7 @@ return array(
     "articles en attente d'éclaircissements" => 'articles waiting for clarifications',
 
     "article accepté" => 'accepted article',
-    "articles acceptés non publiés" => 'accepted but unpublished articles',
+    "articles acceptés" => 'accepted articles',
     "article soumis" => 'submitted article',
     "articles soumis" => 'submitted articles',
     "article proposé" => 'submitted article',
@@ -2514,6 +2514,7 @@ return array(
     'Descripteurs de logiciel' => 'Software descriptors',
     "File 'file_data_descriptor' was not uploaded" => "Descriptor file not downloaded.",
     "La version que vous essayez d'envoyer existe déjà." => "The version you are trying to send already exists.",
+    'unavailable' => 'Unavailable',
 
     // Volume settings
     "Autoriser l'affichage des volumes vides" => "Allow displaying empty volumes",
@@ -2523,6 +2524,24 @@ return array(
     "Afficher les volumes secondaires sur la page publique de l'article" => "Display secondary volumes on the public article page",
     "Si activé, les volumes secondaires seront visibles sur la page publique de l'article" => "If enabled, secondary volumes will be visible on the public article page",
     "Volumes secondaires: " => "Secondary volumes: ",
+
+    // Activity timeline (ActivityController)
+    "Activité" => "Activity",
+    "Activité de l'article" => "Article activity",
+    "Retour à la gestion de l'article" => "Back to article management",
+    "Filtrer les événements de la timeline" => "Filter timeline events",
+    "Timeline de publication" => "Publication timeline",
+    "Récapitulatif des relecteurs pour cette version" => "Reviewer recap for this version",
+    "État actuel" => "Current status",
+    "Soumission & versions" => "Submission & versions",
+    "Processus éditorial" => "Editorial workflow",
+    "Messages & notifications" => "Messages & notifications",
+    "Voir la timeline complète" => "View the full timeline",
+    "Voir la relecture de" => "View the review by",
+    "Voir le rapport de relecture" => "View the review report",
+    "PDF" => "PDF",
+    "Voir le PDF de cette version" => "View the PDF of this version",
+    "Voir la page de gestion de cette version" => "View the management page for this version",
      // Website > menu
     'Choisissez une page' => 'Select a page',
     'unavailable' => 'Unavailable'

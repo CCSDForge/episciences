@@ -1688,7 +1688,7 @@ class PaperController extends PaperDefaultController
                 self::CONTROLLER => 'reviewer',
                 self::ACTION => 'invitation',
                 'id' => $oInvitation->getId()]);
-            $invitation_url = self::buildBaseUrl() . $invitation_url;
+            $invitation_url = APPLICATION_URL . $invitation_url;
 
             // update assignment with invitation_id
             $oAssignment->setInvitation_id($oInvitation->getId());

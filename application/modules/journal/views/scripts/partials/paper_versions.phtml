@@ -20,7 +20,24 @@ $isAllowedToEditVersion = $currentPaper->getEditor($loggedUid) || $currentPaper-
 </style>
 <div id="versions" class="panel panel-default collapsable">
     <div class="panel-heading">
-        <h2 class="panel-title"><?= $this->translate('Versions') ?></h2>
+        <h2 class="panel-title">
+            <?= $this->translate('Versions') ?>
+            <?php // the activity timeline is only ACL-allowed for guest_editor/editor/secretary
+            // (see acl.ini's activity-view resource) — this partial is also rendered on the
+            // public paper/view page for reviewers/authors, who must not see a link they'd be
+            // denied access to ?>
+            <?php if (Episciences_Auth::isAllowedToManagePaper()) : ?>
+                <?php // stopPropagation: the panel-heading itself toggles the collapse on click
+                // (see applyCollapse() in functions.js) — without it, following this link would
+                // also flip the panel open/closed right as the browser navigates away ?>
+                <a href="/activity/view?id=<?= $currentPaper->getDocid() ?>"
+                   class="btn btn-default btn-xs panel-title-timeline-link"
+                   onclick="event.stopPropagation()">
+                    <i class="fa-solid fa-timeline" aria-hidden="true"></i>
+                    <?= $this->translate('Voir la timeline complète') ?>
+                </a>
+            <?php endif; ?>
+        </h2>
     </div>
     <div class="panel-body in" style="overflow: visible; padding: 5px 0;">
         <table class="table table-condensed versions-table" style="margin-bottom: 0;">
