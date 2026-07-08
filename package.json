@@ -29,7 +29,7 @@
     "webpack-notifier": "^1.15.0",
     "yarn-upgrade-all": "^0.8.1"
   },
-  "packageManager": "yarn@4.16.0",
+  "packageManager": "yarn@4.17.0",
   "resolutions": {
     "find-up": "5.0.0",
     "fast-uri": "^3.1.1",
