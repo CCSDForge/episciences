@@ -356,7 +356,18 @@ if ($this->citations !== '') {
 <?php // history ***************************************************** ?>
     <div id="history" class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Historique'); ?></h2>
+            <h2 class="panel-title">
+                <?php echo $this->translate('Historique'); ?>
+                <?php // stopPropagation: the panel-heading itself toggles the collapse on click
+                // (see applyCollapse() in functions.js) — without it, following this link would
+                // also flip the panel open/closed right as the browser navigates away ?>
+                <a href="/activity/view?id=<?= $paper->getDocid() ?>"
+                   class="btn btn-default btn-xs panel-title-timeline-link"
+                   onclick="event.stopPropagation()">
+                    <i class="fa-solid fa-timeline" aria-hidden="true"></i>
+                    <?= $this->translate('Voir la timeline complète') ?>
+                </a>
+            </h2>
         </div>
         <div class="panel-body in" style="overflow: visible">
             <?php echo $this->partial('partials/paper_history.phtml', ['docid' => $paper->getDocid(), 'logs' => $this->logs]); ?>

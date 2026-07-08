@@ -47,7 +47,7 @@ class Episciences_Volume_DoiQueueManager
                 $resInsert = $result->rowCount();
             } catch (Exception $e) {
                 error_log($e->getMessage());
-                error_log('Error adding DOI request queue for VolumeId ' . $doiQueueVolume->getVolumeId() . ' status ' . $doiQueueVolume->getDoi_status());
+                error_log('Error adding DOI request queue for VolumeId ' . $doiQueueVolume->getVid() . ' status ' . $doiQueueVolume->getDoi_status());
                 $resInsert = 0;
             }
         }

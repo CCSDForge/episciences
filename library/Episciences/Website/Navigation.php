@@ -150,7 +150,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     public function save()
     {
         // Suppression de l'ancien menu
-        $this->_db->delete($this->_table, 'SID = ' . $this->_sid);
+        $this->_db->delete($this->_table, 'SID = ' . (int)$this->_sid);
 
         $lang = [];
         $pageIdCounter = 1;
@@ -286,7 +286,9 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         //Liste des permaliens
         $permaliens = [];
         foreach ($this->_pages as $p) {
-            if ($p->isCustom() && $p != $page) {
+            // isCustom() is defined on Episciences_Website_Navigation_Page, not on the
+            // Ccsd_* base: guard against a page type that inherits directly from it.
+            if (method_exists($p, 'isCustom') && $p->isCustom() && $p != $page) {
                 $permaliens[] = $p->getPermalien();
             }
         }

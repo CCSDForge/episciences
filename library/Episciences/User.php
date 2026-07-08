@@ -158,8 +158,8 @@ class Episciences_User extends Ccsd_User_Models_User
 
         if ($everywhere) {
             // Supprime son compte ES et ses rôles pour toutes les revues
-            $db->delete(T_USER_ROLES, 'UID = ' . $uid);
-            $db->delete(T_USERS, 'UID = ' . $uid);
+            $db->delete(T_USER_ROLES, 'UID = ' . (int)$uid);
+            $db->delete(T_USERS, 'UID = ' . (int)$uid);
 
             // Désactive toutes ses assignations (relecture, édition) pour toutes les revues
             $db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
@@ -222,7 +222,7 @@ class Episciences_User extends Ccsd_User_Models_User
     public static function deleteFromCAS($uid)
     {
         $db = Ccsd_Db_Adapter_Cas::getAdapter();
-        return $db->delete(T_CAS_USERS, 'UID = ' . $uid);
+        return $db->delete(T_CAS_USERS, 'UID = ' . (int)$uid);
     }
 
     // Retourne les droits de l'utilisateur (pour toutes les revues / portails)
@@ -250,11 +250,13 @@ class Episciences_User extends Ccsd_User_Models_User
             $select = $casDb->select()->from(T_CAS_USERS)->where('UID IN (?)', array_keys($users))->order('LASTNAME');
 
             $where = '(';
-            foreach ($keywords as $key => $keyword) {
+            $isFirstKeyword = true;
+            foreach ($keywords as $keyword) {
                 if (!empty($keyword)) {
-                    if ($key > 0) {
+                    if (!$isFirstKeyword) {
                         $where .= ' AND ';
                     }
+                    $isFirstKeyword = false;
                     $where .= '(';
                     $where .= $casDb->quoteInto('FIRSTNAME LIKE ? OR ', '%' . $keyword . '%');
                     $where .= $casDb->quoteInto('LASTNAME LIKE ?', '%' . $keyword . '%');
@@ -1159,11 +1161,17 @@ class Episciences_User extends Ccsd_User_Models_User
 
         foreach ($roles as $roleId) {
             $roleId = $this->_db->quote($roleId);
-            $values[] = '(' . $uid . ',' . $rvId . ',' . $roleId . ')';
+            $values[] = '(' . (int)$uid . ',' . (int)$rvId . ',' . $roleId . ')';
 
         }
 
-        $sql = sprintf('INSERT INTO %s (UID, RVID, ROLEID) VALUES %s ON DUPLICATE KEY UPDATE ROLEID = VALUES(ROLEID)', T_USER_ROLES, implode(',', $values));
+        // No roles: skip instead of emitting "VALUES " with no tuple (SQL syntax error).
+        if (empty($values)) {
+            return false;
+        }
+
+        // MySQL 8.0.20+: VALUES() in ON DUPLICATE KEY UPDATE is deprecated; use a row alias.
+        $sql = sprintf('INSERT INTO %s (UID, RVID, ROLEID) VALUES %s AS new_row ON DUPLICATE KEY UPDATE ROLEID = new_row.ROLEID', T_USER_ROLES, implode(',', $values));
 
         if (!$db->getConnection()->query($sql)) {
             trigger_error(sprintf('Failed to execute SQL query: %s', $sql));

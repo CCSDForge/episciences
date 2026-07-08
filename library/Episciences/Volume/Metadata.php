@@ -327,7 +327,9 @@ class Episciences_Volume_Metadata
                         unlink($item['path']);
                     }
                 } else {
-                    $path = REVIEW_FILES_PATH . 'volumes/' . $this->getVid() . '/';
+                    // Files are stored under REVIEW_PUBLIC_PATH (see save() and getFilePath());
+                    // deleting from REVIEW_FILES_PATH silently missed them and leaked the file.
+                    $path = REVIEW_PUBLIC_PATH . 'volumes/' . $this->getVid() . '/';
                     if (file_exists($path . $item['name'])) {
                         unlink($path . $item['name']);
                     }
@@ -345,6 +347,7 @@ class Episciences_Volume_Metadata
             ];
         } catch (JsonException $e) {
             trigger_error($e->getMessage());
+            return false;
         }
         $values['VID'] = $this->getVid();
 

@@ -17,7 +17,7 @@ class Uploader
 
     private array|string $uploadDir;
     private array $info = [];
-    private ?Logger $logger;
+    private ?Logger $logger = null;
 
 
     public function __construct(array|string $uploadDirs)
