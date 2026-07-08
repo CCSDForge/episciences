@@ -59,11 +59,11 @@ $isAllowedToEditVersion = $currentPaper->getEditor($loggedUid) || $currentPaper-
                             <a class="btn btn-default btn-xs" role="button" title="<?= $this->translate('Modifier') ?>" aria-label="<?= $this->translate('Modifier') ?>"
                                onclick="getVersionEditingForm(this, <?= $docId ?>)"><i class="fas fa-edit" aria-hidden="true"></i></a>
                         <?php endif; ?>
-                        <?php if($paper->isTmp()) : ?><span class="label label-status-0"><?= $this->translate('temporaire')?></span><?php endif; ?>
+                        <?php if($paper->isTmp()) : ?><span class="badge text-bg-light"><?= $this->translate('temporaire')?></span><?php endif; ?>
                     </td>
                     <td class="text-left" style="vertical-align: middle; white-space: nowrap; border-top-color: #eee; padding-right: 15px;">
                         <?php $sourceMsg = (!$paper->isImported()) ? $this->translate('Soumise le : ') : $this->translate('Importée le : ') ?>
-                        <span class="label label-status-0"><?= $sourceMsg . Episciences_View_Helper_Date::Date($paper->getWhen()) ?></span>
+                        <span class="badge text-bg-light"><?= $sourceMsg . Episciences_View_Helper_Date::Date($paper->getWhen()) ?></span>
                     </td>
                 </tr>
             <?php endforeach; ?>
