@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+- For submissions containing multiple PDF files, it is now possible to designate the main file. This is the file that will appear in previews on public websites.
 
 - Migration of captcha system (hCaptcha/reCAPTCHA) to a self-hosted, privacy-friendly solution: **ALTCHA** (utilizing the Argon2id PoW algorithm and bundled via Webpack).
 - Export journal ISSN as `dc:identifier` (`urn:ISSN:...`) in OAI-PMH ListSets.

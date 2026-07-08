@@ -35,6 +35,8 @@ class Episciences_Paper_File
     protected $_selfLink;
     protected int $_source;
 
+    protected bool $_isMain = false;
+
     /** @var DateTime */
     protected $_timeModified = 'CURRENT_TIMESTAMP';
 
@@ -286,6 +288,40 @@ class Episciences_Paper_File
     public function getDownloadLike(): ?string
     {
         return $this->_downloadLike;
+    }
+
+    public function isIsMain(): bool
+    {
+        return $this->_isMain;
+    }
+
+    public function setIsMain(bool $isMain = false): self
+    {
+        $this->_isMain = $isMain;
+        return $this;
+    }
+
+
+
+    public function save(): int
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $affectedRows = 0;
+        $values[] = '(' . $db->quote($this->getDocId()) . ',' . $db->quote($this->getSource()) . ',' . $db->quote($this->getFileName()) . ',' . $db->quote($this->getChecksum()) . ',' . $db->quote($this->getChecksumType()) . ',' . $db->quote($this->getSelfLink()) . ',' . $db->quote($this->getFileSize()) . ',' . $db->quote($this->getFileType()) . ',' .  $db->quote($this->isIsMain()) . ')';
+        $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_PAPER_FILES) . ' (`doc_id`, `source`, `file_name`, `checksum`, `checksum_type`, `self_link`, `file_size`, `file_type`,`is_main`) VALUES ';
+        $sql .= implode(', ', $values);
+        $sql .= ' AS new_file ON DUPLICATE KEY UPDATE `file_size` = new_file.file_size, `checksum` = new_file.checksum, `checksum_type` = new_file.checksum_type, `file_type` = new_file.file_type, `file_name` = new_file.file_name, is_main = new_file.is_main';
+        try {
+            //Prepares and executes an SQL
+            /** @var Zend_Db_Statement_Interface $result */
+            $result = $db->query($sql);
+            $affectedRows = $result->rowCount();
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_ERROR);
+        }
+
+        return $affectedRows;
+
     }
 
 }

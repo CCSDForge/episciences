@@ -46,6 +46,7 @@ return array(
     'Taux' => 'Rates',
 
     "Relecteur" => array("Reviewer", "Reviewers"),
+    'Sélectionner un fichier' => 'Select a file',
     // DOCUMENT TYPES
     'article' => array('article', 'articles'),
     'Article' => 'Article',
@@ -463,6 +464,9 @@ return array(
     "Référence bibliographique du volume" => "Volume's bibliographical reference",
     "Si le papier est retiré du volume cela n'entraîne pas le réordonnancement automatique des autres articles." => "If the article is removed from the volume this does not cause the other articles to be reordered automatically.",
     "Il est toujours possible de modifier cet ordre manuellement via l'édition du volume." => "It is always possible to change this order manually by editing the volume.",
+    "Opter pour un autre fichier principal" => "Opt for a different primary file",
+    'Fichier principal' => "Primary file",
+    "Aucun fichier PDF n'est joint à ce dépôt." => "No PDF file is attached to this submission.",
     // proceedings
     "Nom de la conférence" => 'Conference title',
     "Thème de la conférence" => "Conference theme",

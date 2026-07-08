@@ -1,1 +1,2 @@
- ALTER TABLE `episciences`.`paper_files` ADD UNIQUE `unique_docid_self_link` (`doc_id`, `self_link`);
+ ALTER TABLE `paper_files` ADD UNIQUE `unique_docid_self_link` (`doc_id`, `self_link`);
+ ALTER TABLE `paper_files` ADD `is_main` BOOLEAN NOT NULL DEFAULT FALSE  COMMENT 'Indicates that this is the main file ' AFTER `file_type`, ADD INDEX `is_main_index` (`is_main`);

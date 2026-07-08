@@ -4390,4 +4390,118 @@ class PaperController extends PaperDefaultController
 
         return null;
     }
+
+
+    /**
+     * @return void
+     * @throws Zend_Controller_Response_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+
+    public function getmasterfileformAction(): void
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $docId = $request->getPost('docid');
+
+        if (!$docId) {
+            return;
+        }
+
+        $paper = Episciences_PapersManager::get($docId, false);
+
+        if (!$paper instanceof Episciences_Paper) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
+        $this->_helper->layout->disableLayout();
+        $this->view->docId = $paper->getDocid();
+        $this->view->masterFile = Episciences_Paper_FilesManager::getMainFile($paper->getDocid());
+        $this->renderScript('paper/edit-master-file-form.phtml');
+    }
+
+    public function savemasterfileAction(): void
+    {
+        // Disable layout & view rendering
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        header('Content-Type: application/json; charset=utf-8');
+        $result = ['success' => false];
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        // Only accept POST + AJAX
+        if (!$request->isPost() || !$request->isXmlHttpRequest()) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        $docId = (int) ($request->getPost('docid') ?: $request->getParam('docid'));
+
+        if ($docId <= 0) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        $paper = Episciences_PapersManager::get($docId, false);
+
+        if (!$paper) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        if (!Episciences_Auth::isSecretary()
+                && !$paper->isOwner()
+                && !$paper->isEditor(Episciences_Auth::getUid())
+        ) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        // Retrieve the requested new master file ID
+        $currentMasterFileId = (int) $request->getPost('master-file');
+
+
+        if ($currentMasterFileId <= 0) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        $targetFile  = Episciences_Paper_FilesManager::findById($currentMasterFileId);
+
+
+        if (!$targetFile || $targetFile->getDocId() !== $paper->getDocid()) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        // Check if the master file is already the active one
+        $previousMasterFile = Episciences_Paper_FilesManager::getMainFile($paper->getDocid(), true);
+
+        if ($previousMasterFile && $previousMasterFile->getId() === $targetFile->getId()) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        $previousMasterFile?->setIsMain();
+        $targetFile->setIsMain(true);
+        $result['success'] = $targetFile->save() > 0;
+        $result['targetId'] = $targetFile->getId();
+        $this->jsonEncodedResult($result);
+    }
+
+
+    private function jsonEncodedResult(array $result): void
+    {
+
+        try {
+            echo json_encode($result, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            echo Zend_Json::encode($result);
+        }
+    }
 }
