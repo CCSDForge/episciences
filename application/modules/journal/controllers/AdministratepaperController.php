@@ -1884,7 +1884,7 @@ class AdministratepaperController extends PaperDefaultController
             $post = $request->getPost();
             if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
                 $csrfSession->hash = null;
-                $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $docId]));
                 return;
             }
             $csrfSession->hash = null;
@@ -2074,7 +2074,7 @@ class AdministratepaperController extends PaperDefaultController
             $post = $request->getPost();
             if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
                 $csrfSession->hash = null;
-                $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $docId]));
                 return;
             }
             $csrfSession->hash = null;
@@ -2161,7 +2161,7 @@ class AdministratepaperController extends PaperDefaultController
             $post = $request->getPost();
             if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
                 $csrfSession->hash = null;
-                $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $docId]));
                 return;
             }
             $csrfSession->hash = null;
@@ -4691,7 +4691,7 @@ class AdministratepaperController extends PaperDefaultController
             $post = $request->getPost();
             if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
                 $csrfSession->hash = null;
-                $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
+                $this->_helper->redirector->gotoUrl($this->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $docId]));
                 return;
             }
             $csrfSession->hash = null;

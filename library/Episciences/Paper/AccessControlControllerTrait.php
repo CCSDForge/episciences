@@ -9,7 +9,7 @@
  * - Must extend PaperDefaultController (provides ADMINISTRATE_PAPER_CONTROLLER)
  * - Must have access to $this->_helper->FlashMessenger
  * - Must have access to $this->_helper->redirector
- * - Must have access to $this->_helper->url
+ * - Must have access to $this->url() (Episciences_Controller_Action override)
  * - Must have access to $this->view
  * - Must have access to $this->getRequest()
  */
@@ -36,7 +36,7 @@ trait Episciences_Paper_AccessControlControllerTrait
         if (!empty($redirection) && array_key_exists('message', $redirection)) {
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($redirection['message']);
             // redirect target is always the editor's assigned papers list, regardless of the caller
-            $this->_helper->redirector->gotoUrl($this->_helper->url('assigned', self::ADMINISTRATE_PAPER_CONTROLLER, null, $params));
+            $this->_helper->redirector->gotoUrl($this->url(array_merge(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'assigned'], $params)));
         }
 
         return empty($redirection);
