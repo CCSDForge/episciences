@@ -528,7 +528,7 @@ class AdministratepaperController extends PaperDefaultController
         $params = $request->getPost();
         $docId = $params['docid'];
 
-        $paper = Episciences_PapersManager::get($docId);
+        $paper = Episciences_PapersManager::get($docId, false);
 
         $review = Episciences_ReviewsManager::find(RVID);
         $volumes = $review->getVolumes();
@@ -553,7 +553,7 @@ class AdministratepaperController extends PaperDefaultController
         $params = $request->getPost();
         $docId = $params['docid'];
 
-        $paper = Episciences_PapersManager::get($docId);
+        $paper = Episciences_PapersManager::get($docId, false);
         $paper->loadOtherVolumes();
 
         // fetch paper secondary volumes
