@@ -37,9 +37,9 @@ class ActivityController extends PaperDefaultController
         if (!$paper || $paper->getRvid() !== RVID) {
             $actionName = Episciences_Auth::isAllowedToManagePaper() ? 'list' : 'assigned';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($this->view->translate(self::MSG_PAPER_DOES_NOT_EXIST));
-            $this->_helper->redirector->gotoUrl('/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/' . $actionName);
+            $redirectUrl = $this->_helper->url->url(['action' => $actionName, 'controller' => self::ADMINISTRATE_PAPER_CONTROLLER]);
+            $this->_helper->redirector->gotoUrl($redirectUrl);
         }
-        $docId = $paper->getDocid();
 
         $this->redirectWithFlashMessageIfPaperIsRemovedOrDeleted($paper, false);
         $this->redirectWithFlashMessageIfConflictDetected($paper, $review);
