@@ -18,6 +18,8 @@ const editMasterFileJsSource = fs.readFileSync(
     'utf8'
 );
 
+global.JS_PREFIX_URL = '/';
+
 /**
  * A tiny jQuery-alike backed by real jsdom nodes — just enough of the API
  * surface (find/first/closest/remove/after/css/attr/popover/off/on/serialize)
