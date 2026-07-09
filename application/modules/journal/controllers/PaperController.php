@@ -4415,6 +4415,10 @@ class PaperController extends PaperDefaultController
             return;
         }
 
+        if (!$paper->isAllowedToEditMasterFile()) {
+            return;
+        }
+
         $this->_helper->layout->disableLayout();
         $this->view->docId = $paper->getDocid();
         $this->view->masterFile = Episciences_Paper_FilesManager::getMainFile($paper->getDocid());

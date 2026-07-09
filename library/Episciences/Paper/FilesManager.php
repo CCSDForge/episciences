@@ -433,6 +433,9 @@ class Episciences_Paper_FilesManager
         $query = self::findByDocIdQuery($docId)
                 ->where('is_main = ?', self::IS_MAIN);
 
+        // A precaution in case there are multiple files where "is_main" is set to "true"; in that case, we use the most recently modified one.
+        $query->order('time_modified DESC');
+
         $result = $db->fetchRow($query);
 
         if ($strict) {
