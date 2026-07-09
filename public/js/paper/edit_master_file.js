@@ -12,8 +12,8 @@ function getMasterFileForm(button, docId) {
     const $button = $(button);
     const masterFileEp = {
         ENDPOINTS: {
-            GET_FORM: '/paper/getmasterfileform',
-            SAVE_FILE: '/paper/savemasterfile'
+            GET_FORM:  JS_PREFIX_URL + 'paper/getmasterfileform',
+            SAVE_FILE: JS_PREFIX_URL + 'paper/savemasterfile'
         }
     };
 
@@ -52,8 +52,10 @@ function getMasterFileForm(button, docId) {
         // Store reference to close later
         openedPopover = docId;
 
+        const actionStr = masterFileEp.ENDPOINTS.SAVE_FILE;
+
         // Find the form INSIDE the popover only
-        const $formInPopover = $('.popover-content').find('form[action^="/paper/savemasterfile"]');
+        const $formInPopover = $('.popover-content').find('form[action^="' + actionStr + '"]');
 
         // Unbind previous handlers before adding new ones
         $formInPopover.off('submit');
@@ -61,7 +63,7 @@ function getMasterFileForm(button, docId) {
         $formInPopover.on('submit', function (e) {
             e.preventDefault();  // Prevent default form submission
 
-            const actionStr = masterFileEp.ENDPOINTS.SAVE_FILE;
+
             const $loaderContainer = $('#in-progress');
 
             // Show loader

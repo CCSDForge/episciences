@@ -22,7 +22,7 @@ $masterFileSelect = $this->masterFileFormSelect(
 <?php else: ?>
 
     <div style="width: 400px">
-        <form action="/paper/savemasterfile" id="master-file-form-<?= $this->docId ?>"
+        <form action="<?= $url = $this->url(['controller' => 'paper', 'action' => 'savemasterfile'])?>" id="master-file-form-<?= $this->docId ?>"
               style="height : 34px;">
 
             <div class="pull-right" style="padding-left : 10px;">
