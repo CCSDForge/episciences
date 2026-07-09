@@ -485,7 +485,9 @@ function getReviewerMenu(button) {
     if (canBeReviewed && (status === 'pending' || status === 'expired')) {
         content += '<li>';
         content +=
-            '<a class="modal-opener" href="/administratepaper/acceptreviewerinvitation/aid/' +
+            '<a class="modal-opener" href="' +
+            JS_PREFIX_URL +
+            'administratepaper/acceptreviewerinvitation/aid/' +
             aid +
             '" ';
         content += 'data-width="50%" ';
@@ -638,7 +640,9 @@ function getUserMenu(button) {
 
     content += '<li>';
     content +=
-        '<a class="modal-opener" href="/administratemail/send/recipient/' +
+        '<a class="modal-opener" href="' +
+        JS_PREFIX_URL +
+        'administratemail/send/recipient/' +
         uid +
         '/paper/' +
         docid +
