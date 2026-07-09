@@ -2,6 +2,7 @@
 
 class Episciences_Paper_FilesManager
 {
+    public const IS_MAIN = 1;
     /**
      * @param int $docId
      * @param string $fetch
@@ -414,6 +415,76 @@ class Episciences_Paper_FilesManager
         ];
 
         return $db->update(T_PAPER_FILES, $data, $where);
+    }
+
+    /**
+     * Returns the file designated as the main file
+     * @param int $docId
+     * @param bool $strict
+     * @return Episciences_Paper_File|null
+     */
+
+    public static function getMainFile(int $docId, bool $strict = false): ?Episciences_Paper_File
+    {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        // Retrieve the main file if it is flagged
+        $query = self::findByDocIdQuery($docId)
+                ->where('is_main = ?', self::IS_MAIN);
+
+        // A precaution in case there are multiple files where "is_main" is set to "true"; in that case, we use the most recently modified one.
+        $query->order('time_modified DESC');
+
+        $result = $db->fetchRow($query);
+
+        if ($strict) {
+            return !empty($result) ? new Episciences_Paper_File($result) : null;
+        }
+
+
+        //  Retrieve the largest PDF available
+        if (empty($result)) {
+            $query = self::findByDocIdQuery($docId) // New query to avoid the accumulation of WHERE clauses
+            ->where('file_type = ?', 'pdf')
+                    ->order('file_size DESC');
+
+            $result = $db->fetchRow($query);
+
+            if (empty($result)) {
+                return null;
+            }
+        }
+
+        return new Episciences_Paper_File($result);
+
+    }
+
+    public static function findByType(int $docId, string $type = 'pdf'): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $sql = self::findByDocIdQuery($docId)->where('file_type = ?', $type);
+        $rows = $db->fetchAssoc($sql);
+        return self::toArrayObject($rows);
+    }
+
+    public static function findById(int $id): ?Episciences_Paper_File
+    {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $sql = $db?->select()
+                ->from(T_PAPER_FILES)
+                ->where('id = ?', $id);
+
+        $result = $db->fetchRow($sql);
+
+        if (empty($result)) {
+            return null;
+        }
+
+        return new Episciences_Paper_File($result);
+
     }
 
 }
