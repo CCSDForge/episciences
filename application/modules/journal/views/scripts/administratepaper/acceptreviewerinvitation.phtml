@@ -13,7 +13,7 @@ $email = (string)$this->reviewerEmail;
 $mode = (string)$this->accountMode; // 'attach' | 'create'
 $login = (string)$this->accountLogin;
 
-$action = '/administratepaper/saveacceptreviewerinvitation?aid=' . $aid . '&docid=' . $docId;
+$action = $this->url(['controller' => 'administratepaper', 'action' => 'saveacceptreviewerinvitation', ['aid' => $aid, 'docid'=> $docId]]);
 ?>
 
 <style>
