@@ -4486,7 +4486,11 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        $previousMasterFile?->setIsMain();
+        if ($previousMasterFile){
+            $previousMasterFile->setIsMain();
+            $previousMasterFile->save();
+        }
+
         $targetFile->setIsMain(true);
         $result['success'] = $targetFile->save() > 0;
         $result['targetId'] = $targetFile->getId();
