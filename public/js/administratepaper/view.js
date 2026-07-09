@@ -695,7 +695,7 @@ function cancel() {
  * @param docId
  */
 function getPublicationDateForm(button, docId) {
-    let request = getCommunForm(
+    let request = getCommonForm(
         button,
         docId,
         JS_PREFIX_URL + 'administratepaper/publicationdateform'
@@ -809,7 +809,7 @@ function getDoiForm(
     docId,
     url = JS_PREFIX_URL + 'administratepaper/doiform'
 ) {
-    const jqxhr = getCommunForm(button, docId, url);
+    const jqxhr = getCommonForm(button, docId, url);
     if (jqxhr === false) {
         return;
     }
@@ -1079,7 +1079,7 @@ function editAttachmentDescription(target) {
  */
 
 function getVersionEditingForm(button, docId) {
-    let request = getCommunForm(
+    let request = getCommonForm(
         button,
         docId,
         JS_PREFIX_URL + 'administratepaper/latestversioneditingform'
@@ -1312,7 +1312,7 @@ function removeCoAuthor(docId, uid, rvid) {
 }
 
 function getRevisionDeadlineForm(button, docId, commentId = null) {
-    let request = getCommunForm(
+    let request = getCommonForm(
         button,
         docId,
         JS_PREFIX_URL + 'administratepaper/revisiondeadlineform'
