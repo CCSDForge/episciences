@@ -1,5 +1,3 @@
-var openedPopover = null;
-
 function getTags() {
     let paper_title = '';
 
@@ -664,59 +662,7 @@ function cancel() {
     $('#change-status-group').fadeIn();
 }
 
-/**
- *
- * @param button
- * @param docId
- * @param url
- * @param popoverParams
- * @returns {boolean|*}
- */
-function getCommunForm(
-    button,
-    docId,
-    url = '/administratepaper/doiform',
-    popoverParams = {}
-) {
-    const defaultParams = {
-        placement: 'bottom',
-        container: 'body',
-        html: true,
-        content: getLoader(),
-    };
 
-    if (typeof popoverParams.placement === 'undefined') {
-        popoverParams.placement = defaultParams.placement;
-    }
-
-    if (typeof popoverParams.container === 'undefined') {
-        popoverParams.container = defaultParams.container;
-    }
-
-    if (typeof popoverParams.html === 'undefined') {
-        popoverParams.html = defaultParams.html;
-    }
-
-    if (typeof popoverParams.content === 'undefined') {
-        popoverParams.content = defaultParams.content;
-    }
-
-    // Destruction des anciens popups
-    $(button).popover('destroy');
-
-    // Toggle : est-ce qu'on ouvre ou est-ce qu'on ferme le popup ?
-    if (openedPopover && openedPopover == docId) {
-        openedPopover = null;
-        return false;
-    } else {
-        openedPopover = docId;
-    }
-
-    $(button).popover(popoverParams).popover('show');
-
-    // Récupération du formulaire
-    return ajaxRequest(url, { docid: docId });
-}
 
 /**
  *
@@ -724,7 +670,7 @@ function getCommunForm(
  * @param docId
  */
 function getPublicationDateForm(button, docId) {
-    let request = getCommunForm(
+    let request = getCommonForm(
         button,
         docId,
         '/administratepaper/publicationdateform'
@@ -834,7 +780,7 @@ function updateDoiDisplay(doi) {
  * @param {string} [url]
  */
 function getDoiForm(button, docId, url = '/administratepaper/doiform') {
-    const jqxhr = getCommunForm(button, docId, url);
+    const jqxhr = getCommonForm(button, docId, url);
     if (jqxhr === false) {
         return;
     }
@@ -1103,7 +1049,7 @@ function editAttachmentDescription(target) {
  */
 
 function getVersionEditingForm(button, docId) {
-    let request = getCommunForm(
+    let request = getCommonForm(
         button,
         docId,
         '/administratepaper/latestversioneditingform'
@@ -1335,7 +1281,7 @@ function removeCoAuthor(docId, uid, rvid) {
 }
 
 function getRevisionDeadlineForm(button, docId, commentId = null) {
-    let request = getCommunForm(
+    let request = getCommonForm(
         button,
         docId,
         '/administratepaper/revisiondeadlineform'
@@ -1403,3 +1349,5 @@ function valide($target) {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { validateDoiInput, updateDoiDisplay, DOI_PATTERN };
 }
+
+

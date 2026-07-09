@@ -5508,20 +5508,18 @@ class Episciences_Paper
 
         if ($this->hasHook) {
 
-            $files = $this->getFiles();
-            /** @var Episciences_Paper_File $file */
+            $mainFile = Episciences_Paper_FilesManager::getMainFile($this->getDocid());
 
-            foreach ($files as $file) {
-
-                if (($file->getFileType() === 'pdf')) {
-                    return Episciences_Repositories::isDataverse($this->getRepoid()) ? $file->getDownloadLike() : $file->getSelfLink();
-                }
+            if ($mainFile) {
+                return Episciences_Repositories::isDataverse($this->getRepoid()) ? $mainFile->getDownloadLike() : $mainFile->getSelfLink();
             }
-        } else {
-            return $this->getPaperUrl();
+
+            return null;
+
         }
 
-        return null;
+        return $this->getPaperUrl();
+
     }
 
 
@@ -5609,6 +5607,14 @@ class Episciences_Paper
         ]);
 
         $queue->send();
+    }
+
+    public function isAllowedToEditMasterFile(): bool
+    {
+        return
+                Episciences_Auth::isSecretary() ||
+                $this->isOwner() ||
+                $this->isEditor(Episciences_Auth::getUid());
     }
 }
 
