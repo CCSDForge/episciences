@@ -1684,11 +1684,14 @@ class PaperController extends PaperDefaultController
             $invitation_deadline = $oInvitation->getExpiration_date();
 
             // link to rating invitation page
-            $invitation_url = $this->view->url([
+            // self::buildBaseUrl() (no path prefix) is used rather than APPLICATION_URL because
+            // APPLICATION_URL already embeds PREFIX_URL (the review code) on manager deployments,
+            // and $this->view->url() also prefixes its output with PREFIX_URL - concatenating both
+            // would duplicate the review code in the URL.
+            $invitation_url = self::buildBaseUrl() . $this->view->url([
                 self::CONTROLLER => 'reviewer',
                 self::ACTION => 'invitation',
                 'id' => $oInvitation->getId()]);
-            $invitation_url = APPLICATION_URL . $invitation_url;
 
             // update assignment with invitation_id
             $oAssignment->setInvitation_id($oInvitation->getId());

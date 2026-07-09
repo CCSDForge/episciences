@@ -1231,12 +1231,13 @@ class PaperDefaultController extends DefaultController
         $docId = $paper->getDocid();
         $reviewerUid = $user->getUid();
 
-        $ratingUrl = $this->view->url(['controller' => 'paper', 'action' => 'rating', 'id' => $docId]);
-        // SECURITY FIX: Use trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME'] to prevent Host Header Injection
-        $ratingUrl = rtrim(APPLICATION_URL, '/') . '/' . ltrim($ratingUrl, '/');
+        // NB: self::buildBaseUrl() (trusted origin, no path) is used here rather than APPLICATION_URL,
+        // because APPLICATION_URL already embeds PREFIX_URL (the review code) on manager deployments,
+        // and $this->view->url() also prefixes its output with PREFIX_URL - concatenating both
+        // duplicated the review code in the URL (e.g. /epijinfo/epijinfo/administratepaper/view).
+        $ratingUrl = self::buildBaseUrl() . $this->view->url(['controller' => 'paper', 'action' => 'rating', 'id' => $docId]);
 
-        $adminPaperUrl = $this->view->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $docId]);
-        $adminPaperUrl = rtrim(APPLICATION_URL, '/') . '/' . ltrim($adminPaperUrl, '/');
+        $adminPaperUrl = $this->adminPaperUrl($docId);
 
         $reviewerTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY;
         $editorialCommitteeTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY;

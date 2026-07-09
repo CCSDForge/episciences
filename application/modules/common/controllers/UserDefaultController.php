@@ -327,8 +327,11 @@ class UserDefaultController extends Episciences_Controller_Action
         }
 
         // Build the return URL from the configured application base, not from the
-        // incoming request host.
-        $url = rtrim(APPLICATION_URL, '/') . $this->view->url($urlParams);
+        // incoming request host. self::buildBaseUrl() (no path prefix) is used rather than
+        // APPLICATION_URL because APPLICATION_URL already embeds PREFIX_URL (the review code)
+        // on manager deployments, and $this->view->url() also prefixes its output with
+        // PREFIX_URL - concatenating both would duplicate the review code in the URL.
+        $url = self::buildBaseUrl() . $this->view->url($urlParams);
 
         $auth = null;
         $adapterName = strtoupper(defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? (string)EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS');
