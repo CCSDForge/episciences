@@ -4,6 +4,7 @@ namespace unit\library\Episciences\notify;
 
 use Episciences\Notify\CoarNotifyHttpLayer;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 class CoarNotifyHttpLayerTest extends TestCase
 {
@@ -59,5 +60,20 @@ class CoarNotifyHttpLayerTest extends TestCase
 
         self::assertContains('Authorization: Bearer token', $lines);
         self::assertContains('Content-Type: application/json', $lines);
+    }
+
+    /**
+     * HTTP/2 responses are lower-cased by cURL (e.g. HAL's inbox); getHeader("Location")
+     * must still resolve regardless of the case actually sent on the wire.
+     */
+    public function testParseHeadersNormalizesCaseSoLocationHeaderIsFound(): void
+    {
+        $method = new ReflectionMethod(CoarNotifyHttpLayer::class, 'parseHeaders');
+        $method->setAccessible(true);
+
+        $parsed = $method->invoke($this->layer, "HTTP/2 201\r\nlocation: https://hal.example/inbox/123\r\ncontent-type: application/ld+json\r\n\r\n");
+
+        self::assertSame('https://hal.example/inbox/123', $parsed['Location'] ?? null);
+        self::assertSame('application/ld+json', $parsed['Content-Type'] ?? null);
     }
 }
