@@ -51,7 +51,7 @@ $hideSizeAndChecksumColumns = array_filter($files, static fn($f): bool => $f->ge
                 </tbody>
             </table>
 
-                <?php if($paper->isAllowedToEditMasterFile() && count($files) > 0): ?>
+                <?php if($paper->isMainFileChoiceRecommended()): ?>
                     <button
                             id="btn-edit-master-file"
                             data-docid="<?= $paper->getDocid()?>"
