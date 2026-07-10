@@ -4,24 +4,32 @@ declare(strict_types=1);
 
 namespace Episciences\Notify;
 
-use coarnotify\http\CurlHttpResponse;
 use coarnotify\http\HttpLayer;
+use coarnotify\http\HttpResponse;
 use RuntimeException;
 
 /**
- * Replaces coarnotify\http\CurlHttpLayer, whose post()/get() pass the associative
- * $headers array documented by HttpLayer straight to CURLOPT_HTTPHEADER. cURL only
- * reads the array values, so associative keys (e.g. 'Content-Type') are silently
- * dropped: the caller-supplied Content-Type never reaches the request, and the
- * bare value is sent as a malformed header line with no field name. Against a
- * spec-compliant COAR Notify inbox (e.g. HAL's) this produces a 400 response.
+ * Workaround for an upstream bug in cottagelabs/coarnotify (vendor package, not ours to
+ * edit): coarnotify\http\CurlHttpLayer::post()/get() pass the associative $headers array
+ * documented by HttpLayer straight to CURLOPT_HTTPHEADER. cURL only reads the array
+ * values, so associative keys (e.g. 'Content-Type') are silently dropped: the
+ * caller-supplied Content-Type never reaches the request, and the bare value is sent as a
+ * malformed header line with no field name. Against a spec-compliant COAR Notify inbox
+ * (e.g. HAL's) this produces a 400 response.
+ *
+ * Once upstream fixes CurlHttpLayer to build proper "Name: Value" header lines, this class
+ * can be deleted and callers (Episciences_Notify_Hal) reverted to
+ * `new \coarnotify\http\CurlHttpLayer()`.
+ *
+ * request() also returns CoarNotifyHttpResponse instead of the vendor's own
+ * CurlHttpResponse — see that class's docblock for why (a second, separate upstream bug).
  */
 class CoarNotifyHttpLayer implements HttpLayer
 {
     /**
      * @param array<int|string, string>|null $headers
      */
-    public function post(string $url, string $data, ?array $headers = [], ...$args): CurlHttpResponse
+    public function post(string $url, string $data, ?array $headers = [], ...$args): HttpResponse
     {
         return $this->request($url, $headers, $data);
     }
@@ -29,7 +37,7 @@ class CoarNotifyHttpLayer implements HttpLayer
     /**
      * @param array<int|string, string>|null $headers
      */
-    public function get(string $url, ?array $headers = [], ...$args): CurlHttpResponse
+    public function get(string $url, ?array $headers = [], ...$args): HttpResponse
     {
         return $this->request($url, $headers, null);
     }
@@ -37,7 +45,7 @@ class CoarNotifyHttpLayer implements HttpLayer
     /**
      * @param array<int|string, string>|null $headers
      */
-    private function request(string $url, ?array $headers, ?string $data): CurlHttpResponse
+    private function request(string $url, ?array $headers, ?string $data): HttpResponse
     {
         $ch = curl_init($url);
 
@@ -64,7 +72,7 @@ class CoarNotifyHttpLayer implements HttpLayer
 
         curl_close($ch);
 
-        return new CurlHttpResponse($httpStatusCode, $this->parseHeaders($rawHeaders));
+        return new CoarNotifyHttpResponse($httpStatusCode, $this->parseHeaders($rawHeaders));
     }
 
     /**
@@ -111,10 +119,22 @@ class CoarNotifyHttpLayer implements HttpLayer
         foreach (explode("\r\n", $rawHeaders) as $line) {
             if (str_contains($line, ':')) {
                 [$key, $value] = explode(': ', $line, 2);
-                $parsed[$key] = $value;
+                $parsed[$this->canonicalHeaderName($key)] = $value;
             }
         }
 
         return $parsed;
+    }
+
+    /**
+     * Normalizes a header name to Http-Header-Case (e.g. "location" or "LOCATION" -> "Location").
+     * HTTP/2 responses (as HAL's inbox may send) are lower-cased by cURL, but
+     * coarnotify\client\COARNotifyClient::send() looks up the response header by the
+     * exact string "Location". Normalizing here avoids a lookup miss when the
+     * server actually did send the header, just under a different case.
+     */
+    private function canonicalHeaderName(string $name): string
+    {
+        return str_replace(' ', '-', ucwords(strtolower(trim($name)), '-'));
     }
 }
