@@ -11,6 +11,7 @@ use coarnotify\patterns\announce_endorsement\AnnounceEndorsementItem;
 use coarnotify\core\notify\NotifyActor;
 use coarnotify\core\notify\NotifyObject;
 use coarnotify\core\notify\NotifyService;
+use Episciences\Notify\CoarNotifyHttpLayer;
 use Episciences\Notify\Notification;
 use Episciences\Notify\NotificationsRepository;
 use Monolog\Formatter\LineFormatter;
@@ -186,7 +187,7 @@ class Episciences_Notify_Hal
         // Send via COAR Notify client
         $status = Notification::STATUS_PENDING;
         try {
-            $client = $this->client ?? new COARNotifyClient(NOTIFY_TARGET_HAL_INBOX);
+            $client = $this->client ?? new COARNotifyClient(NOTIFY_TARGET_HAL_INBOX, new CoarNotifyHttpLayer());
             $response = $client->send($announcement);
             $status = ($response->getAction() === NotifyResponse::CREATED) ? 201 : 202;
         } catch (NotifyException $e) {
