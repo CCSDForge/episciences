@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Trait for shared "manage this paper" access-control logic.
  * Used by AdministratepaperController and ActivityController so both
@@ -50,73 +52,96 @@ trait Episciences_Paper_AccessControlControllerTrait
      */
     private function buildRedirectionMessage(Episciences_Review $review, Episciences_Paper $paper): array
     {
-        $redirection = [];
+        $redirection = $this->buildRoleRedirection($review, $paper);
 
-        $isNextTest = true;
-
-        $message = "Vous n'avez pas les droits suffisants pour accéder à cet article";
-
-
-        if ($paper->getEditor(Episciences_Auth::getUid()) || $paper->getCopyEditor(Episciences_Auth::getUid())) { // assigned
-            $isNextTest = false;
-        }
-
-        // if editors encapsulation is on, editors who are not assigned to this paper do not have any permission for it: redirect them
-        if ($isNextTest && Episciences_Auth::isEditor() && $review->getSetting('encapsulateEditors')) {
-            $redirection['message'] = $message;
-            $isNextTest = false;
-        }
-
-        // if copy editors encapsulation is on, copy editors who are not assigned to this paper do not have any permission for it: redirect them
-        if ($isNextTest && Episciences_Auth::isCopyEditor() && $review->getSetting('encapsulateCopyEditors')) {
-            $redirection['message'] = $message;
-            $redirection['params'] = ['ce' => 1];
-            $isNextTest = false;
-        }
-
-
-        if ($isNextTest && Episciences_Auth::isGuestEditor() && !(Episciences_Auth::isEditor() || Episciences_Auth::isCopyEditor())) {
-            $redirection['message'] = $message;
+        if (isset($redirection['isFinal'])) { // guest editors are fully blocked: skip the per-action settings
+            unset($redirection['isFinal']);
             return $redirection;
         }
 
-        // check if journal settings allow editors to take decisions about this paper
-        switch ($this->getRequest()->getActionName()) {
+        $actionMessage = $this->buildActionDeniedMessage($review, $paper);
 
-            case 'accept':
-                if (!$review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_ACCEPT_PAPERS)) {
-                    $redirection['message'] = "Vous n'avez pas les droits suffisants pour accepter cet article";
-                }
-                break;
-
-            case 'publish':
-
-                if (
-                    !$review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_PUBLISH_PAPERS) &&
-                    !($paper->isApprovedByAuthor() && $paper->getCopyEditor(Episciences_Auth::getUid()))
-                ) {
-                    $redirection['message'] = "Vous n'avez pas les droits suffisants pour publier cet article";
-                }
-                break;
-
-            case 'refuse':
-                if (!$review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_REJECT_PAPERS)) {
-                    $redirection['message'] = "Vous n'avez pas les droits suffisants pour refuser cet article";
-                }
-                break;
-
-            case 'revision':
-                if (!$review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS)) {
-                    $redirection['message'] = "Vous n'avez pas les droits suffisants pour demander des modifications sur cet article";
-                }
-                break;
-            default: // not action
-                break;
+        if ($actionMessage !== null) {
+            $redirection['message'] = $actionMessage;
         }
 
+        return $redirection;
+    }
+
+    /**
+     * Role-based restrictions (editors / copy editors encapsulation, guest editors).
+     * The 'isFinal' key marks a redirection that must not be overridden by the per-action checks.
+     * @param Episciences_Review $review
+     * @param Episciences_Paper $paper
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function buildRoleRedirection(Episciences_Review $review, Episciences_Paper $paper): array
+    {
+        $redirection = [];
+        $message = "Vous n'avez pas les droits suffisants pour accéder à cet article";
+
+        $isAssigned = $paper->getEditor(Episciences_Auth::getUid()) || $paper->getCopyEditor(Episciences_Auth::getUid());
+
+        if ($isAssigned) {
+            return $redirection;
+        }
+
+        // if editors encapsulation is on, editors who are not assigned to this paper do not have any permission for it: redirect them
+        if (Episciences_Auth::isEditor() && $review->getSetting('encapsulateEditors')) {
+            $redirection['message'] = $message;
+        } elseif (Episciences_Auth::isCopyEditor() && $review->getSetting('encapsulateCopyEditors')) {
+            // same rule for copy editors encapsulation
+            $redirection['message'] = $message;
+            $redirection['params'] = ['ce' => 1];
+        } elseif (Episciences_Auth::isGuestEditor() && !(Episciences_Auth::isEditor() || Episciences_Auth::isCopyEditor())) {
+            $redirection['message'] = $message;
+            $redirection['isFinal'] = true;
+        }
 
         return $redirection;
+    }
 
+    /**
+     * Check if journal settings allow editors to take the decision matching the current action.
+     * @param Episciences_Review $review
+     * @param Episciences_Paper $paper
+     * @return string|null a denial message, or null when the action is allowed
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function buildActionDeniedMessage(Episciences_Review $review, Episciences_Paper $paper): ?string
+    {
+        $settingAndMessageByAction = [
+            'accept' => [
+                Episciences_Review::SETTING_EDITORS_CAN_ACCEPT_PAPERS,
+                "Vous n'avez pas les droits suffisants pour accepter cet article",
+            ],
+            'refuse' => [
+                Episciences_Review::SETTING_EDITORS_CAN_REJECT_PAPERS,
+                "Vous n'avez pas les droits suffisants pour refuser cet article",
+            ],
+            'revision' => [
+                Episciences_Review::SETTING_EDITORS_CAN_ASK_PAPER_REVISIONS,
+                "Vous n'avez pas les droits suffisants pour demander des modifications sur cet article",
+            ],
+        ];
+
+        $action = $this->getRequest()->getActionName();
+
+        if ($action === 'publish') {
+            // a copy editor assigned to a paper approved by its author may publish it even when
+            // the journal settings do not allow editors to publish
+            $isAllowed = $review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_PUBLISH_PAPERS) ||
+                ($paper->isApprovedByAuthor() && $paper->getCopyEditor(Episciences_Auth::getUid()));
+
+            return $isAllowed ? null : "Vous n'avez pas les droits suffisants pour publier cet article";
+        }
+
+        if (isset($settingAndMessageByAction[$action]) && !$review->getSetting($settingAndMessageByAction[$action][0])) {
+            return $settingAndMessageByAction[$action][1];
+        }
+
+        return null;
     }
 
     /**
@@ -127,87 +152,113 @@ trait Episciences_Paper_AccessControlControllerTrait
     private function redirectWithFlashMessageIfConflictDetected(Episciences_Paper $paper, Episciences_Review $review): void
     {
         $docId = $paper->getDocid();
-        $loggedUid = Episciences_Auth::getUid();
 
-        $checkConflictResponse = $paper->checkConflictResponse($loggedUid);
-
-        $isOwnSubmission = $paper->isOwner();
-        $isConflictDetected = self::isConflictDetected($paper, $review);
-
-        // check if user has required permissions
-        if ($isOwnSubmission || $isConflictDetected) {
-
-            $suUser = Episciences_Auth::getOriginalIdentity();
-
-            $message = '';
-
-            if ($isOwnSubmission) {
-
-                if ($suUser && ($suUser->getUid() !== $loggedUid)) {
-
-                    $message .= $suUser->getScreenName();
-                    $message .= ', ';
-                    $message .= '<br>';
-                    $message .= $this->view->translate("Vous êtes connecté en tant que : ");
-                    $message .= Episciences_Auth::getScreenName();
-                    $message .= '<br>';
-                }
-
-
-                $message .= $this->view->translate('Vous avez été redirigé, car vous ne pouvez pas gérer un article que vous avez vous-même déposé');
-                $url = '/paper/view?id=' . $docId;
-
-            } else {
-
-                $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
-
-                if (
-                    isset($session->checkConflictResponseForSu) &&
-                    in_array($session->checkConflictResponseForSu, [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']], true)
-                ) {
-
-                    $message .= $suUser->getScreenName();
-                    $message .= ', ';
-                    $message .= '<br>';
-
-                    if ($session->checkConflictResponseForSu === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
-
-                        Episciences_Auth::updateIdentity($suUser);
-
-                        $message .= $this->view->translate("Vous êtes maintenant connecté à votre compte :");
-                        $message .= '<br>';
-                        $message .= $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
-
-                    } else {
-                        $message .= $this->view->translate("Vous avez vous-même signalé un conflit d'intérêts avec cette soumission.");
-                        $message .= '<br>';
-                        $message .= $this->view->translate("Vous êtes connecté en tant que : ");
-                        $message .= Episciences_Auth::getScreenName();
-                        $message .= '<br>';
-
-
-                        if ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
-                            $message .= $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
-                        }
-
-                    }
-
-                } elseif ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
-                    $message = $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
-
-                } else {
-                    $message = $this->view->translate("Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission.");
-                }
-
-                $url = '/coi/report?id=' . $docId;
-
-            }
-
-
-            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
-            $this->_helper->redirector->gotoUrl($url);
-
+        if ($paper->isOwner()) {
+            $message = $this->buildOwnSubmissionRedirectMessage();
+            $url = '/paper/view?id=' . $docId;
+        } elseif (self::isConflictDetected($paper, $review)) {
+            $message = $this->buildConflictRedirectMessage($paper->checkConflictResponse(Episciences_Auth::getUid()));
+            $url = '/coi/report?id=' . $docId;
+        } else { // user has required permissions
+            return;
         }
 
+        $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
+        $this->_helper->redirector->gotoUrl($url);
+    }
+
+    /**
+     * Message shown when a user tries to manage their own submission,
+     * prefixed with the original identity when the user is switched (su).
+     * @return string
+     */
+    private function buildOwnSubmissionRedirectMessage(): string
+    {
+        $message = '';
+        $suUser = Episciences_Auth::getOriginalIdentity();
+
+        if ($suUser && ($suUser->getUid() !== Episciences_Auth::getUid())) {
+            $message .= $suUser->getScreenName();
+            $message .= ', ';
+            $message .= '<br>';
+            $message .= $this->view->translate("Vous êtes connecté en tant que : ");
+            $message .= Episciences_Auth::getScreenName();
+            $message .= '<br>';
+        }
+
+        $message .= $this->view->translate('Vous avez été redirigé, car vous ne pouvez pas gérer un article que vous avez vous-même déposé');
+
+        return $message;
+    }
+
+    /**
+     * Message shown when a conflict of interest prevents the user from managing the paper.
+     * @param string $checkConflictResponse the logged user's answer to the conflict check
+     * @return string
+     */
+    private function buildConflictRedirectMessage(string $checkConflictResponse): string
+    {
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        $suUser = Episciences_Auth::getOriginalIdentity();
+        $suAnswers = [Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']];
+
+        if (
+            $suUser &&
+            isset($session->checkConflictResponseForSu) &&
+            in_array($session->checkConflictResponseForSu, $suAnswers, true)
+        ) {
+            return $this->buildSwitchedUserConflictMessage($suUser, $session->checkConflictResponseForSu, $checkConflictResponse);
+        }
+
+        if ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
+            return $this->translateConflictConfirmationRequiredMessage();
+        }
+
+        return $this->view->translate("Vous avez été redirigé, car vous avez déclaré un conflit d'intérêts avec cette soumission.");
+    }
+
+    /**
+     * Conflict message for a switched (su) session, based on the answer given while switched.
+     * @param Episciences_User $suUser the original identity
+     * @param string $suResponse the answer given while switched
+     * @param string $checkConflictResponse the logged user's answer to the conflict check
+     * @return string
+     */
+    private function buildSwitchedUserConflictMessage(Episciences_User $suUser, string $suResponse, string $checkConflictResponse): string
+    {
+        $message = $suUser->getScreenName();
+        $message .= ', ';
+        $message .= '<br>';
+
+        if ($suResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
+            // switch back to the original account: the conflict confirmation is expected from it
+            Episciences_Auth::updateIdentity($suUser);
+
+            $message .= $this->view->translate("Vous êtes maintenant connecté à votre compte :");
+            $message .= '<br>';
+            $message .= $this->translateConflictConfirmationRequiredMessage();
+
+            return $message;
+        }
+
+        $message .= $this->view->translate("Vous avez vous-même signalé un conflit d'intérêts avec cette soumission.");
+        $message .= '<br>';
+        $message .= $this->view->translate("Vous êtes connecté en tant que : ");
+        $message .= Episciences_Auth::getScreenName();
+        $message .= '<br>';
+
+        if ($checkConflictResponse === Episciences_Paper_Conflict::AVAILABLE_ANSWER['later']) {
+            $message .= $this->translateConflictConfirmationRequiredMessage();
+        }
+
+        return $message;
+    }
+
+    /**
+     * @return string
+     */
+    private function translateConflictConfirmationRequiredMessage(): string
+    {
+        return $this->view->translate("Vous avez été redirigé, car vous devez confirmer l'absence de conflit d'intérêt pour accéder à cette soumission");
     }
 }
