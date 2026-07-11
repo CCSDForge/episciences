@@ -255,16 +255,16 @@
         },
         {
             "name": "citation-style-language/locales",
-            "version": "v0.0.94",
+            "version": "v0.0.95",
             "source": {
                 "type": "git",
                 "url": "https://github.com/citation-style-language/locales.git",
-                "reference": "af8725651dbca236639e4d539659b29457b47b50"
+                "reference": "bc0a222b4ca526126faf892c35b2b7b1215c10eb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/citation-style-language/locales/zipball/af8725651dbca236639e4d539659b29457b47b50",
-                "reference": "af8725651dbca236639e4d539659b29457b47b50",
+                "url": "https://api.github.com/repos/citation-style-language/locales/zipball/bc0a222b4ca526126faf892c35b2b7b1215c10eb",
+                "reference": "bc0a222b4ca526126faf892c35b2b7b1215c10eb",
                 "shasum": ""
             },
             "type": "library",
@@ -287,7 +287,7 @@
             "homepage": "http://citationstyles.org/",
             "support": {
                 "issues": "https://github.com/citation-style-language/locales/issues",
-                "source": "https://github.com/citation-style-language/locales/tree/v0.0.94"
+                "source": "https://github.com/citation-style-language/locales/tree/v0.0.95"
             },
             "funding": [
                 {
@@ -295,7 +295,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-06-06T16:45:28+00:00"
+            "time": "2026-06-30T12:24:44+00:00"
         },
         {
             "name": "citation-style-language/styles",
