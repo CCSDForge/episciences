@@ -105,4 +105,3 @@ stateDiagram-v2
 5. **`publishAction()` is a single, unconditional action** that sets status 16 from any status; UI buttons gate it behind `canPublish` / `isReadyToPublish()` (= {23, 33}).
 6. **The 26/28/32/33 sub-flow only exists when "Allow post-acceptance revisions of articles" is ON.** With it OFF, a paper accepted at status 4 can only go through the 18/21 copy-editing entry points — the setting effectively chooses between "author formally re-submits a revised version through the copy-editing pipeline" (ON) vs. "copy-editing only, no formal author validation step" (OFF/default CE loop through 23).
 7. **Setting-gated buttons are Secretary-only in the UI** (`paper_status_button.phtml` has no explicit case for statuses 26/32 in the Editor or CopyEditor blocks) — even though `acl.ini` grants the underlying `administratepaper-*` actions to editor/copyeditor/secretary alike.
-
