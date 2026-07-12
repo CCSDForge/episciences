@@ -1,6 +1,6 @@
 # Editorial workflow (complete, current / classic pipeline — `staging`)
 
-*[🇬🇧 English](editorial-workflow.en.md) · [🇫🇷 Français](editorial-workflow.fr.md)*
+*[English](editorial-workflow.en.md) · [Français](editorial-workflow.fr.md)*
 
 This document maps the **complete** paper status state machine on `staging`, from initial submission (status 0) through peer review, editorial decision, the revision loop, and acceptance, up to publication (status 16). It documents the *current, non-opt-in* pipeline only — the alternative pipeline introduced by PR #1083 is deliberately out of scope for now (see `tmp/pr1083.md` for that comparison once this baseline is settled).
 

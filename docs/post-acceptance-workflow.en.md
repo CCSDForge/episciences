@@ -1,6 +1,6 @@
 # Post-acceptance editorial workflow (current / classic pipeline)
 
-*[🇬🇧 English](post-acceptance-workflow.en.md) · [🇫🇷 Français](post-acceptance-workflow.fr.md)*
+*[English](post-acceptance-workflow.en.md) · [Français](post-acceptance-workflow.fr.md)*
 
 This document maps the **existing** (non-opt-in) status transition graph that runs after a paper is accepted (status 4), through copy-editing, to publication (status 16). It exists as a comparison companion to PR #1083 ("alternative editorial pipeline"), which introduces a second, parallel opt-in workflow (statuses 34–39) covering conceptually the same ground for arXiv-based journals. See `docs/paper-statuses.md` for the full status enumeration.
 

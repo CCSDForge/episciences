@@ -1,6 +1,6 @@
 # Workflow éditorial (complet, circuit actuel / classique — `staging`)
 
-*[🇬🇧 English](editorial-workflow.en.md) · [🇫🇷 Français](editorial-workflow.fr.md)*
+*[English](editorial-workflow.en.md) · [Français](editorial-workflow.fr.md)*
 
 Ce document cartographie la machine à états **complète** des statuts d'article sur `staging`, depuis la soumission initiale (statut 0) jusqu'à la relecture par les pairs, la décision éditoriale, la boucle de révision et l'acceptation, jusqu'à la publication (statut 16). Il documente uniquement le circuit *actuel, non opt-in* — le pipeline alternatif introduit par la PR #1083 est volontairement laissé de côté pour l'instant (voir `tmp/pr1083.md` pour cette comparaison une fois cette base stabilisée).
 

@@ -1,6 +1,6 @@
 # Workflow éditorial post-acceptation (circuit actuel / classique)
 
-*[🇬🇧 English](post-acceptance-workflow.en.md) · [🇫🇷 Français](post-acceptance-workflow.fr.md)*
+*[English](post-acceptance-workflow.en.md) · [Français](post-acceptance-workflow.fr.md)*
 
 Ce document cartographie le graphe de transition de statuts **existant** (non opt-in) qui s'exécute après l'acceptation d'un article (statut 4), à travers la préparation de copie, jusqu'à la publication (statut 16). Il sert de comparaison à la PR #1083 (« pipeline éditorial alternatif »), qui introduit un second workflow opt-in parallèle (statuts 34–39) couvrant conceptuellement le même terrain pour les revues basées sur arXiv. Voir `docs/paper-statuses.md` pour l'énumération complète des statuts.
 
