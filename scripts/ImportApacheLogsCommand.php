@@ -488,12 +488,12 @@ class ImportApacheLogsCommand extends Command
     {
         $db  = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = 'INSERT INTO STAT_PROCESSING_LOG (JOURNAL_CODE, PROCESSED_DATE, FILE_PATH, RECORDS_PROCESSED, STATUS)
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?) AS new_row
                 ON DUPLICATE KEY UPDATE
                     PROCESSED_AT      = CURRENT_TIMESTAMP,
-                    FILE_PATH         = VALUES(FILE_PATH),
-                    RECORDS_PROCESSED = VALUES(RECORDS_PROCESSED),
-                    STATUS            = VALUES(STATUS)';
+                    FILE_PATH         = new_row.FILE_PATH,
+                    RECORDS_PROCESSED = new_row.RECORDS_PROCESSED,
+                    STATUS            = new_row.STATUS';
         $stmt = $db->prepare($sql);
         $stmt->execute([$rvcode, $date, $filePath, $records, $status]);
     }

@@ -1776,7 +1776,6 @@ ALTER TABLE `paper_datasets`
 -- Constraints for table `paper_projects`
 --
 ALTER TABLE `paper_projects`
-    ADD CONSTRAINT `paper_projects_ibfk_1` FOREIGN KEY (`paperid`) REFERENCES `PAPERS` (`PAPERID`),
     ADD CONSTRAINT `paper_projects_ibfk_2` FOREIGN KEY (`source_id`) REFERENCES `metadata_sources` (`id`);
 COMMIT;
 

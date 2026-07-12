@@ -98,8 +98,8 @@ class Episciences_VolumeProceeding
             if (!$update) {
                 $this->_db->insert(T_VOLUME_PROCEEDING, ['SETTING' => $setting, 'VALUE' => $value, 'VID' => $vid]);
             } else {
-                $sql = $this->_db->quoteInto('INSERT INTO ' . T_VOLUME_PROCEEDING . ' (SETTING, VALUE, VID) VALUES (?) 
-                ON DUPLICATE KEY UPDATE VALUE = VALUES(VALUE)', ['SETTING' => $setting, 'VALUE' => $value, 'VID' => $vid]);
+                $sql = $this->_db->quoteInto('INSERT INTO ' . T_VOLUME_PROCEEDING . ' (SETTING, VALUE, VID) VALUES (?)
+                AS new_row ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE', ['SETTING' => $setting, 'VALUE' => $value, 'VID' => $vid]);
                 $this->_db->query($sql);
             }
         } catch (Zend_Db_Adapter_Exception $exception) {
