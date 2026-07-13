@@ -5619,7 +5619,7 @@ class Episciences_Paper
     }
 
 
-    public function isMainFileChoiceRecommended(): bool
+    public function isEligibleForMasterFileChoice(): bool
     {
         return
             $this->hasHook &&

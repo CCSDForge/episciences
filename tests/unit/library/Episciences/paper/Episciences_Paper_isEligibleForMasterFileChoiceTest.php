@@ -9,16 +9,16 @@ use Episciences_Paper;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for Episciences_Paper::isMainFileChoiceRecommended.
+ * Unit tests for Episciences_Paper::isEligibleForMasterFileChoice.
  * The method determines whether the selection of a main file
  * is appropriate based on several criteria:
  * - The type of the submission,
  * - The number of available files and the permissions- The original repository : not all repositories are affected based on
  * the hashook criterion - initialized in "Episciences_Paper::setRepoid" method.
  *
- * @covers Episciences_Paper::isMainFileChoiceRecommended
+ * @covers Episciences_Paper::isEligibleForMasterFileChoice
  */
-final class Episciences_Paper_isMainFileChoiceRecommendedTest extends TestCase
+final class Episciences_Paper_isEligibleForMasterFileChoiceTest extends TestCase
 {
 
     private Episciences_Paper $paper;
@@ -44,7 +44,7 @@ final class Episciences_Paper_isMainFileChoiceRecommendedTest extends TestCase
         $this->paper->method('getFiles')->willReturn(['file1.pdf', 'file2.md']);
         $this->paper->method('isAllowedToEditMasterFile')->willReturn(true);
 
-        $result = $this->paper->isMainFileChoiceRecommended();
+        $result = $this->paper->isEligibleForMasterFileChoice();
         self::assertTrue($result);
     }
 
@@ -59,7 +59,7 @@ final class Episciences_Paper_isMainFileChoiceRecommendedTest extends TestCase
         $this->paper->expects(self::never())->method('getFiles');
         $this->paper->expects(self::never())->method('isAllowedToEditMasterFile');
 
-        $result = $this->paper->isMainFileChoiceRecommended();
+        $result = $this->paper->isEligibleForMasterFileChoice();
 
         self::assertFalse($result);
     }
@@ -75,7 +75,7 @@ final class Episciences_Paper_isMainFileChoiceRecommendedTest extends TestCase
         $this->paper->expects(self::never())->method('getFiles');
         $this->paper->expects(self::never())->method('isAllowedToEditMasterFile');
 
-        $result = $this->paper->isMainFileChoiceRecommended();
+        $result = $this->paper->isEligibleForMasterFileChoice();
 
         self::assertFalse($result);
     }
@@ -89,7 +89,7 @@ final class Episciences_Paper_isMainFileChoiceRecommendedTest extends TestCase
 
         // isAllowedToEditMasterFile should not be called
         $this->paper->expects(self::never())->method('isAllowedToEditMasterFile');
-        $result = $this->paper->isMainFileChoiceRecommended();
+        $result = $this->paper->isEligibleForMasterFileChoice();
         self::assertFalse($result);
     }
 
@@ -101,7 +101,7 @@ final class Episciences_Paper_isMainFileChoiceRecommendedTest extends TestCase
         $this->paper->method('getFiles')->willReturn(['file1.txt', 'file2.txt']);
         $this->paper->method('isAllowedToEditMasterFile')->willReturn(false);
 
-        $result = $this->paper->isMainFileChoiceRecommended();
+        $result = $this->paper->isEligibleForMasterFileChoice();
 
         self::assertFalse($result);
     }

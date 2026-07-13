@@ -4415,7 +4415,7 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        if (!$paper->isMainFileChoiceRecommended()) {
+        if (!$paper->isEligibleForMasterFileChoice()) {
             return;
         }
 
@@ -4462,7 +4462,7 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        if (!$paper->isMainFileChoiceRecommended()) {
+        if (!$paper->isEligibleForMasterFileChoice()) {
             $this->jsonEncodedResult($result);
             return;
         }

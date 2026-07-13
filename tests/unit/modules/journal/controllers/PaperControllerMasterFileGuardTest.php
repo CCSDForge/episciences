@@ -61,7 +61,7 @@ final class PaperControllerMasterFileGuardTest extends TestCase
         $method = $this->extractMethod('getmasterfileformAction');
 
         self::assertStringContainsString(
-            '$paper->isMainFileChoiceRecommended()',
+            '$paper->isEligibleForMasterFileChoice()',
             $method,
             'getmasterfileformAction() must reject callers who are not allowed to edit the master file.'
         );
@@ -72,7 +72,7 @@ final class PaperControllerMasterFileGuardTest extends TestCase
         $method = $this->extractMethod('getmasterfileformAction');
 
         $paperLoadedPos = strpos($method, 'Episciences_PapersManager::get(');
-        $permissionCheckPos = strpos($method, 'isMainFileChoiceRecommended()');
+        $permissionCheckPos = strpos($method, 'isEligibleForMasterFileChoice()');
         $renderPos = strpos($method, 'renderScript(');
 
         self::assertNotFalse($paperLoadedPos);
@@ -122,7 +122,7 @@ final class PaperControllerMasterFileGuardTest extends TestCase
         $method = $this->extractMethod('savemasterfileAction');
 
         self::assertStringContainsString(
-            '$paper->isMainFileChoiceRecommended()',
+            '$paper->isEligibleForMasterFileChoice()',
             $method,
             'savemasterfileAction() must reject callers who are not allowed to edit the master file.'
         );
