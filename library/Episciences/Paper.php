@@ -5632,7 +5632,7 @@ class Episciences_Paper
     /**
      * Updates a nested value in a JSON document column
      *
-     * @param string $jsonPath JSON path(ie: '$.document.database.mainPdfUrl')
+     * @param string $jsonPath JSON path(ie: '$.database.current.mainPdfUrl')
      * @param mixed  $value    Value to insert
      *
      * @return bool
@@ -5653,7 +5653,7 @@ class Episciences_Paper
             self::JSON_DOCUMENT_COLUMN
         );
 
-        return $db->prepare($sql)->execute([
+        return $db?->prepare($sql)->execute([
             $jsonPath,
             $jsonValue,
             $this->getDocid()

@@ -4501,7 +4501,7 @@ class PaperController extends PaperDefaultController
         $result['isJsonDocumentUpdated'] = false;
 
         try {
-            $isUpdated = $paper->updateNestedJsonDocument('$.document.database.mainPdfUrl', $paper->getMainPaperUrl());
+            $isUpdated = $paper->updateNestedJsonDocument('$.database.current.mainPdfUrl', $paper->getMainPaperUrl());
             $result['isJsonDocumentUpdated'] = $isUpdated;
         } catch (Exception $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
