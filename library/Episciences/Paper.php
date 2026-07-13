@@ -43,6 +43,7 @@ class Episciences_Paper
      *
      */
     public const CACHE_CLASS_NAMESPACE = 'paper';
+    public const JSON_DOCUMENT_COLUMN = 'DOCUMENT';
 
     public const STATUS_SUBMITTED = 0;
     // reviewers have been assigned, but did not start their reports
@@ -3329,11 +3330,11 @@ class Episciences_Paper
                 $oVolume->loadSettings();
             }
         }
-        
+
         // fetch secondary volume data if the setting is enabled in the review
         $review = Episciences_ReviewsManager::find($this->getRvid());
 
-        $displaySecondaryVolumes = (int) $review->getSetting(
+        $displaySecondaryVolumes = (int)$review->getSetting(
                 Episciences_Review::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE
             ) === 1;
 
@@ -5636,6 +5637,49 @@ class Episciences_Paper
                 $this->isOwner() ||
                 $this->isEditor(Episciences_Auth::getUid());
     }
+
+
+    public function isEligibleForMasterFileChoice(): bool
+    {
+        return
+            $this->hasHook &&
+            !$this->isDataSetOrSoftware() &&
+            count($this->getFiles()) > 0 &&
+            $this->isAllowedToEditMasterFile();
+    }
+
+
+    /**
+     * Updates a nested value in a JSON document column
+     *
+     * @param string $jsonPath JSON path(ie: '$.database.current.mainPdfUrl')
+     * @param mixed  $value    Value to insert
+     *
+     * @return bool
+     * @throws Exception
+     */
+    public function updateNestedJsonDocument(
+        string $jsonPath,
+        mixed $value
+    ): bool {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $jsonValue = json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+
+        $sql = sprintf(
+            'UPDATE `%s` SET `%s` = JSON_SET(`%s`, ?, CAST(? AS JSON)) WHERE DOCID = ?',
+            T_PAPERS,
+            self::JSON_DOCUMENT_COLUMN,
+            self::JSON_DOCUMENT_COLUMN
+        );
+
+        return $db?->prepare($sql)->execute([
+            $jsonPath,
+            $jsonValue,
+            $this->getDocid()
+        ]) ?? false;
+    }
+
 }
 
 
