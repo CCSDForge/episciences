@@ -5657,7 +5657,7 @@ class Episciences_Paper
             $jsonPath,
             $jsonValue,
             $this->getDocid()
-        ]);
+        ]) ?? false;
     }
 
 }
