@@ -4415,7 +4415,7 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        if (!$paper->isAllowedToEditMasterFile()) {
+        if (!$paper->isEligibleForMasterFileChoice()) {
             return;
         }
 
@@ -4462,7 +4462,7 @@ class PaperController extends PaperDefaultController
             return;
         }
 
-        if (!$paper->isAllowedToEditMasterFile()) {
+        if (!$paper->isEligibleForMasterFileChoice()) {
             $this->jsonEncodedResult($result);
             return;
         }
@@ -4498,6 +4498,15 @@ class PaperController extends PaperDefaultController
         $targetFile->setIsMain(true);
         $result['success'] = $targetFile->save() > 0;
         $result['targetId'] = $targetFile->getId();
+        $result['isJsonDocumentUpdated'] = false;
+
+        try {
+            $isUpdated = $paper->updateNestedJsonDocument('$.database.current.mainPdfUrl', $paper->getMainPaperUrl());
+            $result['isJsonDocumentUpdated'] = $isUpdated;
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+
         $this->jsonEncodedResult($result);
     }
 
