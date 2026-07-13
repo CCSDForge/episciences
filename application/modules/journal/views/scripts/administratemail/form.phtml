@@ -1,5 +1,5 @@
 <?php
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
+$this->getHelper('webpackAssets')->queueScript('jquery-file-upload');
 $this->jQuery()->addJavascriptFile('/js/library/es.fileupload.js');
 
 // Attached file description
