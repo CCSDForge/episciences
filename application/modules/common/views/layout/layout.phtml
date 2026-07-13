@@ -58,7 +58,6 @@ echo $this->doctype('HTML5');
     $this->jQuery()->addJavascriptFile("/js/translation.php?lang=" . Zend_Registry::get('lang'));
     $this->jQuery()->addJavascriptFile("/js/functions.js");
     $this->jQuery()->addJavascriptFile("/js/form.js");
-    $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_URL_PARSER);
     $this->jQuery()->setLocalPath(VENDOR_JQUERY)->enable();
     $this->jQuery()->setUiLocalPath(VENDOR_JQUERY_UI)->UiEnable();
     // Episciences Main JS bundle (Bootstrap, Bootbox, Cookie Consent, bundled via webpack). Queued via
