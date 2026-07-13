@@ -74,10 +74,11 @@
 
 <?php
 
-$this->getHelper('webpackAssets')->queueScript('jquery-file-upload');
+$this->getHelper('webpackAssets')->queueScript('filepond');
+$this->getHelper('webpackAssets')->queueStylesheet('filepond');
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
-$this->jQuery()->addJavascriptFile('/js/library/es.fileupload.js');
+$this->jQuery()->addJavascriptFile('/js/library/es.filepond.js');
 $this->jQuery()->addJavascriptFile('/js/library/es.mail.js');
 // Security: DOMPurify for XSS prevention (needed by es.contacts-list.js)
 $this->jQuery()->addJavascriptFile("https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js");

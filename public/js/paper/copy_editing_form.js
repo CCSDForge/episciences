@@ -2,10 +2,13 @@ let paperCommentId;
 $(function () {
     $('[id^=replyFormBtn_]').on('click', function () {
         paperCommentId = $(this).attr('id').match(/\d+/)[0];
-        // Charger ce fichier en ce moment et initialisation de la variable paperCommentId
-        $.getScript('/js/library/es.fileupload.js').fail(function () {
-            console.log('loading failed: /js/library/es.fileupload.js');
-        });
+        // Load the upload widget script now, once the reply form (and its
+        // attachments_path_type_<pcId> hidden input) is in the DOM.
+        const script = document.createElement('script');
+        script.src = '/js/library/es.filepond.js';
+        script.onerror = () =>
+            console.log('loading failed: /js/library/es.filepond.js');
+        document.body.appendChild(script);
     });
 
     $('[id^=ce_cancel_]').on('click', function (evt) {
@@ -40,21 +43,31 @@ $(function () {
     });
 
     function deleteAllAttachedFiles() {
-        let formData = {};
-        let files = $('#replyForm_' + paperCommentId).find('.upload_filename');
         let $ceHiddenPath = $('#attachments_path_type_' + paperCommentId);
 
-        formData.pcId = paperCommentId;
-        formData.path = $ceHiddenPath.length > 0 ? $ceHiddenPath.val() : '';
-        formData.docId =
-            $ceHiddenPath.length > 0 ? $ceHiddenPath.attr('docId') : 0;
+        let context = {
+            pcId: paperCommentId,
+            path: $ceHiddenPath.length > 0 ? $ceHiddenPath.val() : '',
+            docId: $ceHiddenPath.length > 0 ? $ceHiddenPath.attr('docId') : 0,
+        };
 
-        files.each(function (index, value) {
-            formData.file = $(value).val();
-            ajaxDeleteFile(formData).done(function () {
-                $(value).parent().remove();
+        let csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        let csrfToken = csrfMeta ? csrfMeta.content : '';
+
+        $('#replyForm_' + paperCommentId)
+            .find('.upload_filename')
+            .each(function (index, hiddenInput) {
+                let body = new URLSearchParams({
+                    ...context,
+                    file: hiddenInput.value,
+                });
+
+                fetch('/file/delete', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-Token': csrfToken },
+                    body,
+                }).then(() => hiddenInput.remove());
             });
-        });
     }
 
     $(window).on('unload', function () {

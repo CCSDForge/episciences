@@ -512,7 +512,7 @@ class AdministratemailController extends Zend_Controller_Action
         }
 
         if (isset($post[Episciences_Mail_Send::ATTACHMENTS])) {
-            // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
+            // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.filepond.js)
             $attachments = Episciences_Tools::arrayFilterEmptyValues($post[Episciences_Mail_Send::ATTACHMENTS]);
             $path = Episciences_Tools::getAttachmentsPath();
             foreach ($attachments as $attachment) {

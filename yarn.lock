@@ -3064,49 +3064,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"blueimp-canvas-to-blob@npm:3":
-  version: 3.29.0
-  resolution: "blueimp-canvas-to-blob@npm:3.29.0"
-  checksum: 10/6a55b90fbe958b75f7c78ff9e7617c01254d29cc8567ea6c853cd26a52518b3dfce28635f6964130ac738ee8ff9fb9c0ca094db2ceeaa021ff0432c1985416eb
-  languageName: node
-  linkType: hard
-
-"blueimp-file-upload@npm:10.32.0":
-  version: 10.32.0
-  resolution: "blueimp-file-upload@npm:10.32.0"
-  dependencies:
-    blueimp-canvas-to-blob: "npm:3"
-    blueimp-load-image: "npm:5"
-    blueimp-tmpl: "npm:3"
-  peerDependencies:
-    jquery: ">=1.7"
-  dependenciesMeta:
-    blueimp-canvas-to-blob:
-      optional: true
-    blueimp-load-image:
-      optional: true
-    blueimp-tmpl:
-      optional: true
-  checksum: 10/c85b033c2940f83662c473a6586d08f2988bd43371380b005c88099693b2d3ad7f8f5fd8e2ea535facd241de38e13898c63baf003e9e81e291f833525ffadcfb
-  languageName: node
-  linkType: hard
-
-"blueimp-load-image@npm:5":
-  version: 5.16.0
-  resolution: "blueimp-load-image@npm:5.16.0"
-  checksum: 10/ab2c413f2e96c1edc89f2b82b9c0e74fe893242cf5d3526f24638a833fb451edbb3d96e84f5814ed6ee5845b4cff75f1bdd1374c934564355cf86f3b07442b0a
-  languageName: node
-  linkType: hard
-
-"blueimp-tmpl@npm:3":
-  version: 3.20.0
-  resolution: "blueimp-tmpl@npm:3.20.0"
-  bin:
-    tmpl.js: js/compile.js
-  checksum: 10/c809e71547a16db38b8233c7ea17f0bc84bb2e4c2c4c52ddec1bedf4c48f11129f69c08ad6a161538ea475041d20754c41a68f90e5e3e1fceeded8378b9e5e67
-  languageName: node
-  linkType: hard
-
 "boolbase@npm:^1.0.0":
   version: 1.0.0
   resolution: "boolbase@npm:1.0.0"
@@ -4171,6 +4128,40 @@ __metadata:
     picomatch:
       optional: true
   checksum: 10/14ca1c9f0a0e8f4f2e9bf4e8551065a164a09545dae548c12a18d238b72e51e5a7b39bd8e5494b56463a0877672d0a6c1ef62c6fa0677db1b0c847773be939b1
+  languageName: node
+  linkType: hard
+
+"filepond-plugin-file-validate-size@npm:2.2.8":
+  version: 2.2.8
+  resolution: "filepond-plugin-file-validate-size@npm:2.2.8"
+  peerDependencies:
+    filepond: ">=3.1.2 <5.x"
+  checksum: 10/b6024735abb99a51f429abef8a8659fb89d0880647089f080db5c2d33a8972c7b4e77714f9c94b2545556f6960b4e0c2dfc035df4d005fb44f93a7f46dcd52be
+  languageName: node
+  linkType: hard
+
+"filepond-plugin-file-validate-type@npm:1.2.9":
+  version: 1.2.9
+  resolution: "filepond-plugin-file-validate-type@npm:1.2.9"
+  peerDependencies:
+    filepond: ">=1.x <5.x"
+  checksum: 10/d697ffef5e5412a172eceba72b5442ec1f2b61e707df8ca494e8fd9b804125df9dcd2fbcb52e3cc9572b97feec09f25b31ee4f3281464d14fa80fac6de2229bc
+  languageName: node
+  linkType: hard
+
+"filepond-plugin-image-preview@npm:4.6.12":
+  version: 4.6.12
+  resolution: "filepond-plugin-image-preview@npm:4.6.12"
+  peerDependencies:
+    filepond: ">=4.x <5.x"
+  checksum: 10/2f42993b3cfd7a694d833125c2652893d43ddd168aa538cd1b2f9ff2ac5cfd134fe08d98878b282b578b310c8b7b48ecd8e21286761e1802943877a05910fd5f
+  languageName: node
+  linkType: hard
+
+"filepond@npm:4.32.12":
+  version: 4.32.12
+  resolution: "filepond@npm:4.32.12"
+  checksum: 10/dda95621f408080520bc09de739f5307922f7ce1cbae2da474dad5c3e096f697bbac5e3671d20231d1d861871d3bcfc848957d98c6bc3588f47b221e22bfa989
   languageName: node
   linkType: hard
 
@@ -6423,7 +6414,6 @@ __metadata:
     "@playwright/test": "npm:^1.60.0"
     "@symfony/webpack-encore": "npm:^5.3.1"
     altcha: "npm:3.1.0"
-    blueimp-file-upload: "npm:10.32.0"
     bootbox: "npm:5.5.3"
     bootstrap: "npm:3.3.7"
     bootstrap-legacy-js: "npm:bootstrap@3.2.0"
@@ -6431,6 +6421,10 @@ __metadata:
     chartjs-plugin-datalabels: "npm:0.7.0"
     cookieconsent: "npm:3.1.1"
     datatables.net-bs: "npm:1.10.21"
+    filepond: "npm:4.32.12"
+    filepond-plugin-file-validate-size: "npm:2.2.8"
+    filepond-plugin-file-validate-type: "npm:1.2.9"
+    filepond-plugin-image-preview: "npm:4.6.12"
     jest: "npm:^30.4.2"
     jest-environment-jsdom: "npm:^30.4.1"
     jquery-ui: "npm:1.12.1"

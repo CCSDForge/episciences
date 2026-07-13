@@ -45,7 +45,6 @@
     "@fortawesome/fontawesome-free": "7.0.1",
     "@playwright/test": "^1.60.0",
     "altcha": "3.1.0",
-    "blueimp-file-upload": "10.32.0",
     "bootbox": "5.5.3",
     "bootstrap": "3.3.7",
     "bootstrap-legacy-js": "npm:bootstrap@3.2.0",
@@ -53,6 +52,10 @@
     "chartjs-plugin-datalabels": "0.7.0",
     "cookieconsent": "3.1.1",
     "datatables.net-bs": "1.10.21",
+    "filepond": "4.32.12",
+    "filepond-plugin-file-validate-size": "2.2.8",
+    "filepond-plugin-file-validate-type": "1.2.9",
+    "filepond-plugin-image-preview": "4.6.12",
     "jquery-ui": "1.12.1",
     "sortablejs": "1.15.7"
   }

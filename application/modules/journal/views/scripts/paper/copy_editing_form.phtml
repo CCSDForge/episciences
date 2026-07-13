@@ -1,5 +1,6 @@
 <?php
-$this->getHelper('webpackAssets')->queueScript('jquery-file-upload');
+$this->getHelper('webpackAssets')->queueScript('filepond');
+$this->getHelper('webpackAssets')->queueStylesheet('filepond');
 
 // Attached file description
 $description = Episciences_Tools::buildAttachedFilesDescription();
@@ -25,14 +26,11 @@ $attribsForm = $selfElement->getAttribs();
 
     <div id="attachments-element-ce-<?= $pcId; ?>" class="form-group row">
         <div class="col-md-9 col-md-offset-3" style="padding-left: 10px">
-            <div id="upload_widget_<?= $pcId; ?>" class="upload_widget" data-upload-container="test">
+            <div id="upload_widget_<?= $pcId; ?>" class="upload_widget"
+                 data-max-file-size="<?= MAX_FILE_SIZE ?: '' ?>"
+                 data-allowed-mime-types="<?= $this->escape(implode(',', ALLOWED_MIMES_TYPES)) ?>">
                 <span id="help-block-<?= $pcId; ?>" class="help-block text-info"><?= $description; ?></span>
-                <div id="upload_button_<?= $pcId; ?>" class="upload_button btn btn-default btn-xs select-files">
-                    <span class="glyphicon glyphicon-folder-open"></span>
-                    <?= $this->translate('Ajouter des fichiers') . '...'; ?>
-                </div>
                 <input id="upload_input_<?= $pcId; ?>" class="upload_input" type="file" multiple/>
-                <div class="uploads_container"></div>
             </div>
         </div>
     </div>

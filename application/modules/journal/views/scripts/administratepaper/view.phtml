@@ -393,7 +393,8 @@ if ($this->citations !== '') {
     </script>
 
 <?php
-$this->getHelper('webpackAssets')->queueScript('jquery-file-upload');
+$this->getHelper('webpackAssets')->queueScript('filepond');
+$this->getHelper('webpackAssets')->queueStylesheet('filepond');
 
 //datatable (for reviewer invitation modal)
 $this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');

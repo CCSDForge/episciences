@@ -34,15 +34,16 @@ Encore
     .addEntry('datatables-bootstrap', './assets/datatables-bootstrap.js')
     .addEntry('chartjs', './assets/chartjs.js')
     .addEntry('sortablejs', './assets/sortablejs.js')
-    .addEntry('jquery-file-upload', './assets/jquery-file-upload.js')
+    .addEntry('filepond', './assets/filepond.js')
     .addEntry('jquery-ui-theme', './assets/jquery-ui-theme.js')
     //.addEntry('page1', './assets/page1.js')
     //.addEntry('page2', './assets/page2.js')
 
     // jQuery itself is still loaded globally via CDN (VENDOR_JQUERY, see layout.phtml), not bundled.
-    // Any bundled jQuery plugin (Bootstrap JS, DataTables, jQuery File Upload, bootbox) must attach to
-    // that same global instance rather than bundling its own private copy of jQuery — otherwise plugins
-    // wouldn't be visible to non-bundled inline scripts calling $(...).plugin().
+    // Any bundled jQuery plugin (Bootstrap JS, DataTables, bootbox) must attach to that same global
+    // instance rather than bundling its own private copy of jQuery — otherwise plugins wouldn't be
+    // visible to non-bundled inline scripts calling $(...).plugin(). FilePond is standalone and has no
+    // such requirement (see assets/filepond.js).
     .addExternals({ jquery: 'jQuery' })
 
     // When enabled, Webpack "splits" your files into smaller pieces for greater optimization.
