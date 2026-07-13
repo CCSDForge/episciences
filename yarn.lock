@@ -1514,6 +1514,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@fortawesome/fontawesome-free@npm:7.0.1":
+  version: 7.0.1
+  resolution: "@fortawesome/fontawesome-free@npm:7.0.1"
+  checksum: 10/72fcb5be1c16c46dab8c8af58fb9abe54380d9acb54c3ab5bda42c247aa8139ddc038163d4b9ac15191c6b7b6aa255753022eb40b336bf8f88368371af4078f7
+  languageName: node
+  linkType: hard
+
 "@isaacs/cliui@npm:^8.0.2":
   version: 8.0.2
   resolution: "@isaacs/cliui@npm:8.0.2"
@@ -3057,10 +3064,78 @@ __metadata:
   languageName: node
   linkType: hard
 
+"blueimp-canvas-to-blob@npm:3":
+  version: 3.29.0
+  resolution: "blueimp-canvas-to-blob@npm:3.29.0"
+  checksum: 10/6a55b90fbe958b75f7c78ff9e7617c01254d29cc8567ea6c853cd26a52518b3dfce28635f6964130ac738ee8ff9fb9c0ca094db2ceeaa021ff0432c1985416eb
+  languageName: node
+  linkType: hard
+
+"blueimp-file-upload@npm:10.32.0":
+  version: 10.32.0
+  resolution: "blueimp-file-upload@npm:10.32.0"
+  dependencies:
+    blueimp-canvas-to-blob: "npm:3"
+    blueimp-load-image: "npm:5"
+    blueimp-tmpl: "npm:3"
+  peerDependencies:
+    jquery: ">=1.7"
+  dependenciesMeta:
+    blueimp-canvas-to-blob:
+      optional: true
+    blueimp-load-image:
+      optional: true
+    blueimp-tmpl:
+      optional: true
+  checksum: 10/c85b033c2940f83662c473a6586d08f2988bd43371380b005c88099693b2d3ad7f8f5fd8e2ea535facd241de38e13898c63baf003e9e81e291f833525ffadcfb
+  languageName: node
+  linkType: hard
+
+"blueimp-load-image@npm:5":
+  version: 5.16.0
+  resolution: "blueimp-load-image@npm:5.16.0"
+  checksum: 10/ab2c413f2e96c1edc89f2b82b9c0e74fe893242cf5d3526f24638a833fb451edbb3d96e84f5814ed6ee5845b4cff75f1bdd1374c934564355cf86f3b07442b0a
+  languageName: node
+  linkType: hard
+
+"blueimp-tmpl@npm:3":
+  version: 3.20.0
+  resolution: "blueimp-tmpl@npm:3.20.0"
+  bin:
+    tmpl.js: js/compile.js
+  checksum: 10/c809e71547a16db38b8233c7ea17f0bc84bb2e4c2c4c52ddec1bedf4c48f11129f69c08ad6a161538ea475041d20754c41a68f90e5e3e1fceeded8378b9e5e67
+  languageName: node
+  linkType: hard
+
 "boolbase@npm:^1.0.0":
   version: 1.0.0
   resolution: "boolbase@npm:1.0.0"
   checksum: 10/3e25c80ef626c3a3487c73dbfc70ac322ec830666c9ad915d11b701142fab25ec1e63eff2c450c74347acfd2de854ccde865cd79ef4db1683f7c7b046ea43bb0
+  languageName: node
+  linkType: hard
+
+"bootbox@npm:5.5.3":
+  version: 5.5.3
+  resolution: "bootbox@npm:5.5.3"
+  peerDependencies:
+    bootstrap: ^3.1.0 || ^4.4.0
+    jquery: ^3.5.1
+    popper.js: ^1.16.0
+  checksum: 10/a327564502a77e6f460c28e9ec25a3e95a52cbfbc2aa0434c9639b851102ad3bf3d73a6e705cf71a24fdfa821407cb8ec7f4a8e93d7820d2ef002e99b84cf813
+  languageName: node
+  linkType: hard
+
+"bootstrap-legacy-js@npm:bootstrap@3.2.0":
+  version: 3.2.0
+  resolution: "bootstrap@npm:3.2.0"
+  checksum: 10/69fd95d806a0c7f8ee13d9dd51044885ee8aa66a69ffc4c79e2d0ae6e075792f87e80da0dd3938573362829ccc14197c1e1e220264520820f054077644429da1
+  languageName: node
+  linkType: hard
+
+"bootstrap@npm:3.3.7":
+  version: 3.3.7
+  resolution: "bootstrap@npm:3.3.7"
+  checksum: 10/bc978de5b63ea67e21eb6a23de91a1b761c13f77715e4887293f304d03bb449aa44e2ecacfc32309502cdb9e4c542fd5ec1a230f667f4d611c7fa855fe37d731
   languageName: node
   linkType: hard
 
@@ -3191,6 +3266,44 @@ __metadata:
   languageName: node
   linkType: hard
 
+"chart.js@npm:2.9.4":
+  version: 2.9.4
+  resolution: "chart.js@npm:2.9.4"
+  dependencies:
+    chartjs-color: "npm:^2.1.0"
+    moment: "npm:^2.10.2"
+  checksum: 10/0f07ab60f7280970bce3d7871176a6fbff340b76a61fa070084cc500fa0954565aa55931bf3060dc206b3a5a4cc1c1aef2594e50ec6c7d7b13e72778d7406d7b
+  languageName: node
+  linkType: hard
+
+"chartjs-color-string@npm:^0.6.0":
+  version: 0.6.0
+  resolution: "chartjs-color-string@npm:0.6.0"
+  dependencies:
+    color-name: "npm:^1.0.0"
+  checksum: 10/c08303cdd4ed567f0db31afd8d2eb6b055d759af3e5c1b94a70b89c6fe22524972ff35ba03ce71dbd7ac16fb15d6f07bdb075fe5c2eb4346805d7a42d7836ff6
+  languageName: node
+  linkType: hard
+
+"chartjs-color@npm:^2.1.0":
+  version: 2.4.1
+  resolution: "chartjs-color@npm:2.4.1"
+  dependencies:
+    chartjs-color-string: "npm:^0.6.0"
+    color-convert: "npm:^1.9.3"
+  checksum: 10/8c40ca412abae628f58d2c9c778244d0a3e67c2028d62a5a0d503b0467725fb154c72a529ac480eb8506d8555c53bf793f5d716633292d66375ec47939d8e684
+  languageName: node
+  linkType: hard
+
+"chartjs-plugin-datalabels@npm:0.7.0":
+  version: 0.7.0
+  resolution: "chartjs-plugin-datalabels@npm:0.7.0"
+  peerDependencies:
+    chart.js: ">= 2.7.0 < 3"
+  checksum: 10/ce715f1ca392e4147c7eb6a6c846c1fd8f39cbfe3330969022cbbbe1dd837b38df4f59ba406e1a772cbcda76533e529c68dd7af0501cf2bcda6374e2e88f1611
+  languageName: node
+  linkType: hard
+
 "chokidar@npm:^5.0.0":
   version: 5.0.0
   resolution: "chokidar@npm:5.0.0"
@@ -3264,7 +3377,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"color-convert@npm:^1.9.0":
+"color-convert@npm:^1.9.0, color-convert@npm:^1.9.3":
   version: 1.9.3
   resolution: "color-convert@npm:1.9.3"
   dependencies:
@@ -3296,7 +3409,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"color-name@npm:~1.1.4":
+"color-name@npm:^1.0.0, color-name@npm:~1.1.4":
   version: 1.1.4
   resolution: "color-name@npm:1.1.4"
   checksum: 10/b0445859521eb4021cd0fb0cc1a75cecf67fceecae89b63f62b201cca8d345baf8b952c966862a9d9a2632987d4f6581f0ec8d957dfacece86f0a7919316f610
@@ -3363,6 +3476,13 @@ __metadata:
   version: 2.0.0
   resolution: "convert-source-map@npm:2.0.0"
   checksum: 10/c987be3ec061348cdb3c2bfb924bec86dea1eacad10550a85ca23edb0fe3556c3a61c7399114f3331ccb3499d7fd0285ab24566e5745929412983494c3926e15
+  languageName: node
+  linkType: hard
+
+"cookieconsent@npm:3.1.1":
+  version: 3.1.1
+  resolution: "cookieconsent@npm:3.1.1"
+  checksum: 10/ab0f67deb8b801c38791240bea022801d0a54f505633532d8824fe0c0c15000a2bd4addb298337bff03d7c5df34c0f0b962c28bc57f11321bc622383b236d9a3
   languageName: node
   linkType: hard
 
@@ -3607,6 +3727,25 @@ __metadata:
     whatwg-mimetype: "npm:^5.0.0"
     whatwg-url: "npm:^16.0.0"
   checksum: 10/60f88ded4306aea5d6251c4db100ca272fc026014004d68aad4db495397a73bb39d17a6bd29ed9ab348c88a28f6e97266a1759985df4e12dc8c02bb8544c7731
+  languageName: node
+  linkType: hard
+
+"datatables.net-bs@npm:1.10.21":
+  version: 1.10.21
+  resolution: "datatables.net-bs@npm:1.10.21"
+  dependencies:
+    datatables.net: "npm:1.10.21"
+    jquery: "npm:>=1.7"
+  checksum: 10/4575bab056b7e2649177291629bc2cf927c8da95f755ddee54258f8688b4696604e0f0c969095b9861f174b53fd7ce197a8d45bb884d88d1274f1847487a07e7
+  languageName: node
+  linkType: hard
+
+"datatables.net@npm:1.10.21":
+  version: 1.10.21
+  resolution: "datatables.net@npm:1.10.21"
+  dependencies:
+    jquery: "npm:>=1.7"
+  checksum: 10/09b5c7ef94905e51ba48555ec81aa1caad5b394dc2bf6aa88d862d2a09e10211e9611f1109ff4361db13ea01ebaeff25da679ac1eade944358aa2018def806e5
   languageName: node
   linkType: hard
 
@@ -5011,6 +5150,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jquery-ui@npm:1.12.1":
+  version: 1.12.1
+  resolution: "jquery-ui@npm:1.12.1"
+  checksum: 10/256e230eb41c797d4a043376a814fe5690382ed6b85901c2cfdfe0fe793a3c5d982e4f2ff3acc4cef6f429f04b07b544d8a8726353776ec25bd8e556cf04612e
+  languageName: node
+  linkType: hard
+
+"jquery@npm:>=1.7":
+  version: 4.0.0
+  resolution: "jquery@npm:4.0.0"
+  checksum: 10/722be14779518f27f50463d9aaa8d6b42782673a23f65335c4ff9e2ad124cb4d5267696dfc7bc4f40ecf04e852cbb05b1630b50daacf2821737d5d3b480fbf19
+  languageName: node
+  linkType: hard
+
 "js-tokens@npm:^4.0.0":
   version: 4.0.0
   resolution: "js-tokens@npm:4.0.0"
@@ -5341,6 +5494,13 @@ __metadata:
   dependencies:
     minipass: "npm:^7.1.2"
   checksum: 10/f47365cc2cb7f078cbe7e046eb52655e2e7e97f8c0a9a674f4da60d94fb0624edfcec9b5db32e8ba5a99a5f036f595680ae6fe02a262beaa73026e505cc52f99
+  languageName: node
+  linkType: hard
+
+"moment@npm:^2.10.2":
+  version: 2.30.1
+  resolution: "moment@npm:2.30.1"
+  checksum: 10/ae42d876d4ec831ef66110bdc302c0657c664991e45cf2afffc4b0f6cd6d251dde11375c982a5c0564ccc0fa593fc564576ddceb8c8845e87c15f58aa6baca69
   languageName: node
   linkType: hard
 
@@ -6259,16 +6419,27 @@ __metadata:
   dependencies:
     "@babel/core": "npm:^7.29.7"
     "@babel/preset-env": "npm:^7.29.7"
+    "@fortawesome/fontawesome-free": "npm:7.0.1"
     "@playwright/test": "npm:^1.60.0"
     "@symfony/webpack-encore": "npm:^5.3.1"
     altcha: "npm:3.1.0"
+    blueimp-file-upload: "npm:10.32.0"
+    bootbox: "npm:5.5.3"
+    bootstrap: "npm:3.3.7"
+    bootstrap-legacy-js: "npm:bootstrap@3.2.0"
+    chart.js: "npm:2.9.4"
+    chartjs-plugin-datalabels: "npm:0.7.0"
+    cookieconsent: "npm:3.1.1"
+    datatables.net-bs: "npm:1.10.21"
     jest: "npm:^30.4.2"
     jest-environment-jsdom: "npm:^30.4.1"
+    jquery-ui: "npm:1.12.1"
     jsdom: "npm:^29.0.0"
     prettier: "npm:^3.8.3"
     resolve-url-loader: "npm:^5.0.0"
     sass: "npm:^1.100.0"
     sass-loader: "npm:^16.0.8"
+    sortablejs: "npm:1.15.7"
     ts-loader: "npm:^9.6.0"
     typescript: "npm:^5.9.3"
     webpack: "npm:^5.107.2"
@@ -6447,6 +6618,13 @@ __metadata:
   version: 3.0.0
   resolution: "slash@npm:3.0.0"
   checksum: 10/94a93fff615f25a999ad4b83c9d5e257a7280c90a32a7cb8b4a87996e4babf322e469c42b7f649fd5796edd8687652f3fb452a86dc97a816f01113183393f11c
+  languageName: node
+  linkType: hard
+
+"sortablejs@npm:1.15.7":
+  version: 1.15.7
+  resolution: "sortablejs@npm:1.15.7"
+  checksum: 10/4ef195ec8512c48ba536c65fc8ab8ecf0bd05a918dc79d64213428edf12c8d5a6c18ff40f822d69d4716b764d860e0fdf8a467cf7ab6386f613aa4ea99ac5d42
   languageName: node
   linkType: hard
 

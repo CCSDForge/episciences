@@ -13,10 +13,9 @@ $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
 //datatable
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
-$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
-$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
-$this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
+$this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');
+$this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
+$this->getHelper('webpackAssets')->queueStylesheet('jquery-ui-theme');
 ?>
 
 <?php $this->layout()->pageTitle = $this->translate('Inviter un relecteur'); ?>

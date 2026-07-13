@@ -457,7 +457,6 @@ class UserDefaultController extends Zend_Controller_Action
         $this->view->jQuery()->addJavascriptFile("/js/vendor/jquery.ui.autocomplete.html.js");
         $this->view->jQuery()->addJavascriptFile('/js/autocomplete-utils.js');
         $this->view->jQuery()->addJavascriptFile('/js/user/functions.js');
-        $this->view->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
 
         $form = new Ccsd_Form;
         $form->setAction('/user/create')

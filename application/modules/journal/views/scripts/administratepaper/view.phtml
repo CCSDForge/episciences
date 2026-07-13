@@ -393,15 +393,15 @@ if ($this->citations !== '') {
     </script>
 
 <?php
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
+$this->getHelper('webpackAssets')->queueScript('jquery-file-upload');
 
 //datatable (for reviewer invitation modal)
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
-$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
-$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+$this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');
+$this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
 
 $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker-" . Zend_Registry::get('lang') . ".js");
 $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker.js");
+$this->getHelper('webpackAssets')->queueStylesheet('jquery-ui-theme');
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
@@ -417,7 +417,6 @@ $this->jQuery()->addJavascriptFile('/js/common/utils.js');
 $this->jQuery()->addJavascriptFile('/js/paper/edit_master_file.js');
 $this->jQuery()->addJavascriptFile('/js/components/collapsible-message.js');
 
-$this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
 $this->jQuery()->addJavascriptFile('/js/autocomplete-utils.js');
 $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
 $this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');

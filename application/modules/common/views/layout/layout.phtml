@@ -51,25 +51,20 @@ echo $this->doctype('HTML5');
     if ($this->cssFile) {
         $this->jQuery()->addStylesheet($this->cssFile);
     }
-    // Episciences Main CSS
+    // Episciences Main CSS (includes Bootstrap, Font Awesome and Cookie Consent, bundled via webpack)
     $this->jQuery()->addStylesheet("/css/main.css");
-
-    $this->jQuery()->addStylesheet(VENDOR_BOOTSTRAP);
-    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME);
-    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_SOLID);
-    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_BRAND);
-    $this->jQuery()->addStylesheet(VENDOR_COOKIE_CONSENT_CSS);
-
 
     // JS
     $this->jQuery()->addJavascriptFile("/js/translation.php?lang=" . Zend_Registry::get('lang'));
-    $this->jQuery()->addJavascriptFile(VENDOR_BOOTBOX);
     $this->jQuery()->addJavascriptFile("/js/functions.js");
     $this->jQuery()->addJavascriptFile("/js/form.js");
     $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_URL_PARSER);
     $this->jQuery()->setLocalPath(VENDOR_JQUERY)->enable();
     $this->jQuery()->setUiLocalPath(VENDOR_JQUERY_UI)->UiEnable();
-    $this->jQuery()->addJavascriptFile(VENDOR_BOOTSTRAP_JS);
+    // Episciences Main JS bundle (Bootstrap, Bootbox, Cookie Consent, bundled via webpack). Queued via
+    // the jQuery container so it inherits its APPLICATION_VERSION cache-busting (see
+    // Episciences_View_Helper_JQuery_Container).
+    $this->getHelper('webpackAssets')->queueScript('app');
     echo $this->jQuery();
     ?>
     <script src="<?php echo VENDOR_MATHJAX ?>" async></script>
@@ -161,9 +156,6 @@ echo $this->doctype('HTML5');
         echo $this->render('commons/matomo.phtml');
     }
     ?>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.js"
-            integrity="sha512-yXXqOFjdjHNH1GND+1EO0jbvvebABpzGKD66djnUfiKlYME5HGMUJHoCaeE4D5PTG2YsSJf6dwqyUUvQvS0vaA=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         window.cookieconsent.initialise({
             "palette": {

@@ -29,11 +29,39 @@ Encore
      */
     .addEntry('app', './assets/app.js')
     .addEntry('altcha', './assets/altcha.js')
+    // CSS-only entries for vendor libraries only needed on specific pages (not the whole site),
+    // loaded on demand via webpackAssets()->queueStylesheet() where used.
+    .addEntry('datatables-bootstrap', './assets/datatables-bootstrap.js')
+    .addEntry('chartjs', './assets/chartjs.js')
+    .addEntry('sortablejs', './assets/sortablejs.js')
+    .addEntry('jquery-file-upload', './assets/jquery-file-upload.js')
+    .addEntry('jquery-ui-theme', './assets/jquery-ui-theme.js')
     //.addEntry('page1', './assets/page1.js')
     //.addEntry('page2', './assets/page2.js')
 
+    // jQuery itself is still loaded globally via CDN (VENDOR_JQUERY, see layout.phtml), not bundled.
+    // Any bundled jQuery plugin (Bootstrap JS, DataTables, jQuery File Upload, bootbox) must attach to
+    // that same global instance rather than bundling its own private copy of jQuery — otherwise plugins
+    // wouldn't be visible to non-bundled inline scripts calling $(...).plugin().
+    .addExternals({ jquery: 'jQuery' })
+
     // When enabled, Webpack "splits" your files into smaller pieces for greater optimization.
     .splitEntryChunks()
+
+    // Layout templates reference each entry's CSS output as a single static file (e.g. /css/main.css,
+    // symlinked to build/app.css) rather than through entrypoints.json, so CSS pulled in from
+    // node_modules (e.g. Bootstrap) must stay merged into that file instead of being split into its
+    // own "vendors-*.css" chunk.
+    .configureSplitChunks((splitChunks) => {
+        splitChunks.cacheGroups = {
+            ...splitChunks.cacheGroups,
+            defaultVendors: {
+                test: /[\\/]node_modules[\\/].*\.js$/,
+                priority: -10,
+                reuseExistingChunk: true
+            }
+        };
+    })
 
     // will require an extra script tag for runtime.js
     // but, you probably want this, unless you're building a single-page app
