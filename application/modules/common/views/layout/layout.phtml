@@ -184,9 +184,9 @@ $this->navbar(true, [
         echo $this->render('commons/matomo.phtml');
     }
     ?>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.js"
-            data-cfasync="false"></script>
+            integrity="sha512-yXXqOFjdjHNH1GND+1EO0jbvvebABpzGKD66djnUfiKlYME5HGMUJHoCaeE4D5PTG2YsSJf6dwqyUUvQvS0vaA=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         window.cookieconsent.initialise({
             "palette": {
@@ -216,5 +216,6 @@ $this->navbar(true, [
     <script>
         const JS_PREFIX_URL = <?= "'$prefixUrl'" ?>;
     </script>
+    <!-- CLOCKSS system has permission to ingest, preserve, and serve this open access Archival Unit -->
 </body>
 </html>
