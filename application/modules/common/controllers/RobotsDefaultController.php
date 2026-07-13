@@ -12,8 +12,10 @@ class RobotsDefaultController extends Episciences_Controller_Action
         header('Content-Type: text/plain; charset: utf-8');
         echo '# Episciences robots.txt' . PHP_EOL;
 
+        $isNewFrontSwitched = defined('RVID') && Episciences_ReviewsManager::isNewFrontSwitched((int) RVID);
+
         echo "User-Agent: *\n";
-        if (APPLICATION_ENV === ENV_PROD) {
+        if (APPLICATION_ENV == ENV_PROD && !$isNewFrontSwitched) {
             $pathsToDisallow = [
                 '/search',
                 '/index.php/search',

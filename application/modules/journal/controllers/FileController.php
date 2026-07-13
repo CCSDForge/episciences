@@ -150,8 +150,18 @@ class FileController extends DefaultController
      */
     protected function loadFile(string $filepath, bool $forceDownload = false): void
     {
-        if (is_readable($filepath)) {
-            $this->openFile($filepath, $forceDownload);
+        // Confine the resolved file to REVIEW_FILES_PATH to prevent path traversal
+        // (e.g. "../../application/configs/application.ini") via the user-supplied
+        // filename/extension parameters.
+        $realBase = realpath(REVIEW_FILES_PATH);
+        $realPath = realpath($filepath);
+
+        $isConfined = $realBase !== false
+            && $realPath !== false
+            && ($realPath === $realBase || str_starts_with($realPath, $realBase . DIRECTORY_SEPARATOR));
+
+        if ($isConfined && is_readable($realPath)) {
+            $this->openFile($realPath, $forceDownload);
         } else {
             $message = '<strong>' . $this->view->translate("Le fichier n'existe pas.") . '</strong>';
             $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
@@ -279,18 +289,38 @@ class FileController extends DefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
+        // Mutating action: require POST and an authenticated user
+        // (previously reachable anonymously via an XHR request).
+        if (!$request->isPost() || !Episciences_Auth::isLogged()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
         // attachments path
         $path = (string)$request->getPost('path');
-        $filename = $request->getPost('file');
-        $docId = (int)$request->get('docId');
+        // Only a flat file name is expected: strip any directory component.
+        $filename = basename((string)$request->getPost('file'));
+        $docId = (int)$request->getPost('docId');
         $pcId = (int)$request->getPost('pcId');
-        $paperId = (int)$request->getpost('paperId');
+        $paperId = (int)$request->getPost('paperId');
 
-        $path = $this->buildStorageFolder($path, $paperId, $docId, $pcId, true);
+        if ($filename === '' || $filename === '.' || $filename === '..') {
+            $this->getResponse()->setHttpResponseCode(400);
+            return;
+        }
+
+        $path = $this->buildStorageFolder($path, $paperId, $docId, $pcId);
         $filepath = $path . $filename;
 
-        if ($filename && is_file($filepath)) {
-            unlink($filepath);
+        // Confine the target to REVIEW_FILES_PATH before deleting.
+        $realBase = realpath(REVIEW_FILES_PATH);
+        $realPath = realpath($filepath);
+        $isConfined = $realBase !== false
+            && $realPath !== false
+            && str_starts_with($realPath, $realBase . DIRECTORY_SEPARATOR);
+
+        if ($isConfined && is_file($realPath)) {
+            unlink($realPath);
         }
     }
 

@@ -146,4 +146,13 @@ class Episciences_ReviewsManagerTest extends TestCase
         self::assertArrayHasKey('rvcode_myjournal', $cache);
         self::assertArrayHasKey('rvcode_myjournal_enabled', $cache);
     }
+
+    // =========================================================================
+    // isNewFrontSwitched()
+    // =========================================================================
+
+    public function testIsNewFrontSwitchedReturnsFalseForUnknownRvid(): void
+    {
+        self::assertFalse(Episciences_ReviewsManager::isNewFrontSwitched(999999));
+    }
 }
