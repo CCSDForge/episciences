@@ -2358,6 +2358,7 @@ class Episciences_PapersManager
             $db->delete(T_VOLUME_PAPER, ['DOCID = ?' => $docid]);
             $db->delete(T_PAPER_LICENCES, ['docid = ?' => $docid]);
             $db->delete(T_VOLUME_PAPER_POSITION, ['PAPERID = ?' => $paper->getPaperid()]);
+            $db->delete(T_PAPER_PROJECTS, ['paperid = ?' => $paper->getPaperid()]);
 
             $db->commit();
         } catch (Exception $e) {
