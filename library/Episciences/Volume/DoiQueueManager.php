@@ -43,7 +43,7 @@ class Episciences_Volume_DoiQueueManager
                 $sql = 'INSERT INTO ' . $db->quoteIdentifier(T_DOI_QUEUE_VOLUMES) . ' (`vid`,`doi_status`,`date_init`,`date_updated`) VALUES (';
                 //Prepares and executes an SQL
                 /** @var Zend_Db_Statement_Interface $result */
-                $result = $db->query($sql . implode(', ', $values) . ') ON DUPLICATE KEY UPDATE doi_status=VALUES(doi_status), date_updated=NOW()');
+                $result = $db->query($sql . implode(', ', $values) . ') AS new_row ON DUPLICATE KEY UPDATE doi_status=new_row.doi_status, date_updated=NOW()');
                 $resInsert = $result->rowCount();
             } catch (Exception $e) {
                 error_log($e->getMessage());

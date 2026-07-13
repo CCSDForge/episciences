@@ -839,7 +839,7 @@ class Episciences_VolumesManager
 
         if ($values) {
             try {
-                $db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE POSITION=VALUES(POSITION)');
+                $db->query($sql . implode(', ', $values) . ' AS new_row ON DUPLICATE KEY UPDATE POSITION=new_row.POSITION');
             } catch (Exception $e) {
                 trigger_error($e->getMessage(), E_USER_WARNING);
             }

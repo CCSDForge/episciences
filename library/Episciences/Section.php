@@ -629,7 +629,7 @@ class Episciences_Section
             $result = $this->_db->update(T_SECTIONS, $data, $where);
 
             if (!empty($settings)) {
-                $sql = $this->_db->quoteInto('INSERT INTO ' . T_SECTION_SETTINGS . ' (SID, SETTING, VALUE) VALUES (?) ON DUPLICATE KEY UPDATE VALUE = VALUES(VALUE)', $settings);
+                $sql = $this->_db->quoteInto('INSERT INTO ' . T_SECTION_SETTINGS . ' (SID, SETTING, VALUE) VALUES (?) AS new_row ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE', $settings);
                 $query = $this->_db->query($sql);
 
                 $result += $query->rowCount();

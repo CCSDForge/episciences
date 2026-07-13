@@ -325,7 +325,7 @@ class Episciences_Paper_LicenceManager
             try {
                 //Prepares and executes an SQL
                 /** @var Zend_Db_Statement_Interface $result */
-                $result = $db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE licence=VALUES(licence)');
+                $result = $db->query($sql . implode(', ', $values) . ' AS new_row ON DUPLICATE KEY UPDATE licence=new_row.licence');
                 $affectedRows = $result->rowCount();
 
             } catch (Exception $e) {
