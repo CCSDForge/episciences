@@ -3064,49 +3064,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"blueimp-canvas-to-blob@npm:3":
-  version: 3.29.0
-  resolution: "blueimp-canvas-to-blob@npm:3.29.0"
-  checksum: 10/6a55b90fbe958b75f7c78ff9e7617c01254d29cc8567ea6c853cd26a52518b3dfce28635f6964130ac738ee8ff9fb9c0ca094db2ceeaa021ff0432c1985416eb
-  languageName: node
-  linkType: hard
-
-"blueimp-file-upload@npm:10.32.0":
-  version: 10.32.0
-  resolution: "blueimp-file-upload@npm:10.32.0"
-  dependencies:
-    blueimp-canvas-to-blob: "npm:3"
-    blueimp-load-image: "npm:5"
-    blueimp-tmpl: "npm:3"
-  peerDependencies:
-    jquery: ">=1.7"
-  dependenciesMeta:
-    blueimp-canvas-to-blob:
-      optional: true
-    blueimp-load-image:
-      optional: true
-    blueimp-tmpl:
-      optional: true
-  checksum: 10/c85b033c2940f83662c473a6586d08f2988bd43371380b005c88099693b2d3ad7f8f5fd8e2ea535facd241de38e13898c63baf003e9e81e291f833525ffadcfb
-  languageName: node
-  linkType: hard
-
-"blueimp-load-image@npm:5":
-  version: 5.16.0
-  resolution: "blueimp-load-image@npm:5.16.0"
-  checksum: 10/ab2c413f2e96c1edc89f2b82b9c0e74fe893242cf5d3526f24638a833fb451edbb3d96e84f5814ed6ee5845b4cff75f1bdd1374c934564355cf86f3b07442b0a
-  languageName: node
-  linkType: hard
-
-"blueimp-tmpl@npm:3":
-  version: 3.20.0
-  resolution: "blueimp-tmpl@npm:3.20.0"
-  bin:
-    tmpl.js: js/compile.js
-  checksum: 10/c809e71547a16db38b8233c7ea17f0bc84bb2e4c2c4c52ddec1bedf4c48f11129f69c08ad6a161538ea475041d20754c41a68f90e5e3e1fceeded8378b9e5e67
-  languageName: node
-  linkType: hard
-
 "boolbase@npm:^1.0.0":
   version: 1.0.0
   resolution: "boolbase@npm:1.0.0"
@@ -6478,7 +6435,6 @@ __metadata:
     "@playwright/test": "npm:^1.60.0"
     "@symfony/webpack-encore": "npm:^5.3.1"
     altcha: "npm:3.1.0"
-    blueimp-file-upload: "npm:10.32.0"
     bootbox: "npm:5.5.3"
     bootstrap: "npm:3.3.7"
     bootstrap-legacy-js: "npm:bootstrap@3.2.0"
