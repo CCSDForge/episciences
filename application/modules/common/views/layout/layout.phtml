@@ -61,7 +61,6 @@ echo $this->doctype('HTML5');
     $this->getHelper('webpackAssets')->queueScript('toast');
     $this->jQuery()->addJavascriptFile("/js/functions.js");
     $this->jQuery()->addJavascriptFile("/js/form.js");
-    $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_URL_PARSER);
     $this->jQuery()->setLocalPath(VENDOR_JQUERY)->enable();
     $this->jQuery()->setUiLocalPath(VENDOR_JQUERY_UI)->UiEnable();
     // Episciences Main JS bundle (Bootstrap, Bootbox, Cookie Consent, bundled via webpack). Queued via

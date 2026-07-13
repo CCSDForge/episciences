@@ -77,7 +77,7 @@ $(document).ready(function () {
 });
 
 function submit() {
-    let url = $('#reviewer-removal-form').url();
+    let url = parseUrl(document.getElementById('reviewer-removal-form').action);
     let docid = url.param('docid');
 
     tinyMCE.triggerSave();
