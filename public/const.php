@@ -276,8 +276,8 @@ function defineVendorJsLibraries(): void
 {
     $jsLibraries = [
         'VENDOR_MATHJAX' => 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML',
-        'VENDOR_TINYMCE' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
-        'VENDOR_TINYMCE_JQUERY' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
+        // Self-hosted via webpack copyFiles() (see webpack.config.js), previously loaded from cdnjs.
+        'VENDOR_TINYMCE' => '/build/tinymce/tinymce.min.js',
     ];
 
     foreach ($jsLibraries as $name => $url) {
@@ -497,6 +497,5 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         // ========================================
         define('VENDOR_MATHJAX', '');
         define('VENDOR_TINYMCE', '');
-        define('VENDOR_TINYMCE_JQUERY', '');
     }
 }

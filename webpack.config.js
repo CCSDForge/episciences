@@ -48,6 +48,54 @@ Encore
     //.addEntry('page1', './assets/page1.js')
     //.addEntry('page2', './assets/page2.js')
 
+    // TinyMCE: self-hosted (previously loaded from cdnjs via VENDOR_TINYMCE, see public/const.php)
+    // but NOT bundled as an addEntry() — TinyMCE dynamically fetches its own theme/model/icons/plugins
+    // /skin siblings at runtime via plain string concatenation off its own script URL, so it must be
+    // copied as-is rather than tree-shaken through webpack's module graph. Only the pieces actually
+    // used (theme "silver", model "dom", icons "default", skin "oxide", plugins "link image code
+    // fullscreen table" — see Ccsd_Form_Decorator_FormTinymce / FormControls and
+    // public/js/tinymce/tinymce_patch.js) are copied, keeping the same on-disk layout TinyMCE expects
+    // relative to tinymce.min.js. None of the "to" patterns use [hash] so filenames stay literal —
+    // TinyMCE's own loader doesn't consult entrypoints.json/manifest.json to resolve them.
+    .copyFiles({
+        from: './node_modules/tinymce',
+        to: 'tinymce/[name].[ext]',
+        pattern: /tinymce\.min\.js$/,
+        includeSubdirectories: false
+    })
+    .copyFiles({
+        from: './node_modules/tinymce/themes/silver',
+        to: 'tinymce/themes/silver/[name].[ext]',
+        pattern: /theme\.min\.js$/
+    })
+    .copyFiles({
+        from: './node_modules/tinymce/models/dom',
+        to: 'tinymce/models/dom/[name].[ext]',
+        pattern: /model\.min\.js$/
+    })
+    .copyFiles({
+        from: './node_modules/tinymce/icons/default',
+        to: 'tinymce/icons/default/[name].[ext]',
+        pattern: /icons\.min\.js$/
+    })
+    .copyFiles({
+        from: './node_modules/tinymce/skins/ui/oxide',
+        to: 'tinymce/skins/ui/oxide/[name].[ext]',
+        pattern: /(skin|content)\.min\.css$/
+    })
+    .copyFiles({
+        from: './node_modules/tinymce/skins/content/default',
+        to: 'tinymce/skins/content/default/[name].[ext]',
+        pattern: /content\.min\.css$/
+    })
+    .copyFiles([
+        { from: './node_modules/tinymce/plugins/link', to: 'tinymce/plugins/link/[name].[ext]', pattern: /plugin\.min\.js$/ },
+        { from: './node_modules/tinymce/plugins/image', to: 'tinymce/plugins/image/[name].[ext]', pattern: /plugin\.min\.js$/ },
+        { from: './node_modules/tinymce/plugins/code', to: 'tinymce/plugins/code/[name].[ext]', pattern: /plugin\.min\.js$/ },
+        { from: './node_modules/tinymce/plugins/fullscreen', to: 'tinymce/plugins/fullscreen/[name].[ext]', pattern: /plugin\.min\.js$/ },
+        { from: './node_modules/tinymce/plugins/table', to: 'tinymce/plugins/table/[name].[ext]', pattern: /plugin\.min\.js$/ }
+    ])
+
     // Any other bundled jQuery plugin (Bootstrap JS, DataTables, bootbox) must attach to the global
     // jQuery instance set up by assets/jquery.js rather than bundling its own private copy — otherwise
     // plugins wouldn't be visible to non-bundled inline scripts calling $(...).plugin(). FilePond is
