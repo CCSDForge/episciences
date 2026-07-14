@@ -160,7 +160,15 @@ function createUploadWidget(input, csrfToken) {
                     headers: { 'X-CSRF-Token': csrfToken },
                     body,
                 })
-                    .then(() => {
+                    .then(response => {
+                        // fetch() only rejects on network failure, not on HTTP error status
+                        // (403 CSRF failure, 500, ...) — check response.ok explicitly so a
+                        // rejected deletion isn't reported to the user as a success.
+                        if (!response.ok) {
+                            throw new Error(
+                                'delete request failed: ' + response.status
+                            );
+                        }
                         untrackAttachedFile(widget, filename);
                         load();
                     })

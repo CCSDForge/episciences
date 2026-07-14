@@ -66,7 +66,22 @@ $(function () {
                     method: 'POST',
                     headers: { 'X-CSRF-Token': csrfToken },
                     body,
-                }).then(() => hiddenInput.remove());
+                }).then(response => {
+                    // fetch() only rejects on network failure, not on HTTP error status
+                    // (403 CSRF failure, 500, ...) — only drop the tracking element once the
+                    // server has actually confirmed the deletion.
+                    if (response.ok) {
+                        hiddenInput.remove();
+                    } else {
+                        console.log(
+                            'file delete failed: ' +
+                                hiddenInput.value +
+                                ' (' +
+                                response.status +
+                                ')'
+                        );
+                    }
+                });
             });
     }
 

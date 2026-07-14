@@ -138,6 +138,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Remove unused `jquery.ui.autocomplete.html.js` vendor dependency.
+- Remove unused `bootstrap-colorpicker` widget (and its `colorpicker` CSS class hooks in `website/style` and `website/header` admin forms) — not self-hosted as part of the vendor asset migration since it had no actual usage.
 - Remove obsolete `cdnjs.cloudflare.com` preconnect and dns-prefetch link tags.
 - [#1088](https://github.com/CCSDForge/episciences/pull/1088) Remove unused `AGENT`, `CITY`, `LAT`, and `LON` columns from the `PAPER_STAT` table and delete the legacy `scripts/stat.php` script (superseded by the `stats:process` console command).
 - Remove obsolete `google/recaptcha` and `neverbehave/hcaptcha` libraries from `composer.json`.
