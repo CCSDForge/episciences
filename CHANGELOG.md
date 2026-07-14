@@ -248,6 +248,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Remove unused `jquery.ui.autocomplete.html.js` vendor dependency.
+- Remove unused `bootstrap-colorpicker` widget (and its `colorpicker` CSS class hooks in `website/style` and `website/header` admin forms) — not self-hosted as part of the vendor asset migration since it had no actual usage.
 - Remove obsolete `cdnjs.cloudflare.com` preconnect and dns-prefetch link tags.
 - Remove legacy interactive `scripts/update_papers.php` script (replaced by `import:papers` CLI command).
 - Drop the redundant `!$previousPaper->hasHook` guard from `Episciences_Submit::assertDateTimeVersion()`. The branch is selected by the `UPDATE_DATETIME` key, which only ever reaches the result from a repository's `hookApiRecords()`, so the guard added nothing — and it dereferenced a nullable `Episciences_Paper`, raising `Attempt to read property "hasHook" on null` whenever `partialGet()` returned nothing for an existing `docId`. `Episciences_Paper::$hasHook` now has no caller left and is marked `@deprecated`.
