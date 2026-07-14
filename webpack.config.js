@@ -31,9 +31,9 @@ Encore
     .addEntry('altcha', './assets/altcha.js')
     // jQuery / jQuery UI: self-hosted via webpack but loaded as plain global <script> tags through
     // VENDOR_JQUERY / VENDOR_JQUERY_UI (see public/const.php and layout.phtml), not queued via
-    // webpackAssets()->queueScript(). Each sets/uses window.jQuery so non-bundled inline scripts,
-    // ZendX_JQuery_Form_Element widgets and jquery.fastLiveFilter.js keep working against one shared
-    // instance — see addExternals() below and assets/jquery.js / assets/jquery-ui.js.
+    // webpackAssets()->queueScript(). Each sets/uses window.jQuery so non-bundled inline scripts and
+    // ZendX_JQuery_Form_Element widgets keep working against one shared instance — see
+    // addExternals() below and assets/jquery.js / assets/jquery-ui.js.
     .addEntry('jquery', './assets/jquery.js')
     .addEntry('jquery-ui', './assets/jquery-ui.js')
     // CSS-only entries for vendor libraries only needed on specific pages (not the whole site),
