@@ -275,7 +275,14 @@ function defineSimpleConstants(): void
 function defineVendorJsLibraries(): void
 {
     $jsLibraries = [
-        'VENDOR_MATHJAX' => 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML',
+        // Self-hosted via webpack copyFiles() (see webpack.config.js), previously loaded from cdnjs.
+        // The font glyphs it renders with are self-hosted too (see VENDOR_MATHJAX_FONTS_PATH below) —
+        // just self-hosting this script isn't enough, since it fetches its default font from
+        // cdn.jsdelivr.net at runtime unless told otherwise. Its accessibility speech-generation Web
+        // Worker (on by default in v4, absent in v2) is disabled rather than self-hosted — see
+        // options.enableSpeech in layout.phtml.
+        'VENDOR_MATHJAX' => '/build/mathjax/tex-mml-chtml.js',
+        'VENDOR_MATHJAX_FONTS_PATH' => '/build/mathjax-fonts',
         // Self-hosted via webpack copyFiles() (see webpack.config.js), previously loaded from cdnjs.
         'VENDOR_TINYMCE' => '/build/tinymce/tinymce.min.js',
     ];
@@ -496,6 +503,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         // From defineVendorJsLibraries()
         // ========================================
         define('VENDOR_MATHJAX', '');
+        define('VENDOR_MATHJAX_FONTS_PATH', '');
         define('VENDOR_TINYMCE', '');
     }
 }

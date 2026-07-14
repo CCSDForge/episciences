@@ -70,8 +70,39 @@ echo $this->doctype('HTML5');
     $this->getHelper('webpackAssets')->queueScript('app');
     echo $this->jQuery();
     ?>
+    <script>
+        // MathJax v3+ requires this configuration to be set on window.MathJax before the library script
+        // loads — the old <script type="text/x-mathjax-config"> block is no longer supported.
+        // loader.paths.fonts points at the self-hosted font package (see webpack.config.js /
+        // public/const.php) since MathJax otherwise fetches its default font from cdn.jsdelivr.net.
+        // Turns off the accessibility Web Worker MathJax v4 spawns by default (absent in v2) — its
+        // per-language speech-rule data isn't self-hostable without errors as of 4.1.3 (worker crashes
+        // loading mathmaps even when served from the same origin), so this keeps v2's behavior instead
+        // of shipping a broken feature. The enableSpeech/enableBraille/enableEnrichment options flags
+        // alone don't reliably stop it — the "menu" sub-component reasserts its own defaults after
+        // startup regardless of what's configured here — so the "attachSpeech" render action itself is
+        // removed instead (MathJax's documented way to disable a render step: set it to []).
+        window.MathJax = {
+            loader: {
+                paths: {fonts: '<?php echo VENDOR_MATHJAX_FONTS_PATH ?>'}
+            },
+            output: {
+                font: 'mathjax-newcm'
+            },
+            options: {
+                enableSpeech: false,
+                enableBraille: false,
+                enableEnrichment: false,
+                renderActions: {
+                    attachSpeech: []
+                }
+            },
+            tex: {
+                inlineMath: [['$', '$'], ['$$', '$$']]
+            }
+        };
+    </script>
     <script src="<?php echo VENDOR_MATHJAX ?>" async></script>
-    <script type='text/x-mathjax-config'>MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['$$','$$']]}});</script>
 </head>
 
 <body>

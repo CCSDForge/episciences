@@ -96,6 +96,34 @@ Encore
         { from: './node_modules/tinymce/plugins/table', to: 'tinymce/plugins/table/[name].[ext]', pattern: /plugin\.min\.js$/ }
     ])
 
+    // MathJax: self-hosted (previously loaded from cdnjs via VENDOR_MATHJAX, see public/const.php),
+    // NOT bundled as an addEntry() for the same reason as TinyMCE above. tex-mml-chtml.js resolves its
+    // font glyphs at runtime by string concatenation off window.MathJax.loader.paths.fonts (see
+    // layout.phtml), which defaults to cdn.jsdelivr.net if left unset — so both the script and its
+    // font package must be copied, or math rendering silently keeps depending on a third-party CDN
+    // that copying the script alone doesn't remove. Only the "chtml" subtree of the font package is
+    // needed (woff2 glyph files + the "dynamic" chunks MathJax fetches on demand for less common
+    // character ranges) since svg/cjs/mjs outputs aren't used. Its accessibility Web Worker (speech
+    // generation, on by default in v4, absent in v2) is turned off instead of self-hosted — see the
+    // options block in layout.phtml — because its speech-rule data loading crashes even when served
+    // from the same origin as of 4.1.3.
+    .copyFiles({
+        from: './node_modules/mathjax',
+        to: 'mathjax/[name].[ext]',
+        // The npm package ships tex-mml-chtml.js unsuffixed but already minified/bundled (byte-identical
+        // to cdnjs's tex-mml-chtml.min.js up to build metadata) — there's no separate ".min.js" to match.
+        pattern: /tex-mml-chtml\.js$/,
+        includeSubdirectories: false
+    })
+    .copyFiles({
+        from: './node_modules/@mathjax/mathjax-newcm-font/chtml/woff2',
+        to: 'mathjax-fonts/mathjax-newcm-font/chtml/woff2/[name].[ext]'
+    })
+    .copyFiles({
+        from: './node_modules/@mathjax/mathjax-newcm-font/chtml/dynamic',
+        to: 'mathjax-fonts/mathjax-newcm-font/chtml/dynamic/[name].[ext]'
+    })
+
     // Any other bundled jQuery plugin (Bootstrap JS, DataTables, bootbox) must attach to the global
     // jQuery instance set up by assets/jquery.js rather than bundling its own private copy — otherwise
     // plugins wouldn't be visible to non-bundled inline scripts calling $(...).plugin(). FilePond is
