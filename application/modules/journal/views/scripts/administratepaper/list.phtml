@@ -25,8 +25,8 @@ $this->getHelper('webpackAssets')->queueStylesheet('jquery-ui-theme');
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
-$this->jQuery()->addStylesheet('https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.min.css');
-$this->jQuery()->addJavascriptFile('https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js');
+$this->getHelper('webpackAssets')->queueStylesheet('tom-select');
+$this->getHelper('webpackAssets')->queueScript('tom-select');
 ?>
 
 <table class="table table-bordered dataTable table-responsive-lg" id="papers" style="width: 100%;">

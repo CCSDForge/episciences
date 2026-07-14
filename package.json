@@ -52,11 +52,13 @@
     "chartjs-plugin-datalabels": "0.7.0",
     "cookieconsent": "3.1.1",
     "datatables.net-bs": "1.10.21",
+    "dompurify": "3.2.7",
     "filepond": "4.32.12",
     "filepond-plugin-file-validate-size": "2.2.8",
     "filepond-plugin-file-validate-type": "1.2.9",
     "filepond-plugin-image-preview": "4.6.12",
     "jquery-ui": "1.12.1",
-    "sortablejs": "1.15.7"
+    "sortablejs": "1.15.7",
+    "tom-select": "2.6.2"
   }
 }

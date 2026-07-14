@@ -1930,6 +1930,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@orchidjs/sifter@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@orchidjs/sifter@npm:1.1.0"
+  dependencies:
+    "@orchidjs/unicode-variants": "npm:^1.1.2"
+  checksum: 10/41191453e081932d53726bc15346886cc5305772ba843f9683615ba20111b65d7c4bdb85f322e8d957d630d65c095cc0ba0e0d298994a2d5554e83af5376a172
+  languageName: node
+  linkType: hard
+
+"@orchidjs/unicode-variants@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "@orchidjs/unicode-variants@npm:1.1.2"
+  checksum: 10/a6ed605c7e01600295383c4b6707d23ef8671af08a15d39bec7144cb082b38101f59f2db6c3c2b417a9e8663bb463d55b21a5f3aab0a57f0adfe15d0157a8130
+  languageName: node
+  linkType: hard
+
 "@parcel/watcher-android-arm64@npm:2.5.1":
   version: 2.5.1
   resolution: "@parcel/watcher-android-arm64@npm:2.5.1"
@@ -2364,6 +2380,13 @@ __metadata:
   version: 4.0.5
   resolution: "@types/tough-cookie@npm:4.0.5"
   checksum: 10/01fd82efc8202670865928629697b62fe9bf0c0dcbc5b1c115831caeb073a2c0abb871ff393d7df1ae94ea41e256cb87d2a5a91fd03cdb1b0b4384e08d4ee482
+  languageName: node
+  linkType: hard
+
+"@types/trusted-types@npm:^2.0.7":
+  version: 2.0.7
+  resolution: "@types/trusted-types@npm:2.0.7"
+  checksum: 10/8e4202766a65877efcf5d5a41b7dd458480b36195e580a3b1085ad21e948bc417d55d6f8af1fd2a7ad008015d4117d5fdfe432731157da3c68678487174e4ba3
   languageName: node
   linkType: hard
 
@@ -3813,6 +3836,18 @@ __metadata:
   dependencies:
     domelementtype: "npm:^2.3.0"
   checksum: 10/809b805a50a9c6884a29f38aec0a4e1b4537f40e1c861950ed47d10b049febe6b79ab72adaeeebb3cc8fc1cd33f34e97048a72a9265103426d93efafa78d3e96
+  languageName: node
+  linkType: hard
+
+"dompurify@npm:3.2.7":
+  version: 3.2.7
+  resolution: "dompurify@npm:3.2.7"
+  dependencies:
+    "@types/trusted-types": "npm:^2.0.7"
+  dependenciesMeta:
+    "@types/trusted-types":
+      optional: true
+  checksum: 10/51b7866fb834ee62d6c415f41ece5ce11db7b463f60a822932a1f832573a40b98be7715550298690e7647988fbe086db1098bda9b10548b3166fc975eb9bd849
   languageName: node
   linkType: hard
 
@@ -6421,6 +6456,7 @@ __metadata:
     chartjs-plugin-datalabels: "npm:0.7.0"
     cookieconsent: "npm:3.1.1"
     datatables.net-bs: "npm:1.10.21"
+    dompurify: "npm:3.2.7"
     filepond: "npm:4.32.12"
     filepond-plugin-file-validate-size: "npm:2.2.8"
     filepond-plugin-file-validate-type: "npm:1.2.9"
@@ -6434,6 +6470,7 @@ __metadata:
     sass: "npm:^1.100.0"
     sass-loader: "npm:^16.0.8"
     sortablejs: "npm:1.15.7"
+    tom-select: "npm:2.6.2"
     ts-loader: "npm:^9.6.0"
     typescript: "npm:^5.9.3"
     webpack: "npm:^5.107.2"
@@ -7002,6 +7039,16 @@ __metadata:
   dependencies:
     is-number: "npm:^7.0.0"
   checksum: 10/10dda13571e1f5ad37546827e9b6d4252d2e0bc176c24a101252153ef435d83696e2557fe128c4678e4e78f5f01e83711c703eef9814eb12dab028580d45980a
+  languageName: node
+  linkType: hard
+
+"tom-select@npm:2.6.2":
+  version: 2.6.2
+  resolution: "tom-select@npm:2.6.2"
+  dependencies:
+    "@orchidjs/sifter": "npm:^1.1.0"
+    "@orchidjs/unicode-variants": "npm:^1.1.2"
+  checksum: 10/6dde3a26c1efdad047b0bb8009175244da94426f514aec50abfadc747a274882e715eaf1e74349f376f34bf747984ac3b0d4ebb7b211c8dd008787d2dce36c6c
   languageName: node
   linkType: hard
 
