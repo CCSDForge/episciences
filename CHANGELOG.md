@@ -96,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - submitting a refused paper again only renames ("-REFUSED" suffix) the versions of that paper in its journal, never another paper sharing its identifier.
 
 ### Changed
+- Upgrade `@fortawesome/fontawesome-free` to 7.3.0 and `tinymce` to 8.7.0.
 - Self-host all third-party vendor assets (jQuery, jQuery UI, DOMPurify, Tom Select, SortableJS, TinyMCE, MathJax, Bootstrap, Font Awesome, Cookie Consent, Bootbox, Chart.js, DataTables) via Webpack bundles instead of loading them from external CDNs (like `cdnjs`).
 - Upgrade MathJax from v2.7.7 to v4.1.3 (self-hosted).
 - Replace archived jQuery File Upload with FilePond.
@@ -166,6 +167,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Performances
 
+- Skip loading editor-only JavaScript assets (TinyMCE, FilePond, etc.) on the paper view page for anonymous visitors to reduce page load size by ~1MB.
 - [#1143](https://github.com/CCSDForge/episciences/pull/1143) Memoise the paper's primary volume on the `Episciences_Paper` instance, so `toJson()`, `getXml()` and `XmlExportManager::xmlExport()` share a single lookup instead of loading it twice: 38 to 34 queries per paper export.
 - Stop reloading volume settings from `Episciences_Volume::getProceedingInfo()`; every caller reaches it through `isProceeding()`, which already needs them loaded.
 - Load every volume's settings in one query on `/browse/volumes` via `Episciences_VolumesManager::loadSettingsForVolumes()`, instead of one query per volume.
