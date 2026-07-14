@@ -18,8 +18,8 @@ echo $form;
 <?php
 $this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');
 $this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
-$this->jQuery()->addStylesheet('https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.min.css');
-$this->jQuery()->addJavascriptFile('https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js');
+$this->getHelper('webpackAssets')->queueStylesheet('tom-select');
+$this->getHelper('webpackAssets')->queueScript('tom-select');
 $this->jQuery()->addJavascriptFile('/js/common/tomselect-filters.js');
 ?>
 

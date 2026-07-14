@@ -37,6 +37,8 @@ Encore
     .addEntry('chartjs', './assets/chartjs.js')
     .addEntry('sortablejs', './assets/sortablejs.js')
     .addEntry('jquery-ui-theme', './assets/jquery-ui-theme.js')
+    .addEntry('dompurify', './assets/dompurify.js')
+    .addEntry('tom-select', './assets/tom-select.js')
     //.addEntry('page1', './assets/page1.js')
     //.addEntry('page2', './assets/page2.js')
 
