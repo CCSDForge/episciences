@@ -1514,10 +1514,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fortawesome/fontawesome-free@npm:7.0.1":
-  version: 7.0.1
-  resolution: "@fortawesome/fontawesome-free@npm:7.0.1"
-  checksum: 10/72fcb5be1c16c46dab8c8af58fb9abe54380d9acb54c3ab5bda42c247aa8139ddc038163d4b9ac15191c6b7b6aa255753022eb40b336bf8f88368371af4078f7
+"@fortawesome/fontawesome-free@npm:7.3.0":
+  version: 7.3.0
+  resolution: "@fortawesome/fontawesome-free@npm:7.3.0"
+  checksum: 10/256440bd43917a3e90c412d9b8ad27eb53804a7815dfd4623d9e6895b4967182b59e95953cd690f685e73887892399e17195962c61ffe6ca86af3d52a5506535
   languageName: node
   linkType: hard
 
@@ -6517,7 +6517,7 @@ __metadata:
   dependencies:
     "@babel/core": "npm:^7.29.7"
     "@babel/preset-env": "npm:^7.29.7"
-    "@fortawesome/fontawesome-free": "npm:7.0.1"
+    "@fortawesome/fontawesome-free": "npm:7.3.0"
     "@mathjax/mathjax-newcm-font": "npm:4.1.3"
     "@playwright/test": "npm:^1.60.0"
     "@symfony/webpack-encore": "npm:^5.3.1"
@@ -6546,7 +6546,7 @@ __metadata:
     sass: "npm:^1.100.0"
     sass-loader: "npm:^16.0.8"
     sortablejs: "npm:1.15.7"
-    tinymce: "npm:8.1.2"
+    tinymce: "npm:8.7.0"
     tom-select: "npm:2.6.2"
     ts-loader: "npm:^9.6.0"
     typescript: "npm:^5.9.3"
@@ -7071,10 +7071,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tinymce@npm:8.1.2":
-  version: 8.1.2
-  resolution: "tinymce@npm:8.1.2"
-  checksum: 10/f93443405501d9e423b60bcbc17313c3c3652f2b6a88e3f24e78857a6a434a0832db9a90809d5e096a35e95e36c65ecf451673f03fb4e7972057417a431cd3db
+"tinymce@npm:8.7.0":
+  version: 8.7.0
+  resolution: "tinymce@npm:8.7.0"
+  checksum: 10/a4f695a3a8fd64fa83dcc7545df293e21e4d8f8d4fb8ab766b556e03a03ea357522eeca97ac18e34e34058b77cb5b28d46a372e0a8f7af9457ae8667e02365b1
   languageName: node
   linkType: hard
 
