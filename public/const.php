@@ -356,6 +356,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         // External APIs
         define('OPENALEX_MAILTO', '');
         define('OPENALEX_APIURL', '');
+        define('OPENALEX_APIKEY', '');
         define('CROSSREF_MAILTO', '');
         define('CROSSREF_APIURL', '');
         define('CROSSREF_PLUS_API_TOKEN', '');
