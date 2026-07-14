@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgrade `@fortawesome/fontawesome-free` to 7.3.0 and `tinymce` to 8.7.0.
 - Self-host all third-party vendor assets (jQuery, jQuery UI, DOMPurify, Tom Select, SortableJS, TinyMCE, MathJax, Bootstrap, Font Awesome, Cookie Consent, Bootbox, Chart.js, DataTables) via Webpack bundles instead of loading them from external CDNs (like `cdnjs`).
 - Upgrade MathJax from v2.7.7 to v4.1.3 (self-hosted).
 - Replace archived jQuery File Upload with FilePond.
@@ -68,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Performances
 
+- Skip loading editor-only JavaScript assets (TinyMCE, FilePond, etc.) on the paper view page for anonymous visitors to reduce page load size by ~1MB.
 - Eliminate N+1 query patterns on the volume list page (reducing SQL queries from 894 to ~4).
 - Batch-load mail templates in 2 SQL queries instead of 2×N.
 - Implemented PSR-6 request-scoped caching for database entities (authors, projects, comments, and user assignments repositories) to reduce database queries.
