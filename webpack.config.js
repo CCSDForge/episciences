@@ -29,6 +29,13 @@ Encore
      */
     .addEntry('app', './assets/app.js')
     .addEntry('altcha', './assets/altcha.js')
+    // jQuery / jQuery UI: self-hosted via webpack but loaded as plain global <script> tags through
+    // VENDOR_JQUERY / VENDOR_JQUERY_UI (see public/const.php and layout.phtml), not queued via
+    // webpackAssets()->queueScript(). Each sets/uses window.jQuery so non-bundled inline scripts,
+    // ZendX_JQuery_Form_Element widgets and jquery.fastLiveFilter.js keep working against one shared
+    // instance — see addExternals() below and assets/jquery.js / assets/jquery-ui.js.
+    .addEntry('jquery', './assets/jquery.js')
+    .addEntry('jquery-ui', './assets/jquery-ui.js')
     // CSS-only entries for vendor libraries only needed on specific pages (not the whole site),
     // loaded on demand via webpackAssets()->queueStylesheet() where used.
     .addEntry('datatables-bootstrap', './assets/datatables-bootstrap.js')
@@ -41,11 +48,10 @@ Encore
     //.addEntry('page1', './assets/page1.js')
     //.addEntry('page2', './assets/page2.js')
 
-    // jQuery itself is still loaded globally via CDN (VENDOR_JQUERY, see layout.phtml), not bundled.
-    // Any bundled jQuery plugin (Bootstrap JS, DataTables, bootbox) must attach to that same global
-    // instance rather than bundling its own private copy of jQuery — otherwise plugins wouldn't be
-    // visible to non-bundled inline scripts calling $(...).plugin(). FilePond is standalone and has no
-    // such requirement (see assets/filepond.js).
+    // Any other bundled jQuery plugin (Bootstrap JS, DataTables, bootbox) must attach to the global
+    // jQuery instance set up by assets/jquery.js rather than bundling its own private copy — otherwise
+    // plugins wouldn't be visible to non-bundled inline scripts calling $(...).plugin(). FilePond is
+    // standalone and has no such requirement (see assets/filepond.js).
     .addExternals({ jquery: 'jQuery' })
 
     // When enabled, Webpack "splits" your files into smaller pieces for greater optimization.
@@ -61,7 +67,12 @@ Encore
             defaultVendors: {
                 test: /[\\/]node_modules[\\/].*\.js$/,
                 priority: -10,
-                reuseExistingChunk: true
+                reuseExistingChunk: true,
+                // jquery/jquery-ui are referenced as single static files by VENDOR_JQUERY/VENDOR_JQUERY_UI
+                // (see public/const.php, layout.phtml), not through entrypoints.json like other webpack
+                // entries — so they must stay self-contained single files instead of being split into a
+                // shared vendors chunk that a plain <script src> tag wouldn't know to also load.
+                chunks: (chunk) => chunk.name !== 'jquery' && chunk.name !== 'jquery-ui'
             }
         };
     })

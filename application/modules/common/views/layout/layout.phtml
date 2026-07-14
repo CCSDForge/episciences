@@ -55,11 +55,15 @@ echo $this->doctype('HTML5');
     $this->jQuery()->addStylesheet("/css/main.css");
 
     // JS
+    // jQuery / jQuery UI: self-hosted via webpack (see assets/jquery.js, assets/jquery-ui.js). Still
+    // rendered through enable()/UiEnable() rather than webpackAssets()->queueScript(), because the
+    // RENDER_LIBRARY block is guaranteed to render before any page's own addJavascriptFile() sources
+    // (view scripts run, and can queue their own JS, before the layout does) — see
+    // Episciences_View_Helper_JQuery_Container::_renderScriptTags().
+    $this->jQuery()->enable()->UiEnable();
     $this->jQuery()->addJavascriptFile("/js/translation.php?lang=" . Zend_Registry::get('lang'));
     $this->jQuery()->addJavascriptFile("/js/functions.js");
     $this->jQuery()->addJavascriptFile("/js/form.js");
-    $this->jQuery()->setLocalPath(VENDOR_JQUERY)->enable();
-    $this->jQuery()->setUiLocalPath(VENDOR_JQUERY_UI)->UiEnable();
     // Episciences Main JS bundle (Bootstrap, Bootbox, Cookie Consent, bundled via webpack). Queued via
     // the jQuery container so it inherits its APPLICATION_VERSION cache-busting (see
     // Episciences_View_Helper_JQuery_Container).

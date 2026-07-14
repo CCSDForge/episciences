@@ -275,8 +275,6 @@ function defineSimpleConstants(): void
 function defineVendorJsLibraries(): void
 {
     $jsLibraries = [
-        'VENDOR_JQUERY' => 'https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js',
-        'VENDOR_JQUERY_UI' => 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js', // Do not upgrade
         'VENDOR_MATHJAX' => 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML',
         'VENDOR_TINYMCE' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
         'VENDOR_TINYMCE_JQUERY' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
@@ -497,8 +495,6 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         // Vendor JavaScript Libraries
         // From defineVendorJsLibraries()
         // ========================================
-        define('VENDOR_JQUERY', '');
-        define('VENDOR_JQUERY_UI', '');
         define('VENDOR_MATHJAX', '');
         define('VENDOR_TINYMCE', '');
         define('VENDOR_TINYMCE_JQUERY', '');

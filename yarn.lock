@@ -3094,14 +3094,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bootbox@npm:5.5.3":
-  version: 5.5.3
-  resolution: "bootbox@npm:5.5.3"
+"bootbox@npm:6.0.4":
+  version: 6.0.4
+  resolution: "bootbox@npm:6.0.4"
   peerDependencies:
-    bootstrap: ^3.1.0 || ^4.4.0
+    "@popperjs/core": ^2.0.0
+    bootstrap: ^4.4.0 || ^5.0.0
     jquery: ^3.5.1
-    popper.js: ^1.16.0
-  checksum: 10/a327564502a77e6f460c28e9ec25a3e95a52cbfbc2aa0434c9639b851102ad3bf3d73a6e705cf71a24fdfa821407cb8ec7f4a8e93d7820d2ef002e99b84cf813
+  checksum: 10/100e0f7bc8caa910d17dffa540e119f729e9e5b2101154237d5e54313b054cfc91c9cff016a774052901ebbe0b506fc2430e0751ff80293161c6110c26f5686c
   languageName: node
   linkType: hard
 
@@ -3839,15 +3839,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dompurify@npm:3.2.7":
-  version: 3.2.7
-  resolution: "dompurify@npm:3.2.7"
+"dompurify@npm:3.4.0":
+  version: 3.4.0
+  resolution: "dompurify@npm:3.4.0"
   dependencies:
     "@types/trusted-types": "npm:^2.0.7"
   dependenciesMeta:
     "@types/trusted-types":
       optional: true
-  checksum: 10/51b7866fb834ee62d6c415f41ece5ce11db7b463f60a822932a1f832573a40b98be7715550298690e7647988fbe086db1098bda9b10548b3166fc975eb9bd849
+  checksum: 10/ead40b78ec51cd451f2c74fada4233ee0afeafdbab54af2f4a4bd5d4d138ac04d0d85140e79f533803ecfd1c3758edc1176087039c1e7217824f9794a9d34d2c
   languageName: node
   linkType: hard
 
@@ -5176,10 +5176,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jquery-ui@npm:1.12.1":
-  version: 1.12.1
-  resolution: "jquery-ui@npm:1.12.1"
-  checksum: 10/256e230eb41c797d4a043376a814fe5690382ed6b85901c2cfdfe0fe793a3c5d982e4f2ff3acc4cef6f429f04b07b544d8a8726353776ec25bd8e556cf04612e
+"jquery-ui@npm:1.13.2":
+  version: 1.13.2
+  resolution: "jquery-ui@npm:1.13.2"
+  dependencies:
+    jquery: "npm:>=1.8.0 <4.0.0"
+  checksum: 10/0a870411c6dbed95b7cd3461f71f95c8b9d8f15af2975b54dd25e7ead79bbbe6fbf1f6aab0bca35773bb37e1c84cb933cd59171fa8ab62ec79bf7ad0701f9922
+  languageName: node
+  linkType: hard
+
+"jquery@npm:1.12.4":
+  version: 1.12.4
+  resolution: "jquery@npm:1.12.4"
+  checksum: 10/bb213d70683223716aea597d3cef860b08729a62f799ad98ff9750505d2d6cf3912ea45c88a387e5bade8b0fd0214e33f6753913d833d1bcedef7d73b3f52b50
   languageName: node
   linkType: hard
 
@@ -5187,6 +5196,13 @@ __metadata:
   version: 4.0.0
   resolution: "jquery@npm:4.0.0"
   checksum: 10/722be14779518f27f50463d9aaa8d6b42782673a23f65335c4ff9e2ad124cb4d5267696dfc7bc4f40ecf04e852cbb05b1630b50daacf2821737d5d3b480fbf19
+  languageName: node
+  linkType: hard
+
+"jquery@npm:>=1.8.0 <4.0.0":
+  version: 3.7.1
+  resolution: "jquery@npm:3.7.1"
+  checksum: 10/17be9929f5fa37697d9848284f0d108c543318ef79ec794e130cd0c49f6c050d60c803a69e8cfa16fa19f5ff7cdb814a6905cceab0831186560c65ed113cd579
   languageName: node
   linkType: hard
 
@@ -6449,21 +6465,22 @@ __metadata:
     "@playwright/test": "npm:^1.60.0"
     "@symfony/webpack-encore": "npm:^5.3.1"
     altcha: "npm:3.1.0"
-    bootbox: "npm:5.5.3"
+    bootbox: "npm:6.0.4"
     bootstrap: "npm:3.3.7"
     bootstrap-legacy-js: "npm:bootstrap@3.2.0"
     chart.js: "npm:2.9.4"
     chartjs-plugin-datalabels: "npm:0.7.0"
     cookieconsent: "npm:3.1.1"
     datatables.net-bs: "npm:1.10.21"
-    dompurify: "npm:3.2.7"
+    dompurify: "npm:3.4.0"
     filepond: "npm:4.32.12"
     filepond-plugin-file-validate-size: "npm:2.2.8"
     filepond-plugin-file-validate-type: "npm:1.2.9"
     filepond-plugin-image-preview: "npm:4.6.12"
     jest: "npm:^30.4.2"
     jest-environment-jsdom: "npm:^30.4.1"
-    jquery-ui: "npm:1.12.1"
+    jquery: "npm:1.12.4"
+    jquery-ui: "npm:1.13.2"
     jsdom: "npm:^29.0.0"
     prettier: "npm:^3.8.3"
     resolve-url-loader: "npm:^5.0.0"
