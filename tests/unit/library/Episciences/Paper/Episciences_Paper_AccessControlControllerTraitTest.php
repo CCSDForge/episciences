@@ -11,6 +11,7 @@ use Episciences_Paper_AccessControlControllerTrait;
 use Episciences_Paper_Conflict;
 use Episciences_Review;
 use Episciences_User;
+use Episciences_View_Helper_Url;
 use PHPUnit\Framework\TestCase;
 use Zend_Session_Namespace;
 
@@ -121,6 +122,22 @@ final class AccessControlHarness
     public function callRedirectIfConflict(Episciences_Paper $paper, Episciences_Review $review): void
     {
         $this->redirectWithFlashMessageIfConflictDetected($paper, $review);
+    }
+
+    /**
+     * Stands in for Episciences_Controller_Action::url(), which the trait now
+     * calls directly (git "fix(routing)": the HelperBroker's url() drops the
+     * review-code prefix). Delegates to the fake _helper->url() too, so tests
+     * can still assert on the params that were passed in.
+     */
+    public function url(array $urlOptions = [], $name = null, $reset = false, $encode = true): string
+    {
+        $params = $urlOptions;
+        unset($params['controller'], $params['action']);
+
+        $this->_helper->url((string)($urlOptions['action'] ?? ''), (string)($urlOptions['controller'] ?? ''), null, $params);
+
+        return (new Episciences_View_Helper_Url())->url($urlOptions, $name, $reset, $encode);
     }
 }
 
@@ -310,7 +327,9 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         );
 
         self::assertFalse($allowed);
-        self::assertSame('/administratepaper/assigned', $this->harness->_helper->redirectedTo);
+        // the ce param must actually reach assignedAction() as a query param (git "fix(routing)"),
+        // not just be recorded internally: that's how it switches the assigned-list view to copy editor mode
+        self::assertSame('/administratepaper/assigned?ce=1', $this->harness->_helper->redirectedTo);
         self::assertSame(['ce' => 1], $this->harness->_helper->urlParams);
     }
 
