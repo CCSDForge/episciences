@@ -115,9 +115,20 @@ class BiblioRefParser {
             const isSuspect  = detectors.length > 0 || status.includes('Problematic') || pubpeerurl.length > 0;
             const isGenuine  = !isSuspect && status.includes('Genuine');
 
+            // Open access info is optional and only present when the API found a matching open-access copy
+            const openAccess = parsedRef['open-access'];
+            const openAccessUrl = openAccess && typeof openAccess === 'object' && typeof openAccess.url === 'string'
+                ? openAccess.url
+                : null;
+            const openAccessSourceTitle = openAccess && typeof openAccess === 'object' && typeof openAccess.source_title === 'string'
+                ? openAccess.source_title
+                : '';
+
             return {
                 rawReference: parsedRef.raw_reference,
                 doi:          parsedRef.doi,
+                openAccessUrl,
+                openAccessSourceTitle,
                 isAccepted:      citation.isAccepted === 1,
                 showAccepted:    isAuthorizedToSeeAcc && citation.isAccepted === 1,
                 showNotAccepted: isAuthorizedToSeeAcc && citation.isAccepted !== 1,
@@ -224,8 +235,9 @@ class BiblioRefRenderer {
         li.appendChild(document.createTextNode(citation.rawReference || ''));
 
         // Add DOI link if present (only safe http/https URLs)
+        let formattedDoi = null;
         if (citation.doi) {
-            const formattedDoi = BiblioRefParser.formatDoi(citation.doi);
+            formattedDoi = BiblioRefParser.formatDoi(citation.doi);
             if (formattedDoi && /^https?:\/\/[^\s<>"]+$/.test(formattedDoi.url)) {
                 const a = document.createElement('a');
                 a.href = formattedDoi.url;
@@ -236,6 +248,27 @@ class BiblioRefRenderer {
                 li.appendChild(document.createTextNode(' '));
                 li.appendChild(a);
             }
+        }
+
+        // Add open-access link if present, distinct from the DOI link, and a safe http/https URL
+        if (
+            citation.openAccessUrl &&
+            (!formattedDoi || formattedDoi.url !== citation.openAccessUrl) &&
+            /^https?:\/\/[^\s<>"]+$/.test(citation.openAccessUrl)
+        ) {
+            const a = document.createElement('a');
+            a.href = citation.openAccessUrl;
+            a.rel = 'noopener';
+            a.target = '_blank';
+            a.className = 'biblio-ref-oa-link';
+            if (citation.openAccessSourceTitle) {
+                a.title = citation.openAccessSourceTitle;
+            }
+            a.appendChild(this._makeIcon('fas fa-lock-open'));
+            a.appendChild(document.createTextNode(' ' + citation.openAccessUrl));
+            a.appendChild(this._makeSrOnly(typeof translate === 'function' ? ` (${translate('(ouvre dans un nouvel onglet)')})` : ' (opens in new tab)'));
+            li.appendChild(document.createTextNode(' '));
+            li.appendChild(a);
         }
 
         // Append colored badges for suspect signals, or genuine badge
