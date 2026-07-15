@@ -607,7 +607,7 @@ return array(
     'Impossible de supprimer le fichier : élément introuvable.' => 'Unable to delete the file: item not found.',
     "Mes commentaires" => "My comments",
     "Note" => "Note",
-    "Ci-dessous votre ancienne lettre d’accompagnement, son remplacement est possible en joignant un nouveau fichier à votre commentaire." => "Below your old cover letter, its replacement is possible by attaching a new file to your comment.",
+    "Ci-dessous votre ancienne lettre d'accompagnement, son remplacement est possible en joignant un nouveau fichier à votre commentaire." => "Below your old cover letter, its replacement is possible by attaching a new file to your comment.",
     "Ces modifications seront prises en compte une fois le formulaire est validé." => "These changes will be taken into account once the form is validated.",
     "Une erreur est survenue lors de l'enregistrement de votre commentaire." => "An error occurred while saving your comment.",
     "Le fichier a bien été supprimé." => "The file has been deleted.",
