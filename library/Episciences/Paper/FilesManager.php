@@ -419,13 +419,17 @@ class Episciences_Paper_FilesManager
 
     /**
      * Returns the file designated as the main file
-     * @param int $docId
+     * @param int|null $docId
      * @param bool $strict
      * @return Episciences_Paper_File|null
      */
 
-    public static function getMainFile(int $docId, bool $strict = false): ?Episciences_Paper_File
+    public static function getMainFile(?int $docId, bool $strict = false): ?Episciences_Paper_File
     {
+
+        if (!$docId) {
+            return null;
+        }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -435,28 +439,22 @@ class Episciences_Paper_FilesManager
 
         // A precaution in case there are multiple files where "is_main" is set to "true"; in that case, we use the most recently modified one.
         $query->order('time_modified DESC');
-
         $result = $db->fetchRow($query);
 
-        if ($strict) {
-            return !empty($result) ? new Episciences_Paper_File($result) : null;
+        if ($strict && empty($result)) {
+            return null;
         }
-
 
         //  Retrieve the largest PDF available
         if (empty($result)) {
-            $query = self::findByDocIdQuery($docId) // New query to avoid the accumulation of WHERE clauses
-            ->where('file_type = ?', 'pdf')
+            $query = self::findByDocIdQuery($docId)
+                    ->where('file_type = ?', 'pdf') // New query to avoid the accumulation of WHERE clauses
                     ->order('file_size DESC');
 
             $result = $db->fetchRow($query);
-
-            if (empty($result)) {
-                return null;
-            }
         }
 
-        return new Episciences_Paper_File($result);
+        return !empty($result) ? new Episciences_Paper_File($result) : null;
 
     }
 
