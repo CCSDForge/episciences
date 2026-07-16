@@ -157,6 +157,8 @@ return [
     "Are you sure you want to delete this list?" => "Êtes-vous sûr de vouloir supprimer cette liste ?",
     "Edit Mailing List" => "Modifier la liste de diffusion",
     "Create a new Mailing List" => "Créer une nouvelle liste de diffusion",
+    "Last updated" => "Dernière mise à jour",
+    "Created" => "Créée le",
     "Save" => "Enregistrer",
     "Cancel" => "Annuler",
     "Manage members for: " => "Gérer les membres pour : ",

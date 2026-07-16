@@ -95,9 +95,31 @@ trait UrlBuilder
 
     }
 
+    /**
+     * Returns the trusted scheme+host (no path) to prepend to a PREFIX_URL-carrying path
+     * (e.g. the output of Episciences_View_Helper_Url::url()).
+     *
+     * Derived from the APPLICATION_URL constant (set once at bootstrap, see public/const.php)
+     * rather than read directly from $_SERVER, since APPLICATION_URL is a trusted config value
+     * on deployments using RVCODE/MANAGER_APPLICATION_URL - reading $_SERVER['SERVER_NAME']
+     * directly would reflect a client-supplied Host header (Host Header Injection).
+     */
     public static function buildBaseUrl(): string
     {
-        return SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+        $parts = parse_url((string)(defined('APPLICATION_URL') ? APPLICATION_URL : ''));
+
+        if (!isset($parts['scheme'], $parts['host'])) {
+            // Fallback: APPLICATION_URL not usable (e.g. not yet defined in this context)
+            return SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'];
+        }
+
+        $origin = $parts['scheme'] . '://' . $parts['host'];
+
+        if (isset($parts['port'])) {
+            $origin .= ':' . $parts['port'];
+        }
+
+        return $origin;
     }
 
 }

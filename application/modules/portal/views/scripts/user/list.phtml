@@ -4,7 +4,7 @@
 }
 #or-label {
 	display: inline;
-	
+
 }
 </style>
 
@@ -15,7 +15,7 @@
 <?php endif;?>
 
 <?php if ($this->localUsers) : ?>
-	
+
 <table class="table table-striped table-bordered dataTable" id="localUsers">
 	<thead>
 		<tr>
@@ -28,17 +28,17 @@
 		</tr>
 	</thead>
 	<tbody>
-		<?php foreach ($this->localUsers as $user) : ?>	
-		<?php 
+		<?php foreach ($this->localUsers as $user) : ?>
+		<?php
 		// On filtre l'affichage des utilisateurs root, si on est pas root
 		if (!Episciences_Auth::isRoot() && in_array(Episciences_Acl::ROLE_ROOT, $user['ROLES'])) {
 			continue;
-		}		
+		}
 		?>
 		<tr id="localUsers_<?php echo $user['UID']; ?>">
 			<td><?php echo $user['UID']?></td>
 			<td><?php echo $user['SCREEN_NAME']?></td>
-			
+
 			<td><?php echo $user['CAS']['USERNAME']?></td>
 			<td><?php echo $user['CAS']['EMAIL']?></td>
 			<td>
@@ -47,20 +47,23 @@
 				<?php 	echo $this->partial('partials/user_roles.phtml', array('roles'=>$user['ROLES']))?>
 				<?php endif;?>
 				</div>
-				
+
 				<?php if (Episciences_Auth::isSecretary()) :?>
 				<button onclick="getRoles(this, <?php echo $user['UID'] ?>)" class="btn btn-mini popover-link" style="float: right; font-size: 10px"><i class="icon-caret-down"></i></button>
 				<?php endif;?>
-				
+
 			</td>
-			<td style="text-align:right;"> 
+			<td style="text-align:right;">
 				<a href="<?= $this->url(['controller' => 'user', 'action' => 'view', 'userid' => $user['UID']]) ?>"><i class="darkgrey icon-info-sign"></i></a>&nbsp;
 				<?php if (Episciences_Auth::isSecretary()) :?>
-				<a href="<?= $this->url(['controller' => 'user', 'action' => 'edit', 'userid' => $user['UID']]) ?>"><i class="darkgrey icon-edit"></i></a>&nbsp;
-				<a id="delete_localUsers_<?php echo $user['UID']; ?>" href="#"><i class="darkgrey icon-trash"></i></a>
+                    <a href="<?= $this->url(['controller' => 'user', 'action' => 'edit', 'userid' => $user['UID']]) ?>"><i class="darkgrey icon-edit"></i></a>&nbsp;
+				<?php $deleteToken = Episciences_Csrf_Helper::generateToken('user_delete_' . (int)$user['UID']); ?>
+				<a id="delete_localUsers_<?php echo $user['UID']; ?>" href="#"
+				   data-csrf-name="<?php echo htmlspecialchars((string)$deleteToken['name'], ENT_QUOTES, 'UTF-8'); ?>"
+				   data-csrf-value="<?php echo htmlspecialchars((string)$deleteToken['value'], ENT_QUOTES, 'UTF-8'); ?>"><i class="darkgrey icon-trash"></i></a>
 				<?php endif; ?>
 			</td>
-			
+
 		</tr>
 		<?php endforeach; ?>
 	</tbody>

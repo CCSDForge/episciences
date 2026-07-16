@@ -202,9 +202,10 @@ class Episciences_Mail_Reminder
     }
 
     /**
+     * @return bool true on success
      * @throws Zend_Db_Adapter_Exception
      */
-    public function save(): void
+    public function save(): bool
     {
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -253,7 +254,7 @@ class Episciences_Mail_Reminder
         // update translation file
         Episciences_Tools::writeTranslations($translations, REVIEW_LANG_PATH, Episciences_Mail_TemplatesManager::TPL_TRANSLATION_FILE_NAME);
 
-        echo true;
+        return true;
     }
 
     /**
@@ -547,21 +548,25 @@ class Episciences_Mail_Reminder
 
     /**
      * Returns the delay before the reminder is sent
-     * @return mixed
+     * Cast to int when set: this admin-configured, untyped value is interpolated raw
+     * into several Zend_Db_Expr SQL clauses — a non-numeric value would break the query
+     * or allow injection. null is preserved (unset on a freshly constructed reminder).
+     * @return int|null
      */
-    public function getDelay()
+    public function getDelay(): ?int
     {
-        return $this->_delay;
+        return $this->_delay === null ? null : (int)$this->_delay;
     }
 
     /**
      * Returns the frequency between each reminder sending
-     * /* null: never, 1 day, 1 week, 2 week, 1 month
-     * @return mixed
+     * null: never; otherwise 1 day, 1 week, 2 week, 1 month
+     * Cast to int when set for the same SQL-interpolation safety as getDelay().
+     * @return int|null
      */
-    public function getRepetition()
+    public function getRepetition(): ?int
     {
-        return $this->_repetition;
+        return $this->_repetition === null ? null : (int)$this->_repetition;
     }
 
     /**
@@ -1404,6 +1409,9 @@ class Episciences_Mail_Reminder
         foreach ($resultQuery as $item) {
             $paper = new Episciences_Paper($item);
 
+            // Default to no editors so a recipient role other than chief_editor/editor
+            // does not leave $editors undefined (or stale) for the foreach below.
+            $editors = [];
             if (Episciences_Acl::ROLE_CHIEF_EDITOR === $rRecipient) {
                 $editors = Episciences_Review::getChiefEditors();
             } elseif (Episciences_Acl::ROLE_EDITOR === $rRecipient) {

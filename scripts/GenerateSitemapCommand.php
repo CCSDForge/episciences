@@ -100,9 +100,13 @@ class GenerateSitemapCommand extends Command
 
         $logger->info('Starting sitemap generation', ['rvcode' => $rvcode]);
 
+        ['rvid' => $rvid, 'languages' => $languages] = $this->fetchJournalInfo($rvcode);
+
         $entries = array_merge(
-            $this->getSitemapGenericEntries($rvcode),
-            $this->getSitemapArticleEntries($rvcode, $client, $logger)
+            $this->getSitemapGenericEntries($rvcode, $languages),
+            $this->getSitemapVolumeAndSectionEntries($rvcode, $rvid, $languages),
+            $this->getSitemapPageEntries($rvcode, $client, $logger, $languages),
+            $this->getSitemapArticleEntries($rvcode, $client, $logger, $languages),
         );
 
         if (empty($entries)) {
@@ -119,13 +123,14 @@ class GenerateSitemapCommand extends Command
     /**
      * Fetch article entries from the Episciences API (paginated).
      *
+     * @param string[] $languages
      * @return array<int, array<string, mixed>>
      */
-    private function getSitemapArticleEntries(string $rvcode, Client $client, Logger $logger): array
+    private function getSitemapArticleEntries(string $rvcode, Client $client, Logger $logger, array $languages): array
     {
-        $journalBaseUrl = $rvcode . '.' . DOMAIN;
-        $url            = EPISCIENCES_API_URL . "papers/?rvcode={$rvcode}&itemsPerPage=30&pagination=true";
-        $entries        = [];
+        $base    = sprintf('https://%s.%s', $rvcode, DOMAIN);
+        $url     = EPISCIENCES_API_URL . "papers/?rvcode={$rvcode}&itemsPerPage=30&pagination=true";
+        $entries = [];
 
         try {
             do {
@@ -133,12 +138,16 @@ class GenerateSitemapCommand extends Command
                 $data     = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
 
                 foreach ($data['hydra:member'] as $paper) {
-                    $entries[] = [
-                        'loc'        => sprintf('https://%s/articles/%s', $journalBaseUrl, $paper['docid']),
-                        'lastmod'    => null,
-                        'changefreq' => 'weekly',
-                        'priority'   => '0.9',
-                    ];
+                    $modDate = $paper['document']['database']['current']['dates']['modification_date']
+                        ?? $paper['modification_date']
+                        ?? null;
+                    $lastmod = $modDate ? date('Y-m-d', strtotime($modDate)) : null;
+                    foreach ($this->buildLocUrls($base, '/articles/' . $paper['docid'], $languages) as $loc) {
+                        $entries[] = [
+                            'loc'     => $loc,
+                            'lastmod' => $lastmod,
+                        ];
+                    }
                 }
 
                 $url = $data['hydra:view']['hydra:next'] ?? null;
@@ -151,46 +160,118 @@ class GenerateSitemapCommand extends Command
     }
 
     /**
-     * Build static generic URL entries (home, articles, authors, volumes, sections, about).
+     * Fetch visible page entries from the Episciences API.
      *
+     * @param string[] $languages
      * @return array<int, array<string, mixed>>
      */
-    private function getSitemapGenericEntries(string $rvcode): array
+    private function getSitemapPageEntries(string $rvcode, Client $client, Logger $logger, array $languages): array
     {
-        $journalBaseUrl = sprintf('%s.%s', $rvcode, DOMAIN);
+        $base    = sprintf('https://%s.%s', $rvcode, DOMAIN);
+        $url     = EPISCIENCES_API_URL . "pages?pagination=false&rvcode={$rvcode}";
+        $entries = [];
 
-        $createEntry = static fn(string $path, string $changefreq, string $priority): array => [
-            'loc'        => sprintf('https://%s%s', $journalBaseUrl, $path),
-            'lastmod'    => null,
-            'changefreq' => $changefreq,
-            'priority'   => $priority,
-        ];
+        try {
+            $response = $client->get($url);
+            $pages    = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
 
-        // Keys encode the changefreq as the first underscore-delimited segment.
-        $urlCollections = [
-            'daily' => [
-                'priority' => '1',
-                'paths'    => ['/'],
-            ],
-            'daily_articles_authors' => [
-                'priority' => '0.8',
-                'paths'    => ['/articles', '/authors'],
-            ],
-            'weekly' => [
-                'priority' => '0.8',
-                'paths'    => ['/volumes', '/sections', '/about'],
-            ],
-        ];
+            foreach ($pages as $page) {
+                $dateUpdated = $page['date_updated'] ?? null;
+                $lastmod     = $dateUpdated ? date('Y-m-d', strtotime($dateUpdated)) : null;
+                foreach ($this->buildLocUrls($base, '/' . $page['page_code'], $languages) as $loc) {
+                    $entries[] = [
+                        'loc'     => $loc,
+                        'lastmod' => $lastmod,
+                    ];
+                }
+            }
+        } catch (GuzzleException $e) {
+            $logger->error('Error fetching pages from API', ['rvcode' => $rvcode, 'error' => $e->getMessage()]);
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Build static generic URL entries (home, articles, authors, volumes, sections, about).
+     *
+     * @param string[] $languages
+     * @return array<int, array<string, mixed>>
+     */
+    private function getSitemapGenericEntries(string $rvcode, array $languages): array
+    {
+        $base  = sprintf('https://%s.%s', $rvcode, DOMAIN);
+        $paths = ['/', '/articles', '/authors', '/volumes', '/sections', '/about'];
 
         $entries = [];
-        foreach ($urlCollections as $key => $data) {
-            $changefreq = explode('_', $key, 2)[0];
-            foreach ($data['paths'] as $path) {
-                $entries[] = $createEntry($path, $changefreq, $data['priority']);
+        foreach ($paths as $path) {
+            foreach ($this->buildLocUrls($base, $path, $languages) as $loc) {
+                $entries[] = ['loc' => $loc];
             }
         }
 
         return $entries;
+    }
+
+    /**
+     * Build individual volume and section URL entries.
+     *
+     * @param string[] $languages
+     * @return array<int, array<string, mixed>>
+     */
+    private function getSitemapVolumeAndSectionEntries(string $rvcode, int $rvid, array $languages): array
+    {
+        $base    = sprintf('https://%s.%s', $rvcode, DOMAIN);
+        $db      = \Zend_Db_Table_Abstract::getDefaultAdapter();
+        $entries = [];
+
+        $vids = $db->fetchCol($db->select()->from(T_VOLUMES, 'VID')->where('RVID = ?', $rvid));
+        foreach ($vids as $vid) {
+            foreach ($this->buildLocUrls($base, '/volumes/' . $vid, $languages) as $loc) {
+                $entries[] = ['loc' => $loc];
+            }
+        }
+
+        $sids = $db->fetchCol($db->select()->from(T_SECTIONS, 'SID')->where('RVID = ?', $rvid));
+        foreach ($sids as $sid) {
+            foreach ($this->buildLocUrls($base, '/sections/' . $sid, $languages) as $loc) {
+                $entries[] = ['loc' => $loc];
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Resolve RVID and interface languages for a journal.
+     *
+     * @return array{rvid: int, languages: string[]}
+     */
+    private function fetchJournalInfo(string $rvcode): array
+    {
+        $review = \Episciences_ReviewsManager::findByRvcode($rvcode);
+        if (!$review) {
+            throw new \RuntimeException("Journal '{$rvcode}' not found.");
+        }
+        $rvid      = $review->getRvid();
+        $website   = new \Ccsd_Website_Common($rvid, ['sidField' => 'SID']);
+        $languages = $website->getLanguages();
+
+        return ['rvid' => $rvid, 'languages' => $languages];
+    }
+
+    /**
+     * Build one URL per language (with prefix) or a single URL (no prefix for legacy sites).
+     *
+     * @param string[] $languages
+     * @return string[]
+     */
+    private function buildLocUrls(string $base, string $path, array $languages): array
+    {
+        if (empty($languages)) {
+            return [$base . $path];
+        }
+        return array_map(static fn(string $lang) => $base . '/' . $lang . $path, $languages);
     }
 
     /**

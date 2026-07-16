@@ -5,7 +5,7 @@ use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
 
 /**
- * Adapter Zend_Auth pour l'authentification via CAS
+ * Zend_Auth adapter for CAS authentication
  *
  * @see https://wiki.jasig.org/display/CASC/phpCAS JASIG phpCAS library
  * @see https://github.com/Jasig/phpCAS
@@ -25,7 +25,7 @@ class Ccsd_Auth_Adapter_Cas extends Ccsd_Auth_Adapter_CasAbstract
      * Sets the default options for the CAS server
      * @return Ccsd_Auth_Adapter_Cas
      */
-    protected function setCasOptions() : self
+    protected function setCasOptions(): self
     {
 
         $this->setCasVersion(CAS_SERVICE_VERSION)
@@ -37,6 +37,7 @@ class Ccsd_Auth_Adapter_Cas extends Ccsd_Auth_Adapter_CasAbstract
             ->setCasCACert(CAS_SERVICE_SSLCACERT);
         return $this;
     }
+
     protected function setLogger(): void
     {
 

@@ -27,7 +27,6 @@ class Episciences_PapersManager
      * @param bool $isLimit
      * @param string|array|Zend_Db_Expr $cols // The columns to select
      * @return array
-     * @throws DOMException
      * @throws Zend_Db_Select_Exception
      * @throws Zend_Db_Statement_Exception
      */
@@ -80,18 +79,60 @@ class Episciences_PapersManager
 
         // order
         if (array_key_exists('order', $settings)) {
-            if (is_array($settings['order'])) {
-                foreach ($settings['order'] as $value) {
-                    $select->order(strtoupper($value));
-                }
-            } else {
-                $select->order(strtoupper($settings['order']));
+            $orders = is_array($settings['order']) ? $settings['order'] : [$settings['order']];
+            foreach ($orders as $value) {
+                $select = self::applyOrderExpression($select, $value);
             }
         } else {
             $select->order('WHEN DESC');
         }
 
         return $select;
+    }
+
+    private static function applyOrderExpression(Zend_Db_Select $select, string $value): Zend_Db_Select
+    {
+        $parts = preg_split('/\s+/', trim($value), 2);
+        $col = strtoupper($parts[0]);
+        $dir = isset($parts[1]) && strtoupper($parts[1]) === 'DESC' ? 'DESC' : 'ASC';
+
+        $fromParts = $select->getPart(Zend_Db_Select::FROM);
+
+        return match ($col) {
+            'CONTRIBUTOR_SORT' => isset($fromParts['sort_contributor'])
+                ? $select->order("sort_contributor.SCREEN_NAME $dir")
+                : $select
+                    ->joinLeft(['sort_contributor' => T_USERS], 'papers.UID = sort_contributor.UID', [])
+                    ->order("sort_contributor.SCREEN_NAME $dir"),
+            'REVIEWER_SORT'   => self::applyAssignmentSortJoin($select, 'reviewer', $dir),
+            'EDITOR_SORT'     => self::applyAssignmentSortJoin($select, 'editor', $dir),
+            'COPYEDITOR_SORT' => self::applyAssignmentSortJoin($select, 'copyeditor', $dir),
+            default           => $select->order("$col $dir"),
+        };
+    }
+
+    private static function applyAssignmentSortJoin(Zend_Db_Select $select, string $role, string $dir): Zend_Db_Select
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $alias = 'sort_' . $role;
+
+        $subQuery = $db->select()
+            ->from(
+                ['ua' => T_ASSIGNMENTS],
+                ['ITEMID', 'sort_name' => new Zend_Db_Expr('MIN(u.SCREEN_NAME)')]
+            )
+            ->join(['u' => T_USERS], 'ua.UID = u.UID', [])
+            ->where('ua.ITEM = ?', 'paper')
+            ->where('ua.ROLEID = ?', $role)
+            ->where('ua.RVID = ?', RVID)
+            ->where('ua.STATUS != ?', Episciences_User_Assignment::STATUS_INACTIVE)
+            ->group('ua.ITEMID');
+
+        $fromParts = $select->getPart(Zend_Db_Select::FROM);
+        if (!isset($fromParts[$alias])) {
+            $select->joinLeft([$alias => $subQuery], "papers.DOCID = {$alias}.ITEMID", []);
+        }
+        return $select->order("{$alias}.sort_name $dir");
     }
 
     /**
@@ -229,7 +270,6 @@ class Episciences_PapersManager
      * @param array $values
      * @param string $roleId : default : editor
      * @return Zend_Db_Select
-     * @throws JsonException
      * @throws Zend_Db_Select_Exception
      */
     private static function
@@ -462,7 +502,6 @@ class Episciences_PapersManager
      * @param array $sections
      * @return Zend_Db_Select
      * @throws Zend_Db_Select_Exception
-     * @throws Zend_Exception
      */
     private static function dataTableSearchQuery(Zend_Db_Select $select, string $word = '', array $volumes = [], array $sections = []): \Zend_Db_Select
     {
@@ -1243,8 +1282,6 @@ class Episciences_PapersManager
      * @param int $docId
      * @param string $name
      * @return bool|Ccsd_Form
-     * @throws JsonException
-     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
@@ -1439,6 +1476,8 @@ class Episciences_PapersManager
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        /** @var Zend_Db_Select $select */
+
         $select = self::getAssignmentRoleQuery($docId, Episciences_Acl::ROLE_COPY_EDITOR);
 
         $result = $db->fetchAssoc($select);
@@ -1471,8 +1510,6 @@ class Episciences_PapersManager
      * @param $docId
      * @param $copyEditors
      * @return bool|Ccsd_Form
-     * @throws JsonException
-     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
@@ -1686,7 +1723,6 @@ class Episciences_PapersManager
     /**
      * @param $default
      * @return Ccsd_Form
-     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getAcceptanceForm($default): \Ccsd_Form
@@ -1782,7 +1818,6 @@ class Episciences_PapersManager
     /**
      * @param $default
      * @return Ccsd_Form
-     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getPublicationForm($default): \Ccsd_Form
@@ -1877,7 +1912,6 @@ class Episciences_PapersManager
     /**
      * @param $default
      * @return Ccsd_Form
-     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getRefusalForm($default): \Ccsd_Form
@@ -1985,7 +2019,6 @@ class Episciences_PapersManager
      * @param $editors
      * @param $paper
      * @return Ccsd_Form
-     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getAskOtherEditorsForm($default, $editors, $paper): \Ccsd_Form
@@ -2296,29 +2329,46 @@ class Episciences_PapersManager
      * delete a paper from datbase, and all associated files
      * @param $docid
      * @return bool
-     * @throws Zend_Db_Statement_Exception
      */
     public static function delete($docid): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $paper = Episciences_PapersManager::get($docid, false);
 
-        // delete from database
-        Episciences_CommentsManager::deleteByDocid($docid);
-        Episciences_Mail_LogManager::deleteByDocid($docid);
+        // get() returns false when the paper does not exist: bail out before purging
+        // anything rather than crashing on $paper->getPaperid() after 8 tables are gone.
+        if (!$paper instanceof Episciences_Paper) {
+            return false;
+        }
 
-        $db->delete(T_PAPER_VISITS, ['DOCID = ?' => $docid]);
-        $db->delete(VISITS_TEMP, ['DOCID = ?' => $docid]);
-        $db->delete(T_LOGS, ['DOCID = ?' => $docid]);
-        $db->delete(T_REVIEWER_REPORTS, ['DOCID = ?' => $docid]);
-        $db->delete(T_PAPER_SETTINGS, ['DOCID = ?' => $docid]);
-        $db->delete(T_ALIAS, ['DOCID = ?' => $docid]);
-        $db->delete(T_PAPERS, ['DOCID = ?' => $docid]);
-        $db->delete(T_VOLUME_PAPER, ['DOCID = ?' => $docid]);
-        $db->delete(T_PAPER_LICENCES, ['docid = ?' => $docid]);
-        $db->delete(T_VOLUME_PAPER_POSITION, ['PAPERID = ?' => $paper->getPaperid()]);
+        // Purge every table atomically: a failure mid-way must not leave the paper
+        // half-deleted with dangling rows in the remaining tables.
+        $db->beginTransaction();
+        try {
+            Episciences_CommentsManager::deleteByDocid($docid);
+            Episciences_Mail_LogManager::deleteByDocid($docid);
 
-        // delete paper folder and content
+            $db->delete(T_PAPER_VISITS, ['DOCID = ?' => $docid]);
+            $db->delete(VISITS_TEMP, ['DOCID = ?' => $docid]);
+            $db->delete(T_LOGS, ['DOCID = ?' => $docid]);
+            $db->delete(T_REVIEWER_REPORTS, ['DOCID = ?' => $docid]);
+            $db->delete(T_PAPER_SETTINGS, ['DOCID = ?' => $docid]);
+            $db->delete(T_ALIAS, ['DOCID = ?' => $docid]);
+            $db->delete(T_PAPERS, ['DOCID = ?' => $docid]);
+            $db->delete(T_VOLUME_PAPER, ['DOCID = ?' => $docid]);
+            $db->delete(T_PAPER_LICENCES, ['docid = ?' => $docid]);
+            $db->delete(T_VOLUME_PAPER_POSITION, ['PAPERID = ?' => $paper->getPaperid()]);
+            $db->delete(T_PAPER_PROJECTS, ['paperid = ?' => $paper->getPaperid()]);
+
+            $db->commit();
+        } catch (Exception $e) {
+            $db->rollBack();
+            trigger_error(sprintf('Failed to delete paper #%s: %s', $docid, $e->getMessage()));
+            return false;
+        }
+
+        // Filesystem and index cleanup happen only after the DB purge is committed
+        // (they cannot participate in the transaction).
         if (defined('RVCODE') && defined('REVIEW_FILES_PATH') && $docid) {
             Episciences_Tools::deleteDir(self::buildDocumentPath($docid));
         }
@@ -2380,7 +2430,6 @@ class Episciences_PapersManager
      * @param bool $withxsl
      * @param int | null $rvId
      * @return bool|Episciences_Paper
-     * @throws DOMException
      * @throws Zend_Db_Statement_Exception
      */
     public static function get($docId, bool $withxsl = true, int $rvId = null): Episciences_Paper|bool
@@ -2416,11 +2465,8 @@ class Episciences_PapersManager
      * Revision deadlines and conflicts are intentionally omitted: they are
      * editorial-workflow data not required during metadata export (e.g. OAI-PMH).
      *
-     * @param int[] $docIds
-     * @param bool $withxsl
+     * @param  int[] $docIds
      * @return array<int, Episciences_Paper> map keyed by docId; absent IDs are omitted
-     * @throws DOMException
-     * @throws Zend_Db_Statement_Exception
      */
     public static function getByDocIds(array $docIds, bool $withxsl = false): array
     {
@@ -2449,7 +2495,6 @@ class Episciences_PapersManager
      * @param $aid
      * @param array $params
      * @return Ccsd_Form
-     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getDeadlineForm($aid, $params = []): \Ccsd_Form
@@ -2513,7 +2558,6 @@ class Episciences_PapersManager
      * Une invitation est à l'origine de la relecture ? true : oui, false: non
      * @param bool $isUninvited
      * @return Ccsd_Form
-     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getReviewerRemovalForm($aid, $docId, bool $isUninvited = false): \Ccsd_Form
@@ -2578,7 +2622,6 @@ class Episciences_PapersManager
      * @param $docid
      * @param $editors
      * @return Ccsd_Form
-     * @throws Zend_Exception
      * @throws Zend_Form_Exception
      */
     public static function getReassignmentForm($docid, $editors): \Ccsd_Form
@@ -2634,11 +2677,8 @@ class Episciences_PapersManager
      * @param Episciences_Paper $paper
      * @param Episciences_User $contributor
      * @param $other_editors
-     * @param array $options
      * @return array
-     * @throws DOMException
      * @throws Zend_Date_Exception
-     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
     public static function getStatusFormsTemplates(Episciences_Paper $paper, Episciences_User $contributor, $other_editors, array $options = []): array
@@ -2717,10 +2757,14 @@ class Episciences_PapersManager
         // accepted - waiting for authors validation
         $template_keys['acceptedAskAuthorValidation'] = Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMATTED_BY_JOURNAL_WAITING_AUTHOR_VALIDATION;
 
+        $loadedTemplates = Episciences_Mail_TemplatesManager::findManyByKeys(
+            array_values($template_keys),
+            RVCODE
+        );
+
         foreach ($template_keys as $template_name => $template_key) {
-            $oTemplate = new Episciences_Mail_Template();
+            $oTemplate = $loadedTemplates[$template_key] ?? new Episciences_Mail_Template();
             $oTemplate->setLocale($locale);
-            $oTemplate->findByKey($template_key);
             $oTemplate->loadTranslations();
 
             $templates[$template_name] = [
@@ -2749,7 +2793,7 @@ class Episciences_PapersManager
         $defaultTags = [
             Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $contributor->getScreenName(),
             Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $contributor->getUsername(),
-            Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $contributor->getFullName()
+            Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $contributor->getFullName(),
         ];
 
         $tags = array_merge($mail->getTags(), [
@@ -2823,6 +2867,9 @@ class Episciences_PapersManager
                     Episciences_Mail_Tags::TAG_DOI => $doi ?: $translator->translate('Aucun', $locale),
                     Episciences_Mail_Tags::TAG_VOLUME_ID => $volumeId,
                     Episciences_Mail_Tags::TAG_VOLUME_NAME => $volumeName,
+                    Episciences_Mail_Tags::TAG_VOLUME_NUMBER => $volume?->getVol_num() ?: $translator->translate('Aucun', $locale),
+                    Episciences_Mail_Tags::TAG_VOLUME_YEAR => $volume?->getVol_year() ?: $translator->translate('Aucune', $locale),
+                    Episciences_Mail_Tags::TAG_VOLUME_TYPE => $volume?->getVol_type() ?: $translator->translate('Aucun', $locale),
                     Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF => $volBiblioRef,
                     Episciences_Mail_Tags::TAG_SECTION_ID => $paper->getSid(),
                     Episciences_Mail_Tags::TAG_SECTION_NAME => $sectionName,
@@ -3156,7 +3203,7 @@ class Episciences_PapersManager
      * met à jour la version d'un article
      * @param Episciences_Paper $paper
      * @param int $newVersion
-     * @return false|int
+     * @return int|string
      */
     public static function updateVersion(Episciences_Paper $paper, int $newVersion)
     {
@@ -3180,7 +3227,6 @@ class Episciences_PapersManager
      * @param $paperId
      * @param bool $withTmpVersions
      * @return Episciences_Paper | null
-     * @throws DOMException
      * @throws Zend_Db_Statement_Exception
      */
     public static function getLastPaper($paperId, bool $withTmpVersions = false): ?Episciences_Paper
@@ -3670,7 +3716,10 @@ class Episciences_PapersManager
         }
 
         if ($order) {
-            $statusQuery->order('STATUS', $order);
+            // ZF1 Zend_Db_Select::order() ignores a second argument; the direction must
+            // be part of the column expression, otherwise the sort is silently dropped.
+            $direction = (strtoupper((string)$order) === 'DESC') ? 'DESC' : 'ASC';
+            $statusQuery->order('STATUS ' . $direction);
         }
 
         return $db->fetchCol($statusQuery);
@@ -3774,7 +3823,6 @@ class Episciences_PapersManager
      * fetch a paper
      * @param $identifier
      * @return Episciences_Paper|null
-     * @throws DOMException
      * @throws Zend_Db_Statement_Exception
      */
     public static function findByIdentifier($identifier): ?Episciences_Paper
@@ -4195,7 +4243,7 @@ class Episciences_PapersManager
 
     /**
      * @return array
-     * @throws Zend_Exception
+     * @throws JsonException
      */
     private static function fetchPapersWithNoConflictsConfirmation(): array
     {
@@ -4278,7 +4326,7 @@ class Episciences_PapersManager
      * @param $docId
      * @return string
      */
-    public static function buildDocumentPath($docId): string
+    public static function buildDocumentPath(int $docId): string
     {
         return REVIEW_FILES_PATH . $docId;
     }
@@ -4417,8 +4465,6 @@ class Episciences_PapersManager
     private static function updateRecordDataProcessFilesHook($record1, mixed $docId, mixed $repoId, array|string $identifier, mixed $enrichment, mixed $affectedRows): array
     {
         $record = $record1;
-        // delete all paper files
-        Episciences_Paper_FilesManager::deleteByDocId($docId);
 
         $hookParams = ['repoId' => $repoId, 'identifier' => $identifier, 'docId' => $docId];
 
@@ -4478,12 +4524,10 @@ class Episciences_PapersManager
         return $result;
 
     }
-
     /**
      * @param int $docId
      * @param int|null $rvId
      * @return Episciences_Paper|null
-     * @throws DOMException
      * @throws Zend_Db_Statement_Exception
      */
     public static function partialGet(int $docId, int $rvId = null): ?Episciences_Paper

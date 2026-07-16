@@ -34,17 +34,17 @@ $(document).ready(function () {
         }
 
         $('#submit').on('click', function () {
-            let filter_status = $status.length > 0 ? $status.val() : [''];
-            let filter_volume = $volume.length > 0 ? $volume.val() : [''];
-            let filter_section = $section.length > 0 ? $section.val() : [''];
-            let filter_editors = $editors.length > 0 ? $editors.val() : [''];
+            let filter_status = $status.length > 0 ? ($status.val() ?? ['']) : [''];
+            let filter_volume = $volume.length > 0 ? ($volume.val() ?? ['']) : [''];
+            let filter_section = $section.length > 0 ? ($section.val() ?? ['']) : [''];
+            let filter_editors = $editors.length > 0 ? ($editors.val() ?? ['']) : [''];
             let filter_ratingStatus =
-                $ratingStatus.length > 0 ? $ratingStatus.val() : [''];
+                $ratingStatus.length > 0 ? ($ratingStatus.val() ?? ['']) : [''];
             let filter_reviewers =
-                $reviewers.length > 0 ? $reviewers.val() : [''];
-            let filter_doi = $doi.length > 0 ? $doi.val() : [''];
+                $reviewers.length > 0 ? ($reviewers.val() ?? ['']) : [''];
+            let filter_doi = $doi.length > 0 ? ($doi.val() ?? ['']) : [''];
             let filter_repositories =
-                $repositories.length > 0 ? $repositories.val() : [''];
+                $repositories.length > 0 ? ($repositories.val() ?? ['']) : [''];
 
             let filters = {
                 status: filter_status,
@@ -131,7 +131,7 @@ function applyMultipleFilters(controller, action, get = {}, filters = {}) {
         controller === 'administratepaper' &&
         (action === 'list' || action === 'assigned')
     ) {
-        columnDefs.push({ targets: [3, 6, 7, 8], orderable: false });
+        columnDefs.push({ targets: [3], orderable: false });
         columnDefs.push({ className: 'text-center', targets: [0, 1, 2] });
     } else if (controller === 'paper') {
         if (action === 'submitted') {

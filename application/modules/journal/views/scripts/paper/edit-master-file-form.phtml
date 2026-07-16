@@ -1,0 +1,39 @@
+<?php
+/** @var Episciences_Paper_File $masterFile */
+$masterFile = $this->masterFile;
+$masterFileSelect = $this->masterFileFormSelect(
+        'master-file', $this->docId, $masterFile?->getId(),
+        [
+                'class' => 'form-control',
+                'data-file-family' => 'pdf' // only pdf files
+        ]);
+?>
+
+
+<?php if ($masterFileSelect === '') : ?>
+
+    <p class="text-warning" role="alert">
+        <?= $this->translate("Aucun fichier PDF n'est joint à ce dépôt.") ?>
+        <button type="button" class="close" aria-label="<?= $this->translate('Fermer') ?>" data-dismiss="alert">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </p>
+
+<?php else: ?>
+
+    <div style="width: 400px">
+        <form action="<?= $url = $this->url(['controller' => 'paper', 'action' => 'savemasterfile'])?>" id="master-file-form-<?= $this->docId ?>"
+              style="height : 34px;">
+
+            <div class="pull-right" style="padding-left : 10px;">
+                <button type="submit" class="btn btn-primary"><?= $this->translate("Enregistrer") ?></button>
+            </div>
+
+            <div class="input-group">
+                <?= $masterFileSelect ?>
+            </div>
+
+        </form>
+    </div>
+
+<?php endif; ?>

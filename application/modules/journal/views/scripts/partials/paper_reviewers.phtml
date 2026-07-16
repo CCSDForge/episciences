@@ -316,19 +316,6 @@ try {
 </div>
 
 <script>
-    //Initialisation du menu des relecteurs
-    $('#reviewers .reviewer .popover-link').each(function () {
-        $(this).on('click', function (e) {
-            getReviewerMenu(this);
-        });
-    });
-
-    // Initialisation du lien de relecture
-    $('.go_to_rating').on('click', function () {
-        let uid = $(this).data('uid');
-        $("#rating-" + uid).collapse('show');
-    });
-
     function confirmRating() {
         location.href = JS_PREFIX_URL + "paper/rating?id=<?= $paper->getDocId() ?>&reviewer_uid=<?= Episciences_Auth::getUid() ?>";
     }

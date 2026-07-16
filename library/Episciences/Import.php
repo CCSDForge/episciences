@@ -22,6 +22,8 @@ class Episciences_Import
     protected $_publication_date;
     protected $_position;
     protected $_editor_id;
+    /** @var Episciences_Paper|false|null Last paper produced by load()/save(). */
+    protected $paper;
 
     public function __construct(array $options = null)
     {
@@ -229,6 +231,15 @@ class Episciences_Import
             $this->paper = $paper;
         } catch (Exception $e) {
             $this->setError($e -> getMessage());
+            return false;
+        }
+
+        // load() returns false (not a paper) when the docid already exists in another
+        // journal; calling ->save() on false would be a fatal error.
+        if (!$paper instanceof Episciences_Paper) {
+            if (!$this->getError()) {
+                $this->setError("ERREUR : L'article (" . $this->getId() . ") n'a pas pu être chargé.");
+            }
             return false;
         }
 

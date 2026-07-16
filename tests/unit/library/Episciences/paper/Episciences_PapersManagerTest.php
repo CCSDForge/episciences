@@ -261,6 +261,74 @@ class Episciences_PapersManagerTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
+    // applyOrderExpression() / applyAssignmentSortJoin() — issue #937
+    // -----------------------------------------------------------------------
+
+    public function testApplyOrderExpressionIsPrivateStatic(): void
+    {
+        $method = new ReflectionMethod(Episciences_PapersManager::class, 'applyOrderExpression');
+        self::assertTrue($method->isPrivate(), 'applyOrderExpression() must be private');
+        self::assertTrue($method->isStatic(), 'applyOrderExpression() must be static');
+    }
+
+    public function testApplyAssignmentSortJoinIsPrivateStatic(): void
+    {
+        $method = new ReflectionMethod(Episciences_PapersManager::class, 'applyAssignmentSortJoin');
+        self::assertTrue($method->isPrivate(), 'applyAssignmentSortJoin() must be private');
+        self::assertTrue($method->isStatic(), 'applyAssignmentSortJoin() must be static');
+    }
+
+    public function testGetListQueryDelegatesToApplyOrderExpression(): void
+    {
+        $body = $this->extractMethodSource(Episciences_PapersManager::class, 'getListQuery');
+        self::assertStringContainsString(
+            'applyOrderExpression',
+            $body,
+            'getListQuery() must delegate ORDER BY resolution to applyOrderExpression() to support JOIN-based virtual sort keys'
+        );
+    }
+
+    public function testApplyOrderExpressionHandlesAllVirtualSortKeys(): void
+    {
+        $body = $this->extractMethodSource(Episciences_PapersManager::class, 'applyOrderExpression');
+        foreach (['CONTRIBUTOR_SORT', 'REVIEWER_SORT', 'EDITOR_SORT', 'COPYEDITOR_SORT'] as $key) {
+            self::assertStringContainsString($key, $body,
+                "applyOrderExpression() must handle the $key virtual sort key"
+            );
+        }
+    }
+
+    public function testApplyAssignmentSortJoinUsesMinScreenNameAggregation(): void
+    {
+        $body = $this->extractMethodSource(Episciences_PapersManager::class, 'applyAssignmentSortJoin');
+        self::assertStringContainsString(
+            'MIN(u.SCREEN_NAME)',
+            $body,
+            'applyAssignmentSortJoin() must use MIN(u.SCREEN_NAME) to derive a single sort value from multiple assignees'
+        );
+    }
+
+    public function testApplyAssignmentSortJoinExcludesInactiveAssignments(): void
+    {
+        $body = $this->extractMethodSource(Episciences_PapersManager::class, 'applyAssignmentSortJoin');
+        self::assertStringContainsString(
+            'STATUS_INACTIVE',
+            $body,
+            'applyAssignmentSortJoin() must filter out inactive assignments from the derived table'
+        );
+    }
+
+    public function testApplyAssignmentSortJoinUsesLeftJoin(): void
+    {
+        $body = $this->extractMethodSource(Episciences_PapersManager::class, 'applyAssignmentSortJoin');
+        self::assertStringContainsString(
+            'joinLeft',
+            $body,
+            'applyAssignmentSortJoin() must use a LEFT JOIN so papers without assignees still appear in results'
+        );
+    }
+
+    // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
 
@@ -279,5 +347,12 @@ class Episciences_PapersManagerTest extends TestCase
     {
         $ref = new ReflectionMethod($class, $method);
         return $ref->getParameters()[$index];
+    }
+
+    private function extractMethodSource(string $class, string $method): string
+    {
+        $ref   = new ReflectionMethod($class, $method);
+        $lines = file((string) $ref->getFileName());
+        return implode('', array_slice($lines, $ref->getStartLine() - 1, $ref->getEndLine() - $ref->getStartLine() + 1));
     }
 }

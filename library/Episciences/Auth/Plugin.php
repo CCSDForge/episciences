@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Vérifications des droits d'accès à une ressource
+ * Access rights verification for a resource
  *
  */
 class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
@@ -11,19 +11,19 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
     public function preDispatch(Zend_Controller_Request_Abstract $request)
     {
 
-        // Récupération des règles d'accès
+        // Retrieve access rules
         $this->_acl = $this->getAcl();
-        // Récupération de l'id de la ressource (à modifier)
+        // Retrieve resource ID (to be modified)
         $resource = $request->getControllerName() . '-' . $request->getActionName();
         if (APPLICATION_MODULE == OAI) {
             return true;
         }
         if ($this->_acl->has($resource)) {
-            //La ressource demandée existe
+            // The requested resource exists
             if (!$this->isAllowed($resource)) {
-                //L'utilisateur ne peut pas accéder à la page
+                // The user cannot access the page
                 if (!Episciences_Auth::isLogged()) {
-                    //L'utilisateur n'est pas connecté
+                    // The user is not logged in
                     $request->setParam('forward-action', $request->getActionName());
                     $request->setParam('forward-controller', $request->getControllerName());
                     $request->setControllerName('user');
@@ -35,22 +35,22 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
                     $request->setParam('error_description', "Vous ne disposez pas des droits nécessaires pour accéder à cette page.");
                 }
             } else if (Episciences_Auth::isLogged() && $resource !== 'user-edit' && $resource !== 'user-logout' && $resource !== 'user-photo') {
-                //L'utilisateur a le droit d'accéder à la ressource, on vérifie si son compte est complété sur Episciences
+                // The user is allowed to access the resource, we check if their account is completed on Episciences
                 $epiUser = new Episciences_User();
                 if (!$epiUser->hasLocalData(Episciences_Auth::getUid())) {
-                    //Le compte doit être complété
+                    // The account must be completed
                     $redirector = Zend_Controller_Action_HelperBroker::getStaticHelper('redirector');
                     $redirector->gotoUrl((new Episciences_View_Helper_Url())->url(['controller' => 'user', 'action' => 'edit']));
                 }
             }
         } else if (!$request->isXmlHttpRequest()) {
-            //La ressource demandée n'existe pas (pas définie dans les ACL)
+            // The requested resource does not exist (not defined in the ACL)
             $request->setControllerName('index');
             $request->setActionName('notfound');
         }
     }
 
-    public function getAcl()
+    public function getAcl(): ?Episciences_Acl
     {
         return Zend_Controller_Front::getInstance()->getParam('bootstrap')->getResource('acl');
     }

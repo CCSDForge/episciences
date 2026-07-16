@@ -94,6 +94,10 @@ class Episciences_ReviewsManager
         // Cache the result
         self::$_cache[$cacheKey] = $review;
 
+        if ($review instanceof Episciences_Review && $review->getCode() !== '') {
+            self::$_cache['rvcode_' . $review->getCode()] = $review;
+        }
+
         return $review;
     }
 
@@ -135,6 +139,11 @@ class Episciences_ReviewsManager
 
         // Cache the result
         self::$_cache[$cacheKey] = $review;
+
+        self::$_cache['rvid_' . $review->getRvid()] = $review;
+        if ($enabledOnly) {
+            self::$_cache['rvcode_' . $rvcode] = $review;
+        }
 
         return $review;
     }
@@ -255,5 +264,39 @@ class Episciences_ReviewsManager
         self::$_cache = [];
     }
 
+
+    /**
+     * Batch-load settings for multiple reviews in a single query.
+     * Avoids N+1 queries when loading settings for many journals at once.
+     *
+     * @param Episciences_Review[] $reviews Array of Review objects indexed by RVID
+     * @return void
+     */
+    public static function loadSettingsForReviews(array $reviews): void
+    {
+        if (empty($reviews)) {
+            return;
+        }
+
+        $rvids = array_keys($reviews);
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_REVIEW_SETTINGS, ['RVID', 'SETTING', 'VALUE'])
+            ->where('RVID IN (?)', $rvids);
+
+        $rows = $db->fetchAll($select);
+
+        // Group settings by RVID
+        $settingsByRvid = [];
+        foreach ($rows as $row) {
+            $settingsByRvid[(int)$row['RVID']][] = $row;
+        }
+
+        // Apply settings to each review
+        foreach ($reviews as $review) {
+            $review->applySettingsFromRows($settingsByRvid[$review->getRvid()] ?? []);
+        }
+    }
 
 }

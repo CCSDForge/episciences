@@ -18,17 +18,16 @@ RUN apt-get update  \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
     libpng-dev \
-    && apt-get clean
-
-RUN apt-get install -y --no-install-recommends --no-install-suggests \
-     zip \
-     unzip \
-     git \
-     vim \
-     poppler-utils \
-     jq \
-     less \
+    zip \
+    unzip \
+    git \
+    vim \
+    cron \
+    poppler-utils \
+    jq \
+    less \
     iputils-ping \
+    file \
     && apt-get clean
 
 RUN docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/
@@ -60,6 +59,10 @@ COPY ./src/php-fpm/upload.ini /usr/local/etc/php/conf.d/
 
 # disable opcache configuration
 #COPY ./src/php-fpm/opcache.ini /usr/local/etc/php/conf.d/
+
+# Install mail queue crontab
+COPY ./src/php-fpm/crontab /etc/cron.d/episciences-mails
+RUN chmod 0644 /etc/cron.d/episciences-mails
 
 # Copy entrypoint script and set permissions
 COPY ./src/php-fpm/entrypoint.sh /usr/local/bin/entrypoint.sh

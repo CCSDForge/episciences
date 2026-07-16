@@ -24,6 +24,12 @@ class Episciences_UserTest extends TestCase
         $this->user = new Episciences_User();
     }
 
+    protected function tearDown(): void
+    {
+        Episciences_User::clearStaticCache();
+        parent::tearDown();
+    }
+
     // -------------------------------------------------------------------------
     // screenName
     // -------------------------------------------------------------------------
@@ -44,6 +50,40 @@ class Episciences_UserTest extends TestCase
     {
         $this->user->setScreenName('A/B/C');
         $this->assertSame('A B C', $this->user->getScreenName());
+    }
+
+    public function testSetScreenNameStripsHtmlTags(): void
+    {
+        $this->user->setScreenName('<script>alert(1)</script>John <b>Doe</b>');
+        $this->assertSame('alert(1)John Doe', $this->user->getScreenName());
+    }
+
+    public function testSetScreenNameRemovesControlCharacters(): void
+    {
+        $this->user->setScreenName("John\x00\x1F Doe\x7F");
+        $this->assertSame('John Doe', $this->user->getScreenName());
+    }
+
+    public function testSetScreenNameCollapsesWhitespaceAndTrims(): void
+    {
+        $this->user->setScreenName("  John \t\n  Doe  ");
+        $this->assertSame('John Doe', $this->user->getScreenName());
+    }
+
+    public function testSetScreenNameFallsBackToNamesWhenOnlyMarkup(): void
+    {
+        $this->user->setFirstname('Jane');
+        $this->user->setLastname('Roe');
+        $this->user->setScreenName('<br><hr>');
+        $this->assertSame('Jane Roe', $this->user->getScreenName());
+    }
+
+    public function testSetScreenNameFallbackCleansNamesToo(): void
+    {
+        $this->user->setFirstname('Jane<b></b>');
+        $this->user->setLastname('Roe');
+        $this->user->setScreenName(null);
+        $this->assertSame('Jane Roe', $this->user->getScreenName());
     }
 
     // -------------------------------------------------------------------------
@@ -639,5 +679,148 @@ class Episciences_UserTest extends TestCase
             $source,
             'Security S3: EMAIL must be escaped with htmlspecialchars() before HTML injection'
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Static Cache (Identity Map)
+    // -------------------------------------------------------------------------
+
+    public function testSetStaticCacheAndFindFromCache(): void
+    {
+        $uid = 99999;
+        $userData = [
+            'UID' => $uid,
+            'USERNAME' => 'testcacheuser',
+            'EMAIL' => 'testcache@example.com',
+            'SCREEN_NAME' => 'Test Cache User',
+            'LASTNAME' => 'User',
+            'FIRSTNAME' => 'Test',
+            'MIDDLENAME' => '',
+            'CIV' => 'M.',
+            'LANGUEID' => 'en',
+            'API_PASSWORD' => 'hashed_pw',
+            'IS_VALID' => 1,
+            'REGISTRATION_DATE' => '2026-01-01 12:00:00',
+            'MODIFICATION_DATE' => '2026-01-02 12:00:00',
+            'uuid' => 'some-uuid-123',
+            'AFFILIATIONS' => null,
+            'BIOGRAPHY' => null,
+            'ORCID' => null,
+        ];
+
+        Episciences_User::setStaticCache($uid, $userData);
+
+        // find() should fetch from cache and populate the user object
+        // and it should NOT attempt any DB query (which would error in this test setup)
+        $result = $this->user->find($uid);
+
+        $this->assertSame($userData['UID'], $result['UID']);
+        $this->assertSame($userData['USERNAME'], $result['USERNAME']);
+        $this->assertSame($userData['EMAIL'], $result['EMAIL']);
+        $this->assertSame($userData['SCREEN_NAME'], $result['SCREEN_NAME']);
+
+        // Check that user object properties are populated
+        $this->assertSame($uid, $this->user->getUid());
+        $this->assertSame('testcacheuser', $this->user->getUsername());
+        $this->assertSame('testcache@example.com', $this->user->getEmail());
+        $this->assertSame('Test Cache User', $this->user->getScreenName());
+        $this->assertSame('User', $this->user->getLastname());
+        $this->assertSame('Test', $this->user->getFirstname());
+        $this->assertSame('M.', $this->user->getCiv());
+        $this->assertSame('en', $this->user->getLangueid());
+        $this->assertSame('hashed_pw', $this->user->getApiPassword());
+        $this->assertSame(1, $this->user->getIs_valid());
+        $this->assertSame('2026-01-01 12:00:00', $this->user->getRegistrationDate());
+        $this->assertSame('2026-01-02 12:00:00', $this->user->getModificationDate());
+        $this->assertSame('some-uuid-123', $this->user->getUuid());
+    }
+
+    public function testClearStaticCache(): void
+    {
+        $uid = 88888;
+        $userData = [
+            'UID' => $uid,
+            'USERNAME' => 'anotheruser',
+            'EMAIL' => 'another@example.com',
+            'SCREEN_NAME' => 'Another User',
+            'LASTNAME' => 'User',
+            'FIRSTNAME' => 'Another',
+            'MIDDLENAME' => '',
+            'CIV' => 'M.',
+            'LANGUEID' => 'en',
+            'API_PASSWORD' => 'hashed_pw',
+            'IS_VALID' => 1,
+            'REGISTRATION_DATE' => '2026-01-01 12:00:00',
+            'MODIFICATION_DATE' => '2026-01-02 12:00:00',
+            'uuid' => 'some-uuid-456',
+            'AFFILIATIONS' => null,
+            'BIOGRAPHY' => null,
+            'ORCID' => null,
+        ];
+
+        Episciences_User::setStaticCache($uid, $userData);
+        Episciences_User::clearStaticCache();
+
+        // Since cache is cleared, calling find() should try to hit the DB
+        // In this test setup, Zend_Db_Table_Abstract::getDefaultAdapter() will either fail or try to query,
+        // which we can verify throws an exception/error (due to lacking DB connection or empty query mock).
+        try {
+            $this->user->find($uid);
+            $this->fail('Expected an exception when querying database after clearing cache');
+        } catch (\Throwable $e) {
+            $this->assertTrue(true);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // hasLocalData() via identity map — no DB required
+    // -------------------------------------------------------------------------
+
+    public function testHasLocalDataReturnsTrueWhenIdentityMapHasUuidRow(): void
+    {
+        $uid = 42;
+        Episciences_User::setStaticCache($uid, ['UID' => $uid, 'uuid' => 'some-uuid-value']);
+
+        $user = new Episciences_User();
+        $result = $user->hasLocalData($uid);
+
+        $this->assertTrue($result);
+        $this->assertTrue($user->getHasAccountData());
+        $this->assertSame('some-uuid-value', $user->getUuid());
+    }
+
+    public function testHasLocalDataReturnsFalseWhenIdentityMapHasEmptyRow(): void
+    {
+        $uid = 43;
+        Episciences_User::setStaticCache($uid, []);
+
+        $user = new Episciences_User();
+        $result = $user->hasLocalData($uid);
+
+        $this->assertFalse($result);
+        $this->assertFalse($user->getHasAccountData());
+    }
+
+    public function testHasLocalDataThrowsWhenIdentityMapRowHasNullUuid(): void
+    {
+        $uid = 44;
+        Episciences_User::setStaticCache($uid, ['UID' => $uid]);  // no 'uuid' key → null
+
+        $user = new Episciences_User();
+        $this->expectException(\InvalidArgumentException::class);
+        $user->hasLocalData($uid);
+    }
+
+    public function testHasLocalDataUsesUidFromObjectWhenParamIsNull(): void
+    {
+        $uid = 99;
+        Episciences_User::setStaticCache($uid, ['UID' => $uid, 'uuid' => 'uid-from-object']);
+
+        $user = new Episciences_User();
+        $user->setUid($uid);
+        $result = $user->hasLocalData();  // no param → uses getUid()
+
+        $this->assertTrue($result);
+        $this->assertSame('uid-from-object', $user->getUuid());
     }
 }

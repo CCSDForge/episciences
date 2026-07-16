@@ -101,7 +101,7 @@ class Episciences_Review_DoiSettingsManager
         $sql .= T_REVIEW_SETTINGS;
         $sql .= ' (RVID, SETTING, VALUE) VALUES ';
         $sql .= implode(',', $values);
-        $sql .= ' ON DUPLICATE KEY UPDATE VALUE = VALUES(VALUE)';
+        $sql .= ' AS new_row ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE';
 
         if (!$db->getConnection()->query($sql)) {
             return false;

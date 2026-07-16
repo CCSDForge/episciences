@@ -93,7 +93,7 @@ foreach ($this->papers as $paper) : ?>
         <?php // contributor name ************************************************** ?>
         <?php if ($action !== 'submitted' && $action !== 'ratings' && (Episciences_Auth::isSecretary() || Episciences_Auth::isEditor())) : ?>
             <td class="text-center">
-                <?php if ($paper->getSubmitter()) echo $paper->getSubmitter()->getScreenName(); ?>
+                <?php if ($paper->getSubmitter()) echo $this->escape($paper->getSubmitter()->getScreenName()); ?>
             </td>
         <?php endif; ?>
 

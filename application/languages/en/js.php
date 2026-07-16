@@ -10,6 +10,15 @@ return [
     'month' => 'month(s)',
     //------------------------------------------------------------------------
     "Annuler" => "Cancel",
+    "Enregistrer" => "Save",
+    "Fermer" => "Close",
+    'Chargement…' => 'Loading…',
+    "Volume principal" => "Main volume",
+    "Volumes secondaires" => "Secondary volumes",
+    "Rubrique" => "Section",
+    "Hors volume" => "No volume",
+    "Hors rubrique" => "No section",
+    "Déplacer dans une rubrique" => "Move to a section",
     'Confirmer' => 'Confirm',
     "Voulez-vous supprimer ce fichier ?" => "Do you want to delete this file?",
     "Voulez-vous supprimer votre fichier attaché ?" => "Do you want to delete your attached file?",
@@ -43,6 +52,9 @@ return [
     "sur" => "of",
     "Aucun résultat affiché" => "No results displayed",
     "filtrés sur les" => "filtered out of",
+    "Position invalide" => "Invalid position",
+    "modification non sauvegardée" => "unsaved change",
+    "modifications non sauvegardées" => "unsaved changes",
     "Vous devez laisser au moins une valeur." => "You have to let at least one value.",
     "Chargement en cours" => "Loading",
     "Impossible de trouver le document" => "Your document could not be found",
@@ -131,6 +143,7 @@ return [
     "Retirer ce relecteur" => "Remove this reviewer",
     "Retirer un relecteur" => "Remove a reviewer",
     "Réinviter ce relecteur" => "Re-invite this reviewer",
+    "Accepter l'invitation à la place du relecteur" => "Accept the invitation on behalf of the reviewer",
 
     "Code d'accès" => "Access code",
     "Filtrer les relecteurs" => "Filter reviewers",
@@ -287,4 +300,9 @@ return [
     'Genuine'                      => 'Genuine',
     'More information'             => 'More information',
     'View on PubPeer'              => 'View on PubPeer',
+    'Référence problématique détectée automatiquement'    => 'Detected problematic reference',
+    'Références problématiques détectées automatiquement' => 'Automatically detected problematic references',
+
+    // Activity timeline filters
+    'activity_timeline_events_shown' => 'event(s) shown',
 ];

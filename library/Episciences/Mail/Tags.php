@@ -100,6 +100,9 @@ class Episciences_Mail_Tags
     // Présent encore dans ceux déjà personnalisés
     public const TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN = '%%RECIPIENT_USERNAME_LOST_LOGIN%%';
     public const TAG_VOLUME_NAME = '%%VOLUME_NAME%%';
+    public const TAG_VOLUME_NUMBER = '%%VOLUME_NUMBER%%';
+    public const TAG_VOLUME_YEAR = '%%VOLUME_YEAR%%';
+    public const TAG_VOLUME_TYPE = '%%VOLUME_TYPE%%';
     public const TAG_SECTION_NAME = '%%SECTION_NAME%%';
     // date d'acceptation d'un article
     public const TAG_ACCEPTANCE_DATE = '%%ACCEPTANCE_DATE%%';
@@ -242,6 +245,9 @@ class Episciences_Mail_Tags
         self::TAG_VOLUME_EDITORS => "tous les rédacteurs assignés au volume de l'article (e.g. : Hartman Rodney, Daniel Bryan, Walls John)",
         self::TAG_VOLUME_ID => "identifiant du volume de l'article",
         self::TAG_VOLUME_NAME => "nom du volume de l'article",
+        self::TAG_VOLUME_NUMBER => "numéro du volume de l'article",
+        self::TAG_VOLUME_YEAR => "année du volume de l'article",
+        self::TAG_VOLUME_TYPE => "type du volume de l'article",
         self::TAG_AUTHOR_FULL_NAME => "nom d'affichage de l'auteur",
         self::TAG_AUTHOR_SCREEN_NAME => "nom d'affichage de l'auteur",
         self::TAG_EDITOR_ACTION => "action de l'éditeur (envoie/répond)",

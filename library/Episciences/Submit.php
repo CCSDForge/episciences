@@ -25,6 +25,37 @@ class Episciences_Submit
     public const POSTED_VOLUME_KEY = 'volumes';
     public const POSTED_SECTION_KEY = 'sections';
 
+    /**
+     * Validate cover letter file requirement.
+     * When required (value = 2), the cover letter file must be provided.
+     * Note: The comment field is always optional and not controlled by this setting.
+     *
+     * @param array $post POST data
+     * @return true|string Returns true if valid, or error message string if invalid
+     * @throws Zend_Db_Statement_Exception
+     */
+    public static function validateCoverLetterRequirement(array $post): bool|string
+    {
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+        $coverLetterRequirement = $review->getCoverLetterRequirement();
+
+        // Only validate if cover letter is required
+        if ($coverLetterRequirement !== Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED) {
+            return true;
+        }
+
+        $file = $_FILES[self::COVER_LETTER_FILE_ELEMENT_NAME]['name'] ?? '';
+
+        // Cover letter file must be provided
+        if (empty($file)) {
+            return Zend_Registry::get('Zend_Translate')
+                ->translate("Une lettre d'accompagnement est requise. Veuillez joindre un fichier.");
+        }
+
+        return true;
+    }
+
     public function __construct()
     {
         $this->_db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -292,6 +323,14 @@ class Episciences_Submit
 
         // Author's comments and Cover Letter
         // Keep in sync with paper views where these roles have access to the comments and cover letter
+        $coverLetterRequirement = $review->getCoverLetterRequirement();
+
+        // Hidden field to pass cover letter requirement to JavaScript
+        $form->addElement('hidden', 'cover_letter_requirement', [
+            'value' => $coverLetterRequirement,
+            'decorators' => ['ViewHelper']
+        ]);
+
         $allowedToSeeCoverLetterTranslated = [];
 
         foreach ([Episciences_Acl::ROLE_CHIEF_EDITOR_PLURAL, Episciences_Acl::ROLE_EDITOR_PLURAL, Episciences_Acl::ROLE_REVIEWER_PLURAL] as $roleAllowedToSee) {
@@ -300,32 +339,51 @@ class Episciences_Submit
 
         $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
 
+        // Comment field is always optional
+        $optionalSuffix = '<br><em style="font-weight: normal;">' . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>';
 
-        $form->addElement('textarea', self::COVER_LETTER_COMMENT_ELEMENT_NAME, [
-            'label' => Zend_Registry::get('Zend_Translate')->translate('Commentaire') . '<br><em style="font-weight: normal;">' . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>', 'rows' => 5,
+        $commentElementOptions = [
+            'label' => Zend_Registry::get('Zend_Translate')->translate('Commentaire') . $optionalSuffix,
+            'rows' => 5,
             'description' => $descriptionAllowedToSeeCoverLetterTranslated,
             'validators' => [['StringLength', false, ['max' => MAX_INPUT_TEXTAREA]]]
-        ]);
+        ];
+
+        $form->addElement('textarea', self::COVER_LETTER_COMMENT_ELEMENT_NAME, $commentElementOptions);
         $group[] = self::COVER_LETTER_COMMENT_ELEMENT_NAME;
 
-        // Attached file
-        $extensions = ALLOWED_EXTENSIONS;
-        $implode_extensions = implode(',', $extensions);
-        $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
+        // Cover letter file field (controlled by coverLetterRequirement setting)
+        if ($coverLetterRequirement !== Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED) {
+            $isRequired = $coverLetterRequirement === Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED;
+            $fileOptionalSuffix = $isRequired ? '' : $optionalSuffix;
 
-        $form->addElement('file', self::COVER_LETTER_FILE_ELEMENT_NAME, [
-            'label' => Zend_Registry::get('Zend_Translate')->translate("Lettre d'accompagnement") . "<br><em style=\"font-weight: normal;\">" . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>',
-            'description' => $description,
-            'valueDisabled' => true,
-            'maxFileSize' => MAX_FILE_SIZE,
-            'validators' => [
-                'Count' => [false, 1],
-                'Extension' => [false, $implode_extensions],
-                'Size' => [false, MAX_FILE_SIZE]
-            ]
-        ]);
+            $extensions = ALLOWED_EXTENSIONS;
+            $implode_extensions = implode(',', $extensions);
+            $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
 
-        $group[] = self::COVER_LETTER_FILE_ELEMENT_NAME;
+            $fileElementOptions = [
+                'label' => Zend_Registry::get('Zend_Translate')->translate("Lettre d'accompagnement") . $fileOptionalSuffix,
+                'description' => $description,
+                'valueDisabled' => true,
+                'maxFileSize' => MAX_FILE_SIZE,
+                'validators' => [
+                    'Count' => [false, 1],
+                    'Extension' => [false, $implode_extensions],
+                    'Size' => [false, MAX_FILE_SIZE]
+                ]
+            ];
+
+            $form->addElement('file', self::COVER_LETTER_FILE_ELEMENT_NAME, $fileElementOptions);
+
+            // Add required class to label when cover letter is required
+            if ($isRequired) {
+                $form->getElement(self::COVER_LETTER_FILE_ELEMENT_NAME)
+                    ->getDecorator('label')
+                    ->setOption('class', 'col-md-3 control-label required');
+            }
+
+            $group[] = self::COVER_LETTER_FILE_ELEMENT_NAME;
+        }
 
         $form = self::addDdElement($form, $group);
 
@@ -659,6 +717,16 @@ class Episciences_Submit
 
             // Author's comments and Cover Letter [new version]
             // Keep in sync with paper views where these roles have access to the comments and cover letter
+            $review = Episciences_ReviewsManager::find(RVID);
+            $review->loadSettings();
+            $coverLetterRequirement = $review->getCoverLetterRequirement();
+
+            // Hidden field to pass cover letter requirement to JavaScript
+            $form->addElement('hidden', 'cover_letter_requirement', [
+                'value' => $coverLetterRequirement,
+                'decorators' => ['ViewHelper']
+            ]);
+
             $allowedToSeeCoverLetterTranslated = [];
             foreach ([Episciences_Acl::ROLE_CHIEF_EDITOR_PLURAL, Episciences_Acl::ROLE_EDITOR_PLURAL, Episciences_Acl::ROLE_REVIEWER_PLURAL] as $roleAllowedToSee) {
                 $allowedToSeeCoverLetterTranslated[] = Zend_Registry::get('Zend_Translate')->translate($roleAllowedToSee);
@@ -666,8 +734,12 @@ class Episciences_Submit
 
             $descriptionAllowedToSeeCoverLetterTranslated = Zend_Registry::get('Zend_Translate')->translate('Visible par : ') . implode(', ', $allowedToSeeCoverLetterTranslated);
 
+            // Comment field is always optional
+            $optionalSuffix = '<br><em style="font-weight: normal;">' . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>';
+
             $form->addElement('textarea', self::COVER_LETTER_COMMENT_ELEMENT_NAME, [
-                'label' => Zend_Registry::get('Zend_Translate')->translate('Commentaire') . '<br><em style="font-weight: normal;">' . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>', 'rows' => 5,
+                'label' => Zend_Registry::get('Zend_Translate')->translate('Commentaire') . $optionalSuffix,
+                'rows' => 5,
                 'description' => $descriptionAllowedToSeeCoverLetterTranslated,
                 'validators' => [[
                     'StringLength', false, ['max' => MAX_INPUT_TEXTAREA]
@@ -675,24 +747,35 @@ class Episciences_Submit
             ]);
             $group[] = self::COVER_LETTER_COMMENT_ELEMENT_NAME;
 
+            // Cover letter file field (controlled by coverLetterRequirement setting)
+            if ($coverLetterRequirement !== Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED) {
+                $isRequired = $coverLetterRequirement === Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED;
+                $fileOptionalSuffix = $isRequired ? '' : $optionalSuffix;
 
-            // Attached file [new version]
-            $extensions = ALLOWED_EXTENSIONS;
-            $implode_extensions = implode(',', $extensions);
-            $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
-            $form->addElement('file', self::COVER_LETTER_FILE_ELEMENT_NAME, [
-                'label' => Zend_Registry::get('Zend_Translate')->translate("Lettre d'accompagnement") . "<br><em style=\"font-weight: normal;\">" . Zend_Registry::get('Zend_Translate')->translate('(optional)') . '</em>',
-                'description' => $description,
-                'valueDisabled' => true,
-                'maxFileSize' => MAX_FILE_SIZE,
-                'validators' => [
-                    'Count' => [false, 1],
-                    'Extension' => [false, $implode_extensions],
-                    'Size' => [false, MAX_FILE_SIZE]
-                ]
-            ]);
+                $extensions = ALLOWED_EXTENSIONS;
+                $implode_extensions = implode(',', $extensions);
+                $description = Episciences_Tools::buildAttachedFilesDescription($extensions, '.&nbsp;' . $descriptionAllowedToSeeCoverLetterTranslated);
+                $form->addElement('file', self::COVER_LETTER_FILE_ELEMENT_NAME, [
+                    'label' => Zend_Registry::get('Zend_Translate')->translate("Lettre d'accompagnement") . $fileOptionalSuffix,
+                    'description' => $description,
+                    'valueDisabled' => true,
+                    'maxFileSize' => MAX_FILE_SIZE,
+                    'validators' => [
+                        'Count' => [false, 1],
+                        'Extension' => [false, $implode_extensions],
+                        'Size' => [false, MAX_FILE_SIZE]
+                    ]
+                ]);
 
-            $group[] = self::COVER_LETTER_FILE_ELEMENT_NAME;
+                // Add required class to label when cover letter is required
+                if ($isRequired) {
+                    $form->getElement(self::COVER_LETTER_FILE_ELEMENT_NAME)
+                        ->getDecorator('label')
+                        ->setOption('class', 'col-md-3 control-label required');
+                }
+
+                $group[] = self::COVER_LETTER_FILE_ELEMENT_NAME;
+            }
 
             if (isset($settings['dataType'])) {
                 self::addDdElement($form, $group, $settings['dataType']);
@@ -1924,14 +2007,12 @@ class Episciences_Submit
             $value = $this->_db->quote($value);
             $values[] = '(' . $docId . ',' . $option . ',' . $value . ')';
         }
-
         $sql = 'INSERT INTO ' . T_PAPER_SETTINGS . ' (DOCID, SETTING, VALUE) VALUES ' . implode(',', $values);
 
         if (!$this->_db->query($sql)) {
             error_log('Failed to save ' . $suggestionType . ' for DOCID = ' . $docId);
             return false;
         }
-
         return true;
     }
 
@@ -2043,16 +2124,18 @@ class Episciences_Submit
                 $adminTags[Episciences_Mail_Tags::TAG_REFUSED_ARTICLE_MESSAGE] = $message;
             }
 
-            $vTag = !$volume ? $translator->translate('Hors volume', $locale) : $volume->getName($locale);
-            $sTag = !$section ? $translator->translate('Hors rubrique', $locale) : $section->getName($locale);
+            // default translations
+            $noneFemale = $translator->translate('Aucune', $locale);
+            $noneMale   = $translator->translate('Aucun', $locale);
+            $outOfVol   = $translator->translate('Hors volume', $locale);
+            $outOfSec   = $translator->translate('Hors rubrique', $locale);
+
+            $adminTags = array_merge($adminTags, self::resolveVolumeAndSectionTags($volume, $section, $locale, $noneFemale, $noneMale, $outOfVol, $outOfSec));
 
             $adminTags [Episciences_Mail_Tags::TAG_SENDER_EMAIL] = Episciences_Auth::getEmail();
             $adminTags [Episciences_Mail_Tags::TAG_SENDER_FULL_NAME] = Episciences_Auth::getFullName();
             $adminTags [Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
             $adminTags [Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($locale);
-            $adminTags [Episciences_Mail_Tags::TAG_VOLUME_NAME] = $vTag;
-            $adminTags [Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF] = ($volume && $volume->getBib_reference()) ?: $translator->translate('Aucune', $locale);
-            $adminTags [Episciences_Mail_Tags::TAG_SECTION_NAME] = $sTag;
 
             if (!$canReplace) { // new submission only
                 $rTag = $recipient instanceof Episciences_Editor ? $recipient->getTag() : null;
@@ -2067,6 +2150,46 @@ class Episciences_Submit
 
             Episciences_Mail_Send::sendMailFromReview($recipient, $templateKey, $adminTags, $paper);
         }
+    }
+
+    /**
+     * Resolves volume and section mail tags from their respective objects.
+     * Accepts false/null for $volume and $section (ZF1 find() returns false when not found).
+     *
+     * @param Episciences_Volume|bool|null    $volume
+     * @param Episciences_Section|bool|null   $section
+     * @return array<string, string|int>
+     */
+    private static function resolveVolumeAndSectionTags(
+        mixed $volume,
+        mixed $section,
+        string $locale,
+        string $noneFemale,
+        string $noneMale,
+        string $outOfVol,
+        string $outOfSection
+    ): array {
+        $sName = !$section ? $outOfSection : $section->getName($locale);
+
+        if (!$volume) {
+            return [
+                Episciences_Mail_Tags::TAG_VOLUME_NAME    => $outOfVol,
+                Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF => $noneFemale,
+                Episciences_Mail_Tags::TAG_VOLUME_YEAR    => $noneFemale,
+                Episciences_Mail_Tags::TAG_VOLUME_NUMBER  => $noneMale,
+                Episciences_Mail_Tags::TAG_VOLUME_TYPE    => $noneMale,
+                Episciences_Mail_Tags::TAG_SECTION_NAME   => $sName,
+            ];
+        }
+
+        return [
+            Episciences_Mail_Tags::TAG_VOLUME_NAME    => $volume->getName($locale) ?: $noneMale,
+            Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF => $volume->getBib_reference() ?: $noneFemale,
+            Episciences_Mail_Tags::TAG_VOLUME_NUMBER  => $volume->getVol_num() ?: $noneMale,
+            Episciences_Mail_Tags::TAG_VOLUME_YEAR    => $volume->getVol_year() ?: $noneFemale,
+            Episciences_Mail_Tags::TAG_VOLUME_TYPE    => $volume->getVol_type() ?: $noneMale,
+            Episciences_Mail_Tags::TAG_SECTION_NAME   => $sName,
+        ];
     }
 
     /**
@@ -2413,7 +2536,7 @@ class Episciences_Submit
 
             if ($key === Episciences_Repositories_Common::CONTRIB_ENRICHMENT) {
 
-                $authors = Episciences_Paper_AuthorsManager::getAuthorByPaperId($paperId);
+                $authors = Episciences_Paper_Authors_Repository::getAuthorByPaperId($paperId);
 
                 if (empty($authors)) { // to prevent manual changes being overwritten.
 

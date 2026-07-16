@@ -1,109 +1,110 @@
 <?php
 
-abstract class Ccsd_Auth_Adapter_CasAbstract implements \Ccsd\Auth\Adapter\AdapterInterface
+use Ccsd\Auth\Adapter\AdapterInterface;
+
+abstract class Ccsd_Auth_Adapter_CasAbstract implements AdapterInterface
 {
 
     /**
-     * Nom par défaut de l'action pour le login
+     * Default name of the login action
      *
      * @var string
      */
     const DEFAULT_LOGIN_ACTION = 'login';
 
     /**
-     * Nom par défaut de l'action pour le logout
+     * Default name of the logout action
      *
      * @var string
      */
     const DEFAULT_LOGOUT_ACTION = 'logout';
 
     /**
-     * Nom par défaut du controller d'authentification
+     * Default name of the authentication controller
      *
      * @var string
      */
     const DEFAULT_AUTH_CONTROLLER = 'user';
 
     /**
-     * Nom de l'action pour le login
+     * Name of the login action
      *
      * @var string
      */
     protected $_loginAction = null;
 
     /**
-     * Nom de l'action pour le logout
+     * Name of the logout action
      *
      * @var string
      */
     protected $_logoutAction = null;
 
     /**
-     * Nom du controller d'authentification
+     * Name of the authentication controller
      *
      * @var string
      */
     protected $_authController = null;
 
     /**
-     * Version du protocole CAS
+     * CAS protocol version
      *
      * @var string
      */
     protected $_casVersion;
 
     /**
-     * Nom d'hôte du serveur CAS
+     * CAS server hostname
      *
      * @var string
      */
     protected $_casHostname;
 
     /**
-     * Port serveur CAS
+     * CAS server port
      *
      * @var int
      */
     protected $_casPort;
 
     /**
-     * URL du serveur CAS
+     * CAS server URL
      *
      * @var string
      */
     protected $_casUrl;
 
     /**
-     * Définit si PhpCAS doit démarrer les sessions : non si c'est déjà géré par
-     * l'application
+     * Defines whether PhpCAS should start sessions: false if it's already managed by
+     * the application
      *
      * @var bool
      */
     protected $_casStartSessions = false;
 
     /**
-     * Définit si on doit faire la validation SSL du serveur CAS
+     * Defines if SSL validation of the CAS server should be performed
      *
      * @var bool
      */
     protected $_casSslValidation;
 
     /**
-     * Chemin vers le certificat de l'autorité de certification
+     * Path to the CA certificate
      * @var string
      */
     protected $_casCACert;
 
     /**
-     * URL du service pour lequel on s'authentifie * et sur lequel on reviendra
-     * *
+     * URL of the service for which we authenticate and to which we will return
      *
      * @var string
      */
     protected $_serviceURL = '';
 
     /**
-     * Structure de l'identité d'un utilisateur
+     * Structure of a user's identity
      *
      * @var Ccsd_User_Models_User
      */
@@ -114,10 +115,31 @@ abstract class Ccsd_Auth_Adapter_CasAbstract implements \Ccsd\Auth\Adapter\Adapt
      */
     protected $_identityStructure = null;
 
-    abstract protected function setLogger(): void;
+    /**
+     * User logout, with optional return/destination URL
+     *
+     * @param string $urlDeDestination
+     */
+    public function logout($urlDeDestination = null)
+    {
+        if (!isset($PHPCAS_CLIENT)) {
+            phpCAS::client($this->getCasVersion(), $this->getCasHostname(), $this->getCasPort(), $this->getCasUrl(), $urlDeDestination, $this->getCasStartSessions());
+        }
+
+        if ($this->getCasSslValidation() === false) {
+            phpCAS::setNoCasServerValidation();
+        } else {
+            phpCAS::setCasServerCACert($this->getCasCACert());
+        }
+
+        if (!is_string($urlDeDestination)) {
+            phpCAS::logout(); // logout and stay on the CAS page
+        } else {
+            phpCAS::logoutWithRedirectService($urlDeDestination);
+        }
+    }
 
     // Sets the default options for the CAS server
-    abstract protected function setCasOptions(): self;
 
     /**
      *
@@ -127,7 +149,6 @@ abstract class Ccsd_Auth_Adapter_CasAbstract implements \Ccsd\Auth\Adapter\Adapt
     {
         return $this->_casVersion;
     }
-
 
     /**
      * @param string $_casVersion
@@ -254,135 +275,7 @@ abstract class Ccsd_Auth_Adapter_CasAbstract implements \Ccsd\Auth\Adapter\Adapt
     }
 
     /**
-     *
-     * @return string $_serviceURL
-     */
-    public function getServiceURL(): string
-    {
-        return $this->_serviceURL;
-    }
-
-    /**
-     * @param array $params
-     * @return $this
-     */
-    public function setServiceURL(array $params = []): self
-    {
-        $_serviceURL = '';
-
-        if (!empty($params)) {
-            $_serviceURL = $this->buildLoginDestinationUrl($params);
-        }
-
-        $this->_serviceURL = $_serviceURL;
-
-        return $this;
-    }
-
-
-    /**
-     * Retourne le nom d'hôte que l'application CAS va utiliser
-     * Pour redirection après login et logout
-     *
-     * @return string Nom de l'hôte
-     */
-    public final static function getCurrentHostname(): string
-    {
-        $scheme = SERVER_PROTOCOL . '://';
-        $hostname = $scheme . $_SERVER['SERVER_NAME'];
-
-        if ((isset($_SERVER['SERVER_PORT'])) && ($_SERVER['SERVER_PORT'] !== '')) {
-            switch ($_SERVER['SERVER_PORT']) {
-                case '443':
-                case '':
-                case '80':
-                    break;
-                default:
-                    $hostname .= ":" . $_SERVER['SERVER_PORT'];
-                    break;
-            }
-        }
-
-        return $hostname;
-    }
-
-
-    /**
-     * @param array $params
-     * @return string
-     */
-    protected function buildLoginDestinationUrl(array $params = []): string
-    {
-
-        $hostname = self::getCurrentHostname();
-        $hostname = rtrim($hostname, '/');
-        $uri = $hostname;
-        $uri .= PREFIX_URL . 'user/login';
-        $forwardController = $params['forward-controller'] ?? null;
-        $forwardAction = $params['forward-action'] ?? null;
-
-        // Si pas de controller ou si controller == user/logout
-        if (($forwardController === null) || (($forwardController === 'user') && ($forwardAction === 'logout'))) {
-            // destination par défaut
-            $uri .= '/forward-controller/user';
-        } else {
-            $uri .= '/forward-controller/' . urlencode($forwardController);
-            if ($forwardAction) {
-
-                $uri .= '/forward-action/' . urlencode($forwardAction);
-
-                // Concaténation des paramètres supplémentaires à l'uri de retour
-                foreach ($params as $name => $value) {
-                    switch ($name) {
-                        case 'forward-controller':
-                        case 'forward-action':
-                        case 'controller':
-                        case 'action':
-                        case 'module':
-                        case 'ticket':
-                        case PREFIX_ROUTE:
-                            continue 2;
-                        default:
-                            $uri .= '/' . urlencode($name) . '/';
-
-                            if (is_array($value)) {
-                                $uri .= urlencode($value[0]);
-                            } else {
-                                $uri .= urlencode($value);
-                            }
-                    }
-                }
-            }
-        }
-        return $uri;
-    }
-
-    /**
-     * Déconnexion de l'utilisateur, avec URL de retour/destination facultative
-     *
-     * @param string $urlDeDestination
-     */
-    public function logout($urlDeDestination = null)
-    {
-        if (!isset($PHPCAS_CLIENT)) {
-            phpCAS::client($this->getCasVersion(), $this->getCasHostname(), $this->getCasPort(), $this->getCasUrl(), $urlDeDestination, $this->getCasStartSessions());
-        }
-
-        if ($this->getCasSslValidation() === false) {
-            phpCAS::setNoCasServerValidation();
-        } else {
-            phpCAS::setCasServerCACert($this->getCasCACert());
-        }
-
-        if (!is_string($urlDeDestination)) {
-            phpCAS::logout(); // logout et reste sur la page CAS
-        } else {
-            phpCAS::logoutWithRedirectService($urlDeDestination);
-        }
-    }
-
-    /**
-     * Authentification d'un utilisateur
+     * Authenticate a user
      * @see Zend_Auth_Adapter_Interface::authenticate()
      */
     public function authenticate(): Zend_Auth_Result
@@ -402,7 +295,7 @@ abstract class Ccsd_Auth_Adapter_CasAbstract implements \Ccsd\Auth\Adapter\Adapt
         } else {
             phpCAS::setCasServerCACert($this->getCasCACert());
         }
-        // Url de retour/service après authentification
+        // Return/service URL after authentication
         if ('' !== $this->getServiceURL()) {
             phpCAS::setFixedServiceURL($this->getServiceURL());
         }
@@ -446,23 +339,127 @@ abstract class Ccsd_Auth_Adapter_CasAbstract implements \Ccsd\Auth\Adapter\Adapt
         return new Zend_Auth_Result(Zend_Auth_Result::FAILURE, new Ccsd_User_Models_User(), ["Échec de l'authentification depuis CAS"]);
     }
 
+    /**
+     *
+     * @return string $_serviceURL
+     */
+    public function getServiceURL(): string
+    {
+        return $this->_serviceURL;
+    }
+
+    /**
+     * @param array $params
+     * @return $this
+     */
+    public function setServiceURL(array $params = []): self
+    {
+        $_serviceURL = '';
+
+        if (!empty($params)) {
+            $_serviceURL = $this->buildLoginDestinationUrl($params);
+        }
+
+        $this->_serviceURL = $_serviceURL;
+
+        return $this;
+    }
+
+    abstract protected function setLogger(): void;
+
+    /**
+     * @param array $params
+     * @return string
+     */
+    protected function buildLoginDestinationUrl(array $params = []): string
+    {
+
+        $hostname = self::getCurrentHostname();
+
+        $hostname = rtrim($hostname, '/');
+        $uri = $hostname;
+        $uri .= PREFIX_URL . 'user/login';
+        $forwardController = $params['forward-controller'] ?? null;
+        $forwardAction = $params['forward-action'] ?? null;
+
+        // If no controller or if controller == user/logout
+        if (($forwardController === null) || (($forwardController === 'user') && ($forwardAction === 'logout'))) {
+            // default destination
+            $uri .= '/forward-controller/user';
+        } else {
+            $uri .= '/forward-controller/' . urlencode($forwardController);
+            if ($forwardAction) {
+
+                $uri .= '/forward-action/' . urlencode($forwardAction);
+
+                // Concatenation of additional parameters to the return URI
+                foreach ($params as $name => $value) {
+                    switch ($name) {
+                        case 'forward-controller':
+                        case 'forward-action':
+                        case 'controller':
+                        case 'action':
+                        case 'module':
+                        case 'ticket':
+                        case PREFIX_ROUTE:
+                            continue 2;
+                        default:
+                            $uri .= '/' . urlencode($name) . '/';
+
+                            if (is_array($value)) {
+                                $uri .= urlencode($value[0]);
+                            } else {
+                                $uri .= urlencode($value);
+                            }
+                    }
+                }
+            }
+        }
+        return $uri;
+    }
+
+    /**
+     * Returns the hostname that the CAS application will use
+     * For redirection after login and logout
+     *
+     * @return string Hostname
+     */
+    public final static function getCurrentHostname(): string
+    {
+        $scheme = SERVER_PROTOCOL . '://';
+        $hostname = $scheme . $_SERVER['SERVER_NAME'];
+
+        if ((isset($_SERVER['SERVER_PORT'])) && ($_SERVER['SERVER_PORT'] !== '')) {
+            switch ($_SERVER['SERVER_PORT']) {
+                case '443':
+                case '':
+                case '80':
+                    break;
+                default:
+                    $hostname .= ":" . $_SERVER['SERVER_PORT'];
+                    break;
+            }
+        }
+
+        return $hostname;
+    }
+
     public function getIdentityStructure(): ?Ccsd_User_Models_User
     {
         return $this->_identityStructure;
     }
 
     /**
-     * Initialisation de la structure de l'identité utilisateur
+     * Initialization of the user identity structure
      *
      * @param $identity
      */
     public function setIdentityStructure($identity): void
     {
-        // Par compat, on met la structure dans identity aussi
+        // For compatibility, we set the structure in identity as well
         $this->_identity = $identity;
         $this->_identityStructure = $identity;
     }
-
 
     public function pre_auth($controller)
     {
@@ -488,5 +485,7 @@ abstract class Ccsd_Auth_Adapter_CasAbstract implements \Ccsd\Auth\Adapter\Adapt
     {
         return true;
     }
+
+    abstract protected function setCasOptions(): self;
 
 }

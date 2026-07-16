@@ -110,7 +110,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
         }
     }
 
-    public function load(): void
+    public function load()
     {
         $sql = $this->_db->select()
             ->from($this->_table)
@@ -203,7 +203,7 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     public function save(): void
     {
         // Suppression de l'ancien menu
-        $this->_db->delete($this->_table, 'SID = ' . $this->_sid);
+        $this->_db->delete($this->_table, 'SID = ' . (int)$this->_sid);
 
         $lang = [];
         $pageIdCounter = 1;
@@ -247,124 +247,6 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
 
             $pageIdCounter++;
         }
-    }
-
-    public function savePage($page): void
-    {
-        //Cas particulier des pages personnalisable
-        if ($page->isCustom()) {
-            $page->setPermalien($this->getUniqPermalien($page));
-        } elseif ($page->isFile()) {
-            $page->saveFile();
-        }
-
-        //Enregistrement en base
-        $bind = [
-            'SID' => $this->_sid,
-            'PAGEID' => $page->getPageId(),
-            'TYPE_PAGE' => $page->getPageClass(),
-            'CONTROLLER' => $page->getController(),
-            'ACTION' => $page->getAction(),
-            'LABEL' => $page->getLabelKey(),
-            'PARENT_PAGEID' => $page->getPageParentId(),
-            'PARAMS' => $page->getSuppParams()
-        ];
-
-
-        $this->_db->insert($this->_table, $bind);
-    }
-
-    protected function getUniqPermalien($page)
-    {
-        $permalien = $page->getPermalien();
-        //Liste des permaliens
-        $permaliens = [];
-        foreach ($this->_pages as $p) {
-            if ($p->isCustom() && $p != $page) {
-                $permaliens[] = $p->getPermalien();
-            }
-        }
-
-        while (in_array($permalien, $permaliens)) {
-            $newPermalien = preg_replace_callback('#([-_]?)(\d*)$#', function ($matches) {
-                if ($matches[0] != '') {
-                    return ($matches[1] . ($matches[2] + 1));
-                }
-            }, $permalien);
-            $permalien = ($permalien == $newPermalien) ? $permalien . '1' : $newPermalien;
-        }
-        return $permalien;
-    }
-
-    /**
-     * Création de la navigation pour le site
-     * @param string $filename nom du fichier de navigation
-     */
-    public function createNavigation($filename)
-    {
-        $dir = substr($filename, 0, strrpos($filename, '/'));
-        if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
-        }
-        file_put_contents($filename, Zend_Json::encode($this->toArray()));
-    }
-
-    /**
-     * Transformation de la navigation en tableau PHP (compatible avec la navigation Zend_Navigation)
-     */
-    public function toArray(): array
-    {
-        $result = [];
-        $id = 0;
-
-        foreach ($this->_order as $pageId => $subPageIds) {
-            if (isset($this->_pages[$pageId])) {
-                $result[$id] = $this->pageToArray($pageId, $subPageIds);
-            }
-            $id++;
-        }
-
-        return $result;
-    }
-
-    private function pageToArray(int $pageId, $subPageIds): array
-    {
-        $pageArray = $this->_pages[$pageId]->toArray();
-
-        if (is_array($subPageIds) && count($subPageIds) > 0) {
-            $pageArray['pages'] = $this->subPagesToArray($subPageIds);
-        }
-
-        return $pageArray;
-    }
-
-    private function subPagesToArray(array $subPageIds): array
-    {
-        $subPagesArray = [];
-        $subId = 0;
-
-        foreach ($subPageIds as $subPageId => $subSubPageIds) {
-            if (isset($this->_pages[$subPageId])) {
-                $subPagesArray[$subId] = $this->pageToArray($subPageId, $subSubPageIds);
-            }
-            $subId++;
-        }
-
-        return $subPagesArray;
-    }
-
-    public function getPageTypes($reload = false): array
-    {
-        $typePage = parent::getPageTypes($reload);
-
-        foreach ($typePage as $pageKey => $page) {
-
-            if (in_array(lcfirst($pageKey), self::$ignoredPageTypes, true)) {
-                unset($typePage[$pageKey]);
-            }
-        }
-        return $typePage;
-
     }
 
     /**
@@ -426,4 +308,125 @@ class Episciences_Website_Navigation extends Ccsd_Website_Navigation
     }
 
 
+    public function savePage($page)
+    {
+        //Cas particulier des pages personnalisable
+        if ($page->isCustom()) {
+            $page->setPermalien($this->getUniqPermalien($page));
+        } else if ($page->isFile()) {
+            $page->saveFile();
+        }
+
+        //Enregistrement en base
+        $bind = [
+            'SID' => $this->_sid,
+            'PAGEID' => $page->getPageId(),
+            'TYPE_PAGE' => $page->getPageClass(),
+            'CONTROLLER' => $page->getController(),
+            'ACTION' => $page->getAction(),
+            'LABEL' => $page->getLabelKey(),
+            'PARENT_PAGEID' => $page->getPageParentId(),
+            'PARAMS' => $page->getSuppParams()
+        ];
+
+
+        $this->_db->insert($this->_table, $bind);
+    }
+
+    protected function getUniqPermalien($page)
+    {
+        $permalien = $page->getPermalien();
+        //Liste des permaliens
+        $permaliens = [];
+        foreach ($this->_pages as $p) {
+            // isCustom() is defined on Episciences_Website_Navigation_Page, not on the
+            // Ccsd_* base: guard against a page type that inherits directly from it.
+            if (method_exists($p, 'isCustom') && $p->isCustom() && $p != $page) {
+                $permaliens[] = $p->getPermalien();
+            }
+        }
+
+        while (in_array($permalien, $permaliens)) {
+            $newPermalien = preg_replace_callback('#([-_]?)(\d*)$#', function ($matches) {
+                if ($matches[0] != '') {
+                    return ($matches[1] . ($matches[2] + 1));
+                }
+            }, $permalien);
+            $permalien = ($permalien == $newPermalien) ? $permalien . '1' : $newPermalien;
+        }
+        return $permalien;
+    }
+
+    /**
+     * Création de la navigation pour le site
+     * @param string $filename nom du fichier de navigation
+     */
+    public function createNavigation($filename)
+    {
+        $dir = substr($filename, 0, strrpos($filename, '/'));
+        if (!is_dir($dir)) {
+            if (!mkdir($dir, 0777, true) && !is_dir($dir)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $dir));
+            }
+        }
+        file_put_contents($filename, Zend_Json::encode($this->toArray()));
+    }
+
+    /**
+     * Transformation de la navigation en tableau PHP (compatible avec la navigation Zend_Navigation)
+     */
+    public function toArray(): array
+    {
+        $result = [];
+        $id = 0;
+
+        foreach ($this->_order as $pageId => $subPageIds) {
+            if (isset($this->_pages[$pageId])) {
+                $result[$id] = $this->pageToArray($pageId, $subPageIds);
+            }
+            $id++;
+        }
+
+        return $result;
+    }
+
+    private function pageToArray(int $pageId, $subPageIds): array
+    {
+        $pageArray = $this->_pages[$pageId]->toArray();
+
+        if (is_array($subPageIds) && count($subPageIds) > 0) {
+            $pageArray['pages'] = $this->subPagesToArray($subPageIds);
+        }
+
+        return $pageArray;
+    }
+
+    private function subPagesToArray(array $subPageIds): array
+    {
+        $subPagesArray = [];
+        $subId = 0;
+
+        foreach ($subPageIds as $subPageId => $subSubPageIds) {
+            if (isset($this->_pages[$subPageId])) {
+                $subPagesArray[$subId] = $this->pageToArray($subPageId, $subSubPageIds);
+            }
+            $subId++;
+        }
+
+        return $subPagesArray;
+    }
+
+    public function getPageTypes($reload = false): array
+    {
+        $typePage = parent::getPageTypes($reload);
+
+        foreach ($typePage as $pageKey => $page) {
+
+            if (in_array(lcfirst($pageKey), self::$ignoredPageTypes, true)) {
+                unset($typePage[$pageKey]);
+            }
+        }
+        return $typePage;
+
+    }
 }

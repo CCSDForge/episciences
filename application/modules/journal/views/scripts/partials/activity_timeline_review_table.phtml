@@ -1,0 +1,118 @@
+<?php
+/**
+ * Per-version review recap: one row per reviewer, one column per event type they went
+ * through (with its date) — built from ActivityController::buildReviewTableBlock().
+ * The reviewer's current status isn't a separate column (it's implicit in the row:
+ * it's whichever event is their most recent one) — that cell is simply highlighted
+ * with the same label/color used elsewhere, instead of duplicating the information.
+ * Reuses Episciences_Paper_Logger (label/color/detail-modal), so labels/colors stay
+ * identical to the "Historique" panel.
+ */
+$block = $this->block;
+$version = $block['VERSION'];
+$columns = $block['COLUMNS'];
+$reviewers = $block['REVIEWERS'];
+$category = Episciences_Paper_Logger::CATEGORY_REVIEW;
+$cssColor = Episciences_Paper_Logger::PRIMARY;
+
+$entryId = 'activity-review-table-' . $version;
+?>
+<div class="activity-timeline-row" data-category="<?= $category ?>">
+
+    <?= $this->partial('partials/activity_timeline_date.phtml', [
+        'date' => $block['DATE'],
+        'version' => $version,
+        'docId' => $block['DOCID'] ?? null,
+        'pdfUrl' => $block['PDF_URL'] ?? null,
+    ]) ?>
+
+    <div class="activity-timeline-marker label label-<?= $cssColor ?>" aria-hidden="true">
+        <span class="glyphicon <?= Episciences_Paper_Logger::getCategoryIcon($category) ?>"></span>
+    </div>
+
+    <div class="activity-timeline-card activity-review-table-card" aria-labelledby="<?= $entryId ?>">
+
+        <div id="<?= $entryId ?>" class="label label-<?= $cssColor ?> activity-category-label"><?= $this->translate(Episciences_Paper_Logger::getCategoryLabel($category)) ?></div>
+
+        <div class="table-responsive">
+            <table class="table table-condensed activity-review-table">
+                <caption class="sr-only"><?= $this->translate('Récapitulatif des relecteurs pour cette version') ?></caption>
+                <thead>
+                    <tr>
+                        <th scope="col"><?= $this->translate('Relecteur') ?></th>
+                        <?php foreach ($columns as $column) : ?>
+                            <?php
+                            $columnLabel = isset(Episciences_Paper_Logger::$_label[$column]) ? $this->translate(Episciences_Paper_Logger::$_label[$column]) : $this->translate($column);
+                            ?>
+                            <th scope="col" class="activity-review-table-icon-col" title="<?= $columnLabel ?>">
+                                <span class="<?= Episciences_Paper_Logger::getActionIconClasses($column) ?>" aria-hidden="true"></span>
+                                <span class="sr-only"><?= $columnLabel ?></span>
+                            </th>
+                        <?php endforeach; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($reviewers as $reviewer) : ?>
+                        <?php $statusAction = $reviewer['statusAction']; ?>
+                        <tr>
+                            <th scope="row"><?= $this->escape($reviewer['name']) ?></th>
+                            <?php foreach ($columns as $column) : ?>
+                                <?php
+                                $event = $reviewer['events'][$column] ?? null;
+                                $isCurrentStatus = $column === $statusAction;
+                                ?>
+                                <td class="activity-review-table-date-cell">
+                                    <?php if ($event === null) : ?>
+                                        <span class="text-muted" aria-hidden="true">&mdash;</span>
+                                    <?php else : ?>
+                                        <?php
+                                        // every date is shown as a Bootstrap 5.3 badge (see sass/components/_badges.scss,
+                                        // ported for this Bootstrap 3 project): light by default, success once the
+                                        // reviewer's report is in
+                                        $badgeVariant = $column === Episciences_Paper_Logger::CODE_REVIEWING_COMPLETED ? 'success' : 'light';
+                                        $badgeTitle = $isCurrentStatus ? ' title="' . $this->translate('État actuel') . '"' : '';
+                                        $dateMarkup = '<span class="badge text-bg-' . $badgeVariant . '"' . $badgeTitle . '>'
+                                            . '<time datetime="' . date('c', strtotime($event['date'])) . '">'
+                                            . $this->Date($event['date'], null, Zend_Date::DATE_MEDIUM)
+                                            . '</time></span>';
+                                        ?>
+                                        <?php if ($column === Episciences_Paper_Logger::CODE_REVIEWING_COMPLETED) : ?>
+                                            <?php
+                                            // Link straight to the reviewer's report (Evaluations panel, deep-linked
+                                            // via its #rating-{uid} anchor — auto-expanded, see public/js/functions.js).
+                                            // Falls back to the paper's admin page for that version when the
+                                            // reviewer's uid wasn't captured in this log entry's detail.
+                                            $reviewLink = $this->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $event['docid']]);
+                                            if (!empty($event['uid'])) {
+                                                $reviewLink .= '#rating-' . $event['uid'];
+                                            }
+                                            ?>
+                                            <a href="<?= $this->escape($reviewLink) ?>"
+                                               aria-label="<?= $this->translate('Voir la relecture de') ?> <?= $this->escape($reviewer['name']) ?>"
+                                               title="<?= $this->translate('Voir le rapport de relecture') ?>">
+                                                <i class="fa-regular fa-file" aria-hidden="true"></i>
+                                                <?= $dateMarkup ?>
+                                            </a>
+                                        <?php elseif (Episciences_Paper_Logger::hasDetailModal($column)) : ?>
+                                            <a class="modal-opener"
+                                               href="<?= $this->url(['controller' => 'administratepaper', 'action' => 'log', 'id' => $event['logid']]) ?>"
+                                               data-width="50%"
+                                               data-hidesubmit="true"
+                                               aria-label="<?= $this->translate('View details for') ?> <?= $this->escape($reviewer['name']) ?>">
+                                                <?= $dateMarkup ?>
+                                            </a>
+                                        <?php else : ?>
+                                            <?= $dateMarkup ?>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </td>
+                            <?php endforeach; ?>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+</div>

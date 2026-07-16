@@ -254,11 +254,11 @@ describe('PaperAffiAuthorsManager', () => {
             });
 
             jest.spyOn(manager, 'loadAffiliationsScript').mockResolvedValue();
-            jest.spyOn(manager, 'insertHTMLWithScripts');
+            jest.spyOn(manager, 'insertHtml');
 
             await manager.loadAffiliations('author-1');
 
-            expect(manager.insertHTMLWithScripts).toHaveBeenCalledWith(
+            expect(manager.insertHtml).toHaveBeenCalledWith(
                 mockDOM.affiBody,
                 mockHtml
             );
@@ -622,64 +622,120 @@ describe('PaperAffiAuthorsManager', () => {
         });
     });
 
-    describe('insertHTMLWithScripts()', () => {
+    describe('insertHtml()', () => {
         beforeEach(() => {
             manager.initialize();
         });
 
-        test('should insert HTML without script tags', () => {
+        test('should render markup through the shared sanitizer', () => {
             const html = '<div>Content</div><p>More content</p>';
-            manager.insertHTMLWithScripts(mockDOM.affiBody, html);
+            manager.insertHtml(mockDOM.affiBody, html);
 
+            expect(global.sanitizeHTML).toHaveBeenCalledWith(html);
             expect(mockDOM.affiBody.innerHTML).toBe(html);
         });
 
-        test('should extract and execute script tags', () => {
-            const html =
-                '<div>Content</div><script>window.testVar = "executed";</script>';
-            manager.insertHTMLWithScripts(mockDOM.affiBody, html);
-
-            expect(mockDOM.affiBody.innerHTML).toBe('<div>Content</div>');
-            expect(window.testVar).toBe('executed');
-            delete window.testVar;
-        });
-
-        test('should execute multiple scripts in order', () => {
-            const html =
-                '<script>window.order = [];</script><div>Content</div><script>window.order.push(1);</script><script>window.order.push(2);</script>';
-            manager.insertHTMLWithScripts(mockDOM.affiBody, html);
-
-            expect(window.order).toEqual([1, 2]);
-            delete window.order;
-        });
-
-        test('should append scripts to document head', () => {
+        test('should not append any script element to the document head', () => {
             const initialScriptCount =
                 document.head.querySelectorAll('script').length;
             const html = '<div>Content</div><script>var test = 1;</script>';
 
-            manager.insertHTMLWithScripts(mockDOM.affiBody, html);
+            manager.insertHtml(mockDOM.affiBody, html);
 
             const finalScriptCount =
                 document.head.querySelectorAll('script').length;
-            expect(finalScriptCount).toBe(initialScriptCount + 1);
+            expect(finalScriptCount).toBe(initialScriptCount);
         });
 
-        test('should handle HTML without scripts', () => {
-            const html = '<div>Content</div><p>No scripts here</p>';
-            manager.insertHTMLWithScripts(mockDOM.affiBody, html);
+        test('should not execute script content found in the markup', () => {
+            const html =
+                '<div>Content</div><script>window.testVar = "executed";</script>';
+            manager.insertHtml(mockDOM.affiBody, html);
+
+            expect(window.testVar).toBeUndefined();
+            delete window.testVar;
+        });
+
+        test('should fall back to direct assignment when sanitizer is unavailable', () => {
+            const previous = global.sanitizeHTML;
+            delete global.sanitizeHTML;
+
+            const html = '<div>Content</div>';
+            manager.insertHtml(mockDOM.affiBody, html);
 
             expect(mockDOM.affiBody.innerHTML).toBe(html);
+            global.sanitizeHTML = previous;
+        });
+    });
+
+    describe('Affiliation badge handlers (edit/delete buttons)', () => {
+        beforeEach(() => {
+            manager.initialize();
         });
 
-        test('should handle complex HTML with inline scripts', () => {
-            const html =
-                '<script>function testFunc() { return "test"; }</script><div><button onclick="testFunc()">Click</button></div>';
-            manager.insertHTMLWithScripts(mockDOM.affiBody, html);
+        function renderBadge(value) {
+            mockDOM.affiBody.innerHTML = `
+                <div class="input-group">
+                    <span class="label label-primary">
+                        ${value}
+                        <input type="hidden" name="affiliations[0]" value="${value}">
+                        <button type="button" class="btn btn-xs btn-primary">
+                            <i class="glyphicon glyphicon-pencil"></i>
+                        </button>
+                        <button type="button" class="btn btn-xs btn-primary">
+                            <i class="glyphicon glyphicon-trash"></i>
+                        </button>
+                    </span>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="affiliations" class="form-control">
+                </div>
+            `;
+        }
 
-            expect(typeof window.testFunc).toBe('function');
-            expect(window.testFunc()).toBe('test');
-            delete window.testFunc;
+        test('delete button removes the corresponding badge', () => {
+            renderBadge('Canadian Council #https://ror.org/abcd1234');
+
+            const trashIcon =
+                mockDOM.affiBody.querySelector('.glyphicon-trash');
+            trashIcon.click();
+
+            expect(mockDOM.affiBody.querySelector('.label-primary')).toBeNull();
+        });
+
+        test('edit button moves the badge value back into the free-text input and removes the badge', () => {
+            const value = 'Canadian Council #https://ror.org/abcd1234';
+            renderBadge(value);
+
+            const pencilIcon =
+                mockDOM.affiBody.querySelector('.glyphicon-pencil');
+            pencilIcon.click();
+
+            const freeTextInput =
+                mockDOM.affiBody.querySelector('#affiliations');
+            expect(freeTextInput.value).toBe(value);
+            expect(mockDOM.affiBody.querySelector('.label-primary')).toBeNull();
+        });
+
+        test('badge handlers survive innerHTML being replaced (e.g. after switching author)', () => {
+            renderBadge('First affiliation #https://ror.org/first');
+            renderBadge('Second affiliation #https://ror.org/second');
+
+            const trashIcon =
+                mockDOM.affiBody.querySelector('.glyphicon-trash');
+            trashIcon.click();
+
+            expect(mockDOM.affiBody.querySelector('.label-primary')).toBeNull();
+        });
+
+        test('clicking outside a button does nothing', () => {
+            renderBadge('Some affiliation #https://ror.org/xyz');
+
+            mockDOM.affiBody.querySelector('.label-primary').click();
+
+            expect(
+                mockDOM.affiBody.querySelector('.label-primary')
+            ).not.toBeNull();
         });
     });
 

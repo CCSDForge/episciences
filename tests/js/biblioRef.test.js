@@ -138,6 +138,8 @@ describe('BiblioRefParser', () => {
             expect(result).toEqual({
                 rawReference: 'Test citation',
                 doi: '10.1234/test',
+                openAccessUrl: null,
+                openAccessSourceTitle: '',
                 isAccepted: true,
                 showAccepted: true,
                 showNotAccepted: false,
@@ -160,6 +162,8 @@ describe('BiblioRefParser', () => {
             expect(result).toEqual({
                 rawReference: 'Test citation',
                 doi: undefined,
+                openAccessUrl: null,
+                openAccessSourceTitle: '',
                 isAccepted: false,
                 showAccepted: false,
                 showNotAccepted: false,
@@ -217,6 +221,8 @@ describe('BiblioRefParser', () => {
             expect(result).toEqual({
                 rawReference: 'Test citation',
                 doi: '10.1234/test',
+                openAccessUrl: null,
+                openAccessSourceTitle: '',
                 isAccepted: true,
                 showAccepted: true,
                 showNotAccepted: false,
@@ -239,6 +245,8 @@ describe('BiblioRefParser', () => {
             expect(result).toEqual({
                 rawReference: 'Test citation',
                 doi: undefined,
+                openAccessUrl: null,
+                openAccessSourceTitle: '',
                 isAccepted: false,
                 showAccepted: false,
                 showNotAccepted: false,
@@ -366,6 +374,51 @@ describe('BiblioRefParser', () => {
 
             expect(result.isSuspect).toBe(true);
             expect(result.isGenuine).toBe(false);
+        });
+
+        it('should parse open-access url and source_title when present', () => {
+            const citation = {
+                ref: {
+                    raw_reference: 'Paper',
+                    doi: '10.1017/s1755020319000510',
+                    'open-access': {
+                        url: 'http://arxiv.org/abs/1804.00955',
+                        origin: 'openalex',
+                        checked_at: '2026-07-15T11:49:06+00:00',
+                        source_title: 'arXiv (Cornell University)',
+                    },
+                },
+                isAccepted: 1,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.openAccessUrl).toBe('http://arxiv.org/abs/1804.00955');
+            expect(result.openAccessSourceTitle).toBe('arXiv (Cornell University)');
+        });
+
+        it('should default open-access fields when absent', () => {
+            const citation = {
+                ref: { raw_reference: 'Paper' },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.openAccessUrl).toBeNull();
+            expect(result.openAccessSourceTitle).toBe('');
+        });
+
+        it('should ignore malformed open-access field (not an object)', () => {
+            const citation = {
+                ref: { raw_reference: 'Paper', 'open-access': 'not-an-object' },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.openAccessUrl).toBeNull();
+            expect(result.openAccessSourceTitle).toBe('');
         });
     });
 
@@ -561,6 +614,69 @@ describe('BiblioRefRenderer', () => {
             expect(li.querySelector('a')).toBeNull();
             // Reference text is still rendered
             expect(li.textContent).toContain('Test');
+        });
+
+        it('should render open-access link with source_title as tooltip', () => {
+            const citation = {
+                rawReference: 'Test citation',
+                openAccessUrl: 'http://arxiv.org/abs/1804.00955',
+                openAccessSourceTitle: 'arXiv (Cornell University)',
+                showAccepted: false,
+            };
+
+            const li = renderer.renderCitation(citation);
+            const link = li.querySelector('a.biblio-ref-oa-link');
+
+            expect(link).not.toBeNull();
+            expect(link.getAttribute('href')).toBe('http://arxiv.org/abs/1804.00955');
+            expect(link.getAttribute('rel')).toBe('noopener');
+            expect(link.getAttribute('target')).toBe('_blank');
+            expect(link.getAttribute('title')).toBe('arXiv (Cornell University)');
+            expect(link.innerHTML).toContain('fa-lock-open');
+            expect(link.textContent).toContain('http://arxiv.org/abs/1804.00955');
+        });
+
+        it('should render open-access link without a title attribute when source_title is absent', () => {
+            const citation = {
+                rawReference: 'Test citation',
+                openAccessUrl: 'https://example.org/oa-copy',
+                openAccessSourceTitle: '',
+                showAccepted: false,
+            };
+
+            const li = renderer.renderCitation(citation);
+            const link = li.querySelector('a.biblio-ref-oa-link');
+
+            expect(link).not.toBeNull();
+            expect(link.hasAttribute('title')).toBe(false);
+        });
+
+        it('should not render an open-access link for unsafe URLs', () => {
+            const citation = {
+                rawReference: 'Test citation',
+                openAccessUrl: 'javascript:alert(1)',
+                openAccessSourceTitle: 'evil',
+                showAccepted: false,
+            };
+
+            const li = renderer.renderCitation(citation);
+
+            expect(li.querySelector('a.biblio-ref-oa-link')).toBeNull();
+        });
+
+        it('should not duplicate the open-access link when it matches the DOI link', () => {
+            const citation = {
+                rawReference: 'Test citation',
+                doi: '10.1234/test',
+                openAccessUrl: 'https://doi.org/10.1234/test',
+                openAccessSourceTitle: 'Duplicate of DOI',
+                showAccepted: false,
+            };
+
+            const li = renderer.renderCitation(citation);
+
+            expect(li.querySelectorAll('a')).toHaveLength(1);
+            expect(li.querySelector('a.biblio-ref-oa-link')).toBeNull();
         });
 
         it('should render fa-square-xmark icon for suspect citation', () => {
