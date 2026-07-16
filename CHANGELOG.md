@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v1.0.56 - 2026-07-16
+
 ### Added
 - [CLOCKSS] Include the CLOCKSS Permissions Statement to allow archiving and ingestion of open access Archival Units.
 - [Bibliographic References] Display open-access links (retrieved e.g. from OpenAlex) when available and distinct from the DOI link.
