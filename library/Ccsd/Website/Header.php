@@ -61,7 +61,7 @@ class Ccsd_Website_Header
      * Repertoire des fichiers de langue
      * @var String
      */
-    protected $_langDir = '';
+    protected string $_langDir = '';
     /**
      * Langues de l'interface
      * @var array
