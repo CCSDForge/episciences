@@ -211,23 +211,31 @@ class Episciences_Paper_Authors_ViewFormatter
             $displayNumber = $index + 1;
             $affiliationName = htmlspecialchars((string) $affiliation[self::KEY_AFFILIATION]);
 
-            if (isset($affiliation[self::KEY_URL])) {
+            $acronymSuffix = isset($affiliation[self::KEY_ACRONYM])
+                ? ' [' . htmlspecialchars($affiliation[self::KEY_ACRONYM], ENT_QUOTES, 'UTF-8') . ']'
+                : '';
+
+            if (isset($affiliation[self::KEY_URL]) && self::isAllowedUrl((string) $affiliation[self::KEY_URL])) {
                 $affiliationUrl = htmlspecialchars($affiliation[self::KEY_URL], ENT_QUOTES, 'UTF-8');
                 $html .= '<li class="affiliation"><span class="label label-default">' . $displayNumber . '</span> '
-                    . '<a href="' . $affiliationUrl . '" target="_blank">' . $affiliationName;
-
-                if (isset($affiliation[self::KEY_ACRONYM])) {
-                    $html .= ' [' . htmlspecialchars($affiliation[self::KEY_ACRONYM], ENT_QUOTES, 'UTF-8') . ']';
-                }
-
-                $html .= '</a></li>';
+                    . '<a href="' . $affiliationUrl . '" target="_blank">' . $affiliationName . $acronymSuffix . '</a></li>';
             } else {
                 $html .= '<li class="affiliation"><span class="label label-default">' . $displayNumber . '</span> '
-                    . $affiliationName . '</li>';
+                    . $affiliationName . $acronymSuffix . '</li>';
             }
         }
 
         return $html . '</ul>';
+    }
+
+    /**
+     * Whether a URL uses a scheme allowed for rendering as a clickable link.
+     * Only http(s) and mailto are permitted; other schemes are rendered as plain text.
+     */
+    private static function isAllowedUrl(string $url): bool
+    {
+        $scheme = strtolower((string) parse_url(trim($url), PHP_URL_SCHEME));
+        return in_array($scheme, ['http', 'https', 'mailto'], true);
     }
 
     /**

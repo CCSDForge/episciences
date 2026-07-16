@@ -19,6 +19,10 @@ $(function () {
     let $searchDocVersion = $('#' + subform + '-version');
     let $searchPaperPassword = $('#' + subform + '-paperPassword');
     let $searchRequiredPwd = $('#' + subform + '-h_requiredPwd');
+    let $fileDescriptor = $("#file_data_descriptor");
+    let $isRequiredDescriptor = $("#file_data_descriptor_is_required");
+    let $coverLetterFile = $("#file_comment_author");
+    let $coverLetterRequirement = $("#cover_letter_requirement");
 
     // if it is a modal, disable submit button
     disableModalSubmitButton();
@@ -40,6 +44,15 @@ $(function () {
     });
 
     $secondDisclaimersDisclaimer.on('change', function () {
+        activateDeactivateSubmitButton();
+    });
+
+
+    $fileDescriptor.on('change', function () {
+        activateDeactivateSubmitButton();
+    });
+
+    $coverLetterFile.on('change', function () {
         activateDeactivateSubmitButton();
     });
 
@@ -319,8 +332,6 @@ $(function () {
                         }
 
                         if (newVersionErrors.oldConceptIdentifier) {
-                            console.log(newVersionErrors.oldConceptIdentifier);
-
                             $('<input>', {
                                 type: 'hidden',
                                 name: 'old_conceptIdentifier',
@@ -329,26 +340,11 @@ $(function () {
                         }
                     }
 
-                    let hideResultMessage = function hideResultMessage() {
-                        $('#result_message').hide(); // Cacher le message indiquant l'existance d'une ancienne version
-                        $('#submitForm').fadeIn();
-                        $('#form_required').show();
-                        applyAction(
-                            [
-                                'specialIssueAccessCode-element',
-                                'volumes-element',
-                                'sections-element',
-                                'suggestEditors-element',
-                            ],
-                            'hide'
-                        );
-                    };
-
                     message =
                         '<div id="result_message" class="panel panel-danger">';
                     message += '<div class="panel-body red">';
                     message += '<span class="badge">';
-                    message += newVersionErrors.oldIdentifier;
+                    message += htmlEntities(newVersionErrors.oldIdentifier);
                     message += '</span>';
                     message += '<br>';
                     message += '<strong>';
@@ -356,9 +352,6 @@ $(function () {
                     message += '</strong>';
                     message += '</div>';
                     message += '</div>';
-                    message += '<script>';
-                    message += hideResultMessage;
-                    message += '</script>';
                 }
                 $submit_form.fadeOut();
             } else {
@@ -466,28 +459,67 @@ $(function () {
     }
 
     /**
-     * Check if all required fields are not completed
+     * Check if all required fields are completed
+     * returns false if an error occurs, true if the check ok
      * @returns {boolean}
      */
-    function isRequiredFieldsNotCompleted() {
-        return !(
-            ($sectionsElement.is(':visible') &&
-                $sectionsElement.find('label').hasClass('required') &&
-                $sections.val() === '0') ||
-            ($suggestEditorsElement.is(':visible') &&
-                $suggestEditorsElement.find('label').hasClass('required') &&
-                ($suggest_editors.val() === '0' ||
-                    null === $suggest_editors.val())) ||
+    function isFormValid() {
+
+        // Sections check
+        if (
+            $sectionsElement.is(':visible') &&
+            $sectionsElement.find('label').hasClass('required') &&
+            $sections.val() === '0'
+
+        ) {
+            return false;
+        }
+
+        // Editors check
+        if (
+            $suggestEditorsElement.is(':visible') &&
+            $suggestEditorsElement.find('label').hasClass('required')
+        ) {
+            const suggestedEditors = $suggest_editors.val();
+            if (
+                suggestedEditors === '0' ||
+                null === suggestedEditors
+            ) {
+                return false;
+            }
+        }
+
+        //Disclaimers check
+        if (
             !$firstDisclaimersDisclaimer.is(':checked') ||
             !$secondDisclaimersDisclaimer.is(':checked')
-        );
+        ) {
+            return false;
+        }
+
+        // Cover letter file check (required = 2 means file must be provided)
+        if (
+            $coverLetterRequirement.length > 0 &&
+            $coverLetterRequirement.val() === '2'
+        ) {
+            const hasFile = $coverLetterFile.length > 0 && $coverLetterFile.val() !== '';
+            if (!hasFile) {
+                return false;
+            }
+        }
+
+        // data/software descriptor check
+        return !(
+            $isRequiredDescriptor.length > 0 &&
+            $isRequiredDescriptor.val() === 'true' &&
+            $fileDescriptor.val() === '');
     }
 
     /**
      * Deactivate / ACTIVATE  the "Submit" button.
      */
     function activateDeactivateSubmitButton() {
-        if (isRequiredFieldsNotCompleted()) {
+        if (isFormValid()) {
             $submit_button.attr('disabled', false);
             $submit_button.attr('aria-disabled', false);
         } else {
@@ -546,6 +578,26 @@ $(function () {
         search();
     }
 }); // end Ready
+
+/**
+ * Hide the "an older version exists" message and show the submission form.
+ * Called from server-generated markup (see Episciences_Paper::…
+ * onclick="hideResultMessage();"), so it must stay global.
+ */
+function hideResultMessage() {
+    $('#result_message').hide(); // Cacher le message indiquant l'existance d'une ancienne version
+    $('#submitForm').fadeIn();
+    $('#form_required').show();
+    applyAction(
+        [
+            'specialIssueAccessCode-element',
+            'volumes-element',
+            'sections-element',
+            'suggestEditors-element',
+        ],
+        'hide'
+    );
+}
 
 /**
  *

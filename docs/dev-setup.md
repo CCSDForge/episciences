@@ -37,6 +37,19 @@ ping -c1 dev.episciences.org
 
 ---
 
+## Prerequisites: episciences-infrastructure
+
+DB (MySQL), Solr, Traefik, and phpMyAdmin are managed by [episciences-infrastructure](https://github.com/CCSDForge/episciences-infrastructure). Start it **before** this project:
+
+```bash
+cd ../episciences-infrastructure
+make up          # creates epi-network, starts Traefik + DBs + Solr
+make db-import   # first-time DB init (if volumes are empty)
+make solr-setup  # first-time Solr collection setup
+```
+
+---
+
 ## First-time Setup
 
 ```bash
@@ -60,7 +73,7 @@ make dev-setup
 11. **`make collection`** — creates the Solr `episciences` collection
 12. **`make index`** — indexes sample content into Solr
 
-When it completes, open **http://dev.episciences.org/** in your browser.
+When it completes, open **https://dev.episciences.org/** in your browser (accept the self-signed certificate warning).
 
 ---
 
@@ -227,14 +240,16 @@ JS coverage is generated in `coverage/lcov-report/index.html`.
 
 ## Available Services
 
-| Service | URL |
-|---------|-----|
-| Journal | http://dev.episciences.org/ |
-| Manager | http://manager-dev.episciences.org/dev/ |
-| OAI-PMH | http://oai-dev.episciences.org/ |
-| Data | http://data-dev.episciences.org/ |
-| PhpMyAdmin | http://localhost:8001/ |
-| Apache Solr | http://localhost:8983/solr |
+| Service | URL | Note |
+|---------|-----|------|
+| Journal | https://dev.episciences.org/ | via Traefik |
+| Manager | https://manager-dev.episciences.org/dev/ | via Traefik |
+| OAI-PMH | https://oai-dev.episciences.org/ | via Traefik |
+| Data | https://data-dev.episciences.org/ | via Traefik |
+| PhpMyAdmin | https://pma.episciences.org/ | via Traefik (infra) |
+| Apache Solr | http://localhost:8983/solr | direct port (infra) |
+
+> All HTTPS services use Traefik's self-signed certificate — accept the browser warning on first access.
 
 ---
 

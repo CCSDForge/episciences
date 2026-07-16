@@ -1,0 +1,97 @@
+<?php
+/**
+ * Aggregated recap card for one version/category: bundles every log entry of that
+ * category (e.g. review actions, or messages & notifications) into a single timeline
+ * block instead of one row per action — mirrors how a "peer review round" is presented
+ * as one card with a per-item recap. Generic over category so it can bundle any
+ * ActivityController::RECAP_CATEGORIES entry without duplicating markup.
+ *
+ * Every item renders the same way — a muted icon + bold title, never a colored
+ * Bootstrap badge — so the card doesn't turn into a wall of same-weight colored pills
+ * (no action here is inherently more "critical" than another). The one exception is a
+ * status change: instead of a generic "New status" title + a repeated status text below
+ * it, it shows only the status itself, styled exactly like the "Statut" panel on
+ * /administratepaper/view (.label.label-status-{code}).
+ */
+$block = $this->block;
+$version = $block['VERSION'];
+$category = $block['CATEGORY'];
+$logs = $block['LOGS'];
+
+$cssColor = Episciences_Paper_Logger::$_css[$logs[0]['ACTION']] ?? Episciences_Paper_Logger::INFO;
+$icon = Episciences_Paper_Logger::getCategoryIcon($category);
+$entryId = 'activity-recap-' . $category . '-' . $version;
+?>
+<div class="activity-timeline-row" data-category="<?= $this->escape($category) ?>">
+
+    <?= $this->partial('partials/activity_timeline_date.phtml', [
+        'date' => $block['DATE'],
+        'version' => $version,
+        'docId' => $block['DOCID'] ?? null,
+        'pdfUrl' => $block['PDF_URL'] ?? null,
+    ]) ?>
+
+    <div class="activity-timeline-marker label label-<?= $cssColor ?>" aria-hidden="true">
+        <span class="glyphicon <?= $icon ?>"></span>
+    </div>
+
+    <div class="activity-timeline-card activity-recap-block-card" aria-labelledby="<?= $entryId ?>">
+
+        <div id="<?= $entryId ?>" class="label label-<?= $cssColor ?> activity-category-label"><?= $this->translate(Episciences_Paper_Logger::getCategoryLabel($category)) ?></div>
+
+        <ul class="activity-recap-block-list">
+            <?php foreach ($logs as $log) : ?>
+                <?php
+                ['detail' => $itemDetail, 'status' => $itemStatus, 'statusCode' => $itemStatusCode, 'fullName' => $itemFullName, 'tag' => $itemTag] = Episciences_Paper_Logger::extractLogDisplayData($log);
+                $itemAction = $log['ACTION'];
+                $itemLabel = isset(Episciences_Paper_Logger::$_label[$itemAction]) ? $this->translate(Episciences_Paper_Logger::$_label[$itemAction]) : $this->translate($itemAction);
+                $itemHasDetails = Episciences_Paper_Logger::hasDetailModal($itemAction);
+                $itemIconClasses = Episciences_Paper_Logger::getActionIconClasses($itemAction);
+                $itemDateLabel = $this->Date($log['DATE'], null, Zend_Date::DATE_MEDIUM);
+                $itemIsStatusChange = in_array($itemAction, [Episciences_Paper_Logger::CODE_STATUS, Episciences_Paper_Logger::CODE_RESTORATION_OF_STATUS], true)
+                    && $itemStatusCode !== null;
+                ?>
+                <?php
+                $itemBody = $this->partial('partials/paper_history_log_body.phtml', [
+                    'log' => $log,
+                    'detail' => $itemDetail,
+                    'status' => $itemStatus,
+                    'fullName' => $itemFullName,
+                    'tag' => $itemTag,
+                ]);
+                ?>
+                <li class="activity-recap-block-item">
+                    <?php // the modal-opener link wraps ONLY the icon+title: the body may contain its
+                    // own interactive links (e.g. mailto:), and nested <a> tags are invalid HTML ?>
+                    <?php if ($itemIsStatusChange) : ?>
+                        <span style="font-size:1em" class="label label-status-<?= $itemStatusCode ?> activity-recap-block-status"><?= ucfirst($itemStatus) ?></span>
+                    <?php elseif ($itemHasDetails) : ?>
+                        <a class="activity-recap-block-status modal-opener"
+                           href="<?= $this->url(['controller' => 'administratepaper', 'action' => 'log', 'id' => $log['LOGID']]) ?>"
+                           data-width="50%"
+                           data-hidesubmit="true"
+                           aria-label="<?= $this->translate('View details for') ?> <?= $itemLabel ?>">
+                            <span class="<?= $itemIconClasses ?> activity-recap-block-icon" aria-hidden="true"></span>
+                            <strong class="activity-recap-block-title"><?= $itemLabel ?></strong>
+                        </a>
+                    <?php else : ?>
+                        <span class="activity-recap-block-status">
+                            <span class="<?= $itemIconClasses ?> activity-recap-block-icon" aria-hidden="true"></span>
+                            <strong class="activity-recap-block-title"><?= $itemLabel ?></strong>
+                        </span>
+                    <?php endif; ?>
+                    <?php // the status is already fully expressed by the badge above — showing the
+                    // body too would just repeat the exact same word (paper_history_logs_status.phtml).
+                    // Kept in the markup even when empty so it still reserves the flexible space
+                    // that pushes the date to the right, exactly like every other item ?>
+                    <span class="activity-recap-block-item-body"><?= $itemIsStatusChange ? '' : $itemBody ?></span>
+                    <time class="activity-recap-block-date" datetime="<?= date('c', strtotime($log['DATE'])) ?>">
+                        <?= $itemDateLabel ?>
+                    </time>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+
+    </div>
+
+</div>

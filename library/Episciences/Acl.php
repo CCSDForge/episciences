@@ -3,14 +3,14 @@
 class Episciences_Acl extends Ccsd_Acl
 {
     /**
-     * Liste des rôles de l'application
+     * List of application roles
      */
     public const ROLE_ROOT = 'epiadmin';
 
-    public const ROLE_CHIEF_EDITOR = 'chief_editor';           // rédacteur en chef
-    public const ROLE_ADMIN = 'administrator';                 // administrateur
-    public const ROLE_EDITOR = 'editor';                       // rédacteur
-    public const ROLE_GUEST_EDITOR = 'guest_editor';           // rédacteur invité
+    public const ROLE_CHIEF_EDITOR = 'chief_editor';           // editor-in-chief
+    public const ROLE_ADMIN = 'administrator';                 // administrator
+    public const ROLE_EDITOR = 'editor';                       // editor
+    public const ROLE_GUEST_EDITOR = 'guest_editor';           // guest editor
     public const ROLE_SECRETARY = 'secretary';
     public const ROLE_WEBMASTER = 'webmaster';
     public const ROLE_REVIEWER = 'reviewer';
@@ -47,7 +47,7 @@ class Episciences_Acl extends Ccsd_Acl
     public const CONFIGURABLE_RESOURCE = true; // configurable by review
     public const NOT_CONFIGURABLE_RESOURCE = false; //  public resource but restricted to certain roles
 
-    /** @var array : see Episciences_User::Permissions */
+    /** @var list<string> : see Episciences_User::Permissions */
     public const TYPE_OF_RESOURCES_NOT_TO_BE_DISPLAYED = [
         'feed-rss',
         'user-dashboard',
@@ -89,19 +89,19 @@ class Episciences_Acl extends Ccsd_Acl
         'error-error',
         'website-index',
         'website-reset', // idem website-menu
-        'administratepaper-assign', // à supprimer des acl(s) ( à vérifier)
-        'administratepaper-benchmark', // à supprimer des acl(s) ( à vérifier)
-        'administratepaper-managed', // à supprimer des acl(s) ( à vérifier)
-        'administratepaper-reviewerslist', // n'est plus utilisée (à vérifier)
-        'administratepaper-savereviewerinvitation', // idem invitereviewer
-        'administratepaper-status', // à supprimer des acl(s) ( à vérifier)
+        'administratepaper-assign', // to be deleted from acl(s) (to be verified)
+        'administratepaper-benchmark', // to be deleted from acl(s) (to be verified)
+        'administratepaper-managed', // to be deleted from acl(s) (to be verified)
+        'administratepaper-reviewerslist', // no longer used (to be verified)
+        'administratepaper-savereviewerinvitation', // same as invitereviewer
+        'administratepaper-status', // to be deleted from acl(s) (to be verified)
         'administratemail-view',
-        'file-attachments', // pas d'intérêt d'indiquer qui devrait visualiser les fichiers attachés aux mails
-        'file-docfiles', //  pas d'intérêt d'indiquer qui devrait visualiser les fichiers attachés aux comentaires
+        'file-attachments', // no point in indicating who should view files attached to emails
+        'file-docfiles', // no point in indicating who should view files attached to comments
         'file-index',
         'grid-index',
         'news-index',
-        'grid-create', // à supprimer des acl(s) ( à vérifier),
+        'grid-create', // to be deleted from acl(s) (to be verified),
         'review-assignationmode', // obsolete
         'rss-index',
         'rss-news', // idem rss-papers
@@ -114,7 +114,7 @@ class Episciences_Acl extends Ccsd_Acl
         'user-logout',
         'user-logoutfromcas',
         'user-permissions',
-        'user-su',  // idem user-list (se connecter à la place d'un autre utilisateur)
+        'user-su',  // same as user-list (log in on behalf of another user)
         'user-view',
         'volume-index',
         'user-photo',
@@ -253,16 +253,17 @@ class Episciences_Acl extends Ccsd_Acl
             self::ROLE_ROOT => self::ROLE_CHIEF_EDITOR
         ];
 
-        //Ressources à rajouter dans les ACL
+        // Resources to add in the ACL
         $config = new Zend_Config_Ini(APPLICATION_PATH . '/configs/acl.ini');
         $this->_defaultAcl = $config->toArray();
     }
 
-    public static function getCode($rightid): void
+    public static function getCode(mixed $rightid): void
     {
         //return self::$_rolesCodes[$rightid];
     }
 
+    /** @return array<string, string> */
     public function getRolesCodes(): array
     {
         $rolesKeys = array_keys($this->_roles);
@@ -272,6 +273,7 @@ class Episciences_Acl extends Ccsd_Acl
         return array_combine($rolesKeys, $rolesKeys);
     }
 
+    /** @return array<string, string> */
     public function getEditableRoles(): array
     {
         $acl = new Episciences_Acl();

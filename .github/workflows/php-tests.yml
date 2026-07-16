@@ -60,7 +60,7 @@ jobs:
         
     - name: Cache Composer packages
       id: composer-cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: vendor
         key: ${{ runner.os }}-php-${{ matrix.php-version }}-${{ hashFiles('**/composer.lock') }}
@@ -91,7 +91,7 @@ jobs:
         DB_NAME: test_episciences
         
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v6
+      uses: codecov/codecov-action@v7
       if: matrix.php-version == '8.2'
       with:
         file: ./coverage.xml

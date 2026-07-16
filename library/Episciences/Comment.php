@@ -89,7 +89,10 @@ class Episciences_Comment
             $method = 'set' . ucfirst($key);
 
             if (in_array($method, $methods)) {
-                if (Episciences_Tools::isJson($value)) {
+                // Only OPTIONS is stored as JSON (see find() and save()): decoding any
+                // value that merely looks like JSON would corrupt a MESSAGE whose text
+                // happens to be valid JSON (e.g. "42", "true", "[x]") into a non-string.
+                if ($key === 'options' && Episciences_Tools::isJson($value)) {
                     $value = Zend_Json::decode($value);
                 }
                 $this->$method($value);
@@ -238,6 +241,10 @@ class Episciences_Comment
             $this->logComment();
         }
 
+        if ($result) {
+            Episciences_CommentsManager::getCachePool()->clear();
+        }
+
         return $result;
     }
 
@@ -251,6 +258,7 @@ class Episciences_Comment
 
         try {
             $db->delete(T_PAPER_COMMENTS, ['PCID = ?' => $this->getPcid()]);
+            Episciences_CommentsManager::getCachePool()->clear();
         } catch (Zend_Db_Statement_Exception $exception) {
             return false;
         }

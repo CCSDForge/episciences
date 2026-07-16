@@ -398,7 +398,7 @@ final class Episciences_MailTest extends TestCase
     }
 
     // =========================================================================
-    // addTo / addCc / addBcc — empty guard (return false) — source inspection
+    // addTo / addCc / addBcc — empty guard, fluent return $this — source inspection
     // =========================================================================
 
     public function testAddToSourceContainsEmptyGuard(): void
@@ -407,7 +407,9 @@ final class Episciences_MailTest extends TestCase
         $lines  = file($method->getFileName());
         $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
         self::assertStringContainsString('empty($email)', $source);
-        self::assertStringContainsString('return false', $source);
+        // Fluent contract: the method must return $this, never break the chain with return false.
+        self::assertStringContainsString('return $this', $source);
+        self::assertStringNotContainsString('return false', $source);
     }
 
     public function testAddCcSourceContainsEmptyGuard(): void
@@ -416,7 +418,8 @@ final class Episciences_MailTest extends TestCase
         $lines  = file($method->getFileName());
         $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
         self::assertStringContainsString('empty($email)', $source);
-        self::assertStringContainsString('return false', $source);
+        self::assertStringContainsString('return $this', $source);
+        self::assertStringNotContainsString('return false', $source);
     }
 
     public function testAddBccSourceContainsEmptyGuard(): void
@@ -425,7 +428,8 @@ final class Episciences_MailTest extends TestCase
         $lines  = file($method->getFileName());
         $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
         self::assertStringContainsString('empty($email)', $source);
-        self::assertStringContainsString('return false', $source);
+        self::assertStringContainsString('return $this', $source);
+        self::assertStringNotContainsString('return false', $source);
     }
 
     // =========================================================================

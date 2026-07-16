@@ -536,4 +536,183 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         // (array)42 = [42] → filter → [42]
         self::assertContains(42, $result);
     }
+
+    // =========================================================================
+    // GROUP D — resolveVolumeAndSectionTags()  (hotfix PR #1037 / feat #930)
+    // =========================================================================
+    //
+    // Before the fix, $volume could be `false` (ZF1 find() returns false when
+    // the row is not found). The nullsafe operator ?-> only skips null, not
+    // false, causing "Call to a member function getVol_num() on bool".
+    // The helper now uses !$volume to handle both null and false.
+
+    /** @return array<string, string> */
+    private function invokeTags(mixed $volume, mixed $section, string $locale = 'en'): array
+    {
+        return $this->invoke(
+            'resolveVolumeAndSectionTags',
+            [$volume, $section, $locale, 'None_F', 'None_M', 'Out_of_vol', 'Out_of_sec']
+        );
+    }
+
+    private function mockVolume(
+        string $name = 'Vol A',
+        ?int   $num  = 3,
+        string $year = '2024',
+        string $type = 'special',
+        string $bib  = 'BIB-1'
+    ): \Episciences_Volume {
+        $v = $this->createMock(\Episciences_Volume::class);
+        $v->method('getName')->willReturn($name);
+        $v->method('getVol_num')->willReturn($num);
+        $v->method('getVol_year')->willReturn($year);
+        $v->method('getVol_type')->willReturn($type);
+        $v->method('getBib_reference')->willReturn($bib);
+        return $v;
+    }
+
+    private function mockSection(string $name = 'Sec A'): \Episciences_Section
+    {
+        $s = $this->createMock(\Episciences_Section::class);
+        $s->method('getName')->willReturn($name);
+        return $s;
+    }
+
+    // --- volume is false (ZF1 find() returns false on no result) ---
+
+    public function testVolumeTagsWhenVolumeIsFalse(): void
+    {
+        $tags = $this->invokeTags(false, false);
+
+        self::assertSame('Out_of_vol', $tags[\Episciences_Mail_Tags::TAG_VOLUME_NAME]);
+        self::assertSame('None_F',     $tags[\Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF]);
+        self::assertSame('None_F',     $tags[\Episciences_Mail_Tags::TAG_VOLUME_YEAR]);
+        self::assertSame('None_M',     $tags[\Episciences_Mail_Tags::TAG_VOLUME_NUMBER]);
+        self::assertSame('None_M',     $tags[\Episciences_Mail_Tags::TAG_VOLUME_TYPE]);
+    }
+
+    // --- volume is null (paper without volume) ---
+
+    public function testVolumeTagsWhenVolumeIsNull(): void
+    {
+        $tags = $this->invokeTags(null, null);
+
+        self::assertSame('Out_of_vol', $tags[\Episciences_Mail_Tags::TAG_VOLUME_NAME]);
+        self::assertSame('None_M',     $tags[\Episciences_Mail_Tags::TAG_VOLUME_NUMBER]);
+        self::assertSame('None_F',     $tags[\Episciences_Mail_Tags::TAG_VOLUME_YEAR]);
+        self::assertSame('None_M',     $tags[\Episciences_Mail_Tags::TAG_VOLUME_TYPE]);
+        self::assertSame('None_F',     $tags[\Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF]);
+    }
+
+    // --- volume object with all fields populated ---
+
+    public function testVolumeTagsWithCompleteVolume(): void
+    {
+        $tags = $this->invokeTags($this->mockVolume('Volume Alpha', 7, '2025', 'proceedings', 'REF-42'), null);
+
+        self::assertSame('Volume Alpha', $tags[\Episciences_Mail_Tags::TAG_VOLUME_NAME]);
+        self::assertSame(7,              $tags[\Episciences_Mail_Tags::TAG_VOLUME_NUMBER]);
+        self::assertSame('2025',         $tags[\Episciences_Mail_Tags::TAG_VOLUME_YEAR]);
+        self::assertSame('proceedings',  $tags[\Episciences_Mail_Tags::TAG_VOLUME_TYPE]);
+        self::assertSame('REF-42',       $tags[\Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF]);
+    }
+
+    // --- volume with empty/null fields falls back to None placeholders ---
+
+    public function testVolumeTagsWithNullSubFieldsFallBackToPlaceholders(): void
+    {
+        $v = $this->createMock(\Episciences_Volume::class);
+        $v->method('getName')->willReturn('');        // empty → ?: None_M
+        $v->method('getVol_num')->willReturn(null);   // null  → ?: None_M
+        $v->method('getVol_year')->willReturn(null);  // null  → ?: None_F
+        $v->method('getVol_type')->willReturn(null);  // null  → ?: None_M
+        $v->method('getBib_reference')->willReturn(''); // ''  → ?: None_F
+
+        $tags = $this->invokeTags($v, null);
+
+        self::assertSame('None_M', $tags[\Episciences_Mail_Tags::TAG_VOLUME_NAME]);
+        self::assertSame('None_M', $tags[\Episciences_Mail_Tags::TAG_VOLUME_NUMBER]);
+        self::assertSame('None_F', $tags[\Episciences_Mail_Tags::TAG_VOLUME_YEAR]);
+        self::assertSame('None_M', $tags[\Episciences_Mail_Tags::TAG_VOLUME_TYPE]);
+        self::assertSame('None_F', $tags[\Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF]);
+    }
+
+    // --- locale is forwarded to getName() ---
+
+    public function testVolumeNameLocaleIsForwarded(): void
+    {
+        $v = $this->createMock(\Episciences_Volume::class);
+        $v->expects(self::once())->method('getName')->with('fr')->willReturn('Nom FR');
+        $v->method('getVol_num')->willReturn(1);
+        $v->method('getVol_year')->willReturn('2024');
+        $v->method('getVol_type')->willReturn('regular');
+        $v->method('getBib_reference')->willReturn('X');
+
+        $tags = $this->invoke(
+            'resolveVolumeAndSectionTags',
+            [$v, null, 'fr', 'None_F', 'None_M', 'Out_of_vol', 'Out_of_sec']
+        );
+
+        self::assertSame('Nom FR', $tags[\Episciences_Mail_Tags::TAG_VOLUME_NAME]);
+    }
+
+    // --- section is false ---
+
+    public function testSectionTagWhenSectionIsFalse(): void
+    {
+        $tags = $this->invokeTags(false, false);
+        self::assertSame('Out_of_sec', $tags[\Episciences_Mail_Tags::TAG_SECTION_NAME]);
+    }
+
+    // --- section is null ---
+
+    public function testSectionTagWhenSectionIsNull(): void
+    {
+        $tags = $this->invokeTags(null, null);
+        self::assertSame('Out_of_sec', $tags[\Episciences_Mail_Tags::TAG_SECTION_NAME]);
+    }
+
+    // --- section object with a name ---
+
+    public function testSectionTagWithValidSection(): void
+    {
+        $tags = $this->invokeTags($this->mockVolume(), $this->mockSection('My Section'));
+        self::assertSame('My Section', $tags[\Episciences_Mail_Tags::TAG_SECTION_NAME]);
+    }
+
+    // --- section locale is forwarded to getName() ---
+
+    public function testSectionNameLocaleIsForwarded(): void
+    {
+        $s = $this->createMock(\Episciences_Section::class);
+        $s->expects(self::once())->method('getName')->with('de')->willReturn('Abschnitt DE');
+
+        $tags = $this->invoke(
+            'resolveVolumeAndSectionTags',
+            [$this->mockVolume(), $s, 'de', 'None_F', 'None_M', 'Out_of_vol', 'Out_of_sec']
+        );
+
+        self::assertSame('Abschnitt DE', $tags[\Episciences_Mail_Tags::TAG_SECTION_NAME]);
+    }
+
+    // --- return array contains all 6 expected keys ---
+
+    public function testAllSixTagKeysAlwaysPresent(): void
+    {
+        $expected = [
+            \Episciences_Mail_Tags::TAG_VOLUME_NAME,
+            \Episciences_Mail_Tags::TAG_VOLUME_NUMBER,
+            \Episciences_Mail_Tags::TAG_VOLUME_YEAR,
+            \Episciences_Mail_Tags::TAG_VOLUME_TYPE,
+            \Episciences_Mail_Tags::TAG_VOL_BIBLIOG_REF,
+            \Episciences_Mail_Tags::TAG_SECTION_NAME,
+        ];
+
+        foreach ([null, false, $this->mockVolume()] as $volume) {
+            $tags = $this->invokeTags($volume, null);
+            foreach ($expected as $key) {
+                self::assertArrayHasKey($key, $tags, "Missing tag $key when volume=" . gettype($volume));
+            }
+        }
+    }
 }

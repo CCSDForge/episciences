@@ -200,22 +200,6 @@ class Episciences_Tools
         }
     }
 
-    public static function multisort($array, $key)
-    {
-        uksort($array, static function ($a, $b) use ($key) {
-            $a = $a[$key];
-            $b = $b[$key];
-            if ($a === $b) {
-                $r = 0;
-            } else {
-                $r = ($a > $b) ? 1 : -1;
-            }
-            return $r;
-        });
-
-        return $array;
-    }
-
     public static function filter_multiarray(&$input, $filter = '')
     {
         if (is_array($input)) {
@@ -254,12 +238,6 @@ class Episciences_Tools
         return [];
     }
 
-    public static function preg_array_key_exists($pattern, $array): int
-    {
-        $keys = array_keys($array);
-        return (int)preg_grep($pattern, $keys);
-    }
-
     /**
      * upload form files to specified path
      * @param $path : folder where the files will be stored
@@ -273,7 +251,7 @@ class Episciences_Tools
         $files = $upload->getFileInfo();
 
         if (count($files) && !is_dir($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
-            trigger_error('Upload file failed: directory "%s" was not created', $path);
+            trigger_error(sprintf('Upload file failed: directory "%s" was not created', $path));
         }
 
         foreach ($files as $file => $info) {
@@ -355,52 +333,6 @@ class Episciences_Tools
     }
 
     /**
-     * @param $code
-     * @param null $locale
-     * @return bool
-     * @throws Zend_Exception
-     */
-    public static function getLanguageLabel($code, $locale = null): bool
-    {
-        if (!isset($locale)) {
-            $locale = Zend_Registry::get('lang');
-        }
-
-        $languages = Zend_Locale::getTranslationList('language', $locale);
-
-        if (array_key_exists($code, $languages)) {
-            return $languages[$code];
-        }
-
-        return false;
-    }
-
-    /**
-     * @param $languages
-     * @param null $locale
-     * @return array|bool
-     * @throws Zend_Exception
-     */
-    public static function sortLanguages($languages, $locale = null)
-    {
-        if (empty($languages)) {
-            return false;
-        }
-
-        if (!isset($locale)) {
-            $locale = Zend_Registry::get('lang');
-        }
-
-        $translated = [];
-        foreach ($languages as $code) {
-            $translated[$code] = static::getLanguageLabel($code, $locale);
-        }
-        asort($translated);
-
-        return array_keys($translated);
-    }
-
-    /**
      * @param $translations
      * @param $path
      * @param $file
@@ -424,7 +356,7 @@ class Episciences_Tools
             }
 
             if (!is_dir($path . $lang) && !mkdir($concurrentDirectory = $path . $lang) && !is_dir($concurrentDirectory)) {
-                trigger_error('Write translation failed: directory "%s" was not created', $concurrentDirectory);
+                trigger_error(sprintf('Write translation failed: directory "%s" was not created', $concurrentDirectory));
             }
 
             $filePath = $path . $lang . '/' . $file;
@@ -667,12 +599,15 @@ class Episciences_Tools
     public static function filenameRotate($dir, $filename)
     {
         while (is_file($dir . $filename)) {
-            $filename = preg_replace_callback('/(?>_(\d*))?(\.\w*)?$/', static function ($matches) {
-                $i = (isset($matches[1])) ? '_' . ((int)$matches[1] + 1) : '';
+            // Always inject/increment a counter. The previous pattern produced an empty
+            // replacement for a name without a trailing "_N" and no extension (e.g. "foo"),
+            // leaving the filename unchanged and spinning forever.
+            $filename = preg_replace_callback('/(?:_(\d+))?(\.\w+)?$/', static function ($matches) {
+                $counter = (isset($matches[1]) && $matches[1] !== '') ? (int)$matches[1] + 1 : 1;
                 $ext = $matches[2] ?? '';
 
-                return $i . $ext;
-            }, $filename);
+                return '_' . $counter . $ext;
+            }, $filename, 1);
         }
         return $filename;
     }
@@ -858,6 +793,10 @@ class Episciences_Tools
     public static function addDateInterval($date, $interval, $format = 'Y-m-d')
     {
         $result = date_create($date);
+        // date_create() returns false on an invalid date; date_add(false, ...) is a TypeError.
+        if ($result === false) {
+            return '';
+        }
         date_add($result, date_interval_create_from_date_string($interval));
         return date_format($result, $format);
     }
@@ -1334,7 +1273,7 @@ class Episciences_Tools
             $fileExp = $translator->translate('Fichier');
         } catch (Zend_Exception $e) {
             $fileExp = 'Fichier';
-            trigger_error('Expression "%s" was not translated', $fileExp . ': ' . $e->getMessage());
+            trigger_error(sprintf('Expression "%s" was not translated: %s', $fileExp, $e->getMessage()));
         }
 
         $paperId = (string)$paper->getPaperid();
@@ -2377,10 +2316,10 @@ class Episciences_Tools
         $options = [
             'http' => [
                 'method' => 'GET',
-                'timeout' => $timeout // timeout en secondes
-            ],
-            'header' => [
-                'User-Agent' => EPISCIENCES_USER_AGENT
+                'timeout' => $timeout, // timeout en secondes
+                // The header must live under 'http' and be a header line string,
+                // otherwise the User-Agent was never sent.
+                'header' => 'User-Agent: ' . EPISCIENCES_USER_AGENT
             ]
         ];
 
@@ -2417,9 +2356,15 @@ class Episciences_Tools
 
         }
 
+        $warning = null;
+        set_error_handler(static function(int $errno, string $errstr) use (&$warning): bool {
+            $warning = $errstr;
+            return true;
+        });
         $dateInterval = DateInterval::createFromDateString($interval);
+        restore_error_handler();
 
-        if ($dateInterval === false) {
+        if ($dateInterval === false || $warning !== null) {
             throw new \InvalidArgumentException("Invalid interval format: {$interval}");
         }
 

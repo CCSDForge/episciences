@@ -25,7 +25,7 @@
 			?>
 	
 			<?php // Titre de l'article ******************************** ?>
-			<h3><a href="/<?php echo $this->escape($doc['docid']); ?>"><?php echo $title ?></a></h3>
+			<h3><a href="<?php echo PREFIX_URL . $this->escape($doc['docid']); ?>"><?php echo $title ?></a></h3>
 	
 			<?php // Noms des auteurs *********************************** ?>
 			<?php if ($doc['author_fullname_s']) : ?>

@@ -131,6 +131,10 @@ class Episciences_Paper_Citations_ViewFormatter
                     return '';
                 }
                 $safeHref = htmlspecialchars($metadata, ENT_QUOTES, 'UTF-8');
+                if (!self::isAllowedUrl($metadata)) {
+                    // Unsupported scheme: render as plain text rather than a clickable link.
+                    return '<i class=\'fas fa-lock-open\'></i> ' . $safeHref;
+                }
                 return '<i class=\'fas fa-lock-open\'></i>'
                     . ' <a rel="noopener" target="_blank" href="' . $safeHref . '">'
                     . $safeHref . '</a>';
@@ -138,6 +142,16 @@ class Episciences_Paper_Citations_ViewFormatter
             default:
                 return htmlspecialchars($metadata, ENT_QUOTES, 'UTF-8');
         }
+    }
+
+    /**
+     * Whether a URL uses a scheme allowed for rendering as a clickable link.
+     * Only http(s) and mailto are permitted; other schemes are rendered as plain text.
+     */
+    private static function isAllowedUrl(string $url): bool
+    {
+        $scheme = strtolower((string) parse_url(trim($url), PHP_URL_SCHEME));
+        return in_array($scheme, ['http', 'https', 'mailto'], true);
     }
 
     /**

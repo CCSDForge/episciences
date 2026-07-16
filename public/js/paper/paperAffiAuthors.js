@@ -34,6 +34,7 @@ class PaperAffiAuthorsManager {
         }
 
         this.attachEventListeners();
+        this.attachAffiliationBadgeHandlers();
     }
 
     /**
@@ -47,6 +48,64 @@ class PaperAffiAuthorsManager {
         if (this.form) {
             this.form.addEventListener('submit', e => this.handleFormSubmit(e));
         }
+    }
+
+    /**
+     * Wires up the edit/delete buttons rendered on each existing affiliation
+     * badge. The server markup relies on inline onclick attributes and an
+     * inline <script> block (legacy Ccsd_Form multi-text widget), but the
+     * response is injected via innerHTML and passed through DOMPurify, which
+     * strips both <script> tags and on* attributes. Delegating the click
+     * handler from the (stable) container lets it survive innerHTML swaps.
+     */
+    attachAffiliationBadgeHandlers() {
+        if (!this.affiBody || this.affiBody.dataset.badgeHandlersAttached) {
+            return;
+        }
+        this.affiBody.dataset.badgeHandlersAttached = 'true';
+
+        this.affiBody.addEventListener('click', event => {
+            const button = event.target.closest('button');
+            if (!button || !this.affiBody.contains(button)) {
+                return;
+            }
+
+            if (button.querySelector('.glyphicon-trash')) {
+                event.preventDefault();
+                this.removeAffiliationBadge(button);
+            } else if (button.querySelector('.glyphicon-pencil')) {
+                event.preventDefault();
+                this.editAffiliationBadge(button);
+            }
+        });
+    }
+
+    /**
+     * Removes an existing affiliation badge from the DOM
+     * @param {HTMLButtonElement} deleteButton - The clicked delete button
+     */
+    removeAffiliationBadge(deleteButton) {
+        deleteButton.closest('.input-group')?.remove();
+    }
+
+    /**
+     * Sends an existing affiliation badge's value back to the free-text
+     * input for editing, then removes the badge
+     * @param {HTMLButtonElement} editButton - The clicked edit button
+     */
+    editAffiliationBadge(editButton) {
+        const inputGroup = editButton.closest('.input-group');
+        const hiddenInput = inputGroup?.querySelector('input[type="hidden"]');
+        const freeTextInput = document.getElementById('affiliations');
+
+        if (!hiddenInput || !freeTextInput) {
+            return;
+        }
+
+        freeTextInput.value = hiddenInput.value;
+        inputGroup.remove();
+        freeTextInput.focus();
+        freeTextInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     /**
@@ -111,8 +170,7 @@ class PaperAffiAuthorsManager {
 
         if (this.affiBody) {
             this.affiBody.innerHTML = '';
-            // Insert HTML and execute any scripts it contains
-            this.insertHTMLWithScripts(this.affiBody, html);
+            this.insertHtml(this.affiBody, html);
         }
 
         // Initialize affiliations autocomplete
@@ -120,34 +178,20 @@ class PaperAffiAuthorsManager {
     }
 
     /**
-     * Inserts HTML content and executes any script tags within it
-     * innerHTML doesn't execute scripts for security reasons, so we need to do it manually
+     * Renders returned markup into the container.
+     * The markup is passed through the shared sanitizer when available; any
+     * behaviour (autocomplete setup) is wired separately via
+     * loadAffiliationsScript(), so embedded <script> tags are not needed.
      * @param {HTMLElement} container - Container element
-     * @param {string} html - HTML content with potential script tags
+     * @param {string} html - HTML content
      */
-    insertHTMLWithScripts(container, html) {
-        // Create a temporary container
-        const temp = document.createElement('div');
-        temp.innerHTML = html;
-
-        // Extract and remove script tags
-        const scripts = temp.querySelectorAll('script');
-        const scriptContents = [];
-
-        scripts.forEach(script => {
-            scriptContents.push(script.textContent);
-            script.remove();
-        });
-
-        // Insert the HTML without scripts
-        container.innerHTML = temp.innerHTML;
-
-        // Execute each script
-        scriptContents.forEach(scriptContent => {
-            const script = document.createElement('script');
-            script.textContent = scriptContent;
-            document.head.appendChild(script);
-        });
+    insertHtml(container, html) {
+        if (typeof sanitizeHTML === 'function') {
+            container.innerHTML = sanitizeHTML(html);
+            return;
+        }
+        // Fallback when the sanitizer is unavailable.
+        container.innerHTML = html;
     }
 
     /**

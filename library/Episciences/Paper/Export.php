@@ -805,6 +805,7 @@ class Export
         }
 
         $vol = $current['volume'];
+        $csl['volume'] = null;
         if ($vol !== null) {
             $csl['volume'] = self::selectTitle($vol['titles'] ?? []);
         }
@@ -816,6 +817,7 @@ class Export
         }
 
         $sect = $current['section'];
+        $csl['issue'] = null;
         if ($sect !== null) {
             $csl['issue'] = self::selectTitle($sect['titles'] ?? []);
         }

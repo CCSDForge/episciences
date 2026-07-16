@@ -19,6 +19,10 @@ class VolumeController extends Episciences_Controller_Action
         $review->loadSettings();
         $this->view->review = $review;
         $volumes = $review->getVolumes();
+        if (!empty($volumes)) {
+            Episciences_VolumesManager::loadSettingsForVolumes($volumes);
+            Episciences_VolumesManager::loadEditorsForVolumes($volumes);
+        }
         $this->view->volumes = $volumes;
     }
 
@@ -231,6 +235,13 @@ class VolumeController extends Episciences_Controller_Action
     {
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
+
+        // Volume management is reserved to editorial staff (secretary / admin).
+        if (!Episciences_Auth::isSecretary()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
         $upload = new Zend_File_Transfer_Adapter_Http();
         $file = $upload->getFileInfo();
         $response = ['file' => $file[0]];
@@ -512,21 +523,18 @@ class VolumeController extends Episciences_Controller_Action
 
         $volume->loadMetadatas();
 
+        $dateString = '';
         try {
             $dateString =  $volume->getEarliestPublicationDateFromVolume();
         } catch (Exception $exception) {
             trigger_error($exception->getMessage(), E_USER_WARNING);
         }
 
-        $dateObject = DateTime::createFromFormat('d/m/Y', $dateString);
-
-        // Check if the date object was created successfully
-        if ($dateObject) {
-            // Return the date in the desired format Y-m-d
-            $publicationDate =  $dateObject->format('Y');
-        } else {
-            $publicationDate =  date('Y');
-        }
+        // getEarliestPublicationDateFromVolume() returns a SQL date (Y-m-d[ H:i:s]),
+        // not d/m/Y: parsing it with the wrong format always failed and silently fell
+        // back to the current year, so the Crossref deposit carried a wrong publication year.
+        $timestamp = $dateString ? strtotime($dateString) : false;
+        $publicationDate = $timestamp ? date('Y', $timestamp) : date('Y');
 
         $journal = Episciences_ReviewsManager::findByRvcode(RVCODE);
 

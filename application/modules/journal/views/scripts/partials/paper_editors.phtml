@@ -30,7 +30,7 @@ $alertMsg = "Vous ne souhaitez plus gérer cet article, sa gestion vous sera bie
 
 <?php if ($isAssignedToPaper && $this->isMonitoringRefused): ?>
     <div class="alert alert-warning" style="margin-top: 20px">
-        <strong><?= $this->translate($alertMsg) ?></strong><br/>
+        <strong><?= $this->translate($alertMsg); ?></strong><br/>
     </div>
 <?php endif; ?>
 
@@ -45,9 +45,10 @@ $alertMsg = "Vous ne souhaitez plus gérer cet article, sa gestion vous sera bie
                     <span data-toggle="tooltip"
                           class="fa-regular fa-address-card"
                           style="margin: 0.2rem"
-                          title="<?= $this->translate("Voir le profil") ?>">
+                          title="<?php echo $this->translate("Voir le profil") ?>">
                     </span>
                 </a>
+
                 <?php if ($editor->getUid() !== Episciences_Auth::getUid()) : ?>
                     <a class="modal-opener btn btn-default"
                        href="<?= $this->url(['controller' => 'administratemail', 'action' => 'send', 'recipient' => $editor->getUid(), 'paper' => $paper->getDocid()]) ?>">
@@ -63,7 +64,7 @@ $alertMsg = "Vous ne souhaitez plus gérer cet article, sa gestion vous sera bie
                     <a class="btn btn-default" href="<?= $this->url(['controller' => 'user', 'action' => 'su', 'uid' => $editor->getUid()]) ?>">
                         <span data-toggle="tooltip"
                               style="margin: 0.2rem"
-                              title="<?= $this->translate("Se connecter avec ce compte.") ?>"
+                              title="<?php echo $this->translate("Se connecter avec ce compte."); ?>"
                               class="fas fa-user-secret">
 
                         </span>
@@ -72,8 +73,8 @@ $alertMsg = "Vous ne souhaitez plus gérer cet article, sa gestion vous sera bie
 
                 <img src="<?= PREFIX_URL ?>user/photo/name/<?= urlencode($this->escape($editor->getScreenName())) ?>/uid/<?= $editor->getUid() ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?= Episciences_Auth::getPhotoVersion() ?>"
                      class="user-photo-small" alt="avatar">
+                <span style="margin-left: 0.5em;"><strong><?php echo $this->escape($editor->getScreenName()); ?></strong></span>
 
-                <span style="margin-left: 0.5em;"><strong><?= $editor->getScreenName() ?></strong></span>
 
                 <?php
                 $sections = $editor->getAssignedSections();
@@ -90,23 +91,23 @@ $alertMsg = "Vous ne souhaitez plus gérer cet article, sa gestion vous sera bie
                 }
                 ?>
                 <?php if ($msg) : ?><span class="lightgrey text-info" style="margin-left: 5px;">
-                    (<?= $msg ?>)</span><?php endif; ?>
+                    (<?= $msg; ?>)</span><?php endif; ?>
             </div>
         <?php endforeach; ?>
     <?php else: ?>
         <p>
-            <?= $this->translate('Aucun rédacteur pour le moment') . '.' ?>
+            <?= $this->translate('Aucun rédacteur pour le moment') . '.'; ?>
         </p>
     <?php endif; // endif(count($editors)) ?>
 
     <?php if ($paper->getEditor(Episciences_Auth::getUid()) && $paper->isEditable()) : ?>
         <button id="refused_monitoring_button-<?= $loggedUid; ?>" data-toggle="tooltip" data-placement="right"
                 title="<?= $this->translate($title); ?>"
-                class="btn btn-default btn-sm popover-link <?= $disabled ?>" role="button" <?= $ariaDisabled ?>
-                onclick="getRefusedMonitoringForm(<?= $paper->getDocid() ?>, <?= $loggedUid ?>)"
+                class="btn btn-default btn-sm popover-link <?= $disabled; ?>" role="button" <?= $ariaDisabled; ?>
+                onclick="getRefusedMonitoringForm(<?= $paper->getDocid(); ?>, <?= $loggedUid; ?>)"
         >
             <span class="glyphicon glyphicon-log-out"></span>
-            <?= $this->translate('Je ne souhaite plus gérer cet article') ?>
+            <?= $this->translate('Je ne souhaite plus gérer cet article'); ?>
         </button>
     <?php endif; ?>
 

@@ -86,3 +86,4 @@ assets/node_modules/
 /scripts/checkcasusers.php
 /scripts/checkDoi.php
 /build/
+/composer

@@ -46,6 +46,11 @@ class Episciences_Review
     // git #155
     public const SETTING_CAN_RESUBMIT_REFUSED_PAPER = 'canResubmitRefusedPaper';
     public const SETTING_ARXIV_PAPER_PASSWORD = 'canSharePaperPassword';
+    // git #922
+    public const SETTING_COVER_LETTER_REQUIREMENT = 'coverLetterRequirement';
+    public const COVER_LETTER_REQUIREMENT_DISABLED = 0;
+    public const COVER_LETTER_REQUIREMENT_OPTIONAL = 1;
+    public const COVER_LETTER_REQUIREMENT_REQUIRED = 2;
 
     //const SETTING_EDITORS_CAN_MAKE_DECISIONS = 'editorsCanMakeDecisions';
     public const SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'editorsCanAbandonPublicationProcess';
@@ -128,6 +133,9 @@ class Episciences_Review
 
     public const SETTING_JOURNAL_PUBLISHER = 'journalPublisher';
     public const SETTING_JOURNAL_PUBLISHER_LOC = 'journalPublisherLoc';
+    public const SETTING_JOURNAL_DESCRIPTION = 'journalDescription';
+    public const SETTING_JOURNAL_KEYWORDS = 'journalKeywords';
+    public const SETTING_JOURNAL_CREATION_YEAR = 'journalCreationYear';
     #git 303
     public const DEFAULT_REVISION_DEADLINE_MAX = '12 month';
 
@@ -156,6 +164,7 @@ class Episciences_Review
     protected $_jsonSettings = []; // Noms des paramètres autorisés
     protected $_settingsKeys = []; // Paramètres de la revue
     protected $_settings = [];
+    protected bool $_settingsLoaded = false;
     protected $_issn = null;
     protected $_repositories = [];
     /**
@@ -228,6 +237,7 @@ class Episciences_Review
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
             self::SETTING_ARXIV_PAPER_PASSWORD,
+            self::SETTING_COVER_LETTER_REQUIREMENT,
             self::SETTING_CONTACT_ERROR_MAIL,
             self::SETTING_DISPLAY_STATISTICS,
             self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
@@ -235,6 +245,9 @@ class Episciences_Review
             self::SETTING_START_STATS_AFTER_DATE,
             self::SETTING_JOURNAL_PUBLISHER,
             self::SETTING_JOURNAL_PUBLISHER_LOC,
+            self::SETTING_JOURNAL_DESCRIPTION,
+            self::SETTING_JOURNAL_KEYWORDS,
+            self::SETTING_JOURNAL_CREATION_YEAR,
             self::SETTING_DISPLAY_EMPTY_VOLUMES,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
             self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE,
@@ -609,26 +622,63 @@ class Episciences_Review
      */
     public function getSetting($setting)
     {
-        if (count($this->_settings) === 0) {
+        if (!$this->_settingsLoaded) {
             $this->loadSettings();
         }
         return Ccsd_Tools::ifsetor($this->_settings[$setting], false);
     }
 
     /**
+     * Get the cover letter requirement setting (see COVER_LETTER_REQUIREMENT_* constants).
+     * Reviews created before this setting existed have no stored value: default to
+     * COVER_LETTER_REQUIREMENT_OPTIONAL so the cover letter file field keeps being
+     * displayed, matching the behavior that existed for every journal prior to git #922.
+     */
+    public function getCoverLetterRequirement(): int
+    {
+        if (!$this->_settingsLoaded) {
+            $this->loadSettings();
+        }
+
+        if (!array_key_exists(self::SETTING_COVER_LETTER_REQUIREMENT, $this->_settings)) {
+            return self::COVER_LETTER_REQUIREMENT_OPTIONAL;
+        }
+
+        return (int)$this->_settings[self::SETTING_COVER_LETTER_REQUIREMENT];
+    }
+
+    /**
      * load review settings from database
      */
-    public function loadSettings(): void
+    public function loadSettings(bool $forceReload = false): void
     {
-        // review configuration
-        $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from(T_REVIEW_SETTINGS)->where('RVID = ' . $this->_rvid);
+        if ($this->_settingsLoaded && !$forceReload) {
+            return;
+        }
 
+        if ($forceReload) {
+            $this->_settings = [];
+        }
+
+        // review configuration
+        $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from(T_REVIEW_SETTINGS)->where('RVID = ?', $this->_rvid);
+
+        $rows = Zend_Db_Table_Abstract::getDefaultAdapter()->fetchAll($select);
+        $this->applySettingsFromRows($rows);
+    }
+
+    /**
+     * @param array $rows Array of rows with 'SETTING' and 'VALUE' keys
+     * @return void
+     */
+    public function applySettingsFromRows(array $rows): void
+    {
         $journalDoiSettings = [];
-        foreach (Zend_Db_Table_Abstract::getDefaultAdapter()->fetchAll($select) as $row) {
-            if (in_array($row['SETTING'], $this->_jsonSettings, false)) {
+        foreach ($rows as $row) {
+            if (in_array($row['SETTING'], $this->_jsonSettings, true)) {
                 $value = json_decode($row['VALUE'], true);
                 $this->setSetting($row['SETTING'], $value);
-            } elseif (in_array($row['SETTING'], Episciences_Review_DoiSettings::getDoiSettings(), false)) {
+            } elseif (in_array($row['SETTING'], Episciences_Review_DoiSettings::getDoiSettings(), true)) {
                 $journalDoiSettings[$row['SETTING']] = $row['VALUE'];
             } else {
                 $this->setSetting($row['SETTING'], $row['VALUE']);
@@ -638,6 +688,7 @@ class Episciences_Review
 
         $doiSettings = new Episciences_Review_DoiSettings($journalDoiSettings);
         $this->setDoiSettings($doiSettings);
+        $this->_settingsLoaded = true;
 
     }
 
@@ -1019,6 +1070,30 @@ class Episciences_Review
             ]
         );
 
+        $form->addElement('textarea', self::SETTING_JOURNAL_DESCRIPTION, [
+                'label' => 'Description de la revue',
+                'description' => 'Courte description (utilisée dans les flux OAI-PMH)',
+                'rows' => 4,
+                'validators' => [new Zend_Validate_StringLength(['max' => 2000])]
+            ]
+        );
+
+        $form->addElement('text', self::SETTING_JOURNAL_KEYWORDS, [
+                'label' => 'Mots-clés',
+                'description' => 'Séparés par des points-virgules (ex. : mathématiques ; physique)',
+                'validators' => [new Zend_Validate_StringLength(['max' => 1000])]
+            ]
+        );
+
+        $form->addElement('text', self::SETTING_JOURNAL_CREATION_YEAR, [
+                'label' => 'Année de création',
+                'description' => 'Année de création de la revue (format : AAAA)',
+                'validators' => [
+                    new Zend_Validate_Digits(),
+                    new Zend_Validate_StringLength(['min' => 4, 'max' => 4]),
+                ],
+            ]
+        );
 
         $form->getElement(self::SETTING_ISSN)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_ISSN_PRINT)->getDecorator('label')->setOption('class', 'col-md-2');
@@ -1029,9 +1104,12 @@ class Episciences_Review
         $form->getElement(self::SETTING_JOURNAL_NOTICE)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_JOURNAL_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_CONTACT_TECH_SUPPORT_EMAIL)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_JOURNAL_DESCRIPTION)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_JOURNAL_KEYWORDS)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_JOURNAL_CREATION_YEAR)->getDecorator('label')->setOption('class', 'col-md-2');
 
         // display group: global settings
-        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
+        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL, self::SETTING_JOURNAL_DESCRIPTION, self::SETTING_JOURNAL_KEYWORDS, self::SETTING_JOURNAL_CREATION_YEAR], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
         $form->getDisplayGroup('global')->removeDecorator('DtDdWrapper');
 
         // publication settings **********************************************
@@ -1077,6 +1155,7 @@ class Episciences_Review
             self::SETTING_REPOSITORIES,
             self::SETTING_CAN_PICK_SECTION,
             self::SETTING_CAN_PICK_EDITOR,
+            self::SETTING_COVER_LETTER_REQUIREMENT,
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
             self::SETTING_CAN_SUGGEST_REVIEWERS,
             self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS,
@@ -1299,6 +1378,20 @@ class Episciences_Review
 
             ]
         );
+
+        // Cover letter requirement (controls only the file, comment is always optional)
+        $form->addElement('select', self::SETTING_COVER_LETTER_REQUIREMENT, [
+                'label' => "Lettre d'accompagnement",
+                'value' => self::COVER_LETTER_REQUIREMENT_OPTIONAL,
+                'multioptions' => [
+                    self::COVER_LETTER_REQUIREMENT_DISABLED => 'Désactivée',
+                    self::COVER_LETTER_REQUIREMENT_OPTIONAL => 'Facultative',
+                    self::COVER_LETTER_REQUIREMENT_REQUIRED => 'Requise',
+                ],
+            ]
+        );
+
+        $form->getElement(self::SETTING_COVER_LETTER_REQUIREMENT)->getDecorator('label')->setOption('class', 'col-md-2');
 
         return $form;
 
@@ -1892,12 +1985,13 @@ class Episciences_Review
             self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS, self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
             self::SETTING_SYSTEM_IS_COI_ENABLED, self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED,
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION, self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
-            self::SETTING_ARXIV_PAPER_PASSWORD, self::SETTING_DISPLAY_STATISTICS, self::SETTING_CONTACT_ERROR_MAIL,
+            self::SETTING_ARXIV_PAPER_PASSWORD, self::SETTING_COVER_LETTER_REQUIREMENT,
+            self::SETTING_DISPLAY_STATISTICS, self::SETTING_CONTACT_ERROR_MAIL,
             self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
             self::SETTING_TO_REQUIRE_REVISION_DEADLINE, self::SETTING_START_STATS_AFTER_DATE,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, self::SETTING_DISPLAY_EMPTY_VOLUMES,
             self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE, self::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS,
-            self::SETTING_AUTHOR_EDITOR_COMMUNICATION, 
+            self::SETTING_AUTHOR_EDITOR_COMMUNICATION,
         ];
 
         foreach ($settings as $setting) {
@@ -1913,7 +2007,12 @@ class Episciences_Review
         ];
 
         foreach ($deadlines as $key => $unitKey) {
-            $allSettings[$key] = $this->getSetting($key) . ' ' . $this->getSetting($unitKey);
+            // Only combine value and unit when the deadline value is set, otherwise store
+            // '' rather than ' ' or ' weeks', which would break strtotime() downstream.
+            $value = trim((string)$this->getSetting($key));
+            $allSettings[$key] = ($value === '')
+                ? ''
+                : $value . ' ' . trim((string)$this->getSetting($unitKey));
         }
 
         // Publisher information
@@ -1925,6 +2024,11 @@ class Episciences_Review
             return false;
         }
 
+        // OAI-PMH metadata — plain text only
+        $allSettings[self::SETTING_JOURNAL_DESCRIPTION] = trim(strip_tags((string)$this->getSetting(self::SETTING_JOURNAL_DESCRIPTION)));
+        $allSettings[self::SETTING_JOURNAL_KEYWORDS] = trim(strip_tags((string)$this->getSetting(self::SETTING_JOURNAL_KEYWORDS)));
+        $allSettings[self::SETTING_JOURNAL_CREATION_YEAR] = trim((string)$this->getSetting(self::SETTING_JOURNAL_CREATION_YEAR));
+
         // DOI settings
 
         $doiSettings = $this->getDoiSettings();
@@ -1935,18 +2039,21 @@ class Episciences_Review
         // Enregistrement des paramètres
         foreach ($allSettings as $setting => $value) {
             $setting = $this->_db->quote($setting);
-            if (is_array($value) && !empty($value)) {
+            // Encode every array, including an empty one, so [] is stored as '[]' rather
+            // than quoted to '' (which json_decode()s back to null on reload).
+            if (is_array($value)) {
                 $value = Zend_Json::encode($value);
             }
             $value = $this->_db->quote($value);
-            $values[] = '(' . $this->_rvid . ',' . $setting . ',' . $value . ')';
+            $values[] = '(' . (int)$this->_rvid . ',' . $setting . ',' . $value . ')';
         }
 
+        // MySQL 8.0.20+: VALUES() in ON DUPLICATE KEY UPDATE is deprecated; use a row alias.
         $sql = 'INSERT INTO ';
         $sql .= T_REVIEW_SETTINGS;
         $sql .= ' (RVID, SETTING, VALUE) VALUES ';
         $sql .= implode(',', $values);
-        $sql .= ' ON DUPLICATE KEY UPDATE VALUE = VALUES(VALUE)';
+        $sql .= ' AS new_row ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE';
 
         if (!$this->_db->getConnection()?->query($sql)) {
             return false;

@@ -362,11 +362,12 @@ final class Episciences_PapersManagerTest extends TestCase
     }
 
     /**
-     * getByDocIds() must not include revision deadline or conflict data since
+     * getByDocIds() must not eagerly load revision deadline or conflict data since
      * those are editorial-workflow artefacts not needed for metadata export.
      *
-     * We verify that the returned Paper objects expose a null/empty conflicts
-     * collection (getConflicts() returns [] by default, not a DB-populated set).
+     * We read the private _conflicts property directly instead of calling
+     * getConflicts(), which lazily loads conflicts from the DB on first access and
+     * would therefore reflect the test DB content rather than what getByDocIds built.
      */
     public function testGetByDocIdsOmitsWorkflowData(): void
     {
@@ -384,8 +385,16 @@ final class Episciences_PapersManagerTest extends TestCase
         $result    = Episciences_PapersManager::getByDocIds([(int) $reference->getDocid()]);
         $paper     = reset($result);
 
-        // Conflicts default to an empty array when not explicitly loaded.
-        self::assertIsArray($paper->getConflicts());
-        self::assertEmpty($paper->getConflicts(), 'getByDocIds() must not load conflict data');
+        self::assertInstanceOf(Episciences_Paper::class, $paper);
+
+        // Read the raw property without triggering the lazy DB load in getConflicts().
+        $conflictsProperty = new \ReflectionProperty(Episciences_Paper::class, '_conflicts');
+        $conflictsProperty->setAccessible(true);
+
+        self::assertSame(
+            [],
+            $conflictsProperty->getValue($paper),
+            'getByDocIds() must not eagerly populate conflict data'
+        );
     }
 }
