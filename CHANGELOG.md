@@ -15,9 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performances
 -->
 
-## Unreleased
+
+## v1.0.56 - 2026-07-16
 
 ### Added
+- [CLOCKSS] Include the CLOCKSS Permissions Statement to allow archiving and ingestion of open access Archival Units.
+- [Bibliographic References] Display open-access links (retrieved e.g. from OpenAlex) when available and distinct from the DOI link.
+- [OpenAlex] Support configuring and appending an `api_key` query parameter to OpenAlex API requests when the `OPENALEX_APIKEY` constant is defined.
 - For submissions containing multiple PDF files, it is now possible to designate the main file. This is the file that will appear in previews on public websites.
 
 - Migration of captcha system (hCaptcha/reCAPTCHA) to a self-hosted, privacy-friendly solution: **ALTCHA** (utilizing the Argon2id PoW algorithm and bundled via Webpack).
