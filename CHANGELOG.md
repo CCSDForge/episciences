@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Fixed
+- Sorting by invitation status does not reflect the actual situation.
+- [#1009](https://github.com/CCSDForge/episciences/pull/1009): remove redundant account linking confirmation when emails match
+- Avoid suggesting that an invitation be linked to another account if it has already been accepted, has expired or has been cancelled.
 
 ## v1.0.56 - 2026-07-16
 
