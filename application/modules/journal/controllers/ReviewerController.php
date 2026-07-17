@@ -36,6 +36,9 @@ class ReviewerController extends PaperDefaultController
 
         $doRating = true;
 
+        // fetch reviewer answer (if there is one)
+        $invitation->loadAnswer();
+
         // fetch assignment
         $assignmentId = $invitation->getAid();
         $assignment = Episciences_User_AssignmentsManager::findById($assignmentId);
@@ -93,10 +96,6 @@ class ReviewerController extends PaperDefaultController
 
             return;
         }
-
-
-        // fetch reviewer answer (if there is one)
-        $invitation->loadAnswer();
 
         // INVITATION
         $this->view->invitation = $invitation;
@@ -461,6 +460,10 @@ class ReviewerController extends PaperDefaultController
 
     private function checkAndProcessLinkedInvitation(Zend_Controller_Request_Http $request, Episciences_User_Invitation $invitation, Episciences_User_Assignment $assignment, bool &$doRating): array
     {
+        if ($invitation->hasExpired() || !$invitation->isAnswered() || !$invitation->isCancelled()) {
+            return [];
+        }
+
         $doRating = false;
 
         if ($assignment->getFrom_uid()) { // linked to
@@ -493,8 +496,8 @@ class ReviewerController extends PaperDefaultController
             $session->linkedInvitationIds[$invitationId] = ['isPreLinked' => true];
 
             return [
-                    'isPreLinked' => true,
-                    'decision' => null,
+                'isPreLinked' => true,
+                'decision' => null,
             ];
         }
 
@@ -502,8 +505,8 @@ class ReviewerController extends PaperDefaultController
         $decision = $this->processLinkDecision($request, $assignment, $invitationId, $session);
 
         return [
-                'isPreLinked' => false,
-                'decision' => $decision,
+            'isPreLinked' => false,
+            'decision' => $decision,
         ];
 
     }
