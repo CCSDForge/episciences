@@ -9,7 +9,10 @@ use PHPUnit\Framework\TestCase;
 /**
  * Unit tests for Episciences_User_Invitation
  *
- * Tests pure logic (setters/getters, hasExpired, isAnswered, loadAnswer early return).
+ * Tests pure logic (setters/getters, hasExpired, isAnswered, loadAnswer early return)
+ * plus isCancelled(), which touches the DB but is exercised here only through the
+ * AID = 0 fallback path (no fixture uses AID 0, so the lookup reliably misses and
+ * isCancelled() falls back to comparing the invitation's own status).
  * save() requires DB and is not tested here.
  *
  * @covers Episciences_User_Invitation
@@ -74,6 +77,12 @@ class Episciences_User_InvitationTest extends TestCase
     public function testSetAndGetId(): void
     {
         $this->invitation->setId(42);
+        $this->assertSame(42, $this->invitation->getId());
+    }
+
+    public function testSetIdCastsToInt(): void
+    {
+        $this->invitation->setId('42');
         $this->assertSame(42, $this->invitation->getId());
     }
 
@@ -155,6 +164,32 @@ class Episciences_User_InvitationTest extends TestCase
         $answer = new Episciences_User_InvitationAnswer();
         $this->invitation->setAnswer($answer);
         $this->assertTrue($this->invitation->isAnswered());
+    }
+
+    // -------------------------------------------------------------------------
+    // isCancelled
+    //
+    // getAid() defaults to 0 (no fixture uses AID = 0), so
+    // Episciences_User_InvitationsManager::find(['AID' => 0]) reliably returns
+    // false and isCancelled() falls back to comparing the invitation's own
+    // status, without requiring DB fixtures.
+    // -------------------------------------------------------------------------
+
+    public function testIsCancelledReturnsFalseWhenStatusIsNotCancelled(): void
+    {
+        $this->invitation->setStatus(Episciences_User_Invitation::STATUS_PENDING);
+        $this->assertFalse($this->invitation->isCancelled());
+    }
+
+    public function testIsCancelledReturnsTrueWhenStatusIsCancelled(): void
+    {
+        $this->invitation->setStatus(Episciences_User_Invitation::STATUS_CANCELLED);
+        $this->assertTrue($this->invitation->isCancelled());
+    }
+
+    public function testIsCancelledReturnsFalseWithNoStatusSet(): void
+    {
+        $this->assertFalse($this->invitation->isCancelled());
     }
 
     // -------------------------------------------------------------------------

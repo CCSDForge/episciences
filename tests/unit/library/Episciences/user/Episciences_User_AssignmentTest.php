@@ -2,14 +2,20 @@
 
 namespace unit\library\Episciences\user;
 
+use Episciences_TmpUsersManager;
+use Episciences_User;
 use Episciences_User_Assignment;
 use PHPUnit\Framework\TestCase;
+use TypeError;
 
 /**
  * Unit tests for Episciences_User_Assignment
  *
  * Tests pure logic (setters/getters, options constructor, constants).
  * The save() method requires a DB connection and is not tested here.
+ *
+ * resolveFromUser() is exercised with non-existent uids (0, PHP_INT_MAX-ish) so
+ * the DB lookups reliably miss without needing fixtures.
  *
  * @covers Episciences_User_Assignment
  */
@@ -252,5 +258,45 @@ class Episciences_User_AssignmentTest extends TestCase
     {
         $result = $this->assignment->setOptions(['status' => 'pending']);
         $this->assertInstanceOf(Episciences_User_Assignment::class, $result);
+    }
+
+    // -------------------------------------------------------------------------
+    // resolveFromUser() — introduced in PR #1109
+    // -------------------------------------------------------------------------
+
+    public function testResolveFromUserReturnsEpisciencesUserForNonTmpAssignment(): void
+    {
+        $this->assignment->setUid(0);
+        $this->assignment->setTmp_user(false);
+
+        $result = $this->assignment->resolveFromUser();
+
+        $this->assertInstanceOf(Episciences_User::class, $result);
+    }
+
+    /**
+     * Confirmed bug: resolveFromUser() declares a strict return type of
+     * `Episciences_User|Episciences_User_Tmp`, but for a tmp-user assignment it
+     * returns whatever Episciences_TmpUsersManager::findById() yields — and that
+     * method returns the scalar `false` (not an object) when the tmp user row is
+     * not found. PHP therefore raises a TypeError instead of letting the caller
+     * (ReviewerController::checkAndProcessLinkedInvitation()) handle a graceful
+     * "not found" case.
+     *
+     * This test documents the current (buggy) behaviour. It should be updated
+     * (or removed) once resolveFromUser() is changed to handle the "not found"
+     * case without violating its own return type.
+     */
+    public function testResolveFromUserThrowsTypeErrorWhenTmpUserIsNotFound(): void
+    {
+        // Sanity check: this uid must not exist as a tmp user in the test DB.
+        $this->assertFalse(Episciences_TmpUsersManager::findById(999999999));
+
+        $this->assignment->setUid(999999999);
+        $this->assignment->setTmp_user(true);
+
+        $this->expectException(TypeError::class);
+
+        $this->assignment->resolveFromUser();
     }
 }

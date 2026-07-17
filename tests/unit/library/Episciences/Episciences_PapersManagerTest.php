@@ -5,7 +5,9 @@ namespace unit\library\Episciences;
 use Episciences_Paper;
 use Episciences_PapersManager;
 use Episciences_User;
+use Episciences_User_Assignment;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 /**
  * Unit tests for Episciences_PapersManager static utility methods.
@@ -396,5 +398,177 @@ final class Episciences_PapersManagerTest extends TestCase
             $conflictsProperty->getValue($paper),
             'getByDocIds() must not eagerly populate conflict data'
         );
+    }
+
+    // -----------------------------------------------------------------------
+    // sortInvitations() / matchesStatusFilter() — PR #1109
+    //
+    // Both are pure array logic (no DB access), invoked here via reflection
+    // since they are private.
+    // -----------------------------------------------------------------------
+
+    /**
+     * @param string|array<int, string>|null $status
+     * @param array<int|string, array<int, array<string, mixed>>> $invitations
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function sortInvitations($status, array $invitations = []): array
+    {
+        $method = new ReflectionMethod(Episciences_PapersManager::class, 'sortInvitations');
+        $method->setAccessible(true);
+        return $method->invoke(null, $status, $invitations);
+    }
+
+    /**
+     * @param string|array<int, string>|null $status
+     */
+    private function matchesStatusFilter(string $effectiveStatus, $status): bool
+    {
+        $method = new ReflectionMethod(Episciences_PapersManager::class, 'matchesStatusFilter');
+        $method->setAccessible(true);
+        return $method->invoke(null, $effectiveStatus, $status);
+    }
+
+    public function testSortInvitationsBucketsAreInitialisedEvenWhenEmpty(): void
+    {
+        $result = $this->sortInvitations(null, []);
+
+        self::assertSame(
+            [
+                Episciences_User_Assignment::STATUS_ACTIVE    => [],
+                Episciences_User_Assignment::STATUS_PENDING   => [],
+                Episciences_User_Assignment::STATUS_INACTIVE  => [],
+                Episciences_User_Assignment::STATUS_EXPIRED   => [],
+                Episciences_User_Assignment::STATUS_CANCELLED => [],
+            ],
+            $result
+        );
+    }
+
+    /**
+     * Regression for the "sorting by invitation status does not reflect the
+     * actual situation" bug: previously only the FIRST invitation of each
+     * reviewer key was ever examined (array_shift()); any other invitation
+     * under the same key was silently dropped. All of them must now be kept.
+     */
+    public function testSortInvitationsKeepsEveryInvitationUnderTheSameReviewerKey(): void
+    {
+        $invitations = [
+            'reviewerA' => [
+                ['ASSIGNMENT_STATUS' => Episciences_User_Assignment::STATUS_ACTIVE, 'EXPIRATION_DATE' => '2099-12-31 23:59:59'],
+                ['ASSIGNMENT_STATUS' => Episciences_User_Assignment::STATUS_INACTIVE, 'EXPIRATION_DATE' => '2099-12-31 23:59:59'],
+            ],
+        ];
+
+        $result = $this->sortInvitations(null, $invitations);
+
+        self::assertCount(1, $result[Episciences_User_Assignment::STATUS_ACTIVE]);
+        self::assertCount(1, $result[Episciences_User_Assignment::STATUS_INACTIVE]);
+    }
+
+    public function testSortInvitationsMarksPastDeadlinePendingAsExpired(): void
+    {
+        $invitations = [
+            'reviewerA' => [
+                ['ASSIGNMENT_STATUS' => Episciences_User_Assignment::STATUS_PENDING, 'EXPIRATION_DATE' => '2000-01-01 00:00:00'],
+            ],
+        ];
+
+        $result = $this->sortInvitations(null, $invitations);
+
+        self::assertCount(1, $result[Episciences_User_Assignment::STATUS_EXPIRED]);
+        self::assertCount(0, $result[Episciences_User_Assignment::STATUS_PENDING]);
+    }
+
+    public function testSortInvitationsKeepsFutureDeadlinePendingAsPending(): void
+    {
+        $invitations = [
+            'reviewerA' => [
+                ['ASSIGNMENT_STATUS' => Episciences_User_Assignment::STATUS_PENDING, 'EXPIRATION_DATE' => '2099-12-31 23:59:59'],
+            ],
+        ];
+
+        $result = $this->sortInvitations(null, $invitations);
+
+        self::assertCount(1, $result[Episciences_User_Assignment::STATUS_PENDING]);
+        self::assertCount(0, $result[Episciences_User_Assignment::STATUS_EXPIRED]);
+    }
+
+    public function testSortInvitationsFiltersByScalarStatus(): void
+    {
+        $invitations = [
+            'reviewerA' => [
+                ['ASSIGNMENT_STATUS' => Episciences_User_Assignment::STATUS_ACTIVE, 'EXPIRATION_DATE' => '2099-12-31 23:59:59'],
+            ],
+            'reviewerB' => [
+                ['ASSIGNMENT_STATUS' => Episciences_User_Assignment::STATUS_INACTIVE, 'EXPIRATION_DATE' => '2099-12-31 23:59:59'],
+            ],
+        ];
+
+        $result = $this->sortInvitations(Episciences_User_Assignment::STATUS_ACTIVE, $invitations);
+
+        self::assertCount(1, $result[Episciences_User_Assignment::STATUS_ACTIVE]);
+        self::assertCount(0, $result[Episciences_User_Assignment::STATUS_INACTIVE]);
+    }
+
+    public function testSortInvitationsFiltersByArrayOfStatuses(): void
+    {
+        $invitations = [
+            'reviewerA' => [
+                ['ASSIGNMENT_STATUS' => Episciences_User_Assignment::STATUS_ACTIVE, 'EXPIRATION_DATE' => '2099-12-31 23:59:59'],
+            ],
+            'reviewerB' => [
+                ['ASSIGNMENT_STATUS' => Episciences_User_Assignment::STATUS_INACTIVE, 'EXPIRATION_DATE' => '2099-12-31 23:59:59'],
+            ],
+            'reviewerC' => [
+                ['ASSIGNMENT_STATUS' => Episciences_User_Assignment::STATUS_CANCELLED, 'EXPIRATION_DATE' => '2099-12-31 23:59:59'],
+            ],
+        ];
+
+        $result = $this->sortInvitations(
+            [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_INACTIVE],
+            $invitations
+        );
+
+        self::assertCount(1, $result[Episciences_User_Assignment::STATUS_ACTIVE]);
+        self::assertCount(1, $result[Episciences_User_Assignment::STATUS_INACTIVE]);
+        self::assertCount(0, $result[Episciences_User_Assignment::STATUS_CANCELLED]);
+    }
+
+    public function testMatchesStatusFilterWithNullStatusMatchesEverything(): void
+    {
+        self::assertTrue($this->matchesStatusFilter(Episciences_User_Assignment::STATUS_PENDING, null));
+    }
+
+    public function testMatchesStatusFilterWithScalarMatch(): void
+    {
+        self::assertTrue($this->matchesStatusFilter(
+            Episciences_User_Assignment::STATUS_PENDING,
+            Episciences_User_Assignment::STATUS_PENDING
+        ));
+    }
+
+    public function testMatchesStatusFilterWithScalarMismatch(): void
+    {
+        self::assertFalse($this->matchesStatusFilter(
+            Episciences_User_Assignment::STATUS_PENDING,
+            Episciences_User_Assignment::STATUS_ACTIVE
+        ));
+    }
+
+    public function testMatchesStatusFilterWithArrayMatch(): void
+    {
+        self::assertTrue($this->matchesStatusFilter(
+            Episciences_User_Assignment::STATUS_EXPIRED,
+            [Episciences_User_Assignment::STATUS_PENDING, Episciences_User_Assignment::STATUS_EXPIRED]
+        ));
+    }
+
+    public function testMatchesStatusFilterWithArrayMismatch(): void
+    {
+        self::assertFalse($this->matchesStatusFilter(
+            Episciences_User_Assignment::STATUS_CANCELLED,
+            [Episciences_User_Assignment::STATUS_PENDING, Episciences_User_Assignment::STATUS_EXPIRED]
+        ));
     }
 }
