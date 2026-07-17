@@ -206,7 +206,7 @@ class Episciences_User_Invitation
      */
     public function setId($_id)
     {
-        $this->_id = $_id;
+        $this->_id = (int)$_id;
     }
 
     /**
