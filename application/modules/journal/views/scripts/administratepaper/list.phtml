@@ -15,18 +15,17 @@ echo $form;
 ?>
 <hr/>
 <?php
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
-$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');
 $this->jQuery()->addJavascriptFile('/js/administratepaper/editor-availability.js');
 $this->jQuery()->addJavascriptFile('/js/administratepaper/editorsAndCopyEditors-assignment.js');
-$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+$this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
 $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker-" . Zend_Registry::get('lang') . ".js");
 $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker.js");
-$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
+$this->getHelper('webpackAssets')->queueStylesheet('jquery-ui-theme');
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
-$this->jQuery()->addStylesheet('https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.min.css');
-$this->jQuery()->addJavascriptFile('https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js');
+$this->getHelper('webpackAssets')->queueStylesheet('tom-select');
+$this->getHelper('webpackAssets')->queueScript('tom-select');
 ?>
 
 <table class="table table-bordered dataTable table-responsive-lg" id="papers" style="width: 100%;">

@@ -275,47 +275,19 @@ function defineSimpleConstants(): void
 function defineVendorJsLibraries(): void
 {
     $jsLibraries = [
-        'VENDOR_BOOTBOX' => 'https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.5.3/bootbox.min.js',
-        'VENDOR_BOOTSTRAP_COLORPICKER' => 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/js/bootstrap-colorpicker.min.js',
-        'VENDOR_BOOTSTRAP_JS' => 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/js/bootstrap.min.js',
-        'VENDOR_DATATABLES_BOOTSTRAP' => 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/dataTables.bootstrap.min.js',
-        'VENDOR_JQUERY' => 'https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js',
-        'VENDOR_JQUERY_DATATABLES' => 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js',
-        'VENDOR_JQUERY_FILE_UPLOAD' => 'https://cdnjs.cloudflare.com/ajax/libs/blueimp-file-upload/10.32.0/js/jquery.fileupload.min.js',
-        'VENDOR_JQUERY_NESTED_SORTABLE' => 'https://cdnjs.cloudflare.com/ajax/libs/nestedSortable/1.3.4/jquery.ui.nestedSortable.min.js',
-        'VENDOR_SORTABLE_JS' => 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.7/Sortable.min.js',
-        'VENDOR_JQUERY_UI' => 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js', // Do not upgrade
-        'VENDOR_JQUERY_URL_PARSER' => 'https://cdnjs.cloudflare.com/ajax/libs/jquery-url-parser/2.2.1/purl.min.js',
-        'VENDOR_MATHJAX' => 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML',
-        'VENDOR_TINYMCE' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
-        'VENDOR_TINYMCE_JQUERY' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
-        'VENDOR_CHART' => 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js',
-        'VENDOR_CHART_PLUGIN_DATALABELS' => 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/0.7.0/chartjs-plugin-datalabels.min.js',
+        // Self-hosted via webpack copyFiles() (see webpack.config.js), previously loaded from cdnjs.
+        // The font glyphs it renders with are self-hosted too (see VENDOR_MATHJAX_FONTS_PATH below) —
+        // just self-hosting this script isn't enough, since it fetches its default font from
+        // cdn.jsdelivr.net at runtime unless told otherwise. Its accessibility speech-generation Web
+        // Worker (on by default in v4, absent in v2) is disabled rather than self-hosted — see
+        // options.enableSpeech in layout.phtml.
+        'VENDOR_MATHJAX' => '/build/mathjax/tex-mml-chtml.js',
+        'VENDOR_MATHJAX_FONTS_PATH' => '/build/mathjax-fonts',
+        // Self-hosted via webpack copyFiles() (see webpack.config.js), previously loaded from cdnjs.
+        'VENDOR_TINYMCE' => '/build/tinymce/tinymce.min.js',
     ];
 
     foreach ($jsLibraries as $name => $url) {
-        safeDef($name, $url);
-    }
-}
-
-/**
- * Constants to include vendor CSS
- */
-function defineVendorCssLibraries(): void
-{
-    $cssLibraries = [
-        'VENDOR_BOOTSTRAP' => 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css',
-        'VENDOR_BOOTSTRAP_COLORPICKER_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.5.3/css/bootstrap-colorpicker.css',
-        'VENDOR_DATATABLES_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/dataTables.bootstrap.min.css',
-        'VENDOR_FONT_AWESOME' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/fontawesome.min.css',
-        'VENDOR_FONT_AWESOME_BRAND' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/brands.min.css',
-        'VENDOR_FONT_AWESOME_SOLID' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/solid.min.css',
-        'VENDOR_JQUERY_UI_THEME_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/flick/jquery-ui.min.css',
-        'VENDOR_CHART_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css',
-        'VENDOR_COOKIE_CONSENT_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.css',
-    ];
-
-    foreach ($cssLibraries as $name => $url) {
         safeDef($name, $url);
     }
 }
@@ -531,35 +503,8 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         // Vendor JavaScript Libraries
         // From defineVendorJsLibraries()
         // ========================================
-        define('VENDOR_BOOTBOX', '');
-        define('VENDOR_BOOTSTRAP_COLORPICKER', '');
-        define('VENDOR_BOOTSTRAP_JS', '');
-        define('VENDOR_DATATABLES_BOOTSTRAP', '');
-        define('VENDOR_JQUERY', '');
-        define('VENDOR_JQUERY_DATATABLES', '');
-        define('VENDOR_JQUERY_FILE_UPLOAD', '');
-        define('VENDOR_JQUERY_NESTED_SORTABLE', '');
-        define('VENDOR_SORTABLE_JS', '');
-        define('VENDOR_JQUERY_UI', '');
-        define('VENDOR_JQUERY_URL_PARSER', '');
         define('VENDOR_MATHJAX', '');
+        define('VENDOR_MATHJAX_FONTS_PATH', '');
         define('VENDOR_TINYMCE', '');
-        define('VENDOR_TINYMCE_JQUERY', '');
-        define('VENDOR_CHART', '');
-        define('VENDOR_CHART_PLUGIN_DATALABELS', '');
-
-        // ========================================
-        // Vendor CSS Libraries
-        // From defineVendorCssLibraries()
-        // ========================================
-        define('VENDOR_BOOTSTRAP', '');
-        define('VENDOR_BOOTSTRAP_COLORPICKER_CSS', '');
-        define('VENDOR_DATATABLES_CSS', '');
-        define('VENDOR_FONT_AWESOME', '');
-        define('VENDOR_FONT_AWESOME_BRAND', '');
-        define('VENDOR_FONT_AWESOME_SOLID', '');
-        define('VENDOR_JQUERY_UI_THEME_CSS', '');
-        define('VENDOR_CHART_CSS', '');
-        define('VENDOR_COOKIE_CONSENT_CSS', '');
     }
 }

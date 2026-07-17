@@ -777,7 +777,7 @@ class PaperController extends PaperDefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        $attachments = $request->getPost(Episciences_Mail_Send::ATTACHMENTS); // see js/library/es.fileupload.js
+        $attachments = $request->getPost(Episciences_Mail_Send::ATTACHMENTS); // see js/library/es.filepond.js
         $attachments = is_array($attachments) ? $attachments : [];
 
         $templateAuthorType = '';
@@ -795,7 +795,7 @@ class PaperController extends PaperDefaultController
         }
 
         if (!empty($attachments)) {
-            // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
+            // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.filepond.js)
             $attachments = Episciences_Tools::arrayFilterEmptyValues($attachments);
             $cAnswer->setFile(json_encode($attachments));
         }
@@ -1435,7 +1435,7 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         $post = $request->getPost();
 
-        $attachments = $post[Episciences_Mail_Send::ATTACHMENTS] ?? []; // see js/library/es.fileupload.js
+        $attachments = $post[Episciences_Mail_Send::ATTACHMENTS] ?? []; // see js/library/es.filepond.js
 
         // previous version detail
         $docId = $request->getQuery(self::DOC_ID_STR);
@@ -1473,7 +1473,7 @@ class PaperController extends PaperDefaultController
         $answerComment->setFilePath(REVIEW_FILES_PATH . $paperId . '/tmp/');
 
         if (!empty($attachments)) {
-            // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
+            // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.filepond.js)
             $attachments = Episciences_Tools::arrayFilterEmptyValues($attachments);
             $answerComment->setFile(json_encode($attachments));
         }

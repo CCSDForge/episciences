@@ -1,6 +1,7 @@
 <?php
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
-$this->jQuery()->addJavascriptFile('/js/library/es.fileupload.js');
+$this->getHelper('webpackAssets')->queueScript('filepond');
+$this->getHelper('webpackAssets')->queueStylesheet('filepond');
+$this->jQuery()->addJavascriptFile('/js/library/es.filepond.js');
 
 // Attached file description
 $description = Episciences_Tools::buildAttachedFilesDescription();
@@ -30,14 +31,11 @@ $suffix = (isset($attribsForm['id'])) ? '_' . $attribsForm['id'] : '';
 
     <div id="attachments-element<?= $suffix ?>" class="form-group row">
         <div class="col-md-9 col-md-offset-3" style="padding-left: 10px">
-            <div id="upload_widget<?= $suffix ?>" class="upload_widget" data-upload-container="test">
+            <div id="upload_widget<?= $suffix ?>" class="upload_widget"
+                 data-max-file-size="<?= MAX_FILE_SIZE ?: '' ?>"
+                 data-allowed-mime-types="<?= $this->escape(implode(',', ALLOWED_MIMES_TYPES)) ?>">
                 <span id = "help-block<?= $suffix ?>" class="help-block text-info"><?= $description ?></span>
-                <div id="upload_button<?= $suffix ?>" class="upload_button btn btn-default">
-                    <span class="glyphicon glyphicon-file"></span>
-                    <?= $this->translate('Fichiers joints') ?>
-                </div>
                 <input id="upload_input<?= $suffix ?>" class="upload_input" type="file" multiple/>
-                <div class="uploads_container"></div>
             </div>
         </div>
     </div>
@@ -58,7 +56,7 @@ $suffix = (isset($attribsForm['id'])) ? '_' . $attribsForm['id'] : '';
                 cache: true
             });
 
-            $.getScript('/js/library/es.fileupload.js?_=v<?= APPLICATION_VERSION ?>').fail(function (xhr, status, error) {
+            $.getScript('/js/library/es.filepond.js?_=v<?= APPLICATION_VERSION ?>').fail(function (xhr, status, error) {
                 console.log('loading failed:' + error);
             });
         }

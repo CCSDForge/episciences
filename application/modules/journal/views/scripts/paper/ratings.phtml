@@ -13,9 +13,8 @@ echo $form;
 <hr/>
 <?php //if ($this->papers) : ?>
 <?php
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
-$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
-$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+$this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');
+$this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
 ?>
 <table class="table table-bordered dataTable table-responsive-lg" id="papers" style="width: 100%;">
     <thead>

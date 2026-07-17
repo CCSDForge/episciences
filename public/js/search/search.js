@@ -1,8 +1,27 @@
-$(document).ready(function () {
-    // Activation des filtres sur les facettes
-    $('input[id$="-facet-input"]').each(function (i) {
-        $(this).fastLiveFilter($(this).next('ul'));
-    });
+document.addEventListener('DOMContentLoaded', function () {
+    // Activation des filtres sur les facettes (vanilla JS, remplace jquery.fastLiveFilter.js).
+    // La liste associée est retrouvée par nom de champ (id "<field>-facet-input" ->
+    // class "<field>-facet-list") plutôt que par position dans le DOM, l'input n'étant
+    // pas le frère immédiat du <ul> (il est suivi d'un <div class="facet-content">).
+    document
+        .querySelectorAll('input[id$="-facet-input"]')
+        .forEach(function (input) {
+            var fieldName = input.id.replace(/-facet-input$/, '');
+            var list = document.querySelector('.' + fieldName + '-facet-list');
+            if (!list) {
+                return;
+            }
+            var items = Array.prototype.slice.call(list.children);
+            input.addEventListener('input', function () {
+                var filter = input.value.toLowerCase();
+                items.forEach(function (item) {
+                    item.style.display =
+                        item.textContent.toLowerCase().indexOf(filter) >= 0
+                            ? ''
+                            : 'none';
+                });
+            });
+        });
 
     // Activation des tooltips
     $('a[data-toggle="tooltip"]').tooltip();
