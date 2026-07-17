@@ -836,8 +836,6 @@ class Episciences_PapersManager
         // fetch assignments (invitations don't have a docid, and are linked to an assignment)
         $select = self::getLatestInvitationByDocIdQuery($docId);
 
-        //$debugQuery = $select->__toString();
-
         $data = $db?->fetchAll($select);
 
         //reviewers array
@@ -4165,32 +4163,26 @@ class Episciences_PapersManager
         ];
 
         foreach ($invitations as $invitation_list) {
-            $invitation = array_shift($invitation_list);
+            foreach ($invitation_list as $invitation) {
 
-            //si l'invitation a expiré, on la place dans une catégorie à part
-            if (
-                $invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_PENDING &&
-                self::compareToCurrentTime($invitation['EXPIRATION_DATE'])
-            ) {
-                if (
-                    (!is_array($status) && $status !== Episciences_User_Assignment::STATUS_EXPIRED) ||
-                    (is_array($status) && !in_array(Episciences_User_Assignment::STATUS_EXPIRED, $status, true))
-                ) {
-                    //si on a passé des statuts en paramètre, et que 'expired' n'en fait pas partie, on le saute
+                $assignmentStatus = $invitation['ASSIGNMENT_STATUS'];
+
+                // If the invitation has expired, its status changes to "expired."
+                $effectiveStatus = (
+                        $assignmentStatus === Episciences_User_Assignment::STATUS_PENDING &&
+                        self::compareToCurrentTime($invitation['EXPIRATION_DATE'])
+                )
+                        ? Episciences_User_Assignment::STATUS_EXPIRED
+                        : $assignmentStatus;
+
+                // Filter by status: if statuses are passed as parameters
+                // and the current status is not among them, move on to the next one
+                if (!self::matchesStatusFilter($effectiveStatus, $status)) {
                     continue;
                 }
-                $result['expired'][] = $invitation;
-            } else {
-                if (
-                    (!is_array($status) && $status !== $invitation['ASSIGNMENT_STATUS']) ||
-                    (is_array($status) && !in_array($invitation['ASSIGNMENT_STATUS'], $status, true))
-                ) {
-                    //si on a passé des statuts en paramètre, et que ce statut n'en fait pas partie, on le saute
-                    continue;
-                }
-                $result[$invitation['ASSIGNMENT_STATUS']][] = $invitation;
+
+                $result[$effectiveStatus][] = $invitation;
             }
-
         }
 
         return $result;
@@ -4545,6 +4537,25 @@ class Episciences_PapersManager
         $data = $sql?->query()->fetch();
         return !empty($data) ? new Episciences_Paper($data) : null;
 
+    }
+
+    /**
+     * Vérifie si un statut correspond au filtre demandé.
+     * @param string $effectiveStatus
+     * @param string|string[]|null $status
+     * @return bool
+     */
+    private static function matchesStatusFilter(string $effectiveStatus, $status): bool
+    {
+        if ($status === null) {
+            return true;
+        }
+
+        if (is_array($status)) {
+            return in_array($effectiveStatus, $status, true);
+        }
+
+        return $effectiveStatus === $status;
     }
 
 }
