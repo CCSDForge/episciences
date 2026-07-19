@@ -18,6 +18,12 @@
   <logging>
     <junit outputFile="build/junit.xml"/>
   </logging>
+  <coverage>
+    <report>
+      <clover outputFile="build/coverage.xml"/>
+      <text outputFile="php://stdout" showOnlySummary="true"/>
+    </report>
+  </coverage>
   <source>
     <include>
       <directory suffix=".php">application</directory>
