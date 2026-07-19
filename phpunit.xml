@@ -18,6 +18,13 @@
   <logging>
     <junit outputFile="build/junit.xml"/>
   </logging>
+  <source>
+    <include>
+      <directory suffix=".php">application</directory>
+      <directory suffix=".php">library</directory>
+      <directory suffix=".php">src</directory>
+    </include>
+  </source>
   <!-- Run `composer require symfony/panther` before enabling this extension -->
   <!--
     <extensions>
