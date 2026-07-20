@@ -208,6 +208,10 @@ class Episciences_PapersManager
                 if ($setting === 'repositories') {
                     $select = self::applyRepositoriesFilter($select, $value);
                 }
+
+                if ($setting === 'suggestion') {
+                    $select = self::applySuggestionFilter($select, $value);
+                }
             }
         }
 
@@ -682,6 +686,32 @@ class Episciences_PapersManager
         }
 
         return $count;
+    }
+
+    /**
+     * Counts the papers of a review with a pending decision suggestion of the given type
+     *
+     * @param int $rvId Review id
+     * @param int $type Suggestion type (Episciences_CommentsManager::TYPE_SUGGESTION_*)
+     * @return int
+     */
+    public static function countPapersWithPendingSuggestions(int $rvId, int $type): int
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $select = $db->select()
+            ->from(['p' => T_PAPERS], [new Zend_Db_Expr('COUNT(DISTINCT p.DOCID)')])
+            ->join(['c' => T_PAPER_COMMENTS], 'p.DOCID = c.DOCID', [])
+            ->where('p.RVID = ?', $rvId)
+            ->where('c.TYPE = ?', $type)
+            ->where('p.STATUS NOT IN (?)', self::getFinalizedStatusForSuggestions());
+
+        $actedUponStatus = self::getActedUponStatusForSuggestionType($type);
+        if (!empty($actedUponStatus)) {
+            $select->where('p.STATUS NOT IN (?)', $actedUponStatus);
+        }
+
+        return (int)$db->fetchOne($select);
     }
 
     /**
@@ -4101,6 +4131,109 @@ class Episciences_PapersManager
 
         return $select;
 
+    }
+
+    /**
+     * @param Zend_Db_Select $select
+     * @param array<int, int|string>|string $values
+     * @return Zend_Db_Select
+     */
+    private static function applySuggestionFilter(Zend_Db_Select $select, array|string $values): Zend_Db_Select
+    {
+        $types = is_array($values) ? $values : [$values];
+
+        if (in_array('any', $types, true)) {
+            $types = Episciences_CommentsManager::$suggestionTypes;
+        }
+
+        $types = array_map('intval', $types);
+
+        return $select->where('DOCID IN (?)', self::getPapersWithPendingSuggestionQuery($types));
+    }
+
+    /**
+     * Papers of the current review with a pending decision suggestion (among $types)
+     *
+     * @param int[] $types
+     * @return Zend_Db_Select
+     */
+    private static function getPapersWithPendingSuggestionQuery(array $types): Zend_Db_Select
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $conditions = [];
+        foreach ($types as $type) {
+            $condition = $db->quoteInto('c.TYPE = ?', $type);
+
+            $actedUponStatus = self::getActedUponStatusForSuggestionType($type);
+            if (!empty($actedUponStatus)) {
+                $condition .= ' AND ' . $db->quoteInto('p.STATUS NOT IN (?)', $actedUponStatus);
+            }
+
+            $conditions[] = "($condition)";
+        }
+
+        $subSelect = $db->select()
+            ->from(['c' => T_PAPER_COMMENTS], ['DOCID'])
+            ->join(['p' => T_PAPERS], 'c.DOCID = p.DOCID', [])
+            ->where('p.RVID = ?', RVID)
+            ->where('p.STATUS NOT IN (?)', self::getFinalizedStatusForSuggestions());
+
+        if (!empty($conditions)) {
+            $subSelect->where(implode(' OR ', $conditions));
+        }
+
+        return $subSelect;
+    }
+
+    /**
+     * Statuses for which a decision suggestion is no longer "pending" (paper already finalized)
+     * @return int[]
+     */
+    private static function getFinalizedStatusForSuggestions(): array
+    {
+        return [
+            Episciences_Paper::STATUS_PUBLISHED,
+            Episciences_Paper::STATUS_REFUSED,
+            Episciences_Paper::STATUS_DELETED,
+            Episciences_Paper::STATUS_REMOVED,
+            Episciences_Paper::STATUS_OBSOLETE,
+            Episciences_Paper::STATUS_ABANDONED
+        ];
+    }
+
+    /**
+     * Statuses of a paper that has received an acceptance decision (Episciences_Paper::ACCEPTED_SUBMISSIONS
+     * plus the downstream validation/publication statuses it doesn't include)
+     * @return int[]
+     */
+    private static function getPostAcceptanceStatuses(): array
+    {
+        return array_merge(
+            Episciences_Paper::ACCEPTED_SUBMISSIONS,
+            [
+                Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
+                Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION
+            ]
+        );
+    }
+
+    /**
+     * Statuses indicating that a decision suggestion of the given type has already been acted upon
+     * @param int $type
+     * @return int[]
+     */
+    private static function getActedUponStatusForSuggestionType(int $type): array
+    {
+        return match ($type) {
+            Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
+            Episciences_CommentsManager::TYPE_SUGGESTION_REFUS => self::getPostAcceptanceStatuses(),
+            Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION => array_merge(
+                [Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION, Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION],
+                self::getPostAcceptanceStatuses()
+            ),
+            default => [],
+        };
     }
 
     /**

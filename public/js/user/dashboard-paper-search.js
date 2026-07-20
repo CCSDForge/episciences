@@ -20,6 +20,10 @@ class DashboardPaperSearch {
             return;
         }
 
+        // Prevent clicks from bubbling up to an ancestor .panel-heading collapse toggle
+        // when this component is embedded inside a dashboard panel header
+        this.container.addEventListener('click', e => e.stopPropagation());
+
         this.init();
     }
 

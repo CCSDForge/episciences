@@ -2,6 +2,7 @@
 
 namespace unit\library\Episciences;
 
+use Episciences_CommentsManager;
 use Episciences_Paper;
 use Episciences_PapersManager;
 use Episciences_User;
@@ -396,5 +397,153 @@ final class Episciences_PapersManagerTest extends TestCase
             $conflictsProperty->getValue($paper),
             'getByDocIds() must not eagerly populate conflict data'
         );
+    }
+
+    // -----------------------------------------------------------------------
+    // Decision suggestion filter helpers (git #1011)
+    // -----------------------------------------------------------------------
+
+    /**
+     * @param array<int, mixed> $args
+     * @return mixed
+     */
+    private function invokePrivateStatic(string $method, array $args = [])
+    {
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, $method);
+        $reflection->setAccessible(true);
+        return $reflection->invoke(null, ...$args);
+    }
+
+    public function testGetFinalizedStatusForSuggestionsListsTerminalStatuses(): void
+    {
+        $result = $this->invokePrivateStatic('getFinalizedStatusForSuggestions');
+
+        self::assertIsArray($result);
+        self::assertContains(Episciences_Paper::STATUS_PUBLISHED, $result);
+        self::assertContains(Episciences_Paper::STATUS_REFUSED, $result);
+        self::assertContains(Episciences_Paper::STATUS_DELETED, $result);
+        self::assertContains(Episciences_Paper::STATUS_REMOVED, $result);
+        self::assertContains(Episciences_Paper::STATUS_OBSOLETE, $result);
+        self::assertContains(Episciences_Paper::STATUS_ABANDONED, $result);
+
+        // A paper still under review must not be considered "finalized".
+        self::assertNotContains(Episciences_Paper::STATUS_SUBMITTED, $result);
+        self::assertNotContains(Episciences_Paper::STATUS_REVIEWED, $result);
+    }
+
+    public function testGetPostAcceptanceStatusesIncludesAcceptedSubmissionsAndValidationSteps(): void
+    {
+        $result = $this->invokePrivateStatic('getPostAcceptanceStatuses');
+
+        foreach (Episciences_Paper::ACCEPTED_SUBMISSIONS as $status) {
+            self::assertContains($status, $result);
+        }
+        self::assertContains(Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION, $result);
+        self::assertContains(Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION, $result);
+
+        // A paper still awaiting an editorial decision has not been accepted yet.
+        self::assertNotContains(Episciences_Paper::STATUS_REVIEWED, $result);
+    }
+
+    /**
+     * @param int[] $mustContain
+     * @param int[] $mustNotContain
+     * @dataProvider actedUponSuggestionTypeProvider
+     */
+    public function testGetActedUponStatusForSuggestionType(int $type, array $mustContain, array $mustNotContain): void
+    {
+        $result = $this->invokePrivateStatic('getActedUponStatusForSuggestionType', [$type]);
+
+        self::assertIsArray($result);
+        foreach ($mustContain as $status) {
+            self::assertContains($status, $result, "Status $status must be considered 'acted upon' for suggestion type $type");
+        }
+        foreach ($mustNotContain as $status) {
+            self::assertNotContains($status, $result, "Status $status must NOT be considered 'acted upon' for suggestion type $type");
+        }
+    }
+
+    /**
+     * @return array<string, array{int, int[], int[]}>
+     */
+    public static function actedUponSuggestionTypeProvider(): array
+    {
+        return [
+            'acceptation: acted upon once a paper has moved past acceptance' => [
+                Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
+                [Episciences_Paper::STATUS_ACCEPTED, Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION],
+                [Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION, Episciences_Paper::STATUS_REVIEWED],
+            ],
+            'refus: acted upon once a paper has moved past acceptance' => [
+                Episciences_CommentsManager::TYPE_SUGGESTION_REFUS,
+                [Episciences_Paper::STATUS_ACCEPTED],
+                [Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION, Episciences_Paper::STATUS_REVIEWED],
+            ],
+            'new version: acted upon once a revision has been requested or the paper accepted' => [
+                Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION,
+                [
+                    Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION,
+                    Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION,
+                    Episciences_Paper::STATUS_ACCEPTED,
+                ],
+                [Episciences_Paper::STATUS_REVIEWED],
+            ],
+            'unknown type: nothing is considered acted upon' => [
+                9999,
+                [],
+                [Episciences_Paper::STATUS_ACCEPTED, Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION],
+            ],
+        ];
+    }
+
+    // -----------------------------------------------------------------------
+    // applySuggestionFilter() / getPapersWithPendingSuggestionQuery()
+    // -----------------------------------------------------------------------
+
+    private function newPapersSelect(): \Zend_Db_Select
+    {
+        $db = \Zend_Db_Table_Abstract::getDefaultAdapter();
+        return $db->select()->from(['papers' => T_PAPERS], ['DOCID']);
+    }
+
+    public function testApplySuggestionFilterBuildsAssemblableQueryForSingleType(): void
+    {
+        defined('RVID') || define('RVID', 0);
+
+        $select = $this->newPapersSelect();
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, 'applySuggestionFilter');
+        $reflection->setAccessible(true);
+
+        $result = $reflection->invoke(null, $select, (string)Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION);
+
+        self::assertInstanceOf(\Zend_Db_Select::class, $result);
+        $sql = $result->assemble();
+        self::assertStringContainsString('DOCID IN', $sql);
+    }
+
+    public function testApplySuggestionFilterExpandsAnyToAllSuggestionTypes(): void
+    {
+        defined('RVID') || define('RVID', 0);
+
+        $select = $this->newPapersSelect();
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, 'applySuggestionFilter');
+        $reflection->setAccessible(true);
+
+        $result = $reflection->invoke(null, $select, ['any']);
+        $sql = $result->assemble();
+
+        // 'any' must expand into a condition per known suggestion type, joined with OR.
+        foreach (Episciences_CommentsManager::$suggestionTypes as $type) {
+            self::assertStringContainsString((string)$type, $sql);
+        }
+        self::assertStringContainsString(' OR ', $sql);
+    }
+
+    public function testCountPapersWithPendingSuggestionsReturnsZeroForReviewWithNoPapers(): void
+    {
+        // RVID 0 never matches a real review's papers.
+        $count = Episciences_PapersManager::countPapersWithPendingSuggestions(0, Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION);
+
+        self::assertSame(0, $count);
     }
 }

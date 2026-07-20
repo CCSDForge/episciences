@@ -2529,5 +2529,21 @@ return array(
     "Voir le rapport de relecture" => "View the review report",
     "PDF" => "PDF",
     "Voir le PDF de cette version" => "View the PDF of this version",
-    "Voir la page de gestion de cette version" => "View the management page for this version"
+    "Voir la page de gestion de cette version" => "View the management page for this version",
+
+    "Évaluation" => "Evaluation",
+    "Révisions & suggestions" => "Revisions & suggestions",
+    "Copy-editing & publication" => "Copy-editing & publication",
+    "Archives / historique" => "Archives / history",
+    "suggestion d'acceptation" => "suggested acceptance",
+    "suggestions d'acceptation" => "suggested acceptances",
+    "suggestion de refus" => "suggested refusal",
+    "suggestions de refus" => "suggested refusals",
+    "suggestion de modification" => "suggested revision",
+    "suggestions de modification" => "suggested revisions",
+    "Suggestion de décision" => "Suggested decision",
+    "Toutes les suggestions" => "All suggestions",
+    "Suggestion d'acceptation" => "Suggested acceptance",
+    "Suggestion de refus" => "Suggested refusal",
+    "Suggestion de modification" => "Suggested revision"
 );
