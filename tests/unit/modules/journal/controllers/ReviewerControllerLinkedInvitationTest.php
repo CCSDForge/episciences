@@ -49,18 +49,19 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
     // -------------------------------------------------------------------------
 
     /**
-     * Confirmed bug (flagged in PR #1109 review, still present after commit
-     * "fix: condition logic."): checkAndProcessLinkedInvitation() is only called
+     * Regression test for a bug flagged in PR #1109 review and fixed by commit
+     * "fix: condition logic.": checkAndProcessLinkedInvitation() is only called
      * when the logged-in user is NOT the assignment's uid. $doRating is `true`
      * on entry (set by invitationAction()) and must be forced to `false` before
      * ANY return from this method — otherwise a mismatched user hitting an
-     * expired / already-answered / cancelled invitation URL keeps
-     * $doRating = true, skips the "cette invitation ne vous est pas destinée"
-     * gate in invitationAction(), and gets the full paper detail view rendered
+     * expired / already-answered / cancelled invitation URL would keep
+     * $doRating = true, skip the "cette invitation ne vous est pas destinée"
+     * gate in invitationAction(), and get the full paper detail view rendered
      * for an invitation that is not theirs.
      *
-     * This test is expected to FAIL until `$doRating = false;` is moved before
-     * (or duplicated into) the hasExpired()/isAnswered()/isCancelled() guard.
+     * `$doRating = false;` now runs before the hasExpired()/isAnswered()/
+     * isCancelled() guard, so this test passes; keep it to guard against a
+     * regression.
      */
     public function testDoRatingIsSetFalseBeforeTheFirstReturn(): void
     {
