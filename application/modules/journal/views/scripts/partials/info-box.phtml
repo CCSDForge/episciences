@@ -1,0 +1,25 @@
+<?php
+$messages = $this->messages ?? [];
+
+if (!is_array($messages)) {
+    $messages = (array)$messages;
+}
+
+$title = $this->title ?? 'Information';
+?>
+<div class="info-box">
+    <div class="info-icon">
+        <span class="fa-regular fa-bell fa-shake fa-sm"></span>
+    </div>
+
+    <div class="info-content">
+        <h4><?= $this->translate($title) ?></h4>
+
+        <?php foreach ($messages as $msg): ?>
+            <p>
+                <?= $this->translate($msg) ?>
+            </p>
+        <?php endforeach; ?>
+
+    </div>
+</div>

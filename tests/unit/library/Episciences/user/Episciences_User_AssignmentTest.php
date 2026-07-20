@@ -2,6 +2,7 @@
 
 namespace unit\library\Episciences\user;
 
+use Episciences\User\UserNotFoundException;
 use Episciences_TmpUsersManager;
 use Episciences_User;
 use Episciences_User_Assignment;
@@ -295,7 +296,7 @@ class Episciences_User_AssignmentTest extends TestCase
         $this->assignment->setUid(999999999);
         $this->assignment->setTmp_user(true);
 
-        $this->expectException(TypeError::class);
+        $this->expectException(UserNotFoundException::class);
 
         $this->assignment->resolveFromUser();
     }
