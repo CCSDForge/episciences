@@ -460,14 +460,14 @@ class ReviewerController extends PaperDefaultController
 
     private function checkAndProcessLinkedInvitation(Zend_Controller_Request_Http $request, Episciences_User_Invitation $invitation, Episciences_User_Assignment $assignment, bool &$doRating): array
     {
+
+        $doRating = false;
         if (
                 $invitation->hasExpired() ||
                 $invitation->isAnswered() ||
                 $invitation->isCancelled()) {
             return [];
         }
-
-        $doRating = false;
 
         if ($assignment->getFrom_uid()) { // linked to
             return ['isAlreadyLinked' => true];
