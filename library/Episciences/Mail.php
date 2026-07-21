@@ -645,7 +645,7 @@ class Episciences_Mail extends Zend_Mail
 
     public function setDocid($docid)
     {
-        $this->_docid = $docid;
+        $this->_docid = (int)$docid;
 
         $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ID, $docid);
         $this->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $this->getPaperId());
@@ -1030,9 +1030,8 @@ class Episciences_Mail extends Zend_Mail
     private function getPaperId(): int
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $select = Episciences_PapersManager::partialGetQuery((int)$this->_docid, 'paperid');
-        return (int)$db->fetchOne($select);
+        $select = Episciences_PapersManager::partialGetQuery($this->_docid, 'PAPERID');
+        $paperId = (int)$db?->fetchOne($select);
+        return $paperId ?: $this->_docid;
     }
-
-
 }
