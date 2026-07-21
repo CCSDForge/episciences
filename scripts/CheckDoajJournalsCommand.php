@@ -26,17 +26,16 @@ class CheckDoajJournalsCommand extends Command
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        // Fetch all unique ISSN values from REVIEW_SETTING
+        // Fetch all RVID and ISSN values from REVIEW_SETTING
         $select = $db->select()
-            ->from(T_REVIEW_SETTINGS, ['VALUE'])
+            ->from(T_REVIEW_SETTINGS, ['RVID', 'VALUE'])
             ->where('SETTING = ?', 'issn')
             ->where('VALUE IS NOT NULL')
             ->where('VALUE != ?', '');
 
         $rows = $db->fetchAll($select);
-        $issns = array_filter(array_unique(array_column($rows, 'VALUE')));
 
-        if (empty($issns)) {
+        if (empty($rows)) {
             $output->writeln("No ISSN found in the database.");
             return Command::SUCCESS;
         }
@@ -51,8 +50,9 @@ class CheckDoajJournalsCommand extends Command
 
         $journals = [];
 
-        foreach ($issns as $issn) {
-            $issn = trim($issn);
+        foreach ($rows as $row) {
+            $issn = trim((string) $row['VALUE']);
+            $rvid = (int) $row['RVID'];
             if ($issn === '') {
                 continue;
             }
@@ -73,10 +73,18 @@ class CheckDoajJournalsCommand extends Command
                         $title = $result['bibjson']['title'] ?? '';
                         $journalUrl = $result['bibjson']['ref']['journal'] ?? '';
 
+                        // Count published articles for this journal (RVID) in local database
+                        $selectCount = $db->select()
+                            ->from(T_PAPERS, [new Zend_Db_Expr('COUNT(*)')])
+                            ->where('RVID = ?', $rvid)
+                            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+                        $publishedCount = (int) $db->fetchOne($selectCount);
+
                         $journals[] = [
                             'title' => (string) $title,
                             'url' => (string) $journalUrl,
                             'issn' => $issn,
+                            'published_articles' => $publishedCount,
                         ];
                     }
                 }
@@ -90,6 +98,9 @@ class CheckDoajJournalsCommand extends Command
                     $output->getErrorOutput()->writeln(sprintf("Unexpected error for ISSN %s: %s", $issn, $e->getMessage()));
                 }
             }
+
+            // Respect rate limit: sleep 1 second between calls to the DOAJ API
+            sleep(1);
         }
 
         // Sort journals alphabetically by title
@@ -98,14 +109,15 @@ class CheckDoajJournalsCommand extends Command
         });
 
         // Print CSV Header
-        $output->writeln("'Journal Name';'Journal URL';'ISSN'");
+        $output->writeln("'Journal Name';'Journal URL';'ISSN';'Published articles'");
 
         // Print results
         foreach ($journals as $journal) {
-            $output->writeln(sprintf("'%s';'%s';'%s'",
+            $output->writeln(sprintf("'%s';'%s';'%s';%d",
                 str_replace("'", "\\'", $journal['title']),
                 str_replace("'", "\\'", $journal['url']),
-                str_replace("'", "\\'", $journal['issn'])
+                str_replace("'", "\\'", $journal['issn']),
+                $journal['published_articles']
             ));
         }
 
