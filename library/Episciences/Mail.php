@@ -2,7 +2,6 @@
 
 class Episciences_Mail extends Zend_Mail
 {
-    public const PAPER_ID_CACHE_KEY = 'paperid';
     /**
      * We're fine
      */
@@ -1038,21 +1037,21 @@ class Episciences_Mail extends Zend_Mail
     private function getPaperId(): int
     {
 
-        if (array_key_exists(self::PAPER_ID_CACHE_KEY, self::$_cache)) {
-            return self::$_cache[self::PAPER_ID_CACHE_KEY];
+        if (array_key_exists($this->_docid, self::$_cache)) {
+            return self::$_cache[$this->_docid];
         }
-        
+
         $select = Episciences_PapersManager::partialGetQuery($this->_docid, 'PAPERID');
         $paperId = (int)$select->getAdapter()?->fetchOne($select);
 
         // cache result
-        self::$_cache[self::PAPER_ID_CACHE_KEY] = $paperId;
-
+        self::$_cache[$this->_docid] = $paperId;
         return $paperId ?: $this->_docid;
     }
 
     /**
      * Clear the internal cache
+     * Still handy for isolating static state between unit tests
      * @return void
      */
     public static function clearCache(): void
