@@ -645,12 +645,18 @@ class Episciences_Mail extends Zend_Mail
         return $this->_docid;
     }
 
-    public function setDocid($docid)
+    /**
+     * @param $docid
+     * @param int|null $paperId: To be used to avoid systematically incurring the cost of a query; a caching solution is also available.
+     * @return $this
+     */
+
+    public function setDocid($docid, int $paperId = null)
     {
         $this->_docid = (int)$docid;
 
         $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ID, $docid);
-        $this->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $this->getPaperId());
+        $this->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $paperId ?: $this->getPaperId());
 
         if (defined('RVCODE')) {
             $baseurl = SERVER_PROTOCOL . '://' . RVCODE . '.' . DOMAIN;
