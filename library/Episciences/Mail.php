@@ -2,6 +2,7 @@
 
 class Episciences_Mail extends Zend_Mail
 {
+    public const PAPER_ID_CACHE_KEY = 'paperid';
     /**
      * We're fine
      */
@@ -46,6 +47,7 @@ class Episciences_Mail extends Zend_Mail
     private $_rawBody;
     protected bool $_isAutomatic = false;
     private ?int $uid = null ;
+    private static array $_cache = []; // to avoid this sort of problem: N+1 queries in loops.
 
     /**
      * Episciences_Mail constructor.
@@ -1029,9 +1031,28 @@ class Episciences_Mail extends Zend_Mail
 
     private function getPaperId(): int
     {
+
+        if (array_key_exists(self::PAPER_ID_CACHE_KEY, self::$_cache)) {
+            return self::$_cache[self::PAPER_ID_CACHE_KEY];
+        }
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = Episciences_PapersManager::partialGetQuery($this->_docid, 'PAPERID');
         $paperId = (int)$db?->fetchOne($select);
+
+        // cache result
+        self::$_cache[self::PAPER_ID_CACHE_KEY] = $paperId;
+
         return $paperId ?: $this->_docid;
     }
+
+    /**
+     * Clear the internal cache
+     * @return void
+     */
+    public static function clearCache(): void
+    {
+        self::$_cache = [];
+    }
+
 }
