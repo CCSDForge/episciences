@@ -1041,10 +1041,9 @@ class Episciences_Mail extends Zend_Mail
         if (array_key_exists(self::PAPER_ID_CACHE_KEY, self::$_cache)) {
             return self::$_cache[self::PAPER_ID_CACHE_KEY];
         }
-
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        
         $select = Episciences_PapersManager::partialGetQuery($this->_docid, 'PAPERID');
-        $paperId = (int)$db?->fetchOne($select);
+        $paperId = (int)$select->getAdapter()?->fetchOne($select);
 
         // cache result
         self::$_cache[self::PAPER_ID_CACHE_KEY] = $paperId;
