@@ -650,12 +650,17 @@ class Episciences_Mail extends Zend_Mail
      * @return $this
      */
 
-    public function setDocid($docid, int $paperId = null)
+    public function setDocid($docid, int $paperId = null): self
     {
         $this->_docid = (int)$docid;
 
         $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ID, $docid);
-        $this->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $paperId ?: $this->getPaperId());
+
+        $resolvedPaperId = $paperId ?? $this->getPaperId();
+
+        if ($resolvedPaperId !== null) {
+            $this->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $resolvedPaperId);
+        }
 
         if (defined('RVCODE')) {
             $baseurl = SERVER_PROTOCOL . '://' . RVCODE . '.' . DOMAIN;
@@ -1034,19 +1039,26 @@ class Episciences_Mail extends Zend_Mail
         return $this;
     }
 
-    private function getPaperId(): int
-    {
 
+    private function getPaperId(): ?int
+    {
         if (array_key_exists($this->_docid, self::$_cache)) {
             return self::$_cache[$this->_docid];
         }
 
         $select = Episciences_PapersManager::partialGetQuery($this->_docid, 'PAPERID');
-        $paperId = (int)$select->getAdapter()?->fetchOne($select);
+        $paperId = $select->getAdapter()?->fetchOne($select);
+        $paperId = ($paperId !== false && $paperId !== null) ? (int)$paperId : null;
 
-        // cache result
+        if ($paperId === null) {
+            trigger_error(sprintf(
+                    'Episciences_Mail::getPaperId() - PAPERID not found for DOCID=%d, %%PERMANENT_ARTICLE_ID%% tag left unset',
+                    $this->_docid
+            ), E_USER_WARNING);
+        }
+
         self::$_cache[$this->_docid] = $paperId;
-        return $paperId ?: $this->_docid;
+        return $paperId;
     }
 
     /**
