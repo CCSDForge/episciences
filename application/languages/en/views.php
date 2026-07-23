@@ -156,6 +156,7 @@ return array(
     'T_VOLUME_YEAR_INVALID_RANGE' => 'The second volume year must be strictly greater than the first (e.g., 2003-2004).',
     'T_VOLUME_YEAR_OUTSIDE_BOUNDS' => 'The year must be between %s and %s (Current Year + 5 years).',
     'Exemple : 2024 ou 2024-2025' => 'Example : 2024 or 2024-2025',
+    'Format : AAAA ou AAAA-AAAA, entre %s et %s' => 'Format: YYYY or YYYY-YYYY, between %s and %s',
     "Fichier" => 'File',
     "Parcourir" => 'Browse',
     "Ajouter" => 'Add',

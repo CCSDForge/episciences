@@ -640,6 +640,11 @@ class Episciences_VolumesManager
             'attribs' => [
                 'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Exemple : 2024 ou 2024-2025')
             ],
+            'description' => sprintf(
+                Zend_Registry::get('Zend_Translate')->translate('Format : AAAA ou AAAA-AAAA, entre %s et %s'),
+                Episciences_Form_Validate_VolumeYear::MIN_YEAR,
+                (int)date('Y') + 5
+            ),
             'validators' => [
                 [
                     'validator' => 'VolumeYear',
