@@ -528,7 +528,7 @@ class Episciences_Reviewer extends Episciences_User
         return $this->_db->select()
             ->from(['a' => T_ASSIGNMENTS], ['ITEMID', 'STATUS', 'WHEN'])
             ->join(['b' => $subquery], 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', [])
-            ->where('a.STATUS IN (?)', [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_INACTIVE, Episciences_User_Assignment::STATUS_DECLINED]);
+            ->where('a.STATUS IN (?)', [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_INACTIVE, Episciences_User_Assignment::STATUS_DECLINED,  Episciences_User_Assignment::STATUS_PENDING]);
     }
 
     /**
