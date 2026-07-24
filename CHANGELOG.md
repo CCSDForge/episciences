@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 ## Unreleased
+### Fixed
+[RT#293890]:
+- Sorting by invitation status does not reflect the actual situation:
+    A reviewer’s report is categorised as an "Additional reviewer’s report",
+    whereas this should only occur in cases where an editor adds a review directly 
+- The dashboard does not display pending invitations that were sent via a temporary account.
 
 ## v1.0.56 - 2026-07-16
 
