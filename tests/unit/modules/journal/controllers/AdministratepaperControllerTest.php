@@ -15,7 +15,6 @@ use PHPUnit\Framework\TestCase;
  * Each test documents one concrete bug found during a security audit.
  * Currently failing tests mark existing bugs (red). They will turn green once fixed.
  *
- * @covers AdministratepaperController
  */
 class AdministratepaperControllerTest extends TestCase
 {
@@ -50,7 +49,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * layout()->disableLayout() and setNoRender() must be called before ANY
      * early-return guard (auth check, method check) so that every code path
@@ -84,7 +82,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * The auth failure block must contain a `return` to stop further execution.
      */
@@ -103,7 +100,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * $docId must be read from POST only (getPost), not from the combined
      * GET+POST+routing parameter bag (getParam). Using getParam allows an
@@ -121,7 +117,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * $docId must be cast to (int) before use so that a malformed string
      * value cannot reach PapersManager::get() or trigger unexpected behaviour.
@@ -147,7 +142,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * PapersManager::get() returns false when no paper matches the given ID.
      * The method must perform an instanceof check before calling any method on
@@ -166,7 +160,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * Every JSON response — including auth failure and validation errors —
      * must contain all four keys expected by the JavaScript handler:
@@ -192,7 +185,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * The method guard must require BOTH isPost() AND isXmlHttpRequest().
      * Using '&&' (bail only if both are false) allowed plain POST requests
@@ -227,7 +219,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * disableLayout() and setNoRender() must appear before every guard so that
      * even error responses are returned as clean JSON without an HTML wrapper.
@@ -257,7 +248,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * The method guard must require BOTH isPost() AND isXmlHttpRequest().
      * Using '&&' allows plain POST requests from non-XHR clients through;
@@ -286,7 +276,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * docid and paperid must be read from POST only; using getParam() also
      * reads GET and routing parameters, opening an injection surface.
@@ -309,7 +298,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * $docId and $paperId must be cast to (int) before use to prevent
      * a malformed string from reaching the database layer.
@@ -333,7 +321,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * An empty DOI must be rejected with a JSON error response.
      * The original code silently passed an empty DOI through the regex check
@@ -352,7 +339,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * The DOI regex must use an escaped dot `10\.` so that only a literal dot
      * is accepted as the separator.  Without the escape, `10X1234/suffix`
@@ -376,7 +362,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::savedoiAction
      *
      * Every response path must return JSON ({ success, doi, error }) so that
      * the JavaScript handler can reliably parse the response.
@@ -419,7 +404,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::ajaxrequestremovedoiAction
      *
      * The original action had no authentication check at all.
      * Any user — even unauthenticated — could cancel a DOI request.
@@ -436,7 +420,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestremovedoiAction
      *
      * The method guard must require BOTH isPost() AND isXmlHttpRequest().
      * The original action only checked isXmlHttpRequest(), allowing GET requests.
@@ -457,7 +440,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestremovedoiAction
      *
      * paperId and docId must be cast to (int) to prevent malformed strings
      * from reaching the database layer.
@@ -481,7 +463,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestremovedoiAction
      *
      * Every response path must emit a JSON object so that the JavaScript
      * handler can reliably parse the outcome.
@@ -513,7 +494,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::ajaxrequestremovedoiAction
      *
      * The original action used a raw Zend_Db SELECT query to check whether the
      * paper exists. PapersManager::paperExists() must be used instead to keep
@@ -542,7 +522,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::ajaxrequestnewdoiAction
      *
      * Bug: line 165 echoes an error JSON but has NO `return` statement.
      * Execution falls through to line 173+ where it reads $docId and
@@ -571,7 +550,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savepublicationdateAction
      *
      * Bug: line 4242 assigns $docId from POST without (int) cast.
      * Line 4275 interpolates it directly into a SQL string.
@@ -604,7 +582,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savepublicationdateAction
      *
      * Bug: line 4275 builds the SQL via string interpolation then calls prepare().
      * This is "false security": prepare() on an already-interpolated string
@@ -631,7 +608,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::addcoauthorAction
      *
      * Bug: line 4815 — when $user->hasLocalData() && $user->hasRoles() is TRUE
      * (the happy path: a known user is added as co-author), the flash message
@@ -662,7 +638,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::addcoauthorAction
      *
      * Bug: the method has no explicit role check before executing addRoleCoAuthor().
      * Any logged-in user who can reach this route (e.g., a reviewer) could add
@@ -693,7 +668,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::suggeststatusAction
      *
      * Bug line 2135: `if (!$this->getRequest()->isPost() && !$form->isValid(...))`
      *
@@ -719,7 +693,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::revisionAction
      *
      * Bug: $type comes from the request and is used to build field names like
      * `$type . 'revisionsubject'` (line ~4376). The sequential equality checks
@@ -751,7 +724,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savereviewerinvitationAction
      *
      * Bug line 1615: `json_decode($reviewer, true)` result is used immediately
      * in array operations. If the JSON is malformed or the value is not a string,
@@ -787,7 +759,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController (multiple actions)
      *
      * Bug: multiple actions concatenate $_SERVER['SERVER_NAME'] directly into
      * notification/callback URLs. An attacker controlling the HTTP Host header
@@ -818,10 +789,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::acceptAction
-     * @covers AdministratepaperController::refuseAction
-     * @covers AdministratepaperController::publishAction
-     * @covers AdministratepaperController::revisionAction
      *
      * Bug: these four actions perform irreversible state changes on papers
      * (accept, refuse, publish, request revision) but do not validate a CSRF token.
@@ -860,7 +827,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::updatedeadlineAction
      *
      * The assignment id ($aid) must be validated as numeric before use to
      * prevent non-integer values from reaching the DB layer.
@@ -892,7 +858,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savecopyeditorsAction
      *
      * The action must check isPost() before processing any state change.
      */
@@ -923,7 +888,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savemastervolumeAction
      *
      * The vid (volume id) must be cast to (int) before use.
      */
@@ -954,7 +918,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::saveeditorsAction
      *
      * Editor UIDs from POST must be cast to int via array_map('intval', ...).
      */
@@ -985,7 +948,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::refreshratingAction
      *
      * Both docId and reviewerUid must be cast to (int) to avoid string-based
      * DB lookups from unsanitized parameters.
@@ -1026,7 +988,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savereviewerremovalAction
      *
      * The assignment id must be numeric — non-numeric values must be rejected
      * with a JSON error response.
@@ -1058,7 +1019,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::publicationdateformAction
      *
      * The docid is read from POST (form field) and must be checked for
      * presence before use. If missing, the action returns false immediately.
@@ -1090,7 +1050,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::saverefusedmonitoringAction
      *
      * The action reads the paper id from GET (getQuery) and processes the
      * form data from POST. It must check isPost() before applying changes.
@@ -1122,7 +1081,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::revisiondeadlineformAction
      *
      * The docid is read from POST. The action must verify the paper status
      * before rendering the form: only papers with a pending revision request
@@ -1285,7 +1243,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::DATATABLE_COLUMNS
      *
      * Columns 6–9 must carry a non-empty sort key so that DataTables can request
      * server-side ordering and PapersManager::getListQuery() can resolve the
@@ -1348,8 +1305,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::updatedeadlineAction
-     * @covers AdministratepaperController::savenewdeadlineAction
      *
      * Regression #1010: The allowed range for modifying the rating deadline
      * must be calculated relative to the original assignment deadline,
