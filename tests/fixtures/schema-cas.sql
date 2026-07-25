@@ -159,7 +159,7 @@ SET character_set_client = @saved_cs_client;
 /*!50001 SET character_set_results     = utf8mb3 */;
 /*!50001 SET collation_connection      = utf8mb3_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013 DEFINER=`root`@`%.in2p3.fr` SQL SECURITY DEFINER */
+/*!50013 SQL SECURITY INVOKER */
 /*!50001 VIEW `V_UTILISATEURS_VALIDES` AS select `T_UTILISATEURS`.`UID` AS `UID`,`T_UTILISATEURS`.`USERNAME` AS `USERNAME`,`T_UTILISATEURS`.`PASSWORD` AS `PASSWORD`,`T_UTILISATEURS`.`EMAIL` AS `EMAIL`,`T_UTILISATEURS`.`CIV` AS `CIV`,`T_UTILISATEURS`.`LASTNAME` AS `LASTNAME`,`T_UTILISATEURS`.`FIRSTNAME` AS `FIRSTNAME`,`T_UTILISATEURS`.`MIDDLENAME` AS `MIDDLENAME` from `T_UTILISATEURS` where (`T_UTILISATEURS`.`VALID` = 1) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
