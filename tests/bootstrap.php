@@ -25,10 +25,20 @@ if (!file_exists($configPath . $envFile)) {
 
 require $configPath . $envFile;
 
-// public/bdd_const.php reads this file to define every database constant. It reports a missing
+// public/bdd_const.php reads a pwd.json to define every database constant. It reports a missing
 // or invalid file with die() -- harmless for a web request, but a silent success on the CLI --
 // so the case is caught here, before it can be swallowed.
-$credentialsPath = dirname(__DIR__) . '/config/pwd.json';
+//
+// Its location follows the same resolution order as best_define(): an already defined PWD_PATH
+// constant, then a PWD_PATH environment variable, then config/. CI sets the environment variable
+// so that the generated test configuration never overwrites a developer's own config/pwd.json.
+if (defined('PWD_PATH')) {
+    $credentialsDir = PWD_PATH;
+} else {
+    $credentialsDir = getenv('PWD_PATH') ?: dirname(__DIR__) . '/config';
+}
+
+$credentialsPath = rtrim($credentialsDir, '/') . '/pwd.json';
 
 if (!file_exists($credentialsPath)) {
     abortTestBootstrap(

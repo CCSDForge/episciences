@@ -1,21 +1,28 @@
 <?php
 /**
- * Generates the two configuration files the PHPUnit bootstrap needs, so that the test
- * suite can actually run on CI.
+ * Generates the configuration the PHPUnit bootstrap needs, so that the test suite can actually
+ * run on CI.
  *
- * Both files are gitignored (see .gitignore) because they hold per-environment values:
+ * Two files are required and both are gitignored, because they hold per-environment values:
  *   - tests/config/env-test.php : defines RVCODE, read by defineJournalConstants()
- *   - config/pwd.json           : defines every DB/service constant, read by public/bdd_const.php
+ *   - a pwd.json                : defines every database and service constant, read by
+ *                                 public/bdd_const.php
  *
- * Without them the bootstrap aborts. That used to be silent: `exit($string)` and `die($string)`
- * both return exit code 0, so PHPUnit never ran a single test and CI still reported success.
- * tests/bootstrap.php now fails with exit code 1 instead; this script is what keeps CI green
- * for the right reason.
+ * The generated pwd.json is written to tests/config/, never to config/. public/bdd_const.php
+ * resolves its location through the PWD_PATH constant, and best_define() honours a PWD_PATH
+ * environment variable, so exporting PWD_PATH=<repo>/tests/config is enough to isolate the test
+ * configuration from a developer's working one. The workflows set that variable; see
+ * .github/workflows/php-tests.yml.
+ *
+ * Without these files the bootstrap aborts. That used to be silent: `exit($string)` and
+ * `die($string)` both return exit code 0, so PHPUnit ran zero tests and CI still reported
+ * success. tests/bootstrap.php now fails with exit code 1 instead; this script is what keeps CI
+ * green for the right reason.
  *
  * Usage: php .github/scripts/setup-test-config.php
  *
- * Existing files are never overwritten, so running this by mistake on a developer machine
- * cannot destroy a working local configuration. Pass --force to regenerate them anyway.
+ * Existing files are never overwritten, so running this by mistake cannot destroy a working local
+ * configuration. Pass --force to regenerate them anyway.
  *
  * Environment variables (all optional, defaults match the docker-compose dev stack):
  *   TEST_RVCODE, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_AUTH_NAME
@@ -32,10 +39,24 @@ $dbPassword = getenv('DB_PASSWORD') ?: 'root';
 $dbName = getenv('DB_NAME') ?: 'test_episciences';
 $dbAuthName = getenv('DB_AUTH_NAME') ?: 'test_episciences_auth';
 
-// --- tests/config/env-test.php ------------------------------------------------------------
-// RVCODE has to resolve to an existing data/<rvcode> directory: defineJournalConstants()
-// builds REVIEW_PATH with realpath(), which returns false for a missing directory and would
-// silently collapse REVIEW_PATH to '/'.
+// --- writable directories -------------------------------------------------------------------
+// The dist template points its log and mail paths at placeholders such as /logs/file/path.
+// Monolog builds its directory on first write and throws when it cannot, which turns any test
+// exercising a logging code path into an error. Everything is redirected under tmp/ instead.
+$logPath = $root . '/tmp/test-logs/';
+$mailPath = $root . '/tmp/test-mail/';
+
+foreach ([$logPath, $mailPath] as $directory) {
+    if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
+        fwrite(STDERR, sprintf('Unable to create %s%s', $directory, PHP_EOL));
+        exit(1);
+    }
+}
+
+// --- tests/config/env-test.php ----------------------------------------------------------------
+// RVCODE has to resolve to an existing data/<rvcode> directory: defineJournalConstants() builds
+// REVIEW_PATH with realpath(), which returns false for a missing directory and would silently
+// collapse REVIEW_PATH to '/'.
 $dataDir = $root . '/data/' . $rvCode;
 
 if (!is_dir($dataDir) && !mkdir($dataDir, 0777, true) && !is_dir($dataDir)) {
@@ -52,7 +73,7 @@ PHP;
 
 writeFileOrFail($root . '/tests/config/env-test.php', $envTest, $force);
 
-// --- config/pwd.json ----------------------------------------------------------------------
+// --- tests/config/pwd.json --------------------------------------------------------------------
 // Derived from the committed template so that a new key added to config/dist-pwd.json is
 // automatically picked up by CI instead of silently missing from the test environment.
 $templatePath = $root . '/config/dist-pwd.json';
@@ -70,12 +91,13 @@ try {
     exit(1);
 }
 
-// EPI is the main database, CAS the authentication one, SOLR reuses the main one: the test
-// suite never queries Solr, but the constants must exist for the Zend bootstrap to succeed.
+// EPI is the main database and CAS the authentication one; they hold distinct schemas and must
+// not be pointed at the same place. SOLR reuses the main one: the suite never queries Solr, but
+// the constants have to exist for the Zend bootstrap to succeed.
 $databases = [
     'EPI' => $dbName,
-    'CAS' => $dbAuthName,
     'SOLR' => $dbName,
+    'CAS' => $dbAuthName,
 ];
 
 foreach ($databases as $section => $name) {
@@ -86,13 +108,32 @@ foreach ($databases as $section => $name) {
     $config[$section]['PWD'] = $dbPassword;
 }
 
+$config['EPISCIENCES']['LOG_PATH'] = $logPath;
+$config['EPISCIENCES']['EXCEPTIONS_LOG_PATH'] = $logPath;
+$config['EPISCIENCES']['SOLR_LOG_PATH'] = $logPath;
+$config['EPISCIENCES']['MAIL_PATH'] = $mailPath;
+
+// The template value contains spaces, which Episciences_Api_OpenAlexApiClient percent-encodes
+// into the query string. OpenAlexApiClientTest asserts on the raw value, so a space-free key is
+// needed for the assertion to mean anything.
+$config['OPENALEX']['APIKEY'] = 'ci-openalex-api-key';
+
 writeFileOrFail(
-    $root . '/config/pwd.json',
+    $root . '/tests/config/pwd.json',
     json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . PHP_EOL,
     $force
 );
 
-printf('Test configuration ready (RVCODE=%s, database=%s@%s:%d).%s', $rvCode, $dbName, $dbHost, $dbPort, PHP_EOL);
+printf(
+    'Test configuration ready (RVCODE=%s, databases=%s + %s on %s:%d).%s',
+    $rvCode,
+    $dbName,
+    $dbAuthName,
+    $dbHost,
+    $dbPort,
+    PHP_EOL
+);
+printf('Remember to export PWD_PATH=%s/tests/config before running PHPUnit.%s', $root, PHP_EOL);
 
 function writeFileOrFail(string $path, string $contents, bool $force): void
 {

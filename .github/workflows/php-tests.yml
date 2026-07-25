@@ -76,12 +76,17 @@ jobs:
           sleep 1
         done
       
+    # The application bootstrap queries the journal by its code and exits when it finds nothing,
+    # so the schemas and the seed row have to be in place before the first test runs.
     - name: Setup test database
       run: |
         mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences;"
         mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences_auth;"
+        mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/schema-episciences.sql
+        mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/seed.sql
+        mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences_auth < tests/fixtures/schema-cas.sql
 
-    # tests/config/env-test.php and config/pwd.json are gitignored but required by
+    # tests/config/env-test.php and tests/config/pwd.json are gitignored but required by
     # tests/bootstrap.php. Without them the bootstrap aborts and, until this step existed,
     # it did so with exit code 0: PHPUnit ran zero tests and this job still reported success.
     - name: Setup test configuration
@@ -94,14 +99,12 @@ jobs:
         DB_NAME: test_episciences
         DB_AUTH_NAME: test_episciences_auth
 
+    # PWD_PATH makes public/bdd_const.php read the generated tests/config/pwd.json instead of
+    # config/pwd.json, which does not exist here and belongs to the deployed environments.
     - name: Run PHPUnit tests
       run: vendor/bin/phpunit --coverage-clover=coverage.xml
       env:
-        DB_HOST: 127.0.0.1
-        DB_PORT: 3306
-        DB_USER: root
-        DB_PASSWORD: root
-        DB_NAME: test_episciences
+        PWD_PATH: ${{ github.workspace }}/tests/config
         
     - name: Upload coverage reports
       uses: codecov/codecov-action@v7
