@@ -80,7 +80,20 @@ jobs:
       run: |
         mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences;"
         mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences_auth;"
-        
+
+    # tests/config/env-test.php and config/pwd.json are gitignored but required by
+    # tests/bootstrap.php. Without them the bootstrap aborts and, until this step existed,
+    # it did so with exit code 0: PHPUnit ran zero tests and this job still reported success.
+    - name: Setup test configuration
+      run: php .github/scripts/setup-test-config.php
+      env:
+        DB_HOST: 127.0.0.1
+        DB_PORT: 3306
+        DB_USER: root
+        DB_PASSWORD: root
+        DB_NAME: test_episciences
+        DB_AUTH_NAME: test_episciences_auth
+
     - name: Run PHPUnit tests
       run: vendor/bin/phpunit --coverage-clover=coverage.xml
       env:
