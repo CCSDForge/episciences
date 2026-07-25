@@ -45,41 +45,49 @@ final class Episciences_PapersManager_SortInvitationsTest extends TestCase
     }
 
     /**
-     * Regression test for RT#293890 / PR #1121.
+     * sortInvitations() is a pure dispatcher: it classifies whatever it is given and must not
+     * deduplicate anything.
      *
-     * Episciences_PapersManager::getInvitations() groups USER_ASSIGNMENT history rows
-     * per reviewer key, and for a given group it captures the latest row once into
-     * $tmp but then pushes that *same* $tmp array once per row in the group (see
-     * getInvitations(), the `$invitations[$key][] = $tmp;` line inside the inner
-     * foreach). Since USER_ASSIGNMENT is insert-only, a reviewer whose assignment
-     * went through several status transitions commonly has more than one row
-     * sharing the same INVITATION_AID, so the array passed to sortInvitations()
-     * legitimately contains repeated copies of the same invitation.
-     *
-     * sortInvitations() must collapse these repeated copies back down to a single
-     * entry per reviewer/invitation, exactly like the pre-PR #1121 `array_shift()`
-     * did. Iterating over every element of the group (as introduced by PR #1121)
-     * re-surfaces the duplicates instead.
+     * Collapsing an invitation's assignment history into a single entry is getInvitations()'
+     * job, and it is covered by
+     * {@see Episciences_PapersManager_MergeAssignmentHistoryTest}. Asserting deduplication here
+     * would be asserting it in the wrong layer, and would forbid the legitimate case covered by
+     * the next test.
      */
-    public function testSortInvitationsDoesNotDuplicateRepeatedAssignmentHistoryRows(): void
+    public function testSortInvitationsClassifiesEveryEntryItReceives(): void
     {
-        $sameInvitationRepeatedThreeTimes = $this->makeInvitation(501, Episciences_User_Assignment::STATUS_ACTIVE);
+        $invitation = $this->makeInvitation(501, Episciences_User_Assignment::STATUS_ACTIVE);
 
         $invitations = [
-            42 => [
-                $sameInvitationRepeatedThreeTimes,
-                $sameInvitationRepeatedThreeTimes,
-                $sameInvitationRepeatedThreeTimes,
-            ],
+            42 => [$invitation, $invitation, $invitation],
         ];
 
         $result = $this->sortInvitations(Episciences_User_Assignment::STATUS_ACTIVE, $invitations);
 
-        self::assertCount(
-            1,
-            $result[Episciences_User_Assignment::STATUS_ACTIVE],
-            'A reviewer with a multi-row assignment history must appear only once in the sorted result, not once per history row.'
+        self::assertCount(3, $result[Episciences_User_Assignment::STATUS_ACTIVE]);
+    }
+
+    /**
+     * A reviewer invited twice on the same paper legitimately owns two invitations, and both must
+     * be reported. This is what PR #1121 set out to fix: the previous implementation used
+     * array_shift() and only ever kept the first one.
+     */
+    public function testSortInvitationsReportsEveryInvitationOfARepeatedlyInvitedReviewer(): void
+    {
+        $firstInvitation = $this->makeInvitation(1, Episciences_User_Assignment::STATUS_DECLINED, '2099-01-01 00:00:00', 7);
+        $secondInvitation = $this->makeInvitation(9, Episciences_User_Assignment::STATUS_ACTIVE, '2099-01-01 00:00:00', 7);
+
+        $invitations = [
+            7 => [$firstInvitation, $secondInvitation],
+        ];
+
+        $result = $this->sortInvitations(
+            [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_DECLINED],
+            $invitations
         );
+
+        self::assertCount(1, $result[Episciences_User_Assignment::STATUS_DECLINED]);
+        self::assertCount(1, $result[Episciences_User_Assignment::STATUS_ACTIVE]);
     }
 
     public function testSortInvitationsKeepsOneEntryPerDistinctReviewer(): void
@@ -88,7 +96,7 @@ final class Episciences_PapersManager_SortInvitationsTest extends TestCase
         $reviewerB = $this->makeInvitation(2, Episciences_User_Assignment::STATUS_ACTIVE, '2099-01-01 00:00:00', 2);
 
         $invitations = [
-            1 => [$reviewerA, $reviewerA],
+            1 => [$reviewerA],
             2 => [$reviewerB],
         ];
 
