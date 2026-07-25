@@ -28,9 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without any identity, which made the paper page fail.
 
 ### Changed
-- The continuous integration workflows now generate the configuration the PHPUnit bootstrap requires.
-  The test suite was aborting before its first test and reporting success: no PHP test had ever
-  actually run on CI.
+- The continuous integration workflows now generate the configuration and the database the PHPUnit
+  bootstrap requires. The test suite was aborting before its first test and reporting success: no
+  PHP test had ever actually run on CI.
+- A command line script called with an unknown option now exits with an error code instead of 0,
+  so a cron or a CI job is no longer told it succeeded.
 
 ## v1.0.56 - 2026-07-16
 
