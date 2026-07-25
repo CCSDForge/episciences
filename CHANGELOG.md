@@ -22,6 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     A reviewer’s report is categorised as an "Additional reviewer’s report",
     whereas this should only occur in cases where an editor adds a review directly 
 - The dashboard does not display pending invitations that were sent via a temporary account.
+- Reviewers were listed once per assignment history row on the paper page, instead of once per invitation.
+- An expired invitation no longer keeps its paper pinned to the reviewer's assigned papers list.
+- A reviewer holding a temporary account and invited more than once on the same paper was returned
+  without any identity, which made the paper page fail.
+
+### Changed
+- The continuous integration workflows now generate the configuration the PHPUnit bootstrap requires.
+  The test suite was aborting before its first test and reporting success: no PHP test had ever
+  actually run on CI.
 
 ## v1.0.56 - 2026-07-16
 
