@@ -134,14 +134,16 @@ class FileController extends DefaultController
             return;
         }
 
-        // Rating reports are confidential: only editorial staff, the paper's editor
-        // or the reviewer who authored the report may access the attachment.
+        // Rating reports are confidential: only editorial staff, the paper's editor,
+        // the reviewer who authored the report, or the paper's author (when reports
+        // are visible to them) may access the attachment.
         // (Mirrors the display gate in partials/remove_report_file_attachment.phtml.)
         $paper = Episciences_PapersManager::get($report->getDocid());
         $isAllowed = Episciences_Auth::isLogged() && $paper && (
                 Episciences_Auth::isAllowedToUploadPaperReport()
                 || $paper->getEditor(Episciences_Auth::getUid())
                 || (int)$report->getUid() === Episciences_Auth::getUid()
+                || $paper->isReportsVisibleToAuthor()
             );
 
         if (!$isAllowed) {

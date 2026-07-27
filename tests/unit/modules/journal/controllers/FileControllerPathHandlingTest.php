@@ -119,6 +119,8 @@ final class FileControllerPathHandlingTest extends TestCase
             "reportAction() must allow the paper's editor");
         self::assertStringContainsString('$report->getUid()', $method,
             'reportAction() must allow the reviewer who authored the report');
+        self::assertStringContainsString('isReportsVisibleToAuthor()', $method,
+            "reportAction() must allow the paper's author when reports are visible to them");
     }
 
     public function testReportActionUses404WhenNotPermitted(): void
