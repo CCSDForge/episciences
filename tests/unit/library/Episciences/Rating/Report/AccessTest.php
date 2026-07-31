@@ -384,6 +384,180 @@ class AccessTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // mayDownloadAttachment() - open peer review scenarios
+    // -------------------------------------------------------------------------
+
+    /**
+     * Anonymous visitor can download public attachment
+     * when SETTING_SHOW_RATINGS is enabled and paper is published.
+     */
+    public function testAnonymousCanDownloadPublicAttachmentWhenOpenPeerReview(): void
+    {
+        $criterion = $this->createMock(Episciences_Rating_Criterion::class);
+        $criterion->method('getAttachment')->willReturn('public_file.pdf');
+        $criterion->method('getVisibility')->willReturn(Episciences_Rating_Criterion::VISIBILITY_PUBLIC);
+
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(999);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+        $report->method('getCriteria')->willReturn([$criterion]);
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getUid')->willReturn(888);
+        $paper->method('isPublished')->willReturn(true);
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturnMap([
+            [Episciences_Review::SETTING_SHOW_RATINGS, true],
+            [Episciences_Review::SETTING_ENCAPSULATE_EDITORS, false],
+            [Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS, false],
+        ]);
+
+        $result = Episciences_Rating_Report_Access::mayDownloadAttachment(
+            $paper,
+            $report,
+            'public_file.pdf',
+            null, // anonymous user
+            $review,
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false  // isCopyEditor
+        );
+
+        self::assertTrue($result);
+    }
+
+    /**
+     * Anonymous visitor cannot download contributor attachment
+     * even when SETTING_SHOW_RATINGS is enabled.
+     */
+    public function testAnonymousCannotDownloadContributorAttachment(): void
+    {
+        $criterion = $this->createMock(Episciences_Rating_Criterion::class);
+        $criterion->method('getAttachment')->willReturn('contributor_file.pdf');
+        $criterion->method('getVisibility')->willReturn(Episciences_Rating_Criterion::VISIBILITY_CONTRIBUTOR);
+
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(999);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+        $report->method('getCriteria')->willReturn([$criterion]);
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getUid')->willReturn(888);
+        $paper->method('isPublished')->willReturn(true);
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturnMap([
+            [Episciences_Review::SETTING_SHOW_RATINGS, true],
+            [Episciences_Review::SETTING_ENCAPSULATE_EDITORS, false],
+            [Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS, false],
+        ]);
+
+        $result = Episciences_Rating_Report_Access::mayDownloadAttachment(
+            $paper,
+            $report,
+            'contributor_file.pdf',
+            null, // anonymous user
+            $review,
+            false,
+            false,
+            false,
+            false
+        );
+
+        self::assertFalse($result);
+    }
+
+    /**
+     * Anonymous visitor cannot download anything when SETTING_SHOW_RATINGS is disabled.
+     */
+    public function testAnonymousCannotDownloadWhenShowRatingsDisabled(): void
+    {
+        $criterion = $this->createMock(Episciences_Rating_Criterion::class);
+        $criterion->method('getAttachment')->willReturn('public_file.pdf');
+        $criterion->method('getVisibility')->willReturn(Episciences_Rating_Criterion::VISIBILITY_PUBLIC);
+
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(999);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+        $report->method('getCriteria')->willReturn([$criterion]);
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getUid')->willReturn(888);
+        $paper->method('isPublished')->willReturn(true);
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturnMap([
+            [Episciences_Review::SETTING_SHOW_RATINGS, false], // disabled
+            [Episciences_Review::SETTING_ENCAPSULATE_EDITORS, false],
+            [Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS, false],
+        ]);
+
+        $result = Episciences_Rating_Report_Access::mayDownloadAttachment(
+            $paper,
+            $report,
+            'public_file.pdf',
+            null,
+            $review,
+            false,
+            false,
+            false,
+            false
+        );
+
+        self::assertFalse($result);
+    }
+
+    /**
+     * Anonymous visitor cannot download when paper is not published.
+     */
+    public function testAnonymousCannotDownloadWhenPaperNotPublished(): void
+    {
+        $criterion = $this->createMock(Episciences_Rating_Criterion::class);
+        $criterion->method('getAttachment')->willReturn('public_file.pdf');
+        $criterion->method('getVisibility')->willReturn(Episciences_Rating_Criterion::VISIBILITY_PUBLIC);
+
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(999);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+        $report->method('getCriteria')->willReturn([$criterion]);
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getUid')->willReturn(888);
+        $paper->method('isPublished')->willReturn(false); // not published
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturnMap([
+            [Episciences_Review::SETTING_SHOW_RATINGS, true],
+            [Episciences_Review::SETTING_ENCAPSULATE_EDITORS, false],
+            [Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS, false],
+        ]);
+
+        $result = Episciences_Rating_Report_Access::mayDownloadAttachment(
+            $paper,
+            $report,
+            'public_file.pdf',
+            null,
+            $review,
+            false,
+            false,
+            false,
+            false
+        );
+
+        self::assertFalse($result);
+    }
+
+    // -------------------------------------------------------------------------
     // Role constants
     // -------------------------------------------------------------------------
 

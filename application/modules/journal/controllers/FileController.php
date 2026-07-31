@@ -119,7 +119,7 @@ class FileController extends DefaultController
     {
         $params = $this->getRequest()->getParams();
 
-        $id = $params['id'];
+        $id = (int)$params['id'];
         $filename = $params['filename'];
         $extension = $params['extension'];
         $file = $filename . '.' . $extension;
