@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\User\UserNotFoundException;
+
 class Episciences_User_Assignment
 {
 
@@ -377,5 +379,29 @@ class Episciences_User_Assignment
         }
 
         return $reviewer;
+    }
+
+    /**
+     * Determines the recipient based on their type (temporary or non-temporary).
+     * @return Episciences_User|Episciences_User_Tmp
+     * @throws Zend_Db_Statement_Exception
+     * @throws Exception
+     */
+    public function resolveFromUser(): Episciences_User|Episciences_User_Tmp
+    {
+        $fromUid = $this->getUid();
+
+        if ($this->isTmp_user()) {
+            $tmpUser = Episciences_TmpUsersManager::findById($fromUid);
+
+            if(!$tmpUser) {
+                throw new UserNotFoundException($fromUid);
+            }
+        }
+
+        $fromUser = new Episciences_User();
+        $fromUser->findWithCAS($fromUid);
+
+        return $fromUser;
     }
 }

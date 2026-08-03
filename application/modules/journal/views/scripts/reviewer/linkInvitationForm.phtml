@@ -3,12 +3,11 @@
     $loggedScreenName = Episciences_Auth::getScreenName();
     $loggedEmail = Episciences_Auth::getEmail();
     ?>
-    <p>
-        <?= sprintf($this->translate('Elle a été envoyée au compte %s%s < %s >%s'), '<a>', $this->fromScreeName, $this->fromEmail, '</a>') ?>
-    </p>
 
 
     <?php if (!$this->isAlreadyInvited) : ?>
+
+
         <p>
             <?= sprintf($this->translate("Voulez-vous l’associer à votre compte %s %s < %s > %s pour continuer ?"), '<a>', $loggedScreenName, $loggedEmail, '</a>') ?>
         </p>
@@ -29,9 +28,7 @@
         $competeMsg = $this->translate('Finaliser la relecture');
         ?>
 
-        <p>
-            <?= sprintf($this->translate("Une invitation vous a déjà été envoyée via ce compte %s%s < %s >%s"), '<a>', $loggedScreenName, $loggedEmail, '</a>') ?>
-        </p>
+
         <div class="text-center">
             <a class="btn btn-sm btn-success" href="<?= $this->latestInvitationUrl ?>" class="" aria-label="<?= $competeMsg ?>"><span
                         class="fa-solid fa-check" style="margin-right: 5px;"></span><?= $competeMsg ?>

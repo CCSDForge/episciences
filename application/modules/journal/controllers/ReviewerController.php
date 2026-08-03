@@ -1,4 +1,7 @@
 <?php
+
+use Episciences\User\UserNotFoundException;
+
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
 class ReviewerController extends PaperDefaultController
@@ -34,69 +37,105 @@ class ReviewerController extends PaperDefaultController
             return;
         }
 
-        $doRating = true;
-
         // fetch assignment
         $assignmentId = $invitation->getAid();
         $assignment = Episciences_User_AssignmentsManager::findById($assignmentId);
 
-        if (
-            Episciences_Auth::isLogged() &&
-            Episciences_Auth::getUid() !== $assignment->getUid()
-        ) {
-
-            $result = $this->checkAndProcessLinkedInvitation($request, $invitation, $assignment, $doRating);
-
-        } elseif ($assignment->isTmp_user()) {
+        if (!Episciences_Auth::isLogged() && $assignment->isTmp_user()) {
 
             $tmpUser = Episciences_TmpUsersManager::findById($assignment->getUid());
 
-            if (!$tmpUser || md5($tmpUser->getEmail()) !== $request->getParam('tmp')) {
-                $doRating = false;
+            if (md5($tmpUser->getEmail()) !== $request->getParam('tmp')) {
+                $this->view->errors = 'Lien non valide; le jeton transmis dans la requête est erroné.';
+                return;
             }
 
         }
-
-        $paper = Episciences_PapersManager::get($assignment->getItemid());
-
-        if (!$doRating) {
-
-            $checkedIsAlreadyInvited = $this->checkIsAlreadyInvited($paper);
-
-            $this->view->isAlreadyInvited = $checkedIsAlreadyInvited['isAlreadyInvited'];
-            $this->view->latestInvitationUrl = $checkedIsAlreadyInvited['url'] ?? null;
-
-            $message = "Cette invitation ne vous est pas destinée";
-
-            if (
-                isset($result['isAlreadyLinked']) &&
-                $result['isAlreadyLinked'] &&
-                $assignment->getFrom_uid() === Episciences_Auth::getUid()
-            ) {
-                $message = "Cette invitation vous était initialement destinée, mais elle a déjà été utilisée par un autre compte. Si vous pensez qu’il s’agit d’une erreur, veuillez contacter notre support.";
-            }
-
-            if (isset($result['isPreLinked']) && $result['isPreLinked']) {
-
-                if (isset($result['decision']) && $result['decision'] === "declineToLink") {
-                    $this->view->displayLinkedInvitationForm = false;
-                } else {
-                    $message = "Cette invitation n'est pas liée au compte en cours";
-                    $this->view->displayLinkedInvitationForm = true;
-                }
-
-            }
-
-            $message = $this->view->translate($message);
-
-            $this->view->errors = array($message);
-
-            return;
-        }
-
 
         // fetch reviewer answer (if there is one)
         $invitation->loadAnswer();
+
+        //  error handling
+        if (
+            $invitation->isAnswered() ||
+            $invitation->hasExpired() ||
+            $invitation->isCancelled()
+        ) {
+
+            $errorMsg = $assignment->getUid() === Episciences_Auth::getUid() ? 'Vous avez déjà répondu à cette invitation.' : "Il apparaît qu'une réponse a déjà été transmise.";
+
+            if (
+                $invitation->hasExpired() ||
+                $invitation->isCancelled()
+            ) {
+
+                if ($invitation->hasExpired()) {
+                    $errorMsg = 'Cette invitation a expiré.';
+                } else {
+
+                    $errorMsg = "Cette invitation a été annulée, vous n'avez plus besoin d'évaluer cet article.";
+                }
+
+
+            }
+
+            $this->view->displayInvitationDetails = true;
+            $this->view->invitation = $invitation;
+            $this->view->errors = $errorMsg;
+            return;
+
+        }
+
+        // processing of the request
+        if (!$invitation->hasExpired() && !$invitation->isAnswered()) {
+            $this->view->jQuery()->addJavascriptFile("/js/reviewer/invitation.js");
+        }
+
+        $paper = Episciences_PapersManager::get($assignment->getItemid());
+        $checkIsAlreadyInvited = $this->checkIsAlreadyInvited($paper);
+        $isAlreadyInvited = $checkIsAlreadyInvited['isAlreadyInvited'] ?? false;
+
+        $this->view->isAlreadyInvited = $isAlreadyInvited;
+        $this->view->latestInvitationUrl = $checkIsAlreadyInvited['url'] ?? null;
+
+        $result = [];
+
+        if (!$isAlreadyInvited) {
+            $result = $this->checkAndProcessLinkedInvitation($request, $invitation, $assignment);
+        }
+
+
+        $isAlreadyLinked = ($result['isAlreadyLinked'] ?? false) && $result['isAlreadyLinked'];
+
+        if ($isAlreadyLinked && $assignment->getFrom_uid() === Episciences_Auth::getUid()) {
+            $errorMsg = "Cette invitation vous était initialement destinée, mais elle a déjà été utilisée par un autre compte. Si vous pensez qu’il s’agit d’une erreur, veuillez contacter notre support.";
+            $this->view->errors = $errorMsg;
+            return;
+        }
+
+        $isPreLinked = ($result['isPreLinked'] ?? false) && $result['isPreLinked'];
+
+
+        if ($isPreLinked) {
+            $hasDecision = $result['decision'] ?? false;
+            $isDeclinedToLInk = $hasDecision && $result['decision'] === 'declineToLink';
+            $isAcceptedToLInk = $hasDecision && $result['decision'] === 'acceptToLink';
+
+            if ($isAcceptedToLInk || $isDeclinedToLInk) {
+
+                if ($isDeclinedToLInk) {
+                    $errorMsg = "Cette invitation ne vous est pas destinée";
+                    $this->view->errors = $errorMsg;
+
+                }
+
+                $this->view->displayLinkedInvitationForm = false;
+            } else {
+                $errorMsg = "Cette invitation n'est pas liée au compte en cours";
+                $this->view->errors = $errorMsg;
+                $this->view->displayLinkedInvitationForm = true;
+            }
+        }
 
         // INVITATION
         $this->view->invitation = $invitation;
@@ -446,83 +485,105 @@ class ReviewerController extends PaperDefaultController
      * @param Zend_Controller_Request_Http $request
      * @param Episciences_User_Invitation $invitation
      * @param Episciences_User_Assignment $assignment
-     * @param bool $doRating
      * @return array
-     * @throws JsonException
-     * @throws Zend_Controller_Exception
-     * @throws Zend_Controller_Request_Exception
-     * @throws Zend_Db_Adapter_Exception
-     * @throws Zend_Db_Statement_Exception
-     * @throws Zend_Exception
-     * @throws Zend_Form_Exception
-     * @throws Zend_Mail_Exception
-     * @throws Zend_Session_Exception
      */
 
-    private function checkAndProcessLinkedInvitation(Zend_Controller_Request_Http $request, Episciences_User_Invitation $invitation, Episciences_User_Assignment $assignment, bool &$doRating): array
+    private function checkAndProcessLinkedInvitation(Zend_Controller_Request_Http $request, Episciences_User_Invitation $invitation, Episciences_User_Assignment $assignment): array
     {
-        $doRating = false;
-        $decision = null;
 
-        if ($assignment->getFrom_uid()){ // linked to
+        if (
+            !Episciences_Auth::isLogged() ||
+            $invitation->hasExpired() ||
+            $invitation->isAnswered() ||
+            $invitation->isCancelled() ||
+            Episciences_Auth::getUid() === $assignment->getUid()
+        ) {
+            return [];
+        }
+
+        if ($assignment->getFrom_uid()) { // linked to
             return ['isAlreadyLinked' => true];
         }
 
         $invitationId = $invitation->getId();
-        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+        $session = $this->getSession();
 
-        // l'invitation en cours n'est pas encore attachée au compte connecté
+        // Check whether this invitation has already been marked as "pre-linked" for this account
         $isPreLinked = $session->linkedInvitationIds[$invitationId]['isPreLinked'] ?? false;
 
-        $fromUid = $assignment->getUid();
-
-        $isAssignedToTmpUser = (bool)$assignment->isTmp_user();
-
-        if ($isAssignedToTmpUser) {
-            // User to which the invitation is sent
-            $fromUser = Episciences_TmpUsersManager::findById($fromUid);
-        } else {
-            $fromUser = new Episciences_User();
-            $fromUser->findWithCAS($fromUid);
+        try {
+            $fromUser = $assignment->resolveFromUser();
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return ['isPreLinked' => $isPreLinked];
         }
 
+        if ($fromUser->getEmail() === Episciences_Auth::getEmail()) { //Email matches the logged user; automatic linking
+            $isAlreadyLinked = $this->linkToLoggedAccount($assignment);
+            return ['isAlreadyLinked' => $isAlreadyLinked];
+        }
+
+        // prepare view data
         $this->view->fromScreeName = $fromUser->getScreenName();
         $this->view->fromEmail = $fromUser->getEmail();
-
-        if (!$isPreLinked) { // Add invitation ID
+        // First visit: marked as "pre-linked"; pending confirmation
+        if (!$isPreLinked) {
             $session->linkedInvitationIds[$invitationId] = ['isPreLinked' => true];
-            $isPreLinked = true;
-        } else { // already attached to the logged-in account
 
-            $post = $request->getPost();
-
-            if (isset($post['linkInvitation'])) {
-                if ($post['linkInvitation'] === 'acceptToLink') {
-
-                    // The UID of the account to which the invitation is sent.
-                    $assignment->setFrom_uid($fromUid);
-                    // link the assignment to the connected account
-                    $assignment->setUid(Episciences_Auth::getUid());
-
-                    if ($isAssignedToTmpUser) {
-                        $assignment->setTmp_user(0);
-                    }
-
-                    $assignment->save();
-                    $doRating = true;
-
-                    $infoMessage = $this->view->translate("L’invitation a été correctement associée à votre compte.");
-                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_INFO)->addMessage($infoMessage);
-
-                } elseif ($post['linkInvitation'] === 'declineToLink') {
-                    $decision = 'declineToLink';
-                }
-                // Il serait alors possible de proposer à nouveau que l'invitation soit liée au compte connecté.
-                unset($session->linkedInvitationIds[$invitationId]);
-            }
+            return [
+                'isPreLinked' => true,
+                'decision' => null
+            ];
         }
 
-        return ['isPreLinked' => $isPreLinked, 'decision' => $decision];
+        // Next step: processing the user's decision
+        $decision = $this->processLinkDecision($request, $assignment, $invitationId, $session);
+
+        return [
+            'isPreLinked' => $isPreLinked,
+            'decision' => $decision,
+        ];
+
+    }
+
+    /**
+     * Handles the user's decision (accept or reject the link)
+     * @param Zend_Controller_Request_Http $request
+     * @param Episciences_User_Assignment $assignment
+     * @param int $invitationId
+     * @param Zend_Session_Namespace $session
+     * @return string|null
+     */
+
+
+    private function processLinkDecision(
+        Zend_Controller_Request_Http $request,
+        Episciences_User_Assignment  $assignment,
+        int                          $invitationId,
+        Zend_Session_Namespace       $session
+    ): ?string
+    {
+        $post = $request->getPost();
+
+        if (empty($post['linkInvitation'])) {
+            return null;
+        }
+
+        $decision = $post['linkInvitation'];
+
+        if ($decision === 'acceptToLink') {
+            $this->linkToLoggedAccount($assignment);
+
+            $this->_helper->FlashMessenger
+                ->setNamespace(Ccsd_View_Helper_Message::MSG_INFO)
+                ->addMessage($this->view->translate("L'invitation a été correctement associée à votre compte."));
+        } elseif ($decision === 'declineToLink') {
+            $this->redirect($this->view->url(['controller' => 'paper', 'action' => 'ratings']));
+        }
+
+        // Cleanup: The invitation has been processed (accepted or declined)
+        unset($session->linkedInvitationIds[$invitationId]);
+        return $decision;
     }
 
     /**
@@ -533,7 +594,6 @@ class ReviewerController extends PaperDefaultController
      * @throws Zend_Db_Statement_Exception
      */
 
-
     private function checkIsAlreadyInvited(Episciences_Paper $paper): array
     {
 
@@ -542,46 +602,64 @@ class ReviewerController extends PaperDefaultController
         $reviewers = $paper->getReviewers();
         $isReviewer = isset($reviewers[Episciences_Auth::getUid()]);
 
-        if (!$isReviewer) { // is invitations sent to the logged-in account
-            $pendingInvitation = null;
-            $paperInvitations = $paper->getInvitations([Episciences_User_Assignment::STATUS_PENDING], true)[Episciences_User_Assignment::STATUS_PENDING];
+        if ($isReviewer) {
+            $ratingUrlUrl = $this->view->url([
+                'controller' => 'paper',
+                'action' => 'rating',
+                'id' => $paper->getDocid()
+            ]);
 
-            foreach ($paperInvitations as $arrayInvitation) {
-
-                if ((int)$arrayInvitation['UID'] === Episciences_Auth::getUid()) {
-
-                    /** @var Episciences_User_Invitation $pendingInvitation */
-                    $pendingInvitation = Episciences_User_InvitationsManager::find(['ID' => $arrayInvitation['INVITATION_ID']]);
-                    break;
-                }
-            }
-
-            if ($pendingInvitation && $pendingInvitation->getId()) {
-                $invitationUrl = $this->view->url([
-                    'controller' => 'reviewer',
-                    'action' => 'invitation',
-                    'id' => $pendingInvitation->getId(),
-                    'lang' => Episciences_Auth::getLangueid()
-                ]);
-
-                $result ['isAlreadyInvited'] = true;
-                $result ['url'] = $invitationUrl;
-            }
+            $result ['isAlreadyInvited'] = true;
+            $result ['url'] = $ratingUrlUrl;
+            $result['isReviewer'] = true;
 
             return $result;
         }
 
-        $ratingUrlUrl = $this->view->url([
-            'controller' => 'paper',
-            'action' => 'rating',
-            'id' => $paper->getDocid()
-        ]);
+        // is invitations sent to the logged-in account
+        $pendingInvitation = null;
+        $paperInvitations = $paper->getInvitations([Episciences_User_Assignment::STATUS_PENDING], true)[Episciences_User_Assignment::STATUS_PENDING];
 
-        $result ['isAlreadyInvited'] = true;
-        $result ['url'] = $ratingUrlUrl;
+        foreach ($paperInvitations as $arrayInvitation) {
+
+            if ((int)$arrayInvitation['UID'] === Episciences_Auth::getUid()) {
+
+                /** @var Episciences_User_Invitation $pendingInvitation */
+                $pendingInvitation = Episciences_User_InvitationsManager::find(['ID' => $arrayInvitation['INVITATION_ID']]);
+                break;
+            }
+        }
+
+        if ($pendingInvitation && $pendingInvitation->getId()) {
+            $invitationUrl = $this->view->url([
+                'controller' => 'reviewer',
+                'action' => 'invitation',
+                'id' => $pendingInvitation->getId(),
+                'lang' => Episciences_Auth::getLangueid()
+            ]);
+
+            $result ['isAlreadyInvited'] = true;
+            $result ['url'] = $invitationUrl;
+        }
 
         return $result;
 
+    }
+
+    private function linkToLoggedAccount(Episciences_User_Assignment $assignment): bool
+    {
+
+        $assignment->setFrom_uid($assignment->getUid()); // The UID of the account to which the invitation is sent.
+        $assignment->setUid(Episciences_Auth::getUid()); // link the assignment to the connected account
+        $assignment->setTmp_user(0);
+        $result = false;
+        try {
+            $result = $assignment->save();
+        } catch (Zend_Db_Adapter_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+
+        return $result;
     }
 
 }
