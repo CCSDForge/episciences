@@ -9,6 +9,8 @@ class Episciences_PapersManager
     public const WITH_FILTER = '-1';
     // "suggestion" filter value matching any known decision suggestion type
     public const ANY_SUGGESTION_FILTER = 'any';
+    // Only the paper management lists offer the decision-suggestion filter
+    public const SUGGESTION_FILTER_CONTROLLER = 'administratepaper';
     public const ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE = 'acceptedAskAuthorsFinalVersion';
 
     /**
@@ -211,10 +213,7 @@ class Episciences_PapersManager
                     $select = self::applyRepositoriesFilter($select, $value);
                 }
 
-                // Editors' decision suggestions are confidential: the filter must stay unreachable
-                // from the author ("paper/submitted") and reviewer ("paper/ratings") paper lists,
-                // which feed this method with unvalidated request parameters too.
-                if ($setting === 'suggestion' && Episciences_Auth::isAllowedToManagePaper()) {
+                if ($setting === 'suggestion' && self::isSuggestionFilterAllowed()) {
                     $select = self::applySuggestionFilter($select, $value);
                 }
             }
@@ -4153,6 +4152,28 @@ class Episciences_PapersManager
 
         return $select;
 
+    }
+
+    /**
+     * Is the decision-suggestion filter available in the current context?
+     *
+     * Editors' decision suggestions are confidential and only meaningful on the paper management
+     * lists. The other lists that share the filter form show the current user's own papers
+     * ("paper/submitted") or the papers they review ("paper/ratings"), where exposing the pending
+     * suggestion would be both pointless and a disclosure.
+     *
+     * Single source of truth for showing the form element (Episciences_View_Helper_PaperFilter)
+     * and for applying it to the query, so the two cannot drift apart.
+     *
+     * @return bool
+     */
+    public static function isSuggestionFilterAllowed(): bool
+    {
+        $request = Zend_Controller_Front::getInstance()->getRequest();
+
+        return $request !== null
+            && $request->getControllerName() === self::SUGGESTION_FILTER_CONTROLLER
+            && Episciences_Auth::isAllowedToManagePaper();
     }
 
     /**

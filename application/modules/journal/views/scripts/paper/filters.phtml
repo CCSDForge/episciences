@@ -53,14 +53,17 @@ $actionName = Zend_Controller_Front::getInstance()->getRequest()->getActionName(
             </div>
 
             <!-- Ligne 3 : Section | Suggestions | Repositories -->
+            <?php // The suggestion filter only exists on the management lists: elsewhere the
+                  // section field takes back the width it would have used. ?>
+            <?php $hasSuggestion = isset($this->element->suggestion); ?>
             <div class="row">
                 <?php if (isset($this->element->sid)) : ?>
-                    <div class="col-sm-4">
+                    <div class="col-sm-<?= $hasSuggestion ? 4 : 8 ?>">
                         <?= $this->element->sid ?>
                     </div>
                 <?php endif; ?>
 
-                <?php if (isset($this->element->suggestion)) : ?>
+                <?php if ($hasSuggestion) : ?>
                     <div class="col-sm-4">
                         <?= $this->element->suggestion ?>
                     </div>

@@ -502,6 +502,87 @@ final class Episciences_PapersManagerTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
+    // isSuggestionFilterAllowed(): the filter is confined to the management lists
+    // -----------------------------------------------------------------------
+
+    /**
+     * Runs $callback with the front controller pointed at $controller, then restores it.
+     */
+    private function withCurrentController(?string $controller, callable $callback): mixed
+    {
+        $front = \Zend_Controller_Front::getInstance();
+        $previousRequest = $front->getRequest();
+
+        try {
+            if ($controller !== null) {
+                $request = new \Zend_Controller_Request_Http('http://localhost/');
+                $request->setControllerName($controller);
+                $front->setRequest($request);
+            } else {
+                $property = new \ReflectionProperty(\Zend_Controller_Front::class, '_request');
+                $property->setAccessible(true);
+                $property->setValue($front, null);
+            }
+
+            return $callback();
+        } finally {
+            $property = new \ReflectionProperty(\Zend_Controller_Front::class, '_request');
+            $property->setAccessible(true);
+            $property->setValue($front, $previousRequest);
+        }
+    }
+
+    /**
+     * @dataProvider disallowedSuggestionFilterControllerProvider
+     */
+    public function testSuggestionFilterIsNotAllowedOutsideTheManagementLists(?string $controller): void
+    {
+        // Short-circuits before any authentication check: the controller alone rules it out.
+        $allowed = $this->withCurrentController(
+            $controller,
+            static fn(): bool => Episciences_PapersManager::isSuggestionFilterAllowed()
+        );
+
+        self::assertFalse($allowed);
+    }
+
+    /**
+     * @return array<string, array{?string}>
+     */
+    public static function disallowedSuggestionFilterControllerProvider(): array
+    {
+        return [
+            'author paper list (paper/submitted)' => ['paper'],
+            'unrelated controller' => ['volume'],
+            'no dispatched request (CLI)' => [null],
+        ];
+    }
+
+    /**
+     * The suggestion filter must be ignored when it reaches applyFilters() from a list that does
+     * not offer it, e.g. a hand-crafted /paper/submitted?suggestion=8 request.
+     */
+    public function testApplyFiltersIgnoresSuggestionOutsideTheManagementLists(): void
+    {
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, 'applyFilters');
+        $reflection->setAccessible(true);
+
+        $sql = $this->withCurrentController('paper', function () use ($reflection): string {
+            /** @var \Zend_Db_Select $select */
+            $select = $reflection->invoke(
+                null,
+                $this->newPapersSelect(),
+                ['is' => ['suggestion' => (string)Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION]]
+            );
+
+            return $select->assemble();
+        });
+
+        self::assertStringNotContainsString('DOCID IN', $sql);
+        self::assertStringNotContainsString(T_PAPER_COMMENTS, $sql);
+    }
+
+    // -----------------------------------------------------------------------
     // applySuggestionFilter() / getPapersWithPendingSuggestionQuery()
     // -----------------------------------------------------------------------
 

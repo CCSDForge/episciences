@@ -177,7 +177,10 @@ class Episciences_View_Helper_PaperFilter extends Zend_View_Helper_Abstract
                 'decorators' => $decorators
             ]));
 
-            // decision suggestion
+        }
+
+        // decision suggestion: paper management lists only, see isSuggestionFilterAllowed()
+        if (Episciences_PapersManager::isSuggestionFilterAllowed()) {
             $form->addElement(new Zend_Form_Element_Multiselect([
                 'name' => 'suggestion',
                 'label' => "Suggestion de décision",
