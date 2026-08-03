@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Redesign the "Manage the journal" dashboard panel as a four-quadrant grid (evaluation, revisions & suggestions, copy-editing & publication, archives), with a compact paper search box moved into each panel header.
+- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Add a "decision suggestion" filter (acceptance / refusal / revision) to the paper list, and show the number of papers with a pending suggestion on the dashboard. A suggestion stops being counted as pending once the editor in chief has ruled, whether by accepting the paper or by requesting revisions. The filter is restricted to users allowed to manage papers.
+
 ## v1.0.56 - 2026-07-16
 
 ### Added

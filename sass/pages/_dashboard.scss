@@ -1,3 +1,8 @@
+// Horizontal space reserved on a panel header for the collapse chevron:
+// its inset from the right edge, plus the room its box needs before the header content.
+$dashboard-collapse-inset: 15px;
+$dashboard-collapse-box: 40px;
+
 // Flex header for dashboard panels
 .dashboard-panel-header {
   display: flex;
@@ -6,22 +11,22 @@
   flex-wrap: wrap;
   gap: 10px;
   position: relative;
-  // reserve room for the collapse chevron (injected via JS, absolutely positioned below)
-  padding-right: 55px;
+  padding-right: $dashboard-collapse-inset + $dashboard-collapse-box;
 
   // the collapse chevron is injected into .panel-title by applyCollapse() (public/js/functions.js);
   // take it out of flow to anchor it to the header's right edge, independent of the title's width
   .collapseButton {
     position: absolute;
     top: 50%;
-    right: 15px;
+    right: $dashboard-collapse-inset;
     transform: translateY(-50%);
     float: none;
   }
-}
 
-.dashboard-panel-title {
-  margin: 0 !important;
+  // scoped through the header to outrank both `h2` and Bootstrap's `.panel-title`
+  .dashboard-panel-title {
+    margin: 0;
+  }
 }
 
 .dashboard-search-container {
@@ -35,12 +40,11 @@
   margin-bottom: 20px;
 }
 
+// Rendered as an h3 (the panel title is an h2): size and color come from the theme
 .dashboard-quadrant-title {
   border-bottom: 1px solid $almost-white;
   padding-bottom: 5px;
   font-weight: bold;
-  color: #555;
-  text-transform: capitalize;
 
   .glyphicon,
   .fa-solid {

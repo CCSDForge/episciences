@@ -20,9 +20,9 @@ class DashboardPaperSearch {
             return;
         }
 
-        // Prevent clicks from bubbling up to an ancestor .panel-heading collapse toggle
-        // when this component is embedded inside a dashboard panel header
-        this.container.addEventListener('click', e => e.stopPropagation());
+        // Note: when this component sits inside a collapsible .panel-heading, the collapse
+        // toggle in public/js/functions.js ignores clicks originating here, so there is no
+        // need to stop propagation (which would also break document-level handlers).
 
         this.init();
     }
