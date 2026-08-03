@@ -7,6 +7,8 @@ class Episciences_PapersManager
 
     public const NONE_FILTER = '0';
     public const WITH_FILTER = '-1';
+    // "suggestion" filter value matching any known decision suggestion type
+    public const ANY_SUGGESTION_FILTER = 'any';
     public const ACCEPTED_ASK_AUTHORS_FINAL_VERSION_ACTION_TYPE = 'acceptedAskAuthorsFinalVersion';
 
     /**
@@ -209,7 +211,10 @@ class Episciences_PapersManager
                     $select = self::applyRepositoriesFilter($select, $value);
                 }
 
-                if ($setting === 'suggestion') {
+                // Editors' decision suggestions are confidential: the filter must stay unreachable
+                // from the author ("paper/submitted") and reviewer ("paper/ratings") paper lists,
+                // which feed this method with unvalidated request parameters too.
+                if ($setting === 'suggestion' && Episciences_Auth::isAllowedToManagePaper()) {
                     $select = self::applySuggestionFilter($select, $value);
                 }
             }
@@ -689,6 +694,37 @@ class Episciences_PapersManager
     }
 
     /**
+     * Counts the papers of a review with a pending decision suggestion, per suggestion type.
+     * Single grouped query: the dashboard needs all three counts at once.
+     *
+     * @param int $rvId Review id
+     * @return array<int, int> [Episciences_CommentsManager::TYPE_SUGGESTION_* => count], every known
+     *                         type present, missing types counted as 0
+     */
+    public static function countPendingSuggestionsByType(int $rvId): array
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        $types = Episciences_CommentsManager::$suggestionTypes;
+
+        $select = $db->select()
+            ->from(['c' => T_PAPER_COMMENTS], ['TYPE', 'nb' => new Zend_Db_Expr('COUNT(DISTINCT c.DOCID)')])
+            ->join(['p' => T_PAPERS], 'c.DOCID = p.DOCID', [])
+            ->where('p.RVID = ?', $rvId)
+            ->where('p.STATUS NOT IN (?)', self::getFinalizedStatusForSuggestions())
+            ->where(self::getPendingSuggestionCondition($types))
+            ->group('c.TYPE');
+
+        $counts = array_fill_keys($types, 0);
+
+        foreach ($db->fetchAll($select) as $row) {
+            $counts[(int)$row['TYPE']] = (int)$row['nb'];
+        }
+
+        return $counts;
+    }
+
+    /**
      * Counts the papers of a review with a pending decision suggestion of the given type
      *
      * @param int $rvId Review id
@@ -697,21 +733,7 @@ class Episciences_PapersManager
      */
     public static function countPapersWithPendingSuggestions(int $rvId, int $type): int
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        $select = $db->select()
-            ->from(['p' => T_PAPERS], [new Zend_Db_Expr('COUNT(DISTINCT p.DOCID)')])
-            ->join(['c' => T_PAPER_COMMENTS], 'p.DOCID = c.DOCID', [])
-            ->where('p.RVID = ?', $rvId)
-            ->where('c.TYPE = ?', $type)
-            ->where('p.STATUS NOT IN (?)', self::getFinalizedStatusForSuggestions());
-
-        $actedUponStatus = self::getActedUponStatusForSuggestionType($type);
-        if (!empty($actedUponStatus)) {
-            $select->where('p.STATUS NOT IN (?)', $actedUponStatus);
-        }
-
-        return (int)$db->fetchOne($select);
+        return self::countPendingSuggestionsByType($rvId)[$type] ?? 0;
     }
 
     /**
@@ -4140,15 +4162,30 @@ class Episciences_PapersManager
      */
     private static function applySuggestionFilter(Zend_Db_Select $select, array|string $values): Zend_Db_Select
     {
-        $types = is_array($values) ? $values : [$values];
+        return $select->where(
+            'DOCID IN (?)',
+            self::getPapersWithPendingSuggestionQuery(self::sanitizeSuggestionTypes($values))
+        );
+    }
 
-        if (in_array('any', $types, true)) {
-            $types = Episciences_CommentsManager::$suggestionTypes;
+    /**
+     * Turns raw filter input into a list of known suggestion types.
+     * Anything unknown is dropped, so an arbitrary PAPER_COMMENTS.TYPE cannot be filtered on.
+     *
+     * @param array<int, int|string>|string $values
+     * @return int[]
+     */
+    private static function sanitizeSuggestionTypes(array|string $values): array
+    {
+        $values = is_array($values) ? $values : [$values];
+
+        if (in_array(self::ANY_SUGGESTION_FILTER, $values, true)) {
+            return Episciences_CommentsManager::$suggestionTypes;
         }
 
-        $types = array_map('intval', $types);
-
-        return $select->where('DOCID IN (?)', self::getPapersWithPendingSuggestionQuery($types));
+        return array_values(
+            array_intersect(array_map('intval', $values), Episciences_CommentsManager::$suggestionTypes)
+        );
     }
 
     /**
@@ -4158,6 +4195,25 @@ class Episciences_PapersManager
      * @return Zend_Db_Select
      */
     private static function getPapersWithPendingSuggestionQuery(array $types): Zend_Db_Select
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+
+        return $db->select()
+            ->from(['c' => T_PAPER_COMMENTS], ['DOCID'])
+            ->join(['p' => T_PAPERS], 'c.DOCID = p.DOCID', [])
+            ->where('p.RVID = ?', RVID)
+            ->where('p.STATUS NOT IN (?)', self::getFinalizedStatusForSuggestions())
+            ->where(self::getPendingSuggestionCondition($types));
+    }
+
+    /**
+     * SQL condition matching a pending suggestion of one of $types, each type carrying its own
+     * "already acted upon" status exclusions. Matches nothing when no known type is given.
+     *
+     * @param int[] $types
+     * @return string
+     */
+    private static function getPendingSuggestionCondition(array $types): string
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -4173,17 +4229,8 @@ class Episciences_PapersManager
             $conditions[] = "($condition)";
         }
 
-        $subSelect = $db->select()
-            ->from(['c' => T_PAPER_COMMENTS], ['DOCID'])
-            ->join(['p' => T_PAPERS], 'c.DOCID = p.DOCID', [])
-            ->where('p.RVID = ?', RVID)
-            ->where('p.STATUS NOT IN (?)', self::getFinalizedStatusForSuggestions());
-
-        if (!empty($conditions)) {
-            $subSelect->where(implode(' OR ', $conditions));
-        }
-
-        return $subSelect;
+        // No known suggestion type left: the filter must exclude everything, not match everything.
+        return empty($conditions) ? '1 = 0' : implode(' OR ', $conditions);
     }
 
     /**
@@ -4219,7 +4266,12 @@ class Episciences_PapersManager
     }
 
     /**
-     * Statuses indicating that a decision suggestion of the given type has already been acted upon
+     * Statuses indicating that a decision suggestion of the given type has already been acted upon.
+     *
+     * A suggestion stops being pending as soon as the editor in chief has taken a decision, whether
+     * that decision follows the suggestion or not: moving the paper past acceptance, or asking the
+     * author for revisions, settles all three suggestion types.
+     *
      * @param int $type
      * @return int[]
      */
@@ -4227,7 +4279,7 @@ class Episciences_PapersManager
     {
         return match ($type) {
             Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
-            Episciences_CommentsManager::TYPE_SUGGESTION_REFUS => self::getPostAcceptanceStatuses(),
+            Episciences_CommentsManager::TYPE_SUGGESTION_REFUS,
             Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION => array_merge(
                 [Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION, Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION],
                 self::getPostAcceptanceStatuses()

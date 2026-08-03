@@ -184,7 +184,7 @@ class Episciences_View_Helper_PaperFilter extends Zend_View_Helper_Abstract
                 'class' => 'form-control',
                 'multiOptions' => [
                     '' => $this->view->translate('Tous'),
-                    'any' => $this->view->translate('Toutes les suggestions'),
+                    Episciences_PapersManager::ANY_SUGGESTION_FILTER => $this->view->translate('Toutes les suggestions'),
                     Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION => $this->view->translate("Suggestion d'acceptation"),
                     Episciences_CommentsManager::TYPE_SUGGESTION_REFUS => $this->view->translate("Suggestion de refus"),
                     Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION => $this->view->translate("Suggestion de modification")
