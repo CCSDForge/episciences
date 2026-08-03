@@ -18,7 +18,7 @@
     <div class="panel panel-default collapsable">
         <div class="panel-heading dashboard-panel-header">
             <h2 class="panel-title dashboard-panel-title"><?= $this->translate('Gérer la revue') ?></h2>
-            <?= $this->partial('partials/dashboard_paper_search.phtml', ['minimal' => true]) ?>
+            <?= $this->partial('partials/dashboard_paper_search.phtml') ?>
         </div>
         <div class="panel-body in">
             <div class="col-md-12">
@@ -65,7 +65,6 @@
         <div class="panel-heading dashboard-panel-header">
             <h2 class="panel-title dashboard-panel-title"><?= $assignedMsg ?></h2>
             <?= $this->partial('partials/dashboard_paper_search.phtml', [
-                    'minimal' => true,
                     'from' => UserController::ASSIGNED_ARTICLES_STR,
                     'title' => "Accès à un article assigné"
             ]) ?>
@@ -120,7 +119,6 @@
         <h2 class="panel-title dashboard-panel-title"><?= $this->translate('Mes articles') ?></h2>
         <?php if ($this->submittedPapers) : ?>
             <?= $this->partial('partials/dashboard_paper_search.phtml', [
-                    'minimal' => true,
                     'from' => UserController::MY_SUBMISSIONS_STR,
                     'title' => 'Accès à mon article'
             ]) ?>
