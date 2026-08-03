@@ -2531,7 +2531,11 @@ return array(
     "Voir le PDF de cette version" => "View the PDF of this version",
     "Voir la page de gestion de cette version" => "View the management page for this version",
 
-    "Évaluation" => "Evaluation",
+    "Accès à un article assigné" => "Access an assigned article",
+    "Accès à mon article" => "Access my article",
+
+    // "Évaluation" is deliberately not redefined here: it is already translated above ("Review")
+    // and that translation is reused by the dashboard quadrant title.
     "Révisions & suggestions" => "Revisions & suggestions",
     "Copy-editing & publication" => "Copy-editing & publication",
     "Archives / historique" => "Archives / history",

@@ -441,20 +441,4 @@ return [
     'T_VOLUME_YEAR_INVALID_RANGE'  => 'La deuxième année du volume doit être strictement supérieure à la première (ex: 2003-2004).',
     'T_VOLUME_YEAR_OUTSIDE_BOUNDS' => 'L\'année doit être comprise entre %s et %s (Année courante + 5 ans).',
 
-    "Évaluation" => "Évaluation",
-    "Révisions & suggestions" => "Révisions & suggestions",
-    "Copy-editing & publication" => "Copy-editing & publication",
-    "Archives / historique" => "Archives / historique",
-    "suggestion d'acceptation" => "suggestion d'acceptation",
-    "suggestions d'acceptation" => "suggestions d'acceptation",
-    "suggestion de refus" => "suggestion de refus",
-    "suggestions de refus" => "suggestions de refus",
-    "suggestion de modification" => "suggestion de modification",
-    "suggestions de modification" => "suggestions de modification",
-    "Suggestion de décision" => "Suggestion de décision",
-    "Toutes les suggestions" => "Toutes les suggestions",
-    "Suggestion d'acceptation" => "Suggestion d'acceptation",
-    "Suggestion de refus" => "Suggestion de refus",
-    "Suggestion de modification" => "Suggestion de modification",
-
 ];
