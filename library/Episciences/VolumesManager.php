@@ -624,7 +624,9 @@ class Episciences_VolumesManager
             'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Numéro du volume'),
             'value' => ($volume !== null) ? $volume->getVol_num() : "",
             //'required' => true,
+            'maxlength' => self::MAX_STRING_LENGTH_VOL_NUM,
             'style' => 'width:300px;position: static;',
+            'description' => sprintf(Zend_Registry::get('Zend_Translate')->translate('%u caractères maximum'), self::MAX_STRING_LENGTH_VOL_NUM),
             'validators' => [
                 [new Zend_Validate_StringLength(['max' => self::MAX_STRING_LENGTH_VOL_NUM])],
             ],
@@ -638,6 +640,11 @@ class Episciences_VolumesManager
             'attribs' => [
                 'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Exemple : 2024 ou 2024-2025')
             ],
+            'description' => sprintf(
+                Zend_Registry::get('Zend_Translate')->translate('Format : AAAA ou AAAA-AAAA, entre %s et %s'),
+                Episciences_Form_Validate_VolumeYear::MIN_YEAR,
+                (int)date('Y') + 5
+            ),
             'validators' => [
                 [
                     'validator' => 'VolumeYear',

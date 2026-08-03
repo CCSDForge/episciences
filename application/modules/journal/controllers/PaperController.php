@@ -550,6 +550,7 @@ class PaperController extends PaperDefaultController
         }
         $this->view->enabledBib = $enabledBib;
         $this->view->enabledManageFromPublicPage = $enabledManageFromPublicPage;
+        $this->view->showAllBib = $isAllowedToSeeNoPublicDetails || $paper->isCoauthor();
 
         // Author to editor communication - extracted to helper method
         $this->handleAuthorToEditorCommunication($paper, $review);

@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performances
 -->
 
+## Unreleased
+
+### Added
+- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Redesign the "Manage the journal" dashboard panel as a four-quadrant grid (evaluation, revisions & suggestions, copy-editing & publication, archives), with a compact paper search box moved into each panel header.
+- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Add a "decision suggestion" filter (acceptance / refusal / revision) to the paper list, and show the number of papers with a pending suggestion on the dashboard. A suggestion stops being counted as pending once the editor in chief has ruled, whether by accepting the paper or by requesting revisions. The filter is restricted to users allowed to manage papers.
+
+### Fixed
+- [#1118](https://github.com/CCSDForge/episciences/issues/1118) Add missing French and English translations for intra-work relationship types and group headers in linked data forms.
 
 ## v1.0.56 - 2026-07-16
 
@@ -41,6 +49,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Remove redundant per-type add buttons in linked-data panels.
+- Add Subresource Integrity (SRI) to CDN-hosted `cookieconsent.min.js`.
+- Remove flag emojis from language-switcher dropdown links.
+- Refactor `AccessControlControllerTrait` to reduce cognitive complexity.
+- MySQL 8.4 compatibility:
+  - Migrate `ON DUPLICATE KEY UPDATE column = VALUES(column)` statements to the modern `AS new_row ... UPDATE column = new_row.column` syntax.
+  - Drop the non-standard foreign key `paper_projects_ibfk_1` from the `paper_projects` schema.
+- Add unit tests to cover `updateNestedJsonDocument()` and `savemasterfileAction()` wiring.
 - [#1080](https://github.com/CCSDForge/episciences/pull/1080) Replace cover letter requirement magic numbers with class constants in `Episciences_Review` and related managers.
 - Replace native language switcher dropdown with an accessible WAI-ARIA custom dropdown.
 - Route development emails to a local Mailpit SMTP server instead of dumping them to the UI, and remove legacy UI mail dump.
@@ -80,6 +96,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix PHP 8 compatibility by explicitly declaring `Ccsd_Website_Header::$_langDir` as `string` to prevent fatal type variance errors in subclasses.
+- Fix deprecation warning "Implicit conversion from float to int loses precision" when updating metadata.
+- Fix missing translation caused by a curly apostrophe character (`’`) in templates.
+- Fix application error in `Episciences_Paper_FilesManager::getMainFile()` where a null `$docId` parameter caused a type crash.
+- Fix malformed `Content-Type` headers in COAR Notify client requests sent to HAL by injecting a custom cURL HTTP layer (`CoarNotifyHttpLayer`).
+- Fix JSON path mapping in `updateNestedJsonDocument` (`$.document.database.mainPdfUrl` -> `$.database.current.mainPdfUrl`) and add a null-safe operator to database preparation.
+- Adapt the master file choice logic so that the option to select a main file does not apply to Software and Dataset submissions.
+- Fix COAR Notify Location-header lookup warnings.
 - [#1087](https://github.com/CCSDForge/episciences/pull/1087) Normalize user affiliations to `{label, rorId}` format during account signup to ensure shape consistency with profile edits.
 - [#1080](https://github.com/CCSDForge/episciences/pull/1080) Fix cover letter validation error target (attaching the error to the file element instead of the comments field) and default the setting value to optional (1) for older reviews.
 - Escaping of XML special characters in OAI-PMH ListSets and setDescription (by using `createTextNode`).
@@ -131,7 +155,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#1088](https://github.com/CCSDForge/episciences/pull/1088) Remove unused `AGENT`, `CITY`, `LAT`, and `LON` columns from the `PAPER_STAT` table and delete the legacy `scripts/stat.php` script (superseded by the `stats:process` console command).
 - Remove obsolete `google/recaptcha` and `neverbehave/hcaptcha` libraries from `composer.json`.
-- Remove PubPeer link feature from bibliographic references.
 - Removed obsolete, unused, and deprecated authentication adapters: `Asso`, `DbTable`, `Idp`, `Asso/Ext`, and `Orcid` (`Ccsd/Auth`).
 - Removed obsolete `DEAD CODE AUDIT` deprecation warnings from `UserFtpQuota` and `UserFtpQuotaMapper` classes.
 

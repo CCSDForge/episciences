@@ -87,3 +87,7 @@ assets/node_modules/
 /scripts/checkDoi.php
 /build/
 /composer
+
+# SonarQube
+/.scannerwork/
+/.sonar/

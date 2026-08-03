@@ -348,6 +348,7 @@ function defineVendorJsLibraries(): void
         'VENDOR_MATHJAX' => 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML',
         'VENDOR_TINYMCE' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
         'VENDOR_TINYMCE_JQUERY' => 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js',
+        'VENDOR_TOM_SELECT' => 'https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js',
         'VENDOR_CHART' => 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js',
         'VENDOR_CHART_PLUGIN_DATALABELS' => 'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/0.7.0/chartjs-plugin-datalabels.min.js',
     ];
@@ -372,6 +373,7 @@ function defineVendorCssLibraries(): void
         'VENDOR_JQUERY_UI_THEME_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/themes/flick/jquery-ui.min.css',
         'VENDOR_CHART_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css',
         'VENDOR_COOKIE_CONSENT_CSS' => 'https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.css',
+        'VENDOR_TOM_SELECT_CSS' => 'https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.min.css',
     ];
 
     foreach ($cssLibraries as $name => $url) {
@@ -604,6 +606,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('VENDOR_MATHJAX', '');
         define('VENDOR_TINYMCE', '');
         define('VENDOR_TINYMCE_JQUERY', '');
+        define('VENDOR_TOM_SELECT', '');
         define('VENDOR_CHART', '');
         define('VENDOR_CHART_PLUGIN_DATALABELS', '');
 
@@ -620,5 +623,6 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('VENDOR_JQUERY_UI_THEME_CSS', '');
         define('VENDOR_CHART_CSS', '');
         define('VENDOR_COOKIE_CONSENT_CSS', '');
+        define('VENDOR_TOM_SELECT_CSS', '');
     }
 }

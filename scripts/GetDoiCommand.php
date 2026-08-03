@@ -266,14 +266,12 @@ class GetDoiCommand extends Command
             }
 
             $xmlFileName = sprintf('%s-%d.xml', $rvcode, $paperId);
-            $xmlFilePath = CACHE_PATH . $xmlFileName;
             $paperUrl    = sprintf('%spapers/export/%d/crossref?code=%s', EPISCIENCES_API_URL, $docId, $rvcode);
 
             $logger->info("Requesting metadata: {$paperUrl}");
 
             try {
                 $body = $http->request('GET', $paperUrl)->getBody()->getContents();
-                file_put_contents($xmlFilePath, $body);
             } catch (GuzzleException $e) {
                 $logger->error("Metadata fetch failed for paper #{$paperId}: " . $e->getMessage());
                 $io->progressAdvance();
@@ -281,7 +279,7 @@ class GetDoiCommand extends Command
             }
 
             try {
-                $response = $crossrefClient->postMetadata($xmlFilePath, $xmlFileName, $dryRun);
+                $response = $crossrefClient->postMetadata($body, $xmlFileName, $dryRun);
                 $doiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_REQUESTED);
                 Episciences_Paper_DoiQueueManager::update($doiQueue);
                 $logger->info(sprintf('%s: Crossref answered: %s', $rvcode, $response->getBody()));
@@ -438,14 +436,12 @@ class GetDoiCommand extends Command
             }
 
             $xmlFileName = sprintf('%s-%d.xml', $rvcode, $currentPaperId);
-            $xmlFilePath = CACHE_PATH . $xmlFileName;
             $paperUrl    = sprintf('%spapers/export/%d/crossref?code=%s', EPISCIENCES_API_URL, $docId, $rvcode);
 
             $logger->info("Fetching metadata: {$paperUrl}");
 
             try {
                 $body = $http->request('GET', $paperUrl)->getBody()->getContents();
-                file_put_contents($xmlFilePath, $body);
             } catch (GuzzleException $e) {
                 $logger->error("Metadata fetch failed for paper #{$currentPaperId}: " . $e->getMessage());
                 $io->progressAdvance();
@@ -453,7 +449,7 @@ class GetDoiCommand extends Command
             }
 
             try {
-                $response = $crossrefClient->postMetadata($xmlFilePath, $xmlFileName, $dryRun);
+                $response = $crossrefClient->postMetadata($body, $xmlFileName, $dryRun);
                 /** @var Episciences_Paper_DoiQueue $doiQueue */
                 $doiQueue = $doiToProcess['doiq'];
                 $doiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_UPDATE_PENDING);

@@ -315,7 +315,7 @@ class Episciences_Paper_Logger
     public static array $_categoryIcon = [
         self::CATEGORY_SUBMISSION => 'glyphicon-cloud-upload',
         self::CATEGORY_EDITORIAL => 'glyphicon-cog',
-        self::CATEGORY_REVIEW => 'glyphicon-eye-open',
+        self::CATEGORY_REVIEW => 'glyphicon-tasks',
         self::CATEGORY_COMMUNICATION => 'glyphicon-envelope',
     ];
 

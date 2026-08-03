@@ -161,6 +161,7 @@ return array(
     'T_VOLUME_YEAR_INVALID_RANGE' => 'The second volume year must be strictly greater than the first (e.g., 2003-2004).',
     'T_VOLUME_YEAR_OUTSIDE_BOUNDS' => 'The year must be between %s and %s (Current Year + 5 years).',
     'Exemple : 2024 ou 2024-2025' => 'Example : 2024 or 2024-2025',
+    'Format : AAAA ou AAAA-AAAA, entre %s et %s' => 'Format: YYYY or YYYY-YYYY, between %s and %s',
     "Fichier" => 'File',
     "Parcourir" => 'Browse',
     "Ajouter" => 'Add',
@@ -355,6 +356,7 @@ return array(
     'Numéro' => 'Number',
     'Année du volume' => 'Year of the volume',
     'Numéro du volume' => "Volume Number",
+    '%u caractères maximum' => '%u characters maximum',
     "Volume de l'article" => "Volume of the article",
     "Volume de l'article (seulement les nombres)" => 'Volume of the article (numbers only)',
     "Volume de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Volume of the article (numbers only) [Replacement char for spaces]',
@@ -900,7 +902,6 @@ return array(
     "Votre message a bien été envoyé à l'auteur." => 'Your message has been sent to the author.',
     "Vous n'êtes pas autorisé à envoyer un message à cet auteur." => 'You are not authorized to send a message to this author.',
     "Erreur lors de l'envoi de votre message." => 'Error sending your message.',
-    "Rédacteur" => 'Editor',
     "Anciens messages" => 'Older messages',
     "Evaluation" => 'Review',
     "Grille de relecture" => 'Review Grid',
@@ -1514,7 +1515,6 @@ return array(
     // Erreurs de soumission d'une nouvelle version
     "Rechercher un document" => "Search a document",
     "Saisir l'identifiant du document" => "Enter the document identifier",
-    "Version" => "Version",
     "Archive" => "Repository",
     "Rechercher" => "Search",
     "Envoyer" => "Send",
@@ -1578,7 +1578,6 @@ return array(
 
     "Vous êtes connecté avec un compte différent de celui ayant été utilisé pour soumettre ce document. Veuillez vous déconnecter et vous reconnecter avec le bon compte pour continuer." => "You’re signed in with a different account than the one used to submit this document. Please sign out and log in with the correct account to continue.",
     "Souhaitez-vous remplacer la version précédente ?" => "Do you want to replace the previous version?",
-    "ou" => 'or',
     "Attention : " => "Warning: ",
     "Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, " => "To submit your new version, please use the link in the email you received from the journal, ",
     "pour répondre à la demande de modification." => "to meet the demand of requested changes.",
@@ -1858,7 +1857,7 @@ return array(
     "Obligatoire" => "Required",
     // RESSOURCES
     "Le tableau ci-dessous reprend l'ensemble des ressources visibles déposées sur le site. Vous pouvez les visualiser dans un nouvel onglet et repérer leur url sur le site ou les supprimer."
-    => "The table below lists all visible resources stored on the website. You can view them in a new tab, locate their URL or delete them.",
+    => "The table below lists all visible resources stored on the website. You can view them in a new tab, locate their url or delete them.",
 
     "Ajouter un nouveau fichier" => "Add a new file",
     "Déposer le fichier" => "Upload the file",
@@ -1968,7 +1967,6 @@ return array(
     "Number of users" => "Number of users",
     "Total unique members" => "Total unique members",
     "Add" => "Add",
-    "Actions" => "Actions",
     "Edit list" => "Edit list",
     "A mailing list with this name already exists." => "A mailing list with this name already exists.",
     "This name collides with an existing journal code." => "This name collides with an existing journal code.",
@@ -2098,7 +2096,6 @@ return array(
     "articles en attente d'éclaircissements" => 'articles waiting for clarifications',
 
     "article accepté" => 'accepted article',
-    "articles acceptés" => 'accepted articles',
     "article soumis" => 'submitted article',
     "articles soumis" => 'submitted articles',
     "article proposé" => 'submitted article',
@@ -2123,7 +2120,6 @@ return array(
 
     // Accept a review invitation on behalf of the reviewer
     "Vous êtes sur le point d'accepter l'invitation de relecture à la place du relecteur. Les mêmes effets qu'une acceptation par le relecteur seront appliqués (e-mails, journalisation, assignation)." => "You are about to accept the review invitation on behalf of the reviewer. The same effects as a reviewer's own acceptance will be applied (e-mails, logging, assignment).",
-    "Relecteur" => "Reviewer",
     "Compte" => "Account",
     "Un nouveau compte sera créé avec l'identifiant :" => "A new account will be created with the username:",
     "La relecture sera rattachée au compte existant :" => "The review will be attached to the existing account:",
@@ -2485,7 +2481,51 @@ return array(
     "finances" => "Finances",
     "isFinancedBy" => "Is financed by",
     "isVersionOf" => "Is version of",
+    "hasVersion" => "Has version",
     'isRelatedTo' => 'Is related to',
+    "isTranslationOf" => "Is translation of",
+    "hasTranslation" => "Has translation",
+    "isPreprintOf" => "Is preprint of",
+    "hasPreprint" => "Has preprint",
+    "isManuscriptOf" => "Is manuscript of",
+    "hasManuscript" => "Has manuscript",
+    "isExpressionOf" => "Is expression of",
+    "hasExpression" => "Has expression",
+    "isManifestationOf" => "Is manifestation of",
+    "hasManifestation" => "Has manifestation",
+    "isReplacedBy" => "Is replaced by",
+    "replaces" => "Replaces",
+    "isSameAs" => "Is same as",
+    "isIdenticalTo" => "Is identical to",
+    "isVariantFormOf" => "Is variant form of",
+    "isOriginalFormOf" => "Is original form of",
+    "isFormatOf" => "Is format of",
+    "hasFormat" => "Has format",
+    // Headers for relations
+    "Basis" => "Basis",
+    "Comment" => "Comment",
+    "Continuation" => "Continuation",
+    "Derivation" => "Derivation",
+    "Documentation" => "Documentation",
+    "Funding" => "Funding",
+    "Part" => "Part",
+    "Peer review" => "Peer review",
+    "References" => "References",
+    "Related material" => "Related material",
+    "Reply" => "Reply",
+    "Requirement" => "Requirement",
+    "Software compilation" => "Software compilation",
+    "Supplement" => "Supplement",
+    "Translation" => "Translation",
+    "Manuscript" => "Manuscript",
+    "Expression" => "Expression",
+    "Manifestation" => "Manifestation",
+    "Replacement" => "Replacement",
+    "Same as" => "Same as",
+    "Identical" => "Identical",
+    "Variant form" => "Variant form",
+    "Version" => "Version",
+    "Format" => "Format",
 
 
     "Références" => "References",
@@ -2546,7 +2586,25 @@ return array(
     "PDF" => "PDF",
     "Voir le PDF de cette version" => "View the PDF of this version",
     "Voir la page de gestion de cette version" => "View the management page for this version",
+
+
+
+    // "Évaluation" is deliberately not redefined here: it is already translated above ("Review")
+    // and that translation is reused by the dashboard quadrant title.
+    "Révisions & suggestions" => "Revisions & suggestions",
+    "Copy-editing & publication" => "Copy-editing & publication",
+    "Archives / historique" => "Archives / history",
+    "suggestion d'acceptation" => "suggested acceptance",
+    "suggestions d'acceptation" => "suggested acceptances",
+    "suggestion de refus" => "suggested refusal",
+    "suggestions de refus" => "suggested refusals",
+    "suggestion de modification" => "suggested revision",
+    "suggestions de modification" => "suggested revisions",
+    "Suggestion de décision" => "Suggested decision",
+    "Toutes les suggestions" => "All suggestions",
+    "Suggestion d'acceptation" => "Suggested acceptance",
+    "Suggestion de refus" => "Suggested refusal",
+    "Suggestion de modification" => "Suggested revision",
      // Website > menu
     'Choisissez une page' => 'Select a page',
-    'unavailable' => 'Unavailable'
 );

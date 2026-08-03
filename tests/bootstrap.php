@@ -26,6 +26,10 @@ defineJournalConstants();
 defined('APPLICATION_ENV') || define('APPLICATION_ENV', (getenv('APPLICATION_ENV') ?: ENV_DEV));
 defined('APPLICATION_MODULE') || define('APPLICATION_MODULE', (getenv('APPLICATION_MODULE') ?: PORTAL));
 
+// Review id under test. Defined once here rather than by whichever test case happens to run
+// first: a constant cannot be redefined, so per-test values leak into every later test.
+defined('RVID') || define('RVID', 1);
+
 
 set_include_path(implode(PATH_SEPARATOR, array_merge([__DIR__ . '/library'], [get_include_path()])));
 

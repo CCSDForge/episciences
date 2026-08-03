@@ -1451,7 +1451,7 @@ class Episciences_Volume
 
     public function setVol_num($volNum): \Episciences_Volume
     {
-        $this->_vol_num = $volNum ? (int)trim(strip_tags($volNum)) : null;
+        $this->_vol_num = $volNum ? trim(strip_tags($volNum)) : null;
         return $this;
     }
 
