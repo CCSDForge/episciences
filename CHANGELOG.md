@@ -23,7 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [2022](changelogs/CHANGELOG-2022.md)
 - [2021](changelogs/CHANGELOG-2021.md)
 
-## v1.0.56 - 2026-07-16
+## Unreleased
+
+## v1.0.56.1 - 2026-08-04
 
 ### Added
 
