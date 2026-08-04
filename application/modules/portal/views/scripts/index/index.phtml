@@ -1,1 +1,51 @@
-TEST
+<?php
+$lang = Zend_Registry::get('lang');
+$isFr = ($lang === 'fr');
+?>
+
+<div class="portal-homepage" style="max-width: 800px; margin: 0 auto; padding: 10px 0;">
+
+    <!-- Compact Hero Section -->
+    <section class="hero-section" aria-labelledby="hero-title" style="background: linear-gradient(135deg, #143CAA 0%, #0066cc 100%); color: #ffffff; border-radius: 12px; padding: 36px 28px; text-align: center; box-shadow: 0 8px 20px rgba(20, 60, 170, 0.15);">
+        <h1 id="hero-title" style="font-size: 2.2rem; font-weight: 700; margin-top: 0; margin-bottom: 12px; color: #ffffff; line-height: 1.2;">
+            Episciences overlay journals
+        </h1>
+        <p style="font-size: 1.1rem; font-weight: 400; opacity: 0.95; max-width: 650px; margin: 0 auto 24px auto; line-height: 1.5; color: #ffffff;">
+            <?= $isFr
+                ? 'Plateforme d\'édition et de publication scientifiques en accès ouvert Diamant.'
+                : 'Diamond Open Access scientific publishing and peer-review platform.' ?>
+        </p>
+        <div>
+            <a class="btn-hero-cta"
+               href="https://www.episciences.org/"
+               target="_blank"
+               rel="noopener noreferrer"
+               aria-label="<?= $isFr ? 'Accéder au site officiel Episciences (ouvre dans un nouvel onglet)' : 'Visit official Episciences website (opens in a new tab)' ?>"
+               style="background-color: #ffffff; color: #143CAA; font-weight: 700; font-size: 1rem; padding: 12px 28px; border-radius: 30px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.18); min-height: 44px; transition: transform 0.15s, box-shadow 0.15s;">
+                <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+                <span><?= $isFr ? 'Accéder à Episciences (www.episciences.org)' : 'Visit Episciences (www.episciences.org)' ?></span>
+            </a>
+        </div>
+    </section>
+
+</div>
+
+<style>
+    .btn-hero-cta,
+    .btn-hero-cta:link,
+    .btn-hero-cta:visited {
+        color: #143CAA !important;
+        background-color: #ffffff !important;
+        text-decoration: none !important;
+    }
+    .btn-hero-cta:hover {
+        background-color: #f8f9fa !important;
+        color: #0033aa !important;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.22) !important;
+    }
+    .btn-hero-cta:focus-visible {
+        outline: 3px solid #ffffff !important;
+        outline-offset: 3px !important;
+    }
+</style>
