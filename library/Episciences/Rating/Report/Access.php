@@ -4,11 +4,11 @@
  * Access control for rating report attachments.
  *
  * Centralizes the logic that determines whether a user may download
- * a report attachment, aligning the download guard with the display
- * gate in PaperController::viewAction().
+ * a report attachment. This logic aligns with the report display gate
+ * that filters reports by user role and criterion visibility.
  *
- * @see PaperController::viewAction() for $isVisibleRatings (line 222)
- * @see PaperController::viewAction() for $commonTest (line 240)
+ * @see AdministratepaperController::isAllowedToSeeReportDetails() for editorial staff access
+ * @see Episciences_Paper::filterReportsByUserRole() for visibility filtering
  */
 class Episciences_Rating_Report_Access
 {
@@ -21,15 +21,19 @@ class Episciences_Rating_Report_Access
     /**
      * Determines whether a user may download a specific attachment from a report.
      *
+     * All role-related parameters are resolved by the caller (typically the controller)
+     * to keep this class free of static dependencies and fully testable.
+     *
      * @param Episciences_Paper $paper The paper the report belongs to
      * @param Episciences_Rating_Report $report The rating report
      * @param string $filename The attachment filename being requested
      * @param int|null $uid The user ID (null if not logged in)
      * @param Episciences_Review $review The review with loaded settings
-     * @param bool|null $isSecretary Override for testing (null = use Auth)
-     * @param bool|null $isGuestEditor Override for testing (null = use Auth)
-     * @param bool|null $isEditor Override for testing (null = use Auth)
-     * @param bool|null $isCopyEditor Override for testing (null = use Auth)
+     * @param bool $isSecretary Whether the user is a secretary
+     * @param bool $isGuestEditor Whether the user is a guest editor
+     * @param bool $isEditor Whether the user is an editor (global role)
+     * @param bool $isCopyEditor Whether the user is a copy editor (global role)
+     * @param bool $isReportsVisibleToAuthor Whether reports are visible to the paper author
      * @return bool True if the user may download the attachment
      */
     public static function mayDownloadAttachment(
@@ -38,10 +42,11 @@ class Episciences_Rating_Report_Access
         string $filename,
         ?int $uid,
         Episciences_Review $review,
-        ?bool $isSecretary = null,
-        ?bool $isGuestEditor = null,
-        ?bool $isEditor = null,
-        ?bool $isCopyEditor = null
+        bool $isSecretary,
+        bool $isGuestEditor,
+        bool $isEditor,
+        bool $isCopyEditor,
+        bool $isReportsVisibleToAuthor
     ): bool {
         $role = self::resolveRole(
             $paper,
@@ -61,7 +66,7 @@ class Episciences_Rating_Report_Access
 
         // Paper author: check status visibility and criterion visibility
         if ($role === self::ROLE_PAPER_AUTHOR) {
-            if (!$paper->isReportsVisibleToAuthor()) {
+            if (!$isReportsVisibleToAuthor) {
                 return false;
             }
             $visibility = self::findAttachmentVisibility($report, $filename);
@@ -91,24 +96,24 @@ class Episciences_Rating_Report_Access
      * 4. Public (everyone else, including anonymous)
      *
      * @param Episciences_Paper $paper The paper
-     * @param Episciences_Rating_Report|null $report The report (null if checking general access)
+     * @param Episciences_Rating_Report $report The report
      * @param int|null $uid The user ID (null if not logged in)
      * @param Episciences_Review $review The review with loaded settings
-     * @param bool|null $isSecretary Override for testing (null = use Auth)
-     * @param bool|null $isGuestEditor Override for testing (null = use Auth)
-     * @param bool|null $isEditor Override for testing (null = use Auth)
-     * @param bool|null $isCopyEditor Override for testing (null = use Auth)
+     * @param bool $isSecretary Whether the user is a secretary
+     * @param bool $isGuestEditor Whether the user is a guest editor
+     * @param bool $isEditor Whether the user is an editor (global role)
+     * @param bool $isCopyEditor Whether the user is a copy editor (global role)
      * @return string One of the ROLE_* constants
      */
     public static function resolveRole(
         Episciences_Paper $paper,
-        ?Episciences_Rating_Report $report,
+        Episciences_Rating_Report $report,
         ?int $uid,
         Episciences_Review $review,
-        ?bool $isSecretary = null,
-        ?bool $isGuestEditor = null,
-        ?bool $isEditor = null,
-        ?bool $isCopyEditor = null
+        bool $isSecretary,
+        bool $isGuestEditor,
+        bool $isEditor,
+        bool $isCopyEditor
     ): string {
         // Check editorial staff first
         if (self::isEditorialStaff($paper, $uid, $review, $isSecretary, $isGuestEditor, $isEditor, $isCopyEditor)) {
@@ -116,7 +121,7 @@ class Episciences_Rating_Report_Access
         }
 
         // Check report author (reviewer)
-        if ($report !== null && $uid !== null && $uid !== 0) {
+        if ($uid !== null && $uid !== 0) {
             if ((int)$report->getUid() === $uid || (int)$report->getOnbehalf_uid() === $uid) {
                 return self::ROLE_REPORT_AUTHOR;
             }
@@ -176,14 +181,11 @@ class Episciences_Rating_Report_Access
         string $filename
     ): ?string {
         $criteria = $report->getCriteria();
-        if (!is_array($criteria)) {
+        if ($criteria === null) {
             return null;
         }
 
         foreach ($criteria as $criterion) {
-            if (!$criterion instanceof Episciences_Rating_Criterion) {
-                continue;
-            }
             if ($criterion->getAttachment() === $filename) {
                 return $criterion->getVisibility();
             }
@@ -200,27 +202,21 @@ class Episciences_Rating_Report_Access
      * @param Episciences_Paper $paper The paper
      * @param int|null $uid The user ID
      * @param Episciences_Review $review The review with loaded settings
-     * @param bool|null $isSecretary Override for testing (null = use Auth)
-     * @param bool|null $isGuestEditor Override for testing (null = use Auth)
-     * @param bool|null $isEditor Override for testing (null = use Auth)
-     * @param bool|null $isCopyEditor Override for testing (null = use Auth)
+     * @param bool $isSecretary Whether the user is a secretary
+     * @param bool $isGuestEditor Whether the user is a guest editor
+     * @param bool $isEditor Whether the user is an editor (global role)
+     * @param bool $isCopyEditor Whether the user is a copy editor (global role)
      * @return bool True if the user is editorial staff
      */
     private static function isEditorialStaff(
         Episciences_Paper $paper,
         ?int $uid,
         Episciences_Review $review,
-        ?bool $isSecretary = null,
-        ?bool $isGuestEditor = null,
-        ?bool $isEditor = null,
-        ?bool $isCopyEditor = null
+        bool $isSecretary,
+        bool $isGuestEditor,
+        bool $isEditor,
+        bool $isCopyEditor
     ): bool {
-        // Use Auth if not overridden (for testing)
-        $isSecretary = $isSecretary ?? Episciences_Auth::isSecretary();
-        $isGuestEditor = $isGuestEditor ?? Episciences_Auth::isGuestEditor();
-        $isEditor = $isEditor ?? Episciences_Auth::isEditor();
-        $isCopyEditor = $isCopyEditor ?? Episciences_Auth::isCopyEditor();
-
         // Secretary always has access
         if ($isSecretary) {
             return true;

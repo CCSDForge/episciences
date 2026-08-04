@@ -127,43 +127,44 @@ class FileController extends DefaultController
         // check if report exists
         $report = Episciences_Rating_Report::findById($id);
         if (!$report) {
-            $this->getResponse()->setHttpResponseCode(404);
-            $this->view->message = "Fichier introuvable";
-            $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
-            $this->renderScript('error/error.phtml');
+            $this->renderNotFound();
             return;
         }
 
-        // Rating reports are confidential: access control aligns with the display
-        // gate in PaperController::viewAction() and filters by criterion visibility.
-        // See also: $isVisibleRatings (PaperController.php:222) and $commonTest (line 240).
+        // Rating reports are confidential: access control aligns with the report
+        // display gate that filters by user role and criterion visibility.
         $paper = Episciences_PapersManager::get($report->getDocid());
         if (!$paper) {
-            $this->getResponse()->setHttpResponseCode(404);
-            $this->view->message = "Fichier introuvable";
-            $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
-            $this->renderScript('error/error.phtml');
+            $this->renderNotFound();
             return;
         }
 
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
 
+        // Resolve all role-related flags here (controller context) to keep
+        // the Access class free of static dependencies and fully testable.
         $uid = Episciences_Auth::isLogged() ? Episciences_Auth::getUid() : null;
+        $isReportsVisibleToAuthor = $uid !== null
+            && (int)$paper->getUid() === $uid
+            && $paper->isReportsVisibleToAuthor();
+
         $isAllowed = Episciences_Rating_Report_Access::mayDownloadAttachment(
             $paper,
             $report,
             $file,
             $uid,
-            $review
+            $review,
+            Episciences_Auth::isSecretary(),
+            Episciences_Auth::isGuestEditor(),
+            Episciences_Auth::isEditor(),
+            Episciences_Auth::isCopyEditor(),
+            $isReportsVisibleToAuthor
         );
 
         if (!$isAllowed) {
             // Return 404 rather than 403 to avoid disclosing the report's existence.
-            $this->getResponse()->setHttpResponseCode(404);
-            $this->view->message = "Fichier introuvable";
-            $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
-            $this->renderScript('error/error.phtml');
+            $this->renderNotFound();
             return;
         }
 
@@ -173,16 +174,24 @@ class FileController extends DefaultController
         $filepath = $this->resolveSafePath($baseDir, $file);
 
         if ($filepath === null) {
-            $this->getResponse()->setHttpResponseCode(404);
-            $this->view->message = "Fichier introuvable";
-            $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
-            $this->renderScript('error/error.phtml');
+            $this->renderNotFound();
             return;
         }
 
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
         $this->openFile($filepath);
+    }
+
+    /**
+     * Renders a generic 404 "file not found" error page.
+     */
+    private function renderNotFound(): void
+    {
+        $this->getResponse()->setHttpResponseCode(404);
+        $this->view->message = "Fichier introuvable";
+        $this->view->description = "Le fichier demandé n'existe pas, ou bien vous n'avez pas les autorisations nécessaires pour y accéder.";
+        $this->renderScript('error/error.phtml');
     }
 
     /**

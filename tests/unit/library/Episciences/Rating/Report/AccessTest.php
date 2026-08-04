@@ -198,7 +198,7 @@ class AccessTest extends TestCase
         $result = Episciences_Rating_Report_Access::resolveRole(
             $paper,
             $report,
-            123, // uid
+            123,   // uid
             $review,
             true,  // isSecretary
             false, // isGuestEditor
@@ -218,7 +218,7 @@ class AccessTest extends TestCase
         $result = Episciences_Rating_Report_Access::resolveRole(
             $paper,
             $report,
-            123,
+            123,   // uid
             $review,
             false, // isSecretary
             true,  // isGuestEditor
@@ -232,22 +232,25 @@ class AccessTest extends TestCase
     public function testResolveRoleReturnsReportAuthorForReviewer(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
 
         $report = $this->createMock(Episciences_Rating_Report::class);
         $report->method('getUid')->willReturn(456);
         $report->method('getOnbehalf_uid')->willReturn(null);
 
         $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturn(false);
 
         $result = Episciences_Rating_Report_Access::resolveRole(
             $paper,
             $report,
-            456, // uid matches report author
+            456,   // uid matches report author
             $review,
-            false,
-            false,
-            false,
-            false
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false  // isCopyEditor
         );
 
         self::assertSame(Episciences_Rating_Report_Access::ROLE_REPORT_AUTHOR, $result);
@@ -256,22 +259,25 @@ class AccessTest extends TestCase
     public function testResolveRoleReturnsReportAuthorForOnbehalfReviewer(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
 
         $report = $this->createMock(Episciences_Rating_Report::class);
         $report->method('getUid')->willReturn(456);
         $report->method('getOnbehalf_uid')->willReturn(789);
 
         $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturn(false);
 
         $result = Episciences_Rating_Report_Access::resolveRole(
             $paper,
             $report,
-            789, // uid matches onbehalf_uid
+            789,   // uid matches onbehalf_uid
             $review,
-            false,
-            false,
-            false,
-            false
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false  // isCopyEditor
         );
 
         self::assertSame(Episciences_Rating_Report_Access::ROLE_REPORT_AUTHOR, $result);
@@ -294,12 +300,12 @@ class AccessTest extends TestCase
         $result = Episciences_Rating_Report_Access::resolveRole(
             $paper,
             $report,
-            111, // uid matches paper author
+            111,   // uid matches paper author
             $review,
-            false,
-            false,
-            false,
-            false
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false  // isCopyEditor
         );
 
         self::assertSame(Episciences_Rating_Report_Access::ROLE_PAPER_AUTHOR, $result);
@@ -308,18 +314,23 @@ class AccessTest extends TestCase
     public function testResolveRoleReturnsPublicForAnonymous(): void
     {
         $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
+
         $report = $this->createMock(Episciences_Rating_Report::class);
+
         $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturn(false);
 
         $result = Episciences_Rating_Report_Access::resolveRole(
             $paper,
             $report,
-            null, // not logged in
+            null,  // not logged in
             $review,
-            false,
-            false,
-            false,
-            false
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false  // isCopyEditor
         );
 
         self::assertSame(Episciences_Rating_Report_Access::ROLE_PUBLIC, $result);
@@ -343,12 +354,12 @@ class AccessTest extends TestCase
         $result = Episciences_Rating_Report_Access::resolveRole(
             $paper,
             $report,
-            123, // is both paper author and report author
+            123,   // is both paper author and report author
             $review,
-            false,
-            false,
-            false,
-            false
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false  // isCopyEditor
         );
 
         // Report author has higher precedence
@@ -371,12 +382,12 @@ class AccessTest extends TestCase
         $result = Episciences_Rating_Report_Access::resolveRole(
             $paper,
             $report,
-            456, // is both secretary and report author
+            456,   // is both secretary and report author
             $review,
             true,  // isSecretary
-            false,
-            false,
-            false
+            false, // isGuestEditor
+            false, // isEditor
+            false  // isCopyEditor
         );
 
         // Editorial staff has higher precedence
@@ -419,12 +430,13 @@ class AccessTest extends TestCase
             $paper,
             $report,
             'public_file.pdf',
-            null, // anonymous user
+            null,  // anonymous user
             $review,
             false, // isSecretary
             false, // isGuestEditor
             false, // isEditor
-            false  // isCopyEditor
+            false, // isCopyEditor
+            false  // isReportsVisibleToAuthor (not applicable for anonymous)
         );
 
         self::assertTrue($result);
@@ -462,12 +474,13 @@ class AccessTest extends TestCase
             $paper,
             $report,
             'contributor_file.pdf',
-            null, // anonymous user
+            null,  // anonymous user
             $review,
-            false,
-            false,
-            false,
-            false
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false, // isCopyEditor
+            false  // isReportsVisibleToAuthor
         );
 
         self::assertFalse($result);
@@ -504,12 +517,13 @@ class AccessTest extends TestCase
             $paper,
             $report,
             'public_file.pdf',
-            null,
+            null,  // anonymous user
             $review,
-            false,
-            false,
-            false,
-            false
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false, // isCopyEditor
+            false  // isReportsVisibleToAuthor
         );
 
         self::assertFalse($result);
@@ -546,12 +560,169 @@ class AccessTest extends TestCase
             $paper,
             $report,
             'public_file.pdf',
-            null,
+            null,  // anonymous user
             $review,
-            false,
-            false,
-            false,
-            false
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false, // isCopyEditor
+            false  // isReportsVisibleToAuthor
+        );
+
+        self::assertFalse($result);
+    }
+
+    // -------------------------------------------------------------------------
+    // mayDownloadAttachment() - paper author scenarios
+    // -------------------------------------------------------------------------
+
+    /**
+     * Paper author can download public attachment when reports are visible.
+     */
+    public function testPaperAuthorCanDownloadPublicAttachmentWhenReportsVisible(): void
+    {
+        $criterion = $this->createMock(Episciences_Rating_Criterion::class);
+        $criterion->method('getAttachment')->willReturn('public_file.pdf');
+        $criterion->method('getVisibility')->willReturn(Episciences_Rating_Criterion::VISIBILITY_PUBLIC);
+
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(999);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+        $report->method('getCriteria')->willReturn([$criterion]);
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getUid')->willReturn(123); // paper author
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturn(false);
+
+        $result = Episciences_Rating_Report_Access::mayDownloadAttachment(
+            $paper,
+            $report,
+            'public_file.pdf',
+            123,   // uid matches paper author
+            $review,
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false, // isCopyEditor
+            true   // isReportsVisibleToAuthor
+        );
+
+        self::assertTrue($result);
+    }
+
+    /**
+     * Paper author can download contributor attachment when reports are visible.
+     */
+    public function testPaperAuthorCanDownloadContributorAttachmentWhenReportsVisible(): void
+    {
+        $criterion = $this->createMock(Episciences_Rating_Criterion::class);
+        $criterion->method('getAttachment')->willReturn('contributor_file.pdf');
+        $criterion->method('getVisibility')->willReturn(Episciences_Rating_Criterion::VISIBILITY_CONTRIBUTOR);
+
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(999);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+        $report->method('getCriteria')->willReturn([$criterion]);
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getUid')->willReturn(123);
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturn(false);
+
+        $result = Episciences_Rating_Report_Access::mayDownloadAttachment(
+            $paper,
+            $report,
+            'contributor_file.pdf',
+            123,   // uid matches paper author
+            $review,
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false, // isCopyEditor
+            true   // isReportsVisibleToAuthor
+        );
+
+        self::assertTrue($result);
+    }
+
+    /**
+     * Paper author cannot download editors-only attachment.
+     */
+    public function testPaperAuthorCannotDownloadEditorsAttachment(): void
+    {
+        $criterion = $this->createMock(Episciences_Rating_Criterion::class);
+        $criterion->method('getAttachment')->willReturn('editors_file.pdf');
+        $criterion->method('getVisibility')->willReturn(Episciences_Rating_Criterion::VISIBILITY_EDITORS);
+
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(999);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+        $report->method('getCriteria')->willReturn([$criterion]);
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getUid')->willReturn(123);
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturn(false);
+
+        $result = Episciences_Rating_Report_Access::mayDownloadAttachment(
+            $paper,
+            $report,
+            'editors_file.pdf',
+            123,   // uid matches paper author
+            $review,
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false, // isCopyEditor
+            true   // isReportsVisibleToAuthor
+        );
+
+        self::assertFalse($result);
+    }
+
+    /**
+     * Paper author cannot download when reports are not visible (wrong status).
+     */
+    public function testPaperAuthorCannotDownloadWhenReportsNotVisible(): void
+    {
+        $criterion = $this->createMock(Episciences_Rating_Criterion::class);
+        $criterion->method('getAttachment')->willReturn('public_file.pdf');
+        $criterion->method('getVisibility')->willReturn(Episciences_Rating_Criterion::VISIBILITY_PUBLIC);
+
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(999);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+        $report->method('getCriteria')->willReturn([$criterion]);
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getUid')->willReturn(123);
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturn(false);
+
+        $result = Episciences_Rating_Report_Access::mayDownloadAttachment(
+            $paper,
+            $report,
+            'public_file.pdf',
+            123,   // uid matches paper author
+            $review,
+            false, // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false, // isCopyEditor
+            false  // isReportsVisibleToAuthor = false (paper in wrong status)
         );
 
         self::assertFalse($result);
