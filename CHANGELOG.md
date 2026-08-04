@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- [CLOCKSS] Additional article URLs, published ahead of the actual switch to ease harvesting during the transition period: `/articles/{docid}` and `/articles/{docid}/download`, both also accepting an optional `en`, `fr` or `es` language prefix (e.g. `/en/articles/{docid}`). These are pure routing aliases: the historical `/{docid}` and `/{docid}/pdf` URLs are unchanged.
+
 ### Fixed
 
 - Allow paper authors to download review report attachments after an editorial decision by aligning authorization checks in `FileController::reportAction()`.
