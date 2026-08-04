@@ -81,6 +81,8 @@ try {
 ?>
 
 
+<?php // TomSelect filter styling lives in sass/components/_tomselect.scss ?>
+
 <script type="text/javascript">
 
     let selfController = <?= "'$controller'" ?>;
@@ -88,7 +90,7 @@ try {
 
     const editableWithoutEditorsData = <?= $editableWithoutEditorsData ?>;
 
-    bootTomSelectFilters(['status', 'vid', 'sid', 'editors', 'reviewers', 'doi', 'repositories']);
+    bootTomSelectFilters(['status', 'vid', 'sid', 'editors', 'reviewers', 'doi', 'repositories','suggestion']);
 
     $.getScript("/js/paper/submitted.js?_=v<?= APPLICATION_VERSION ?>;");
     $.getScript("/js/administratepaper/paper-assignment-modal.js?_=v<?= APPLICATION_VERSION ?>");
