@@ -1,27 +1,59 @@
-<div class="alert alert-block alert-error fixed">
-	<h1 class="alert-heading"><?php echo $this->translate($this->message) ?></h1>
-	<p>
-		<?php if (isset($this->description)){ ?>
-			<h2><?php echo $this->translate($this->description); ?></h2>
-		<?php } ?>
-		<?php if (isset($this->exception)){ ?>
-			<?php echo $this->translate($this->exception->getMessage()); ?>
-		<?php } ?>
-	</p>
-	<p><a href="<?= $this->url(['controller' => 'index']) ?>" class="btn btn-danger"><?php echo $this->translate('Retourner à l\'accueil') ?></a></p>
-		
+<?php
+$lang = Zend_Registry::get('lang');
+$isFr = ($lang === 'fr');
+?>
+
+<div class="portal-error-page" style="max-width: 650px; margin: 20px auto; text-align: center;">
+
+    <div class="panel panel-default" style="border: 1px solid #e5e7eb; border-radius: 12px; padding: 40px 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background-color: #ffffff;">
+        
+        <div style="font-size: 3.5rem; color: #143CAA; margin-bottom: 16px;" aria-hidden="true">
+            <i class="fas fa-exclamation-circle"></i>
+        </div>
+
+        <h1 style="font-size: 2rem; font-weight: 700; margin-top: 0; margin-bottom: 12px; color: #111827;">
+            <?= $isFr ? 'Page introuvable' : 'Page not found' ?>
+        </h1>
+
+        <p style="color: #4b5563; font-size: 1.05rem; line-height: 1.5; margin-bottom: 24px;">
+            <?= $isFr 
+                ? 'La page demandée n\'existe pas ou a été déplacée.' 
+                : 'The requested page does not exist or has been moved.' ?>
+        </p>
+
+        <?php if (APPLICATION_ENV != ENV_PROD && isset($this->exception)): ?>
+            <div style="text-align: left; background-color: #f8f9fa; border: 1px solid #fee2e2; border-radius: 6px; padding: 12px 16px; margin-bottom: 24px; font-size: 0.85rem; color: #dc2626; word-break: break-word;">
+                <strong>Debug Info:</strong> <?= $this->escape($this->exception->getMessage()) ?>
+            </div>
+        <?php endif; ?>
+
+        <div>
+            <a href="/" class="btn btn-portal-primary" style="background-color: #143CAA; color: #ffffff !important; border-color: #143CAA; padding: 10px 24px; font-weight: 600; font-size: 1rem; border-radius: 25px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px;">
+                <i class="fas fa-home" aria-hidden="true" style="color: #ffffff;"></i>
+                <span style="color: #ffffff !important;"><?= $isFr ? 'Retourner à l\'accueil' : 'Go back to homepage' ?></span>
+            </a>
+        </div>
+
+    </div>
+
 </div>
 
-
-<?php if (isset($this->sql)){ ?>
-	<h2><?php echo $this->translate('Erreur SQL')?> : </h2>
-	<pre><?php echo $this->sql ?></pre>
-<?php } ?>
-
-<?php if (isset($this->exception)){ ?>
-	<h2>Stack trace:</h2>
-	<pre><?php echo $this->exception->getTraceAsString() ?></pre>
-
-	<h2>Request Parameters:</h2>
-	<pre><?php echo $this->escape(var_export($this->request->getParams(), true)) ?></pre>
-<?php } ?>
+<style>
+    .btn-portal-primary,
+    .btn-portal-primary:link,
+    .btn-portal-primary:visited,
+    .btn-portal-primary:hover,
+    .btn-portal-primary:focus,
+    .btn-portal-primary:active {
+        color: #ffffff !important;
+        background-color: #143CAA !important;
+        text-decoration: none !important;
+    }
+    .btn-portal-primary:hover {
+        background-color: #0f2d80 !important;
+    }
+    .btn-portal-primary:focus-visible {
+        outline: 3px solid #005fcc !important;
+        outline-offset: 3px !important;
+    }
+</style>

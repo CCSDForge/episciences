@@ -1,38 +1,103 @@
-<div class="container review-container">
-    <h2 class="review-title text-center"><?php echo $this->translate("Liste des revues"); ?></h2>
+<?php
+$lang = Zend_Registry::get('lang');
+$isFr = ($lang === 'fr');
+?>
 
-    <?php if (count($this->reviewData) > 0): ?>
-        <div class="list-group">
-            <?php foreach ($this->reviewData as $review): ?>
-                <a href="<?php echo htmlspecialchars($review['url'], ENT_QUOTES, 'UTF-8'); ?>"
-                   class="list-group-item clearfix" target="_blank">
+<div class="portal-homepage">
 
-                    <img src="<?php echo htmlspecialchars($review['logo'], ENT_QUOTES, 'UTF-8'); ?>"
-                         alt="Logo <?php echo htmlspecialchars($review['code'], ENT_QUOTES, 'UTF-8'); ?>"
-                         class="review-logo">
-
-                    <span class="review-name"><?php echo htmlspecialchars($review['name'], ENT_QUOTES, 'UTF-8'); ?></span>
-
-                    <i class="fa fa-external-link review-link"></i>
-                </a>
-            <?php endforeach; ?>
+    <!-- Compact Hero Section -->
+    <section class="hero-section" aria-labelledby="hero-title">
+        <h1 id="hero-title" class="hero-title">
+            Episciences overlay journals
+        </h1>
+        <p class="hero-subtitle">
+            <?= $isFr
+                ? 'Plateforme d\'édition et de publication scientifiques en accès ouvert Diamant.'
+                : 'Diamond Open Access scientific publishing and peer-review platform.' ?>
+        </p>
+        <div>
+            <a class="btn-hero-cta"
+               href="https://www.episciences.org/"
+               target="_blank"
+               rel="noopener noreferrer"
+               aria-label="<?= $isFr ? 'Accéder au site officiel Episciences (ouvre dans un nouvel onglet)' : 'Visit official Episciences website (opens in a new tab)' ?>">
+                <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+                <span><?= $isFr ? 'Accéder à Episciences (www.episciences.org)' : 'Visit Episciences (www.episciences.org)' ?></span>
+            </a>
         </div>
+    </section>
 
-        <div class="row pagination-container">
-            <div class="col-xs-4">
-            </div>
-            <div class="col-xs-4 text-center">
-                <?php if (isset($this->paginator) && $this->paginator->getPages()->pageCount > 0): ?>
-                    <nav>
-                        <ul class="pagination">
+    <!-- Switched Journals List Section -->
+    <section class="journals-section" aria-labelledby="journals-title">
+        <header class="journals-header">
+            <h2 id="journals-title" class="journals-title">
+                <?= $isFr ? 'Revues de la plateforme' : 'Platform Journals' ?>
+            </h2>
+        </header>
+
+        <?php if (!empty($this->reviewData)): ?>
+            <ul class="journals-list" role="list">
+                <?php foreach ($this->reviewData as $review): 
+                    $reviewName = htmlspecialchars($review['name'], ENT_QUOTES, 'UTF-8');
+                    $reviewCode = htmlspecialchars($review['code'], ENT_QUOTES, 'UTF-8');
+                    $reviewUrl  = htmlspecialchars($review['url'], ENT_QUOTES, 'UTF-8');
+                    $reviewLogo = htmlspecialchars($review['logo'], ENT_QUOTES, 'UTF-8');
+                    $ariaLabel  = sprintf(
+                        $isFr ? 'Consulter la revue %s (ouvre dans un nouvel onglet)' : 'Visit journal %s (opens in a new tab)',
+                        $reviewName
+                    );
+                ?>
+                    <li class="journal-card-item">
+                        <article class="journal-card">
+                            <a href="<?= $reviewUrl ?>" 
+                               class="journal-card-link" 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               aria-label="<?= $ariaLabel ?>">
+                                
+                                <div class="journal-card-main">
+                                    <div class="journal-logo-wrapper">
+                                        <img src="<?= $reviewLogo ?>" 
+                                             alt="" 
+                                             aria-hidden="true"
+                                             class="journal-logo-img"
+                                             onerror="this.parentElement.style.display='none';">
+                                    </div>
+                                    <h3 class="journal-card-name"><?= $reviewName ?></h3>
+                                </div>
+
+                                <div class="journal-card-action">
+                                    <span><?= $isFr ? 'Consulter' : 'Visit' ?></span>
+                                    <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+                                </div>
+                            </a>
+                        </article>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+
+            <!-- Pagination & Count -->
+            <div class="journals-footer-bar">
+                <div class="journals-count">
+                    <?= $isFr ? 'Nombre total de revues :' : 'Total journals:' ?> 
+                    <strong><?= htmlspecialchars($this->paginator->getTotalItemCount(), ENT_QUOTES, 'UTF-8') ?></strong>
+                </div>
+
+                <?php if (isset($this->paginator) && $this->paginator->getPages()->pageCount > 1): ?>
+                    <nav aria-label="<?= $isFr ? 'Pagination des revues' : 'Journals pagination' ?>">
+                        <ul class="pagination-list">
                             <?php if ($this->paginator->getCurrentPageNumber() != 1): ?>
                                 <li>
-                                    <a href="<?php echo $this->url(['page' => $this->paginator->getPages()->first]); ?>" aria-label="Premier">
+                                    <a href="<?= $this->url(['page' => 1]) ?>" 
+                                       class="pagination-link" 
+                                       aria-label="<?= $isFr ? 'Aller à la première page' : 'Go to first page' ?>">
                                         <span aria-hidden="true">&laquo;&laquo;</span>
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="<?php echo $this->url(['page' => $this->paginator->getCurrentPageNumber() - 1]); ?>" aria-label="Précédent">
+                                    <a href="<?= $this->url(['page' => $this->paginator->getCurrentPageNumber() - 1]) ?>" 
+                                       class="pagination-link" 
+                                       aria-label="<?= $isFr ? 'Page précédente' : 'Previous page' ?>">
                                         <span aria-hidden="true">&laquo;</span>
                                     </a>
                                 </li>
@@ -40,20 +105,34 @@
 
                             <?php foreach ($this->paginator->getPages()->pagesInRange as $page): ?>
                                 <?php if ($page == $this->paginator->getCurrentPageNumber()): ?>
-                                    <li class="active"><span><?php echo htmlspecialchars($page, ENT_QUOTES, 'UTF-8'); ?></span></li>
+                                    <li>
+                                        <span class="pagination-link active" aria-current="page">
+                                            <?= htmlspecialchars($page, ENT_QUOTES, 'UTF-8') ?>
+                                        </span>
+                                    </li>
                                 <?php else: ?>
-                                    <li><a href="<?php echo $this->url(['page' => $page]); ?>"><?php echo htmlspecialchars($page, ENT_QUOTES, 'UTF-8'); ?></a></li>
+                                    <li>
+                                        <a href="<?= $this->url(['page' => $page]) ?>" 
+                                           class="pagination-link"
+                                           aria-label="<?= sprintf($isFr ? 'Aller à la page %d' : 'Go to page %d', $page) ?>">
+                                            <?= htmlspecialchars($page, ENT_QUOTES, 'UTF-8') ?>
+                                        </a>
+                                    </li>
                                 <?php endif; ?>
                             <?php endforeach; ?>
 
                             <?php if ($this->paginator->getCurrentPageNumber() != $this->paginator->getPages()->last): ?>
                                 <li>
-                                    <a href="<?php echo $this->url(['page' => $this->paginator->getCurrentPageNumber() + 1]); ?>" aria-label="Suivant">
+                                    <a href="<?= $this->url(['page' => $this->paginator->getCurrentPageNumber() + 1]) ?>" 
+                                       class="pagination-link" 
+                                       aria-label="<?= $isFr ? 'Page suivante' : 'Next page' ?>">
                                         <span aria-hidden="true">&raquo;</span>
                                     </a>
                                 </li>
                                 <li>
-                                    <a href="<?php echo $this->url(['page' => $this->paginator->getPages()->last]); ?>" aria-label="Dernier">
+                                    <a href="<?= $this->url(['page' => $this->paginator->getPages()->last]) ?>" 
+                                       class="pagination-link" 
+                                       aria-label="<?= $isFr ? 'Aller à la dernière page' : 'Go to last page' ?>">
                                         <span aria-hidden="true">&raquo;&raquo;</span>
                                     </a>
                                 </li>
@@ -62,13 +141,235 @@
                     </nav>
                 <?php endif; ?>
             </div>
-            <div class="col-xs-4 text-right">
-                <p class="review-count">
-                    <?php echo $this->translate("Nombre total de revues"); ?> : <?php echo htmlspecialchars($this->paginator->getTotalItemCount(), ENT_QUOTES, 'UTF-8'); ?>
-                </p>
+
+        <?php else: ?>
+            <div class="journals-empty-state">
+                <?= $isFr ? 'Aucune revue disponible pour le moment.' : 'No journals available at the moment.' ?>
             </div>
-        </div>
-    <?php else: ?>
-        <div class="no-reviews"><?php echo $this->translate("Aucune revue disponible"); ?></div>
-    <?php endif; ?>
+        <?php endif; ?>
+    </section>
+
 </div>
+
+<style>
+    .portal-homepage {
+        max-width: 850px;
+        margin: 0 auto;
+        padding: 10px 0;
+    }
+
+    /* Hero Section */
+    .hero-section {
+        background: linear-gradient(135deg, #143CAA 0%, #0066cc 100%);
+        color: #ffffff;
+        border-radius: 12px;
+        padding: 32px 24px;
+        text-align: center;
+        box-shadow: 0 8px 20px rgba(20, 60, 170, 0.15);
+        margin-bottom: 30px;
+    }
+    .hero-title {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-top: 0;
+        margin-bottom: 12px;
+        color: #ffffff;
+        line-height: 1.2;
+    }
+    .hero-subtitle {
+        font-size: 1.05rem;
+        font-weight: 400;
+        opacity: 0.95;
+        max-width: 650px;
+        margin: 0 auto 20px auto;
+        line-height: 1.5;
+        color: #ffffff;
+    }
+    .btn-hero-cta,
+    .btn-hero-cta:link,
+    .btn-hero-cta:visited {
+        color: #143CAA !important;
+        background-color: #ffffff !important;
+        font-weight: 700;
+        font-size: 0.95rem;
+        padding: 10px 24px;
+        border-radius: 30px;
+        text-decoration: none !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+        min-height: 44px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+    .btn-hero-cta:hover {
+        background-color: #f8f9fa !important;
+        color: #0033aa !important;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.22) !important;
+    }
+    .btn-hero-cta:focus-visible {
+        outline: 3px solid #ffffff !important;
+        outline-offset: 3px !important;
+    }
+
+    /* Journals Section */
+    .journals-section {
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 28px 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        margin-bottom: 24px;
+    }
+    .journals-header {
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .journals-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #111827;
+        margin: 0;
+    }
+
+    /* Journals List & Cards */
+    .journals-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 20px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .journal-card-item {
+        margin: 0;
+    }
+    .journal-card {
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .journal-card:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 4px 12px rgba(20, 60, 170, 0.06);
+        transform: translateY(-1px);
+    }
+    .journal-card-link,
+    .journal-card-link:link,
+    .journal-card-link:visited {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        text-decoration: none !important;
+        color: inherit;
+        border-radius: 10px;
+        min-height: 56px;
+    }
+    .journal-card-link:focus-visible {
+        outline: 3px solid #005fcc !important;
+        outline-offset: 2px !important;
+    }
+
+    .journal-card-main {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .journal-logo-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 100px;
+        max-width: 130px;
+    }
+    .journal-logo-img {
+        height: 38px;
+        width: auto;
+        max-width: 120px;
+        object-fit: contain;
+    }
+    .journal-card-name {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0;
+        line-height: 1.4;
+    }
+    .journal-card-action {
+        color: #143CAA;
+        font-size: 0.925rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* Footer & Pagination Bar */
+    .journals-footer-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+        padding-top: 16px;
+        border-top: 1px solid #f3f4f6;
+    }
+    .journals-count {
+        font-size: 0.875rem;
+        color: #4b5563;
+    }
+    .pagination-list {
+        display: flex;
+        align-items: center;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        gap: 4px;
+    }
+    .pagination-link,
+    .pagination-link:link,
+    .pagination-link:visited {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        min-height: 36px;
+        padding: 6px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        background-color: #ffffff;
+        color: #374151;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none !important;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+    .pagination-link:hover {
+        background-color: #f3f4f6;
+        border-color: #d1d5db;
+        color: #143CAA;
+    }
+    .pagination-link:focus-visible {
+        outline: 3px solid #005fcc !important;
+        outline-offset: 2px !important;
+    }
+    .pagination-link.active {
+        background-color: #143CAA;
+        border-color: #143CAA;
+        color: #ffffff !important;
+        font-weight: 700;
+    }
+
+    .journals-empty-state {
+        text-align: center;
+        color: #6b7280;
+        padding: 24px 0;
+        font-size: 0.95rem;
+    }
+</style>

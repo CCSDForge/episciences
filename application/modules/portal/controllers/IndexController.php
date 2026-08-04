@@ -2,6 +2,10 @@
 
 class IndexController extends Episciences_Controller_Action
 {
+    public function init(): void
+    {
+        Zend_Layout::getMvcInstance()->setLayout('portal');
+    }
 
     // Homepage
     public function indexAction(): void
@@ -18,7 +22,7 @@ class IndexController extends Episciences_Controller_Action
 
         $reviews = Episciences_ReviewsManager::getList($settings);
 
-        $itemsPerPage =20;
+        $itemsPerPage = 20;
         $page = $this->getRequest()->getParam('page', 1);
 
         $paginator = Zend_Paginator::factory($reviews);
@@ -34,7 +38,7 @@ class IndexController extends Episciences_Controller_Action
                 'name' => $review->getName(),
                 'code' => $review->getCode(),
                 'url' => $url,
-                'logo' => sprintf('%s./logos/logo-%s.svg', $url, $review->getCode())
+                'logo' => sprintf('%s/logos/logo-%s.svg', $url, $review->getCode())
             ];
         }
 
