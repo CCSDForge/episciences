@@ -17,6 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Allow paper authors to download review report attachments after an editorial decision by aligning authorization checks in `FileController::reportAction()`.
+- Fix XML export corruption during Solr indexing by checking `isRegistered()` in `AppRegistry::getMonoLogger()` instead of catching exceptions.
+- Fix `TypeError` in `ZbjatsTools` and `BiblioRefApiClient` by normalizing CSL response parsing to accept both array and JSON-encoded string formats from the bibliographic reference API.
+
+### Changed
+
+- Update dependencies.
+
 ## v1.0.56 - 2026-07-16
 
 ### Added
