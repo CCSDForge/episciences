@@ -76,6 +76,10 @@ class ZbjatsZipperCommand extends Command
             return Command::FAILURE;
         }
 
+        if (!defined('RVID')) {
+            define('RVID', $review->getRvid());
+        }
+
         $this->review = $review;
         $this->review->loadSettings();
 
