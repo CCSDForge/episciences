@@ -7,6 +7,23 @@
  * a report attachment. This logic aligns with the report display gate
  * that filters reports by user role and criterion visibility.
  *
+ * Règles d'accès aux pièces jointes des rapports :
+ *
+ * - Auteur du rapport (reviewer) : accès complet à son propre rapport,
+ *   y compris en brouillon (WIP). Le reviewer peut toujours accéder
+ *   à ses propres pièces jointes pendant la rédaction.
+ *
+ * - Staff éditorial (secrétaire, rédacteur, etc.) : accès uniquement
+ *   aux rapports finalisés (COMPLETED). Les rapports en brouillon (WIP)
+ *   sont privés et ne sont pas visibles par l'équipe éditoriale.
+ *
+ * - Auteur de l'article : accès aux rapports finalisés (COMPLETED)
+ *   uniquement lorsque le statut de l'article le permet (après décision
+ *   éditoriale). L'accès est limité aux critères avec visibilité
+ *   PUBLIC ou CONTRIBUTOR.
+ *
+ * - Utilisateur anonyme : pas d'accès (authentification requise).
+ *
  * @see AdministratepaperController::isAllowedToSeeReportDetails() for editorial staff access
  * @see Episciences_Paper::filterReportsByUserRole() for visibility filtering
  */
@@ -16,7 +33,6 @@ class Episciences_Rating_Report_Access
     public const ROLE_EDITORIAL_STAFF = 'editorial_staff';
     public const ROLE_REPORT_AUTHOR = 'report_author';
     public const ROLE_PAPER_AUTHOR = 'paper_author';
-    public const ROLE_PUBLIC = 'public';
 
     /**
      * Determines whether a user may download a specific attachment from a report.
@@ -59,13 +75,23 @@ class Episciences_Rating_Report_Access
             $isCopyEditor
         );
 
-        // Editorial staff and report author have full access to the report
-        if ($role === self::ROLE_EDITORIAL_STAFF || $role === self::ROLE_REPORT_AUTHOR) {
+        // Auteur du rapport (reviewer) : accès complet à son propre rapport, y compris en brouillon
+        if ($role === self::ROLE_REPORT_AUTHOR) {
             return true;
         }
 
-        // Paper author: check status visibility and criterion visibility
+        // Staff éditorial : accès uniquement aux rapports finalisés (COMPLETED)
+        // Les rapports en brouillon (WIP) sont privés pour le reviewer
+        if ($role === self::ROLE_EDITORIAL_STAFF) {
+            return $report->getStatus() === Episciences_Rating_Report::STATUS_COMPLETED;
+        }
+
+        // Paper author: check report status, paper status visibility, and criterion visibility
         if ($role === self::ROLE_PAPER_AUTHOR) {
+            // Block access to reopened (WIP) or pending reports
+            if ($report->getStatus() !== Episciences_Rating_Report::STATUS_COMPLETED) {
+                return false;
+            }
             if (!$isReportsVisibleToAuthor) {
                 return false;
             }
@@ -73,16 +99,7 @@ class Episciences_Rating_Report_Access
             return self::mayReadCriterion(self::ROLE_PAPER_AUTHOR, $visibility);
         }
 
-        // Public: check open peer review settings and criterion visibility
-        if ($role === self::ROLE_PUBLIC) {
-            $showRatings = $review->getSetting(Episciences_Review::SETTING_SHOW_RATINGS);
-            if (!$showRatings || !$paper->isPublished()) {
-                return false;
-            }
-            $visibility = self::findAttachmentVisibility($report, $filename);
-            return self::mayReadCriterion(self::ROLE_PUBLIC, $visibility);
-        }
-
+        // No matching role: deny access (requires authentication)
         return false;
     }
 
@@ -93,7 +110,8 @@ class Episciences_Rating_Report_Access
      * 1. Editorial staff (secretary, editor, copy editor, guest editor)
      * 2. Report author (reviewer who authored or on-behalf)
      * 3. Paper author (depositor)
-     * 4. Public (everyone else, including anonymous)
+     *
+     * Returns null for unauthenticated users or users with no recognized role.
      *
      * @param Episciences_Paper $paper The paper
      * @param Episciences_Rating_Report $report The report
@@ -103,7 +121,7 @@ class Episciences_Rating_Report_Access
      * @param bool $isGuestEditor Whether the user is a guest editor
      * @param bool $isEditor Whether the user is an editor (global role)
      * @param bool $isCopyEditor Whether the user is a copy editor (global role)
-     * @return string One of the ROLE_* constants
+     * @return string|null One of the ROLE_* constants, or null if no role applies
      */
     public static function resolveRole(
         Episciences_Paper $paper,
@@ -114,7 +132,7 @@ class Episciences_Rating_Report_Access
         bool $isGuestEditor,
         bool $isEditor,
         bool $isCopyEditor
-    ): string {
+    ): ?string {
         // Check editorial staff first
         if (self::isEditorialStaff($paper, $uid, $review, $isSecretary, $isGuestEditor, $isEditor, $isCopyEditor)) {
             return self::ROLE_EDITORIAL_STAFF;
@@ -132,7 +150,7 @@ class Episciences_Rating_Report_Access
             return self::ROLE_PAPER_AUTHOR;
         }
 
-        return self::ROLE_PUBLIC;
+        return null;
     }
 
     /**
@@ -159,11 +177,6 @@ class Episciences_Rating_Report_Access
         if ($role === self::ROLE_PAPER_AUTHOR) {
             return $visibility === Episciences_Rating_Criterion::VISIBILITY_PUBLIC
                 || $visibility === Episciences_Rating_Criterion::VISIBILITY_CONTRIBUTOR;
-        }
-
-        // Public can only read PUBLIC
-        if ($role === self::ROLE_PUBLIC) {
-            return $visibility === Episciences_Rating_Criterion::VISIBILITY_PUBLIC;
         }
 
         return false;

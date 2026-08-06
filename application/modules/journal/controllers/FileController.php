@@ -144,22 +144,21 @@ class FileController extends DefaultController
 
         // Resolve all role-related flags here (controller context) to keep
         // the Access class free of static dependencies and fully testable.
+        // Note: isReportsVisibleToAuthor() already calls isOwner() internally,
+        // which handles the "switch user" (su) case via getOriginalIdentity().
         $uid = Episciences_Auth::isLogged() ? Episciences_Auth::getUid() : null;
-        $isReportsVisibleToAuthor = $uid !== null
-            && (int)$paper->getUid() === $uid
-            && $paper->isReportsVisibleToAuthor();
 
         $isAllowed = Episciences_Rating_Report_Access::mayDownloadAttachment(
-            $paper,
-            $report,
-            $file,
-            $uid,
-            $review,
-            Episciences_Auth::isSecretary(),
-            Episciences_Auth::isGuestEditor(),
-            Episciences_Auth::isEditor(),
-            Episciences_Auth::isCopyEditor(),
-            $isReportsVisibleToAuthor
+            paper: $paper,
+            report: $report,
+            filename: $file,
+            uid: $uid,
+            review: $review,
+            isSecretary: Episciences_Auth::isSecretary(),
+            isGuestEditor: Episciences_Auth::isGuestEditor(),
+            isEditor: Episciences_Auth::isEditor(),
+            isCopyEditor: Episciences_Auth::isCopyEditor(),
+            isReportsVisibleToAuthor: $paper->isReportsVisibleToAuthor()
         );
 
         if (!$isAllowed) {
