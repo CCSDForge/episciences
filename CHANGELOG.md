@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## v1.0.56.1 - 2026-08-04
+
 ### Added
 
 - [CLOCKSS] Additional article URLs, published ahead of the actual switch to ease harvesting during the transition period: `/articles/{paperid}` and `/articles/{paperid}/download`, both also accepting an optional `en`, `fr` or `es` language prefix (e.g. `/en/articles/{paperid}`). They are addressed by paper id — the canonical reference, as used by the new interfaces — and answer `200` with the published version, without redirecting to its docid: `Episciences_ArticleAlias_Plugin` resolves the paper id at routing time. A docid is still accepted, and the historical `/{docid}` and `/{docid}/pdf` URLs are unchanged.

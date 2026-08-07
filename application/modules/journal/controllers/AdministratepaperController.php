@@ -5088,7 +5088,11 @@ class AdministratepaperController extends PaperDefaultController
             return false;
         }
 
-        $hookedVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $latestPostedVersion, 'repoId' => $paper->getRepoid()]);
+        $hookedVersion = Episciences_Repositories::callHook('hookVersion', [
+            'identifier' => $latestPostedVersion,
+            'repoId' => $paper->getRepoid(),
+            'context' => ['previousVersion' => $paper->getVersion()],
+        ]);
 
         if (isset($hookedVersion['version']) || $hasDateTime) {
             $paper->setIdentifier($latestPostedVersion); // posted identifier
