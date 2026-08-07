@@ -625,9 +625,11 @@ class AccessTest extends TestCase
         self::assertSame(Episciences_Rating_Report_Access::ROLE_REPORT_AUTHOR, $result);
     }
 
-    public function testResolveRolePrecedenceEditorialStaffOverReportAuthor(): void
+    public function testResolveRolePrecedenceReportAuthorOverEditorialStaff(): void
     {
-        // A secretary who is also the report author should be EDITORIAL_STAFF
+        // A secretary who is also the report author should be REPORT_AUTHOR,
+        // so they keep full access to their own report (including WIP) even
+        // though they also hold an editorial role.
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getEditor')->willReturn(false);
         $paper->method('getCopyEditor')->willReturn(false);
@@ -649,8 +651,8 @@ class AccessTest extends TestCase
             false  // isCopyEditor
         );
 
-        // Editorial staff has higher precedence
-        self::assertSame(Episciences_Rating_Report_Access::ROLE_EDITORIAL_STAFF, $result);
+        // Report author has higher precedence
+        self::assertSame(Episciences_Rating_Report_Access::ROLE_REPORT_AUTHOR, $result);
     }
 
     // -------------------------------------------------------------------------

@@ -117,8 +117,10 @@ class Episciences_Rating_Report_Access
      * Resolves the effective role of a user with respect to a report.
      *
      * Precedence (highest to lowest):
-     * 1. Editorial staff (secretary, editor, copy editor, guest editor)
-     * 2. Report author (reviewer who authored or on-behalf)
+     * 1. Report author (reviewer who authored or on-behalf) — takes priority even
+     *    when the same user also holds an editorial role, so authors always keep
+     *    full access to their own report, including drafts (WIP).
+     * 2. Editorial staff (secretary, editor, copy editor, guest editor)
      * 3. Paper author (depositor)
      *
      * Returns null for unauthenticated users or users with no recognized role.
@@ -143,16 +145,18 @@ class Episciences_Rating_Report_Access
         bool $isEditor,
         bool $isCopyEditor
     ): ?string {
-        // Check editorial staff first
-        if (self::isEditorialStaff($paper, $uid, $review, $isSecretary, $isGuestEditor, $isEditor, $isCopyEditor)) {
-            return self::ROLE_EDITORIAL_STAFF;
-        }
-
-        // Check report author (reviewer)
+        // Check report author (reviewer) first: authorship of the report itself
+        // must win over an editorial role, so the user keeps full access to their
+        // own report (including WIP) even if they are also staff on this paper.
         if ($uid !== null && $uid !== 0) {
             if ((int)$report->getUid() === $uid || (int)$report->getOnbehalf_uid() === $uid) {
                 return self::ROLE_REPORT_AUTHOR;
             }
+        }
+
+        // Check editorial staff
+        if (self::isEditorialStaff($paper, $uid, $review, $isSecretary, $isGuestEditor, $isEditor, $isCopyEditor)) {
+            return self::ROLE_EDITORIAL_STAFF;
         }
 
         // Check paper author

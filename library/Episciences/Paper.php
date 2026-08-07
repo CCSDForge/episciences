@@ -4911,7 +4911,7 @@ class Episciences_Paper
 
     public function isOwner(): bool
     {
-        return Episciences_Auth::getUid() === $this->getUid() || Episciences_Auth::getOriginalIdentity() === $this->getUid();
+        return Episciences_Auth::getUid() === $this->getUid() || Episciences_Auth::getOriginalIdentity()?->getUid() === $this->getUid();
     }
 
     public function isAlreadyAcceptedWaitingForAuthorFinalVersion(): bool
