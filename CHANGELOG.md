@@ -25,11 +25,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Cache PDF and XML responses with Symfony Cache in `ZbjatsTools` and support new-front URLs.
+- [#1125](https://github.com/CCSDForge/episciences/pull/1125) Allow anonymous access to public review report attachments for open peer review.
+
+### Fixed
+
+- [#1125](https://github.com/CCSDForge/episciences/pull/1125) Block review report attachment downloads for users with a declared Conflict of Interest (COI).
+- [#1125](https://github.com/CCSDForge/episciences/pull/1125) Ensure paper authors' access precedence over editorial staff COI checks when downloading review report attachments.
+- [#1132](https://github.com/CCSDForge/episciences/pull/1132) Pass `previousVersion` context to `hookVersion` in `savenewpostedversionAction` to correctly update Zenodo version identifiers when posting a new version.
+- Define missing `RVID` constant in `ZbjatsZipperCommand` CLI bootstrap.
+
+### Refactored
+
+- Remove static `Ccsd_Auth` dependencies to improve testability.
+- Simplify portal module and remove dead code.
+
 ## v1.0.56.1 - 2026-08-04
 
 ### Added
 
 - [CLOCKSS] Additional article URLs, published ahead of the actual switch to ease harvesting during the transition period: `/articles/{paperid}` and `/articles/{paperid}/download`, both also accepting an optional `en`, `fr` or `es` language prefix (e.g. `/en/articles/{paperid}`). They are addressed by paper id — the canonical reference, as used by the new interfaces — and answer `200` with the published version, without redirecting to its docid: `Episciences_ArticleAlias_Plugin` resolves the paper id at routing time. A docid is still accepted, and the historical `/{docid}` and `/{docid}/pdf` URLs are unchanged.
+- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Redesign the "Manage the journal" dashboard panel as a four-quadrant grid (evaluation, revisions & suggestions, copy-editing & publication, archives), with a compact paper search box moved into each panel header.
+- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Add a "decision suggestion" filter (acceptance / refusal / revision) to the paper list, and show the number of papers with a pending suggestion on the dashboard. A suggestion stops being counted as pending once the editor in chief has ruled, whether by accepting the paper or by requesting revisions. The filter is restricted to users allowed to manage papers.
 
 ### Fixed
 
@@ -41,10 +60,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update dependencies.
-
-### Added
-- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Redesign the "Manage the journal" dashboard panel as a four-quadrant grid (evaluation, revisions & suggestions, copy-editing & publication, archives), with a compact paper search box moved into each panel header.
-- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Add a "decision suggestion" filter (acceptance / refusal / revision) to the paper list, and show the number of papers with a pending suggestion on the dashboard. A suggestion stops being counted as pending once the editor in chief has ruled, whether by accepting the paper or by requesting revisions. The filter is restricted to users allowed to manage papers.
 
 ## v1.0.56 - 2026-07-16
 
