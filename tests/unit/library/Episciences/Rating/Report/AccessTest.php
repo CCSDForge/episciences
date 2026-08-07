@@ -820,7 +820,9 @@ class AccessTest extends TestCase
     }
 
     /**
-     * Paper author cannot download when reports are not visible (wrong status).
+     * Paper author cannot download when reports are not visible to the author
+     * (e.g. the paper hasn't reached the status that grants that visibility),
+     * even though the report itself is COMPLETED.
      */
     public function testPaperAuthorCannotDownloadWhenReportsNotVisible(): void
     {
@@ -832,6 +834,7 @@ class AccessTest extends TestCase
         $report->method('getUid')->willReturn(self::UID_UNRELATED);
         $report->method('getOnbehalf_uid')->willReturn(null);
         $report->method('getCriteria')->willReturn([$criterion]);
+        $report->method('getStatus')->willReturn(Episciences_Rating_Report::STATUS_COMPLETED);
 
         $paper = $this->createMock(Episciences_Paper::class);
         $paper->method('getUid')->willReturn(self::UID_PAPER_AUTHOR);
@@ -851,7 +854,7 @@ class AccessTest extends TestCase
             false, // isGuestEditor
             false, // isEditor
             false, // isCopyEditor
-            false  // isReportsVisibleToAuthor = false (paper in wrong status)
+            false  // isReportsVisibleToAuthor = false
         );
 
         self::assertFalse($result);

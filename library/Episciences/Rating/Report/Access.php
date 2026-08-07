@@ -7,25 +7,24 @@
  * a report attachment. This logic aligns with the report display gate
  * that filters reports by user role and criterion visibility.
  *
- * Règles d'accès aux pièces jointes des rapports :
+ * Access rules for report attachments:
  *
- * - Conflit d'intérêts (COI) : si l'utilisateur a déclaré un conflit
- *   d'intérêts pour ce papier, l'accès est refusé quel que soit son rôle.
+ * - Conflict of interest (COI): if the user has declared a conflict of
+ *   interest for this paper, access is denied regardless of their role.
  *
- * - Auteur du rapport (reviewer) : accès complet à son propre rapport,
- *   y compris en brouillon (WIP). Le reviewer peut toujours accéder
- *   à ses propres pièces jointes pendant la rédaction.
+ * - Report author (reviewer): full access to their own report, including
+ *   drafts (WIP). The reviewer can always access their own attachments
+ *   while writing the report.
  *
- * - Staff éditorial (secrétaire, rédacteur, etc.) : accès uniquement
- *   aux rapports finalisés (COMPLETED). Les rapports en brouillon (WIP)
- *   sont privés et ne sont pas visibles par l'équipe éditoriale.
+ * - Editorial staff (secretary, editor, etc.): access only to finalized
+ *   (COMPLETED) reports. Draft (WIP) reports are private and not visible
+ *   to the editorial team.
  *
- * - Auteur de l'article : accès aux rapports finalisés (COMPLETED)
- *   uniquement lorsque le statut de l'article le permet (après décision
- *   éditoriale). L'accès est limité aux critères avec visibilité
- *   PUBLIC ou CONTRIBUTOR.
+ * - Paper author: access to finalized (COMPLETED) reports only, and only
+ *   when the paper status allows it (after an editorial decision). Access
+ *   is limited to criteria with PUBLIC or CONTRIBUTOR visibility.
  *
- * - Utilisateur anonyme : pas d'accès (authentification requise).
+ * - Anonymous user: no access (authentication required).
  *
  * @see AdministratepaperController::isAllowedToSeeReportDetails() for editorial staff access
  * @see Episciences_Paper::filterReportsByUserRole() for visibility filtering
@@ -85,13 +84,13 @@ class Episciences_Rating_Report_Access
             $isCopyEditor
         );
 
-        // Auteur du rapport (reviewer) : accès complet à son propre rapport, y compris en brouillon
+        // Report author (reviewer): full access to their own report, including drafts
         if ($role === self::ROLE_REPORT_AUTHOR) {
             return true;
         }
 
-        // Staff éditorial : accès uniquement aux rapports finalisés (COMPLETED)
-        // Les rapports en brouillon (WIP) sont privés pour le reviewer
+        // Editorial staff: access only to finalized (COMPLETED) reports
+        // Draft (WIP) reports are private to the reviewer
         if ($role === self::ROLE_EDITORIAL_STAFF) {
             return $report->getStatus() === Episciences_Rating_Report::STATUS_COMPLETED;
         }
