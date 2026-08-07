@@ -166,7 +166,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix history filter date popover sizing, correct jQuery UI datepicker positioning/z-index, and fix calendar-icon click interaction in the paper administration view.
 - Fix multiple bugs and potential XSS issues found during a public JavaScript audit (including strict tooltip option defaults, escaping regex patterns in search inputs, and removing incorrect JSON dataType requirements).
 - Improve `Episciences_Paper_FilesManager::syncFiles()`: generate unique self-link hashes to prevent database collisions when file links are empty or set to `#`, resolve argument order in file difference checking, and clean up paper file deletion logic.
-- [#1125](https://github.com/CCSDForge/episciences/pull/1125) Allow paper authors to download review attachments.
+- [#1125](https://github.com/CCSDForge/episciences/pull/1125) Improve report attachment access control: allow paper authors to download, block users with declared COI.
 ### Deprecated
 
 - Deprecate obsolete `Ccsd_Form_Element_Thesaurus` form element (scheduled for removal).
