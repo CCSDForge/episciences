@@ -938,10 +938,8 @@ class AccessTest extends TestCase
     }
 
     /**
-     * Editorial staff cannot download from a WIP report (drafts are private).
-     *
-     * Les rapports en brouillon (WIP) sont privés pour le reviewer.
-     * Le staff éditorial ne peut accéder qu'aux rapports finalisés (COMPLETED).
+     * Editorial staff cannot download from a WIP report.
+     * Draft reports are private to the reviewer; editorial staff can only access completed reports.
      */
     public function testEditorialStaffCannotDownloadFromWipReport(): void
     {
@@ -975,9 +973,7 @@ class AccessTest extends TestCase
     }
 
     /**
-     * Editorial staff can download from a COMPLETED report.
-     *
-     * Le staff éditorial peut accéder aux rapports finalisés.
+     * Editorial staff can download from a completed report.
      */
     public function testEditorialStaffCanDownloadFromCompletedReport(): void
     {
@@ -1012,9 +1008,7 @@ class AccessTest extends TestCase
 
     /**
      * Report author can download from their own WIP report.
-     *
-     * L'auteur du rapport (reviewer) peut accéder à son propre rapport
-     * en brouillon (WIP) car il est en train de le rédiger.
+     * The reviewer can access their own draft report while writing it.
      */
     public function testReportAuthorCanDownloadFromOwnWipReport(): void
     {
@@ -1042,6 +1036,115 @@ class AccessTest extends TestCase
             false, // isEditor
             false, // isCopyEditor
             false  // isReportsVisibleToAuthor
+        );
+
+        self::assertTrue($result);
+    }
+
+    // -------------------------------------------------------------------------
+    // mayDownloadAttachment() - COI (Conflict of Interest) scenarios
+    // -------------------------------------------------------------------------
+
+    /**
+     * Editor with declared COI cannot download report attachment.
+     */
+    public function testEditorWithConflictCannotDownloadAttachment(): void
+    {
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(self::UID_UNRELATED);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+        $report->method('getStatus')->willReturn(Episciences_Rating_Report::STATUS_COMPLETED);
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getUid')->willReturn(self::UID_OTHER_PAPER_AUTHOR);
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturn(false);
+
+        $result = Episciences_Rating_Report_Access::mayDownloadAttachment(
+            $paper,
+            $report,
+            'any_file.pdf',
+            self::UID_PAPER_AUTHOR,
+            $review,
+            false, // isSecretary
+            false, // isGuestEditor
+            true,  // isEditor
+            false, // isCopyEditor
+            false, // isReportsVisibleToAuthor
+            true   // hasConflict = true
+        );
+
+        self::assertFalse($result);
+    }
+
+    /**
+     * Secretary with declared COI cannot download report attachment.
+     */
+    public function testSecretaryWithConflictCannotDownloadAttachment(): void
+    {
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(self::UID_UNRELATED);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+        $report->method('getStatus')->willReturn(Episciences_Rating_Report::STATUS_COMPLETED);
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getUid')->willReturn(self::UID_OTHER_PAPER_AUTHOR);
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturn(false);
+
+        $result = Episciences_Rating_Report_Access::mayDownloadAttachment(
+            $paper,
+            $report,
+            'any_file.pdf',
+            self::UID_PAPER_AUTHOR,
+            $review,
+            true,  // isSecretary
+            false, // isGuestEditor
+            false, // isEditor
+            false, // isCopyEditor
+            false, // isReportsVisibleToAuthor
+            true   // hasConflict = true
+        );
+
+        self::assertFalse($result);
+    }
+
+    /**
+     * Editor without COI can download completed report attachment.
+     */
+    public function testEditorWithoutConflictCanDownloadAttachment(): void
+    {
+        $report = $this->createMock(Episciences_Rating_Report::class);
+        $report->method('getUid')->willReturn(self::UID_UNRELATED);
+        $report->method('getOnbehalf_uid')->willReturn(null);
+        $report->method('getStatus')->willReturn(Episciences_Rating_Report::STATUS_COMPLETED);
+
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->method('getUid')->willReturn(self::UID_OTHER_PAPER_AUTHOR);
+        $paper->method('getEditor')->willReturn(false);
+        $paper->method('getCopyEditor')->willReturn(false);
+
+        $review = $this->createMock(Episciences_Review::class);
+        $review->method('getSetting')->willReturn(false);
+
+        $result = Episciences_Rating_Report_Access::mayDownloadAttachment(
+            $paper,
+            $report,
+            'any_file.pdf',
+            self::UID_PAPER_AUTHOR,
+            $review,
+            false, // isSecretary
+            false, // isGuestEditor
+            true,  // isEditor
+            false, // isCopyEditor
+            false, // isReportsVisibleToAuthor
+            false  // hasConflict = false
         );
 
         self::assertTrue($result);

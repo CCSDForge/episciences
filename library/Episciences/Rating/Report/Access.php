@@ -9,6 +9,9 @@
  *
  * Règles d'accès aux pièces jointes des rapports :
  *
+ * - Conflit d'intérêts (COI) : si l'utilisateur a déclaré un conflit
+ *   d'intérêts pour ce papier, l'accès est refusé quel que soit son rôle.
+ *
  * - Auteur du rapport (reviewer) : accès complet à son propre rapport,
  *   y compris en brouillon (WIP). Le reviewer peut toujours accéder
  *   à ses propres pièces jointes pendant la rédaction.
@@ -50,6 +53,7 @@ class Episciences_Rating_Report_Access
      * @param bool $isEditor Whether the user is an editor (global role)
      * @param bool $isCopyEditor Whether the user is a copy editor (global role)
      * @param bool $isReportsVisibleToAuthor Whether reports are visible to the paper author
+     * @param bool $hasConflict Whether the user has declared a conflict of interest for this paper
      * @return bool True if the user may download the attachment
      */
     public static function mayDownloadAttachment(
@@ -62,8 +66,14 @@ class Episciences_Rating_Report_Access
         bool $isGuestEditor,
         bool $isEditor,
         bool $isCopyEditor,
-        bool $isReportsVisibleToAuthor
+        bool $isReportsVisibleToAuthor,
+        bool $hasConflict = false
     ): bool {
+        // User with declared conflict of interest cannot access reports
+        if ($hasConflict) {
+            return false;
+        }
+
         $role = self::resolveRole(
             $paper,
             $report,

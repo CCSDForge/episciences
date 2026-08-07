@@ -148,6 +148,10 @@ class FileController extends DefaultController
         // which handles the "switch user" (su) case via getOriginalIdentity().
         $uid = Episciences_Auth::isLogged() ? Episciences_Auth::getUid() : null;
 
+        // Check if user has declared a conflict of interest for this paper
+        $isCoiEnabled = (bool)$review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+        $hasConflict = $isCoiEnabled && $uid !== null && $paper->checkConflictResponse($uid) === Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'];
+
         $isAllowed = Episciences_Rating_Report_Access::mayDownloadAttachment(
             paper: $paper,
             report: $report,
@@ -158,7 +162,8 @@ class FileController extends DefaultController
             isGuestEditor: Episciences_Auth::isGuestEditor(),
             isEditor: Episciences_Auth::isEditor(),
             isCopyEditor: Episciences_Auth::isCopyEditor(),
-            isReportsVisibleToAuthor: $paper->isReportsVisibleToAuthor()
+            isReportsVisibleToAuthor: $paper->isReportsVisibleToAuthor(),
+            hasConflict: $hasConflict
         );
 
         if (!$isAllowed) {
