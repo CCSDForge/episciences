@@ -14,7 +14,6 @@ use PHPUnit\Framework\TestCase;
  * analyse the source to assert the expected handling stays in place. The actual
  * path-confinement behaviour is covered by DefaultControllerResolveSafePathTest.
  *
- * @covers FileController
  */
 final class FileControllerPathHandlingTest extends TestCase
 {

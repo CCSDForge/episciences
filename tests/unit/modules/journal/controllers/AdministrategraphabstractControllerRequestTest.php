@@ -13,7 +13,6 @@ use PHPUnit\Framework\TestCase;
  * they assert the request guard keeps its corrected form and that the document id
  * is cast to int before being used to build filesystem paths.
  *
- * @covers AdministrategraphabstractController
  */
 final class AdministrategraphabstractControllerRequestTest extends TestCase
 {

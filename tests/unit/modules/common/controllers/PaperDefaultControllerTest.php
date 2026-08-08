@@ -17,7 +17,6 @@ use PHPUnit\Framework\TestCase;
  * Bugs discovered during review are documented inline.
  * Intentionally failing tests document confirmed bugs (red → green once fixed).
  *
- * @covers PaperDefaultController
  */
 final class PaperDefaultControllerTest extends TestCase
 {
