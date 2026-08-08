@@ -12,6 +12,30 @@ use Script;
 
 class InboxNotificationsTest extends TestCase
 {
+    /** @var list<string>|null */
+    private ?array $originalArgv = null;
+
+    /**
+     * InboxNotifications::__construct() -> Script::__construct() parses the
+     * real process argv via Zend_Console_Getopt and die()s on any option it
+     * doesn't recognize (see Script.php). Under PHPUnit, argv contains flags
+     * like --no-coverage or --filter, which are foreign to this script and
+     * would kill the whole test run. Swap argv for a safe placeholder for
+     * the duration of these tests only.
+     */
+    protected function setUp(): void
+    {
+        $this->originalArgv = $_SERVER['argv'] ?? null;
+        $_SERVER['argv'] = ['phpunit'];
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->originalArgv !== null) {
+            $_SERVER['argv'] = $this->originalArgv;
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
