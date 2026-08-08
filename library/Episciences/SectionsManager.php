@@ -174,6 +174,20 @@ class Episciences_SectionsManager
     }
 
     /**
+     * @param int $sid
+     * @return bool
+     */
+    public static function isPublishedPapersInSection(int $sid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_PAPERS, 'COUNT(DOCID)')
+            ->where('SID = ?', $sid)
+            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+        return (int)$db->fetchOne($select) > 0;
+    }
+
+    /**
      * @Deprecated. Use Episciences_VolumesAndSectionsManager::sort
      * @param $params
      * @return bool

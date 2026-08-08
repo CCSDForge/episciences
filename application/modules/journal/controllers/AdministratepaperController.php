@@ -2718,6 +2718,14 @@ class AdministratepaperController extends PaperDefaultController
                 // deleting the volume from T_VOLUME_PAPER
                 Episciences_Volume_PapersManager::deletePaperVolume($docId, $vid);
 
+                if ($paper->isPublished()) {
+                    try {
+                        SolrIndexing::enqueueIndex($paper->getDocid());
+                    } catch (Exception $e) {
+                        trigger_error($e->getMessage());
+                    }
+                }
+
             }
 
             echo true;
@@ -2815,6 +2823,14 @@ class AdministratepaperController extends PaperDefaultController
                 Episciences_Paper_Logger::CODE_SECTION_SELECTION,
                 Episciences_Auth::getUid(),
                 ['sid' => $sid]);
+
+            if ($paper->isPublished()) {
+                try {
+                    SolrIndexing::enqueueIndex($paper->getDocid());
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+            }
 
             // if checkbox is checked,
             if ($request->getPost('assignEditors')) {

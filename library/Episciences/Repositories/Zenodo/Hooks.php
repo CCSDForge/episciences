@@ -6,6 +6,7 @@ use Episciences\Repositories\FilesEnrichmentInterface;
 use Episciences\Repositories\InputSanitizerInterface;
 use Episciences\Repositories\LinkedDataEnrichmentInterface;
 use Episciences\Repositories\Zenodo\HooksInterface;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\Intl\Languages;
@@ -267,6 +268,18 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
     {
         $linkedIdentifiers = self::hookGetLinkedIdentifiers($hookParams);
         $affectedRows = Episciences_Submit::processDatasets($hookParams['docId'], $linkedIdentifiers);
+
+        if ($affectedRows > 0) {
+            $paper = Episciences_PapersManager::get((int) $hookParams['docId'], false);
+            if ($paper && $paper->isPublished()) {
+                try {
+                    SolrIndexing::enqueueIndex($paper->getDocid());
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+            }
+        }
+
         $response = self::checkResponse($hookParams);
         $response['affectedRows'] = $affectedRows;
         return $response;

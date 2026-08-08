@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 
 /**
  * Symfony Console command: enrich funding data from OpenAIRE Research Graph + HAL.
@@ -67,20 +68,20 @@ class GetFundingDataCommand extends Command
         if ($input->getOption('doi')) {
             $doi = (string) $input->getOption('doi');
             $select = $db->select()
-                ->from(T_PAPERS, ['PAPERID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
+                ->from(T_PAPERS, ['PAPERID', 'DOCID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
                 ->where('DOI = ?', trim($doi))
                 ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
             $rows = $db->fetchAll($select);
         } elseif ($input->getOption('paperid')) {
             $paperId = (int) $input->getOption('paperid');
             $select = $db->select()
-                ->from(T_PAPERS, ['PAPERID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
+                ->from(T_PAPERS, ['PAPERID', 'DOCID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
                 ->where('PAPERID = ?', $paperId)
                 ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
             $rows = $db->fetchAll($select);
         } else {
             $select = $db->select()
-                ->from(T_PAPERS, ['PAPERID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
+                ->from(T_PAPERS, ['PAPERID', 'DOCID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
                 ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
                 ->order('REPOID DESC');
             if ($rvid !== null) {
@@ -96,6 +97,7 @@ class GetFundingDataCommand extends Command
 
         foreach ($rows as $value) {
             $paperId = (int) $value['PAPERID'];
+            $docId   = (int) $value['DOCID'];
 
             // Process OpenAIRE funding for papers with DOI (all rows are already STATUS_PUBLISHED)
             if (!empty($value['DOI'])) {
@@ -178,6 +180,14 @@ class GetFundingDataCommand extends Command
                     } catch (\Throwable $e) {
                         $logger->error("HAL funding error for paper {$paperId}: " . $e->getMessage());
                     }
+                }
+            }
+
+            if (!$dryRun) {
+                try {
+                    SolrIndexing::enqueueIndex($docId);
+                } catch (Exception $e) {
+                    $logger->error("Solr enqueue error for paper {$docId}: " . $e->getMessage());
                 }
             }
 

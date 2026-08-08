@@ -949,6 +949,54 @@ class AdministratepaperControllerTest extends TestCase
         );
     }
 
+    /**
+     * @covers AdministratepaperController::savemastervolumeAction
+     *
+     * Changing the master volume of an already published paper must enqueue
+     * a Solr reindex, mirroring the pattern already in saveothervolumesAction().
+     */
+    public function testSavemastervolumeActionEnqueuesSolrIndexWhenPublished(): void
+    {
+        $method = $this->extractMethod('savemastervolumeAction');
+
+        $this->assertStringContainsString(
+            'isPublished()',
+            $method,
+            'savemastervolumeAction must guard the Solr reindex with isPublished()'
+        );
+        $this->assertStringContainsString(
+            'SolrIndexing::enqueueIndex',
+            $method,
+            'savemastervolumeAction must enqueue a Solr reindex for a published paper on volume change'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // savesectionAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savesectionAction
+     *
+     * Changing the section of an already published paper must enqueue
+     * a Solr reindex, mirroring the pattern already in saveothervolumesAction().
+     */
+    public function testSavesectionActionEnqueuesSolrIndexWhenPublished(): void
+    {
+        $method = $this->extractMethod('savesectionAction');
+
+        $this->assertStringContainsString(
+            'isPublished()',
+            $method,
+            'savesectionAction must guard the Solr reindex with isPublished()'
+        );
+        $this->assertStringContainsString(
+            'SolrIndexing::enqueueIndex',
+            $method,
+            'savesectionAction must enqueue a Solr reindex for a published paper on section change'
+        );
+    }
+
     // -----------------------------------------------------------------------
     // saveeditorsAction
     // -----------------------------------------------------------------------
