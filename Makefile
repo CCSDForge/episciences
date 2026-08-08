@@ -33,7 +33,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 # PHONY Targets
 # =============================================================================
 .PHONY: help build up down status logs restart clean clean-mysql
-.PHONY: collection collection-ref-pps index import-ref-pps download-ref-pps dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir yarn-encore-dev
+.PHONY: collection collection-ref-pps import-ref-pps download-ref-pps dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir yarn-encore-dev
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
@@ -55,7 +55,7 @@ help: ## Display this help message
 	@grep -h -E '^(wait-for-db|load-db.*|generate-users|shell-mysql.*|backup-db):.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No database commands found"
 	@echo ""
 	@echo "🔍 Solr Commands:"
-	@grep -E '^(collection|collection-ref-pps|index|import-ref-pps|download-ref-pps):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(collection|collection-ref-pps|import-ref-pps|download-ref-pps|solr-index|solr-delete|solr-worker|solr-queue):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "🛠️  Development Commands:"
 	@grep -E '^(dev-setup|composer|yarn|enter):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
@@ -180,11 +180,6 @@ collection-ref-pps: ## Create Solr core 'ref_pps' (requires episciences-infrastr
 		echo "Core may already exist, continuing..."
 	@echo "Solr core ref_pps setup complete!"
 
-index: ## Index content into Solr  [V=1 verbose] [D=1 debug]
-	@echo "Indexing content into Solr..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/solr/solrJob.php -D % $(if $(V),-v) $(if $(D),-d)
-	@echo "Indexing complete!"
-
 import-ref-pps: ## Import PPS data from CSV into Solr core ref_pps (optional: csv-file=PATH)
 	@echo "Importing PPS data into Solr..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
@@ -209,7 +204,7 @@ dev-setup: build copy-config setup-logs up wait-for-db init-data-dir ## Complete
 	@$(MAKE) init-dev-users
 	@$(MAKE) create-bot-user
 	@$(MAKE) collection
-	@$(MAKE) index
+	@$(MAKE) solr-index sqlwhere='1=1' sync=1
 	@echo "Development environment setup complete!"
 	@echo ""
 	@echo "====================================================================="
@@ -503,6 +498,59 @@ stats-download-kpi: ## Generate download KPI JSON for all published articles (op
 		$(if $(filter 1,$(pretty)),--pretty) \
 		$(if $(filter 1,$(dry-run)),--dry-run) \
 		$(if $(output),--output=$(output))
+
+# --- Solr Indexing ---------------------------------------------------------------
+# Symfony Messenger + Doctrine DBAL transport. See docs/console-commands.md#solr-indexing.
+
+solr-index: ## Enqueue (or sync) Solr re-indexing (requires docid=N or sqlwhere=CLAUSE or file=PATH; optional: sync=1 priority=N)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:index --docid=N|--sqlwhere=CLAUSE|--file=PATH [--sync] [-q]
+	@if [ -z "$(docid)" ] && [ -z "$(sqlwhere)" ] && [ -z "$(file)" ]; then \
+		echo "Error: specify docid=N or sqlwhere=CLAUSE or file=PATH"; \
+		echo "Usage: make solr-index docid=N | sqlwhere=CLAUSE | file=PATH [sync=1] [priority=N]"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php solr:index \
+		$(if $(docid),--docid=$(docid)) \
+		$(if $(sqlwhere),--sqlwhere=$(sqlwhere)) \
+		$(if $(file),--file=$(file)) \
+		$(if $(priority),--priority=$(priority)) \
+		$(if $(filter 1,$(sync)),--sync)
+
+solr-delete: ## Enqueue (or sync) a Solr deletion (requires docid=N or query=QUERY; optional: sync=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:delete --docid=N|--query=QUERY [--sync] [-q]
+	@if [ -z "$(docid)" ] && [ -z "$(query)" ]; then \
+		echo "Error: specify docid=N or query=QUERY"; \
+		echo "Usage: make solr-delete docid=N | query=QUERY [sync=1]"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php solr:delete \
+		$(if $(docid),--docid=$(docid)) \
+		$(if $(query),--query=$(query)) \
+		$(if $(filter 1,$(sync)),--sync)
+
+solr-worker: ## Continuously consume the Solr indexing/deletion queue (optional: limit=N time-limit=SECONDS memory-limit=SIZE)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:worker [--limit=N] [--time-limit=SECONDS] [--memory-limit=SIZE] [-q]
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php solr:worker \
+		$(if $(limit),--limit=$(limit)) \
+		$(if $(time-limit),--time-limit=$(time-limit)) \
+		$(if $(memory-limit),--memory-limit=$(memory-limit))
+
+solr-queue: ## Inspect/manage the Solr indexing queue (requires stats=1 or list-failed=1 or retry=ID; optional: limit=N)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:queue --stats|--list-failed|--retry=ID [-q]
+	@if [ "$(stats)" != "1" ] && [ "$(list-failed)" != "1" ] && [ -z "$(retry)" ]; then \
+		echo "Error: specify stats=1 or list-failed=1 or retry=ID"; \
+		echo "Usage: make solr-queue stats=1 | list-failed=1 [limit=N] | retry=ID"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php solr:queue \
+		$(if $(filter 1,$(stats)),--stats) \
+		$(if $(filter 1,$(list-failed)),--list-failed) \
+		$(if $(retry),--retry=$(retry)) \
+		$(if $(limit),--limit=$(limit))
 
 can-i-use-update: ## Update browserslist database when caniuse-lite is outdated
 	@echo "Updating browserslist database..."

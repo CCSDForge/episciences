@@ -3,6 +3,7 @@
  * Import or updates papers
  */
 
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Client;
 
 $localopts = [
@@ -730,7 +731,7 @@ class UpdatePapers extends JournalScript
     {
         try {
             $this->displayInfo("adding paper to index queue");
-            Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], 'episciences', 'UPDATE', 'episciences');
+            SolrIndexing::enqueueIndex($paper->getDocid());
             $this->displayInfo("paper added to index queue");
         } catch (Exception $e) {
             throw new Zend_Exception("paper indexation failed for " . $paper->getDocid() . ": " . $e->getMessage());
