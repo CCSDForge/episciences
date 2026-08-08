@@ -297,11 +297,10 @@ class Episciences_Paper_ConflictsManager
             $sql .= $db->quoteIdentifier('date');
             $sql .= ') VALUES ';
             $sql .= implode(',', $values);
-            $sql .= ' ON DUPLICATE KEY UPDATE ';
+            $sql .= ' AS new_row ON DUPLICATE KEY UPDATE ';
             $sql .= $db->quoteIdentifier('by');
-            $sql .= ' = VALUES(';
+            $sql .= ' = new_row.';
             $sql .= $db->quoteIdentifier('by');
-            $sql .= ')';
 
 
             $statement = $db->prepare($sql);

@@ -220,6 +220,287 @@ class Episciences_Paper_Logger
         self::CODE_VOLUME_SELECTION                     => "Déplacé dans un volume",
     ];
 
+    // activity timeline filter categories
+    public const CATEGORY_SUBMISSION = 'submission';
+    public const CATEGORY_EDITORIAL = 'editorial';
+    public const CATEGORY_REVIEW = 'review';
+    public const CATEGORY_COMMUNICATION = 'communication';
+
+    // log type filter category — sorted alphabetically by key (constant value), mirrors $_css
+    /** @var array<string, string> */
+    public static array $_category = [
+        self::CODE_ABANDON_PUBLICATION_PROCESS          => self::CATEGORY_EDITORIAL,
+        self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION   => self::CATEGORY_EDITORIAL,
+        self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION   => self::CATEGORY_EDITORIAL,
+        self::CODE_ALTER_REPORT_STATUS                  => self::CATEGORY_REVIEW,
+        self::CODE_AUTHOR_COMMENT_COVER_LETTER          => self::CATEGORY_COMMUNICATION,
+        self::CODE_INBOX_COAR_NOTIFY_REVIEW             => self::CATEGORY_COMMUNICATION,
+        self::CODE_COI_REPORTED                         => self::CATEGORY_EDITORIAL,
+        self::CODE_COI_REVERTED                         => self::CATEGORY_EDITORIAL,
+        self::CODE_CONTINUE_PUBLICATION_PROCESS         => self::CATEGORY_EDITORIAL,
+        self::CODE_CE_AUTHOR_FINAL_VERSION_SUBMITTED    => self::CATEGORY_EDITORIAL,
+        self::CODE_CE_AUTHOR_FINALE_VERSION_DEPOSED     => self::CATEGORY_EDITORIAL,
+        self::CODE_CE_AUTHOR_FINALE_VERSION_REQUEST     => self::CATEGORY_EDITORIAL,
+        self::CODE_CE_AUTHOR_SOURCES_DEPOSED            => self::CATEGORY_EDITORIAL,
+        self::CODE_CE_AUTHOR_SOURCES_REQUEST            => self::CATEGORY_EDITORIAL,
+        self::CODE_CE_READY_TO_PUBLISH                  => self::CATEGORY_EDITORIAL,
+        self::CODE_CE_REVIEW_FORMATTING_DEPOSED         => self::CATEGORY_EDITORIAL,
+        self::CODE_COPY_EDITOR_ASSIGNMENT               => self::CATEGORY_EDITORIAL,
+        self::CODE_COPY_EDITOR_UNASSIGNMENT             => self::CATEGORY_EDITORIAL,
+        self::CODE_DD_UPLOADED                          => self::CATEGORY_EDITORIAL,
+        self::CODE_DOI_ASSIGNED                         => self::CATEGORY_EDITORIAL,
+        self::CODE_DOI_CANCELED                         => self::CATEGORY_EDITORIAL,
+        self::CODE_DOI_UPDATED                          => self::CATEGORY_EDITORIAL,
+        self::CODE_DOCUMENT_IMPORTED                    => self::CATEGORY_SUBMISSION,
+        self::CODE_EDITOR_ASSIGNMENT                    => self::CATEGORY_EDITORIAL,
+        self::CODE_EDITOR_COMMENT                       => self::CATEGORY_COMMUNICATION,
+        self::CODE_EDITOR_UNASSIGNMENT                  => self::CATEGORY_EDITORIAL,
+        self::CODE_LD_ADDED                             => self::CATEGORY_EDITORIAL,
+        self::CODE_LD_CHANGED                           => self::CATEGORY_EDITORIAL,
+        self::CODE_LD_REMOVED                           => self::CATEGORY_EDITORIAL,
+        self::CODE_MAIL_SENT                            => self::CATEGORY_COMMUNICATION,
+        self::CODE_MAJOR_REVISION_REQUEST               => self::CATEGORY_EDITORIAL,
+        self::CODE_MINOR_REVISION_REQUEST               => self::CATEGORY_EDITORIAL,
+        self::CODE_MONITORING_REFUSED                   => self::CATEGORY_EDITORIAL,
+        self::CODE_NEW_PAPER_COMMENT                    => self::CATEGORY_COMMUNICATION,
+        self::CODE_NEW_REVIEWING_DEADLINE               => self::CATEGORY_EDITORIAL,
+        self::CODE_OTHER_VOLUMES_SELECTION              => self::CATEGORY_EDITORIAL,
+        self::CODE_ALTER_PUBLICATION_DATE               => self::CATEGORY_EDITORIAL,
+        self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => self::CATEGORY_COMMUNICATION,
+        self::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR => self::CATEGORY_COMMUNICATION,
+        self::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR => self::CATEGORY_COMMUNICATION,
+        self::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => self::CATEGORY_COMMUNICATION,
+        self::CODE_PAPER_UPDATED                        => self::CATEGORY_SUBMISSION,
+        self::CODE_REMINDER_SENT                        => self::CATEGORY_COMMUNICATION,
+        self::CODE_RESTORATION_OF_STATUS               => self::CATEGORY_EDITORIAL,
+        self::CODE_REVISION_DEADLINE_UPDATED            => self::CATEGORY_EDITORIAL,
+        self::CODE_REVISION_REQUEST_ANSWER              => self::CATEGORY_COMMUNICATION,
+        self::CODE_REVISION_REQUEST_NEW_VERSION         => self::CATEGORY_SUBMISSION,
+        self::CODE_REVISION_REQUEST_TMP_VERSION         => self::CATEGORY_SUBMISSION,
+        self::CODE_REVIEWER_ASSIGNMENT                  => self::CATEGORY_REVIEW,
+        self::CODE_REVIEWER_INVITATION                  => self::CATEGORY_REVIEW,
+        self::CODE_REVIEWER_INVITATION_ACCEPTED         => self::CATEGORY_REVIEW,
+        self::CODE_REVIEWER_INVITATION_DECLINED         => self::CATEGORY_REVIEW,
+        self::CODE_REVIEWER_UNASSIGNMENT                => self::CATEGORY_REVIEW,
+        self::CODE_REVIEWING_COMPLETED                  => self::CATEGORY_REVIEW,
+        self::CODE_REVIEWING_IN_PROGRESS                => self::CATEGORY_REVIEW,
+        self::CODE_SECTION_SELECTION                    => self::CATEGORY_EDITORIAL,
+        self::CODE_STATUS                               => self::CATEGORY_EDITORIAL,
+        self::CODE_SWD_UPLOADED                         => self::CATEGORY_EDITORIAL,
+        self::CODE_VERSION_REPOSITORY_UPDATED           => self::CATEGORY_SUBMISSION,
+        self::CODE_VOLUME_SELECTION                     => self::CATEGORY_EDITORIAL,
+    ];
+
+    public static function getCategory(string $action): string
+    {
+        return self::$_category[$action] ?? self::CATEGORY_EDITORIAL;
+    }
+
+    // human-readable label for each activity timeline filter category
+    /** @var array<string, string> */
+    public static array $_categoryLabel = [
+        self::CATEGORY_SUBMISSION => 'Soumission & versions',
+        self::CATEGORY_EDITORIAL => 'Processus éditorial',
+        self::CATEGORY_REVIEW => 'Évaluation',
+        self::CATEGORY_COMMUNICATION => 'Messages & notifications',
+    ];
+
+    public static function getCategoryLabel(string $category): string
+    {
+        return self::$_categoryLabel[$category] ?? $category;
+    }
+
+    // glyphicon for each activity timeline category (marker icon)
+    /** @var array<string, string> */
+    public static array $_categoryIcon = [
+        self::CATEGORY_SUBMISSION => 'glyphicon-cloud-upload',
+        self::CATEGORY_EDITORIAL => 'glyphicon-cog',
+        self::CATEGORY_REVIEW => 'glyphicon-tasks',
+        self::CATEGORY_COMMUNICATION => 'glyphicon-envelope',
+    ];
+
+    public static function getCategoryIcon(string $category): string
+    {
+        return self::$_categoryIcon[$category] ?? 'glyphicon-record';
+    }
+
+    // glyphicon for each log action — used for compact icon-only column headers
+    // (e.g. the activity timeline's per-reviewer recap table) and as the per-item marker
+    // in the activity timeline's recap blocks
+    /** @var array<string, string> */
+    public static array $_actionIcon = [
+        self::CODE_REVIEWER_ASSIGNMENT => 'glyphicon-log-in',
+        self::CODE_REVIEWER_UNASSIGNMENT => 'glyphicon-log-out',
+        self::CODE_REVIEWER_INVITATION => 'glyphicon-envelope',
+        self::CODE_REVIEWER_INVITATION_ACCEPTED => 'glyphicon-ok',
+        self::CODE_REVIEWER_INVITATION_DECLINED => 'glyphicon-remove',
+        self::CODE_REVIEWING_IN_PROGRESS => 'glyphicon-time',
+        self::CODE_REVIEWING_COMPLETED => 'glyphicon-ok-circle',
+        self::CODE_ALTER_REPORT_STATUS => 'glyphicon-pencil',
+        self::CODE_STATUS => 'fa-regular fa-flag',
+        self::CODE_RESTORATION_OF_STATUS => 'fa-regular fa-flag',
+        self::CODE_MAIL_SENT => 'glyphicon-envelope',
+        self::CODE_REMINDER_SENT => 'glyphicon-envelope',
+        self::CODE_EDITOR_ASSIGNMENT => 'glyphicon-log-in',
+        self::CODE_EDITOR_UNASSIGNMENT => 'glyphicon-log-out',
+        self::CODE_EDITOR_COMMENT => 'glyphicon-comment',
+        self::CODE_NEW_PAPER_COMMENT => 'glyphicon-comment',
+        self::CODE_AUTHOR_COMMENT_COVER_LETTER => 'glyphicon-comment',
+        self::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR => 'glyphicon-comment',
+        self::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR => 'glyphicon-comment',
+        self::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR => 'glyphicon-comment',
+        self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER => 'glyphicon-comment',
+        self::CODE_DOI_ASSIGNED => 'glyphicon-link',
+        self::CODE_DOI_UPDATED => 'glyphicon-link',
+        self::CODE_DOI_CANCELED => 'glyphicon-link',
+        self::CODE_DOCUMENT_IMPORTED => 'glyphicon-cloud-upload',
+        self::CODE_PAPER_UPDATED => 'glyphicon-cloud-upload',
+        self::CODE_VERSION_REPOSITORY_UPDATED => 'glyphicon-cloud-upload',
+        self::CODE_REVISION_REQUEST_NEW_VERSION => 'glyphicon-cloud-upload',
+        self::CODE_REVISION_REQUEST_TMP_VERSION => 'glyphicon-cloud-upload',
+        self::CODE_REVISION_REQUEST_ANSWER => 'glyphicon-comment',
+        self::CODE_COPY_EDITOR_ASSIGNMENT => 'glyphicon-log-in',
+        self::CODE_COPY_EDITOR_UNASSIGNMENT => 'glyphicon-log-out',
+        self::CODE_CE_AUTHOR_SOURCES_REQUEST => 'glyphicon-inbox',
+        self::CODE_CE_AUTHOR_SOURCES_DEPOSED => 'glyphicon-upload',
+        self::CODE_CE_AUTHOR_FINALE_VERSION_REQUEST => 'glyphicon-inbox',
+        self::CODE_CE_AUTHOR_FINALE_VERSION_DEPOSED => 'glyphicon-upload',
+        self::CODE_CE_AUTHOR_FINAL_VERSION_SUBMITTED => 'glyphicon-upload',
+        self::CODE_CE_READY_TO_PUBLISH => 'glyphicon-ok-circle',
+        self::CODE_CE_REVIEW_FORMATTING_DEPOSED => 'glyphicon-upload',
+        self::CODE_SECTION_SELECTION => 'glyphicon-folder-open',
+        self::CODE_VOLUME_SELECTION => 'glyphicon-folder-open',
+        self::CODE_OTHER_VOLUMES_SELECTION => 'glyphicon-folder-open',
+        self::CODE_MINOR_REVISION_REQUEST => 'glyphicon-pencil',
+        self::CODE_MAJOR_REVISION_REQUEST => 'glyphicon-pencil',
+        self::CODE_COI_REPORTED => 'glyphicon-exclamation-sign',
+        self::CODE_COI_REVERTED => 'glyphicon-ok',
+        self::CODE_ABANDON_PUBLICATION_PROCESS => 'glyphicon-pause',
+        self::CODE_CONTINUE_PUBLICATION_PROCESS => 'glyphicon-play',
+        self::CODE_MONITORING_REFUSED => 'glyphicon-eye-close',
+        self::CODE_ALTER_PUBLICATION_DATE => 'glyphicon-calendar',
+        self::CODE_REVISION_DEADLINE_UPDATED => 'glyphicon-calendar',
+        self::CODE_NEW_REVIEWING_DEADLINE => 'glyphicon-calendar',
+        self::CODE_LD_ADDED => 'glyphicon-link',
+        self::CODE_LD_CHANGED => 'glyphicon-link',
+        self::CODE_LD_REMOVED => 'glyphicon-link',
+        self::CODE_DD_UPLOADED => 'glyphicon-upload',
+        self::CODE_SWD_UPLOADED => 'glyphicon-upload',
+        self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION => 'glyphicon-inbox',
+        self::CODE_ACCEPTED_ASK_FOR_AUTHOR_VALIDATION => 'glyphicon-inbox',
+        self::CODE_INBOX_COAR_NOTIFY_REVIEW => 'glyphicon-envelope',
+    ];
+
+    public static function getActionIcon(string $action): string
+    {
+        return self::$_actionIcon[$action] ?? 'glyphicon-record';
+    }
+
+    /**
+     * Full, ready-to-use CSS class list for an action's icon marker (activity timeline
+     * recap blocks / review table column headers). Most $_actionIcon entries are a bare
+     * glyphicon modifier (e.g. "glyphicon-flag") that needs the "glyphicon" base class
+     * added; a few (e.g. the status flag: "fa-regular fa-flag") are Font Awesome and are
+     * already a complete class list, used as-is.
+     */
+    public static function getActionIconClasses(string $action): string
+    {
+        $icon = self::getActionIcon($action);
+
+        return str_starts_with($icon, 'glyphicon-') ? 'glyphicon ' . $icon : $icon;
+    }
+
+    // log actions that open a "view details" modal (/administratepaper/log?id=)
+    // shared by the "Historique" panel and the activity timeline
+    /** @var array<int, string> */
+    public static array $_logsWithDetailModal = [
+        self::CODE_MAIL_SENT,
+        self::CODE_REMINDER_SENT,
+        self::CODE_EDITOR_ASSIGNMENT,
+        self::CODE_EDITOR_UNASSIGNMENT,
+        self::CODE_REVIEWER_INVITATION,
+        self::CODE_REVIEWER_INVITATION_ACCEPTED,
+        self::CODE_REVIEWER_INVITATION_DECLINED,
+        self::CODE_ABANDON_PUBLICATION_PROCESS,
+        self::CODE_CONTINUE_PUBLICATION_PROCESS,
+        self::CODE_COPY_EDITOR_ASSIGNMENT,
+        self::CODE_COPY_EDITOR_UNASSIGNMENT,
+        self::CODE_CE_AUTHOR_SOURCES_REQUEST,
+        self::CODE_CE_AUTHOR_SOURCES_DEPOSED,
+        self::CODE_NEW_PAPER_COMMENT,
+        self::CODE_CE_AUTHOR_FINALE_VERSION_REQUEST,
+        self::CODE_CE_AUTHOR_FINALE_VERSION_DEPOSED,
+        self::CODE_CE_REVIEW_FORMATTING_DEPOSED,
+        self::CODE_CE_AUTHOR_FINAL_VERSION_SUBMITTED,
+        self::CODE_CE_READY_TO_PUBLISH,
+        self::CODE_AUTHOR_COMMENT_COVER_LETTER,
+        self::CODE_EDITOR_COMMENT,
+        self::CODE_REVISION_REQUEST_TMP_VERSION,
+        self::CODE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR,
+        self::CODE_PAPER_COMMENT_FROM_CONTRIBUTOR_TO_REVIEWER,
+        self::CODE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR,
+        self::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR,
+        self::CODE_COI_REPORTED,
+        self::CODE_COI_REVERTED,
+        self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION,
+        self::CODE_NEW_REVIEWING_DEADLINE,
+        self::CODE_LD_ADDED,
+        self::CODE_LD_CHANGED,
+        self::CODE_LD_REMOVED,
+    ];
+
+    public static function hasDetailModal(string $action): bool
+    {
+        return in_array($action, self::$_logsWithDetailModal, true);
+    }
+
+    /**
+     * Decode a PAPER_LOG row's DETAIL JSON and extract the (status, statusCode, fullName, tag)
+     * used to display it. Shared by the "Historique" panel and the activity timeline, so both
+     * interpret log entries the exact same way.
+     * @param array<string, mixed> $log a PAPER_LOG row (as returned by Episciences_Paper::getHistory())
+     * @return array{detail: array<string, mixed>, status: string, statusCode: int|null, fullName: string, tag: string}
+     */
+    public static function extractLogDisplayData(array $log): array
+    {
+        try {
+            $detail = $log['DETAIL'] ? Zend_Json::decode($log['DETAIL']) : [];
+        } catch (Zend_Json_Exception $e) {
+            $detail = [];
+        }
+
+        // Zend_Registry::isRegistered() guard mirrors the Zend_View_Helper_Translate this
+        // replaces: that helper degrades to the raw message id when no translator is
+        // bootstrapped (console scripts, PHPUnit tests) instead of throwing Zend_Exception
+        $translator = Zend_Registry::isRegistered('Zend_Translate') ? Zend_Registry::get('Zend_Translate') : null;
+        $translate = static fn(string $message): string => $translator !== null ? $translator->translate($message) : $message;
+
+        $statusCode = isset($detail['status']) && in_array($detail['status'], array_merge(Episciences_Paper::STATUS_CODES, Episciences_Paper::OTHER_STATUS_CODE), false)
+            ? (int)$detail['status']
+            : null;
+
+        $status = $statusCode !== null
+            ? $translate(Episciences_Paper::$_statusLabel[$statusCode])
+            : $translate('undefined status');
+
+        $fullName = 'undefined';
+        if (isset($detail['user']['fullname'])) {
+            $fullName = $detail['user']['fullname'];
+        } elseif (isset($detail['user']['SCREEN_NAME'])) {
+            $fullName = $detail['user']['SCREEN_NAME'];
+        }
+
+        $tag = !empty($detail['user']['tag']) ? (' [ ' . $translate($detail['user']['tag']) . ' ]') : '';
+
+        return [
+            'detail' => $detail,
+            'status' => $status,
+            'statusCode' => $statusCode,
+            'fullName' => $fullName,
+            'tag' => $tag,
+        ];
+    }
+
     /**
      * @param $paperid
      * @param $docid
@@ -241,7 +522,9 @@ class Episciences_Paper_Logger
             'UID'  => $uid  ?? EPISCIENCES_UID,
             'RVID' => $rvid ?? RVID,
             'ACTION' => $action,
-            'DETAIL' => $detail,
+            // Normalise an array $detail to JSON for direct callers; callers going through
+            // Paper::log() already pass an encoded string, so no double encoding occurs.
+            'DETAIL' => is_array($detail) ? json_encode($detail) : $detail,
             'DATE' => $date ?? new Zend_Db_Expr('NOW()')
         ];
         return (bool)$db->insert(T_LOGS, $data);

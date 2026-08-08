@@ -39,7 +39,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
 .PHONY: enter-container-php
 .PHONY: update-geoip stats-process stats-update-robots-list stats-download-kpi
-.PHONY: format format-check format-tests format-file
+.PHONY: format format-check format-tests format-file sonar
 
 # =============================================================================
 # Help & Information
@@ -64,7 +64,7 @@ help: ## Display this help message
 	@grep -h -E '^test.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No testing commands found"
 	@echo ""
 	@echo "🔎 Linting & Quality Commands:"
-	@grep -h -E '^(phpstan|rector).*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No quality commands found"
+	@grep -h -E '^(phpstan|rector|sonar).*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No quality commands found"
 	@echo ""
 	@echo "✨ Formatting Commands:"
 	@grep -E '^format.*:.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'

@@ -44,6 +44,8 @@ class Episciences_Volume
     private array $_metadatas = [];
     private $_indexedPapers = null;
     private $_paperPositions = [];
+    /** @var array<int, Episciences_Reviewer>|null */
+    private $_reviewers;
     private $_editors;
     private ?bool $_editorsActiveState = null;
     // Copy Editors
@@ -608,6 +610,16 @@ class Episciences_Volume
         return $this->_metadatas;
     }
 
+    public function getCover(): ?Episciences_Volume_Metadata
+    {
+        foreach ($this->_metadatas as $metadata) {
+            if ($metadata->isCover()) {
+                return $metadata;
+            }
+        }
+        return null;
+    }
+
     /**
      * @param $metadatas
      */
@@ -920,8 +932,8 @@ class Episciences_Volume
             if (!$update) {
                 $this->_db->insert(T_VOLUME_SETTINGS, ['SETTING' => $setting, 'VALUE' => $value, 'VID' => $vid]);
             } else {
-                $sql = $this->_db->quoteInto('INSERT INTO ' . T_VOLUME_SETTINGS . ' (SETTING, VALUE, VID) VALUES (?) 
-                ON DUPLICATE KEY UPDATE VALUE = VALUES(VALUE)', ['SETTING' => $setting, 'VALUE' => $value, 'VID' => $vid]);
+                $sql = $this->_db->quoteInto('INSERT INTO ' . T_VOLUME_SETTINGS . ' (SETTING, VALUE, VID) VALUES (?)
+                AS new_row ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE', ['SETTING' => $setting, 'VALUE' => $value, 'VID' => $vid]);
                 $this->_db->query($sql);
             }
         } catch (Zend_Db_Adapter_Exception $exception) {
@@ -975,6 +987,55 @@ class Episciences_Volume
 
             $this->setMetadata($metadata);
             $newMetadataIds[] = $metadata->getId();
+        }
+
+        // Handle volume cover separately
+        $existingCover = $this->getCover();
+
+        if (!empty($post['cover_data'])) {
+            try {
+                $coverData = json_decode($post['cover_data'], true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException $e) {
+                $errors[] = 'Failed to decode cover_data: ' . $e->getMessage();
+                $coverData = [];
+            }
+            $coverAction = $coverData['action'] ?? '';
+
+            if ($coverAction === 'delete') {
+                // Intentionally excluded from $newMetadataIds → deleteOldMetadata() removes it
+            } elseif ($coverAction === 'save' && !empty($coverData['tmpfile'])) {
+                try {
+                    $tmpfile = json_decode($coverData['tmpfile'], true, 512, JSON_THROW_ON_ERROR);
+                } catch (JsonException $e) {
+                    $errors[] = 'Failed to decode cover tmpfile: ' . $e->getMessage();
+                    $tmpfile = null;
+                }
+
+                if ($tmpfile !== null) {
+                    $langs = array_keys(Episciences_Tools::getLanguages());
+                    $coverTitles = array_fill_keys($langs, Episciences_Volume_Metadata::COVER_TITLE_KEY);
+
+                    $coverMetadata = new Episciences_Volume_Metadata([
+                        'id'       => $existingCover?->getId(),
+                        'vid'      => $this->getVid(),
+                        'title'    => $coverTitles,
+                        'content'  => [],
+                        'file'     => $existingCover?->getFile(),
+                        'tmpfile'  => $tmpfile,
+                        'position' => 0,
+                    ]);
+
+                    if ($coverMetadata->save()) {
+                        $this->setMetadata($coverMetadata);
+                        $newMetadataIds[] = $coverMetadata->getId();
+                    } else {
+                        $errors[] = 'Failed to save cover metadata';
+                    }
+                }
+            }
+        } elseif ($existingCover) {
+            // No cover action posted → preserve existing cover
+            $newMetadataIds[] = $existingCover->getId();
         }
 
         // Clean up old metadata
@@ -1064,9 +1125,12 @@ class Episciences_Volume
 
         foreach ($this->getMetadatas() as $oldMetadataIds => $metadata) {
             if (!in_array($oldMetadataIds, $newMetadataIds, false)) {
-                $this->_db->delete(T_VOLUME_METADATAS, 'ID = ' . $oldMetadataIds);
-                if ($metadata->hasFile() && file_exists(REVIEW_FILES_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile())) {
-                    unlink(REVIEW_FILES_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile());
+                $this->_db->delete(T_VOLUME_METADATAS, 'ID = ' . (int)$oldMetadataIds);
+                // Metadata files live under REVIEW_PUBLIC_PATH (see Metadata::save()); using
+                // REVIEW_FILES_PATH here never matched and left orphaned files on disk.
+                $metadataFilePath = REVIEW_PUBLIC_PATH . 'volumes/' . $this->getVid() . '/' . $metadata->getFile();
+                if ($metadata->hasFile() && file_exists($metadataFilePath)) {
+                    unlink($metadataFilePath);
                 }
             }
         }
@@ -1387,7 +1451,7 @@ class Episciences_Volume
 
     public function setVol_num($volNum): \Episciences_Volume
     {
-        $this->_vol_num = $volNum ? (int)trim(strip_tags($volNum)) : null;
+        $this->_vol_num = $volNum ? trim(strip_tags($volNum)) : null;
         return $this;
     }
 
@@ -1568,6 +1632,10 @@ class Episciences_Volume
         }
 
 
+        if (empty($sortedPapers)) {
+            return 0;
+        }
+
         /**
          * @var int $position
          * @var  Episciences_Paper $paper
@@ -1580,7 +1648,9 @@ class Episciences_Volume
             }
         }
 
-        return $position;
+        // Not found: assign the next position after the current maximum (per the docblock),
+        // instead of returning the last, already-occupied position.
+        return max(array_keys($sortedPapers)) + 1;
     }
 
 

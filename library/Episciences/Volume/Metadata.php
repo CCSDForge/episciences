@@ -3,6 +3,7 @@
 class Episciences_Volume_Metadata
 {
     const TRANSLATION_FILE = 'volumes.php';
+    const COVER_TITLE_KEY = 'tile';
     protected $_db = null;
     private $_id;
     private $_vid;
@@ -206,6 +207,20 @@ class Episciences_Volume_Metadata
         return $this;
     }
 
+    public function isCover(): bool
+    {
+        $titles = $this->getTitles();
+        if (empty($titles)) {
+            return false;
+        }
+        foreach ($titles as $value) {
+            if ($value !== self::COVER_TITLE_KEY) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public function isPDF(): bool
     {
         $type = $this->getFileType();
@@ -312,7 +327,9 @@ class Episciences_Volume_Metadata
                         unlink($item['path']);
                     }
                 } else {
-                    $path = REVIEW_FILES_PATH . 'volumes/' . $this->getVid() . '/';
+                    // Files are stored under REVIEW_PUBLIC_PATH (see save() and getFilePath());
+                    // deleting from REVIEW_FILES_PATH silently missed them and leaked the file.
+                    $path = REVIEW_PUBLIC_PATH . 'volumes/' . $this->getVid() . '/';
                     if (file_exists($path . $item['name'])) {
                         unlink($path . $item['name']);
                     }
@@ -330,6 +347,7 @@ class Episciences_Volume_Metadata
             ];
         } catch (JsonException $e) {
             trigger_error($e->getMessage());
+            return false;
         }
         $values['VID'] = $this->getVid();
 

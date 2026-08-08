@@ -1384,4 +1384,32 @@ class AdministratepaperControllerTest extends TestCase
             'BUG #1010: savenewdeadlineAction should no longer use today\'s date for range calculation'
         );
     }
+
+    // ---------------------------------------------------------------
+    // BUG — Zenodo: posted identifier overwrites VERSION, IDENTIFIER not saved
+    // ---------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savenewpostedversionAction
+     *
+     * Bug: for repositories where the posted value is an identifier rather than
+     * a version number (e.g. Zenodo), the 'hookVersion' hook must be given
+     * 'context' => ['previousVersion' => ...] so it can fall back to
+     * previousVersion + 1 when the repository does not expose an explicit
+     * version number. Without it, Episciences_Repositories_Zenodo_Hooks::hookVersion()
+     * returns [], the whole conversion block is skipped, and the raw posted
+     * identifier is written into VERSION while IDENTIFIER is never updated.
+     */
+    public function testSavenewpostedversionActionPassesPreviousVersionContextToHookVersion(): void
+    {
+        $method = $this->extractMethod('savenewpostedversionAction');
+
+        $this->assertMatchesRegularExpression(
+            '/callHook\(\s*\'hookVersion\'\s*,\s*\[.*?\'context\'\s*=>\s*\[\s*\'previousVersion\'\s*=>\s*\$paper->getVersion\(\)/s',
+            $method,
+            "BUG: savenewpostedversionAction must pass 'context' => ['previousVersion' => \$paper->getVersion()] "
+            . "to the 'hookVersion' hook, otherwise Zenodo's hookVersion() cannot increment the version and "
+            . 'the posted identifier ends up written into VERSION while IDENTIFIER is left untouched'
+        );
+    }
 }

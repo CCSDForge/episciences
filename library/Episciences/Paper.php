@@ -43,6 +43,7 @@ class Episciences_Paper
      *
      */
     public const CACHE_CLASS_NAMESPACE = 'paper';
+    public const JSON_DOCUMENT_COLUMN = 'DOCUMENT';
 
     public const STATUS_SUBMITTED = 0;
     // reviewers have been assigned, but did not start their reports
@@ -1232,7 +1233,7 @@ class Episciences_Paper
 
                     //insert licence when save paper
                     try {
-                        $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), (int)$this->getVersion());
+                        $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), $this->getVersion());
                         Episciences_Paper_LicenceManager::insertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
 
                     } catch (\GuzzleHttp\Exception\GuzzleException|JsonException $e) {
@@ -3321,11 +3322,11 @@ class Episciences_Paper
                 $oVolume->loadSettings();
             }
         }
-        
+
         // fetch secondary volume data if the setting is enabled in the review
         $review = Episciences_ReviewsManager::find($this->getRvid());
 
-        $displaySecondaryVolumes = (int) $review->getSetting(
+        $displaySecondaryVolumes = (int)$review->getSetting(
                 Episciences_Review::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE
             ) === 1;
 
@@ -4872,7 +4873,7 @@ class Episciences_Paper
 
     public function isOwner(): bool
     {
-        return Episciences_Auth::getUid() === $this->getUid() || Episciences_Auth::getOriginalIdentity() === $this->getUid();
+        return Episciences_Auth::getUid() === $this->getUid() || Episciences_Auth::getOriginalIdentity()?->getUid() === $this->getUid();
     }
 
     public function isAlreadyAcceptedWaitingForAuthorFinalVersion(): bool
@@ -5470,20 +5471,18 @@ class Episciences_Paper
 
         if ($this->hasHook) {
 
-            $files = $this->getFiles();
-            /** @var Episciences_Paper_File $file */
+            $mainFile = Episciences_Paper_FilesManager::getMainFile($this->getDocid());
 
-            foreach ($files as $file) {
-
-                if (($file->getFileType() === 'pdf')) {
-                    return Episciences_Repositories::isDataverse($this->getRepoid()) ? $file->getDownloadLike() : $file->getSelfLink();
-                }
+            if ($mainFile) {
+                return Episciences_Repositories::isDataverse($this->getRepoid()) ? $mainFile->getDownloadLike() : $mainFile->getSelfLink();
             }
-        } else {
-            return $this->getPaperUrl();
+
+            return null;
+
         }
 
-        return null;
+        return $this->getPaperUrl();
+
     }
 
 
@@ -5572,6 +5571,57 @@ class Episciences_Paper
 
         $queue->send();
     }
+
+    public function isAllowedToEditMasterFile(): bool
+    {
+        return
+                Episciences_Auth::isSecretary() ||
+                $this->isOwner() ||
+                $this->isEditor(Episciences_Auth::getUid());
+    }
+
+
+    public function isEligibleForMasterFileChoice(): bool
+    {
+        return
+            $this->hasHook &&
+            !$this->isDataSetOrSoftware() &&
+            count($this->getFiles()) > 0 &&
+            $this->isAllowedToEditMasterFile();
+    }
+
+
+    /**
+     * Updates a nested value in a JSON document column
+     *
+     * @param string $jsonPath JSON path(ie: '$.database.current.mainPdfUrl')
+     * @param mixed  $value    Value to insert
+     *
+     * @return bool
+     * @throws Exception
+     */
+    public function updateNestedJsonDocument(
+        string $jsonPath,
+        mixed $value
+    ): bool {
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $jsonValue = json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+
+        $sql = sprintf(
+            'UPDATE `%s` SET `%s` = JSON_SET(`%s`, ?, CAST(? AS JSON)) WHERE DOCID = ?',
+            T_PAPERS,
+            self::JSON_DOCUMENT_COLUMN,
+            self::JSON_DOCUMENT_COLUMN
+        );
+
+        return $db?->prepare($sql)->execute([
+            $jsonPath,
+            $jsonValue,
+            $this->getDocid()
+        ]) ?? false;
+    }
+
 }
 
 

@@ -84,6 +84,17 @@ services:
         - 8.8.8.8
         - 1.1.1.1
 
+  sonar-scanner:
+    image: sonarsource/sonar-scanner-cli
+    container_name: episciences-sonar-scanner
+    user: root
+    volumes:
+      - .:/usr/src
+    environment:
+      - SONAR_HOST_URL=http://episciences-sonarqube:9000
+    networks:
+      - epi-network
+
   solr-worker:
     container_name: episciences-solr-worker
     # Reuses the php-fpm image built by the service above (same

@@ -54,7 +54,6 @@ function submit() {
         $.ajax({
             url: $('#reminder_form').attr('action'),
             type: 'POST',
-            datatype: 'json',
             data: $('#reminder_form').serialize(),
             success: function (response) {
                 $('#modal-box').modal('hide');

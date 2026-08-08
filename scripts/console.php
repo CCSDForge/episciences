@@ -16,6 +16,7 @@ require_once __DIR__ . '/GetZbReviewsCommand.php';
 require_once __DIR__ . '/GenerateSitemapCommand.php';
 require_once __DIR__ . '/MergePdfVolCommand.php';
 require_once __DIR__ . '/CreateDoajVolumeExportsCommand.php';
+require_once __DIR__ . '/CheckDoajJournalsCommand.php';
 require_once __DIR__ . '/ZbjatsZipperCommand.php';
 require_once __DIR__ . '/ImportSectionsCommand.php';
 require_once __DIR__ . '/ImportVolumesCommand.php';
@@ -65,6 +66,7 @@ $application->add(new MergePdfVolCommand());
 
 // DOAJ commands
 $application->add(new CreateDoajVolumeExportsCommand());
+$application->add(new CheckDoajJournalsCommand());
 
 // zbJATS commands
 $application->add(new ZbjatsZipperCommand());

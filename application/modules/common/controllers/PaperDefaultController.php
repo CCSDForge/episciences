@@ -1249,10 +1249,11 @@ class PaperDefaultController extends DefaultController
         $reviewerUid = $user->getUid();
 
         $ratingUrl = $this->view->url(['controller' => 'paper', 'action' => 'rating', 'id' => $docId]);
-        $ratingUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $ratingUrl;
+        // SECURITY FIX: Use trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME'] to prevent Host Header Injection
+        $ratingUrl = rtrim(APPLICATION_URL, '/') . '/' . ltrim($ratingUrl, '/');
 
         $adminPaperUrl = $this->view->url(['controller' => 'administratepaper', 'action' => 'view', 'id' => $docId]);
-        $adminPaperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $adminPaperUrl;
+        $adminPaperUrl = rtrim(APPLICATION_URL, '/') . '/' . ltrim($adminPaperUrl, '/');
 
         $reviewerTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_REVIEWER_COPY;
         $editorialCommitteeTemplateType = Episciences_Mail_TemplatesManager::TYPE_PAPER_REVIEWER_ACCEPTATION_EDITOR_COPY;

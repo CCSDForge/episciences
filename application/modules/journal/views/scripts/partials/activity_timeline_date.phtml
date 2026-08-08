@@ -1,0 +1,50 @@
+<?php
+/**
+ * Shared timeline date column: date + "Version N" badge, plus — when a docid is known
+ * for that version — two quick links to that version's PDF and admin page. Used by every
+ * timeline row (standalone item, recap block, per-reviewer table) so "Version N" always
+ * means the same thing and always offers the same shortcuts.
+ *
+ * The PDF link (pdfUrl) is resolved by ActivityController::resolveVersionPdfUrl(): a
+ * published version points to Episciences' own PDF proxy, any other version (in
+ * progress, obsolete, ...) points straight to its file on the open archive — same rule
+ * as the public article page (see `episciences/status = 16` in public/xsl/full_paper.xsl).
+ *
+ * Expected view vars: date (string), version (int|string), docId (int|string|null),
+ * pdfUrl (string|null)
+ */
+$date = $this->date;
+$version = $this->version;
+$docId = $this->docId;
+$pdfUrl = $this->pdfUrl;
+?>
+<div class="activity-timeline-date">
+    <time datetime="<?= date('c', strtotime($date)) ?>">
+        <?= $this->Date($date, null, Zend_Date::DATE_MEDIUM) ?>
+    </time>
+    <?php if ($version !== '') : ?>
+        <span class="label label-default activity-version-badge">
+            <?= $this->translate('Version') ?> <?= $this->escape((string)$version) ?>
+        </span>
+    <?php endif; ?>
+    <?php if (!empty($docId)) : ?>
+        <span class="activity-version-actions">
+            <?php if (!empty($pdfUrl)) : ?>
+                <a class="btn btn-default btn-xs"
+                   href="<?= $this->escape($pdfUrl) ?>"
+                   target="_blank"
+                   rel="noopener"
+                   aria-label="<?= $this->translate('Voir le PDF de cette version') ?>">
+                    <i class="fa-regular fa-file" aria-hidden="true"></i>
+                    <?= $this->translate('PDF') ?>
+                </a>
+            <?php endif; ?>
+            <a class="btn btn-default btn-xs"
+               href="/administratepaper/view?id=<?= (int)$docId ?>"
+               aria-label="<?= $this->translate('Voir la page de gestion de cette version') ?>">
+                <span class="glyphicon glyphicon-new-window" aria-hidden="true"></span>
+                <?= $this->translate('Article') ?>
+            </a>
+        </span>
+    <?php endif; ?>
+</div>

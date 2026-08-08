@@ -138,11 +138,14 @@ describe('BiblioRefParser', () => {
             expect(result).toEqual({
                 rawReference: 'Test citation',
                 doi: '10.1234/test',
+                openAccessUrl: null,
+                openAccessSourceTitle: '',
                 isAccepted: true,
                 showAccepted: true,
                 showNotAccepted: false,
                 detectors: [],
                 status: [],
+                pubpeerurl: [],
                 isSuspect: false,
                 isGenuine: false,
             });
@@ -159,11 +162,14 @@ describe('BiblioRefParser', () => {
             expect(result).toEqual({
                 rawReference: 'Test citation',
                 doi: undefined,
+                openAccessUrl: null,
+                openAccessSourceTitle: '',
                 isAccepted: false,
                 showAccepted: false,
                 showNotAccepted: false,
                 detectors: [],
                 status: [],
+                pubpeerurl: [],
                 isSuspect: false,
                 isGenuine: false,
             });
@@ -215,11 +221,14 @@ describe('BiblioRefParser', () => {
             expect(result).toEqual({
                 rawReference: 'Test citation',
                 doi: '10.1234/test',
+                openAccessUrl: null,
+                openAccessSourceTitle: '',
                 isAccepted: true,
                 showAccepted: true,
                 showNotAccepted: false,
                 detectors: [],
                 status: [],
+                pubpeerurl: [],
                 isSuspect: false,
                 isGenuine: false,
             });
@@ -236,11 +245,14 @@ describe('BiblioRefParser', () => {
             expect(result).toEqual({
                 rawReference: 'Test citation',
                 doi: undefined,
+                openAccessUrl: null,
+                openAccessSourceTitle: '',
                 isAccepted: false,
                 showAccepted: false,
                 showNotAccepted: false,
                 detectors: [],
                 status: [],
+                pubpeerurl: [],
                 isSuspect: false,
                 isGenuine: false,
             });
@@ -253,6 +265,7 @@ describe('BiblioRefParser', () => {
                     doi: '10.1234/suspect',
                     detectors: ['tortured', 'citejacked'],
                     status: ['Problematic'],
+                    pubpeerurl: ['https://pubpeer.com/publications/ABC'],
                 },
                 isAccepted: 0,
             };
@@ -263,6 +276,7 @@ describe('BiblioRefParser', () => {
             expect(result.isGenuine).toBe(false);
             expect(result.detectors).toEqual(['tortured', 'citejacked']);
             expect(result.status).toEqual(['Problematic']);
+            expect(result.pubpeerurl).toEqual(['https://pubpeer.com/publications/ABC']);
         });
 
         it('should mark citation as suspect when only detectors present (no status)', () => {
@@ -327,10 +341,85 @@ describe('BiblioRefParser', () => {
 
             expect(result.detectors).toEqual([]);
             expect(result.status).toEqual([]);
+            expect(result.pubpeerurl).toEqual([]);
             expect(result.isSuspect).toBe(false);
             expect(result.isGenuine).toBe(false);
         });
 
+        it('should wrap pubpeerurl string as single-element array (Solr single-value)', () => {
+            const citation = {
+                ref: {
+                    raw_reference: 'Paper',
+                    pubpeerurl: 'https://pubpeer.com/publications/ABC',
+                },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.pubpeerurl).toEqual(['https://pubpeer.com/publications/ABC']);
+            expect(result.isSuspect).toBe(true);
+        });
+
+        it('should mark citation as suspect when only pubpeerurl is present', () => {
+            const citation = {
+                ref: {
+                    raw_reference: 'Paper',
+                    pubpeerurl: ['https://pubpeer.com/publications/ABC'],
+                },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.isSuspect).toBe(true);
+            expect(result.isGenuine).toBe(false);
+        });
+
+        it('should parse open-access url and source_title when present', () => {
+            const citation = {
+                ref: {
+                    raw_reference: 'Paper',
+                    doi: '10.1017/s1755020319000510',
+                    'open-access': {
+                        url: 'http://arxiv.org/abs/1804.00955',
+                        origin: 'openalex',
+                        checked_at: '2026-07-15T11:49:06+00:00',
+                        source_title: 'arXiv (Cornell University)',
+                    },
+                },
+                isAccepted: 1,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.openAccessUrl).toBe('http://arxiv.org/abs/1804.00955');
+            expect(result.openAccessSourceTitle).toBe('arXiv (Cornell University)');
+        });
+
+        it('should default open-access fields when absent', () => {
+            const citation = {
+                ref: { raw_reference: 'Paper' },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.openAccessUrl).toBeNull();
+            expect(result.openAccessSourceTitle).toBe('');
+        });
+
+        it('should ignore malformed open-access field (not an object)', () => {
+            const citation = {
+                ref: { raw_reference: 'Paper', 'open-access': 'not-an-object' },
+                isAccepted: 0,
+            };
+
+            const result = BiblioRefParser.parseCitation(citation, false);
+
+            expect(result.openAccessUrl).toBeNull();
+            expect(result.openAccessSourceTitle).toBe('');
+        });
     });
 
     describe('formatDoi', () => {
@@ -527,6 +616,69 @@ describe('BiblioRefRenderer', () => {
             expect(li.textContent).toContain('Test');
         });
 
+        it('should render open-access link with source_title as tooltip', () => {
+            const citation = {
+                rawReference: 'Test citation',
+                openAccessUrl: 'http://arxiv.org/abs/1804.00955',
+                openAccessSourceTitle: 'arXiv (Cornell University)',
+                showAccepted: false,
+            };
+
+            const li = renderer.renderCitation(citation);
+            const link = li.querySelector('a.biblio-ref-oa-link');
+
+            expect(link).not.toBeNull();
+            expect(link.getAttribute('href')).toBe('http://arxiv.org/abs/1804.00955');
+            expect(link.getAttribute('rel')).toBe('noopener');
+            expect(link.getAttribute('target')).toBe('_blank');
+            expect(link.getAttribute('title')).toBe('arXiv (Cornell University)');
+            expect(link.innerHTML).toContain('fa-lock-open');
+            expect(link.textContent).toContain('http://arxiv.org/abs/1804.00955');
+        });
+
+        it('should render open-access link without a title attribute when source_title is absent', () => {
+            const citation = {
+                rawReference: 'Test citation',
+                openAccessUrl: 'https://example.org/oa-copy',
+                openAccessSourceTitle: '',
+                showAccepted: false,
+            };
+
+            const li = renderer.renderCitation(citation);
+            const link = li.querySelector('a.biblio-ref-oa-link');
+
+            expect(link).not.toBeNull();
+            expect(link.hasAttribute('title')).toBe(false);
+        });
+
+        it('should not render an open-access link for unsafe URLs', () => {
+            const citation = {
+                rawReference: 'Test citation',
+                openAccessUrl: 'javascript:alert(1)',
+                openAccessSourceTitle: 'evil',
+                showAccepted: false,
+            };
+
+            const li = renderer.renderCitation(citation);
+
+            expect(li.querySelector('a.biblio-ref-oa-link')).toBeNull();
+        });
+
+        it('should not duplicate the open-access link when it matches the DOI link', () => {
+            const citation = {
+                rawReference: 'Test citation',
+                doi: '10.1234/test',
+                openAccessUrl: 'https://doi.org/10.1234/test',
+                openAccessSourceTitle: 'Duplicate of DOI',
+                showAccepted: false,
+            };
+
+            const li = renderer.renderCitation(citation);
+
+            expect(li.querySelectorAll('a')).toHaveLength(1);
+            expect(li.querySelector('a.biblio-ref-oa-link')).toBeNull();
+        });
+
         it('should render fa-square-xmark icon for suspect citation', () => {
             const citation = {
                 rawReference: 'Suspect paper',
@@ -536,7 +688,7 @@ describe('BiblioRefRenderer', () => {
                 isGenuine: false,
                 detectors: [],
                 status: ['Problematic'],
-
+                pubpeerurl: [],
             };
 
             const li = renderer.renderCitation(citation);
@@ -554,7 +706,7 @@ describe('BiblioRefRenderer', () => {
                 isGenuine: false,
                 detectors: [],
                 status: [],
-
+                pubpeerurl: [],
             };
 
             const li = renderer.renderCitation(citation);
@@ -575,7 +727,7 @@ describe('BiblioRefRenderer', () => {
                 isGenuine: false,
                 detectors: ['tortured'],
                 status: [],
-
+                pubpeerurl: [],
             };
 
             const li = renderer.renderCitation(citation);
@@ -591,7 +743,7 @@ describe('BiblioRefRenderer', () => {
                 isGenuine: false,
                 detectors: ['tortured'],
                 status: [],
-
+                pubpeerurl: [],
             };
 
             const li = renderer.renderCitation(citation);
@@ -610,7 +762,7 @@ describe('BiblioRefRenderer', () => {
                 isGenuine: false,
                 detectors: ['tortured', 'annulled'],
                 status: [],
-
+                pubpeerurl: [],
             };
 
             const li = renderer.renderCitation(citation);
@@ -629,7 +781,7 @@ describe('BiblioRefRenderer', () => {
                 isGenuine: false,
                 detectors: [],
                 status: ['Problematic'],
-
+                pubpeerurl: [],
             };
 
             const li = renderer.renderCitation(citation);
@@ -647,7 +799,7 @@ describe('BiblioRefRenderer', () => {
                 isGenuine: false,
                 detectors: ['tortured'],
                 status: ['Genuine'],
-
+                pubpeerurl: [],
             };
 
             const li = renderer.renderCitation(citation);
@@ -666,7 +818,7 @@ describe('BiblioRefRenderer', () => {
                 isGenuine: false,
                 detectors: ['annulled'],
                 status: [],
-
+                pubpeerurl: [],
             };
 
             const li = renderer.renderCitation(citation);
@@ -684,7 +836,7 @@ describe('BiblioRefRenderer', () => {
                 isGenuine: false,
                 detectors: ['unknown-future-detector'],
                 status: [],
-
+                pubpeerurl: [],
             };
 
             const li = renderer.renderCitation(citation);
@@ -692,6 +844,30 @@ describe('BiblioRefRenderer', () => {
 
             expect(badge.textContent).toContain('unknown-future-detector');
             expect(badge.classList.contains('label-info')).toBe(true);
+        });
+
+        it('should render PubPeer link when pubpeerurl is present', () => {
+            const citation = {
+                rawReference: 'Paper',
+                showAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: [],
+                status: [],
+                pubpeerurl: ['https://pubpeer.com/publications/ABC123'],
+            };
+
+            const li = renderer.renderCitation(citation);
+            const link = li.querySelector('.biblio-ref-pubpeer-link');
+
+            expect(link).not.toBeNull();
+            expect(link.href).toBe('https://pubpeer.com/publications/ABC123');
+            expect(link.rel).toContain('noopener');
+            expect(link.rel).toContain('noreferrer');
+            expect(link.target).toBe('_blank');
+            expect(link.getAttribute('aria-label')).toBe('View on PubPeer');
+            expect(link.title).toBe('More information');
+            expect(link.querySelector('.fa-circle-info')).not.toBeNull();
         });
 
         it('should add warning icon to detector badges with aria-hidden', () => {
@@ -702,7 +878,7 @@ describe('BiblioRefRenderer', () => {
                 isGenuine: false,
                 detectors: ['annulled'],
                 status: [],
-
+                pubpeerurl: [],
             };
 
             const li = renderer.renderCitation(citation);
@@ -713,6 +889,23 @@ describe('BiblioRefRenderer', () => {
             expect(icon.getAttribute('aria-hidden')).toBe('true');
         });
 
+        it('should not render PubPeer link for non-http URL', () => {
+            const citation = {
+                rawReference: 'Paper',
+                showAccepted: false,
+                isSuspect: true,
+                isGenuine: false,
+                detectors: [],
+                status: ['Problematic'],
+                pubpeerurl: ['javascript:alert(1)'],
+            };
+
+            const li = renderer.renderCitation(citation);
+            const link = li.querySelector('.biblio-ref-pubpeer-link');
+
+            expect(link).toBeNull();
+        });
+
         it('should render no toggle button and no hidden panel', () => {
             const citation = {
                 rawReference: 'Paper',
@@ -721,7 +914,7 @@ describe('BiblioRefRenderer', () => {
                 isGenuine: false,
                 detectors: ['scigen'],
                 status: [],
-
+                pubpeerurl: [],
             };
 
             const li = renderer.renderCitation(citation);
@@ -823,7 +1016,7 @@ describe('BiblioRefRenderer', () => {
 
             renderer.renderCitations([
                 { rawReference: 'Normal', showAccepted: false, isSuspect: false },
-                { rawReference: 'Suspect', showAccepted: false, isSuspect: true, detectors: [], status: [] },
+                { rawReference: 'Suspect', showAccepted: false, isSuspect: true, detectors: [], status: [], pubpeerurl: [] },
             ]);
 
             expect(legend.hasAttribute('hidden')).toBe(false);

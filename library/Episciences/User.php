@@ -158,8 +158,8 @@ class Episciences_User extends Ccsd_User_Models_User
 
         if ($everywhere) {
             // Supprime son compte ES et ses rôles pour toutes les revues
-            $db->delete(T_USER_ROLES, 'UID = ' . $uid);
-            $db->delete(T_USERS, 'UID = ' . $uid);
+            $db->delete(T_USER_ROLES, 'UID = ' . (int)$uid);
+            $db->delete(T_USERS, 'UID = ' . (int)$uid);
 
             // Désactive toutes ses assignations (relecture, édition) pour toutes les revues
             $db->query("INSERT INTO `USER_ASSIGNMENT` (`RVID`, `ITEMID`, `ITEM`, `UID`, `ROLEID`, `STATUS`, `WHEN`)
@@ -222,7 +222,7 @@ class Episciences_User extends Ccsd_User_Models_User
     public static function deleteFromCAS($uid)
     {
         $db = Ccsd_Db_Adapter_Cas::getAdapter();
-        return $db->delete(T_CAS_USERS, 'UID = ' . $uid);
+        return $db->delete(T_CAS_USERS, 'UID = ' . (int)$uid);
     }
 
     // Retourne les droits de l'utilisateur (pour toutes les revues / portails)
@@ -237,10 +237,10 @@ class Episciences_User extends Ccsd_User_Models_User
         $select = $db->select()->from(T_USERS);
         $subSelect = $db->select()->from(T_USER_ROLES, ['UID'])->where('RVID = ?', RVID);
         if ($withoutRoles) {
-            $subSelect->where('ROLEID != "member');
-            $select->where('UID NOT IN (' . new Zend_db_Expr($subSelect) . ')');
+            $subSelect->where('ROLEID != ?', Episciences_Acl::ROLE_MEMBER);
+            $select->where('UID NOT IN (' . new Zend_Db_Expr($subSelect) . ')');
         } else {
-            $select->where('UID IN (' . new Zend_db_Expr($subSelect) . ')');
+            $select->where('UID IN (' . new Zend_Db_Expr($subSelect) . ')');
         }
 
         $users = $db->fetchAssoc($select);
@@ -250,11 +250,13 @@ class Episciences_User extends Ccsd_User_Models_User
             $select = $casDb->select()->from(T_CAS_USERS)->where('UID IN (?)', array_keys($users))->order('LASTNAME');
 
             $where = '(';
-            foreach ($keywords as $key => $keyword) {
+            $isFirstKeyword = true;
+            foreach ($keywords as $keyword) {
                 if (!empty($keyword)) {
-                    if ($key > 0) {
+                    if (!$isFirstKeyword) {
                         $where .= ' AND ';
                     }
+                    $isFirstKeyword = false;
                     $where .= '(';
                     $where .= $casDb->quoteInto('FIRSTNAME LIKE ? OR ', '%' . $keyword . '%');
                     $where .= $casDb->quoteInto('LASTNAME LIKE ?', '%' . $keyword . '%');
@@ -383,12 +385,20 @@ class Episciences_User extends Ccsd_User_Models_User
     }
 
     /**
+     * The screen name is plain text: strip HTML tags and control characters,
+     * then normalize whitespace. Applied on every write (account creation,
+     * profile update) and on hydration from the database, so legacy polluted
+     * values are also cleaned on read and re-cleaned in base on the next save.
      * @param string $_screenName
      * @return string
      */
     private static function cleanScreenName(string $_screenName = ''): string
     {
-        return str_replace('/', ' ', $_screenName);
+        $screenName = strip_tags($_screenName);
+        $screenName = preg_replace('/[\x00-\x1F\x7F]/u', ' ', $screenName) ?? $screenName;
+        $screenName = str_replace('/', ' ', $screenName);
+        $screenName = preg_replace('/\s+/u', ' ', $screenName) ?? $screenName;
+        return trim($screenName);
     }
 
     public function getScreenName(): string
@@ -399,12 +409,14 @@ class Episciences_User extends Ccsd_User_Models_User
 
     public function setScreenName($_screenName = null): Episciences_User
     {
-        if (empty($_screenName)) {
-            $_screenName = Ccsd_Tools::formatUser($this->getFirstname(), $this->getLastname());
+        $screenName = self::cleanScreenName((string)$_screenName);
+
+        // Empty input, or a value entirely made of stripped markup: derive it from the names
+        if ($screenName === '') {
+            $screenName = self::cleanScreenName(Ccsd_Tools::formatUser($this->getFirstname(), $this->getLastname()));
         }
 
-        $_screenName = self::cleanScreenName($_screenName);
-        $this->_screenName = filter_var($_screenName, FILTER_DEFAULT, FILTER_FLAG_NO_ENCODE_QUOTES);
+        $this->_screenName = $screenName;
         return $this;
     }
 
@@ -1149,11 +1161,17 @@ class Episciences_User extends Ccsd_User_Models_User
 
         foreach ($roles as $roleId) {
             $roleId = $this->_db->quote($roleId);
-            $values[] = '(' . $uid . ',' . $rvId . ',' . $roleId . ')';
+            $values[] = '(' . (int)$uid . ',' . (int)$rvId . ',' . $roleId . ')';
 
         }
 
-        $sql = sprintf('INSERT INTO %s (UID, RVID, ROLEID) VALUES %s ON DUPLICATE KEY UPDATE ROLEID = VALUES(ROLEID)', T_USER_ROLES, implode(',', $values));
+        // No roles: skip instead of emitting "VALUES " with no tuple (SQL syntax error).
+        if (empty($values)) {
+            return false;
+        }
+
+        // MySQL 8.0.20+: VALUES() in ON DUPLICATE KEY UPDATE is deprecated; use a row alias.
+        $sql = sprintf('INSERT INTO %s (UID, RVID, ROLEID) VALUES %s AS new_row ON DUPLICATE KEY UPDATE ROLEID = new_row.ROLEID', T_USER_ROLES, implode(',', $values));
 
         if (!$db->getConnection()->query($sql)) {
             trigger_error(sprintf('Failed to execute SQL query: %s', $sql));

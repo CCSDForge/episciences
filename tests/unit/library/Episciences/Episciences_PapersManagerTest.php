@@ -2,6 +2,7 @@
 
 namespace unit\library\Episciences;
 
+use Episciences_CommentsManager;
 use Episciences_Paper;
 use Episciences_PapersManager;
 use Episciences_User;
@@ -362,11 +363,12 @@ final class Episciences_PapersManagerTest extends TestCase
     }
 
     /**
-     * getByDocIds() must not include revision deadline or conflict data since
+     * getByDocIds() must not eagerly load revision deadline or conflict data since
      * those are editorial-workflow artefacts not needed for metadata export.
      *
-     * We verify that the returned Paper objects expose a null/empty conflicts
-     * collection (getConflicts() returns [] by default, not a DB-populated set).
+     * We read the private _conflicts property directly instead of calling
+     * getConflicts(), which lazily loads conflicts from the DB on first access and
+     * would therefore reflect the test DB content rather than what getByDocIds built.
      */
     public function testGetByDocIdsOmitsWorkflowData(): void
     {
@@ -384,8 +386,317 @@ final class Episciences_PapersManagerTest extends TestCase
         $result    = Episciences_PapersManager::getByDocIds([(int) $reference->getDocid()]);
         $paper     = reset($result);
 
-        // Conflicts default to an empty array when not explicitly loaded.
-        self::assertIsArray($paper->getConflicts());
-        self::assertEmpty($paper->getConflicts(), 'getByDocIds() must not load conflict data');
+        self::assertInstanceOf(Episciences_Paper::class, $paper);
+
+        // Read the raw property without triggering the lazy DB load in getConflicts().
+        $conflictsProperty = new \ReflectionProperty(Episciences_Paper::class, '_conflicts');
+        $conflictsProperty->setAccessible(true);
+
+        self::assertSame(
+            [],
+            $conflictsProperty->getValue($paper),
+            'getByDocIds() must not eagerly populate conflict data'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Decision suggestion filter helpers (git #1011)
+    // -----------------------------------------------------------------------
+
+    /**
+     * @param array<int, mixed> $args
+     * @return mixed
+     */
+    private function invokePrivateStatic(string $method, array $args = [])
+    {
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, $method);
+        $reflection->setAccessible(true);
+        return $reflection->invoke(null, ...$args);
+    }
+
+    public function testGetFinalizedStatusForSuggestionsListsTerminalStatuses(): void
+    {
+        $result = $this->invokePrivateStatic('getFinalizedStatusForSuggestions');
+
+        self::assertIsArray($result);
+        self::assertContains(Episciences_Paper::STATUS_PUBLISHED, $result);
+        self::assertContains(Episciences_Paper::STATUS_REFUSED, $result);
+        self::assertContains(Episciences_Paper::STATUS_DELETED, $result);
+        self::assertContains(Episciences_Paper::STATUS_REMOVED, $result);
+        self::assertContains(Episciences_Paper::STATUS_OBSOLETE, $result);
+        self::assertContains(Episciences_Paper::STATUS_ABANDONED, $result);
+
+        // A paper still under review must not be considered "finalized".
+        self::assertNotContains(Episciences_Paper::STATUS_SUBMITTED, $result);
+        self::assertNotContains(Episciences_Paper::STATUS_REVIEWED, $result);
+    }
+
+    public function testGetPostAcceptanceStatusesIncludesAcceptedSubmissionsAndValidationSteps(): void
+    {
+        $result = $this->invokePrivateStatic('getPostAcceptanceStatuses');
+
+        foreach (Episciences_Paper::ACCEPTED_SUBMISSIONS as $status) {
+            self::assertContains($status, $result);
+        }
+        self::assertContains(Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION, $result);
+        self::assertContains(Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION, $result);
+
+        // A paper still awaiting an editorial decision has not been accepted yet.
+        self::assertNotContains(Episciences_Paper::STATUS_REVIEWED, $result);
+    }
+
+    /**
+     * @param int[] $mustContain
+     * @param int[] $mustNotContain
+     * @dataProvider actedUponSuggestionTypeProvider
+     */
+    public function testGetActedUponStatusForSuggestionType(int $type, array $mustContain, array $mustNotContain): void
+    {
+        $result = $this->invokePrivateStatic('getActedUponStatusForSuggestionType', [$type]);
+
+        self::assertIsArray($result);
+        foreach ($mustContain as $status) {
+            self::assertContains($status, $result, "Status $status must be considered 'acted upon' for suggestion type $type");
+        }
+        foreach ($mustNotContain as $status) {
+            self::assertNotContains($status, $result, "Status $status must NOT be considered 'acted upon' for suggestion type $type");
+        }
+    }
+
+    /**
+     * @return array<string, array{int, int[], int[]}>
+     */
+    public static function actedUponSuggestionTypeProvider(): array
+    {
+        // Any editorial decision settles a suggestion, including a revision request that
+        // contradicts it: the editor in chief has ruled, the suggestion is no longer pending.
+        $settledByDecision = [
+            Episciences_Paper::STATUS_ACCEPTED,
+            Episciences_Paper::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION,
+            Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION,
+            Episciences_Paper::STATUS_WAITING_FOR_MAJOR_REVISION,
+        ];
+
+        return [
+            'acceptation: settled by acceptance or by a revision request' => [
+                Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
+                $settledByDecision,
+                [Episciences_Paper::STATUS_REVIEWED, Episciences_Paper::STATUS_SUBMITTED],
+            ],
+            'refus: settled by acceptance or by a revision request' => [
+                Episciences_CommentsManager::TYPE_SUGGESTION_REFUS,
+                $settledByDecision,
+                [Episciences_Paper::STATUS_REVIEWED, Episciences_Paper::STATUS_SUBMITTED],
+            ],
+            'new version: settled by acceptance or by a revision request' => [
+                Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION,
+                $settledByDecision,
+                [Episciences_Paper::STATUS_REVIEWED, Episciences_Paper::STATUS_SUBMITTED],
+            ],
+            'unknown type: nothing is considered acted upon' => [
+                9999,
+                [],
+                [Episciences_Paper::STATUS_ACCEPTED, Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION],
+            ],
+        ];
+    }
+
+    // -----------------------------------------------------------------------
+    // isSuggestionFilterAllowed(): the filter is confined to the management lists
+    // -----------------------------------------------------------------------
+
+    /**
+     * Runs $callback with the front controller pointed at $controller, then restores it.
+     */
+    private function withCurrentController(?string $controller, callable $callback): mixed
+    {
+        $front = \Zend_Controller_Front::getInstance();
+        $previousRequest = $front->getRequest();
+
+        try {
+            if ($controller !== null) {
+                $request = new \Zend_Controller_Request_Http('http://localhost/');
+                $request->setControllerName($controller);
+                $front->setRequest($request);
+            } else {
+                $property = new \ReflectionProperty(\Zend_Controller_Front::class, '_request');
+                $property->setAccessible(true);
+                $property->setValue($front, null);
+            }
+
+            return $callback();
+        } finally {
+            $property = new \ReflectionProperty(\Zend_Controller_Front::class, '_request');
+            $property->setAccessible(true);
+            $property->setValue($front, $previousRequest);
+        }
+    }
+
+    /**
+     * @dataProvider disallowedSuggestionFilterControllerProvider
+     */
+    public function testSuggestionFilterIsNotAllowedOutsideTheManagementLists(?string $controller): void
+    {
+        // Short-circuits before any authentication check: the controller alone rules it out.
+        $allowed = $this->withCurrentController(
+            $controller,
+            static fn(): bool => Episciences_PapersManager::isSuggestionFilterAllowed()
+        );
+
+        self::assertFalse($allowed);
+    }
+
+    /**
+     * @return array<string, array{?string}>
+     */
+    public static function disallowedSuggestionFilterControllerProvider(): array
+    {
+        return [
+            'author paper list (paper/submitted)' => ['paper'],
+            'unrelated controller' => ['volume'],
+            'no dispatched request (CLI)' => [null],
+        ];
+    }
+
+    /**
+     * The suggestion filter must be ignored when it reaches applyFilters() from a list that does
+     * not offer it, e.g. a hand-crafted /paper/submitted?suggestion=8 request.
+     */
+    public function testApplyFiltersIgnoresSuggestionOutsideTheManagementLists(): void
+    {
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, 'applyFilters');
+        $reflection->setAccessible(true);
+
+        $sql = $this->withCurrentController('paper', function () use ($reflection): string {
+            /** @var \Zend_Db_Select $select */
+            $select = $reflection->invoke(
+                null,
+                $this->newPapersSelect(),
+                ['is' => ['suggestion' => (string)Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION]]
+            );
+
+            return $select->assemble();
+        });
+
+        self::assertStringNotContainsString('DOCID IN', $sql);
+        self::assertStringNotContainsString(T_PAPER_COMMENTS, $sql);
+    }
+
+    // -----------------------------------------------------------------------
+    // applySuggestionFilter() / getPapersWithPendingSuggestionQuery()
+    // -----------------------------------------------------------------------
+
+    private function newPapersSelect(): \Zend_Db_Select
+    {
+        $db = \Zend_Db_Table_Abstract::getDefaultAdapter();
+        return $db->select()->from(['papers' => T_PAPERS], ['DOCID']);
+    }
+
+    /**
+     * @param array<int, int|string>|string $values
+     */
+    private function assembleSuggestionFilter(array|string $values): string
+    {
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, 'applySuggestionFilter');
+        $reflection->setAccessible(true);
+
+        /** @var \Zend_Db_Select $result */
+        $result = $reflection->invoke(null, $this->newPapersSelect(), $values);
+
+        return $result->assemble();
+    }
+
+    public function testApplySuggestionFilterBuildsAssemblableQueryForSingleType(): void
+    {
+        $sql = $this->assembleSuggestionFilter((string)Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION);
+
+        self::assertStringContainsString('DOCID IN', $sql);
+        self::assertStringContainsString('c.TYPE = ' . Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION, $sql);
+        // A single type must not produce an OR of several type conditions.
+        self::assertStringNotContainsString(' OR ', $sql);
+    }
+
+    public function testApplySuggestionFilterExpandsAnyToAllSuggestionTypes(): void
+    {
+        $sql = $this->assembleSuggestionFilter([Episciences_PapersManager::ANY_SUGGESTION_FILTER]);
+
+        // 'any' must expand into a condition per known suggestion type, joined with OR.
+        foreach (Episciences_CommentsManager::$suggestionTypes as $type) {
+            self::assertStringContainsString('c.TYPE = ' . $type, $sql);
+        }
+        self::assertSame(
+            count(Episciences_CommentsManager::$suggestionTypes) - 1,
+            substr_count($sql, ' OR ')
+        );
+    }
+
+    public function testApplySuggestionFilterCombinesSeveralExplicitTypes(): void
+    {
+        $types = [
+            Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION,
+            Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION,
+        ];
+
+        $sql = $this->assembleSuggestionFilter($types);
+
+        foreach ($types as $type) {
+            self::assertStringContainsString('c.TYPE = ' . $type, $sql);
+        }
+        self::assertStringNotContainsString(
+            'c.TYPE = ' . Episciences_CommentsManager::TYPE_SUGGESTION_REFUS,
+            $sql,
+            'A type that was not requested must not be filtered on'
+        );
+        // One exclusion list per requested type, plus the shared "finalized statuses" one.
+        self::assertSame(3, substr_count($sql, 'p.STATUS NOT IN'));
+        self::assertStringContainsString(' OR ', $sql);
+    }
+
+    /**
+     * @dataProvider unknownSuggestionFilterValueProvider
+     * @param array<int, int|string>|string $values
+     */
+    public function testApplySuggestionFilterMatchesNothingForUnknownTypes(array|string $values): void
+    {
+        $sql = $this->assembleSuggestionFilter($values);
+
+        // Unknown types must exclude everything, never degrade into "any comment at all".
+        self::assertStringContainsString('1 = 0', $sql);
+        self::assertStringNotContainsString('c.TYPE =', $sql);
+    }
+
+    /**
+     * @return array<string, array{array<int, int|string>|string}>
+     */
+    public static function unknownSuggestionFilterValueProvider(): array
+    {
+        return [
+            'unrelated comment type' => [['3']],
+            'non numeric value' => [["' OR 1=1 --"]],
+            'empty list' => [[]],
+            'zero' => ['0'],
+        ];
+    }
+
+    public function testCountPendingSuggestionsByTypeReturnsEveryTypeForReviewWithNoPapers(): void
+    {
+        // RVID 0 never matches a real review's papers.
+        $counts = Episciences_PapersManager::countPendingSuggestionsByType(0);
+
+        self::assertSame(Episciences_CommentsManager::$suggestionTypes, array_keys($counts));
+        self::assertSame([0, 0, 0], array_values($counts));
+    }
+
+    public function testCountPapersWithPendingSuggestionsReturnsZeroForReviewWithNoPapers(): void
+    {
+        // RVID 0 never matches a real review's papers.
+        $count = Episciences_PapersManager::countPapersWithPendingSuggestions(0, Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION);
+
+        self::assertSame(0, $count);
+    }
+
+    public function testCountPapersWithPendingSuggestionsReturnsZeroForUnknownType(): void
+    {
+        self::assertSame(0, Episciences_PapersManager::countPapersWithPendingSuggestions(0, 9999));
     }
 }

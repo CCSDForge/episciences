@@ -107,17 +107,34 @@ class BiblioRefParser {
 
             const detectors  = Array.isArray(parsedRef.detectors)  ? parsedRef.detectors  : [];
             const status     = Array.isArray(parsedRef.status)     ? parsedRef.status     : [];
-            const isSuspect  = detectors.length > 0 || status.includes('Problematic');
+            // Solr may return a single string instead of an array when there is only one value
+            const rawPubpeer = parsedRef.pubpeerurl;
+            const pubpeerurl = Array.isArray(rawPubpeer) ? rawPubpeer
+                : (typeof rawPubpeer === 'string' && rawPubpeer) ? [rawPubpeer]
+                : [];
+            const isSuspect  = detectors.length > 0 || status.includes('Problematic') || pubpeerurl.length > 0;
             const isGenuine  = !isSuspect && status.includes('Genuine');
+
+            // Open access info is optional and only present when the API found a matching open-access copy
+            const openAccess = parsedRef['open-access'];
+            const openAccessUrl = openAccess && typeof openAccess === 'object' && typeof openAccess.url === 'string'
+                ? openAccess.url
+                : null;
+            const openAccessSourceTitle = openAccess && typeof openAccess === 'object' && typeof openAccess.source_title === 'string'
+                ? openAccess.source_title
+                : '';
 
             return {
                 rawReference: parsedRef.raw_reference,
                 doi:          parsedRef.doi,
+                openAccessUrl,
+                openAccessSourceTitle,
                 isAccepted:      citation.isAccepted === 1,
                 showAccepted:    isAuthorizedToSeeAcc && citation.isAccepted === 1,
                 showNotAccepted: isAuthorizedToSeeAcc && citation.isAccepted !== 1,
                 detectors,
                 status,
+                pubpeerurl,
                 isSuspect,
                 isGenuine,
             };
@@ -218,8 +235,9 @@ class BiblioRefRenderer {
         li.appendChild(document.createTextNode(citation.rawReference || ''));
 
         // Add DOI link if present (only safe http/https URLs)
+        let formattedDoi = null;
         if (citation.doi) {
-            const formattedDoi = BiblioRefParser.formatDoi(citation.doi);
+            formattedDoi = BiblioRefParser.formatDoi(citation.doi);
             if (formattedDoi && /^https?:\/\/[^\s<>"]+$/.test(formattedDoi.url)) {
                 const a = document.createElement('a');
                 a.href = formattedDoi.url;
@@ -230,6 +248,27 @@ class BiblioRefRenderer {
                 li.appendChild(document.createTextNode(' '));
                 li.appendChild(a);
             }
+        }
+
+        // Add open-access link if present, distinct from the DOI link, and a safe http/https URL
+        if (
+            citation.openAccessUrl &&
+            (!formattedDoi || formattedDoi.url !== citation.openAccessUrl) &&
+            /^https?:\/\/[^\s<>"]+$/.test(citation.openAccessUrl)
+        ) {
+            const a = document.createElement('a');
+            a.href = citation.openAccessUrl;
+            a.rel = 'noopener';
+            a.target = '_blank';
+            a.className = 'biblio-ref-oa-link';
+            if (citation.openAccessSourceTitle) {
+                a.title = citation.openAccessSourceTitle;
+            }
+            a.appendChild(this._makeIcon('fas fa-lock-open'));
+            a.appendChild(document.createTextNode(' ' + citation.openAccessUrl));
+            a.appendChild(this._makeSrOnly(typeof translate === 'function' ? ` (${translate('(ouvre dans un nouvel onglet)')})` : ' (opens in new tab)'));
+            li.appendChild(document.createTextNode(' '));
+            li.appendChild(a);
         }
 
         // Append colored badges for suspect signals, or genuine badge
@@ -269,7 +308,7 @@ class BiblioRefRenderer {
     }
 
     /**
-     * Render all PPS signals (status + detectors) as inline badges.
+     * Render all PPS signals (status + detectors + PubPeer links) as inline badges.
      * @param {Object} citation - Formatted citation object
      * @returns {DocumentFragment}
      */
@@ -303,6 +342,23 @@ class BiblioRefRenderer {
             );
         });
 
+        // PubPeer links (icon-only, labelled for screen readers)
+        (citation.pubpeerurl || []).forEach(url => {
+            if (!/^https?:\/\/[^\s<>"]+$/.test(url)) {
+                return;
+            }
+            const link = document.createElement('a');
+            link.href = url;
+            link.rel = 'noopener noreferrer';
+            link.target = '_blank';
+            link.className = 'biblio-ref-pubpeer-link';
+            link.setAttribute('aria-label', typeof translate === 'function' ? translate('View on PubPeer') : 'View on PubPeer');
+            link.title = typeof translate === 'function' ? translate('More information') : 'More information';
+            link.appendChild(this._makeIcon('fa-solid fa-circle-info'));
+            fragment.appendChild(document.createTextNode(' '));
+            fragment.appendChild(link);
+        });
+
         return fragment;
     }
 
@@ -312,12 +368,8 @@ class BiblioRefRenderer {
      */
     renderGenuineBadge() {
         const entry = BiblioRefParser.STATUS_LABELS['Genuine'];
-
-        return this._makeBadge(
-            'Genuine',
-            'success',
-            entry ? entry.desc : undefined
-        );
+        const badge = this._makeBadge('Genuine', 'success', entry ? entry.desc : undefined);
+        return badge;
     }
 
     /**

@@ -270,6 +270,15 @@ class Episciences_ReviewsManagerTest extends TestCase
 
         self::assertFalse($review->getSetting(Episciences_Review::SETTING_JOURNAL_DESCRIPTION));
     }
+
+    // =========================================================================
+    // isNewFrontSwitched()
+    // =========================================================================
+
+    public function testIsNewFrontSwitchedReturnsFalseForUnknownRvid(): void
+    {
+        self::assertFalse(Episciences_ReviewsManager::isNewFrontSwitched(999999));
+    }
 }
 
 final class Episciences_ReviewsManager_FetchAllTestAdapter extends Zend_Db_Adapter_Abstract

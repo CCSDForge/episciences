@@ -550,6 +550,7 @@ class PaperController extends PaperDefaultController
         }
         $this->view->enabledBib = $enabledBib;
         $this->view->enabledManageFromPublicPage = $enabledManageFromPublicPage;
+        $this->view->showAllBib = $isAllowedToSeeNoPublicDetails || $paper->isCoauthor();
 
         // Author to editor communication - extracted to helper method
         $this->handleAuthorToEditorCommunication($paper, $review);
@@ -905,7 +906,8 @@ class PaperController extends PaperDefaultController
         // + autres: selon les paramètres de la revue, notifier aussi les rédacteurs en chefs, administrateurs et secrétaires de rédaction
 
         $adminPaperUrl = $this->view->url(['controller' => self::ADMINISTRATE_PAPER_CONTROLLER, 'action' => 'view', 'id' => $paper->getDocid()]);
-        $adminPaperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $adminPaperUrl;
+        // SECURITY FIX: Use trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME'] to prevent Host Header Injection
+        $adminPaperUrl = rtrim(APPLICATION_URL, '/') . '/' . ltrim($adminPaperUrl, '/');
 
         // Tous les rédacteurs
         $allEditors = $this->getAllEditors($paper);
@@ -973,7 +975,8 @@ class PaperController extends PaperDefaultController
 
         // La page de l'article
         $paperUrl = '/' . self::CONTROLLER_NAME . '/view?id=' . $docId;
-        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        // SECURITY FIX: Use trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME'] to prevent Host Header Injection
+        $paperUrl = rtrim(APPLICATION_URL, '/') . '/' . ltrim($paperUrl, '/');
 
         $tags = [
             Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
@@ -1842,6 +1845,12 @@ class PaperController extends PaperDefaultController
         }
 
         $form = $this->buildNewVersionForm($paper);
+
+        // Validate cover letter requirement before form validation
+        if (!$this->handleCoverLetterValidation($form, $post, $paper)) {
+            return;
+        }
+
         if (!$form?->isValid($post)) {
             $this->handleInvalidForm($form, $paper);
             return;
@@ -2005,6 +2014,29 @@ class PaperController extends PaperDefaultController
     {
         $this->renderFormErrors($form);
         $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+    }
+
+    /**
+     * Validate cover letter requirement.
+     * When required, at least one of comment or file must be provided.
+     *
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function handleCoverLetterValidation(?Zend_Form $form, array $post, Episciences_Paper $paper): bool
+    {
+        if (!$form) {
+            return true;
+        }
+
+        $validation = Episciences_Submit::validateCoverLetterRequirement($post);
+
+        if ($validation !== true) {
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($validation);
+            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -3992,7 +4024,8 @@ class PaperController extends PaperDefaultController
 
         // La page de l'article
         $paperUrl = $this->view->url([self::CONTROLLER => self::CONTROLLER_NAME, self::ACTION => 'view', 'id' => $paper->getDocid()]);
-        $paperUrl = SERVER_PROTOCOL . '://' . $_SERVER['SERVER_NAME'] . $paperUrl;
+        // SECURITY FIX: Use trusted APPLICATION_URL instead of $_SERVER['SERVER_NAME'] to prevent Host Header Injection
+        $paperUrl = rtrim(APPLICATION_URL, '/') . '/' . ltrim($paperUrl, '/');
 
         /** @var  $invitations [] */
         foreach ($invitationsByStatus as $invitations) {
@@ -4357,5 +4390,136 @@ class PaperController extends PaperDefaultController
         }
 
         return null;
+    }
+
+
+    /**
+     * @return void
+     * @throws Zend_Controller_Response_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+
+    public function getmasterfileformAction(): void
+    {
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        $docId = $request->getPost('docid');
+
+        if (!$docId) {
+            return;
+        }
+
+        $paper = Episciences_PapersManager::get($docId, false);
+
+        if (!$paper instanceof Episciences_Paper) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
+        if (!$paper->isEligibleForMasterFileChoice()) {
+            return;
+        }
+
+        $this->_helper->layout->disableLayout();
+        $this->view->docId = $paper->getDocid();
+        $this->view->masterFile = Episciences_Paper_FilesManager::getMainFile($paper->getDocid());
+        $this->renderScript('paper/edit-master-file-form.phtml');
+    }
+
+    public function savemasterfileAction(): void
+    {
+        // Disable layout & view rendering
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        header('Content-Type: application/json; charset=utf-8');
+        $result = ['success' => false];
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+
+        // Only accept POST + AJAX
+        if (!$request->isPost() || !$request->isXmlHttpRequest()) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        $docId = (int) ($request->getPost('docid') ?: $request->getParam('docid'));
+
+        if ($docId <= 0) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        try {
+            $paper = Episciences_PapersManager::get($docId, false);
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            return;
+        }
+
+        if (!$paper) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        if (!$paper->isEligibleForMasterFileChoice()) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        // Retrieve the requested new master file ID
+        $currentMasterFileId = (int) $request->getPost('master-file');
+
+        if ($currentMasterFileId <= 0) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        $targetFile  = Episciences_Paper_FilesManager::findById($currentMasterFileId);
+        
+        if (!$targetFile || $targetFile->getDocId() !== $paper->getDocid()) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        // Check if the master file is already the active one
+        $previousMasterFile = Episciences_Paper_FilesManager::getMainFile($paper->getDocid(), true);
+
+        if ($previousMasterFile && $previousMasterFile->getId() === $targetFile->getId()) {
+            $this->jsonEncodedResult($result);
+            return;
+        }
+
+        if ($previousMasterFile){
+            $previousMasterFile->setIsMain();
+            $previousMasterFile->save();
+        }
+
+        $targetFile->setIsMain(true);
+        $result['success'] = $targetFile->save() > 0;
+        $result['targetId'] = $targetFile->getId();
+        $result['isJsonDocumentUpdated'] = false;
+
+        try {
+            $isUpdated = $paper->updateNestedJsonDocument('$.database.current.mainPdfUrl', $paper->getMainPaperUrl());
+            $result['isJsonDocumentUpdated'] = $isUpdated;
+        } catch (Exception $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+        }
+
+        $this->jsonEncodedResult($result);
+    }
+
+
+    private function jsonEncodedResult(array $result): void
+    {
+
+        try {
+            echo json_encode($result, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            trigger_error($e->getMessage(), E_USER_WARNING);
+            echo Zend_Json::encode($result);
+        }
     }
 }
