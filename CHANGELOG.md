@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Cache PDF and XML responses with Symfony Cache in `ZbjatsTools` and support new-front URLs.
 - [#1125](https://github.com/CCSDForge/episciences/pull/1125) Allow anonymous access to public review report attachments for open peer review.
+- Add `CheckDoajJournalsCommand` CLI command to check journal presence in DOAJ, track published article count, and enforce API rate limits.
+- Add constraint description helper text to the volume year field in volume management.
+- Add TomSelect component to paper filters on `/paper/submitted` and `/paper/ratings`.
+- Configure local SonarQube support (`make sonar`) and XML-based PHPUnit coverage report generation.
 
 ### Fixed
 
@@ -36,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1125](https://github.com/CCSDForge/episciences/pull/1125) Ensure paper authors' access precedence over editorial staff COI checks when downloading review report attachments.
 - [#1132](https://github.com/CCSDForge/episciences/pull/1132) Pass `previousVersion` context to `hookVersion` in `savenewpostedversionAction` to correctly update Zenodo version identifiers when posting a new version.
 - Define missing `RVID` constant in `ZbjatsZipperCommand` CLI bootstrap.
+- Allow non-numeric volume numbers (`varchar(6)`) in volume management forms.
+- Stream Crossref DOI XML in-memory and scope volume/DOAJ caches under `rvcode`.
+- Allow authorized roles to visualize all bibliographic references on unpublished papers.
+- Add explicit `string` type hint to `Ccsd_Website_Header::$_langDir` for PHP 8 compatibility.
 
 ### Refactored
 
