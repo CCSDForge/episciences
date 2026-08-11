@@ -25,6 +25,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- [zbJATS] Add caching for downloaded PDF and XML files using Symfony Cache (`FilesystemAdapter`) in `ZbjatsZipperCommand`, with support for new front-end URLs (`/articles/{paperId}/download|zbjats`) and `--remove-cache` CLI option.
+
+### Fixed
+
+- [#793](https://github.com/CCSDForge/episciences/issues/793) [arXiv] Keep only the first `<dc:description>` tag as paper abstract during record harvest in `Episciences_Paper::setMetadata()` and `Episciences_Submit`.
+- [#1132](https://github.com/CCSDForge/episciences/pull/1132) [Zenodo] Pass `previousVersion` context to `hookVersion()` in `savenewpostedversionAction()` to prevent overwriting `VERSION` with the raw Zenodo identifier when creating a new posted version.
+- [zbJATS] Define `RVID` constant in `ZbjatsZipperCommand` CLI bootstrap to fix uncaught "Undefined constant RVID" error during volume processing.
+
+### Changed
+
+- Update dependencies.
+
 ## v1.0.56.1 - 2026-08-04
 
 ### Added
