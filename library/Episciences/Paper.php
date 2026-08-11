@@ -1986,6 +1986,14 @@ class Episciences_Paper
             $metadata['description'] = 'Merci de contacter le support pour vérifier le document et ses métadonnées';
         }
 
+        $hookResult = Episciences_Repositories::callHook('hookFilterMetadata', [
+            'repoId'   => $this->getRepoid(),
+            'metadata' => $metadata,
+            'xml'      => $xml
+        ]);
+        if (isset($hookResult['metadata']) && is_array($hookResult['metadata'])) {
+            $metadata = $hookResult['metadata'];
+        }
 
         $this->_metadata = $metadata;
         return $this;
