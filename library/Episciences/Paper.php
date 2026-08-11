@@ -1975,7 +1975,22 @@ class Episciences_Paper
             $metadata['publication_date'] = Episciences_Tools::xpath($xml, '/episciences/publication_date');
             $metadata['version'] = Episciences_Tools::xpath($xml, '/episciences/version');
             $metadata['title'] = Episciences_Tools::xpath($xml, '//dc:title', true);
-            $metadata['description'] = Episciences_Tools::xpath($xml, '//dc:description', true);
+
+            $descriptions = Episciences_Tools::xpath($xml, '//dc:description', true);
+            if ($this->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID && is_array($descriptions)) {
+                // xpath($xml, ..., true) overwrites entries sharing the same xml:lang in place,
+                // so array_slice(0, 1) could silently keep a later node's text instead of the true
+                // first <dc:description>. Re-query without lang-collapsing to get the real document order.
+                $orderedDescriptions = Episciences_Tools::xpath($xml, '//dc:description', true, false);
+                if (is_array($orderedDescriptions) && $orderedDescriptions !== []) {
+                    $firstDescription = reset($orderedDescriptions);
+                    $descriptions = is_array($firstDescription) ? $firstDescription : [$firstDescription];
+                } else {
+                    $descriptions = [];
+                }
+            }
+            $metadata['description'] = $descriptions;
+
             $metadata['authors'] = Episciences_Tools::xpath($xml, '//dc:creator', true);
             $metadata['subjects'] = Episciences_Tools::xpath($xml, '//dc:subject', true, false);
             $metadata['language'] = Episciences_Tools::xpath($xml, '//dc:language');

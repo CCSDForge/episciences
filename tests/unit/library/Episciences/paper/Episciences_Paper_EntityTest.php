@@ -3,8 +3,11 @@
 namespace unit\library\Episciences\paper;
 
 use Episciences_Paper;
+use Episciences_Repositories;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
+use Zend_Registry;
+use Zend_Translate;
 
 /**
  * Unit tests for Episciences_Paper entity: getters/setters, DOI, identifier,
@@ -19,6 +22,15 @@ final class Episciences_Paper_EntityTest extends TestCase
     protected function setUp(): void
     {
         $this->paper = new Episciences_Paper();
+
+        // getAbstract() → Episciences_Tools::getLocale() → Zend_Registry::get('Zend_Translate')
+        if (!Zend_Registry::isRegistered('Zend_Translate')) {
+            Zend_Registry::set('Zend_Translate', new Zend_Translate([
+                'adapter' => Zend_Translate::AN_ARRAY,
+                'content' => ['' => ''],
+                'locale'  => 'en',
+            ]));
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -325,5 +337,38 @@ XML;
             $this->paper->getMetadata('licenses'),
             $this->paper->getMetadata('type')
         );
+    }
+
+    private const RECORD_WITH_MULTIPLE_DESCRIPTIONS = <<<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<episciences xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:description>Main abstract text</dc:description>
+    <dc:description>to be published in JFP</dc:description>
+</episciences>
+XML;
+
+    public function testGetMetadataArXivMultipleDescriptionsKeepsOnlyFirst(): void
+    {
+        $this->paper->setRepoid((int)Episciences_Repositories::ARXIV_REPO_ID);
+        $this->paper->setMetadata(self::RECORD_WITH_MULTIPLE_DESCRIPTIONS);
+        self::assertSame(['Main abstract text'], $this->paper->getMetadata('description'));
+        self::assertSame('Main abstract text', $this->paper->getAbstract());
+    }
+
+    private const RECORD_WITH_SAME_LANG_DESCRIPTIONS = <<<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<episciences xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:description xml:lang="en">Main abstract text</dc:description>
+    <dc:description>to be published in JFP</dc:description>
+    <dc:description xml:lang="en">Updated abstract text</dc:description>
+</episciences>
+XML;
+
+    public function testGetMetadataArXivKeepsFirstDescriptionOnLanguageCollision(): void
+    {
+        $this->paper->setRepoid((int)Episciences_Repositories::ARXIV_REPO_ID);
+        $this->paper->setMetadata(self::RECORD_WITH_SAME_LANG_DESCRIPTIONS);
+        self::assertSame(['en' => 'Main abstract text'], $this->paper->getMetadata('description'));
+        self::assertSame('Main abstract text', $this->paper->getAbstract());
     }
 }
