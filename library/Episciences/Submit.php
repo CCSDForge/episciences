@@ -1108,6 +1108,15 @@ class Episciences_Submit
             $oai = new Episciences_Oai_Client($baseUrl, 'xml');
             $record = $oai->getRecord($identifier);
 
+            $cleanedRecord = Episciences_Repositories::callHook('hookCleanXMLRecordInput', [
+                'record' => $record,
+                'repoId' => (int)$repoId
+            ]);
+
+            if (isset($cleanedRecord['record'])) {
+                $record = $cleanedRecord['record'];
+            }
+
             $type = Episciences_Tools::xpath($record, '//dc:type');
 
             if (!empty($type)) {
