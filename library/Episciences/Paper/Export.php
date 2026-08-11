@@ -594,9 +594,6 @@ class Export
         // description
         foreach ($paper->getAllAbstracts() as $lang => $abstract) {
             $abstract = trim($abstract);
-            if ($abstract === 'International audience') {
-                continue;
-            }
             $description = $xml->createElement('dc:description', $abstract);
             if ($lang && Zend_Locale::isLocale($lang)) {
                 $description->setAttribute('xml:lang', $lang);

@@ -406,53 +406,52 @@
     <xsl:template name="process-descriptions">
         <xsl:param name="justify" select="'false'"/>
         
-        <!-- Count only displayable descriptions (excluding 'International audience') -->
-        <xsl:variable name="displayable_desc_count" select="count(metadata/oai_dc:dc/dc:description[normalize-space(.) != 'International audience'])"/>
+        <!-- Count descriptions to decide whether language prefixes are needed. Repository
+             boilerplate is stripped from RECORD at ingestion (see
+             Episciences_Repositories_HAL_Hooks), so nothing is excluded here. -->
+        <xsl:variable name="displayable_desc_count" select="count(metadata/oai_dc:dc/dc:description)"/>
         
         <xsl:for-each select="metadata/oai_dc:dc/dc:description">
-            <!-- Skip descriptions with value 'International audience' -->
-            <xsl:if test="normalize-space(.) != 'International audience'">
-                <xsl:choose>
-                    <xsl:when test="$justify = 'true'">
-                        <p class="small force-word-wrap" style="text-align: justify">
-                            <!-- Add lang attribute if language is specified -->
-                            <xsl:if test="@xml:lang">
-                                <xsl:attribute name="lang">
-                                    <xsl:value-of select="@xml:lang"/>
-                                </xsl:attribute>
-                                <!-- Add dir attribute for RTL languages -->
-                                <xsl:if test="php:function('Episciences_Tools::isRtlLanguage', string(@xml:lang))">
-                                    <xsl:attribute name="dir">rtl</xsl:attribute>
-                                </xsl:if>
+            <xsl:choose>
+                <xsl:when test="$justify = 'true'">
+                    <p class="small force-word-wrap" style="text-align: justify">
+                        <!-- Add lang attribute if language is specified -->
+                        <xsl:if test="@xml:lang">
+                            <xsl:attribute name="lang">
+                                <xsl:value-of select="@xml:lang"/>
+                            </xsl:attribute>
+                            <!-- Add dir attribute for RTL languages -->
+                            <xsl:if test="php:function('Episciences_Tools::isRtlLanguage', string(@xml:lang))">
+                                <xsl:attribute name="dir">rtl</xsl:attribute>
                             </xsl:if>
-                            <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
-                            <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
-                                <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
+                        </xsl:if>
+                        <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
+                        <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
+                            <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
+                        </xsl:if>
+                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
+                    </p>
+                </xsl:when>
+                <xsl:otherwise>
+                    <p class="small force-word-wrap" style="">
+                        <!-- Add lang attribute if language is specified -->
+                        <xsl:if test="@xml:lang">
+                            <xsl:attribute name="lang">
+                                <xsl:value-of select="@xml:lang"/>
+                            </xsl:attribute>
+                            <!-- Add dir attribute for RTL languages -->
+                            <xsl:if test="php:function('Episciences_Tools::isRtlLanguage', string(@xml:lang))">
+                                <xsl:attribute name="dir">rtl</xsl:attribute>
                             </xsl:if>
-                            <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
-                        </p>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <p class="small force-word-wrap" style="">
-                            <!-- Add lang attribute if language is specified -->
-                            <xsl:if test="@xml:lang">
-                                <xsl:attribute name="lang">
-                                    <xsl:value-of select="@xml:lang"/>
-                                </xsl:attribute>
-                                <!-- Add dir attribute for RTL languages -->
-                                <xsl:if test="php:function('Episciences_Tools::isRtlLanguage', string(@xml:lang))">
-                                    <xsl:attribute name="dir">rtl</xsl:attribute>
-                                </xsl:if>
-                            </xsl:if>
-                            <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
-                            <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
-                                <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
-                            </xsl:if>
-                            <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
-                        </p>
-                    </xsl:otherwise>
-                </xsl:choose>
-            </xsl:if>
+                        </xsl:if>
+                        <!-- Only add language prefix if multiple descriptions AND this one has xml:lang -->
+                        <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
+                            <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
+                        </xsl:if>
+                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
+                    </p>
+                </xsl:otherwise>
+            </xsl:choose>
         </xsl:for-each>
     </xsl:template>
 

@@ -1988,6 +1988,14 @@ class Episciences_Paper
             $metadata['description'] = 'Merci de contacter le support pour vérifier le document et ses métadonnées';
         }
 
+        $hookResult = Episciences_Repositories::callHook('hookFilterMetadata', [
+            'repoId'   => $this->getRepoid(),
+            'metadata' => $metadata,
+            'xml'      => $xml
+        ]);
+        if (isset($hookResult['metadata']) && is_array($hookResult['metadata'])) {
+            $metadata = $hookResult['metadata'];
+        }
 
         $this->_metadata = $metadata;
         return $this;
@@ -5316,6 +5324,12 @@ class Episciences_Paper
 
     /**
      * Get an array of abstracts
+     *
+     * Repository boilerplate such as HAL's "International audience" marker is no
+     * longer filtered here: it is stripped from the raw XML at ingestion
+     * (@see Episciences_Repositories_HAL_Hooks::hookCleanXMLRecordInput()), so it
+     * never reaches PAPERS.RECORD in the first place.
+     *
      * @return array
      */
     public function getAbstractsCleaned()
@@ -5325,15 +5339,9 @@ class Episciences_Paper
             if (is_array($abstract)) {
                 $abstractLang = array_key_first($abstract);
                 $abstractText = array_shift($abstract);
-                $abstractText = $this->cleanAbstract($abstractText);
-                if ($abstractText !== 'International audience') {
-                    $abstracts[][$abstractLang] = $abstractText;
-                }
+                $abstracts[][$abstractLang] = $this->cleanAbstract($abstractText);
             } else {
-                $abstract = $this->cleanAbstract($abstract);
-                if ($abstract !== 'International audience') {
-                    $abstracts[$locale] = $abstract;
-                }
+                $abstracts[$locale] = $this->cleanAbstract($abstract);
             }
         }
         return $abstracts;
