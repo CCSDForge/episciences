@@ -211,7 +211,12 @@ $timestamp = time();
                         //default to paper language
                     }
                     $abstract = trim($abstract);
-                    if (($abstract === 'International audience') || $abstract === 'soumission à Episciences' || (str_starts_with($abstract, 'Comment:'))) {
+                    // Repository boilerplate ("International audience", "soumission à
+                    // Episciences") is stripped at ingestion, see
+                    // Episciences_Repositories_HAL_Hooks::hookCleanXMLRecordInput().
+                    // arXiv's "Comment:" field is legitimate content misplaced in
+                    // dc:description, so it is still skipped here rather than deleted.
+                    if (str_starts_with($abstract, 'Comment:')) {
                         continue;
                     }
                     if ($abstractCount === 0): ?>
