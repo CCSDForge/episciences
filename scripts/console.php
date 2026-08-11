@@ -28,6 +28,7 @@ require_once __DIR__ . '/ImportApacheLogsCommand.php';
 require_once __DIR__ . '/UpdateGeoIpCommand.php';
 require_once __DIR__ . '/GenerateDownloadKpiCommand.php';
 require_once __DIR__ . '/UpdatePapersDocumentCommand.php';
+require_once __DIR__ . '/CleanHalRecordDescriptionsCommand.php';
 require_once __DIR__ . '/UpdateTranslationsCommand.php';
 require_once __DIR__ . '/GetDoiCommand.php';
 require_once __DIR__ . '/NormalizeUserAffiliationsCommand.php';
@@ -88,6 +89,7 @@ $application->add(new UpdateGeoIpCommand());
 
 // Papers commands
 $application->add(new UpdatePapersDocumentCommand());
+$application->add(new CleanHalRecordDescriptionsCommand());
 
 // Translation commands
 $application->add(new UpdateTranslationsCommand());

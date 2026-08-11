@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Refactored
 
+- Strip HAL's non-abstract `dc:description` markers (`International audience`, `National audience`, `soumission à Episciences`) at ingestion instead of filtering them in every consumer. A new `Episciences_Repositories_HAL_Hooks::hookCleanXMLRecordInput()` removes the nodes from the raw OAI record before it reaches `PAPERS.RECORD`, so the two independent render paths — `Paper::getMetadata()` and `Paper::getXslt()` → `public/xsl/*.xsl` — stay consistent on their own. Removes the eight downstream workarounds in `Paper::getAbstractsCleaned()`, `Paper_Export`, the DataCite and zbJATS exports and the three paper XSLTs, and fixes the TEI export, which never filtered the marker at all. Matching is content-based and case-insensitive on normalized whitespace, so a real (possibly multilingual) abstract can never be dropped. `National audience` was never filtered anywhere and was displayed as an abstract; it is now handled with the others. Existing rows are migrated by the new `papers:clean-hal-descriptions` command (`--dry-run`, `--update-document`, `--no-reindex`).
 - Remove static `Ccsd_Auth` dependencies to improve testability.
 - Simplify portal module and remove dead code.
 
