@@ -485,13 +485,12 @@ class PaperController extends PaperDefaultController
 
         // A temporary paper carries no repository of its own (repoId = 0): the
         // repository to reason about is the one of its first version.
-        $repositoryPaper = $paper;
+        $repositoryPaper = $paper->isTmp()
+            ? (Episciences_PapersManager::get($paper->getPaperid(), false) ?: $paper)
+            : $paper;
 
-        if ($paper->isTmp()) {
-            $repositoryPaper = Episciences_PapersManager::get($paper->getPaperid(), false) ?: $paper;
-        }
-
-        $this->view->hasHook = $repositoryPaper->hasHook;
+        // Read by submit/functions.js, which the new version form pulls in with
+        // $.getScript() from paper/new_version_show_result.phtml.
         $this->view->isRequiredVersion = Episciences_Repositories::isVersionRequired($repositoryPaper->getRepoid());
 
         $this->view->isAllowedToBackToAdminPage = Episciences_Auth::isLogged() && $commonTest;

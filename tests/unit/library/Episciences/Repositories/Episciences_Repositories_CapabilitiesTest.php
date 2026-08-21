@@ -61,6 +61,7 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
             (int)Episciences_Repositories::ARXIV_REPO_ID => $source('arXiv'),
             (int)Episciences_Repositories::ZENODO_REPO_ID => $source('Zenodo'),
             (int)Episciences_Repositories::BIO_RXIV_ID => $source('bioRxiv'),
+            (int)Episciences_Repositories::MED_RXIV_ID => $source('medRxiv'),
             (int)Episciences_Repositories::ARCHE_ID => $source('ARCHE'),
             (int)Episciences_Repositories::CRYPTOLOGY_EPRINT => $source('Cryptology ePrint'),
             self::DATAVERSE_REPO_ID => $source('ADataverse', 'dataverse'),
@@ -117,6 +118,7 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
             'arXiv' => [(int)Episciences_Repositories::ARXIV_REPO_ID, 'Episciences_Repositories_ArXiv_Hooks'],
             'Zenodo' => [(int)Episciences_Repositories::ZENODO_REPO_ID, 'Episciences_Repositories_Zenodo_Hooks'],
             'bioRxiv' => [(int)Episciences_Repositories::BIO_RXIV_ID, 'Episciences_Repositories_BioRxiv_Hooks'],
+            'medRxiv' => [(int)Episciences_Repositories::MED_RXIV_ID, 'Episciences_Repositories_MedRxiv_Hooks'],
             'ARCHE' => [(int)Episciences_Repositories::ARCHE_ID, 'Episciences_Repositories_ARCHE_Hooks'],
             'Cryptology ePrint' => [(int)Episciences_Repositories::CRYPTOLOGY_EPRINT, 'Episciences_Repositories_CryptologyePrint_Hooks'],
             'Dataverse' => [self::DATAVERSE_REPO_ID, 'Episciences_Repositories_Dataverse_Hooks'],
@@ -148,6 +150,7 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
             // Broken by the same conflation long before #793: bioRxiv has had a hooks
             // class since it was added, and it declares no files enrichment either.
             'bioRxiv has no files enrichment' => [(int)Episciences_Repositories::BIO_RXIV_ID, false],
+            'medRxiv has no files enrichment' => [(int)Episciences_Repositories::MED_RXIV_ID, false],
             'ARCHE has no files enrichment' => [(int)Episciences_Repositories::ARCHE_ID, false],
             'Zenodo mirrors its files' => [(int)Episciences_Repositories::ZENODO_REPO_ID, true],
             'Cryptology ePrint mirrors its files' => [(int)Episciences_Repositories::CRYPTOLOGY_EPRINT, true],
@@ -178,6 +181,7 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
             'HAL' => [(int)Episciences_Repositories::HAL_REPO_ID, false],
             'arXiv' => [(int)Episciences_Repositories::ARXIV_REPO_ID, false],
             'bioRxiv' => [(int)Episciences_Repositories::BIO_RXIV_ID, false],
+            'medRxiv' => [(int)Episciences_Repositories::MED_RXIV_ID, false],
             'Zenodo' => [(int)Episciences_Repositories::ZENODO_REPO_ID, true],
             'ARCHE' => [(int)Episciences_Repositories::ARCHE_ID, true],
             'Dataverse mirrors files only' => [self::DATAVERSE_REPO_ID, false],
@@ -205,6 +209,7 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
             'HAL falls back to the generic enrichment' => [(int)Episciences_Repositories::HAL_REPO_ID, false],
             'arXiv falls back to the generic enrichment' => [(int)Episciences_Repositories::ARXIV_REPO_ID, false],
             'bioRxiv falls back to the generic enrichment' => [(int)Episciences_Repositories::BIO_RXIV_ID, false],
+            'medRxiv falls back to the generic enrichment' => [(int)Episciences_Repositories::MED_RXIV_ID, false],
             'Zenodo enriches itself' => [(int)Episciences_Repositories::ZENODO_REPO_ID, true],
             'ARCHE enriches itself' => [(int)Episciences_Repositories::ARCHE_ID, true],
             // Files-only repositories have never gone through the generic enrichment.
@@ -265,6 +270,7 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
             'arXiv still requires a version' => [(int)Episciences_Repositories::ARXIV_REPO_ID, true],
             'no hooks class at all requires a version' => [self::UNKNOWN_REPO_ID, true],
             'bioRxiv requires a version' => [(int)Episciences_Repositories::BIO_RXIV_ID, true],
+            'medRxiv requires a version' => [(int)Episciences_Repositories::MED_RXIV_ID, true],
             'Dataverse requires a version' => [self::DATAVERSE_REPO_ID, true],
             'Zenodo does not' => [(int)Episciences_Repositories::ZENODO_REPO_ID, false],
             'DSpace does not' => [self::DSPACE_REPO_ID, false],

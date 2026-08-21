@@ -657,11 +657,6 @@ class Episciences_Submit
                 $subform->addElement('hidden', 'newVersionOf', ['value' => $settings['newVersionOf']]);
 
                 // Submission of a new version following a request for changes to the temporary version
-
-                if (isset($defaults['hasHook']) && $defaults['hasHook']) {
-                    $subform->addElement('hidden', 'h_hasHook', ['value' => $defaults['hasHook']]);
-                }
-
                 if ($paper->isTmp()) {
 
                     //#git 259 : Leave the version field empty when submitting a new one (request: ask for the final version)
@@ -2438,7 +2433,6 @@ class Episciences_Submit
 
         $isTmp = $paper->isTmp();
 
-        //$hasHook = $paper->hasHook;  // @see Episciences_Paper::setRepoid() todo à vérifier où il est utilisé et voir s'il peut être supprimé
         $repository = $paper->getRepoid();
         $identifier = $paper->getIdentifier();
         $version = (int)$paper->getVersion();
@@ -2449,7 +2443,6 @@ class Episciences_Submit
 
             if ($firstSubmission) {
                 $repository = $firstSubmission->getRepoid();
-                //$hasHook = $firstSubmission->hasHook;
                 $identifier = $firstSubmission->getIdentifier();
                 $repoId = $firstSubmission->getRepoid();
             }
@@ -2461,9 +2454,6 @@ class Episciences_Submit
 
         $identifier = rtrim(Episciences_Repositories_Common::removeDateTimePattern($identifier), '/');
 
-        //$isIdentifierCommonToAllVersions = !$hasHook || $repository !== (int)Episciences_Repositories::ZENODO_REPO_ID; //  The identifier field will be empty
-
-        //$defaults['hasHook'] = $hasHook;
         $defaults['isIdentifierCommonToAllVersions'] = $isIdentifierCommonToAllVersions;
         $defaults['repoId'] = $repository;
         $defaults['docId'] = $isIdentifierCommonToAllVersions ? $identifier : ''; //NB. Pour Zenodo, un identifiant différent par version, d’où l’initialisation de sa valeur par défaut à ''

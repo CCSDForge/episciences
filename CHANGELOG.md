@@ -57,6 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Allow authorized roles to visualize all bibliographic references on unpublished papers.
 - Add explicit `string` type hint to `Ccsd_Website_Header::$_langDir` for PHP 8 compatibility.
 
+### Removed
+
+- Remove the dead `hasHook` plumbing left behind now that repository capabilities are asked for explicitly: the `hasHook` JavaScript global on the article and submission pages (declared, assigned from `/submit/ajaxhashook`, never read), the `hasHook` view variable of the version-number form, and the `h_hasHook` hidden form element, whose value came from a `$defaults['hasHook']` key that had been commented out. `/submit/ajaxhashook` now answers `isRequiredVersion` only.
+
 ### Refactored
 
 - [#793](https://github.com/CCSDForge/episciences/issues/793) Add `hookFilterMetadata` repository hook and strip surplus arXiv `dc:description` comment nodes at ingestion.
