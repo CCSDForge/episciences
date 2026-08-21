@@ -881,11 +881,17 @@ class Episciences_Submit
         $hookVersion = [];
 
         if ($isNewVersionOf) {
+            // $latestObsoleteDocId comes straight from the request, so partialGet()
+            // returns null for a stale docid or one belonging to another journal.
+            // Leave $oldPaper null in that case: assertDateTimeVersion(),
+            // assertVersion() and assertNewVersionConsistency() all treat that as
+            // "nothing to compare against", and findExistingDocId() below still
+            // locates the real latest version if there is one.
             $oldPaper = Episciences_PapersManager::partialGet((int)$latestObsoleteDocId, $rvId);
 
-            if ($oldPaper->isTmp()) {
+            if ($oldPaper?->isTmp()) {
                 $previousVersions = $oldPaper->getPreviousVersions(false, false);
-                $oldPaper = $previousVersions[array_key_first($previousVersions)];
+                $oldPaper = $previousVersions[array_key_first($previousVersions)] ?? null;
             }
 
         }

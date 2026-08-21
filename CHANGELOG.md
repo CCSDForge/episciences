@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stream Crossref DOI XML in-memory and scope volume/DOAJ caches under `rvcode`.
 - Allow authorized roles to visualize all bibliographic references on unpublished papers.
 - Add explicit `string` type hint to `Ccsd_Website_Header::$_langDir` for PHP 8 compatibility.
+- Stop `Episciences_Submit::getDoc()` from crashing on a `latestObsoleteDocId` that does not resolve. The value arrives straight from the `/submit/getdoc` POST, so `partialGet()` returns `null` for a stale docid or one belonging to another journal, and the previous paper was dereferenced without a check — `Call to a member function isTmp() on null`. The lookup now degrades to "no previous version", which every downstream check already handles, and the real latest version is still found by `findExistingDocId()`. Same for a temporary paper with no previous version, which indexed an array with `array_key_first([])`.
 
 ### Removed
 
