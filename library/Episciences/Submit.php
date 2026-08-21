@@ -993,6 +993,12 @@ class Episciences_Submit
 
     /**
      * Define the version based on the date/time and validation of the new submission
+     *
+     * Only applies to repositories that version by date-time rather than by an
+     * OAI version number. They are identified by the UPDATE_DATETIME key, which
+     * reaches $result from hookApiRecords() through fillConceptAndUpdateInfo():
+     * absent for every other repository, so no further guard is needed.
+     *
      * @param $docId
      * @param Episciences_Paper|null $previousPaper
      * @param array $result
@@ -1002,9 +1008,7 @@ class Episciences_Submit
 
     private static function assertDateTimeVersion(&$docId, ?Episciences_Paper $previousPaper, array &$result, bool $isNewVersion): void
     {
-        if(
-            !$docId ||
-            !$previousPaper->hasHook){
+        if (!$docId || !$previousPaper) {
             return;
         }
 
@@ -1014,7 +1018,7 @@ class Episciences_Submit
             return;
         }
 
-        $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($previousPaper?->getIdentifier());
+        $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($previousPaper->getIdentifier());
 
         if ($previousPaperVersionDateTime < $currentVersionDateTime) {
 
@@ -1023,8 +1027,7 @@ class Episciences_Submit
             }
 
             $result['status'] = 2;
-            $version = $previousPaper?->getVersion() + 1;
-            $result['hookVersion'] = $version;
+            $result['hookVersion'] = $previousPaper->getVersion() + 1;
         }
     }
 

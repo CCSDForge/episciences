@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Drop the redundant `!$previousPaper->hasHook` guard from `Episciences_Submit::assertDateTimeVersion()`. The branch is selected by the `UPDATE_DATETIME` key, which only ever reaches the result from a repository's `hookApiRecords()`, so the guard added nothing — and it dereferenced a nullable `Episciences_Paper`, raising `Attempt to read property "hasHook" on null` whenever `partialGet()` returned nothing for an existing `docId`. `Episciences_Paper::$hasHook` now has no caller left and is marked `@deprecated`.
 - Remove the dead `hasHook` plumbing left behind now that repository capabilities are asked for explicitly: the `hasHook` JavaScript global on the article and submission pages (declared, assigned from `/submit/ajaxhashook`, never read), the `hasHook` view variable of the version-number form, and the `h_hasHook` hidden form element, whose value came from a `$defaults['hasHook']` key that had been commented out. `/submit/ajaxhashook` now answers `isRequiredVersion` only.
 
 ### Refactored

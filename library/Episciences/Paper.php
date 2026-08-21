@@ -374,10 +374,16 @@ class Episciences_Paper
     public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'openaire', 'crossref', 'doaj', 'zbjats', 'json'];
     /**
      * True as soon as the paper's repository has a hooks class, whatever that
-     * class implements. It is NOT a capability: use hasFilesEnrichment(),
+     * class implements. It is NOT a capability, and reading it as one is what
+     * broke the article download for arXiv and HAL: ask hasFilesEnrichment(),
      * hasConceptIdentifier() or Episciences_Repositories::handlesOwnEnrichment()
-     * to ask what the repository can actually do.
+     * what the repository can actually do.
      *
+     * No caller is left in the codebase; kept only because it is public.
+     *
+     * @deprecated Use the capability methods above, or
+     *             Episciences_Repositories::hasHook($paper->getRepoid()) when the
+     *             mere existence of a hooks class really is the question.
      * @var bool|null
      */
     public $hasHook;
