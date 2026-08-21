@@ -1514,9 +1514,16 @@ class Episciences_Volume
     /**
      * @return array
      */
+    /**
+     * Conference metadata of a proceedings volume.
+     *
+     * Settings are expected to be loaded already: every caller reaches this method
+     * through isProceeding(), which reads one of them. Load them explicitly —
+     * Episciences_VolumesManager::loadSettingsForVolumes() does it for a whole list
+     * in one query — rather than relying on a side effect here.
+     */
     public function getProceedingInfo(): array
     {
-        $this->loadSettings();
         return [
             self::VOLUME_IS_PROCEEDING => $this->getSetting(self::VOLUME_IS_PROCEEDING),
             self::VOLUME_CONFERENCE_NAME => $this->getSetting(self::VOLUME_CONFERENCE_NAME),

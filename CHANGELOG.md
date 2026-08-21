@@ -34,6 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add TomSelect component to paper filters on `/paper/submitted` and `/paper/ratings`.
 - Configure local SonarQube support (`make sonar`) and XML-based PHPUnit coverage report generation.
 
+### Performances
+
+- Memoise the paper's primary volume on the `Episciences_Paper` instance, so `toJson()`, `getXml()` and `XmlExportManager::xmlExport()` share a single lookup instead of loading it twice: 38 to 34 queries per paper export.
+- Stop reloading volume settings from `Episciences_Volume::getProceedingInfo()`; every caller reaches it through `isProceeding()`, which already needs them loaded.
+- Load every volume's settings in one query on `/browse/volumes` via `Episciences_VolumesManager::loadSettingsForVolumes()`, instead of one query per volume.
+
 ### Fixed
 
 - Report `database.current.graphical_abstract_file` as `null` instead of `""` in the JSON v2 paper export when the paper has no graphical abstract, and drop the dead `unset()` that was meant to do it. Consumers must treat both `null` and a missing key as "no graphical abstract".

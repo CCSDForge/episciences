@@ -44,8 +44,7 @@ class Episciences_Paper_XmlExportManager
         $section = '';
         $proceedingInfo = '';
         if ($paper->getVid()) {
-            /* @var $oVolume Episciences_Volume */
-            $oVolume = Episciences_VolumesManager::find($paper->getVid());
+            $oVolume = $paper->getPrimaryVolume();
             if ($oVolume) {
                 $volume = $oVolume->getName('en');
                 if ($oVolume->isProceeding()) {
