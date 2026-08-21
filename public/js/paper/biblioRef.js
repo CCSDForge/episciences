@@ -126,8 +126,10 @@ class BiblioRefParser {
 
             // Reference order within bibliography (for manual/curated reordering)
             let referenceOrder;
-            if (citation.referenceOrder !== undefined && citation.referenceOrder !== null && !isNaN(Number(citation.referenceOrder))) {
-                referenceOrder = Number(citation.referenceOrder);
+            const rawReferenceOrder = citation.referenceOrder;
+            const isBlankReferenceOrder = typeof rawReferenceOrder === 'string' && rawReferenceOrder.trim() === '';
+            if (rawReferenceOrder !== undefined && rawReferenceOrder !== null && !isBlankReferenceOrder && Number.isFinite(Number(rawReferenceOrder))) {
+                referenceOrder = Number(rawReferenceOrder);
             }
 
             return {

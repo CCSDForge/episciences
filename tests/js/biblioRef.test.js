@@ -450,6 +450,20 @@ describe('BiblioRefParser', () => {
             };
             const resultInvalid = BiblioRefParser.parseCitation(citationInvalid, false);
             expect(resultInvalid.referenceOrder).toBeUndefined();
+
+            const citationBlank = {
+                ref: { raw_reference: 'Paper 3' },
+                referenceOrder: '   ',
+            };
+            const resultBlank = BiblioRefParser.parseCitation(citationBlank, false);
+            expect(resultBlank.referenceOrder).toBeUndefined();
+
+            const citationInfinite = {
+                ref: { raw_reference: 'Paper 4' },
+                referenceOrder: 'Infinity',
+            };
+            const resultInfinite = BiblioRefParser.parseCitation(citationInfinite, false);
+            expect(resultInfinite.referenceOrder).toBeUndefined();
         });
     });
 
