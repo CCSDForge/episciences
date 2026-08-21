@@ -420,6 +420,72 @@ describe('BiblioRefParser', () => {
             expect(result.openAccessUrl).toBeNull();
             expect(result.openAccessSourceTitle).toBe('');
         });
+
+        it('should parse referenceOrder when present as number or numeric string', () => {
+            const citationNum = {
+                ref: { raw_reference: 'Paper 1' },
+                referenceOrder: 12,
+            };
+            const resultNum = BiblioRefParser.parseCitation(citationNum, false);
+            expect(resultNum.referenceOrder).toBe(12);
+
+            const citationStr = {
+                ref: { raw_reference: 'Paper 2' },
+                referenceOrder: '15',
+            };
+            const resultStr = BiblioRefParser.parseCitation(citationStr, false);
+            expect(resultStr.referenceOrder).toBe(15);
+        });
+
+        it('should leave referenceOrder undefined when absent or invalid', () => {
+            const citationWithout = {
+                ref: { raw_reference: 'Paper 1' },
+            };
+            const resultWithout = BiblioRefParser.parseCitation(citationWithout, false);
+            expect(resultWithout.referenceOrder).toBeUndefined();
+
+            const citationInvalid = {
+                ref: { raw_reference: 'Paper 2' },
+                referenceOrder: 'not-a-number',
+            };
+            const resultInvalid = BiblioRefParser.parseCitation(citationInvalid, false);
+            expect(resultInvalid.referenceOrder).toBeUndefined();
+
+            const citationBlank = {
+                ref: { raw_reference: 'Paper 3' },
+                referenceOrder: '   ',
+            };
+            const resultBlank = BiblioRefParser.parseCitation(citationBlank, false);
+            expect(resultBlank.referenceOrder).toBeUndefined();
+
+            const citationInfinite = {
+                ref: { raw_reference: 'Paper 4' },
+                referenceOrder: 'Infinity',
+            };
+            const resultInfinite = BiblioRefParser.parseCitation(citationInfinite, false);
+            expect(resultInfinite.referenceOrder).toBeUndefined();
+
+            const citationBoolean = {
+                ref: { raw_reference: 'Paper 5' },
+                referenceOrder: false,
+            };
+            const resultBoolean = BiblioRefParser.parseCitation(citationBoolean, false);
+            expect(resultBoolean.referenceOrder).toBeUndefined();
+
+            const citationEmptyArray = {
+                ref: { raw_reference: 'Paper 6' },
+                referenceOrder: [],
+            };
+            const resultEmptyArray = BiblioRefParser.parseCitation(citationEmptyArray, false);
+            expect(resultEmptyArray.referenceOrder).toBeUndefined();
+
+            const citationArrayWithNumber = {
+                ref: { raw_reference: 'Paper 7' },
+                referenceOrder: [3],
+            };
+            const resultArrayWithNumber = BiblioRefParser.parseCitation(citationArrayWithNumber, false);
+            expect(resultArrayWithNumber.referenceOrder).toBeUndefined();
+        });
     });
 
     describe('formatDoi', () => {
@@ -1363,6 +1429,83 @@ describe('BiblioRefManager', () => {
 
             const container = document.getElementById('biblio-refs-container');
             expect(container.innerHTML).toContain('Test');
+        });
+
+        it('should sort citations by referenceOrder when initializing', async () => {
+            document.body.innerHTML = `
+                <div id="visualize-biblio-refs"
+                     data-api="https://api.test.com"
+                     data-value="https://paper.com/123">
+                </div>
+                <ol id="biblio-refs-container"></ol>
+            `;
+
+            // Simulating API response where key order "13", "14" does not match referenceOrder 13, 12
+            const mockResponse = {
+                1: {
+                    ref: { raw_reference: 'Reference 1 (order 0)' },
+                    referenceOrder: 0,
+                },
+                13: {
+                    ref: { raw_reference: 'Reference 13 (order 13)' },
+                    referenceOrder: 13,
+                },
+                14: {
+                    ref: { raw_reference: 'Reference 14 (order 12)' },
+                    referenceOrder: 12,
+                },
+            };
+
+            fetch.mockResolvedValueOnce({
+                ok: true,
+                json: async () => mockResponse,
+            });
+
+            await manager.initialize();
+
+            const container = document.getElementById('biblio-refs-container');
+            const items = container.querySelectorAll('li');
+            expect(items.length).toBe(3);
+            expect(items[0].textContent).toContain('Reference 1 (order 0)');
+            expect(items[1].textContent).toContain('Reference 14 (order 12)');
+            expect(items[2].textContent).toContain('Reference 13 (order 13)');
+        });
+
+        it('should keep unordered citations last and preserve their relative order', async () => {
+            document.body.innerHTML = `
+                <div id="visualize-biblio-refs"
+                     data-api="https://api.test.com"
+                     data-value="https://paper.com/123">
+                </div>
+                <ol id="biblio-refs-container"></ol>
+            `;
+
+            const mockResponse = {
+                1: {
+                    ref: { raw_reference: 'Reference 1 (unordered A)' },
+                },
+                2: {
+                    ref: { raw_reference: 'Reference 2 (order 5)' },
+                    referenceOrder: 5,
+                },
+                3: {
+                    ref: { raw_reference: 'Reference 3 (unordered B)' },
+                },
+            };
+
+            fetch.mockResolvedValueOnce({
+                ok: true,
+                json: async () => mockResponse,
+            });
+
+            await manager.initialize();
+
+            const container = document.getElementById('biblio-refs-container');
+            const items = container.querySelectorAll('li');
+            expect(items.length).toBe(3);
+            expect(items[0].textContent).toContain('Reference 2 (order 5)');
+            expect(items[1].textContent).toContain('Reference 1 (unordered A)');
+            expect(items[2].textContent).toContain('Reference 3 (unordered B)');
         });
     });
 });

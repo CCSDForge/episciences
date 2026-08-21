@@ -107,6 +107,14 @@ class BiblioRefApiClient extends AbstractApiClient
             return [];
         }
 
+        // A missing/non-numeric referenceOrder sorts last (PHP_INT_MAX sentinel); mirrored in
+        // public/js/paper/biblioRef.js (BiblioRefParser.parseCitation + the citations.sort comparator).
+        uasort($decoded, static function ($a, $b): int {
+            $orderA = is_array($a) && isset($a['referenceOrder']) && is_numeric($a['referenceOrder']) ? (int) $a['referenceOrder'] : PHP_INT_MAX;
+            $orderB = is_array($b) && isset($b['referenceOrder']) && is_numeric($b['referenceOrder']) ? (int) $b['referenceOrder'] : PHP_INT_MAX;
+            return $orderA <=> $orderB;
+        });
+
         $result = [];
         foreach ($decoded as $citation) {
             if (!is_array($citation) || !isset($citation['ref'])) {
