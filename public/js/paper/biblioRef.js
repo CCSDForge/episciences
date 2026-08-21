@@ -124,6 +124,12 @@ class BiblioRefParser {
                 ? openAccess.source_title
                 : '';
 
+            // Reference order within bibliography (for manual/curated reordering)
+            let referenceOrder;
+            if (citation.referenceOrder !== undefined && citation.referenceOrder !== null && !isNaN(Number(citation.referenceOrder))) {
+                referenceOrder = Number(citation.referenceOrder);
+            }
+
             return {
                 rawReference: parsedRef.raw_reference,
                 doi:          parsedRef.doi,
@@ -137,6 +143,7 @@ class BiblioRefParser {
                 pubpeerurl,
                 isSuspect,
                 isGenuine,
+                referenceOrder,
             };
         } catch (error) {
             console.error('Failed to parse citation reference:', error);
@@ -512,6 +519,22 @@ class BiblioRefManager {
                     BiblioRefParser.parseCitation(citation, config.showAll)
                 )
                 .filter(citation => citation !== null);
+
+            // Sort citations by referenceOrder when available
+            citations.sort((a, b) => {
+                const orderA = a.referenceOrder;
+                const orderB = b.referenceOrder;
+                if (orderA !== undefined && orderB !== undefined) {
+                    return orderA - orderB;
+                }
+                if (orderA !== undefined) {
+                    return -1;
+                }
+                if (orderB !== undefined) {
+                    return 1;
+                }
+                return 0;
+            });
 
             // Render citations if we have any
             if (citations.length > 0) {
