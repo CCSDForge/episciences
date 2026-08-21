@@ -411,6 +411,8 @@ class Episciences_Paper
     private $_publication_date;
     private $_settings;
     private $_otherVolumes;
+    private ?Episciences_Volume $_primaryVolume = null;
+    private bool $_primaryVolumeLoaded = false;
     private $_withxsl = true;
     /**
      * @var array
@@ -833,7 +835,14 @@ class Episciences_Paper
      */
     public function setVid($id = 0): self
     {
-        $this->_vId = (int)$id;
+        $newVid = (int)$id;
+
+        if ($newVid !== $this->_vId) {
+            // the memoised volume belongs to the previous VID
+            $this->resetPrimaryVolume();
+        }
+
+        $this->_vId = $newVid;
         return $this;
     }
 
@@ -1355,7 +1364,7 @@ class Episciences_Paper
         }
 
         if ($this->getVid()) {
-            $oVolume = Episciences_VolumesManager::find($this->getVid());
+            $oVolume = $this->getPrimaryVolume();
             if ($oVolume) {
                 $sVolume = [
                     'id' => $oVolume->getVid() ?: null,
@@ -1388,11 +1397,6 @@ class Episciences_Paper
                     ]
                 ];
             }
-        }
-        $graphical_abstract_file = '';
-        $current = $this->getDocument()['database']['current'] ?? null;
-        if (isset($current['graphical_abstract_file'])) {
-            $graphical_abstract_file = $current['graphical_abstract_file'];
         }
         $extraData = [
 
@@ -1442,7 +1446,7 @@ class Episciences_Paper
                     'repository' => Episciences_Repositories::getRepositories()[$this->getRepoid()] ?? null,
                     'cited_by' => $citedBy,
                     'classifications' => $classifications,
-                    'graphical_abstract_file' => $graphical_abstract_file,
+                    'graphical_abstract_file' => $this->getGraphicalAbstractFileToJson(),
                     'metrics' => Episciences_Paper_Visits::getPaperMetricsByPaperId($this->getPaperid()),
 
                 ],
@@ -1452,9 +1456,6 @@ class Episciences_Paper
             ]
 
         ];
-        if ($graphical_abstract_file === '') {
-            unset($extraData[Episciences_Paper_XmlExportManager::PUBLIC_KEY][Episciences_Paper_XmlExportManager::DATABASE_KEY]['current']['graphical_abstract_file']);
-        }
 // Define the keys for better readability
         $keyBody = Episciences_Paper_XmlExportManager::BODY_KEY;
         $keyJournal = Episciences_Paper_XmlExportManager::JOURNAL_KEY;
@@ -1569,6 +1570,64 @@ class Episciences_Paper
             'descriptions' => $oVolume->getDescriptions(),
             'bibliographical_references' => $oVolume->getBib_reference(),
         ];
+    }
+
+    /**
+     * The paper's primary volume, loaded at most once per Paper instance.
+     *
+     * Exporting a paper reads the primary volume from several places in the same
+     * pass — Paper::toJson(), Paper::getXml() and XmlExportManager::xmlExport() —
+     * and Episciences_VolumesManager::find() costs three queries every time
+     * (volume, settings, metadata). Memoising on the instance keeps the lifetime
+     * tied to the paper rather than to the whole request, so a volume edited
+     * elsewhere in the same request cannot be served from a stale cache.
+     */
+    public function getPrimaryVolume(): ?Episciences_Volume
+    {
+        if ($this->_primaryVolumeLoaded) {
+            return $this->_primaryVolume;
+        }
+
+        $this->_primaryVolumeLoaded = true;
+
+        $vid = (int)$this->getVid();
+
+        if ($vid > 0) {
+            $oVolume = Episciences_VolumesManager::find($vid);
+            $this->_primaryVolume = $oVolume instanceof Episciences_Volume ? $oVolume : null;
+        }
+
+        return $this->_primaryVolume;
+    }
+
+    /**
+     * Drops the memoised primary volume, so the next read reloads it.
+     */
+    public function resetPrimaryVolume(): self
+    {
+        $this->_primaryVolume = null;
+        $this->_primaryVolumeLoaded = false;
+
+        return $this;
+    }
+
+    /**
+     * Filename of the paper's graphical abstract, carried over from the stored JSON.
+     *
+     * The file is written straight into PAPERS.DOCUMENT by
+     * AdministrategraphabstractController (JSON_SET on upload, JSON_REMOVE on delete),
+     * so toJson() has to read the previous value back rather than rebuild it.
+     *
+     * Returns null, not an empty string, when the paper has no graphical abstract:
+     * consistent with the other empty keys of database.current (volume, section,
+     * cited_by, previous_versions).
+     */
+    private function getGraphicalAbstractFileToJson(): ?string
+    {
+        $current = $this->getDocument()[Episciences_Paper_XmlExportManager::DATABASE_KEY]['current'] ?? null;
+        $file = trim((string)($current['graphical_abstract_file'] ?? ''));
+
+        return $file !== '' ? $file : null;
     }
 
     private function processTmpVersion(Episciences_Paper $paper): void
@@ -3397,10 +3456,9 @@ class Episciences_Paper
 
         // fetch volume data
         if ($this->getVid()) {
-            $oVolume = Episciences_VolumesManager::find($this->getVid());
+            $oVolume = $this->getPrimaryVolume();
             if ($oVolume instanceof Episciences_Volume) {
                 $node->appendChild($dom->createElement('volumeName', $oVolume->getNameKey()));
-                $oVolume->loadSettings();
             }
         }
 
@@ -3486,7 +3544,7 @@ class Episciences_Paper
         // et qu'on est rédacteur de l'article
         if ($this->getDocid() &&
             $oReview->getSetting(Episciences_Review::SETTING_EDITORS_CAN_REASSIGN_ARTICLES) &&
-            isset($oVolume) && $oVolume instanceof Episciences_Volume && $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
+            isset($oVolume) && $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
             array_key_exists(Episciences_Auth::getUid(), $this->getEditors(true, true))
         ) {
 
