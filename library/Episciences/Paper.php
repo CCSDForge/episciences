@@ -411,6 +411,8 @@ class Episciences_Paper
     private $_publication_date;
     private $_settings;
     private $_otherVolumes;
+    private ?Episciences_Volume $_primaryVolume = null;
+    private bool $_primaryVolumeLoaded = false;
     private $_withxsl = true;
     /**
      * @var array
@@ -833,7 +835,14 @@ class Episciences_Paper
      */
     public function setVid($id = 0): self
     {
-        $this->_vId = (int)$id;
+        $newVid = (int)$id;
+
+        if ($newVid !== $this->_vId) {
+            // the memoised volume belongs to the previous VID
+            $this->resetPrimaryVolume();
+        }
+
+        $this->_vId = $newVid;
         return $this;
     }
 
@@ -1355,7 +1364,7 @@ class Episciences_Paper
         }
 
         if ($this->getVid()) {
-            $oVolume = Episciences_VolumesManager::find($this->getVid());
+            $oVolume = $this->getPrimaryVolume();
             if ($oVolume) {
                 $sVolume = [
                     'id' => $oVolume->getVid() ?: null,
@@ -1496,6 +1505,45 @@ class Episciences_Paper
         $identifier = str_replace('"', '\"', $this->getIdentifier());
         $xmlToArray = null;
         return str_replace(array('"#"', '%%ID', '%%VERSION'), array('"value"', $identifier, $this->getVersion()), $result);
+    }
+
+    /**
+     * The paper's primary volume, loaded at most once per Paper instance.
+     *
+     * Exporting a paper reads the primary volume from several places in the same
+     * pass — Paper::toJson(), Paper::getXml() and XmlExportManager::xmlExport() —
+     * and Episciences_VolumesManager::find() costs three queries every time
+     * (volume, settings, metadata). Memoising on the instance keeps the lifetime
+     * tied to the paper rather than to the whole request, so a volume edited
+     * elsewhere in the same request cannot be served from a stale cache.
+     */
+    public function getPrimaryVolume(): ?Episciences_Volume
+    {
+        if ($this->_primaryVolumeLoaded) {
+            return $this->_primaryVolume;
+        }
+
+        $this->_primaryVolumeLoaded = true;
+
+        $vid = (int)$this->getVid();
+
+        if ($vid > 0) {
+            $oVolume = Episciences_VolumesManager::find($vid);
+            $this->_primaryVolume = $oVolume instanceof Episciences_Volume ? $oVolume : null;
+        }
+
+        return $this->_primaryVolume;
+    }
+
+    /**
+     * Drops the memoised primary volume, so the next read reloads it.
+     */
+    public function resetPrimaryVolume(): self
+    {
+        $this->_primaryVolume = null;
+        $this->_primaryVolumeLoaded = false;
+
+        return $this;
     }
 
     private function processTmpVersion(Episciences_Paper $paper): void
@@ -3324,10 +3372,9 @@ class Episciences_Paper
 
         // fetch volume data
         if ($this->getVid()) {
-            $oVolume = Episciences_VolumesManager::find($this->getVid());
+            $oVolume = $this->getPrimaryVolume();
             if ($oVolume instanceof Episciences_Volume) {
                 $node->appendChild($dom->createElement('volumeName', $oVolume->getNameKey()));
-                $oVolume->loadSettings();
             }
         }
 
@@ -3413,7 +3460,7 @@ class Episciences_Paper
         // et qu'on est rédacteur de l'article
         if ($this->getDocid() &&
             $oReview->getSetting(Episciences_Review::SETTING_EDITORS_CAN_REASSIGN_ARTICLES) &&
-            isset($oVolume) && $oVolume instanceof Episciences_Volume && $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
+            isset($oVolume) && $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
             array_key_exists(Episciences_Auth::getUid(), $this->getEditors(true, true))
         ) {
 
