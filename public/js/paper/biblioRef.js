@@ -129,8 +129,9 @@ class BiblioRefParser {
             // below); mirrored in library/Episciences/Api/BiblioRefApiClient.php::parseResponse().
             let referenceOrder;
             const rawReferenceOrder = citation.referenceOrder;
-            const isBlankReferenceOrder = typeof rawReferenceOrder === 'string' && rawReferenceOrder.trim() === '';
-            if (rawReferenceOrder !== undefined && rawReferenceOrder !== null && !isBlankReferenceOrder && Number.isFinite(Number(rawReferenceOrder))) {
+            const isNumberType = typeof rawReferenceOrder === 'number';
+            const isNonBlankStringType = typeof rawReferenceOrder === 'string' && rawReferenceOrder.trim() !== '';
+            if ((isNumberType || isNonBlankStringType) && Number.isFinite(Number(rawReferenceOrder))) {
                 referenceOrder = Number(rawReferenceOrder);
             }
 
