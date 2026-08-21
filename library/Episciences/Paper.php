@@ -1398,11 +1398,6 @@ class Episciences_Paper
                 ];
             }
         }
-        $graphical_abstract_file = '';
-        $current = $this->getDocument()['database']['current'] ?? null;
-        if (isset($current['graphical_abstract_file'])) {
-            $graphical_abstract_file = $current['graphical_abstract_file'];
-        }
         $extraData = [
 
             Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY => [
@@ -1450,7 +1445,7 @@ class Episciences_Paper
                     'repository' => Episciences_Repositories::getRepositories()[$this->getRepoid()] ?? null,
                     'cited_by' => $citedBy,
                     'classifications' => $classifications,
-                    'graphical_abstract_file' => $graphical_abstract_file,
+                    'graphical_abstract_file' => $this->getGraphicalAbstractFileToJson(),
                     'metrics' => Episciences_Paper_Visits::getPaperMetricsByPaperId($this->getPaperid()),
 
                 ],
@@ -1460,9 +1455,6 @@ class Episciences_Paper
             ]
 
         ];
-        if ($graphical_abstract_file === '') {
-            unset($extraData[Episciences_Paper_XmlExportManager::PUBLIC_KEY][Episciences_Paper_XmlExportManager::DATABASE_KEY]['current']['graphical_abstract_file']);
-        }
 // Define the keys for better readability
         $keyBody = Episciences_Paper_XmlExportManager::BODY_KEY;
         $keyJournal = Episciences_Paper_XmlExportManager::JOURNAL_KEY;
@@ -1544,6 +1536,25 @@ class Episciences_Paper
         $this->_primaryVolumeLoaded = false;
 
         return $this;
+    }
+
+    /**
+     * Filename of the paper's graphical abstract, carried over from the stored JSON.
+     *
+     * The file is written straight into PAPERS.DOCUMENT by
+     * AdministrategraphabstractController (JSON_SET on upload, JSON_REMOVE on delete),
+     * so toJson() has to read the previous value back rather than rebuild it.
+     *
+     * Returns null, not an empty string, when the paper has no graphical abstract:
+     * consistent with the other empty keys of database.current (volume, section,
+     * cited_by, previous_versions).
+     */
+    private function getGraphicalAbstractFileToJson(): ?string
+    {
+        $current = $this->getDocument()[Episciences_Paper_XmlExportManager::DATABASE_KEY]['current'] ?? null;
+        $file = trim((string)($current['graphical_abstract_file'] ?? ''));
+
+        return $file !== '' ? $file : null;
     }
 
     private function processTmpVersion(Episciences_Paper $paper): void
