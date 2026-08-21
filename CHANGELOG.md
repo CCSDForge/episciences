@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#1140](https://github.com/CCSDForge/episciences/issues/1140) Refresh the `PAPERS.DOCUMENT` JSON column after a secondary volume change, so API consumers no longer read stale volume data.
+- [#1140](https://github.com/CCSDForge/episciences/issues/1140) Refresh the `PAPERS.DOCUMENT` JSON column after a secondary volume change, so API consumers no longer read stale volume data. Papers already in database keep a `DOCUMENT` without the new key until resaved: run `php scripts/console.php papers:update-document` after deploying (API consumers should read the key as `?? null` in the meantime).
 - Report `database.current.graphical_abstract_file` as `null` instead of `""` in the JSON v2 paper export when the paper has no graphical abstract, and drop the dead `unset()` that was meant to do it. Consumers must treat both `null` and a missing key as "no graphical abstract".
 - [#1125](https://github.com/CCSDForge/episciences/pull/1125) Block review report attachment downloads for users with a declared Conflict of Interest (COI).
 - [#1125](https://github.com/CCSDForge/episciences/pull/1125) Ensure paper authors' access precedence over editorial staff COI checks when downloading review report attachments.

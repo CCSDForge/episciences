@@ -1,6 +1,7 @@
 <?php
 
 use GuzzleHttp\Exception\GuzzleException;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class Episciences_PapersManager
 {
@@ -4544,17 +4545,30 @@ class Episciences_PapersManager
         return $db->fetchOne($select);
     }
 
-    public static function updateJsonDocumentData(int $docId): void
+    public static function updateJsonDocumentData(int $docId): bool
     {
+        $paper = self::get($docId, false);
+
+        if (!$paper) {
+            return false;
+        }
+
         try {
             $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-            $paper = self::get($docId, false);
             $toJson = $paper->toJson();
             $str = sprintf('UPDATE `PAPERS` set `DOCUMENT` = %s  WHERE DOCID = %s;', $db->quote($toJson), $docId);
             $db->query($str)->closeCursor();
         } catch (Zend_Db_Statement_Exception $e) {
             trigger_error($e->getMessage());
+            return false;
         }
+
+        // invalidate the getJsonV2 metadata cache entry (up to CACHE_EXPIRE_METADATA_PUBLISHED = 31 days)
+        // so callers going through Episciences_Paper::get('json', 2) don't keep serving the stale DOCUMENT
+        (new FilesystemAdapter(Episciences_Paper::CACHE_CLASS_NAMESPACE, 0, CACHE_PATH_METADATA))
+            ->deleteItem($docId . '-getJsonV2');
+
+        return true;
     }
 
     /**
