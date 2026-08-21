@@ -33,9 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add constraint description helper text to the volume year field in volume management.
 - Add TomSelect component to paper filters on `/paper/submitted` and `/paper/ratings`.
 - Configure local SonarQube support (`make sonar`) and XML-based PHPUnit coverage report generation.
+- [#1140](https://github.com/CCSDForge/episciences/issues/1140) Export secondary volumes under `database.current.secondary_volumes` in the JSON v2 paper export.
 
 ### Fixed
 
+- [#1140](https://github.com/CCSDForge/episciences/issues/1140) Refresh the `PAPERS.DOCUMENT` JSON column after a secondary volume change, so API consumers no longer read stale volume data.
 - [#1125](https://github.com/CCSDForge/episciences/pull/1125) Block review report attachment downloads for users with a declared Conflict of Interest (COI).
 - [#1125](https://github.com/CCSDForge/episciences/pull/1125) Ensure paper authors' access precedence over editorial staff COI checks when downloading review report attachments.
 - [#1132](https://github.com/CCSDForge/episciences/pull/1132) Pass `previousVersion` context to `hookVersion` in `savenewpostedversionAction` to correctly update Zenodo version identifiers when posting a new version.

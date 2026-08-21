@@ -1429,6 +1429,7 @@ class Episciences_Paper
                         'publication_date' => $this->getPublication_date()
                     ],
                     'volume' => $sVolume,
+                    'secondary_volumes' => $this->getSecondaryVolumesToJson(),
                     'position_in_volume' => $this->getPosition(),
                     'section' => $sSection,
                     'journal' => [
@@ -1496,6 +1497,78 @@ class Episciences_Paper
         $identifier = str_replace('"', '\"', $this->getIdentifier());
         $xmlToArray = null;
         return str_replace(array('"#"', '%%ID', '%%VERSION'), array('"value"', $identifier, $this->getVersion()), $result);
+    }
+
+    /**
+     * Build the public JSON representation of the paper's secondary volumes,
+     * exposed under database.current.secondary_volumes.
+     *
+     * Returns null when the paper has no secondary volume, to stay consistent with
+     * the other empty keys of database.current (volume, section, cited_by, ...).
+     *
+     * @return array<int, array<string, mixed>>|null
+     */
+    private function getSecondaryVolumesToJson(): ?array
+    {
+        $primaryVid = (int)$this->getVid();
+        $vids = [];
+
+        foreach ($this->getOtherVolumes() as $volumePaper) {
+            $vid = (int)$volumePaper->getVid();
+            // a paper's primary volume is never one of its secondary volumes
+            if ($vid > 0 && $vid !== $primaryVid) {
+                $vids[$vid] = $vid;
+            }
+        }
+
+        if ($vids === []) {
+            return null;
+        }
+
+        $secondaryVolumes = [];
+
+        foreach ($this->resolveSecondaryVolumes($vids) as $oVolume) {
+            $secondaryVolumes[] = self::formatSecondaryVolumeToJson($oVolume);
+        }
+
+        return $secondaryVolumes !== [] ? $secondaryVolumes : null;
+    }
+
+    /**
+     * Load the volumes behind a list of VIDs, with their settings.
+     *
+     * Two queries in total, instead of the three per volume that
+     * Episciences_VolumesManager::find() would cost: toJson() runs on every Paper::save().
+     *
+     * @param int[] $vids
+     * @return array<int, Episciences_Volume> keyed by VID, ordered by volume position
+     */
+    protected function resolveSecondaryVolumes(array $vids): array
+    {
+        $volumes = Episciences_VolumesManager::getList(['where' => 'VID IN (' . implode(',', $vids) . ')']);
+        Episciences_VolumesManager::loadSettingsForVolumes($volumes);
+
+        return $volumes;
+    }
+
+    /**
+     * Public volume metadata exposed under database.current.secondary_volumes.
+     * Private settings (access code, ...) are deliberately left out.
+     *
+     * @return array<string, mixed>
+     */
+    private static function formatSecondaryVolumeToJson(Episciences_Volume $oVolume): array
+    {
+        return [
+            'id' => $oVolume->getVid() ?: null,
+            'position' => $oVolume->getPosition(),
+            'number' => $oVolume->getVol_num(),
+            'year' => $oVolume->getVol_year(),
+            'has_proceedings' => $oVolume->isProceeding() === 1,
+            'titles' => $oVolume->getTitles(),
+            'descriptions' => $oVolume->getDescriptions(),
+            'bibliographical_references' => $oVolume->getBib_reference(),
+        ];
     }
 
     private function processTmpVersion(Episciences_Paper $paper): void

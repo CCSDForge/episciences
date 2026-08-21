@@ -2758,6 +2758,9 @@ class AdministratepaperController extends PaperDefaultController
 
             $paper->setOtherVolumes($paper_volumes);
             $paper->saveOtherVolumes();
+            // VOLUME_PAPER is a satellite table: refresh PAPERS.DOCUMENT so API consumers,
+            // which read the stored JSON, do not keep serving stale secondary volumes.
+            Episciences_PapersManager::updateJsonDocumentData((int)$docid);
             $oOVolumes = $paper->getOtherVolumes(true);
             $oVolumes = [];
 
