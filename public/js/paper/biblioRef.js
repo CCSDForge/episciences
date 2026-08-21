@@ -124,7 +124,9 @@ class BiblioRefParser {
                 ? openAccess.source_title
                 : '';
 
-            // Reference order within bibliography (for manual/curated reordering)
+            // Reference order within bibliography (for manual/curated reordering).
+            // A missing/non-numeric referenceOrder is left undefined and sorts last (see citations.sort
+            // below); mirrored in library/Episciences/Api/BiblioRefApiClient.php::parseResponse().
             let referenceOrder;
             const rawReferenceOrder = citation.referenceOrder;
             const isBlankReferenceOrder = typeof rawReferenceOrder === 'string' && rawReferenceOrder.trim() === '';
@@ -522,20 +524,13 @@ class BiblioRefManager {
                 )
                 .filter(citation => citation !== null);
 
-            // Sort citations by referenceOrder when available
+            // Sort citations by referenceOrder when available; a missing referenceOrder sorts last.
+            // Number.MAX_SAFE_INTEGER (rather than Infinity) is used as the "missing" sentinel so that
+            // two missing values subtract to 0, not NaN, keeping this a spec-valid sort comparator.
             citations.sort((a, b) => {
-                const orderA = a.referenceOrder;
-                const orderB = b.referenceOrder;
-                if (orderA !== undefined && orderB !== undefined) {
-                    return orderA - orderB;
-                }
-                if (orderA !== undefined) {
-                    return -1;
-                }
-                if (orderB !== undefined) {
-                    return 1;
-                }
-                return 0;
+                const orderA = a.referenceOrder ?? Number.MAX_SAFE_INTEGER;
+                const orderB = b.referenceOrder ?? Number.MAX_SAFE_INTEGER;
+                return orderA - orderB;
             });
 
             // Render citations if we have any

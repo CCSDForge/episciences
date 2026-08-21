@@ -390,4 +390,26 @@ class BiblioRefApiClientTest extends TestCase
         $this->assertSame('Citation 14 (order 12)', $result[1]['unstructured_citation']);
         $this->assertSame('Citation 13 (order 13)', $result[2]['unstructured_citation']);
     }
+
+    public function testParseResponse_MissingOrNonNumericReferenceOrder_SortsLast(): void
+    {
+        $client = $this->makeApiClient('');
+        $body = (string) json_encode([
+            '1' => [
+                'ref' => ['raw_reference' => 'Citation with blank order'],
+                'referenceOrder' => '',
+            ],
+            '2' => [
+                'ref' => ['raw_reference' => 'Citation with order 5'],
+                'referenceOrder' => 5,
+            ],
+            '3' => [
+                'ref' => ['raw_reference' => 'Citation without order'],
+            ],
+        ]);
+        $result = $client->parseResponse($body);
+
+        $this->assertCount(3, $result);
+        $this->assertSame('Citation with order 5', $result[0]['unstructured_citation']);
+    }
 }
