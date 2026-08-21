@@ -372,6 +372,14 @@ class Episciences_Paper
         self::STATUS_TMP_VERSION_ACCEPTED
     ];
     public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'openaire', 'crossref', 'doaj', 'zbjats', 'json'];
+    /**
+     * True as soon as the paper's repository has a hooks class, whatever that
+     * class implements. It is NOT a capability: use hasFilesEnrichment(),
+     * hasConceptIdentifier() or Episciences_Repositories::handlesOwnEnrichment()
+     * to ask what the repository can actually do.
+     *
+     * @var bool|null
+     */
     public $hasHook;
     protected array $_type = [self::TITLE_TYPE => self::DEFAULT_TYPE_TITLE, self::TYPE_TYPE => self::DEFAULT_TYPE_TITLE];
     /**
@@ -774,7 +782,7 @@ class Episciences_Paper
             $result['latestVersionId'] = $this->_latestVersionId;
         }
 
-        if ($this->hasHook && isset($this->_concept_identifier)) {
+        if ($this->hasConceptIdentifier() && isset($this->_concept_identifier)) {
             $result['concept_identifier'] = $this->getConcept_identifier();
         }
 
@@ -1881,10 +1889,10 @@ class Episciences_Paper
     {
         if (
             $conceptIdentifier &&
-            !$this->hasHook &&
-            !$this->isTmp() // repoId = 0 : hasHook returns false
+            !$this->hasConceptIdentifier() &&
+            !$this->isTmp() // repoId = 0 : no repository, hence no concept identifier
         ) {
-            throw new \InvalidArgumentException('Concept identifier should be applied exclusively to submissions coming from a repository with a hook');
+            throw new \InvalidArgumentException('Concept identifier should be applied exclusively to submissions coming from a repository exposing concept identifiers');
         }
 
         $this->_concept_identifier = $conceptIdentifier;
@@ -2190,7 +2198,7 @@ class Episciences_Paper
 
         $processedFile = [];
 
-        if ($this->hasHook) {
+        if ($this->hasFilesEnrichment()) {
             $oCurrentFiles = $this->getFiles();
             /** @var Episciences_Paper_File $oCFile */
             foreach ($oCurrentFiles as $oCFile) {
@@ -3399,9 +3407,12 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('esURL', SERVER_PROTOCOL . '://' . RVCODE . '.' . DOMAIN . '/' . $this->getDocid()));
         $node->appendChild($dom->createElement('docURL', $this->getDocUrl()));
         $mainUrl = $this->getMainPaperUrl();
-        // ----  @sse [#644]: https://github.com/CCSDForge/episciences/issues/644
-        $node->appendChild($dom->createElement('notHasHook', !empty($mainUrl)));
-        $node->appendChild($dom->createElement('paperURL', $mainUrl));
+        // ----  @see [#644]: https://github.com/CCSDForge/episciences/issues/644
+        // Named after what it actually holds: whether a downloadable main file URL
+        // could be resolved. It used to be called notHasHook, which invited readers
+        // to test the repository's hooks instead of the resolved URL.
+        $node->appendChild($dom->createElement('hasMainPaperUrl', !empty($mainUrl)));
+        $node->appendChild($dom->createElement('paperURL', (string)$mainUrl));
         // ----- end @see [#644]
         $node->appendChild($dom->createElement('volume', $this->getVid()));
         $node->appendChild($dom->createElement('section', $this->getSid()));
@@ -4251,7 +4262,7 @@ class Episciences_Paper
             }
 
             if (
-                !$this->hasHook ||
+                !$this->hasConceptIdentifier() ||
                 $this->getConcept_identifier() === null
             ) {
                 $identifierChanged = $this->getIdentifier() !== $paper->getIdentifier();
@@ -4755,7 +4766,7 @@ class Episciences_Paper
      */
     public function getFileByName(string $fileName): ?Episciences_Paper_File
     {
-        if (!$this->hasHook) {
+        if (!$this->hasFilesEnrichment()) {
             return null;
         }
 
@@ -5632,6 +5643,27 @@ class Episciences_Paper
     }
 
     /**
+     * Whether this paper's files are mirrored into the PAPER_FILES table, which
+     * only repositories declaring FilesEnrichmentInterface do.
+     *
+     * Never use $this->hasHook for that: it is true as soon as the repository has
+     * a hooks class, whatever that class actually implements.
+     */
+    public function hasFilesEnrichment(): bool
+    {
+        return Episciences_Repositories::hasFilesEnrichment($this->getRepoid());
+    }
+
+    /**
+     * Whether this paper's repository exposes concept identifiers, i.e. a single
+     * stable identifier shared by every version of a record.
+     */
+    public function hasConceptIdentifier(): bool
+    {
+        return Episciences_Repositories::hasConceptIdentifier($this->getRepoid());
+    }
+
+    /**
      * returns the repository url to the main paper's file
      * @return string|null
      */
@@ -5646,7 +5678,7 @@ class Episciences_Paper
             return $this->getDataDescriptorUrl();
         }
 
-        if ($this->hasHook) {
+        if ($this->hasFilesEnrichment()) {
 
             $mainFile = Episciences_Paper_FilesManager::getMainFile($this->getDocid());
 
@@ -5761,7 +5793,7 @@ class Episciences_Paper
     public function isEligibleForMasterFileChoice(): bool
     {
         return
-            $this->hasHook &&
+            $this->hasFilesEnrichment() &&
             !$this->isDataSetOrSoftware() &&
             count($this->getFiles()) > 0 &&
             $this->isAllowedToEditMasterFile();

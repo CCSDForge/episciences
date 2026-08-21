@@ -3163,7 +3163,7 @@ class Episciences_PapersManager
         Episciences_Paper $paper, array $context, int $affectedRows
     ): int
     {
-        if (Episciences_Repositories::hasHook($context['repoId'])) {
+        if (Episciences_Repositories::handlesOwnEnrichment((int)$context['repoId'])) {
             $hookData = Episciences_Repositories::callHook('hookLinkedDataProcessing', [
                 'repoId' => $context['repoId'],
                 'identifier' => $context['identifier'],

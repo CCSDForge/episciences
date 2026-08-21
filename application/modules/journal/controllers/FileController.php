@@ -429,7 +429,7 @@ class FileController extends DefaultController
         $paper = Episciences_PapersManager::get($docId);
 
         // check if paper exists
-        if (!$paper || !$paper->hasHook || ($paper->getRvid() !== RVID) || ($paper->getRepoid() === 0)) {
+        if (!$paper || !$paper->hasFilesEnrichment() || ($paper->getRvid() !== RVID) || ($paper->getRepoid() === 0)) {
             $this->getResponse()->setHttpResponseCode(404);
             $this->renderScript('index/notfound.phtml');
             return;

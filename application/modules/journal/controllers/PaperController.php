@@ -483,18 +483,16 @@ class PaperController extends PaperDefaultController
             }
         }
 
-        $hasHook = $paper->hasHook;
+        // A temporary paper carries no repository of its own (repoId = 0): the
+        // repository to reason about is the one of its first version.
+        $repositoryPaper = $paper;
 
         if ($paper->isTmp()) {
-            $firstPaper = Episciences_PapersManager::get($paper->getPaperid(), false);
-            $hasHook = $firstPaper->hasHook;
+            $repositoryPaper = Episciences_PapersManager::get($paper->getPaperid(), false) ?: $paper;
         }
 
-        $this->view->hasHook = $hasHook;
-        $this->view->isRequiredVersion = $hasHook ? Episciences_Repositories::callHook(
-            'hookIsRequiredVersion', [
-            'repoId' => $paper->getRepoid()
-        ])['result'] : true;
+        $this->view->hasHook = $repositoryPaper->hasHook;
+        $this->view->isRequiredVersion = Episciences_Repositories::isVersionRequired($repositoryPaper->getRepoid());
 
         $this->view->isAllowedToBackToAdminPage = Episciences_Auth::isLogged() && $commonTest;
 

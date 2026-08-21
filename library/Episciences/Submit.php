@@ -1675,7 +1675,10 @@ class Episciences_Submit
         Episciences_Repositories::callHook('hookFilesProcessing', $filesHookParams);
         Episciences_Repositories::callHook('hookLinkedDataProcessing', $hookParams);
 
-        if (Episciences_Repositories::hasHook($paper->getRepoid()) === '' && Episciences_Repositories::getApiUrl($paper->getRepoid())) {
+        if (
+            !Episciences_Repositories::handlesOwnEnrichment($paper->getRepoid()) &&
+            Episciences_Repositories::getApiUrl($paper->getRepoid()) !== ''
+        ) {
             self::datasetsProcessing($paper);
         }
     }
