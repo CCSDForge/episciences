@@ -112,8 +112,7 @@ class Episciences_Submit
         // Champ texte : identifiant du document
         $subform->addElement('text', 'docId', $docIdElementOptions);
 
-        $hookVersion = isset($defaults['repoId']) ? Episciences_Repositories::callHook('hookIsRequiredVersion', ['repoId' => $defaults['repoId']]) : [];
-        $isRequiredVersionField = empty($hookVersion) || (isset($hookVersion['result']) && $hookVersion['result']);
+        $isRequiredVersionField = !isset($defaults['repoId']) || Episciences_Repositories::isVersionRequired((int)$defaults['repoId']);
 
         // Champ texte : version du document
 
@@ -624,8 +623,7 @@ class Episciences_Submit
 
             $subform->addElement('hidden', 'h_docId');
 
-            $isRequiredVersionFromHook = Episciences_Repositories::callHook('hookIsRequiredVersion', ['repoId' => $defaults['repoId']]);
-            $isRequiredVersion = $isRequiredVersionFromHook['result'] ?? true;
+            $isRequiredVersion = Episciences_Repositories::isVersionRequired((int)$defaults['repoId']);
 
             if ($isRequiredVersion) {
 
@@ -890,7 +888,7 @@ class Episciences_Submit
             $oldPaper = Episciences_PapersManager::partialGet((int)$latestObsoleteDocId, $rvId);
 
             if ($oldPaper?->isTmp()) {
-                $previousVersions = $oldPaper->getPreviousVersions(false, false);
+                $previousVersions = $oldPaper->getPreviousVersions(false, false) ?? [];
                 $oldPaper = $previousVersions[array_key_first($previousVersions)] ?? null;
             }
 
