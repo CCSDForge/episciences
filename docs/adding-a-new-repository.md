@@ -175,6 +175,13 @@ Two shared suites also need extending whenever capabilities change:
   corresponding data providers so a regression there is caught the same way it
   would be for Zenodo/DSpace/Cryptology ePrint today.
 
+`Episciences_Repositories_CapabilityDeclarationTest` needs no extending: it
+discovers `library/Episciences/Repositories/*/Hooks.php` on its own and fails if a
+new class declares a capability it does not implement, or implements one it does
+not declare. It is what catches a `hookApiRecords()` writing
+`CONCEPT_IDENTIFIER_KEY` without `ConceptIdentifierInterface` — the marker
+interface has no method, so nothing else can.
+
 ## Common pitfall: `hasHook()` is not a capability
 
 `Episciences_Repositories::hasHook($repoId)` only answers "does a hooks class
