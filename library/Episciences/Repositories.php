@@ -1,8 +1,8 @@
 <?php
 
+use Episciences\Repositories\ConceptIdentifierInterface;
 use Episciences\Repositories\FilesEnrichmentInterface;
 use Episciences\Repositories\LinkedDataEnrichmentInterface;
-use Episciences\Repositories\Zenodo\HooksInterface as ZenodoHooksInterface;
 
 /**
  * Class Episciences_Repositories
@@ -291,7 +291,7 @@ class Episciences_Repositories
      */
     public static function hasConceptIdentifier(int $repoId): bool
     {
-        return self::hookImplements($repoId, ZenodoHooksInterface::class);
+        return self::hookImplements($repoId, ConceptIdentifierInterface::class);
     }
 
     /**

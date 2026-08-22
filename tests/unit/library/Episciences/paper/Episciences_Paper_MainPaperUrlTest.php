@@ -36,6 +36,7 @@ use Zend_Registry;
 final class Episciences_Paper_MainPaperUrlTest extends TestCase
 {
     private const DATAVERSE_REPO_ID = 99;
+    private const DSPACE_REPO_ID = 98;
 
     /** @var array<int, array<string, mixed>> */
     private static array $fakeSources = [];
@@ -58,7 +59,9 @@ final class Episciences_Paper_MainPaperUrlTest extends TestCase
             (int)Episciences_Repositories::ARXIV_REPO_ID => $source('arXiv', 'https://arxiv.org/pdf/%%IDv%%VERSION'),
             (int)Episciences_Repositories::BIO_RXIV_ID => $source('bioRxiv', 'https://www.biorxiv.org/content/%%IDv%%VERSION.full.pdf'),
             (int)Episciences_Repositories::ZENODO_REPO_ID => $source('Zenodo', ''),
+            (int)Episciences_Repositories::CRYPTOLOGY_EPRINT => $source('Cryptology ePrint', ''),
             self::DATAVERSE_REPO_ID => $source('ADataverse', '', 'dataverse'),
+            self::DSPACE_REPO_ID => $source('ADspace', '', 'dspace'),
         ];
     }
 
@@ -218,9 +221,11 @@ final class Episciences_Paper_MainPaperUrlTest extends TestCase
     // hasConceptIdentifier() / setConcept_identifier()
     // -------------------------------------------------------------------------
 
-    public function testOnlyZenodoExposesConceptIdentifiers(): void
+    public function testOnlyRepositoriesSharingAnIdentifierAcrossVersionsExposeConceptIdentifiers(): void
     {
         self::assertTrue($this->makePaper((int)Episciences_Repositories::ZENODO_REPO_ID)->hasConceptIdentifier());
+        self::assertTrue($this->makePaper((int)Episciences_Repositories::CRYPTOLOGY_EPRINT)->hasConceptIdentifier());
+        self::assertTrue($this->makePaper(self::DSPACE_REPO_ID)->hasConceptIdentifier());
         self::assertFalse($this->makePaper((int)Episciences_Repositories::HAL_REPO_ID)->hasConceptIdentifier());
         self::assertFalse($this->makePaper((int)Episciences_Repositories::ARXIV_REPO_ID)->hasConceptIdentifier());
         self::assertFalse($this->makePaper(self::DATAVERSE_REPO_ID)->hasConceptIdentifier());
@@ -232,6 +237,22 @@ final class Episciences_Paper_MainPaperUrlTest extends TestCase
         $paper->setConcept_identifier('10.5281/zenodo.123456');
 
         self::assertSame('10.5281/zenodo.123456', $paper->getConcept_identifier());
+    }
+
+    public function testConceptIdentifierIsAcceptedForCryptologyEprint(): void
+    {
+        $paper = $this->makePaper((int)Episciences_Repositories::CRYPTOLOGY_EPRINT, '2024/001');
+        $paper->setConcept_identifier('2024/001');
+
+        self::assertSame('2024/001', $paper->getConcept_identifier());
+    }
+
+    public function testConceptIdentifierIsAcceptedForDspace(): void
+    {
+        $paper = $this->makePaper(self::DSPACE_REPO_ID, 'oai:dspace:123');
+        $paper->setConcept_identifier('oai:dspace:123');
+
+        self::assertSame('oai:dspace:123', $paper->getConcept_identifier());
     }
 
     public function testConceptIdentifierIsRejectedForHal(): void

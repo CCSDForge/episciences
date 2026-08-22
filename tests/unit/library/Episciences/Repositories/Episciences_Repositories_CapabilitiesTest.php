@@ -239,6 +239,8 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
     {
         return [
             'Zenodo' => [(int)Episciences_Repositories::ZENODO_REPO_ID, true],
+            'Cryptology ePrint' => [(int)Episciences_Repositories::CRYPTOLOGY_EPRINT, true],
+            'DSpace' => [self::DSPACE_REPO_ID, true],
             'HAL' => [(int)Episciences_Repositories::HAL_REPO_ID, false],
             'arXiv' => [(int)Episciences_Repositories::ARXIV_REPO_ID, false],
             'Dataverse' => [self::DATAVERSE_REPO_ID, false],
