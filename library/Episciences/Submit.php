@@ -912,7 +912,11 @@ class Episciences_Submit
                     'response' => $hookApiRecord,
                 ];
 
-                if ($isNewVersionOf) {
+                // $oldPaper is null whenever $latestObsoleteDocId could not be
+                // resolved above: addContext() takes a non-nullable paper, and the
+                // TypeError it would raise is an Error, which the catch clauses
+                // below do not intercept.
+                if ($isNewVersionOf && $oldPaper) {
                     self::addContext($oldPaper, $parms);
                 }
 
