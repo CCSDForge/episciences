@@ -5352,7 +5352,8 @@ class Episciences_Paper
         $query = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(`DOCUMENT`, " . $db->quote(self::JSON_PATH_ABS_FILE) . ")) FROM " . T_PAPERS . " WHERE DOCID = ?", [$docId]);
         try {
             foreach ($query->fetch() as $val) {
-                if (!is_null($val)) {
+                // JSON_UNQUOTE(JSON_EXTRACT()) returns the string "null" (not SQL NULL) when the JSON value itself is null
+                if (!is_null($val) && $val !== 'null') {
                     return trim($val);
                 }
             }
