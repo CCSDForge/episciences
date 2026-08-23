@@ -685,7 +685,7 @@ class Export
         $result['abstracts'] = $paper->getAbstractsCleaned();
         $result['keywords'] = $paper->getMetadata('subjects');
 
-        if ($paper->hasHook && $paper->getConcept_identifier() !== null) {
+        if ($paper->hasConceptIdentifier() && $paper->getConcept_identifier() !== null) {
             $result['concept_identifier'] = $paper->getConcept_identifier();
         }
 
