@@ -32,6 +32,14 @@ class ZbjatsZipperCommandTest extends TestCase
         $this->assertTrue($definition->getOption('rvid')->isValueRequired(), 'rvid must require a value');
     }
 
+    public function testCommandHasRvcodeOption(): void
+    {
+        $definition = (new ZbjatsZipperCommand())->getDefinition();
+        $this->assertInstanceOf(InputDefinition::class, $definition);
+        $this->assertTrue($definition->hasOption('rvcode'));
+        $this->assertTrue($definition->getOption('rvcode')->isValueRequired(), 'rvcode must require a value');
+    }
+
     public function testCommandHasZipPrefixOption(): void
     {
         $definition = (new ZbjatsZipperCommand())->getDefinition();

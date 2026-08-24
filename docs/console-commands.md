@@ -336,6 +336,7 @@ php scripts/console.php zbjats:zip [options]
 | Option | Description |
 |--------|-------------|
 | `--rvid <id>` | RVID (integer) of the journal to process |
+| `--rvcode <code>` | RV code (string) of the journal to process |
 | `--zip-prefix <prefix>` | Optional prefix for the ZIP filename (e.g. `2024_`) |
 | `--dry-run` | Simulate without downloading files or writing the ZIP |
 

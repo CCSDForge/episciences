@@ -46,6 +46,7 @@ class ZbjatsZipperCommand extends Command
         $this
             ->setDescription('Download PDF + zbJATS XML per volume and package them into a ZIP archive.')
             ->addOption('rvid', null, InputOption::VALUE_REQUIRED, 'RVID (integer) of the journal to process')
+            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'RV code (string) of the journal to process')
             ->addOption('zip-prefix', null, InputOption::VALUE_OPTIONAL, 'Optional prefix for the ZIP filename (e.g. "2024_")')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simulate without downloading files or writing the ZIP')
             ->addOption('remove-cache', null, InputOption::VALUE_NONE, 'Clear the PDF/XML cache for this journal before processing');
@@ -56,10 +57,18 @@ class ZbjatsZipperCommand extends Command
         $io     = new SymfonyStyle($input, $output);
         $dryRun = (bool) $input->getOption('dry-run');
         $rvid   = $input->getOption('rvid');
+        $rvcode = $input->getOption('rvcode');
 
-        if ($rvid === null || $rvid === '') {
-            $io->error('Missing required option: --rvid');
+        if (($rvid === null || $rvid === '') && ($rvcode === null || $rvcode === '')) {
+            $io->error('Provide either --rvid (integer) or --rvcode (string).');
             return Command::FAILURE;
+        }
+
+        if ($rvid !== null && $rvid !== '') {
+            if (filter_var($rvid, FILTER_VALIDATE_INT) === false || (int) $rvid <= 0) {
+                $io->error('Option --rvid must be a positive integer.');
+                return Command::FAILURE;
+            }
         }
 
         $io->title('zbJAT Zipper');
@@ -79,12 +88,17 @@ class ZbjatsZipperCommand extends Command
 
         $this->httpClient = new Client();
 
-        // findByRvid() returns Episciences_Review|bool; check before assigning to typed property
-        $review = Episciences_ReviewsManager::findByRvid((int) $rvid);
+        if ($rvid !== null && $rvid !== '') {
+            $review = Episciences_ReviewsManager::findByRvid((int) $rvid);
+            $identifierLog = "RVID {$rvid}";
+        } else {
+            $review = Episciences_ReviewsManager::findByRvcode((string) $rvcode);
+            $identifierLog = "RV code '{$rvcode}'";
+        }
 
         if (!$review instanceof Episciences_Review) {
-            $this->logger->error('Journal not found', ['rvid' => $rvid]);
-            $io->error("No journal found for RVID {$rvid}.");
+            $this->logger->error('Journal not found', ['identifier' => $identifierLog]);
+            $io->error("No journal found for {$identifierLog}.");
             return Command::FAILURE;
         }
 
