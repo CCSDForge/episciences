@@ -33,7 +33,6 @@ $(document).ready(function () {
 
             if (oResponse) {
                 // initialized in submit/index.phtml
-                hasHook = oResponse.hasHook;
                 isRequiredVersion = oResponse.isRequiredVersion.result;
 
                 if (!isRequiredVersion) {

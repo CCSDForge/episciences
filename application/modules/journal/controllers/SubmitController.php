@@ -588,20 +588,12 @@ class SubmitController extends DefaultController
         $this->_helper->viewRenderer->setNoRender();
 
         $repoId = (int)$request->get('repoId');
-        $hasHook = !empty(Episciences_Repositories::hasHook($repoId));
 
-        if ($repoId !== (int)Episciences_Repositories::CWI_REPO_ID) {
+        $isRequiredVersion = $repoId !== (int)Episciences_Repositories::CWI_REPO_ID
+            && Episciences_Repositories::isVersionRequired($repoId);
 
-            $isRequiredVersion = $hasHook ?
-                Episciences_Repositories::callHook('hookIsRequiredVersion', ['repoId' => $repoId]) :
-                ['result' => true];
-
-        } else {
-            $isRequiredVersion = ['result' => false];
-
-        }
-
-        $response = ['hasHook' => $hasHook, 'isRequiredVersion' => $isRequiredVersion];
+        // Kept nested: public/js/submit/index.js reads isRequiredVersion.result
+        $response = ['isRequiredVersion' => ['result' => $isRequiredVersion]];
 
         try {
             echo json_encode($response, JSON_THROW_ON_ERROR);

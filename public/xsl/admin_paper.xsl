@@ -178,7 +178,7 @@
                                             </xsl:otherwise>
                                         </xsl:choose>
                                     </xsl:attribute>
-                                    <xsl:if test="episciences/notHasHook/text() = '1'">
+                                    <xsl:if test="episciences/hasMainPaperUrl/text() = '1'">
                                         <button class="btn btn-primary btn" style="margin-right: 5px">
                                             <span class="fas fa-file-download" style="margin-right: 5px"/>
                                             <xsl:value-of select="php:function('Ccsd_Tools::translate', &quot;Télécharger l'article&quot;)"/>
