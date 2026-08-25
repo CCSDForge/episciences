@@ -33,6 +33,12 @@ trait ResolvesDocIdOptions
         }
 
         if ($docId !== null) {
+            if (!ctype_digit((string)$docId) || (int)$docId <= 0) {
+                $io->error(sprintf('Invalid --docid: %s', $docId));
+
+                return null;
+            }
+
             return [(int)$docId];
         }
 
@@ -44,8 +50,18 @@ trait ResolvesDocIdOptions
             }
 
             $lines = file((string)$file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $docIds = array_values(array_filter(
+                array_map('intval', $lines ?: []),
+                static fn (int $id): bool => $id > 0
+            ));
 
-            return array_map('intval', $lines ?: []);
+            if ($docIds === []) {
+                $io->error(sprintf('No valid DOCID found in file: %s', $file));
+
+                return null;
+            }
+
+            return $docIds;
         }
 
         // Only published papers belong in the Solr index (matches legacy

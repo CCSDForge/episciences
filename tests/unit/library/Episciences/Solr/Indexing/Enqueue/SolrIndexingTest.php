@@ -9,6 +9,8 @@ use Episciences\Solr\Indexing\Messenger\Message\IndexPaperMessage;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/SpyMessageBus.php';
+require_once __DIR__ . '/SpyEnqueueFailureStore.php';
+require_once __DIR__ . '/RestoresSolrIndexingPort.php';
 
 /**
  * Unit tests for the SolrIndexing facade — the seam every legacy trigger call
@@ -17,16 +19,22 @@ require_once __DIR__ . '/SpyMessageBus.php';
  */
 class SolrIndexingTest extends TestCase
 {
+    use RestoresSolrIndexingPort;
+
+    protected function setUp(): void
+    {
+        $this->captureSolrIndexingPort();
+    }
+
     protected function tearDown(): void
     {
-        // Avoid leaking an injected spy into unrelated tests run afterwards.
-        SolrIndexing::setPort(new SolrIndexQueuePort(new SpyMessageBus()));
+        $this->restoreSolrIndexingPort();
     }
 
     public function testEnqueueIndexDelegatesToInjectedPort(): void
     {
         $bus = new SpyMessageBus();
-        SolrIndexing::setPort(new SolrIndexQueuePort($bus));
+        SolrIndexing::setPort(new SolrIndexQueuePort($bus, new SpyEnqueueFailureStore()));
 
         SolrIndexing::enqueueIndex(42, 3);
 
@@ -39,7 +47,7 @@ class SolrIndexingTest extends TestCase
     public function testEnqueueDeleteDelegatesToInjectedPort(): void
     {
         $bus = new SpyMessageBus();
-        SolrIndexing::setPort(new SolrIndexQueuePort($bus));
+        SolrIndexing::setPort(new SolrIndexQueuePort($bus, new SpyEnqueueFailureStore()));
 
         SolrIndexing::enqueueDelete(docId: 7);
 
@@ -50,7 +58,7 @@ class SolrIndexingTest extends TestCase
 
     public function testGetPortReturnsTheInjectedInstance(): void
     {
-        $port = new SolrIndexQueuePort(new SpyMessageBus());
+        $port = new SolrIndexQueuePort(new SpyMessageBus(), new SpyEnqueueFailureStore());
         SolrIndexing::setPort($port);
 
         self::assertSame($port, SolrIndexing::getPort());

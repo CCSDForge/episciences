@@ -7,8 +7,11 @@ require_once __DIR__ . '/Solr/BootstrapsSolrEnvironment.php';
 use Doctrine\DBAL\Connection as DbalConnection;
 use Doctrine\DBAL\Schema\Schema;
 use Episciences\Solr\Indexing\Client\SolariumClientFactory;
+use Episciences\Solr\Indexing\Enqueue\DbalEnqueueFailureStore;
 use Episciences\Solr\Indexing\Messenger\Handler\DeletePaperMessageHandler;
 use Episciences\Solr\Indexing\Messenger\Handler\IndexPaperMessageHandler;
+use Episciences\Solr\Indexing\Messenger\Message\DeletePaperMessage;
+use Episciences\Solr\Indexing\Messenger\Message\IndexPaperMessage;
 use Episciences\Solr\Indexing\Messenger\MessengerFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -41,8 +44,10 @@ class SolrQueueCommand extends Command
             ->addOption('stats', null, InputOption::VALUE_NONE, 'Show pending and failed message counts.')
             ->addOption('list-failed', null, InputOption::VALUE_NONE, 'List failed messages.')
             ->addOption('retry', null, InputOption::VALUE_REQUIRED, 'Retry the failed message with this id, synchronously, in this process.')
-            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit for --list-failed.', 50)
-            ->addOption('setup', null, InputOption::VALUE_NONE, "Create the messenger_messages/messenger_failed tables if they don't exist yet (one-time, per environment).");
+            ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit for --list-failed / --list-dispatch-failures.', 50)
+            ->addOption('setup', null, InputOption::VALUE_NONE, "Create the messenger_messages/messenger_failed/solr_enqueue_failures tables if they don't exist yet (one-time, per environment).")
+            ->addOption('list-dispatch-failures', null, InputOption::VALUE_NONE, 'List enqueue calls that failed even after their bounded retry (no message row was ever created for these — see solr_enqueue_failures).')
+            ->addOption('retry-dispatch-failure', null, InputOption::VALUE_REQUIRED, 'Re-attempt the recorded dispatch failure with this id; removes it from solr_enqueue_failures on success.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -55,10 +60,12 @@ class SolrQueueCommand extends Command
             'list-failed' => (bool)$input->getOption('list-failed'),
             'retry' => $input->getOption('retry') !== null,
             'setup' => (bool)$input->getOption('setup'),
+            'list-dispatch-failures' => (bool)$input->getOption('list-dispatch-failures'),
+            'retry-dispatch-failure' => $input->getOption('retry-dispatch-failure') !== null,
         ]));
 
         if (count($actions) !== 1) {
-            $io->error('Exactly one of --stats, --list-failed, --retry or --setup is required.');
+            $io->error('Exactly one of --stats, --list-failed, --retry, --setup, --list-dispatch-failures or --retry-dispatch-failure is required.');
 
             return Command::FAILURE;
         }
@@ -69,12 +76,21 @@ class SolrQueueCommand extends Command
         $connection = $this->createDbalConnection();
         $transport = MessengerFactory::createTransport($connection);
         $failureTransport = MessengerFactory::createFailureTransport($connection);
+        $dispatchFailureStore = new DbalEnqueueFailureStore($connection);
 
         return match ($actions[0]) {
             'stats' => $this->showStats($transport, $failureTransport, $io),
             'list-failed' => $this->listFailed($failureTransport, (int)$input->getOption('limit'), $io),
             'retry' => $this->retry($failureTransport, (string)$input->getOption('retry'), $io, $logger),
-            'setup' => $this->setup($transport, $failureTransport, $connection, $io),
+            'setup' => $this->setup($transport, $failureTransport, $dispatchFailureStore, $connection, $io),
+            'list-dispatch-failures' => $this->listDispatchFailures($dispatchFailureStore, (int)$input->getOption('limit'), $io),
+            'retry-dispatch-failure' => $this->retryDispatchFailure(
+                $transport,
+                $dispatchFailureStore,
+                (int)$input->getOption('retry-dispatch-failure'),
+                $io,
+                $logger
+            ),
         };
     }
 
@@ -84,11 +100,17 @@ class SolrQueueCommand extends Command
      * DELETE) — in that case, print the exact DDL so a DBA can run it
      * manually instead of failing with an opaque permission error.
      */
-    private function setup(DoctrineTransport $transport, DoctrineTransport $failureTransport, DbalConnection $connection, SymfonyStyle $io): int
-    {
+    private function setup(
+        DoctrineTransport $transport,
+        DoctrineTransport $failureTransport,
+        DbalEnqueueFailureStore $dispatchFailureStore,
+        DbalConnection $connection,
+        SymfonyStyle $io
+    ): int {
         try {
             $transport->setup();
             $failureTransport->setup();
+            $dispatchFailureStore->setup();
         } catch (\Throwable $e) {
             $io->error(sprintf('Automatic table creation failed: %s', $e->getMessage()));
             $io->note('This is expected if the database user lacks CREATE/ALTER privileges (common in staging/prod). Ask a DBA to run the following SQL manually, then re-run this command to confirm:');
@@ -100,10 +122,14 @@ class SolrQueueCommand extends Command
                 $io->newLine();
             }
 
+            foreach ($dispatchFailureStore->buildCreateTableSql() as $sql) {
+                $io->writeln($sql . ';');
+            }
+
             return Command::FAILURE;
         }
 
-        $io->success('messenger_messages / messenger_failed tables are ready.');
+        $io->success('messenger_messages / messenger_failed / solr_enqueue_failures tables are ready.');
 
         return Command::SUCCESS;
     }
@@ -184,5 +210,78 @@ class SolrQueueCommand extends Command
 
             return Command::FAILURE;
         }
+    }
+
+    private function listDispatchFailures(DbalEnqueueFailureStore $dispatchFailureStore, int $limit, SymfonyStyle $io): int
+    {
+        $rows = $dispatchFailureStore->all($limit);
+
+        if ($rows === []) {
+            $io->success('No dispatch failures.');
+
+            return Command::SUCCESS;
+        }
+
+        $io->table(
+            ['ID', 'Action', 'Docid', 'Priority/Query', 'Attempts', 'Last error', 'Created at'],
+            array_map(
+                static fn (array $row): array => [
+                    $row['id'],
+                    $row['action'],
+                    $row['docid'],
+                    $row['action'] === 'index' ? $row['priority'] : $row['solr_query'],
+                    $row['attempts'],
+                    $row['last_error'],
+                    $row['created_at'],
+                ],
+                $rows
+            )
+        );
+
+        return Command::SUCCESS;
+    }
+
+    /**
+     * Re-attempts a producer-side dispatch that never made it into
+     * messenger_messages (see SolrIndexQueuePort). Unlike --retry, which
+     * replays an envelope that already exists in the failure transport, this
+     * re-enqueues from the raw docid/action recorded at the time of failure.
+     */
+    private function retryDispatchFailure(
+        DoctrineTransport $transport,
+        DbalEnqueueFailureStore $dispatchFailureStore,
+        int $id,
+        SymfonyStyle $io,
+        \Monolog\Logger $logger
+    ): int {
+        $row = $dispatchFailureStore->find($id);
+
+        if ($row === null) {
+            $io->error(sprintf('No dispatch failure found with id "%d".', $id));
+
+            return Command::FAILURE;
+        }
+
+        $sendBus = MessengerFactory::createSendBus($transport);
+        $docId = $row['docid'] !== null ? (int)$row['docid'] : null;
+
+        try {
+            if ($row['action'] === 'index') {
+                $sendBus->dispatch(new IndexPaperMessage((int)$docId, (int)$row['priority']));
+            } else {
+                $sendBus->dispatch(new DeletePaperMessage($docId, $row['solr_query']));
+            }
+        } catch (\Throwable $e) {
+            $dispatchFailureStore->markRetryFailed($id, $e->getMessage());
+            $logger->error(sprintf('solr:queue --retry-dispatch-failure=%d failed again: %s', $id, $e->getMessage()));
+            $io->error(sprintf('Retry failed: %s', $e->getMessage()));
+
+            return Command::FAILURE;
+        }
+
+        $dispatchFailureStore->delete($id);
+        $io->success(sprintf('Dispatch failure #%d re-enqueued successfully and removed.', $id));
+
+        return Command::SUCCESS;
     }
 }

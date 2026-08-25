@@ -28,9 +28,13 @@ class SolrDeleteCommand extends Command
     /**
      * Matches any Solr delete query that wipes every document for a single
      * field (docid:*, revue_id_i:*, ...) or the whole core (*:*) — any schema
-     * field name works as the wildcard target, not just docid/*.
+     * field name works as the wildcard target, not just docid/*. Matched
+     * anywhere in the query, not just as an exact full-string match, so it
+     * still catches a destructive clause wrapped in parentheses or combined
+     * with another clause via AND/OR (e.g. "(*:*)", "*:* OR docid:1"), and the
+     * open-range form "field:[* TO *]" which is equally destructive.
      */
-    private const WILDCARD_DELETE_PATTERN = '/^([A-Za-z0-9_]+:\*|\*:\*)$/';
+    private const WILDCARD_DELETE_PATTERN = '/(^|[\s(])(\*:\*|[A-Za-z0-9_]+:(\*|\[\s*\*\s+TO\s+\*\s*]))([\s)]|$)/i';
 
     protected function configure(): void
     {
@@ -69,7 +73,7 @@ class SolrDeleteCommand extends Command
             return Command::FAILURE;
         }
 
-        $solrQuery = $message->toSolrDeleteQuery();
+        $solrQuery = trim($message->toSolrDeleteQuery());
 
         if (preg_match(self::WILDCARD_DELETE_PATTERN, $solrQuery) === 1) {
             $io->caution(sprintf(

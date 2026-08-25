@@ -68,10 +68,16 @@ class VolumeSectionResolverTest extends TestCase
 
     public function testWithVolumeReturnsUnchangedDocumentWhenVolumeNotFound(): void
     {
-        // Cache miss on a vid that does not exist in DB: Episciences_VolumesManager::find()
-        // returns false, and the resolver must leave the document unchanged
-        // rather than write partial volume fields.
-        $resolver = new VolumeSectionResolver(new ArrayAdapter(0, false));
+        // Pre-seed the cache with the resolver's own missing-value result
+        // (false) instead of relying on a real cache miss, which would call
+        // the DB-backed Episciences_VolumesManager::find() — the resolver
+        // must leave the document unchanged rather than write partial volume
+        // fields, without this test depending on database availability.
+        $cache = new ArrayAdapter(0, false);
+        $item = $cache->getItem('volume.999999');
+        $cache->save($item->set(false));
+
+        $resolver = new VolumeSectionResolver($cache);
 
         $result = $resolver->withVolume(SolrDocument::empty(), 999999);
 

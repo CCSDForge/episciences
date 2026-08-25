@@ -43,7 +43,10 @@ final class SolrIndexing
         if (self::$port === null) {
             $connection = DbalConnectionFactory::fromZendAdapter(Zend_Db_Table_Abstract::getDefaultAdapter());
             $transport = MessengerFactory::createTransport($connection);
-            self::setPort(new SolrIndexQueuePort(MessengerFactory::createSendBus($transport)));
+            self::setPort(new SolrIndexQueuePort(
+                MessengerFactory::createSendBus($transport),
+                new DbalEnqueueFailureStore($connection)
+            ));
         }
 
         return self::$port;

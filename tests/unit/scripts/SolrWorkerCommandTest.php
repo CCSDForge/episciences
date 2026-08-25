@@ -54,6 +54,19 @@ class SolrWorkerCommandTest extends TestCase
             'megabytes' => ['512M', 512 * 1024 * 1024],
             'kilobytes' => ['256K', 256 * 1024],
             'plain bytes' => ['1000', 1000],
+            'megabytes with trailing b' => ['512MB', 512 * 1024 * 1024],
+            'gigabytes with trailing b' => ['1GB', 1024 * 1024 * 1024],
+            'kilobytes with trailing b' => ['256KB', 256 * 1024],
+            'lowercase unit with trailing b' => ['512mb', 512 * 1024 * 1024],
         ];
+    }
+
+    public function testParseMemoryLimitRejectsGarbageInput(): void
+    {
+        $method = new ReflectionMethod(SolrWorkerCommand::class, 'parseMemoryLimit');
+        $method->setAccessible(true);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $method->invoke($this->command, 'not-a-size');
     }
 }

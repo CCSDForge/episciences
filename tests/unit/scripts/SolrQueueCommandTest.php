@@ -38,7 +38,7 @@ class SolrQueueCommandTest extends TestCase
         $definition = $this->command->getDefinition();
         self::assertInstanceOf(InputDefinition::class, $definition);
 
-        foreach (['stats', 'list-failed', 'retry', 'limit', 'setup'] as $option) {
+        foreach (['stats', 'list-failed', 'retry', 'limit', 'setup', 'list-dispatch-failures', 'retry-dispatch-failure'] as $option) {
             self::assertTrue($definition->hasOption($option), "Missing option --{$option}");
         }
     }
@@ -48,7 +48,13 @@ class SolrQueueCommandTest extends TestCase
         $this->commandTester->execute([]);
 
         self::assertSame(1, $this->commandTester->getStatusCode());
-        self::assertStringContainsString('Exactly one of --stats, --list-failed, --retry or --setup', $this->commandTester->getDisplay());
+        // SymfonyStyle word-wraps long error messages onto multiple lines, so
+        // normalise whitespace before the substring check instead of
+        // asserting on the terminal's wrapped output verbatim.
+        self::assertStringContainsString(
+            'Exactly one of --stats, --list-failed, --retry, --setup, --list-dispatch-failures or --retry-dispatch-failure',
+            preg_replace('/\s+/', ' ', $this->commandTester->getDisplay())
+        );
     }
 
     public function testFailsWhenMultipleActionsProvided(): void
@@ -56,6 +62,12 @@ class SolrQueueCommandTest extends TestCase
         $this->commandTester->execute(['--stats' => true, '--list-failed' => true]);
 
         self::assertSame(1, $this->commandTester->getStatusCode());
-        self::assertStringContainsString('Exactly one of --stats, --list-failed, --retry or --setup', $this->commandTester->getDisplay());
+        // SymfonyStyle word-wraps long error messages onto multiple lines, so
+        // normalise whitespace before the substring check instead of
+        // asserting on the terminal's wrapped output verbatim.
+        self::assertStringContainsString(
+            'Exactly one of --stats, --list-failed, --retry, --setup, --list-dispatch-failures or --retry-dispatch-failure',
+            preg_replace('/\s+/', ' ', $this->commandTester->getDisplay())
+        );
     }
 }

@@ -10,7 +10,11 @@ use Episciences_Paper;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../Solr/Indexing/Enqueue/SpyMessageBus.php';
+require_once __DIR__ . '/../Solr/Indexing/Enqueue/SpyEnqueueFailureStore.php';
+require_once __DIR__ . '/../Solr/Indexing/Enqueue/RestoresSolrIndexingPort.php';
 
+use unit\library\Episciences\Solr\Indexing\Enqueue\RestoresSolrIndexingPort;
+use unit\library\Episciences\Solr\Indexing\Enqueue\SpyEnqueueFailureStore;
 use unit\library\Episciences\Solr\Indexing\Enqueue\SpyMessageBus;
 
 /**
@@ -20,17 +24,20 @@ use unit\library\Episciences\Solr\Indexing\Enqueue\SpyMessageBus;
  */
 class ToolsTest extends TestCase
 {
+    use RestoresSolrIndexingPort;
+
     private SpyMessageBus $bus;
 
     protected function setUp(): void
     {
+        $this->captureSolrIndexingPort();
         $this->bus = new SpyMessageBus();
-        SolrIndexing::setPort(new SolrIndexQueuePort($this->bus));
+        SolrIndexing::setPort(new SolrIndexQueuePort($this->bus, new SpyEnqueueFailureStore()));
     }
 
     protected function tearDown(): void
     {
-        SolrIndexing::setPort(new SolrIndexQueuePort(new SpyMessageBus()));
+        $this->restoreSolrIndexingPort();
     }
 
     public function testPublishedPaperEnqueuesAnIndexMessage(): void

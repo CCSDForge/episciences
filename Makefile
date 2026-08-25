@@ -512,7 +512,7 @@ solr-index: ## Enqueue (or sync) Solr re-indexing (requires docid=N or sqlwhere=
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php solr:index \
 		$(if $(docid),--docid=$(docid)) \
-		$(if $(sqlwhere),--sqlwhere=$(sqlwhere)) \
+		$(if $(sqlwhere),--sqlwhere='$(sqlwhere)') \
 		$(if $(file),--file=$(file)) \
 		$(if $(priority),--priority=$(priority)) \
 		$(if $(filter 1,$(sync)),--sync)
@@ -527,7 +527,7 @@ solr-delete: ## Enqueue (or sync) a Solr deletion (requires docid=N or query=QUE
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php solr:delete \
 		$(if $(docid),--docid=$(docid)) \
-		$(if $(query),--query=$(query)) \
+		$(if $(query),--query='$(query)') \
 		$(if $(filter 1,$(sync)),--sync)
 
 solr-worker: ## Continuously consume the Solr indexing/deletion queue (optional: limit=N time-limit=SECONDS memory-limit=SIZE)
@@ -538,11 +538,11 @@ solr-worker: ## Continuously consume the Solr indexing/deletion queue (optional:
 		$(if $(time-limit),--time-limit=$(time-limit)) \
 		$(if $(memory-limit),--memory-limit=$(memory-limit))
 
-solr-queue: ## Inspect/manage the Solr indexing queue (requires stats=1 or list-failed=1 or retry=ID; optional: limit=N)
-	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:queue --stats|--list-failed|--retry=ID [-q]
-	@if [ "$(stats)" != "1" ] && [ "$(list-failed)" != "1" ] && [ -z "$(retry)" ]; then \
-		echo "Error: specify stats=1 or list-failed=1 or retry=ID"; \
-		echo "Usage: make solr-queue stats=1 | list-failed=1 [limit=N] | retry=ID"; \
+solr-queue: ## Inspect/manage the Solr indexing queue (requires stats=1, list-failed=1, retry=ID, setup=1, list-dispatch-failures=1 or retry-dispatch-failure=ID; optional: limit=N)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:queue --stats|--list-failed|--retry=ID|--setup|--list-dispatch-failures|--retry-dispatch-failure=ID [-q]
+	@if [ "$(stats)" != "1" ] && [ "$(list-failed)" != "1" ] && [ -z "$(retry)" ] && [ "$(setup)" != "1" ] && [ "$(list-dispatch-failures)" != "1" ] && [ -z "$(retry-dispatch-failure)" ]; then \
+		echo "Error: specify stats=1, list-failed=1, retry=ID, setup=1, list-dispatch-failures=1 or retry-dispatch-failure=ID"; \
+		echo "Usage: make solr-queue stats=1 | list-failed=1 [limit=N] | retry=ID | setup=1 | list-dispatch-failures=1 [limit=N] | retry-dispatch-failure=ID"; \
 		exit 1; \
 	fi
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
@@ -550,6 +550,9 @@ solr-queue: ## Inspect/manage the Solr indexing queue (requires stats=1 or list-
 		$(if $(filter 1,$(stats)),--stats) \
 		$(if $(filter 1,$(list-failed)),--list-failed) \
 		$(if $(retry),--retry=$(retry)) \
+		$(if $(filter 1,$(setup)),--setup) \
+		$(if $(filter 1,$(list-dispatch-failures)),--list-dispatch-failures) \
+		$(if $(retry-dispatch-failure),--retry-dispatch-failure=$(retry-dispatch-failure)) \
 		$(if $(limit),--limit=$(limit))
 
 can-i-use-update: ## Update browserslist database when caniuse-lite is outdated

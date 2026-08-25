@@ -33,6 +33,8 @@ class InboxNotificationsTest extends TestCase
     {
         if ($this->originalArgv !== null) {
             $_SERVER['argv'] = $this->originalArgv;
+        } else {
+            unset($_SERVER['argv']);
         }
     }
 

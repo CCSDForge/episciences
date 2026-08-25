@@ -28,4 +28,19 @@ class DeletePaperMessageTest extends TestCase
 
         self::assertSame('revue_id_i:7', $message->toSolrDeleteQuery());
     }
+
+    public function testThrowsWhenQueryIsBlankAndNoDocIdIsProvided(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        new DeletePaperMessage(solrQuery: '   ');
+    }
+
+    public function testBlankQueryFallsBackToDocIdInsteadOfWinningSilently(): void
+    {
+        $message = new DeletePaperMessage(docId: 42, solrQuery: '   ');
+
+        self::assertNull($message->solrQuery);
+        self::assertSame('docid:42', $message->toSolrDeleteQuery());
+    }
 }
