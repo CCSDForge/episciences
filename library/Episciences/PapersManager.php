@@ -166,9 +166,19 @@ class Episciences_PapersManager
             $volumes = (array_key_exists('volumes', $settings)) ? $settings['volumes'] : [];
             $sections = (array_key_exists('sections', $settings)) ? $settings['sections'] : [];
 
-            $select = self::dataTableSearchQuery($select, $word, $volumes, $sections);
+            $select = self::dataTableSearchQuery($select, $word, $volumes, $sections, self::extractFilteredRvid($settings));
         }
         return $select;
+    }
+
+    /**
+     * @param array $settings
+     * @return int|null Journal to scope the query to, or null to fall back to the global RVID constant
+     */
+    private static function extractFilteredRvid(array $settings): ?int
+    {
+        $rvid = $settings['is']['rvid'] ?? $settings['is']['RVID'] ?? null;
+        return is_numeric($rvid) ? (int)$rvid : null;
     }
 
     /**
@@ -182,6 +192,7 @@ class Episciences_PapersManager
     {
         $validFilters = ['rvid', 'repoid', 'uid', 'docid', 'vid', 'sid', 'status'];
         if (array_key_exists('is', $settings)) {
+            $filteredRvid = self::extractFilteredRvid($settings);
             foreach ($settings['is'] as $setting => $value) {
                 if (in_array(strtolower($setting), $validFilters)) {
                     $setting = strtoupper($setting);
@@ -193,7 +204,7 @@ class Episciences_PapersManager
                         }
 
                     } else {
-                        $select = self::volumesFilter($select, $value, $isFilterInfos);
+                        $select = self::volumesFilter($select, $value, $isFilterInfos, $filteredRvid);
                     }
 
                 }
@@ -239,12 +250,13 @@ class Episciences_PapersManager
      * @param Zend_Db_Select $select
      * @param array $value
      * @param bool $includeSecondaryVolume
+     * @param int|null $rvid Journal to scope the volume lookup to; falls back to the global RVID constant when null
      * @return Zend_Db_Select
      */
-    private static function volumesFilter(Zend_Db_Select $select, array $value, bool $includeSecondaryVolume = false): \Zend_Db_Select
+    private static function volumesFilter(Zend_Db_Select $select, array $value, bool $includeSecondaryVolume = false, ?int $rvid = null): \Zend_Db_Select
     {
         // Filtrage par volume secondaire : inclure l'article s'il appartient à un volume primaire(git#72)
-        $select1 = self::getVolumesQuery();
+        $select1 = self::getVolumesQuery(['DOCID'], $rvid);
 
         $select1->where(" st.VID IN (?)", $value);
 
@@ -259,16 +271,17 @@ class Episciences_PapersManager
 
     /**
      * @param array $fields
+     * @param int|null $rvid Journal to scope the query to; falls back to the global RVID constant when null
      * @return Zend_Db_Select
      */
-    public static function getVolumesQuery(array $fields = ['DOCID']): \Zend_Db_Select
+    public static function getVolumesQuery(array $fields = ['DOCID'], ?int $rvid = null): \Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         return $db
             ->select()
             ->from(['st' => T_PAPERS], $fields)
             ->joinLeft(['vpt' => T_VOLUME_PAPER], 'st.DOCID = vpt.DOCID', [])
-            ->where('st.RVID = ?', RVID);
+            ->where('st.RVID = ?', $rvid ?? RVID);
     }
 
     /**
@@ -507,10 +520,11 @@ class Episciences_PapersManager
      * @param String $word
      * @param array $volumes
      * @param array $sections
+     * @param int|null $rvid Journal to scope the secondary-volume lookup to; falls back to the global RVID constant when null
      * @return Zend_Db_Select
      * @throws Zend_Db_Select_Exception
      */
-    private static function dataTableSearchQuery(Zend_Db_Select $select, string $word = '', array $volumes = [], array $sections = []): \Zend_Db_Select
+    private static function dataTableSearchQuery(Zend_Db_Select $select, string $word = '', array $volumes = [], array $sections = [], ?int $rvid = null): \Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -548,7 +562,7 @@ class Episciences_PapersManager
                 //Volume primaire
                 $where .= "OR VID IN ($volumeCondition) ";
                 //Inclure les documents qui ont un volume secondaire
-                $papersWithSecondaryVolume = self::getVolumesQuery()->where("vpt.VID IN ($volumeCondition) ");
+                $papersWithSecondaryVolume = self::getVolumesQuery(['DOCID'], $rvid)->where("vpt.VID IN ($volumeCondition) ");
                 $where .= "OR DOCID IN ($papersWithSecondaryVolume) ";
             }
 
