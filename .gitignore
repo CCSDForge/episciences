@@ -91,3 +91,4 @@ assets/node_modules/
 # SonarQube
 /.scannerwork/
 /.sonar/
+/.phpunit.cache/
