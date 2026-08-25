@@ -1390,7 +1390,7 @@ class Episciences_Volume
     public function getPaperListFromVolume(array $excludedStatus = [], bool $includeSecondaryVolume = true): array
     {
 
-        $options['is']['rvid'] = RVID;
+        $options['is']['rvid'] = $this->getRvid();
         $options['is']['vid'] = [$this->getVid()];
         $status = empty($excludedStatus) ? Episciences_Paper::DO_NOT_SORT_THIS_KIND_OF_PAPERS : array_merge($excludedStatus, Episciences_Paper::DO_NOT_SORT_THIS_KIND_OF_PAPERS);
         $options['isNot'] = ['status' => $status];
