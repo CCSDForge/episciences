@@ -1,7 +1,9 @@
 <?php
 
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Psr\Log\LogLevel;
 
 class Episciences_PapersManager
 {
@@ -2437,7 +2439,11 @@ class Episciences_PapersManager
         }
 
         // remove from index
-        Ccsd_Search_Solr_Indexer::addToIndexQueue([$docid], 'episciences', 'DELETE', 'episciences');
+        try {
+            SolrIndexing::enqueueDelete((int)$docid);
+        } catch (Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
+        }
 
         // TODO: delete user assignments
         // TODO: delete user invitations
