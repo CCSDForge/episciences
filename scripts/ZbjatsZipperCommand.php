@@ -456,8 +456,11 @@ class ZbjatsZipperCommand extends Command
             return;
         }
 
-        if (!is_dir($pathdir) && !mkdir($pathdir, 0776, true) && !is_dir($pathdir)) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $pathdir));
+        if (!is_dir($pathdir)) {
+            if (!mkdir($pathdir, 0755, true) && !is_dir($pathdir)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $pathdir));
+            }
+            chmod($pathdir, 0755);
         }
 
         $zip = new \ZipArchive();
@@ -475,6 +478,7 @@ class ZbjatsZipperCommand extends Command
         }
 
         $zip->close();
+        chmod($zipcreated, 0644);
         $this->logger->info('ZIP archive created', ['path' => $zipcreated]);
     }
 
