@@ -3482,7 +3482,7 @@ class Episciences_Paper
 
         $node->appendChild($dom->createElement('isOwner', $this->isOwner()));
 
-        $oVolume = false;
+        $oVolume = null;
 
         // fetch volume data
         if ($this->getVid()) {
@@ -3572,7 +3572,8 @@ class Episciences_Paper
         // et qu'on est rédacteur de l'article
         if ($this->getDocid() &&
             $oReview->getSetting(Episciences_Review::SETTING_EDITORS_CAN_REASSIGN_ARTICLES) &&
-            isset($oVolume) && $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
+            $oVolume instanceof Episciences_Volume &&
+            $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
             array_key_exists(Episciences_Auth::getUid(), $this->getEditors(true, true))
         ) {
 
