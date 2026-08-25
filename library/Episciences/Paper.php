@@ -3493,9 +3493,7 @@ class Episciences_Paper
         }
 
         // fetch secondary volume data if the setting is enabled in the review
-        $review = Episciences_ReviewsManager::find($this->getRvid());
-
-        $displaySecondaryVolumes = (int)$review->getSetting(
+        $displaySecondaryVolumes = (int)$oReview->getSetting(
                 Episciences_Review::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE
             ) === 1;
 
