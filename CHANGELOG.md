@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `--rvcode` option, `--rvid` integer validation, and batch processing support via `--config` (`journals.ini`) in `ZbjatsZipperCommand` (`zbjats:zip`).
 - Cache PDF and XML responses with Symfony Cache in `ZbjatsTools` and support new-front URLs.
 - [#1125](https://github.com/CCSDForge/episciences/pull/1125) Allow anonymous access to public review report attachments for open peer review.
 - Add `CheckDoajJournalsCommand` CLI command to check journal presence in DOAJ, track published article count, and enforce API rate limits.
@@ -43,6 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Guard `Episciences_Paper::updateXml()` against unresolvable review lookups (`Episciences_ReviewsManager::find()` returning `false`), preventing fatal errors when fetching review settings.
+- [#1145](https://github.com/CCSDForge/episciences/issues/1145) Sort bibliographic references by `referenceOrder` in both `BiblioRefApiClient` and `biblioRef.js`, placing missing or invalid orders last.
+- Guard `Episciences_Paper::getGraphical_abstract()` against MySQL `JSON_UNQUOTE(JSON_EXTRACT())` returning the literal string `"null"` for JSON null values, avoiding invalid image paths (`/public/documents/{docId}/null`).
+- Make the arXiv article password panel collapsible in `paper_password_form.phtml` by wrapping its contents in a `.panel-body` container.
 - Restore the article download for every repository that does not mirror its files into `PAPER_FILES` (arXiv, HAL, bioRxiv, medRxiv, ARCHE). `Episciences_Repositories::hasHook()` only reports that a hooks class exists, yet it was read as "this repository's files live in `PAPER_FILES`". Giving arXiv ([#1135](https://github.com/CCSDForge/episciences/pull/1135)) and HAL ([#1137](https://github.com/CCSDForge/episciences/pull/1137)) a metadata-filtering hooks class therefore made `Paper::getMainPaperUrl()` look for a row that never exists, so `/{docid}/pdf` answered `404 no PDF files found`, the "Download the article" button disappeared from the article page, and `database.current.mainPdfUrl` and `files` went empty in the JSON v2 export. bioRxiv, medRxiv and ARCHE had been broken the same way ever since they got a hooks class. Capabilities are now asked for explicitly, through the interfaces the hook classes already declare: `hasFilesEnrichment()`, `hasLinkedDataEnrichment()`, `handlesOwnEnrichment()` and `hasConceptIdentifier()`. The XML node driving the download button is renamed `notHasHook` → `hasMainPaperUrl` after what it actually holds.
 - Require a version number again when submitting an arXiv or HAL paper. Their `hookIsRequiredVersion()` returns `[]` to keep the historical default, but callers read `['result']` straight off it, so the version block was hidden in the submission form and skipped by its client-side validation. The default now lives in `Episciences_Repositories::isVersionRequired()`. Also fixes the same lookup on temporary papers, which queried the hook with `repoId = 0` instead of the repository of their first version.
 - Run the generic dataset enrichment (`Episciences_Submit::datasetsProcessing()`) again for arXiv and HAL papers, at submission and on metadata refresh: both were silently skipped because they now have a hooks class, even though neither declares any enrichment capability.
