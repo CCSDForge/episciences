@@ -166,9 +166,19 @@ class Episciences_PapersManager
             $volumes = (array_key_exists('volumes', $settings)) ? $settings['volumes'] : [];
             $sections = (array_key_exists('sections', $settings)) ? $settings['sections'] : [];
 
-            $select = self::dataTableSearchQuery($select, $word, $volumes, $sections);
+            $select = self::dataTableSearchQuery($select, $word, $volumes, $sections, self::extractFilteredRvid($settings));
         }
         return $select;
+    }
+
+    /**
+     * @param array $settings
+     * @return int|null Journal to scope the query to, or null to fall back to the global RVID constant
+     */
+    private static function extractFilteredRvid(array $settings): ?int
+    {
+        $rvid = $settings['is']['rvid'] ?? $settings['is']['RVID'] ?? null;
+        return is_numeric($rvid) ? (int)$rvid : null;
     }
 
     /**
@@ -182,9 +192,7 @@ class Episciences_PapersManager
     {
         $validFilters = ['rvid', 'repoid', 'uid', 'docid', 'vid', 'sid', 'status'];
         if (array_key_exists('is', $settings)) {
-            $filteredRvid = isset($settings['is']['rvid']) && is_numeric($settings['is']['rvid'])
-                ? (int) $settings['is']['rvid']
-                : null;
+            $filteredRvid = self::extractFilteredRvid($settings);
             foreach ($settings['is'] as $setting => $value) {
                 if (in_array(strtolower($setting), $validFilters)) {
                     $setting = strtoupper($setting);
@@ -512,10 +520,11 @@ class Episciences_PapersManager
      * @param String $word
      * @param array $volumes
      * @param array $sections
+     * @param int|null $rvid Journal to scope the secondary-volume lookup to; falls back to the global RVID constant when null
      * @return Zend_Db_Select
      * @throws Zend_Db_Select_Exception
      */
-    private static function dataTableSearchQuery(Zend_Db_Select $select, string $word = '', array $volumes = [], array $sections = []): \Zend_Db_Select
+    private static function dataTableSearchQuery(Zend_Db_Select $select, string $word = '', array $volumes = [], array $sections = [], ?int $rvid = null): \Zend_Db_Select
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -553,7 +562,7 @@ class Episciences_PapersManager
                 //Volume primaire
                 $where .= "OR VID IN ($volumeCondition) ";
                 //Inclure les documents qui ont un volume secondaire
-                $papersWithSecondaryVolume = self::getVolumesQuery()->where("vpt.VID IN ($volumeCondition) ");
+                $papersWithSecondaryVolume = self::getVolumesQuery(['DOCID'], $rvid)->where("vpt.VID IN ($volumeCondition) ");
                 $where .= "OR DOCID IN ($papersWithSecondaryVolume) ";
             }
 

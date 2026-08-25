@@ -688,6 +688,74 @@ final class Episciences_PapersManagerTest extends TestCase
         self::assertStringContainsString('st.RVID = ' . RVID, $sql);
     }
 
+    /**
+     * Reproduces callers using the uppercase 'RVID' filter key convention (e.g. getList()),
+     * combined with a 'vid' filter, to ensure the rvid lookup is not case-sensitive.
+     */
+    public function testApplyFiltersThreadsUppercaseRvidFilterKeyIntoTheVidSubquery(): void
+    {
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, 'applyFilters');
+        $reflection->setAccessible(true);
+
+        $otherRvid = RVID + 41;
+
+        /** @var \Zend_Db_Select $select */
+        $select = $reflection->invoke(
+            null,
+            $this->newPapersSelect(),
+            ['is' => ['RVID' => $otherRvid, 'vid' => [5]]]
+        );
+
+        $sql = $select->assemble();
+
+        self::assertStringContainsString(
+            'st.RVID = ' . $otherRvid,
+            $sql,
+            'The VID subquery must be scoped to the requested rvid regardless of the filter key casing'
+        );
+        self::assertStringNotContainsString('st.RVID = ' . RVID . ' ', $sql . ' ');
+    }
+
+    // -----------------------------------------------------------------------
+    // dataTableSearchQuery(): the DataTable "search" box must scope its secondary-volume
+    // subquery to the rvid being filtered on, not to the global RVID constant.
+    // -----------------------------------------------------------------------
+
+    /**
+     * @param array<int, mixed> $args
+     */
+    private function invokePrivateDataTableSearchQuery(array $args): \Zend_Db_Select
+    {
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, 'dataTableSearchQuery');
+        $reflection->setAccessible(true);
+
+        /** @var \Zend_Db_Select $result */
+        $result = $reflection->invoke(null, ...$args);
+
+        return $result;
+    }
+
+    public function testDataTableSearchQueryScopesSecondaryVolumeSubqueryToTheProvidedRvid(): void
+    {
+        $otherRvid = RVID + 41;
+
+        $sql = $this->invokePrivateDataTableSearchQuery(
+            [$this->newPapersSelect(), '', [5 => 'Volume A'], [], $otherRvid]
+        )->assemble();
+
+        self::assertStringContainsString('st.RVID = ' . $otherRvid, $sql);
+        self::assertStringNotContainsString('st.RVID = ' . RVID . ' ', $sql . ' ');
+    }
+
+    public function testDataTableSearchQueryFallsBackToGlobalRvidConstantWhenNoneGiven(): void
+    {
+        $sql = $this->invokePrivateDataTableSearchQuery(
+            [$this->newPapersSelect(), '', [5 => 'Volume A'], []]
+        )->assemble();
+
+        self::assertStringContainsString('st.RVID = ' . RVID, $sql);
+    }
+
     // -----------------------------------------------------------------------
     // applySuggestionFilter() / getPapersWithPendingSuggestionQuery()
     // -----------------------------------------------------------------------
