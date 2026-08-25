@@ -3393,6 +3393,11 @@ class Episciences_Paper
 
         // Récupération des infos de la revue
         $oReview = Episciences_ReviewsManager::find($this->getRvid());
+
+        if (!$oReview instanceof Episciences_Review) {
+            return false;
+        }
+
         $oReview->loadSettings();
 
         // Création des éléments et ajout au node episciences
