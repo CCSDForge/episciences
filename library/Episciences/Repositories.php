@@ -1,5 +1,9 @@
 <?php
 
+use Episciences\Repositories\ConceptIdentifierInterface;
+use Episciences\Repositories\FilesEnrichmentInterface;
+use Episciences\Repositories\LinkedDataEnrichmentInterface;
+
 /**
  * Class Episciences_Repositories
  * List repositories available as submit sources
@@ -244,6 +248,72 @@ class Episciences_Repositories
         }
         $label = str_replace(' ', '', $label);
         return __CLASS__ . '_' . ucfirst($label) . '_Hooks';
+    }
+
+    /**
+     * Whether the repository mirrors its files into the PAPER_FILES table.
+     *
+     * hasHook() only reports that a hooks class exists, which says nothing about
+     * what that class can do: adding a hooks class to a repository whose files
+     * are not mirrored (arXiv, HAL) must not be mistaken for this capability.
+     */
+    public static function hasFilesEnrichment(int $repoId): bool
+    {
+        return self::hookImplements($repoId, FilesEnrichmentInterface::class);
+    }
+
+    /**
+     * Whether the repository resolves its own linked data, instead of relying on
+     * the generic Episciences_Submit::datasetsProcessing() enrichment.
+     */
+    public static function hasLinkedDataEnrichment(int $repoId): bool
+    {
+        return self::hookImplements($repoId, LinkedDataEnrichmentInterface::class);
+    }
+
+    /**
+     * Whether the repository enriches its papers itself, through its own hooks,
+     * and must therefore be kept out of the generic
+     * Episciences_Submit::datasetsProcessing() enrichment.
+     *
+     * The union of both enrichment capabilities is deliberate: a repository that
+     * only mirrors files (Dataverse, DSpace, Cryptology ePrint) has never gone
+     * through the generic enrichment either.
+     */
+    public static function handlesOwnEnrichment(int $repoId): bool
+    {
+        return self::hasFilesEnrichment($repoId) || self::hasLinkedDataEnrichment($repoId);
+    }
+
+    /**
+     * Whether the repository exposes concept identifiers, i.e. a single stable
+     * identifier shared by every version of a record.
+     */
+    public static function hasConceptIdentifier(int $repoId): bool
+    {
+        return self::hookImplements($repoId, ConceptIdentifierInterface::class);
+    }
+
+    /**
+     * Whether a version number must be supplied along with the repository
+     * identifier when submitting a paper.
+     *
+     * Hooks may return an empty array to keep the historical default, so the
+     * fallback belongs here rather than in each caller.
+     */
+    public static function isVersionRequired(int $repoId): bool
+    {
+        return (bool)(self::callHook('hookIsRequiredVersion', ['repoId' => $repoId])['result'] ?? true);
+    }
+
+    /**
+     * @param class-string $interface
+     */
+    private static function hookImplements(int $repoId, string $interface): bool
+    {
+        $className = self::hasHook($repoId);
+
+        return $className !== '' && is_a($className, $interface, true);
     }
 
     /**

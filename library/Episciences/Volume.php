@@ -1390,7 +1390,7 @@ class Episciences_Volume
     public function getPaperListFromVolume(array $excludedStatus = [], bool $includeSecondaryVolume = true): array
     {
 
-        $options['is']['rvid'] = RVID;
+        $options['is']['rvid'] = $this->getRvid();
         $options['is']['vid'] = [$this->getVid()];
         $status = empty($excludedStatus) ? Episciences_Paper::DO_NOT_SORT_THIS_KIND_OF_PAPERS : array_merge($excludedStatus, Episciences_Paper::DO_NOT_SORT_THIS_KIND_OF_PAPERS);
         $options['isNot'] = ['status' => $status];
@@ -1451,7 +1451,7 @@ class Episciences_Volume
 
     public function setVol_num($volNum): \Episciences_Volume
     {
-        $this->_vol_num = $volNum ? (int)trim(strip_tags($volNum)) : null;
+        $this->_vol_num = $volNum ? trim(strip_tags($volNum)) : null;
         return $this;
     }
 
@@ -1514,9 +1514,16 @@ class Episciences_Volume
     /**
      * @return array
      */
+    /**
+     * Conference metadata of a proceedings volume.
+     *
+     * Settings are expected to be loaded already: every caller reaches this method
+     * through isProceeding(), which reads one of them. Load them explicitly —
+     * Episciences_VolumesManager::loadSettingsForVolumes() does it for a whole list
+     * in one query — rather than relying on a side effect here.
+     */
     public function getProceedingInfo(): array
     {
-        $this->loadSettings();
         return [
             self::VOLUME_IS_PROCEEDING => $this->getSetting(self::VOLUME_IS_PROCEEDING),
             self::VOLUME_CONFERENCE_NAME => $this->getSetting(self::VOLUME_CONFERENCE_NAME),

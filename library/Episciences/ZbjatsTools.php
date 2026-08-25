@@ -67,7 +67,7 @@ class Episciences_ZbjatsTools
                     $refsInfo[] = self::cslToJats($doiInfo);
                 }
             } elseif (array_key_exists('csl', $refBib) && !isset($refBib['doi'])) {
-                $csl = json_decode($refBib['csl'], true, 512, JSON_THROW_ON_ERROR)['csl'];
+                $csl = $refBib['csl']['csl'] ?? $refBib['csl'];
                 $csl['published'] = $csl['issued'];
                 unset($csl['issued']);
                 $removeLayer = json_encode($csl, JSON_THROW_ON_ERROR);

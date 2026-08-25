@@ -2758,6 +2758,11 @@ class AdministratepaperController extends PaperDefaultController
 
             $paper->setOtherVolumes($paper_volumes);
             $paper->saveOtherVolumes();
+            // VOLUME_PAPER is a satellite table: refresh PAPERS.DOCUMENT so API consumers,
+            // which read the stored JSON, do not keep serving stale secondary volumes.
+            if (!Episciences_PapersManager::updateJsonDocumentData((int)$docid)) {
+                $errors[] = 'PAPERS.DOCUMENT refresh failed';
+            }
             $oOVolumes = $paper->getOtherVolumes(true);
             $oVolumes = [];
 
@@ -4890,8 +4895,6 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         $vString = "version la plus récente dans l’archive ouverte";
-        $hasHook = $paper->hasHook;
-        $this->view->hasHook = $hasHook;
         $this->view->label = $paper->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID ? ("L'identifiant de la " . $vString) : ('La ' . $vString);
         $this->view->type = 'select';
         $this->view->options = $availableVersions;
@@ -5102,7 +5105,11 @@ class AdministratepaperController extends PaperDefaultController
             return false;
         }
 
-        $hookedVersion = Episciences_Repositories::callHook('hookVersion', ['identifier' => $latestPostedVersion, 'repoId' => $paper->getRepoid()]);
+        $hookedVersion = Episciences_Repositories::callHook('hookVersion', [
+            'identifier' => $latestPostedVersion,
+            'repoId' => $paper->getRepoid(),
+            'context' => ['previousVersion' => $paper->getVersion()],
+        ]);
 
         if (isset($hookedVersion['version']) || $hasDateTime) {
             $paper->setIdentifier($latestPostedVersion); // posted identifier

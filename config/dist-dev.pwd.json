@@ -128,7 +128,8 @@
   },
   "OPENALEX": {
     "MAILTO": "YOUR-MAIL-TO",
-    "APIURL": "https://api.openalex.org/works/"
+    "APIURL": "https://api.openalex.org/works/",
+    "APIKEY": "four random common words"
   },
   "CROSSREF": {
     "MAILTO": "YOUR-MAIL-TO",

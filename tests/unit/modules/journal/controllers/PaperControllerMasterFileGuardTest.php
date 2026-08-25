@@ -23,6 +23,13 @@ use PHPUnit\Framework\TestCase;
  *   - savemasterfileAction() must persist the previous main file's cleared
  *     is_main flag (an earlier version mutated it in memory only, leaving
  *     two files flagged is_main=1 in the database after a single switch).
+ *   - savemasterfileAction() must sync the new main file's URL into the
+ *     PAPERS.DOCUMENT JSON column via Episciences_Paper::updateNestedJsonDocument(),
+ *     using the '$.database.current.mainPdfUrl' path (an earlier version used
+ *     '$.document.database.mainPdfUrl', which did not match the document's
+ *     actual layout — fixed in commit 6f7f1415), and that call must be
+ *     wrapped in a try/catch so a JSON-sync failure cannot abort the response
+ *     after the file's is_main flag has already been persisted.
  *
  * @covers PaperController::getmasterfileformAction
  * @covers PaperController::savemasterfileAction
@@ -194,5 +201,76 @@ final class PaperControllerMasterFileGuardTest extends TestCase
         $method = $this->extractMethod('savemasterfileAction');
 
         self::assertStringContainsString("\$result['targetId'] = \$targetFile->getId();", $method);
+    }
+
+    public function testSaveFormSyncsTheMainPdfUrlIntoTheJsonDocumentColumn(): void
+    {
+        $method = $this->extractMethod('savemasterfileAction');
+
+        self::assertStringContainsString(
+            "\$paper->updateNestedJsonDocument('\$.database.current.mainPdfUrl', \$paper->getMainPaperUrl());",
+            $method,
+            'The new main file URL must be synced into the DOCUMENT JSON column at the correct path.'
+        );
+    }
+
+    public function testSaveFormJsonDocumentSyncRunsAfterTheFileFlagIsPersisted(): void
+    {
+        // Regression guard: the JSON sync must happen after the relational
+        // is_main flag has already been saved, so a JSON-sync failure never
+        // prevents the file switch itself from being persisted.
+        $method = $this->extractMethod('savemasterfileAction');
+
+        $targetSavePos = strpos($method, '$targetFile->save()');
+        $jsonSyncPos = strpos($method, 'updateNestedJsonDocument(');
+
+        self::assertNotFalse($targetSavePos);
+        self::assertNotFalse($jsonSyncPos);
+        self::assertLessThan($jsonSyncPos, $targetSavePos, 'The main file must be saved before the JSON document is synced.');
+    }
+
+    public function testSaveFormJsonDocumentSyncIsWrappedInATryCatch(): void
+    {
+        // Regression guard: a JSON-encoding or DB error inside
+        // updateNestedJsonDocument() must not crash the whole action —
+        // it is only a secondary sync of the already-persisted file switch.
+        $method = $this->extractMethod('savemasterfileAction');
+
+        $jsonSyncPos = strpos($method, 'updateNestedJsonDocument(');
+        self::assertNotFalse($jsonSyncPos);
+
+        // Search for the try/catch/trigger_error guarding the JSON sync
+        // specifically — savemasterfileAction() has an earlier, unrelated
+        // try/catch around loading the paper, whose trigger_error() call
+        // would otherwise match a plain strpos() first.
+        $tryPos = strrpos(substr($method, 0, $jsonSyncPos), 'try {');
+        self::assertNotFalse($tryPos, 'updateNestedJsonDocument() must be preceded by a try block.');
+
+        $catchPos = strpos($method, 'catch (Exception $e)', $jsonSyncPos);
+        self::assertNotFalse($catchPos);
+
+        $triggerErrorPos = strpos($method, 'trigger_error($e->getMessage()', $catchPos);
+        self::assertNotFalse($triggerErrorPos);
+        self::assertLessThan($jsonSyncPos, $tryPos, 'updateNestedJsonDocument() must run inside the try block.');
+        self::assertLessThan($catchPos, $jsonSyncPos, 'The catch block must follow the updateNestedJsonDocument() call.');
+        self::assertLessThan($triggerErrorPos, $catchPos, 'A caught exception must not be silently swallowed.');
+    }
+
+    public function testSaveFormResultDefaultsIsJsonDocumentUpdatedToFalseBeforeTheSyncAttempt(): void
+    {
+        // Regression guard: the flag must start false so that if the sync
+        // throws before assigning the real outcome, the response still
+        // reports an accurate (unsynced) state rather than an undefined key.
+        $method = $this->extractMethod('savemasterfileAction');
+
+        $defaultPos = strpos($method, "\$result['isJsonDocumentUpdated'] = false;");
+        $jsonSyncPos = strpos($method, 'updateNestedJsonDocument(');
+        $assignPos = strpos($method, "\$result['isJsonDocumentUpdated'] = \$isUpdated;");
+
+        self::assertNotFalse($defaultPos, "\$result['isJsonDocumentUpdated'] must default to false.");
+        self::assertNotFalse($jsonSyncPos);
+        self::assertNotFalse($assignPos);
+        self::assertLessThan($jsonSyncPos, $defaultPos, 'The default false value must be set before attempting the sync.');
+        self::assertLessThan($assignPos, $jsonSyncPos, 'The real outcome must be assigned after the sync call.');
     }
 }

@@ -9,6 +9,7 @@ defineSimpleConstants();
 defineSQLTableConstants();
 defineApplicationConstants();
 defineJournalConstants();
+defineVendorCssLibraries();
 defineVendorJsLibraries();
 
 

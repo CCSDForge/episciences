@@ -293,6 +293,27 @@ function defineVendorJsLibraries(): void
 }
 
 /**
+ * Constants to include vendor CSS.
+ *
+ * Only for the portal module's layout (application/modules/common/views/layout/portal.phtml),
+ * which still loads Bootstrap and Font Awesome from cdnjs — the journal module self-hosts its
+ * vendor CSS/JS via webpack instead (see defineVendorJsLibraries() above and webpack.config.js).
+ */
+function defineVendorCssLibraries(): void
+{
+    $cssLibraries = [
+        'VENDOR_BOOTSTRAP' => 'https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css',
+        'VENDOR_FONT_AWESOME' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/fontawesome.min.css',
+        'VENDOR_FONT_AWESOME_BRAND' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/brands.min.css',
+        'VENDOR_FONT_AWESOME_SOLID' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/solid.min.css',
+    ];
+
+    foreach ($cssLibraries as $name => $url) {
+        safeDef($name, $url);
+    }
+}
+
+/**
  * Never called
  * Prevent warning from code analyzers for undefined constants
  * @see config pwd.json
@@ -328,6 +349,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         // External APIs
         define('OPENALEX_MAILTO', '');
         define('OPENALEX_APIURL', '');
+        define('OPENALEX_APIKEY', '');
         define('CROSSREF_MAILTO', '');
         define('CROSSREF_APIURL', '');
         define('CROSSREF_PLUS_API_TOKEN', '');
@@ -505,5 +527,14 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('VENDOR_MATHJAX', '');
         define('VENDOR_MATHJAX_FONTS_PATH', '');
         define('VENDOR_TINYMCE', '');
+
+        // ========================================
+        // Vendor CSS Libraries
+        // From defineVendorCssLibraries()
+        // ========================================
+        define('VENDOR_BOOTSTRAP', '');
+        define('VENDOR_FONT_AWESOME', '');
+        define('VENDOR_FONT_AWESOME_BRAND', '');
+        define('VENDOR_FONT_AWESOME_SOLID', '');
     }
 }

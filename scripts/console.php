@@ -16,6 +16,7 @@ require_once __DIR__ . '/GetZbReviewsCommand.php';
 require_once __DIR__ . '/GenerateSitemapCommand.php';
 require_once __DIR__ . '/MergePdfVolCommand.php';
 require_once __DIR__ . '/CreateDoajVolumeExportsCommand.php';
+require_once __DIR__ . '/CheckDoajJournalsCommand.php';
 require_once __DIR__ . '/ZbjatsZipperCommand.php';
 require_once __DIR__ . '/ImportSectionsCommand.php';
 require_once __DIR__ . '/ImportVolumesCommand.php';
@@ -27,6 +28,7 @@ require_once __DIR__ . '/ImportApacheLogsCommand.php';
 require_once __DIR__ . '/UpdateGeoIpCommand.php';
 require_once __DIR__ . '/GenerateDownloadKpiCommand.php';
 require_once __DIR__ . '/UpdatePapersDocumentCommand.php';
+require_once __DIR__ . '/CleanHalRecordDescriptionsCommand.php';
 require_once __DIR__ . '/UpdateTranslationsCommand.php';
 require_once __DIR__ . '/GetDoiCommand.php';
 require_once __DIR__ . '/NormalizeUserAffiliationsCommand.php';
@@ -59,6 +61,7 @@ $application->add(new MergePdfVolCommand());
 
 // DOAJ commands
 $application->add(new CreateDoajVolumeExportsCommand());
+$application->add(new CheckDoajJournalsCommand());
 
 // zbJATS commands
 $application->add(new ZbjatsZipperCommand());
@@ -86,6 +89,7 @@ $application->add(new UpdateGeoIpCommand());
 
 // Papers commands
 $application->add(new UpdatePapersDocumentCommand());
+$application->add(new CleanHalRecordDescriptionsCommand());
 
 // Translation commands
 $application->add(new UpdateTranslationsCommand());

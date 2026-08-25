@@ -833,4 +833,159 @@ XML;
 
         self::assertSame([], $authors);
     }
+
+    // =========================================================================
+    // removeDcDescriptionByText()
+    // =========================================================================
+
+    private function dcRecord(string ...$descriptions): string
+    {
+        $nodes = '';
+        foreach ($descriptions as $description) {
+            $nodes .= sprintf("\n    <dc:description>%s</dc:description>", $description);
+        }
+
+        return sprintf(
+            '<oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/">%s' . "\n" . '</oai_dc:dc>',
+            $nodes
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function dcDescriptionsOf(string $record): array
+    {
+        $dom = new \DOMDocument();
+        self::assertTrue($dom->loadXML($record));
+
+        $texts = [];
+        foreach ($dom->getElementsByTagNameNS('http://purl.org/dc/elements/1.1/', 'description') as $node) {
+            $texts[] = $node->textContent;
+        }
+
+        return $texts;
+    }
+
+    public function testRemoveDcDescriptionByTextRemovesTheMatchingNode(): void
+    {
+        $record = $this->dcRecord('Boilerplate', 'A real abstract.');
+
+        $cleaned = Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate']);
+
+        self::assertSame(['A real abstract.'], $this->dcDescriptionsOf($cleaned));
+    }
+
+    public function testRemoveDcDescriptionByTextMatchesSeveralTexts(): void
+    {
+        $record = $this->dcRecord('First marker', 'A real abstract.', 'Second marker');
+
+        $cleaned = Episciences_Repositories_Common::removeDcDescriptionByText(
+            $record,
+            ['First marker', 'Second marker']
+        );
+
+        self::assertSame(['A real abstract.'], $this->dcDescriptionsOf($cleaned));
+    }
+
+    public function testRemoveDcDescriptionByTextIgnoresCaseAndCollapsesWhitespace(): void
+    {
+        $record = $this->dcRecord("  BOILER\n  plate ", 'A real abstract.');
+
+        $cleaned = Episciences_Repositories_Common::removeDcDescriptionByText($record, ['boiler plate']);
+
+        self::assertSame(['A real abstract.'], $this->dcDescriptionsOf($cleaned));
+    }
+
+    public function testRemoveDcDescriptionByTextRequiresAFullMatch(): void
+    {
+        $record = $this->dcRecord('Boilerplate and then some real content.');
+
+        self::assertSame(
+            $record,
+            Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate'])
+        );
+    }
+
+    public function testRemoveDcDescriptionByTextReturnsRecordUnchangedWhenNothingMatches(): void
+    {
+        $record = $this->dcRecord('A real abstract.');
+
+        self::assertSame(
+            $record,
+            Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate'])
+        );
+    }
+
+    public function testRemoveDcDescriptionByTextReturnsRecordUnchangedOnEmptyNeedleList(): void
+    {
+        $record = $this->dcRecord('Boilerplate');
+
+        self::assertSame(
+            $record,
+            Episciences_Repositories_Common::removeDcDescriptionByText($record, [])
+        );
+    }
+
+    /**
+     * A needle made only of whitespace would otherwise normalize to '' and match every
+     * empty <dc:description>, silently deleting nodes the caller never named.
+     */
+    public function testRemoveDcDescriptionByTextIgnoresBlankNeedles(): void
+    {
+        $record = $this->dcRecord('', 'A real abstract.');
+
+        self::assertSame(
+            $record,
+            Episciences_Repositories_Common::removeDcDescriptionByText($record, ['   '])
+        );
+    }
+
+    public function testRemoveDcDescriptionByTextHandlesEmptyRecord(): void
+    {
+        self::assertSame('', Episciences_Repositories_Common::removeDcDescriptionByText('', ['Boilerplate']));
+    }
+
+    public function testRemoveDcDescriptionByTextHandlesMalformedXml(): void
+    {
+        $record = '<oai_dc:dc><dc:description>Boilerplate</dc:description>';
+
+        self::assertSame(
+            $record,
+            Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate'])
+        );
+    }
+
+    /**
+     * Episciences_PapersManager::cleanRecord() strips the default xmlns before the hooks
+     * run, so a record can reach this helper with no namespace at all.
+     */
+    public function testRemoveDcDescriptionByTextMatchesNodesWithoutNamespace(): void
+    {
+        $record = "<dc>\n    <description>Boilerplate</description>\n    <description>A real abstract.</description>\n</dc>";
+
+        $cleaned = Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate']);
+
+        self::assertStringNotContainsString('Boilerplate', $cleaned);
+        self::assertStringContainsString('A real abstract.', $cleaned);
+    }
+
+    public function testRemoveDcDescriptionByTextLeavesOtherNamespacesAlone(): void
+    {
+        $record = '<root xmlns:datacite="http://datacite.org/schema/kernel-4">'
+            . '<datacite:description>Boilerplate</datacite:description></root>';
+
+        self::assertSame(
+            $record,
+            Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate'])
+        );
+    }
+
+    public function testRemoveDcDescriptionByTextDoesNotLeaveABlankLineBehind(): void
+    {
+        $record  = $this->dcRecord('Boilerplate', 'A real abstract.');
+        $cleaned = Episciences_Repositories_Common::removeDcDescriptionByText($record, ['Boilerplate']);
+
+        self::assertStringNotContainsString("\n\n", $cleaned);
+    }
 }

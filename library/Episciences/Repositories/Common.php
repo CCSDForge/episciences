@@ -201,6 +201,105 @@ class Episciences_Repositories_Common
 
     }
 
+    /**
+     * Remove every <dc:description> node whose text content exactly matches one of
+     * $exactTexts, comparing on whitespace normalized by
+     * Episciences_Tools::spaceCleaner() and ignoring case.
+     *
+     * Some repositories push non-descriptive boilerplate through dc:description
+     * (HAL's audience marker, for instance). Dropping those nodes from the raw XML
+     * before it reaches PAPERS.RECORD keeps the two independent render paths -
+     * Paper::getMetadata() on one side, Paper::getXslt() feeding public/xsl/*.xsl on
+     * the other - consistent without a filter in each consumer.
+     *
+     * Matching is content-based, never positional: only text we explicitly name is
+     * ever removed, so a real (possibly multilingual) abstract cannot be lost.
+     *
+     * The record is returned untouched when it cannot be parsed or when nothing
+     * matches, so callers never have to guard against a corrupted result.
+     *
+     * @param string $record raw OAI-PMH XML
+     * @param string[] $exactTexts description texts to drop
+     */
+    public static function removeDcDescriptionByText(string $record, array $exactTexts): string
+    {
+        if (trim($record) === '' || $exactTexts === []) {
+            return $record;
+        }
+
+        $needles = [];
+        foreach ($exactTexts as $exactText) {
+            $normalized = (string)Episciences_Tools::spaceCleaner($exactText);
+            if ($normalized !== '') {
+                $needles[] = mb_strtolower($normalized);
+            }
+        }
+
+        if ($needles === []) {
+            return $record;
+        }
+
+        $dom = new DOMDocument();
+
+        try {
+            set_error_handler('\Ccsd\Xml\Exception::HandleXmlError');
+            $loaded = $dom->loadXML($record);
+        } catch (\Ccsd\Xml\Exception $e) {
+            $loaded = false;
+        } finally {
+            restore_error_handler();
+        }
+
+        if (!$loaded || !$dom->documentElement) {
+            return $record;
+        }
+
+        // Match on namespace URI rather than on a registered prefix: callers hand over
+        // records at different stages of cleaning, some of which have already had the
+        // default xmlns stripped (@see Episciences_PapersManager::cleanRecord()). An
+        // empty namespace URI is therefore accepted too, while a same-named node from
+        // another vocabulary (datacite:description) stays out of reach.
+        $query = "//*[local-name()='description' and (namespace-uri()='http://purl.org/dc/elements/1.1/' or namespace-uri()='')]";
+
+        $descriptions = (new DOMXPath($dom))->query($query);
+
+        if ($descriptions === false || $descriptions->length === 0) {
+            return $record;
+        }
+
+        $removed = 0;
+
+        foreach ($descriptions as $description) {
+            $text = mb_strtolower((string)Episciences_Tools::spaceCleaner($description->textContent));
+
+            if (!in_array($text, $needles, true)) {
+                continue;
+            }
+
+            // Drop the indentation left over from the removed node so the stored XML
+            // keeps its original formatting instead of gaining a blank line.
+            $previous = $description->previousSibling;
+            if ($previous instanceof DOMText && trim($previous->nodeValue) === '') {
+                $previous->parentNode?->removeChild($previous);
+            }
+
+            $description->parentNode?->removeChild($description);
+            $removed++;
+        }
+
+        if ($removed === 0) {
+            return $record;
+        }
+
+        // Preserve the prolog only when the input had one: callers store the serialized
+        // result straight back into RECORD, next to records nobody rewrote.
+        $cleaned = str_starts_with(ltrim($record), '<?xml')
+            ? $dom->saveXML()
+            : $dom->saveXML($dom->documentElement);
+
+        return $cleaned !== false ? $cleaned : $record;
+    }
+
     public static function formatReferences(array $reference = []): array
     {
         if (empty($reference)) {

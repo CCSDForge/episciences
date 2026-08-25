@@ -480,12 +480,13 @@ class Episciences_VolumesManager
     /**
      * @param int $vid
      * @param array $fields
+     * @param int|null $rvid Journal to scope the lookup to; falls back to the global RVID constant when null
      * @return Zend_Db_Select
      */
-    private static function isPapersInVolumeQuery(int $vid, array $fields = ['COUNT(st.DOCID)']): \Zend_Db_Select
+    private static function isPapersInVolumeQuery(int $vid, array $fields = ['COUNT(st.DOCID)'], ?int $rvid = null): \Zend_Db_Select
     {
         //Prise en compte des volumes secondaires git #169
-        return Episciences_PapersManager::getVolumesQuery($fields)
+        return Episciences_PapersManager::getVolumesQuery($fields, $rvid)
             ->where("st.VID = ? OR vpt.VID = ?", $vid);
     }
 
@@ -624,7 +625,9 @@ class Episciences_VolumesManager
             'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Numéro du volume'),
             'value' => ($volume !== null) ? $volume->getVol_num() : "",
             //'required' => true,
+            'maxlength' => self::MAX_STRING_LENGTH_VOL_NUM,
             'style' => 'width:300px;position: static;',
+            'description' => sprintf(Zend_Registry::get('Zend_Translate')->translate('%u caractères maximum'), self::MAX_STRING_LENGTH_VOL_NUM),
             'validators' => [
                 [new Zend_Validate_StringLength(['max' => self::MAX_STRING_LENGTH_VOL_NUM])],
             ],
@@ -638,6 +641,11 @@ class Episciences_VolumesManager
             'attribs' => [
                 'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Exemple : 2024 ou 2024-2025')
             ],
+            'description' => sprintf(
+                Zend_Registry::get('Zend_Translate')->translate('Format : AAAA ou AAAA-AAAA, entre %s et %s'),
+                Episciences_Form_Validate_VolumeYear::MIN_YEAR,
+                (int)date('Y') + 5
+            ),
             'validators' => [
                 [
                     'validator' => 'VolumeYear',

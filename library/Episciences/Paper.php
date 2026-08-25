@@ -372,6 +372,20 @@ class Episciences_Paper
         self::STATUS_TMP_VERSION_ACCEPTED
     ];
     public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'openaire', 'crossref', 'doaj', 'zbjats', 'json'];
+    /**
+     * True as soon as the paper's repository has a hooks class, whatever that
+     * class implements. It is NOT a capability, and reading it as one is what
+     * broke the article download for arXiv and HAL: ask hasFilesEnrichment(),
+     * hasConceptIdentifier() or Episciences_Repositories::handlesOwnEnrichment()
+     * what the repository can actually do.
+     *
+     * No caller is left in the codebase; kept only because it is public.
+     *
+     * @deprecated Use the capability methods above, or
+     *             Episciences_Repositories::hasHook($paper->getRepoid()) when the
+     *             mere existence of a hooks class really is the question.
+     * @var bool|null
+     */
     public $hasHook;
     protected array $_type = [self::TITLE_TYPE => self::DEFAULT_TYPE_TITLE, self::TYPE_TYPE => self::DEFAULT_TYPE_TITLE];
     /**
@@ -411,6 +425,8 @@ class Episciences_Paper
     private $_publication_date;
     private $_settings;
     private $_otherVolumes;
+    private ?Episciences_Volume $_primaryVolume = null;
+    private bool $_primaryVolumeLoaded = false;
     private $_withxsl = true;
     /**
      * @var array
@@ -772,7 +788,7 @@ class Episciences_Paper
             $result['latestVersionId'] = $this->_latestVersionId;
         }
 
-        if ($this->hasHook && isset($this->_concept_identifier)) {
+        if ($this->hasConceptIdentifier() && isset($this->_concept_identifier)) {
             $result['concept_identifier'] = $this->getConcept_identifier();
         }
 
@@ -833,7 +849,14 @@ class Episciences_Paper
      */
     public function setVid($id = 0): self
     {
-        $this->_vId = (int)$id;
+        $newVid = (int)$id;
+
+        if ($newVid !== $this->_vId) {
+            // the memoised volume belongs to the previous VID
+            $this->resetPrimaryVolume();
+        }
+
+        $this->_vId = $newVid;
         return $this;
     }
 
@@ -1233,7 +1256,7 @@ class Episciences_Paper
 
                     //insert licence when save paper
                     try {
-                        $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), (int)$this->getVersion());
+                        $callArrayResp = Episciences_Paper_LicenceManager::getApiResponseByRepoId($this->getRepoid(), $this->getIdentifier(), $this->getVersion());
                         Episciences_Paper_LicenceManager::insertLicenceFromApiByRepoId($this->getRepoid(), $callArrayResp, $this->getDocid(), $this->getIdentifier());
 
                     } catch (\GuzzleHttp\Exception\GuzzleException|JsonException $e) {
@@ -1355,7 +1378,7 @@ class Episciences_Paper
         }
 
         if ($this->getVid()) {
-            $oVolume = Episciences_VolumesManager::find($this->getVid());
+            $oVolume = $this->getPrimaryVolume();
             if ($oVolume) {
                 $sVolume = [
                     'id' => $oVolume->getVid() ?: null,
@@ -1388,11 +1411,6 @@ class Episciences_Paper
                     ]
                 ];
             }
-        }
-        $graphical_abstract_file = '';
-        $current = $this->getDocument()['database']['current'] ?? null;
-        if (isset($current['graphical_abstract_file'])) {
-            $graphical_abstract_file = $current['graphical_abstract_file'];
         }
         $extraData = [
 
@@ -1429,6 +1447,7 @@ class Episciences_Paper
                         'publication_date' => $this->getPublication_date()
                     ],
                     'volume' => $sVolume,
+                    'secondary_volumes' => $this->getSecondaryVolumesToJson(),
                     'position_in_volume' => $this->getPosition(),
                     'section' => $sSection,
                     'journal' => [
@@ -1441,7 +1460,7 @@ class Episciences_Paper
                     'repository' => Episciences_Repositories::getRepositories()[$this->getRepoid()] ?? null,
                     'cited_by' => $citedBy,
                     'classifications' => $classifications,
-                    'graphical_abstract_file' => $graphical_abstract_file,
+                    'graphical_abstract_file' => $this->getGraphicalAbstractFileToJson(),
                     'metrics' => Episciences_Paper_Visits::getPaperMetricsByPaperId($this->getPaperid()),
 
                 ],
@@ -1451,9 +1470,6 @@ class Episciences_Paper
             ]
 
         ];
-        if ($graphical_abstract_file === '') {
-            unset($extraData[Episciences_Paper_XmlExportManager::PUBLIC_KEY][Episciences_Paper_XmlExportManager::DATABASE_KEY]['current']['graphical_abstract_file']);
-        }
 // Define the keys for better readability
         $keyBody = Episciences_Paper_XmlExportManager::BODY_KEY;
         $keyJournal = Episciences_Paper_XmlExportManager::JOURNAL_KEY;
@@ -1496,6 +1512,136 @@ class Episciences_Paper
         $identifier = str_replace('"', '\"', $this->getIdentifier());
         $xmlToArray = null;
         return str_replace(array('"#"', '%%ID', '%%VERSION'), array('"value"', $identifier, $this->getVersion()), $result);
+    }
+
+    /**
+     * Build the public JSON representation of the paper's secondary volumes,
+     * exposed under database.current.secondary_volumes.
+     *
+     * Returns null when the paper has no secondary volume, to stay consistent with
+     * the other empty keys of database.current (volume, section, cited_by, ...).
+     *
+     * @return array<int, array<string, mixed>>|null
+     */
+    private function getSecondaryVolumesToJson(): ?array
+    {
+        $primaryVid = (int)$this->getVid();
+        $vids = [];
+
+        foreach ($this->getOtherVolumes() as $volumePaper) {
+            $vid = (int)$volumePaper->getVid();
+            // a paper's primary volume is never one of its secondary volumes
+            if ($vid > 0 && $vid !== $primaryVid) {
+                $vids[$vid] = $vid;
+            }
+        }
+
+        if ($vids === []) {
+            return null;
+        }
+
+        $secondaryVolumes = [];
+
+        foreach ($this->resolveSecondaryVolumes($vids) as $oVolume) {
+            $secondaryVolumes[] = self::formatSecondaryVolumeToJson($oVolume);
+        }
+
+        return $secondaryVolumes !== [] ? $secondaryVolumes : null;
+    }
+
+    /**
+     * Load the volumes behind a list of VIDs, with their settings.
+     *
+     * Two queries in total, instead of the three per volume that
+     * Episciences_VolumesManager::find() would cost: toJson() runs on every Paper::save().
+     *
+     * @param int[] $vids
+     * @return array<int, Episciences_Volume> keyed by VID, ordered by volume position
+     */
+    protected function resolveSecondaryVolumes(array $vids): array
+    {
+        $volumes = Episciences_VolumesManager::getList(['where' => 'VID IN (' . implode(',', $vids) . ')']);
+        Episciences_VolumesManager::loadSettingsForVolumes($volumes);
+
+        return $volumes;
+    }
+
+    /**
+     * Public volume metadata exposed under database.current.secondary_volumes.
+     * Private settings (access code, ...) are deliberately left out.
+     *
+     * @return array<string, mixed>
+     */
+    private static function formatSecondaryVolumeToJson(Episciences_Volume $oVolume): array
+    {
+        return [
+            'id' => $oVolume->getVid() ?: null,
+            'position' => $oVolume->getPosition(),
+            'number' => $oVolume->getVol_num(),
+            'year' => $oVolume->getVol_year(),
+            'has_proceedings' => $oVolume->isProceeding() === 1,
+            'titles' => $oVolume->getTitles(),
+            'descriptions' => $oVolume->getDescriptions(),
+            'bibliographical_references' => $oVolume->getBib_reference(),
+        ];
+    }
+
+    /**
+     * The paper's primary volume, loaded at most once per Paper instance.
+     *
+     * Exporting a paper reads the primary volume from several places in the same
+     * pass — Paper::toJson(), Paper::getXml() and XmlExportManager::xmlExport() —
+     * and Episciences_VolumesManager::find() costs three queries every time
+     * (volume, settings, metadata). Memoising on the instance keeps the lifetime
+     * tied to the paper rather than to the whole request, so a volume edited
+     * elsewhere in the same request cannot be served from a stale cache.
+     */
+    public function getPrimaryVolume(): ?Episciences_Volume
+    {
+        if ($this->_primaryVolumeLoaded) {
+            return $this->_primaryVolume;
+        }
+
+        $this->_primaryVolumeLoaded = true;
+
+        $vid = (int)$this->getVid();
+
+        if ($vid > 0) {
+            $oVolume = Episciences_VolumesManager::find($vid);
+            $this->_primaryVolume = $oVolume instanceof Episciences_Volume ? $oVolume : null;
+        }
+
+        return $this->_primaryVolume;
+    }
+
+    /**
+     * Drops the memoised primary volume, so the next read reloads it.
+     */
+    public function resetPrimaryVolume(): self
+    {
+        $this->_primaryVolume = null;
+        $this->_primaryVolumeLoaded = false;
+
+        return $this;
+    }
+
+    /**
+     * Filename of the paper's graphical abstract, carried over from the stored JSON.
+     *
+     * The file is written straight into PAPERS.DOCUMENT by
+     * AdministrategraphabstractController (JSON_SET on upload, JSON_REMOVE on delete),
+     * so toJson() has to read the previous value back rather than rebuild it.
+     *
+     * Returns null, not an empty string, when the paper has no graphical abstract:
+     * consistent with the other empty keys of database.current (volume, section,
+     * cited_by, previous_versions).
+     */
+    private function getGraphicalAbstractFileToJson(): ?string
+    {
+        $current = $this->getDocument()[Episciences_Paper_XmlExportManager::DATABASE_KEY]['current'] ?? null;
+        $file = trim((string)($current['graphical_abstract_file'] ?? ''));
+
+        return $file !== '' ? $file : null;
     }
 
     private function processTmpVersion(Episciences_Paper $paper): void
@@ -1749,10 +1895,10 @@ class Episciences_Paper
     {
         if (
             $conceptIdentifier &&
-            !$this->hasHook &&
-            !$this->isTmp() // repoId = 0 : hasHook returns false
+            !$this->hasConceptIdentifier() &&
+            !$this->isTmp() // repoId = 0 : no repository, hence no concept identifier
         ) {
-            throw new \InvalidArgumentException('Concept identifier should be applied exclusively to submissions coming from a repository with a hook');
+            throw new \InvalidArgumentException('Concept identifier should be applied exclusively to submissions coming from a repository exposing concept identifiers');
         }
 
         $this->_concept_identifier = $conceptIdentifier;
@@ -1986,6 +2132,14 @@ class Episciences_Paper
             $metadata['description'] = 'Merci de contacter le support pour vérifier le document et ses métadonnées';
         }
 
+        $hookResult = Episciences_Repositories::callHook('hookFilterMetadata', [
+            'repoId'   => $this->getRepoid(),
+            'metadata' => $metadata,
+            'xml'      => $xml
+        ]);
+        if (isset($hookResult['metadata']) && is_array($hookResult['metadata'])) {
+            $metadata = $hookResult['metadata'];
+        }
 
         $this->_metadata = $metadata;
         return $this;
@@ -2050,7 +2204,7 @@ class Episciences_Paper
 
         $processedFile = [];
 
-        if ($this->hasHook) {
+        if ($this->hasFilesEnrichment()) {
             $oCurrentFiles = $this->getFiles();
             /** @var Episciences_Paper_File $oCFile */
             foreach ($oCurrentFiles as $oCFile) {
@@ -3234,6 +3388,11 @@ class Episciences_Paper
 
         // Récupération des infos de la revue
         $oReview = Episciences_ReviewsManager::find($this->getRvid());
+
+        if (!$oReview instanceof Episciences_Review) {
+            return false;
+        }
+
         $oReview->loadSettings();
 
         // Création des éléments et ajout au node episciences
@@ -3259,9 +3418,12 @@ class Episciences_Paper
         $node->appendChild($dom->createElement('esURL', SERVER_PROTOCOL . '://' . RVCODE . '.' . DOMAIN . '/' . $this->getDocid()));
         $node->appendChild($dom->createElement('docURL', $this->getDocUrl()));
         $mainUrl = $this->getMainPaperUrl();
-        // ----  @sse [#644]: https://github.com/CCSDForge/episciences/issues/644
-        $node->appendChild($dom->createElement('notHasHook', !empty($mainUrl)));
-        $node->appendChild($dom->createElement('paperURL', $mainUrl));
+        // ----  @see [#644]: https://github.com/CCSDForge/episciences/issues/644
+        // Named after what it actually holds: whether a downloadable main file URL
+        // could be resolved. It used to be called notHasHook, which invited readers
+        // to test the repository's hooks instead of the resolved URL.
+        $node->appendChild($dom->createElement('hasMainPaperUrl', !empty($mainUrl)));
+        $node->appendChild($dom->createElement('paperURL', (string)$mainUrl));
         // ----- end @see [#644]
         $node->appendChild($dom->createElement('volume', $this->getVid()));
         $node->appendChild($dom->createElement('section', $this->getSid()));
@@ -3314,19 +3476,18 @@ class Episciences_Paper
 
         $node->appendChild($dom->createElement('isOwner', $this->isOwner()));
 
+        $oVolume = null;
+
         // fetch volume data
         if ($this->getVid()) {
-            $oVolume = Episciences_VolumesManager::find($this->getVid());
+            $oVolume = $this->getPrimaryVolume();
             if ($oVolume instanceof Episciences_Volume) {
                 $node->appendChild($dom->createElement('volumeName', $oVolume->getNameKey()));
-                $oVolume->loadSettings();
             }
         }
 
         // fetch secondary volume data if the setting is enabled in the review
-        $review = Episciences_ReviewsManager::find($this->getRvid());
-
-        $displaySecondaryVolumes = (int)$review->getSetting(
+        $displaySecondaryVolumes = (int)$oReview->getSetting(
                 Episciences_Review::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE
             ) === 1;
 
@@ -3405,7 +3566,8 @@ class Episciences_Paper
         // et qu'on est rédacteur de l'article
         if ($this->getDocid() &&
             $oReview->getSetting(Episciences_Review::SETTING_EDITORS_CAN_REASSIGN_ARTICLES) &&
-            isset($oVolume) && $oVolume instanceof Episciences_Volume && $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
+            $oVolume instanceof Episciences_Volume &&
+            $oVolume->getSetting(Episciences_Volume::SETTING_SPECIAL_ISSUE) &&
             array_key_exists(Episciences_Auth::getUid(), $this->getEditors(true, true))
         ) {
 
@@ -4112,7 +4274,7 @@ class Episciences_Paper
             }
 
             if (
-                !$this->hasHook ||
+                !$this->hasConceptIdentifier() ||
                 $this->getConcept_identifier() === null
             ) {
                 $identifierChanged = $this->getIdentifier() !== $paper->getIdentifier();
@@ -4616,7 +4778,7 @@ class Episciences_Paper
      */
     public function getFileByName(string $fileName): ?Episciences_Paper_File
     {
-        if (!$this->hasHook) {
+        if (!$this->hasFilesEnrichment()) {
             return null;
         }
 
@@ -4911,7 +5073,7 @@ class Episciences_Paper
 
     public function isOwner(): bool
     {
-        return Episciences_Auth::getUid() === $this->getUid() || Episciences_Auth::getOriginalIdentity() === $this->getUid();
+        return Episciences_Auth::getUid() === $this->getUid() || Episciences_Auth::getOriginalIdentity()?->getUid() === $this->getUid();
     }
 
     public function isAlreadyAcceptedWaitingForAuthorFinalVersion(): bool
@@ -5196,7 +5358,8 @@ class Episciences_Paper
         $query = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(`DOCUMENT`, " . $db->quote(self::JSON_PATH_ABS_FILE) . ")) FROM " . T_PAPERS . " WHERE DOCID = ?", [$docId]);
         try {
             foreach ($query->fetch() as $val) {
-                if (!is_null($val)) {
+                // JSON_UNQUOTE(JSON_EXTRACT()) returns the string "null" (not SQL NULL) when the JSON value itself is null
+                if (!is_null($val) && $val !== 'null') {
                     return trim($val);
                 }
             }
@@ -5296,6 +5459,12 @@ class Episciences_Paper
 
     /**
      * Get an array of abstracts
+     *
+     * Repository boilerplate such as HAL's "International audience" marker is no
+     * longer filtered here: it is stripped from the raw XML at ingestion
+     * (@see Episciences_Repositories_HAL_Hooks::hookCleanXMLRecordInput()), so it
+     * never reaches PAPERS.RECORD in the first place.
+     *
      * @return array
      */
     public function getAbstractsCleaned()
@@ -5305,15 +5474,9 @@ class Episciences_Paper
             if (is_array($abstract)) {
                 $abstractLang = array_key_first($abstract);
                 $abstractText = array_shift($abstract);
-                $abstractText = $this->cleanAbstract($abstractText);
-                if ($abstractText !== 'International audience') {
-                    $abstracts[][$abstractLang] = $abstractText;
-                }
+                $abstracts[][$abstractLang] = $this->cleanAbstract($abstractText);
             } else {
-                $abstract = $this->cleanAbstract($abstract);
-                if ($abstract !== 'International audience') {
-                    $abstracts[$locale] = $abstract;
-                }
+                $abstracts[$locale] = $this->cleanAbstract($abstract);
             }
         }
         return $abstracts;
@@ -5493,6 +5656,27 @@ class Episciences_Paper
     }
 
     /**
+     * Whether this paper's files are mirrored into the PAPER_FILES table, which
+     * only repositories declaring FilesEnrichmentInterface do.
+     *
+     * Never use $this->hasHook for that: it is true as soon as the repository has
+     * a hooks class, whatever that class actually implements.
+     */
+    public function hasFilesEnrichment(): bool
+    {
+        return Episciences_Repositories::hasFilesEnrichment($this->getRepoid());
+    }
+
+    /**
+     * Whether this paper's repository exposes concept identifiers, i.e. a single
+     * stable identifier shared by every version of a record.
+     */
+    public function hasConceptIdentifier(): bool
+    {
+        return Episciences_Repositories::hasConceptIdentifier($this->getRepoid());
+    }
+
+    /**
      * returns the repository url to the main paper's file
      * @return string|null
      */
@@ -5507,7 +5691,7 @@ class Episciences_Paper
             return $this->getDataDescriptorUrl();
         }
 
-        if ($this->hasHook) {
+        if ($this->hasFilesEnrichment()) {
 
             $mainFile = Episciences_Paper_FilesManager::getMainFile($this->getDocid());
 
@@ -5622,7 +5806,7 @@ class Episciences_Paper
     public function isEligibleForMasterFileChoice(): bool
     {
         return
-            $this->hasHook &&
+            $this->hasFilesEnrichment() &&
             !$this->isDataSetOrSoftware() &&
             count($this->getFiles()) > 0 &&
             $this->isAllowedToEditMasterFile();

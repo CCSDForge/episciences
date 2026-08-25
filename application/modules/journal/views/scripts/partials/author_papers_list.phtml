@@ -18,6 +18,9 @@ echo $form;
 <?php
 $this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');
 $this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
+$this->getHelper('webpackAssets')->queueStylesheet('tom-select');
+$this->getHelper('webpackAssets')->queueScript('tom-select');
+$this->jQuery()->addJavascriptFile('/js/common/tomselect-filters.js');
 ?>
 
 
@@ -40,6 +43,11 @@ $this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
 <script type="text/javascript">
     let selfAction = <?php echo "'$action'"; ?>;
     let selfController = <?php echo "'$controller'"; ?>;
+
+    bootTomSelectFilters(
+        ['status', 'ratingStatus', 'vid', 'sid', 'editors', 'reviewers', 'doi', 'repositories'],
+        {plugins: ['checkbox_options', 'dropdown_input', 'remove_button']}
+    );
 </script>
 
 <?php $this->jQuery()->addJavascriptFile('/js/paper/submitted.js'); ?>
