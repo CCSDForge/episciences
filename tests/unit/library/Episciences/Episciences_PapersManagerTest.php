@@ -583,7 +583,13 @@ final class Episciences_PapersManagerTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
-    // applySuggestionFilter() / getPapersWithPendingSuggestionQuery()
+    // getVolumesQuery() / volumesFilter() / applyFilters(): the 'vid' filter must scope
+    // its subquery to the rvid being filtered on, not to the global RVID constant.
+    //
+    // RVID is defined once per PHP process. A long-running CLI process that loops over
+    // several journals (e.g. zbjats:zip) defines it for the first journal only, then every
+    // following journal keeps querying under the first journal's rvid and silently gets
+    // zero results.
     // -----------------------------------------------------------------------
 
     private function newPapersSelect(): \Zend_Db_Select
@@ -591,6 +597,100 @@ final class Episciences_PapersManagerTest extends TestCase
         $db = \Zend_Db_Table_Abstract::getDefaultAdapter();
         return $db->select()->from(['papers' => T_PAPERS], ['DOCID']);
     }
+
+    public function testGetVolumesQueryFallsBackToGlobalRvidConstantWhenNoneGiven(): void
+    {
+        $sql = Episciences_PapersManager::getVolumesQuery()->assemble();
+
+        self::assertStringContainsString('st.RVID = ' . RVID, $sql);
+    }
+
+    public function testGetVolumesQueryUsesTheExplicitRvidOverTheGlobalConstant(): void
+    {
+        $otherRvid = RVID + 41;
+
+        $sql = Episciences_PapersManager::getVolumesQuery(['DOCID'], $otherRvid)->assemble();
+
+        self::assertStringContainsString('st.RVID = ' . $otherRvid, $sql);
+        self::assertStringNotContainsString('st.RVID = ' . RVID . ' ', $sql . ' ');
+    }
+
+    /**
+     * @param array<int, mixed> $args
+     */
+    private function invokePrivateVolumesFilter(array $args): \Zend_Db_Select
+    {
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, 'volumesFilter');
+        $reflection->setAccessible(true);
+
+        /** @var \Zend_Db_Select $result */
+        $result = $reflection->invoke(null, ...$args);
+
+        return $result;
+    }
+
+    public function testVolumesFilterScopesItsSubqueryToTheProvidedRvid(): void
+    {
+        $otherRvid = RVID + 41;
+
+        $sql = $this->invokePrivateVolumesFilter([$this->newPapersSelect(), [5], false, $otherRvid])->assemble();
+
+        self::assertStringContainsString('st.RVID = ' . $otherRvid, $sql);
+        self::assertStringNotContainsString('st.RVID = ' . RVID . ' ', $sql . ' ');
+    }
+
+    public function testVolumesFilterFallsBackToGlobalRvidConstantWhenNoneGiven(): void
+    {
+        $sql = $this->invokePrivateVolumesFilter([$this->newPapersSelect(), [5]])->assemble();
+
+        self::assertStringContainsString('st.RVID = ' . RVID, $sql);
+    }
+
+    /**
+     * Reproduces Episciences_Volume::getPaperListFromVolume(), which filters papers by
+     * ['is' => ['rvid' => ..., 'vid' => [...]]] for one specific journal.
+     */
+    public function testApplyFiltersThreadsTheRvidFilterIntoTheVidSubquery(): void
+    {
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, 'applyFilters');
+        $reflection->setAccessible(true);
+
+        $otherRvid = RVID + 41;
+
+        /** @var \Zend_Db_Select $select */
+        $select = $reflection->invoke(
+            null,
+            $this->newPapersSelect(),
+            ['is' => ['rvid' => $otherRvid, 'vid' => [5]]]
+        );
+
+        $sql = $select->assemble();
+
+        self::assertStringContainsString('RVID = ' . $otherRvid, $sql);
+        self::assertStringContainsString('st.RVID = ' . $otherRvid, $sql, 'The VID subquery must be scoped to the requested rvid, not the global RVID constant');
+        self::assertStringNotContainsString('st.RVID = ' . RVID . ' ', $sql . ' ');
+    }
+
+    public function testApplyFiltersFallsBackToGlobalRvidConstantWhenNoRvidFilterIsGiven(): void
+    {
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, 'applyFilters');
+        $reflection->setAccessible(true);
+
+        /** @var \Zend_Db_Select $select */
+        $select = $reflection->invoke(
+            null,
+            $this->newPapersSelect(),
+            ['is' => ['vid' => [5]]]
+        );
+
+        $sql = $select->assemble();
+
+        self::assertStringContainsString('st.RVID = ' . RVID, $sql);
+    }
+
+    // -----------------------------------------------------------------------
+    // applySuggestionFilter() / getPapersWithPendingSuggestionQuery()
+    // -----------------------------------------------------------------------
 
     /**
      * @param array<int, int|string>|string $values
