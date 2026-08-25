@@ -6,6 +6,7 @@ namespace unit\library\Episciences\paper;
 
 use Episciences_Paper;
 
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -13,15 +14,16 @@ use PHPUnit\Framework\TestCase;
  * The method determines whether the selection of a main file
  * is appropriate based on several criteria:
  * - The type of the submission,
- * - The number of available files and the permissions- The original repository : not all repositories are affected based on
- * the hashook criterion - initialized in "Episciences_Paper::setRepoid" method.
+ * - The number of available files and the permissions,
+ * - The original repository: only those mirroring their files into PAPER_FILES
+ *   are eligible, i.e. those whose hooks class declares FilesEnrichmentInterface.
  *
  * @covers Episciences_Paper::isEligibleForMasterFileChoice
  */
 final class Episciences_Paper_isEligibleForMasterFileChoiceTest extends TestCase
 {
 
-    private Episciences_Paper $paper;
+    private Episciences_Paper&MockObject $paper;
 
     protected function setUp(): void
     {
@@ -30,6 +32,7 @@ final class Episciences_Paper_isEligibleForMasterFileChoiceTest extends TestCase
         $this->paper = $this->createPartialMock(
             Episciences_Paper::class,
             [
+                'hasFilesEnrichment',
                 'isDataSetOrSoftware',
                 'getFiles',
                 'isAllowedToEditMasterFile'
@@ -39,7 +42,7 @@ final class Episciences_Paper_isEligibleForMasterFileChoiceTest extends TestCase
 
     public function testThatWhenAllCriteriaAreMet(): void
     {
-        $this->paper->hasHook = true;
+        $this->paper->method('hasFilesEnrichment')->willReturn(true);
         $this->paper->method('isDataSetOrSoftware')->willReturn(false);
         $this->paper->method('getFiles')->willReturn(['file1.pdf', 'file2.md']);
         $this->paper->method('isAllowedToEditMasterFile')->willReturn(true);
@@ -49,10 +52,10 @@ final class Episciences_Paper_isEligibleForMasterFileChoiceTest extends TestCase
     }
 
 
-    public function testReturnsFalseWhenHasHookIsFalse(): void
+    public function testReturnsFalseWhenRepositoryHasNoFilesEnrichment(): void
     {
 
-        $this->paper->hasHook = false;
+        $this->paper->method('hasFilesEnrichment')->willReturn(false);
 
         //the other methods must NOT be called
         $this->paper->expects(self::never())->method('isDataSetOrSoftware');
@@ -67,7 +70,7 @@ final class Episciences_Paper_isEligibleForMasterFileChoiceTest extends TestCase
 
     public function testReturnsFalseWhenIsDataSetOrSoftwareIsFalse(): void
     {
-        $this->paper->hasHook = true;
+        $this->paper->method('hasFilesEnrichment')->willReturn(true);
         $this->paper->method('isDataSetOrSoftware')->willReturn(true);
 
         // the other methods must NOT be called
@@ -83,7 +86,7 @@ final class Episciences_Paper_isEligibleForMasterFileChoiceTest extends TestCase
 
     public function testReturnsFalseWhenEmptyFiles(): void
     {
-        $this->paper->hasHook = true;
+        $this->paper->method('hasFilesEnrichment')->willReturn(true);
         $this->paper->method('isDataSetOrSoftware')->willReturn(false);
         $this->paper->method('getFiles')->willReturn([]);
 
@@ -96,7 +99,7 @@ final class Episciences_Paper_isEligibleForMasterFileChoiceTest extends TestCase
 
     public function testReturnsFalseWhenNotAllowedToChangeMainFile(): void
     {
-        $this->paper->hasHook = true;
+        $this->paper->method('hasFilesEnrichment')->willReturn(true);
         $this->paper->method('isDataSetOrSoftware')->willReturn(false);
         $this->paper->method('getFiles')->willReturn(['file1.txt', 'file2.txt']);
         $this->paper->method('isAllowedToEditMasterFile')->willReturn(false);

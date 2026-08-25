@@ -339,9 +339,14 @@ php scripts/console.php zbjats:zip [options]
 
 | Option | Description |
 |--------|-------------|
-| `--rvid <id>` | RVID (integer) of the journal to process |
+| `--rvid <id>` | RVID (integer) or comma-separated list of RVIDs to process |
+| `--rvcode <code>` | RV code (string) or comma-separated list of RV codes to process |
+| `--config <path>` | Path to INI file containing journal list (default: `scripts/zbjats/journals.ini`) |
 | `--zip-prefix <prefix>` | Optional prefix for the ZIP filename (e.g. `2024_`) |
 | `--dry-run` | Simulate without downloading files or writing the ZIP |
+| `--remove-cache` | Clear the PDF/XML cache for the processed journal(s) |
+
+When neither `--rvcode` nor `--rvid` is provided, the command automatically processes journals defined in `scripts/zbjats/journals.ini`.
 
 ---
 

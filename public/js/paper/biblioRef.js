@@ -124,6 +124,17 @@ class BiblioRefParser {
                 ? openAccess.source_title
                 : '';
 
+            // Reference order within bibliography (for manual/curated reordering).
+            // A missing/non-numeric referenceOrder is left undefined and sorts last (see citations.sort
+            // below); mirrored in library/Episciences/Api/BiblioRefApiClient.php::parseResponse().
+            let referenceOrder;
+            const rawReferenceOrder = citation.referenceOrder;
+            const isNumberType = typeof rawReferenceOrder === 'number';
+            const isNonBlankStringType = typeof rawReferenceOrder === 'string' && rawReferenceOrder.trim() !== '';
+            if ((isNumberType || isNonBlankStringType) && Number.isFinite(Number(rawReferenceOrder))) {
+                referenceOrder = Number(rawReferenceOrder);
+            }
+
             return {
                 rawReference: parsedRef.raw_reference,
                 doi:          parsedRef.doi,
@@ -137,6 +148,7 @@ class BiblioRefParser {
                 pubpeerurl,
                 isSuspect,
                 isGenuine,
+                referenceOrder,
             };
         } catch (error) {
             console.error('Failed to parse citation reference:', error);
@@ -512,6 +524,15 @@ class BiblioRefManager {
                     BiblioRefParser.parseCitation(citation, config.showAll)
                 )
                 .filter(citation => citation !== null);
+
+            // Sort citations by referenceOrder when available; a missing referenceOrder sorts last.
+            // Number.MAX_SAFE_INTEGER (rather than Infinity) is used as the "missing" sentinel so that
+            // two missing values subtract to 0, not NaN, keeping this a spec-valid sort comparator.
+            citations.sort((a, b) => {
+                const orderA = a.referenceOrder ?? Number.MAX_SAFE_INTEGER;
+                const orderB = b.referenceOrder ?? Number.MAX_SAFE_INTEGER;
+                return orderA - orderB;
+            });
 
             // Render citations if we have any
             if (citations.length > 0) {

@@ -33,6 +33,8 @@ class ZbjatsZipperCommand extends Command
     private const PDF_CACHE_TTL_SECONDS = 3600 * 24 * 365;
     private const XML_CACHE_TTL_SECONDS = 3600 * 24 * 30;
 
+    public const DEFAULT_CONFIG_PATH = __DIR__ . '/zbjats/journals.ini';
+
     private Logger $logger;
     private Client $httpClient;
     private Episciences_Review $review;
@@ -45,20 +47,70 @@ class ZbjatsZipperCommand extends Command
     {
         $this
             ->setDescription('Download PDF + zbJATS XML per volume and package them into a ZIP archive.')
-            ->addOption('rvid', null, InputOption::VALUE_REQUIRED, 'RVID (integer) of the journal to process')
+            ->addOption('rvid', null, InputOption::VALUE_REQUIRED, 'RVID (integer) or comma-separated list of RVIDs to process')
+            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'RV code (string) or comma-separated list of RV codes to process')
+            ->addOption('config', null, InputOption::VALUE_REQUIRED, 'Path to INI file containing journal list (default: scripts/zbjats/journals.ini)')
             ->addOption('zip-prefix', null, InputOption::VALUE_OPTIONAL, 'Optional prefix for the ZIP filename (e.g. "2024_")')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Simulate without downloading files or writing the ZIP')
-            ->addOption('remove-cache', null, InputOption::VALUE_NONE, 'Clear the PDF/XML cache for this journal before processing');
+            ->addOption('remove-cache', null, InputOption::VALUE_NONE, 'Clear the PDF/XML cache for the processed journal(s)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io     = new SymfonyStyle($input, $output);
-        $dryRun = (bool) $input->getOption('dry-run');
-        $rvid   = $input->getOption('rvid');
+        $io         = new SymfonyStyle($input, $output);
+        $dryRun     = (bool) $input->getOption('dry-run');
+        $rvid       = $input->getOption('rvid');
+        $rvcode     = $input->getOption('rvcode');
+        $configPath = $input->getOption('config');
 
-        if ($rvid === null || $rvid === '') {
-            $io->error('Missing required option: --rvid');
+        /** @var list<string> $targetIdentifiers */
+        $targetIdentifiers = [];
+
+        if ($rvid !== null && $rvid !== '') {
+            $parts = array_map('trim', explode(',', (string) $rvid));
+            foreach ($parts as $part) {
+                if ($part === '') {
+                    continue;
+                }
+                if (filter_var($part, FILTER_VALIDATE_INT) === false || (int) $part <= 0) {
+                    $io->error(sprintf('Option --rvid must contain only positive integers (got "%s").', $part));
+                    return Command::FAILURE;
+                }
+                $targetIdentifiers[] = $part;
+            }
+        }
+
+        if ($rvcode !== null && $rvcode !== '') {
+            $parts = array_map('trim', explode(',', (string) $rvcode));
+            foreach ($parts as $part) {
+                if ($part !== '') {
+                    $targetIdentifiers[] = $part;
+                }
+            }
+        }
+
+        // If no explicit rvid or rvcode is passed, load from config file
+        if (empty($targetIdentifiers)) {
+            $iniFile = $configPath ?? (is_file(self::DEFAULT_CONFIG_PATH) ? self::DEFAULT_CONFIG_PATH : null);
+
+            if ($configPath !== null && !is_file($configPath)) {
+                $io->error(sprintf('Configuration file not found: %s', $configPath));
+                return Command::FAILURE;
+            }
+
+            if ($iniFile !== null) {
+                try {
+                    $targetIdentifiers = self::parseJournalsIniFile($iniFile);
+                    $io->note(sprintf('Loaded %d journal(s) from %s', count($targetIdentifiers), $iniFile));
+                } catch (\Throwable $e) {
+                    $io->error($e->getMessage());
+                    return Command::FAILURE;
+                }
+            }
+        }
+
+        if (empty($targetIdentifiers)) {
+            $io->error('No journals to process. Provide --rvcode, --rvid, --config, or configure ' . self::DEFAULT_CONFIG_PATH);
             return Command::FAILURE;
         }
 
@@ -78,28 +130,70 @@ class ZbjatsZipperCommand extends Command
         }
 
         $this->httpClient = new Client();
+        $zipPrefix   = (string) ($input->getOption('zip-prefix') ?? '');
+        $removeCache = (bool) $input->getOption('remove-cache');
 
-        // findByRvid() returns Episciences_Review|bool; check before assigning to typed property
-        $review = Episciences_ReviewsManager::findByRvid((int) $rvid);
+        $successCount = 0;
+        $errorCount   = 0;
 
-        if (!$review instanceof Episciences_Review) {
-            $this->logger->error('Journal not found', ['rvid' => $rvid]);
-            $io->error("No journal found for RVID {$rvid}.");
+        foreach ($targetIdentifiers as $identifier) {
+            $io->section(sprintf('Processing journal: %s', $identifier));
+            $review = self::resolveJournal($identifier);
+
+            if (!$review instanceof Episciences_Review) {
+                $this->logger->error('Journal not found', ['identifier' => $identifier]);
+                $io->error(sprintf('No journal found for "%s".', $identifier));
+                $errorCount++;
+                continue;
+            }
+
+            try {
+                $this->processSingleJournal($review, $zipPrefix, $dryRun, $removeCache, $io);
+                $successCount++;
+            } catch (\Throwable $e) {
+                $this->logger->error('Error processing journal', [
+                    'rvcode'    => $review->getCode(),
+                    'exception' => $e->getMessage(),
+                ]);
+                $io->error(sprintf('Failed to process journal %s: %s', $review->getCode(), $e->getMessage()));
+                $errorCount++;
+            }
+        }
+
+        $this->logger->info('Batch completed', ['success' => $successCount, 'errors' => $errorCount]);
+
+        if ($errorCount > 0) {
+            $io->warning(sprintf('zbJAT ZIP completed with %d success(es) and %d error(s).', $successCount, $errorCount));
             return Command::FAILURE;
         }
 
+        $io->success(sprintf('zbJAT ZIP completed successfully for %d journal(s).', $successCount));
+        return Command::SUCCESS;
+    }
+
+    /**
+     * Process a single journal.
+     */
+    private function processSingleJournal(
+        Episciences_Review $review,
+        string $zipPrefix,
+        bool $dryRun,
+        bool $removeCache,
+        SymfonyStyle $io
+    ): void {
         if (!defined('RVID')) {
             define('RVID', $review->getRvid());
         }
 
-        $this->review     = $review;
-        $this->isNewFront = Episciences_ReviewsManager::isNewFrontSwitched($review->getRvid());
+        $this->review      = $review;
+        $this->isNewFront  = Episciences_ReviewsManager::isNewFrontSwitched($review->getRvid());
+        $this->hasNewFiles = false;
         $this->review->loadSettings();
 
         $this->pdfCache = new FilesystemAdapter("zbjats-pdf-{$review->getCode()}", self::PDF_CACHE_TTL_SECONDS, CACHE_PATH_METADATA);
         $this->xmlCache = new FilesystemAdapter("zbjats-xml-{$review->getCode()}", self::XML_CACHE_TTL_SECONDS, CACHE_PATH_METADATA);
 
-        if ($input->getOption('remove-cache')) {
+        if ($removeCache) {
             $this->pdfCache->clear();
             $this->xmlCache->clear();
             $this->logger->info('Cache cleared for journal', ['rvcode' => $review->getCode()]);
@@ -107,11 +201,87 @@ class ZbjatsZipperCommand extends Command
 
         $volumesData = $this->processJournal($dryRun);
 
-        $this->createZipArchive($volumesData, (string) ($input->getOption('zip-prefix') ?? ''), $dryRun);
+        $this->createZipArchive($volumesData, $zipPrefix, $dryRun);
 
-        $this->logger->info('Done');
-        $io->success('zbJAT ZIP completed.');
-        return Command::SUCCESS;
+        $this->logger->info('zbJAT ZIP completed for journal', ['rvcode' => $review->getCode()]);
+        $io->success(sprintf('zbJAT ZIP completed for %s.', $review->getCode()));
+    }
+
+    /**
+     * Resolve a journal from an identifier (RVID int or RVCODE string).
+     */
+    public static function resolveJournal(string $identifier): ?Episciences_Review
+    {
+        $identifier = trim($identifier);
+        if ($identifier === '') {
+            return null;
+        }
+
+        if (filter_var($identifier, FILTER_VALIDATE_INT) !== false && (int) $identifier > 0) {
+            $review = Episciences_ReviewsManager::findByRvid((int) $identifier);
+        } else {
+            $review = Episciences_ReviewsManager::findByRvcode($identifier);
+        }
+
+        return ($review instanceof Episciences_Review) ? $review : null;
+    }
+
+    /**
+     * Parse a journals INI file and return a list of journal identifiers (rvcode or rvid).
+     *
+     * Supported formats:
+     *   journals[] = "jfp"
+     *   journals[] = "dmtcs"
+     * or:
+     *   [journals]
+     *   journals[] = "jfp"
+     *   rvcode[] = "dmtcs"
+     *   jfp = 1
+     *
+     * @return list<string>
+     */
+    public static function parseJournalsIniFile(string $filePath): array
+    {
+        if (!is_file($filePath) || !is_readable($filePath)) {
+            throw new \RuntimeException(sprintf('Configuration file "%s" does not exist or is not readable.', $filePath));
+        }
+
+        $parsed = parse_ini_file($filePath, true);
+        if ($parsed === false) {
+            throw new \RuntimeException(sprintf('Failed to parse configuration file "%s".', $filePath));
+        }
+
+        $journals = [];
+
+        // If section-based ([journals])
+        if (isset($parsed['journals']) && is_array($parsed['journals'])) {
+            $parsed = $parsed['journals'];
+        }
+
+        foreach ($parsed as $key => $value) {
+            if (is_array($value)) {
+                foreach ($value as $item) {
+                    $item = trim((string) $item);
+                    if ($item !== '') {
+                        $journals[] = $item;
+                    }
+                }
+            } elseif (is_string($value) || is_numeric($value)) {
+                if (is_numeric($key) || $key === 'journals' || $key === 'rvcode' || $key === 'rvid') {
+                    $valStr = trim((string) $value);
+                    if ($valStr !== '') {
+                        $journals[] = $valStr;
+                    }
+                } else {
+                    $keyStr = trim((string) $key);
+                    if ($keyStr !== '') {
+                        $journals[] = $keyStr;
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique($journals));
     }
 
     /**
@@ -281,13 +451,26 @@ class ZbjatsZipperCommand extends Command
             return;
         }
 
+        $totalPapers = 0;
+        foreach ($volumesData as $volumeData) {
+            $totalPapers += count($volumeData['papers']);
+        }
+
+        if ($totalPapers === 0) {
+            $this->logger->info('No published paper found, skipping ZIP archive', ['rvcode' => $this->review->getCode()]);
+            return;
+        }
+
         if (!$this->hasNewFiles && is_file($zipcreated)) {
             $this->logger->info('No new files cached, ZIP archive already up to date, skipping', ['path' => $zipcreated]);
             return;
         }
 
-        if (!is_dir($pathdir) && !mkdir($pathdir, 0776, true) && !is_dir($pathdir)) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $pathdir));
+        if (!is_dir($pathdir)) {
+            if (!mkdir($pathdir, 0755, true) && !is_dir($pathdir)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $pathdir));
+            }
+            chmod($pathdir, 0755);
         }
 
         $zip = new \ZipArchive();
@@ -304,7 +487,22 @@ class ZbjatsZipperCommand extends Command
             }
         }
 
-        $zip->close();
+        $closeError = null;
+        set_error_handler(static function (int $errno, string $errstr) use (&$closeError): bool {
+            $closeError = $errstr;
+            return true;
+        });
+        $closed = $zip->close();
+        restore_error_handler();
+
+        if (!$closed) {
+            throw new \RuntimeException(sprintf(
+                'Failed to write ZIP archive: %s%s',
+                $zipcreated,
+                $closeError !== null ? sprintf(' (%s)', $closeError) : ''
+            ));
+        }
+        chmod($zipcreated, 0644);
         $this->logger->info('ZIP archive created', ['path' => $zipcreated]);
     }
 
