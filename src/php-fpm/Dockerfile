@@ -64,6 +64,15 @@ COPY ./src/php-fpm/upload.ini /usr/local/etc/php/conf.d/
 COPY ./src/php-fpm/crontab /etc/cron.d/episciences-mails
 RUN chmod 0644 /etc/cron.d/episciences-mails
 
+# Ship the solr:worker systemd unit inside the image so every build/deploy
+# carries the current version of it — this container doesn't run systemd
+# itself, this is just so ops can pull the up-to-date unit file straight off
+# a running/built image (e.g. `docker cp`) instead of hunting for it
+# separately. See docs/console-commands.md#deploying-solrworker for install
+# steps on the actual host.
+COPY ./src/php-fpm/episciences-solr-worker.service /etc/systemd/system/episciences-solr-worker.service
+RUN chmod 0644 /etc/systemd/system/episciences-solr-worker.service
+
 # Copy entrypoint script and set permissions
 COPY ./src/php-fpm/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

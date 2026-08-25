@@ -128,7 +128,7 @@ class ZbjatsZipperCommandTest extends TestCase
         if (!defined('DOMAIN')) {
             define('DOMAIN', 'episciences.org');
         }
-        $url = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 42, 'pdf');
+        $url = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 42, 999, 'pdf', false);
         $this->assertSame('https://dmtcs.episciences.org/42/pdf', $url);
     }
 
@@ -137,7 +137,7 @@ class ZbjatsZipperCommandTest extends TestCase
         if (!defined('DOMAIN')) {
             define('DOMAIN', 'episciences.org');
         }
-        $url = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 99, 'zbjats');
+        $url = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 99, 999, 'zbjats', false);
         $this->assertSame('https://dmtcs.episciences.org/99/zbjats', $url);
     }
 
@@ -146,9 +146,27 @@ class ZbjatsZipperCommandTest extends TestCase
         if (!defined('DOMAIN')) {
             define('DOMAIN', 'episciences.org');
         }
-        $url = ZbjatsZipperCommand::buildPaperUrl('jtcam', 7, 'pdf');
+        $url = ZbjatsZipperCommand::buildPaperUrl('jtcam', 7, 999, 'pdf', false);
         $this->assertStringContainsString('jtcam.', $url);
         $this->assertStringStartsWith('https://', $url);
+    }
+
+    public function testBuildPaperUrlNewFrontUsesPaperIdAndDownloadFormat(): void
+    {
+        if (!defined('DOMAIN')) {
+            define('DOMAIN', 'episciences.org');
+        }
+        $url = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 42, 99, 'pdf', true);
+        $this->assertSame('https://dmtcs.episciences.org/articles/99/download', $url);
+    }
+
+    public function testBuildPaperUrlNewFrontKeepsZbjatsFormat(): void
+    {
+        if (!defined('DOMAIN')) {
+            define('DOMAIN', 'episciences.org');
+        }
+        $url = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 42, 99, 'zbjats', true);
+        $this->assertSame('https://dmtcs.episciences.org/articles/99/zbjats', $url);
     }
 
     // -------------------------------------------------------------------------

@@ -1,6 +1,8 @@
 <?php
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
+
 /**
  * Class AdministratepaperController
  */
@@ -2716,6 +2718,14 @@ class AdministratepaperController extends PaperDefaultController
                 // deleting the volume from T_VOLUME_PAPER
                 Episciences_Volume_PapersManager::deletePaperVolume($docId, $vid);
 
+                if ($paper->isPublished()) {
+                    try {
+                        SolrIndexing::enqueueIndex($paper->getDocid());
+                    } catch (Exception $e) {
+                        trigger_error($e->getMessage());
+                    }
+                }
+
                 if (defined('RVCODE') && RVCODE !== '') {
                     $tagsToInvalidate = ["volume-{$vid}", 'volumes-' . RVCODE, 'sitemap-' . RVCODE];
                     if ($oldVid > 0) {
@@ -2783,16 +2793,11 @@ class AdministratepaperController extends PaperDefaultController
             $paper->log(Episciences_Paper_Logger::CODE_OTHER_VOLUMES_SELECTION, Episciences_Auth::getUid(), ['vids' => $oVolumes]);
 
             if ($paper->isPublished()) {
-                $resOfIndexing = $paper->indexUpdatePaper();
-
-                if (!$resOfIndexing) {
-                    try {
-                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
-                    } catch (Exception $e) {
-                        trigger_error($e->getMessage());
-                    }
+                try {
+                    SolrIndexing::enqueueIndex($paper->getDocid());
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
                 }
-
             }
 
             echo empty($errors);
@@ -2832,6 +2837,14 @@ class AdministratepaperController extends PaperDefaultController
                 Episciences_Paper_Logger::CODE_SECTION_SELECTION,
                 Episciences_Auth::getUid(),
                 ['sid' => $sid]);
+
+            if ($paper->isPublished()) {
+                try {
+                    SolrIndexing::enqueueIndex($paper->getDocid());
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+            }
 
             if (defined('RVCODE')) {
                 $tagsToInvalidate = [];

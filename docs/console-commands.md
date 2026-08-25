@@ -43,6 +43,10 @@ php scripts/console.php <command> --help
 | [`stats:update-robots-list`](#statsupdate-robots-list) | Download the COUNTER Robots list for bot detection |
 | [`stats:process`](#statsprocess) | Process raw visit records from `STAT_TEMP` into `PAPER_STAT` |
 | [`geoip:update`](#geoipupdate) | Download or update the GeoLite2-City.mmdb database |
+| [`solr:index`](#solrindex) | Enqueue (or synchronously run) Solr re-indexing for one or more papers |
+| [`solr:delete`](#solrdelete) | Enqueue (or synchronously run) a Solr deletion, by DOCID or by raw query |
+| [`solr:worker`](#solrworker) | Continuously consume the Solr indexing/deletion queue |
+| [`solr:queue`](#solrqueue) | Inspect and manage the Solr indexing queue |
 | [`next:revalidate-cache`](#nextrevalidate-cache) | Immediately trigger Next.js cache revalidation for a journal and tag (bypasses queue) |
 
 ---
@@ -595,3 +599,182 @@ php scripts/console.php next:revalidate-cache epiga articles-epiga
 # Invalidate a specific article
 php scripts/console.php next:revalidate-cache epijinfo article-1234
 ```
+
+---
+
+## Solr Indexing
+
+Solr indexing pipeline built on Symfony Messenger with a Doctrine DBAL
+transport (tables `messenger_messages` / `messenger_failed` in the main
+application database). This is the **only** indexing path — paper
+publication, deletion, and import all enqueue work here via
+`Episciences\Solr\Indexing\Enqueue\SolrIndexing`. There is no synchronous
+fallback and no legacy cron.
+
+`messenger_messages`/`messenger_failed` are generic Doctrine Messenger
+transport tables and may end up shared with other message types in the
+future. Rows are scoped by the `queue_name` column, which `MessengerFactory`
+sets to `solr_index` (`MessengerFactory::TRANSPORT_NAME`) — the Doctrine
+bridge filters every read (`get()`, `find()`, `getMessageCount()`) by this
+column, so `solr:worker`/`solr:queue` only ever see/touch Solr's own rows,
+regardless of what else lands in the same tables. Any other producer sharing
+these tables must set its own distinct `queue_name` for the same reason.
+**Deployment note:** rows written before this was added carry the bridge's
+implicit default (`queue_name = 'default'`); drain the queue (`solr:queue
+--stats` at 0) before deploying this change, or they'll be stranded (never
+picked up again, since `default` no longer matches `solr_index`).
+
+Retries and failures are handled natively by Messenger instead of being
+silently swallowed: a Solr/network failure is retried up to 5 times with
+exponential backoff (5s, 15s, 45s, ...) before landing in the failure
+transport, where it stays until inspected or retried via `solr:queue`.
+
+**`solr:worker` must run continuously, supervised (a dedicated Docker Compose
+service, or systemd/supervisord on bare metal), in every environment.** There
+is no synchronous fallback and no periodic-cron alternative: if the worker
+isn't running, enqueued papers are simply never indexed or deleted in Solr,
+with no error visible anywhere else in the app. See
+[Deploying `solr:worker`](#deploying-solrworker) below.
+
+Before first use in an environment, the two transport tables must exist:
+
+```bash
+php scripts/console.php solr:queue --setup
+```
+
+### Deploying `solr:worker`
+
+**Docker Compose (this repo's own stack — dev, and any environment using this
+`docker-compose.yml`):** a dedicated `solr-worker` service runs it, reusing
+the `php-fpm` image (`docker-compose.yml`). It starts with `make up` /
+`docker compose up -d` like any other service — no manual step needed.
+`restart: always` covers crash recovery, and `--time-limit=3600
+--memory-limit=512M` (same bounds as the systemd unit below) make it
+periodically recycle the process. Check it with:
+
+```bash
+docker compose logs -f solr-worker
+docker compose exec -u www-data -w /var/www/htdocs php-fpm php scripts/console.php solr:queue --stats
+```
+
+A container does **not** run systemd as PID 1 (confirmed by
+`systemctl status` failing with "not booted with systemd" inside `php-fpm`),
+so nothing under `/etc/systemd/system` inside that container is ever started
+automatically — this was the actual cause of a stuck queue after a container
+rebuild: the systemd unit below is inert unless installed on a real
+systemd-managed host.
+
+**Bare-metal / VM without this Compose stack:** a ready-to-use systemd unit
+ships in the repo at
+[`src/php-fpm/episciences-solr-worker.service`](../src/php-fpm/episciences-solr-worker.service)
+(it's also baked into the `php-fpm` Docker image at
+`/etc/systemd/system/episciences-solr-worker.service` at build time, so a
+`docker cp episciences-php-fpm:/etc/systemd/system/episciences-solr-worker.service .`
+against the image always gets the current version without checking out the
+repo). Install it on each such server that must index into Solr:
+
+```bash
+# From a checkout, or via docker cp from a running/built php-fpm image as above:
+sudo cp src/php-fpm/episciences-solr-worker.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now episciences-solr-worker.service
+
+# Check status / logs
+sudo systemctl status episciences-solr-worker.service
+sudo journalctl -u episciences-solr-worker.service -f
+# (StandardOutput/StandardError are also appended to /var/www/logs/solrWorker.log)
+```
+
+The unit runs as `www-data`, restarts automatically on crash
+(`Restart=always`), and self-recycles hourly (`--time-limit=3600`) or past
+512M memory (`--memory-limit=512M`) so `Restart=always` periodically refreshes
+the process instead of a single PHP process running forever — edit
+`ExecStart` in the unit file to change either bound. `WorkingDirectory` and
+`ExecStart` assume the app lives at `/var/www/htdocs`, matching this repo's
+Docker/prod convention (`CNTR_APP_DIR` in the `Makefile`); adjust both paths
+if a given server checks out the app elsewhere.
+
+After editing the unit file (in the repo or on a server), re-run
+`systemctl daemon-reload && systemctl restart episciences-solr-worker.service`
+to pick up the change.
+
+### `solr:index`
+
+Enqueues (or synchronously runs) Solr re-indexing for one or more papers.
+
+```bash
+php scripts/console.php solr:index [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--docid <id>` | Index only this DOCID |
+| `--sqlwhere <clause>` | SQL `WHERE` clause to select DOCIDs (e.g. `'RVID = 42'`), always ANDed with `STATUS = 16` (published). **Trusted input only.** |
+| `--file <path>` | Path to a file of DOCIDs, one per line |
+| `--priority <n>` | Message priority (informational only — the Doctrine DBAL transport does not reorder by priority, unlike legacy `INDEX_QUEUE.PRIORITY`) |
+| `--sync` | Build and send each document immediately instead of enqueuing it (bypasses Messenger entirely) |
+
+`--docid`, `--sqlwhere` and `--file` are mutually exclusive; exactly one is required.
+
+Only published papers (`STATUS = 16`) are ever indexed: `--sqlwhere` always ANDs
+`STATUS = 16` onto the caller-supplied clause, and `IndexPaperMessageHandler`
+re-checks status before building/sending the document — so a non-published
+docid passed via `--docid` or `--file` is silently skipped rather than indexed.
+
+---
+
+### `solr:delete`
+
+Enqueues (or synchronously runs) a Solr deletion, by DOCID or by raw query.
+
+```bash
+php scripts/console.php solr:delete [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--docid <id>` | Delete this DOCID |
+| `--query <query>` | Raw Solr delete query, e.g. `'docid:19'`. **Trusted input only.** |
+| `--sync` | Run the deletion immediately instead of enqueuing it |
+
+Exactly one of `--docid` or `--query` is required.
+
+---
+
+### `solr:worker`
+
+Continuously consumes the Solr indexing/deletion queue. Both index and delete messages share the same transport and are routed to the correct handler automatically; there is no update/delete mode flag.
+
+```bash
+php scripts/console.php solr:worker [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--limit <n>` | Stop after processing this many messages |
+| `--time-limit <seconds>` | Stop after this many seconds |
+| `--memory-limit <size>` | Stop once memory usage exceeds this limit (e.g. `512M`) |
+
+**Must run continuously under a process supervisor (systemd/supervisord).** A
+periodic cron tick is not sufficient — this is the only path papers get
+indexed/deleted through, with no synchronous fallback.
+
+---
+
+### `solr:queue`
+
+Inspects and manages the Solr indexing queue — a minimal, hand-rolled equivalent of Symfony FrameworkBundle's `messenger:failed:*` commands (this app has no bundle system to auto-register them).
+
+```bash
+php scripts/console.php solr:queue [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--stats` | Show pending and failed message counts |
+| `--list-failed` | List failed messages (id, message class, exception, error) |
+| `--retry <id>` | Retry the failed message with this id, synchronously, in this process |
+| `--limit <n>` | Limit for `--list-failed` (default: 50) |
+| `--setup` | Create the `messenger_messages`/`messenger_failed` tables if they don't exist yet (one-time, per environment) |
+
+Exactly one of `--stats`, `--list-failed`, `--retry` or `--setup` is required.
