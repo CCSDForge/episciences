@@ -451,13 +451,26 @@ class ZbjatsZipperCommand extends Command
             return;
         }
 
+        $totalPapers = 0;
+        foreach ($volumesData as $volumeData) {
+            $totalPapers += count($volumeData['papers']);
+        }
+
+        if ($totalPapers === 0) {
+            $this->logger->info('No published paper found, skipping ZIP archive', ['rvcode' => $this->review->getCode()]);
+            return;
+        }
+
         if (!$this->hasNewFiles && is_file($zipcreated)) {
             $this->logger->info('No new files cached, ZIP archive already up to date, skipping', ['path' => $zipcreated]);
             return;
         }
 
-        if (!is_dir($pathdir) && !mkdir($pathdir, 0776, true) && !is_dir($pathdir)) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $pathdir));
+        if (!is_dir($pathdir)) {
+            if (!mkdir($pathdir, 0755, true) && !is_dir($pathdir)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $pathdir));
+            }
+            chmod($pathdir, 0755);
         }
 
         $zip = new \ZipArchive();
@@ -474,7 +487,22 @@ class ZbjatsZipperCommand extends Command
             }
         }
 
-        $zip->close();
+        $closeError = null;
+        set_error_handler(static function (int $errno, string $errstr) use (&$closeError): bool {
+            $closeError = $errstr;
+            return true;
+        });
+        $closed = $zip->close();
+        restore_error_handler();
+
+        if (!$closed) {
+            throw new \RuntimeException(sprintf(
+                'Failed to write ZIP archive: %s%s',
+                $zipcreated,
+                $closeError !== null ? sprintf(' (%s)', $closeError) : ''
+            ));
+        }
+        chmod($zipcreated, 0644);
         $this->logger->info('ZIP archive created', ['path' => $zipcreated]);
     }
 

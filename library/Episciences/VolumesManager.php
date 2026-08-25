@@ -480,12 +480,13 @@ class Episciences_VolumesManager
     /**
      * @param int $vid
      * @param array $fields
+     * @param int|null $rvid Journal to scope the lookup to; falls back to the global RVID constant when null
      * @return Zend_Db_Select
      */
-    private static function isPapersInVolumeQuery(int $vid, array $fields = ['COUNT(st.DOCID)']): \Zend_Db_Select
+    private static function isPapersInVolumeQuery(int $vid, array $fields = ['COUNT(st.DOCID)'], ?int $rvid = null): \Zend_Db_Select
     {
         //Prise en compte des volumes secondaires git #169
-        return Episciences_PapersManager::getVolumesQuery($fields)
+        return Episciences_PapersManager::getVolumesQuery($fields, $rvid)
             ->where("st.VID = ? OR vpt.VID = ?", $vid);
     }
 
