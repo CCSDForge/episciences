@@ -115,8 +115,10 @@ class WebsiteDefaultController extends Zend_Controller_Action
         if (isset($params['method']) && $request->isPost()) {
             if ($params['method'] === 'remove') {
                 //Suppression d'un fichier
-                if (isset($params['name']) && is_file($dir . $params['name'])) {
-                    unlink($dir . $params['name']);
+                // Keep only the file name so the removal stays within $dir.
+                $fileToRemove = isset($params['name']) ? basename((string)$params['name']) : '';
+                if ($fileToRemove !== '' && is_file($dir . $fileToRemove)) {
+                    unlink($dir . $fileToRemove);
                 }
             } else if (isset($_FILES['file']['tmp_name']) && $_FILES['file']['tmp_name'] !== '') {
 

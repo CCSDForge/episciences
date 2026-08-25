@@ -79,7 +79,7 @@ class GetLicenceDataCommand extends Command
             $identifier = $value['IDENTIFIER'];
             $repoId     = (int) $value['REPOID'];
             $docId      = (int) $value['DOCID'];
-            $version    = (int) $value['VERSION'];
+            $version    = (float) $value['VERSION'];
 
             // Clean old-style arXiv identifiers
             if (strpos($identifier, '.LO/') !== false) {

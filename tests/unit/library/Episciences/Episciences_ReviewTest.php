@@ -190,6 +190,58 @@ class Episciences_ReviewTest extends TestCase
     }
 
     // =========================================================================
+    // getCoverLetterRequirement (git #922)
+    // =========================================================================
+
+    public function testCoverLetterRequirementConstants(): void
+    {
+        self::assertSame(0, Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED);
+        self::assertSame(1, Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL);
+        self::assertSame(2, Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED);
+    }
+
+    public function testGetCoverLetterRequirementDefaultsToOptionalWhenUnset(): void
+    {
+        // Reviews created before this setting existed have no stored value in DB.
+        // Regression: must default to optional, not disabled, otherwise the cover
+        // letter file field silently disappears for every pre-existing journal.
+        $this->review->applySettingsFromRows([]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsDisabledWhenExplicitlySetToZero(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '0'],
+        ]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsOptionalWhenExplicitlySet(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '1'],
+        ]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsRequired(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '2'],
+        ]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementCastsStoredValueToInt(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '2'],
+        ]);
+        self::assertIsInt($this->review->getCoverLetterRequirement());
+    }
+
+    // =========================================================================
     // getRepositories (reads from $_settings)
     // =========================================================================
 
@@ -360,6 +412,66 @@ class Episciences_ReviewTest extends TestCase
         } finally {
             Zend_Db_Table_Abstract::setDefaultAdapter($previousAdapter);
         }
+    }
+
+    // =========================================================================
+    // New OAI metadata setting constants
+    // =========================================================================
+
+    public function testNewOaiMetadataSettingConstants(): void
+    {
+        self::assertSame('journalDescription', Episciences_Review::SETTING_JOURNAL_DESCRIPTION);
+        self::assertSame('journalKeywords', Episciences_Review::SETTING_JOURNAL_KEYWORDS);
+        self::assertSame('journalCreationYear', Episciences_Review::SETTING_JOURNAL_CREATION_YEAR);
+    }
+
+    // =========================================================================
+    // applySettingsFromRows()
+    // =========================================================================
+
+    public function testApplySettingsFromRowsWithEmptyRowsReturnsFalseForUnsetSetting(): void
+    {
+        $this->review->applySettingsFromRows([]);
+        self::assertFalse($this->review->getSetting(Episciences_Review::SETTING_JOURNAL_DESCRIPTION));
+    }
+
+    public function testApplySettingsFromRowsSetsPlainSetting(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_DESCRIPTION, 'VALUE' => 'A great journal'],
+        ]);
+        self::assertSame('A great journal', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_DESCRIPTION));
+    }
+
+    public function testApplySettingsFromRowsSetsMultipleSettings(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_DESCRIPTION, 'VALUE' => 'Some description'],
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_KEYWORDS, 'VALUE' => 'math; physics'],
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_CREATION_YEAR, 'VALUE' => '2010'],
+        ]);
+        self::assertSame('Some description', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_DESCRIPTION));
+        self::assertSame('math; physics', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_KEYWORDS));
+        self::assertSame('2010', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_CREATION_YEAR));
+    }
+
+    public function testApplySettingsFromRowsMarksSettingsAsLoaded(): void
+    {
+        // After applySettingsFromRows(), getSetting() must NOT trigger a DB load
+        // (_settingsLoaded = true), so calling it without a DB adapter must not throw.
+        $this->review->applySettingsFromRows([]);
+        self::assertFalse($this->review->getSetting('nonexistent_setting'));
+    }
+
+    public function testApplySettingsFromRowsSecondCallOverwritesFirst(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_CREATION_YEAR, 'VALUE' => '2000'],
+        ]);
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_JOURNAL_CREATION_YEAR, 'VALUE' => '2020'],
+        ]);
+        self::assertSame('2020', $this->review->getSetting(Episciences_Review::SETTING_JOURNAL_CREATION_YEAR));
     }
 }
 

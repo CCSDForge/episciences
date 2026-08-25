@@ -22,7 +22,7 @@ var $modal_form;
 
 var openedPopover;
 
-$(document).ready(function () {
+$(document).ready(function ($) {
     $modal_box = $('#modal-box');
     $modal_body = $modal_box.find('.modal-body');
     $modal_footer = $modal_box.find('.modal-footer');
@@ -68,6 +68,21 @@ $(document).ready(function () {
                 { scrollTop: $targetPanel.offset().top },
                 300
             );
+        }
+
+        // Same idea for a single reviewer's rating panel (Bootstrap collapse, see
+        // partials/paper_reports.phtml) — e.g. linked from the activity timeline
+        // when a review has been completed
+        var ratingPanel = document.querySelector(window.location.hash + '.rating');
+        if (ratingPanel && !ratingPanel.classList.contains('in')) {
+            var ratingToggle = document.querySelector('[data-target="' + window.location.hash + '"]');
+            if (ratingToggle) {
+                ratingToggle.click();
+            }
+            var ratingPanelContainer = ratingPanel.closest('.panel');
+            if (ratingPanelContainer) {
+                ratingPanelContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
     }
 
@@ -591,9 +606,9 @@ function activateTooltips(params = {}) {
     //params = params || {};
     params.container = params.container || 'body';
     params.placement = params.placement || 'bottom';
-    params.html = params.html || true;
-    params.show = params.show || 200;
-    params.hide = params.hide || 100;
+    params.html = params.html ?? true;
+    params.show = params.show ?? 200;
+    params.hide = params.hide ?? 100;
 
     $("[data-toggle~='tooltip']").tooltip({
         container: params.container,
@@ -697,7 +712,13 @@ function applyCollapse(object) {
     }
 
     $('.collapseButton', object).tooltip();
-    $('.panel-heading:first', object).click(function () {
+    $('.panel-heading:first', object).click(function (e) {
+        // A panel header may embed its own controls (e.g. the dashboard paper search box):
+        // interacting with them must not collapse the panel.
+        if ($(e.target).closest('[data-component="dashboard-paper-search"]').length) {
+            return;
+        }
+
         $(this).closest('.panel').find('.panel-body').toggle();
         if (
             $(this)
@@ -779,7 +800,9 @@ function openModal(url, title, params, source) {
 
     // run callback method (if there is one)
     if (params['callback']) {
-        $modal_button.off('click.callback');
+        // Remove all existing click handlers (including the generic one from modal.phtml)
+        // so only the AJAX callback fires and the form is not submitted natively.
+        $modal_button.off('click').off('click.callback');
         $modal_button.on(
             'click.callback',
             { callback: params['callback'] },
@@ -791,7 +814,7 @@ function openModal(url, title, params, source) {
             }
         );
     } else {
-        $modal_button.on('click', function (e) {
+        $modal_button.off('click').on('click', function (e) {
             // submit form if necessary
             if ($modal_form.length && $modal_form.data('submission') != false) {
                 $modal_form.submit();
@@ -946,7 +969,7 @@ function updateDeadlineTag(body, tagName, date, locale = 'en') {
  */
 function getObjectNameFromTinyMce(name) {
     let body = {};
-    if (tinymce) {
+    if (typeof tinymce !== 'undefined' && tinymce) {
         body = tinymce.get(name);
     }
     return body;
@@ -968,7 +991,7 @@ function ajaxRequest(url, jData, type = 'POST', dataType = null) {
     };
 
     if (dataType) {
-        params.datatype = dataType;
+        params.dataType = dataType;
     }
     return $.ajax(params);
 }

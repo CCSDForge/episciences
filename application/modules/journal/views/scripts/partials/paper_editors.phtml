@@ -72,7 +72,7 @@ $alertMsg = "Vous ne souhaitez plus gérer cet article, sa gestion vous sera bie
 
                 <img src="/user/photo/name/<?= urlencode($this->escape($editor->getScreenName())); ?>/uid/<?= $editor->getUid(); ?>/size/<?= Ccsd_User_Models_User::IMG_NAME_INITIALS ?>?v=<?php echo Episciences_Auth::getPhotoVersion() ?>"
                      class="user-photo-small" alt="avatar">
-                <span style="margin-left: 0.5em;"><strong><?php echo $editor->getScreenName(); ?></strong></span>
+                <span style="margin-left: 0.5em;"><strong><?php echo $this->escape($editor->getScreenName()); ?></strong></span>
 
 
                 <?php

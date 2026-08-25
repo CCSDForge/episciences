@@ -105,7 +105,8 @@ class GenerateSitemapCommand extends Command
         $entries = array_merge(
             $this->getSitemapGenericEntries($rvcode, $languages),
             $this->getSitemapVolumeAndSectionEntries($rvcode, $rvid, $languages),
-            $this->getSitemapArticleEntries($rvcode, $client, $logger, $languages)
+            $this->getSitemapPageEntries($rvcode, $client, $logger, $languages),
+            $this->getSitemapArticleEntries($rvcode, $client, $logger, $languages),
         );
 
         if (empty($entries)) {
@@ -137,12 +138,14 @@ class GenerateSitemapCommand extends Command
                 $data     = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
 
                 foreach ($data['hydra:member'] as $paper) {
+                    $modDate = $paper['document']['database']['current']['dates']['modification_date']
+                        ?? $paper['modification_date']
+                        ?? null;
+                    $lastmod = $modDate ? date('Y-m-d', strtotime($modDate)) : null;
                     foreach ($this->buildLocUrls($base, '/articles/' . $paper['docid'], $languages) as $loc) {
                         $entries[] = [
-                            'loc'        => $loc,
-                            'lastmod'    => null,
-                            'changefreq' => 'weekly',
-                            'priority'   => '0.9',
+                            'loc'     => $loc,
+                            'lastmod' => $lastmod,
                         ];
                     }
                 }
@@ -157,6 +160,39 @@ class GenerateSitemapCommand extends Command
     }
 
     /**
+     * Fetch visible page entries from the Episciences API.
+     *
+     * @param string[] $languages
+     * @return array<int, array<string, mixed>>
+     */
+    private function getSitemapPageEntries(string $rvcode, Client $client, Logger $logger, array $languages): array
+    {
+        $base    = sprintf('https://%s.%s', $rvcode, DOMAIN);
+        $url     = EPISCIENCES_API_URL . "pages?pagination=false&rvcode={$rvcode}";
+        $entries = [];
+
+        try {
+            $response = $client->get($url);
+            $pages    = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
+
+            foreach ($pages as $page) {
+                $dateUpdated = $page['date_updated'] ?? null;
+                $lastmod     = $dateUpdated ? date('Y-m-d', strtotime($dateUpdated)) : null;
+                foreach ($this->buildLocUrls($base, '/' . $page['page_code'], $languages) as $loc) {
+                    $entries[] = [
+                        'loc'     => $loc,
+                        'lastmod' => $lastmod,
+                    ];
+                }
+            }
+        } catch (GuzzleException $e) {
+            $logger->error('Error fetching pages from API', ['rvcode' => $rvcode, 'error' => $e->getMessage()]);
+        }
+
+        return $entries;
+    }
+
+    /**
      * Build static generic URL entries (home, articles, authors, volumes, sections, about).
      *
      * @param string[] $languages
@@ -164,26 +200,13 @@ class GenerateSitemapCommand extends Command
      */
     private function getSitemapGenericEntries(string $rvcode, array $languages): array
     {
-        $base = sprintf('https://%s.%s', $rvcode, DOMAIN);
-
-        $specs = [
-            ['path' => '/',         'changefreq' => 'daily',  'priority' => '1'],
-            ['path' => '/articles', 'changefreq' => 'daily',  'priority' => '0.8'],
-            ['path' => '/authors',  'changefreq' => 'daily',  'priority' => '0.8'],
-            ['path' => '/volumes',  'changefreq' => 'weekly', 'priority' => '0.8'],
-            ['path' => '/sections', 'changefreq' => 'weekly', 'priority' => '0.8'],
-            ['path' => '/about',    'changefreq' => 'weekly', 'priority' => '0.8'],
-        ];
+        $base  = sprintf('https://%s.%s', $rvcode, DOMAIN);
+        $paths = ['/', '/articles', '/authors', '/volumes', '/sections', '/about'];
 
         $entries = [];
-        foreach ($specs as $spec) {
-            foreach ($this->buildLocUrls($base, $spec['path'], $languages) as $loc) {
-                $entries[] = [
-                    'loc'        => $loc,
-                    'lastmod'    => null,
-                    'changefreq' => $spec['changefreq'],
-                    'priority'   => $spec['priority'],
-                ];
+        foreach ($paths as $path) {
+            foreach ($this->buildLocUrls($base, $path, $languages) as $loc) {
+                $entries[] = ['loc' => $loc];
             }
         }
 
@@ -205,14 +228,14 @@ class GenerateSitemapCommand extends Command
         $vids = $db->fetchCol($db->select()->from(T_VOLUMES, 'VID')->where('RVID = ?', $rvid));
         foreach ($vids as $vid) {
             foreach ($this->buildLocUrls($base, '/volumes/' . $vid, $languages) as $loc) {
-                $entries[] = ['loc' => $loc, 'lastmod' => null, 'changefreq' => 'weekly', 'priority' => '0.8'];
+                $entries[] = ['loc' => $loc];
             }
         }
 
         $sids = $db->fetchCol($db->select()->from(T_SECTIONS, 'SID')->where('RVID = ?', $rvid));
         foreach ($sids as $sid) {
             foreach ($this->buildLocUrls($base, '/sections/' . $sid, $languages) as $loc) {
-                $entries[] = ['loc' => $loc, 'lastmod' => null, 'changefreq' => 'weekly', 'priority' => '0.8'];
+                $entries[] = ['loc' => $loc];
             }
         }
 

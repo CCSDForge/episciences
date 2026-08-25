@@ -176,9 +176,13 @@ class BrowseController extends Zend_Controller_Action
             return;
         }
 
+        // one query for every volume's settings, instead of one per volume: the
+        // partial reads them through getSetting(), and getProceedingInfo() no longer
+        // loads them as a side effect
+        Episciences_VolumesManager::loadSettingsForVolumes($volumes);
+
         foreach ($volumes as &$volume) {
             $volume->loadMetadatas();
-            $volume->getProceedingInfo();
             $volume->getSolrCountOfVolumePapers();
         }
 

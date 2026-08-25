@@ -3,8 +3,11 @@
 namespace unit\library\Episciences\paper;
 
 use Episciences_Paper;
+use Episciences_Repositories;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
+use Zend_Registry;
+use Zend_Translate;
 
 /**
  * Unit tests for Episciences_Paper entity: getters/setters, DOI, identifier,
@@ -15,10 +18,55 @@ use ReflectionProperty;
 final class Episciences_Paper_EntityTest extends TestCase
 {
     private Episciences_Paper $paper;
+    private bool $hadMetadataSources;
+    /** @var mixed */
+    private $originalMetadataSources;
 
     protected function setUp(): void
     {
         $this->paper = new Episciences_Paper();
+
+        // getAbstract() → Episciences_Tools::getLocale() → Zend_Registry::get('Zend_Translate')
+        if (!Zend_Registry::isRegistered('Zend_Translate')) {
+            Zend_Registry::set('Zend_Translate', new Zend_Translate([
+                'adapter' => Zend_Translate::AN_ARRAY,
+                'content' => ['' => ''],
+                'locale'  => 'en',
+            ]));
+        }
+
+        // setMetadata()'s hookFilterMetadata call resolves the arXiv Hooks class from
+        // Episciences_Repositories::getLabel(ARXIV_REPO_ID), which reads Zend_Registry's
+        // 'metadataSources'. Save/restore it around each test so this suite stays
+        // independent of run order instead of leaking a fake value to other test files.
+        $this->hadMetadataSources = Zend_Registry::isRegistered('metadataSources');
+        if ($this->hadMetadataSources) {
+            $this->originalMetadataSources = Zend_Registry::get('metadataSources');
+        }
+        Zend_Registry::set('metadataSources', [
+            (int)Episciences_Repositories::ARXIV_REPO_ID => [
+                'name' => 'arXiv',
+                'type' => 'repository',
+            ],
+        ]);
+        $this->resetRepositoriesCache();
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->hadMetadataSources) {
+            Zend_Registry::set('metadataSources', $this->originalMetadataSources);
+        } else {
+            Zend_Registry::getInstance()->offsetUnset('metadataSources');
+        }
+        $this->resetRepositoriesCache();
+    }
+
+    private function resetRepositoriesCache(): void
+    {
+        $repositoriesCache = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
+        $repositoriesCache->setAccessible(true);
+        $repositoriesCache->setValue(null, []);
     }
 
     // -----------------------------------------------------------------------
@@ -289,5 +337,74 @@ final class Episciences_Paper_EntityTest extends TestCase
         $paper = new Episciences_Paper(['type' => null]);
         $type = $paper->getType();
         self::assertSame(Episciences_Paper::DEFAULT_TYPE_TITLE, $type[Episciences_Paper::TITLE_TYPE]);
+    }
+
+    // -----------------------------------------------------------------------
+    // setMetadata / getMetadata: type and licenses are read from distinct nodes
+    // -----------------------------------------------------------------------
+
+    private const RECORD_WITH_TYPE_AND_RIGHTS = <<<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<episciences xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:type>Journal article</dc:type>
+    <dc:rights>https://creativecommons.org/licenses/by/4.0</dc:rights>
+</episciences>
+XML;
+
+    public function testGetMetadataTypeReadsDcType(): void
+    {
+        $this->paper->setMetadata(self::RECORD_WITH_TYPE_AND_RIGHTS);
+        self::assertSame('Journal article', $this->paper->getMetadata('type'));
+    }
+
+    public function testGetMetadataLicensesReadsDcRights(): void
+    {
+        $this->paper->setMetadata(self::RECORD_WITH_TYPE_AND_RIGHTS);
+        self::assertSame(
+            'https://creativecommons.org/licenses/by/4.0',
+            $this->paper->getMetadata('licenses')
+        );
+    }
+
+    public function testGetMetadataTypeIsNotOverwrittenByRights(): void
+    {
+        $this->paper->setMetadata(self::RECORD_WITH_TYPE_AND_RIGHTS);
+        self::assertNotSame(
+            $this->paper->getMetadata('licenses'),
+            $this->paper->getMetadata('type')
+        );
+    }
+
+    private const RECORD_WITH_MULTIPLE_DESCRIPTIONS = <<<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<episciences xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:description>Main abstract text</dc:description>
+    <dc:description>to be published in JFP</dc:description>
+</episciences>
+XML;
+
+    public function testGetMetadataTriggersHookFilterMetadataForArXiv(): void
+    {
+        $this->paper->setRepoid((int)Episciences_Repositories::ARXIV_REPO_ID);
+        $this->paper->setMetadata(self::RECORD_WITH_MULTIPLE_DESCRIPTIONS);
+        self::assertSame(['Main abstract text'], $this->paper->getMetadata('description'));
+        self::assertSame('Main abstract text', $this->paper->getAbstract());
+    }
+
+    private const RECORD_WITH_SAME_LANG_DESCRIPTIONS = <<<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<episciences xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:description xml:lang="en">Main abstract text</dc:description>
+    <dc:description>to be published in JFP</dc:description>
+    <dc:description xml:lang="en">Updated abstract text</dc:description>
+</episciences>
+XML;
+
+    public function testGetMetadataArXivHookKeepsFirstDescriptionOnLanguageCollision(): void
+    {
+        $this->paper->setRepoid((int)Episciences_Repositories::ARXIV_REPO_ID);
+        $this->paper->setMetadata(self::RECORD_WITH_SAME_LANG_DESCRIPTIONS);
+        self::assertSame(['en' => 'Main abstract text'], $this->paper->getMetadata('description'));
+        self::assertSame('Main abstract text', $this->paper->getAbstract());
     }
 }

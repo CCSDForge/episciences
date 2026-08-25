@@ -594,9 +594,6 @@ class Export
         // description
         foreach ($paper->getAllAbstracts() as $lang => $abstract) {
             $abstract = trim($abstract);
-            if ($abstract === 'International audience') {
-                continue;
-            }
             $description = $xml->createElement('dc:description', $abstract);
             if ($lang && Zend_Locale::isLocale($lang)) {
                 $description->setAttribute('xml:lang', $lang);
@@ -688,7 +685,7 @@ class Export
         $result['abstracts'] = $paper->getAbstractsCleaned();
         $result['keywords'] = $paper->getMetadata('subjects');
 
-        if ($paper->hasHook && $paper->getConcept_identifier() !== null) {
+        if ($paper->hasConceptIdentifier() && $paper->getConcept_identifier() !== null) {
             $result['concept_identifier'] = $paper->getConcept_identifier();
         }
 

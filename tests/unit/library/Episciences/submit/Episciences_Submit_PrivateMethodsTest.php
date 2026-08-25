@@ -95,7 +95,6 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $docId = 42;
         $result = [];
         $paper = $this->mockPaper(1.0, 'some-id-no-datetime');
-        $paper->hasHook = true;
         $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, false]);
         self::assertSame(42, $docId); // unchanged
     }
@@ -110,7 +109,6 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $result = ['update' => '20240315:120000', 'hookVersion' => 1.0];
         // identifier has no YYYYMMDD:HHMMSS pattern → getDateTimePattern returns ''
         $paper = $this->mockPaper(1.0, 'some-id-without-datetime');
-        $paper->hasHook = true;
         $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
         self::assertNull($docId);
         self::assertSame(2.0, $result['hookVersion']);
@@ -125,7 +123,6 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $datetime = '20240315:120000';
         $result = ['update' => $datetime, 'hookVersion' => 1.0];
         $paper = $this->mockPaper(1.0, 'some-id/' . $datetime);
-        $paper->hasHook = true;
         $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
         // same datetime → previousDatetime is NOT < current → no change
         self::assertSame(42, $docId);
@@ -140,7 +137,6 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $docId = 99;
         $result = ['update' => '20250101:000000', 'hookVersion' => 3.0];
         $paper = $this->mockPaper(3.0, 'paper/20240101:000000'); // older
-        $paper->hasHook = true;
         $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
         self::assertNull($docId);
         self::assertSame(4.0, $result['hookVersion']);
@@ -154,9 +150,57 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
         $docId = 77;
         $result = ['update' => '20230101:000000', 'hookVersion' => 2.0]; // current is older
         $paper = $this->mockPaper(2.0, 'paper/20250101:000000'); // previous is newer
-        $paper->hasHook = true;
         $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
         self::assertSame(77, $docId); // unchanged — previous > current, NOT a new version
+    }
+
+    /**
+     * No previousPaper → early return, and no "Attempt to read property on null"
+     * warning: the guard used to dereference $previousPaper->hasHook before
+     * checking that $previousPaper was there at all.
+     */
+    public function testAssertDateTimeVersionEarlyReturnWhenNoPreviousPaper(): void
+    {
+        $docId = 42;
+        $result = ['update' => '20240315:120000', 'hookVersion' => 1.0];
+
+        $raised = [];
+        set_error_handler(static function (int $errno, string $message) use (&$raised): bool {
+            $raised[] = $message;
+            return true;
+        });
+
+        try {
+            $this->invoke('assertDateTimeVersion', [&$docId, null, &$result, true]);
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertSame([], $raised);
+        self::assertSame(42, $docId);
+        self::assertSame(1.0, $result['hookVersion']);
+    }
+
+    /**
+     * The date-time versioning branch is selected by the UPDATE_DATETIME key alone.
+     *
+     * That key only ever reaches $result from a repository's hookApiRecords(), so
+     * the extra "does this repository have a hooks class" guard the method used to
+     * carry was redundant — and it silently disabled the branch for a paper whose
+     * hasHook property had not been populated.
+     */
+    public function testAssertDateTimeVersionDependsOnTheUpdateKeyOnly(): void
+    {
+        $docId = 42;
+        $result = ['update' => '20250101:000000', 'hookVersion' => 1.0];
+        // hasHook left unset, as on any Episciences_Paper built without setRepoid()
+        $paper = $this->mockPaper(1.0, 'paper/20240101:000000');
+
+        $this->invoke('assertDateTimeVersion', [&$docId, $paper, &$result, true]);
+
+        self::assertNull($docId);
+        self::assertSame(2.0, $result['hookVersion']);
+        self::assertSame(2, $result['status']);
     }
 
     // =========================================================================

@@ -15,7 +15,9 @@ class ErrorDefaultController extends Zend_Controller_Action
         if (!$errors || !$errors instanceof ArrayObject) {
             $this->view->message = $this->_getParam('error_message');
             $this->view->description = $this->_getParam('error_description');
-                       
+            if (in_array($this->view->message, ["Accès refusé", "Access denied", "Erreur d'authentification", "Erreur d'autorisation"])) {
+                $this->getResponse()->setHttpResponseCode(403);
+            }
             //return;
         } else {
         	
@@ -40,7 +42,8 @@ class ErrorDefaultController extends Zend_Controller_Action
 	        if ($log = $this->getLog()) {
 	        	$log->log("******* " . $this->view->message . " : " . $errors->exception->getMessage(), $priority, $errors->exception);
 	        	$log->log("Exception thrown in : " . $errors->exception->getFile() . " - l." .$errors->exception->getLine(), $priority);
-	            $log->log('Request Parameters : ' . Zend_Json::encode($errors->request->getParams()), $priority, $errors->request->getParams());
+	            $loggableParams = $this->redactSensitiveParams($errors->request->getParams());
+            $log->log('Request Parameters : ' . Zend_Json::encode($loggableParams), $priority, $loggableParams);
 	        }
 	        
 	        // conditionally display exceptions
@@ -61,6 +64,27 @@ class ErrorDefaultController extends Zend_Controller_Action
 	        
 	        
         }
+    }
+
+    /**
+     * Replace the value of credential-like parameters before they reach the logs.
+     *
+     * @param array $params
+     * @return array
+     */
+    public function redactSensitiveParams(array $params): array
+    {
+        $sensitive = ['password', 'passwd', 'pwd', 'previous_password', 'api_password', 'token', 'secret', 'csrf_token'];
+
+        foreach ($params as $key => $value) {
+            if (is_array($value)) {
+                $params[$key] = $this->redactSensitiveParams($value);
+            } elseif (in_array(strtolower((string)$key), $sensitive, true)) {
+                $params[$key] = '***';
+            }
+        }
+
+        return $params;
     }
 
     public function getLog()

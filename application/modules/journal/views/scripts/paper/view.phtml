@@ -199,7 +199,8 @@ if ($paper->isPublished()) {
 <?php
 $this->headTitle("#" . $paper->getDocid() . ' - ' . $paper->getTitle($language, true));
 $this->jQuery()->addJavascriptFile('/js/paper/view.js');
-
+$this->jQuery()->addJavascriptFile('/js/common/utils.js');
+$this->jQuery()->addJavascriptFile('/js/paper/edit_master_file.js');
 ?>
 
 <?php if ($this->isAllowedToBackToAdminPage): ?>
@@ -459,7 +460,6 @@ $this->jQuery()->addJavascriptFile('/js/paper/biblioRef.js');
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
 ?>
 <script>
-    let hasHook = <?= json_encode($this->hasHook) ?>;
     let isRequiredVersion = <?= json_encode($this->isRequiredVersion) ?>;
     let isFromZSubmit = <?= $this->isFromZSubmit ?>;
     let zSubmitStatus = <?= json_encode($this->zSubmitStatus) ?>;

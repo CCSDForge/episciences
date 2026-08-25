@@ -88,6 +88,44 @@ describe('Volume Special Issue - Access Code Toggle', () => {
             expect(html).toContain('id="access_code-element"');
             expect(html).toContain("Code d'accès"); // Default translate returns text as-is
         });
+
+        test('should include copy button with data-copy-value when access code is present', () => {
+            const html = VolumeSpecial.createAccessCodeElement('ABC123', text => text);
+
+            expect(html).toContain('class="btn btn-link btn-xs copy-btn"');
+            expect(html).toContain('data-copy-value="ABC123"');
+            expect(html).toContain('fa-regular fa-copy');
+            expect(html).toContain('copy-feedback');
+        });
+
+        test('should not include copy button when access code is empty', () => {
+            const html = VolumeSpecial.createAccessCodeElement('', text => text);
+
+            expect(html).not.toContain('copy-btn');
+            expect(html).not.toContain('data-copy-value');
+        });
+
+        test('should not include copy button when access code is undefined', () => {
+            const html = VolumeSpecial.createAccessCodeElement(undefined, text => text);
+
+            expect(html).not.toContain('copy-btn');
+        });
+
+        test('should HTML-escape special characters in copy button data-copy-value', () => {
+            const html = VolumeSpecial.createAccessCodeElement('<script>alert(1)</script>', text => text);
+
+            expect(html).not.toContain('<script>');
+            expect(html).toContain('&lt;script&gt;');
+        });
+
+        test('should translate copy button labels', () => {
+            const mockTranslate = jest.fn(text => `TR:${text}`);
+            const html = VolumeSpecial.createAccessCodeElement('CODE', mockTranslate);
+
+            expect(mockTranslate).toHaveBeenCalledWith("Copier le code d'accès");
+            expect(mockTranslate).toHaveBeenCalledWith('Copié !');
+            expect(html).toContain("TR:Copié !");
+        });
     });
 
     describe('showAccessCode', () => {
@@ -125,6 +163,24 @@ describe('Volume Special Issue - Access Code Toggle', () => {
 
             expect(() => VolumeSpecial.showAccessCode()).not.toThrow();
             expect(document.getElementById('access_code-element')).toBeNull();
+        });
+
+        test('should call CopyToClipboard.init with the inserted element when available', () => {
+            global.CopyToClipboard = { init: jest.fn() };
+            window.access_code = 'MYCODE';
+
+            VolumeSpecial.showAccessCode();
+
+            const el = document.getElementById('access_code-element');
+            expect(global.CopyToClipboard.init).toHaveBeenCalledWith(el);
+
+            delete global.CopyToClipboard;
+        });
+
+        test('should not throw when CopyToClipboard is not defined', () => {
+            delete global.CopyToClipboard;
+
+            expect(() => VolumeSpecial.showAccessCode()).not.toThrow();
         });
     });
 

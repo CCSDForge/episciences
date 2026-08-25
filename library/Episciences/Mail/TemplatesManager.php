@@ -2,6 +2,8 @@
 
 class Episciences_Mail_TemplatesManager
 {
+    private const CUSTOM_KEY_PREFIX = 'custom_';
+
     public const SUFFIX_TPL_NAME = '_tpl_name';
     public const SUFFIX_TPL_SUBJECT = '_mail_subject';
     public const TPL_TRANSLATION_FILE_NAME = 'mails.php';
@@ -1619,7 +1621,10 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_COMMENT_ANSWER_EDITOR_COPY => [self::DESCRIPTION => "notification informant le comité éditorial quand un rédacteur commente un article", self::RECIPIENT => self::MANAGERS_COPY_EDITORS_EXCEPTED_EXP],
         self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_AUTHOR_COPY => [self::DESCRIPTION => "notification informant l'auteur quand un relecteur poste un commentaire sur la page de son article", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_PAPER_COMMENT_FROM_REVIEWER_TO_CONTRIBUTOR_EDITOR_COPY => [self::DESCRIPTION => "notification informant le comité éditorial quand un relecteur poste un commentaire sur la page de l'article", self::RECIPIENT => self::MANAGERS_COPY_EDITORS_EXCEPTED_EXP],
-        self::TYPE_PAPER_REVISION_ANSWER => [self::DESCRIPTION => "réponse de l'auteur à une demande de modifications émise par le comité éditorial : l'auteur ne veut pas apporter de modifications", self::RECIPIENT => self::EDITORS_RECEP_EXP],
+        self::TYPE_PAPER_REVISION_ANSWER => [
+                self::DESCRIPTION => "réponse de l'auteur à une demande de modifications émise par le comité éditorial : l'auteur ne veut pas apporter de modifications",
+                self::RECIPIENT => self::MANAGERS_RECEP_EXP
+        ],
         self::TYPE_PAPER_NEW_VERSION_REVIEWER_REINVITATION => [self::DESCRIPTION => "notification informant le relecteur de sa réassignation à la nouvelle version de l'article", self::RECIPIENT => self::AUTHOR_RECEP_EXP],
         self::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN => [self::DESCRIPTION => "notification informant le relecteur de sa réassignation à la version temporaire de l'article", self::RECIPIENT => "tous les relecteurs assignés à l'article si l'option 'Réassigner automatiquement les mêmes relecteurs quand une nouvelle version est soumise' est activée"],
         self::TYPE_PAPER_TMP_VERSION_SUBMITTED => [self::DESCRIPTION => "réponse de l'auteur à une demande de modifications émise par le comité éditorial : l’auteur propose une version temporaire", self::RECIPIENT => self::MANAGERS_COPY_EDITORS_EXCEPTED_EXP],
@@ -1895,6 +1900,71 @@ class Episciences_Mail_TemplatesManager
             $result['file'] = $result['key'] . '.phtml';
         } else {
             $result = false;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Fetch multiple templates by their base keys using two queries instead of 2×N.
+     * Custom templates take precedence over defaults; when the DB returns duplicate rows
+     * for the same key, the first row wins (consistent with findByKey/fetchRow semantics).
+     *
+     * @param array<int, string> $keys   base template keys (without 'custom_' prefix)
+     * @param string|null        $rvcode journal code
+     * @return array<string, Episciences_Mail_Template> indexed by base key
+     * @throws Zend_Exception when rvcode is empty or null
+     */
+    public static function findManyByKeys(array $keys, ?string $rvcode): array
+    {
+        if (empty($keys)) {
+            return [];
+        }
+
+        if (!$rvcode) {
+            throw new Zend_Exception("Template could not be found because rvcode is missing");
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $prefixLen = strlen(self::CUSTOM_KEY_PREFIX);
+
+        $customKeys = array_map(static fn(string $k) => self::CUSTOM_KEY_PREFIX . $k, $keys);
+        $customRows = $db->fetchAll(
+            $db->select()->from(T_MAIL_TEMPLATES)
+                ->where('`KEY` IN (?)', $customKeys)
+                ->where('RVCODE = ?', $rvcode)
+                ->order('ID ASC')
+        );
+
+        $customByKey = [];
+        foreach ($customRows as $row) {
+            $baseKey = substr($row['KEY'], $prefixLen);
+            if (!isset($customByKey[$baseKey])) {
+                $customByKey[$baseKey] = $row;
+            }
+        }
+
+        $defaultByKey = [];
+        $needsDefault = array_diff($keys, array_keys($customByKey));
+        if (!empty($needsDefault)) {
+            $defaultRows = $db->fetchAll(
+                $db->select()->from(T_MAIL_TEMPLATES)
+                    ->where('`KEY` IN (?)', array_values($needsDefault))
+                    ->order('ID ASC')
+            );
+            foreach ($defaultRows as $row) {
+                if (!isset($defaultByKey[$row['KEY']])) {
+                    $defaultByKey[$row['KEY']] = $row;
+                }
+            }
+        }
+
+        $result = [];
+        foreach ($keys as $key) {
+            $row = $customByKey[$key] ?? $defaultByKey[$key] ?? null;
+            if ($row !== null) {
+                $result[$key] = Episciences_Mail_Template::fromRow($row);
+            }
         }
 
         return $result;

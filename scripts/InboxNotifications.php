@@ -1351,7 +1351,7 @@ class InboxNotifications extends AbstractScript
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $context->getTitle($locale, true),
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $context->formatAuthorsMetadata($locale),
-                Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($context->getWhen(), $locale),
+                Episciences_Mail_Tags::TAG_PAPER_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($context->getSubmission_date(), $locale),
                 Episciences_Mail_Tags::TAG_PAPER_URL => $contextUrl,
                 Episciences_Mail_Tags::TAG_INVITATION_URL => $invitationUrl,
                 Episciences_Mail_Tags::TAG_INVITATION_DEADLINE => Episciences_View_Helper_Date::Date($oInvitation->getExpiration_date(), $locale),

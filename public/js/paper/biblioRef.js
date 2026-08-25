@@ -115,9 +115,31 @@ class BiblioRefParser {
             const isSuspect  = detectors.length > 0 || status.includes('Problematic') || pubpeerurl.length > 0;
             const isGenuine  = !isSuspect && status.includes('Genuine');
 
+            // Open access info is optional and only present when the API found a matching open-access copy
+            const openAccess = parsedRef['open-access'];
+            const openAccessUrl = openAccess && typeof openAccess === 'object' && typeof openAccess.url === 'string'
+                ? openAccess.url
+                : null;
+            const openAccessSourceTitle = openAccess && typeof openAccess === 'object' && typeof openAccess.source_title === 'string'
+                ? openAccess.source_title
+                : '';
+
+            // Reference order within bibliography (for manual/curated reordering).
+            // A missing/non-numeric referenceOrder is left undefined and sorts last (see citations.sort
+            // below); mirrored in library/Episciences/Api/BiblioRefApiClient.php::parseResponse().
+            let referenceOrder;
+            const rawReferenceOrder = citation.referenceOrder;
+            const isNumberType = typeof rawReferenceOrder === 'number';
+            const isNonBlankStringType = typeof rawReferenceOrder === 'string' && rawReferenceOrder.trim() !== '';
+            if ((isNumberType || isNonBlankStringType) && Number.isFinite(Number(rawReferenceOrder))) {
+                referenceOrder = Number(rawReferenceOrder);
+            }
+
             return {
                 rawReference: parsedRef.raw_reference,
                 doi:          parsedRef.doi,
+                openAccessUrl,
+                openAccessSourceTitle,
                 isAccepted:      citation.isAccepted === 1,
                 showAccepted:    isAuthorizedToSeeAcc && citation.isAccepted === 1,
                 showNotAccepted: isAuthorizedToSeeAcc && citation.isAccepted !== 1,
@@ -126,6 +148,7 @@ class BiblioRefParser {
                 pubpeerurl,
                 isSuspect,
                 isGenuine,
+                referenceOrder,
             };
         } catch (error) {
             console.error('Failed to parse citation reference:', error);
@@ -203,7 +226,7 @@ class BiblioRefRenderer {
         if (citation.isSuspect) {
             const icon = this._makeIcon('fa-solid fa-square-xmark');
             icon.style.color = '#c0392b';
-            li.appendChild(this._makeSrOnly(typeof translate === 'function' ? translate('Référence problématique') : 'Problematic reference'));
+            li.appendChild(this._makeSrOnly(typeof translate === 'function' ? translate('Référence problématique détectée automatiquement') : 'Detected problematic reference'));
             li.appendChild(icon);
             li.appendChild(document.createTextNode(' '));
         } else if (citation.showAccepted) {
@@ -224,8 +247,9 @@ class BiblioRefRenderer {
         li.appendChild(document.createTextNode(citation.rawReference || ''));
 
         // Add DOI link if present (only safe http/https URLs)
+        let formattedDoi = null;
         if (citation.doi) {
-            const formattedDoi = BiblioRefParser.formatDoi(citation.doi);
+            formattedDoi = BiblioRefParser.formatDoi(citation.doi);
             if (formattedDoi && /^https?:\/\/[^\s<>"]+$/.test(formattedDoi.url)) {
                 const a = document.createElement('a');
                 a.href = formattedDoi.url;
@@ -236,6 +260,27 @@ class BiblioRefRenderer {
                 li.appendChild(document.createTextNode(' '));
                 li.appendChild(a);
             }
+        }
+
+        // Add open-access link if present, distinct from the DOI link, and a safe http/https URL
+        if (
+            citation.openAccessUrl &&
+            (!formattedDoi || formattedDoi.url !== citation.openAccessUrl) &&
+            /^https?:\/\/[^\s<>"]+$/.test(citation.openAccessUrl)
+        ) {
+            const a = document.createElement('a');
+            a.href = citation.openAccessUrl;
+            a.rel = 'noopener';
+            a.target = '_blank';
+            a.className = 'biblio-ref-oa-link';
+            if (citation.openAccessSourceTitle) {
+                a.title = citation.openAccessSourceTitle;
+            }
+            a.appendChild(this._makeIcon('fas fa-lock-open'));
+            a.appendChild(document.createTextNode(' ' + citation.openAccessUrl));
+            a.appendChild(this._makeSrOnly(typeof translate === 'function' ? ` (${translate('(ouvre dans un nouvel onglet)')})` : ' (opens in new tab)'));
+            li.appendChild(document.createTextNode(' '));
+            li.appendChild(a);
         }
 
         // Append colored badges for suspect signals, or genuine badge
@@ -480,6 +525,15 @@ class BiblioRefManager {
                 )
                 .filter(citation => citation !== null);
 
+            // Sort citations by referenceOrder when available; a missing referenceOrder sorts last.
+            // Number.MAX_SAFE_INTEGER (rather than Infinity) is used as the "missing" sentinel so that
+            // two missing values subtract to 0, not NaN, keeping this a spec-valid sort comparator.
+            citations.sort((a, b) => {
+                const orderA = a.referenceOrder ?? Number.MAX_SAFE_INTEGER;
+                const orderB = b.referenceOrder ?? Number.MAX_SAFE_INTEGER;
+                return orderA - orderB;
+            });
+
             // Render citations if we have any
             if (citations.length > 0) {
                 renderer.renderCitations(citations);
@@ -487,6 +541,26 @@ class BiblioRefManager {
                 // Show section if available
                 if (section) {
                     section.style.display = 'block';
+                }
+
+                // Badge + hover hint for problematic references count
+                const suspectCount = citations.filter(c => c.isSuspect).length;
+                if (suspectCount > 0) {
+                    const hintText = typeof translate === 'function'
+                        ? translate('Références problématiques détectées automatiquement')
+                        : 'Automatically detected problematic references';
+
+                    const badge = document.getElementById('biblio-refs-problematic-count');
+                    if (badge) {
+                        badge.textContent = String(suspectCount);
+                        badge.setAttribute('aria-label', suspectCount + ' ' + hintText);
+                        badge.removeAttribute('hidden');
+                    }
+
+                    const hint = section ? section.querySelector('.biblio-refs-hint') : null;
+                    if (hint) {
+                        hint.textContent = hintText;
+                    }
                 }
             }
         } catch (error) {

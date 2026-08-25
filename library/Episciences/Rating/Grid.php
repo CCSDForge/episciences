@@ -180,9 +180,11 @@ class Episciences_Rating_Grid
     }
 
     /**
-     * @return Episciences_Rating_Criterion[]
+     * Returns the criteria array, or null if not yet initialized.
+     *
+     * @return Episciences_Rating_Criterion[]|null
      */
-    public function getCriteria()
+    public function getCriteria(): ?array
     {
         return $this->_criteria;
     }

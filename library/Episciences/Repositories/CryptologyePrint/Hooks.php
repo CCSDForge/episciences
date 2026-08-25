@@ -1,10 +1,11 @@
 <?php
 
 use Episciences\Repositories\CommonHooksInterface;
+use Episciences\Repositories\ConceptIdentifierInterface;
 use Episciences\Repositories\FilesEnrichmentInterface;
 use Episciences\Repositories\InputSanitizerInterface;
 
-class Episciences_Repositories_CryptologyePrint_Hooks implements CommonHooksInterface, InputSanitizerInterface, FilesEnrichmentInterface
+class Episciences_Repositories_CryptologyePrint_Hooks implements CommonHooksInterface, InputSanitizerInterface, FilesEnrichmentInterface, ConceptIdentifierInterface
 {
     public const SELF_URL = 'https://eprint.iacr.org/';
     public const SHORT_URL = 'https://ia.cr/';

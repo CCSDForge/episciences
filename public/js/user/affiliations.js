@@ -90,7 +90,7 @@ function initializeAffiliationsAutocomplete() {
     }
 
     function searchAffiliations(term) {
-        const url = `https://api.ror.org/organizations?affiliation=${encodeURIComponent(term)}`;
+        const url = `https://api.ror.org/v2/organizations?query=${encodeURIComponent(term)}`;
 
         fetch(url)
             .then(response => {
@@ -105,40 +105,39 @@ function initializeAffiliationsAutocomplete() {
                 if (rorResponse.items) {
                     rorResponse.items.forEach(item => {
                         let additionalInfo = '';
-                        if (
-                            item.matching_type === 'ACRONYM' &&
-                            item.organization.acronyms &&
-                            item.organization.acronyms.length > 0
-                        ) {
-                            additionalInfo = `[${item.organization.acronyms[0]}]`;
-                            cacheAcronym.push(additionalInfo);
-                            cacheAcronym = [...new Set(cacheAcronym)];
-                        }
+                        const names = item.names || [];
 
-                        // Get the display name from the names array
-                        let displayName = '';
-                        if (item.organization.names) {
-                            const rorDisplayName = item.organization.names.find(
-                                n => n.types && n.types.includes('ror_display')
-                            );
-                            const labelName = item.organization.names.find(
-                                n => n.types && n.types.includes('label')
-                            );
-
-                            if (rorDisplayName) {
-                                displayName = rorDisplayName.value;
-                            } else if (labelName) {
-                                displayName = labelName.value;
-                            } else if (item.organization.names.length > 0) {
-                                displayName = item.organization.names[0].value;
+                        const acronymEntry = names.find(
+                            n => n.types && n.types.includes('acronym')
+                        );
+                        if (acronymEntry) {
+                            additionalInfo = `[${acronymEntry.value}]`;
+                            if (!cacheAcronym.includes(additionalInfo)) {
+                                cacheAcronym.push(additionalInfo);
                             }
                         }
 
+                        let displayName = '';
+                        const rorDisplayName = names.find(
+                            n => n.types && n.types.includes('ror_display')
+                        );
+                        const labelName = names.find(
+                            n => n.types && n.types.includes('label')
+                        );
+
+                        if (rorDisplayName) {
+                            displayName = rorDisplayName.value;
+                        } else if (labelName) {
+                            displayName = labelName.value;
+                        } else if (names.length > 0) {
+                            displayName = names[0].value;
+                        }
+
                         const label =
-                            `${displayName} ${additionalInfo} #${item.organization.id}`.trim();
+                            `${displayName} ${additionalInfo} #${item.id}`.trim();
                         availableAffiliations.push({
                             label: label,
-                            identifier: item.organization.id,
+                            identifier: item.id,
                             acronym: additionalInfo,
                         });
                     });

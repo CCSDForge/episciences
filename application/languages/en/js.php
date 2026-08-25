@@ -142,6 +142,7 @@ return [
     "Retirer ce relecteur" => "Remove this reviewer",
     "Retirer un relecteur" => "Remove a reviewer",
     "Réinviter ce relecteur" => "Re-invite this reviewer",
+    "Accepter l'invitation à la place du relecteur" => "Accept the invitation on behalf of the reviewer",
 
     "Code d'accès" => "Access code",
     "Filtrer les relecteurs" => "Filter reviewers",
@@ -298,4 +299,9 @@ return [
     'Genuine'                      => 'Genuine',
     'More information'             => 'More information',
     'View on PubPeer'              => 'View on PubPeer',
+    'Référence problématique détectée automatiquement'    => 'Detected problematic reference',
+    'Références problématiques détectées automatiquement' => 'Automatically detected problematic references',
+
+    // Activity timeline filters
+    'activity_timeline_events_shown' => 'event(s) shown',
 ];

@@ -1,8 +1,8 @@
 <?php
 
+use Ccsd\Auth\AdapterFactory;
+use Episciences\Altcha\ChallengeHelper;
 use Episciences\Trait\LocaleByCookieTrait;
-use neverbehave\Hcaptcha;
-use ReCaptcha\ReCaptcha;
 
 
 class UserDefaultController extends Zend_Controller_Action
@@ -13,6 +13,8 @@ class UserDefaultController extends Zend_Controller_Action
     public const ERROR = 'error';
 
     public const DEFAULT_IMG_PATH = '/../public/img/user.svg';
+    private const ERROR_ERROR_PHTML = 'error/error.phtml';
+    private const IMAGE_SVG_XML = 'image/svg+xml';
 
     public function indexAction(): void
     {
@@ -40,7 +42,7 @@ class UserDefaultController extends Zend_Controller_Action
             if (count($epiUserData) === 0) {
                 $this->view->message = "Utilisateur inconnu";
                 $this->view->description = "Cet utilisateur est inconnu.";
-                $this->renderScript('error/error.phtml');
+                $this->renderScript(self::ERROR_ERROR_PHTML);
                 return;
             }
 
@@ -59,7 +61,7 @@ class UserDefaultController extends Zend_Controller_Action
         } else {
             $this->view->message = "Vous n'êtes pas connecté";
             $this->view->description = "<a href='/user/login'>Connectez-vous</a>, ou <a href='/user/create'>créez votre compte</a>.";
-            $this->renderScript('error/error.phtml');
+            $this->renderScript(self::ERROR_ERROR_PHTML);
             return;
         }
 
@@ -164,8 +166,8 @@ class UserDefaultController extends Zend_Controller_Action
         if ($adapterType === 'LemonLDAP') {
             $adapter = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
         } else {
-            // Use Factory for standard adapters (CAS, MYSQL, DB, IDP, ORCID)
-            $adapter = \Ccsd\Auth\AdapterFactory::getTypedAdapter($adapterType);
+            // Use Factory for standard adapters (CAS, MYSQL)
+            $adapter = AdapterFactory::getTypedAdapter($adapterType);
         }
 
         $adapter->setIdentityStructure($localUser);
@@ -205,7 +207,7 @@ class UserDefaultController extends Zend_Controller_Action
                     // For other adapters (CAS, etc.), show generic error
                     $this->view->message = "Erreur d'authentification";
                     $this->view->description = "L'authentification a échoué";
-                    $this->renderScript('error/error.phtml');
+                    $this->renderScript(self::ERROR_ERROR_PHTML);
                 }
                 break;
 
@@ -240,7 +242,7 @@ class UserDefaultController extends Zend_Controller_Action
                             trigger_error(sprintf('Profile #%s [rvCode = %s] not identified.', $localUser->getUid(), RVCODE), E_USER_WARNING);
                             $this->view->message = 'Actuellement connecté en tant que :';
                             $this->view->description = 'Profil non identifié !';
-                            $this->renderScript('error/error.phtml');
+                            $this->renderScript(self::ERROR_ERROR_PHTML);
                             return;
                         }
                     } catch (Zend_Db_Statement_Exception $e) {
@@ -309,8 +311,6 @@ class UserDefaultController extends Zend_Controller_Action
     public function logoutAction(): void
     {
 
-        $scheme = SERVER_PROTOCOL . '://';
-
         $urlParams = ['controller' => 'user', 'action' => 'logoutfromcas'];
 
         if ($this->getParam('reason') == 'passwordupdated') {
@@ -321,7 +321,9 @@ class UserDefaultController extends Zend_Controller_Action
             $urlParams = array_merge($urlParams, ['lang' => Episciences_Auth::getLangueid()]);
         }
 
-        $url = $scheme . $_SERVER['HTTP_HOST'] . $this->view->url($urlParams);
+        // Build the return URL from the configured application base, not from the
+        // incoming request host.
+        $url = rtrim(APPLICATION_URL, '/') . $this->view->url($urlParams);
 
         $auth = null;
         $adapterName = strtoupper(defined('EPISCIENCES_AUTH_ADAPTER_NAME') ? (string)EPISCIENCES_AUTH_ADAPTER_NAME : 'CAS');
@@ -330,7 +332,7 @@ class UserDefaultController extends Zend_Controller_Action
             $auth = new Episciences_Auth_Adapter_LmLDAP_Protocol_Cas();
         } elseif ($adapterName === 'MYSQL') {
             Episciences_Auth::getInstance()->clearIdentity();
-            $this->_redirect($url);
+            $this->redirect($url);
             return;
         } else {
             $auth = new Ccsd_Auth_Adapter_Cas();
@@ -515,11 +517,7 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
 
-        if (((CAPTCHA_BRAND === 'RECAPTCHA') || (CAPTCHA_BRAND === 'HCAPTCHA')) && !$isAllowedToAddUserAccounts) {
-            $displayCaptcha = true;
-        } else {
-            $displayCaptcha = false;
-        }
+        $displayCaptcha = CAPTCHA_BRAND === 'ALTCHA' && !$isAllowedToAddUserAccounts;
 
         $form = new Episciences_User_Form_Create();
         $form->setAction('/user/create');
@@ -529,32 +527,7 @@ class UserDefaultController extends Zend_Controller_Action
         ]);
 
         if ($displayCaptcha) {
-            if (CAPTCHA_BRAND === 'RECAPTCHA') {
-                $datasitekey = RECAPTCHA_PUBKEY;
-                $htmlClassId = 'g-recaptcha';
-            } elseif (CAPTCHA_BRAND === 'HCAPTCHA') {
-                $datasitekey = HCAPTCHA_SITEKEY;
-                $htmlClassId = 'h-captcha';
-            }
-            $form->addElement(
-                'hidden',
-                'a-fake-element',
-                [
-                    'required' => false,
-                    'ignore' => true,
-                    'autoInsertNotEmptyValidator' => false,
-                    'decorators' => [
-                        [
-                            'HtmlTag', [
-                            'tag' => 'div',
-                            'id' => $htmlClassId,
-                            'class' => $htmlClassId,
-                            'style' => 'margin-left:20%',
-                            'data-sitekey' => $datasitekey]
-                        ]
-                    ]
-                ]
-            );
+            $this->addAltchaWidgetToForm($form);
         }
 
         /** @var Zend_Controller_Request_Http $request */
@@ -599,7 +572,10 @@ class UserDefaultController extends Zend_Controller_Action
         // create an account (CAS + Episciences)
         if ($request->getPost('submit') && $form->isValid($request->getPost())) {
 
-            $user = new Episciences_User($form->getValues());
+            $formValues = $form->getValues();
+            $formValues['AFFILIATIONS'] = $this->processAffiliations($formValues['AFFILIATIONS'] ?? []);
+
+            $user = new Episciences_User($formValues);
             $user->setTime_registered();
             $user->setRegistrationDate(); // Episciences registration
             $user->setScreenName();
@@ -619,24 +595,11 @@ class UserDefaultController extends Zend_Controller_Action
             } else {
                 // regular user: new account is not valid, a mail is sent with an activation link
 
-                if ($displayCaptcha) {
-                    if (CAPTCHA_BRAND === 'RECAPTCHA') {
-                        $recaptcha = new ReCaptcha(RECAPTCHA_PRIVKEY);
-                        $userResponse = $request->getPost('g-recaptcha-response');
-                        $resp = $recaptcha->setExpectedHostname($_SERVER['SERVER_NAME'])
-                            ->verify($userResponse, $_SERVER['REMOTE_ADDR']);
-                    } elseif (CAPTCHA_BRAND === 'HCAPTCHA') {
-                        $hcaptcha = new Hcaptcha(HCAPTCHA_SECRETKEY);
-                        $userResponse = $request->getPost('h-captcha-response');
-                        $resp = $hcaptcha->challenge($userResponse);
-                    }
-
-                    if (!$resp->isSuccess()) {
-                        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Merci de compléter le <a target="_blank" rel="noopener" href="https://fr.wikipedia.org/wiki/CAPTCHA">CAPTCHA</a>');
-                        $this->view->form = $form;
-                        $this->render('create');
-                        return;
-                    }
+                if ($displayCaptcha && !$this->verifyAltchaToken($request->getPost('altcha', ''))) {
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Merci de compléter le <a target="_blank" rel="noopener" href="https://fr.wikipedia.org/wiki/CAPTCHA">CAPTCHA</a>');
+                    $this->view->form = $form;
+                    $this->render('create');
+                    return;
                 }
 
 
@@ -870,10 +833,28 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function deleteAction()
     {
+        $this->_helper->viewRenderer->setNoRender();
+        $this->_helper->getHelper('layout')->disableLayout();
+
         $request = $this->getRequest();
+
+        // This action only handles POST submissions from a secretary.
+        if (!$request->isPost() || !Episciences_Auth::isSecretary()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo 0;
+            return;
+        }
 
         $userId = $request->getPost('userId');
         $table = $request->getPost('table');
+
+        // Each delete control carries its own per-user request token.
+        $tokenName = 'user_delete_' . (int)$userId;
+        if (!Episciences_Csrf_Helper::validateToken($tokenName, (string)$request->getPost($tokenName, ''))) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo 0;
+            return;
+        }
 
         $respond = 0;
 
@@ -883,10 +864,84 @@ class UserDefaultController extends Zend_Controller_Action
             $respond = Episciences_User::deleteFromCAS($userId);
         }
 
-        $this->_helper->viewRenderer->setNoRender();
-        $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;
 
+    }
+
+    /**
+     * Issues a new ALTCHA proof-of-work challenge for the registration form.
+     */
+    public function altchaChallengeAction(): void
+    {
+        $challenge = ChallengeHelper::createChallenge();
+        $this->getResponse()
+            ->setHeader('Content-Type', 'application/json')
+            ->setHeader('Cache-Control', 'no-store')
+            ->setBody($challenge->toJson());
+        $this->_helper->viewRenderer->setNoRender(true);
+        $this->_helper->layout()->disableLayout();
+    }
+
+    private function addAltchaWidgetToForm(Zend_Form $form): void
+    {
+        $form->addElement('hidden', 'a-fake-element', [
+            'required' => false,
+            'ignore' => true,
+            'autoInsertNotEmptyValidator' => false,
+            'decorators' => [
+                new Episciences_Form_Decorator_CustomHtmlTag([
+                    'tag' => 'altcha-widget',
+                    'challenge' => '/user/altcha-challenge',
+                    'language' => Zend_Registry::get('lang'),
+                ]),
+                new Zend_Form_Decorator_HtmlTag([
+                    'tag' => 'div',
+                    'style' => 'clear:both; padding-left:25%; padding-right:15px; margin-bottom:10px',
+                ]),
+            ],
+        ]);
+    }
+
+    private function verifyAltchaToken(string $raw): bool
+    {
+        if ($raw === '') {
+            return false;
+        }
+        $decoded = json_decode(base64_decode($raw, true) ?: '', true);
+        if (!is_array($decoded)
+            || !isset($decoded['challenge']['parameters'], $decoded['solution'])
+            || !is_array($decoded['challenge']['parameters'])
+            || !is_array($decoded['solution'])
+        ) {
+            return false;
+        }
+        $nonce = $decoded['challenge']['parameters']['nonce'] ?? '';
+        if ($nonce === '') {
+            return false;
+        }
+        $cache = ChallengeHelper::getCache();
+        if (ChallengeHelper::isReplay($nonce, $cache)) {
+            return false;
+        }
+        $challenge = new \AltchaOrg\Altcha\Challenge(
+            \AltchaOrg\Altcha\ChallengeParameters::fromArray($decoded['challenge']['parameters']),
+            $decoded['challenge']['signature'] ?? null,
+        );
+        $solution = new \AltchaOrg\Altcha\Solution(
+            counter: (int) $decoded['solution']['counter'],
+            derivedKey: (string) $decoded['solution']['derivedKey'],
+        );
+        $result = ChallengeHelper::createAltcha()->verifySolution(
+            new \AltchaOrg\Altcha\VerifySolutionOptions(
+                payload: new \AltchaOrg\Altcha\Payload($challenge, $solution),
+                algorithm: new \AltchaOrg\Altcha\Algorithm\Argon2id(),
+            )
+        );
+        if (!$result->verified) {
+            return false;
+        }
+        ChallengeHelper::markUsed($nonce, $cache);
+        return true;
     }
 
     /**
@@ -908,7 +963,7 @@ class UserDefaultController extends Zend_Controller_Action
         if (empty($tokenData) || 'VALID' !== $userTokens->getUsage()) {
             $this->view->message = "Erreur lors de l'activation du compte";
             $this->view->description = "Erreur le jeton d'activation de ce compte n'est pas valable";
-            $this->renderScript('error/error.phtml');
+            $this->renderScript(self::ERROR_ERROR_PHTML);
             return;
         }
 
@@ -939,7 +994,18 @@ class UserDefaultController extends Zend_Controller_Action
             'class' => 'btn btn-primary'
         ]);
 
+        $displayCaptcha = CAPTCHA_BRAND === 'ALTCHA';
+        if ($displayCaptcha) {
+            $this->addAltchaWidgetToForm($form);
+        }
+
         if ($this->getRequest()->isPost() && $form->isValid($this->getRequest()->getPost())) {
+            if ($displayCaptcha && !$this->verifyAltchaToken($this->getRequest()->getPost('altcha', ''))) {
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Merci de compléter le <a target="_blank" rel="noopener" href="https://fr.wikipedia.org/wiki/CAPTCHA">CAPTCHA</a>');
+                $this->view->form = $form;
+                $this->render('lostpassword');
+                return;
+            }
 
             $userMapper = new Ccsd_User_Models_UserMapper();
             $userInfo = $userMapper->findByUsername($form->getValue('USERNAME'));
@@ -1069,9 +1135,20 @@ class UserDefaultController extends Zend_Controller_Action
             'class' => 'btn btn-primary'
         ]);
 
+        $displayCaptcha = CAPTCHA_BRAND === 'ALTCHA';
+        if ($displayCaptcha) {
+            $this->addAltchaWidgetToForm($form);
+        }
+
         $request = $this->getRequest();
 
         if ($this->getRequest()->isPost() && $form->isValid($request->getPost())) {
+            if ($displayCaptcha && !$this->verifyAltchaToken($request->getPost('altcha', ''))) {
+                $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Merci de compléter le <a target="_blank" rel="noopener" href="https://fr.wikipedia.org/wiki/CAPTCHA">CAPTCHA</a>');
+                $this->view->form = $form;
+                $this->render('lostlogin');
+                return;
+            }
 
             $user = new Episciences_User($form->getValues());
 
@@ -1481,6 +1558,7 @@ class UserDefaultController extends Zend_Controller_Action
             $this->_helper->layout->disableLayout();
             $this->view->form = $form;
             $this->view->uid = $uid;
+            $this->view->csrfToken = Episciences_Csrf_Helper::generateToken('user_saveroles_' . (int)$uid);
             $this->renderScript('user/roles_form.phtml');
         }
     }
@@ -1490,9 +1568,28 @@ class UserDefaultController extends Zend_Controller_Action
      */
     public function saverolesAction()
     {
+        $this->_helper->viewRenderer->setNoRender();
+        $this->_helper->layout->disableLayout();
+
         $request = $this->getRequest();
+
+        // This action only handles POST submissions from an authenticated user.
+        if (!$request->isPost() || !Episciences_Auth::isLogged()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo 0;
+            return;
+        }
+
         $params = $request->getPost();
         $uid = $params['uid'];
+
+        // The form rendered by rolesformAction carries a per-user request token.
+        $tokenName = 'user_saveroles_' . (int)$uid;
+        if (!Episciences_Csrf_Helper::validateToken($tokenName, $params[$tokenName] ?? '')) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo 0;
+            return;
+        }
 
         if (array_key_exists('roles_' . $uid, $params)) {
             $roles = $params['roles_' . $uid];
@@ -1500,9 +1597,12 @@ class UserDefaultController extends Zend_Controller_Action
             $roles = [];
         }
 
+        // Restrict submitted roles to those the current user is allowed to assign.
+        $acl = new Episciences_Acl();
+        $editableRoles = $acl->getEditableRoles();
+        $roles = array_values(array_intersect((array)$roles, array_keys($editableRoles)));
+
         $user = new Episciences_User();
-        $this->_helper->viewRenderer->setNoRender();
-        $this->_helper->layout->disableLayout();
 
         // Save roles
         $rolesSaved = $user->saveUserRoles($uid, $roles);
@@ -1606,7 +1706,7 @@ class UserDefaultController extends Zend_Controller_Action
         echo $res;
     }
 
-    public function photoAction()
+    public function photoAction(): void
     {
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender(true);
@@ -1624,7 +1724,7 @@ class UserDefaultController extends Zend_Controller_Action
                 $screenName = $this->getParam('name');
                 $screenName = urldecode($screenName);
                 $screenName = filter_var($screenName, FILTER_DEFAULT, FILTER_FLAG_NO_ENCODE_QUOTES);
-                $imageMimeType = 'image/svg+xml';
+                $imageMimeType = self::IMAGE_SVG_XML;
                 break;
             case Ccsd_User_Models_User::IMG_NAME_THUMB:
             case Ccsd_User_Models_User::IMG_NAME_NORMAL:
@@ -1661,7 +1761,7 @@ class UserDefaultController extends Zend_Controller_Action
                 ->setHeader('Expires', $expires, true)
                 ->setHeader('Pragma', '', true)
                 ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
-                ->setHeader('Content-Type', 'image/svg+xml', true)
+                ->setHeader('Content-Type', self::IMAGE_SVG_XML, true)
                 ->setHeader('Content-Length', $contentSize, true)
                 ->setBody($data);
             return;
@@ -1673,6 +1773,25 @@ class UserDefaultController extends Zend_Controller_Action
                 // Generate SVG
                 $data = Episciences_View_Helper_GetAvatar::asSvg($screenName);
 
+                if (!isset($user)) {
+                    // Anonymous request (no uid, not logged in): there is no user
+                    // directory to cache the SVG in, so serve it inline instead of
+                    // dereferencing an undefined $user (which was a fatal error).
+                    $contentSize = strlen($data);
+                    $maxAge = 300;
+                    $expires = gmdate('D, d M Y H:i:s \G\M\T', time() + $maxAge);
+
+                    $this->getResponse()
+                        ->setHeader('ETag', md5($data), true)
+                        ->setHeader('Expires', $expires, true)
+                        ->setHeader('Pragma', '', true)
+                        ->setHeader('Cache-Control', 'private, max-age=' . $maxAge, true)
+                        ->setHeader('Content-Type', self::IMAGE_SVG_XML, true)
+                        ->setHeader('Content-Length', $contentSize, true)
+                        ->setBody($data);
+                    return;
+                }
+
                 $userPhotoPath = $user->getPhotoPath();
 
                 if (!is_dir($userPhotoPath) && !mkdir($userPhotoPath, 0777, true) && !is_dir($userPhotoPath)) {
@@ -1683,7 +1802,7 @@ class UserDefaultController extends Zend_Controller_Action
                 file_put_contents($photoPathName, $data);
 
             } else {
-                $imageMimeType = 'image/svg+xml';
+                $imageMimeType = self::IMAGE_SVG_XML;
                 $photoPathName = APPLICATION_PATH . self::DEFAULT_IMG_PATH;
             }
         }

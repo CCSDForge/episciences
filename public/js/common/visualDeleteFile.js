@@ -6,8 +6,8 @@ function clearFile(index) {
     let object_inputs = getElements('input', 'value');
     let self_id = object_inputs[index].id;
     let $identifier = $('#' + self_id.replace('value_', ''));
-    $('#' + self_id).val('');
-    $identifier.val('');
+    $('#' + self_id).val(''); // to clear the value from the input field
+    $identifier.val('').trigger('change'); // The .trigger('change') is crucial here: if the input is marked as required in a form to prevent submission (for example data descriptor file; if a listener "change" is attached to it)
     $('#tempFile_content_' + index).html('');
 }
 

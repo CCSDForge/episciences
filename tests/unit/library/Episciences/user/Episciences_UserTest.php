@@ -52,6 +52,40 @@ class Episciences_UserTest extends TestCase
         $this->assertSame('A B C', $this->user->getScreenName());
     }
 
+    public function testSetScreenNameStripsHtmlTags(): void
+    {
+        $this->user->setScreenName('<script>alert(1)</script>John <b>Doe</b>');
+        $this->assertSame('alert(1)John Doe', $this->user->getScreenName());
+    }
+
+    public function testSetScreenNameRemovesControlCharacters(): void
+    {
+        $this->user->setScreenName("John\x00\x1F Doe\x7F");
+        $this->assertSame('John Doe', $this->user->getScreenName());
+    }
+
+    public function testSetScreenNameCollapsesWhitespaceAndTrims(): void
+    {
+        $this->user->setScreenName("  John \t\n  Doe  ");
+        $this->assertSame('John Doe', $this->user->getScreenName());
+    }
+
+    public function testSetScreenNameFallsBackToNamesWhenOnlyMarkup(): void
+    {
+        $this->user->setFirstname('Jane');
+        $this->user->setLastname('Roe');
+        $this->user->setScreenName('<br><hr>');
+        $this->assertSame('Jane Roe', $this->user->getScreenName());
+    }
+
+    public function testSetScreenNameFallbackCleansNamesToo(): void
+    {
+        $this->user->setFirstname('Jane<b></b>');
+        $this->user->setLastname('Roe');
+        $this->user->setScreenName(null);
+        $this->assertSame('Jane Roe', $this->user->getScreenName());
+    }
+
     // -------------------------------------------------------------------------
     // langueid
     // -------------------------------------------------------------------------
@@ -736,5 +770,57 @@ class Episciences_UserTest extends TestCase
         } catch (\Throwable $e) {
             $this->assertTrue(true);
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // hasLocalData() via identity map — no DB required
+    // -------------------------------------------------------------------------
+
+    public function testHasLocalDataReturnsTrueWhenIdentityMapHasUuidRow(): void
+    {
+        $uid = 42;
+        Episciences_User::setStaticCache($uid, ['UID' => $uid, 'uuid' => 'some-uuid-value']);
+
+        $user = new Episciences_User();
+        $result = $user->hasLocalData($uid);
+
+        $this->assertTrue($result);
+        $this->assertTrue($user->getHasAccountData());
+        $this->assertSame('some-uuid-value', $user->getUuid());
+    }
+
+    public function testHasLocalDataReturnsFalseWhenIdentityMapHasEmptyRow(): void
+    {
+        $uid = 43;
+        Episciences_User::setStaticCache($uid, []);
+
+        $user = new Episciences_User();
+        $result = $user->hasLocalData($uid);
+
+        $this->assertFalse($result);
+        $this->assertFalse($user->getHasAccountData());
+    }
+
+    public function testHasLocalDataThrowsWhenIdentityMapRowHasNullUuid(): void
+    {
+        $uid = 44;
+        Episciences_User::setStaticCache($uid, ['UID' => $uid]);  // no 'uuid' key → null
+
+        $user = new Episciences_User();
+        $this->expectException(\InvalidArgumentException::class);
+        $user->hasLocalData($uid);
+    }
+
+    public function testHasLocalDataUsesUidFromObjectWhenParamIsNull(): void
+    {
+        $uid = 99;
+        Episciences_User::setStaticCache($uid, ['UID' => $uid, 'uuid' => 'uid-from-object']);
+
+        $user = new Episciences_User();
+        $user->setUid($uid);
+        $result = $user->hasLocalData();  // no param → uses getUid()
+
+        $this->assertTrue($result);
+        $this->assertSame('uid-from-object', $user->getUuid());
     }
 }

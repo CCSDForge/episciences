@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace unit\modules\journal\controllers;
 
 use PHPUnit\Framework\TestCase;
@@ -354,6 +356,91 @@ final class PaperControllerTest extends TestCase
             '$paper',
             $method,
             'loadPaper() must store the PapersManager::get() result in $paper'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // PR #1040 — handleManagerNotifications / determinePrincipalRecipient
+    // -----------------------------------------------------------------------
+
+    /**
+     * saveanswerAction must delegate notification to handleManagerNotifications,
+     * not send individual emails in a foreach loop (old behaviour).
+     */
+    public function testSaveanswerActionDelegatesToHandleManagerNotifications(): void
+    {
+        $method = $this->extractMethod('saveanswerAction');
+
+        self::assertStringContainsString(
+            'handleManagerNotifications',
+            $method,
+            'saveanswerAction must call handleManagerNotifications() for manager notifications'
+        );
+    }
+
+    /**
+     * The old saveanswerAction iterated $recipients with foreach and called
+     * sendMailFromReview() per recipient. That loop must be gone.
+     */
+    public function testSaveanswerActionNoLongerLoopsRecipientsDirectly(): void
+    {
+        $method = $this->extractMethod('saveanswerAction');
+
+        self::assertStringNotContainsString(
+            'foreach ($recipients as $recipient)',
+            $method,
+            'saveanswerAction must not loop over recipients directly — use handleManagerNotifications()'
+        );
+    }
+
+    /**
+     * savetmpversionAction must also delegate to handleManagerNotifications.
+     */
+    public function testSavetmpversionActionDelegatesToHandleManagerNotifications(): void
+    {
+        $method = $this->extractMethod('savetmpversionAction');
+
+        self::assertStringContainsString(
+            'handleManagerNotifications',
+            $method,
+            'savetmpversionAction must call handleManagerNotifications() for manager notifications'
+        );
+    }
+
+
+    /**
+     * Regression: after removing $paper from notifyManagersAndAuthor(), the method
+     * must use $newPaper (not a stale $paper variable) when filtering for conflicts.
+     */
+    public function testNotifyManagersAndAuthorUsesNewPaperForConflictCheck(): void
+    {
+        $method = $this->extractMethod('notifyManagersAndAuthor');
+
+        self::assertStringContainsString(
+            '$newPaper->getPaperid()',
+            $method,
+            'keepOnlyUsersWithoutConflict() must receive $newPaper->getPaperid(), not a stale $paper'
+        );
+
+        self::assertStringContainsString(
+            'unset($recipients[$newPaper->getUid()])',
+            $method,
+            'Author must be removed using $newPaper->getUid(), not a stale $paper'
+        );
+    }
+
+    /**
+     * determinePrincipalRecipient() must return null when neither the request
+     * initiator is an editor nor the recipient list contains any candidate.
+     */
+    public function testDeterminePrincipalRecipientReturnsNullWhenListIsEmpty(): void
+    {
+        $method = $this->extractMethod('determinePrincipalRecipient');
+
+        self::assertStringContainsString(
+            'return null;',
+            $method,
+            'determinePrincipalRecipient() must explicitly return null when no recipient can be found'
         );
     }
 }

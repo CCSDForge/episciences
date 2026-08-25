@@ -339,4 +339,115 @@ describe('es.contacts-list', function () {
             expect(submitBtn.disabled).toBe(false);
         });
     });
+
+    describe('Contacts data handling', function () {
+        afterEach(function () {
+            delete window.all_contacts;
+            delete window.reviewers;
+            delete window.sender_uid;
+            delete window.target;
+            delete window.__shouldNotRun;
+        });
+
+        function realisticResponse() {
+            // One assignment per line, mirroring the server-rendered payload.
+            return (
+                '<script>\n' +
+                '    var sender_uid = 5;\n' +
+                "    var target = 'cc';\n" +
+                '    var all_contacts = {"1":{"uid":1,"fullname":"Ada","mail":"ada@x.org"}};\n' +
+                '    var reviewers = {"1":{"uid":1,"fullname":"Ada"}};\n' +
+                '</script>\n' +
+                '<table><tr><td>Ada</td></tr></table>'
+            );
+        }
+
+        it('assigns parsed JSON globals from the response without executing script', async function () {
+            global.fetch = jest.fn(() =>
+                Promise.resolve({
+                    ok: true,
+                    status: 200,
+                    text: () => Promise.resolve(realisticResponse()),
+                })
+            );
+
+            document
+                .querySelector('.show_contacts_button[href*="target=cc"]')
+                .click();
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(window.all_contacts).toEqual({
+                1: { uid: 1, fullname: 'Ada', mail: 'ada@x.org' },
+            });
+            expect(window.reviewers).toEqual({
+                1: { uid: 1, fullname: 'Ada' },
+            });
+            expect(window.sender_uid).toBe(5);
+        });
+
+        it('sets target from the request URL, not from the response', async function () {
+            global.fetch = jest.fn(() =>
+                Promise.resolve({
+                    ok: true,
+                    status: 200,
+                    text: () => Promise.resolve(realisticResponse()),
+                })
+            );
+
+            document
+                .querySelector('.show_contacts_button[href*="target=bcc"]')
+                .click();
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(window.target).toBe('bcc');
+        });
+
+        it('does not execute non-data script found in the response', async function () {
+            global.fetch = jest.fn(() =>
+                Promise.resolve({
+                    ok: true,
+                    status: 200,
+                    text: () =>
+                        Promise.resolve(
+                            '<script>window.__shouldNotRun = true;</script>' +
+                                '<script>\n    var all_contacts = {"1":{"uid":1}};\n</script>' +
+                                '<table></table>'
+                        ),
+                })
+            );
+
+            document
+                .querySelector('.show_contacts_button[href*="target=cc"]')
+                .click();
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(window.__shouldNotRun).toBeUndefined();
+            expect(window.all_contacts).toEqual({ 1: { uid: 1 } });
+        });
+
+        it('ignores assignments that are not valid JSON', async function () {
+            global.fetch = jest.fn(() =>
+                Promise.resolve({
+                    ok: true,
+                    status: 200,
+                    text: () =>
+                        Promise.resolve(
+                            '<script>\n' +
+                                '    var url = "/js/x.js";\n' +
+                                '    var all_contacts = {"1":{"uid":1}};\n' +
+                                '</script>'
+                        ),
+                })
+            );
+
+            document
+                .querySelector('.show_contacts_button[href*="target=cc"]')
+                .click();
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            // String assignment is skipped (only objects/arrays/numbers are kept).
+            expect(window.url).toBeUndefined();
+            expect(window.all_contacts).toEqual({ 1: { uid: 1 } });
+        });
+    });
 });
