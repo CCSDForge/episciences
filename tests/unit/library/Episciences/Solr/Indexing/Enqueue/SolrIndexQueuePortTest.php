@@ -5,6 +5,7 @@ namespace unit\library\Episciences\Solr\Indexing\Enqueue;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexQueuePort;
 use Episciences\Solr\Indexing\Messenger\Message\DeletePaperMessage;
 use Episciences\Solr\Indexing\Messenger\Message\IndexPaperMessage;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/SpyMessageBus.php';
@@ -84,5 +85,24 @@ class SolrIndexQueuePortTest extends TestCase
         self::assertCount(1, $bus->dispatched);
         self::assertInstanceOf(DeletePaperMessage::class, $bus->dispatched[0]);
         self::assertSame('*:*', $bus->dispatched[0]->solrQuery);
+    }
+
+    public function testEnqueueDeleteWithNoUsableInputThrowsImmediatelyInsteadOfBeingRetriedAndRecorded(): void
+    {
+        $bus = new SpyMessageBus();
+        $failureStore = new SpyEnqueueFailureStore();
+        $port = new SolrIndexQueuePort($bus, $failureStore);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        try {
+            $port->enqueueDelete(null, null);
+        } finally {
+            // A caller bug (no docId, no solrQuery) is not a transient
+            // send-bus failure: it must not be retried, must not reach the
+            // bus, and must not be recorded as a dispatch failure.
+            self::assertCount(0, $bus->dispatched);
+            self::assertSame([], $failureStore->recorded);
+        }
     }
 }

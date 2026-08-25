@@ -49,8 +49,15 @@ final class SolrIndexQueuePort
 
     public function enqueueDelete(?int $docId = null, ?string $solrQuery = null): void
     {
+        // Built outside dispatchWithRetry() on purpose: DeletePaperMessage's
+        // constructor validates its arguments and throws on a caller bug (no
+        // usable docId or solrQuery) — that's not a transient send-bus
+        // failure, so it must not be retried 3 times and recorded as a
+        // dispatch failure. Let it propagate immediately instead.
+        $message = new DeletePaperMessage($docId, $solrQuery);
+
         $this->dispatchWithRetry(
-            fn () => $this->sendBus->dispatch(new DeletePaperMessage($docId, $solrQuery)),
+            fn () => $this->sendBus->dispatch($message),
             'delete',
             $docId,
             0,

@@ -502,6 +502,12 @@ stats-download-kpi: ## Generate download KPI JSON for all published articles (op
 # --- Solr Indexing ---------------------------------------------------------------
 # Symfony Messenger + Doctrine DBAL transport. See docs/console-commands.md#solr-indexing.
 
+# Quotes an arbitrary Make value for the recipe's POSIX shell: a wrapping
+# '...' alone preserves spaces but not embedded apostrophes (e.g.
+# sqlwhere="TYPE = 'article'"), which corrupts the value instead of erroring.
+# Standard idiom: close the quote, emit an escaped one via double quotes, reopen.
+shell_quote = '$(subst ','"'"',$(1))'
+
 solr-index: ## Enqueue (or sync) Solr re-indexing (requires docid=N or sqlwhere=CLAUSE or file=PATH; optional: sync=1 priority=N)
 	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:index --docid=N|--sqlwhere=CLAUSE|--file=PATH [--sync] [-q]
 	@if [ -z "$(docid)" ] && [ -z "$(sqlwhere)" ] && [ -z "$(file)" ]; then \
@@ -512,7 +518,7 @@ solr-index: ## Enqueue (or sync) Solr re-indexing (requires docid=N or sqlwhere=
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php solr:index \
 		$(if $(docid),--docid=$(docid)) \
-		$(if $(sqlwhere),--sqlwhere='$(sqlwhere)') \
+		$(if $(sqlwhere),--sqlwhere=$(call shell_quote,$(sqlwhere))) \
 		$(if $(file),--file=$(file)) \
 		$(if $(priority),--priority=$(priority)) \
 		$(if $(filter 1,$(sync)),--sync)
@@ -527,7 +533,7 @@ solr-delete: ## Enqueue (or sync) a Solr deletion (requires docid=N or query=QUE
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php solr:delete \
 		$(if $(docid),--docid=$(docid)) \
-		$(if $(query),--query='$(query)') \
+		$(if $(query),--query=$(call shell_quote,$(query))) \
 		$(if $(filter 1,$(sync)),--sync)
 
 solr-worker: ## Continuously consume the Solr indexing/deletion queue (optional: limit=N time-limit=SECONDS memory-limit=SIZE)

@@ -89,6 +89,9 @@ class SolrDeleteCommandTest extends TestCase
             'open range' => ['docid:[* TO *]'],
             'combined with OR' => ['*:* OR docid:1'],
             'combined with AND, field wildcard first' => ['docid:* AND status:1'],
+            'unary required wildcard' => ['+*:*'],
+            'unary required field wildcard' => ['+docid:*'],
+            'unary required open range' => ['+docid:[* TO *]'],
         ];
     }
 
@@ -101,6 +104,7 @@ class SolrDeleteCommandTest extends TestCase
             'single docid' => ['docid:19'],
             'field value containing a star mid-token' => ['title:foo*bar'],
             'prefix wildcard, not a full-field wildcard' => ['title:foo*'],
+            'unary excluded wildcard matches nothing, not destructive' => ['-*:*'],
         ];
     }
 

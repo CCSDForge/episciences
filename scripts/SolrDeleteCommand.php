@@ -32,9 +32,14 @@ class SolrDeleteCommand extends Command
      * anywhere in the query, not just as an exact full-string match, so it
      * still catches a destructive clause wrapped in parentheses or combined
      * with another clause via AND/OR (e.g. "(*:*)", "*:* OR docid:1"), and the
-     * open-range form "field:[* TO *]" which is equally destructive.
+     * open-range form "field:[* TO *]" which is equally destructive. Also
+     * matches the Lucene/Solr unary "required clause" prefix ("+*:*",
+     * "+docid:*") — just as destructive as the bare form, but otherwise
+     * bypasses the boundary check below. The unary "-" prefix is NOT
+     * included: "-*:*" alone excludes everything rather than matching it, so
+     * it isn't destructive.
      */
-    private const WILDCARD_DELETE_PATTERN = '/(^|[\s(])(\*:\*|[A-Za-z0-9_]+:(\*|\[\s*\*\s+TO\s+\*\s*]))([\s)]|$)/i';
+    private const WILDCARD_DELETE_PATTERN = '/(^|[\s(])\+?(\*:\*|[A-Za-z0-9_]+:(\*|\[\s*\*\s+TO\s+\*\s*]))([\s)]|$)/i';
 
     protected function configure(): void
     {
