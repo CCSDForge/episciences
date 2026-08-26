@@ -10,6 +10,7 @@ use Episciences\Messenger\Dbal\DbalConnectionFactory;
 use Episciences\Messenger\Enqueue\BoundedRetryDispatcher;
 use Episciences\Messenger\Transport\TransportFactory;
 use Episciences\Solr\Indexing\Messenger\SolrIndexTransport;
+use Throwable;
 use Zend_Db_Table_Abstract;
 
 /**
@@ -27,6 +28,14 @@ use Zend_Db_Table_Abstract;
  * introducing a new pattern: a static getter builds and caches a
  * SolrIndexQueuePort on first use per request/process, and setPort() lets
  * tests inject a different instance.
+ *
+ * enqueueIndex()/enqueueDelete() only swallow a failure to *build* the port
+ * (DB hiccup, etc.) — every trigger call site treats indexing as a
+ * best-effort side effect of a change that has already been committed. Once
+ * built, the port call itself is NOT wrapped here: enqueueDelete() must let
+ * DeletePaperMessage's constructor validation (no docId, no solrQuery — a
+ * caller bug) propagate immediately, not be swallowed alongside a genuine
+ * infrastructure failure.
  */
 final class SolrIndexing
 {
@@ -34,12 +43,34 @@ final class SolrIndexing
 
     public static function enqueueIndex(int $docId, int $priority = 0): void
     {
-        self::getPort()->enqueueIndex($docId, $priority);
+        $port = self::tryGetPort();
+
+        if ($port !== null) {
+            $port->enqueueIndex($docId, $priority);
+        }
     }
 
     public static function enqueueDelete(?int $docId = null, ?string $solrQuery = null): void
     {
-        self::getPort()->enqueueDelete($docId, $solrQuery);
+        $port = self::tryGetPort();
+
+        if ($port !== null) {
+            $port->enqueueDelete($docId, $solrQuery);
+        }
+    }
+
+    private static function tryGetPort(): ?SolrIndexQueuePort
+    {
+        try {
+            return self::getPort();
+        } catch (Throwable $e) {
+            AppRegistry::getMonoLogger()?->error(sprintf(
+                'Could not build the Solr indexing port: %s',
+                $e->getMessage()
+            ));
+
+            return null;
+        }
     }
 
     public static function getPort(): SolrIndexQueuePort

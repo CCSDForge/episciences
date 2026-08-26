@@ -12,6 +12,7 @@ use Episciences\Messenger\Transport\TransportFactory;
 use Episciences\Next\Enqueue\DbalNextRevalidationFailureStore;
 use Episciences\Next\Enqueue\NextRevalidationQueuePort;
 use Episciences\Next\Messenger\NextRevalidationTransport;
+use Throwable;
 use Zend_Db_Table_Abstract;
 
 /**
@@ -29,6 +30,13 @@ use Zend_Db_Table_Abstract;
  * by Episciences\Solr\Indexing\Enqueue\SolrIndexing: a static getter builds
  * and caches a NextRevalidationQueuePort on first use per request/process,
  * and setPort() lets tests inject a different instance.
+ *
+ * enqueueTag()/enqueueTags() only swallow a failure to *build* the port (DB
+ * hiccup, etc.) — every trigger call site treats revalidation as a
+ * best-effort side effect of a change that has already been committed. Once
+ * built, NextRevalidationQueuePort's own calls are never wrapped here: they
+ * cannot throw (blank input is ignored, not rejected, and dispatch failures
+ * are already caught by BoundedRetryDispatcher) — see its class docblock.
  */
 final class RevalidationService
 {
@@ -51,7 +59,11 @@ final class RevalidationService
             return;
         }
 
-        self::getPort()->enqueueTags($rvcode, $tags);
+        $port = self::tryGetPort();
+
+        if ($port !== null) {
+            $port->enqueueTags($rvcode, $tags);
+        }
     }
 
     /**
@@ -63,7 +75,25 @@ final class RevalidationService
             return;
         }
 
-        self::getPort()->enqueueTag($rvcode, $tag);
+        $port = self::tryGetPort();
+
+        if ($port !== null) {
+            $port->enqueueTag($rvcode, $tag);
+        }
+    }
+
+    private static function tryGetPort(): ?NextRevalidationQueuePort
+    {
+        try {
+            return self::getPort();
+        } catch (Throwable $e) {
+            AppRegistry::getMonoLogger()?->error(sprintf(
+                'Could not build the Next.js revalidation port: %s',
+                $e->getMessage()
+            ));
+
+            return null;
+        }
     }
 
     public static function getPort(): NextRevalidationQueuePort

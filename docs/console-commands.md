@@ -671,9 +671,11 @@ php scripts/console.php episciences:queue --transport=next_revalidation --setup
 `worker-next-revalidation`, run them, reusing the `php-fpm` image
 (`docker-compose.yml`). They start with `make up` / `docker compose up -d`
 like any other service — no manual step needed. `restart: always` covers
-crash recovery, and `--time-limit=3600 --memory-limit=...` (same bounds as
-the systemd unit below) make each periodically recycle its process. Check
-with:
+crash recovery, and `--time-limit=3600` (same bound as the systemd unit
+below) makes each periodically recycle its process; `--memory-limit` differs
+per service — `512M` for `worker-solr-index` (document building is heavier),
+`256M` for `worker-next-revalidation` — unlike the systemd unit below, which
+uses `512M` for both since it's a single template. Check with:
 
 ```bash
 docker compose logs -f worker-solr-index worker-next-revalidation

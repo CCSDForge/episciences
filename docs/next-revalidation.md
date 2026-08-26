@@ -61,7 +61,7 @@ All settings live in `config/pwd.json` (global) and `data/{rvcode}/config/pwd.js
 1. `NEXT_REVALIDATION_TOKEN` from `data/{rvcode}/config/pwd.json`
 2. Fall back to global `NEXT_REVALIDATION_SECRET`
 
-Resolved tokens are memoized per journal for the lifetime of the worker process — a rotated token is only picked up the next time the worker recycles (bounded by its `--time-limit`, 3600s by default).
+Resolved tokens are memoized per journal for the lifetime of the worker process — a rotated token is only picked up the next time the worker recycles. `episciences:worker` has no default `--time-limit`; the packaged systemd unit and `docker-compose.yml` both pass `--time-limit=3600`, so a token rotation is picked up within the hour there. A worker started manually without `--time-limit` never recycles on its own — pass the option explicitly if bounded rotation matters.
 
 Never commit tokens to version control — they must be set only in `config/pwd.json` and per-journal `pwd.json` files, which are excluded from the repository.
 

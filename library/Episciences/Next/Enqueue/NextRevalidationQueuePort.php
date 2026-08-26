@@ -20,6 +20,12 @@ use Episciences\Next\Messenger\Message\RevalidateTagMessage;
  * "article-{docId}", and Section::save()+sort() both emit
  * "sections-{rvcode}" — without this, each becomes its own message and its
  * own POST, which also caps the burst that would otherwise risk a 429.
+ *
+ * Neither method ever throws: a blank rvcode/tag is silently ignored rather
+ * than rejected (unlike SolrIndexQueuePort::enqueueDelete(), which does
+ * reject an unusable caller input on purpose), and BoundedRetryDispatcher
+ * already catches every dispatch failure. RevalidationService relies on
+ * this to stay best-effort without wrapping these calls itself.
  */
 final class NextRevalidationQueuePort
 {

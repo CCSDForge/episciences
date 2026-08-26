@@ -11,6 +11,7 @@ use PHPUnit\Framework\TestCase;
 use unit\library\Episciences\Messenger\Enqueue\RestoresStaticQueuePort;
 use unit\library\Episciences\Messenger\Enqueue\SpyEnqueueFailureStore;
 use unit\library\Episciences\Messenger\Enqueue\SpyMessageBus;
+use Zend_Db_Table_Abstract;
 
 require_once __DIR__ . '/../Messenger/Enqueue/SpyMessageBus.php';
 require_once __DIR__ . '/../Messenger/Enqueue/SpyEnqueueFailureStore.php';
@@ -112,5 +113,36 @@ class Episciences_Next_RevalidationServiceTest extends TestCase
         RevalidationService::enqueueTags('epijinfo', ['article-42', 'volumes-epijinfo']);
 
         self::assertCount(2, $bus->dispatched);
+    }
+
+    // =========================================================================
+    // Best-effort — an infrastructure failure building the port (not just a
+    // send failure, already covered by BoundedRetryDispatcherTest) must not
+    // propagate to the caller, which has already committed its own change.
+    // =========================================================================
+
+    #[RunInSeparateProcess]
+    public function testEnqueueTagDoesNotThrowWhenThePortCannotBeBuilt(): void
+    {
+        define('EPISCIENCES_ENABLE_NEXT_FRONT', true);
+        // No default adapter registered in this fresh process: getPort()'s
+        // DbalConnectionFactory::fromZendAdapter(null) throws a TypeError,
+        // exercising the exact failure this catch is meant to swallow.
+        Zend_Db_Table_Abstract::setDefaultAdapter(null);
+
+        RevalidationService::enqueueTag('epijinfo', 'article-42');
+
+        $this->addToAssertionCount(1);
+    }
+
+    #[RunInSeparateProcess]
+    public function testEnqueueTagsDoesNotThrowWhenThePortCannotBeBuilt(): void
+    {
+        define('EPISCIENCES_ENABLE_NEXT_FRONT', true);
+        Zend_Db_Table_Abstract::setDefaultAdapter(null);
+
+        RevalidationService::enqueueTags('epijinfo', ['article-42', 'volumes-epijinfo']);
+
+        $this->addToAssertionCount(1);
     }
 }
