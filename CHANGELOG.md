@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add TomSelect component to paper filters on `/paper/submitted` and `/paper/ratings`.
 - Configure local SonarQube support (`make sonar`) and XML-based PHPUnit coverage report generation.
 - [#1140](https://github.com/CCSDForge/episciences/issues/1140) Export secondary volumes under `database.current.secondary_volumes` in the JSON v2 paper export.
+- [#1089](https://github.com/CCSDForge/episciences/pull/1089) Asynchronous Solr indexing pipeline powered by Symfony Messenger and Doctrine DBAL transport, replacing the legacy polling queue with automatic retries, bounded failure handling, and `episciences:worker`/`episciences:queue` CLI commands.
+- [#1089](https://github.com/CCSDForge/episciences/pull/1089) Automatic Solr reindexing on primary volume or section updates, volume/section metadata changes, and paper enrichments (authors, funding, citations, datasets).
+- [#1149](https://github.com/CCSDForge/episciences/pull/1149) On-demand Next.js cache revalidation for frontend pages, articles, volumes, sections, news, and editorial board member updates, with the `next:revalidate-cache` CLI command.
+- Add Docker Compose worker services (`solr-worker`, `worker-next-revalidation`) and systemd service units for background queue processing.
 
 ### Performances
 
@@ -45,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Guard `Episciences_Paper::updateXml()` against unresolvable review lookups (`Episciences_ReviewsManager::find()` returning `false`), preventing fatal errors when fetching review settings.
+- Guard `$oVolume` with `instanceof Episciences_Volume` before calling `getSetting()` in `Episciences_Paper::updateXml()`, preventing fatal errors on the dashboard when a paper has no primary volume.
+- Remove redundant unguarded review lookup in `Episciences_Paper::updateXml()` by reusing `$oReview`.
 - [#1145](https://github.com/CCSDForge/episciences/issues/1145) Sort bibliographic references by `referenceOrder` in both `BiblioRefApiClient` and `biblioRef.js`, placing missing or invalid orders last.
 - Guard `Episciences_Paper::getGraphical_abstract()` against MySQL `JSON_UNQUOTE(JSON_EXTRACT())` returning the literal string `"null"` for JSON null values, avoiding invalid image paths (`/public/documents/{docId}/null`).
 - Make the arXiv article password panel collapsible in `paper_password_form.phtml` by wrapping its contents in a `.panel-body` container.
@@ -63,7 +69,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add explicit `string` type hint to `Ccsd_Website_Header::$_langDir` for PHP 8 compatibility.
 - Stop `Episciences_Submit::getDoc()` from crashing on a `latestObsoleteDocId` that does not resolve. The value arrives straight from the `/submit/getdoc` POST, so `partialGet()` returns `null` for a stale docid or one belonging to another journal, and the previous paper was dereferenced without a check — `Call to a member function isTmp() on null`. The lookup now degrades to "no previous version", which every downstream check already handles, and the real latest version is still found by `findExistingDocId()`. Same for a temporary paper with no previous version, which indexed an array with `array_key_first([])`. The `addContext()` call feeding the `hookVersion` parameters is guarded too: it takes a non-nullable `Episciences_Paper`, and the `TypeError` it raised is an `Error`, which `getDoc()`'s `catch (Exception)` does not intercept.
 - Restore submissions from Cryptology ePrint and DSpace, broken by the `hasConceptIdentifier()` capability check introduced above: that check was scoped to Zenodo's own hooks interface, while Cryptology ePrint's and DSpace's hooks set a concept identifier through `hookApiRecords()` without implementing it. Every submission (or new version) from these two repositories therefore threw `InvalidArgumentException` in `Episciences_Paper::setConcept_identifier()`, caught as a generic error by `Episciences_Submit::getDoc()`. The capability is now a dedicated `ConceptIdentifierInterface`, implemented by all three hook classes.
-- Stop `Episciences_Submit::getDoc()` from throwing a `TypeError` when a temporary previous paper has no previous version of its own: `getPreviousVersions()` returns `null` (not `[]`) in that case, and `array_key_first()` requires an array.
+- Stop `Episciences_Submit::getDoc()` from throwing a `TypeError` when a temporary previous paper has no previous version of its own: `getPreviousVersions()` returns `null` (not `[]`) in that case, and `array_key_first([])` requires an array.
+- [#1148](https://github.com/CCSDForge/episciences/pull/1148) Scope volume paper queries to the volume's own `rvid` instead of the global `RVID` constant in `Episciences_Volume::getPaperListFromVolume()`, fixing empty paper lists in multi-journal CLI batch runs (`zbjats:zip`).
+- [#1148](https://github.com/CCSDForge/episciences/pull/1148) Scope the `vid` filter subquery to the requested journal's `rvid` in `Episciences_PapersManager::getVolumesQuery()`, and accept uppercase `'RVID'` key in `applyFilters()`.
+- [#1148](https://github.com/CCSDForge/episciences/pull/1148) Ensure zbJATS ZIP files (permissions `0644`) and destination directory (`0755`) are readable by all users, skip archive creation when there are no published papers, and check `ZipArchive::close()` return value.
+- Wrap Messenger message dispatching in `tryGetPort()` across `RevalidationService` and `SolrIndexing` to prevent lazy DBAL connection failures from interrupting database writes.
+- Ensure Solr indexing only processes published papers (`STATUS_PUBLISHED`).
+- Scope Messenger transports to distinct `queue_name` identifiers (`solr_index` and `next_revalidation`) to avoid cross-queue message collisions.
+- Prevent Next.js cache revalidation exceptions from interrupting paper deletion in `Episciences_PapersManager::delete()`.
 
 ### Removed
 
@@ -77,7 +90,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Strip HAL's non-abstract `dc:description` markers (`International audience`, `National audience`, `soumission à Episciences`) at ingestion instead of filtering them in every consumer. A new `Episciences_Repositories_HAL_Hooks::hookCleanXMLRecordInput()` removes the nodes from the raw OAI record before it reaches `PAPERS.RECORD`, so the two independent render paths — `Paper::getMetadata()` and `Paper::getXslt()` → `public/xsl/*.xsl` — stay consistent on their own. Removes the eight downstream workarounds in `Paper::getAbstractsCleaned()`, `Paper_Export`, the DataCite and zbJATS exports and the three paper XSLTs, and fixes the TEI export, which never filtered the marker at all. Matching is content-based and case-insensitive on normalized whitespace, so a real (possibly multilingual) abstract can never be dropped. `National audience` was never filtered anywhere and was displayed as an abstract; it is now handled with the others. Existing rows are migrated by the new `papers:clean-hal-descriptions` command (`--dry-run`, `--update-document`, `--no-reindex`).
 - Remove static `Ccsd_Auth` dependencies to improve testability.
 - Simplify portal module and remove dead code.
+- [#1089](https://github.com/CCSDForge/episciences/pull/1089) Replace legacy Solr indexing (`Ccsd_Search_Solr_Indexer*`, `solrJob.php`, `INDEX_QUEUE` polling) with decomposed `DocumentBuilder` field builders and Messenger message handlers.
 - Migrate Next.js cache revalidation off the legacy `queue_messages` table and its cron consumer (`scripts/NextRevalidationQueue.php`) onto the same Symfony Messenger + Doctrine DBAL infrastructure as Solr indexing, on its own `next_revalidation` transport so a slow Solr document build never blocks a cheap revalidation POST. The Messenger plumbing itself (transports, buses, worker event dispatcher, bounded-retry dispatch, dispatch-failure store) is extracted out of the Solr-only code into a generic `Episciences\Messenger\*` library that both producers now share, and `solr:worker`/`solr:queue` are replaced by transport-agnostic `episciences:worker`/`episciences:queue --transport=<solr_index|next_revalidation>` commands (see `docs/console-commands.md#messenger-queues`, `docs/next-revalidation.md`). `RevalidationService::revalidateOrEnqueue()` (synchronous POST with queue fallback) is removed — every call site is now fully asynchronous — and `next:revalidate-cache` gains a variadic tag argument and a `--queue` option.
+
+### Changed
+
+- Update dependencies.
 
 ## v1.0.56.1 - 2026-08-04
 
