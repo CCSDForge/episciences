@@ -203,9 +203,14 @@ Omit the `{rvcode}` suffix to affect every journal. Use only for emergencies (e.
 
 Deployed as its own systemd instance / Docker Compose service, independent from the Solr indexing worker, precisely so a slow Solr document build can never delay a Next.js revalidation:
 
-```
-systemctl enable --now episciences-worker@next_revalidation
-# or: docker compose up -d worker-next-revalidation
+```bash
+# Bare-metal / VM (symlink to /etc/systemd/system/):
+sudo ln -sf /var/www/htdocs/src/php-fpm/episciences-worker@.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now episciences-worker@next_revalidation
+
+# or with Docker Compose:
+# docker compose up -d worker-next-revalidation
 ```
 
 If `EPISCIENCES_ENABLE_NEXT_FRONT` is off when the worker starts, it still starts (a message can only exist if the flag was on when it was enqueued) but logs a warning, since a worker that's running but never finding anything to consume can otherwise look broken rather than idle.

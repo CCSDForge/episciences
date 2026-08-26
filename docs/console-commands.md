@@ -702,8 +702,13 @@ enable one instance per transport (the `%i` in the unit becomes the
 `--transport` value):
 
 ```bash
-# From a checkout, or via docker cp from a running/built php-fpm image as above:
-sudo cp "src/php-fpm/episciences-worker@.service" /etc/systemd/system/
+# Recommended: create a symlink to the repo's unit file so future git pulls
+# update the definition automatically without manual file copying:
+sudo ln -sf /var/www/htdocs/src/php-fpm/episciences-worker@.service /etc/systemd/system/episciences-worker@.service
+
+# (Alternatively, copy it directly if preferred, or via docker cp from a running/built php-fpm image:
+#  sudo cp "src/php-fpm/episciences-worker@.service" /etc/systemd/system/)
+
 sudo systemctl daemon-reload
 sudo systemctl enable --now episciences-worker@solr_index episciences-worker@next_revalidation
 
@@ -724,9 +729,10 @@ matching this repo's Docker/prod convention (`CNTR_APP_DIR` in the
 `Makefile`); adjust both paths if a given server checks out the app
 elsewhere.
 
-After editing the unit file (in the repo or on a server), re-run
-`systemctl daemon-reload && systemctl restart episciences-worker@solr_index episciences-worker@next_revalidation`
-to pick up the change.
+When using a symlink, whenever the unit file is modified in git, you only need
+to run:
+`sudo systemctl daemon-reload && sudo systemctl restart episciences-worker@solr_index episciences-worker@next_revalidation`
+to pick up the changes.
 
 ### `solr:index`
 
