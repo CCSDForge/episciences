@@ -5267,11 +5267,13 @@ class Episciences_Paper
     public function getBibRef(string $rvCode = null): array
     {
 
-        if (!$rvCode && !Ccsd_Tools::isFromCli()) {
-            $rvCode = RVCODE;
+        if (!$rvCode) {
+            $journal = Episciences_ReviewsManager::find($this->getRvid());
+            $rvCode = $journal instanceof Episciences_Review ? $journal->getCode() : null;
         }
 
         if (
+            $rvCode &&
             (isset(EPISCIENCES_BIBLIOREF['ENABLE']) && EPISCIENCES_BIBLIOREF['ENABLE']) &&
             $this->getDocid() &&
             (
@@ -5279,7 +5281,10 @@ class Episciences_Paper
                 $this->getStatus() === self::STATUS_PUBLISHED
             )
         ) {
-            $urlPdf = SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN . '/' . $this->getDocid() . '/pdf';
+            $path = Episciences_ReviewsManager::isNewFrontSwitched($this->getRvid())
+                ? '/articles/' . $this->getDocid() . '/download'
+                : '/' . $this->getDocid() . '/pdf';
+            $urlPdf = SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN . $path;
             return Episciences_BibliographicalsReferencesTools::getBibRefFromApi($urlPdf);
         }
         return [];
