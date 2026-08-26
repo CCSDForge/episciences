@@ -2405,11 +2405,19 @@ class Episciences_PapersManager
         if (!$paper instanceof Episciences_Paper) {
             return false;
         }
-
+        // Capture rvcode before deletion for Next.js cache revalidation
+        $rvcode = null;
+        $journal = Episciences_ReviewsManager::find($paper->getRvid());
+        if ($journal !== false) {
+            $rvcode = $journal->getCode();
+        }
         // Purge every table atomically: a failure mid-way must not leave the paper
         // half-deleted with dangling rows in the remaining tables.
         $db->beginTransaction();
         try {
+
+
+        // delete from database
             Episciences_CommentsManager::deleteByDocid($docid);
             Episciences_Mail_LogManager::deleteByDocid($docid);
 
@@ -2449,6 +2457,14 @@ class Episciences_PapersManager
         // TODO: delete user invitations
         // TODO: delete user invitation answers
         // TODO: if published paper, update HAL metadata
+
+        // Enqueue Next.js cache revalidation for deleted article
+        if ($rvcode !== null) {
+            \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                "article-{$docid}",
+                "articles-{$rvcode}",
+            ]);
+        }
 
         return true;
 

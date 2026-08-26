@@ -2726,6 +2726,14 @@ class AdministratepaperController extends PaperDefaultController
                     }
                 }
 
+                if (defined('RVCODE') && RVCODE !== '') {
+                    $tagsToInvalidate = ["volume-{$vid}", 'volumes-' . RVCODE];
+                    if ($oldVid > 0) {
+                        $tagsToInvalidate[] = "volume-{$oldVid}";
+                    }
+                    \Episciences\Next\RevalidationService::enqueueTags(RVCODE, $tagsToInvalidate);
+                }
+
             }
 
             echo true;
@@ -2821,6 +2829,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($request->isPost()) {
 
+            $oldSid = $paper->getSid();
             $sid = (int)$request->getPost('sid');
             $paper->setSid($sid);
             $paper->save();
@@ -2834,6 +2843,19 @@ class AdministratepaperController extends PaperDefaultController
                     SolrIndexing::enqueueIndex($paper->getDocid());
                 } catch (Exception $e) {
                     trigger_error($e->getMessage());
+                }
+            }
+
+            if (defined('RVCODE')) {
+                $tagsToInvalidate = [];
+                if ($sid > 0) {
+                    $tagsToInvalidate[] = "section-articles-{$sid}-" . RVCODE;
+                }
+                if ($oldSid > 0 && $oldSid !== $sid) {
+                    $tagsToInvalidate[] = "section-articles-{$oldSid}-" . RVCODE;
+                }
+                if (!empty($tagsToInvalidate)) {
+                    \Episciences\Next\RevalidationService::enqueueTags(RVCODE, $tagsToInvalidate);
                 }
             }
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace unit\library\Episciences\Solr\Indexing\Enqueue;
+namespace unit\library\Episciences\Messenger\Enqueue;
 
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;

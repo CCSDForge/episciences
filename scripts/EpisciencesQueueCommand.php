@@ -2,58 +2,69 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Solr/BootstrapsSolrEnvironment.php';
+require_once __DIR__ . '/Messenger/TransportProfileRegistry.php';
 
 use Doctrine\DBAL\Connection as DbalConnection;
 use Doctrine\DBAL\Schema\Schema;
-use Episciences\Solr\Indexing\Client\SolariumClientFactory;
-use Episciences\Solr\Indexing\Enqueue\DbalEnqueueFailureStore;
-use Episciences\Solr\Indexing\Messenger\Handler\DeletePaperMessageHandler;
-use Episciences\Solr\Indexing\Messenger\Handler\IndexPaperMessageHandler;
-use Episciences\Solr\Indexing\Messenger\Message\DeletePaperMessage;
-use Episciences\Solr\Indexing\Messenger\Message\IndexPaperMessage;
-use Episciences\Solr\Indexing\Messenger\MessengerFactory;
+use Episciences\Messenger\Bus\BusFactory;
+use Episciences\Messenger\Dbal\DbalConnectionFactory;
+use Episciences\Messenger\Enqueue\AbstractDbalEnqueueFailureStore;
+use Episciences\Messenger\Log\CliLoggerFactory;
+use Episciences\Messenger\Transport\TransportConfig;
+use Episciences\Messenger\Transport\TransportFactory;
+use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Messenger\Bridge\Doctrine\Transport\DoctrineTransport;
+use Symfony\Component\Messenger\Exception\HandlerFailedException;
 use Symfony\Component\Messenger\Stamp\ErrorDetailsStamp;
 use Symfony\Component\Messenger\Stamp\TransportMessageIdStamp;
 
 /**
  * Minimal, hand-rolled equivalent of Symfony FrameworkBundle's
  * messenger:failed:* console commands (not available here — this app has no
- * Kernel/bundle system to auto-register them, see scripts/console.php).
- * Also fills the "no audit trail" gap left by legacy INDEX_QUEUE, whose rows
- * simply disappear on success and get stuck forever on transport failure —
- * failed messages here persist in the failure transport until explicitly
- * retried or inspected.
+ * Kernel/bundle system to auto-register them). Operates on one Messenger
+ * queue, selected by --transport via TransportProfileRegistry.
  */
-class SolrQueueCommand extends Command
+class EpisciencesQueueCommand extends Command
 {
-    use BootstrapsSolrEnvironment;
-
-    protected static $defaultName = 'solr:queue';
+    protected static $defaultName = 'episciences:queue';
 
     protected function configure(): void
     {
         $this
-            ->setDescription('Inspect and manage the Solr indexing queue')
+            ->setDescription('Inspect and manage one Messenger queue (see --transport).')
+            ->addOption('transport', null, InputOption::VALUE_REQUIRED, 'Which queue to operate on: ' . implode(', ', TransportProfileRegistry::names()) . '.')
             ->addOption('stats', null, InputOption::VALUE_NONE, 'Show pending and failed message counts.')
             ->addOption('list-failed', null, InputOption::VALUE_NONE, 'List failed messages.')
             ->addOption('retry', null, InputOption::VALUE_REQUIRED, 'Retry the failed message with this id, synchronously, in this process.')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Limit for --list-failed / --list-dispatch-failures.', 50)
-            ->addOption('setup', null, InputOption::VALUE_NONE, "Create the messenger_messages/messenger_failed/solr_enqueue_failures tables if they don't exist yet (one-time, per environment).")
-            ->addOption('list-dispatch-failures', null, InputOption::VALUE_NONE, 'List enqueue calls that failed even after their bounded retry (no message row was ever created for these — see solr_enqueue_failures).')
-            ->addOption('retry-dispatch-failure', null, InputOption::VALUE_REQUIRED, 'Re-attempt the recorded dispatch failure with this id; removes it from solr_enqueue_failures on success.');
+            ->addOption('setup', null, InputOption::VALUE_NONE, "Create the messenger_messages/messenger_failed tables and this transport's own dispatch-failure table if they don't exist yet (one-time, per environment and per transport).")
+            ->addOption('list-dispatch-failures', null, InputOption::VALUE_NONE, 'List enqueue calls that failed even after their bounded retry (no message row was ever created for these).')
+            ->addOption('retry-dispatch-failure', null, InputOption::VALUE_REQUIRED, 'Re-attempt the recorded dispatch failure with this id; removes it on success.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $io->title('Solr indexing queue');
+
+        $transportName = $input->getOption('transport');
+        if ($transportName === null) {
+            $io->error('--transport is required. Known transports: ' . implode(', ', TransportProfileRegistry::names()) . '.');
+
+            return Command::FAILURE;
+        }
+
+        try {
+            $profile = TransportProfileRegistry::get((string)$transportName);
+        } catch (InvalidArgumentException $e) {
+            $io->error($e->getMessage());
+
+            return Command::FAILURE;
+        }
 
         $actions = array_keys(array_filter([
             'stats' => (bool)$input->getOption('stats'),
@@ -70,21 +81,26 @@ class SolrQueueCommand extends Command
             return Command::FAILURE;
         }
 
-        $this->bootstrapSolrEnvironment();
-        $logger = $this->createSolrLogger($io, 'solrQueue');
+        $io->title($profile->label());
 
-        $connection = $this->createDbalConnection();
-        $transport = MessengerFactory::createTransport($connection);
-        $failureTransport = MessengerFactory::createFailureTransport($connection);
-        $dispatchFailureStore = new DbalEnqueueFailureStore($connection);
+        $profile->bootstrap();
+        $logger = CliLoggerFactory::create($profile->logPrefix() . 'Queue', !$io->isQuiet());
+
+        $connection = DbalConnectionFactory::fromZendAdapter(Zend_Db_Table_Abstract::getDefaultAdapter());
+        $transportConfig = $profile->config();
+        $transport = TransportFactory::createTransport($connection, $transportConfig);
+        $failureTransport = TransportFactory::createFailureTransport($connection, $transportConfig);
+        $dispatchFailureStore = $profile->failureStore($connection);
 
         return match ($actions[0]) {
-            'stats' => $this->showStats($transport, $failureTransport, $io),
+            'stats' => $this->showStats($transportConfig->name, $transport, $failureTransport, $io),
             'list-failed' => $this->listFailed($failureTransport, (int)$input->getOption('limit'), $io),
-            'retry' => $this->retry($failureTransport, (string)$input->getOption('retry'), $io, $logger),
-            'setup' => $this->setup($transport, $failureTransport, $dispatchFailureStore, $connection, $io),
-            'list-dispatch-failures' => $this->listDispatchFailures($dispatchFailureStore, (int)$input->getOption('limit'), $io),
+            'retry' => $this->retry($profile, $failureTransport, (string)$input->getOption('retry'), $io, $logger),
+            'setup' => $this->setup($transport, $failureTransport, $dispatchFailureStore, $connection, $transportConfig, $io),
+            'list-dispatch-failures' => $this->listDispatchFailures($profile, $dispatchFailureStore, (int)$input->getOption('limit'), $io),
             'retry-dispatch-failure' => $this->retryDispatchFailure(
+                $profile,
+                $transportConfig->name,
                 $transport,
                 $dispatchFailureStore,
                 (int)$input->getOption('retry-dispatch-failure'),
@@ -99,19 +115,35 @@ class SolrQueueCommand extends Command
      * no CREATE/ALTER privilege in staging/prod (only SELECT/INSERT/UPDATE/
      * DELETE) — in that case, print the exact DDL so a DBA can run it
      * manually instead of failing with an opaque permission error.
+     *
+     * messenger_messages/messenger_failed are shared across every transport,
+     * so --setup running once per transport must not try to re-diff/alter
+     * tables a previous transport's --setup already created —
+     * DoctrineTransport::setup() diffs the schema rather than "create if
+     * absent", so each table is only ever set up once, guarded by
+     * tablesExist().
      */
     private function setup(
         DoctrineTransport $transport,
         DoctrineTransport $failureTransport,
-        DbalEnqueueFailureStore $dispatchFailureStore,
+        AbstractDbalEnqueueFailureStore $dispatchFailureStore,
         DbalConnection $connection,
+        TransportConfig $transportConfig,
         SymfonyStyle $io
     ): int {
         try {
-            $transport->setup();
-            $failureTransport->setup();
+            $schemaManager = $connection->createSchemaManager();
+
+            if (!$schemaManager->tablesExist([$transportConfig->messagesTable])) {
+                $transport->setup();
+            }
+
+            if (!$schemaManager->tablesExist([$transportConfig->failedTable])) {
+                $failureTransport->setup();
+            }
+
             $dispatchFailureStore->setup();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $io->error(sprintf('Automatic table creation failed: %s', $e->getMessage()));
             $io->note('This is expected if the database user lacks CREATE/ALTER privileges (common in staging/prod). Ask a DBA to run the following SQL manually, then re-run this command to confirm:');
 
@@ -129,16 +161,20 @@ class SolrQueueCommand extends Command
             return Command::FAILURE;
         }
 
-        $io->success('messenger_messages / messenger_failed / solr_enqueue_failures tables are ready.');
+        $io->success(sprintf(
+            '%s / %s / %s tables are ready.',
+            $transportConfig->messagesTable,
+            $transportConfig->failedTable,
+            $dispatchFailureStore->tableName()
+        ));
 
         return Command::SUCCESS;
     }
 
     /**
-     * Builds the DDL from the bridge's own public configureSchema() instead of
-     * a hand-typed column list, so this can never drift from what setup()
-     * actually creates on a symfony/doctrine-messenger version bump — the
-     * table shape comes from the library itself, not a copy of it.
+     * Builds the DDL from the bridge's own public configureSchema() instead
+     * of a hand-typed column list, so this can never drift from what
+     * setup() actually creates on a symfony/doctrine-messenger version bump.
      *
      * @return list<string>
      */
@@ -150,11 +186,11 @@ class SolrQueueCommand extends Command
         return $connection->getDatabasePlatform()->getCreateTableSQL($table);
     }
 
-    private function showStats(DoctrineTransport $transport, DoctrineTransport $failureTransport, SymfonyStyle $io): int
+    private function showStats(string $transportName, DoctrineTransport $transport, DoctrineTransport $failureTransport, SymfonyStyle $io): int
     {
         $io->table(['Queue', 'Pending messages'], [
-            [MessengerFactory::TRANSPORT_NAME, $transport->getMessageCount()],
-            [MessengerFactory::TRANSPORT_NAME . ' (failed)', $failureTransport->getMessageCount()],
+            [$transportName, $transport->getMessageCount()],
+            [$transportName . ' (failed)', $failureTransport->getMessageCount()],
         ]);
 
         return Command::SUCCESS;
@@ -184,7 +220,7 @@ class SolrQueueCommand extends Command
         return Command::SUCCESS;
     }
 
-    private function retry(DoctrineTransport $failureTransport, string $id, SymfonyStyle $io, \Monolog\Logger $logger): int
+    private function retry(TransportProfileInterface $profile, DoctrineTransport $failureTransport, string $id, SymfonyStyle $io, Logger $logger): int
     {
         $envelope = $failureTransport->find($id);
 
@@ -194,9 +230,7 @@ class SolrQueueCommand extends Command
             return Command::FAILURE;
         }
 
-        $indexHandler = new IndexPaperMessageHandler($this->createDocumentBuilder(), new SolariumClientFactory());
-        $deleteHandler = new DeletePaperMessageHandler(new SolariumClientFactory());
-        $handleBus = MessengerFactory::createHandleBus($indexHandler, $deleteHandler);
+        $handleBus = BusFactory::createHandleBus($profile->handlers());
 
         try {
             $handleBus->dispatch($envelope->withoutAll(ErrorDetailsStamp::class));
@@ -204,15 +238,22 @@ class SolrQueueCommand extends Command
             $io->success(sprintf('Message "%s" retried successfully and removed from the failure queue.', $id));
 
             return Command::SUCCESS;
-        } catch (\Throwable $e) {
-            $logger->error(sprintf('solr:queue --retry=%s failed again: %s', $id, $e->getMessage()));
-            $io->error(sprintf('Retry failed: %s', $e->getMessage()));
+        } catch (Throwable $e) {
+            // HandleMessageMiddleware wraps handler throwables in a
+            // HandlerFailedException — unwrap it so the real error is logged
+            // and displayed instead of the wrapper's generic message.
+            $realError = $e instanceof HandlerFailedException
+                ? ($e->getWrappedExceptions()[0] ?? $e)
+                : $e;
+
+            $logger->error(sprintf('episciences:queue --retry=%s failed again: %s', $id, $realError->getMessage()));
+            $io->error(sprintf('Retry failed: %s', $realError->getMessage()));
 
             return Command::FAILURE;
         }
     }
 
-    private function listDispatchFailures(DbalEnqueueFailureStore $dispatchFailureStore, int $limit, SymfonyStyle $io): int
+    private function listDispatchFailures(TransportProfileInterface $profile, AbstractDbalEnqueueFailureStore $dispatchFailureStore, int $limit, SymfonyStyle $io): int
     {
         $rows = $dispatchFailureStore->all($limit);
 
@@ -222,18 +263,16 @@ class SolrQueueCommand extends Command
             return Command::SUCCESS;
         }
 
+        $columns = $profile->dispatchFailureColumns();
+        $headers = array_map(
+            static fn (string $col): string => ucfirst(str_replace('_', ' ', $col)),
+            $columns
+        );
+
         $io->table(
-            ['ID', 'Action', 'Docid', 'Priority/Query', 'Attempts', 'Last error', 'Created at'],
+            $headers,
             array_map(
-                static fn (array $row): array => [
-                    $row['id'],
-                    $row['action'],
-                    $row['docid'],
-                    $row['action'] === 'index' ? $row['priority'] : $row['solr_query'],
-                    $row['attempts'],
-                    $row['last_error'],
-                    $row['created_at'],
-                ],
+                static fn (array $row): array => array_map(static fn (string $col) => $row[$col], $columns),
                 $rows
             )
         );
@@ -243,16 +282,18 @@ class SolrQueueCommand extends Command
 
     /**
      * Re-attempts a producer-side dispatch that never made it into
-     * messenger_messages (see SolrIndexQueuePort). Unlike --retry, which
+     * messenger_messages (see BoundedRetryDispatcher). Unlike --retry, which
      * replays an envelope that already exists in the failure transport, this
-     * re-enqueues from the raw docid/action recorded at the time of failure.
+     * re-enqueues from the raw row recorded at the time of failure.
      */
     private function retryDispatchFailure(
+        TransportProfileInterface $profile,
+        string $transportName,
         DoctrineTransport $transport,
-        DbalEnqueueFailureStore $dispatchFailureStore,
+        AbstractDbalEnqueueFailureStore $dispatchFailureStore,
         int $id,
         SymfonyStyle $io,
-        \Monolog\Logger $logger
+        Logger $logger
     ): int {
         $row = $dispatchFailureStore->find($id);
 
@@ -262,18 +303,13 @@ class SolrQueueCommand extends Command
             return Command::FAILURE;
         }
 
-        $sendBus = MessengerFactory::createSendBus($transport);
-        $docId = $row['docid'] !== null ? (int)$row['docid'] : null;
+        $sendBus = BusFactory::createSendBus($transportName, $transport, $profile->messageClasses());
 
         try {
-            if ($row['action'] === 'index') {
-                $sendBus->dispatch(new IndexPaperMessage((int)$docId, (int)$row['priority']));
-            } else {
-                $sendBus->dispatch(new DeletePaperMessage($docId, $row['solr_query']));
-            }
-        } catch (\Throwable $e) {
+            $sendBus->dispatch($profile->rebuildMessage($row));
+        } catch (Throwable $e) {
             $dispatchFailureStore->markRetryFailed($id, $e->getMessage());
-            $logger->error(sprintf('solr:queue --retry-dispatch-failure=%d failed again: %s', $id, $e->getMessage()));
+            $logger->error(sprintf('episciences:queue --retry-dispatch-failure=%d failed again: %s', $id, $e->getMessage()));
             $io->error(sprintf('Retry failed: %s', $e->getMessage()));
 
             return Command::FAILURE;

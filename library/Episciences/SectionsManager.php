@@ -164,13 +164,23 @@ class Episciences_SectionsManager
             // 4. Suppression des paramètres de la rubrique
             $db->delete(self::SETTINGS_TABLE, 'SID = ' . $id);
             $db->commit();
-            return true;
-
         } catch (Exception $e) {
             $db->rollBack();
             trigger_error("Error deleting section: " . $e->getMessage(), E_USER_WARNING);
             return false;
         }
+
+        // Enqueue Next.js cache revalidation for deleted section
+        $journal = Episciences_ReviewsManager::find($rvId);
+        if ($journal !== false) {
+            $rvcode = $journal->getCode();
+            \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                "section-{$id}-{$rvcode}",
+                "sections-{$rvcode}",
+            ]);
+        }
+
+        return true;
     }
 
     /**

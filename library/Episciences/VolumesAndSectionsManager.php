@@ -84,6 +84,12 @@ class Episciences_VolumesAndSectionsManager
             echo count($params['sorted']);
         }
 
+        $rvcode = defined('RVCODE') ? RVCODE : null;
+        if ($rvcode !== null) {
+            $tag = $colId === 'SID' ? "sections-{$rvcode}" : "volumes-{$rvcode}";
+            \Episciences\Next\RevalidationService::enqueueTag($rvcode, $tag);
+        }
+
         return true;
     }
 

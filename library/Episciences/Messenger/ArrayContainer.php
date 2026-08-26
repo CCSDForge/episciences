@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Episciences\Solr\Indexing\Messenger;
+namespace Episciences\Messenger;
 
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
