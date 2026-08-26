@@ -941,7 +941,7 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->logs = $paper->getHistory();
 
         // js tags
-        $this->view->js_review = Zend_Json::encode(['rvid' => RVID, 'code' => RVCODE, 'name' => $review->getName()]);
+        $this->view->js_review = Zend_Json::encode(['rvid' => RVID, 'code' => $review->getMailDisplayCode(), 'name' => $review->getName()]);
         $this->view->js_paper = Zend_Json::encode(['id' => $paper->getDocid(),
             'title' => $paper->getAllTitles(),
             'repository' => (int)$paper->getRepoid()]);
@@ -1349,7 +1349,7 @@ class AdministratepaperController extends PaperDefaultController
 
             // review js array init
             $review['id'] = $oReview->getRvid();
-            $review['code'] = $oReview->getCode();
+            $review['code'] = $oReview->getMailDisplayCode();
             $review['name'] = $oReview->getName();
             $review['invitation_deadline'] = $oReview->getSetting('invitation_deadline');
             $review['rating_deadline'] = Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting('rating_deadline'));
@@ -1437,7 +1437,7 @@ class AdministratepaperController extends PaperDefaultController
 
         //get review object
         $oReview = Episciences_ReviewsManager::find(RVID);
-        $review = ['rvid' => RVID, 'code' => RVCODE, 'name' => $oReview->getName()];
+        $review = ['rvid' => RVID, 'code' => $oReview->getMailDisplayCode(), 'name' => $oReview->getName()];
 
         //init template
         $template = new Episciences_Mail_Template;
@@ -3292,7 +3292,7 @@ class AdministratepaperController extends PaperDefaultController
 
             //review object
             $oReview = Episciences_ReviewsManager::find(RVID);
-            $review = ['rvid' => RVID, 'code' => RVCODE, 'name' => $oReview->getName()];
+            $review = ['rvid' => RVID, 'code' => $oReview->getMailDisplayCode(), 'name' => $oReview->getName()];
 
             //user object
             if ($oAssignment->isTmp_user()) {
@@ -3811,7 +3811,7 @@ class AdministratepaperController extends PaperDefaultController
         // Préparation de js_review
         $review = [
             'id' => $oReview->getRvid(),
-            'code' => $oReview->getCode(),
+            'code' => $oReview->getMailDisplayCode(),
             'name' => $oReview->getName()
         ];
 
