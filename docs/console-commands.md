@@ -45,9 +45,9 @@ php scripts/console.php <command> --help
 | [`geoip:update`](#geoipupdate) | Download or update the GeoLite2-City.mmdb database |
 | [`solr:index`](#solrindex) | Enqueue (or synchronously run) Solr re-indexing for one or more papers |
 | [`solr:delete`](#solrdelete) | Enqueue (or synchronously run) a Solr deletion, by DOCID or by raw query |
-| [`solr:worker`](#solrworker) | Continuously consume the Solr indexing/deletion queue |
-| [`solr:queue`](#solrqueue) | Inspect and manage the Solr indexing queue |
-| [`next:revalidate-cache`](#nextrevalidate-cache) | Immediately trigger Next.js cache revalidation for a journal and tag (bypasses queue) |
+| [`episciences:worker`](#episciencesworker) | Continuously consume one Messenger queue (`solr_index` or `next_revalidation`) |
+| [`episciences:queue`](#episciencesqueue) | Inspect and manage one Messenger queue |
+| [`next:revalidate-cache`](#nextrevalidate-cache) | Immediately trigger (or enqueue) Next.js cache revalidation for a journal and one or more tags |
 
 ---
 
@@ -574,20 +574,22 @@ Recommended cron schedule: daily (e.g. every day at 02:00).
 
 ### `next:revalidate-cache`
 
-Immediately sends a revalidation request for a specific cache tag to the Next.js frontend, bypassing the async queue. Use for urgent manual invalidation or smoke testing. Requires `NEXT_BASE_URL` and a valid token to be configured in `config/pwd.json` or `data/{rvcode}/config/pwd.json`.
+Immediately sends a revalidation request for one or more cache tags to the Next.js frontend, bypassing the async queue by default — or enqueues them with `--queue` instead (symmetry with `solr:index`'s default-enqueue + `--sync`). Use the immediate form for urgent manual invalidation or smoke testing. Requires `NEXT_BASE_URL` and a valid token to be configured in `config/pwd.json` or `data/{rvcode}/config/pwd.json`.
 
-See [docs/next-revalidation.md](./next-revalidation.md) for the full feature documentation (architecture, tag reference, cron setup, configuration).
+See [docs/next-revalidation.md](./next-revalidation.md) for the full feature documentation (architecture, tag reference, worker setup, configuration).
 
 ```bash
-php scripts/console.php next:revalidate-cache <rvcode> <tag>
+php scripts/console.php next:revalidate-cache <rvcode> <tag> [<tag> ...]
+php scripts/console.php next:revalidate-cache --queue <rvcode> <tag> [<tag> ...]
 ```
 
-| Argument | Description |
-|----------|-------------|
+| Argument / option | Description |
+|--------------------|-------------|
 | `rvcode` | Journal code (e.g. `epijinfo`) |
-| `tag` | Cache tag to invalidate (e.g. `article-42`, `news-epijinfo`, `volumes-epiga`) |
+| `tag` | One or more cache tags to invalidate (e.g. `article-42`, `news-epijinfo`, `volumes-epiga`) |
+| `--queue` | Enqueue the tag(s) on the `next_revalidation` Messenger queue instead of POSTing immediately |
 
-Returns exit code `0` on HTTP 200, `1` otherwise.
+Exit code `0` if every tag succeeded (or was enqueued), `1` if any tag failed.
 
 ```bash
 # Invalidate the news list for epijinfo
@@ -598,63 +600,85 @@ php scripts/console.php next:revalidate-cache epiga articles-epiga
 
 # Invalidate a specific article
 php scripts/console.php next:revalidate-cache epijinfo article-1234
+
+# Emergency broad invalidation, enqueued rather than blocking on N sequential POSTs
+php scripts/console.php next:revalidate-cache --queue epijinfo articles articles-accepted sitemap
 ```
 
 ---
 
-## Solr Indexing
+## Messenger queues
 
-Solr indexing pipeline built on Symfony Messenger with a Doctrine DBAL
-transport (tables `messenger_messages` / `messenger_failed` in the main
-application database). This is the **only** indexing path — paper
-publication, deletion, and import all enqueue work here via
-`Episciences\Solr\Indexing\Enqueue\SolrIndexing`. There is no synchronous
-fallback and no legacy cron.
+Two independent queues share the same generic Symfony Messenger + Doctrine
+DBAL transport infrastructure (`library/Episciences/Messenger/*`), each with
+its own `messenger_messages`/`messenger_failed` rows (scoped by the
+`queue_name` column) and its own dispatch-failure table:
 
-`messenger_messages`/`messenger_failed` are generic Doctrine Messenger
-transport tables and may end up shared with other message types in the
-future. Rows are scoped by the `queue_name` column, which `MessengerFactory`
-sets to `solr_index` (`MessengerFactory::TRANSPORT_NAME`) — the Doctrine
-bridge filters every read (`get()`, `find()`, `getMessageCount()`) by this
-column, so `solr:worker`/`solr:queue` only ever see/touch Solr's own rows,
-regardless of what else lands in the same tables. Any other producer sharing
-these tables must set its own distinct `queue_name` for the same reason.
-**Deployment note:** rows written before this was added carry the bridge's
-implicit default (`queue_name = 'default'`); drain the queue (`solr:queue
---stats` at 0) before deploying this change, or they'll be stranded (never
-picked up again, since `default` no longer matches `solr_index`).
+| Transport (`--transport=`) | Producer | Purpose | Failure table |
+|---|---|---|---|
+| `solr_index` | `Episciences\Solr\Indexing\Enqueue\SolrIndexing` | Index/delete a paper in Solr | `solr_enqueue_failures` |
+| `next_revalidation` | `Episciences\Next\RevalidationService` | POST a Next.js `revalidateTag()` request | `next_revalidation_enqueue_failures` |
+
+Both are consumed and administered by the same two generic commands,
+`episciences:worker` and `episciences:queue`, selected via `--transport`
+(see `scripts/Messenger/TransportProfileRegistry.php`). This is the **only**
+path for either kind of work — paper publication/deletion/import and every
+Next.js-facing model hook all enqueue here; there is no synchronous fallback
+and no legacy cron for either.
+
+The Doctrine bridge filters every read (`get()`, `find()`, `getMessageCount()`)
+by `queue_name`, so `--transport=solr_index` and `--transport=next_revalidation`
+never see each other's rows even though they share the same tables — verify
+this with `episciences:queue --transport=<name> --stats` on both while both
+workers are running. One exception: `messenger_failed.id` is a single shared
+sequence across every transport, so a `--retry=<id>` for the wrong transport
+correctly answers "not found" rather than replaying the wrong queue's
+message, but `--list-failed` ids will look non-contiguous per transport —
+that's expected, not data loss.
 
 Retries and failures are handled natively by Messenger instead of being
-silently swallowed: a Solr/network failure is retried up to 5 times with
-exponential backoff (5s, 15s, 45s, ...) before landing in the failure
-transport, where it stays until inspected or retried via `solr:queue`.
+silently swallowed. Backoff differs by transport, tuned to how much a delayed
+message is still worth:
 
-**`solr:worker` must run continuously, supervised (a dedicated Docker Compose
-service, or systemd/supervisord on bare metal), in every environment.** There
-is no synchronous fallback and no periodic-cron alternative: if the worker
-isn't running, enqueued papers are simply never indexed or deleted in Solr,
-with no error visible anywhere else in the app. See
-[Deploying `solr:worker`](#deploying-solrworker) below.
+| Transport | Retries | Backoff | Dead-letter after |
+|---|---|---|---|
+| `solr_index` | 5 | 5s, 15s, 45s, ... (×3, capped at 30min) | up to ~30min |
+| `next_revalidation` | 4 | 1s, 4s, 16s, 60s (×4) | ~81s |
 
-Before first use in an environment, the two transport tables must exist:
+A failed message stays in `messenger_failed` until inspected or retried via
+`episciences:queue --transport=<name>`.
+
+**Both workers must run continuously, supervised** (a dedicated Docker
+Compose service each, or one systemd unit instance per transport on bare
+metal), **in every environment.** There is no synchronous fallback and no
+periodic-cron alternative for either: if a worker isn't running, its enqueued
+work is simply never processed, with no error visible anywhere else in the
+app. See [Deploying the workers](#deploying-the-workers) below.
+
+Before first use in an environment, set up each transport once (the second
+call skips re-diffing the shared `messenger_messages`/`messenger_failed`
+tables the first one already created — see `--setup` below):
 
 ```bash
-php scripts/console.php solr:queue --setup
+php scripts/console.php episciences:queue --transport=solr_index --setup
+php scripts/console.php episciences:queue --transport=next_revalidation --setup
 ```
 
-### Deploying `solr:worker`
+### Deploying the workers
 
 **Docker Compose (this repo's own stack — dev, and any environment using this
-`docker-compose.yml`):** a dedicated `solr-worker` service runs it, reusing
-the `php-fpm` image (`docker-compose.yml`). It starts with `make up` /
-`docker compose up -d` like any other service — no manual step needed.
-`restart: always` covers crash recovery, and `--time-limit=3600
---memory-limit=512M` (same bounds as the systemd unit below) make it
-periodically recycle the process. Check it with:
+`docker-compose.yml`):** two dedicated services, `worker-solr-index` and
+`worker-next-revalidation`, run them, reusing the `php-fpm` image
+(`docker-compose.yml`). They start with `make up` / `docker compose up -d`
+like any other service — no manual step needed. `restart: always` covers
+crash recovery, and `--time-limit=3600 --memory-limit=...` (same bounds as
+the systemd unit below) make each periodically recycle its process. Check
+with:
 
 ```bash
-docker compose logs -f solr-worker
-docker compose exec -u www-data -w /var/www/htdocs php-fpm php scripts/console.php solr:queue --stats
+docker compose logs -f worker-solr-index worker-next-revalidation
+docker compose exec -u www-data -w /var/www/htdocs php-fpm php scripts/console.php episciences:queue --transport=solr_index --stats
+docker compose exec -u www-data -w /var/www/htdocs php-fpm php scripts/console.php episciences:queue --transport=next_revalidation --stats
 ```
 
 A container does **not** run systemd as PID 1 (confirmed by
@@ -664,38 +688,42 @@ automatically — this was the actual cause of a stuck queue after a container
 rebuild: the systemd unit below is inert unless installed on a real
 systemd-managed host.
 
-**Bare-metal / VM without this Compose stack:** a ready-to-use systemd unit
-ships in the repo at
-[`src/php-fpm/episciences-solr-worker.service`](../src/php-fpm/episciences-solr-worker.service)
+**Bare-metal / VM without this Compose stack:** a ready-to-use systemd
+*template* unit ships in the repo at
+[`src/php-fpm/episciences-worker@.service`](../src/php-fpm/episciences-worker@.service)
 (it's also baked into the `php-fpm` Docker image at
-`/etc/systemd/system/episciences-solr-worker.service` at build time, so a
-`docker cp episciences-php-fpm:/etc/systemd/system/episciences-solr-worker.service .`
+`/etc/systemd/system/episciences-worker@.service` at build time, so a
+`docker cp episciences-php-fpm:/etc/systemd/system/episciences-worker@.service .`
 against the image always gets the current version without checking out the
-repo). Install it on each such server that must index into Solr:
+repo). Install it on each such server that must run these workers, then
+enable one instance per transport (the `%i` in the unit becomes the
+`--transport` value):
 
 ```bash
 # From a checkout, or via docker cp from a running/built php-fpm image as above:
-sudo cp src/php-fpm/episciences-solr-worker.service /etc/systemd/system/
+sudo cp "src/php-fpm/episciences-worker@.service" /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now episciences-solr-worker.service
+sudo systemctl enable --now episciences-worker@solr_index episciences-worker@next_revalidation
 
 # Check status / logs
-sudo systemctl status episciences-solr-worker.service
-sudo journalctl -u episciences-solr-worker.service -f
-# (StandardOutput/StandardError are also appended to /var/www/logs/solrWorker.log)
+sudo systemctl status episciences-worker@solr_index episciences-worker@next_revalidation
+sudo journalctl -u episciences-worker@solr_index -f
+# (StandardOutput/StandardError are also appended to /var/www/logs/<transport>-worker.log)
 ```
 
-The unit runs as `www-data`, restarts automatically on crash
+Each instance runs as `www-data`, restarts automatically on crash
 (`Restart=always`), and self-recycles hourly (`--time-limit=3600`) or past
 512M memory (`--memory-limit=512M`) so `Restart=always` periodically refreshes
 the process instead of a single PHP process running forever — edit
-`ExecStart` in the unit file to change either bound. `WorkingDirectory` and
-`ExecStart` assume the app lives at `/var/www/htdocs`, matching this repo's
-Docker/prod convention (`CNTR_APP_DIR` in the `Makefile`); adjust both paths
-if a given server checks out the app elsewhere.
+`ExecStart` in the unit file to change either bound (or override per-instance
+with a `systemctl edit episciences-worker@next_revalidation` drop-in).
+`WorkingDirectory` and `ExecStart` assume the app lives at `/var/www/htdocs`,
+matching this repo's Docker/prod convention (`CNTR_APP_DIR` in the
+`Makefile`); adjust both paths if a given server checks out the app
+elsewhere.
 
 After editing the unit file (in the repo or on a server), re-run
-`systemctl daemon-reload && systemctl restart episciences-solr-worker.service`
+`systemctl daemon-reload && systemctl restart episciences-worker@solr_index episciences-worker@next_revalidation`
 to pick up the change.
 
 ### `solr:index`
@@ -741,40 +769,56 @@ Exactly one of `--docid` or `--query` is required.
 
 ---
 
-### `solr:worker`
+### `episciences:worker`
 
-Continuously consumes the Solr indexing/deletion queue. Both index and delete messages share the same transport and are routed to the correct handler automatically; there is no update/delete mode flag.
+Continuously consumes one Messenger queue, selected by `--transport`. For
+`solr_index`, index and delete messages share the same transport and are
+routed to the correct handler automatically; there is no update/delete mode
+flag. For `next_revalidation`, refuses to start if `NEXT_BASE_URL` is not
+configured (see [docs/next-revalidation.md](./next-revalidation.md)).
 
 ```bash
-php scripts/console.php solr:worker [options]
+php scripts/console.php episciences:worker --transport=<solr_index|next_revalidation> [options]
 ```
 
 | Option | Description |
 |--------|-------------|
+| `--transport <name>` | **Required.** `solr_index` or `next_revalidation` |
 | `--limit <n>` | Stop after processing this many messages |
 | `--time-limit <seconds>` | Stop after this many seconds |
 | `--memory-limit <size>` | Stop once memory usage exceeds this limit (e.g. `512M`) |
 
-**Must run continuously under a process supervisor (systemd/supervisord).** A
-periodic cron tick is not sufficient — this is the only path papers get
-indexed/deleted through, with no synchronous fallback.
+**Must run continuously under a process supervisor (systemd/supervisord),
+one process per transport.** A periodic cron tick is not sufficient — this
+is the only path either kind of work gets processed through, with no
+synchronous fallback. Running one process per transport (rather than one
+process alternating between both) means a slow Solr document build never
+delays a Next.js revalidation POST.
 
 ---
 
-### `solr:queue`
+### `episciences:queue`
 
-Inspects and manages the Solr indexing queue — a minimal, hand-rolled equivalent of Symfony FrameworkBundle's `messenger:failed:*` commands (this app has no bundle system to auto-register them).
+Inspects and manages one Messenger queue, selected by `--transport` — a
+minimal, hand-rolled equivalent of Symfony FrameworkBundle's
+`messenger:failed:*` commands (this app has no bundle system to auto-register
+them).
 
 ```bash
-php scripts/console.php solr:queue [options]
+php scripts/console.php episciences:queue --transport=<solr_index|next_revalidation> [options]
 ```
 
 | Option | Description |
 |--------|-------------|
+| `--transport <name>` | **Required.** `solr_index` or `next_revalidation` |
 | `--stats` | Show pending and failed message counts |
 | `--list-failed` | List failed messages (id, message class, exception, error) |
 | `--retry <id>` | Retry the failed message with this id, synchronously, in this process |
-| `--limit <n>` | Limit for `--list-failed` (default: 50) |
-| `--setup` | Create the `messenger_messages`/`messenger_failed` tables if they don't exist yet (one-time, per environment) |
+| `--setup` | Create the `messenger_messages`/`messenger_failed` tables and this transport's own dispatch-failure table if they don't exist yet (one-time, per environment *and per transport* — see above) |
+| `--list-dispatch-failures` | List enqueue calls that failed even after their bounded producer-side retry — these never made it into `messenger_messages` at all, so they don't show up in `--list-failed` |
+| `--retry-dispatch-failure <id>` | Re-attempt a recorded dispatch failure; removes it from the dispatch-failure table on success |
+| `--limit <n>` | Limit for `--list-failed` / `--list-dispatch-failures` (default: 50) |
 
-Exactly one of `--stats`, `--list-failed`, `--retry` or `--setup` is required.
+Exactly one of `--stats`, `--list-failed`, `--retry`, `--setup`,
+`--list-dispatch-failures` or `--retry-dispatch-failure` is required, and
+both it and `--transport` are validated before any bootstrap.

@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Episciences\Solr\Indexing\Enqueue;
 
-use Episciences\Solr\Indexing\Messenger\Dbal\DbalConnectionFactory;
-use Episciences\Solr\Indexing\Messenger\MessengerFactory;
+use Episciences\AppRegistry;
+use Episciences\Messenger\Bus\BusFactory;
+use Episciences\Messenger\Dbal\DbalConnectionFactory;
+use Episciences\Messenger\Enqueue\BoundedRetryDispatcher;
+use Episciences\Messenger\Transport\TransportFactory;
+use Episciences\Solr\Indexing\Messenger\SolrIndexTransport;
 use Zend_Db_Table_Abstract;
 
 /**
@@ -42,11 +46,15 @@ final class SolrIndexing
     {
         if (self::$port === null) {
             $connection = DbalConnectionFactory::fromZendAdapter(Zend_Db_Table_Abstract::getDefaultAdapter());
-            $transport = MessengerFactory::createTransport($connection);
-            self::setPort(new SolrIndexQueuePort(
-                MessengerFactory::createSendBus($transport),
-                new DbalEnqueueFailureStore($connection)
-            ));
+            $transport = TransportFactory::createTransport($connection, SolrIndexTransport::config());
+            $sendBus = BusFactory::createSendBus(SolrIndexTransport::NAME, $transport, SolrIndexTransport::messageClasses());
+            $dispatcher = new BoundedRetryDispatcher(
+                $sendBus,
+                new DbalEnqueueFailureStore($connection),
+                AppRegistry::getMonoLogger()
+            );
+
+            self::setPort(new SolrIndexQueuePort($dispatcher));
         }
 
         return self::$port;

@@ -55,7 +55,10 @@ help: ## Display this help message
 	@grep -h -E '^(wait-for-db|load-db.*|generate-users|shell-mysql.*|backup-db):.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No database commands found"
 	@echo ""
 	@echo "🔍 Solr Commands:"
-	@grep -E '^(collection|collection-ref-pps|import-ref-pps|download-ref-pps|solr-index|solr-delete|solr-worker|solr-queue):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(collection|collection-ref-pps|import-ref-pps|download-ref-pps|solr-index|solr-delete):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "📬 Queue Commands (Messenger — Solr indexing, Next.js revalidation):"
+	@grep -E '^(queue-worker|queue-admin|next-revalidate):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "🛠️  Development Commands:"
 	@grep -E '^(dev-setup|composer|yarn|enter):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
@@ -536,23 +539,39 @@ solr-delete: ## Enqueue (or sync) a Solr deletion (requires docid=N or query=QUE
 		$(if $(query),--query=$(call shell_quote,$(query))) \
 		$(if $(filter 1,$(sync)),--sync)
 
-solr-worker: ## Continuously consume the Solr indexing/deletion queue (optional: limit=N time-limit=SECONDS memory-limit=SIZE)
-	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:worker [--limit=N] [--time-limit=SECONDS] [--memory-limit=SIZE] [-q]
+# --- Messenger queues (Solr indexing, Next.js revalidation) ----------------
+# One shared worker/admin command per docs/console-commands.md#messenger-queues.
+# transport=solr_index|next_revalidation selects which queue.
+
+queue-worker: ## Continuously consume one Messenger queue (requires transport=NAME; optional: limit=N time-limit=SECONDS memory-limit=SIZE)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php episciences:worker --transport=NAME [--limit=N] [--time-limit=SECONDS] [--memory-limit=SIZE] [-q]
+	@if [ -z "$(transport)" ]; then \
+		echo "Error: specify transport=solr_index|next_revalidation"; \
+		echo "Usage: make queue-worker transport=NAME [limit=N] [time-limit=SECONDS] [memory-limit=SIZE]"; \
+		exit 1; \
+	fi
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
-		php scripts/console.php solr:worker \
+		php scripts/console.php episciences:worker \
+		--transport=$(transport) \
 		$(if $(limit),--limit=$(limit)) \
 		$(if $(time-limit),--time-limit=$(time-limit)) \
 		$(if $(memory-limit),--memory-limit=$(memory-limit))
 
-solr-queue: ## Inspect/manage the Solr indexing queue (requires stats=1, list-failed=1, retry=ID, setup=1, list-dispatch-failures=1 or retry-dispatch-failure=ID; optional: limit=N)
-	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:queue --stats|--list-failed|--retry=ID|--setup|--list-dispatch-failures|--retry-dispatch-failure=ID [-q]
+queue-admin: ## Inspect/manage one Messenger queue (requires transport=NAME and one of stats=1, list-failed=1, retry=ID, setup=1, list-dispatch-failures=1 or retry-dispatch-failure=ID; optional: limit=N)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php episciences:queue --transport=NAME --stats|--list-failed|--retry=ID|--setup|--list-dispatch-failures|--retry-dispatch-failure=ID [-q]
+	@if [ -z "$(transport)" ]; then \
+		echo "Error: specify transport=solr_index|next_revalidation"; \
+		echo "Usage: make queue-admin transport=NAME stats=1 | list-failed=1 [limit=N] | retry=ID | setup=1 | list-dispatch-failures=1 [limit=N] | retry-dispatch-failure=ID"; \
+		exit 1; \
+	fi
 	@if [ "$(stats)" != "1" ] && [ "$(list-failed)" != "1" ] && [ -z "$(retry)" ] && [ "$(setup)" != "1" ] && [ "$(list-dispatch-failures)" != "1" ] && [ -z "$(retry-dispatch-failure)" ]; then \
 		echo "Error: specify stats=1, list-failed=1, retry=ID, setup=1, list-dispatch-failures=1 or retry-dispatch-failure=ID"; \
-		echo "Usage: make solr-queue stats=1 | list-failed=1 [limit=N] | retry=ID | setup=1 | list-dispatch-failures=1 [limit=N] | retry-dispatch-failure=ID"; \
+		echo "Usage: make queue-admin transport=NAME stats=1 | list-failed=1 [limit=N] | retry=ID | setup=1 | list-dispatch-failures=1 [limit=N] | retry-dispatch-failure=ID"; \
 		exit 1; \
 	fi
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
-		php scripts/console.php solr:queue \
+		php scripts/console.php episciences:queue \
+		--transport=$(transport) \
 		$(if $(filter 1,$(stats)),--stats) \
 		$(if $(filter 1,$(list-failed)),--list-failed) \
 		$(if $(retry),--retry=$(retry)) \
@@ -560,6 +579,18 @@ solr-queue: ## Inspect/manage the Solr indexing queue (requires stats=1, list-fa
 		$(if $(filter 1,$(list-dispatch-failures)),--list-dispatch-failures) \
 		$(if $(retry-dispatch-failure),--retry-dispatch-failure=$(retry-dispatch-failure)) \
 		$(if $(limit),--limit=$(limit))
+
+next-revalidate: ## Immediately trigger (or enqueue) Next.js cache revalidation (requires rvcode=CODE tag="TAG1 TAG2 ..."; optional: queue=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php next:revalidate-cache [--queue] RVCODE TAG...
+	@if [ -z "$(rvcode)" ] || [ -z "$(tag)" ]; then \
+		echo "Error: specify rvcode=CODE and tag=\"TAG1 TAG2 ...\""; \
+		echo "Usage: make next-revalidate rvcode=epijinfo tag=article-42 [queue=1]"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php next:revalidate-cache \
+		$(if $(filter 1,$(queue)),--queue) \
+		$(rvcode) $(tag)
 
 can-i-use-update: ## Update browserslist database when caniuse-lite is outdated
 	@echo "Updating browserslist database..."

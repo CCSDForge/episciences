@@ -2,21 +2,25 @@
 
 namespace unit\library\Episciences\Solr\Indexing\Enqueue;
 
+use Episciences\Messenger\Enqueue\BoundedRetryDispatcher;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexQueuePort;
 use Episciences\Solr\Indexing\Messenger\Message\DeletePaperMessage;
 use Episciences\Solr\Indexing\Messenger\Message\IndexPaperMessage;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use unit\library\Episciences\Messenger\Enqueue\FlakyMessageBus;
+use unit\library\Episciences\Messenger\Enqueue\SpyEnqueueFailureStore;
+use unit\library\Episciences\Messenger\Enqueue\SpyMessageBus;
 
-require_once __DIR__ . '/SpyMessageBus.php';
-require_once __DIR__ . '/FlakyMessageBus.php';
-require_once __DIR__ . '/SpyEnqueueFailureStore.php';
+require_once __DIR__ . '/../../../Messenger/Enqueue/SpyMessageBus.php';
+require_once __DIR__ . '/../../../Messenger/Enqueue/FlakyMessageBus.php';
+require_once __DIR__ . '/../../../Messenger/Enqueue/SpyEnqueueFailureStore.php';
 
 /**
- * Unit tests for SolrIndexQueuePort's bounded dispatch retry and its
- * fallback to EnqueueFailureStoreInterface once that retry is exhausted —
- * the producer-side durability gap Messenger's own retry/failure transport
- * cannot cover (no message row exists yet to retry).
+ * Unit tests for SolrIndexQueuePort: it must turn a (docId, priority) or
+ * (docId, solrQuery) pair into the right message and failure-store payload,
+ * and forward both to its BoundedRetryDispatcher. The bounded-retry/record
+ * mechanics themselves are covered generically by BoundedRetryDispatcherTest.
  */
 class SolrIndexQueuePortTest extends TestCase
 {
@@ -24,7 +28,7 @@ class SolrIndexQueuePortTest extends TestCase
     {
         $bus = new SpyMessageBus();
         $failureStore = new SpyEnqueueFailureStore();
-        $port = new SolrIndexQueuePort($bus, $failureStore);
+        $port = new SolrIndexQueuePort(new BoundedRetryDispatcher($bus, $failureStore));
 
         $port->enqueueIndex(42, 3);
 
@@ -33,31 +37,19 @@ class SolrIndexQueuePortTest extends TestCase
         self::assertSame([], $failureStore->recorded);
     }
 
-    public function testEnqueueIndexSucceedsAfterATransientFailure(): void
-    {
-        $bus = new FlakyMessageBus(failuresBeforeSuccess: 1);
-        $failureStore = new SpyEnqueueFailureStore();
-        $port = new SolrIndexQueuePort($bus, $failureStore);
-
-        $port->enqueueIndex(42);
-
-        self::assertCount(1, $bus->dispatched);
-        self::assertSame([], $failureStore->recorded);
-    }
-
     public function testEnqueueIndexRecordsFailureOnceRetryIsExhaustedAndDoesNotThrow(): void
     {
         $bus = new FlakyMessageBus(failuresBeforeSuccess: 99);
         $failureStore = new SpyEnqueueFailureStore();
-        $port = new SolrIndexQueuePort($bus, $failureStore);
+        $port = new SolrIndexQueuePort(new BoundedRetryDispatcher($bus, $failureStore));
 
         $port->enqueueIndex(42, 5);
 
         self::assertCount(0, $bus->dispatched);
         self::assertCount(1, $failureStore->recorded);
         self::assertSame('index', $failureStore->recorded[0]['action']);
-        self::assertSame(42, $failureStore->recorded[0]['docId']);
-        self::assertSame(5, $failureStore->recorded[0]['priority']);
+        self::assertSame(42, $failureStore->recorded[0]['payload']['docid']);
+        self::assertSame(5, $failureStore->recorded[0]['payload']['priority']);
         self::assertStringContainsString('transient failure', $failureStore->recorded[0]['errorMessage']);
     }
 
@@ -65,20 +57,20 @@ class SolrIndexQueuePortTest extends TestCase
     {
         $bus = new FlakyMessageBus(failuresBeforeSuccess: 99);
         $failureStore = new SpyEnqueueFailureStore();
-        $port = new SolrIndexQueuePort($bus, $failureStore);
+        $port = new SolrIndexQueuePort(new BoundedRetryDispatcher($bus, $failureStore));
 
         $port->enqueueDelete(7, null);
 
         self::assertCount(0, $bus->dispatched);
         self::assertCount(1, $failureStore->recorded);
         self::assertSame('delete', $failureStore->recorded[0]['action']);
-        self::assertSame(7, $failureStore->recorded[0]['docId']);
+        self::assertSame(7, $failureStore->recorded[0]['payload']['docid']);
     }
 
     public function testEnqueueDeleteDispatchesAsDeletePaperMessageOnSuccess(): void
     {
         $bus = new SpyMessageBus();
-        $port = new SolrIndexQueuePort($bus, new SpyEnqueueFailureStore());
+        $port = new SolrIndexQueuePort(new BoundedRetryDispatcher($bus, new SpyEnqueueFailureStore()));
 
         $port->enqueueDelete(null, '*:*');
 
@@ -91,7 +83,7 @@ class SolrIndexQueuePortTest extends TestCase
     {
         $bus = new SpyMessageBus();
         $failureStore = new SpyEnqueueFailureStore();
-        $port = new SolrIndexQueuePort($bus, $failureStore);
+        $port = new SolrIndexQueuePort(new BoundedRetryDispatcher($bus, $failureStore));
 
         $this->expectException(InvalidArgumentException::class);
 

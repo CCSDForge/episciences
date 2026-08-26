@@ -2,6 +2,7 @@
 
 namespace unit\library\Episciences\Trait;
 
+use Episciences\Messenger\Enqueue\BoundedRetryDispatcher;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexQueuePort;
 use Episciences\Solr\Indexing\Messenger\Message\IndexPaperMessage;
@@ -9,13 +10,13 @@ use Episciences\Trait\Tools;
 use Episciences_Paper;
 use PHPUnit\Framework\TestCase;
 
-require_once __DIR__ . '/../Solr/Indexing/Enqueue/SpyMessageBus.php';
-require_once __DIR__ . '/../Solr/Indexing/Enqueue/SpyEnqueueFailureStore.php';
-require_once __DIR__ . '/../Solr/Indexing/Enqueue/RestoresSolrIndexingPort.php';
+require_once __DIR__ . '/../Messenger/Enqueue/SpyMessageBus.php';
+require_once __DIR__ . '/../Messenger/Enqueue/SpyEnqueueFailureStore.php';
+require_once __DIR__ . '/../Messenger/Enqueue/RestoresStaticQueuePort.php';
 
-use unit\library\Episciences\Solr\Indexing\Enqueue\RestoresSolrIndexingPort;
-use unit\library\Episciences\Solr\Indexing\Enqueue\SpyEnqueueFailureStore;
-use unit\library\Episciences\Solr\Indexing\Enqueue\SpyMessageBus;
+use unit\library\Episciences\Messenger\Enqueue\RestoresStaticQueuePort;
+use unit\library\Episciences\Messenger\Enqueue\SpyEnqueueFailureStore;
+use unit\library\Episciences\Messenger\Enqueue\SpyMessageBus;
 
 /**
  * Unit tests for Episciences\Trait\Tools::index() — the migrated trigger that
@@ -24,20 +25,20 @@ use unit\library\Episciences\Solr\Indexing\Enqueue\SpyMessageBus;
  */
 class ToolsTest extends TestCase
 {
-    use RestoresSolrIndexingPort;
+    use RestoresStaticQueuePort;
 
     private SpyMessageBus $bus;
 
     protected function setUp(): void
     {
-        $this->captureSolrIndexingPort();
+        $this->captureStaticQueuePort(SolrIndexing::class);
         $this->bus = new SpyMessageBus();
-        SolrIndexing::setPort(new SolrIndexQueuePort($this->bus, new SpyEnqueueFailureStore()));
+        SolrIndexing::setPort(new SolrIndexQueuePort(new BoundedRetryDispatcher($this->bus, new SpyEnqueueFailureStore())));
     }
 
     protected function tearDown(): void
     {
-        $this->restoreSolrIndexingPort();
+        $this->restoreStaticQueuePort(SolrIndexing::class);
     }
 
     public function testPublishedPaperEnqueuesAnIndexMessage(): void

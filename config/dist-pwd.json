@@ -32,7 +32,8 @@
     },
     "SUPPORT": "email-support@platform.org",
     "CONTACT": "email-support@platform.org",
-    "IGNORED_EMAILS_WHEN_INVITING_REVIEWER": []
+    "IGNORED_EMAILS_WHEN_INVITING_REVIEWER": [],
+    "ENABLE_NEXT_FRONT": false
   },
   "CAS": {
     "HOST": "a_db_host",
@@ -152,5 +153,9 @@
     "MAILTO": "YOUR-MAIL-TO",
     "APIURL": "https://api.crossref.org/works/",
     "PLUS_API_TOKEN": "Ash-nazg-durbatulûk"
+  },
+  "NEXT": {
+    "BASE_URL": "https://next.example.org",
+    "REVALIDATION_SECRET": "generate-a-long-random-secret-eg-openssl-rand-hex-32"
   }
 }

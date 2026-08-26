@@ -14,15 +14,13 @@ class QueueMessageManager
 {
     public const TABLE = 'queue_messages';
     public const TYPE_DEFAULT_TIMEOUT = 120;
-    public const TYPE_NEXT_REVALIDATION = 'next_revalidation';
-    public const TYPE_NEXT_REVALIDATION_TIMEOUT = 3600; // 1 hour — cron must run within this window
 
     public const UNPROCESSED = 0;
     public const PROCESSED = 1;
     public const MAX_RECEIVE = 1000;
     public const DEFAULT_RECEIVE = 10;
     public const TYPE_STATUS_CHANGED = 'status_changed';
-    public const VALID_TYPES = [self::TYPE_STATUS_CHANGED, self::TYPE_NEXT_REVALIDATION];
+    public const VALID_TYPES = [self::TYPE_STATUS_CHANGED];
 
 
     public static function add(QueueMessage $queue): int

@@ -37,8 +37,10 @@ require_once __DIR__ . '/RevalidateNextCacheCommand.php';
 // Solr indexing commands
 require_once __DIR__ . '/SolrIndexCommand.php';
 require_once __DIR__ . '/SolrDeleteCommand.php';
-require_once __DIR__ . '/SolrWorkerCommand.php';
-require_once __DIR__ . '/SolrQueueCommand.php';
+
+// Messenger queue commands (Solr indexing, Next.js revalidation)
+require_once __DIR__ . '/EpisciencesWorkerCommand.php';
+require_once __DIR__ . '/EpisciencesQueueCommand.php';
 
 use Symfony\Component\Console\Application;
 
@@ -104,8 +106,10 @@ $application->add(new UpdateTranslationsCommand());
 // Solr indexing commands
 $application->add(new SolrIndexCommand());
 $application->add(new SolrDeleteCommand());
-$application->add(new SolrWorkerCommand());
-$application->add(new SolrQueueCommand());
+
+// Messenger queue commands (Solr indexing, Next.js revalidation)
+$application->add(new EpisciencesWorkerCommand());
+$application->add(new EpisciencesQueueCommand());
 
 // Next.js cache revalidation commands
 $application->add(new RevalidateNextCacheCommand());

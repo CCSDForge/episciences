@@ -143,7 +143,7 @@ class Episciences_Page_Manager
     private static function tryRevalidate(string $rvcode, string $tag, string $context): void
     {
         try {
-            \Episciences\Next\RevalidationService::revalidateOrEnqueue($rvcode, $tag);
+            \Episciences\Next\RevalidationService::enqueueTag($rvcode, $tag);
         } catch (\Throwable $e) {
             error_log("[Page/Manager] Revalidation failed after {$context}: " . $e->getMessage());
         }

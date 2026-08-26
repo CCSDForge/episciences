@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Doctrine\DBAL\Connection as DbalConnection;
 use Episciences\Solr\Indexing\Build\AuthorFieldsBuilder;
 use Episciences\Solr\Indexing\Build\DateFieldsBuilder;
 use Episciences\Solr\Indexing\Build\DocumentBuilder;
@@ -10,8 +9,7 @@ use Episciences\Solr\Indexing\Build\ExportFieldsBuilder;
 use Episciences\Solr\Indexing\Build\KeywordFieldsBuilder;
 use Episciences\Solr\Indexing\Build\LocaleFieldsBuilder;
 use Episciences\Solr\Indexing\Build\VolumeSectionResolver;
-use Episciences\Solr\Indexing\Messenger\Dbal\DbalConnectionFactory;
-use Monolog\Handler\StreamHandler;
+use Episciences\Messenger\Log\CliLoggerFactory;
 use Monolog\Logger;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -92,26 +90,7 @@ trait BootstrapsSolrEnvironment
 
     private function createSolrLogger(SymfonyStyle $io, string $channel): Logger
     {
-        $logger = new Logger($channel);
-        $logger->pushHandler(new StreamHandler(
-            EPISCIENCES_LOG_PATH . $channel . '_' . date('Y-m-d') . '.log',
-            Logger::INFO
-        ));
-        if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
-        }
-
-        return $logger;
-    }
-
-    /**
-     * Doctrine DBAL connection to the main application database, reusing the
-     * already-bootstrapped Zend_Db adapter's own connection parameters — see
-     * Messenger\Dbal\DbalConnectionFactory for why this DB (not a separate one).
-     */
-    private function createDbalConnection(): DbalConnection
-    {
-        return DbalConnectionFactory::fromZendAdapter(Zend_Db_Table_Abstract::getDefaultAdapter());
+        return CliLoggerFactory::create($channel, !$io->isQuiet());
     }
 
     /**

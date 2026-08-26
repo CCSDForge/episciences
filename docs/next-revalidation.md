@@ -6,49 +6,48 @@ Episciences uses [Next.js ISR](https://nextjs.org/docs/app/building-your-applica
 
 ## Architecture
 
+Revalidation is queued and consumed through the same Symfony Messenger + Doctrine DBAL transport as Solr indexing (see `docs/console-commands.md#messenger-queues`), on its own `next_revalidation` queue so a slow Solr document build never blocks a cheap Next.js POST.
+
 ```
 ZF1 Model / Controller
         │
         ▼
-RevalidationService::enqueueTag()   ←── async (no web-request impact)
+RevalidationService::enqueueTag() / enqueueTags()   ←── async, zero web-request impact
         │
         ▼
-queue_messages table
+messenger_messages (queue_name = 'next_revalidation')
         │
-        ▼   (cron — scripts/NextRevalidationQueue.php)
+        ▼   episciences:worker --transport=next_revalidation
 POST /api/revalidate  ──►  Next.js  ──►  revalidateTag()
 ```
 
-Two strategies are available:
-
-| Method | When to use |
-|--------|-------------|
-| `enqueueTag()` / `enqueueTags()` | Default for all model hooks — async, zero web-request impact |
-| `revalidateOrEnqueue()` | Critical paths (editorial pages) where near-instant invalidation is preferred; falls back to queue on HTTP error or non-200 |
-
-The feature is entirely guarded by the `EPISCIENCES_ENABLE_NEXT_FRONT` constant. All service methods are no-ops when it is not defined or falsy.
+The feature is entirely guarded by the `EPISCIENCES_ENABLE_NEXT_FRONT` constant, checked both at enqueue time (`RevalidationService`) and again when the worker consumes the message (`RevalidateTagMessageHandler`) — the second check only matters if the flag was switched off between the two. All revalidation methods are no-ops when the flag is not defined or falsy.
 
 ---
 
 ## Configuration
 
-All settings live in `config/pwd.json` (global) and `data/{rvcode}/config/pwd.json` (per-journal).
+All settings live in `config/pwd.json` (global) and `data/{rvcode}/config/pwd.json` (per-journal). See `config/dist-pwd.json` for the tracked template.
 
 ### Global (`config/pwd.json`)
 
 ```json
 {
-  "NEXT_BASE_URL": "https://episciences.org",
-  "NEXT_REVALIDATION_SECRET": "global_fallback_token",
-  "EPISCIENCES_ENABLE_NEXT_FRONT": true
+  "EPISCIENCES": {
+    "ENABLE_NEXT_FRONT": true
+  },
+  "NEXT": {
+    "BASE_URL": "https://episciences.org",
+    "REVALIDATION_SECRET": "global_fallback_token"
+  }
 }
 ```
 
-| Key | Description |
-|-----|-------------|
-| `NEXT_BASE_URL` | Base URL of the Next.js application. The revalidation endpoint is `{NEXT_BASE_URL}/api/revalidate`. |
-| `NEXT_REVALIDATION_SECRET` | Global fallback token used when no per-journal token is found. |
-| `EPISCIENCES_ENABLE_NEXT_FRONT` | Master switch. Set to `true` to enable all revalidation hooks. |
+| Key | Constant | Description |
+|-----|----------|-------------|
+| `NEXT.BASE_URL` | `NEXT_BASE_URL` | Base URL of the Next.js application. The revalidation endpoint is `{NEXT_BASE_URL}/api/revalidate`. Required for the worker and `next:revalidate-cache` to start — a missing value aborts the command rather than retrying every message. |
+| `NEXT.REVALIDATION_SECRET` | `NEXT_REVALIDATION_SECRET` | Global fallback token used when no per-journal token is found. |
+| `EPISCIENCES.ENABLE_NEXT_FRONT` | `EPISCIENCES_ENABLE_NEXT_FRONT` | Master switch. Set to `true` to enable all revalidation hooks. |
 
 ### Per-journal (`data/{rvcode}/config/pwd.json`)
 
@@ -61,6 +60,8 @@ All settings live in `config/pwd.json` (global) and `data/{rvcode}/config/pwd.js
 **Token resolution order:**
 1. `NEXT_REVALIDATION_TOKEN` from `data/{rvcode}/config/pwd.json`
 2. Fall back to global `NEXT_REVALIDATION_SECRET`
+
+Resolved tokens are memoized per journal for the lifetime of the worker process — a rotated token is only picked up the next time the worker recycles (bounded by its `--time-limit`, 3600s by default).
 
 Never commit tokens to version control — they must be set only in `config/pwd.json` and per-journal `pwd.json` files, which are excluded from the repository.
 
@@ -83,9 +84,14 @@ One `POST` is sent per tag. The endpoint does not accept multiple tags in a sing
 
 | HTTP status | Meaning | Action |
 |-------------|---------|--------|
-| `200` | Cache revalidated | Message deleted from queue |
-| `4xx` | Bad token / IP / payload | Logged, message left in queue |
-| `5xx` / timeout | Server/network error | Logged, message left in queue |
+| `2xx` | Cache revalidated | Message acknowledged |
+| `3xx` (unexpected — Guzzle already follows redirects) | `NEXT_BASE_URL` is misconfigured | Permanent failure, sent straight to `messenger_failed`, no retry |
+| `408` / `425` / `429` | Transient (timeout / too early / rate-limited) | Retried with backoff |
+| Other `4xx` | Bad token / IP / payload / route | Permanent failure, sent straight to `messenger_failed`, no retry |
+| `5xx` | Server error | Retried with backoff |
+| Network / DNS / connect timeout | Transport-level failure | Retried with backoff |
+
+Backoff schedule: 1s → 4s → 16s → 60s (4 attempts), landing in `messenger_failed` after roughly 81s if still failing — short on purpose, since a tag revalidated 30 minutes late is worthless (the ISR TTL would have expired on its own by then). Compare with the Solr indexing queue's much longer 5s–30min backoff, appropriate there because a delayed *index* update has no equivalent TTL fallback.
 
 ---
 
@@ -160,9 +166,7 @@ Hook: `Episciences_User::saveUserRoles()` and `saveNewRoles()`.
 
 Pages with codes `editorial-workflow`, `ethical-charter`, and `prepare-submission` are skipped — they have no corresponding Next.js fetch tag and refresh only on TTL expiry.
 
-These use `revalidateOrEnqueue()` (immediate HTTP POST with queue fallback) because editorial pages are typically edited and reviewed live.
-
-Hook: `Episciences_Page_Manager::add()`, `update()`, `delete()`.
+Hook: `Episciences_Page_Manager::add()`, `update()`, `delete()` — all go through the same async `enqueueTag()` as every other hook; there is no separate immediate-POST path for pages.
 
 ### Statistics
 
@@ -183,36 +187,41 @@ Omit the `{rvcode}` suffix to affect every journal. Use only for emergencies (e.
 | `pages` | All editorial pages |
 | `sitemap` | All sitemaps |
 
+`next:revalidate-cache` accepts more than one tag per invocation, which is the easiest way to fire off a batch of these emergency tags in one command (see below).
+
 ---
 
-## Queue Consumer (Cron)
+## Worker
 
-`scripts/NextRevalidationQueue.php` reads `TYPE_NEXT_REVALIDATION` messages from `queue_messages` and sends the corresponding HTTP POST to Next.js. Successfully delivered messages are deleted; failed ones remain in the queue for retry on the next run.
+`episciences:worker --transport=next_revalidation` continuously consumes the queue and POSTs to Next.js — see `docs/console-commands.md#messenger-queues` for the full command reference, deployment unit, and troubleshooting (`--list-failed`, `--retry`, `--list-dispatch-failures`).
 
-Message timeout: `3600 s` — the cron must run at least once per hour to avoid expiry.
-
-Recommended cron schedule:
+Deployed as its own systemd instance / Docker Compose service, independent from the Solr indexing worker, precisely so a slow Solr document build can never delay a Next.js revalidation:
 
 ```
-*/5 * * * *  www-data  php /var/www/htdocs/scripts/NextRevalidationQueue.php
+systemctl enable --now episciences-worker@next_revalidation
+# or: docker compose up -d worker-next-revalidation
 ```
+
+If `EPISCIENCES_ENABLE_NEXT_FRONT` is off when the worker starts, it still starts (a message can only exist if the flag was on when it was enqueued) but logs a warning, since a worker that's running but never finding anything to consume can otherwise look broken rather than idle.
 
 ---
 
 ## Console Command
 
-The `next:revalidate-cache` command sends an immediate HTTP POST, bypassing the queue. Use it for urgent manual revalidation or smoke testing.
+The `next:revalidate-cache` command sends an immediate HTTP POST for one or more tags, bypassing the queue by default — use it for urgent manual revalidation or smoke testing. Pass `--queue` to enqueue instead (symmetry with `solr:index`, which enqueues by default and has a `--sync` option).
 
 ```bash
-php scripts/console.php next:revalidate-cache <rvcode> <tag>
+php scripts/console.php next:revalidate-cache <rvcode> <tag> [<tag> ...]
+php scripts/console.php next:revalidate-cache --queue <rvcode> <tag> [<tag> ...]
 ```
 
-| Argument | Description |
-|----------|-------------|
+| Argument / option | Description |
+|--------------------|-------------|
 | `rvcode` | Journal code (e.g. `epijinfo`) |
-| `tag` | Cache tag to invalidate (e.g. `article-42`) |
+| `tag` | One or more cache tags to invalidate (e.g. `article-42`); see [Emergency — Broad Invalidation](#emergency--broad-invalidation) for the rvcode-less batch |
+| `--queue` | Enqueue instead of POSTing immediately |
 
-Returns exit code `0` on HTTP 200, `1` otherwise.
+Exit code `0` if every tag revalidated successfully (or was enqueued), `1` if any tag failed.
 
 ---
 
@@ -230,13 +239,20 @@ curl -s -X POST https://epijinfo.episciences.org/api/revalidate \
 # Expected: {"revalidated":true,"now":...,"journalId":"epijinfo","tag":"news-epijinfo"}
 ```
 
+End-to-end via the queue: enqueue a tag, then confirm `episciences:queue --transport=next_revalidation --stats` drops its pending count and the worker's log shows the POST — see `docs/console-commands.md#messenger-queues`.
+
 ---
 
 ## Key Files
 
 | File | Role |
 |------|------|
-| `library/Episciences/Next/RevalidationService.php` | Static service: `enqueueTag()`, `enqueueTags()`, `revalidateOrEnqueue()` |
-| `scripts/NextRevalidationQueue.php` | Cron consumer — reads queue and POSTs to Next.js |
+| `library/Episciences/Next/RevalidationService.php` | Static facade: `enqueueTag()`, `enqueueTags()`, `getPort()`/`setPort()` |
+| `library/Episciences/Next/Enqueue/NextRevalidationQueuePort.php` | Builds/dedupes/dispatches `RevalidateTagMessage` |
+| `library/Episciences/Next/Enqueue/DbalNextRevalidationFailureStore.php` | Producer-side dispatch-failure record (`next_revalidation_enqueue_failures`) |
+| `library/Episciences/Next/Messenger/Message/RevalidateTagMessage.php` | The queued message |
+| `library/Episciences/Next/Messenger/TokenResolver.php` | Per-journal token resolution (memoized) |
+| `library/Episciences/Next/Messenger/Handler/RevalidateTagMessageHandler.php` | Consumes the message: POSTs and applies the HTTP taxonomy above |
+| `library/Episciences/Next/Messenger/NextRevalidationTransport.php` | Transport name, retry policy |
+| `scripts/Messenger/NextRevalidationProfile.php` | Wires the queue into `episciences:worker` / `episciences:queue` |
 | `scripts/RevalidateNextCacheCommand.php` | Symfony Console command `next:revalidate-cache` |
-| `library/Episciences/QueueMessageManager.php` | Defines `TYPE_NEXT_REVALIDATION` and `TYPE_NEXT_REVALIDATION_TIMEOUT` |

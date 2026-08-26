@@ -2,156 +2,115 @@
 
 namespace unit\library\Episciences\Next;
 
+use Episciences\Messenger\Enqueue\BoundedRetryDispatcher;
+use Episciences\Next\Enqueue\NextRevalidationQueuePort;
+use Episciences\Next\Messenger\Message\RevalidateTagMessage;
 use Episciences\Next\RevalidationService;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use unit\library\Episciences\Messenger\Enqueue\RestoresStaticQueuePort;
+use unit\library\Episciences\Messenger\Enqueue\SpyEnqueueFailureStore;
+use unit\library\Episciences\Messenger\Enqueue\SpyMessageBus;
+
+require_once __DIR__ . '/../Messenger/Enqueue/SpyMessageBus.php';
+require_once __DIR__ . '/../Messenger/Enqueue/SpyEnqueueFailureStore.php';
+require_once __DIR__ . '/../Messenger/Enqueue/RestoresStaticQueuePort.php';
 
 /**
- * Unit tests for Episciences\Next\RevalidationService.
+ * Unit tests for Episciences\Next\RevalidationService — the seam every
+ * trigger call site (Paper, PapersManager, Volume, Section, User,
+ * JournalNews, AdministratepaperController, ...) uses to enqueue a Next.js
+ * cache revalidation.
  *
- * HTTP behaviour (postRevalidation with a live server) and queue persistence
- * (enqueueTag → DB) are excluded — they require integration test setup.
+ * Token resolution is covered by TokenResolverTest; the HTTP taxonomy by
+ * RevalidateTagMessageHandlerTest. This class only covers the facade's own
+ * responsibility: isEnabled() gating and delegation to the injected port.
+ *
+ * EPISCIENCES_ENABLE_NEXT_FRONT is never defined anywhere else in this test
+ * process — the "flag off" tests below rely on that directly; the "flag on"
+ * tests run in their own process via #[RunInSeparateProcess] so defining it
+ * there doesn't leak into unrelated tests.
  *
  * @covers \Episciences\Next\RevalidationService
  */
 class Episciences_Next_RevalidationServiceTest extends TestCase
 {
-    private const TEST_RVCODE = 'phpunit-next-revalidation-test';
+    use RestoresStaticQueuePort;
 
-    private static string $testConfigDir;
-    private static string $testConfigFile;
-
-    // =========================================================================
-    // Setup / teardown
-    // =========================================================================
-
-    public static function setUpBeforeClass(): void
+    protected function setUp(): void
     {
-        self::$testConfigDir = APPLICATION_PATH . '/../data/' . self::TEST_RVCODE . '/config';
-        self::$testConfigFile = self::$testConfigDir . '/pwd.json';
+        $this->captureStaticQueuePort(RevalidationService::class);
     }
 
     protected function tearDown(): void
     {
-        if (file_exists(self::$testConfigFile)) {
-            unlink(self::$testConfigFile);
-        }
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        self::removeDirectory(APPLICATION_PATH . '/../data/' . self::TEST_RVCODE);
+        $this->restoreStaticQueuePort(RevalidationService::class);
     }
 
     // =========================================================================
-    // resolveToken() — no journal config file
+    // isEnabled() gating — EPISCIENCES_ENABLE_NEXT_FRONT unset in this process
     // =========================================================================
 
-    public function testResolveToken_NoFile_ReturnsEmptyString(): void
+    public function testEnqueueTagIsANoopWhenFeatureFlagIsOff(): void
     {
-        // No data/{rvcode}/config/pwd.json exists for this rvcode
-        $token = RevalidationService::resolveToken(self::TEST_RVCODE);
-        self::assertSame('', $token);
-    }
+        $bus = new SpyMessageBus();
+        RevalidationService::setPort(new NextRevalidationQueuePort(new BoundedRetryDispatcher($bus, new SpyEnqueueFailureStore())));
 
-    // =========================================================================
-    // resolveToken() — with journal config file
-    // =========================================================================
-
-    public function testResolveToken_ValidToken_ReturnsToken(): void
-    {
-        $this->writeConfig(['NEXT_REVALIDATION_TOKEN' => 'secret-abc-123']);
-
-        $token = RevalidationService::resolveToken(self::TEST_RVCODE);
-
-        self::assertSame('secret-abc-123', $token);
-    }
-
-    public function testResolveToken_EmptyTokenInFile_ReturnsEmptyString(): void
-    {
-        $this->writeConfig(['NEXT_REVALIDATION_TOKEN' => '']);
-
-        $token = RevalidationService::resolveToken(self::TEST_RVCODE);
-
-        // Empty string is treated as absent → falls back to global constant (undefined → '')
-        self::assertSame('', $token);
-    }
-
-    public function testResolveToken_MissingKeyInFile_ReturnsEmptyString(): void
-    {
-        $this->writeConfig(['OTHER_KEY' => 'irrelevant']);
-
-        $token = RevalidationService::resolveToken(self::TEST_RVCODE);
-
-        self::assertSame('', $token);
-    }
-
-    public function testResolveToken_MalformedJson_ReturnsEmptyString(): void
-    {
-        if (!is_dir(self::$testConfigDir)) {
-            mkdir(self::$testConfigDir, 0755, true);
-        }
-        file_put_contents(self::$testConfigFile, '{not valid json}');
-
-        $token = RevalidationService::resolveToken(self::TEST_RVCODE);
-
-        self::assertSame('', $token);
-    }
-
-    // =========================================================================
-    // isEnabled() — tested via public API (EPISCIENCES_ENABLE_NEXT_FRONT unset)
-    // =========================================================================
-
-    public function testEnqueueTag_FeatureFlagOff_DoesNotThrow(): void
-    {
-        // EPISCIENCES_ENABLE_NEXT_FRONT is not defined in the test environment → no-op
         RevalidationService::enqueueTag('epijinfo', 'article-42');
-        self::assertTrue(true); // reached without exception or DB call
+
+        self::assertSame([], $bus->dispatched);
     }
 
-    public function testEnqueuTags_FeatureFlagOff_DoesNotThrow(): void
+    public function testEnqueueTagsIsANoopWhenFeatureFlagIsOff(): void
     {
-        RevalidationService::enqueueTags('epijinfo', ['article-42', 'articles-epijinfo']);
-        self::assertTrue(true);
-    }
+        $bus = new SpyMessageBus();
+        RevalidationService::setPort(new NextRevalidationQueuePort(new BoundedRetryDispatcher($bus, new SpyEnqueueFailureStore())));
 
-    public function testRevalidateOrEnqueue_FeatureFlagOff_DoesNotThrow(): void
-    {
-        RevalidationService::revalidateOrEnqueue('epijinfo', 'about-epijinfo');
-        self::assertTrue(true);
-    }
+        RevalidationService::enqueueTags('epijinfo', ['article-42', 'volumes-epijinfo']);
 
-    // =========================================================================
-    // postRevalidation() — NEXT_BASE_URL not defined
-    // =========================================================================
-
-    public function testPostRevalidation_NoBaseUrl_ReturnsZero(): void
-    {
-        // NEXT_BASE_URL is not defined in the test environment
-        $status = RevalidationService::postRevalidation('epijinfo', 'article-42');
-        self::assertSame(0, $status);
+        self::assertSame([], $bus->dispatched);
     }
 
     // =========================================================================
-    // Helpers
+    // getPort() / setPort() — unconditional, no flag involved
     // =========================================================================
 
-    private function writeConfig(array $data): void
+    public function testGetPortReturnsTheInjectedInstance(): void
     {
-        if (!is_dir(self::$testConfigDir)) {
-            mkdir(self::$testConfigDir, 0755, true);
-        }
-        file_put_contents(self::$testConfigFile, json_encode($data, JSON_THROW_ON_ERROR));
+        $port = new NextRevalidationQueuePort(new BoundedRetryDispatcher(new SpyMessageBus(), new SpyEnqueueFailureStore()));
+        RevalidationService::setPort($port);
+
+        self::assertSame($port, RevalidationService::getPort());
     }
 
-    private static function removeDirectory(string $path): void
+    // =========================================================================
+    // Delegation to the port — EPISCIENCES_ENABLE_NEXT_FRONT forced on
+    // =========================================================================
+
+    #[RunInSeparateProcess]
+    public function testEnqueueTagDelegatesToTheInjectedPortWhenFeatureFlagIsOn(): void
     {
-        if (!is_dir($path)) {
-            return;
-        }
-        foreach (array_diff(scandir($path), ['.', '..']) as $entry) {
-            $full = $path . '/' . $entry;
-            is_dir($full) ? self::removeDirectory($full) : unlink($full);
-        }
-        rmdir($path);
+        define('EPISCIENCES_ENABLE_NEXT_FRONT', true);
+        $bus = new SpyMessageBus();
+        RevalidationService::setPort(new NextRevalidationQueuePort(new BoundedRetryDispatcher($bus, new SpyEnqueueFailureStore())));
+
+        RevalidationService::enqueueTag('epijinfo', 'article-42');
+
+        self::assertCount(1, $bus->dispatched);
+        self::assertInstanceOf(RevalidateTagMessage::class, $bus->dispatched[0]);
+        self::assertSame('epijinfo', $bus->dispatched[0]->rvcode);
+        self::assertSame('article-42', $bus->dispatched[0]->tag);
+    }
+
+    #[RunInSeparateProcess]
+    public function testEnqueueTagsDelegatesToTheInjectedPortWhenFeatureFlagIsOn(): void
+    {
+        define('EPISCIENCES_ENABLE_NEXT_FRONT', true);
+        $bus = new SpyMessageBus();
+        RevalidationService::setPort(new NextRevalidationQueuePort(new BoundedRetryDispatcher($bus, new SpyEnqueueFailureStore())));
+
+        RevalidationService::enqueueTags('epijinfo', ['article-42', 'volumes-epijinfo']);
+
+        self::assertCount(2, $bus->dispatched);
     }
 }

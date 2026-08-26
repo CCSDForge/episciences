@@ -1,6 +1,6 @@
 <?php
 
-namespace unit\library\Episciences\Solr\Indexing\Enqueue;
+namespace unit\library\Episciences\Messenger\Enqueue;
 
 use RuntimeException;
 use Symfony\Component\Messenger\Envelope;
@@ -8,7 +8,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * MessageBusInterface test double that throws on the first N dispatch() calls
- * before succeeding — used to exercise SolrIndexQueuePort's bounded retry.
+ * before succeeding — used to exercise BoundedRetryDispatcher's bounded retry.
  */
 final class FlakyMessageBus implements MessageBusInterface
 {

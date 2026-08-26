@@ -90,7 +90,7 @@ class Episciences_Page_ManagerTest extends TestCase
     public function testTryRevalidate_FeatureFlagOff_DoesNotThrow(): void
     {
         // EPISCIENCES_ENABLE_NEXT_FRONT is not defined in the test environment.
-        // RevalidationService::revalidateOrEnqueue() is a no-op → no exception.
+        // RevalidationService::enqueueTag() is a no-op → no exception.
         $this->callTryRevalidate('epijinfo', 'about-epijinfo', 'test');
         self::assertTrue(true);
     }
