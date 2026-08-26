@@ -445,6 +445,32 @@ class Episciences_ReviewTest extends TestCase
         self::assertFalse($this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
     }
 
+    public function testGetMailDisplayCodeFallsBackToCodeWhenSettingUnset(): void
+    {
+        $this->review->setCode('epijinfo');
+        self::assertSame('epijinfo', $this->review->getMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeFallsBackToCodeWhenSettingBlank(): void
+    {
+        $this->review->setCode('epijinfo');
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, '   ');
+        self::assertSame('epijinfo', $this->review->getMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeUsesCustomSettingWhenSet(): void
+    {
+        $this->review->setCode('epijinfo');
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, 'Épijournal Info');
+        self::assertSame('Épijournal Info', $this->review->getMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeTrimsCustomSetting(): void
+    {
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, '  custom  ');
+        self::assertSame('custom', $this->review->getMailDisplayCode());
+    }
+
     public function testApplySettingsFromRowsSetsMailDisplayCode(): void
     {
         $this->review->applySettingsFromRows([

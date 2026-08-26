@@ -68,13 +68,7 @@ class Episciences_Mail extends Zend_Mail
         }
 
         if (defined('RVCODE')) {
-            $mailDisplayCode = RVCODE;
-            if ($review instanceof Episciences_Review) {
-                $customMailDisplayCode = trim((string)$review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
-                if ($customMailDisplayCode !== '') {
-                    $mailDisplayCode = $customMailDisplayCode;
-                }
-            }
+            $mailDisplayCode = ($review instanceof Episciences_Review) ? $review->getMailDisplayCode() : RVCODE;
             $this->addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, $mailDisplayCode);
         }
         if (defined('RVNAME')) {

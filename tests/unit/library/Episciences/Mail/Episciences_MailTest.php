@@ -444,8 +444,8 @@ final class Episciences_MailTest extends TestCase
         $lines  = file($method->getFileName());
         $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
 
-        self::assertStringContainsString('Episciences_Review::SETTING_MAIL_DISPLAY_CODE', $source);
-        self::assertStringContainsString('$mailDisplayCode = RVCODE', $source);
+        self::assertStringContainsString('$review->getMailDisplayCode()', $source);
+        self::assertStringContainsString(': RVCODE', $source);
         self::assertStringContainsString('TAG_REVIEW_CODE, $mailDisplayCode', $source);
     }
 

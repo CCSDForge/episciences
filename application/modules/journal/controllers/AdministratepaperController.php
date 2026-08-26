@@ -1456,7 +1456,7 @@ class AdministratepaperController extends PaperDefaultController
             Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $oPaper->formatAuthorsMetadata(),
             Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
             Episciences_Mail_Tags::TAG_UPDATED_DEADLINE => $this->view->Date($oAssignment->getDeadline()),
-            Episciences_Mail_Tags::TAG_REVIEW_CODE => RVCODE,
+            Episciences_Mail_Tags::TAG_REVIEW_CODE => $oReview->getMailDisplayCode(),
         ];
         $subject = str_replace(array_keys($tags), array_values($tags), $template->getSubject());
         $body = str_replace(array_keys($tags), array_values($tags), $template->getBody());
@@ -3329,7 +3329,7 @@ class AdministratepaperController extends PaperDefaultController
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $oPaper->getPaperid(),
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $oPaper->getTitle($locale, true),
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $oPaper->formatAuthorsMetadata(),
-                Episciences_Mail_Tags::TAG_REVIEW_CODE => RVCODE,
+                Episciences_Mail_Tags::TAG_REVIEW_CODE => $oReview->getMailDisplayCode(),
                 Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => (!$oAssignment->isTmp_user()) ? $oReviewer->getUsername() : '',
             ];
 

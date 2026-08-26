@@ -732,6 +732,16 @@ class Episciences_Review
     }
 
     /**
+     * Code displayed in the subject/body of automatic emails: the review's custom
+     * mail display code (SETTING_MAIL_DISPLAY_CODE) if set, its own code otherwise.
+     */
+    public function getMailDisplayCode(): string
+    {
+        $customMailDisplayCode = trim((string)$this->getSetting(self::SETTING_MAIL_DISPLAY_CODE));
+        return $customMailDisplayCode !== '' ? $customMailDisplayCode : $this->getCode();
+    }
+
+    /**
      * @param $code
      * @return $this
      */
