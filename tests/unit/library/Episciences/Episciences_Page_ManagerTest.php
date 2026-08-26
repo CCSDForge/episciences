@@ -15,27 +15,28 @@ use PHPUnit\Framework\TestCase;
 class Episciences_Page_ManagerTest extends TestCase
 {
     // =========================================================================
-    // resolvePageTag() — skip list
-    // =========================================================================
-
-    public function testResolvePageTag_EditorialWorkflow_ReturnsNull(): void
-    {
-        self::assertNull($this->resolvePageTag('editorial-workflow', 'epijinfo'));
-    }
-
-    public function testResolvePageTag_EthicalCharter_ReturnsNull(): void
-    {
-        self::assertNull($this->resolvePageTag('ethical-charter', 'epijinfo'));
-    }
-
-    public function testResolvePageTag_PrepareSubmission_ReturnsNull(): void
-    {
-        self::assertNull($this->resolvePageTag('prepare-submission', 'epijinfo'));
-    }
-
-    // =========================================================================
     // resolvePageTag() — known mappings
     // =========================================================================
+
+    public function testResolvePageTag_EditorialWorkflow_ReturnsMappedTag(): void
+    {
+        self::assertSame('editorial-workflow-epijinfo', $this->resolvePageTag('editorial-workflow', 'epijinfo'));
+    }
+
+    public function testResolvePageTag_EthicalCharter_ReturnsMappedTag(): void
+    {
+        self::assertSame('ethical-charter-epijinfo', $this->resolvePageTag('ethical-charter', 'epijinfo'));
+    }
+
+    public function testResolvePageTag_PrepareSubmission_ReturnsMappedTag(): void
+    {
+        self::assertSame('prepare-submission-epijinfo', $this->resolvePageTag('prepare-submission', 'epijinfo'));
+    }
+
+    public function testResolvePageTag_ForEditors_ReturnsMappedTag(): void
+    {
+        self::assertSame('for-editors-epijinfo', $this->resolvePageTag('for-editors', 'epijinfo'));
+    }
 
     public function testResolvePageTag_About_ReturnsMappedTag(): void
     {

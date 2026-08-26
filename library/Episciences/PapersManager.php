@@ -2463,7 +2463,6 @@ class Episciences_PapersManager
             \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
                 "article-{$docid}",
                 "articles-{$rvcode}",
-                "sitemap-{$rvcode}",
             ]);
         }
 

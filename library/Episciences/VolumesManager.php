@@ -472,8 +472,8 @@ class Episciences_VolumesManager
         if ($journal !== false) {
             $rvcode = $journal->getCode();
             \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                "volume-{$id}",
                 "volumes-{$rvcode}",
-                "sitemap-{$rvcode}",
             ]);
         }
 
@@ -860,6 +860,12 @@ class Episciences_VolumesManager
                 $db->query($sql . implode(', ', $values) . ' AS new_row ON DUPLICATE KEY UPDATE POSITION=new_row.POSITION');
             } catch (Exception $e) {
                 trigger_error($e->getMessage(), E_USER_WARNING);
+            }
+
+            // Enqueue Next.js cache revalidation for reordered papers
+            $rvcode = defined('RVCODE') ? RVCODE : null;
+            if ($rvcode !== null) {
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "volume-{$vid}");
             }
         }
     }

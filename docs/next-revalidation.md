@@ -103,8 +103,8 @@ Backoff schedule: 1s → 4s → 16s → 60s (4 attempts), landing in `messenger_
 |-----------|-----------|
 | Article metadata updated (title, abstract, authors, DOI) | `article-{id}` |
 | Article moved to any "Accepted" status | `article-{id}`, `articles-accepted-{rvcode}` |
-| Article published | `article-{id}`, `articles-{rvcode}`, `articles-accepted-{rvcode}`, `sitemap-{rvcode}` |
-| Article deleted or removed | `article-{id}`, `articles-{rvcode}`, `sitemap-{rvcode}` |
+| Article published | `article-{id}`, `articles-{rvcode}`, `articles-accepted-{rvcode}` |
+| Article deleted or removed | `article-{id}`, `articles-{rvcode}` |
 
 Hooks: `Episciences_Paper::enqueueNextRevalidationForStatus()` (called on `CODE_STATUS` log) and `Episciences_Paper::save()` (UPDATE path for metadata).
 
@@ -114,11 +114,12 @@ Hooks: `Episciences_Paper::enqueueNextRevalidationForStatus()` (called on `CODE_
 |-----------|-----------|
 | Volume metadata updated (title, description, cover) | `volume-{id}` |
 | Article added to or removed from a volume | `volume-{id}`, `volumes-{rvcode}` |
-| New volume created | `volumes-{rvcode}`, `sitemap-{rvcode}` |
-| Volume deleted | `volumes-{rvcode}` |
+| Article order changed within a volume (drag-and-drop) | `volume-{id}` |
+| New volume created | `volumes-{rvcode}` |
+| Volume deleted | `volume-{id}`, `volumes-{rvcode}` |
 | Volume display order changed (drag-and-drop) | `volumes-{rvcode}` |
 
-Hooks: `Episciences_Volume::save()`, `Episciences_VolumesManager::delete()`, `Episciences_Volume_PapersManager::updatePaperVolumes()` / `deletePaperVolume()`, `Episciences_VolumesAndSectionsManager::sort()`.
+Hooks: `Episciences_Volume::save()`, `Episciences_VolumesManager::delete()`, `Episciences_VolumesManager::savePaperPositionsInVolume()`, `Episciences_Volume_PapersManager::updatePaperVolumes()` / `deletePaperVolume()`, `Episciences_VolumesAndSectionsManager::sort()`.
 
 ### Sections
 
@@ -127,7 +128,7 @@ Hooks: `Episciences_Volume::save()`, `Episciences_VolumesManager::delete()`, `Ep
 | Section metadata updated (title, description) | `section-{id}-{rvcode}`, `sections-{rvcode}` |
 | Article assigned to or removed from a section | `section-articles-{id}-{rvcode}` (+ old section tag when moving) |
 | New section created | `sections-{rvcode}` |
-| Section deleted | `sections-{rvcode}` |
+| Section deleted | `section-{id}-{rvcode}`, `sections-{rvcode}` |
 | Section display order changed (drag-and-drop) | `sections-{rvcode}` |
 
 Hooks: `Episciences_Section::save()`, `Episciences_SectionsManager::delete()`, `AdministratepaperController::savesectionAction()`, `Episciences_VolumesAndSectionsManager::sort()`.
@@ -159,18 +160,24 @@ Hook: `Episciences_User::saveUserRoles()` and `saveNewRoles()`.
 | `indexation-metrics` | `indexation-{rvcode}` |
 | `credits` | `credits-{rvcode}` |
 | `for-reviewers` | `for-reviewers-{rvcode}` |
+| `for-editors` | `for-editors-{rvcode}` |
 | `for-conference-organisers` | `for-conference-organisers-{rvcode}` |
 | `proposing-special-issues` | `proposing-special-issues-{rvcode}` |
 | `acknowledgements` | `acknowledgements-{rvcode}` |
+| `editorial-workflow` | `editorial-workflow-{rvcode}` |
+| `ethical-charter` | `ethical-charter-{rvcode}` |
+| `prepare-submission` | `prepare-submission-{rvcode}` |
 | Any other page (`X`) | `page-X-{rvcode}` |
-
-Pages with codes `editorial-workflow`, `ethical-charter`, and `prepare-submission` are skipped — they have no corresponding Next.js fetch tag and refresh only on TTL expiry.
 
 Hook: `Episciences_Page_Manager::add()`, `update()`, `delete()` — all go through the same async `enqueueTag()` as every other hook; there is no separate immediate-POST path for pages.
 
 ### Statistics
 
 Statistics tags (`stats-{rvcode}`, `statistics-{rvcode}`) are not wired to automatic hooks — the data behind them is updated by batch cron jobs, and TTL-based expiry is acceptable for stats pages. Use the console command for a manual forced refresh if needed.
+
+### Sitemaps
+
+Sitemaps are not part of the Next.js tag-based revalidation system — there is no `sitemap` fetch tag on the Next.js side. They are generated as static XML files by the ZF1 `sitemap:generate` console command (`scripts/GenerateSitemapCommand.php`), run periodically via cron, independently of this queue.
 
 ### Emergency — Broad Invalidation
 
@@ -185,7 +192,6 @@ Omit the `{rvcode}` suffix to affect every journal. Use only for emergencies (e.
 | `news` | All news |
 | `members` | All member lists |
 | `pages` | All editorial pages |
-| `sitemap` | All sitemaps |
 
 `next:revalidate-cache` accepts more than one tag per invocation, which is the easiest way to fire off a batch of these emergency tags in one command (see below).
 

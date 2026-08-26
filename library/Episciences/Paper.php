@@ -5751,7 +5751,6 @@ class Episciences_Paper
                     "article-{$docId}",
                     "articles-{$rvcode}",
                     "articles-accepted-{$rvcode}",
-                    "sitemap-{$rvcode}",
                 ]);
                 break;
 
@@ -5772,7 +5771,6 @@ class Episciences_Paper
                 \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
                     "article-{$docId}",
                     "articles-{$rvcode}",
-                    "sitemap-{$rvcode}",
                 ]);
                 break;
 

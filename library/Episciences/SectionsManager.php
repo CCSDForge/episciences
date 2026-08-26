@@ -169,7 +169,10 @@ class Episciences_SectionsManager
             $journal = Episciences_ReviewsManager::find($rvId);
             if ($journal !== false) {
                 $rvcode = $journal->getCode();
-                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "sections-{$rvcode}");
+                \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                    "section-{$id}-{$rvcode}",
+                    "sections-{$rvcode}",
+                ]);
             }
 
             return true;

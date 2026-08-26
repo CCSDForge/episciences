@@ -2727,7 +2727,7 @@ class AdministratepaperController extends PaperDefaultController
                 }
 
                 if (defined('RVCODE') && RVCODE !== '') {
-                    $tagsToInvalidate = ["volume-{$vid}", 'volumes-' . RVCODE, 'sitemap-' . RVCODE];
+                    $tagsToInvalidate = ["volume-{$vid}", 'volumes-' . RVCODE];
                     if ($oldVid > 0) {
                         $tagsToInvalidate[] = "volume-{$oldVid}";
                     }

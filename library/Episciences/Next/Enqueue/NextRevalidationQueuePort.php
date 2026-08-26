@@ -32,7 +32,7 @@ final class NextRevalidationQueuePort
     /**
      * Bounds $seen so a long-running process (e.g. a batch script publishing
      * many papers in one run) doesn't permanently suppress a journal-wide tag
-     * ("articles-{rvcode}", "sitemap-{rvcode}") after its first occurrence —
+     * ("articles-{rvcode}", "volumes-{rvcode}") after its first occurrence —
      * $seen is small in the common case (a handful of tags per save()), so
      * this only ever triggers in a long-lived process.
      */
