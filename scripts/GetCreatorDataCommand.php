@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 
 /**
  * Symfony Console command: enrich author data (ORCID) from OpenAIRE Research Graph + HAL TEI.
@@ -154,6 +155,14 @@ class GetCreatorDataCommand extends Command
                             Episciences_Paper_AuthorsManager::update($newAuthorInfos);
                         }
                     }
+                }
+            }
+
+            if (!$dryRun) {
+                try {
+                    SolrIndexing::enqueueIndex($docId);
+                } catch (Exception $e) {
+                    $logger->error("Solr enqueue error for paper {$docId}: " . $e->getMessage());
                 }
             }
 

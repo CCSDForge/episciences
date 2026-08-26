@@ -32,6 +32,15 @@ require_once __DIR__ . '/CleanHalRecordDescriptionsCommand.php';
 require_once __DIR__ . '/UpdateTranslationsCommand.php';
 require_once __DIR__ . '/GetDoiCommand.php';
 require_once __DIR__ . '/NormalizeUserAffiliationsCommand.php';
+require_once __DIR__ . '/RevalidateNextCacheCommand.php';
+
+// Solr indexing commands
+require_once __DIR__ . '/SolrIndexCommand.php';
+require_once __DIR__ . '/SolrDeleteCommand.php';
+
+// Messenger queue commands (Solr indexing, Next.js revalidation)
+require_once __DIR__ . '/EpisciencesWorkerCommand.php';
+require_once __DIR__ . '/EpisciencesQueueCommand.php';
 
 use Symfony\Component\Console\Application;
 
@@ -93,5 +102,16 @@ $application->add(new CleanHalRecordDescriptionsCommand());
 
 // Translation commands
 $application->add(new UpdateTranslationsCommand());
+
+// Solr indexing commands
+$application->add(new SolrIndexCommand());
+$application->add(new SolrDeleteCommand());
+
+// Messenger queue commands (Solr indexing, Next.js revalidation)
+$application->add(new EpisciencesWorkerCommand());
+$application->add(new EpisciencesQueueCommand());
+
+// Next.js cache revalidation commands
+$application->add(new RevalidateNextCacheCommand());
 
 $application->run();

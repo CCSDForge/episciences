@@ -461,6 +461,11 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('EPISCIENCES_IGNORED_EMAILS_WHEN_INVITING_REVIEWER', []);
         define('EPISCIENCES_BIBLIOREF', ['URL' => '', 'ENABLE' => false, 'SSL_VERIFY' => true, 'TOKEN' => '']);
 
+        // Next.js cache revalidation
+        define('EPISCIENCES_ENABLE_NEXT_FRONT', false);
+        define('NEXT_BASE_URL', '');
+        define('NEXT_REVALIDATION_SECRET', '');
+
         // ========================================
         // Protocol constants
         // From defineProtocol()

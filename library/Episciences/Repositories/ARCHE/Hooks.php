@@ -2,6 +2,7 @@
 
 use Episciences\Repositories\CommonHooksInterface;
 use Episciences\Repositories\LinkedDataEnrichmentInterface;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Episciences\Tools\Translations;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -217,6 +218,17 @@ class Episciences_Repositories_ARCHE_Hooks implements CommonHooksInterface, Link
         }
 
         $affectedRows = Episciences_Submit::processDatasets($hookParams['docId'], $relatedIdentifiers);
+
+        if ($affectedRows > 0) {
+            $paper = Episciences_PapersManager::get((int) $hookParams['docId'], false);
+            if ($paper && $paper->isPublished()) {
+                try {
+                    SolrIndexing::enqueueIndex($paper->getDocid());
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+            }
+        }
 
         $response['affectedRows'] = $affectedRows;
         return $response;

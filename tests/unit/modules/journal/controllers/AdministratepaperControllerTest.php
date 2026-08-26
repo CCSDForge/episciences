@@ -949,6 +949,73 @@ class AdministratepaperControllerTest extends TestCase
         );
     }
 
+    /**
+     * @covers AdministratepaperController::savemastervolumeAction
+     *
+     * Changing the master volume of an already published paper must enqueue
+     * a Solr reindex, mirroring the pattern already in saveothervolumesAction().
+     */
+    public function testSavemastervolumeActionEnqueuesSolrIndexWhenPublished(): void
+    {
+        $method = $this->extractMethod('savemastervolumeAction');
+
+        $this->assertStringContainsString(
+            'isPublished()',
+            $method,
+            'savemastervolumeAction must guard the Solr reindex with isPublished()'
+        );
+        $this->assertStringContainsString(
+            'SolrIndexing::enqueueIndex',
+            $method,
+            'savemastervolumeAction must enqueue a Solr reindex for a published paper on volume change'
+        );
+        // The two assertions above only check that both tokens appear
+        // somewhere in the method — an unconditional enqueue call, or an
+        // unrelated isPublished() check elsewhere, would still pass them.
+        // This asserts the actual nesting: no closing brace between the
+        // isPublished() check's opening brace and the enqueue call, i.e. the
+        // enqueue really is inside that branch.
+        $this->assertMatchesRegularExpression(
+            '/isPublished\(\)\s*\)\s*\{[^}]*SolrIndexing::enqueueIndex/',
+            $method,
+            'savemastervolumeAction must enqueue the Solr reindex from inside the isPublished() branch, not merely alongside it'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // savesectionAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savesectionAction
+     *
+     * Changing the section of an already published paper must enqueue
+     * a Solr reindex, mirroring the pattern already in saveothervolumesAction().
+     */
+    public function testSavesectionActionEnqueuesSolrIndexWhenPublished(): void
+    {
+        $method = $this->extractMethod('savesectionAction');
+
+        $this->assertStringContainsString(
+            'isPublished()',
+            $method,
+            'savesectionAction must guard the Solr reindex with isPublished()'
+        );
+        $this->assertStringContainsString(
+            'SolrIndexing::enqueueIndex',
+            $method,
+            'savesectionAction must enqueue a Solr reindex for a published paper on section change'
+        );
+        // See the equivalent assertion in
+        // testSavemastervolumeActionEnqueuesSolrIndexWhenPublished() for why
+        // the two checks above are not enough on their own.
+        $this->assertMatchesRegularExpression(
+            '/isPublished\(\)\s*\)\s*\{[^}]*SolrIndexing::enqueueIndex/',
+            $method,
+            'savesectionAction must enqueue the Solr reindex from inside the isPublished() branch, not merely alongside it'
+        );
+    }
+
     // -----------------------------------------------------------------------
     // saveeditorsAction
     // -----------------------------------------------------------------------

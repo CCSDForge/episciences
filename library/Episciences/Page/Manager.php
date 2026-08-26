@@ -2,6 +2,22 @@
 
 class Episciences_Page_Manager
 {
+    /** Direct mapping from page_code to tag template (placeholder {rvcode} resolved at runtime). */
+    private const NEXT_PAGE_CODE_TAGS = [
+        'about'                     => 'about',
+        'indexing'                  => 'indexing',
+        'indexation-metrics'        => 'indexation',
+        'credits'                   => 'credits',
+        'for-reviewers'             => 'for-reviewers',
+        'for-editors'               => 'for-editors',
+        'for-conference-organisers' => 'for-conference-organisers',
+        'proposing-special-issues'  => 'proposing-special-issues',
+        'acknowledgements'          => 'acknowledgements',
+        'editorial-workflow'        => 'editorial-workflow',
+        'ethical-charter'           => 'ethical-charter',
+        'prepare-submission'        => 'prepare-submission',
+    ];
+
     public static function findByCodeAndPageCode(string $code, string $page_code): Episciences_Page
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -40,6 +56,10 @@ class Episciences_Page_Manager
             $resInsert = 0;
         }
 
+        if ($resInsert > 0) {
+            self::tryRevalidate($page->getCode(), self::resolvePageTag($page->getPageCode(), $page->getCode()), 'add');
+        }
+
         return $resInsert;
     }
 
@@ -66,6 +86,10 @@ class Episciences_Page_Manager
             $resUpdate = 0;
         }
 
+        if ($resUpdate > 0) {
+            self::tryRevalidate($page->getCode(), self::resolvePageTag($page->getPageCode(), $page->getCode()), 'update');
+        }
+
         return $resUpdate;
     }
 
@@ -84,7 +108,31 @@ class Episciences_Page_Manager
             $resDelete = 0;
         }
 
+        if ($resDelete > 0) {
+            self::tryRevalidate($code, self::resolvePageTag($page_code, $code), 'delete');
+        }
 
         return $resDelete > 0;
+    }
+
+    /**
+     * Resolve the Next.js cache tag for a given page_code and journal rvcode.
+     */
+    private static function resolvePageTag(string $pageCode, string $rvcode): string
+    {
+        if (isset(self::NEXT_PAGE_CODE_TAGS[$pageCode])) {
+            return self::NEXT_PAGE_CODE_TAGS[$pageCode] . '-' . $rvcode;
+        }
+
+        return 'page-' . $pageCode . '-' . $rvcode;
+    }
+
+    private static function tryRevalidate(string $rvcode, string $tag, string $context): void
+    {
+        try {
+            \Episciences\Next\RevalidationService::enqueueTag($rvcode, $tag);
+        } catch (\Throwable $e) {
+            error_log("[Page/Manager] Revalidation failed after {$context}: " . $e->getMessage());
+        }
     }
 }

@@ -1,8 +1,10 @@
 <?php
 
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
 use Episciences\Trait\UrlBuilder;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Psr\Log\LogLevel;
 
 class Episciences_PapersManager
 {
@@ -2406,11 +2408,19 @@ class Episciences_PapersManager
         if (!$paper instanceof Episciences_Paper) {
             return false;
         }
-
+        // Capture rvcode before deletion for Next.js cache revalidation
+        $rvcode = null;
+        $journal = Episciences_ReviewsManager::find($paper->getRvid());
+        if ($journal !== false) {
+            $rvcode = $journal->getCode();
+        }
         // Purge every table atomically: a failure mid-way must not leave the paper
         // half-deleted with dangling rows in the remaining tables.
         $db->beginTransaction();
         try {
+
+
+        // delete from database
             Episciences_CommentsManager::deleteByDocid($docid);
             Episciences_Mail_LogManager::deleteByDocid($docid);
 
@@ -2440,12 +2450,24 @@ class Episciences_PapersManager
         }
 
         // remove from index
-        Ccsd_Search_Solr_Indexer::addToIndexQueue([$docid], 'episciences', 'DELETE', 'episciences');
+        try {
+            SolrIndexing::enqueueDelete((int)$docid);
+        } catch (Exception $e) {
+            Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
+        }
 
         // TODO: delete user assignments
         // TODO: delete user invitations
         // TODO: delete user invitation answers
         // TODO: if published paper, update HAL metadata
+
+        // Enqueue Next.js cache revalidation for deleted article
+        if ($rvcode !== null) {
+            \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                "article-{$docid}",
+                "articles-{$rvcode}",
+            ]);
+        }
 
         return true;
 
