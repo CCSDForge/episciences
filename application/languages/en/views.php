@@ -236,6 +236,8 @@ return array(
     'Séparés par des points-virgules (ex. : mathématiques ; physique)' => 'Semicolon-separated (e.g.: mathematics; physics)',
     'Année de création' => 'Year of creation',
     'Année de création de la revue (format : AAAA)' => 'Year the journal was created (format: YYYY)',
+    'Code affiché dans les courriels' => 'Code displayed in emails',
+    'Remplace le code de la revue dans le sujet et le corps des courriels automatiques. Laisser vide pour utiliser le code par défaut.' => "Replaces the journal's code in the subject and body of automatic emails. Leave empty to use the default code.",
 
 
     //Assignation automatique des rédacteurs,
