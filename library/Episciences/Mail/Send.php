@@ -14,17 +14,9 @@ class Episciences_Mail_Send
      */
     private static function getMailDisplayCode(): string
     {
-        try {
-            $reviewSettings = Zend_Registry::get('reviewSettings');
-            $customMailDisplayCode = trim((string)($reviewSettings[Episciences_Review::SETTING_MAIL_DISPLAY_CODE] ?? ''));
-            if ($customMailDisplayCode !== '') {
-                return $customMailDisplayCode;
-            }
-        } catch (Exception $e) {
-            trigger_error($e->getMessage());
-        }
+        $review = Episciences_ReviewsManager::find(RVCODE);
 
-        return (string)RVCODE;
+        return $review instanceof Episciences_Review ? $review->getMailDisplayCode() : (string)RVCODE;
     }
 
     /**
