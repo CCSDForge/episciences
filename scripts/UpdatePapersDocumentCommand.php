@@ -68,6 +68,12 @@ class UpdatePapersDocumentCommand extends Command
             $logger->pushHandler(new StreamHandler($handle, Logger::INFO));
         }
 
+        // bootstrap() skips $application->bootstrap(), so AppRegistry's 'appLogger' is never
+        // registered here. Without it, Episciences_BibliographicalsReferencesTools::getClient()
+        // falls back to a NullLogger and swallows biblioref API failures silently — register
+        // this command's logger so those errors surface in updatePapersDocument_*.log.
+        \Episciences\AppRegistry::set('appLogger', $logger);
+
         $db = \Zend_Db_Table_Abstract::getDefaultAdapter();
 
         if ($db === null) {
