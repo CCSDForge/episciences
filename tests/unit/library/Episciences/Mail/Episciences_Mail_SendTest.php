@@ -111,4 +111,54 @@ final class Episciences_Mail_SendTest extends TestCase
 
         self::assertSame($email, $escaped);
     }
+
+    // =========================================================================
+    // getMailDisplayCode() — the code shown in the default subject of the manual
+    // mail-sending form: the review's custom mail display code if set, RVCODE otherwise.
+    // =========================================================================
+
+    private function invokeGetMailDisplayCode(): string
+    {
+        $method = new ReflectionMethod(Episciences_Mail_Send::class, 'getMailDisplayCode');
+        $method->setAccessible(true);
+        return $method->invoke(null);
+    }
+
+    public function testGetMailDisplayCodeFallsBackToRvcodeWhenSettingUnset(): void
+    {
+        \Zend_Registry::set('reviewSettings', []);
+
+        self::assertSame(RVCODE, $this->invokeGetMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeFallsBackToRvcodeWhenSettingBlank(): void
+    {
+        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_MAIL_DISPLAY_CODE => '   ']);
+
+        self::assertSame(RVCODE, $this->invokeGetMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeUsesCustomSettingWhenSet(): void
+    {
+        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_MAIL_DISPLAY_CODE => 'custom-label']);
+
+        self::assertSame('custom-label', $this->invokeGetMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeTrimsCustomSetting(): void
+    {
+        \Zend_Registry::set('reviewSettings', [\Episciences_Review::SETTING_MAIL_DISPLAY_CODE => '  custom-label  ']);
+
+        self::assertSame('custom-label', $this->invokeGetMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeFallsBackToRvcodeWhenRegistryKeyMissing(): void
+    {
+        if (\Zend_Registry::isRegistered('reviewSettings')) {
+            $registry = \Zend_Registry::getInstance();
+            unset($registry['reviewSettings']);
+        }
+
+        self::assertSame(RVCODE, $this->invokeGetMailDisplayCode());
+    }
 }

@@ -426,6 +426,50 @@ class Episciences_ReviewTest extends TestCase
     }
 
     // =========================================================================
+    // SETTING_MAIL_DISPLAY_CODE (custom rvcode label in automatic emails)
+    // =========================================================================
+
+    public function testMailDisplayCodeSettingConstant(): void
+    {
+        self::assertSame('mailDisplayCode', Episciences_Review::SETTING_MAIL_DISPLAY_CODE);
+    }
+
+    public function testSetAndGetMailDisplayCodeSetting(): void
+    {
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, 'custom-code');
+        self::assertSame('custom-code', $this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
+    }
+
+    public function testMailDisplayCodeSettingDefaultsToFalseWhenUnset(): void
+    {
+        self::assertFalse($this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
+    }
+
+    public function testApplySettingsFromRowsSetsMailDisplayCode(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_MAIL_DISPLAY_CODE, 'VALUE' => 'epij-custom'],
+        ]);
+
+        self::assertSame('epij-custom', $this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
+    }
+
+    /**
+     * settingsForm() pulls in Zend_Registry-dependent sub-forms (translator, repositories),
+     * so it cannot be instantiated in isolation here; verified via source inspection instead,
+     * consistent with other DB/registry-dependent methods in this codebase's test suite.
+     */
+    public function testSettingsFormSourceAddsMailDisplayCodeElement(): void
+    {
+        $method = new ReflectionMethod(Episciences_Review::class, 'settingsForm');
+        $lines = file($method->getFileName());
+        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        self::assertStringContainsString("addElement('text', self::SETTING_MAIL_DISPLAY_CODE", $source);
+        self::assertStringContainsString('self::SETTING_MAIL_DISPLAY_CODE], \'global\'', $source);
+    }
+
+    // =========================================================================
     // applySettingsFromRows()
     // =========================================================================
 

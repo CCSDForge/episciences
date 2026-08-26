@@ -433,6 +433,23 @@ final class Episciences_MailTest extends TestCase
     }
 
     // =========================================================================
+    // __construct() — %%REVIEW_CODE%% tag uses the review's custom mail display
+    // code (SETTING_MAIL_DISPLAY_CODE) when set, falling back to RVCODE — source
+    // inspection, since the constructor requires a live DB (Episciences_ReviewsManager::find()).
+    // =========================================================================
+
+    public function testConstructSourceFallsBackToRvcodeForReviewCodeTag(): void
+    {
+        $method = new ReflectionMethod(Episciences_Mail::class, '__construct');
+        $lines  = file($method->getFileName());
+        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        self::assertStringContainsString('Episciences_Review::SETTING_MAIL_DISPLAY_CODE', $source);
+        self::assertStringContainsString('$mailDisplayCode = RVCODE', $source);
+        self::assertStringContainsString('TAG_REVIEW_CODE, $mailDisplayCode', $source);
+    }
+
+    // =========================================================================
     // Security S1 — SQL injection via $docIds in getHistoryQuery()
     // =========================================================================
 
