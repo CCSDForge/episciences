@@ -54,7 +54,11 @@ class RevalidateNextCacheCommand extends Command
             foreach ($tags as $tag) {
                 RevalidationService::enqueueTag($rvcode, (string)$tag);
             }
-            $io->success(sprintf('Enqueued %d tag(s) for journal <info>%s</info>.', count($tags), $rvcode));
+            // Best-effort: BoundedRetryDispatcher swallows an exhausted-retry
+            // failure (logs critical(), records it in the failure store) rather
+            // than throwing, so this success message only confirms the tags
+            // were handed off, not that the dispatch itself succeeded.
+            $io->success(sprintf('Queued %d tag(s) for journal <info>%s</info> (check logs / dispatch failures for delivery errors).', count($tags), $rvcode));
 
             return Command::SUCCESS;
         }
@@ -70,6 +74,8 @@ class RevalidateNextCacheCommand extends Command
             // RevalidateTagMessageHandler) — warn here so this doesn't look
             // like a silent success for an explicit, manual command.
             $io->warning('EPISCIENCES_ENABLE_NEXT_FRONT is off — nothing will actually be sent.');
+
+            return Command::SUCCESS;
         }
 
         $io->text('Endpoint: ' . rtrim(NEXT_BASE_URL, '/') . '/api/revalidate');

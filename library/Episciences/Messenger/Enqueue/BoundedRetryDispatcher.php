@@ -50,7 +50,11 @@ final class BoundedRetryDispatcher
             } catch (Throwable $e) {
                 $lastError = $e;
 
-                if ($attempt < self::MAX_ATTEMPTS) {
+                // This path is reachable from PHP-FPM request threads (any
+                // controller/save() that enqueues), not only CLI workers —
+                // only back off with a sleep in CLI, where blocking the
+                // process for a few hundred ms isn't tying up a web worker.
+                if ($attempt < self::MAX_ATTEMPTS && PHP_SAPI === 'cli') {
                     usleep(self::RETRY_DELAYS_MICROSECONDS[$attempt - 1]);
                 }
             }

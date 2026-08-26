@@ -2407,11 +2407,9 @@ class Episciences_PapersManager
         }
         // Capture rvcode before deletion for Next.js cache revalidation
         $rvcode = null;
-        if ($paper !== false && $paper !== null) {
-            $journal = Episciences_ReviewsManager::find($paper->getRvid());
-            if ($journal !== false) {
-                $rvcode = $journal->getCode();
-            }
+        $journal = Episciences_ReviewsManager::find($paper->getRvid());
+        if ($journal !== false) {
+            $rvcode = $journal->getCode();
         }
         // Purge every table atomically: a failure mid-way must not leave the paper
         // half-deleted with dangling rows in the remaining tables.
@@ -2432,10 +2430,8 @@ class Episciences_PapersManager
             $db->delete(T_PAPERS, ['DOCID = ?' => $docid]);
             $db->delete(T_VOLUME_PAPER, ['DOCID = ?' => $docid]);
             $db->delete(T_PAPER_LICENCES, ['docid = ?' => $docid]);
-        if ($paper !== false && $paper !== null) {
             $db->delete(T_VOLUME_PAPER_POSITION, ['PAPERID = ?' => $paper->getPaperid()]);
             $db->delete(T_PAPER_PROJECTS, ['paperid = ?' => $paper->getPaperid()]);
-        }
 
             $db->commit();
         } catch (Exception $e) {

@@ -92,9 +92,15 @@ final class SolrIndexProfile implements TransportProfileInterface
     {
         $docId = $row['docid'] !== null ? (int)$row['docid'] : null;
 
-        return $row['action'] === 'index'
-            ? new IndexPaperMessage((int)$docId, (int)$row['priority'])
-            : new DeletePaperMessage($docId, $row['solr_query']);
+        return match ($row['action']) {
+            'index' => new IndexPaperMessage((int)$docId, (int)$row['priority']),
+            'delete' => new DeletePaperMessage($docId, $row['solr_query']),
+            default => throw new InvalidArgumentException(sprintf(
+                'Unknown Solr dispatch-failure action "%s" for row id %s — refusing to guess between index/delete.',
+                (string)$row['action'],
+                (string)($row['id'] ?? '?')
+            )),
+        };
     }
 
     /** @return list<string> */

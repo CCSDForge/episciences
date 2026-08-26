@@ -7,7 +7,7 @@ namespace Episciences\Next\Messenger\Handler;
 use Episciences\Next\Messenger\Message\RevalidateTagMessage;
 use Episciences\Next\Messenger\TokenResolver;
 use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Exception\TransferException;
+use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Messenger\Exception\UnrecoverableMessageHandlingException;
@@ -70,7 +70,7 @@ final class RevalidateTagMessageHandler
                 'connect_timeout' => self::HTTP_CONNECT_TIMEOUT,
                 'http_errors' => false,
             ]);
-        } catch (TransferException $e) {
+        } catch (GuzzleException $e) {
             $this->logger?->warning(sprintf(
                 'Next.js revalidation request failed for tag "%s" (journal: %s): %s',
                 $message->tag,
@@ -145,18 +145,22 @@ final class RevalidateTagMessageHandler
         }
 
         // 5xx
+        $errorBody = substr($response->getBody()->getContents(), 0, 200);
+
         $this->logger?->warning(sprintf(
-            'Next.js revalidation got HTTP %d for tag "%s" (journal: %s).',
+            'Next.js revalidation got HTTP %d for tag "%s" (journal: %s): %s',
             $status,
             $message->tag,
-            $message->rvcode
+            $message->rvcode,
+            $errorBody
         ));
 
         throw new RuntimeException(sprintf(
-            'Next.js revalidation got HTTP %d for tag "%s" (journal: %s).',
+            'Next.js revalidation got HTTP %d for tag "%s" (journal: %s): %s',
             $status,
             $message->tag,
-            $message->rvcode
+            $message->rvcode,
+            $errorBody
         ));
     }
 }

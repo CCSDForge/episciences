@@ -29,6 +29,15 @@ use Episciences\Next\Messenger\Message\RevalidateTagMessage;
  */
 final class NextRevalidationQueuePort
 {
+    /**
+     * Bounds $seen so a long-running process (e.g. a batch script publishing
+     * many papers in one run) doesn't permanently suppress a journal-wide tag
+     * ("articles-{rvcode}", "sitemap-{rvcode}") after its first occurrence —
+     * $seen is small in the common case (a handful of tags per save()), so
+     * this only ever triggers in a long-lived process.
+     */
+    private const MAX_SEEN = 200;
+
     /** @var array<string, true> */
     private array $seen = [];
 
@@ -46,6 +55,10 @@ final class NextRevalidationQueuePort
 
         if (isset($this->seen[$key])) {
             return;
+        }
+
+        if (count($this->seen) >= self::MAX_SEEN) {
+            $this->seen = [];
         }
 
         $this->seen[$key] = true;

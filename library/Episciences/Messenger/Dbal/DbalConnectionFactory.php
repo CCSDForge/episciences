@@ -35,7 +35,7 @@ final class DbalConnectionFactory
 
         $key = implode('|', [
             (string)($config['host'] ?? ''),
-            (string)($config['port'] ?? 3306),
+            (string)(!empty($config['port']) ? $config['port'] : 3306),
             (string)($config['dbname'] ?? ''),
             (string)($config['username'] ?? ''),
         ]);
@@ -44,7 +44,7 @@ final class DbalConnectionFactory
             self::$connections[$key] = DriverManager::getConnection([
                 'driver' => 'pdo_mysql',
                 'host' => $config['host'],
-                'port' => isset($config['port']) ? (int)$config['port'] : 3306,
+                'port' => !empty($config['port']) ? (int)$config['port'] : 3306,
                 'dbname' => $config['dbname'],
                 'user' => $config['username'],
                 'password' => $config['password'],

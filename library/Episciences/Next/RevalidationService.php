@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace Episciences\Next;
 
 use Episciences\AppRegistry;
-use Episciences\Messenger\Bus\BusFactory;
 use Episciences\Messenger\Dbal\DbalConnectionFactory;
-use Episciences\Messenger\Enqueue\BoundedRetryDispatcher;
-use Episciences\Messenger\Transport\TransportFactory;
+use Episciences\Messenger\Enqueue\DispatcherFactory;
 use Episciences\Next\Enqueue\DbalNextRevalidationFailureStore;
 use Episciences\Next\Enqueue\NextRevalidationQueuePort;
 use Episciences\Next\Messenger\NextRevalidationTransport;
@@ -100,14 +98,10 @@ final class RevalidationService
     {
         if (self::$port === null) {
             $connection = DbalConnectionFactory::fromZendAdapter(Zend_Db_Table_Abstract::getDefaultAdapter());
-            $transport = TransportFactory::createTransport($connection, NextRevalidationTransport::config());
-            $sendBus = BusFactory::createSendBus(
-                NextRevalidationTransport::NAME,
-                $transport,
-                NextRevalidationTransport::messageClasses()
-            );
-            $dispatcher = new BoundedRetryDispatcher(
-                $sendBus,
+            $dispatcher = DispatcherFactory::create(
+                $connection,
+                NextRevalidationTransport::config(),
+                NextRevalidationTransport::messageClasses(),
                 new DbalNextRevalidationFailureStore($connection),
                 AppRegistry::getMonoLogger()
             );

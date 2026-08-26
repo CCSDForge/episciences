@@ -53,7 +53,13 @@ final class TokenResolver
             if (file_exists($configPath)) {
                 $fileContent = file_get_contents($configPath);
 
-                if ($fileContent !== false) {
+                if ($fileContent === false) {
+                    $this->logger?->warning(sprintf(
+                        'Could not read journal config for token resolution (rvcode: %s): file_get_contents("%s") failed.',
+                        $rvcode,
+                        $configPath
+                    ));
+                } else {
                     try {
                         $config = json_decode($fileContent, true, 512, JSON_THROW_ON_ERROR);
 
