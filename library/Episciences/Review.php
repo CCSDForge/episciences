@@ -1073,7 +1073,8 @@ class Episciences_Review
 
         $form->addElement('text', self::SETTING_MAIL_DISPLAY_CODE, [
                 'label' => "Code affiché dans les courriels",
-                'description' => "Remplace le code de la revue dans le sujet et le corps des courriels automatiques. Laisser vide pour utiliser le code par défaut.",
+                'description' => "Remplace le code de la revue dans le sujet et le corps des courriels automatiques. Laisser vide pour utiliser le code par défaut. 100 caractères maximum.",
+                'maxlength' => '100',
                 'validators' => [new Zend_Validate_StringLength(['max' => 100])]
             ]
         );
