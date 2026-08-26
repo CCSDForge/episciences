@@ -1,7 +1,7 @@
 [Unit]
 Description=Episciences Messenger queue worker (%i)
 Documentation=https://github.com/CCSDForge/episciences-gpl/blob/main/docs/console-commands.md#messenger-queues
-After=network-online.target mysql.service mariadb.service
+After=network-online.target
 Wants=network-online.target
 
 [Service]

@@ -729,6 +729,64 @@ matching this repo's Docker/prod convention (`CNTR_APP_DIR` in the
 `Makefile`); adjust both paths if a given server checks out the app
 elsewhere.
 
+`User`, `Group`, and `ReadWritePaths` assume the same account and filesystem
+layout as the Docker image (`www-data`, `/var/www/logs`, `/var/www/data`,
+`/var/www/cache`). If a given server uses a different user/group or
+different paths, don't edit the symlinked file directly — use a drop-in
+instead, so `git pull` still updates the rest of the unit:
+
+```bash
+sudo systemctl edit episciences-worker@.service
+```
+
+```ini
+[Service]
+User=<prod-user>
+Group=<prod-group>
+ReadWritePaths=
+ReadWritePaths=/path/to/prod/logs /path/to/prod/data /path/to/prod/cache
+```
+
+The empty `ReadWritePaths=` line is required: it's a list directive, so a
+drop-in appends to the base file's value by default — without resetting it
+first, the unit ends up with both the container paths and the prod paths.
+
+This drop-in can be laid down by a deployment tool instead of by hand — e.g.
+a SaltStack state templating the same content from pillar data, one
+`file.managed` per host/environment, followed by a `daemon-reload` and a
+restart of the worker instances on change:
+
+```yaml
+episciences-worker-override:
+  file.managed:
+    - name: /etc/systemd/system/episciences-worker@.service.d/override.conf
+    - makedirs: True
+    - contents: |
+        [Service]
+        User={{ pillar['episciences']['worker_user'] }}
+        Group={{ pillar['episciences']['worker_group'] }}
+        ReadWritePaths=
+        ReadWritePaths={{ pillar['episciences']['worker_logs'] }} {{ pillar['episciences']['worker_data'] }} {{ pillar['episciences']['worker_cache'] }}
+
+episciences-worker-reload:
+  module.run:
+    - name: service.systemctl_reload
+    - onchanges:
+      - file: episciences-worker-override
+```
+
+(this state lives in the infra/Salt repo, not here — the point is only that
+the values come from pillar, not hardcoded, keeping this repo's unit file
+generic across environments.)
+
+The unit only orders itself after `network-online.target`, not after a local
+`mysql.service`/`mariadb.service` — the database can live on a different
+host, where those unit names wouldn't exist anyway (and `After=` on a
+nonexistent unit name is silently a no-op, not a startup failure). Actual
+resilience to the database not being reachable yet comes from `Restart=always`
++ `RestartSec=5` below: if the worker starts before the remote database
+accepts connections, it fails and gets retried every 5s until it succeeds.
+
 When using a symlink, whenever the unit file is modified in git, you only need
 to run:
 `sudo systemctl daemon-reload && sudo systemctl restart episciences-worker@solr_index episciences-worker@next_revalidation`
