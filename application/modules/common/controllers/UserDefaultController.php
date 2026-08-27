@@ -647,7 +647,9 @@ class UserDefaultController extends Episciences_Controller_Action
                 $tokenUrl = $url;
 
                 $tags = [
-                    Episciences_Mail_Tags::TAG_REVIEW_CODE => RVCODE,
+                    // TAG_REVIEW_CODE deliberately omitted: it is not in OVERRIDABLE_TAGS,
+                    // so sendMailFromReview() already sets it from the review's mail display
+                    // code (Episciences_Mail's constructor runs before this array is merged).
                     Episciences_Mail_Tags::TAG_REVIEW_NAME => RVNAME,
                     Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK => $tokenUrl
 

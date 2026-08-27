@@ -64,9 +64,16 @@ class Episciences_Mail extends Zend_Mail
 
         $this->setPath(EPISCIENCES_MAIL_PATH);
 
+        // find() returns false for an unknown review code: guard before loadSettings()
+        // to avoid a fatal, falling back to the generic error return path.
+        $review = Episciences_ReviewsManager::find($rvCode);
+        if ($review instanceof Episciences_Review) {
+            $review->loadSettings();
+        }
 
         if (defined('RVCODE')) {
-            $this->addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, RVCODE);
+            $mailDisplayCode = ($review instanceof Episciences_Review) ? $review->getMailDisplayCode() : RVCODE;
+            $this->addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, $mailDisplayCode);
         }
         if (defined('RVNAME')) {
             $this->addTag(Episciences_Mail_Tags::TAG_REVIEW_NAME, RVNAME);
@@ -79,15 +86,12 @@ class Episciences_Mail extends Zend_Mail
             $this->addTag(Episciences_Mail_Tags::TAG_SENDER_LAST_NAME, Episciences_Auth::getLastname());
 
         }
-        // find() returns false for an unknown review code: guard before loadSettings()
-        // to avoid a fatal, falling back to the generic error return path.
-        $review = Episciences_ReviewsManager::find($rvCode);
+
         if (!$review instanceof Episciences_Review) {
             $this->setReturnPath('error@' . DOMAIN);
             return;
         }
 
-        $review->loadSettings();
         $mailError = $review->getSetting(Episciences_Review::SETTING_CONTACT_ERROR_MAIL);
         if ($mailError === false || $mailError === "0") {
             $this->setReturnPath('error@' . DOMAIN);
