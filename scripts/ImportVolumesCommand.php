@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Volume\Import\Importer;
+use Episciences\Volume\Import\Row;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
@@ -13,34 +15,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Symfony Console command: import journal volumes from a CSV file.
  *
  * Expected CSV format (semicolon-separated, with header row):
- *   position;status;current_issue;special_issue;bib_reference;title_en;title_fr;description_en;description_fr
+ *   position;status;current_issue;special_issue;bib_reference;title_en;title_fr;description_en;description_fr;num;year
  *
- * - position      : (int)  volume position; ignored if empty
- * - status        : (int)  volume status flag
- * - current_issue : (int)  1 if current issue, 0 otherwise
- * - special_issue : (int)  1 if special issue, 0 otherwise
- * - bib_reference : (str)  bibliographic reference (optional)
- * - title_en      : (str)  English title (at least one of title_en / title_fr required)
- * - title_fr      : (str)  French title
- * - description_en: (str)  English description (optional)
- * - description_fr: (str)  French description (optional)
+ * See Episciences\Volume\Import\Row for the exact meaning of each column.
  *
  * Replaces: scripts/importVolumes.php (JournalScript)
  */
-class ImportVolumesCommand extends Command
+final class ImportVolumesCommand extends Command
 {
     protected static $defaultName = 'import:volumes';
-
-    // CSV column positions (0-indexed)
-    public const COL_POSITION      = 0;
-    public const COL_STATUS        = 1;
-    public const COL_CURRENT_ISSUE = 2;
-    public const COL_SPECIAL_ISSUE = 3;
-    public const COL_BIB_REFERENCE = 4;
-    public const COL_TITLE_EN      = 5;
-    public const COL_TITLE_FR      = 6;
-    public const COL_DESC_EN       = 7;
-    public const COL_DESC_FR       = 8;
 
     private Logger $logger;
     private int $importedCount = 0;
@@ -97,6 +80,11 @@ class ImportVolumesCommand extends Command
             return Command::FAILURE;
         }
 
+        // defineJournalConstants() does not define RVID itself; Episciences_Volume's internals
+        // (e.g. addNewVolume(), VolumesAndSectionsManager::sort()) read it as a bare constant.
+        if (!defined('RVID')) {
+            define('RVID', $review->getRvid());
+        }
         Zend_Registry::set('reviewSettingsDoi', $review->getDoiSettings());
         defineJournalConstants($review->getCode());
 
@@ -122,6 +110,7 @@ class ImportVolumesCommand extends Command
             return;
         }
 
+        $importer = new Importer($dryRun);
         $lineNumber = 0;
 
         while (($data = fgetcsv($handle, 0, ';')) !== false) {
@@ -132,96 +121,38 @@ class ImportVolumesCommand extends Command
                 continue;
             }
 
-            $titleEn = $this->getCol($data, self::COL_TITLE_EN);
-            $titleFr = $this->getCol($data, self::COL_TITLE_FR);
-
-            if ($titleEn === '' && $titleFr === '') {
-                $this->logger->warning("Line {$lineNumber}: Skipped — no title provided");
-                $this->skippedCount++;
-                continue;
-            }
-
-            $titles = [];
-            if ($titleEn !== '') {
-                $titles['en'] = $titleEn;
-            }
-            if ($titleFr !== '') {
-                $titles['fr'] = $titleFr;
-            }
-
-            $descriptions = [];
-            $descEn = $this->getCol($data, self::COL_DESC_EN);
-            if ($descEn !== '') {
-                $descriptions['en'] = $descEn;
-            }
-            $descFr = $this->getCol($data, self::COL_DESC_FR);
-            if ($descFr !== '') {
-                $descriptions['fr'] = $descFr;
-            }
-
-            $params = [
-                Episciences_Volume::SETTING_STATUS        => $this->getCol($data, self::COL_STATUS),
-                Episciences_Volume::SETTING_CURRENT_ISSUE => $this->getCol($data, self::COL_CURRENT_ISSUE),
-                Episciences_Volume::SETTING_SPECIAL_ISSUE => $this->getCol($data, self::COL_SPECIAL_ISSUE),
-                'title'                                   => $titles,
-            ];
-
-            $bibReference = $this->getCol($data, self::COL_BIB_REFERENCE);
-            if ($bibReference !== '') {
-                $params['bib_reference'] = $bibReference;
-            }
-
-            if (!empty($descriptions)) {
-                $params['description'] = $descriptions;
-            }
-
-            $this->logger->info("Processing line {$lineNumber}: " . implode(' / ', $titles));
-
-            try {
-                $this->processSingleVolume($params, $lineNumber, $dryRun);
-            } catch (\Throwable $e) {
-                $this->logger->error("Line {$lineNumber}: " . $e->getMessage());
-                $this->errorCount++;
-            }
+            $this->processRow(Row::fromCsvRow($data), $lineNumber, $importer, $dryRun);
         }
 
         fclose($handle);
     }
 
-    /**
-     * @param array<string, mixed> $params
-     */
-    private function processSingleVolume(array $params, int $lineNumber, bool $dryRun): void
+    private function processRow(Row $row, int $lineNumber, Importer $importer, bool $dryRun): void
     {
-        if ($dryRun) {
-            $this->logger->info(
-                '[dry-run] Would create volume: ' . implode(' / ', (array) $params['title']),
-                ['line' => $lineNumber]
-            );
-            $this->importedCount++;
+        $titles = $row->titles();
+
+        if ($titles === []) {
+            $this->logger->warning("Line {$lineNumber}: Skipped — no title provided");
+            $this->skippedCount++;
             return;
         }
 
-        $volume = new Episciences_Volume();
+        $this->logger->info("Processing line {$lineNumber}: " . implode(' / ', $titles));
 
-        if ($volume->save($params)) {
-            $this->logger->info('Volume saved successfully', ['line' => $lineNumber]);
+        try {
+            $importer->import($row);
+
+            if ($dryRun) {
+                $this->logger->info('[dry-run] Would create volume: ' . implode(' / ', $titles), ['line' => $lineNumber]);
+            } else {
+                $this->logger->info('Volume saved successfully', ['line' => $lineNumber]);
+            }
+
             $this->importedCount++;
-        } else {
-            throw new \RuntimeException("Failed to save volume on line {$lineNumber}");
+        } catch (Throwable $e) {
+            $this->logger->error("Line {$lineNumber}: " . $e->getMessage());
+            $this->errorCount++;
         }
-    }
-
-    /**
-     * Return the trimmed value of a CSV column, or an empty string if absent or blank.
-     *
-     * @param array<int, string> $data
-     */
-    public static function getCol(array $data, int $col): string
-    {
-        return (array_key_exists($col, $data) && trim($data[$col]) !== '')
-            ? trim($data[$col])
-            : '';
     }
 
     private function displaySummary(SymfonyStyle $io): void
