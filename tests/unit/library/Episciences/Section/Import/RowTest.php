@@ -141,4 +141,28 @@ class RowTest extends TestCase
     {
         $this->assertSame($expected, Row::isStatusInvalid($raw));
     }
+
+    /**
+     * A malformed rvid must become null (row rejected/skipped upstream), never 0 — casting
+     * blindly to (int) would silently target journal 0 instead of failing loudly.
+     */
+    public function testMalformedRvidBecomesNullInsteadOfZero(): void
+    {
+        $data = $this->fullRow();
+        $data[Row::COL_RVID] = 'abc';
+
+        $row = Row::fromCsvRow($data);
+
+        $this->assertNull($row->rvid);
+    }
+
+    public function testMalformedPositionBecomesNullInsteadOfZero(): void
+    {
+        $data = $this->fullRow();
+        $data[Row::COL_POSITION] = '2.5';
+
+        $row = Row::fromCsvRow($data);
+
+        $this->assertNull($row->position);
+    }
 }

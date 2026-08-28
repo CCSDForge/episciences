@@ -170,6 +170,6 @@ final class Row
     private static function getIntCol(array $data, int $col): ?int
     {
         $value = self::getCol($data, $col);
-        return $value === null ? null : (int)$value;
+        return $value !== null && ctype_digit($value) ? (int)$value : null;
     }
 }

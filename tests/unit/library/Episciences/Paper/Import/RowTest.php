@@ -113,4 +113,88 @@ class RowTest extends TestCase
 
         $this->assertSame(['en' => 'Section EN'], $row->sectionTitles());
     }
+
+    /**
+     * @return array<string, array{int, string}>
+     */
+    public static function malformedIntColumnProvider(): array
+    {
+        return [
+            'repoid' => [Row::COL_REPOID, 'abc'],
+            'docid' => [Row::COL_DOCID, '12abc'],
+            'uid' => [Row::COL_UID, '-1'],
+            'volume_id' => [Row::COL_VOLUME_ID, '1.5'],
+        ];
+    }
+
+    /** @dataProvider malformedIntColumnProvider */
+    public function testMalformedIntColumnsBecomeNullInsteadOfZero(int $col, string $malformedValue): void
+    {
+        $data = $this->fullRow();
+        $data[$col] = $malformedValue;
+
+        $row = Row::fromCsvRow($data);
+
+        $properties = [
+            Row::COL_REPOID => 'repoid',
+            Row::COL_DOCID => 'docid',
+            Row::COL_UID => 'uid',
+            Row::COL_VOLUME_ID => 'volumeId',
+        ];
+
+        $this->assertNull($row->{$properties[$col]});
+    }
+
+    /**
+     * @return array<string, array{array<int, string|null>, bool}>
+     */
+    public static function blankCsvRecordProvider(): array
+    {
+        return [
+            'fgetcsv blank line' => [[null], true],
+            'normal row' => [['HAL-001', '3'], false],
+            'empty array' => [[], false],
+            'row with a null field but more than one column' => [['HAL-001', null], false],
+        ];
+    }
+
+    /**
+     * @param array<int, string|null> $data
+     * @dataProvider blankCsvRecordProvider
+     */
+    public function testIsBlankCsvRecord(array $data, bool $expected): void
+    {
+        $this->assertSame($expected, Row::isBlankCsvRecord($data));
+    }
+
+    public function testValidatedStatusReturnsKnownStatus(): void
+    {
+        $row = Row::fromCsvRow($this->fullRow());
+
+        $this->assertSame(16, $row->validatedStatus());
+        $this->assertFalse($row->hasInvalidStatus());
+    }
+
+    public function testValidatedStatusReturnsNullForUnknownStatus(): void
+    {
+        $data = $this->fullRow();
+        $data[Row::COL_STATUS] = '999';
+
+        $row = Row::fromCsvRow($data);
+
+        $this->assertNull($row->validatedStatus());
+        $this->assertTrue($row->hasInvalidStatus());
+    }
+
+    public function testHasInvalidStatusFalseWhenStatusAbsent(): void
+    {
+        $data = $this->fullRow();
+        $data[Row::COL_STATUS] = '';
+
+        $row = Row::fromCsvRow($data);
+
+        $this->assertNull($row->status);
+        $this->assertFalse($row->hasInvalidStatus());
+        $this->assertNull($row->validatedStatus());
+    }
 }

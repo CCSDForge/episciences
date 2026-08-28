@@ -52,10 +52,10 @@ final class Importer
     private function resolvePosition(int $rvid, ?int $requestedPosition): ?int
     {
         if ($requestedPosition === null) {
-            return $this->dryRun ? 999 : $this->getNextPosition($rvid);
+            return $this->getNextPosition($rvid);
         }
 
-        if (!$this->dryRun && $this->sectionExists($rvid, $requestedPosition)) {
+        if ($this->sectionExists($rvid, $requestedPosition)) {
             return null;
         }
 

@@ -86,7 +86,11 @@ final class PublicationDateResolver
         $url = self::buildHalApiUrl($identifier, (string)($paper->getVersion() ?: 1));
 
         try {
-            $response = $this->httpClient->get($url, ['headers' => ['Content-type' => 'application/json']]);
+            $response = $this->httpClient->get($url, [
+                'headers' => ['Content-type' => 'application/json'],
+                'connect_timeout' => 5,
+                'timeout' => 10,
+            ]);
         } catch (GuzzleException) {
             return null;
         }

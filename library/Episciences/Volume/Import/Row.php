@@ -103,4 +103,14 @@ final class Row
         $value = trim($data[$col]);
         return $value === '' ? null : $value;
     }
+
+    /**
+     * True when fgetcsv() returned the single-null-field array it produces for a blank line.
+     *
+     * @param array<int, string|null> $data
+     */
+    public static function isBlankCsvRecord(array $data): bool
+    {
+        return count($data) === 1 && $data[0] === null;
+    }
 }

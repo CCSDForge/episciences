@@ -98,4 +98,26 @@ class RowTest extends TestCase
 
         $this->assertSame(['en' => 'An english description'], $row->descriptions());
     }
+
+    /**
+     * @return array<string, array{array<int, string|null>, bool}>
+     */
+    public static function blankCsvRecordProvider(): array
+    {
+        return [
+            'fgetcsv blank line' => [[null], true],
+            'normal row' => [['3', '1'], false],
+            'empty array' => [[], false],
+            'row with a null field but more than one column' => [['3', null], false],
+        ];
+    }
+
+    /**
+     * @param array<int, string|null> $data
+     * @dataProvider blankCsvRecordProvider
+     */
+    public function testIsBlankCsvRecord(array $data, bool $expected): void
+    {
+        $this->assertSame($expected, Row::isBlankCsvRecord($data));
+    }
 }

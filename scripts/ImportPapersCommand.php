@@ -109,6 +109,10 @@ final class ImportPapersCommand extends Command
         while (($data = fgetcsv($handle, 0, ';')) !== false) {
             $lineNumber++;
 
+            if (Row::isBlankCsvRecord($data)) {
+                continue;
+            }
+
             // Skip header row (first column value is 'identifier')
             if ($lineNumber === 1 && strtolower($data[0]) === 'identifier') {
                 continue;
@@ -126,6 +130,12 @@ final class ImportPapersCommand extends Command
     private function processRow(array $data, int $lineNumber, PaperImporter $importer): void
     {
         $row = Row::fromCsvRow($data);
+
+        if ($row->hasInvalidStatus()) {
+            $this->logger->warning(
+                "Line {$lineNumber}: Invalid status value '{$row->status}', falling back to the default status"
+            );
+        }
 
         if ($row->rvidOrCode === null) {
             $this->logger->warning("Line {$lineNumber}: Missing required field 'rvid', skipping");

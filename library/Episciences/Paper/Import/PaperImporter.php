@@ -81,7 +81,7 @@ final class PaperImporter
             'repoid' => $row->repoid,
             'identifier' => $identifier,
             'version' => $version,
-            'status' => $row->status,
+            'status' => $row->validatedStatus(),
             'vid' => $vid,
             'sid' => $sid,
             'uid' => $row->uid,

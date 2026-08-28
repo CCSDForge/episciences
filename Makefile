@@ -432,7 +432,7 @@ import-sections: ## Import journal sections from a CSV file (requires csv-file=P
 	@echo "Importing sections from '$(csv-file)'..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php import:sections \
-		--csv-file=$(csv-file) \
+		--csv-file=$(call shell_quote,$(csv-file)) \
 		$(if $(filter 1,$(dry-run)),--dry-run)
 
 import-volumes: ## Import journal volumes from a CSV file (requires rvid=JOURNAL_RVID csv-file=PATH; optional: dry-run=1)
@@ -446,7 +446,7 @@ import-volumes: ## Import journal volumes from a CSV file (requires rvid=JOURNAL
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php import:volumes \
 		--rvid=$(rvid) \
-		--csv-file=$(csv-file) \
+		--csv-file=$(call shell_quote,$(csv-file)) \
 		$(if $(filter 1,$(dry-run)),--dry-run)
 
 import-papers: ## Import or update papers from a CSV file (requires csv-file=PATH; optional: dry-run=1)
@@ -459,7 +459,7 @@ import-papers: ## Import or update papers from a CSV file (requires csv-file=PAT
 	@echo "Importing papers from '$(csv-file)'..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php import:papers \
-		--csv-file=$(csv-file) \
+		--csv-file=$(call shell_quote,$(csv-file)) \
 		$(if $(filter 1,$(dry-run)),--dry-run)
 
 # --- zbJATS ---------------------------------------------------------------------

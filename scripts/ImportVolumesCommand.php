@@ -116,6 +116,10 @@ final class ImportVolumesCommand extends Command
         while (($data = fgetcsv($handle, 0, ';')) !== false) {
             $lineNumber++;
 
+            if (Row::isBlankCsvRecord($data)) {
+                continue;
+            }
+
             // Skip header row (first column value is 'position')
             if ($lineNumber === 1 && strtolower($data[0]) === 'position') {
                 continue;

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Episciences\Paper\Import;
 
+use Episciences_Paper;
+
 /**
  * Immutable value object for one row of a papers import/update CSV.
  *
@@ -128,6 +130,24 @@ final class Row
     }
 
     /**
+     * The CSV status, or null if absent or not one of Episciences_Paper::STATUS_CODES —
+     * letting the caller's default (published) apply instead of persisting an unknown status.
+     */
+    public function validatedStatus(): ?int
+    {
+        return $this->hasInvalidStatus() ? null : $this->status;
+    }
+
+    /**
+     * True when a status was given in the CSV but isn't one of Episciences_Paper::STATUS_CODES
+     * (used by the caller to decide whether to log a warning before falling back to the default).
+     */
+    public function hasInvalidStatus(): bool
+    {
+        return $this->status !== null && !in_array($this->status, Episciences_Paper::STATUS_CODES, true);
+    }
+
+    /**
      * @param array<int, string> $data
      */
     public static function getCol(array $data, int $col): ?string
@@ -140,11 +160,21 @@ final class Row
     }
 
     /**
+     * True when fgetcsv() returned the single-null-field array it produces for a blank line.
+     *
+     * @param array<int, string|null> $data
+     */
+    public static function isBlankCsvRecord(array $data): bool
+    {
+        return count($data) === 1 && $data[0] === null;
+    }
+
+    /**
      * @param array<int, string> $data
      */
     private static function getIntCol(array $data, int $col): ?int
     {
         $value = self::getCol($data, $col);
-        return $value === null ? null : (int)$value;
+        return $value !== null && ctype_digit($value) ? (int)$value : null;
     }
 }
