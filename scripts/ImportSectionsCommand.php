@@ -30,7 +30,7 @@ final class ImportSectionsCommand extends Command
     private int $importedCount = 0;
     private int $skippedCount  = 0;
     private int $errorCount    = 0;
-    private bool $rvidDefined  = false;
+    private ?Episciences_Review $lockedReview = null;
 
     protected function configure(): void
     {
@@ -119,6 +119,10 @@ final class ImportSectionsCommand extends Command
         while (($data = fgetcsv($handle, 0, ';')) !== false) {
             $lineNumber++;
 
+            if (Row::isBlankCsvRecord($data)) {
+                continue;
+            }
+
             if (count($data) < 7) {
                 $this->logger->warning(
                     "Line {$lineNumber}: Invalid format — expected 7 columns, got " . count($data) . ', skipping'
@@ -141,11 +145,22 @@ final class ImportSectionsCommand extends Command
             return;
         }
 
-        // Define RVID constant from first valid row — required by Section->save()
-        if (!$this->rvidDefined && !defined('RVID')) {
-            define('RVID', $row->rvid);
-            $this->rvidDefined = true;
-            $this->logger->info("RVID constant defined as: {$row->rvid}");
+        $review = Episciences_ReviewsManager::findByRvid($row->rvid);
+        if (!$review) {
+            $this->logger->error("Line {$lineNumber}: No journal found for rvid '{$row->rvid}'");
+            $this->errorCount++;
+            return;
+        }
+
+        if ($this->lockedReview === null) {
+            $this->lockJournal($review);
+        } elseif ($review->getRvid() !== $this->lockedReview->getRvid()) {
+            $this->logger->error(
+                "Line {$lineNumber}: row references journal '{$review->getCode()}' but this run is locked to "
+                . "'{$this->lockedReview->getCode()}' — a single CSV run can only process one journal"
+            );
+            $this->errorCount++;
+            return;
         }
 
         $titles = $row->titles();
@@ -189,6 +204,20 @@ final class ImportSectionsCommand extends Command
             $this->logger->error("Exception on line {$lineNumber}: " . $e->getMessage());
             $this->errorCount++;
         }
+    }
+
+    /**
+     * Locks this run to a single journal, since RVID is a process-wide PHP constant that
+     * legacy code (Episciences_Section, Episciences_VolumesAndSectionsManager, ...) reads directly.
+     */
+    private function lockJournal(Episciences_Review $review): void
+    {
+        $this->lockedReview = $review;
+
+        define('RVID', $review->getRvid());
+        defineJournalConstants($review->getCode());
+
+        $this->logger->info("Journal locked for this run: {$review->getCode()} (RVID {$review->getRvid()})");
     }
 
     private function displaySummary(SymfonyStyle $io): void

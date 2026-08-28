@@ -12,7 +12,8 @@ use RuntimeException;
 /**
  * Finds or creates the volume/section referenced by one papers import CSV row.
  *
- * A volume/section id from the CSV is trusted and reused as-is. Without an id,
+ * A volume/section id from the CSV is reused as-is once verified to belong to the
+ * journal being imported into. Without an id,
  * the given title(s) are matched (case/whitespace-insensitive, per language)
  * against the journal's existing volumes/sections; the first match's id is
  * reused, otherwise a new volume/section is created. Created ids (and, in
@@ -35,6 +36,10 @@ final class VolumeSectionResolver
     public function resolveVolumeId(int $rvid, Row $row): ?int
     {
         if ($row->volumeId !== null) {
+            if (!array_key_exists($row->volumeId, $this->loadVolumeIndex($rvid))) {
+                throw new RuntimeException("Volume id {$row->volumeId} does not belong to review {$rvid}");
+            }
+
             return $row->volumeId;
         }
 
@@ -58,6 +63,10 @@ final class VolumeSectionResolver
     public function resolveSectionId(int $rvid, Row $row): ?int
     {
         if ($row->sectionId !== null) {
+            if (!array_key_exists($row->sectionId, $this->loadSectionIndex($rvid))) {
+                throw new RuntimeException("Section id {$row->sectionId} does not belong to review {$rvid}");
+            }
+
             return $row->sectionId;
         }
 

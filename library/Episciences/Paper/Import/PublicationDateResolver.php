@@ -31,7 +31,7 @@ final class PublicationDateResolver
     {
         return $this->fromArgs($row)
             ?? $this->fromPaper($paper)
-            ?? $this->fromOai($paper->getMetadata('record'))
+            ?? $this->fromOai($paper->getRecord())
             ?? $this->fromHalApi($paper)
             ?? date('Y-m-d H:i:s');
     }
@@ -103,7 +103,11 @@ final class PublicationDateResolver
         }
 
         // expecting e.g. 2000-12-10T00:00:00Z
-        return (new DateTime($rawDate))->format('Y-m-d H:i:s');
+        try {
+            return (new DateTime($rawDate))->format('Y-m-d H:i:s');
+        } catch (\Exception) {
+            return null;
+        }
     }
 
     public static function buildHalApiUrl(string $identifier, string $version): string

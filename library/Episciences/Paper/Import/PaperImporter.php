@@ -93,7 +93,7 @@ final class PaperImporter
             'editors' => $row->editors,
             'doi' => $row->doi,
             'docid' => $row->docid,
-            'submission_date' => $row->submissionDate ?: date('Y-m-d H:i:s'),
+            'submission_date' => $row->submissionDate,
         ], $paper, $isAnUpdate);
 
         $paper->setOptions($params);
@@ -173,6 +173,7 @@ final class PaperImporter
             'status' => Episciences_Paper::STATUS_ACCEPTED,
             'vid' => 0,
             'sid' => 0,
+            'submission_date' => date('Y-m-d H:i:s'),
         ];
 
         foreach ($defaultParams as $paramKey => $defaultValue) {
