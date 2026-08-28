@@ -211,4 +211,37 @@ class RowTest extends TestCase
         $this->assertTrue($row->hasInvalidStatus());
         $this->assertNull($row->validatedStatus());
     }
+
+    public function testToCsvArrayRoundTripsFromCsvRow(): void
+    {
+        $data = $this->fullRow();
+
+        $row = Row::fromCsvRow($data);
+
+        $this->assertSame($data, $row->toCsvArray());
+    }
+
+    public function testToCsvArrayKeepsRawStatusOnUnknownStatus(): void
+    {
+        $data = $this->fullRow();
+        $data[Row::COL_STATUS] = '999';
+
+        $row = Row::fromCsvRow($data);
+
+        $this->assertSame($data, $row->toCsvArray());
+    }
+
+    public function testToCsvArrayUsesEmptyStringsForMissingColumns(): void
+    {
+        $row = Row::fromCsvRow(['HAL-001', '3']);
+
+        $csvArray = $row->toCsvArray();
+
+        $this->assertSame('HAL-001', $csvArray[Row::COL_IDENTIFIER]);
+        $this->assertSame('3', $csvArray[Row::COL_REPOID]);
+        $this->assertSame('', $csvArray[Row::COL_VERSION]);
+        $this->assertSame('', $csvArray[Row::COL_STATUS]);
+        $this->assertSame('', $csvArray[Row::COL_RVID]);
+        $this->assertCount(19, $csvArray);
+    }
 }
