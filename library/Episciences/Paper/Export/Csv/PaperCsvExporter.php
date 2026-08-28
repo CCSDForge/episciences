@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 namespace Episciences\Paper\Export\Csv;
 
-use Episciences\Paper\Import\Row;
 use Episciences_PapersManager;
 use Episciences_SectionsManager;
 use Episciences_VolumesManager;
+use Zend_Db_Select;
 use Zend_Db_Table_Abstract;
 
 /**
@@ -88,9 +88,21 @@ final class PaperCsvExporter
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
+        return array_map('intval', $db->fetchCol($this->buildSelect()));
+    }
+
+    /**
+     * Builds the DOCID-matching Zend_Db_Select — split out from matchingDocids() so its SQL
+     * shape can be asserted (via ->assemble()) without executing a query, same convention as
+     * Episciences_PapersManagerTest.
+     */
+    private function buildSelect(): Zend_Db_Select
+    {
         $is = ['rvid' => $this->filters->rvid];
         if ($this->filters->volumeId !== null) {
-            $is['vid'] = $this->filters->volumeId;
+            // Episciences_PapersManager::volumesFilter() requires an array, unlike the other
+            // 'is' filters which also accept a scalar.
+            $is['vid'] = [$this->filters->volumeId];
         }
         if ($this->filters->sectionId !== null) {
             $is['sid'] = $this->filters->sectionId;
@@ -136,6 +148,6 @@ final class PaperCsvExporter
             $select->limit($this->filters->limit);
         }
 
-        return array_map('intval', $db->fetchCol($select));
+        return $select;
     }
 }
