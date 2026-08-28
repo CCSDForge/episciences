@@ -130,7 +130,8 @@ docker compose exec -u www-data php php scripts/console.php enrichment:creators 
 | **volume** | `volume:merge-pdf` | Merge per-volume PDFs into a single file |
 | **doaj** | `doaj:export-volumes` | Create DOAJ XML exports per volume |
 | **zbjats** | `zbjats:zip` | Package PDF + zbJATS XML files into a ZIP archive |
-| **import** | `import:sections` | Import journal sections from a CSV file |
+| **import** | `import:papers` | Import or update papers from a CSV file |
+| | `import:sections` | Import journal sections from a CSV file |
 | | `import:volumes` | Import journal volumes from a CSV file |
 | | `import:ref-pps` | Import PPS data from a CSV file into Solr |
 | | `download:ref-pps` | Download the PPS CSV file from IRIT |

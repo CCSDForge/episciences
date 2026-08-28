@@ -899,8 +899,12 @@ class Episciences_Volume
      */
     private function addNewVolume(): int
     {
+        if (!$this->getRvid()) { // If RVID has not been defined, it is specified here
+            $this->setRvid(RVID);
+        }
+
         $values = $this->getVolumeDataForSave();
-        $values['RVID'] = RVID;
+        $values['RVID'] = $this->getRvid();
         $values['POSITION'] = 0;
 
         try {
