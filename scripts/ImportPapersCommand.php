@@ -133,7 +133,7 @@ final class ImportPapersCommand extends Command
 
         if ($row->hasInvalidStatus()) {
             $this->logger->warning(
-                "Line {$lineNumber}: Invalid status value '{$row->status}', falling back to the default status"
+                "Line {$lineNumber}: Invalid status value '{$row->rawStatus}', falling back to the default status"
             );
         }
 

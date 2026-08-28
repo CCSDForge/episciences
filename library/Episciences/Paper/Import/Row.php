@@ -15,7 +15,7 @@ use Episciences_Paper;
  * - identifier        : (str) paper external id (e.g. HAL id) — required
  * - repoid            : (int) source repository id (open archive) — required
  * - version           : (str) paper version; left as string, cast where needed
- * - status            : (int) paper status id (default: published)
+ * - status            : (int) paper status id (default: accepted)
  * - volume_id         : (int) existing volume id, reused as-is if set
  * - volume_title_fr   : (str) French volume title — used to find or create a volume when volume_id is empty
  * - volume_title_en   : (str) English volume title
@@ -61,6 +61,7 @@ final class Row
         public readonly ?int $repoid,
         public readonly ?string $version,
         public readonly ?int $status,
+        public readonly ?string $rawStatus,
         public readonly ?int $volumeId,
         public readonly ?string $volumeTitleFr,
         public readonly ?string $volumeTitleEn,
@@ -89,6 +90,7 @@ final class Row
             repoid: self::getIntCol($data, self::COL_REPOID),
             version: self::getCol($data, self::COL_VERSION),
             status: self::getIntCol($data, self::COL_STATUS),
+            rawStatus: self::getCol($data, self::COL_STATUS),
             volumeId: self::getIntCol($data, self::COL_VOLUME_ID),
             volumeTitleFr: self::getCol($data, self::COL_VOLUME_TITLE_FR),
             volumeTitleEn: self::getCol($data, self::COL_VOLUME_TITLE_EN),
@@ -131,7 +133,7 @@ final class Row
 
     /**
      * The CSV status, or null if absent or not one of Episciences_Paper::STATUS_CODES —
-     * letting the caller's default (published) apply instead of persisting an unknown status.
+     * letting the caller's default (accepted) apply instead of persisting an unknown status.
      */
     public function validatedStatus(): ?int
     {
@@ -139,12 +141,17 @@ final class Row
     }
 
     /**
-     * True when a status was given in the CSV but isn't one of Episciences_Paper::STATUS_CODES
-     * (used by the caller to decide whether to log a warning before falling back to the default).
+     * True when a status was given in the CSV (non-blank) but is either not numeric or isn't
+     * one of Episciences_Paper::STATUS_CODES (used by the caller to decide whether to log a
+     * warning before falling back to the default, and to force that default even on updates).
      */
     public function hasInvalidStatus(): bool
     {
-        return $this->status !== null && !in_array($this->status, Episciences_Paper::STATUS_CODES, true);
+        if ($this->rawStatus === null) {
+            return false;
+        }
+
+        return $this->status === null || !in_array($this->status, Episciences_Paper::STATUS_CODES, true);
     }
 
     /**

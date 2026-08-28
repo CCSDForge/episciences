@@ -81,7 +81,10 @@ final class PaperImporter
             'repoid' => $row->repoid,
             'identifier' => $identifier,
             'version' => $version,
-            'status' => $row->validatedStatus(),
+            // An invalid status must fall back to the default even on update — never inherit
+            // the paper's existing status for it. An absent status, however, still goes through
+            // processInputParams()'s update-inheritance below.
+            'status' => $row->hasInvalidStatus() ? Episciences_Paper::STATUS_ACCEPTED : $row->validatedStatus(),
             'vid' => $vid,
             'sid' => $sid,
             'uid' => $row->uid,
@@ -167,7 +170,7 @@ final class PaperImporter
         }
 
         $defaultParams = [
-            'status' => Episciences_Paper::STATUS_PUBLISHED,
+            'status' => Episciences_Paper::STATUS_ACCEPTED,
             'vid' => 0,
             'sid' => 0,
         ];

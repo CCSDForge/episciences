@@ -194,7 +194,21 @@ class RowTest extends TestCase
         $row = Row::fromCsvRow($data);
 
         $this->assertNull($row->status);
+        $this->assertNull($row->rawStatus);
         $this->assertFalse($row->hasInvalidStatus());
+        $this->assertNull($row->validatedStatus());
+    }
+
+    public function testHasInvalidStatusTrueForNonNumericStatus(): void
+    {
+        $data = $this->fullRow();
+        $data[Row::COL_STATUS] = 'abc';
+
+        $row = Row::fromCsvRow($data);
+
+        $this->assertNull($row->status);
+        $this->assertSame('abc', $row->rawStatus);
+        $this->assertTrue($row->hasInvalidStatus());
         $this->assertNull($row->validatedStatus());
     }
 }
