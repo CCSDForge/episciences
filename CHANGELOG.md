@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `export:papers` CLI command (`scripts/ExportPapersCommand.php`, `make export-papers`) to export papers to a CSV file, in the same format `import:papers` reads — for a journal, optionally filtered by volume, section, publication year, docid(s), archive identifier+version, status, repoid, uid, or a raw SQL `WHERE` clause.
 - Add `import:papers` CLI command (`scripts/ImportPapersCommand.php`, `make import-papers`) to import new papers or update existing ones from a CSV file.
 - Add `num` and `year` CSV column support to `import:volumes` (`scripts/ImportVolumesCommand.php`).
 - Add `--rvcode` option, `--rvid` integer validation, and batch processing support via `--config` (`journals.ini`) in `ZbjatsZipperCommand` (`zbjats:zip`).
