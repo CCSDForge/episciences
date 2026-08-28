@@ -443,7 +443,7 @@ php scripts/console.php import:papers [options]
 | `identifier` | Paper external id (e.g. HAL id) — required |
 | `repoid` | Source repository id (open archive) — required |
 | `version` | Paper version |
-| `status` | Paper status id (default: published) |
+| `status` | Paper status id (default: accepted) |
 | `volume_id` | Existing volume id, reused as-is if set |
 | `volume_title_fr` | French volume title — used to find or create a volume when `volume_id` is empty |
 | `volume_title_en` | English volume title |

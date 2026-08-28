@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `import:papers` CLI command (`scripts/ImportPapersCommand.php`, `make import-papers`) to import new papers or update existing ones from a CSV file.
+- Add `num` and `year` CSV column support to `import:volumes` (`scripts/ImportVolumesCommand.php`).
 - Add `--rvcode` option, `--rvid` integer validation, and batch processing support via `--config` (`journals.ini`) in `ZbjatsZipperCommand` (`zbjats:zip`).
 - Cache PDF and XML responses with Symfony Cache in `ZbjatsTools` and support new-front URLs.
 - [#1125](https://github.com/CCSDForge/episciences/pull/1125) Allow anonymous access to public review report attachments for open peer review.
@@ -48,6 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Default invalid or missing CSV paper status to `accepted` (`STATUS_ACCEPTED`), not published, in `import:papers`.
+- Fix `Episciences_Volume::save()` silently dropping titles passed as a nested array instead of flat `title_{lang}` keys.
+- Fix `import:volumes` never defining the `RVID` constant on a real (non-dry-run) write.
+- Set finite Guzzle timeouts on the HAL publication-date lookup in `PublicationDateResolver` to avoid stalling sequential imports.
 - Guard `Episciences_Paper::updateXml()` against unresolvable review lookups (`Episciences_ReviewsManager::find()` returning `false`), preventing fatal errors when fetching review settings.
 - Guard `$oVolume` with `instanceof Episciences_Volume` before calling `getSetting()` in `Episciences_Paper::updateXml()`, preventing fatal errors on the dashboard when a paper has no primary volume.
 - Remove redundant unguarded review lookup in `Episciences_Paper::updateXml()` by reusing `$oReview`.
@@ -80,11 +86,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove legacy interactive `scripts/update_papers.php` script (replaced by `import:papers` CLI command).
 - Drop the redundant `!$previousPaper->hasHook` guard from `Episciences_Submit::assertDateTimeVersion()`. The branch is selected by the `UPDATE_DATETIME` key, which only ever reaches the result from a repository's `hookApiRecords()`, so the guard added nothing — and it dereferenced a nullable `Episciences_Paper`, raising `Attempt to read property "hasHook" on null` whenever `partialGet()` returned nothing for an existing `docId`. `Episciences_Paper::$hasHook` now has no caller left and is marked `@deprecated`.
 - Remove the dead `hasHook` plumbing left behind now that repository capabilities are asked for explicitly: the `hasHook` JavaScript global on the article and submission pages (declared, assigned from `/submit/ajaxhashook`, never read), the `hasHook` view variable of the version-number form, and the `h_hasHook` hidden form element, whose value came from a `$defaults['hasHook']` key that had been commented out. `/submit/ajaxhashook` now answers `isRequiredVersion` only.
 
 ### Refactored
 
+- Refactor `import:papers`, `import:volumes`, and `import:sections` console commands to delegate business logic to dedicated `Episciences\Paper\Import\*`, `Episciences\Volume\Import\*`, and `Episciences\Section\Import\*` classes with testable `Row` and `Importer` components.
 - Route `Episciences_Submit::getRepositoriesForm()` and `getNewVersionForm()` through `Episciences_Repositories::isVersionRequired()` instead of calling `callHook('hookIsRequiredVersion', ...)` directly and re-implementing its `[]` → required fallback locally, so the two form-building sites this PR left behind stay in sync with the centralized default.
 - [#793](https://github.com/CCSDForge/episciences/issues/793) Add `hookFilterMetadata` repository hook and strip surplus arXiv `dc:description` comment nodes at ingestion.
 - Strip HAL's non-abstract `dc:description` markers (`International audience`, `National audience`, `soumission à Episciences`) at ingestion instead of filtering them in every consumer. A new `Episciences_Repositories_HAL_Hooks::hookCleanXMLRecordInput()` removes the nodes from the raw OAI record before it reaches `PAPERS.RECORD`, so the two independent render paths — `Paper::getMetadata()` and `Paper::getXslt()` → `public/xsl/*.xsl` — stay consistent on their own. Removes the eight downstream workarounds in `Paper::getAbstractsCleaned()`, `Paper_Export`, the DataCite and zbJATS exports and the three paper XSLTs, and fixes the TEI export, which never filtered the marker at all. Matching is content-based and case-insensitive on normalized whitespace, so a real (possibly multilingual) abstract can never be dropped. `National audience` was never filtered anywhere and was displayed as an abstract; it is now handled with the others. Existing rows are migrated by the new `papers:clean-hal-descriptions` command (`--dry-run`, `--update-document`, `--no-reindex`).
