@@ -132,6 +132,10 @@ final class PaperCsvExporter
             $select->where($this->filters->sqlWhere);
         }
 
+        if ($this->filters->limit !== null) {
+            $select->limit($this->filters->limit);
+        }
+
         return array_map('intval', $db->fetchCol($select));
     }
 }

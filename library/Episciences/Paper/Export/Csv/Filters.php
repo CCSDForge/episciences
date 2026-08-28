@@ -26,6 +26,7 @@ final class Filters
         public readonly ?int $repoid = null,
         public readonly ?int $uid = null,
         public readonly ?string $sqlWhere = null,
+        public readonly ?int $limit = null,
         public readonly bool $versionIgnored = false,
     ) {
     }
@@ -35,7 +36,8 @@ final class Filters
      * journal RVID (see Episciences\Paper\Import\ReviewResolver).
      *
      * @param array<string, mixed> $options keyed by option name: volume-id, section-id, year,
-     *                                       docid, identifier, version, status, repoid, uid, sql-where
+     *                                       docid, identifier, version, status, repoid, uid,
+     *                                       sql-where, limit
      */
     public static function fromOptions(array $options, int $resolvedRvid): self
     {
@@ -57,6 +59,7 @@ final class Filters
             repoid: self::intOrNull($options['repoid'] ?? null),
             uid: self::intOrNull($options['uid'] ?? null),
             sqlWhere: self::stringOrNull($options['sql-where'] ?? null),
+            limit: self::intOrNull($options['limit'] ?? null),
             versionIgnored: $versionIgnored,
         );
     }

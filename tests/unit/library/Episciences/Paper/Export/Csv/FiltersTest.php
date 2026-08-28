@@ -18,6 +18,7 @@ class FiltersTest extends TestCase
             'repoid' => '1',
             'uid' => '42',
             'sql-where' => "STATUS = 4",
+            'limit' => '100',
         ], 7);
 
         self::assertSame(7, $filters->rvid);
@@ -29,6 +30,7 @@ class FiltersTest extends TestCase
         self::assertSame(1, $filters->repoid);
         self::assertSame(42, $filters->uid);
         self::assertSame('STATUS = 4', $filters->sqlWhere);
+        self::assertSame(100, $filters->limit);
         self::assertFalse($filters->versionIgnored);
     }
 
@@ -47,6 +49,7 @@ class FiltersTest extends TestCase
         self::assertNull($filters->repoid);
         self::assertNull($filters->uid);
         self::assertNull($filters->sqlWhere);
+        self::assertNull($filters->limit);
         self::assertFalse($filters->versionIgnored);
     }
 
