@@ -36,6 +36,7 @@ php scripts/console.php <command> --help
 | [`zbjats:zip`](#zbjatszip) | Package PDF + zbJATS XML into a ZIP archive per volume |
 | [`import:sections`](#importsections) | Import journal sections from a CSV file |
 | [`import:volumes`](#importvolumes) | Import journal volumes from a CSV file |
+| [`import:papers`](#importpapers) | Import or update papers from a CSV file |
 | [`import:ref-pps`](#importref-pps) | Import PPS data from a CSV file into Solr |
 | [`download:ref-pps`](#downloadref-pps) | Download the PPS CSV file from IRIT |
 | [`stats:import-logs`](#statsimport-logs) | Parse Apache access logs and insert article visits into `STAT_TEMP` |
@@ -355,7 +356,8 @@ When neither `--rvcode` nor `--rvid` is provided, the command automatically proc
 
 ### `import:sections`
 
-Imports journal sections from a semicolon-separated CSV file.
+Imports journal sections from a semicolon-separated CSV file. Business logic lives in
+`Episciences\Section\Import\{Row,Importer}`.
 
 ```bash
 php scripts/console.php import:sections [options]
@@ -366,11 +368,27 @@ php scripts/console.php import:sections [options]
 | `--csv-file <path>` | Path to the CSV file containing sections data |
 | `--dry-run` | Simulate the import without writing to the database |
 
+**CSV format** (semicolon-separated, with header row):
+
+| Column | Description |
+|--------|-------------|
+| `rvid` | Journal RVID (integer) — required on every row |
+| `position` | Section position (integer); auto-incremented if empty |
+| `title_fr` | French title — at least one of `title_fr` / `title_en` is required |
+| `title_en` | English title |
+| `description_fr` | French description (used only if `title_fr` is set) |
+| `description_en` | English description (used only if `title_en` is set) |
+| `status` | `1` = open (default), `0` = closed |
+
+A row with a `position` that already exists for the journal is skipped. Example:
+[`scripts/importSamples/sample-sections.csv`](../scripts/importSamples/sample-sections.csv).
+
 ---
 
 ### `import:volumes`
 
-Imports journal volumes from a semicolon-separated CSV file.
+Imports journal volumes from a semicolon-separated CSV file. Business logic lives in
+`Episciences\Volume\Import\{Row,Importer}`.
 
 ```bash
 php scripts/console.php import:volumes [options]
@@ -381,6 +399,80 @@ php scripts/console.php import:volumes [options]
 | `--rvid <id>` | Journal RVID (integer) |
 | `--csv-file <path>` | Path to the CSV file containing volumes data |
 | `--dry-run` | Simulate the import without writing to the database |
+
+**CSV format** (semicolon-separated, with header row):
+
+| Column | Description |
+|--------|-------------|
+| `position` | Volume position (integer); currently unused by the importer |
+| `status` | Volume status flag |
+| `current_issue` | `1` if this is the current issue, `0` otherwise |
+| `special_issue` | `1` if this is a special issue, `0` otherwise |
+| `bib_reference` | Bibliographic reference (optional) |
+| `title_en` | English title — at least one of `title_en` / `title_fr` is required |
+| `title_fr` | French title |
+| `description_en` | English description (optional) |
+| `description_fr` | French description (optional) |
+| `num` | Volume number (optional) |
+| `year` | Volume year (optional) |
+
+Example: [`scripts/importSamples/sample-volumes.csv`](../scripts/importSamples/sample-volumes.csv).
+
+---
+
+### `import:papers`
+
+Imports new papers or updates existing ones from a semicolon-separated CSV file. This
+replaces the legacy interactive `scripts/update_papers.php` script — every parameter comes
+from the CSV, there is no interactive prompt. Business logic lives in
+`Episciences\Paper\Import\{Row,ReviewResolver,VolumeSectionResolver,PublicationDateResolver,PaperImporter}`.
+
+```bash
+php scripts/console.php import:papers [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--csv-file <path>` | Path to the CSV file containing papers data |
+| `--dry-run` | Simulate the import without writing to the database |
+
+**CSV format** (semicolon-separated, with header row):
+
+| Column | Description |
+|--------|-------------|
+| `identifier` | Paper external id (e.g. HAL id) — required |
+| `repoid` | Source repository id (open archive) — required |
+| `version` | Paper version |
+| `status` | Paper status id (default: accepted) |
+| `volume_id` | Existing volume id, reused as-is if set |
+| `volume_title_fr` | French volume title — used to find or create a volume when `volume_id` is empty |
+| `volume_title_en` | English volume title |
+| `volume_num` | Volume number, used only when creating a volume |
+| `volume_year` | Volume year, used only when creating a volume |
+| `section_id` | Existing section id, reused as-is if set |
+| `section_title_fr` | French section title — used to find or create a section when `section_id` is empty |
+| `section_title_en` | English section title |
+| `uid` | Contributor id (default: a randomly picked chief editor) |
+| `publication_date` | Publication date |
+| `editors` | Dash-separated (`-`) editor uids, e.g. `12-34` |
+| `doi` | DOI |
+| `docid` | Paper docid — matched against an existing paper to decide an update instead of an import |
+| `rvid` | Journal RVID (numeric) **or** RVCODE (string) — required |
+| `submission_date` | Submission date (default: now) |
+
+A paper is imported if no existing paper matches it (by `identifier`+`version`, or by
+`docid`) for the resolved journal, or updated otherwise.
+
+A volume/section referenced only by title is looked up (case/whitespace-insensitive, across
+both languages) among the journal's existing volumes/sections; the first match is reused,
+otherwise a new one is created on the fly. Ids created this way are reused across later rows
+of the same CSV that reference the same title.
+
+> **One journal per run.** All rows in a CSV file must resolve to the same journal — RVID is
+> a process-wide PHP constant, locked from the first valid row. A row referencing a different
+> journal is rejected as a per-row error without aborting the rest of the import.
+
+Example: [`scripts/importSamples/sample-papers.csv`](../scripts/importSamples/sample-papers.csv).
 
 ---
 
