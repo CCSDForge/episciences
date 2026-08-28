@@ -135,6 +135,7 @@ docker compose exec -u www-data php php scripts/console.php enrichment:creators 
 | | `import:volumes` | Import journal volumes from a CSV file |
 | | `import:ref-pps` | Import PPS data from a CSV file into Solr |
 | | `download:ref-pps` | Download the PPS CSV file from IRIT |
+| **export** | `export:papers` | Export papers to a CSV file, same format as `import:papers` |
 | **stats** | `stats:import-logs` | Parse Apache access logs into `STAT_TEMP` |
 | | `stats:download-kpi` | Aggregate download KPIs and write `data/kpi_downloads.json` |
 | | `stats:update-robots-list` | Download the COUNTER Robots list for bot detection |
@@ -145,7 +146,7 @@ docker compose exec -u www-data php php scripts/console.php enrichment:creators 
 
 | Option | Applies to | Description |
 |--------|-----------|-------------|
-| `--dry-run` | all commands | Simulate without writing to the database or filesystem |
+| `--dry-run` | most commands (`enrichment:*`, `import:*`, `stats:*`, etc.) | Simulate without writing to the database or filesystem |
 | `--rvcode=<code>` | all `enrichment:*` commands | Restrict processing to one journal |
 | `-q` / `--quiet` | all commands | Suppress console output (log file only) |
 | `-vv` | `enrichment:zb-reviews`, `enrichment:classifications-msc` | Print each zbMATH API URL as it is called |

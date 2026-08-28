@@ -21,6 +21,7 @@ require_once __DIR__ . '/ZbjatsZipperCommand.php';
 require_once __DIR__ . '/ImportSectionsCommand.php';
 require_once __DIR__ . '/ImportVolumesCommand.php';
 require_once __DIR__ . '/ImportPapersCommand.php';
+require_once __DIR__ . '/ExportPapersCommand.php';
 require_once __DIR__ . '/ImportRefPpsCommand.php';
 require_once __DIR__ . '/DownloadRefPpsCommand.php';
 require_once __DIR__ . '/UpdateCounterRobotsListCommand.php';
@@ -80,6 +81,7 @@ $application->add(new ZbjatsZipperCommand());
 $application->add(new ImportSectionsCommand());
 $application->add(new ImportVolumesCommand());
 $application->add(new ImportPapersCommand());
+$application->add(new ExportPapersCommand());
 $application->add(new ImportRefPpsCommand());
 $application->add(new DownloadRefPpsCommand());
 

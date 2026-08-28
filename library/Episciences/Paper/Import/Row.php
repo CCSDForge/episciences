@@ -155,6 +155,43 @@ final class Row
     }
 
     /**
+     * The 19 CSV columns in order, as strings — the export counterpart of fromCsvRow().
+     * Uses rawStatus rather than the parsed status so an unrecognized status value survives
+     * an export/import round-trip unchanged instead of being silently dropped.
+     *
+     * @return array<int, string>
+     */
+    public function toCsvArray(): array
+    {
+        return [
+            self::COL_IDENTIFIER => $this->identifier ?? '',
+            self::COL_REPOID => self::intToCsv($this->repoid),
+            self::COL_VERSION => $this->version ?? '',
+            self::COL_STATUS => $this->rawStatus ?? self::intToCsv($this->status),
+            self::COL_VOLUME_ID => self::intToCsv($this->volumeId),
+            self::COL_VOLUME_TITLE_FR => $this->volumeTitleFr ?? '',
+            self::COL_VOLUME_TITLE_EN => $this->volumeTitleEn ?? '',
+            self::COL_VOLUME_NUM => $this->volumeNum ?? '',
+            self::COL_VOLUME_YEAR => $this->volumeYear ?? '',
+            self::COL_SECTION_ID => self::intToCsv($this->sectionId),
+            self::COL_SECTION_TITLE_FR => $this->sectionTitleFr ?? '',
+            self::COL_SECTION_TITLE_EN => $this->sectionTitleEn ?? '',
+            self::COL_UID => self::intToCsv($this->uid),
+            self::COL_PUBLICATION_DATE => $this->publicationDate ?? '',
+            self::COL_EDITORS => $this->editors ?? '',
+            self::COL_DOI => $this->doi ?? '',
+            self::COL_DOCID => self::intToCsv($this->docid),
+            self::COL_RVID => $this->rvidOrCode ?? '',
+            self::COL_SUBMISSION_DATE => $this->submissionDate ?? '',
+        ];
+    }
+
+    private static function intToCsv(?int $value): string
+    {
+        return $value !== null ? (string)$value : '';
+    }
+
+    /**
      * @param array<int, string> $data
      */
     public static function getCol(array $data, int $col): ?string

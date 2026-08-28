@@ -462,6 +462,32 @@ import-papers: ## Import or update papers from a CSV file (requires csv-file=PAT
 		--csv-file=$(call shell_quote,$(csv-file)) \
 		$(if $(filter 1,$(dry-run)),--dry-run)
 
+# --- Export ---------------------------------------------------------------------
+
+export-papers: ## Export papers to a CSV file, same format as import:papers (requires rvid=JOURNAL_RVID csv-file=PATH; optional filters: volume-id=ID section-id=ID year=YYYY docid="ID ID..." identifier=ID version=N status="N N..." repoid=ID uid=ID sql-where='CLAUSE' limit=N)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php export:papers --rvid=RVID --csv-file=PATH [options] [-q]
+	@if [ -z "$(rvid)" ] || [ -z "$(csv-file)" ]; then \
+		echo "Error: rvid and csv-file parameters are required"; \
+		echo "Usage: make export-papers rvid=JOURNAL_RVID csv-file=PATH/TO/FILE.csv [volume-id=ID] [section-id=ID] [year=YYYY] [docid=\"ID ID...\"] [identifier=ID] [version=N] [status=\"N N...\"] [repoid=ID] [uid=ID] [sql-where='CLAUSE'] [limit=N]"; \
+		exit 1; \
+	fi
+	@echo "Exporting papers for RVID $(rvid) to '$(csv-file)'..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php export:papers \
+		--rvid=$(rvid) \
+		--csv-file=$(call shell_quote,$(csv-file)) \
+		$(if $(volume-id),--volume-id=$(volume-id)) \
+		$(if $(section-id),--section-id=$(section-id)) \
+		$(if $(year),--year=$(year)) \
+		$(foreach d,$(docid),--docid=$(d)) \
+		$(if $(identifier),--identifier=$(call shell_quote,$(identifier))) \
+		$(if $(version),--version=$(version)) \
+		$(foreach s,$(status),--status=$(s)) \
+		$(if $(repoid),--repoid=$(repoid)) \
+		$(if $(uid),--uid=$(uid)) \
+		$(if $(sql-where),--sql-where=$(call shell_quote,$(sql-where))) \
+		$(if $(limit),--limit=$(limit))
+
 # --- zbJATS ---------------------------------------------------------------------
 
 zbjats-zip: ## Download PDF + zbJATS XML per volume and create a ZIP archive (requires rvid=JOURNAL_RVID; optional: zip-prefix=PREFIX dry-run=1)
