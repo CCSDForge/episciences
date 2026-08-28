@@ -28,8 +28,8 @@ final class PaperCsvExporter
 
     /**
      * Papers are hydrated in batches of this size via Episciences_PapersManager::getByDocIds()
-     * (one query per batch, no N+1) rather than all at once, to keep memory bounded on a large
-     * export — mirrors papers:update-document's --buffer.
+     * rather than all at once, to keep memory bounded on a large export — mirrors
+     * papers:update-document's --buffer. Note: paper editors are lazily fetched per paper.
      */
     private const BATCH_SIZE = 500;
 
@@ -40,10 +40,13 @@ final class PaperCsvExporter
     /**
      * @param resource $handle writable stream, e.g. fopen($csvFile, 'wb')
      * @return int number of paper rows written (header not included)
+     * @throws \RuntimeException when writing to the stream fails
      */
     public function export($handle): int
     {
-        fputcsv($handle, self::HEADER, ';');
+        if (fputcsv($handle, self::HEADER, ';') === false) {
+            throw new \RuntimeException('Failed to write CSV header.');
+        }
 
         $volumes = $this->indexById(Episciences_VolumesManager::getList(['where' => 'RVID = ' . $this->filters->rvid]), 'getVid');
         $sections = $this->indexById(Episciences_SectionsManager::getList(['where' => 'RVID = ' . $this->filters->rvid]), 'getSid');
@@ -59,7 +62,9 @@ final class PaperCsvExporter
                 }
 
                 $row = RowBuilder::build($paper, $volumes[$paper->getVid()] ?? null, $sections[$paper->getSid()] ?? null);
-                fputcsv($handle, $row->toCsvArray(), ';');
+                if (fputcsv($handle, $row->toCsvArray(), ';') === false) {
+                    throw new \RuntimeException(sprintf('Failed to write paper DOCID %d to CSV.', $paper->getDocid()));
+                }
                 $count++;
             }
         }

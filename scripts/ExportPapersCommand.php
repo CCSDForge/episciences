@@ -114,8 +114,20 @@ final class ExportPapersCommand extends Command
             return Command::FAILURE;
         }
 
-        $count = (new PaperCsvExporter($filters))->export($handle);
-        fclose($handle);
+        try {
+            $count = (new PaperCsvExporter($filters))->export($handle);
+        } catch (\Throwable $e) {
+            fclose($handle);
+            $logger->error('Export failed: ' . $e->getMessage());
+            $io->error('Export failed: ' . $e->getMessage());
+            return Command::FAILURE;
+        }
+
+        if (fclose($handle) === false) {
+            $logger->error("Failed to close {$csvFile}");
+            $io->error("Failed to close {$csvFile}.");
+            return Command::FAILURE;
+        }
 
         if ($count === 0) {
             $logger->warning('No paper matched the given criteria — an empty CSV (header only) was written.');

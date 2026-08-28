@@ -146,4 +146,19 @@ final class PaperCsvExporterTest extends TestCase
 
         self::assertStringContainsString('SELECT `papers`.`DOCID`', $sql);
     }
+
+    public function testExportThrowsExceptionWhenHeaderWriteFails(): void
+    {
+        $exporter = new PaperCsvExporter(new Filters(rvid: 7));
+        $handle = fopen('php://temp', 'r');
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Failed to write CSV header.');
+
+        try {
+            $exporter->export($handle);
+        } finally {
+            fclose($handle);
+        }
+    }
 }
