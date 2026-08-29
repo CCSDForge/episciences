@@ -1907,7 +1907,6 @@ class Episciences_Review
         return $form->addElement('checkbox', self::SETTING_ALTERNATIVE_PIPELINE, [
             'label' => "Activer le pipeline éditorial alternatif",
             'description' => "Disponible uniquement lorsque arXiv est la seule archive autorisée pour la soumission. Après acceptation, l'administrateur demande à l'auteur son mot de passe arXiv et sa version finale ; le préparateur de copie met l'article en page ; l'épreuve est envoyée à l'auteur pour validation ; après l'approbation de l'auteur, l'administrateur valide la mise en page puis publie l'article.",
-            'disabled' => !$this->isAlternativePipelineAvailable(),
             'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
             'decorators' => $checkboxDecorators]
         );

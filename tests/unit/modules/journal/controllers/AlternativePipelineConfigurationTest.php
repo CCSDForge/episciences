@@ -20,7 +20,7 @@ final class AlternativePipelineConfigurationTest extends TestCase
         self::assertStringContainsString('public function isAlternativePipelineAvailable(): bool', $reviewSource);
         self::assertStringContainsString('count($repositories) === 1', $reviewSource);
         self::assertStringContainsString('Episciences_Repositories::ARXIV_REPO_ID', $reviewSource);
-        self::assertStringContainsString("'disabled' => !\$this->isAlternativePipelineAvailable()", $reviewSource);
+        self::assertStringNotContainsString("'disabled' => !\$this->isAlternativePipelineAvailable()", $reviewSource);
     }
 
     public function testPostedSettingsCannotEnablePipelineForOtherRepositorySelections(): void
