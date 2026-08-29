@@ -676,17 +676,23 @@ class PaperController extends PaperDefaultController
         $request = $this->getRequest();
         $docId = $request->getParam('id');
         $paper = Episciences_PapersManager::get($docId);
+        $isActingOnBehalfOfAuthor = $paper instanceof Episciences_Paper
+            && !$paper->isOwner()
+            && $this->isAlternativePipelineAuthorProxy($paper);
+        $redirectUrl = $isActingOnBehalfOfAuthor
+            ? '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . (int)$docId
+            : self::PAPER_URL_STR . (int)$docId;
 
         if (
             !$paper instanceof Episciences_Paper ||
             !$request->isPost() ||
-            !$paper->isOwner() ||
+            (!$paper->isOwner() && !$isActingOnBehalfOfAuthor) ||
             $paper->getStatus() !== Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR
         ) {
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
                 $this->view->translate("Vous n'êtes pas autorisé à effectuer cette action.")
             );
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . (int)$docId);
+            $this->_helper->redirector->gotoUrl($redirectUrl);
             return;
         }
 
@@ -695,7 +701,7 @@ class PaperController extends PaperDefaultController
         $post = $request->getPost();
         if (!isset($post[$csrfName], $csrfSession->hash) || $post[$csrfName] !== $csrfSession->hash) {
             $csrfSession->hash = null;
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+            $this->_helper->redirector->gotoUrl($redirectUrl);
             return;
         }
         $csrfSession->hash = null;
@@ -708,11 +714,15 @@ class PaperController extends PaperDefaultController
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
                 $this->view->translate("Les modifications n'ont pas abouti !")
             );
-            $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+            $this->_helper->redirector->gotoUrl($redirectUrl);
             return;
         }
 
-        $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
+        $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), [
+            'status' => $paper->getStatus(),
+            'actedOnBehalfOfAuthor' => $isActingOnBehalfOfAuthor,
+            'authorUid' => $paper->getUid(),
+        ]);
 
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
@@ -741,7 +751,7 @@ class PaperController extends PaperDefaultController
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage(
             $this->view->translate('Vos modifications ont bien été prises en compte')
         );
-        $this->_helper->redirector->gotoUrl(self::PAPER_URL_STR . $paper->getDocid());
+        $this->_helper->redirector->gotoUrl($redirectUrl);
     }
 
     /**
@@ -1370,8 +1380,9 @@ class PaperController extends PaperDefaultController
         if (!$paper instanceof Episciences_Paper) {
             return;
         }
-
         $this->view->paper = $paper;
+        $this->view->isActingOnBehalfOfAuthor =
+            !$paper->isOwner() && $this->isAlternativePipelineAuthorProxy($paper);
         $formState = new Zend_Session_Namespace('AltFinalVersionDeposit_' . (int)$paper->getDocid());
         $defaults = isset($formState->values) && is_array($formState->values)
             ? $formState->values
@@ -1392,6 +1403,7 @@ class PaperController extends PaperDefaultController
         if (!$paper instanceof Episciences_Paper) {
             return;
         }
+        $isActingOnBehalfOfAuthor = !$paper->isOwner() && $this->isAlternativePipelineAuthorProxy($paper);
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
@@ -1474,12 +1486,19 @@ class PaperController extends PaperDefaultController
         }
 
         $this->saveAltFinalVersionAccompanyingFiles($paper, $post);
-        $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), [self::STATUS => $paper->getStatus()]);
+        $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), [
+            self::STATUS => $paper->getStatus(),
+            'actedOnBehalfOfAuthor' => $isActingOnBehalfOfAuthor,
+            'authorUid' => $paper->getUid(),
+        ]);
 
         $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage(
             $this->view->translate("Votre dépôt a bien été enregistré.")
         );
-        $this->_helper->redirector->gotoUrl('/' . self::CONTROLLER_NAME . '/view?id=' . $paper->getDocid());
+        $redirectUrl = $this->isAlternativePipelineAuthorProxy($paper)
+            ? '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid()
+            : '/' . self::CONTROLLER_NAME . '/view?id=' . $paper->getDocid();
+        $this->_helper->redirector->gotoUrl($redirectUrl);
     }
 
     private function redirectAltFinalVersionDepositWithError(
@@ -1755,7 +1774,8 @@ class PaperController extends PaperDefaultController
 
     /**
      * Common guard for the final-version-deposit endpoints: paper must exist,
-     * the viewer must own it, and the status must be the alt-pipeline wait-state.
+     * the viewer must be its author or an assigned/authorized manager, and the
+     * status must be the alt-pipeline wait-state.
      */
     private function loadAltFinalVersionDepositPaperOrRedirect(): ?Episciences_Paper
     {
@@ -1765,7 +1785,7 @@ class PaperController extends PaperDefaultController
         if (
             !$paper instanceof Episciences_Paper ||
             !Episciences_Auth::isLogged() ||
-            !$paper->isOwner() ||
+            (!$paper->isOwner() && !$this->isAlternativePipelineAuthorProxy($paper)) ||
             $paper->getStatus() !== Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION
         ) {
             $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage(
@@ -1776,6 +1796,18 @@ class PaperController extends PaperDefaultController
         }
 
         return $paper;
+    }
+
+    private function isAlternativePipelineAuthorProxy(Episciences_Paper $paper): bool
+    {
+        if (!Episciences_Auth::isLogged() || $paper->getRvid() !== RVID) {
+            return false;
+        }
+
+        $uid = Episciences_Auth::getUid();
+        return Episciences_Auth::isSecretary()
+            || (bool)$paper->getEditor($uid)
+            || (bool)$paper->getCopyEditor($uid);
     }
 
     /**

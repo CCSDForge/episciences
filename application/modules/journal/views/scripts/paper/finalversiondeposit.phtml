@@ -10,6 +10,11 @@ $this->layout()->description = $this->translate("Déposez le fichier final deman
         <strong><?= $this->translate('Article') ?></strong>
     </div>
     <div class="panel-body">
+        <?php if (!empty($this->isActingOnBehalfOfAuthor)): ?>
+            <div class="alert alert-info">
+                <?= $this->translate("Vous remplissez ce formulaire au nom de l'auteur. L'action sera enregistrée avec votre identité.") ?>
+            </div>
+        <?php endif; ?>
         <p>
             <strong>#<?= $paper->getDocid() ?></strong>
             — <?= htmlspecialchars(Episciences_Tools::decodeLatex($paper->getTitle()), ENT_QUOTES, 'UTF-8') ?>

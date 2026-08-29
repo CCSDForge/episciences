@@ -221,6 +221,33 @@ final class PaperControllerTest extends TestCase
         self::assertStringContainsString('$comment->logComment()', $method);
     }
 
+    public function testManagersCanActAsAlternativePipelineAuthorProxy(): void
+    {
+        $method = $this->extractMethod('isAlternativePipelineAuthorProxy');
+
+        self::assertStringContainsString('Episciences_Auth::isSecretary()', $method);
+        self::assertStringContainsString('$paper->getEditor($uid)', $method);
+        self::assertStringContainsString('$paper->getCopyEditor($uid)', $method);
+    }
+
+    public function testProxyActionsAreRecordedInStatusLog(): void
+    {
+        $finalVersionMethod = $this->extractMethod('savefinalversiondepositAction');
+        $proofMethod = $this->extractMethod('processAuthorProofAction');
+
+        self::assertStringContainsString("'actedOnBehalfOfAuthor'", $finalVersionMethod);
+        self::assertStringContainsString("'actedOnBehalfOfAuthor'", $proofMethod);
+        self::assertStringContainsString("'authorUid'", $proofMethod);
+    }
+
+    public function testProofActionAllowsAuthorizedProxyAndReturnsToManagementPage(): void
+    {
+        $method = $this->extractMethod('processAuthorProofAction');
+
+        self::assertStringContainsString('isAlternativePipelineAuthorProxy($paper)', $method);
+        self::assertStringContainsString('ADMINISTRATE_PAPER_CONTROLLER', $method);
+    }
+
     // -----------------------------------------------------------------------
     // deleteattachmentreportAction
     // -----------------------------------------------------------------------

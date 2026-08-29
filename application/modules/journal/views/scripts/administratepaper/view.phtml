@@ -88,6 +88,11 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
                             <div class="alert alert-warning alert-fixed">
                                 <i class="fas fa-hourglass-half" style="color:chocolate"></i>
                                 <?= $this->translate($info) ?>
+                                <div style="margin-top: 10px;">
+                                    <a class="btn btn-primary" href="/paper/finalversiondeposit/id/<?= (int)$paper->getDocid() ?>">
+                                        <?= $this->translate("Déposer la version finale au nom de l'auteur") ?>
+                                    </a>
+                                </div>
                             </div>
                         <?php endif; ?>
 
@@ -96,7 +101,30 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
                             <div class="alert alert-warning alert-fixed">
                                 <i class="fas fa-hourglass-half" style="color:chocolate"></i>
                                 <?= $this->translate($info) ?>
+                                <div class="btn-group" style="margin-top: 10px; display: block;">
+                                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                                        <?= $this->translate("Répondre au nom de l'auteur") ?> <span class="caret"></span>
+                                    </button>
+                                    <ul class="dropdown-menu" role="menu">
+                                        <li><a href="#" data-toggle="modal" data-target=".alt-author-approve-proof-modal"><?= $this->translate('Approuver') ?></a></li>
+                                        <li><a href="#" data-toggle="modal" data-target=".alt-author-reject-proof-modal"><?= $this->translate('Refuser') ?></a></li>
+                                    </ul>
+                                </div>
                             </div>
+                            <?php if (isset($this->altAuthorApproveProofForm)): ?>
+                                <?= $this->partial('partials/paper-status-modal.phtml', [
+                                        'target' => 'alt-author-approve-proof-modal',
+                                        'title' => $this->translate("Approuver la mise en page au nom de l'auteur"),
+                                        'body' => $this->altAuthorApproveProofForm,
+                                ]) ?>
+                            <?php endif; ?>
+                            <?php if (isset($this->altAuthorRejectProofForm)): ?>
+                                <?= $this->partial('partials/paper-status-modal.phtml', [
+                                        'target' => 'alt-author-reject-proof-modal',
+                                        'title' => $this->translate("Refuser la mise en page au nom de l'auteur"),
+                                        'body' => $this->altAuthorRejectProofForm,
+                                ]) ?>
+                            <?php endif; ?>
                         <?php endif; ?>
 
                         <p>

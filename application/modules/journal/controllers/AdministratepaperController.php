@@ -975,6 +975,22 @@ class AdministratepaperController extends PaperDefaultController
                         'copyEditors'
                     )
                 );
+                $this->view->altAuthorApproveProofForm = Episciences_PapersManager::getAltAuthorApproveProofForm(
+                    Episciences_PapersManager::getAlternativePipelineFormDefault(
+                        $paper,
+                        $contributor,
+                        Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_AUTHOR_APPROVED_PROOF_EDITOR_COPY,
+                        'copyEditors'
+                    )
+                );
+                $this->view->altAuthorRejectProofForm = Episciences_PapersManager::getAltAuthorRejectProofForm(
+                    Episciences_PapersManager::getAlternativePipelineFormDefault(
+                        $paper,
+                        $contributor,
+                        Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_AUTHOR_REJECTED_PROOF_EDITOR_COPY,
+                        'copyEditors'
+                    )
+                );
             }
             if ($paper->isAltAuthorProofApproved()) {
                 $this->view->altApproveForPublicationForm = Episciences_PapersManager::getAltApproveForPublicationForm(
