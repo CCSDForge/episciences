@@ -25,9 +25,23 @@ function %%FCT_NAME%% (btn, name) {
 	$(inputGroup).find('.btn-group').val(lang);
 	
 	var textNode = $(inputGroup).find('.btn-group > button').contents().first();
-	textNode.replaceWith($(inputGroup).find('ul li a[val=' + lang + ']').closest('li').text()); 
-	
-	$(inputGroup).find('ul li a[val=' + lang + ']').closest('li').removeClass("disabled");
+	textNode.replaceWith(
+		$(inputGroup)
+			.find('ul li a')
+			.filter(function () {
+				return $(this).attr('val') === lang;
+			})
+			.closest('li')
+			.text()
+	);
+
+	$(inputGroup)
+		.find('ul li a')
+		.filter(function () {
+			return $(this).attr('val') === lang;
+		})
+		.closest('li')
+		.removeClass("disabled");
 	$(inputGroup).find('.btn-group > button').val(lang);
 	
 	var clone = $(inputGroup).find(".glyphicon-plus").closest("span").clone();

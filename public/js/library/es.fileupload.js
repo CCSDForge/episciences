@@ -8,6 +8,12 @@ $(function () {
     let formData = {};
     let idCpt = 0;
 
+    // Per-session request token, sent with every upload/delete call
+    let csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    if (csrfMeta) {
+        formData.csrf_token = csrfMeta.content;
+    }
+
     // comment
     if (null !== paperCommentId) {
         formData.pcId = paperCommentId;

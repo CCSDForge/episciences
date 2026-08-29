@@ -224,7 +224,9 @@ ul.errors li:first-child:nth-last-child(2) {
   }
 }
 
-#to_tags, #cc_tags, #bcc_tags {
+#to_tags, #cc_tags, #bcc_tags,
+span[id$="-cc-tags"],
+span[id$="-bcc-tags"] {
   float: left;
 }
 
@@ -383,4 +385,8 @@ button.btn.btn-primary:disabled {
   background-color: grey;
   cursor: not-allowed;
   color: black;
+}
+
+#authorEditorCommunication-wrapper {
+  margin-top: 15px;
 }

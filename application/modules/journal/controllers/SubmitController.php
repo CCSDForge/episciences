@@ -37,12 +37,12 @@ class SubmitController extends DefaultController
         $submit = new Episciences_Submit();
         $form = $submit::getForm($settings, $default, $isFromZSubmit);
 
+        $this->prepareViewData($settings, $isFromZSubmit, $form);
+
         if ($isPost && array_key_exists('submitPaper', $post)) {
             $this->handleSubmitPaper($request, $form, $submit, $post);
-            return;
         }
 
-        $this->prepareViewData($settings, $isFromZSubmit, $form);
     }
 
     /**
@@ -162,6 +162,10 @@ class SubmitController extends DefaultController
         $this->adjustFormForReplacementOrSuggestions($request, $form, $canReplace);
         $this->setDdFileRequiredFlag($form, $post);
 
+        if (!$this->handleCoverLetterValidation($form, $post)) {
+            return;
+        }
+
         if (!$form->isValid($post)) {
             $this->renderFormErrors($form);
             return;
@@ -216,6 +220,29 @@ class SubmitController extends DefaultController
     }
 
     /**
+     * Validate cover letter requirement.
+     * When required, at least one of comment or file must be provided.
+     *
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function handleCoverLetterValidation(Zend_Form $form, array $post): bool
+    {
+        $validation = Episciences_Submit::validateCoverLetterRequirement($post);
+
+        if ($validation !== true) {
+            $element = $form->getElement(Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME);
+            if ($element) {
+                $element->addError($validation);
+            }
+
+            $this->renderFormErrors($form);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Merge Zend_Form values with raw POST (keep unmapped inputs).
      */
     private function mergeFormValuesWithPost(array $formValues, array $post): array
@@ -240,16 +267,25 @@ class SubmitController extends DefaultController
      */
     private function handlePaperReplacement(array &$formValues): array
     {
+
+        $formValues['old_paper_status'] = (int)$formValues['old_paper_status'];
+        $formValues['old_version'] = (float)$formValues['old_version'];
+        $formValues['old_repoid'] = (int)$formValues['old_repoid'];
+        $formValues['old_docid'] = (int)$formValues['old_docid'];
+
         $selfPaper = new Episciences_Paper([
-            'identifier' => $formValues['old_identifier'],
-            'version' => (int)$formValues['old_version'],
-            'repoId' => (int)$formValues['old_repoid'],
-            'status' => (int)$formValues['old_paper_status'],
+            'docid' => $formValues['old_docid'],
+            'identifier' => $formValues['old_identifier'] ?? '',
+            'version' => $formValues['old_version'],
+            'repoId' => $formValues['old_repoid'],
+            'status' => $formValues['old_paper_status'],
+            'concept_identifier' => $formValues['old_conceptIdentifier'] ?? null
         ]);
 
         unset(
             $formValues['old_identifier'],
-            $formValues['old_repoid']
+            $formValues['old_repoid'],
+            $formValues['old_conceptIdentifier']
         );
 
         $result = $selfPaper->updatePaper($formValues);
@@ -367,7 +403,7 @@ class SubmitController extends DefaultController
     private function extractVersion(array &$params): void
     {
         $params['version'] = (isset($params['version']) && is_numeric($params['version']))
-            ? (int)$params['version']
+            ? (float)$params['version']
             : 1;
     }
 

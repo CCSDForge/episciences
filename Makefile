@@ -17,7 +17,7 @@ NPX := npx
 PROJECT_NAME := episciences
 
 # Container Configuration
-CNTR_NAME_SOLR := solr
+CNTR_NAME_SOLR := episciences-solr
 CNTR_NAME_PHP := php-fpm
 CNTR_NAME_HTTPD := httpd
 CNTR_APP_DIR := /var/www/htdocs
@@ -33,12 +33,12 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 # PHONY Targets
 # =============================================================================
 .PHONY: help build up down status logs restart clean clean-mysql
-.PHONY: collection index dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir yarn-encore-dev
+.PHONY: collection collection-ref-pps index import-ref-pps download-ref-pps dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir yarn-encore-dev
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
 .PHONY: enter-container-php
-.PHONY: update-geoip stats-process stats-update-robots-list
+.PHONY: update-geoip stats-process stats-update-robots-list stats-download-kpi
 .PHONY: format format-check format-tests format-file
 
 # =============================================================================
@@ -48,32 +48,32 @@ help: ## Display this help message
 	@echo "Episciences GPL - Development Environment"
 	@echo "========================================"
 	@echo ""
-	@echo "Core Docker Commands:"
+	@echo "🐳 Core Docker Commands:"
 	@grep -E '^(build|up|down|status|logs|restart|clean|clean-mysql):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Database Commands:"
+	@echo "🗄️  Database Commands:"
 	@grep -h -E '^(wait-for-db|load-db.*|generate-users|shell-mysql.*|backup-db):.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No database commands found"
 	@echo ""
-	@echo "Solr Commands:"
-	@grep -E '^(collection|index):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@echo "🔍 Solr Commands:"
+	@grep -E '^(collection|collection-ref-pps|index|import-ref-pps|download-ref-pps):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Development Commands:"
+	@echo "🛠️  Development Commands:"
 	@grep -E '^(dev-setup|composer|yarn|enter):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Testing Commands:"
+	@echo "🧪 Testing Commands:"
 	@grep -h -E '^test.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No testing commands found"
 	@echo ""
-	@echo "Linting & Quality Commands:"
+	@echo "🔎 Linting & Quality Commands:"
 	@grep -h -E '^(phpstan|rector).*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No quality commands found"
 	@echo ""
-	@echo "Formatting Commands:"
+	@echo "✨ Formatting Commands:"
 	@grep -E '^format.*:.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "Deployment Commands:"
+	@echo "🚀 Deployment Commands:"
 	@grep -h -E '^deploy.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No deployment commands found"
 	@echo ""
-	@echo "Other Commands:"
-	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@echo "📦 Other Commands:"
+	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use|import-apache-logs):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 
 # =============================================================================
 # Core Docker Commands
@@ -89,15 +89,16 @@ up: ## Start all docker containers
 	@echo "Development Environment Started Successfully!"
 	@echo "====================================================================="
 	@echo "📝 Make sure you have the following in /etc/hosts:"
-	@echo "127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org manager-dev.episciences.org"
+	@echo "127.0.0.1 localhost dev.episciences.org oai-dev.episciences.org data-dev.episciences.org manager-dev.episciences.org mailpit.episciences.org"
 	@echo ""
-	@echo "🌐 Available Services:"
-	@echo "  Journal     : http://dev.episciences.org/"
-	@echo "  Manager     : http://manager-dev.episciences.org/dev/"
-	@echo "  OAI-PMH     : http://oai-dev.episciences.org/"
-	@echo "  Data        : http://data-dev.episciences.org/"
-	@echo "  PhpMyAdmin  : http://localhost:8001/"
+	@echo "🌐 Available Services (via Traefik — start episciences-infrastructure first):"
+	@echo "  Journal     : https://dev.episciences.org/"
+	@echo "  Manager     : https://manager-dev.episciences.org/dev/"
+	@echo "  OAI-PMH     : https://oai-dev.episciences.org/"
+	@echo "  Data        : https://data-dev.episciences.org/"
+	@echo "  PhpMyAdmin  : https://pma.episciences.org/"
 	@echo "  Apache Solr : http://localhost:8983/solr"
+	@echo "  Mailpit     : https://mailpit.episciences.org/"
 	@echo "====================================================================="
 
 down: ## Stop all docker containers and remove orphans
@@ -126,8 +127,6 @@ restart: down up ## Restart all containers
 clean: down ## Clean up unused docker resources
 	@echo "Cleaning up Docker resources..."
 	@$(DOCKER) system prune -f
-	@echo "Removing episciences network..."
-	@$(DOCKER) network rm epi-network 2>/dev/null || true
 
 clean-mysql: down ## Remove all MySQL volumes (WARNING: This will delete all database data!)
 	@echo "WARNING: This will permanently delete all MySQL database data!"
@@ -151,28 +150,59 @@ clean-mysql: down ## Remove all MySQL volumes (WARNING: This will delete all dat
 # =============================================================================
 # Solr Commands
 # =============================================================================
-collection: up ## Create Solr collection after starting containers
-	@echo "Setting up Solr collection..."
-	@echo "Waiting for Solr container to be ready..."
-	@until $(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
+collection: ## Create Solr collection 'episciences' (requires episciences-infrastructure running)
+	@echo "Setting up Solr collection 'episciences'..."
+	@echo "Waiting for Solr to be ready..."
+	@until $(DOCKER) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
 		echo "Waiting for Solr..."; \
 		sleep 2; \
 	done
 	@echo "Solr is ready. Creating 'episciences' collection..."
-	@$(DOCKER_COMPOSE) exec $(CNTR_NAME_SOLR) solr create_collection -c episciences -d $(SOLR_COLLECTION_CONFIG) -s http://localhost:8983 >/dev/null 2>&1 || \
-		echo "Collection may already exist, continuing..."
+	@$(DOCKER) exec $(CNTR_NAME_SOLR) /opt/solr/bin/solr zk upconfig \
+		-d $(SOLR_COLLECTION_CONFIG) -n episciences -z episciences-zoo:2181
+	@$(DOCKER) exec $(CNTR_NAME_SOLR) \
+		curl -sf "http://localhost:8983/solr/admin/collections?action=CREATE&name=episciences&numShards=1&replicationFactor=1&collection.configName=episciences" \
+		>/dev/null 2>&1 || echo "Collection may already exist, continuing..."
 	@echo "Solr collection setup complete!"
+
+collection-ref-pps: ## Create Solr core 'ref_pps' (requires episciences-infrastructure running)
+	@echo "Setting up Solr core 'ref_pps'..."
+	@echo "Waiting for Solr to be ready..."
+	@until $(DOCKER) exec $(CNTR_NAME_SOLR) curl -s http://localhost:8983/solr >/dev/null 2>&1; do \
+		echo "Waiting for Solr..."; \
+		sleep 2; \
+	done
+	@echo "Solr is ready. Creating 'ref_pps' core..."
+	@$(DOCKER) exec -u 0:0 $(CNTR_NAME_SOLR) mkdir -p /opt/solr/server/solr/configsets/ref_pps
+	@docker cp src/solr/ref_pps/conf $(CNTR_NAME_SOLR):/opt/solr/server/solr/configsets/ref_pps/
+	@$(DOCKER) exec $(CNTR_NAME_SOLR) solr create_core -c ref_pps \
+		-d /opt/solr/server/solr/configsets/ref_pps/conf -s http://localhost:8983 || \
+		echo "Core may already exist, continuing..."
+	@echo "Solr core ref_pps setup complete!"
 
 index: ## Index content into Solr  [V=1 verbose] [D=1 debug]
 	@echo "Indexing content into Solr..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/solr/solrJob.php -D % $(if $(V),-v) $(if $(D),-d)
 	@echo "Indexing complete!"
 
+import-ref-pps: ## Import PPS data from CSV into Solr core ref_pps (optional: csv-file=PATH)
+	@echo "Importing PPS data into Solr..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php import:ref-pps $(if $(csv-file),$(csv-file))
+	@echo "Import complete!"
+
+download-ref-pps: ## Download PPS CSV file from IRIT (optional: force=1)
+	@echo "Downloading PPS data..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php download:ref-pps $(if $(filter 1,$(force)),--force)
+	@echo "Download complete!"
+
 # =============================================================================
 # Development Setup Commands
 # =============================================================================
-dev-setup: build copy-config setup-logs up wait-for-db init-data-dir ## Complete development environment setup with 30 generated users
+dev-setup: build copy-config setup-logs up wait-for-db init-data-dir ## Complete development environment setup (requires episciences-infrastructure running)
 	@echo "Setting up complete development environment..."
+	@echo "⚠️  Make sure episciences-infrastructure is running (cd ../episciences-infrastructure && make up)"
 	@$(MAKE) composer-install
 	@$(MAKE) yarn-encore-dev
 	@$(MAKE) load-dev-db
@@ -282,8 +312,7 @@ restart-php: ## Restart PHP-FPM container
 
 # --- Mail -----------------------------------------------------------------------
 
-send-mails: ## Send queued emails using the mail queue system
-	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/send_mails.php
+send-mails: ## Flush the mail queue now (without waiting for the cron)
 	@echo "Sending queued emails..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/send_mails.php
@@ -340,17 +369,26 @@ enrich-zb-reviews: ## Enrich zbMATH review data
 
 # --- Sitemap --------------------------------------------------------------------
 
-generate-sitemap: ## Generate XML sitemap for a journal (requires rvcode=JOURNAL_CODE; optional: pretty=1)
-	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate RVCODE [--pretty] [-q]
-	@if [ -z "$(rvcode)" ]; then \
-		echo "Error: rvcode parameter is required"; \
+generate-sitemap: ## Generate XML sitemap — use rvcode=CODE for one journal, or all=1 for all active journals (optional: pretty=1)
+	# Prod (one journal):  sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate --rvcode=RVCODE [--pretty] [-q]
+	# Prod (all journals): sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php sitemap:generate --all [--pretty] [-q]
+	@if [ -z "$(rvcode)" ] && [ "$(all)" != "1" ]; then \
+		echo "Error: specify rvcode=JOURNAL_CODE or all=1"; \
 		echo "Usage: make generate-sitemap rvcode=JOURNAL_CODE [pretty=1]"; \
+		echo "       make generate-sitemap all=1 [pretty=1]"; \
 		exit 1; \
 	fi
-	@echo "Generating sitemap for journal '$(rvcode)'..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
-		php scripts/console.php sitemap:generate $(rvcode) \
-		$(if $(filter 1,$(pretty)),--pretty)
+	@if [ -n "$(rvcode)" ]; then \
+		echo "Generating sitemap for journal '$(rvcode)'..."; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+			php scripts/console.php sitemap:generate --rvcode=$(rvcode) \
+			$(if $(filter 1,$(pretty)),--pretty); \
+	else \
+		echo "Generating sitemaps for all active journals..."; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+			php scripts/console.php sitemap:generate --all \
+			$(if $(filter 1,$(pretty)),--pretty); \
+	fi
 
 # --- Volume / DOAJ --------------------------------------------------------------
 
@@ -456,9 +494,57 @@ stats-process: ## Process STAT_TEMP into PAPER_STAT (optional: date=YYYY-MM-DD a
 		$(if $(filter 1,$(all)),--all) \
 		$(if $(filter 1,$(dry-run)),--dry-run)
 
+stats-download-kpi: ## Generate download KPI JSON for all published articles (optional: rvcode=xxx pretty=1 dry-run=1 output=path)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php stats:download-kpi [-q]
+	@echo "Generating download KPI JSON..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php stats:download-kpi \
+		$(if $(rvcode),--rvcode=$(rvcode)) \
+		$(if $(filter 1,$(pretty)),--pretty) \
+		$(if $(filter 1,$(dry-run)),--dry-run) \
+		$(if $(output),--output=$(output))
+
 can-i-use-update: ## Update browserslist database when caniuse-lite is outdated
 	@echo "Updating browserslist database..."
 	@$(NPX) update-browserslist-db@latest
+
+import-apache-logs: ## Parse Apache logs into STAT_TEMP (rvcode=JOURNAL|all=1 [date=YYYY-MM-DD|month=YYYY-MM|year=YYYY|start-date=…+end-date=…] [logs-path=PATH] [force=1])
+	@if [ -z "$(rvcode)" ] && [ "$(all)" != "1" ]; then \
+		echo "Error: specify rvcode=JOURNAL_CODE or all=1"; \
+		echo "Usage: make import-apache-logs rvcode=JOURNAL_CODE [options]"; \
+		echo "       make import-apache-logs all=1 [options]"; \
+		echo "Options:"; \
+		echo "  date=YYYY-MM-DD          Process a specific day"; \
+		echo "  month=YYYY-MM            Process entire month"; \
+		echo "  year=YYYY                Process entire year"; \
+		echo "  start-date=YYYY-MM-DD    Start date for custom range"; \
+		echo "  end-date=YYYY-MM-DD      End date for custom range"; \
+		echo "  logs-path=PATH           Base path to Apache log directory"; \
+		echo "  force=1                  Force reprocessing of already-processed dates"; \
+		exit 1; \
+	fi
+	@cmd="php scripts/console.php stats:import-logs"; \
+	if [ "$(all)" = "1" ]; then \
+		cmd="$$cmd --all"; \
+	else \
+		cmd="$$cmd --rvcode=$(rvcode)"; \
+	fi; \
+	if [ -n "$(date)" ]; then \
+		cmd="$$cmd --date=$(date)"; \
+	elif [ -n "$(month)" ]; then \
+		cmd="$$cmd --month=$(month)"; \
+	elif [ -n "$(year)" ]; then \
+		cmd="$$cmd --year=$(year)"; \
+	elif [ -n "$(start-date)" ] && [ -n "$(end-date)" ]; then \
+		cmd="$$cmd --start-date=$(start-date) --end-date=$(end-date)"; \
+	fi; \
+	if [ -n "$(logs-path)" ]; then \
+		cmd="$$cmd --logs-path=$(logs-path)"; \
+	fi; \
+	if [ "$(force)" = "1" ]; then \
+		cmd="$$cmd --force"; \
+	fi; \
+	$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) $$cmd
 
 # =============================================================================
 # Code Formatting Commands (Prettier)

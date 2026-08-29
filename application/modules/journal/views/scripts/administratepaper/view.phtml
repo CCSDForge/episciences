@@ -29,6 +29,21 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
             color: #ccc !important;
             background-color: #fff !important;
         }
+
+        #article-status-panel .label {
+            display: inline-block;
+            max-width: 100%;
+            white-space: normal;
+            text-align: left;
+        }
+
+        #status-versions-row .col-status {
+            padding-right: 8px;
+        }
+
+        #status-versions-row .col-versions {
+            padding-left: 8px;
+        }
     </style>
 
 
@@ -45,61 +60,72 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
         <?php // Data Descriptor ?>
         <?= $this->render('partials/paper_data_descriptor_bloc.phtml') ?>
         <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
-        <?php // paper status ***************************************************** ?>
-        <div id="article-status-panel" class="panel panel-default collapsable">
-            <div class="panel-heading">
-                <h2 class="panel-title"><?php echo $this->translate('Statut de l\'article'); ?></h2>
+        <?php // paper status + versions side by side ***************************************************** ?>
+        <div class="row" id="status-versions-row">
+            <div class="col-sm-7 col-status">
+                <div id="article-status-panel" class="panel panel-default collapsable">
+                    <div class="panel-heading">
+                        <h2 class="panel-title"><?php echo $this->translate('Statut de l\'article'); ?></h2>
+                    </div>
+                    <div class="panel-body in">
+                        <?php
+                        $isWaitingForAuthorValidation = (Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION === $status);
+                        $isAltWaitingForAuthorFinalVersion = (Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION === $status);
+                        $isAltProofSentToAuthor = (Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR === $status);
+                        ?>
+
+                        <?php if ($isWaitingForAuthorValidation): ?>
+                            <?php $info = "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via Episciences"; ?>
+                            <div class="alert alert-info alert-fixed">
+                                <i class="fas fa-exclamation-triangle" style="color:chocolate"></i>
+                                <?= $this->translate($info) ?>
+                                <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ($isAltWaitingForAuthorFinalVersion): ?>
+                            <?php $info = "En attente de la réponse de l'auteur : le mot de passe et la version finale ont été demandés à l'auteur"; ?>
+                            <div class="alert alert-warning alert-fixed">
+                                <i class="fas fa-hourglass-half" style="color:chocolate"></i>
+                                <?= $this->translate($info) ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ($isAltProofSentToAuthor): ?>
+                            <?php $info = "En attente de la réponse de l'auteur : l'épreuve a été envoyée à l'auteur pour vérification"; ?>
+                            <div class="alert alert-warning alert-fixed">
+                                <i class="fas fa-hourglass-half" style="color:chocolate"></i>
+                                <?= $this->translate($info) ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <p>
+                            <span style="font-size:1em" class="label label-status-<?= $status ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
+                            <?= $this->partial('partials/paper-revision-deadline.phtml', [
+                                    'paper' => $paper,
+                                    'currentDemand' => $this->currentDemand
+                            ]) ?>
+                        </p>
+
+
+                        <?= $this->render('partials/paper_editor_suggestions.phtml') ?>
+
+                        <?php if ($paper->isEditable()) : ?>
+                            <?php echo $this->render('partials/paper_status_button.phtml'); ?>
+                        <?php endif; ?>
+
+                    </div>
+                </div>
             </div>
-            <div class="panel-body in">
-                <?php
-                $isWaitingForAuthorValidation = (Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION === $status);
-                $isAltWaitingForAuthorFinalVersion = (Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION === $status);
-                $isAltProofSentToAuthor = (Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR === $status);
-                ?>
-
-                <?php if ($isWaitingForAuthorValidation): ?>
-                    <?php $info = "À ce stade l'auteur se coordonne avec le préparateur de copie et se mettent d'accord en échangeant des courriels en dehors ou via Episciences"; ?>
-                    <div class="alert alert-info alert-fixed">
-                        <i class="fas fa-exclamation-triangle" style="color:chocolate"></i>
-                        <?= $this->translate($info) ?>
-                        <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>
-                    </div>
-                <?php endif; ?>
-
-                <?php if ($isAltWaitingForAuthorFinalVersion): ?>
-                    <?php $info = "En attente de la réponse de l'auteur : le mot de passe et la version finale ont été demandés à l'auteur"; ?>
-                    <div class="alert alert-warning alert-fixed">
-                        <i class="fas fa-hourglass-half" style="color:chocolate"></i>
-                        <?= $this->translate($info) ?>
-                    </div>
-                <?php endif; ?>
-
-                <?php if ($isAltProofSentToAuthor): ?>
-                    <?php $info = "En attente de la réponse de l'auteur : l'épreuve a été envoyée à l'auteur pour vérification"; ?>
-                    <div class="alert alert-warning alert-fixed">
-                        <i class="fas fa-hourglass-half" style="color:chocolate"></i>
-                        <?= $this->translate($info) ?>
-                    </div>
-                <?php endif; ?>
-
-                <p>
-                    <span style="font-size:1em" class="label label-status-<?= $status ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
-                    <?= $this->partial('partials/paper-revision-deadline.phtml', [
-                            'paper' => $paper,
-                            'currentDemand' => $this->currentDemand
-                    ]) ?>
-                </p>
-
-
-                <?= $this->render('partials/paper_editor_suggestions.phtml') ?>
-
-                <?php if ($paper->isEditable()) : ?>
-                    <?php echo $this->render('partials/paper_status_button.phtml'); ?>
-                <?php endif; ?>
-
+            <div class="col-sm-5 col-versions">
+                <?= $this->partial('partials/paper_versions.phtml', [
+                        'paper' => $paper,
+                        'versions' => $this->versions,
+                        'isEditableVersion' => $this->isEditableVersion
+                ]) ?>
             </div>
         </div>
-        <?php // end of paper status ***************************************************** ?>
+        <?php // end of paper status + versions ***************************************************** ?>
 
         <?php // contributor section  ?>
         <?php if ($paper->getUid()): ?>
@@ -156,9 +182,15 @@ if ($this->citations !== '') {
 
 
 <?php if ($this->enabledBib): ?>
-    <div id="biblio-refs" class="panel panel-default collapsable">
+    <div id="biblio-refs" class="panel panel-default collapsable" <?php if (!$paper->isPublished()) echo 'style="display: none;"'; ?>>
         <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Références bibliographiques') ?></h2>
+            <h2 class="panel-title">
+                <?= $this->translate('Références bibliographiques') ?>
+                <span id="biblio-refs-problematic-count"
+                      class="label label-danger"
+                      hidden></span>
+                <span class="biblio-refs-hint" aria-hidden="true"></span>
+            </h2>
         </div>
         <div class="panel-body in" style="max-height: 350px; overflow: auto;">
             <?php
@@ -295,11 +327,17 @@ if ($this->citations !== '') {
 
 
 <?php // editor comments ***************************************************** ?>
-    <div class="panel panel-default collapsable">
+    <div class="panel panel-warning collapsable" role="region" aria-labelledby="editor-comments-heading">
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Communication entre les rédacteurs'); ?></h2>
+            <h2 class="panel-title" id="editor-comments-heading">
+                <span aria-hidden="true">🔒</span>
+                &nbsp;<?php echo $this->translate('Discussion interne des rédacteurs/rédactrices'); ?>
+                <span class="label label-success" style="font-size: 0.6em; vertical-align: middle; margin-left: 0.5em;">
+                    <?php echo $this->translate('Non visible par les auteurs/autrices'); ?>
+                </span>
+            </h2>
         </div>
-        <div class="panel-body in">
+        <div id="editor-comments-body" class="panel-body <?php echo !empty($this->editor_comments) ? 'in' : ''; ?>">
             <?php echo $this->render('partials/paper_editor_comments.phtml') ?>
         </div>
     </div>
@@ -333,16 +371,21 @@ if ($this->citations !== '') {
     </div>
 <?php endif; ?>
 
-<?= $this->partial('partials/paper_versions.phtml', [
-        'paper' => $paper,
-        'versions' => $this->versions,
-        'isEditableVersion' => $this->isEditableVersion
-]) ?>
-
 <?php // history ***************************************************** ?>
     <div id="history" class="panel panel-default collapsable">
         <div class="panel-heading">
-            <h2 class="panel-title"><?php echo $this->translate('Historique'); ?></h2>
+            <h2 class="panel-title">
+                <?php echo $this->translate('Historique'); ?>
+                <?php // stopPropagation: the panel-heading itself toggles the collapse on click
+                // (see applyCollapse() in functions.js) — without it, following this link would
+                // also flip the panel open/closed right as the browser navigates away ?>
+                <a href="/activity/view?id=<?= $paper->getDocid() ?>"
+                   class="btn btn-default btn-xs panel-title-timeline-link"
+                   onclick="event.stopPropagation()">
+                    <i class="fa-solid fa-timeline" aria-hidden="true"></i>
+                    <?= $this->translate('Voir la timeline complète') ?>
+                </a>
+            </h2>
         </div>
         <div class="panel-body in" style="overflow: visible">
             <?php echo $this->partial('partials/paper_history.phtml', ['docid' => $paper->getDocid(), 'logs' => $this->logs]); ?>
@@ -358,6 +401,9 @@ if ($this->citations !== '') {
         var paper_ratings = <?php if ($this->js_ratings) : ?><?php echo $this->js_ratings; ?><?php else:?>null<?php endif;?>;
         var author = <?php if ($this->js_contributor) : ?><?php echo $this->js_contributor; ?><?php else:?>null<?php endif;?>;
         var sender = <?php if ($this->js_sender) : ?><?php echo $this->js_sender; ?><?php else:?>null<?php endif;?>;
+        // Used by recipients autocomplete (Cc/Bcc) inside paper status modals (es.mail.js)
+        var users = <?php if (isset($this->js_users)) : ?><?php echo $this->js_users; ?><?php else:?>[]<?php endif;?>;
+        var sender_uid = <?= (int) Episciences_Auth::getUid(); ?>;
         var available_languages = <?php echo $this->available_languages?>;
         let siteLocale = '<?= $this->siteLocale ?>';
         let defaultLocale = '<?= $this->defaultLocale ?>';
@@ -378,16 +424,18 @@ $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
 
+$this->jQuery()->addJavascriptFile("/js/vendor/jquery.ui.autocomplete.html.js");
 $this->jQuery()->addJavascriptFile('/js/library/es.mail.js');
 // Security: DOMPurify for XSS prevention (needed by es.contacts-list.js)
 $this->jQuery()->addJavascriptFile("https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js");
 $this->jQuery()->addJavascriptFile("/js/utils/sanitizer.js");
 $this->jQuery()->addJavascriptFile("/js/library/es.contacts-list.js");
 $this->jQuery()->addJavascriptFile('/js/administratepaper/view.js');
+$this->jQuery()->addJavascriptFile('/js/common/utils.js');
+$this->jQuery()->addJavascriptFile('/js/paper/edit_master_file.js');
 $this->jQuery()->addJavascriptFile('/js/components/collapsible-message.js');
 
 $this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
-$this->jQuery()->addJavascriptFile("/js/vendor/jquery.ui.autocomplete.html.js");
 $this->jQuery()->addJavascriptFile('/js/autocomplete-utils.js');
 $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
 $this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');

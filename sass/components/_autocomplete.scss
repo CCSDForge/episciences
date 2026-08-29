@@ -3,6 +3,8 @@
   overflow: auto;
   padding: 5px;
   background: #fff;
+  // Must exceed Bootstrap modal z-index (1050) to render above other form fields
+  z-index: 1051 !important;
 }
 
 .ui-autocomplete .ui-menu-item {
@@ -12,15 +14,32 @@
   font-size:12px;
 }
 
+// Override site global <a> color so autocomplete items don't appear pink/underlined
+.ui-autocomplete .ui-menu-item a {
+  color: inherit;
+  text-decoration: none;
+}
+
 .ui-autocomplete .ui-menu-item a.ui-state-focus,
 .ui-autocomplete .ui-menu-item a.ui-state-active {
-  /*background: #f6f6f6;*/
-  border: 1px solid #ccc;
+  border: none;
+  margin: 0;
 }
 
 .ui-autocomplete .ui-menu-item .email {
   font-size:10px;
   font-style: italic;
+}
+
+// htmlLabel spans: stack name and email on separate lines without block-in-inline issues
+.ui-autocomplete .ui-menu-item .ep-ac-name,
+.ui-autocomplete .ui-menu-item .ep-ac-email {
+  display: block;
+}
+
+.ui-autocomplete .ui-menu-item .ep-ac-email {
+  font-size: 10px;
+  color: #666;
 }
 
 input.ui-autocomplete-input {

@@ -19,6 +19,7 @@ use Ccsd_Form_Validate_Isensam;
 use Ccsd_Form_Validate_Iscern;
 use Ccsd_Form_Validate_Issciencespo;
 use Ccsd_Form_Validate_Isird;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -29,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  * Isinspire, Isoatao, Isokina, Isprodinra, Isirstea,
  * Isensam, Iscern, Issciencespo, Isird.
  */
+#[IgnoreDeprecations]
 class Ccsd_Form_Validate_IdentifiersTest extends TestCase
 {
     // ------------------------------------------------------------------

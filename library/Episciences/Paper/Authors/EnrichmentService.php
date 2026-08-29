@@ -155,7 +155,7 @@ class Episciences_Paper_Authors_EnrichmentService
     private static function mergeExistingAffiliations(array &$dbAuthors, int|string $authorIndex, array $dbAuthor, array $teiAuthor): void
     {
         foreach ($teiAuthor[self::KEY_AFFILIATIONS] as $teiAffiliation) {
-            $existingNames = array_column($dbAuthor[self::KEY_AFFILIATION], self::KEY_NAME);
+            $existingNames = array_map(static fn($aff) => $aff[self::KEY_NAME] ?? null, $dbAuthor[self::KEY_AFFILIATION]);
             $affiliationName = $teiAffiliation[self::KEY_NAME];
 
             if (!in_array($affiliationName, $existingNames, true)) {

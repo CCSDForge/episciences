@@ -6,50 +6,58 @@ let $contact_type_dropdown;
  *
  */
 function initGetContacts() {
-    console.log('executed initGetContacts');
-
     $contact_list = $('#contact-list');
     $contacts = $contact_list.find('tr');
     $contact_type_dropdown = $('#contact-type-dropdown');
 
-    // contact type dropdown
-    $contact_type_dropdown.find('a').on('click', function () {
-        showList($(this).parent('li'));
-    });
+    // contact type dropdown - use .off() to prevent double binding
+    $contact_type_dropdown
+        .find('a')
+        .off('click.epContactsDropdown')
+        .on('click.epContactsDropdown', function () {
+            showList($(this).parent('li'));
+        });
 
-    // toggle all contacts
-    $('#toggleAll').on('click', function () {
-        let action = $(this).data('action');
+    // toggle all contacts - use .off() to prevent double binding
+    $('#toggleAll')
+        .off('click.epContactsToggle')
+        .on('click.epContactsToggle', function () {
+            let action = $(this).data('action');
 
-        $contacts.each(function () {
-            if (action === 'select') {
-                if (!$(this).hasClass('selected')) {
-                    $(this).addClass('selected');
-                    select($(this));
+            $contacts.each(function () {
+                if (action === 'select') {
+                    if (!$(this).hasClass('selected')) {
+                        $(this).addClass('selected');
+                        select($(this));
+                    }
+                } else {
+                    $(this).removeClass('selected');
+                    unselect($(this));
                 }
+            });
+
+            if (action === 'select') {
+                $(this).data('action', 'unselect');
             } else {
-                $(this).removeClass('selected');
-                unselect($(this));
+                $(this).data('action', 'select');
             }
         });
 
-        if (action === 'select') {
-            $(this).data('action', 'unselect');
-        } else {
-            $(this).data('action', 'select');
-        }
-    });
-
     initList();
 
-    $('#filter-input').keyup(function () {
-        filterTable('#filter-input', '#contact-list tr');
-    });
-    $('#filter-input').on('paste', function () {
-        setTimeout(function () {
+    // Filter input - use .off() to prevent double binding
+    $('#filter-input')
+        .off('keyup.epContactsFilter')
+        .on('keyup.epContactsFilter', function () {
             filterTable('#filter-input', '#contact-list tr');
-        }, 4);
-    });
+        });
+    $('#filter-input')
+        .off('paste.epContactsFilter')
+        .on('paste.epContactsFilter', function () {
+            setTimeout(function () {
+                filterTable('#filter-input', '#contact-list tr');
+            }, 4);
+        });
 }
 
 function filterTable(input, elements) {
@@ -71,7 +79,7 @@ function filterTable(input, elements) {
 
 // when a contact is clicked, it is either added or removed
 function initList() {
-    $contacts.on('click', function () {
+    $contacts.off('click.epContacts').on('click.epContacts', function () {
         let action = $(this).hasClass('selected') ? 'remove' : 'add';
         if (action === 'add') {
             select($(this));
@@ -82,17 +90,28 @@ function initList() {
     });
 }
 
+// Encode a value for safe inclusion in markup by relying on the browser's
+// text-node encoding (mirrors the helper used elsewhere in public/js).
+function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent =
+        value === undefined || value === null ? '' : String(value);
+    return div.innerHTML;
+}
+
 function showList($li) {
     $contact_type_dropdown.find('span:first').html($li.find('a').html());
-    let contacts = eval($li.data('value'));
+    // Resolve the contacts collection by its variable name, without code execution.
+    let contacts = window[$li.data('value')] || [];
 
     let html = '';
     for (let i in contacts) {
         let user = contacts[i];
+        let uid = String(user['uid']).replace(/[^\d]/g, '');
 
-        html += '<tr id="contact_' + user['uid'] + '">';
-        html += '   <td>' + user['fullname'] + '</td>';
-        html += '   <td class="grey">' + user['username'] + '</td>';
+        html += '<tr id="contact_' + uid + '">';
+        html += '   <td>' + escapeHtml(user['fullname']) + '</td>';
+        html += '   <td class="grey">' + escapeHtml(user['username']) + '</td>';
         let roleArr = user['role'];
         html += '<td>';
         if (roleArr.length > 0) {
@@ -100,14 +119,14 @@ function showList($li) {
                 if (el !== 'member')
                     html +=
                         '   <span class="label label-default role-' +
-                        el +
+                        escapeHtml(el) +
                         '">' +
-                        translate(el) +
+                        escapeHtml(translate(el)) +
                         '</span>';
             });
         }
         html += '</td>';
-        html += '   <td>' + user['mail'] + '</td>';
+        html += '   <td>' + escapeHtml(user['mail']) + '</td>';
         html += '</tr>';
     }
 
@@ -116,7 +135,7 @@ function showList($li) {
     initList();
 
     // (re)selection des contacts déjà ajoutés, dans la liste nouvellement chargée
-    $('#' + target + '_tags')
+    $('#added_contacts_tags')
         .find('.recipient-tag')
         .each(function () {
             $('#contact_' + $(this).data('uid')).addClass('selected');
@@ -131,7 +150,7 @@ function select(row) {
             user = all_contacts[i];
         }
     }
-    let tagId = addRecipient(target, user, 'known');
+    let tagId = addRecipient('added_contacts', user, 'known');
     $('#' + tagId)
         .find('.remove-recipient')
         .on('click', function () {
@@ -141,6 +160,6 @@ function select(row) {
 
 function unselect(row) {
     let uid = $(row).attr('id').replace(/[^\d]/g, '');
-    let tag = $('#' + target + '_tags .recipient-tag[data-uid="' + uid + '"]');
+    let tag = $('#added_contacts_tags .recipient-tag[data-uid="' + uid + '"]');
     removeRecipient(tag);
 }

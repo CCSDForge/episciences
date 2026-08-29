@@ -38,7 +38,7 @@ $paperPositionInVolume = $paper->getPaperPositionInVolume();
     eid        = <?= $paperPositionInVolume ?>,
 <?php endif; ?>
     year       = {<?= Episciences_View_Helper_Date::Date($paper->getPublication_date(), null, 'y') ?>},
-    month      = {<?= Episciences_View_Helper_Date::Date($paper->getPublication_date(), null, 'MMM') ?>},
+    month      = {<?= Episciences_View_Helper_Date::Date($paper->getPublication_date(), 'en', 'MMM') ?>},
 <?php if (!empty($subjects)): ?>
     keywords   = {<?= Ccsd_Tools::protectLatex(implode(', ', $subjects)) ?>},
 <?php endif; ?>

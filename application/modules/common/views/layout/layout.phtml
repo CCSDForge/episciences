@@ -41,6 +41,9 @@ echo $this->doctype('HTML5');
     <link rel="shortcut icon" href="/favicon.ico?v=20211124">
     <meta name="msapplication-TileColor" content="#2b5797">
     <meta name="theme-color" content="#ffffff">
+<?php if (Episciences_Auth::isLogged()) : ?>
+    <meta name="csrf-token" content="<?php echo $this->escape(Episciences_Csrf_Helper::getSessionToken()); ?>">
+<?php endif; ?>
     <link href="<?= INBOX_URL ?>" rel="http://www.w3.org/ns/ldp#inbox">
     <?php
 
@@ -138,17 +141,6 @@ echo $this->doctype('HTML5');
                     echo $this->DisplayFlashMessages(Ccsd_View_Helper_Message::MSG_INFO, true);
                     ?>
 
-                    <?php
-                    //Développement : affichage des mails
-                    if (APPLICATION_ENV == ENV_DEV) {
-                        $session = new Zend_Session_Namespace();
-                        if (isset($session->mail) && $session->mail instanceof Episciences_Mail) {
-                            $this->mail = $session->mail;
-                            echo $this->render('commons/mail.phtml');
-                            unset($session->mail);
-                        }
-                    } ?>
-
                     <?php echo $this->layout()->content; ?>
                 </div>
             </div>
@@ -169,9 +161,9 @@ echo $this->doctype('HTML5');
         echo $this->render('commons/matomo.phtml');
     }
     ?>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.js"
-            data-cfasync="false"></script>
+            integrity="sha512-yXXqOFjdjHNH1GND+1EO0jbvvebABpzGKD66djnUfiKlYME5HGMUJHoCaeE4D5PTG2YsSJf6dwqyUUvQvS0vaA=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         window.cookieconsent.initialise({
             "palette": {
@@ -197,5 +189,6 @@ echo $this->doctype('HTML5');
     echo $this->render('commons/debug.phtml');
     }
     ?>
+    <!-- CLOCKSS system has permission to ingest, preserve, and serve this open access Archival Unit -->
 </body>
 </html>

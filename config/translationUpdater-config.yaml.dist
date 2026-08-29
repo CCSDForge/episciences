@@ -1,7 +1,7 @@
 inputFile: ../application/languages/en/views.php
 outputFile: ../application/languages/en/zz_views.php
 
-# Arrays for search and replace terms
+# Arrays for search and replace terms (must have the same number of elements)
 search:
   - article
   - articles
@@ -18,8 +18,15 @@ replace:
   - Datasets/software
   - A dataset/software
 
-# Other configuration options
-case-sensitive: true
-force: true
-silent: false
-log: ../tmp/translationUpdater.log
+# The following options have moved to CLI flags:
+#   case-sensitive  →  --case-sensitive
+#   force           →  --force
+#   silent          →  -q / --quiet
+#   log             →  --log=<path>
+#
+# Usage example:
+#   php scripts/console.php translations:update \
+#     --config=config/translationUpdater-config.yaml \
+#     --case-sensitive \
+#     --force \
+#     --log=tmp/translations.log

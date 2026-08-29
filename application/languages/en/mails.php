@@ -70,6 +70,14 @@ return [
     "paper_editor_unassign_tpl_name" => "Unassign an editor",
     "paper_editor_unassign_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - You've been unassigned from managing an article",
 
+    "paper_coi_unassign_chief_editor_copy_tpl_name" => "Conflict of interest declared — copy for editor-in-chief",
+    "paper_coi_unassign_chief_editor_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - An editor declared a conflict of interest",
+
+    "paper_coi_unassign_other_editors_copy_tpl_name" => "Conflict of interest declared — copy for other assigned editors",
+    "paper_coi_unassign_other_editors_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - An editor declared a conflict of interest",
+
+    "paper_coi_last_editor_warning" => "This was the last editor assigned to this article. The article currently has no editor assigned.",
+
 
     // PAPER - RELECTURE ****************************************************************************************************************************
     "paper_review_tpl_group" => "Paper - reviewing",

@@ -9,47 +9,68 @@ $(document).ready(function () {
     $('#metadatas').sortable();
     $('#metadatas').disableSelection();
 
+    // Cache cover selectors — each is referenced in both the change and click handlers
+    var $coverFile = $('#cover-file');
+    var $coverPreview = $('#cover-preview');
+    var $coverPreviewContainer = $('#cover-preview-container');
+    var $coverUploadZone = $('#cover-upload-zone');
+    var $coverData = $('#cover_data');
+
     // Préparation des uploads
     $('#mFile').change(function (event) {
-        // Barre de chargement
         var container = getContainer($(this));
         $(container).html(getLoader());
 
-        // Préparation des données
-        var data = new FormData();
-        $.each(event.target.files, function (key, value) {
-            data.append(key, value);
+        uploadFileToServer(event.target.files[0], function (serverFile) {
+            var $mTmpData = $('#mTmpData');
+            var values = $mTmpData.val() ? JSON.parse($mTmpData.val()) : {};
+            values.tmpfile = JSON.stringify(serverFile);
+            $mTmpData.val(JSON.stringify(values));
+            $('#mFile_content')
+                .empty()
+                .append(
+                    formatFileLabel(
+                        serverFile.name +
+                            ' (' +
+                            readableBytes(serverFile.size, lang) +
+                            ')'
+                    )
+                );
+            $('#value_mFile').val('');
         });
+    });
 
-        // Envoi des données
-        $.ajax({
-            url: '/volume/addfile',
-            type: 'POST',
-            data: data,
-            cache: false,
-            processData: false,
-            contentType: false,
-            success: function (response) {
-                var response = $.parseJSON(response);
-                var file = response.file;
-                var values = $('#mTmpData').val()
-                    ? JSON.parse($('#mTmpData').val())
-                    : new Object();
-                values.tmpfile = JSON.stringify(file);
-                $('#mTmpData').val(JSON.stringify(values));
-                $('#mFile_content')
-                    .empty()
-                    .append(
-                        formatFileLabel(
-                            file.name +
-                                ' (' +
-                                readableBytes(file.size, lang) +
-                                ')'
-                        )
-                    );
-                $('#value_mFile').val('');
-            },
+    // Cover upload and preview
+    $coverFile.on('change', function (event) {
+        var file = event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            $coverPreview.attr('src', e.target.result);
+        };
+        reader.readAsDataURL(file);
+        $coverPreviewContainer.show();
+        $coverUploadZone.hide();
+
+        uploadFileToServer(file, function (serverFile) {
+            $coverData.val(
+                JSON.stringify({
+                    action: 'save',
+                    tmpfile: JSON.stringify(serverFile),
+                })
+            );
         });
+    });
+
+    $('#remove-cover').on('click', function () {
+        $coverData.val(JSON.stringify({ action: 'delete' }));
+        $coverPreviewContainer.hide();
+        $coverPreview.attr('src', '');
+        $coverUploadZone.show();
+        $coverFile.val('');
     });
 
     // Gestion des positions des articles au sein d'un volume
@@ -63,6 +84,22 @@ $(document).ready(function () {
         $('#papers').disableSelection();
     }
 });
+
+function uploadFileToServer(file, callback) {
+    var data = new FormData();
+    data.append('0', file);
+    $.ajax({
+        url: '/volume/addfile',
+        type: 'POST',
+        data: data,
+        cache: false,
+        processData: false,
+        contentType: false,
+        success: function (response) {
+            callback(JSON.parse(response).file);
+        },
+    });
+}
 
 function getContainer(element) {
     var container_id = 'mFile_content';
@@ -102,27 +139,50 @@ function formatFileLabel(label) {
 }
 
 function removeFile() {
-    var values = JSON.parse($('#mTmpData').val());
-    var deletelist = values.deletelist ? values.deletelist : new Array();
+    var $mTmpData = $('#mTmpData');
+    var $mFileContent = $('#mFile_content');
+    var values = JSON.parse($mTmpData.val());
+    var deletelist = values.deletelist || [];
 
     if (values.tmpfile) {
         var tmp_file = JSON.parse(values.tmpfile);
         deletelist.push({ type: 'tmp_file', path: tmp_file.tmp_name });
         values.deletelist = deletelist;
         values.tmpfile = '';
-        $('#mFile_content').html('');
+        $mFileContent.empty();
         if (values.file) {
-            $('#mFile_content').empty().append(formatFileLabel(values.file));
+            $mFileContent.append(formatFileLabel(values.file));
         }
-        $('#mTmpData').val(JSON.stringify(values));
+        $mTmpData.val(JSON.stringify(values));
     } else {
         deletelist.push({ type: 'current_file', name: values.file });
         values.deletelist = deletelist;
         values.file = '';
-        $('#mTmpData').val(JSON.stringify(values));
-        $('#mFile_content').html('');
+        $mTmpData.val(JSON.stringify(values));
+        $mFileContent.empty();
     }
 }
+
+/**
+ * Decode the five HTML entities produced by PHP's htmlspecialchars(ENT_QUOTES).
+ * A targeted regex is safer than DOMParser (no HTML parsing sink) and complete
+ * for this specific use case: we only need to undo what the server encoded.
+ * Order matters: &amp; must be last to avoid double-decoding &amp;lt; → &lt; → <
+ * @param {string|null|undefined} text
+ * @returns {string}
+ */
+function decodeHtmlEntities(text) {
+    if (text === null || text === undefined) return text;
+    var str = String(text);
+    if (!str.includes('&')) return str;
+    return str
+        .replace(/&quot;/g, '"')
+        .replace(/&#0?39;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
+}
+
 
 /**
  * init form in modal
@@ -136,13 +196,23 @@ function init(source) {
         var values = JSON.parse($('#mTmpData').val());
 
         for (var lang in values.title) {
-            $('#mTitle').val(values.title[lang]);
-            $('#mTitle').attr('lang', lang);
-            $('#mTitle').next('span').find('button').attr('value', lang);
+            var decodedTitle = decodeHtmlEntities(values.title[lang]);
+
+            // First, trigger language selection click (may overwrite input value from hidden field)
             $('#mTitle')
                 .parent('div')
-                .find('li a[val="' + lang + '"]')
+                .find('li a')
+                .filter(function () {
+                    return $(this).attr('val') === lang;
+                })
                 .trigger('click');
+
+            // Set the decoded value after language click to ensure it is not overwritten
+            $('#mTitle').val(decodedTitle);
+            $('#mTitle').attr('lang', lang);
+            $('#mTitle').next('span').find('button').attr('value', lang);
+
+            // Then trigger the add button
             $('#mTitle')
                 .parent('div')
                 .find('span:last button')
@@ -150,13 +220,15 @@ function init(source) {
         }
 
         for (var lang in values.content) {
-            //tinyMCE.get('mContent').setContent(values.content[lang]);
-            $('#mContent').val(values.content[lang]);
+            $('#mContent').val(decodeHtmlEntities(values.content[lang]));
             $('#mContent').attr('lang', lang);
             $('#mContent').next('div').find('button').attr('value', lang);
             $('#mContent')
                 .parent('div')
-                .find('li a[val="' + lang + '"]')
+                .find('li a')
+                .filter(function () {
+                    return $(this).attr('val') === lang;
+                })
                 .trigger('click');
             $('#mContent')
                 .parent('div')
@@ -193,8 +265,8 @@ function submit(source) {
 }
 
 function getInput(id, mce) {
-    var langs = new Array();
-    var value = new Object();
+    var langs = [];
+    var value = {};
 
     if (mce) {
         $('#' + id)
@@ -204,22 +276,12 @@ function getInput(id, mce) {
                 langs.push($(this).attr('val'));
             });
         for (var i in langs) {
-            if (
-                $(
-                    '#modal-box form textarea[name="' +
-                        id +
-                        '[' +
-                        langs[i] +
-                        ']"]'
-                ).val()
-            ) {
-                value[langs[i]] = $(
-                    '#modal-box form textarea[name="' +
-                        id +
-                        '[' +
-                        langs[i] +
-                        ']"]'
-                ).val();
+            var fieldName = id + '[' + langs[i] + ']';
+            var $field = $('#modal-box form textarea').filter(function () {
+                return this.name === fieldName;
+            });
+            if ($field.val()) {
+                value[langs[i]] = $field.val();
             } /*else if (tinyMCE.activeEditor.getContent() && $('#'+id+'-element').find('button[data-toggle="dropdown"]').val() == langs[i]) {
 				value[langs[i]] = tinyMCE.activeEditor.getContent();
 			}*/
@@ -232,9 +294,12 @@ function getInput(id, mce) {
                 langs.push($(this).attr('val'));
             });
         for (i in langs) {
-            value[langs[i]] = $(
-                '#modal-box form input[name="' + id + '[' + langs[i] + ']"]'
-            ).val();
+            var fieldName = id + '[' + langs[i] + ']';
+            var $field = $('#modal-box form input').filter(function () {
+                return this.name === fieldName;
+            });
+            // Decode HTML entities that may have been added by the multilang decorator
+            value[langs[i]] = decodeHtmlEntities($field.val());
         }
     }
 
@@ -242,8 +307,9 @@ function getInput(id, mce) {
 }
 
 function getMetadata() {
-    var tmpData = $('#mTmpData').val() ? $.parseJSON($('#mTmpData').val()) : {};
-    var value = new Object();
+    var mTmpDataVal = $('#mTmpData').val();
+    var tmpData = mTmpDataVal ? JSON.parse(mTmpDataVal) : {};
+    var value = {};
     value.id = tmpData.id;
     value.title = getInput('mTitle');
     value.content = getInput('mContent', true);
@@ -339,7 +405,7 @@ function removeMetadata(btn) {
 }
 
 function validate() {
-    var errors = new Array();
+    var errors = [];
 
     if (!validMultilangInput('mTitle')) {
         errors.push(translate('Le champ Nom est obligatoire'));
@@ -391,7 +457,7 @@ function validate() {
 // Contrôle si toutes les langues d'un champ multilangue ont été remplies
 function validMultilangInput(id, mce) {
     var errors = false;
-    var langs = new Array();
+    var langs = [];
 
     if (mce) {
         $('#' + id)
@@ -401,14 +467,12 @@ function validMultilangInput(id, mce) {
                 langs.push($(this).attr('val'));
             });
         for (var i in langs) {
+            var fieldName = id + '[' + langs[i] + ']';
+            var $field = $('#modal-box form textarea').filter(function () {
+                return this.name === fieldName;
+            });
             if (
-                !$(
-                    '#modal-box form textarea[name="' +
-                        id +
-                        '[' +
-                        langs[i] +
-                        ']"]'
-                ).val() &&
+                !$field.val() &&
                 (!tinyMCE.activeEditor.getContent() ||
                     $('#' + id + '-element')
                         .find('button[data-toggle="dropdown"]')
@@ -425,11 +489,11 @@ function validMultilangInput(id, mce) {
                 langs.push($(this).attr('val'));
             });
         for (i in langs) {
-            if (
-                !$(
-                    '#modal-box form input[name="' + id + '[' + langs[i] + ']"]'
-                ).val()
-            ) {
+            var fieldName = id + '[' + langs[i] + ']';
+            var $field = $('#modal-box form input').filter(function () {
+                return this.name === fieldName;
+            });
+            if (!$field.val()) {
                 return false;
             }
         }

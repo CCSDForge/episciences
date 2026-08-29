@@ -1,5 +1,10 @@
 <?php // first position in view => position 0 in VOLUME_PAPER_POSITION table?>
-<span id="position_ <?= $this->docId ?>"> , # <?= $this->position + 1 ?> &nbsp;
+<span id="position_ <?= $this->docId ?>"> <span class="label label-default"
+          tabindex="0"
+          data-toggle="tooltip"
+          data-placement="top"
+          title="<?= $this->escape($this->translate("Numéro de l'article dans un volume (ordre)")) ?>"
+    ># <?= $this->position + 1 ?></span> &nbsp;
         <?php if (Episciences_Auth::isSecretary()) : ?>
             <?php
             $params = ['controller' => 'volume', 'action' => 'edit', 'id' => $this->vid, 'from' => $this->from];
@@ -7,9 +12,12 @@
                 $params ['docid'] = $this->docId;
             }
             ?>
-            <a href="<?= $this->url($params) ?>" class="btn btn-default btn-xs"
-               title="<?= $this->translate("Modifier") ?>">
-                <span class="glyphicon glyphicon-pencil"></span>
+            <a href="<?= $this->url($params) ?>"
+               class="btn btn-default btn-xs"
+               data-toggle="tooltip"
+               data-placement="top"
+               title="<?= $this->escape($this->translate("Propriétés du volume et ordre des articles")) ?>">
+                <i class="fa-solid fa-arrow-down-1-9"></i>
             </a>
         <?php endif; ?>
     </span>

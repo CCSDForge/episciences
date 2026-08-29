@@ -1,6 +1,5 @@
 <?php
 $this->layout()->pageTitle = $this->translate("Gérer les articles");
-$this->layout()->description = ($this->pageDescription) ?: $this->translate("Gestion des articles de la revue.");
 
 $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
 $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
@@ -26,6 +25,8 @@ $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker.js");
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+$this->jQuery()->addStylesheet('https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.min.css');
+$this->jQuery()->addJavascriptFile('https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js');
 ?>
 
 <table class="table table-bordered dataTable table-responsive-lg" id="papers" style="width: 100%;">
@@ -79,17 +80,54 @@ try {
 ?>
 
 
-<script type="text/javascript">
+<style>
+    select.tomselected, select.ts-hidden-accessible { display: none !important; }
+    .ts-wrapper { position: relative; }
+    .ts-wrapper.form-control { height: auto !important; padding: 0 !important; border: none !important; box-shadow: none !important; background: transparent !important; }
+    .ts-wrapper.multi .ts-control { min-height: 34px; border: 1px solid #ccc; border-radius: 4px; padding: 4px 28px 4px 8px; cursor: pointer; background: #fff; position: relative; }
+    .ts-wrapper.multi .ts-control::after { content: '▾'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: #777; pointer-events: none; font-size: 14px; line-height: 1; transition: transform 0.15s; }
+    .ts-wrapper.multi.focus .ts-control::after { transform: translateY(-50%) rotate(180deg); }
+    .ts-dropdown { position: absolute !important; z-index: 1050 !important; }
+    .ts-dropdown .option { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ts-dropdown .option.active,
+    .ts-dropdown .option:hover { background-color: #337ab7; color: #fff; }
+    .ts-wrapper.multi .ts-control > .item { background-color: #337ab7; color: #fff; border-color: #2e6da4; border-radius: 3px; padding: 2px 6px; }
+    .ts-wrapper.multi .ts-control > .item .remove { color: rgba(255,255,255,0.7); border-left-color: rgba(255,255,255,0.3); }
+    .ts-wrapper.multi .ts-control > .item .remove:hover { color: #fff; }
+</style>
 
+<script type="text/javascript">
 
     let selfController = <?= "'$controller'" ?>;
     let selfAction = <?= "'$action'" ?>;
 
     const editableWithoutEditorsData = <?= $editableWithoutEditorsData ?>;
 
+    function initTomSelects() {
+        ['status', 'vid', 'sid', 'editors', 'reviewers', 'doi', 'repositories'].forEach(function (id) {
+            const el = document.getElementById(id);
+            if (!el || el.tomselect) return;
+            const firstOption = el.querySelector('option[value=""]');
+            const placeholder = firstOption ? firstOption.textContent.trim() : '';
+            const ts = new TomSelect(el, {
+                plugins: ['remove_button'],
+                maxOptions: null,
+                placeholder: placeholder,
+                onItemAdd: function () { this.setTextboxValue(''); },
+            });
+            el.style.setProperty('display', 'none', 'important');
+            ts.wrapper.classList.remove('form-control');
+        });
+    }
+
+    if (typeof TomSelect !== 'undefined') {
+        initTomSelects();
+    } else {
+        document.addEventListener('DOMContentLoaded', initTomSelects);
+    }
+
     $.getScript("/js/paper/submitted.js?_=v<?= APPLICATION_VERSION ?>;");
-    $.getScript("/js/administratepaper/section-assignment.js?_=v<?= APPLICATION_VERSION ?>");
-    $.getScript("/js/administratepaper/volume-assignment.js?_=v<?= APPLICATION_VERSION ?>");
+    $.getScript("/js/administratepaper/paper-assignment-modal.js?_=v<?= APPLICATION_VERSION ?>");
 
 </script>
 

@@ -18,7 +18,7 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
     public static function hookFilesProcessing(array $hookParams): array
     {
 
-        $files = $hookParams['files'];
+        $files = $hookParams['files'] ?? [];
         $docId = $hookParams['docId'];
         $repoId = $hookParams['repoId'];
 
@@ -51,7 +51,7 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
         $url = Episciences_Repositories::getRepositories()[$hookParams['repoId']][Episciences_Repositories::REPO_API_URL];
 
         $url .= 'datasets/:persistentId/versions/';
-        $url .= (int)$hookParams['version'];
+        $url .= (float)$hookParams['version'];
         $url .= '/?persistentId=';
         $url .= $hookParams['identifier'];
 
@@ -167,7 +167,7 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
 
             $urlIdentifier = 'https://doi.org/';
             $urlIdentifier .= mb_substr(
-                $data['datasetPersistentId'], strlen(Episciences_Repositories_Dataverse_Hooks::IDENTIFIER_PREFIX)
+                $data['datasetPersistentId'], strlen(self::IDENTIFIER_PREFIX)
             );
         }
 
@@ -452,14 +452,14 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
             $dataFile = $val['dataFile'];
 
             $fileName = $dataFile['filename'] ?? $dataFile['label'];
-            $explodedFileName = explode('.', $fileName);
 
             $tmp['file_name'] = $fileName;
-            $tmp['file_type'] = $explodedFileName[array_key_last($explodedFileName)] ?? 'undefined';
+            $tmp['file_type'] = pathinfo($fileName, PATHINFO_EXTENSION);
             $tmp['file_size'] = $dataFile['filesize'];
             $tmp['checksum'] = $dataFile['checksum']['value'];
             $tmp['checksum_type'] = $dataFile['checksum']['type'];
             $tmp['self_link'] = self::getAssembledLink($val, $hookParams['repoId']);
+
             $processedFiles[] = $tmp;
         }
 
@@ -486,7 +486,7 @@ class Episciences_Repositories_Dataverse_Hooks implements CommonHooksInterface, 
 
         }
 
-        return '#';
+        return Episciences_Paper_File::DEFAULT_SELF_LINK_VALUE;
 
     }
 

@@ -23,7 +23,13 @@
 // The stub is intentionally thin — only the methods called at module scope
 // need to be implemented; everything else can be a no-op.
 const jQueryStub = () => ({
-    ready: (fn) => { try { fn(); } catch (_e) { /* swallow errors from unrelated code */ } },
+    ready: fn => {
+        try {
+            fn();
+        } catch (_e) {
+            /* swallow errors from unrelated code */
+        }
+    },
     prop: () => jQueryStub(),
     on: () => jQueryStub(),
     off: () => jQueryStub(),
@@ -54,7 +60,7 @@ global.$ = jQueryStub;
 // Other globals used by view.js function bodies.
 global.sanitizeHTML = undefined;
 global.getLoader = () => '';
-global.translate = (s) => s;
+global.translate = s => s;
 global.ajaxRequest = undefined;
 global.paper = { repository: 0, title: 'Test', id: { toString: () => '1' } };
 global.review = { code: 'test', name: 'Test Review' };
@@ -67,7 +73,11 @@ global.isRequiredRevisionDeadline = false;
 // Load the module under test
 // ---------------------------------------------------------------------------
 
-const { validateDoiInput, updateDoiDisplay, DOI_PATTERN } = require('../../../public/js/administratepaper/view');
+const {
+    validateDoiInput,
+    updateDoiDisplay,
+    DOI_PATTERN,
+} = require('../../../public/js/administratepaper/view');
 
 // ---------------------------------------------------------------------------
 // DOI_PATTERN
@@ -87,7 +97,7 @@ describe('DOI_PATTERN', () => {
         '10.1234/UPPER',
         '10.1234/lower',
     ];
-    valid.forEach((doi) => {
+    valid.forEach(doi => {
         test(`accepts valid DOI: ${doi}`, () => {
             expect(DOI_PATTERN.test(doi)).toBe(true);
         });
@@ -97,12 +107,12 @@ describe('DOI_PATTERN', () => {
         '',
         'not-a-doi',
         '10/nodot',
-        '10.12/too-short-prefix',     // fewer than 4 digits after 10.
-        '10.1234',                    // missing suffix after slash
-        '20.1234/suffix',             // must start with 10.
-        '10.abc/suffix',              // non-numeric registrant
+        '10.12/too-short-prefix', // fewer than 4 digits after 10.
+        '10.1234', // missing suffix after slash
+        '20.1234/suffix', // must start with 10.
+        '10.abc/suffix', // non-numeric registrant
     ];
-    invalid.forEach((doi) => {
+    invalid.forEach(doi => {
         test(`rejects invalid DOI: "${doi}"`, () => {
             expect(DOI_PATTERN.test(doi)).toBe(false);
         });
@@ -194,13 +204,18 @@ describe('updateDoiDisplay', () => {
     test('sets textContent of #doi-link with leading non-breaking space', () => {
         document.body.innerHTML = '<span id="doi-link"></span>';
         updateDoiDisplay('10.1234/test');
-        expect(document.getElementById('doi-link').textContent).toBe('\u00A0' + '10.1234/test');
+        expect(document.getElementById('doi-link').textContent).toBe(
+            '\u00A0' + '10.1234/test'
+        );
     });
 
     test('sets textContent of div.paper-doi a', () => {
-        document.body.innerHTML = '<div class="paper-doi"><a href="#">old</a></div>';
+        document.body.innerHTML =
+            '<div class="paper-doi"><a href="#">old</a></div>';
         updateDoiDisplay('10.1234/test');
-        expect(document.querySelector('div.paper-doi a').textContent).toBe('10.1234/test');
+        expect(document.querySelector('div.paper-doi a').textContent).toBe(
+            '10.1234/test'
+        );
     });
 
     test('updates both elements when both are present', () => {
@@ -208,12 +223,17 @@ describe('updateDoiDisplay', () => {
             '<span id="doi-link"></span>' +
             '<div class="paper-doi"><a href="#">old</a></div>';
         updateDoiDisplay('10.5678/new-doi');
-        expect(document.getElementById('doi-link').textContent).toBe('\u00A010.5678/new-doi');
-        expect(document.querySelector('div.paper-doi a').textContent).toBe('10.5678/new-doi');
+        expect(document.getElementById('doi-link').textContent).toBe(
+            '\u00A010.5678/new-doi'
+        );
+        expect(document.querySelector('div.paper-doi a').textContent).toBe(
+            '10.5678/new-doi'
+        );
     });
 
     test('does not throw when #doi-link is absent', () => {
-        document.body.innerHTML = '<div class="paper-doi"><a href="#">old</a></div>';
+        document.body.innerHTML =
+            '<div class="paper-doi"><a href="#">old</a></div>';
         expect(() => updateDoiDisplay('10.1234/test')).not.toThrow();
     });
 

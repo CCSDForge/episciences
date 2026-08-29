@@ -6,8 +6,8 @@ function clearFile(index) {
     let object_inputs = getElements('input', 'value');
     let self_id = object_inputs[index].id;
     let $identifier = $('#' + self_id.replace('value_', ''));
-    $('#' + self_id).val('');
-    $identifier.val('');
+    $('#' + self_id).val(''); // to clear the value from the input field
+    $identifier.val('').trigger('change'); // The .trigger('change') is crucial here: if the input is marked as required in a form to prevent submission (for example data descriptor file; if a listener "change" is attached to it)
     $('#tempFile_content_' + index).html('');
 }
 
@@ -69,23 +69,25 @@ function getElements(element, attr) {
 
 $(document).ready(function () {
     // Use event delegation to handle both existing and dynamically added file inputs
-    $(document).off('change', 'input[id^=file]').on('change', 'input[id^=file]', function () {
-        // Get all file inputs to determine the correct index for this input
-        let object_inputs = getElements('input', 'file');
-        let index = -1;
-        for (let i = 0; i < object_inputs.length; i++) {
-            if (object_inputs[i].id === this.id) {
-                index = i;
-                break;
+    $(document)
+        .off('change', 'input[id^=file]')
+        .on('change', 'input[id^=file]', function () {
+            // Get all file inputs to determine the correct index for this input
+            let object_inputs = getElements('input', 'file');
+            let index = -1;
+            for (let i = 0; i < object_inputs.length; i++) {
+                if (object_inputs[i].id === this.id) {
+                    index = i;
+                    break;
+                }
             }
-        }
 
-        if (index !== -1) {
-            let container = getContainer($(this), index);
-            let filename = $(this)[0].files.length
-                ? $(this)[0].files[0].name
-                : '';
-            $(container).html(formatFileLabel(filename, index));
-        }
-    });
+            if (index !== -1) {
+                let container = getContainer($(this), index);
+                let filename = $(this)[0].files.length
+                    ? $(this)[0].files[0].name
+                    : '';
+                $(container).html(formatFileLabel(filename, index));
+            }
+        });
 });

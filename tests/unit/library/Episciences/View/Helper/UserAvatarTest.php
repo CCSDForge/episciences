@@ -123,6 +123,21 @@ class UserAvatarTest extends TestCase
     }
 
     /**
+     * Test that adding a custom user-photo class overrides the default size class
+     */
+    public function testCustomUserPhotoClassOverridesDefaultSizeClass(): void
+    {
+        $user = ['SCREEN_NAME' => 'Test', 'UID' => 1];
+
+        $html = $this->helper->userAvatar($user, 'initials')
+            ->addClass('user-photo-small')
+            ->render();
+
+        $this->assertStringContainsString('class="user-photo-small"', $html);
+        $this->assertStringNotContainsString('user-photo-thumb', $html);
+    }
+
+    /**
      * Test adding multiple custom CSS classes
      */
     public function testAddMultipleClasses(): void

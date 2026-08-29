@@ -67,6 +67,13 @@ class Ccsd_Form_Validate_BeginsWith extends Zend_Validate_Abstract
      */
     public function __construct($adapter)
     {
+        trigger_error(
+            '[DEAD CODE AUDIT 2026-05-08] ' . __CLASS__ . ' is scheduled for removal.'
+            . ' Do NOT use this class in new code. If this message appears in production logs,'
+            . ' report it to the development team immediately.',
+            E_USER_DEPRECATED
+        );
+
         if ($adapter instanceof Zend_Config) {
             $adapter = $adapter->toArray();
         }

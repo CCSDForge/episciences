@@ -41,6 +41,11 @@ class OpenAlexApiClient extends AbstractApiClient
 
         $url = OPENALEX_APIURL . 'https://doi.org/' . $doi . self::PARAMS . '&mailto=' . OPENALEX_MAILTO;
 
+        // @phpstan-ignore notIdentical.alwaysTrue
+        if (defined('OPENALEX_APIKEY') && (string) constant('OPENALEX_APIKEY') !== '') {
+            $url .= '&api_key=' . constant('OPENALEX_APIKEY');
+        }
+
         try {
             $body = $this->client->get($url, ['headers' => $this->defaultHeaders()])->getBody()->getContents();
         } catch (GuzzleException $e) {

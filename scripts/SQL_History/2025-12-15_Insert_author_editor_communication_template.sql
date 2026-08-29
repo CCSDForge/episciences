@@ -7,7 +7,7 @@
 --   3. paper_comment_from_author_to_editor_coauthor_copy: Email template sent to co-authors when a co-author sends a message to assigned editors
 
 -- Note: These templates are global (NULL RVID) and apply to all journals
--- They are used in conjunction with the authorsCanContactEditors setting
+-- They are used in conjunction with the authorEditorCommunication setting
 
 -- Update existing template key if it was inserted with old name
 UPDATE MAIL_TEMPLATE

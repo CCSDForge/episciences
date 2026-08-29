@@ -357,6 +357,7 @@ class ModernUserAutocomplete {
                 `${user.firstname || ''} ${user.lastname || ''}`.trim();
             const email = user.email || user.EMAIL || '';
             const uid = user.id || user.UID || '';
+            const locale = user.locale
 
             // Create item container
             const itemDiv = document.createElement('div');
@@ -364,6 +365,7 @@ class ModernUserAutocomplete {
             itemDiv.dataset.id = uid;
             itemDiv.dataset.email = email;
             itemDiv.dataset.name = name;
+            itemDiv.dataset.locale = locale;
 
             // Create name element with highlighted match
             const nameDiv = document.createElement('div');
@@ -428,6 +430,7 @@ class ModernUserAutocomplete {
         const id = item.dataset.id;
         const name = item.dataset.name;
         const email = item.dataset.email;
+        const locale = item.dataset.locale;
 
         this.inputElement.value = name;
         this.lastValue = name;
@@ -451,6 +454,7 @@ class ModernUserAutocomplete {
                 name: name,
                 email: email,
                 full_name: name,
+                locale: locale,
             });
         }
     }

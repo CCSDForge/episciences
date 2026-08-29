@@ -3,38 +3,45 @@
 $paper = $this->paper;
 $action = 'oafiles';
 $files = $paper->getFiles();
+$hideSizeAndChecksumColumns = array_filter($files, static fn($f): bool => $f->getFileSize() > 0);
 ?>
 <?php if ($paper->hasHook && $files): ?>
     <div class="panel panel-default collapsable" id="paper-files">
         <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Fichiers') ?>
-                <!-- small class=""> ()</small-->
-            </h2>
+            <h2 class="panel-title"><?= $this->translate('Fichiers') ?></h2>
         </div>
         <div class="panel-body in">
             <table class="table table-striped">
                 <thead>
                 <tr class="">
                     <th> <?= $this->translate('Nom') ?></th>
-                    <th> <?= $this->translate('Taille') ?></th>
+                    <?php if ($hideSizeAndChecksumColumns): ?>
+                        <th> <?= $this->translate('Taille') ?></th>
+                    <?php endif; ?>
                 </tr>
                 </thead>
                 <tbody>
                 <?php /** @var  Episciences_Paper_File $oFile */ ?>
                 <?php foreach ($files as $oFile) : ?>
                     <tr>
-                        <td>
+                        <td id="td-<?= $oFile->getId()?>">
                             <a href="<?= $oFile->getSelfLink() ?>" target="_blank"><?= $oFile->getName() ?></a>
-                            <br/>
-                            <small class="label label-default"> <?= $oFile->getChecksumType() ?><?= $this->translate(' :') . ' ' ?><?= $oFile->getChecksum() ?>
-                                <!-- i class="fas fa-question-circle text-muted" data-toggle="tooltip" data-placement="top"
-                                   title=<?= $this->translate("Il s'agit de l'empreinte du fichier (somme de contrôle MD5), qui peut être utilisée pour vérifier l'intégrité du fichier.") ?>></i -->
-                            </small>
+                            <?php if ($oFile->getChecksum() !== ''): ?>
+                                <br/>
+                                <small class="label label-default"> <?= $oFile->getChecksumType() ?><?= $this->translate(' :') . ' ' ?><?= $oFile->getChecksum() ?>
+                                </small>
+                                <?php if($oFile->isMain()):?>
+                                    <i  class="fa-solid fa-user-check" style="margin-left: 5px; cursor: help;" title="<?= $this->translate('Fichier principal')?>"></i>
+                                <?php endif;?>
+                            <?php endif; ?>
                         </td>
-                        <td> <?= Episciences_Tools::toHumanReadable($oFile->getFileSize()) ?></td>
+                        <?php if ($hideSizeAndChecksumColumns): ?>
+                            <td> <?= Episciences_Tools::toHumanReadable($oFile->getFileSize()) ?></td>
+                        <?php endif; ?>
                         <td>
                     <span class="pull-right">
-                        <a class="btn btn-xs btn-default" href="<?= $oFile->getDownloadLike() ?>" data-toggle="tooltip" title="<?= $this->translate('Télécharger le fichier') ?>">
+                        <a class="btn btn-xs btn-default" href="<?= $oFile->getDownloadLike() ?>" data-toggle="tooltip"
+                           title="<?= $this->translate('Télécharger le fichier') ?>">
                            <i class="fas fa-file-download"></i>
                         </a>
                     </span>
@@ -43,6 +50,17 @@ $files = $paper->getFiles();
                 <?php endforeach; ?>
                 </tbody>
             </table>
+
+                <?php if($paper->isEligibleForMasterFileChoice()): ?>
+                    <button
+                            id="btn-edit-master-file"
+                            data-docid="<?= $paper->getDocid()?>"
+                            class="btn btn-default btn-xs popover-link edit-main-file pull-right">
+                        <i class="fa-solid fa-pen-to-square" style="margin-right: 5px"></i>
+                        <?= $this->translate('Opter pour un autre fichier principal')?>
+                    </button>
+                <?php endif;?>
+
         </div>
     </div>
 <?php endif; ?>

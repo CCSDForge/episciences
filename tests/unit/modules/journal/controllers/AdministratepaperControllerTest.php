@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace unit\modules\journal\controllers;
 
 use PHPUnit\Framework\TestCase;
@@ -851,5 +853,563 @@ class AdministratepaperControllerTest extends TestCase
                 "BUG #10: $action performs an irreversible state change but has no CSRF token validation — add a CSRF check (hash_equals, token comparison, or Zend_Form with CSRF element) before processing POST data"
             );
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // updatedeadlineAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::updatedeadlineAction
+     *
+     * The assignment id ($aid) must be validated as numeric before use to
+     * prevent non-integer values from reaching the DB layer.
+     */
+    public function testUpdatedeadlineActionValidatesAidIsNumeric(): void
+    {
+        $method = $this->extractMethod('updatedeadlineAction');
+
+        $this->assertStringContainsString(
+            'is_numeric($aid)',
+            $method,
+            'updatedeadlineAction must verify $aid is numeric before looking up the assignment'
+        );
+    }
+
+    public function testUpdatedeadlineActionReturnsEarlyIfAidIsEmpty(): void
+    {
+        $method = $this->extractMethod('updatedeadlineAction');
+
+        $this->assertStringContainsString(
+            'return false',
+            $method,
+            'updatedeadlineAction must return false when $aid is invalid or missing'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // savecopyeditorsAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savecopyeditorsAction
+     *
+     * The action must check isPost() before processing any state change.
+     */
+    public function testSavecopyeditorsActionChecksIsPost(): void
+    {
+        $method = $this->extractMethod('savecopyeditorsAction');
+
+        $this->assertStringContainsString(
+            'isPost()',
+            $method,
+            'savecopyeditorsAction must check isPost() before applying changes'
+        );
+    }
+
+    public function testSavecopyeditorsActionDisablesLayout(): void
+    {
+        $method = $this->extractMethod('savecopyeditorsAction');
+
+        $this->assertStringContainsString(
+            'disableLayout',
+            $method,
+            'savecopyeditorsAction must disable layout (AJAX action)'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // savemastervolumeAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savemastervolumeAction
+     *
+     * The vid (volume id) must be cast to (int) before use.
+     */
+    public function testSavemastervolumeActionCastsVidToInt(): void
+    {
+        $method = $this->extractMethod('savemastervolumeAction');
+
+        $this->assertStringContainsString(
+            "(int)\$request->getPost('vid')",
+            $method,
+            'savemastervolumeAction must cast the vid POST parameter to (int)'
+        );
+    }
+
+    public function testSavemastervolumeActionChecksIsPost(): void
+    {
+        $method = $this->extractMethod('savemastervolumeAction');
+
+        $this->assertStringContainsString(
+            'isPost()',
+            $method,
+            'savemastervolumeAction must check isPost() before applying changes'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // saveeditorsAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::saveeditorsAction
+     *
+     * Editor UIDs from POST must be cast to int via array_map('intval', ...).
+     */
+    public function testSaveeditorsActionCastsEditorUidsToInt(): void
+    {
+        $method = $this->extractMethod('saveeditorsAction');
+
+        $this->assertStringContainsString(
+            "array_map('intval'",
+            $method,
+            'saveeditorsAction must cast submitted editor UIDs to int via array_map(intval)'
+        );
+    }
+
+    public function testSaveeditorsActionChecksIsPost(): void
+    {
+        $method = $this->extractMethod('saveeditorsAction');
+
+        $this->assertStringContainsString(
+            'isPost()',
+            $method,
+            'saveeditorsAction must verify the request is a POST'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // refreshratingAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::refreshratingAction
+     *
+     * Both docId and reviewerUid must be cast to (int) to avoid string-based
+     * DB lookups from unsanitized parameters.
+     */
+    public function testRefreshratingActionCastsIdsToInt(): void
+    {
+        $method = $this->extractMethod('refreshratingAction');
+
+        $this->assertStringContainsString(
+            "(int)\$request->getParam('id')",
+            $method,
+            'refreshratingAction must cast the id parameter to (int)'
+        );
+        $this->assertStringContainsString(
+            "(int)\$request->getParam('reviewer_uid')",
+            $method,
+            'refreshratingAction must cast the reviewer_uid parameter to (int)'
+        );
+    }
+
+    /**
+     * The action must only reset a report that is already in STATUS_COMPLETED,
+     * not any report regardless of state.
+     */
+    public function testRefreshratingActionOnlyResetsCompletedReports(): void
+    {
+        $method = $this->extractMethod('refreshratingAction');
+
+        $this->assertStringContainsString(
+            'isCompleted()',
+            $method,
+            'refreshratingAction must check isCompleted() before resetting the report status'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // savereviewerremovalAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savereviewerremovalAction
+     *
+     * The assignment id must be numeric — non-numeric values must be rejected
+     * with a JSON error response.
+     */
+    public function testSavereviewerremovalActionRejectsNonNumericAid(): void
+    {
+        $method = $this->extractMethod('savereviewerremovalAction');
+
+        $this->assertStringContainsString(
+            'is_numeric($id)',
+            $method,
+            'savereviewerremovalAction must validate that $id is numeric'
+        );
+    }
+
+    public function testSavereviewerremovalActionDisablesLayout(): void
+    {
+        $method = $this->extractMethod('savereviewerremovalAction');
+
+        $this->assertStringContainsString(
+            'disableLayout',
+            $method,
+            'savereviewerremovalAction must disable layout (AJAX action returning JSON)'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // publicationdateformAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::publicationdateformAction
+     *
+     * The docid is read from POST (form field) and must be checked for
+     * presence before use. If missing, the action returns false immediately.
+     */
+    public function testPublicationdateformActionReadsDocidFromPost(): void
+    {
+        $method = $this->extractMethod('publicationdateformAction');
+
+        $this->assertStringContainsString(
+            "getPost('docid')",
+            $method,
+            'publicationdateformAction must read docid from POST'
+        );
+    }
+
+    public function testPublicationdateformActionReturnsFalseWhenDocidMissing(): void
+    {
+        $method = $this->extractMethod('publicationdateformAction');
+
+        $this->assertStringContainsString(
+            'return false',
+            $method,
+            'publicationdateformAction must return false when docid is not provided'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // saverefusedmonitoringAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::saverefusedmonitoringAction
+     *
+     * The action reads the paper id from GET (getQuery) and processes the
+     * form data from POST. It must check isPost() before applying changes.
+     */
+    public function testSaverefusedmonitoringActionChecksIsPost(): void
+    {
+        $method = $this->extractMethod('saverefusedmonitoringAction');
+
+        $this->assertStringContainsString(
+            'isPost()',
+            $method,
+            'saverefusedmonitoringAction must check isPost() before processing form data'
+        );
+    }
+
+    public function testSaverefusedmonitoringActionReadsIdFromGet(): void
+    {
+        $method = $this->extractMethod('saverefusedmonitoringAction');
+
+        $this->assertStringContainsString(
+            "getQuery('id')",
+            $method,
+            "saverefusedmonitoringAction must read the paper id from GET via getQuery('id')"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // revisiondeadlineformAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::revisiondeadlineformAction
+     *
+     * The docid is read from POST. The action must verify the paper status
+     * before rendering the form: only papers with a pending revision request
+     * should show this form.
+     */
+    public function testRevisiondeadlineformActionReadsDocidFromPost(): void
+    {
+        $method = $this->extractMethod('revisiondeadlineformAction');
+
+        $this->assertStringContainsString(
+            "getPost('docid')",
+            $method,
+            'revisiondeadlineformAction must read docid from POST'
+        );
+    }
+
+    public function testRevisiondeadlineformActionChecksRevisionRequestedStatus(): void
+    {
+        $method = $this->extractMethod('revisiondeadlineformAction');
+
+        $this->assertStringContainsString(
+            'isRevisionRequested()',
+            $method,
+            'revisiondeadlineformAction must verify the paper has a revision-requested status before rendering the form'
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // compileMailUsers() — source-code analysis
+    // ---------------------------------------------------------------
+
+    /**
+     * All three user-supplied values injected into htmlLabel must be escaped
+     * via htmlspecialchars() to prevent XSS.
+     *
+     * htmlLabel is passed as a raw HTML string to jQuery's .append(), so any
+     * unescaped < > " & in a user's name, username or email is executable.
+     */
+    public function testCompileMailUsersEscapesFullNameInHtmlLabel(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        // fullName is cast to string then escaped before inclusion in htmlLabel
+        $this->assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*\(string\)\s*\$user->getFullName\(\)/',
+            $method,
+            'getFullName() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
+        );
+    }
+
+    public function testCompileMailUsersEscapesUsernameInHtmlLabel(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        $this->assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*mb_strtolower\s*\(\s*\(string\)\s*\$user->getUsername\(\)\s*\)/',
+            $method,
+            'getUsername() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
+        );
+    }
+
+    public function testCompileMailUsersEscapesEmailInHtmlLabel(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        $this->assertMatchesRegularExpression(
+            '/htmlspecialchars\s*\(\s*\(string\)\s*\$user->getEmail\(\)/',
+            $method,
+            'getEmail() must be cast to (string) and wrapped in htmlspecialchars() before injection into htmlLabel'
+        );
+    }
+
+    /**
+     * htmlLabel must use <span> elements, not <div>.
+     *
+     * <div> (block) inside <a> (inline) is invalid HTML: browsers emit orphaned
+     * empty <a> boxes between autocomplete items. <span class="ep-ac-name/email">
+     * with display:block via CSS is the correct approach.
+     */
+    public function testCompileMailUsersUsesSpanNotDivInHtmlLabel(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        $this->assertStringNotContainsString(
+            "'<div>",
+            $method,
+            'htmlLabel must not use <div> — block elements inside <a> produce invalid HTML'
+        );
+        $this->assertStringContainsString(
+            'ep-ac-name',
+            $method,
+            'htmlLabel must use <span class="ep-ac-name"> for the name line'
+        );
+        $this->assertStringContainsString(
+            'ep-ac-email',
+            $method,
+            'htmlLabel must use <span class="ep-ac-email"> for the email line'
+        );
+    }
+
+    /**
+     * BUG: getFullName(), getUsername(), and getEmail() may return null when a user
+     * record is incomplete. Passing null to htmlspecialchars() raises a TypeError
+     * in PHP 8.2+ (and a deprecation notice in PHP 8.1).
+     *
+     * Fix: cast each value to (string) before passing to htmlspecialchars(),
+     * e.g. htmlspecialchars((string) $user->getFullName(), ENT_QUOTES, 'UTF-8').
+     */
+    /**
+     * Fixed (BUG-5): all three getter return values are now cast to (string)
+     * before being passed to htmlspecialchars(), preventing TypeError when
+     * getFullName()/getUsername()/getEmail() returns null (PHP 8.2+).
+     */
+    public function testCompileMailUsersCastsGettersToStringBeforeHtmlspecialchars(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        $hasCast = (bool) preg_match(
+            '/htmlspecialchars\s*\(\s*\(string\)/',
+            $method
+        );
+
+        $this->assertTrue(
+            $hasCast,
+            'getter return values must be cast to (string) before htmlspecialchars() ' .
+            'to avoid TypeError when getFullName()/getUsername()/getEmail() returns null (PHP 8.2+)'
+        );
+    }
+
+    /**
+     * The "label" field (used for autocomplete text matching) is intentionally
+     * not HTML-escaped — it is JSON-encoded by Zend_Json::encode() before being
+     * output to the page, which makes it safe as a data value.
+     * This test documents that the absence of htmlspecialchars on $cUser['label'] is correct.
+     */
+    public function testCompileMailUsersLabelFieldIsNotHtmlEscaped(): void
+    {
+        $method = $this->extractMethod('compileMailUsers');
+
+        // Find the label assignment line and confirm it has no htmlspecialchars
+        $labelLinePos  = strpos($method, "\$cUser['label']");
+        $htmlspecPos   = strpos($method, 'htmlspecialchars', (int) $labelLinePos);
+        $nextAssignPos = strpos($method, "\$cUser[", (int) $labelLinePos + 1);
+
+        // htmlspecialchars must not appear between the label assignment and the next field
+        if ($htmlspecPos !== false && $nextAssignPos !== false) {
+            $this->assertGreaterThan(
+                $nextAssignPos,
+                $htmlspecPos,
+                'label field should not be HTML-escaped — it goes through JSON encoding, not direct HTML injection'
+            );
+        } else {
+            // htmlspecialchars is not present at all after the label line — correct
+            $this->addToAssertionCount(1);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // DATATABLE_COLUMNS — sortable column keys (issue #937)
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::DATATABLE_COLUMNS
+     *
+     * Columns 6–9 must carry a non-empty sort key so that DataTables can request
+     * server-side ordering and PapersManager::getListQuery() can resolve the
+     * appropriate JOIN. An empty string silently disables the sort.
+     */
+    public function testDatatableColumnsDefinesSortKeyForReviewers(): void
+    {
+        $this->assertStringContainsString(
+            "'6' => 'reviewer_sort'",
+            $this->source,
+            'Column 6 (Reviewers) must be mapped to reviewer_sort in DATATABLE_COLUMNS; empty string disables server-side ordering'
+        );
+    }
+
+    public function testDatatableColumnsDefinesSortKeyForEditors(): void
+    {
+        $this->assertStringContainsString(
+            "'7' => 'editor_sort'",
+            $this->source,
+            'Column 7 (Editors) must be mapped to editor_sort in DATATABLE_COLUMNS; empty string disables server-side ordering'
+        );
+    }
+
+    public function testDatatableColumnsDefinesSortKeyForCopyEditors(): void
+    {
+        $this->assertStringContainsString(
+            "'8' => 'copyeditor_sort'",
+            $this->source,
+            'Column 8 (Copy editors) must be mapped to copyeditor_sort in DATATABLE_COLUMNS; empty string disables server-side ordering'
+        );
+    }
+
+    public function testDatatableColumnsDefinesSortKeyForContributor(): void
+    {
+        $this->assertStringContainsString(
+            "'9' => 'contributor_sort'",
+            $this->source,
+            'Column 9 (Contributor) must be mapped to contributor_sort in DATATABLE_COLUMNS; empty string silently ignores the sort request'
+        );
+    }
+
+    /**
+     * submitted.js must not mark columns 6, 7, or 8 as orderable:false.
+     * Only the title column (3) remains non-sortable after issue #937.
+     */
+    public function testJsDoesNotBlockSortingOnColumns678(): void
+    {
+        $js = file_get_contents(dirname(APPLICATION_PATH) . '/public/js/paper/submitted.js');
+
+        $this->assertDoesNotMatchRegularExpression(
+            '/targets\s*:\s*\[\s*3\s*,\s*6/',
+            $js,
+            'submitted.js must not declare columns 6, 7, or 8 as orderable:false — they are now sortable'
+        );
+        $this->assertMatchesRegularExpression(
+            '/targets\s*:\s*\[\s*3\s*\]\s*,\s*orderable\s*:\s*false/',
+            $js,
+            'submitted.js must use targets:[3] with orderable:false — only the title column is non-sortable for administratepaper/list'
+        );
+    }
+
+    /**
+     * @covers AdministratepaperController::updatedeadlineAction
+     * @covers AdministratepaperController::savenewdeadlineAction
+     *
+     * Regression #1010: The allowed range for modifying the rating deadline
+     * must be calculated relative to the original assignment deadline,
+     * not relative to today's date.
+     */
+    public function testDeadlineModificationActionsUseOriginalDeadlineInsteadOfToday(): void
+    {
+        $updatedeadline = $this->extractMethod('updatedeadlineAction');
+        $savenewdeadline = $this->extractMethod('savenewdeadlineAction');
+
+        // updatedeadlineAction check
+        $this->assertStringContainsString(
+            "\$deadline = date('Y-m-d', strtotime(\$oAssignment->getDeadline()))",
+            $updatedeadline,
+            'BUG #1010: updatedeadlineAction must use the original assignment deadline for range calculation'
+        );
+        $this->assertStringNotContainsString(
+            "Episciences_Tools::addDateInterval(date('Y-m-d')",
+            $updatedeadline,
+            'BUG #1010: updatedeadlineAction should no longer use today\'s date for range calculation'
+        );
+
+        // savenewdeadlineAction check
+        $this->assertStringContainsString(
+            "\$deadline = date('Y-m-d', strtotime(\$assignment->getDeadline()))",
+            $savenewdeadline,
+            'BUG #1010: savenewdeadlineAction must use the original assignment deadline for range calculation'
+        );
+        $this->assertStringNotContainsString(
+            "\$today = date('Y-m-d')",
+            $savenewdeadline,
+            'BUG #1010: savenewdeadlineAction should no longer use today\'s date for range calculation'
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // BUG — Zenodo: posted identifier overwrites VERSION, IDENTIFIER not saved
+    // ---------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savenewpostedversionAction
+     *
+     * Bug: for repositories where the posted value is an identifier rather than
+     * a version number (e.g. Zenodo), the 'hookVersion' hook must be given
+     * 'context' => ['previousVersion' => ...] so it can fall back to
+     * previousVersion + 1 when the repository does not expose an explicit
+     * version number. Without it, Episciences_Repositories_Zenodo_Hooks::hookVersion()
+     * returns [], the whole conversion block is skipped, and the raw posted
+     * identifier is written into VERSION while IDENTIFIER is never updated.
+     */
+    public function testSavenewpostedversionActionPassesPreviousVersionContextToHookVersion(): void
+    {
+        $method = $this->extractMethod('savenewpostedversionAction');
+
+        $this->assertMatchesRegularExpression(
+            '/callHook\(\s*\'hookVersion\'\s*,\s*\[.*?\'context\'\s*=>\s*\[\s*\'previousVersion\'\s*=>\s*\$paper->getVersion\(\)/s',
+            $method,
+            "BUG: savenewpostedversionAction must pass 'context' => ['previousVersion' => \$paper->getVersion()] "
+            . "to the 'hookVersion' hook, otherwise Zenodo's hookVersion() cannot increment the version and "
+            . 'the posted identifier ends up written into VERSION while IDENTIFIER is left untouched'
+        );
     }
 }

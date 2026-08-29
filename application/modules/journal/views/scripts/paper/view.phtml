@@ -199,7 +199,8 @@ if ($paper->isPublished()) {
 <?php
 $this->headTitle("#" . $paper->getDocid() . ' - ' . $paper->getTitle($language, true));
 $this->jQuery()->addJavascriptFile('/js/paper/view.js');
-
+$this->jQuery()->addJavascriptFile('/js/common/utils.js');
+$this->jQuery()->addJavascriptFile('/js/paper/edit_master_file.js');
 ?>
 
 <?php if ($this->isAllowedToBackToAdminPage): ?>

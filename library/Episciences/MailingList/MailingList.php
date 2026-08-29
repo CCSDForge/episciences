@@ -21,6 +21,12 @@ class MailingList
     /** @var int */
     protected $_status = 1;
 
+    /** @var string|null */
+    protected $_createdAt = null;
+
+    /** @var string|null */
+    protected $_updatedAt = null;
+
     /** @var array<int> */
     protected $_users = [];
 
@@ -76,6 +82,7 @@ class MailingList
     {
         $rvcode = strtolower($rvcode);
         $subName = preg_replace('/[^a-zA-Z0-9._-]/', '', $subName);
+        $subName = ltrim($subName, '-');
         $subName = strtolower($subName);
         $suffix = '@' . (defined('DOMAIN') ? DOMAIN : 'episciences.org');
 
@@ -138,6 +145,28 @@ class MailingList
     public function setStatus(int $status): self
     {
         $this->_status = $status;
+        return $this;
+    }
+
+    public function getCreatedAt(): ?string
+    {
+        return $this->_createdAt;
+    }
+
+    public function setCreatedAt(?string $createdAt): self
+    {
+        $this->_createdAt = $createdAt;
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?string
+    {
+        return $this->_updatedAt;
+    }
+
+    public function setUpdatedAt(?string $updatedAt): self
+    {
+        $this->_updatedAt = $updatedAt;
         return $this;
     }
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Authentification sur Episciences
+ * Authentication on Episciences
  *
  */
 class Episciences_Auth extends Ccsd_Auth
@@ -13,8 +13,8 @@ class Episciences_Auth extends Ccsd_Auth
     public const ANONYMOUS_UID = 0;
 
     /**
-     * Récupération des privilèges de l'utilisateur pour le site actuel
-     * @return array
+     * Retrieve user privileges for the current site
+     * @return list<string>
      */
     public static function getRoles(): array
     {
@@ -27,32 +27,32 @@ class Episciences_Auth extends Ccsd_Auth
         return $roles;
     }
 
-    public static function getFullName()
+    public static function getFullName(): ?string
     {
         return self::getInstance()->getIdentity()->getFullName();
     }
 
-    public static function getEmail()
+    public static function getEmail(): ?string
     {
         return self::getInstance()->getIdentity()->getEmail();
     }
 
-    public static function getFirstname()
+    public static function getFirstname(): ?string
     {
         return self::getInstance()->getIdentity()->getFirstname();
     }
 
-    public static function getLastname()
+    public static function getLastname(): ?string
     {
         return self::getInstance()->getIdentity()->getLastname();
     }
 
-    public static function getLangueid()
+    public static function getLangueid(): mixed
     {
         return self::getInstance()->getIdentity()->getLangueid();
     }
 
-    public static function isWebmaster($rvid = RVID, $strict = false): bool
+    public static function isWebmaster(int $rvid = RVID, bool $strict = false): bool
     {
         return self::is(Episciences_Acl::ROLE_WEBMASTER, $rvid) || (!$strict && self::isAdministrator($rvid));
     }
@@ -60,11 +60,11 @@ class Episciences_Auth extends Ccsd_Auth
     /**
      * check if logged-in user has permission $role for a given journal
      * if $rvid is null, check roles in all journals
-     * @param $role
-     * @param int $rvid
+     * @param string $role
+     * @param int|null $rvid
      * @return bool
      */
-    public static function is($role, $rvid = RVID): bool
+    public static function is(string $role, int|null $rvid = RVID): bool
     {
         // get user roles list for each journal
         if (self::isLogged()) {
@@ -74,24 +74,24 @@ class Episciences_Auth extends Ccsd_Auth
         }
 
         // if $rvid is set, only return roles list for this journal
-        if (is_numeric($rvid)) {
-            $user_roles = $user_roles[$rvid];
+        if ($rvid !== null) {
+            $user_roles = $user_roles[$rvid] ?? [];
         }
 
         return Ccsd_Tools::in_array_r($role, $user_roles);
     }
 
-    public static function isAdministrator($rvid = RVID, $strict = false): bool
+    public static function isAdministrator(int $rvid = RVID, bool $strict = false): bool
     {
         return self::is(Episciences_Acl::ROLE_ADMIN, $rvid) || (!$strict && self::isChiefEditor($rvid));
     }
 
-    public static function isChiefEditor($rvid = RVID, $strict = false): bool
+    public static function isChiefEditor(int $rvid = RVID, bool $strict = false): bool
     {
         return self::is(Episciences_Acl::ROLE_CHIEF_EDITOR, $rvid) || (!$strict && self::isRoot($rvid));
     }
 
-    public static function isRoot($rvid = RVID): bool
+    public static function isRoot(int $rvid = RVID): bool
     {
         return self::is(Episciences_Acl::ROLE_ROOT, $rvid);
     }
@@ -106,31 +106,29 @@ class Episciences_Auth extends Ccsd_Auth
         return self::is(Episciences_Acl::ROLE_AUTHOR, $rvId);
     }
 
-    public static function getScreenName()
+    public static function getScreenName(): string
     {
         return self::getInstance()->getIdentity()->getScreenName();
     }
 
     public static function isAllowedToManagePaper(): bool
     {
-        return (
-            self::isSecretary() ||
+        return self::isSecretary() ||
             self::isEditor() ||
-            self::isGuestEditor()
-        );
+            self::isGuestEditor();
     }
 
-    public static function isSecretary($rvid = RVID, $strict = false): bool
+    public static function isSecretary(int $rvid = RVID, bool $strict = false): bool
     {
         return self::is(Episciences_Acl::ROLE_SECRETARY, $rvid) || (!$strict && self::isAdministrator($rvid));
     }
 
-    public static function isEditor($rvid = RVID, $strict = false): bool
+    public static function isEditor(int $rvid = RVID, bool $strict = false): bool
     {
         return self::is(Episciences_Acl::ROLE_EDITOR, $rvid) || (!$strict && self::isAdministrator($rvid));
     }
 
-    public static function isGuestEditor($rvid = RVID, $strict = false): bool
+    public static function isGuestEditor(int $rvid = RVID, bool $strict = false): bool
     {
         return self::is(Episciences_Acl::ROLE_GUEST_EDITOR, $rvid) || (!$strict && self::isAdministrator($rvid));
     }
@@ -140,18 +138,16 @@ class Episciences_Auth extends Ccsd_Auth
      */
     public static function isAllowedToManageDoi(): bool
     {
-        return (
-            self::isSecretary() ||
+        return self::isSecretary() ||
             self::isEditor() ||
             self::isGuestEditor() ||
             self::isChiefEditor() ||
-            self::isCopyEditor()
-        );
+            self::isCopyEditor();
     }
 
-    public static function isAllowedToManageOrcidAuthor($isOwner = false): bool
+    public static function isAllowedToManageOrcidAuthor(bool $isOwner = false): bool
     {
-        return (self::isAllowedToManagePaper() || $isOwner);
+        return self::isAllowedToManagePaper() || $isOwner;
     }
 
     /**
@@ -169,33 +165,28 @@ class Episciences_Auth extends Ccsd_Auth
      */
     public static function isAllowedToSendMail(): bool
     {
-        return (
-            self::isSecretary() ||
+        return self::isSecretary() ||
             self::isEditor() ||
             self::isGuestEditor() ||
-            self::isReviewer()
-        );
+            self::isReviewer();
     }
 
-    public static function isReviewer($rvid = RVID): bool
+    public static function isReviewer(int $rvid = RVID): bool
     {
         return self::is(Episciences_Acl::ROLE_REVIEWER, $rvid);
     }
 
     /**
-     * Possibilité de déposer un rapport de relecture
+     * Ability to upload a peer review report
      * @return bool
      */
     public static function isAllowedToUploadPaperReport(): bool
     {
-        return (
-            self::isSecretary() ||
-            self::isEditor()
-        );
+        return self::isSecretary() || self::isEditor();
     }
 
     /**
-     * Autorise de lister les papiers assignés à un utilisateur
+     * Authorizes listing papers assigned to a user
      * @return bool
      */
 
@@ -205,19 +196,14 @@ class Episciences_Auth extends Ccsd_Auth
         try {
             $journalSettings = Zend_Registry::get('reviewSettings');
 
-            return (
-                !self::isSecretary() &&
-                (
-                    self::isEditor(RVID, true) ||
-                    self::isGuestEditor(RVID, true)
-                ) &&
-                (
-                    isset($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS]) && !empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS])
-                )
-            );
+            return !self::isSecretary() &&
+                (self::isEditor(RVID, true) || self::isGuestEditor(RVID, true)) &&
+                isset($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS]) &&
+                !empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_EDITORS]);
 
         } catch (Zend_Exception $e) {
-            if (APPLICATION_MODULE!=='oai') {
+            // @phpstan-ignore notIdentical.alwaysTrue
+            if (APPLICATION_MODULE !== OAI) {
                 trigger_error($e->getMessage());
             }
             return false;
@@ -242,13 +228,9 @@ class Episciences_Auth extends Ccsd_Auth
         return self::getPhotoVersionAsHash($session->photoVersion);
     }
 
-    /**
-     * @param $photoVersion
-     * @return string
-     */
-    public static function getPhotoVersionAsHash($photoVersion): string
+    public static function getPhotoVersionAsHash(int $photoVersion): string
     {
-        //add some salt with uid
+        // add some salt with uid
         return sha1(self::getUid() . $photoVersion);
     }
 
@@ -284,8 +266,11 @@ class Episciences_Auth extends Ccsd_Auth
      */
     public static function hasRealIdentity(): bool
     {
-
-        return self::isLogged() && self::getOriginalIdentity()->getUid() === self::getUid();
+        if (!self::isLogged()) {
+            return false;
+        }
+        $original = self::getOriginalIdentity();
+        return $original !== null && $original->getUid() === self::getUid();
     }
 
     /**
@@ -294,6 +279,9 @@ class Episciences_Auth extends Ccsd_Auth
     public static function getOriginalIdentity(): ?Episciences_User
     {
         $identities = self::getAllIdentities();
+        if (empty($identities)) {
+            return null;
+        }
         return $identities[array_key_first($identities)];
     }
 
@@ -384,15 +372,10 @@ class Episciences_Auth extends Ccsd_Auth
         try {
             $journalSettings = Zend_Registry::get('reviewSettings');
 
-            return (
-                !self::isSecretary() &&
-                (
-                    self::isCopyEditor()
-                ) &&
-                (
-                    isset($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS]) && !empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS])
-                )
-            );
+            return !self::isSecretary() &&
+                self::isCopyEditor() &&
+                isset($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS]) &&
+                !empty($journalSettings[Episciences_Review::SETTING_ENCAPSULATE_COPY_EDITORS]);
 
         } catch (Zend_Exception $e) {
             trigger_error($e->getMessage());

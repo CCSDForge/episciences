@@ -164,9 +164,20 @@ class Episciences_Repositories_ARCHE_Hooks implements CommonHooksInterface, Link
             $desValue = Episciences_Tools::epi_html_decode((string)$descNode, ['HTML.AllowedElements' => 'p']);
             $value = trim(str_replace(['<p>', '</p>'], '', $desValue));
             if (!empty($value)) {
+                $nodeLanguage = '';
+                $xmlAttrs = $descNode->attributes('xml', true);
+                if (isset($xmlAttrs['lang'])) {
+                    $nodeLanguage = (string)$xmlAttrs['lang'];
+                }
+                if (empty($nodeLanguage)) {
+                    $langXpath = $descNode->xpath('@xml:lang');
+                    if (!empty($langXpath)) {
+                        $nodeLanguage = (string)$langXpath[0];
+                    }
+                }
                 $descriptions[] = [
-                    'value' => $value,
-                    'language' => (string)$descNode[self::XML_LANG_ATTR] ?: $language
+                    'value'    => $value,
+                    'language' => $nodeLanguage ?: $language,
                 ];
             }
         }

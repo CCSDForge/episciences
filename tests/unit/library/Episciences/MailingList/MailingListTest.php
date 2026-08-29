@@ -47,8 +47,9 @@ class MailingListTest extends TestCase
         self::assertSame(0, $this->list->getStatus());
     }
 
-    public function testDefaultStatusIsOpen(): void
+    public function testDefaultStatusIsEnabled(): void
     {
+        // Status 1 means enabled (active). The default must be enabled.
         self::assertSame(1, $this->list->getStatus());
     }
 
@@ -250,6 +251,82 @@ class MailingListTest extends TestCase
     }
 
     // ------------------------------------------------------------------
+    // created_at / updated_at
+    // ------------------------------------------------------------------
+
+    public function testGetCreatedAtDefaultIsNull(): void
+    {
+        self::assertNull($this->list->getCreatedAt());
+    }
+
+    public function testGetUpdatedAtDefaultIsNull(): void
+    {
+        self::assertNull($this->list->getUpdatedAt());
+    }
+
+    public function testSetGetCreatedAt(): void
+    {
+        $this->list->setCreatedAt('2026-03-12 10:00:00');
+        self::assertSame('2026-03-12 10:00:00', $this->list->getCreatedAt());
+    }
+
+    public function testSetGetUpdatedAt(): void
+    {
+        $this->list->setUpdatedAt('2026-05-20 15:30:00');
+        self::assertSame('2026-05-20 15:30:00', $this->list->getUpdatedAt());
+    }
+
+    public function testSetCreatedAtAcceptsNull(): void
+    {
+        $this->list->setCreatedAt('2026-01-01 00:00:00');
+        $this->list->setCreatedAt(null);
+        self::assertNull($this->list->getCreatedAt());
+    }
+
+    public function testSetUpdatedAtAcceptsNull(): void
+    {
+        $this->list->setUpdatedAt('2026-01-01 00:00:00');
+        $this->list->setUpdatedAt(null);
+        self::assertNull($this->list->getUpdatedAt());
+    }
+
+    public function testSetOptionsPopulatesCreatedAt(): void
+    {
+        $list = new MailingList(['created_at' => '2026-01-01 00:00:00']);
+        self::assertSame('2026-01-01 00:00:00', $list->getCreatedAt());
+    }
+
+    public function testSetOptionsPopulatesUpdatedAt(): void
+    {
+        $list = new MailingList(['updated_at' => '2026-05-20 12:00:00']);
+        self::assertSame('2026-05-20 12:00:00', $list->getUpdatedAt());
+    }
+
+    public function testToArrayDoesNotIncludeCreatedAt(): void
+    {
+        $this->list->setCreatedAt('2026-01-01 00:00:00');
+        self::assertArrayNotHasKey('created_at', $this->list->toArray());
+    }
+
+    public function testToArrayDoesNotIncludeUpdatedAt(): void
+    {
+        $this->list->setUpdatedAt('2026-01-01 00:00:00');
+        self::assertArrayNotHasKey('updated_at', $this->list->toArray());
+    }
+
+    public function testFluentInterfaceCreatedAt(): void
+    {
+        $result = $this->list->setCreatedAt('2026-01-01 00:00:00');
+        self::assertSame($this->list, $result);
+    }
+
+    public function testFluentInterfaceUpdatedAt(): void
+    {
+        $result = $this->list->setUpdatedAt('2026-01-01 00:00:00');
+        self::assertSame($this->list, $result);
+    }
+
+    // ------------------------------------------------------------------
     // buildFullName edge cases
     // ------------------------------------------------------------------
 
@@ -261,6 +338,43 @@ class MailingListTest extends TestCase
         // All chars stripped → treated as empty → mandatory list form
         $fullName = MailingList::buildFullName('DEV', '!!! @@@');
         self::assertSame('dev@episciences.org', $fullName);
+    }
+
+    /**
+     * A user who types "-editors" in the sub-name field (thinking the prefix
+     * already ends with the separator) must not produce a double dash.
+     * buildFullName() strips any leading hyphens from the sub-name before
+     * prepending its own separator.
+     *
+     * @covers \Episciences\MailingList\MailingList::buildFullName
+     */
+    public function testBuildFullNameStripsLeadingHyphensFromSubName(): void
+    {
+        $fullName = MailingList::buildFullName('DEV', '-editors');
+        self::assertSame('dev-editors@episciences.org', $fullName);
+    }
+
+    /**
+     * Multiple leading hyphens must all be removed.
+     *
+     * @covers \Episciences\MailingList\MailingList::buildFullName
+     */
+    public function testBuildFullNameStripsMultipleLeadingHyphens(): void
+    {
+        $fullName = MailingList::buildFullName('journal', '--board');
+        self::assertSame('journal-board@episciences.org', $fullName);
+    }
+
+    /**
+     * A sub-name that is only hyphens collapses to empty after stripping,
+     * so the result is the mandatory list address.
+     *
+     * @covers \Episciences\MailingList\MailingList::buildFullName
+     */
+    public function testBuildFullNameSubNameOfOnlyHyphensYieldsMainList(): void
+    {
+        $fullName = MailingList::buildFullName('journal', '---');
+        self::assertSame('journal@episciences.org', $fullName);
     }
 
     /**

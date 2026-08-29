@@ -29,9 +29,11 @@ class MenuManager {
         this._initEventListeners();
 
         // Initial setup for existing items
-        this.rootList.querySelectorAll('.logo, .menu-sortable > li').forEach(li => {
-            this._initSync(li);
-        });
+        this.rootList
+            .querySelectorAll('.logo, .menu-sortable > li')
+            .forEach(li => {
+                this._initSync(li);
+            });
 
         // Initially toggle required status for all forms based on their visibility
         this.rootList.querySelectorAll('.menu-edit-form').forEach(form => {
@@ -49,9 +51,9 @@ class MenuManager {
         // The input name format is pages_IDX[labels][LANG]
         const labelInput = li.querySelector(`input[name$="[labels][${lang}]"]`);
         const itemNameSpan = li.querySelector('.menu-item-name');
-        
+
         if (labelInput && itemNameSpan) {
-            labelInput.addEventListener('input', (e) => {
+            labelInput.addEventListener('input', e => {
                 itemNameSpan.textContent = e.target.value;
             });
             // Initial value (already escaped by PHP, but textContent is safe anyway)
@@ -79,7 +81,7 @@ class MenuManager {
         });
 
         // Delegate actions within the list
-        this.rootList.addEventListener('click', (e) => {
+        this.rootList.addEventListener('click', e => {
             const btn = e.target.closest('button[data-action]');
             if (!btn) return;
 
@@ -93,22 +95,26 @@ class MenuManager {
     }
 
     /**
-     * Toggle the required attribute on inputs within a container to avoid 
+     * Toggle the required attribute on inputs within a container to avoid
      * HTML5 validation errors on hidden fields.
      *
-     * @param {HTMLElement} container 
-     * @param {boolean}     isVisible 
+     * @param {HTMLElement} container
+     * @param {boolean}     isVisible
      */
     toggleRequired(container, isVisible) {
         const targets = container.querySelectorAll('input, select, textarea');
         targets.forEach(el => {
             if (isVisible) {
-                // If it's a child of a currently hidden container (.multicheckbox or similar), 
+                // If it's a child of a currently hidden container (.multicheckbox or similar),
                 // don't restore required yet.
                 let parentHidden = false;
                 let p = el.parentElement;
                 while (p && p !== container) {
-                    if (p.hidden || (p.classList.contains('form-group') && p.style.display === 'none')) {
+                    if (
+                        p.hidden ||
+                        (p.classList.contains('form-group') &&
+                            p.style.display === 'none')
+                    ) {
                         parentHidden = true;
                         break;
                     }
@@ -179,7 +185,9 @@ class MenuManager {
      * @returns {Promise<Response>}
      */
     async post(url, body) {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const csrfToken = document.querySelector(
+            'meta[name="csrf-token"]'
+        )?.content;
         const res = await fetch(url, {
             method: 'POST',
             headers: {
@@ -228,13 +236,16 @@ class MenuManager {
             animation: 150,
             ghostClass: 'menu-drop-placeholder',
             swapThreshold: 0.65,
-            onMove: (evt) => {
+            onMove: evt => {
                 // Prevent dropping into a list that is itself nested inside a no-nest item.
                 // (no-nest items are leaf pages that cannot become parents.)
                 // Because no-nest <li> elements never have a child <ul> in the DOM,
                 // this situation cannot occur naturally — the check is kept for safety.
                 const destParentLi = evt.to.parentElement?.closest('li');
-                if (destParentLi && destParentLi.classList.contains('no-nest')) {
+                if (
+                    destParentLi &&
+                    destParentLi.classList.contains('no-nest')
+                ) {
                     return false;
                 }
                 // _getDepth() returns 1 for the root list, 2 for first nested ul,
@@ -254,7 +265,9 @@ class MenuManager {
      */
     _initAllSortables() {
         this._initSortable(this.rootList);
-        this.rootList.querySelectorAll('ul').forEach((ul) => this._initSortable(ul));
+        this.rootList
+            .querySelectorAll('ul')
+            .forEach(ul => this._initSortable(ul));
     }
 
     /**
@@ -263,11 +276,9 @@ class MenuManager {
      * @param {HTMLLIElement} li
      */
     _initNewSortables(li) {
-        li.querySelectorAll('ul').forEach((ul) => {
+        li.querySelectorAll('ul').forEach(ul => {
             // Only init if not already managed
-            const alreadyInit = this._sortableInstances.some(
-                (s) => s.el === ul
-            );
+            const alreadyInit = this._sortableInstances.some(s => s.el === ul);
             if (!alreadyInit) this._initSortable(ul);
         });
     }
@@ -281,7 +292,10 @@ class MenuManager {
      */
     async saveOrder() {
         try {
-            await this.post('/website/ajaxorder', this.serializeOrder(this.rootList));
+            await this.post(
+                '/website/ajaxorder',
+                this.serializeOrder(this.rootList)
+            );
         } catch (err) {
             console.error('MenuManager: saveOrder failed', err);
         }
@@ -305,55 +319,60 @@ class MenuManager {
 
             const clone = template.querySelector('li').cloneNode(true);
             const pageContent = clone.querySelector('.page-content');
-            
+
             // Determine the new page id from the hidden input inside the injected form
             // We need to parse the HTML first to find the hidden input
             const tempDiv = document.createElement('div');
             this._safeSetInnerHTML(tempDiv, html);
-            
+
             // Try specific pageid first, fallback to any hidden input (as in tests)
             let hiddenInput = tempDiv.querySelector('input[name$="[pageid]"]');
             if (!hiddenInput) {
                 hiddenInput = tempDiv.querySelector('input[type="hidden"]');
             }
             const pageIdx = hiddenInput ? hiddenInput.value : Date.now();
-            
+
             // Re-wrap the HTML in the same structure as menu-page.phtml
             const formContainer = document.createElement('div');
             formContainer.className = 'menu-edit-form';
             formContainer.id = `form-${pageIdx}`;
             // New pages are shown by default to allow immediate editing
             formContainer.hidden = false;
-            
+
             const hr = document.createElement('hr');
             formContainer.appendChild(hr);
-            
+
             // Move all elements from tempDiv to formContainer
             while (tempDiv.firstChild) {
                 formContainer.appendChild(tempDiv.firstChild);
             }
-            
+
             pageContent.appendChild(formContainer);
 
             clone.id = `page_${pageIdx}`;
-            
+
             // Set aria-controls and aria-expanded on the edit button
             const editBtn = clone.querySelector('[data-action="toggle-edit"]');
             if (editBtn) {
                 editBtn.setAttribute('aria-controls', `form-${pageIdx}`);
                 editBtn.setAttribute('aria-expanded', 'true');
             }
-            
+
             // Also update the delete button idx if needed (though it uses pageIdx from the ID usually)
-            const deleteBtn = clone.querySelector('[data-action="delete-page"]');
+            const deleteBtn = clone.querySelector(
+                '[data-action="delete-page"]'
+            );
             if (deleteBtn) {
                 deleteBtn.dataset.idx = pageIdx;
             }
 
             if (type === 'folder') {
-                const icon = clone.querySelector('.menu-item-type-icon .glyphicon');
+                const icon = clone.querySelector(
+                    '.menu-item-type-icon .glyphicon'
+                );
                 if (icon) {
-                    icon.className = 'glyphicon glyphicon-folder-open menu-icon-folder';
+                    icon.className =
+                        'glyphicon glyphicon-folder-open menu-icon-folder';
                 }
             } else {
                 clone.classList.add('no-nest');
@@ -361,11 +380,12 @@ class MenuManager {
 
             // Initialise sync between label inputs and the item name
             this._initSync(clone);
-            
+
             // Add a default name for new pages
             const itemNameSpan = clone.querySelector('.menu-item-name');
             if (itemNameSpan && !itemNameSpan.textContent) {
-                itemNameSpan.textContent = type === 'folder' ? 'Nouveau dossier' : 'Nouvelle page';
+                itemNameSpan.textContent =
+                    type === 'folder' ? 'Nouveau dossier' : 'Nouvelle page';
             }
 
             this.rootList.appendChild(clone);
@@ -377,7 +397,9 @@ class MenuManager {
             }
 
             // ACCESSIBILITY: Move focus to the first input of the new form
-            const firstInput = formContainer.querySelector('input:not([type="hidden"]), select, textarea');
+            const firstInput = formContainer.querySelector(
+                'input:not([type="hidden"]), select, textarea'
+            );
             if (firstInput) {
                 firstInput.focus();
             }
@@ -416,9 +438,13 @@ class MenuManager {
             // Re-enable the page type in the <select> if it was disabled
             const typeSelect = document.getElementById('type');
             if (typeSelect) {
-                const pageType = document.getElementById(`pages_${idx}-type`)?.className;
+                const pageType = document.getElementById(
+                    `pages_${idx}-type`
+                )?.className;
                 if (pageType) {
-                    const opt = typeSelect.querySelector(`option[type="${pageType}"]`);
+                    const opt = typeSelect.querySelector(
+                        `option[type="${pageType}"]`
+                    );
                     if (opt) opt.removeAttribute('disabled');
                 }
             }

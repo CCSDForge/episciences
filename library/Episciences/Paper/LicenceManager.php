@@ -15,12 +15,12 @@ class Episciences_Paper_LicenceManager
     /**
      * @param string|int $repoId
      * @param string $identifier
-     * @param int $version
+     * @param float $version
      * @return string
      * @throws GuzzleException
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public static function getApiResponseByRepoId($repoId, string $identifier, int $version): string
+    public static function getApiResponseByRepoId($repoId, string $identifier, float $version): string
     {
         if (empty(trim($identifier))) {
             return '';
@@ -112,9 +112,12 @@ class Episciences_Paper_LicenceManager
         }
 
         $xmlString = $response->getBody()->getContents();
+        libxml_use_internal_errors(true);
         $metadata = simplexml_load_string($xmlString);
+        libxml_clear_errors();
         if ($metadata === false) {
             trigger_error('Invalid XML', E_USER_WARNING);
+            return '';
         }
 
         // Register namespaces for OAI-PMH and DataCite
@@ -322,7 +325,7 @@ class Episciences_Paper_LicenceManager
             try {
                 //Prepares and executes an SQL
                 /** @var Zend_Db_Statement_Interface $result */
-                $result = $db->query($sql . implode(', ', $values) . ' ON DUPLICATE KEY UPDATE licence=VALUES(licence)');
+                $result = $db->query($sql . implode(', ', $values) . ' AS new_row ON DUPLICATE KEY UPDATE licence=new_row.licence');
                 $affectedRows = $result->rowCount();
 
             } catch (Exception $e) {

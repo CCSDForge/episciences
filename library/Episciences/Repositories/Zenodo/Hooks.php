@@ -50,12 +50,11 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
             $tmpData = [];
 
             $explodedChecksum = explode(':', $file['checksum']);
-            $explodedFileName = explode('.', $file['key']);
 
             $tmpData['doc_id'] = $hookParams['docId'];
             $tmpData['source'] = $hookParams['repoId'];
             $tmpData['file_name'] = $file['key'];
-            $tmpData['file_type'] = $explodedFileName[array_key_last($explodedFileName)] ?? 'undefined';
+            $tmpData['file_type'] = pathinfo($file['key'], PATHINFO_EXTENSION);
             $tmpData['file_size'] = $file['size'];
             $tmpData['checksum'] = $explodedChecksum[array_key_last($explodedChecksum)] ?? null;
             $tmpData['checksum_type'] = $explodedChecksum[array_key_first($explodedChecksum)] ?? null;
@@ -155,8 +154,17 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
      */
     public static function hookVersion(array $hookParams): array
     {
+
+        //@see https://semver.org/
         $response = self::checkResponse($hookParams);
-        $version = $response['metadata']['version'] ?? 1;
+
+        $previousVersion = $hookParams['context']['previousVersion'] ?? null;
+        $version = $response['metadata']['version'] ?? ($previousVersion !== null ? $previousVersion + 1 : null);
+
+        if (!$version) {
+            return [];
+        }
+
         return ['version' => $version];
     }
 
@@ -167,27 +175,6 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
     public static function hookIsOpenAccessRight(array $hookParams): array
     {
         return Episciences_Repositories_Common::isOpenAccessRight($hookParams);
-    }
-
-    public static function hookHasDoiInfoRepresentsAllVersions(array $hookParams): array
-    {
-
-        $hasDoiInfoRepresentsAllVersions = false;
-
-        if (isset($hookParams['repoId'], $hookParams['record'], $hookParams[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY])) {
-
-            $pattern = '<dc:relation>';
-            $pattern .= Episciences_DoiTools::DOI_ORG_PREFIX . Episciences_Repositories::getRepoDoiPrefix($hookParams['repoId']) . '/' . mb_strtolower(Episciences_Repositories::getLabel($hookParams['repoId'])) . '.';
-            $pattern .= $hookParams[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY];
-            $pattern .= '</dc:relation>';
-
-            $found = Episciences_Tools::extractPattern('#' . $pattern . '#', $hookParams['record']);
-
-            $hasDoiInfoRepresentsAllVersions = !empty($found);
-        }
-
-        return ['hasDoiInfoRepresentsAllVersions' => $hasDoiInfoRepresentsAllVersions];
-
     }
 
     public static function hookGetConceptIdentifierFromRecord(array $hookParams): array
@@ -228,8 +215,8 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
 
         $response = self::checkResponse($hookParams);
 
-        if (array_key_exists(Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY, $response)) {
-            $conceptIdentifier = $response[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY];
+        if (array_key_exists('conceptrecid', $response)) {
+            $conceptIdentifier = $response['conceptrecid'];
         }
 
         return [Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY => $conceptIdentifier];
@@ -335,7 +322,7 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
         $creatorsDc = [];
         $type = []; // title, type & subtype;
         $authors = []; // enrichment
-        $metadata = $data['metadata'];
+        $metadata = $data['metadata'] ?? [];
 
         if (isset($metadata['resource_type'])) {
             $type = array_values($metadata['resource_type']);
@@ -352,7 +339,8 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
 
         $dcType = mb_strtolower($type[Episciences_Paper::TITLE_TYPE_INDEX] ??
             $type[Episciences_Paper::TYPE_TYPE_INDEX] ??
-            $type[Episciences_Paper::TYPE_SUBTYPE_INDEX]);
+            $type[Episciences_Paper::TYPE_SUBTYPE_INDEX] ??
+            '');
 
 
         if (isset($metadata['creators']) && is_array($metadata['creators'])) {

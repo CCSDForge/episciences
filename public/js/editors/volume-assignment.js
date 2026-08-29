@@ -71,8 +71,7 @@ function getEditors(button, vid) {
                             { vid: vid }
                         );
                         refreshEditorsRequest.done(function (editors) {
-                            let td = $('#volume_' + vid + ' td:nth-child(4)');
-                            let container = $(td).find('.editors');
+                            let container = $('#volume_' + vid + ' .editors');
                             $(container).hide();
                             $(container).html(editors);
                             $(container).fadeIn();

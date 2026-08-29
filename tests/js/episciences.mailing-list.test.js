@@ -46,10 +46,20 @@ describe('EpisciencesMailingList', () => {
 
         global.fetch = jest.fn(() =>
             Promise.resolve({
-                json: () => Promise.resolve({
-                    members: [{ FIRSTNAME: 'New', LASTNAME: 'User', EMAIL: 'new@test.com' }],
-                    csrf: { name: 'mailing_list_preview', value: 'tok_next' }
-                }),
+                json: () =>
+                    Promise.resolve({
+                        members: [
+                            {
+                                FIRSTNAME: 'New',
+                                LASTNAME: 'User',
+                                EMAIL: 'new@test.com',
+                            },
+                        ],
+                        csrf: {
+                            name: 'mailing_list_preview',
+                            value: 'tok_next',
+                        },
+                    }),
             })
         );
 
@@ -63,7 +73,7 @@ describe('EpisciencesMailingList', () => {
             removeUserMsg: 'Remove',
             addedMsg: 'added',
             removedMsg: 'removed',
-            noUsersSelectedMsg: 'None'
+            noUsersSelectedMsg: 'None',
         });
     });
 
@@ -74,7 +84,7 @@ describe('EpisciencesMailingList', () => {
     test('it filters modal users by search text', () => {
         const searchInput = document.getElementById('user-search');
         const rows = document.querySelectorAll('#modal-users-table tbody tr');
-        
+
         searchInput.value = 'jane';
         searchInput.dispatchEvent(new Event('keyup'));
 
@@ -85,7 +95,7 @@ describe('EpisciencesMailingList', () => {
     test('it filters modal users by role', () => {
         const roleFilter = document.getElementById('role-filter');
         const rows = document.querySelectorAll('#modal-users-table tbody tr');
-        
+
         roleFilter.value = 'editor';
         roleFilter.dispatchEvent(new Event('change'));
 
@@ -96,11 +106,15 @@ describe('EpisciencesMailingList', () => {
     test('it adds a user from the modal to the selected users table', () => {
         const addBtn = document.querySelector('.add-user-btn[data-uid="1"]');
         const selectedTable = document.querySelector('#users-table tbody');
-        
+
         addBtn.click();
 
         expect(document.getElementById('user-row-1')).toBeTruthy();
-        expect(document.getElementById('user-row-1').classList.contains('member-row')).toBeTruthy();
+        expect(
+            document
+                .getElementById('user-row-1')
+                .classList.contains('member-row')
+        ).toBeTruthy();
         expect(document.getElementById('no-users-msg')).toBeFalsy();
         expect(selectedTable.innerHTML).toContain('jdoe');
     });
@@ -108,7 +122,7 @@ describe('EpisciencesMailingList', () => {
     test('it removes a user from the selected users table', () => {
         const addBtn = document.querySelector('.add-user-btn[data-uid="1"]');
         addBtn.click();
-        
+
         const removeBtn = document.querySelector('.remove-user');
         removeBtn.click();
 
@@ -134,7 +148,10 @@ describe('EpisciencesMailingList', () => {
         document.getElementById('refresh-preview').click();
         await new Promise(process.nextTick);
 
-        expect(global.fetch).toHaveBeenCalledWith('/preview', expect.objectContaining({ method: 'POST' }));
+        expect(global.fetch).toHaveBeenCalledWith(
+            '/preview',
+            expect.objectContaining({ method: 'POST' })
+        );
     });
 
     test('it re-enables the refresh button after preview completes', async () => {
@@ -170,7 +187,13 @@ describe('EpisciencesMailingList', () => {
 
     test('it shows no-members placeholder when preview returns empty array', async () => {
         global.fetch = jest.fn(() =>
-            Promise.resolve({ json: () => Promise.resolve({ members: [], csrf: { name: 'mailing_list_preview', value: 'tok2' } }) })
+            Promise.resolve({
+                json: () =>
+                    Promise.resolve({
+                        members: [],
+                        csrf: { name: 'mailing_list_preview', value: 'tok2' },
+                    }),
+            })
         );
 
         document.getElementById('refresh-preview').click();
@@ -182,7 +205,9 @@ describe('EpisciencesMailingList', () => {
     });
 
     test('it shows alert and re-enables button on fetch failure', async () => {
-        global.fetch = jest.fn(() => Promise.reject(new Error('Network error')));
+        global.fetch = jest.fn(() =>
+            Promise.reject(new Error('Network error'))
+        );
         global.alert = jest.fn();
 
         const btn = document.getElementById('refresh-preview');
@@ -256,21 +281,27 @@ describe('EpisciencesMailingList', () => {
     test('it announces when a user is added', () => {
         document.querySelector('.add-user-btn[data-uid="1"]').click();
 
-        expect(document.getElementById('member-announcements').textContent).toContain('added');
+        expect(
+            document.getElementById('member-announcements').textContent
+        ).toContain('added');
     });
 
     test('it announces when a user is removed', () => {
         document.querySelector('.add-user-btn[data-uid="1"]').click();
         document.querySelector('.remove-user').click();
 
-        expect(document.getElementById('member-announcements').textContent).toContain('removed');
+        expect(
+            document.getElementById('member-announcements').textContent
+        ).toContain('removed');
     });
 
     test('it announces after the audience preview is refreshed', async () => {
         document.getElementById('refresh-preview').click();
         await new Promise(process.nextTick);
 
-        expect(document.getElementById('member-announcements').textContent).toBe('Updated');
+        expect(
+            document.getElementById('member-announcements').textContent
+        ).toBe('Updated');
     });
 
     describe('initDashboard', () => {
@@ -297,7 +328,7 @@ describe('EpisciencesMailingList', () => {
         test('it copies text to clipboard and shows feedback', () => {
             const copyBtn = document.querySelector('.copy-btn');
             const feedback = document.querySelector('.copy-feedback');
-            
+
             copyBtn.click();
 
             expect(document.execCommand).toHaveBeenCalledWith('copy');

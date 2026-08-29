@@ -29,6 +29,7 @@
                     <thead style="background: #fcfcfc;">
                         <tr>
                             <th scope="col" style="padding: 15px;"><?php echo $this->translate('Name'); ?></th>
+                            <th scope="col" style="padding: 15px;"><?php echo $this->translate('Last updated'); ?></th>
                             <th scope="col" style="padding: 15px;"><?php echo $this->translate('Type'); ?></th>
                             <th scope="col" style="padding: 15px; text-align: center;"><?php echo $this->translate('Members'); ?></th>
                             <th scope="col" style="padding: 15px; text-align: center;"><?php echo $this->translate('Status'); ?></th>
@@ -53,6 +54,20 @@
                                     </div>
                                 </th>
                                 <td style="padding: 15px; vertical-align: middle;">
+                                    <?php
+                                    $updatedAt = $list->getUpdatedAt();
+                                    $dtUpdated = $updatedAt ? \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $updatedAt) : false;
+                                    ?>
+                                    <?php if ($dtUpdated): ?>
+                                        <time datetime="<?php echo $this->escape($dtUpdated->format('c')); ?>"
+                                              title="<?php echo $this->escape($dtUpdated->format('Y-m-d H:i:s')); ?>">
+                                            <?php echo $this->escape($dtUpdated->format('d M Y')); ?>
+                                        </time>
+                                    <?php else: ?>
+                                        <span class="text-muted">—</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="padding: 15px; vertical-align: middle;">
                                     <span class="text-muted"><?php echo $this->translate($list->getType()); ?></span>
                                 </td>
                                 <td style="padding: 15px; vertical-align: middle; text-align: center;">
@@ -62,9 +77,9 @@
                                 </td>
                                 <td style="padding: 15px; vertical-align: middle; text-align: center;">
                                     <?php if ($list->getStatus() == 1): ?>
-                                        <span class="label label-success" style="padding: 4px 8px; border-radius: 12px; font-weight: normal;"><?php echo $this->translate('Open'); ?></span>
+                                        <span class="label label-success" style="padding: 4px 8px; border-radius: 12px; font-weight: normal;"><?php echo $this->escape($this->translate('Enabled')); ?></span>
                                     <?php else: ?>
-                                        <span class="label label-default" style="padding: 4px 8px; border-radius: 12px; font-weight: normal; background-color: #999;"><?php echo $this->translate('Closed'); ?></span>
+                                        <span class="label label-default" style="padding: 4px 8px; border-radius: 12px; font-weight: normal; background-color: #999;"><?php echo $this->escape($this->translate('Disabled')); ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td style="padding: 15px; vertical-align: middle; text-align: right;">

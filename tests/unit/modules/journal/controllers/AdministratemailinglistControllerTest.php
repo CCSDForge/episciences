@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace unit\modules\journal\controllers;
 
 use PHPUnit\Framework\TestCase;
@@ -219,6 +221,103 @@ class AdministratemailinglistControllerTest extends TestCase
             'isPost',
             $method,
             'previewAction() must check isPost() and reject requests that are not HTTP POST'
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // manageAction — auto-disable on empty members (CCE #436)
+    // ---------------------------------------------------------------
+
+    /**
+     * When the resolved member list is empty, manageAction() must set status
+     * to 0 (disabled) and use the "automatically disabled" translation key —
+     * not the legacy "closed" wording which is ambiguous alongside the Type
+     * field's "Open/Members only" vocabulary.
+     */
+    public function testManageActionUsesDisabledLanguageWhenMembersEmpty(): void
+    {
+        $method = $this->extractMethod('manageAction');
+
+        $this->assertStringContainsString(
+            'automatically disabled',
+            $method,
+            'manageAction() must use the "automatically disabled" translation key (not "closed") when auto-disabling an empty list'
+        );
+
+        $this->assertStringNotContainsString(
+            'automatically closed',
+            $method,
+            'manageAction() must not use the legacy "automatically closed" string; use "automatically disabled" instead'
+        );
+    }
+
+    /**
+     * The auto-disable comment in the source must use status 0 and reference
+     * "disabled" to stay consistent with the Status field vocabulary.
+     */
+    public function testManageActionSetsStatusZeroOnEmptyMembers(): void
+    {
+        $method = $this->extractMethod('manageAction');
+
+        $this->assertMatchesRegularExpression(
+            '/setStatus\s*\(\s*0\s*\)/',
+            $method,
+            'manageAction() must call setStatus(0) to disable the list when it has no members'
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // created_at / updated_at — entity contract regression guards
+    // ---------------------------------------------------------------
+
+    /**
+     * MailingList must expose getCreatedAt() and getUpdatedAt() so that
+     * controllers and views can read the timestamps populated by getList()
+     * and getById() without any additional query.
+     */
+    public function testMailingListEntityHasDateGetters(): void
+    {
+        $list = new \Episciences\MailingList\MailingList();
+
+        $this->assertTrue(
+            method_exists($list, 'getCreatedAt'),
+            'MailingList must expose getCreatedAt() to allow views to display the creation date'
+        );
+        $this->assertTrue(
+            method_exists($list, 'getUpdatedAt'),
+            'MailingList must expose getUpdatedAt() to allow views to display the last-updated date'
+        );
+    }
+
+    /**
+     * created_at and updated_at must NOT appear in toArray() — MySQL manages
+     * these columns automatically (DEFAULT / ON UPDATE / triggers). Including
+     * them in save() data would override MySQL's values on UPDATE and break
+     * the "members change → updated_at refreshed" invariant.
+     */
+    public function testMailingListToArrayExcludesDateColumns(): void
+    {
+        $list = new \Episciences\MailingList\MailingList([
+            'id'         => 1,
+            'rvid'       => 2,
+            'name'       => 'test@episciences.org',
+            'type'       => 'mailing_list_type_open',
+            'status'     => 1,
+            'created_at' => '2026-01-01 00:00:00',
+            'updated_at' => '2026-05-20 12:00:00',
+        ]);
+
+        $array = $list->toArray();
+
+        $this->assertArrayNotHasKey(
+            'created_at',
+            $array,
+            'toArray() must not include created_at — Manager::save() would then override MySQL\'s automatic timestamp'
+        );
+        $this->assertArrayNotHasKey(
+            'updated_at',
+            $array,
+            'toArray() must not include updated_at — Manager::save() would then override MySQL\'s automatic timestamp and triggers'
         );
     }
 }

@@ -1,5 +1,4 @@
 <?php
-$class = 'col-sm-4';
 $actionName = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
 ?>
 <div class="panel panel-default collapsable">
@@ -11,54 +10,58 @@ $actionName = Zend_Controller_Front::getInstance()->getRequest()->getActionName(
               action="<?= $this->escape($this->element->getAction()) ?>"
               method="<?= $this->escape($this->element->getMethod()) ?>">
 
-            <?php if (isset($this->element->status)) : ?>
-                <div class="row">
-                    <div class="col-sm-12">
+            <!-- Ligne 1 : Article Status | Editors | Reviewers -->
+            <div class="row">
+                <?php if (isset($this->element->status)) : ?>
+                    <div class="col-sm-4">
                         <?= $this->element->status ?>
                     </div>
-                </div>
-            <?php endif; ?>
-
-            <div class="row">
+                <?php endif; ?>
 
                 <?php if (isset($this->element->ratingStatus) && $actionName === 'ratings') : ?>
-                    <div class="<?= $class ?>">
+                    <div class="col-sm-4">
                         <?= $this->element->ratingStatus ?>
                     </div>
                 <?php endif; ?>
 
-                <?php if (isset($this->element->vid)) : ?>
-                    <div class="<?= $class ?>">
-                        <?= $this->element->vid ?>
-                    </div>
-                <?php endif; ?>
-
-                <?php if (isset($this->element->sid)) : ?>
-                    <div class="<?= $class ?>">
-                        <?= $this->element->sid ?>
-                    </div>
-                <?php endif; ?>
-
                 <?php if (isset($this->element->editors)) : ?>
-                    <div class="<?= $class ?>">
+                    <div class="col-sm-4">
                         <?= $this->element->editors ?>
                     </div>
                 <?php endif; ?>
 
                 <?php if (isset($this->element->reviewers)) : ?>
-                    <div class="<?= $class ?>">
+                    <div class="col-sm-4">
                         <?= $this->element->reviewers ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Ligne 2 : Volume (large) | DOI -->
+            <div class="row">
+                <?php if (isset($this->element->vid)) : ?>
+                    <div class="col-sm-8">
+                        <?= $this->element->vid ?>
                     </div>
                 <?php endif; ?>
 
                 <?php if (isset($this->element->doi)) : ?>
-                    <div class="<?= $class ?>">
+                    <div class="col-sm-4">
                         <?= $this->element->doi ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Ligne 3 : Section (large) | Repositories -->
+            <div class="row">
+                <?php if (isset($this->element->sid)) : ?>
+                    <div class="col-sm-8">
+                        <?= $this->element->sid ?>
                     </div>
                 <?php endif; ?>
 
                 <?php if (isset($this->element->repositories)) : ?>
-                    <div class="<?= $class ?>">
+                    <div class="col-sm-4">
                         <?= $this->element->repositories ?>
                     </div>
                 <?php endif; ?>

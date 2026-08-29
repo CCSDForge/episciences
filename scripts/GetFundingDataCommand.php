@@ -19,8 +19,6 @@ class GetFundingDataCommand extends Command
 {
     protected static $defaultName = 'enrichment:funding';
 
-    private const ONE_MONTH = 3600 * 24 * 31;
-
     protected function configure(): void
     {
         $this
@@ -94,6 +92,8 @@ class GetFundingDataCommand extends Command
         $logger->info('Starting funding enrichment for ' . count($rows) . ' papers');
         $io->progressStart(count($rows));
 
+        $oaClient = \Episciences\Api\OpenAireApiClient::create();
+
         foreach ($rows as $value) {
             $paperId = (int) $value['PAPERID'];
 
@@ -109,37 +109,34 @@ class GetFundingDataCommand extends Command
                     $cacheFund->deleteItem(md5($doiTrim) . '_funding.json');
                 }
 
-                Episciences_OpenAireResearchGraphTools::checkOpenAireGlobalInfoByDoi($doiTrim, $paperId);
+                $response = $oaClient->fetchPublication($doiTrim, $paperId);
 
-                $cacheOARG = new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
-                $setsGlobalOARG = $cacheOARG->getItem(md5($doiTrim) . '.json');
-
-                [$cacheFunding, , $setOAFunding] = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
-
-                if ($setsGlobalOARG->isHit() && !$setOAFunding->isHit()) {
-                    try {
-                        $decodeOpenAireResp = json_decode($setsGlobalOARG->get(), true, 512, JSON_THROW_ON_ERROR);
-                        Episciences_OpenAireResearchGraphTools::putFundingsInCache($decodeOpenAireResp, $doiTrim);
-                        $logger->info("Funding data cached for DOI {$doiTrim}");
-                    } catch (JsonException $e) {
-                        $logger->error("JSON error for paper {$paperId} (funding cache): " . $e->getMessage());
-                        $setOAFunding->set(json_encode(['']));
-                        $cacheFunding->save($setOAFunding);
+                if ($response !== null && !$dryRun) {
+                    [, , $fundingItem] = $oaClient->getFundingCacheItem($doiTrim);
+                    if (!$fundingItem->isHit()) {
+                        $oaClient->putFundingInCache($response, $doiTrim);
+                        [, , $fundingItem] = $oaClient->getFundingCacheItem($doiTrim);
                     }
-                    sleep(1);
-                }
 
-                [$cacheFunding, , $setOAFunding] = Episciences_OpenAireResearchGraphTools::getFundingCacheOA($doiTrim);
-
-                if (!$dryRun) {
                     try {
-                        $fileFound = json_decode($setOAFunding->get(), true, 512, JSON_THROW_ON_ERROR);
+                        $fileFound = json_decode($fundingItem->get(), true, 512, JSON_THROW_ON_ERROR);
                         if (!empty($fileFound[0])) {
                             $fundingArray       = [];
                             $globalfundingArray = [];
-                            $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB($fileFound, $fundingArray, $globalfundingArray);
-                            $rowInDBGraph       = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId($paperId, (int) Episciences_Repositories::GRAPH_OPENAIRE_ID);
-                            Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA($globalfundingArray, $rowInDBGraph, $paperId);
+                            $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB(
+                                $fileFound,
+                                $fundingArray,
+                                $globalfundingArray
+                            );
+                            $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId(
+                                $paperId,
+                                (int) Episciences_Repositories::GRAPH_OPENAIRE_ID
+                            );
+                            Episciences_Paper_ProjectsManager::insertOrUpdateFundingOA(
+                                $globalfundingArray,
+                                $rowInDBGraph,
+                                $paperId
+                            );
                         }
                     } catch (JsonException $e) {
                         $logger->error("JSON decode error for paper {$paperId} (OpenAIRE funding): " . $e->getMessage());

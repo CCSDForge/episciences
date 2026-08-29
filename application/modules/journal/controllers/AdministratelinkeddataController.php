@@ -13,7 +13,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
             return;
         }
-        $inputTypeLd = filter_var(trim($this->getRequest()->getPost('typeld')), FILTER_SANITIZE_SPECIAL_CHARS);
+        $inputTypeLd = filter_var(trim($this->getRequest()->getPost('typeld') ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
         $rawValueLd = str_replace(' ','',trim($this->getRequest()->getPost('valueld')));
         $docId = (int)$this->getRequest()->getPost('docId');
         $paperId = filter_var(trim($this->getRequest()->getPost('paperId')), FILTER_SANITIZE_SPECIAL_CHARS);
@@ -86,16 +86,22 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
         } elseif (($inputTypeLd === 'dataset' || $inputTypeLd === 'publication') && $typeLd === 'hal') {
             $getHalIdentifierInUrl = Episciences_Tools::getHalIdInString($rawValueLd);
+            // Default to the raw value so it is defined even for a HAL id without a version.
+            $rawValueLdWithoutVersion = $rawValueLd;
             if (!empty($getHalIdentifierInUrl)) {
                 $typeLd = 'hal';
                 $rawValueLd = $getHalIdentifierInUrl[0];
+                $rawValueLdWithoutVersion = $rawValueLd;
                 if (isset($getHalIdentifierInUrl[1])) {
-                    $rawValueLd = str_replace($getHalIdentifierInUrl[1],'',$rawValueLd);
+                    $rawValueLdWithoutVersion = str_replace($getHalIdentifierInUrl[1],'',$rawValueLd);
                     $versionHal = (int)str_replace('v','',$getHalIdentifierInUrl[1]);
                 }
             }
-            $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($rawValueLd,$versionHal));
-            $arraySoftware['citationFull'] = $citationFull->response->docs[0]->citationFull_s;
+            $citationFull = json_decode(Episciences_SoftwareHeritageTools::getCitationsFullFromHal($rawValueLdWithoutVersion,$versionHal));
+            // Guard against an empty/malformed HAL response before dereferencing it.
+            if (!empty($citationFull->response->docs[0]->citationFull_s)) {
+                $arraySoftware['citationFull'] = $citationFull->response->docs[0]->citationFull_s;
+            }
             $epiDM = new Episciences_Paper_DatasetMetadata();
             $epiDM->setMetatext(json_encode($arraySoftware));
             $idMetaDataLastId = Episciences_Paper_DatasetsMetadataManager::insert([$epiDM]);
@@ -149,23 +155,29 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         }
     }
     public function removeldAction(){
+        ob_start();
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         if ((!$request->isXmlHttpRequest() || !$request->isPost()) && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
+            ob_clean();
             echo json_encode([false], JSON_THROW_ON_ERROR);
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
             return;
         }
 
         $docId = (int)$request->getPost('docId');
-        $paperId = filter_var(trim($request->getPost('paperId')), FILTER_SANITIZE_SPECIAL_CHARS);
+        $paperId = filter_var(trim($request->getPost('paperId') ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
         $idLd = filter_var($request->getPost('id'), FILTER_SANITIZE_NUMBER_INT);
-        /** @var Episciences_Paper_Dataset $datasetInDb */
         $datasetInDb = Episciences_Paper_DatasetsManager::findById($idLd);
-        $typeLd = htmlspecialchars($datasetInDb->getName(), ENT_QUOTES, 'UTF-8');
+        if (!$datasetInDb instanceof Episciences_Paper_Dataset) {
+            ob_clean();
+            echo json_encode([false], JSON_THROW_ON_ERROR);
+            return;
+        }
+        $typeLd = htmlspecialchars($datasetInDb->getName() ?? '', ENT_QUOTES, 'UTF-8');
         $valueLd = htmlspecialchars($datasetInDb->getValue(), ENT_QUOTES, 'UTF-8');
         if (($ds = $datasetInDb->getIdPaperDatasetsMeta()) !== null){
             $isDeleted = Episciences_Paper_DatasetsMetadataManager::deleteMetaDataAndDatasetsByIdMd((int)$ds);
@@ -175,9 +187,10 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         if ($isDeleted) {
             Episciences_PapersManager::updateJsonDocumentData($docId);
             Episciences_Paper_Logger::log($paperId,$docId,Episciences_Paper_Logger::CODE_LD_REMOVED,Episciences_Auth::getUid(), json_encode(['typeLd' => $typeLd,'valueLd' => $valueLd,'docId'=>$docId,'paperId' => $paperId,'username' => Episciences_Auth::getFullName()]));
-
+            ob_clean();
             echo json_encode([true], JSON_THROW_ON_ERROR);
         } else {
+            ob_clean();
             echo json_encode([false], JSON_THROW_ON_ERROR);
         }
     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage('Suppression de la donnée liée bien prise en compte');
@@ -206,7 +219,10 @@ class AdministratelinkeddataController extends Zend_Controller_Action
                     $idLd = $ldOptions['idLd'];
                 }
             }
-            $this->view->supportedRelationShips = Episciences_Paper_Dataset::getSupportedRelationShips();
+            $this->view->supportedRelationShips = array_merge(
+                \Episciences\Paper\Relationship::getSupportedRelationShips(),
+                \Episciences\Paper\Relationship::getDisplayedRelationShipsIntraWorkRelation()
+            );
             $this->view->disabledValue = $disabledValue;
             $this->view->valueLd = $valueLd;
             $this->view->formId = $idForm;
@@ -226,7 +242,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             
             // Sanitize all input parameters
             $ldId = filter_var($request->getPost('ldId'), FILTER_SANITIZE_NUMBER_INT);
-            $relationship = htmlspecialchars(trim($request->getPost('relationship')), ENT_QUOTES, 'UTF-8');
+            $relationship = htmlspecialchars(trim($request->getPost('relationship') ?? ''), ENT_QUOTES, 'UTF-8');
             $typeLd = filter_var(trim($request->getPost('typeld')), FILTER_SANITIZE_SPECIAL_CHARS);
             $valueLd = htmlspecialchars(trim($request->getPost('valueLd')), ENT_QUOTES, 'UTF-8');
             $docId = filter_var($request->getPost('docId'), FILTER_SANITIZE_NUMBER_INT);

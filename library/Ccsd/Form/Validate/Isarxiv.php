@@ -10,6 +10,13 @@ class Ccsd_Form_Validate_Isarxiv extends Zend_Validate_Regex {
     
     public function __construct($pattern = "/^([0-9]{4}\.[0-9]{4})|([a-zA-Z\.-]+\/[0-9]{7})$/")
     {
+        trigger_error(
+            '[DEAD CODE AUDIT 2026-05-08] ' . __CLASS__ . ' is scheduled for removal.'
+            . ' Do NOT use this class in new code. If this message appears in production logs,'
+            . ' report it to the development team immediately.',
+            E_USER_DEPRECATED
+        );
+
         parent::__construct($pattern);
     }
     

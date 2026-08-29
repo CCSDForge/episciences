@@ -135,6 +135,54 @@ class Episciences_Csrf_Helper
     }
 
     /**
+     * Get the per-session request token (creating it on first use).
+     *
+     * The token is stored under the same session key as the one used by
+     * WebsiteDefaultController, so both share a single token per session.
+     * Unlike the Zend_Form_Element_Hash tokens above it is reusable across
+     * requests, which fits repeated AJAX calls on the same page.
+     *
+     * @throws Exception
+     */
+    public static function getSessionToken(): string
+    {
+        $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+
+        if (empty($session->csrfToken)) {
+            $session->csrfToken = bin2hex(random_bytes(32));
+        }
+
+        return (string)$session->csrfToken;
+    }
+
+    /**
+     * Validate the per-session request token sent with a request, either as the
+     * X-CSRF-Token header (AJAX calls) or as the csrf_token POST field (forms).
+     */
+    public static function validateRequestToken(Zend_Controller_Request_Http $request): bool
+    {
+        try {
+            $session = new Zend_Session_Namespace(SESSION_NAMESPACE);
+            $expected = $session->csrfToken;
+        } catch (Exception $e) {
+            trigger_error('Request token validation error: ' . $e->getMessage(), E_USER_WARNING);
+            return false;
+        }
+
+        if (!is_string($expected) || $expected === '') {
+            return false;
+        }
+
+        $submitted = $request->getHeader('X-CSRF-Token');
+
+        if (!is_string($submitted) || $submitted === '') {
+            $submitted = $request->getPost('csrf_token');
+        }
+
+        return is_string($submitted) && $submitted !== '' && hash_equals($expected, $submitted);
+    }
+
+    /**
      * Sanitize the token name to be a valid form element name
      */
     private static function sanitizeName(string $name): string

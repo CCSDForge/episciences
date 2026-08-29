@@ -15,6 +15,7 @@ $.widget('ui.autocomplete', $.ui.autocomplete, {
         this._super(ul, items);
     },
 });
+window.__epAutocompleteRenderItemBridge = true;
 
 function initModal() {
     if (!modalStructureExists()) {
@@ -74,9 +75,13 @@ $(document).ready(function () {
 
     $('.show_contacts_button').on('click', function (e) {
         e.preventDefault();
+        e.stopPropagation(); // Prevent es.contacts-list.js from handling this
         // fetch and parse button url
         let oUrl = $.url($(this).attr('href'));
         let urlParams = oUrl.param();
+
+        // Set form reference for addRecipient() to find tags containers
+        window.__epContactsForm = document.getElementById('send_form');
 
         if (in_modal) {
             // fetch and display contacts
@@ -168,6 +173,7 @@ function initAutocomplete() {
 
         $(input).autocomplete({
             appendTo: $(input).closest('form'),
+            minLength: 2,
 
             source: function (request, response) {
                 let matcher = new RegExp(
@@ -192,7 +198,6 @@ function initAutocomplete() {
             select: function (event, ui) {
                 addRecipient(input_id, ui.item, 'known');
                 $(input).val('');
-                //resizeInput('#' + input_id, 'add');
 
                 return false;
             },
@@ -204,17 +209,14 @@ function initAutocomplete() {
             },
         });
 
-        // add recipient when focus is lost
-        $(input).blur(function (e) {
+        $(input).blur(function () {
             if ($(input).val() != '') {
                 addRecipient(input_id, $(input).val(), 'unknown');
                 $(input).autocomplete('close');
                 $(input).val('');
-                //resizeInput('#' + input_id, 'add');
             }
         });
 
-        // enter: manual input
         $(input).keydown(function (e) {
             let code = e.keyCode || e.which;
             input_val = $(input).val().length;
@@ -224,12 +226,10 @@ function initAutocomplete() {
                     addRecipient(input_id, $(input).val(), 'unknown');
                     $(input).autocomplete('close');
                     $(input).val('');
-                    //resizeInput('#' + input_id, 'add');
                 }
             }
         });
 
-        // backspace : remove recipient
         $(input).keyup(function (e) {
             let code = e.keyCode || e.which;
             if (
@@ -240,7 +240,6 @@ function initAutocomplete() {
                 removeRecipient(
                     $('#' + input_id + '_tags').find('.recipient-tag:last')
                 );
-                //resizeInput('#' + input_id, 'remove');
             }
         });
     });

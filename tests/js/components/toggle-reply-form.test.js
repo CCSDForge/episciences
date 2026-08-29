@@ -94,14 +94,19 @@ describe('Toggle Reply Form Component', function () {
                 document.querySelector('.toggle-reply-form').click();
             }).not.toThrow();
 
-            expect(document.getElementById('no-ta').style.display).toBe('block');
+            expect(document.getElementById('no-ta').style.display).toBe(
+                'block'
+            );
         });
 
         it('should prevent the default action on click', function () {
             buildReplyDom('form-3');
             eval(toggleReplyFormJs);
 
-            const event = new MouseEvent('click', { cancelable: true, bubbles: true });
+            const event = new MouseEvent('click', {
+                cancelable: true,
+                bubbles: true,
+            });
             document.querySelector('.toggle-reply-form').dispatchEvent(event);
 
             expect(event.defaultPrevented).toBe(true);
@@ -144,7 +149,10 @@ describe('Toggle Reply Form Component', function () {
             buildReplyDom('form-6');
             eval(toggleReplyFormJs);
 
-            const event = new MouseEvent('click', { cancelable: true, bubbles: true });
+            const event = new MouseEvent('click', {
+                cancelable: true,
+                bubbles: true,
+            });
             document.querySelector('.cancel-reply-form').dispatchEvent(event);
 
             expect(event.defaultPrevented).toBe(true);
@@ -183,11 +191,15 @@ describe('Toggle Reply Form Component', function () {
             buildAuthorFormDom();
             eval(toggleReplyFormJs);
 
-            expect(document.querySelector('textarea[name="comment"]').value).toBe('Hello world');
+            expect(
+                document.querySelector('textarea[name="comment"]').value
+            ).toBe('Hello world');
 
             document.querySelector('.cancel-author-form').click();
 
-            expect(document.querySelector('textarea[name="comment"]').value).toBe('');
+            expect(
+                document.querySelector('textarea[name="comment"]').value
+            ).toBe('');
         });
 
         it('should reset the file input on click', function () {
@@ -203,7 +215,10 @@ describe('Toggle Reply Form Component', function () {
             buildAuthorFormDom();
             eval(toggleReplyFormJs);
 
-            const event = new MouseEvent('click', { cancelable: true, bubbles: true });
+            const event = new MouseEvent('click', {
+                cancelable: true,
+                bubbles: true,
+            });
             document.querySelector('.cancel-author-form').dispatchEvent(event);
 
             expect(event.defaultPrevented).toBe(true);
@@ -246,7 +261,9 @@ describe('Toggle Reply Form Component', function () {
 
             document.querySelector('.toggle-reply-form').click();
 
-            expect(document.getElementById('form-immediate').style.display).toBe('block');
+            expect(
+                document.getElementById('form-immediate').style.display
+            ).toBe('block');
         });
 
         it('should defer initialization to DOMContentLoaded when readyState is loading', function () {
@@ -263,7 +280,9 @@ describe('Toggle Reply Form Component', function () {
                 // Before DOMContentLoaded fires, click does nothing (no listener yet)
                 document.querySelector('.toggle-reply-form').click();
                 // form starts with style="display:none" from HTML — click was a no-op
-                expect(document.getElementById('form-defer').style.display).toBe('none');
+                expect(
+                    document.getElementById('form-defer').style.display
+                ).toBe('none');
 
                 // Restore readyState before dispatching DOMContentLoaded
                 Object.defineProperty(document, 'readyState', {
@@ -274,7 +293,9 @@ describe('Toggle Reply Form Component', function () {
 
                 // Now handlers are attached; click the (cloned) button
                 document.querySelector('.toggle-reply-form').click();
-                expect(document.getElementById('form-defer').style.display).toBe('block');
+                expect(
+                    document.getElementById('form-defer').style.display
+                ).toBe('block');
             } finally {
                 // Always restore to avoid polluting subsequent tests on assertion failure
                 Object.defineProperty(document, 'readyState', {
@@ -293,7 +314,9 @@ describe('Toggle Reply Form Component', function () {
             document.dispatchEvent(new Event('contentLoaded'));
 
             document.querySelector('.toggle-reply-form').click();
-            expect(document.getElementById('form-dynamic').style.display).toBe('block');
+            expect(document.getElementById('form-dynamic').style.display).toBe(
+                'block'
+            );
         });
 
         it('should replace buttons with clones to avoid duplicate listeners on re-init', function () {
@@ -307,7 +330,9 @@ describe('Toggle Reply Form Component', function () {
             // → clicking once should show the form exactly once (not toggle it back)
             document.querySelector('.toggle-reply-form').click();
 
-            expect(document.getElementById('form-clone').style.display).toBe('block');
+            expect(document.getElementById('form-clone').style.display).toBe(
+                'block'
+            );
         });
     });
 
@@ -322,14 +347,21 @@ describe('Toggle Reply Form Component', function () {
             `;
             eval(toggleReplyFormJs);
 
-            const [btnA, btnB] = document.querySelectorAll('.toggle-reply-form');
+            const [btnA, btnB] =
+                document.querySelectorAll('.toggle-reply-form');
 
             btnA.click();
-            expect(document.getElementById('form-a').style.display).toBe('block');
-            expect(document.getElementById('form-b').style.display).toBe('none');
+            expect(document.getElementById('form-a').style.display).toBe(
+                'block'
+            );
+            expect(document.getElementById('form-b').style.display).toBe(
+                'none'
+            );
 
             btnB.click();
-            expect(document.getElementById('form-b').style.display).toBe('block');
+            expect(document.getElementById('form-b').style.display).toBe(
+                'block'
+            );
         });
 
         it('should handle multiple cancel buttons independently', function () {
@@ -384,8 +416,12 @@ describe('Toggle Reply Form Component', function () {
             // Clicking cancel on an already-open form should close it
             document.querySelector('.cancel-reply-form').click();
 
-            expect(document.getElementById('form-open').style.display).toBe('none');
-            expect(document.querySelector('.toggle-reply-form').style.display).toBe('inline-block');
+            expect(document.getElementById('form-open').style.display).toBe(
+                'none'
+            );
+            expect(
+                document.querySelector('.toggle-reply-form').style.display
+            ).toBe('inline-block');
         });
     });
 
@@ -433,7 +469,11 @@ describe('Toggle Reply Form Component', function () {
             // because the !form early-return fired first
             const attrSelectorCalls = querySelectorSpy.mock.calls
                 .map(c => c[0])
-                .filter(s => typeof s === 'string' && s.includes('data-reply-form-id'));
+                .filter(
+                    s =>
+                        typeof s === 'string' &&
+                        s.includes('data-reply-form-id')
+                );
             expect(attrSelectorCalls).toHaveLength(0);
         });
     });
@@ -489,8 +529,11 @@ describe('Toggle Reply Form Component', function () {
         });
 
         it('CSS.escape is used: selector passed to querySelector contains escaped characters', function () {
-            document.body.innerHTML = '<button class="toggle-reply-form">Reply</button>';
-            document.querySelector('.toggle-reply-form').setAttribute('data-reply-form-id', 'foo"bar');
+            document.body.innerHTML =
+                '<button class="toggle-reply-form">Reply</button>';
+            document
+                .querySelector('.toggle-reply-form')
+                .setAttribute('data-reply-form-id', 'foo"bar');
 
             // Add a matching form so getElementById succeeds and querySelector is reached
             const form = document.createElement('div');
@@ -501,19 +544,25 @@ describe('Toggle Reply Form Component', function () {
 
             const btn = document.querySelector('.toggle-reply-form');
             const capturedSelectors = [];
-            jest.spyOn(document, 'querySelector').mockImplementation((selector) => {
-                capturedSelectors.push(selector);
-                return null;
-            });
+            jest.spyOn(document, 'querySelector').mockImplementation(
+                selector => {
+                    capturedSelectors.push(selector);
+                    return null;
+                }
+            );
 
             btn.click();
 
-            const attrSelector = capturedSelectors.find(s => s.includes('data-reply-form-id'));
+            const attrSelector = capturedSelectors.find(s =>
+                s.includes('data-reply-form-id')
+            );
             expect(attrSelector).toBeDefined();
             // CSS.escape('foo"bar') escapes the `"` with a backslash → foo\"bar
             // The buggy (unescaped) selector would be: [data-reply-form-id="foo"bar"]
             // The fixed (escaped) selector must contain \" (backslash + double-quote)
-            expect(attrSelector).not.toBe('.toggle-reply-form[data-reply-form-id="foo"bar"]');
+            expect(attrSelector).not.toBe(
+                '.toggle-reply-form[data-reply-form-id="foo"bar"]'
+            );
             expect(attrSelector).toContain('\\"'); // literal backslash + double-quote = CSS escape
         });
 
@@ -523,7 +572,9 @@ describe('Toggle Reply Form Component', function () {
 
             document.querySelector('.toggle-reply-form').click();
 
-            expect(document.getElementById('safe-form-123').style.display).toBe('block');
+            expect(document.getElementById('safe-form-123').style.display).toBe(
+                'block'
+            );
         });
     });
 });

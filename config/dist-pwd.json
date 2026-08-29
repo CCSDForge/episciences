@@ -19,7 +19,8 @@
     "BIBLIOREF": {
       "URL":"https://epiextract-env.domain.org",
       "ENABLE" : false,
-      "SSL_VERIFY": true
+      "SSL_VERIFY": true,
+      "TOKEN": "exampleToken"
     },
     "AUTH_ADAPTER_NAME": "LemonLDAP",
     "RENDER_ALERT_BANNER": {
@@ -77,15 +78,10 @@
     "TOKEN_AUTH": "exampleToken"
   },
   "CAPTCHA": {
-    "BRAND": "HCAPTCHA"
+    "BRAND": "ALTCHA"
   },
-  "RECAPTCHA": {
-    "PUBKEY": "see https://www.google.com/recaptcha/admin",
-    "PRIVKEY": "see https://www.google.com/recaptcha/admin"
-  },
-  "HCAPTCHA": {
-    "SITEKEY": "see https://www.hcaptcha.com/",
-    "SECRETKEY": "see https://www.hcaptcha.com/"
+  "ALTCHA": {
+    "HMAC_SECRET": "generate-a-long-random-secret-eg-openssl-rand-hex-32"
   },
   "ENDPOINTS": {
     "INDEXING_HOST": "solr-hostname-for-indexing.example.com",
@@ -129,7 +125,7 @@
   "INBOX": {
     "URL": "https://inbox.example.org/",
     "DB_HOST": "db.example.org",
-    "DB_DRIVER": "pdo_mysql",
+    "DB_DRIVER": "mysql",
     "DB_NAME": "inbox",
     "DB_USER": "inbox",
     "DB_PASSWORD": "four random common words",
@@ -149,7 +145,8 @@
   },
   "OPENALEX": {
     "MAILTO": "YOUR-MAIL-TO",
-    "APIURL": "https://api.openalex.org/works/"
+    "APIURL": "https://api.openalex.org/works/",
+    "APIKEY": "four random common words"
   },
   "CROSSREF": {
     "MAILTO": "YOUR-MAIL-TO",

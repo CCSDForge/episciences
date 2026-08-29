@@ -34,11 +34,18 @@ class OrcidAuthorsManager {
      */
     updateOrcidAuthors() {
         const authorsListEl = document.querySelector('div#authors-list');
-        const orcidExistingEl = document.querySelector('div#orcid-author-existing');
+        const orcidExistingEl = document.querySelector(
+            'div#orcid-author-existing'
+        );
         const modalCalledEl = document.querySelector('input#modal-called');
         const modalBodyEl = document.querySelector('#modal-body-authors');
 
-        if (!authorsListEl || !orcidExistingEl || !modalCalledEl || !modalBodyEl) {
+        if (
+            !authorsListEl ||
+            !orcidExistingEl ||
+            !modalCalledEl ||
+            !modalBodyEl
+        ) {
             return;
         }
 
@@ -74,7 +81,7 @@ class OrcidAuthorsManager {
             label.style.flex = '1';
             label.style.marginRight = '10px';
             label.style.marginBottom = '0'; // Reset label margin for better alignment
-            label.style.fontWeight = 'normal'; 
+            label.style.fontWeight = 'normal';
             label.textContent = fullname;
 
             const input = document.createElement('input');
@@ -104,7 +111,9 @@ class OrcidAuthorsManager {
      */
     generateSelectAuthors() {
         const authorsListEl = document.querySelector('div#authors-list');
-        const affiliationsLabelEl = document.querySelector('label#affiliations-label');
+        const affiliationsLabelEl = document.querySelector(
+            'label#affiliations-label'
+        );
 
         if (!authorsListEl || !affiliationsLabelEl) {
             return;
@@ -148,18 +157,28 @@ class OrcidAuthorsManager {
 
             // .action property returns the absolute URL, safer than getAttribute('action')
             const url = form.action;
-            const fullnameLabels = document.querySelectorAll("label[id^='fullname__']");
-            const orcidInputs = document.querySelectorAll("input[id^='ORCIDauthor__']");
+            const fullnameLabels = document.querySelectorAll(
+                "label[id^='fullname__']"
+            );
+            const orcidInputs = document.querySelectorAll(
+                "input[id^='ORCIDauthor__']"
+            );
 
-            const arrayMerge = Array.from(fullnameLabels).map((labelEl, index) => {
-                const fullname = labelEl.textContent.trim();
-                const orcidInput = orcidInputs[index];
-                const orcid = orcidInput ? OrcidAuthorsManager.sanitizeOrcid(orcidInput.value) : '';
-                return [fullname, orcid];
-            });
+            const arrayMerge = Array.from(fullnameLabels).map(
+                (labelEl, index) => {
+                    const fullname = labelEl.textContent.trim();
+                    const orcidInput = orcidInputs[index];
+                    const orcid = orcidInput
+                        ? OrcidAuthorsManager.sanitizeOrcid(orcidInput.value)
+                        : '';
+                    return [fullname, orcid];
+                }
+            );
 
             // Validation: non-empty ORCIDs must be unique
-            const nonEmptyOrcids = arrayMerge.map(item => item[1]).filter(orcid => orcid !== '');
+            const nonEmptyOrcids = arrayMerge
+                .map(item => item[1])
+                .filter(orcid => orcid !== '');
             const uniqueOrcids = new Set(nonEmptyOrcids);
             if (uniqueOrcids.size !== nonEmptyOrcids.length) {
                 alert(translate('orcid-duplicate'));
@@ -184,15 +203,19 @@ class OrcidAuthorsManager {
                     method: 'POST',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                        'Content-Type':
+                            'application/x-www-form-urlencoded; charset=UTF-8',
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
                 });
 
                 if (response.ok) {
                     this.reloadPage();
                 } else {
-                    console.error('Failed to update ORCID authors', response.statusText);
+                    console.error(
+                        'Failed to update ORCID authors',
+                        response.statusText
+                    );
                 }
             } catch (error) {
                 console.error('Error submitting ORCID authors:', error);
