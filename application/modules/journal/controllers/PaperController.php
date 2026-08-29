@@ -276,7 +276,7 @@ class PaperController extends PaperDefaultController
 
         // paper password bloc
 
-        $isAltPipeline = (int)$review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1;
+        $isAltPipeline = $review->isAlternativePipelineEnabled();
 
         $displayPaperPasswordBloc = (
             Episciences_Auth::isLogged() &&
@@ -685,6 +685,7 @@ class PaperController extends PaperDefaultController
 
         if (
             !$paper instanceof Episciences_Paper ||
+            !$this->isAlternativePipelineEnabled() ||
             !$request->isPost() ||
             (!$paper->isOwner() && !$isActingOnBehalfOfAuthor) ||
             $paper->getStatus() !== Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR
@@ -1784,6 +1785,7 @@ class PaperController extends PaperDefaultController
 
         if (
             !$paper instanceof Episciences_Paper ||
+            !$this->isAlternativePipelineEnabled() ||
             !Episciences_Auth::isLogged() ||
             (!$paper->isOwner() && !$this->isAlternativePipelineAuthorProxy($paper)) ||
             $paper->getStatus() !== Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION
@@ -1796,6 +1798,14 @@ class PaperController extends PaperDefaultController
         }
 
         return $paper;
+    }
+
+    private function isAlternativePipelineEnabled(): bool
+    {
+        $review = Episciences_ReviewsManager::find(RVID);
+        $review->loadSettings();
+
+        return $review->isAlternativePipelineEnabled();
     }
 
     private function isAlternativePipelineAuthorProxy(Episciences_Paper $paper): bool

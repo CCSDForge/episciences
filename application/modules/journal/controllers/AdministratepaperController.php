@@ -917,7 +917,7 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         if (
-            (int)$review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1
+            $review->isAlternativePipelineEnabled()
             && Episciences_Auth::isAllowedToManagePaper()
         ) {
             if ($paper->isAccepted()) {
@@ -1081,8 +1081,7 @@ class AdministratepaperController extends PaperDefaultController
             $review->getSetting($review::SETTING_ARXIV_PAPER_PASSWORD) &&
             $paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID;
 
-        $isAltPipelinePasswordContext =
-            (int)$review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1;
+        $isAltPipelinePasswordContext = $review->isAlternativePipelineEnabled();
 
         $displayPaperPasswordBloc =
             $isAuthorizedPaperManager &&
@@ -2359,7 +2358,7 @@ class AdministratepaperController extends PaperDefaultController
         }
         $csrfSession->hash = null;
 
-        if (!$journal->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE)) {
+        if (!$journal->isAlternativePipelineEnabled()) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Le pipeline alternatif n'est pas activé pour cette revue.");
             $this->_helper->redirector->gotoUrl($redirectUrl);
             return;
@@ -2447,7 +2446,7 @@ class AdministratepaperController extends PaperDefaultController
         }
         $csrfSession->hash = null;
 
-        if (!$journal->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE)) {
+        if (!$journal->isAlternativePipelineEnabled()) {
             $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage("Le pipeline alternatif n'est pas activé pour cette revue.");
             $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
             return;

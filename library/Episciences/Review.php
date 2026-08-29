@@ -619,6 +619,23 @@ class Episciences_Review
         return Ccsd_Tools::ifsetor($this->_settings[$setting], false);
     }
 
+    public function isAlternativePipelineAvailable(): bool
+    {
+        $repositories = array_values(array_unique(array_map(
+            'intval',
+            (array)$this->getSetting(self::SETTING_REPOSITORIES)
+        )));
+
+        return count($repositories) === 1
+            && $repositories[0] === (int)Episciences_Repositories::ARXIV_REPO_ID;
+    }
+
+    public function isAlternativePipelineEnabled(): bool
+    {
+        return $this->isAlternativePipelineAvailable()
+            && (int)$this->getSetting(self::SETTING_ALTERNATIVE_PIPELINE) === 1;
+    }
+
     /**
      * Get the cover letter requirement setting (see COVER_LETTER_REQUIREMENT_* constants).
      * Reviews created before this setting existed have no stored value: default to
@@ -1889,7 +1906,8 @@ class Episciences_Review
 
         return $form->addElement('checkbox', self::SETTING_ALTERNATIVE_PIPELINE, [
             'label' => "Activer le pipeline éditorial alternatif",
-            'description' => "Active un workflow simplifié destiné aux revues qui s'appuient sur arXiv. Après acceptation, l'administrateur demande à l'auteur son mot de passe arXiv et sa version finale ; le préparateur de copie met l'article en page ; l'épreuve est envoyée à l'auteur pour validation ; après l'approbation de l'auteur, l'administrateur valide la mise en page puis publie l'article.",
+            'description' => "Disponible uniquement lorsque arXiv est la seule archive autorisée pour la soumission. Après acceptation, l'administrateur demande à l'auteur son mot de passe arXiv et sa version finale ; le préparateur de copie met l'article en page ; l'épreuve est envoyée à l'auteur pour validation ; après l'approbation de l'auteur, l'administrateur valide la mise en page puis publie l'article.",
+            'disabled' => !$this->isAlternativePipelineAvailable(),
             'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
             'decorators' => $checkboxDecorators]
         );

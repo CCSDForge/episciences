@@ -30,7 +30,7 @@ try {
 }
 $copyEditingNotStarted = !$paper->isCopyEditingProcessStarted();
 $isInRevision = $paper->isRevisionRequested();
-$isAltPipelineOn = (int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1;
+$isAltPipelineOn = $this->review->isAlternativePipelineEnabled();
 $askSourcesAgainMsg = "Redemander à l'auteur ses sources (À mettre en forme par la revue)";
 $askFinalVersionAgainMsg = "Demander à nouveau la version finale à l'auteur";
 $acceptedWaitingForAuthorValidation = "Accepté - en attente de validation par l'auteur";
@@ -299,7 +299,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             <?= $this->translate($changeStatusMsg) ?> <span class="caret" style="margin-left: 5px"></span>
         </button>
         <ul class="status-menu dropdown-menu" role="menu">
-            <?php if ((int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1): ?>
+            <?php if ($this->review->isAlternativePipelineEnabled()): ?>
                 <?php if ($paper->isAltFinalVersionSubmitted()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
@@ -885,4 +885,3 @@ $this->partial('partials/paper-status-modal.phtml', [
     'title' => $validFinalVersionMsg,
     'body' => $this->ceAcceptFinalVersionForm
 ]) ?>
-

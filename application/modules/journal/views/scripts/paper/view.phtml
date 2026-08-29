@@ -239,7 +239,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/edit_master_file.js');
     <?php endif; ?>
     <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
     <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper, 'metadata' => $metadata]) ?>
-    <?php $isAltPipeline = (int)$this->review->getSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE) === 1; ?>
+    <?php $isAltPipeline = $this->review->isAlternativePipelineEnabled(); ?>
     <?php if (!$isAltPipeline): ?>
         <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
     <?php endif; ?>
@@ -264,7 +264,7 @@ $this->jQuery()->addJavascriptFile('/js/paper/edit_master_file.js');
                 <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
                 <?php if ($paper->isOwner() && $status === Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR): ?>
                     <div class="alert alert-info" style="margin-top: 10px;">
-                        <p><?= $this->translate("L'épreuve de votre article est prête. Veuillez vérifier et approuver ou refuser la mise en page.") ?></p>
+                        <p><?= $this->translate("Utilisez le lien figurant dans le courriel de demande d'approbation pour consulter l'épreuve de votre article, puis approuvez ou refusez la mise en page.") ?></p>
                         <div class="btn-group" style="margin-top: 10px;">
                             <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
                                 <?= $this->translate("Répondre") ?> <span class="caret" style="margin-left: 5px"></span>
