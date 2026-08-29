@@ -2545,6 +2545,8 @@ return array(
     "Facultatif : ajoutez uniquement les fichiers complémentaires qui ne sont pas disponibles dans la version arXiv, par exemple une bibliographie BibTeX. Le PDF et les sources TeX seront récupérés depuis arXiv." => 'Optional: add only accompanying files that are not available in the arXiv version, such as a BibTeX bibliography. The PDF and TeX sources will be retrieved from arXiv.',
     "La version arXiv doit être un nombre entier au moins égal à la version actuelle (%s)." => "The arXiv version must be a whole number at least equal to the current version (%s).",
     "La version arXiv demandée n'a pas pu être récupérée." => "The requested arXiv version could not be retrieved.",
+    "Pour des raisons de sécurité, ce mot de passe est automatiquement supprimé lors de la publication de l'article." => "For security, this password is automatically deleted when the article is published.",
+    "Un mot de passe arXiv est enregistré, mais il n'a pas pu être déchiffré. Vérifiez la clé de chiffrement de la revue." => "An arXiv password is stored, but it could not be decrypted. Check the journal's encryption key.",
     'Déposer' => 'Deposit',
     "Votre dépôt a bien été enregistré." => "Your deposit has been saved.",
     "Votre dépôt n'a pas pu être enregistré." => "Your deposit could not be saved.",

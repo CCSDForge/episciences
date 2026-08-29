@@ -146,7 +146,13 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
         <?php endif; ?>
 
         <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper, 'metadata' => $this->metadata]) ?>
-        <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
+        <?= $this->partial('partials/paper_password_form.phtml', [
+                'paper' => $paper,
+                'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc,
+                'paperPassword' => $this->paperPassword,
+                'hasStoredPaperPassword' => $this->hasStoredPaperPassword,
+                'paperPasswordDecryptionFailed' => $this->paperPasswordDecryptionFailed,
+        ]) ?>
 
     </div>
 

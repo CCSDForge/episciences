@@ -1073,9 +1073,14 @@ class AdministratepaperController extends PaperDefaultController
             $isStatusEditableForPassword &&
             ($isArxivPaperPasswordContext || $isAltPipelinePasswordContext);
 
+        $this->view->paperPassword = '';
+        $this->view->hasStoredPaperPassword = !empty($paper->getPassword());
+        $this->view->paperPasswordDecryptionFailed = false;
         if ($displayPaperPasswordBloc) {
             $plainPaperPassword = $this->getPlainPaperPassword($paper);
             $this->view->paperPassword = $plainPaperPassword;
+            $this->view->paperPasswordDecryptionFailed =
+                $this->view->hasStoredPaperPassword && $plainPaperPassword === '';
         }
 
         $this->view->displayPaperPasswordBloc = $displayPaperPasswordBloc;
