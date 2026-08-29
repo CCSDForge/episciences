@@ -2136,13 +2136,14 @@ class Episciences_PapersManager
         }, $recipients));
     }
 
-    public static function getAltFinalVersionDepositForm(Episciences_Paper $paper): \Ccsd_Form
+    public static function getAltFinalVersionDepositForm(Episciences_Paper $paper, array $defaults = []): \Ccsd_Form
     {
         $docId = (int)$paper->getDocid();
         $form = new \Ccsd_Form();
         $form->setName('final_version_deposit_form_' . $docId);
         $form->setAttrib('id', 'final_version_deposit_form_' . $docId);
         $form->setAttrib('enctype', 'multipart/form-data');
+        $form->setAttrib('class', 'form-horizontal');
         $form->setMethod('post');
         $form->setAction('/paper/savefinalversiondeposit/id/' . $docId);
         $form->addElementPrefixPath('Episciences_Form_Decorator', 'Episciences/Form/Decorator/', 'decorator');
@@ -2151,13 +2152,21 @@ class Episciences_PapersManager
 
         // Version number text input — same pattern as Episciences_Submit::getNewVersionForm()
         $form->addElement('text', 'version', [
-            'label' => 'Version',
+            'label' => 'Version arXiv',
+            'description' => sprintf(
+                Zend_Registry::get('Zend_Translate')->translate(
+                    "Indiquez la version de l'article disponible sur arXiv que vous souhaitez déposer. Elle doit être au moins égale à %s."
+                ),
+                (int)$paper->getVersion()
+            ),
             'required' => true,
+            'value' => (string)$paper->getVersion(),
             'style' => 'width:33%;',
         ]);
 
-        // arXiv paper password (required in the alt pipeline)
-        \Episciences_Submit::addPaperArxivPwdElement($form, true);
+        // A previously supplied password remains attached to the paper. Authors
+        // only need to enter it again when none is currently stored.
+        \Episciences_Submit::addPaperArxivPwdElement($form, empty($paper->getPassword()));
 
         // The decorator template inspects a hidden element for pcId/docId attributes;
         // pcId is unused here (no parent comment) but kept for compatibility.
@@ -2165,6 +2174,10 @@ class Episciences_PapersManager
             'value' => 'final_version_deposit',
             'docId' => $docId,
             'pcId' => 0,
+        ]);
+        $form->addElement('hidden', 'docid', [
+            'value' => $docId,
+            'decorators' => [['ViewHelper']],
         ]);
 
         $form->addElement('submit', 'submitFinalVersionDeposit', [
@@ -2177,6 +2190,16 @@ class Episciences_PapersManager
             ['ViewScript', ['viewScript' => '/paper/final_version_deposit_form.phtml']],
             $form->getDecorator('FormRequired'),
         ]);
+
+        $preservedAttachments = $defaults[Episciences_Mail_Send::ATTACHMENTS] ?? [];
+        if (is_array($preservedAttachments) && $preservedAttachments) {
+            $form->setAttrib('preservedAttachments', $preservedAttachments);
+        }
+        unset($defaults[Episciences_Mail_Send::ATTACHMENTS]);
+
+        if ($defaults) {
+            $form->setDefaults($defaults);
+        }
 
         return $form;
     }

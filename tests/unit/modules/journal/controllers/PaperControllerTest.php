@@ -183,6 +183,44 @@ final class PaperControllerTest extends TestCase
         );
     }
 
+    public function testFinalVersionDepositRejectsOlderAndNonIntegerArxivVersions(): void
+    {
+        $method = $this->extractMethod('savefinalversiondepositAction');
+
+        self::assertStringContainsString('ctype_digit($version)', $method);
+        self::assertStringContainsString('(int)$version < $currentVersion', $method);
+    }
+
+    public function testHigherFinalVersionCreatesANewPaperFromRepositoryMetadata(): void
+    {
+        $method = $this->extractMethod('createAltFinalVersionPaper');
+
+        self::assertStringContainsString('Episciences_Submit::getDoc(', $method);
+        self::assertStringContainsString('$newPaper = clone $paper', $method);
+        self::assertStringContainsString('$newPaper->setDocid(null)', $method);
+        self::assertStringContainsString('STATUS_ALT_FINAL_VERSION_SUBMITTED', $method);
+        self::assertStringContainsString('updatePreviousVersionStatus($paper)', $method);
+    }
+
+    public function testInvalidFinalVersionDepositPreservesSubmittedValues(): void
+    {
+        $method = $this->extractMethod('redirectAltFinalVersionDepositWithError');
+
+        self::assertStringContainsString("'version' =>", $method);
+        self::assertStringContainsString("'paperPassword' =>", $method);
+        self::assertStringContainsString('Episciences_Mail_Send::ATTACHMENTS', $method);
+        self::assertStringContainsString('AltFinalVersionDeposit_', $method);
+    }
+
+    public function testFinalVersionAccompanyingFilesAreSavedAsAComment(): void
+    {
+        $method = $this->extractMethod('saveAltFinalVersionAccompanyingFiles');
+
+        self::assertStringContainsString('TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED', $method);
+        self::assertStringContainsString('Episciences_Mail_Send::ATTACHMENTS', $method);
+        self::assertStringContainsString('$comment->logComment()', $method);
+    }
+
     // -----------------------------------------------------------------------
     // deleteattachmentreportAction
     // -----------------------------------------------------------------------
