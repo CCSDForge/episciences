@@ -77,7 +77,29 @@ function getTags() {
     return tags;
 }
 
+function removeEmptyStatusMenus(root = document) {
+    root.querySelectorAll('.status-menu').forEach(menu => {
+        if (menu.querySelector('li')) {
+            return;
+        }
+
+        const toggle = menu.previousElementSibling;
+        const buttonGroup = menu.closest('.btn-group');
+
+        if (toggle && toggle.classList.contains('dropdown-toggle')) {
+            toggle.remove();
+        }
+        menu.remove();
+
+        if (buttonGroup && buttonGroup.children.length === 0) {
+            buttonGroup.remove();
+        }
+    });
+}
+
 $(document).ready(function () {
+    removeEmptyStatusMenus();
+
     // Désactivation de la possibilité de mettre à jour des métadonnées pour les versions temporaires d'un article.
     $('#update_metadata').prop('disabled', true);
 
@@ -1347,7 +1369,11 @@ function valide($target) {
 
 // Expose pure helpers for unit testing only.
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { validateDoiInput, updateDoiDisplay, DOI_PATTERN };
+    module.exports = {
+        validateDoiInput,
+        updateDoiDisplay,
+        removeEmptyStatusMenus,
+        DOI_PATTERN,
+    };
 }
-
 
