@@ -762,7 +762,7 @@ class InboxNotifications extends AbstractScript
     ): array
     {
         return [
-            Episciences_Mail_Tags::TAG_REVIEW_CODE => $journal->getCode(),
+            Episciences_Mail_Tags::TAG_REVIEW_CODE => $journal->getMailDisplayCode(),
             Episciences_Mail_Tags::TAG_REVIEW_NAME => $journal->getName(),
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocId(),
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
