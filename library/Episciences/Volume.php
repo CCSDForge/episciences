@@ -803,6 +803,11 @@ class Episciences_Volume
                 $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding, $vid);
             }
 
+            // Enqueue Next.js cache revalidation for new volume
+            $rvcode = defined('RVCODE') ? RVCODE : null;
+            if ($rvcode !== null) {
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "volumes-{$rvcode}");
+            }
 
         } else {
             // Modification d'un volume
@@ -816,6 +821,14 @@ class Episciences_Volume
                 $volumeProceeding->saveVolumeArrayProceeding($settingsProceeding, $vid, true);
             }
 
+            // Enqueue Next.js cache revalidation for updated volume
+            $rvcode = defined('RVCODE') ? RVCODE : null;
+            if ($rvcode !== null) {
+                \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                    "volume-{$vid}",
+                    "volumes-{$rvcode}",
+                ]);
+            }
 
         }
 
@@ -886,8 +899,12 @@ class Episciences_Volume
      */
     private function addNewVolume(): int
     {
+        if (!$this->getRvid()) { // If RVID has not been defined, it is specified here
+            $this->setRvid(RVID);
+        }
+
         $values = $this->getVolumeDataForSave();
-        $values['RVID'] = RVID;
+        $values['RVID'] = $this->getRvid();
         $values['POSITION'] = 0;
 
         try {
@@ -1451,7 +1468,7 @@ class Episciences_Volume
 
     public function setVol_num($volNum): \Episciences_Volume
     {
-        $this->_vol_num = $volNum ? (int)trim(strip_tags($volNum)) : null;
+        $this->_vol_num = $volNum ? trim(strip_tags($volNum)) : null;
         return $this;
     }
 
@@ -1514,9 +1531,16 @@ class Episciences_Volume
     /**
      * @return array
      */
+    /**
+     * Conference metadata of a proceedings volume.
+     *
+     * Settings are expected to be loaded already: every caller reaches this method
+     * through isProceeding(), which reads one of them. Load them explicitly —
+     * Episciences_VolumesManager::loadSettingsForVolumes() does it for a whole list
+     * in one query — rather than relying on a side effect here.
+     */
     public function getProceedingInfo(): array
     {
-        $this->loadSettings();
         return [
             self::VOLUME_IS_PROCEEDING => $this->getSetting(self::VOLUME_IS_PROCEEDING),
             self::VOLUME_CONFERENCE_NAME => $this->getSetting(self::VOLUME_CONFERENCE_NAME),

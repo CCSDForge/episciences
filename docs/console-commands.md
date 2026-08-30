@@ -36,6 +36,8 @@ php scripts/console.php <command> --help
 | [`zbjats:zip`](#zbjatszip) | Package PDF + zbJATS XML into a ZIP archive per volume |
 | [`import:sections`](#importsections) | Import journal sections from a CSV file |
 | [`import:volumes`](#importvolumes) | Import journal volumes from a CSV file |
+| [`import:papers`](#importpapers) | Import or update papers from a CSV file |
+| [`export:papers`](#exportpapers) | Export papers to a CSV file, in the same format `import:papers` reads |
 | [`import:ref-pps`](#importref-pps) | Import PPS data from a CSV file into Solr |
 | [`download:ref-pps`](#downloadref-pps) | Download the PPS CSV file from IRIT |
 | [`stats:import-logs`](#statsimport-logs) | Parse Apache access logs and insert article visits into `STAT_TEMP` |
@@ -43,6 +45,11 @@ php scripts/console.php <command> --help
 | [`stats:update-robots-list`](#statsupdate-robots-list) | Download the COUNTER Robots list for bot detection |
 | [`stats:process`](#statsprocess) | Process raw visit records from `STAT_TEMP` into `PAPER_STAT` |
 | [`geoip:update`](#geoipupdate) | Download or update the GeoLite2-City.mmdb database |
+| [`solr:index`](#solrindex) | Enqueue (or synchronously run) Solr re-indexing for one or more papers |
+| [`solr:delete`](#solrdelete) | Enqueue (or synchronously run) a Solr deletion, by DOCID or by raw query |
+| [`episciences:worker`](#episciencesworker) | Continuously consume one Messenger queue (`solr_index` or `next_revalidation`) |
+| [`episciences:queue`](#episciencesqueue) | Inspect and manage one Messenger queue |
+| [`next:revalidate-cache`](#nextrevalidate-cache) | Immediately trigger (or enqueue) Next.js cache revalidation for a journal and one or more tags |
 
 ---
 
@@ -335,9 +342,64 @@ php scripts/console.php zbjats:zip [options]
 
 | Option | Description |
 |--------|-------------|
-| `--rvid <id>` | RVID (integer) of the journal to process |
+| `--rvid <id>` | RVID (integer) or comma-separated list of RVIDs to process |
+| `--rvcode <code>` | RV code (string) or comma-separated list of RV codes to process |
+| `--config <path>` | Path to INI file containing journal list (default: `scripts/zbjats/journals.ini`) |
 | `--zip-prefix <prefix>` | Optional prefix for the ZIP filename (e.g. `2024_`) |
 | `--dry-run` | Simulate without downloading files or writing the ZIP |
+| `--remove-cache` | Clear the PDF/XML cache for the processed journal(s) |
+
+When neither `--rvcode` nor `--rvid` is provided, the command automatically processes journals defined in `scripts/zbjats/journals.ini`.
+
+---
+
+## Export
+
+### `export:papers`
+
+Exports papers to a semicolon-separated CSV file, in the exact same 19-column format
+`import:papers` reads — the intended workflow is to export, edit the file (e.g. to move papers to
+another volume, change their status, or fix a DOI), then feed it back into `import:papers` to
+apply the update. Business logic lives in
+`Episciences\Paper\Export\Csv\{Filters,RowBuilder,PaperCsvExporter}`, reusing
+`Episciences\Paper\Import\Row` as the shared CSV row DTO and
+`Episciences\Paper\Import\ReviewResolver` for `--rvid`.
+
+```bash
+php scripts/console.php export:papers --rvid=<id> --csv-file=<path> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--rvid <id>` | Journal RVID (integer) or RVCODE — required, one journal per run |
+| `--csv-file <path>` | Path to write the CSV file to — required |
+| `--volume-id <id>` | Only export papers in this volume |
+| `--section-id <id>` | Only export papers in this section |
+| `--year <yyyy>` | Only export papers published in this year |
+| `--docid <id>` | Only export this docid (repeatable) |
+| `--identifier <id>` | Only export papers matching this archive identifier |
+| `--version <n>` | Only export this version of `--identifier` (ignored without `--identifier`) |
+| `--status <n>` | Only export papers with this status (repeatable) |
+| `--repoid <id>` | Only export papers from this source repository |
+| `--uid <id>` | Only export papers submitted by this user |
+| `--sql-where <clause>` | Additional raw SQL `WHERE` clause on `PAPERS`. **Trusted input only** — passed as-is to the query, same escape hatch as `papers:update-document --sqlwhere` |
+| `--limit <n>` | Maximum number of papers to export |
+
+**CSV format**: identical to `import:papers` — see the column table above. `volume_id`/`section_id`
+are exported alongside the human-readable `volume_title_*`/`section_title_*`/`volume_num`/
+`volume_year` for readability, but on a later `import:papers` run the **id always wins**
+(`VolumeSectionResolver` only falls back to the title columns when the id is empty) — editing the
+title columns in the CSV has no effect unless the corresponding id column is also cleared.
+
+Columns `PAPERID`, `RECORD`, `DOCUMENT`, `CONCEPT_IDENTIFIER`, `FLAG`, `PASSWORD`, `WHEN`,
+`MODIFICATION_DATE` and `TYPE` are not part of the format (same as `import:papers`) — `RECORD`/
+`DOCUMENT` in particular are regenerated by `import:papers` itself from the source repository, so
+their absence from the CSV is expected.
+
+> **Editors and already-published papers.** Re-importing a CSV whose `editors` column is filled
+> for a paper that is already published re-triggers an assign *and* unassign
+> (`Episciences\Paper\Import\PaperImporter::processEditors()`) — this is existing `import:papers`
+> behavior, not a bug, but it does add log noise for every published paper in the file.
 
 ---
 
@@ -345,7 +407,8 @@ php scripts/console.php zbjats:zip [options]
 
 ### `import:sections`
 
-Imports journal sections from a semicolon-separated CSV file.
+Imports journal sections from a semicolon-separated CSV file. Business logic lives in
+`Episciences\Section\Import\{Row,Importer}`.
 
 ```bash
 php scripts/console.php import:sections [options]
@@ -356,11 +419,27 @@ php scripts/console.php import:sections [options]
 | `--csv-file <path>` | Path to the CSV file containing sections data |
 | `--dry-run` | Simulate the import without writing to the database |
 
+**CSV format** (semicolon-separated, with header row):
+
+| Column | Description |
+|--------|-------------|
+| `rvid` | Journal RVID (integer) — required on every row |
+| `position` | Section position (integer); auto-incremented if empty |
+| `title_fr` | French title — at least one of `title_fr` / `title_en` is required |
+| `title_en` | English title |
+| `description_fr` | French description (used only if `title_fr` is set) |
+| `description_en` | English description (used only if `title_en` is set) |
+| `status` | `1` = open (default), `0` = closed |
+
+A row with a `position` that already exists for the journal is skipped. Example:
+[`scripts/importSamples/sample-sections.csv`](../scripts/importSamples/sample-sections.csv).
+
 ---
 
 ### `import:volumes`
 
-Imports journal volumes from a semicolon-separated CSV file.
+Imports journal volumes from a semicolon-separated CSV file. Business logic lives in
+`Episciences\Volume\Import\{Row,Importer}`.
 
 ```bash
 php scripts/console.php import:volumes [options]
@@ -371,6 +450,80 @@ php scripts/console.php import:volumes [options]
 | `--rvid <id>` | Journal RVID (integer) |
 | `--csv-file <path>` | Path to the CSV file containing volumes data |
 | `--dry-run` | Simulate the import without writing to the database |
+
+**CSV format** (semicolon-separated, with header row):
+
+| Column | Description |
+|--------|-------------|
+| `position` | Volume position (integer); currently unused by the importer |
+| `status` | Volume status flag |
+| `current_issue` | `1` if this is the current issue, `0` otherwise |
+| `special_issue` | `1` if this is a special issue, `0` otherwise |
+| `bib_reference` | Bibliographic reference (optional) |
+| `title_en` | English title — at least one of `title_en` / `title_fr` is required |
+| `title_fr` | French title |
+| `description_en` | English description (optional) |
+| `description_fr` | French description (optional) |
+| `num` | Volume number (optional) |
+| `year` | Volume year (optional) |
+
+Example: [`scripts/importSamples/sample-volumes.csv`](../scripts/importSamples/sample-volumes.csv).
+
+---
+
+### `import:papers`
+
+Imports new papers or updates existing ones from a semicolon-separated CSV file. This
+replaces the legacy interactive `scripts/update_papers.php` script — every parameter comes
+from the CSV, there is no interactive prompt. Business logic lives in
+`Episciences\Paper\Import\{Row,ReviewResolver,VolumeSectionResolver,PublicationDateResolver,PaperImporter}`.
+
+```bash
+php scripts/console.php import:papers [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--csv-file <path>` | Path to the CSV file containing papers data |
+| `--dry-run` | Simulate the import without writing to the database |
+
+**CSV format** (semicolon-separated, with header row):
+
+| Column | Description |
+|--------|-------------|
+| `identifier` | Paper external id (e.g. HAL id) — required |
+| `repoid` | Source repository id (open archive) — required |
+| `version` | Paper version |
+| `status` | Paper status id (default: accepted) |
+| `volume_id` | Existing volume id, reused as-is if set |
+| `volume_title_fr` | French volume title — used to find or create a volume when `volume_id` is empty |
+| `volume_title_en` | English volume title |
+| `volume_num` | Volume number, used only when creating a volume |
+| `volume_year` | Volume year, used only when creating a volume |
+| `section_id` | Existing section id, reused as-is if set |
+| `section_title_fr` | French section title — used to find or create a section when `section_id` is empty |
+| `section_title_en` | English section title |
+| `uid` | Contributor id (default: a randomly picked chief editor) |
+| `publication_date` | Publication date |
+| `editors` | Dash-separated (`-`) editor uids, e.g. `12-34` |
+| `doi` | DOI |
+| `docid` | Paper docid — matched against an existing paper to decide an update instead of an import |
+| `rvid` | Journal RVID (numeric) **or** RVCODE (string) — required |
+| `submission_date` | Submission date (default: now) |
+
+A paper is imported if no existing paper matches it (by `identifier`+`version`, or by
+`docid`) for the resolved journal, or updated otherwise.
+
+A volume/section referenced only by title is looked up (case/whitespace-insensitive, across
+both languages) among the journal's existing volumes/sections; the first match is reused,
+otherwise a new one is created on the fly. Ids created this way are reused across later rows
+of the same CSV that reference the same title.
+
+> **One journal per run.** All rows in a CSV file must resolve to the same journal — RVID is
+> a process-wide PHP constant, locked from the first valid row. A row referencing a different
+> journal is rejected as a per-row error without aborting the rest of the import.
+
+Example: [`scripts/importSamples/sample-papers.csv`](../scripts/importSamples/sample-papers.csv).
 
 ---
 
@@ -557,3 +710,324 @@ Recommended cron schedule: daily (e.g. every day at 02:00).
 > ```
 
 > **Note:** Run `stats:update-robots-list` at least once before the first execution of `stats:process`.
+
+---
+
+## Next.js Cache Revalidation
+
+### `next:revalidate-cache`
+
+Immediately sends a revalidation request for one or more cache tags to the Next.js frontend, bypassing the async queue by default — or enqueues them with `--queue` instead (symmetry with `solr:index`'s default-enqueue + `--sync`). Use the immediate form for urgent manual invalidation or smoke testing. Requires `NEXT_BASE_URL` and a valid token to be configured in `config/pwd.json` or `data/{rvcode}/config/pwd.json`.
+
+See [docs/next-revalidation.md](./next-revalidation.md) for the full feature documentation (architecture, tag reference, worker setup, configuration).
+
+```bash
+php scripts/console.php next:revalidate-cache <rvcode> <tag> [<tag> ...]
+php scripts/console.php next:revalidate-cache --queue <rvcode> <tag> [<tag> ...]
+```
+
+| Argument / option | Description |
+|--------------------|-------------|
+| `rvcode` | Journal code (e.g. `epijinfo`) |
+| `tag` | One or more cache tags to invalidate (e.g. `article-42`, `news-epijinfo`, `volumes-epiga`) |
+| `--queue` | Enqueue the tag(s) on the `next_revalidation` Messenger queue instead of POSTing immediately |
+
+Exit code `0` if every tag succeeded (or was enqueued), `1` if any tag failed.
+
+```bash
+# Invalidate the news list for epijinfo
+php scripts/console.php next:revalidate-cache epijinfo news-epijinfo
+
+# Force-refresh the article list for epiga
+php scripts/console.php next:revalidate-cache epiga articles-epiga
+
+# Invalidate a specific article
+php scripts/console.php next:revalidate-cache epijinfo article-1234
+
+# Emergency broad invalidation, enqueued rather than blocking on N sequential POSTs
+php scripts/console.php next:revalidate-cache --queue epijinfo articles articles-accepted sitemap
+```
+
+---
+
+## Messenger queues
+
+Two independent queues share the same generic Symfony Messenger + Doctrine
+DBAL transport infrastructure (`library/Episciences/Messenger/*`), each with
+its own `messenger_messages`/`messenger_failed` rows (scoped by the
+`queue_name` column) and its own dispatch-failure table:
+
+| Transport (`--transport=`) | Producer | Purpose | Failure table |
+|---|---|---|---|
+| `solr_index` | `Episciences\Solr\Indexing\Enqueue\SolrIndexing` | Index/delete a paper in Solr | `solr_enqueue_failures` |
+| `next_revalidation` | `Episciences\Next\RevalidationService` | POST a Next.js `revalidateTag()` request | `next_revalidation_enqueue_failures` |
+
+Both are consumed and administered by the same two generic commands,
+`episciences:worker` and `episciences:queue`, selected via `--transport`
+(see `scripts/Messenger/TransportProfileRegistry.php`). This is the **only**
+path for either kind of work — paper publication/deletion/import and every
+Next.js-facing model hook all enqueue here; there is no synchronous fallback
+and no legacy cron for either.
+
+The Doctrine bridge filters every read (`get()`, `find()`, `getMessageCount()`)
+by `queue_name`, so `--transport=solr_index` and `--transport=next_revalidation`
+never see each other's rows even though they share the same tables — verify
+this with `episciences:queue --transport=<name> --stats` on both while both
+workers are running. One exception: `messenger_failed.id` is a single shared
+sequence across every transport, so a `--retry=<id>` for the wrong transport
+correctly answers "not found" rather than replaying the wrong queue's
+message, but `--list-failed` ids will look non-contiguous per transport —
+that's expected, not data loss.
+
+Retries and failures are handled natively by Messenger instead of being
+silently swallowed. Backoff differs by transport, tuned to how much a delayed
+message is still worth:
+
+| Transport | Retries | Backoff | Dead-letter after |
+|---|---|---|---|
+| `solr_index` | 5 | 5s, 15s, 45s, ... (×3, capped at 30min) | up to ~30min |
+| `next_revalidation` | 4 | 1s, 4s, 16s, 60s (×4) | ~81s |
+
+A failed message stays in `messenger_failed` until inspected or retried via
+`episciences:queue --transport=<name>`.
+
+**Both workers must run continuously, supervised** (a dedicated Docker
+Compose service each, or one systemd unit instance per transport on bare
+metal), **in every environment.** There is no synchronous fallback and no
+periodic-cron alternative for either: if a worker isn't running, its enqueued
+work is simply never processed, with no error visible anywhere else in the
+app. See [Deploying the workers](#deploying-the-workers) below.
+
+Before first use in an environment, set up each transport once (the second
+call skips re-diffing the shared `messenger_messages`/`messenger_failed`
+tables the first one already created — see `--setup` below):
+
+```bash
+php scripts/console.php episciences:queue --transport=solr_index --setup
+php scripts/console.php episciences:queue --transport=next_revalidation --setup
+```
+
+### Deploying the workers
+
+**Docker Compose (this repo's own stack — dev, and any environment using this
+`docker-compose.yml`):** two dedicated services, `worker-solr-index` and
+`worker-next-revalidation`, run them, reusing the `php-fpm` image
+(`docker-compose.yml`). They start with `make up` / `docker compose up -d`
+like any other service — no manual step needed. `restart: always` covers
+crash recovery, and `--time-limit=3600` (same bound as the systemd unit
+below) makes each periodically recycle its process; `--memory-limit` differs
+per service — `512M` for `worker-solr-index` (document building is heavier),
+`256M` for `worker-next-revalidation` — unlike the systemd unit below, which
+uses `512M` for both since it's a single template. Check with:
+
+```bash
+docker compose logs -f worker-solr-index worker-next-revalidation
+docker compose exec -u www-data -w /var/www/htdocs php-fpm php scripts/console.php episciences:queue --transport=solr_index --stats
+docker compose exec -u www-data -w /var/www/htdocs php-fpm php scripts/console.php episciences:queue --transport=next_revalidation --stats
+```
+
+A container does **not** run systemd as PID 1 (confirmed by
+`systemctl status` failing with "not booted with systemd" inside `php-fpm`),
+so nothing under `/etc/systemd/system` inside that container is ever started
+automatically — this was the actual cause of a stuck queue after a container
+rebuild: the systemd unit below is inert unless installed on a real
+systemd-managed host.
+
+**Bare-metal / VM without this Compose stack:** a ready-to-use systemd
+*template* unit ships in the repo at
+[`src/php-fpm/episciences-worker@.service`](../src/php-fpm/episciences-worker@.service)
+(it's also baked into the `php-fpm` Docker image at
+`/etc/systemd/system/episciences-worker@.service` at build time, so a
+`docker cp episciences-php-fpm:/etc/systemd/system/episciences-worker@.service .`
+against the image always gets the current version without checking out the
+repo). Install it on each such server that must run these workers, then
+enable one instance per transport (the `%i` in the unit becomes the
+`--transport` value):
+
+```bash
+# Recommended: create a symlink to the repo's unit file so future git pulls
+# update the definition automatically without manual file copying:
+sudo ln -sf /var/www/htdocs/src/php-fpm/episciences-worker@.service /etc/systemd/system/episciences-worker@.service
+
+# (Alternatively, copy it directly if preferred, or via docker cp from a running/built php-fpm image:
+#  sudo cp "src/php-fpm/episciences-worker@.service" /etc/systemd/system/)
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now episciences-worker@solr_index episciences-worker@next_revalidation
+
+# Check status / logs
+sudo systemctl status episciences-worker@solr_index episciences-worker@next_revalidation
+sudo journalctl -u episciences-worker@solr_index -f
+# (StandardOutput/StandardError are also appended to /var/www/logs/<transport>-worker.log)
+```
+
+Each instance runs as `www-data`, restarts automatically on crash
+(`Restart=always`), and self-recycles hourly (`--time-limit=3600`) or past
+512M memory (`--memory-limit=512M`) so `Restart=always` periodically refreshes
+the process instead of a single PHP process running forever — edit
+`ExecStart` in the unit file to change either bound (or override per-instance
+with a `systemctl edit episciences-worker@next_revalidation` drop-in).
+`WorkingDirectory` and `ExecStart` assume the app lives at `/var/www/htdocs`,
+matching this repo's Docker/prod convention (`CNTR_APP_DIR` in the
+`Makefile`); adjust both paths if a given server checks out the app
+elsewhere.
+
+`User`, `Group`, and `ReadWritePaths` assume the same account and filesystem
+layout as the Docker image (`www-data`, `/var/www/logs`, `/var/www/data`,
+`/var/www/cache`). If a given server uses a different user/group or
+different paths, don't edit the symlinked file directly — use a drop-in
+instead, so `git pull` still updates the rest of the unit:
+
+```bash
+sudo systemctl edit episciences-worker@.service
+```
+
+```ini
+[Service]
+User=<prod-user>
+Group=<prod-group>
+ReadWritePaths=
+ReadWritePaths=/path/to/prod/logs /path/to/prod/data /path/to/prod/cache
+```
+
+The empty `ReadWritePaths=` line is required: it's a list directive, so a
+drop-in appends to the base file's value by default — without resetting it
+first, the unit ends up with both the container paths and the prod paths.
+
+This drop-in can be laid down by a deployment tool instead of by hand — e.g.
+a SaltStack state templating the same content from pillar data, one
+`file.managed` per host/environment, followed by a `daemon-reload` and a
+restart of the worker instances on change:
+
+```yaml
+episciences-worker-override:
+  file.managed:
+    - name: /etc/systemd/system/episciences-worker@.service.d/override.conf
+    - makedirs: True
+    - contents: |
+        [Service]
+        User={{ pillar['episciences']['worker_user'] }}
+        Group={{ pillar['episciences']['worker_group'] }}
+        ReadWritePaths=
+        ReadWritePaths={{ pillar['episciences']['worker_logs'] }} {{ pillar['episciences']['worker_data'] }} {{ pillar['episciences']['worker_cache'] }}
+
+episciences-worker-reload:
+  module.run:
+    - name: service.systemctl_reload
+    - onchanges:
+      - file: episciences-worker-override
+```
+
+(this state lives in the infra/Salt repo, not here — the point is only that
+the values come from pillar, not hardcoded, keeping this repo's unit file
+generic across environments.)
+
+The unit only orders itself after `network-online.target`, not after a local
+`mysql.service`/`mariadb.service` — the database can live on a different
+host, where those unit names wouldn't exist anyway (and `After=` on a
+nonexistent unit name is silently a no-op, not a startup failure). Actual
+resilience to the database not being reachable yet comes from `Restart=always`
++ `RestartSec=5` below: if the worker starts before the remote database
+accepts connections, it fails and gets retried every 5s until it succeeds.
+
+When using a symlink, whenever the unit file is modified in git, you only need
+to run:
+`sudo systemctl daemon-reload && sudo systemctl restart episciences-worker@solr_index episciences-worker@next_revalidation`
+to pick up the changes.
+
+### `solr:index`
+
+Enqueues (or synchronously runs) Solr re-indexing for one or more papers.
+
+```bash
+php scripts/console.php solr:index [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--docid <id>` | Index only this DOCID |
+| `--sqlwhere <clause>` | SQL `WHERE` clause to select DOCIDs (e.g. `'RVID = 42'`), always ANDed with `STATUS = 16` (published). **Trusted input only.** |
+| `--file <path>` | Path to a file of DOCIDs, one per line |
+| `--priority <n>` | Message priority (informational only — the Doctrine DBAL transport does not reorder by priority, unlike legacy `INDEX_QUEUE.PRIORITY`) |
+| `--sync` | Build and send each document immediately instead of enqueuing it (bypasses Messenger entirely) |
+
+`--docid`, `--sqlwhere` and `--file` are mutually exclusive; exactly one is required.
+
+Only published papers (`STATUS = 16`) are ever indexed: `--sqlwhere` always ANDs
+`STATUS = 16` onto the caller-supplied clause, and `IndexPaperMessageHandler`
+re-checks status before building/sending the document — so a non-published
+docid passed via `--docid` or `--file` is silently skipped rather than indexed.
+
+---
+
+### `solr:delete`
+
+Enqueues (or synchronously runs) a Solr deletion, by DOCID or by raw query.
+
+```bash
+php scripts/console.php solr:delete [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--docid <id>` | Delete this DOCID |
+| `--query <query>` | Raw Solr delete query, e.g. `'docid:19'`. **Trusted input only.** |
+| `--sync` | Run the deletion immediately instead of enqueuing it |
+
+Exactly one of `--docid` or `--query` is required.
+
+---
+
+### `episciences:worker`
+
+Continuously consumes one Messenger queue, selected by `--transport`. For
+`solr_index`, index and delete messages share the same transport and are
+routed to the correct handler automatically; there is no update/delete mode
+flag. For `next_revalidation`, refuses to start if `NEXT_BASE_URL` is not
+configured (see [docs/next-revalidation.md](./next-revalidation.md)).
+
+```bash
+php scripts/console.php episciences:worker --transport=<solr_index|next_revalidation> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--transport <name>` | **Required.** `solr_index` or `next_revalidation` |
+| `--limit <n>` | Stop after processing this many messages |
+| `--time-limit <seconds>` | Stop after this many seconds |
+| `--memory-limit <size>` | Stop once memory usage exceeds this limit (e.g. `512M`) |
+
+**Must run continuously under a process supervisor (systemd/supervisord),
+one process per transport.** A periodic cron tick is not sufficient — this
+is the only path either kind of work gets processed through, with no
+synchronous fallback. Running one process per transport (rather than one
+process alternating between both) means a slow Solr document build never
+delays a Next.js revalidation POST.
+
+---
+
+### `episciences:queue`
+
+Inspects and manages one Messenger queue, selected by `--transport` — a
+minimal, hand-rolled equivalent of Symfony FrameworkBundle's
+`messenger:failed:*` commands (this app has no bundle system to auto-register
+them).
+
+```bash
+php scripts/console.php episciences:queue --transport=<solr_index|next_revalidation> [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--transport <name>` | **Required.** `solr_index` or `next_revalidation` |
+| `--stats` | Show pending and failed message counts |
+| `--list-failed` | List failed messages (id, message class, exception, error) |
+| `--retry <id>` | Retry the failed message with this id, synchronously, in this process |
+| `--setup` | Create the `messenger_messages`/`messenger_failed` tables and this transport's own dispatch-failure table if they don't exist yet (one-time, per environment *and per transport* — see above) |
+| `--list-dispatch-failures` | List enqueue calls that failed even after their bounded producer-side retry — these never made it into `messenger_messages` at all, so they don't show up in `--list-failed` |
+| `--retry-dispatch-failure <id>` | Re-attempt a recorded dispatch failure; removes it from the dispatch-failure table on success |
+| `--limit <n>` | Limit for `--list-failed` / `--list-dispatch-failures` (default: 50) |
+
+Exactly one of `--stats`, `--list-failed`, `--retry`, `--setup`,
+`--list-dispatch-failures` or `--retry-dispatch-failure` is required, and
+both it and `--transport` are validated before any bootstrap.

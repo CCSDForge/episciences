@@ -68,6 +68,12 @@ class UpdatePapersDocumentCommand extends Command
             $logger->pushHandler(new StreamHandler($handle, Logger::INFO));
         }
 
+        // bootstrap() skips $application->bootstrap(), so AppRegistry's 'appLogger' is never
+        // registered here. Without it, Episciences_BibliographicalsReferencesTools::getClient()
+        // falls back to a NullLogger and swallows biblioref API failures silently — register
+        // this command's logger so those errors surface in updatePapersDocument_*.log.
+        \Episciences\AppRegistry::set('appLogger', $logger);
+
         $db = \Zend_Db_Table_Abstract::getDefaultAdapter();
 
         if ($db === null) {
@@ -109,6 +115,7 @@ class UpdatePapersDocumentCommand extends Command
         $totalPages     = $paginator->count();
         $processedCount = 0;
         $failureCount   = 0;
+        $totalBibRefs   = 0;
 
         $logger->info(sprintf('Total pages: %d', $totalPages));
 
@@ -189,7 +196,15 @@ class UpdatePapersDocumentCommand extends Command
                     }
 
                     $pageStatements[] = $this->buildUpdateStatement($docId, (string) $db->quote($paperJson));
-                    $logger->info(sprintf('[DOCID %d] JSON generated.', $docId));
+                    $bibRefCount = $this->countBibliographicReferences($paperJson);
+                    $totalBibRefs += $bibRefCount;
+
+                    if ($io->isVeryVerbose()) {
+                        $logger->info(sprintf('[DOCID %d] JSON generated (%d bibliographic reference(s)).', $docId, $bibRefCount));
+                    } else {
+                        $logger->info(sprintf('[DOCID %d] JSON generated.', $docId));
+                    }
+
                     $processedCount++;
                 } catch (\Zend_Db_Statement_Exception|\JsonException $e) {
                     $logger->error(sprintf('[DOCID %d] toJson() failed: %s', $docId, $e->getMessage()));
@@ -232,9 +247,10 @@ class UpdatePapersDocumentCommand extends Command
         }
 
         $summary = sprintf(
-            'Done. Processed: %d | Failures: %d%s',
+            'Done. Processed: %d | Failures: %d%s%s',
             $processedCount,
             $failureCount,
+            $io->isVeryVerbose() ? sprintf(' | Bibliographic references: %d', $totalBibRefs) : '',
             $isDryRun ? ' (dry-run)' : ''
         );
 
@@ -254,6 +270,39 @@ class UpdatePapersDocumentCommand extends Command
     // -------------------------------------------------------------------------
     // Public pure helpers — testable without bootstrap or DB
     // -------------------------------------------------------------------------
+
+    /**
+     * Count the number of bibliographic references in a paper's DOCUMENT JSON.
+     *
+     * @param string|array<string, mixed> $json
+     */
+    public function countBibliographicReferences(string|array $json): int
+    {
+        $data = is_string($json) ? json_decode($json, true) : $json;
+
+        if (!is_array($data)) {
+            return 0;
+        }
+
+        $citation = $data['journal']['journal_article']['citation_list']['citation']
+            ?? $data['conference']['conference_paper']['citation_list']['citation']
+            ?? $data['body']['journal']['journal_article']['citation_list']['citation']
+            ?? $data['body']['conference']['conference_paper']['citation_list']['citation']
+            ?? null;
+
+        if ($citation === null || $citation === [] || $citation === '') {
+            return 0;
+        }
+
+        if (is_array($citation)) {
+            if (isset($citation[0])) {
+                return count($citation);
+            }
+            return 1;
+        }
+
+        return 0;
+    }
 
     /**
      * Return the ordered list of columns to SELECT from PAPERS.

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Section\Import\Importer;
+use Episciences\Section\Import\Row;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -16,17 +18,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Expected CSV format (semicolon-separated, with header row):
  *   rvid;position;title_fr;title_en;description_fr;description_en;status
  *
- * - rvid        : (int)  journal RVID — required per row
- * - position    : (int)  section position; auto-incremented if empty
- * - title_fr    : (str)  French title (at least one of title_fr / title_en required)
- * - title_en    : (str)  English title
- * - description_fr : (str) French description (only used when title_fr is set)
- * - description_en : (str) English description (only used when title_en is set)
- * - status      : (int)  1 = open (default), 0 = closed
+ * See Episciences\Section\Import\Row for the exact meaning of each column.
  *
  * Replaces: scripts/importSections.php (JournalScript)
  */
-class ImportSectionsCommand extends Command
+final class ImportSectionsCommand extends Command
 {
     protected static $defaultName = 'import:sections';
 
@@ -34,6 +30,7 @@ class ImportSectionsCommand extends Command
     private int $importedCount = 0;
     private int $skippedCount  = 0;
     private int $errorCount    = 0;
+    private ?Episciences_Review $lockedReview = null;
 
     protected function configure(): void
     {
@@ -116,11 +113,15 @@ class ImportSectionsCommand extends Command
             $this->logger->info('CSV header: ' . implode(', ', $header));
         }
 
-        $lineNumber  = 1;
-        $rvidDefined = false;
+        $importer   = new Importer($dryRun);
+        $lineNumber = 1;
 
         while (($data = fgetcsv($handle, 0, ';')) !== false) {
             $lineNumber++;
+
+            if (Row::isBlankCsvRecord($data)) {
+                continue;
+            }
 
             if (count($data) < 7) {
                 $this->logger->warning(
@@ -130,161 +131,93 @@ class ImportSectionsCommand extends Command
                 continue;
             }
 
-            $this->processSectionRow($data, $lineNumber, $rvidDefined, $dryRun);
+            $this->processRow(Row::fromCsvRow($data), $lineNumber, $importer);
         }
 
         fclose($handle);
     }
 
-    /**
-     * @param array<int, string> $data
-     */
-    private function processSectionRow(array $data, int $lineNumber, bool &$rvidDefined, bool $dryRun): void
+    private function processRow(Row $row, int $lineNumber, Importer $importer): void
     {
-        [$rvid, $position, $titleFr, $titleEn, $descriptionFr, $descriptionEn, $status] = $data;
-
-        if (empty($rvid)) {
+        if ($row->rvid === null) {
             $this->logger->warning("Line {$lineNumber}: Missing required field 'rvid', skipping");
             $this->skippedCount++;
             return;
         }
 
-        // Define RVID constant from first valid row — required by Section->save()
-        if (!$rvidDefined && !defined('RVID')) {
-            define('RVID', (int) $rvid);
-            $rvidDefined = true;
-            $this->logger->info("RVID constant defined as: {$rvid}");
+        $review = Episciences_ReviewsManager::findByRvid($row->rvid);
+        if (!$review) {
+            $this->logger->error("Line {$lineNumber}: No journal found for rvid '{$row->rvid}'");
+            $this->errorCount++;
+            return;
         }
 
-        if (empty(trim($titleFr)) && empty(trim($titleEn))) {
+        if ($this->lockedReview === null) {
+            $this->lockJournal($review);
+        } elseif ($review->getRvid() !== $this->lockedReview->getRvid()) {
+            $this->logger->error(
+                "Line {$lineNumber}: row references journal '{$review->getCode()}' but this run is locked to "
+                . "'{$this->lockedReview->getCode()}' — a single CSV run can only process one journal"
+            );
+            $this->errorCount++;
+            return;
+        }
+
+        $titles = $row->titles();
+        if ($titles === []) {
             $this->logger->warning("Line {$lineNumber}: At least one title (fr or en) is required, skipping");
             $this->skippedCount++;
             return;
         }
 
+        foreach ($row->orphanedDescriptionLanguages($titles) as $lang) {
+            $label = $lang === 'fr' ? 'French' : 'English';
+            $this->logger->warning(
+                "Line {$lineNumber}: {$label} description provided but no {$label} title — ignoring description"
+            );
+        }
+        $descriptions = $row->descriptionsForTitles($titles);
+
+        if (Row::isStatusInvalid($row->status)) {
+            $this->logger->warning("Line {$lineNumber}: Invalid status value '{$row->status}', defaulting to open");
+        }
+        $status = Row::parseStatus($row->status);
+
         try {
-            if (empty($position)) {
-                $position = $dryRun ? 999 : $this->getNextPosition((int) $rvid);
-                $this->logger->info("Line {$lineNumber}: Auto-generated position {$position} for journal {$rvid}");
-            } else {
-                $position = (int) $position;
-                if (!$dryRun && $this->sectionExists((int) $rvid, $position)) {
-                    $this->logger->warning(
-                        "Line {$lineNumber}: Section already exists for journal {$rvid} at position {$position}, skipping"
-                    );
-                    $this->skippedCount++;
-                    return;
-                }
-            }
+            $sid = $importer->import($row->rvid, $row->position, $titles, $descriptions, $status);
 
-            $section = new Episciences_Section();
-            $section->setRvid((int) $rvid);
-            $section->setPosition($position);
-
-            $titles = [];
-            if (!empty(trim($titleFr))) {
-                $titles['fr'] = trim($titleFr);
-            }
-            if (!empty(trim($titleEn))) {
-                $titles['en'] = trim($titleEn);
-            }
-            $section->setTitles($titles);
-
-            $descriptions = [];
-            if (!empty(trim($descriptionFr))) {
-                if (isset($titles['fr'])) {
-                    $descriptions['fr'] = trim($descriptionFr);
-                } else {
-                    $this->logger->warning("Line {$lineNumber}: French description provided but no French title — ignoring description");
-                }
-            }
-            if (!empty(trim($descriptionEn))) {
-                if (isset($titles['en'])) {
-                    $descriptions['en'] = trim($descriptionEn);
-                } else {
-                    $this->logger->warning("Line {$lineNumber}: English description provided but no English title — ignoring description");
-                }
-            }
-            $section->setDescriptions($descriptions);
-
-            $statusValue = self::parseStatusValue($status, $lineNumber, $this->logger);
-            $section->setSetting(Episciences_Section::SETTING_STATUS, $statusValue);
-
-            if ($dryRun) {
-                $this->logger->info(
-                    "[dry-run] Would create section for journal {$rvid} at position {$position} with status {$statusValue}",
-                    ['line' => $lineNumber]
+            if ($sid === null) {
+                $this->logger->warning(
+                    "Line {$lineNumber}: Section already exists for journal {$row->rvid}"
+                    . " at position {$row->position}, skipping"
                 );
-                $this->importedCount++;
-            } elseif ($section->save()) {
-                $this->logger->info(
-                    "Section created (SID: {$section->getSid()}, journal: {$rvid}, position: {$position}, status: {$statusValue})",
-                    ['line' => $lineNumber]
-                );
-                $this->importedCount++;
-            } else {
-                $this->logger->error("Failed to save section", ['line' => $lineNumber]);
-                $this->errorCount++;
+                $this->skippedCount++;
+                return;
             }
-        } catch (\Throwable $e) {
+
+            $this->logger->info(
+                "Section created (SID: {$sid}, journal: {$row->rvid}, status: {$status})",
+                ['line' => $lineNumber]
+            );
+            $this->importedCount++;
+        } catch (Throwable $e) {
             $this->logger->error("Exception on line {$lineNumber}: " . $e->getMessage());
             $this->errorCount++;
         }
     }
 
     /**
-     * Parse and validate a raw status value from the CSV.
-     *
-     * Returns SECTION_OPEN_STATUS when the value is empty or unrecognised.
+     * Locks this run to a single journal, since RVID is a process-wide PHP constant that
+     * legacy code (Episciences_Section, Episciences_VolumesAndSectionsManager, ...) reads directly.
      */
-    public static function parseStatusValue(string $raw, int $lineNumber, Logger $logger): int
+    private function lockJournal(Episciences_Review $review): void
     {
-        $trimmed = trim($raw);
+        $this->lockedReview = $review;
 
-        if ($trimmed === '') {
-            return Episciences_Section::SECTION_OPEN_STATUS;
-        }
+        define('RVID', $review->getRvid());
+        defineJournalConstants($review->getCode());
 
-        // is_numeric guards against non-numeric strings like 'abc' whose (int) cast would
-        // silently produce 0 and accidentally match SECTION_CLOSED_STATUS.
-        if (!is_numeric($trimmed)) {
-            $logger->warning("Line {$lineNumber}: Invalid status value '{$raw}', defaulting to open");
-            return Episciences_Section::SECTION_OPEN_STATUS;
-        }
-
-        $statusInt = (int) $trimmed;
-
-        if ($statusInt === Episciences_Section::SECTION_CLOSED_STATUS
-            || $statusInt === Episciences_Section::SECTION_OPEN_STATUS
-        ) {
-            return $statusInt;
-        }
-
-        $logger->warning("Line {$lineNumber}: Invalid status value '{$raw}', defaulting to open");
-        return Episciences_Section::SECTION_OPEN_STATUS;
-    }
-
-    private function sectionExists(int $rvid, int $position): bool
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        return (int) $db->fetchOne(
-            $db->select()
-                ->from(Episciences_SectionsManager::TABLE, 'COUNT(*)')
-                ->where('RVID = ?', $rvid)
-                ->where('POSITION = ?', $position)
-        ) > 0;
-    }
-
-    private function getNextPosition(int $rvid): int
-    {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-
-        return (int) $db->fetchOne(
-            $db->select()
-                ->from(Episciences_SectionsManager::TABLE, 'MAX(POSITION)')
-                ->where('RVID = ?', $rvid)
-        ) + 1;
+        $this->logger->info("Journal locked for this run: {$review->getCode()} (RVID {$review->getRvid()})");
     }
 
     private function displaySummary(SymfonyStyle $io): void

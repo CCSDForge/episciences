@@ -33,13 +33,13 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 # PHONY Targets
 # =============================================================================
 .PHONY: help build up down status logs restart clean clean-mysql
-.PHONY: collection collection-ref-pps index import-ref-pps download-ref-pps dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir yarn-encore-dev
+.PHONY: collection collection-ref-pps import-ref-pps download-ref-pps dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir yarn-encore-dev
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
 .PHONY: enter-container-php
 .PHONY: update-geoip stats-process stats-update-robots-list stats-download-kpi
-.PHONY: format format-check format-tests format-file
+.PHONY: format format-check format-tests format-file sonar
 
 # =============================================================================
 # Help & Information
@@ -55,7 +55,10 @@ help: ## Display this help message
 	@grep -h -E '^(wait-for-db|load-db.*|generate-users|shell-mysql.*|backup-db):.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No database commands found"
 	@echo ""
 	@echo "🔍 Solr Commands:"
-	@grep -E '^(collection|collection-ref-pps|index|import-ref-pps|download-ref-pps):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(collection|collection-ref-pps|import-ref-pps|download-ref-pps|solr-index|solr-delete):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "📬 Queue Commands (Messenger — Solr indexing, Next.js revalidation):"
+	@grep -E '^(queue-worker|queue-admin|next-revalidate):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "🛠️  Development Commands:"
 	@grep -E '^(dev-setup|composer|yarn|enter):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
@@ -64,7 +67,7 @@ help: ## Display this help message
 	@grep -h -E '^test.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No testing commands found"
 	@echo ""
 	@echo "🔎 Linting & Quality Commands:"
-	@grep -h -E '^(phpstan|rector).*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No quality commands found"
+	@grep -h -E '^(phpstan|rector|sonar).*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No quality commands found"
 	@echo ""
 	@echo "✨ Formatting Commands:"
 	@grep -E '^format.*:.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
@@ -180,11 +183,6 @@ collection-ref-pps: ## Create Solr core 'ref_pps' (requires episciences-infrastr
 		echo "Core may already exist, continuing..."
 	@echo "Solr core ref_pps setup complete!"
 
-index: ## Index content into Solr  [V=1 verbose] [D=1 debug]
-	@echo "Indexing content into Solr..."
-	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/solr/solrJob.php -D % $(if $(V),-v) $(if $(D),-d)
-	@echo "Indexing complete!"
-
 import-ref-pps: ## Import PPS data from CSV into Solr core ref_pps (optional: csv-file=PATH)
 	@echo "Importing PPS data into Solr..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
@@ -209,7 +207,7 @@ dev-setup: build copy-config setup-logs up wait-for-db init-data-dir ## Complete
 	@$(MAKE) init-dev-users
 	@$(MAKE) create-bot-user
 	@$(MAKE) collection
-	@$(MAKE) index
+	@$(MAKE) solr-index sqlwhere='1=1' sync=1
 	@echo "Development environment setup complete!"
 	@echo ""
 	@echo "====================================================================="
@@ -434,7 +432,7 @@ import-sections: ## Import journal sections from a CSV file (requires csv-file=P
 	@echo "Importing sections from '$(csv-file)'..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php import:sections \
-		--csv-file=$(csv-file) \
+		--csv-file=$(call shell_quote,$(csv-file)) \
 		$(if $(filter 1,$(dry-run)),--dry-run)
 
 import-volumes: ## Import journal volumes from a CSV file (requires rvid=JOURNAL_RVID csv-file=PATH; optional: dry-run=1)
@@ -448,8 +446,47 @@ import-volumes: ## Import journal volumes from a CSV file (requires rvid=JOURNAL
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php import:volumes \
 		--rvid=$(rvid) \
-		--csv-file=$(csv-file) \
+		--csv-file=$(call shell_quote,$(csv-file)) \
 		$(if $(filter 1,$(dry-run)),--dry-run)
+
+import-papers: ## Import or update papers from a CSV file (requires csv-file=PATH; optional: dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php import:papers --csv-file=PATH [--dry-run] [-q]
+	@if [ -z "$(csv-file)" ]; then \
+		echo "Error: csv-file parameter is required"; \
+		echo "Usage: make import-papers csv-file=PATH/TO/FILE.csv [dry-run=1]"; \
+		exit 1; \
+	fi
+	@echo "Importing papers from '$(csv-file)'..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php import:papers \
+		--csv-file=$(call shell_quote,$(csv-file)) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
+
+# --- Export ---------------------------------------------------------------------
+
+export-papers: ## Export papers to a CSV file, same format as import:papers (requires rvid=JOURNAL_RVID csv-file=PATH; optional filters: volume-id=ID section-id=ID year=YYYY docid="ID ID..." identifier=ID version=N status="N N..." repoid=ID uid=ID sql-where='CLAUSE' limit=N)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php export:papers --rvid=RVID --csv-file=PATH [options] [-q]
+	@if [ -z "$(rvid)" ] || [ -z "$(csv-file)" ]; then \
+		echo "Error: rvid and csv-file parameters are required"; \
+		echo "Usage: make export-papers rvid=JOURNAL_RVID csv-file=PATH/TO/FILE.csv [volume-id=ID] [section-id=ID] [year=YYYY] [docid=\"ID ID...\"] [identifier=ID] [version=N] [status=\"N N...\"] [repoid=ID] [uid=ID] [sql-where='CLAUSE'] [limit=N]"; \
+		exit 1; \
+	fi
+	@echo "Exporting papers for RVID $(rvid) to '$(csv-file)'..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php export:papers \
+		--rvid=$(rvid) \
+		--csv-file=$(call shell_quote,$(csv-file)) \
+		$(if $(volume-id),--volume-id=$(volume-id)) \
+		$(if $(section-id),--section-id=$(section-id)) \
+		$(if $(year),--year=$(year)) \
+		$(foreach d,$(docid),--docid=$(d)) \
+		$(if $(identifier),--identifier=$(call shell_quote,$(identifier))) \
+		$(if $(version),--version=$(version)) \
+		$(foreach s,$(status),--status=$(s)) \
+		$(if $(repoid),--repoid=$(repoid)) \
+		$(if $(uid),--uid=$(uid)) \
+		$(if $(sql-where),--sql-where=$(call shell_quote,$(sql-where))) \
+		$(if $(limit),--limit=$(limit))
 
 # --- zbJATS ---------------------------------------------------------------------
 
@@ -503,6 +540,96 @@ stats-download-kpi: ## Generate download KPI JSON for all published articles (op
 		$(if $(filter 1,$(pretty)),--pretty) \
 		$(if $(filter 1,$(dry-run)),--dry-run) \
 		$(if $(output),--output=$(output))
+
+# --- Solr Indexing ---------------------------------------------------------------
+# Symfony Messenger + Doctrine DBAL transport. See docs/console-commands.md#solr-indexing.
+
+# Quotes an arbitrary Make value for the recipe's POSIX shell: a wrapping
+# '...' alone preserves spaces but not embedded apostrophes (e.g.
+# sqlwhere="TYPE = 'article'"), which corrupts the value instead of erroring.
+# Standard idiom: close the quote, emit an escaped one via double quotes, reopen.
+shell_quote = '$(subst ','"'"',$(1))'
+
+solr-index: ## Enqueue (or sync) Solr re-indexing (requires docid=N or sqlwhere=CLAUSE or file=PATH; optional: sync=1 priority=N)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:index --docid=N|--sqlwhere=CLAUSE|--file=PATH [--sync] [-q]
+	@if [ -z "$(docid)" ] && [ -z "$(sqlwhere)" ] && [ -z "$(file)" ]; then \
+		echo "Error: specify docid=N or sqlwhere=CLAUSE or file=PATH"; \
+		echo "Usage: make solr-index docid=N | sqlwhere=CLAUSE | file=PATH [sync=1] [priority=N]"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php solr:index \
+		$(if $(docid),--docid=$(docid)) \
+		$(if $(sqlwhere),--sqlwhere=$(call shell_quote,$(sqlwhere))) \
+		$(if $(file),--file=$(file)) \
+		$(if $(priority),--priority=$(priority)) \
+		$(if $(filter 1,$(sync)),--sync)
+
+solr-delete: ## Enqueue (or sync) a Solr deletion (requires docid=N or query=QUERY; optional: sync=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php solr:delete --docid=N|--query=QUERY [--sync] [-q]
+	@if [ -z "$(docid)" ] && [ -z "$(query)" ]; then \
+		echo "Error: specify docid=N or query=QUERY"; \
+		echo "Usage: make solr-delete docid=N | query=QUERY [sync=1]"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php solr:delete \
+		$(if $(docid),--docid=$(docid)) \
+		$(if $(query),--query=$(call shell_quote,$(query))) \
+		$(if $(filter 1,$(sync)),--sync)
+
+# --- Messenger queues (Solr indexing, Next.js revalidation) ----------------
+# One shared worker/admin command per docs/console-commands.md#messenger-queues.
+# transport=solr_index|next_revalidation selects which queue.
+
+queue-worker: ## Continuously consume one Messenger queue (requires transport=NAME; optional: limit=N time-limit=SECONDS memory-limit=SIZE)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php episciences:worker --transport=NAME [--limit=N] [--time-limit=SECONDS] [--memory-limit=SIZE] [-q]
+	@if [ -z "$(transport)" ]; then \
+		echo "Error: specify transport=solr_index|next_revalidation"; \
+		echo "Usage: make queue-worker transport=NAME [limit=N] [time-limit=SECONDS] [memory-limit=SIZE]"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php episciences:worker \
+		--transport=$(transport) \
+		$(if $(limit),--limit=$(limit)) \
+		$(if $(time-limit),--time-limit=$(time-limit)) \
+		$(if $(memory-limit),--memory-limit=$(memory-limit))
+
+queue-admin: ## Inspect/manage one Messenger queue (requires transport=NAME and one of stats=1, list-failed=1, retry=ID, setup=1, list-dispatch-failures=1 or retry-dispatch-failure=ID; optional: limit=N)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php episciences:queue --transport=NAME --stats|--list-failed|--retry=ID|--setup|--list-dispatch-failures|--retry-dispatch-failure=ID [-q]
+	@if [ -z "$(transport)" ]; then \
+		echo "Error: specify transport=solr_index|next_revalidation"; \
+		echo "Usage: make queue-admin transport=NAME stats=1 | list-failed=1 [limit=N] | retry=ID | setup=1 | list-dispatch-failures=1 [limit=N] | retry-dispatch-failure=ID"; \
+		exit 1; \
+	fi
+	@if [ "$(stats)" != "1" ] && [ "$(list-failed)" != "1" ] && [ -z "$(retry)" ] && [ "$(setup)" != "1" ] && [ "$(list-dispatch-failures)" != "1" ] && [ -z "$(retry-dispatch-failure)" ]; then \
+		echo "Error: specify stats=1, list-failed=1, retry=ID, setup=1, list-dispatch-failures=1 or retry-dispatch-failure=ID"; \
+		echo "Usage: make queue-admin transport=NAME stats=1 | list-failed=1 [limit=N] | retry=ID | setup=1 | list-dispatch-failures=1 [limit=N] | retry-dispatch-failure=ID"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php episciences:queue \
+		--transport=$(transport) \
+		$(if $(filter 1,$(stats)),--stats) \
+		$(if $(filter 1,$(list-failed)),--list-failed) \
+		$(if $(retry),--retry=$(retry)) \
+		$(if $(filter 1,$(setup)),--setup) \
+		$(if $(filter 1,$(list-dispatch-failures)),--list-dispatch-failures) \
+		$(if $(retry-dispatch-failure),--retry-dispatch-failure=$(retry-dispatch-failure)) \
+		$(if $(limit),--limit=$(limit))
+
+next-revalidate: ## Immediately trigger (or enqueue) Next.js cache revalidation (requires rvcode=CODE tag="TAG1 TAG2 ..."; optional: queue=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php next:revalidate-cache [--queue] RVCODE TAG...
+	@if [ -z "$(rvcode)" ] || [ -z "$(tag)" ]; then \
+		echo "Error: specify rvcode=CODE and tag=\"TAG1 TAG2 ...\""; \
+		echo "Usage: make next-revalidate rvcode=epijinfo tag=article-42 [queue=1]"; \
+		exit 1; \
+	fi
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php next:revalidate-cache \
+		$(if $(filter 1,$(queue)),--queue) \
+		$(rvcode) $(tag)
 
 can-i-use-update: ## Update browserslist database when caniuse-lite is outdated
 	@echo "Updating browserslist database..."

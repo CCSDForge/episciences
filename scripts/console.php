@@ -16,9 +16,12 @@ require_once __DIR__ . '/GetZbReviewsCommand.php';
 require_once __DIR__ . '/GenerateSitemapCommand.php';
 require_once __DIR__ . '/MergePdfVolCommand.php';
 require_once __DIR__ . '/CreateDoajVolumeExportsCommand.php';
+require_once __DIR__ . '/CheckDoajJournalsCommand.php';
 require_once __DIR__ . '/ZbjatsZipperCommand.php';
 require_once __DIR__ . '/ImportSectionsCommand.php';
 require_once __DIR__ . '/ImportVolumesCommand.php';
+require_once __DIR__ . '/ImportPapersCommand.php';
+require_once __DIR__ . '/ExportPapersCommand.php';
 require_once __DIR__ . '/ImportRefPpsCommand.php';
 require_once __DIR__ . '/DownloadRefPpsCommand.php';
 require_once __DIR__ . '/UpdateCounterRobotsListCommand.php';
@@ -27,9 +30,19 @@ require_once __DIR__ . '/ImportApacheLogsCommand.php';
 require_once __DIR__ . '/UpdateGeoIpCommand.php';
 require_once __DIR__ . '/GenerateDownloadKpiCommand.php';
 require_once __DIR__ . '/UpdatePapersDocumentCommand.php';
+require_once __DIR__ . '/CleanHalRecordDescriptionsCommand.php';
 require_once __DIR__ . '/UpdateTranslationsCommand.php';
 require_once __DIR__ . '/GetDoiCommand.php';
 require_once __DIR__ . '/NormalizeUserAffiliationsCommand.php';
+require_once __DIR__ . '/RevalidateNextCacheCommand.php';
+
+// Solr indexing commands
+require_once __DIR__ . '/SolrIndexCommand.php';
+require_once __DIR__ . '/SolrDeleteCommand.php';
+
+// Messenger queue commands (Solr indexing, Next.js revalidation)
+require_once __DIR__ . '/EpisciencesWorkerCommand.php';
+require_once __DIR__ . '/EpisciencesQueueCommand.php';
 
 use Symfony\Component\Console\Application;
 
@@ -59,6 +72,7 @@ $application->add(new MergePdfVolCommand());
 
 // DOAJ commands
 $application->add(new CreateDoajVolumeExportsCommand());
+$application->add(new CheckDoajJournalsCommand());
 
 // zbJATS commands
 $application->add(new ZbjatsZipperCommand());
@@ -66,6 +80,8 @@ $application->add(new ZbjatsZipperCommand());
 // Import commands
 $application->add(new ImportSectionsCommand());
 $application->add(new ImportVolumesCommand());
+$application->add(new ImportPapersCommand());
+$application->add(new ExportPapersCommand());
 $application->add(new ImportRefPpsCommand());
 $application->add(new DownloadRefPpsCommand());
 
@@ -86,8 +102,20 @@ $application->add(new UpdateGeoIpCommand());
 
 // Papers commands
 $application->add(new UpdatePapersDocumentCommand());
+$application->add(new CleanHalRecordDescriptionsCommand());
 
 // Translation commands
 $application->add(new UpdateTranslationsCommand());
+
+// Solr indexing commands
+$application->add(new SolrIndexCommand());
+$application->add(new SolrDeleteCommand());
+
+// Messenger queue commands (Solr indexing, Next.js revalidation)
+$application->add(new EpisciencesWorkerCommand());
+$application->add(new EpisciencesQueueCommand());
+
+// Next.js cache revalidation commands
+$application->add(new RevalidateNextCacheCommand());
 
 $application->run();

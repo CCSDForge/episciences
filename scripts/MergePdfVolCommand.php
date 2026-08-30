@@ -84,7 +84,7 @@ class MergePdfVolCommand extends Command
             ]);
 
             if ($removeCache) {
-                $cache = new FilesystemAdapter("volume-pdf-{$rvCode}", 0, CACHE_PATH_METADATA);
+                $cache = new FilesystemAdapter('volume-pdf', 0, CACHE_PATH_METADATA . $rvCode);
                 $cache->clear();
                 $this->logger->info('Cache cleared', ['rvCode' => $rvCode]);
             }
@@ -404,7 +404,7 @@ class MergePdfVolCommand extends Command
      */
     public static function getCacheDocIdsList(string $vid, string $rvCode): string
     {
-        $cache  = new FilesystemAdapter("volume-pdf-{$rvCode}", 0, CACHE_PATH_METADATA);
+        $cache  = new FilesystemAdapter('volume-pdf', 0, CACHE_PATH_METADATA . $rvCode);
         $item   = $cache->getItem($vid);
         if (!$item->isHit()) {
             return json_encode([''], JSON_THROW_ON_ERROR);
@@ -419,7 +419,7 @@ class MergePdfVolCommand extends Command
      */
     public static function setCacheDocIdsList(string $vid, array $jsonVidList, string $rvCode): void
     {
-        $cache = new FilesystemAdapter("volume-pdf-{$rvCode}", 0, CACHE_PATH_METADATA);
+        $cache = new FilesystemAdapter('volume-pdf', 0, CACHE_PATH_METADATA . $rvCode);
         $item  = $cache->getItem($vid);
         $item->set(json_encode($jsonVidList, JSON_THROW_ON_ERROR));
         $cache->save($item);

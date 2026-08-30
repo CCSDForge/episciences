@@ -1,6 +1,8 @@
 <?php
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
+
 /**
  * Class AdministratepaperController
  */
@@ -1037,7 +1039,7 @@ class AdministratepaperController extends PaperDefaultController
         $this->view->logs = $paper->getHistory();
 
         // js tags
-        $this->view->js_review = Zend_Json::encode(['rvid' => RVID, 'code' => RVCODE, 'name' => $review->getName()]);
+        $this->view->js_review = Zend_Json::encode(['rvid' => RVID, 'code' => $review->getMailDisplayCode(), 'name' => $review->getName()]);
         $this->view->js_paper = Zend_Json::encode(['id' => $paper->getDocid(),
             'title' => $paper->getAllTitles(),
             'repository' => (int)$paper->getRepoid()]);
@@ -1457,7 +1459,7 @@ class AdministratepaperController extends PaperDefaultController
 
             // review js array init
             $review['id'] = $oReview->getRvid();
-            $review['code'] = $oReview->getCode();
+            $review['code'] = $oReview->getMailDisplayCode();
             $review['name'] = $oReview->getName();
             $review['invitation_deadline'] = $oReview->getSetting('invitation_deadline');
             $review['rating_deadline'] = Episciences_Tools::addDateInterval(date('Y-m-d'), $oReview->getSetting('rating_deadline'));
@@ -1545,7 +1547,7 @@ class AdministratepaperController extends PaperDefaultController
 
         //get review object
         $oReview = Episciences_ReviewsManager::find(RVID);
-        $review = ['rvid' => RVID, 'code' => RVCODE, 'name' => $oReview->getName()];
+        $review = ['rvid' => RVID, 'code' => $oReview->getMailDisplayCode(), 'name' => $oReview->getName()];
 
         //init template
         $template = new Episciences_Mail_Template;
@@ -1564,7 +1566,7 @@ class AdministratepaperController extends PaperDefaultController
             Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $oPaper->formatAuthorsMetadata(),
             Episciences_Mail_Tags::TAG_SENDER_FULL_NAME => Episciences_Auth::getFullName(),
             Episciences_Mail_Tags::TAG_UPDATED_DEADLINE => $this->view->Date($oAssignment->getDeadline()),
-            Episciences_Mail_Tags::TAG_REVIEW_CODE => RVCODE,
+            Episciences_Mail_Tags::TAG_REVIEW_CODE => $oReview->getMailDisplayCode(),
         ];
         $subject = str_replace(array_keys($tags), array_values($tags), $template->getSubject());
         $body = str_replace(array_keys($tags), array_values($tags), $template->getBody());
@@ -3113,6 +3115,22 @@ class AdministratepaperController extends PaperDefaultController
                 // deleting the volume from T_VOLUME_PAPER
                 Episciences_Volume_PapersManager::deletePaperVolume($docId, $vid);
 
+                if ($paper->isPublished()) {
+                    try {
+                        SolrIndexing::enqueueIndex($paper->getDocid());
+                    } catch (Exception $e) {
+                        trigger_error($e->getMessage());
+                    }
+                }
+
+                if (defined('RVCODE') && RVCODE !== '') {
+                    $tagsToInvalidate = ["volume-{$vid}", 'volumes-' . RVCODE];
+                    if ($oldVid > 0) {
+                        $tagsToInvalidate[] = "volume-{$oldVid}";
+                    }
+                    \Episciences\Next\RevalidationService::enqueueTags(RVCODE, $tagsToInvalidate);
+                }
+
             }
 
             echo true;
@@ -3155,6 +3173,11 @@ class AdministratepaperController extends PaperDefaultController
 
             $paper->setOtherVolumes($paper_volumes);
             $paper->saveOtherVolumes();
+            // VOLUME_PAPER is a satellite table: refresh PAPERS.DOCUMENT so API consumers,
+            // which read the stored JSON, do not keep serving stale secondary volumes.
+            if (!Episciences_PapersManager::updateJsonDocumentData((int)$docid)) {
+                $errors[] = 'PAPERS.DOCUMENT refresh failed';
+            }
             $oOVolumes = $paper->getOtherVolumes(true);
             $oVolumes = [];
 
@@ -3167,16 +3190,11 @@ class AdministratepaperController extends PaperDefaultController
             $paper->log(Episciences_Paper_Logger::CODE_OTHER_VOLUMES_SELECTION, Episciences_Auth::getUid(), ['vids' => $oVolumes]);
 
             if ($paper->isPublished()) {
-                $resOfIndexing = $paper->indexUpdatePaper();
-
-                if (!$resOfIndexing) {
-                    try {
-                        Ccsd_Search_Solr_Indexer::addToIndexQueue([$paper->getDocid()], RVCODE, Ccsd_Search_Solr_Indexer::O_UPDATE, Ccsd_Search_Solr_Indexer_Episciences::$coreName);
-                    } catch (Exception $e) {
-                        trigger_error($e->getMessage());
-                    }
+                try {
+                    SolrIndexing::enqueueIndex($paper->getDocid());
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
                 }
-
             }
 
             echo empty($errors);
@@ -3208,6 +3226,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($request->isPost()) {
 
+            $oldSid = $paper->getSid();
             $sid = (int)$request->getPost('sid');
             $paper->setSid($sid);
             $paper->save();
@@ -3215,6 +3234,27 @@ class AdministratepaperController extends PaperDefaultController
                 Episciences_Paper_Logger::CODE_SECTION_SELECTION,
                 Episciences_Auth::getUid(),
                 ['sid' => $sid]);
+
+            if ($paper->isPublished()) {
+                try {
+                    SolrIndexing::enqueueIndex($paper->getDocid());
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+            }
+
+            if (defined('RVCODE')) {
+                $tagsToInvalidate = [];
+                if ($sid > 0) {
+                    $tagsToInvalidate[] = "section-articles-{$sid}-" . RVCODE;
+                }
+                if ($oldSid > 0 && $oldSid !== $sid) {
+                    $tagsToInvalidate[] = "section-articles-{$oldSid}-" . RVCODE;
+                }
+                if (!empty($tagsToInvalidate)) {
+                    \Episciences\Next\RevalidationService::enqueueTags(RVCODE, $tagsToInvalidate);
+                }
+            }
 
             // if checkbox is checked,
             if ($request->getPost('assignEditors')) {
@@ -3649,7 +3689,7 @@ class AdministratepaperController extends PaperDefaultController
 
             //review object
             $oReview = Episciences_ReviewsManager::find(RVID);
-            $review = ['rvid' => RVID, 'code' => RVCODE, 'name' => $oReview->getName()];
+            $review = ['rvid' => RVID, 'code' => $oReview->getMailDisplayCode(), 'name' => $oReview->getName()];
 
             //user object
             if ($oAssignment->isTmp_user()) {
@@ -3686,7 +3726,7 @@ class AdministratepaperController extends PaperDefaultController
                 Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $oPaper->getPaperid(),
                 Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $oPaper->getTitle($locale, true),
                 Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $oPaper->formatAuthorsMetadata(),
-                Episciences_Mail_Tags::TAG_REVIEW_CODE => RVCODE,
+                Episciences_Mail_Tags::TAG_REVIEW_CODE => $oReview->getMailDisplayCode(),
                 Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => (!$oAssignment->isTmp_user()) ? $oReviewer->getUsername() : '',
             ];
 
@@ -4168,7 +4208,7 @@ class AdministratepaperController extends PaperDefaultController
         // Préparation de js_review
         $review = [
             'id' => $oReview->getRvid(),
-            'code' => $oReview->getCode(),
+            'code' => $oReview->getMailDisplayCode(),
             'name' => $oReview->getName()
         ];
 
@@ -5287,8 +5327,6 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         $vString = "version la plus récente dans l’archive ouverte";
-        $hasHook = $paper->hasHook;
-        $this->view->hasHook = $hasHook;
         $this->view->label = $paper->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID ? ("L'identifiant de la " . $vString) : ('La ' . $vString);
         $this->view->type = 'select';
         $this->view->options = $availableVersions;

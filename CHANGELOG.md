@@ -25,17 +25,101 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Add `export:papers` CLI command (`scripts/ExportPapersCommand.php`, `make export-papers`) to export papers to a CSV file, in the same format `import:papers` reads — for a journal, optionally filtered by volume, section, publication year, docid(s), archive identifier+version, status, repoid, uid, or a raw SQL `WHERE` clause.
+- Add `import:papers` CLI command (`scripts/ImportPapersCommand.php`, `make import-papers`) to import new papers or update existing ones from a CSV file.
+- Add `num` and `year` CSV column support to `import:volumes` (`scripts/ImportVolumesCommand.php`).
+- Add `--rvcode` option, `--rvid` integer validation, and batch processing support via `--config` (`journals.ini`) in `ZbjatsZipperCommand` (`zbjats:zip`).
+- Cache PDF and XML responses with Symfony Cache in `ZbjatsTools` and support new-front URLs.
+- [#1125](https://github.com/CCSDForge/episciences/pull/1125) Allow anonymous access to public review report attachments for open peer review.
+- Add `CheckDoajJournalsCommand` CLI command to check journal presence in DOAJ, track published article count, and enforce API rate limits.
+- Add constraint description helper text to the volume year field in volume management.
+- Add TomSelect component to paper filters on `/paper/submitted` and `/paper/ratings`.
+- Configure local SonarQube support (`make sonar`) and XML-based PHPUnit coverage report generation.
+- [#1140](https://github.com/CCSDForge/episciences/issues/1140) Export secondary volumes under `database.current.secondary_volumes` in the JSON v2 paper export.
+- [#1089](https://github.com/CCSDForge/episciences/pull/1089) Asynchronous Solr indexing pipeline powered by Symfony Messenger and Doctrine DBAL transport, replacing the legacy polling queue with automatic retries, bounded failure handling, and `episciences:worker`/`episciences:queue` CLI commands.
+- [#1089](https://github.com/CCSDForge/episciences/pull/1089) Automatic Solr reindexing on primary volume or section updates, volume/section metadata changes, and paper enrichments (authors, funding, citations, datasets).
+- [#1149](https://github.com/CCSDForge/episciences/pull/1149) On-demand Next.js cache revalidation for frontend pages, articles, volumes, sections, news, and editorial board member updates, with the `next:revalidate-cache` CLI command.
+- Add Docker Compose worker services (`solr-worker`, `worker-next-revalidation`) and systemd service units for background queue processing.
+
+### Performances
+
+- Memoise the paper's primary volume on the `Episciences_Paper` instance, so `toJson()`, `getXml()` and `XmlExportManager::xmlExport()` share a single lookup instead of loading it twice: 38 to 34 queries per paper export.
+- Stop reloading volume settings from `Episciences_Volume::getProceedingInfo()`; every caller reaches it through `isProceeding()`, which already needs them loaded.
+- Load every volume's settings in one query on `/browse/volumes` via `Episciences_VolumesManager::loadSettingsForVolumes()`, instead of one query per volume.
+
+### Fixed
+
+- Default invalid or missing CSV paper status to `accepted` (`STATUS_ACCEPTED`), not published, in `import:papers`.
+- Fix `Episciences_Volume::save()` silently dropping titles passed as a nested array instead of flat `title_{lang}` keys.
+- Fix `import:volumes` never defining the `RVID` constant on a real (non-dry-run) write.
+- Set finite Guzzle timeouts on the HAL publication-date lookup in `PublicationDateResolver` to avoid stalling sequential imports.
+- Guard `Episciences_Paper::updateXml()` against unresolvable review lookups (`Episciences_ReviewsManager::find()` returning `false`), preventing fatal errors when fetching review settings.
+- Guard `$oVolume` with `instanceof Episciences_Volume` before calling `getSetting()` in `Episciences_Paper::updateXml()`, preventing fatal errors on the dashboard when a paper has no primary volume.
+- Remove redundant unguarded review lookup in `Episciences_Paper::updateXml()` by reusing `$oReview`.
+- [#1145](https://github.com/CCSDForge/episciences/issues/1145) Sort bibliographic references by `referenceOrder` in both `BiblioRefApiClient` and `biblioRef.js`, placing missing or invalid orders last.
+- Guard `Episciences_Paper::getGraphical_abstract()` against MySQL `JSON_UNQUOTE(JSON_EXTRACT())` returning the literal string `"null"` for JSON null values, avoiding invalid image paths (`/public/documents/{docId}/null`).
+- Make the arXiv article password panel collapsible in `paper_password_form.phtml` by wrapping its contents in a `.panel-body` container.
+- Restore the article download for every repository that does not mirror its files into `PAPER_FILES` (arXiv, HAL, bioRxiv, medRxiv, ARCHE). `Episciences_Repositories::hasHook()` only reports that a hooks class exists, yet it was read as "this repository's files live in `PAPER_FILES`". Giving arXiv ([#1135](https://github.com/CCSDForge/episciences/pull/1135)) and HAL ([#1137](https://github.com/CCSDForge/episciences/pull/1137)) a metadata-filtering hooks class therefore made `Paper::getMainPaperUrl()` look for a row that never exists, so `/{docid}/pdf` answered `404 no PDF files found`, the "Download the article" button disappeared from the article page, and `database.current.mainPdfUrl` and `files` went empty in the JSON v2 export. bioRxiv, medRxiv and ARCHE had been broken the same way ever since they got a hooks class. Capabilities are now asked for explicitly, through the interfaces the hook classes already declare: `hasFilesEnrichment()`, `hasLinkedDataEnrichment()`, `handlesOwnEnrichment()` and `hasConceptIdentifier()`. The XML node driving the download button is renamed `notHasHook` → `hasMainPaperUrl` after what it actually holds.
+- Require a version number again when submitting an arXiv or HAL paper. Their `hookIsRequiredVersion()` returns `[]` to keep the historical default, but callers read `['result']` straight off it, so the version block was hidden in the submission form and skipped by its client-side validation. The default now lives in `Episciences_Repositories::isVersionRequired()`. Also fixes the same lookup on temporary papers, which queried the hook with `repoId = 0` instead of the repository of their first version.
+- Run the generic dataset enrichment (`Episciences_Submit::datasetsProcessing()`) again for arXiv and HAL papers, at submission and on metadata refresh: both were silently skipped because they now have a hooks class, even though neither declares any enrichment capability.
+- [#1140](https://github.com/CCSDForge/episciences/issues/1140) Refresh the `PAPERS.DOCUMENT` JSON column after a secondary volume change, so API consumers no longer read stale volume data. Papers already in database keep a `DOCUMENT` without the new key until resaved: run `php scripts/console.php papers:update-document` after deploying (API consumers should read the key as `?? null` in the meantime).
+- Report `database.current.graphical_abstract_file` as `null` instead of `""` in the JSON v2 paper export when the paper has no graphical abstract, and drop the dead `unset()` that was meant to do it. Consumers must treat both `null` and a missing key as "no graphical abstract".
+- [#1125](https://github.com/CCSDForge/episciences/pull/1125) Block review report attachment downloads for users with a declared Conflict of Interest (COI).
+- [#1125](https://github.com/CCSDForge/episciences/pull/1125) Ensure paper authors' access precedence over editorial staff COI checks when downloading review report attachments.
+- [#1132](https://github.com/CCSDForge/episciences/pull/1132) Pass `previousVersion` context to `hookVersion` in `savenewpostedversionAction` to correctly update Zenodo version identifiers when posting a new version.
+- Define missing `RVID` constant in `ZbjatsZipperCommand` CLI bootstrap.
+- Allow non-numeric volume numbers (`varchar(6)`) in volume management forms.
+- Stream Crossref DOI XML in-memory and scope volume/DOAJ caches under `rvcode`.
+- Allow authorized roles to visualize all bibliographic references on unpublished papers.
+- Add explicit `string` type hint to `Ccsd_Website_Header::$_langDir` for PHP 8 compatibility.
+- Stop `Episciences_Submit::getDoc()` from crashing on a `latestObsoleteDocId` that does not resolve. The value arrives straight from the `/submit/getdoc` POST, so `partialGet()` returns `null` for a stale docid or one belonging to another journal, and the previous paper was dereferenced without a check — `Call to a member function isTmp() on null`. The lookup now degrades to "no previous version", which every downstream check already handles, and the real latest version is still found by `findExistingDocId()`. Same for a temporary paper with no previous version, which indexed an array with `array_key_first([])`. The `addContext()` call feeding the `hookVersion` parameters is guarded too: it takes a non-nullable `Episciences_Paper`, and the `TypeError` it raised is an `Error`, which `getDoc()`'s `catch (Exception)` does not intercept.
+- Restore submissions from Cryptology ePrint and DSpace, broken by the `hasConceptIdentifier()` capability check introduced above: that check was scoped to Zenodo's own hooks interface, while Cryptology ePrint's and DSpace's hooks set a concept identifier through `hookApiRecords()` without implementing it. Every submission (or new version) from these two repositories therefore threw `InvalidArgumentException` in `Episciences_Paper::setConcept_identifier()`, caught as a generic error by `Episciences_Submit::getDoc()`. The capability is now a dedicated `ConceptIdentifierInterface`, implemented by all three hook classes.
+- Stop `Episciences_Submit::getDoc()` from throwing a `TypeError` when a temporary previous paper has no previous version of its own: `getPreviousVersions()` returns `null` (not `[]`) in that case, and `array_key_first([])` requires an array.
+- [#1148](https://github.com/CCSDForge/episciences/pull/1148) Scope volume paper queries to the volume's own `rvid` instead of the global `RVID` constant in `Episciences_Volume::getPaperListFromVolume()`, fixing empty paper lists in multi-journal CLI batch runs (`zbjats:zip`).
+- [#1148](https://github.com/CCSDForge/episciences/pull/1148) Scope the `vid` filter subquery to the requested journal's `rvid` in `Episciences_PapersManager::getVolumesQuery()`, and accept uppercase `'RVID'` key in `applyFilters()`.
+- [#1148](https://github.com/CCSDForge/episciences/pull/1148) Ensure zbJATS ZIP files (permissions `0644`) and destination directory (`0755`) are readable by all users, skip archive creation when there are no published papers, and check `ZipArchive::close()` return value.
+- Wrap Messenger message dispatching in `tryGetPort()` across `RevalidationService` and `SolrIndexing` to prevent lazy DBAL connection failures from interrupting database writes.
+- Ensure Solr indexing only processes published papers (`STATUS_PUBLISHED`).
+- Scope Messenger transports to distinct `queue_name` identifiers (`solr_index` and `next_revalidation`) to avoid cross-queue message collisions.
+- Prevent Next.js cache revalidation exceptions from interrupting paper deletion in `Episciences_PapersManager::delete()`.
+
+### Removed
+
+- Remove legacy interactive `scripts/update_papers.php` script (replaced by `import:papers` CLI command).
+- Drop the redundant `!$previousPaper->hasHook` guard from `Episciences_Submit::assertDateTimeVersion()`. The branch is selected by the `UPDATE_DATETIME` key, which only ever reaches the result from a repository's `hookApiRecords()`, so the guard added nothing — and it dereferenced a nullable `Episciences_Paper`, raising `Attempt to read property "hasHook" on null` whenever `partialGet()` returned nothing for an existing `docId`. `Episciences_Paper::$hasHook` now has no caller left and is marked `@deprecated`.
+- Remove the dead `hasHook` plumbing left behind now that repository capabilities are asked for explicitly: the `hasHook` JavaScript global on the article and submission pages (declared, assigned from `/submit/ajaxhashook`, never read), the `hasHook` view variable of the version-number form, and the `h_hasHook` hidden form element, whose value came from a `$defaults['hasHook']` key that had been commented out. `/submit/ajaxhashook` now answers `isRequiredVersion` only.
+
+### Refactored
+
+- Refactor `import:papers`, `import:volumes`, and `import:sections` console commands to delegate business logic to dedicated `Episciences\Paper\Import\*`, `Episciences\Volume\Import\*`, and `Episciences\Section\Import\*` classes with testable `Row` and `Importer` components.
+- Route `Episciences_Submit::getRepositoriesForm()` and `getNewVersionForm()` through `Episciences_Repositories::isVersionRequired()` instead of calling `callHook('hookIsRequiredVersion', ...)` directly and re-implementing its `[]` → required fallback locally, so the two form-building sites this PR left behind stay in sync with the centralized default.
+- [#793](https://github.com/CCSDForge/episciences/issues/793) Add `hookFilterMetadata` repository hook and strip surplus arXiv `dc:description` comment nodes at ingestion.
+- Strip HAL's non-abstract `dc:description` markers (`International audience`, `National audience`, `soumission à Episciences`) at ingestion instead of filtering them in every consumer. A new `Episciences_Repositories_HAL_Hooks::hookCleanXMLRecordInput()` removes the nodes from the raw OAI record before it reaches `PAPERS.RECORD`, so the two independent render paths — `Paper::getMetadata()` and `Paper::getXslt()` → `public/xsl/*.xsl` — stay consistent on their own. Removes the eight downstream workarounds in `Paper::getAbstractsCleaned()`, `Paper_Export`, the DataCite and zbJATS exports and the three paper XSLTs, and fixes the TEI export, which never filtered the marker at all. Matching is content-based and case-insensitive on normalized whitespace, so a real (possibly multilingual) abstract can never be dropped. `National audience` was never filtered anywhere and was displayed as an abstract; it is now handled with the others. Existing rows are migrated by the new `papers:clean-hal-descriptions` command (`--dry-run`, `--update-document`, `--no-reindex`).
+- Remove static `Ccsd_Auth` dependencies to improve testability.
+- Simplify portal module and remove dead code.
+- [#1089](https://github.com/CCSDForge/episciences/pull/1089) Replace legacy Solr indexing (`Ccsd_Search_Solr_Indexer*`, `solrJob.php`, `INDEX_QUEUE` polling) with decomposed `DocumentBuilder` field builders and Messenger message handlers.
+- Migrate Next.js cache revalidation off the legacy `queue_messages` table and its cron consumer (`scripts/NextRevalidationQueue.php`) onto the same Symfony Messenger + Doctrine DBAL infrastructure as Solr indexing, on its own `next_revalidation` transport so a slow Solr document build never blocks a cheap revalidation POST. The Messenger plumbing itself (transports, buses, worker event dispatcher, bounded-retry dispatch, dispatch-failure store) is extracted out of the Solr-only code into a generic `Episciences\Messenger\*` library that both producers now share, and `solr:worker`/`solr:queue` are replaced by transport-agnostic `episciences:worker`/`episciences:queue --transport=<solr_index|next_revalidation>` commands (see `docs/console-commands.md#messenger-queues`, `docs/next-revalidation.md`). `RevalidationService::revalidateOrEnqueue()` (synchronous POST with queue fallback) is removed — every call site is now fully asynchronous — and `next:revalidate-cache` gains a variadic tag argument and a `--queue` option.
+
+### Changed
+
+- Update dependencies.
+
 ## v1.0.56.1 - 2026-08-04
 
 ### Added
 
 - [CLOCKSS] Additional article URLs, published ahead of the actual switch to ease harvesting during the transition period: `/articles/{paperid}` and `/articles/{paperid}/download`, both also accepting an optional `en`, `fr` or `es` language prefix (e.g. `/en/articles/{paperid}`). They are addressed by paper id — the canonical reference, as used by the new interfaces — and answer `200` with the published version, without redirecting to its docid: `Episciences_ArticleAlias_Plugin` resolves the paper id at routing time. A docid is still accepted, and the historical `/{docid}` and `/{docid}/pdf` URLs are unchanged.
+- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Redesign the "Manage the journal" dashboard panel as a four-quadrant grid (evaluation, revisions & suggestions, copy-editing & publication, archives), with a compact paper search box moved into each panel header.
+- [#1011](https://github.com/CCSDForge/episciences/issues/1011) Add a "decision suggestion" filter (acceptance / refusal / revision) to the paper list, and show the number of papers with a pending suggestion on the dashboard. A suggestion stops being counted as pending once the editor in chief has ruled, whether by accepting the paper or by requesting revisions. The filter is restricted to users allowed to manage papers.
 
 ### Fixed
 
 - Allow paper authors to download review report attachments after an editorial decision by aligning authorization checks in `FileController::reportAction()`.
 - Fix XML export corruption during Solr indexing by checking `isRegistered()` in `AppRegistry::getMonoLogger()` instead of catching exceptions.
 - Fix `TypeError` in `ZbjatsTools` and `BiblioRefApiClient` by normalizing CSL response parsing to accept both array and JSON-encoded string formats from the bibliographic reference API.
+- [#1118](https://github.com/CCSDForge/episciences/issues/1118) Add missing French and English translations for intra-work relationship types and group headers in linked data forms.
 
 ### Changed
 
@@ -163,7 +247,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix history filter date popover sizing, correct jQuery UI datepicker positioning/z-index, and fix calendar-icon click interaction in the paper administration view.
 - Fix multiple bugs and potential XSS issues found during a public JavaScript audit (including strict tooltip option defaults, escaping regex patterns in search inputs, and removing incorrect JSON dataType requirements).
 - Improve `Episciences_Paper_FilesManager::syncFiles()`: generate unique self-link hashes to prevent database collisions when file links are empty or set to `#`, resolve argument order in file difference checking, and clean up paper file deletion logic.
-
+- [#1125](https://github.com/CCSDForge/episciences/pull/1125) Improve report attachment access control: allow paper authors to download, block users with declared COI.
 ### Deprecated
 
 - Deprecate obsolete `Ccsd_Form_Element_Thesaurus` form element (scheduled for removal).

@@ -8,6 +8,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 
 /**
  * Symfony Console command: enrich citations data from OpenCitations + OpenAlex + Crossref.
@@ -86,6 +87,7 @@ class GetCitationsDataCommand extends Command
                 if (!$dryRun) {
                     try {
                         Episciences_Paper_Citations_EnrichmentService::extractAndStore($apiCallCitationCache, (int) $value['DOCID']);
+                        SolrIndexing::enqueueIndex((int) $value['DOCID']);
                     } catch (\Throwable $e) {
                         $logger->error('Citation enrichment error for doc ' . $value['DOCID'] . ': ' . get_class($e) . ': ' . $e->getMessage());
                     }

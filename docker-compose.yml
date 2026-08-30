@@ -84,6 +84,74 @@ services:
         - 8.8.8.8
         - 1.1.1.1
 
+  sonar-scanner:
+    image: sonarsource/sonar-scanner-cli
+    container_name: episciences-sonar-scanner
+    user: root
+    volumes:
+      - .:/usr/src
+    environment:
+      - SONAR_HOST_URL=http://episciences-sonarqube:9000
+    networks:
+      - epi-network
+
+  worker-solr-index:
+    container_name: episciences-worker-solr-index
+    # Reuses the php-fpm image built by the service above (same
+    # Dockerfile/context) instead of a second `build:` block, so this never
+    # drifts from php-fpm's image and compose doesn't build it twice.
+    image: episciences-php-fpm
+    restart: always
+    user: www-data
+    working_dir: /var/www/htdocs
+    entrypoint: ["php", "scripts/console.php"]
+    command: ["episciences:worker", "--transport=solr_index", "--time-limit=3600", "--memory-limit=512M"]
+    depends_on:
+        - php-fpm
+    volumes:
+        - .:/var/www/htdocs
+        - ./data:/var/www/data
+        - ./cache:/var/www/cache
+        - ./logs:/var/www/logs
+    environment:
+        - COMPOSER_HOME=/tmp/composer
+    extra_hosts:
+        - "host.docker.internal:host-gateway"
+        - "api-dev.episciences.org:172.19.0.11"
+    networks:
+        - epi-network
+    dns:
+        - 8.8.8.8
+        - 1.1.1.1
+
+  # A POST to Next.js (~100ms) must never queue behind a Solr document build
+  # — hence its own process, sharing everything else with worker-solr-index.
+  worker-next-revalidation:
+    container_name: episciences-worker-next-revalidation
+    image: episciences-php-fpm
+    restart: always
+    user: www-data
+    working_dir: /var/www/htdocs
+    entrypoint: ["php", "scripts/console.php"]
+    command: ["episciences:worker", "--transport=next_revalidation", "--time-limit=3600", "--memory-limit=256M"]
+    depends_on:
+        - php-fpm
+    volumes:
+        - .:/var/www/htdocs
+        - ./data:/var/www/data
+        - ./cache:/var/www/cache
+        - ./logs:/var/www/logs
+    environment:
+        - COMPOSER_HOME=/tmp/composer
+    extra_hosts:
+        - "host.docker.internal:host-gateway"
+        - "api-dev.episciences.org:172.19.0.11"
+    networks:
+        - epi-network
+    dns:
+        - 8.8.8.8
+        - 1.1.1.1
+
 networks:
   epi-network:
     external: true

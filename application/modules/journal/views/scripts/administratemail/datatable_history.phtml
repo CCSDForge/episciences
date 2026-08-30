@@ -5,7 +5,7 @@
                href="/administratemail/view?id=<?php echo $mail['ID'] ?>"
                data-width="50%" data-toggle="tooltip"
                title="<?php echo $this->translate('Voir cet e-mail'); ?>">
-                <?php echo ($mail['SUBJECT']) ? $mail['SUBJECT'] : $this->translate('Aucun sujet'); ?>
+                <?php echo ($mail['SUBJECT']) ? htmlentities($mail['SUBJECT']) : $this->translate('Aucun sujet'); ?>
             </a>
         </td>
         <td>

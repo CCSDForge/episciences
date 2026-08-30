@@ -1,0 +1,4 @@
+; List of journals to process for zbJATS ZIP export
+; Specify journals by RV code (string) or RVID (integer)
+[journals]
+journals[] = "dev"

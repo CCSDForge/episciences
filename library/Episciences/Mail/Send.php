@@ -9,6 +9,17 @@ class Episciences_Mail_Send
     public const ATTACHMENTS = 'attachments';
 
     /**
+     * Code displayed in the default subject of the manual mail-sending form: the review's
+     * custom mail display code if set, RVCODE otherwise.
+     */
+    private static function getMailDisplayCode(): string
+    {
+        $review = Episciences_ReviewsManager::find(RVCODE);
+
+        return $review instanceof Episciences_Review ? $review->getMailDisplayCode() : (string)RVCODE;
+    }
+
+    /**
      * mailing form
      * if $to_enabled is false, recipient is automatically filled, and user can't change it
      * @param null $prefix
@@ -132,7 +143,7 @@ class Episciences_Mail_Send
 
 
         // subject
-        $form->addElement('text', self::getElementName('subject', $prefix), ['label' => 'Sujet', 'value' => !empty($docId) ? RVCODE . ' #' . $docId : '']);
+        $form->addElement('text', self::getElementName('subject', $prefix), ['label' => 'Sujet', 'value' => !empty($docId) ? self::getMailDisplayCode() . ' #' . $docId : '']);
 
         // content
         $form->addElement('textarea', self::getElementName('content', $prefix), ['label' => 'Contenu', 'class' => 'tinymce']);

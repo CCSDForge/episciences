@@ -111,4 +111,80 @@ final class Episciences_Mail_SendTest extends TestCase
 
         self::assertSame($email, $escaped);
     }
+
+    // =========================================================================
+    // getMailDisplayCode() — the code shown in the default subject of the manual
+    // mail-sending form: the review's custom mail display code if set, RVCODE otherwise.
+    // =========================================================================
+
+    private function invokeGetMailDisplayCode(): string
+    {
+        $method = new ReflectionMethod(Episciences_Mail_Send::class, 'getMailDisplayCode');
+        $method->setAccessible(true);
+        return $method->invoke(null);
+    }
+
+    /**
+     * Primes Episciences_ReviewsManager's intra-request cache so find(RVCODE) resolves
+     * to $review (or `false`, when null) without a DB round-trip.
+     */
+    private function primeReviewsManagerCache(?\Episciences_Review $review): void
+    {
+        $property = new \ReflectionProperty(\Episciences_ReviewsManager::class, '_cache');
+        $property->setAccessible(true);
+        $cache = $property->getValue();
+        $cache['rvcode_' . RVCODE] = $review ?? false;
+        $property->setValue(null, $cache);
+    }
+
+    protected function tearDown(): void
+    {
+        $this->primeReviewsManagerCache(null);
+        parent::tearDown();
+    }
+
+    private function reviewWithSetting(?string $mailDisplayCode): \Episciences_Review
+    {
+        $review = new \Episciences_Review();
+        $review->setCode(RVCODE);
+        if ($mailDisplayCode !== null) {
+            $review->setSetting(\Episciences_Review::SETTING_MAIL_DISPLAY_CODE, $mailDisplayCode);
+        }
+        return $review;
+    }
+
+    public function testGetMailDisplayCodeFallsBackToRvcodeWhenSettingUnset(): void
+    {
+        $this->primeReviewsManagerCache($this->reviewWithSetting(null));
+
+        self::assertSame(RVCODE, $this->invokeGetMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeFallsBackToRvcodeWhenSettingBlank(): void
+    {
+        $this->primeReviewsManagerCache($this->reviewWithSetting('   '));
+
+        self::assertSame(RVCODE, $this->invokeGetMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeUsesCustomSettingWhenSet(): void
+    {
+        $this->primeReviewsManagerCache($this->reviewWithSetting('custom-label'));
+
+        self::assertSame('custom-label', $this->invokeGetMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeTrimsCustomSetting(): void
+    {
+        $this->primeReviewsManagerCache($this->reviewWithSetting('  custom-label  '));
+
+        self::assertSame('custom-label', $this->invokeGetMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeFallsBackToRvcodeWhenReviewNotFound(): void
+    {
+        $this->primeReviewsManagerCache(null);
+
+        self::assertSame(RVCODE, $this->invokeGetMailDisplayCode());
+    }
 }

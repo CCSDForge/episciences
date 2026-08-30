@@ -18,6 +18,9 @@ use Zend_Translate;
 final class Episciences_Paper_EntityTest extends TestCase
 {
     private Episciences_Paper $paper;
+    private bool $hadMetadataSources;
+    /** @var mixed */
+    private $originalMetadataSources;
 
     protected function setUp(): void
     {
@@ -31,6 +34,39 @@ final class Episciences_Paper_EntityTest extends TestCase
                 'locale'  => 'en',
             ]));
         }
+
+        // setMetadata()'s hookFilterMetadata call resolves the arXiv Hooks class from
+        // Episciences_Repositories::getLabel(ARXIV_REPO_ID), which reads Zend_Registry's
+        // 'metadataSources'. Save/restore it around each test so this suite stays
+        // independent of run order instead of leaking a fake value to other test files.
+        $this->hadMetadataSources = Zend_Registry::isRegistered('metadataSources');
+        if ($this->hadMetadataSources) {
+            $this->originalMetadataSources = Zend_Registry::get('metadataSources');
+        }
+        Zend_Registry::set('metadataSources', [
+            (int)Episciences_Repositories::ARXIV_REPO_ID => [
+                'name' => 'arXiv',
+                'type' => 'repository',
+            ],
+        ]);
+        $this->resetRepositoriesCache();
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->hadMetadataSources) {
+            Zend_Registry::set('metadataSources', $this->originalMetadataSources);
+        } else {
+            Zend_Registry::getInstance()->offsetUnset('metadataSources');
+        }
+        $this->resetRepositoriesCache();
+    }
+
+    private function resetRepositoriesCache(): void
+    {
+        $repositoriesCache = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
+        $repositoriesCache->setAccessible(true);
+        $repositoriesCache->setValue(null, []);
     }
 
     // -----------------------------------------------------------------------
@@ -347,7 +383,7 @@ XML;
 </episciences>
 XML;
 
-    public function testGetMetadataArXivMultipleDescriptionsKeepsOnlyFirst(): void
+    public function testGetMetadataTriggersHookFilterMetadataForArXiv(): void
     {
         $this->paper->setRepoid((int)Episciences_Repositories::ARXIV_REPO_ID);
         $this->paper->setMetadata(self::RECORD_WITH_MULTIPLE_DESCRIPTIONS);
@@ -364,7 +400,7 @@ XML;
 </episciences>
 XML;
 
-    public function testGetMetadataArXivKeepsFirstDescriptionOnLanguageCollision(): void
+    public function testGetMetadataArXivHookKeepsFirstDescriptionOnLanguageCollision(): void
     {
         $this->paper->setRepoid((int)Episciences_Repositories::ARXIV_REPO_ID);
         $this->paper->setMetadata(self::RECORD_WITH_SAME_LANG_DESCRIPTIONS);
