@@ -101,14 +101,16 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
                             <div class="alert alert-warning alert-fixed">
                                 <i class="fas fa-hourglass-half" style="color:chocolate"></i>
                                 <?= $this->translate($info) ?>
-                                <div class="btn-group" style="margin-top: 10px; display: block;">
-                                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-                                        <?= $this->translate("Répondre au nom de l'auteur") ?> <span class="caret"></span>
-                                    </button>
-                                    <ul class="dropdown-menu" role="menu">
-                                        <li><a href="#" data-toggle="modal" data-target=".alt-author-approve-proof-modal"><?= $this->translate('Approuver') ?></a></li>
-                                        <li><a href="#" data-toggle="modal" data-target=".alt-author-reject-proof-modal"><?= $this->translate('Refuser') ?></a></li>
-                                    </ul>
+                                <div style="margin-top: 10px;">
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                                            <?= $this->translate("Répondre au nom de l'auteur") ?> <span class="caret"></span>
+                                        </button>
+                                        <ul class="dropdown-menu" role="menu">
+                                            <li><a href="#" data-toggle="modal" data-target=".alt-author-approve-proof-modal"><?= $this->translate('Approuver') ?></a></li>
+                                            <li><a href="#" data-toggle="modal" data-target=".alt-author-reject-proof-modal"><?= $this->translate('Refuser') ?></a></li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                             <?php if (isset($this->altAuthorApproveProofForm)): ?>

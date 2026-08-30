@@ -17,5 +17,6 @@ final class AlternativePipelineProxyUiTest extends TestCase
         self::assertStringContainsString('/paper/finalversiondeposit/id/', $source);
         self::assertStringContainsString('alt-author-approve-proof-modal', $source);
         self::assertStringContainsString('alt-author-reject-proof-modal', $source);
+        self::assertStringNotContainsString('class="btn-group" style="margin-top: 10px; display: block;"', $source);
     }
 }
