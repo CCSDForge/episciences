@@ -711,6 +711,75 @@ class OpenAireApiClientTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // fetchPublication() — never blocks the request thread outside CLI (e.g. a
+    // request triggered synchronously from PaperController/AdministratepaperController)
+    // -------------------------------------------------------------------------
+
+    public function testFetchPublication_429_OutsideCli_ReturnsNullImmediatelyWithoutRetry(): void
+    {
+        $testHandler = new TestHandler();
+        $logger      = new Logger('test');
+        $logger->pushHandler($testHandler);
+
+        $history = [];
+        // Only one response queued: a retry attempt would exhaust the mock queue and error out.
+        $guzzle = $this->makeGuzzle([new Response(429, ['Retry-After' => '5'], 'Too Many Requests')], $history);
+
+        $client = $this->makeHttpContextClient($guzzle, $this->makeAuthenticatedTokenProvider(), $logger);
+        $result = $client->fetchPublication('10.1234/ratelimited-http', 1);
+
+        $this->assertNull($result);
+        $this->assertCount(1, $history, 'must not retry outside CLI execution');
+        $this->assertTrue($testHandler->hasWarningThatContains('not retrying outside CLI execution'));
+    }
+
+    public function testFetchPublication_429_OutsideCli_Unauthenticated_ReturnsNullImmediately(): void
+    {
+        $history = [];
+        $guzzle  = $this->makeGuzzle([new Response(429, [], 'Too Many Requests')], $history);
+
+        $client = $this->makeHttpContextClient($guzzle, null);
+        $result = $client->fetchPublication('10.1234/ratelimited-http-anon', 1);
+
+        $this->assertNull($result);
+        $this->assertCount(1, $history, 'must not retry outside CLI execution');
+    }
+
+    public function testThrottleAuthenticated_OutsideCli_SkipsDelayAndStillSendsRequest(): void
+    {
+        $testHandler = new TestHandler();
+        $logger      = new Logger('test');
+        $logger->pushHandler($testHandler);
+
+        $history = [];
+        $guzzle  = $this->makeGuzzle([new Response(200, [], json_encode(['results' => []]))], $history);
+
+        $client = $this->makeHttpContextClient($guzzle, $this->makeAuthenticatedTokenProvider('http-token'), $logger);
+        $client->fetchPublication('10.1234/authed-http', 1);
+
+        $this->assertCount(1, $history);
+        $this->assertSame('Bearer http-token', $history[0]['request']->getHeaderLine('Authorization'));
+        $this->assertTrue($testHandler->hasDebugThatContains('authenticated throttle skipped outside CLI execution'));
+    }
+
+    public function testThrottleUnauthenticated_OutsideCli_SkipsDelayAndStillSendsRequest(): void
+    {
+        $testHandler = new TestHandler();
+        $logger      = new Logger('test');
+        $logger->pushHandler($testHandler);
+
+        $history = [];
+        $guzzle  = $this->makeGuzzle([new Response(200, [], json_encode(['results' => []]))], $history);
+
+        $client = $this->makeHttpContextClient($guzzle, null, $logger);
+        $client->fetchPublication('10.1234/anon-http', 1);
+
+        $this->assertCount(1, $history);
+        $this->assertFalse($history[0]['request']->hasHeader('Authorization'));
+        $this->assertTrue($testHandler->hasDebugThatContains('unauthenticated throttle skipped outside CLI execution'));
+    }
+
+    // -------------------------------------------------------------------------
     // fetchPublication() — rate-limit header logging
     // -------------------------------------------------------------------------
 
@@ -813,6 +882,21 @@ class OpenAireApiClientTest extends TestCase
         );
     }
 
+    private function makeHttpContextClient(
+        Client $guzzle,
+        ?OpenAireTokenProvider $tokenProvider = null,
+        ?Logger $logger = null
+    ): OpenAireApiClientHttpContext {
+        return new OpenAireApiClientHttpContext(
+            $guzzle,
+            new ArrayAdapter(),
+            new ArrayAdapter(),
+            new ArrayAdapter(),
+            $logger ?? new NullLogger(),
+            $tokenProvider
+        );
+    }
+
     /** @param array<int, array<string, mixed>> $subjects */
     private function makeResponseWithSubjects(array $subjects): array
     {
@@ -862,5 +946,19 @@ class OpenAireApiClientNoSleep extends OpenAireApiClient
     protected function backoff(int $seconds): void
     {
         $this->sleepLog[] = "backoff:{$seconds}s";
+    }
+}
+
+/**
+ * Test double: simulates the HTTP request path (non-CLI SAPI) by overriding only
+ * isCliContext(), while keeping the real throttleAuthenticated()/throttleUnauthenticated()/
+ * 429-branch guard logic — so these tests exercise the actual "skip the delay outside
+ * CLI" code paths without ever reaching a real sleep()/usleep() call.
+ */
+class OpenAireApiClientHttpContext extends OpenAireApiClient
+{
+    protected function isCliContext(): bool
+    {
+        return false;
     }
 }

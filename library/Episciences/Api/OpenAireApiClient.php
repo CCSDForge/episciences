@@ -188,6 +188,15 @@ class OpenAireApiClient extends AbstractApiClient
 
                 // 429 Too Many Requests: back off and retry, up to MAX_RETRIES attempts.
                 if ($statusCode === 429) {
+                    // Never block the request thread: this path is also reachable synchronously
+                    // from PaperController/AdministratepaperController via updateRecordData().
+                    if (!$this->isCliContext()) {
+                        $this->logger->warning(
+                            "OpenAIRE 429 Too Many Requests for paper {$paperId}; not retrying outside CLI execution (would block the request)"
+                        );
+                        return null;
+                    }
+
                     if ($attempt >= self::MAX_RETRIES) {
                         $this->logger->critical(
                             "OpenAIRE API: rate limit (429) exhausted after {$attempt} attempts for paper {$paperId}, giving up"
@@ -238,9 +247,18 @@ class OpenAireApiClient extends AbstractApiClient
     /**
      * Proactive throttle before an authenticated request (~2 req/s, quota 7200 req/h).
      * Extracted as an overridable seam so tests can skip the real delay.
+     *
+     * Restricted to CLI execution for the same reason as throttleUnauthenticated(): a
+     * request triggered from PaperController/AdministratepaperController must never be
+     * delayed for UI/UX reasons. Skipping the 500ms pacing on an isolated HTTP-triggered
+     * call is safe — the pacing only matters for back-to-back CLI batch requests.
      */
     protected function throttleAuthenticated(): void
     {
+        if (!$this->isCliContext()) {
+            $this->logger->debug('OpenAIRE authenticated throttle skipped outside CLI execution (HTTP request path)');
+            return;
+        }
         usleep(self::AUTH_THROTTLE_MICROSECONDS);
     }
 
@@ -254,7 +272,7 @@ class OpenAireApiClient extends AbstractApiClient
      */
     protected function throttleUnauthenticated(): void
     {
-        if (PHP_SAPI !== 'cli') {
+        if (!$this->isCliContext()) {
             $this->logger->debug('OpenAIRE unauthenticated throttle skipped outside CLI execution (HTTP request path)');
             return;
         }
@@ -264,10 +282,23 @@ class OpenAireApiClient extends AbstractApiClient
     /**
      * Reactive backoff wait after an HTTP 429 response.
      * Extracted as an overridable seam so tests can skip the real delay.
+     *
+     * Only ever called from a CLI context: requestWithRetry() returns before reaching
+     * this call outside CLI execution, so the request thread is never blocked here.
      */
     protected function backoff(int $seconds): void
     {
         sleep($seconds);
+    }
+
+    /**
+     * True when running under the CLI SAPI (batch commands), false for an HTTP request
+     * (e.g. PaperController/AdministratepaperController). Extracted as an overridable
+     * seam so tests can simulate the HTTP path without faking the global PHP_SAPI value.
+     */
+    protected function isCliContext(): bool
+    {
+        return PHP_SAPI === 'cli';
     }
 
     // -------------------------------------------------------------------------
