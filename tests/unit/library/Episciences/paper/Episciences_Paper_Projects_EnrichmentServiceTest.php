@@ -154,4 +154,92 @@ final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
         self::assertSame('Existing Project', $result[0]['projectTitle']);
         self::assertSame('New Project', $result[1]['projectTitle']);
     }
+
+    // -------------------------------------------------------------------------
+    // formatFundingOAForDB() — OpenAire Graph v3 direct project entries
+    // -------------------------------------------------------------------------
+
+    public function testFormatFundingOAForDBv3MapsDirectScalarFields(): void
+    {
+        $fileFound = [
+            [
+                'id'      => 'corda_______::824087',
+                'code'    => '824087',
+                'acronym' => 'EOSC-Pillar',
+                'title'   => 'European Open Science Cloud Pillar',
+                'funder'  => 'European Commission',
+                'pids'    => null,
+            ],
+        ];
+
+        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, [], []);
+
+        self::assertCount(1, $result);
+        self::assertSame('European Open Science Cloud Pillar', $result[0]['projectTitle']);
+        self::assertSame('824087', $result[0]['code']);
+        self::assertSame('EOSC-Pillar', $result[0]['acronym']);
+        self::assertSame('European Commission', $result[0]['funderName']);
+    }
+
+    public function testFormatFundingOAForDBv3NullAcronymOmitted(): void
+    {
+        $fileFound = [
+            [
+                'id'      => 'nih_________::01713ce3da46fe56c2b11399f029007c',
+                'code'    => '5T15LM007059-20',
+                'acronym' => null,
+                'title'   => 'Pittsburgh Biomedical Informatics Training Program',
+                'funder'  => 'National Institutes of Health',
+                'pids'    => null,
+            ],
+        ];
+
+        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, [], []);
+
+        self::assertCount(1, $result);
+        self::assertArrayNotHasKey('acronym', $result[0]);
+    }
+
+    public function testFormatFundingOAForDBv3FunderAsDataModelObject(): void
+    {
+        $fileFound = [
+            [
+                'code'    => '824087',
+                'acronym' => null,
+                'title'   => 'European Open Science Cloud Pillar',
+                'funder'  => ['name' => 'European Commission', 'shortName' => 'EC'],
+                'pids'    => null,
+            ],
+        ];
+
+        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, [], []);
+
+        self::assertSame('European Commission', $result[0]['funderName']);
+    }
+
+    public function testFormatFundingOAForDBv3MultipleProjectsMapped(): void
+    {
+        $fileFound = [
+            [
+                'code'    => '824087',
+                'acronym' => 'EOSC-Pillar',
+                'title'   => 'European Open Science Cloud Pillar',
+                'funder'  => 'European Commission',
+                'pids'    => null,
+            ],
+            [
+                'code'    => 'ANR-11-LABX-0010',
+                'acronym' => 'DRIIHM / IRDHEI',
+                'title'   => 'Dispositif de recherche interdisciplinaire sur les Interactions Hommes-Milieux',
+                'funder'  => 'French National Research Agency (ANR)',
+                'pids'    => null,
+            ],
+        ];
+
+        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, [], []);
+
+        self::assertCount(2, $result);
+        self::assertSame('EOSC-Pillar', $result[0]['acronym']);
+        self::assertSame('DRIIHM / IRDHEI', $result[1]['acronym']);
+    }
 }

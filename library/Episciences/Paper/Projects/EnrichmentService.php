@@ -140,7 +140,10 @@ class Episciences_Paper_Projects_EnrichmentService
     }
 
     /**
-     * Filter OpenAire relations to keep only project-type entries.
+     * Map OpenAire Graph v3 project entries (results[0].projects) to the DB funding structure.
+     * Also accepts the legacy v1 relation format (rels.rel with to.@type === 'project')
+     * as a fallback, so residual v1 caches keep working during the transition.
+     *
      * Replaces formatFundingOAForDB().
      */
     public static function formatFundingOAForDB(
@@ -149,6 +152,12 @@ class Episciences_Paper_Projects_EnrichmentService
         array $globalFundingArray
     ): array {
         foreach ($fileFound as $valueOpenAire) {
+            if (self::isV3ProjectEntry($valueOpenAire)) {
+                $globalFundingArray[] = self::mapV3ProjectEntry($valueOpenAire);
+                continue;
+            }
+
+            // v1 fallback (residual caches)
             if (
                 !array_key_exists('to', $valueOpenAire) ||
                 !array_key_exists('@type', $valueOpenAire['to']) ||
@@ -171,6 +180,46 @@ class Episciences_Paper_Projects_EnrichmentService
             $globalFundingArray[] = $fundingArray;
         }
         return $globalFundingArray;
+    }
+
+    /**
+     * A v3 project entry carries a direct scalar 'title', unlike the v1 relation format
+     * where 'title' is a nested {"$": "..."} structure.
+     *
+     * @param array<string, mixed> $entry
+     */
+    private static function isV3ProjectEntry(array $entry): bool
+    {
+        return array_key_exists('title', $entry) && is_string($entry['title']);
+    }
+
+    /**
+     * Map a single v3 project entry ({title, acronym, code, funder}) to the DB funding structure.
+     * 'funder' may be a scalar name (current REST serialization) or a Data Model object
+     * ({name, shortName, jurisdiction, fundingStream}); both are supported.
+     *
+     * @param array<string, mixed> $entry
+     * @return array<string, mixed>
+     */
+    private static function mapV3ProjectEntry(array $entry): array
+    {
+        $fundingArray = ['projectTitle' => $entry['title']];
+
+        if (!empty($entry['code'])) {
+            $fundingArray['code'] = $entry['code'];
+        }
+        if (!empty($entry['acronym'])) {
+            $fundingArray['acronym'] = $entry['acronym'];
+        }
+
+        $funder = $entry['funder'] ?? null;
+        if (is_string($funder) && $funder !== '') {
+            $fundingArray['funderName'] = $funder;
+        } elseif (is_array($funder) && !empty($funder['name'])) {
+            $fundingArray['funderName'] = $funder['name'];
+        }
+
+        return $fundingArray;
     }
 
     /**

@@ -14,7 +14,9 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 /**
- * OpenAire Research Graph REST API client.
+ * OpenAire Research Graph v3 REST API client.
+ *
+ * @see https://graph.openaire.eu/docs/apis/search-api
  *
  * Cache namespaces:
  *  - openAireResearchGraph : md5($doi) . '.json'
@@ -26,8 +28,9 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
  */
 class OpenAireApiClient extends AbstractApiClient
 {
-    private const API_BASE_URL  = 'https://api.openaire.eu/search/publications';
+    private const API_BASE_URL  = 'https://api.openaire.eu/graph/v3/research-products';
     private const MAX_RESPONSE_SIZE = 5242880; // 5 MB
+    private const ORCID_SCHEMES = ['orcid', 'orcid_pending'];
 
     private CacheItemPoolInterface $globalCache;
     private CacheItemPoolInterface $authorsCache;
@@ -69,7 +72,7 @@ class OpenAireApiClient extends AbstractApiClient
             return $data;
         }
 
-        $url = self::API_BASE_URL . '/?doi=' . urlencode($doi) . '&format=json';
+        $url = self::API_BASE_URL . '?pid=' . urlencode($doi);
         $this->logger->info("Fetching OpenAIRE data for DOI {$doi}");
 
         try {
@@ -131,18 +134,18 @@ class OpenAireApiClient extends AbstractApiClient
     // -------------------------------------------------------------------------
 
     /**
-     * Extract creator array from OpenAire response, or null if unavailable.
+     * Extract author array from an OpenAire Graph v3 response, or null if unavailable.
      *
      * @param array<string, mixed> $response
      * @return array<mixed>|null
      */
     public function extractCreators(array $response): ?array
     {
-        if (empty($response['response']['results']['result'][0])) {
+        if (empty($response['results'][0])) {
             return null;
         }
-        $result = $response['response']['results']['result'][0];
-        return $result['metadata']['oaf:entity']['oaf:result']['creator'] ?? null;
+        $authors = $response['results'][0]['authors'] ?? null;
+        return !empty($authors) ? $authors : null;
     }
 
     // -------------------------------------------------------------------------
@@ -150,21 +153,18 @@ class OpenAireApiClient extends AbstractApiClient
     // -------------------------------------------------------------------------
 
     /**
-     * Extract funding array from OpenAire response, or null if unavailable.
+     * Extract project array from an OpenAire Graph v3 response, or null if unavailable.
      *
      * @param array<string, mixed> $response
      * @return array<mixed>|null
      */
     public function extractFunding(array $response): ?array
     {
-        if (empty($response['response']['results']['result'][0])) {
+        if (empty($response['results'][0])) {
             return null;
         }
-        $rels = $response['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['rels'] ?? null;
-        if ($rels === null || !array_key_exists('rel', $rels)) {
-            return null;
-        }
-        return $rels['rel'];
+        $projects = $response['results'][0]['projects'] ?? null;
+        return !empty($projects) ? $projects : null;
     }
 
     // -------------------------------------------------------------------------
@@ -172,7 +172,11 @@ class OpenAireApiClient extends AbstractApiClient
     // -------------------------------------------------------------------------
 
     /**
-     * Extract JEL classification codes from an OpenAire publication response.
+     * Extract JEL classification codes from an OpenAire Graph v3 publication response.
+     *
+     * A subject is retained as a JEL code when its scheme is 'jel', or when its value
+     * is prefixed with 'jel:' (some sources tag JEL values under a different scheme,
+     * e.g. 'keyword').
      *
      * @param array<string, mixed> $response
      * @return array<string> unique JEL codes (e.g. "A10", "B23")
@@ -180,31 +184,23 @@ class OpenAireApiClient extends AbstractApiClient
     public function extractJelCodes(array $response): array
     {
         $codes = [];
-        if (!isset($response['response']['results']['result'])) {
-            return $codes;
-        }
-        foreach ($response['response']['results']['result'] as $result) {
-            $subjects = $result['metadata']['oaf:entity']['oaf:result']['subject'] ?? null;
-            if ($subjects === null) {
+        $subjects = $response['results'][0]['subjects'] ?? [];
+
+        foreach ($subjects as $item) {
+            $scheme = $item['subject']['scheme'] ?? null;
+            $value  = $item['subject']['value'] ?? null;
+
+            if ($value === null || ($scheme !== 'jel' && !str_starts_with($value, 'jel:'))) {
                 continue;
             }
-            // subject may be a single object or an array of objects
-            if (!is_array($subjects) || isset($subjects['@classid'])) {
-                $subjects = [$subjects];
-            }
-            foreach ($subjects as $subject) {
-                if (($subject['@classid'] ?? '') !== 'jel' || !isset($subject['$'])) {
-                    continue;
-                }
-                $value = $subject['$'];
-                if (str_starts_with($value, 'jel:')) {
-                    $code = substr($value, 4); // fix: ltrim('jel:') strips chars, not the prefix string
-                    if ($code !== '') {
-                        $codes[] = $code;
-                    }
-                }
+
+            $code = str_starts_with($value, 'jel:') ? substr($value, 4) : $value;
+            $code = trim($code);
+            if ($code !== '') {
+                $codes[] = $code;
             }
         }
+
         return array_unique($codes);
     }
 
@@ -424,27 +420,29 @@ class OpenAireApiClient extends AbstractApiClient
     // -------------------------------------------------------------------------
 
     /**
-     * Search API data for a matching ORCID for the given author full name.
+     * Search OpenAire Graph v3 author data for a matching ORCID for the given full name.
+     *
+     * Matching is case-insensitive and accent-insensitive against `fullName`. The ORCID
+     * is read exclusively from `pid.id.value` when `pid.id.scheme` is 'orcid' or
+     * 'orcid_pending' — `id` (an OpenAire-internal hash) must never be used as an ORCID.
      *
      * @param array<int, array<string, mixed>> $apiData
      */
     public function findOrcidForAuthor(string $fullName, array $apiData): ?string
     {
-        foreach ($apiData as $authorInfoFromApi) {
-            $isMatch = false;
+        $needle = \Episciences_Tools::replaceAccents(mb_strtolower($fullName));
 
-            if (array_search($fullName, $authorInfoFromApi, true) !== false
-                || array_search(\Episciences_Tools::replaceAccents($fullName), $authorInfoFromApi, true) !== false
-            ) {
-                $isMatch = true;
-            } elseif (isset($authorInfoFromApi['$'])
-                && \Episciences_Tools::replaceAccents($fullName) === \Episciences_Tools::replaceAccents($authorInfoFromApi['$'])
-            ) {
-                $isMatch = true;
+        foreach ($apiData as $authorInfoFromApi) {
+            $candidate = \Episciences_Tools::replaceAccents(mb_strtolower($authorInfoFromApi['fullName'] ?? ''));
+            if ($candidate === '' || $candidate !== $needle) {
+                continue;
             }
 
-            if ($isMatch && array_key_exists('@orcid', $authorInfoFromApi)) {
-                return \Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($authorInfoFromApi['@orcid']);
+            $scheme = $authorInfoFromApi['pid']['id']['scheme'] ?? null;
+            $value  = $authorInfoFromApi['pid']['id']['value'] ?? null;
+
+            if ($value !== null && in_array($scheme, self::ORCID_SCHEMES, true)) {
+                return \Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($value);
             }
         }
         return null;

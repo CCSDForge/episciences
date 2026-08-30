@@ -26,14 +26,18 @@ class GetClassificationJelCommand extends Command
     {
         $this
             ->setDescription('Enrich JEL classification data from the OpenAIRE Research Graph')
+            ->addOption('doi', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by DOI')
+            ->addOption('paperid', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by paper ID')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
-            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
+            ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Bypass cache and fetch fresh data')
+            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code); ignored when --doi or --paperid is used');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io      = new SymfonyStyle($input, $output);
         $dryRun  = (bool) $input->getOption('dry-run');
+        $noCache = (bool) $input->getOption('no-cache');
         $rvcode  = $input->getOption('rvcode');
         $io->title('JEL classification enrichment');
         $this->bootstrap();
@@ -71,13 +75,26 @@ class GetClassificationJelCommand extends Command
 
         $db       = Zend_Db_Table_Abstract::getDefaultAdapter();
         $allCodes = $db->fetchCol($db->select()->from(T_PAPER_CLASSIFICATION_JEL, ['code']));
-        $select   = $db->select()
-            ->from(T_PAPERS, ['DOI', 'DOCID'])
-            ->where('DOI != ""')
-            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
-            ->order('DOCID ASC');
-        if ($rvid !== null) {
-            $select->where('RVID = ?', $rvid);
+        if ($input->getOption('doi')) {
+            $select = $db->select()
+                ->from(T_PAPERS, ['DOI', 'DOCID'])
+                ->where('DOI = ?', trim((string) $input->getOption('doi')))
+                ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+        } elseif ($input->getOption('paperid')) {
+            $select = $db->select()
+                ->from(T_PAPERS, ['DOI', 'DOCID'])
+                ->where('PAPERID = ?', (int) $input->getOption('paperid'))
+                ->where('DOI != ""')
+                ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+        } else {
+            $select = $db->select()
+                ->from(T_PAPERS, ['DOI', 'DOCID'])
+                ->where('DOI != ""')
+                ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
+                ->order('DOCID ASC');
+            if ($rvid !== null) {
+                $select->where('RVID = ?', $rvid);
+            }
         }
         $papers = $db->fetchAll($select);
 
@@ -85,8 +102,14 @@ class GetClassificationJelCommand extends Command
         $io->progressStart(count($papers));
 
         foreach ($papers as $row) {
-            $doi   = $row['DOI'];
+            $doi   = trim($row['DOI']);
             $docId = (int) $row['DOCID'];
+
+            if ($noCache && $doi !== '') {
+                $cacheOARG = new FilesystemAdapter('openAireResearchGraph', 0, $cacheDir);
+                $cacheOARG->deleteItem(md5($doi) . '.json');
+            }
+
             try {
                 $response = $apiClient->fetchPublication($doi, $docId);
                 $codes    = $response !== null ? $apiClient->extractJelCodes($response) : [];

@@ -9,7 +9,7 @@ use Psr\Log\NullLogger;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 /**
- * Unit tests for OpenAireApiClient.
+ * Unit tests for OpenAireApiClient (OpenAire Graph v3 API).
  */
 class OpenAireApiClientTest extends TestCase
 {
@@ -33,130 +33,104 @@ class OpenAireApiClientTest extends TestCase
         $this->assertSame([], $this->makeClient()->extractJelCodes([]));
     }
 
-    public function testExtractJelCodes_ResultKeyAbsent_ReturnsEmpty(): void
+    public function testExtractJelCodes_ResultsEmpty_ReturnsEmpty(): void
     {
-        $response = ['response' => ['results' => []]];
+        $this->assertSame([], $this->makeClient()->extractJelCodes(['results' => []]));
+    }
+
+    public function testExtractJelCodes_SubjectsMissing_ReturnsEmpty(): void
+    {
+        $response = $this->makeResponseWithSubjects([]);
         $this->assertSame([], $this->makeClient()->extractJelCodes($response));
     }
 
-    public function testExtractJelCodes_SubjectMissing_ReturnsEmpty(): void
+    public function testExtractJelCodes_SchemeJel_ExtractsCode(): void
     {
-        $response = ['response' => ['results' => ['result' => [
-            ['metadata' => ['oaf:entity' => ['oaf:result' => []]]],
-        ]]]];
-        $this->assertSame([], $this->makeClient()->extractJelCodes($response));
+        $subjects = [
+            ['subject' => ['scheme' => 'jel', 'value' => 'jel:C10']],
+        ];
+        $response = $this->makeResponseWithSubjects($subjects);
+
+        $this->assertSame(['C10'], $this->makeClient()->extractJelCodes($response));
     }
 
-    public function testExtractJelCodes_SubjectNull_ReturnsEmpty(): void
+    public function testExtractJelCodes_SchemeJelWithoutPrefix_ExtractsRawValue(): void
     {
-        $response = ['response' => ['results' => ['result' => [
-            ['metadata' => ['oaf:entity' => ['oaf:result' => ['subject' => null]]]],
-        ]]]];
-        $this->assertSame([], $this->makeClient()->extractJelCodes($response));
-    }
-
-    /**
-     * When the API returns a single subject as an associative array (not wrapped in a list),
-     * it must still be processed correctly.
-     */
-    public function testExtractJelCodes_SingleSubjectObject_ExtractsCode(): void
-    {
-        $subject  = ['@classid' => 'jel', '$' => 'jel:A10'];
-        $response = $this->makeResponseWithSubject($subject);
+        $subjects = [
+            ['subject' => ['scheme' => 'jel', 'value' => 'A10']],
+        ];
+        $response = $this->makeResponseWithSubjects($subjects);
 
         $this->assertSame(['A10'], $this->makeClient()->extractJelCodes($response));
     }
 
-    public function testExtractJelCodes_MultipleSubjectsArray_FiltersJelOnly(): void
+    public function testExtractJelCodes_JelPrefixUnderOtherScheme_ExtractsCode(): void
+    {
+        // some sources tag JEL values under scheme 'keyword' instead of 'jel'
+        $subjects = [
+            ['subject' => ['scheme' => 'keyword', 'value' => 'jel:B23']],
+        ];
+        $response = $this->makeResponseWithSubjects($subjects);
+
+        $this->assertSame(['B23'], $this->makeClient()->extractJelCodes($response));
+    }
+
+    public function testExtractJelCodes_FiltersOutNonJelSubjects(): void
     {
         $subjects = [
-            ['@classid' => 'ddc',  '$' => 'ddc:330'],
-            ['@classid' => 'jel',  '$' => 'jel:B23'],
-            ['@classid' => 'jel',  '$' => 'jel:C10'],
+            ['subject' => ['scheme' => 'FOS', 'value' => '0102 computer and information sciences']],
+            ['subject' => ['scheme' => 'keyword', 'value' => 'Econometrics']],
+            ['subject' => ['scheme' => 'jel', 'value' => 'jel:A10']],
         ];
-        $response = $this->makeResponseWithSubject($subjects);
+        $response = $this->makeResponseWithSubjects($subjects);
 
-        $codes = $this->makeClient()->extractJelCodes($response);
-        $this->assertSame(['B23', 'C10'], $codes);
-    }
-
-    public function testExtractJelCodes_NoJelSubjects_ReturnsEmpty(): void
-    {
-        $subjects = [
-            ['@classid' => 'ddc', '$' => 'ddc:330'],
-        ];
-        $response = $this->makeResponseWithSubject($subjects);
-
-        $this->assertSame([], $this->makeClient()->extractJelCodes($response));
-    }
-
-    /**
-     * Bug A fix: ltrim($value, 'jel:') strips individual characters {j,e,l,:} from the left,
-     * so a code like 'jel:e10' would become '10' with ltrim, but correctly 'e10' with substr.
-     */
-    public function testBugFix_JelCodeStartingWithE_CorrectlyExtracted(): void
-    {
-        // ltrim('jel:e10', 'jel:') → strips 'j','e','l',':','e' → '10'
-        // substr('jel:e10', 4)    → 'e10'  ← correct
-        $response = $this->makeResponseWithSubject(['@classid' => 'jel', '$' => 'jel:e10']);
-        $this->assertSame(['e10'], $this->makeClient()->extractJelCodes($response));
-    }
-
-    public function testBugFix_JelCodeStartingWithJ_CorrectlyExtracted(): void
-    {
-        // ltrim('jel:jl1', 'jel:') → strips 'j','l' → '1'
-        // substr('jel:jl1', 4)    → 'jl1' ← correct
-        $response = $this->makeResponseWithSubject(['@classid' => 'jel', '$' => 'jel:jl1']);
-        $this->assertSame(['jl1'], $this->makeClient()->extractJelCodes($response));
+        $this->assertSame(['A10'], $this->makeClient()->extractJelCodes($response));
     }
 
     public function testExtractJelCodes_DuplicateCodes_Deduplicated(): void
     {
         $subjects = [
-            ['@classid' => 'jel', '$' => 'jel:A10'],
-            ['@classid' => 'jel', '$' => 'jel:A10'],
-            ['@classid' => 'jel', '$' => 'jel:B01'],
+            ['subject' => ['scheme' => 'jel', 'value' => 'jel:A10']],
+            ['subject' => ['scheme' => 'jel', 'value' => 'A10']],
+            ['subject' => ['scheme' => 'jel', 'value' => 'jel:B01']],
         ];
-        $response = $this->makeResponseWithSubject($subjects);
-        $codes    = $this->makeClient()->extractJelCodes($response);
+        $response = $this->makeResponseWithSubjects($subjects);
 
+        $codes = $this->makeClient()->extractJelCodes($response);
         $this->assertCount(2, $codes);
         $this->assertContains('A10', $codes);
         $this->assertContains('B01', $codes);
     }
 
-    public function testExtractJelCodes_MissingDollarSign_SubjectSkipped(): void
+    public function testExtractJelCodes_MissingValue_SubjectSkipped(): void
     {
         $subjects = [
-            ['@classid' => 'jel'],  // no '$' key
-            ['@classid' => 'jel', '$' => 'jel:B01'],
+            ['subject' => ['scheme' => 'jel']], // no 'value' key
+            ['subject' => ['scheme' => 'jel', 'value' => 'jel:B01']],
         ];
-        $response = $this->makeResponseWithSubject($subjects);
+        $response = $this->makeResponseWithSubjects($subjects);
 
         $this->assertSame(['B01'], $this->makeClient()->extractJelCodes($response));
     }
 
-    public function testExtractJelCodes_ValueNotStartingWithJelPrefix_Skipped(): void
+    /**
+     * Bug fix regression: substr($value, 4) must be used instead of ltrim($value, 'jel:'),
+     * which strips individual characters {j,e,l,:} from the left rather than the prefix string.
+     */
+    public function testBugFix_JelCodeStartingWithE_CorrectlyExtracted(): void
     {
-        $subjects = [
-            ['@classid' => 'jel', '$' => 'A10'],     // missing 'jel:' prefix
-            ['@classid' => 'jel', '$' => 'jel:B01'],
-        ];
-        $response = $this->makeResponseWithSubject($subjects);
-
-        $this->assertSame(['B01'], $this->makeClient()->extractJelCodes($response));
+        $response = $this->makeResponseWithSubjects([
+            ['subject' => ['scheme' => 'jel', 'value' => 'jel:e10']],
+        ]);
+        $this->assertSame(['e10'], $this->makeClient()->extractJelCodes($response));
     }
 
-    public function testExtractJelCodes_MultipleResults_CodesAggregatedAcrossAll(): void
+    public function testBugFix_JelCodeStartingWithJ_CorrectlyExtracted(): void
     {
-        $response = ['response' => ['results' => ['result' => [
-            $this->makeResult([['@classid' => 'jel', '$' => 'jel:A10']]),
-            $this->makeResult([['@classid' => 'jel', '$' => 'jel:B01']]),
-        ]]]];
-
-        $codes = $this->makeClient()->extractJelCodes($response);
-        $this->assertContains('A10', $codes);
-        $this->assertContains('B01', $codes);
+        $response = $this->makeResponseWithSubjects([
+            ['subject' => ['scheme' => 'jel', 'value' => 'jel:jl1']],
+        ]);
+        $this->assertSame(['jl1'], $this->makeClient()->extractJelCodes($response));
     }
 
     // -------------------------------------------------------------------------
@@ -168,24 +142,35 @@ class OpenAireApiClientTest extends TestCase
         $this->assertNull($this->makeClient()->extractCreators([]));
     }
 
-    public function testExtractCreators_ResultKeyAbsent_ReturnsNull(): void
+    public function testExtractCreators_ResultsEmpty_ReturnsNull(): void
     {
-        $this->assertNull($this->makeClient()->extractCreators(['response' => ['results' => []]]));
+        $this->assertNull($this->makeClient()->extractCreators(['results' => []]));
     }
 
-    public function testExtractCreators_NoCreatorKey_ReturnsNull(): void
+    public function testExtractCreators_NoAuthorsKey_ReturnsNull(): void
     {
-        $response = $this->makeResponseWithResult(['metadata' => ['oaf:entity' => ['oaf:result' => []]]]);
+        $response = $this->makeResponseWithResult([]);
         $this->assertNull($this->makeClient()->extractCreators($response));
     }
 
-    public function testExtractCreators_WithCreators_ReturnsArray(): void
+    public function testExtractCreators_EmptyAuthorsArray_ReturnsNull(): void
     {
-        $creators = [['$' => 'Doe, Jane', '@orcid' => '0000-0001-2345-6789']];
-        $response = $this->makeResponseWithResult([
-            'metadata' => ['oaf:entity' => ['oaf:result' => ['creator' => $creators]]],
-        ]);
-        $this->assertSame($creators, $this->makeClient()->extractCreators($response));
+        $response = $this->makeResponseWithResult(['authors' => []]);
+        $this->assertNull($this->makeClient()->extractCreators($response));
+    }
+
+    public function testExtractCreators_WithAuthors_ReturnsArray(): void
+    {
+        $authors = [
+            ['id' => null, 'fullName' => 'Bostjan Bresar', 'name' => 'Bostjan', 'surname' => 'Bresar', 'rank' => 1, 'pid' => null],
+            ['id' => 'orcid_______::28bda0fd2326ea51cb2e980c9d232397', 'fullName' => 'Babak Samadi', 'name' => 'Babak', 'surname' => 'Samadi', 'rank' => 2, 'pid' => [
+                'id' => ['scheme' => 'orcid', 'value' => '0000-0003-0045-1883'],
+                'provenance' => null,
+            ]],
+        ];
+        $response = $this->makeResponseWithResult(['authors' => $authors]);
+
+        $this->assertSame($authors, $this->makeClient()->extractCreators($response));
     }
 
     // -------------------------------------------------------------------------
@@ -197,29 +182,33 @@ class OpenAireApiClientTest extends TestCase
         $this->assertNull($this->makeClient()->extractFunding([]));
     }
 
-    public function testExtractFunding_NoRelsKey_ReturnsNull(): void
+    public function testExtractFunding_NoProjectsKey_ReturnsNull(): void
     {
-        $response = $this->makeResponseWithResult([
-            'metadata' => ['oaf:entity' => ['oaf:result' => []]],
-        ]);
+        $response = $this->makeResponseWithResult([]);
         $this->assertNull($this->makeClient()->extractFunding($response));
     }
 
-    public function testExtractFunding_RelsWithNoRelKey_ReturnsNull(): void
+    public function testExtractFunding_EmptyProjectsArray_ReturnsNull(): void
     {
-        $response = $this->makeResponseWithResult([
-            'metadata' => ['oaf:entity' => ['oaf:result' => ['rels' => []]]],
-        ]);
+        $response = $this->makeResponseWithResult(['projects' => []]);
         $this->assertNull($this->makeClient()->extractFunding($response));
     }
 
-    public function testExtractFunding_WithFunding_ReturnsRelArray(): void
+    public function testExtractFunding_WithProjects_ReturnsProjectsArray(): void
     {
-        $rel      = [['projectTitle' => 'My Project', 'grantId' => '12345']];
-        $response = $this->makeResponseWithResult([
-            'metadata' => ['oaf:entity' => ['oaf:result' => ['rels' => ['rel' => $rel]]]],
-        ]);
-        $this->assertSame($rel, $this->makeClient()->extractFunding($response));
+        $projects = [
+            [
+                'id'      => 'corda_______::824087',
+                'code'    => '824087',
+                'acronym' => 'EOSC-Pillar',
+                'title'   => 'European Open Science Cloud Pillar',
+                'funder'  => 'European Commission',
+                'pids'    => null,
+            ],
+        ];
+        $response = $this->makeResponseWithResult(['projects' => $projects]);
+
+        $this->assertSame($projects, $this->makeClient()->extractFunding($response));
     }
 
     // -------------------------------------------------------------------------
@@ -228,10 +217,8 @@ class OpenAireApiClientTest extends TestCase
 
     public function testPutCreatorInCache_ResponseWithCreators_CachesCreatorArray(): void
     {
-        $creators = [['$' => 'Doe, Jane', '@orcid' => '0000-0001-2345-6789']];
-        $response = $this->makeResponseWithResult([
-            'metadata' => ['oaf:entity' => ['oaf:result' => ['creator' => $creators]]],
-        ]);
+        $authors  = [['id' => null, 'fullName' => 'Doe, Jane', 'name' => 'Jane', 'surname' => 'Doe', 'rank' => 1, 'pid' => null]];
+        $response = $this->makeResponseWithResult(['authors' => $authors]);
 
         $authorsCache = new ArrayAdapter();
         $client = $this->makeClientWithCaches(new ArrayAdapter(), $authorsCache, new ArrayAdapter());
@@ -241,7 +228,7 @@ class OpenAireApiClientTest extends TestCase
 
         $item = $authorsCache->getItem(md5($doi) . '_creator.json');
         $this->assertTrue($item->isHit());
-        $this->assertSame($creators, json_decode($item->get(), true));
+        $this->assertSame($authors, json_decode($item->get(), true));
     }
 
     public function testPutCreatorInCache_NullResponse_StoresEmptyMarker(): void
@@ -276,10 +263,10 @@ class OpenAireApiClientTest extends TestCase
 
     public function testPutFundingInCache_ResponseWithFunding_CachesFundingArray(): void
     {
-        $rel      = [['projectTitle' => 'My Project', 'grantId' => '12345']];
-        $response = $this->makeResponseWithResult([
-            'metadata' => ['oaf:entity' => ['oaf:result' => ['rels' => ['rel' => $rel]]]],
-        ]);
+        $projects = [
+            ['id' => 'corda_______::824087', 'code' => '824087', 'acronym' => 'EOSC-Pillar', 'title' => 'European Open Science Cloud Pillar', 'funder' => 'European Commission', 'pids' => null],
+        ];
+        $response = $this->makeResponseWithResult(['projects' => $projects]);
 
         $fundingCache = new ArrayAdapter();
         $client = $this->makeClientWithCaches(new ArrayAdapter(), new ArrayAdapter(), $fundingCache);
@@ -289,7 +276,7 @@ class OpenAireApiClientTest extends TestCase
 
         $item = $fundingCache->getItem(md5($doi) . '_funding.json');
         $this->assertTrue($item->isHit());
-        $this->assertSame($rel, json_decode($item->get(), true));
+        $this->assertSame($projects, json_decode($item->get(), true));
     }
 
     public function testPutFundingInCache_NullResponse_StoresEmptyMarker(): void
@@ -362,30 +349,67 @@ class OpenAireApiClientTest extends TestCase
     // findOrcidForAuthor()
     // -------------------------------------------------------------------------
 
-    public function testFindOrcidForAuthor_ExactMatch_ReturnsCleanedOrcid(): void
+    public function testFindOrcidForAuthor_OrcidScheme_ReturnsCleanedOrcid(): void
     {
         $apiData = [
-            ['$' => 'Doe, Jane', '@orcid' => 'https://orcid.org/0000-0001-2345-6789'],
+            ['fullName' => 'Babak Samadi', 'pid' => ['id' => ['scheme' => 'orcid', 'value' => 'https://orcid.org/0000-0003-0045-1883']]],
         ];
-        $result = $this->makeClient()->findOrcidForAuthor('Doe, Jane', $apiData);
-        // cleanLowerCaseOrcid strips URL prefix and lowercases
-        $this->assertStringContainsString('0000-0001-2345-6789', $result);
+        $result = $this->makeClient()->findOrcidForAuthor('Babak Samadi', $apiData);
+        $this->assertStringContainsString('0000-0003-0045-1883', $result);
+    }
+
+    public function testFindOrcidForAuthor_OrcidPendingScheme_ReturnsCleanedOrcid(): void
+    {
+        $apiData = [
+            ['fullName' => 'Matti Picus', 'pid' => ['id' => ['scheme' => 'orcid_pending', 'value' => '0000-0002-1771-9949']]],
+        ];
+        $result = $this->makeClient()->findOrcidForAuthor('Matti Picus', $apiData);
+        $this->assertSame('0000-0002-1771-9949', $result);
+    }
+
+    public function testFindOrcidForAuthor_CaseAndAccentInsensitiveMatch(): void
+    {
+        $apiData = [
+            ['fullName' => 'Bosstjan Brešar', 'pid' => ['id' => ['scheme' => 'orcid', 'value' => '0000-0001-1111-1111']]],
+        ];
+        $result = $this->makeClient()->findOrcidForAuthor('bosstjan bresar', $apiData);
+        $this->assertSame('0000-0001-1111-1111', $result);
     }
 
     public function testFindOrcidForAuthor_NoMatch_ReturnsNull(): void
     {
         $apiData = [
-            ['$' => 'Smith, John', '@orcid' => 'https://orcid.org/0000-0002-0000-0000'],
+            ['fullName' => 'Smith, John', 'pid' => ['id' => ['scheme' => 'orcid', 'value' => '0000-0002-0000-0000']]],
         ];
         $this->assertNull($this->makeClient()->findOrcidForAuthor('Doe, Jane', $apiData));
     }
 
-    public function testFindOrcidForAuthor_MatchWithoutOrcid_ReturnsNull(): void
+    public function testFindOrcidForAuthor_MatchWithoutPid_ReturnsNull(): void
     {
         $apiData = [
-            ['$' => 'Doe, Jane'], // no @orcid key
+            ['fullName' => 'Sandi Klavzar', 'pid' => null],
+        ];
+        $this->assertNull($this->makeClient()->findOrcidForAuthor('Sandi Klavzar', $apiData));
+    }
+
+    public function testFindOrcidForAuthor_UnsupportedScheme_ReturnsNull(): void
+    {
+        $apiData = [
+            ['fullName' => 'Doe, Jane', 'pid' => ['id' => ['scheme' => 'ror', 'value' => '05dxps055']]],
         ];
         $this->assertNull($this->makeClient()->findOrcidForAuthor('Doe, Jane', $apiData));
+    }
+
+    /**
+     * Golden rule: 'id' (an OpenAire-internal hash, e.g. 'orcid_______::28bda0fd...') must
+     * never be used as an ORCID, only 'pid.id.value'.
+     */
+    public function testFindOrcidForAuthor_NeverUsesInternalIdHash(): void
+    {
+        $apiData = [
+            ['id' => 'orcid_______::28bda0fd2326ea51cb2e980c9d232397', 'fullName' => 'Babak Samadi', 'pid' => null],
+        ];
+        $this->assertNull($this->makeClient()->findOrcidForAuthor('Babak Samadi', $apiData));
     }
 
     public function testFindOrcidForAuthor_EmptyApiData_ReturnsNull(): void
@@ -397,24 +421,16 @@ class OpenAireApiClientTest extends TestCase
     // Helpers
     // -------------------------------------------------------------------------
 
-    /** @param mixed $subject single subject dict or array of dicts */
-    private function makeResponseWithSubject(mixed $subject): array
+    /** @param array<int, array<string, mixed>> $subjects */
+    private function makeResponseWithSubjects(array $subjects): array
     {
-        return ['response' => ['results' => ['result' => [
-            $this->makeResult($subject),
-        ]]]];
-    }
-
-    /** @param mixed $subject */
-    private function makeResult(mixed $subject): array
-    {
-        return ['metadata' => ['oaf:entity' => ['oaf:result' => ['subject' => $subject]]]];
+        return $this->makeResponseWithResult(['subjects' => $subjects]);
     }
 
     /** @param array<string, mixed> $resultEntry */
     private function makeResponseWithResult(array $resultEntry): array
     {
-        return ['response' => ['results' => ['result' => [$resultEntry]]]];
+        return ['results' => [$resultEntry]];
     }
 
     private function makeClientWithCaches(
