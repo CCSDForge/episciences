@@ -2488,6 +2488,8 @@ return array(
     "Renvoyer en mise en page" => "Return to layout editing",
     "Approuver pour publication" => "Approve for publication",
     "Le pipeline alternatif n'est pas activé pour cette revue." => "The alternative pipeline is not enabled for this journal.",
+    "Le statut de l'article a été modifié, mais au moins un courriel n'a pas pu être envoyé." => "The article status was changed, but at least one email could not be sent.",
+    "Le dépôt a été enregistré, mais au moins un courriel n'a pas pu être envoyé." => "The submission was saved, but at least one email could not be sent.",
     "Le statut actuel de l'article ne permet pas cette action." => "The current paper status does not allow this action.",
     "mot de passe et version finale demandés" => "password and final version requested",
     "mot de passe et version finale soumis" => "password and final version submitted",

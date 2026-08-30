@@ -728,11 +728,9 @@ class PaperController extends PaperDefaultController
         $review = Episciences_ReviewsManager::find(RVID);
         $review->loadSettings();
 
-        $recipients = array_merge(
-            $paper->getEditors(true, true),
-            $paper->getCopyEditors(true, true)
-        );
+        $recipients = Episciences_PapersManager::getAlternativePipelineManagerRecipients($paper);
 
+        $allMailsSent = !empty($recipients);
         foreach ($recipients as $recipient) {
             $locale = $recipient->getLangueid();
             $tags = [
@@ -746,12 +744,18 @@ class PaperController extends PaperDefaultController
                 Episciences_Mail_Tags::TAG_ACTION_TIME => Zend_Date::now()->get(Zend_Date::TIME_MEDIUM),
                 Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $paper->getSubmitter()?->getFullName(),
             ];
-            $this->sendMailFromModal($recipient, $paper, $subject, $message, $post, $tags);
+            $allMailsSent = $this->sendMailFromModal($recipient, $paper, $subject, $message, $post, $tags)
+                && $allMailsSent;
         }
 
         $this->_helper->FlashMessenger->setNamespace('success')->addMessage(
             $this->view->translate('Vos modifications ont bien été prises en compte')
         );
+        if (!$allMailsSent) {
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage(
+                $this->view->translate("Le statut de l'article a été modifié, mais au moins un courriel n'a pas pu être envoyé.")
+            );
+        }
         $this->_helper->redirector->gotoUrl($redirectUrl);
     }
 
@@ -1493,13 +1497,77 @@ class PaperController extends PaperDefaultController
             'authorUid' => $paper->getUid(),
         ]);
 
+        $allMailsSent = $this->notifyAltFinalVersionSubmitted($paper, $post);
+
         $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage(
             $this->view->translate("Votre dépôt a bien été enregistré.")
         );
+        if (!$allMailsSent) {
+            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage(
+                $this->view->translate("Le dépôt a été enregistré, mais au moins un courriel n'a pas pu être envoyé.")
+            );
+        }
         $redirectUrl = $this->isAlternativePipelineAuthorProxy($paper)
             ? '/' . self::ADMINISTRATE_PAPER_CONTROLLER . '/view?id=' . $paper->getDocid()
             : '/' . self::CONTROLLER_NAME . '/view?id=' . $paper->getDocid();
         $this->_helper->redirector->gotoUrl($redirectUrl);
+    }
+
+    private function notifyAltFinalVersionSubmitted(Episciences_Paper $paper, array $data): bool
+    {
+        $author = new Episciences_User();
+        $authorFound = $author->findWithCAS($paper->getUid());
+        $managers = Episciences_PapersManager::getAlternativePipelineManagerRecipients($paper);
+        $allMailsSent = $authorFound && !empty($managers);
+
+        if ($authorFound) {
+            $allMailsSent = $this->sendMailFromModal(
+                $author,
+                $paper,
+                '',
+                '',
+                $data,
+                $this->buildAlternativePipelineNotificationTags($paper, $author, true),
+                Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_AUTHOR_COPY
+            ) && $allMailsSent;
+        }
+
+        foreach ($managers as $manager) {
+            $allMailsSent = $this->sendMailFromModal(
+                $manager,
+                $paper,
+                '',
+                '',
+                $data,
+                $this->buildAlternativePipelineNotificationTags($paper, $manager, false),
+                Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_EDITOR_COPY
+            ) && $allMailsSent;
+        }
+
+        return $allMailsSent;
+    }
+
+    private function buildAlternativePipelineNotificationTags(
+        Episciences_Paper $paper,
+        Episciences_User $recipient,
+        bool $publicPaperUrl
+    ): array {
+        $locale = $recipient->getLangueid();
+
+        return [
+            Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
+            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
+            Episciences_Mail_Tags::TAG_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paper->getSubmission_date(), $locale),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $publicPaperUrl
+                ? $this->buildPublicPaperUrl($paper->getDocid())
+                : $this->buildAdminPaperUrl($paper->getDocid()),
+            Episciences_Mail_Tags::TAG_COMMENT => '',
+            Episciences_Mail_Tags::TAG_ACTION_DATE => Episciences_View_Helper_Date::Date(date('Y-m-d'), $locale),
+            Episciences_Mail_Tags::TAG_ACTION_TIME => Zend_Date::now()->get(Zend_Date::TIME_MEDIUM),
+            Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $paper->getSubmitter()?->getFullName(),
+        ];
     }
 
     private function redirectAltFinalVersionDepositWithError(

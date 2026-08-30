@@ -935,8 +935,8 @@ class AdministratepaperController extends PaperDefaultController
                     Episciences_PapersManager::getAlternativePipelineFormDefault(
                         $paper,
                         $contributor,
-                        Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_START_LAYOUT_EDITING_COPYEDITOR_COPY,
-                        'copyEditors'
+                        Episciences_Mail_TemplatesManager::TYPE_PAPER_ALT_START_LAYOUT_EDITING_AUTHOR_COPY,
+                        'author'
                     )
                 );
                 $this->view->altIncorrectPasswordForm = Episciences_PapersManager::getAltIncorrectPasswordForm(
@@ -2289,7 +2289,7 @@ class AdministratepaperController extends PaperDefaultController
             Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
             'altstartlayoutsubject',
             'altstartlayoutmessage',
-            'copyEditors'
+            'author'
         );
     }
 
@@ -2397,7 +2397,7 @@ class AdministratepaperController extends PaperDefaultController
         $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
 
         // notify the author with the alternative-pipeline modal content
-        $this->sendMailFromModal($contributor, $paper, $data['altpublishsubject'] ?? '', $data['altpublishmessage'] ?? '', $data);
+        $authorMailSent = $this->sendMailFromModal($contributor, $paper, $data['altpublishsubject'] ?? '', $data['altpublishmessage'] ?? '', $data);
 
         // notify reviewers (stop pending reviewing)
         $this->paperStatusChangedNotifyReviewer($paper, Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING);
@@ -2405,7 +2405,7 @@ class AdministratepaperController extends PaperDefaultController
         // notify editors, copy editors and (per journal settings) chief editors, admins, secretaries
         $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_EDITOR_COPY, Episciences_Auth::getUser());
 
-        $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
+        $this->addAlternativePipelineMailResultMessage($authorMailSent);
 
         $this->indexAndCOARNotify($paper, $journal);
 
@@ -2472,12 +2472,14 @@ class AdministratepaperController extends PaperDefaultController
         $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
 
         $recipients = $this->resolveAlternativePipelineRecipients($paper, $recipientType);
+        $allMailsSent = !empty($recipients);
         foreach ($recipients as $recipient) {
             $tags = $this->buildAlternativePipelineMailTags($paper, $recipient, $message, $recipientType);
-            $this->sendMailFromModal($recipient, $paper, $subject, $message, $data, $tags);
+            $allMailsSent = $this->sendMailFromModal($recipient, $paper, $subject, $message, $data, $tags)
+                && $allMailsSent;
         }
 
-        $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
+        $this->addAlternativePipelineMailResultMessage($allMailsSent);
         $this->_helper->redirector->gotoUrl($this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]));
     }
 
@@ -2515,12 +2517,19 @@ class AdministratepaperController extends PaperDefaultController
             return [];
         }
 
-        // copyEditors with fallback to editors
-        $recipients = $paper->getCopyEditors(true, true);
-        if (empty($recipients)) {
-            $recipients = $paper->getEditors(true, true);
+        return Episciences_PapersManager::getAlternativePipelineManagerRecipients($paper);
+    }
+
+    private function addAlternativePipelineMailResultMessage(bool $allMailsSent): void
+    {
+        if ($allMailsSent) {
+            $this->_helper->FlashMessenger->setNamespace('success')->addMessage('Vos modifications ont bien été prises en compte');
+            return;
         }
-        return array_values($recipients);
+
+        $this->_helper->FlashMessenger->setNamespace('warning')->addMessage(
+            "Le statut de l'article a été modifié, mais au moins un courriel n'a pas pu être envoyé."
+        );
     }
 
     /**

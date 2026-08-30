@@ -2122,10 +2122,7 @@ class Episciences_PapersManager
 
     private static function formatAlternativePipelineRecipientsForDisplay(Episciences_Paper $paper): string
     {
-        $recipients = $paper->getCopyEditors(true, true);
-        if (empty($recipients)) {
-            $recipients = $paper->getEditors(true, true);
-        }
+        $recipients = self::getAlternativePipelineManagerRecipients($paper);
 
         if (empty($recipients)) {
             return '';
@@ -2134,6 +2131,30 @@ class Episciences_PapersManager
         return implode('; ', array_map(static function (Episciences_User $recipient): string {
             return $recipient->getFullName() . ' <' . $recipient->getEmail() . '>';
         }, $recipients));
+    }
+
+    /**
+     * Return the assigned layout editors, falling back to assigned editors,
+     * without sending duplicate messages to the same user.
+     *
+     * @return Episciences_User[]
+     */
+    public static function getAlternativePipelineManagerRecipients(Episciences_Paper $paper): array
+    {
+        $recipients = $paper->getCopyEditors(true, true);
+        if (empty($recipients)) {
+            $recipients = $paper->getEditors(true, true);
+        }
+
+        $uniqueRecipients = [];
+        foreach ($recipients as $recipient) {
+            $key = $recipient->getUid() ?: strtolower((string)$recipient->getEmail());
+            if ($key !== '' && !isset($uniqueRecipients[$key])) {
+                $uniqueRecipients[$key] = $recipient;
+            }
+        }
+
+        return array_values($uniqueRecipients);
     }
 
     public static function getAltFinalVersionDepositForm(Episciences_Paper $paper, array $defaults = []): \Ccsd_Form

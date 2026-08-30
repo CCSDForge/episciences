@@ -136,7 +136,7 @@ class PaperDefaultController extends DefaultController
      * @throws Zend_Mail_Exception
      * @throws Exception
      */
-    protected function sendMailFromModal(Episciences_User $submitter, Episciences_Paper $paper, string $subject, string $message, array $data, array $tags = [], ?string $templateKey = null): void
+    protected function sendMailFromModal(Episciences_User $submitter, Episciences_Paper $paper, string $subject, string $message, array $data, array $tags = [], ?string $templateKey = null): bool
     {
 
         $mail = new Episciences_Mail('UTF-8');
@@ -148,7 +148,9 @@ class PaperDefaultController extends DefaultController
             }
         }
 
-        $mail->setTo($submitter);
+        if (!$mail->setTo($submitter)) {
+            return false;
+        }
 
         if ($templateKey !== null) {
             $template = new Episciences_Mail_Template();
@@ -181,13 +183,17 @@ class PaperDefaultController extends DefaultController
         $cc = $this->extractModalRecipientEmails($data, 'cc');
         $bcc = $this->extractModalRecipientEmails($data, 'bcc');
         $this->addOtherRecipients($mail, $cc, $bcc);
-        $mail->writeMail();
+        if (!$mail->writeMail()) {
+            return false;
+        }
 
         // log mail sending
         $paper->log(
             Episciences_Paper_Logger::CODE_MAIL_SENT,
             Episciences_Auth::getUid(),
             ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
+
+        return true;
     }
 
     /**

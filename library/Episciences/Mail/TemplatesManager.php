@@ -143,7 +143,9 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_ALT_REQUEST_FINAL_VERSION_AUTHOR_COPY = 'paper_alt_request_final_version_author_copy';
     public const TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_AUTHOR_COPY = 'paper_alt_final_version_deposit_author_copy';
     public const TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_EDITOR_COPY = 'paper_alt_final_version_deposit_editor_copy';
-    public const TYPE_PAPER_ALT_START_LAYOUT_EDITING_COPYEDITOR_COPY = 'paper_alt_start_layout_editing_copyeditor_copy';
+    public const TYPE_PAPER_ALT_START_LAYOUT_EDITING_AUTHOR_COPY = 'paper_alt_start_layout_editing_copyeditor_copy';
+    /** @deprecated Use TYPE_PAPER_ALT_START_LAYOUT_EDITING_AUTHOR_COPY. */
+    public const TYPE_PAPER_ALT_START_LAYOUT_EDITING_COPYEDITOR_COPY = self::TYPE_PAPER_ALT_START_LAYOUT_EDITING_AUTHOR_COPY;
     public const TYPE_PAPER_ALT_INCORRECT_PASSWORD_AUTHOR_COPY = 'paper_alt_incorrect_password_author_copy';
     public const TYPE_PAPER_ALT_INCORRECT_LATEX_AUTHOR_COPY = 'paper_alt_incorrect_latex_author_copy';
     public const TYPE_PAPER_ALT_SEND_PROOF_TO_AUTHOR_AUTHOR_COPY = 'paper_alt_send_proof_to_author_author_copy';
@@ -1836,7 +1838,7 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_PAPER_ALT_REQUEST_FINAL_VERSION_AUTHOR_COPY,
         self::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_AUTHOR_COPY,
         self::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_EDITOR_COPY,
-        self::TYPE_PAPER_ALT_START_LAYOUT_EDITING_COPYEDITOR_COPY,
+        self::TYPE_PAPER_ALT_START_LAYOUT_EDITING_AUTHOR_COPY,
         self::TYPE_PAPER_ALT_INCORRECT_PASSWORD_AUTHOR_COPY,
         self::TYPE_PAPER_ALT_INCORRECT_LATEX_AUTHOR_COPY,
         self::TYPE_PAPER_ALT_SEND_PROOF_TO_AUTHOR_AUTHOR_COPY,
@@ -2236,7 +2238,7 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_PAPER_ALT_REQUEST_FINAL_VERSION_AUTHOR_COPY => self::paper_alt_pipeline_author_copy_tags,
             self::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_AUTHOR_COPY => self::paper_alt_pipeline_author_copy_tags,
             self::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_EDITOR_COPY => self::paper_alt_pipeline_editor_copy_tags,
-            self::TYPE_PAPER_ALT_START_LAYOUT_EDITING_COPYEDITOR_COPY => self::paper_alt_pipeline_editor_copy_tags,
+            self::TYPE_PAPER_ALT_START_LAYOUT_EDITING_AUTHOR_COPY => self::paper_alt_pipeline_author_copy_tags,
             self::TYPE_PAPER_ALT_INCORRECT_PASSWORD_AUTHOR_COPY => self::paper_alt_pipeline_author_copy_tags,
             self::TYPE_PAPER_ALT_INCORRECT_LATEX_AUTHOR_COPY => self::paper_alt_pipeline_author_copy_tags,
             self::TYPE_PAPER_ALT_SEND_PROOF_TO_AUTHOR_AUTHOR_COPY => self::paper_alt_pipeline_author_copy_tags,
