@@ -72,7 +72,10 @@ class OpenAireTokenProvider
 
         $item = $this->cache->getItem(self::CACHE_KEY);
         if ($item->isHit()) {
-            return (string) $item->get();
+            $cached = $item->get();
+            // A cached `false` is the short-lived AAI-failure marker set by fetchNewToken();
+            // it must not be mistaken for an (invalid) empty-string token.
+            return is_string($cached) ? $cached : null;
         }
 
         return $this->fetchNewToken($item);
@@ -134,6 +137,10 @@ class OpenAireTokenProvider
             return $token;
         } catch (GuzzleException|\JsonException $e) {
             $this->logger->error('Failed to acquire OpenAIRE access token: ' . $e->getMessage());
+            // Cache a short-lived failure marker to prevent spamming AAI on every item during outages.
+            $item->set(false);
+            $item->expiresAfter(self::MIN_TTL_SECONDS);
+            $this->cache->save($item);
             return null;
         }
     }

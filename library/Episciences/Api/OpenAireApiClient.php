@@ -94,7 +94,7 @@ class OpenAireApiClient extends AbstractApiClient
         $apiBaseUrl = (defined('OPENAIRE_API_URL') && (string) constant('OPENAIRE_API_URL') !== '')
             ? (string) constant('OPENAIRE_API_URL')
             : self::API_BASE_URL;
-        $url = $apiBaseUrl . '?pid=' . urlencode($doi);
+        $url = rtrim($apiBaseUrl, '/') . '?pid=' . urlencode($doi);
         $this->logger->info("Fetching OpenAIRE data for DOI {$doi}");
 
         $body = $this->requestWithRetry($url, $paperId);
@@ -373,7 +373,7 @@ class OpenAireApiClient extends AbstractApiClient
             }
         }
 
-        return array_unique($codes);
+        return array_values(array_unique($codes));
     }
 
     // -------------------------------------------------------------------------
@@ -403,7 +403,6 @@ class OpenAireApiClient extends AbstractApiClient
     {
         $key  = md5($doi) . '_funding.json';
         $item = $this->fundingCache->getItem($key);
-        $item->expiresAfter(self::ONE_MONTH);
         return [$this->fundingCache, $key, $item];
     }
 
@@ -630,7 +629,7 @@ class OpenAireApiClient extends AbstractApiClient
             $value  = $authorInfoFromApi['pid']['id']['value'] ?? null;
 
             if (is_string($value) && $value !== '' && in_array($scheme, self::ORCID_SCHEMES, true)) {
-                return \Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($value);
+                return \Episciences_Paper_AuthorsManager::normalizeOrcid($value);
             }
         }
         return null;

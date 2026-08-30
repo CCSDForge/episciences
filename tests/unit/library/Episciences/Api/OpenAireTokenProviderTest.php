@@ -210,6 +210,34 @@ class OpenAireTokenProviderTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // getAccessToken() — negative caching on AAI failure
+    // -------------------------------------------------------------------------
+
+    public function testGetAccessToken_HttpError_CachesFailureMarker_PreventsSecondAaiCallWithinTtl(): void
+    {
+        // Single response queued: a second HTTP call would throw an "empty queue" error,
+        // proving the failure marker was used instead of hitting AAI again.
+        $provider = $this->makeProvider($this->makeGuzzle([new Response(500, [], 'Internal Server Error')]));
+
+        $this->assertNull($provider->getAccessToken());
+        $this->assertNull($provider->getAccessToken());
+    }
+
+    public function testGetAccessToken_CachedFailureMarker_ReturnsNullNotEmptyString(): void
+    {
+        $cache = new ArrayAdapter();
+        $item  = $cache->getItem('openaire_access_token');
+        $item->set(false);
+        $item->expiresAfter(60);
+        $cache->save($item);
+
+        // Empty MockHandler queue: any HTTP call would throw an "empty queue" error.
+        $provider = $this->makeProvider($this->makeGuzzle([]), $cache);
+
+        $this->assertNull($provider->getAccessToken());
+    }
+
+    // -------------------------------------------------------------------------
     // clearTokenCache()
     // -------------------------------------------------------------------------
 

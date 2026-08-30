@@ -378,7 +378,7 @@ class OpenAireApiClientTest extends TestCase
             ['fullName' => 'Babak Samadi', 'pid' => ['id' => ['scheme' => 'orcid', 'value' => 'https://orcid.org/0000-0003-0045-1883']]],
         ];
         $result = $this->makeClient()->findOrcidForAuthor('Babak Samadi', $apiData);
-        $this->assertStringContainsString('0000-0003-0045-1883', $result);
+        $this->assertSame('0000-0003-0045-1883', $result);
     }
 
     public function testFindOrcidForAuthor_OrcidPendingScheme_ReturnsCleanedOrcid(): void
@@ -434,7 +434,7 @@ class OpenAireApiClientTest extends TestCase
             ['fullName' => 'Doe, Jane', 'pid' => ['id' => ['scheme' => 'orcid', 'value' => '0000-0001-2345-6789']]],
         ];
         $result = $this->makeClient()->findOrcidForAuthor('Doe, Jane', $apiData);
-        $this->assertStringContainsString('0000-0001-2345-6789', $result);
+        $this->assertSame('0000-0001-2345-6789', $result);
     }
 
     /**
@@ -577,7 +577,6 @@ class OpenAireApiClientTest extends TestCase
         // A second getItem() after clearTokenCache() would miss and try a real AAI call;
         // to keep this a pure unit test we re-seed via a token provider whose AAI mock
         // returns a fresh token on that fallback call.
-        $aaiHistory = [];
         $aaiClient  = new Client(['handler' => HandlerStack::create(new MockHandler([
             new Response(200, [], json_encode(['access_token' => 'refreshed-token', 'expires_in' => 3600])),
         ]))]);
