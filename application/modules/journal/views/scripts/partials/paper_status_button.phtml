@@ -507,8 +507,6 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?php endif; ?>
             <?php endif; ?>
 
-            <?php // BEGIN: Alt pipeline buttons ?>
-
             <?php if ($isAltPipelineOn && $paper->isAccepted()): ?>
                 <li>
                     <a href="#" data-toggle="modal"
@@ -540,8 +538,6 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
 
             </ul>
             </div>
-
-            <?php // END: Alt pipeline buttons ?>
 
     <?php // Copy editor?>
 <?php elseif (Episciences_Auth::isCopyEditor()) : ?>

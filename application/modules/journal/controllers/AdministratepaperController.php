@@ -2374,13 +2374,11 @@ class AdministratepaperController extends PaperDefaultController
 
         $data = $post;
 
-        // get contributor detail
         $contributor = new Episciences_User();
         $contributor->findWithCAS($paper->getUid());
 
         $paper->setPublication_date(date('Y-m-d H:i:s'));
         $paper->setStatus(Episciences_Paper::STATUS_PUBLISHED);
-        // delete paper password
         $paper->setPassword();
 
         if ($paper->isPreprint()) { // force article's type to 'article'
@@ -2395,16 +2393,12 @@ class AdministratepaperController extends PaperDefaultController
             return;
         }
 
-        // log new status
         $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), ['status' => $paper->getStatus()]);
 
-        // notify the author with the alternative-pipeline modal content
         $authorMailSent = $this->sendMailFromModal($contributor, $paper, $data['altpublishsubject'] ?? '', $data['altpublishmessage'] ?? '', $data);
 
-        // notify reviewers (stop pending reviewing)
         $this->paperStatusChangedNotifyReviewer($paper, Episciences_Mail_TemplatesManager::TYPE_REVIEWER_PAPER_PUBLISHED_REQUEST_STOP_PENDING_REVIEWING);
 
-        // notify editors, copy editors and (per journal settings) chief editors, admins, secretaries
         $this->paperStatusChangedNotifyManagers($paper, Episciences_Mail_TemplatesManager::TYPE_PAPER_PUBLISHED_EDITOR_COPY, Episciences_Auth::getUser());
 
         $this->addAlternativePipelineMailResultMessage($authorMailSent);

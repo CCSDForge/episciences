@@ -2234,7 +2234,6 @@ class Episciences_PapersManager
 
         $form->addElement('hash', 'csrf_finalversiondeposit_' . $docId, ['salt' => 'unique']);
 
-        // Version number text input — same pattern as Episciences_Submit::getNewVersionForm()
         $form->addElement('text', 'version', [
             'label' => 'Version arXiv',
             'description' => sprintf(

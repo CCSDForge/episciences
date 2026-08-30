@@ -88,7 +88,7 @@ class Episciences_Paper
     public const STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION = 31;
     public const STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION = 32;
     public const STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION = 33; // Journal formatting approved by author
-    // states for alternative workflow (requested by LMCS)
+    // Alternative editorial pipeline statuses
     public const STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION = 34;
     public const STATUS_ALT_FINAL_VERSION_SUBMITTED = 35;
     public const STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS = 36;
@@ -2921,7 +2921,7 @@ class Episciences_Paper
     public function isReadyToPublish(): bool
     {
         return in_array($this->getStatus(), [
-            self::STATUS_CE_READY_TO_PUBLISH, 
+            self::STATUS_CE_READY_TO_PUBLISH,
             self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION,
             self::STATUS_ALT_AWAITING_PUBLICATION
             ], true);
@@ -5962,5 +5962,3 @@ class Episciences_Paper
     }
 
 }
-
-
