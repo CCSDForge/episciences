@@ -121,6 +121,22 @@ class OpenAireApiClientTest extends TestCase
     }
 
     /**
+     * Regression: a non-string 'value' (malformed payload) must be skipped rather than
+     * crash str_starts_with()/substr() with a TypeError under strict_types.
+     */
+    public function testExtractJelCodes_NonStringValue_SubjectSkippedWithoutTypeError(): void
+    {
+        $subjects = [
+            ['subject' => ['scheme' => 'jel', 'value' => ['unexpected' => 'array']]],
+            ['subject' => ['scheme' => 'jel', 'value' => 42]],
+            ['subject' => ['scheme' => 'jel', 'value' => 'jel:B01']],
+        ];
+        $response = $this->makeResponseWithSubjects($subjects);
+
+        $this->assertSame(['B01'], $this->makeClient()->extractJelCodes($response));
+    }
+
+    /**
      * Bug fix regression: substr($value, 4) must be used instead of ltrim($value, 'jel:'),
      * which strips individual characters {j,e,l,:} from the left rather than the prefix string.
      */
@@ -403,6 +419,32 @@ class OpenAireApiClientTest extends TestCase
     {
         $apiData = [
             ['fullName' => 'Doe, Jane', 'pid' => ['id' => ['scheme' => 'ror', 'value' => '05dxps055']]],
+        ];
+        $this->assertNull($this->makeClient()->findOrcidForAuthor('Doe, Jane', $apiData));
+    }
+
+    /**
+     * Regression: a non-string 'fullName' (malformed payload) must be skipped rather than
+     * crash mb_strtolower() with a TypeError under strict_types.
+     */
+    public function testFindOrcidForAuthor_NonStringFullName_EntrySkippedWithoutTypeError(): void
+    {
+        $apiData = [
+            ['fullName' => ['unexpected' => 'array'], 'pid' => null],
+            ['fullName' => 'Doe, Jane', 'pid' => ['id' => ['scheme' => 'orcid', 'value' => '0000-0001-2345-6789']]],
+        ];
+        $result = $this->makeClient()->findOrcidForAuthor('Doe, Jane', $apiData);
+        $this->assertStringContainsString('0000-0001-2345-6789', $result);
+    }
+
+    /**
+     * Regression: a non-string 'pid.id.value' must be skipped rather than crash
+     * cleanLowerCaseOrcid() (strictly typed `string $orcid`) with a TypeError.
+     */
+    public function testFindOrcidForAuthor_NonStringPidValue_ReturnsNullWithoutTypeError(): void
+    {
+        $apiData = [
+            ['fullName' => 'Doe, Jane', 'pid' => ['id' => ['scheme' => 'orcid', 'value' => ['unexpected' => 'array']]]],
         ];
         $this->assertNull($this->makeClient()->findOrcidForAuthor('Doe, Jane', $apiData));
     }

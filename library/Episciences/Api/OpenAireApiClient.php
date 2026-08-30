@@ -247,9 +247,17 @@ class OpenAireApiClient extends AbstractApiClient
     /**
      * Proactive throttle before an anonymous request (1 req/min, quota 60 req/h).
      * Extracted as an overridable seam so tests can skip the real delay.
+     *
+     * Restricted to CLI execution: this path is also reachable synchronously from
+     * PaperController/AdministratepaperController via PapersManager::updateRecordData(),
+     * and a 60s sleep() would block a PHP-FPM worker for a full minute per request.
      */
     protected function throttleUnauthenticated(): void
     {
+        if (PHP_SAPI !== 'cli') {
+            $this->logger->debug('OpenAIRE unauthenticated throttle skipped outside CLI execution (HTTP request path)');
+            return;
+        }
         sleep(self::UNAUTH_THROTTLE_SECONDS);
     }
 
@@ -323,7 +331,7 @@ class OpenAireApiClient extends AbstractApiClient
             $scheme = $item['subject']['scheme'] ?? null;
             $value  = $item['subject']['value'] ?? null;
 
-            if ($value === null || ($scheme !== 'jel' && !str_starts_with($value, 'jel:'))) {
+            if (!is_string($value) || ($scheme !== 'jel' && !str_starts_with($value, 'jel:'))) {
                 continue;
             }
 
@@ -578,7 +586,11 @@ class OpenAireApiClient extends AbstractApiClient
         $needle = \Episciences_Tools::replaceAccents(mb_strtolower($fullName));
 
         foreach ($apiData as $authorInfoFromApi) {
-            $candidate = \Episciences_Tools::replaceAccents(mb_strtolower($authorInfoFromApi['fullName'] ?? ''));
+            $rawFullName = $authorInfoFromApi['fullName'] ?? '';
+            if (!is_string($rawFullName)) {
+                continue;
+            }
+            $candidate = \Episciences_Tools::replaceAccents(mb_strtolower($rawFullName));
             if ($candidate === '' || $candidate !== $needle) {
                 continue;
             }
@@ -586,7 +598,7 @@ class OpenAireApiClient extends AbstractApiClient
             $scheme = $authorInfoFromApi['pid']['id']['scheme'] ?? null;
             $value  = $authorInfoFromApi['pid']['id']['value'] ?? null;
 
-            if ($value !== null && in_array($scheme, self::ORCID_SCHEMES, true)) {
+            if (is_string($value) && $value !== '' && in_array($scheme, self::ORCID_SCHEMES, true)) {
                 return \Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($value);
             }
         }

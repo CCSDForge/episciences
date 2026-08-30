@@ -48,17 +48,24 @@ class ClearOpenAireCacheCommand extends Command
             $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
         }
 
-        $cacheDir = dirname(APPLICATION_PATH) . '/cache/';
+        $cacheDir   = dirname(APPLICATION_PATH) . '/cache/';
+        $allCleared = true;
 
         foreach (self::CACHE_POOLS as $pool) {
             $cache   = new FilesystemAdapter($pool, 0, $cacheDir);
             $cleared = $cache->clear();
+            $allCleared = $allCleared && $cleared;
             $logger->info("Cache pool '{$pool}' " . ($cleared ? 'cleared' : 'clear failed'));
             if ($cleared) {
                 $io->writeln("<info>✓</info> {$pool}");
             } else {
                 $io->writeln("<error>✗</error> {$pool}");
             }
+        }
+
+        if (!$allCleared) {
+            $io->error('OpenAIRE enrichment cache purge failed for one or more pools.');
+            return Command::FAILURE;
         }
 
         $io->success('OpenAIRE enrichment cache purge completed.');
