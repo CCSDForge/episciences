@@ -2133,12 +2133,7 @@ class Episciences_PapersManager
         }, $recipients));
     }
 
-    /**
-     * Return the assigned layout editors, falling back to assigned editors,
-     * without sending duplicate messages to the same user.
-     *
-     * @return Episciences_User[]
-     */
+    /** @return Episciences_User[] */
     public static function getAlternativePipelineManagerRecipients(Episciences_Paper $paper): array
     {
         $recipients = $paper->getCopyEditors(true, true);
@@ -2185,8 +2180,7 @@ class Episciences_PapersManager
             'style' => 'width:33%;',
         ]);
 
-        // A previously supplied password remains attached to the paper. Authors
-        // only need to enter it again when none is currently stored.
+        // Reuse the stored password when only the final version changes.
         \Episciences_Submit::addPaperArxivPwdElement($form, empty($paper->getPassword()));
 
         // The decorator template inspects a hidden element for pcId/docId attributes;

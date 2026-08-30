@@ -1210,8 +1210,7 @@ class Episciences_Paper
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $docId = $this->getDocid();
 
-        // Passwords grant update access to the repository record and must never
-        // survive publication, regardless of which controller publishes it.
+        // Repository update credentials must not survive publication.
         if ($this->getStatus() === self::STATUS_PUBLISHED) {
             $this->setPassword();
         }
@@ -5760,6 +5759,5 @@ class Episciences_Paper
     }
 
 }
-
 
 

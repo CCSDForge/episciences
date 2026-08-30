@@ -725,9 +725,6 @@ class PaperController extends PaperDefaultController
             'authorUid' => $paper->getUid(),
         ]);
 
-        $review = Episciences_ReviewsManager::find(RVID);
-        $review->loadSettings();
-
         $recipients = Episciences_PapersManager::getAlternativePipelineManagerRecipients($paper);
 
         $allMailsSent = !empty($recipients);
