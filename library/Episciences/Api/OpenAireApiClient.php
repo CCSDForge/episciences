@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Episciences\Api;
 
+use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -10,6 +11,7 @@ use Psr\Cache\CacheItemInterface;
 use Psr\Cache\InvalidArgumentException;
 use Psr\Cache\CacheItemPoolInterface;
 use GuzzleHttp\Client;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
@@ -32,22 +34,38 @@ class OpenAireApiClient extends AbstractApiClient
     private const MAX_RESPONSE_SIZE = 5242880; // 5 MB
     private const ORCID_SCHEMES = ['orcid', 'orcid_pending'];
 
+    // Rate limits per https://graph.openaire.eu/docs/apis/terms#authentication--limits
+    private const AUTH_THROTTLE_MICROSECONDS = 500000; // 500ms (~2 req/s, quota 7200 req/h, authenticated)
+    private const UNAUTH_THROTTLE_SECONDS    = 60;      // 60s (1 req/min, quota 60 req/h, anonymous)
+    private const MAX_RETRIES = 3;
+
     private CacheItemPoolInterface $globalCache;
     private CacheItemPoolInterface $authorsCache;
     private CacheItemPoolInterface $fundingCache;
+    private ?OpenAireTokenProvider $tokenProvider;
 
     public function __construct(
         Client               $client,
         CacheItemPoolInterface $globalCache,
         CacheItemPoolInterface $authorsCache,
         CacheItemPoolInterface $fundingCache,
-        LoggerInterface      $logger
+        LoggerInterface      $logger,
+        ?OpenAireTokenProvider $tokenProvider = null
     ) {
         // Parent constructor requires a single CacheItemPoolInterface; pass globalCache as primary.
         parent::__construct($client, $globalCache, $logger);
-        $this->globalCache  = $globalCache;
-        $this->authorsCache = $authorsCache;
-        $this->fundingCache = $fundingCache;
+        $this->globalCache   = $globalCache;
+        $this->authorsCache  = $authorsCache;
+        $this->fundingCache  = $fundingCache;
+        $this->tokenProvider = $tokenProvider;
+    }
+
+    /**
+     * True when a token provider is set up with client credentials (authenticated mode).
+     */
+    public function isAuthenticated(): bool
+    {
+        return $this->tokenProvider?->isConfigured() ?? false;
     }
 
     // -------------------------------------------------------------------------
@@ -68,32 +86,19 @@ class OpenAireApiClient extends AbstractApiClient
         $item = $this->globalCache->getItem($key);
 
         if ($item->isHit()) {
-            $data = json_decode((string) $item->get(), true, self::JSON_MAX_DEPTH, JSON_THROW_ON_ERROR);
-            return $data;
+            $this->logger->info("OpenAIRE data from cache for DOI {$doi}");
+            return json_decode((string) $item->get(), true, self::JSON_MAX_DEPTH, JSON_THROW_ON_ERROR);
         }
 
-        $url = self::API_BASE_URL . '?pid=' . urlencode($doi);
+        // @phpstan-ignore notIdentical.alwaysTrue
+        $apiBaseUrl = (defined('OPENAIRE_API_URL') && (string) constant('OPENAIRE_API_URL') !== '')
+            ? (string) constant('OPENAIRE_API_URL')
+            : self::API_BASE_URL;
+        $url = $apiBaseUrl . '?pid=' . urlencode($doi);
         $this->logger->info("Fetching OpenAIRE data for DOI {$doi}");
 
-        try {
-            $response = $this->client->get($url, [
-                'headers'         => $this->defaultHeaders(),
-                'timeout'         => 30,
-                'allow_redirects' => [
-                    'max'       => 2,
-                    'strict'    => true,
-                    'referer'   => true,
-                    'protocols' => ['https'],
-                ],
-                'verify'          => true,
-            ]);
-            $body = $response->getBody()->getContents();
-        } catch (GuzzleException $e) {
-            $this->logger->error(sprintf(
-                'OpenAIRE API error for paper %d: %s',
-                $paperId,
-                $e->getMessage()
-            ));
+        $body = $this->requestWithRetry($url, $paperId);
+        if ($body === null) {
             return null;
         }
 
@@ -105,9 +110,6 @@ class OpenAireApiClient extends AbstractApiClient
             ));
             return null;
         }
-
-        // Rate limiting
-        sleep(1);
 
         try {
             $decoded = json_decode($body, true, self::JSON_MAX_DEPTH, JSON_THROW_ON_ERROR);
@@ -127,6 +129,137 @@ class OpenAireApiClient extends AbstractApiClient
         $this->globalCache->save($item);
 
         return $decoded;
+    }
+
+    // -------------------------------------------------------------------------
+    // HTTP request with bi-mode auth, adaptive throttling, and 401/429 retry
+    // -------------------------------------------------------------------------
+
+    /**
+     * Issue the GET request, handling authentication, throttling, and 401/429 retry.
+     * Returns the raw response body, or null on unrecoverable error / exhausted retries.
+     */
+    private function requestWithRetry(string $url, int $paperId): ?string
+    {
+        $token   = $this->tokenProvider?->getAccessToken();
+        $headers = $this->defaultHeaders();
+
+        if ($token !== null) {
+            $headers['Authorization'] = 'Bearer ' . $token;
+            $this->throttleAuthenticated();
+        } else {
+            $this->logger->warning(
+                'OpenAIRE unauthenticated mode active: throttling for ' . self::UNAUTH_THROTTLE_SECONDS . 's (rate limit: 60 req/h)'
+            );
+            $this->throttleUnauthenticated();
+        }
+
+        $attempt = 0;
+        while ($attempt < self::MAX_RETRIES) {
+            $attempt++;
+            try {
+                $response = $this->client->get($url, [
+                    'headers'         => $headers,
+                    'timeout'         => 30,
+                    'allow_redirects' => [
+                        'max'       => 2,
+                        'strict'    => true,
+                        'referer'   => true,
+                        'protocols' => ['https'],
+                    ],
+                    'verify'          => true,
+                ]);
+
+                $this->logRateLimitStatus($response);
+                return $response->getBody()->getContents();
+            } catch (ClientException $e) {
+                $statusCode = $e->getResponse()->getStatusCode();
+
+                // 401 Unauthorized: token revoked/expired in authenticated mode -> refresh and retry once.
+                if ($statusCode === 401 && $token !== null && $this->tokenProvider !== null && $attempt === 1) {
+                    $this->logger->warning('OpenAIRE 401 Unauthorized received, refreshing token...');
+                    $this->tokenProvider->clearTokenCache();
+                    $token = $this->tokenProvider->getAccessToken();
+                    if ($token !== null) {
+                        $headers['Authorization'] = 'Bearer ' . $token;
+                        continue;
+                    }
+                }
+
+                // 429 Too Many Requests: back off and retry, up to MAX_RETRIES attempts.
+                if ($statusCode === 429) {
+                    if ($attempt >= self::MAX_RETRIES) {
+                        $this->logger->critical(
+                            "OpenAIRE API: rate limit (429) exhausted after {$attempt} attempts for paper {$paperId}, giving up"
+                        );
+                        return null;
+                    }
+
+                    $retryAfter   = (int) $e->getResponse()->getHeaderLine('Retry-After');
+                    $sleepSeconds = $token !== null
+                        ? ($retryAfter > 0 ? $retryAfter : ($attempt * 3))
+                        : max(self::UNAUTH_THROTTLE_SECONDS, $retryAfter);
+
+                    $this->logger->warning(
+                        "OpenAIRE 429 Too Many Requests for paper {$paperId} (attempt {$attempt}/" . self::MAX_RETRIES . "). Waiting {$sleepSeconds}s..."
+                    );
+                    $this->backoff($sleepSeconds);
+                    continue;
+                }
+
+                $this->logger->error("OpenAIRE API error for paper {$paperId} (HTTP {$statusCode}): " . $e->getMessage());
+                return null;
+            } catch (GuzzleException $e) {
+                $this->logger->error("OpenAIRE API connection error for paper {$paperId}: " . $e->getMessage());
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Log OpenAIRE rate-limit response headers (x-ratelimit-used / x-ratelimit-limit), if present.
+     */
+    private function logRateLimitStatus(ResponseInterface $response): void
+    {
+        $used  = $response->getHeaderLine('x-ratelimit-used');
+        $limit = $response->getHeaderLine('x-ratelimit-limit');
+        if ($used === '' || $limit === '') {
+            return;
+        }
+
+        $this->logger->debug("OpenAIRE Rate Limit status: {$used}/{$limit}");
+        if ((int) $limit > 0 && (int) $used > ((int) $limit * 0.85)) {
+            $this->logger->warning("OpenAIRE Rate Limit threshold > 85%: {$used}/{$limit}");
+        }
+    }
+
+    /**
+     * Proactive throttle before an authenticated request (~2 req/s, quota 7200 req/h).
+     * Extracted as an overridable seam so tests can skip the real delay.
+     */
+    protected function throttleAuthenticated(): void
+    {
+        usleep(self::AUTH_THROTTLE_MICROSECONDS);
+    }
+
+    /**
+     * Proactive throttle before an anonymous request (1 req/min, quota 60 req/h).
+     * Extracted as an overridable seam so tests can skip the real delay.
+     */
+    protected function throttleUnauthenticated(): void
+    {
+        sleep(self::UNAUTH_THROTTLE_SECONDS);
+    }
+
+    /**
+     * Reactive backoff wait after an HTTP 429 response.
+     * Extracted as an overridable seam so tests can skip the real delay.
+     */
+    protected function backoff(int $seconds): void
+    {
+        sleep($seconds);
     }
 
     // -------------------------------------------------------------------------
@@ -253,6 +386,8 @@ class OpenAireApiClient extends AbstractApiClient
      * Build a production-ready instance using FilesystemAdapter caches and a file logger.
      *
      * Constants APPLICATION_PATH and EPISCIENCES_LOG_PATH must be defined by the bootstrap.
+     * The token provider falls back to unauthenticated mode when OPENAIRE_CLIENT_ID /
+     * OPENAIRE_CLIENT_SECRET are not configured.
      */
     public static function create(): self
     {
@@ -264,12 +399,22 @@ class OpenAireApiClient extends AbstractApiClient
             Logger::INFO
         ));
 
+        $tokenProvider = new OpenAireTokenProvider(
+            new Client(),
+            new FilesystemAdapter('openAireAuthToken', self::ONE_MONTH, $cacheDir),
+            $logger,
+            defined('OPENAIRE_CLIENT_ID') ? (string) constant('OPENAIRE_CLIENT_ID') : null,
+            defined('OPENAIRE_CLIENT_SECRET') ? (string) constant('OPENAIRE_CLIENT_SECRET') : null,
+            defined('OPENAIRE_AUTH_URL') ? (string) constant('OPENAIRE_AUTH_URL') : null
+        );
+
         return new self(
             new Client(),
             new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, $cacheDir),
             new FilesystemAdapter('enrichmentAuthors',     self::ONE_MONTH, $cacheDir),
             new FilesystemAdapter('enrichmentFunding',     self::ONE_MONTH, $cacheDir),
-            $logger
+            $logger,
+            $tokenProvider
         );
     }
 

@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 use Episciences\Api\OpenAireApiClient;
-use GuzzleHttp\Client;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -20,7 +19,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class GetClassificationJelCommand extends Command
 {
     protected static $defaultName = 'enrichment:classifications-jel';
-    private const ONE_MONTH = 3600 * 24 * 31;
 
     protected function configure(): void
     {
@@ -65,12 +63,10 @@ class GetClassificationJelCommand extends Command
         }
 
         $cacheDir  = dirname(APPLICATION_PATH) . '/cache/';
-        $apiClient = new OpenAireApiClient(
-            new Client(),
-            new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, $cacheDir),
-            new FilesystemAdapter('enrichmentAuthors',     self::ONE_MONTH, $cacheDir),
-            new FilesystemAdapter('enrichmentFunding',     self::ONE_MONTH, $cacheDir),
-            $logger
+        $apiClient = OpenAireApiClient::create();
+        $logger->info($apiClient->isAuthenticated()
+            ? 'OpenAIRE: authenticated mode (client credentials configured)'
+            : 'OpenAIRE: anonymous fallback mode (no client credentials configured) — throttling at 60s/request'
         );
 
         $db       = Zend_Db_Table_Abstract::getDefaultAdapter();

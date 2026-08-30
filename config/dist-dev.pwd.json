@@ -135,5 +135,11 @@
     "MAILTO": "YOUR-MAIL-TO",
     "APIURL": "https://api.crossref.org/works/",
     "PLUS_API_TOKEN": "four random common words"
+  },
+  "OPENAIRE": {
+    "AUTH_URL": "https://aai.openaire.eu/token",
+    "API_URL": "https://api.openaire.eu/graph/v3/research-products",
+    "CLIENT_ID": "",
+    "CLIENT_SECRET": ""
   }
 }

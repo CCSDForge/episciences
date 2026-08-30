@@ -3,7 +3,14 @@
 namespace unit\library\Episciences\Api;
 
 use Episciences\Api\OpenAireApiClient;
+use Episciences\Api\OpenAireTokenProvider;
 use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Response;
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -418,8 +425,351 @@ class OpenAireApiClientTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // isAuthenticated()
+    // -------------------------------------------------------------------------
+
+    public function testIsAuthenticated_NoTokenProvider_ReturnsFalse(): void
+    {
+        $client = $this->makeBiModeClient($this->makeGuzzle([]));
+        $this->assertFalse($client->isAuthenticated());
+    }
+
+    public function testIsAuthenticated_UnconfiguredTokenProvider_ReturnsFalse(): void
+    {
+        $client = $this->makeBiModeClient($this->makeGuzzle([]), $this->makeUnconfiguredTokenProvider());
+        $this->assertFalse($client->isAuthenticated());
+    }
+
+    public function testIsAuthenticated_ConfiguredTokenProvider_ReturnsTrue(): void
+    {
+        $client = $this->makeBiModeClient($this->makeGuzzle([]), $this->makeAuthenticatedTokenProvider());
+        $this->assertTrue($client->isAuthenticated());
+    }
+
+    // -------------------------------------------------------------------------
+    // fetchPublication() — bi-mode auth & throttling
+    // -------------------------------------------------------------------------
+
+    public function testFetchPublication_CacheHit_NoHttpCallNoThrottle(): void
+    {
+        $cache = new ArrayAdapter();
+        $item  = $cache->getItem(md5('10.1234/cached') . '.json');
+        $item->set(json_encode(['results' => [['mainTitle' => 'Cached']]]));
+        $cache->save($item);
+
+        // Empty MockHandler queue: any HTTP call would throw an "empty queue" error.
+        $client = new OpenAireApiClientNoSleep(
+            $this->makeGuzzle([]),
+            $cache,
+            new ArrayAdapter(),
+            new ArrayAdapter(),
+            new NullLogger()
+        );
+
+        $result = $client->fetchPublication('10.1234/cached', 1);
+
+        $this->assertSame('Cached', $result['results'][0]['mainTitle']);
+        $this->assertSame([], $client->sleepLog);
+    }
+
+    public function testFetchPublication_Authenticated_SendsBearerTokenAndThrottles500ms(): void
+    {
+        $history = [];
+        $guzzle  = $this->makeGuzzle([new Response(200, [], json_encode(['results' => []]))], $history);
+        $client  = $this->makeBiModeClient($guzzle, $this->makeAuthenticatedTokenProvider('the-bearer-token'));
+
+        $client->fetchPublication('10.1234/authed', 1);
+
+        $this->assertCount(1, $history);
+        $this->assertSame('Bearer the-bearer-token', $history[0]['request']->getHeaderLine('Authorization'));
+        $this->assertSame(['auth:500000us'], $client->sleepLog);
+    }
+
+    public function testFetchPublication_Unauthenticated_NoAuthorizationHeaderAndThrottles60s(): void
+    {
+        $history = [];
+        $guzzle  = $this->makeGuzzle([new Response(200, [], json_encode(['results' => []]))], $history);
+        $client  = $this->makeBiModeClient($guzzle, null);
+
+        $client->fetchPublication('10.1234/anon', 1);
+
+        $this->assertCount(1, $history);
+        $this->assertFalse($history[0]['request']->hasHeader('Authorization'));
+        $this->assertSame(['unauth:60s'], $client->sleepLog);
+    }
+
+    public function testFetchPublication_Unauthenticated_LogsWarning(): void
+    {
+        $testHandler = new TestHandler();
+        $logger      = new Logger('test');
+        $logger->pushHandler($testHandler);
+
+        $guzzle = $this->makeGuzzle([new Response(200, [], json_encode(['results' => []]))]);
+        $client = $this->makeBiModeClient($guzzle, null, $logger);
+
+        $client->fetchPublication('10.1234/anon', 1);
+
+        $this->assertTrue($testHandler->hasWarningThatContains('unauthenticated mode'));
+    }
+
+    // -------------------------------------------------------------------------
+    // fetchPublication() — HTTP 401 retry (authenticated mode only)
+    // -------------------------------------------------------------------------
+
+    public function testFetchPublication_401ThenSuccess_RefreshesTokenAndRetriesOnce(): void
+    {
+        $history = [];
+        $guzzle  = $this->makeGuzzle([
+            new Response(401, [], 'Unauthorized'),
+            new Response(200, [], json_encode(['results' => [['mainTitle' => 'Recovered']]])),
+        ], $history);
+
+        // Token cache pre-seeded with a stale token; clearTokenCache() + getAccessToken()
+        // must yield a (mocked) fresh one from the same cache-hit path.
+        $tokenCache = new ArrayAdapter();
+        $tokenItem  = $tokenCache->getItem('openaire_access_token');
+        $tokenItem->set('stale-token');
+        $tokenItem->expiresAfter(3600);
+        $tokenCache->save($tokenItem);
+
+        // A second getItem() after clearTokenCache() would miss and try a real AAI call;
+        // to keep this a pure unit test we re-seed via a token provider whose AAI mock
+        // returns a fresh token on that fallback call.
+        $aaiHistory = [];
+        $aaiClient  = new Client(['handler' => HandlerStack::create(new MockHandler([
+            new Response(200, [], json_encode(['access_token' => 'refreshed-token', 'expires_in' => 3600])),
+        ]))]);
+        $tokenProvider = new OpenAireTokenProvider($aaiClient, $tokenCache, new NullLogger(), 'id', 'secret');
+
+        $client = $this->makeBiModeClient($guzzle, $tokenProvider);
+        $result = $client->fetchPublication('10.1234/expired-token', 1);
+
+        $this->assertSame('Recovered', $result['results'][0]['mainTitle']);
+        $this->assertCount(2, $history);
+        $this->assertSame('Bearer stale-token', $history[0]['request']->getHeaderLine('Authorization'));
+        $this->assertSame('Bearer refreshed-token', $history[1]['request']->getHeaderLine('Authorization'));
+    }
+
+    public function testFetchPublication_401Twice_ReturnsNullAfterSingleRetry(): void
+    {
+        $history = [];
+        $guzzle  = $this->makeGuzzle([
+            new Response(401, [], 'Unauthorized'),
+            new Response(401, [], 'Unauthorized'),
+        ], $history);
+
+        // Token cache pre-seeded; the refresh triggered by the first 401 must still
+        // succeed in acquiring *a* (still-rejected) token, so the second GET is attempted.
+        $tokenCache = new ArrayAdapter();
+        $tokenItem  = $tokenCache->getItem('openaire_access_token');
+        $tokenItem->set('stale-token');
+        $tokenItem->expiresAfter(3600);
+        $tokenCache->save($tokenItem);
+
+        $aaiClient = new Client(['handler' => HandlerStack::create(new MockHandler([
+            new Response(200, [], json_encode(['access_token' => 'still-rejected-token', 'expires_in' => 3600])),
+        ]))]);
+        $tokenProvider = new OpenAireTokenProvider($aaiClient, $tokenCache, new NullLogger(), 'id', 'secret');
+
+        $client = $this->makeBiModeClient($guzzle, $tokenProvider);
+        $result = $client->fetchPublication('10.1234/still-unauthorized', 1);
+
+        $this->assertNull($result);
+        // Exactly one retry: the initial attempt + one refreshed-token retry, no more.
+        $this->assertCount(2, $history);
+    }
+
+    public function testFetchPublication_401_TokenRefreshFails_ReturnsNullWithoutSecondRequest(): void
+    {
+        $history = [];
+        $guzzle  = $this->makeGuzzle([new Response(401, [], 'Unauthorized')], $history);
+
+        $tokenCache = new ArrayAdapter();
+        $tokenItem  = $tokenCache->getItem('openaire_access_token');
+        $tokenItem->set('stale-token');
+        $tokenItem->expiresAfter(3600);
+        $tokenCache->save($tokenItem);
+
+        // AAI itself fails on the refresh attempt -> getAccessToken() returns null.
+        $aaiClient     = new Client(['handler' => HandlerStack::create(new MockHandler([new Response(500, [], 'error')]))]);
+        $tokenProvider = new OpenAireTokenProvider($aaiClient, $tokenCache, new NullLogger(), 'id', 'secret');
+
+        $client = $this->makeBiModeClient($guzzle, $tokenProvider);
+        $result = $client->fetchPublication('10.1234/refresh-fails', 1);
+
+        $this->assertNull($result);
+        // No second GET: refresh failed, so there is no new token to retry with.
+        $this->assertCount(1, $history);
+    }
+
+    // -------------------------------------------------------------------------
+    // fetchPublication() — HTTP 429 backoff & retry
+    // -------------------------------------------------------------------------
+
+    public function testFetchPublication_429ThenSuccess_Authenticated_BacksOffUsingRetryAfter(): void
+    {
+        $history = [];
+        $guzzle  = $this->makeGuzzle([
+            new Response(429, ['Retry-After' => '7'], 'Too Many Requests'),
+            new Response(200, [], json_encode(['results' => [['mainTitle' => 'OK']]])),
+        ], $history);
+
+        $client = $this->makeBiModeClient($guzzle, $this->makeAuthenticatedTokenProvider());
+        $result = $client->fetchPublication('10.1234/ratelimited', 1);
+
+        $this->assertSame('OK', $result['results'][0]['mainTitle']);
+        $this->assertCount(2, $history);
+        $this->assertSame(['auth:500000us', 'backoff:7s'], $client->sleepLog);
+    }
+
+    public function testFetchPublication_429ThenSuccess_Authenticated_NoRetryAfterHeader_UsesAttemptBackoff(): void
+    {
+        $guzzle = $this->makeGuzzle([
+            new Response(429, [], 'Too Many Requests'),
+            new Response(200, [], json_encode(['results' => []])),
+        ]);
+
+        $client = $this->makeBiModeClient($guzzle, $this->makeAuthenticatedTokenProvider());
+        $client->fetchPublication('10.1234/ratelimited-no-header', 1);
+
+        // attempt 1 * 3 seconds
+        $this->assertSame(['auth:500000us', 'backoff:3s'], $client->sleepLog);
+    }
+
+    public function testFetchPublication_429ThenSuccess_Unauthenticated_BacksOffAtLeast60s(): void
+    {
+        $guzzle = $this->makeGuzzle([
+            new Response(429, ['Retry-After' => '5'], 'Too Many Requests'), // below the 60s floor
+            new Response(200, [], json_encode(['results' => []])),
+        ]);
+
+        $client = $this->makeBiModeClient($guzzle, null);
+        $client->fetchPublication('10.1234/ratelimited-anon', 1);
+
+        $this->assertSame(['unauth:60s', 'backoff:60s'], $client->sleepLog);
+    }
+
+    public function testFetchPublication_429Exhausted_ReturnsNullAndLogsCritical(): void
+    {
+        $testHandler = new TestHandler();
+        $logger      = new Logger('test');
+        $logger->pushHandler($testHandler);
+
+        $guzzle = $this->makeGuzzle([
+            new Response(429, [], 'Too Many Requests'),
+            new Response(429, [], 'Too Many Requests'),
+            new Response(429, [], 'Too Many Requests'),
+        ]);
+
+        $client = $this->makeBiModeClient($guzzle, $this->makeAuthenticatedTokenProvider(), $logger);
+        $result = $client->fetchPublication('10.1234/always-ratelimited', 1);
+
+        $this->assertNull($result);
+        $this->assertTrue($testHandler->hasCriticalThatContains('rate limit (429) exhausted'));
+    }
+
+    // -------------------------------------------------------------------------
+    // fetchPublication() — rate-limit header logging
+    // -------------------------------------------------------------------------
+
+    public function testFetchPublication_RateLimitHeaders_LoggedAtDebug(): void
+    {
+        $testHandler = new TestHandler();
+        $logger      = new Logger('test');
+        $logger->pushHandler($testHandler);
+
+        $guzzle = $this->makeGuzzle([
+            new Response(200, ['x-ratelimit-used' => '10', 'x-ratelimit-limit' => '7200'], json_encode(['results' => []])),
+        ]);
+
+        $client = $this->makeBiModeClient($guzzle, $this->makeAuthenticatedTokenProvider(), $logger);
+        $client->fetchPublication('10.1234/ratelimit-status', 1);
+
+        $this->assertTrue($testHandler->hasDebugThatContains('10/7200'));
+    }
+
+    public function testFetchPublication_RateLimitAbove85Percent_LogsWarning(): void
+    {
+        $testHandler = new TestHandler();
+        $logger      = new Logger('test');
+        $logger->pushHandler($testHandler);
+
+        $guzzle = $this->makeGuzzle([
+            new Response(200, ['x-ratelimit-used' => '6200', 'x-ratelimit-limit' => '7200'], json_encode(['results' => []])),
+        ]);
+
+        $client = $this->makeBiModeClient($guzzle, $this->makeAuthenticatedTokenProvider(), $logger);
+        $client->fetchPublication('10.1234/ratelimit-high', 1);
+
+        $this->assertTrue($testHandler->hasWarningThatContains('threshold > 85%'));
+    }
+
+    public function testFetchPublication_RateLimitHeadersAbsent_NoLogging(): void
+    {
+        $testHandler = new TestHandler();
+        $logger      = new Logger('test');
+        $logger->pushHandler($testHandler);
+
+        $guzzle = $this->makeGuzzle([new Response(200, [], json_encode(['results' => []]))]);
+        $client = $this->makeBiModeClient($guzzle, $this->makeAuthenticatedTokenProvider(), $logger);
+        $client->fetchPublication('10.1234/no-ratelimit-headers', 1);
+
+        $this->assertFalse($testHandler->hasRecordThatContains('Rate Limit', Logger::DEBUG));
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    private function makeGuzzle(array $responses, array &$history = []): Client
+    {
+        $handlerStack = HandlerStack::create(new MockHandler($responses));
+        $handlerStack->push(Middleware::history($history));
+        return new Client(['handler' => $handlerStack]);
+    }
+
+    private function makeAuthenticatedTokenProvider(string $token = 'test-access-token'): OpenAireTokenProvider
+    {
+        $cache = new ArrayAdapter();
+        $item  = $cache->getItem('openaire_access_token');
+        $item->set($token);
+        $item->expiresAfter(3600);
+        $cache->save($item);
+
+        return new OpenAireTokenProvider(
+            new Client(['handler' => HandlerStack::create(new MockHandler([]))]), // never called: cache hit
+            $cache,
+            new NullLogger(),
+            'client-id',
+            'client-secret'
+        );
+    }
+
+    private function makeUnconfiguredTokenProvider(): OpenAireTokenProvider
+    {
+        return new OpenAireTokenProvider(
+            new Client(['handler' => HandlerStack::create(new MockHandler([]))]),
+            new ArrayAdapter(),
+            new NullLogger(),
+            '',
+            ''
+        );
+    }
+
+    private function makeBiModeClient(
+        Client $guzzle,
+        ?OpenAireTokenProvider $tokenProvider = null,
+        ?Logger $logger = null
+    ): OpenAireApiClientNoSleep {
+        return new OpenAireApiClientNoSleep(
+            $guzzle,
+            new ArrayAdapter(),
+            new ArrayAdapter(),
+            new ArrayAdapter(),
+            $logger ?? new NullLogger(),
+            $tokenProvider
+        );
+    }
 
     /** @param array<int, array<string, mixed>> $subjects */
     private function makeResponseWithSubjects(array $subjects): array
@@ -445,5 +795,30 @@ class OpenAireApiClientTest extends TestCase
             $fundingCache,
             new NullLogger()
         );
+    }
+}
+
+/**
+ * Test double: records throttle/backoff calls instead of actually sleeping,
+ * so 60s-anonymous-mode and 429-backoff tests run instantly.
+ */
+class OpenAireApiClientNoSleep extends OpenAireApiClient
+{
+    /** @var array<int, string> */
+    public array $sleepLog = [];
+
+    protected function throttleAuthenticated(): void
+    {
+        $this->sleepLog[] = 'auth:500000us';
+    }
+
+    protected function throttleUnauthenticated(): void
+    {
+        $this->sleepLog[] = 'unauth:60s';
+    }
+
+    protected function backoff(int $seconds): void
+    {
+        $this->sleepLog[] = "backoff:{$seconds}s";
     }
 }

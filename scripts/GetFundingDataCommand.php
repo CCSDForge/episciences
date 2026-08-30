@@ -94,6 +94,10 @@ class GetFundingDataCommand extends Command
         $io->progressStart(count($rows));
 
         $oaClient = \Episciences\Api\OpenAireApiClient::create();
+        $logger->info($oaClient->isAuthenticated()
+            ? 'OpenAIRE: authenticated mode (client credentials configured)'
+            : 'OpenAIRE: anonymous fallback mode (no client credentials configured) — throttling at 60s/request'
+        );
 
         foreach ($rows as $value) {
             $paperId = (int) $value['PAPERID'];
