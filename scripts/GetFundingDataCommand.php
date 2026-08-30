@@ -127,11 +127,9 @@ class GetFundingDataCommand extends Command
                     try {
                         $fileFound = json_decode($fundingItem->get(), true, 512, JSON_THROW_ON_ERROR);
                         if (!empty($fileFound[0])) {
-                            $fundingArray       = [];
                             $globalfundingArray = [];
                             $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB(
                                 $fileFound,
-                                $fundingArray,
                                 $globalfundingArray
                             );
                             $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId(

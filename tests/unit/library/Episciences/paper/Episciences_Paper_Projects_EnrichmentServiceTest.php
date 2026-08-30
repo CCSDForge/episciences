@@ -93,69 +93,6 @@ final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // formatFundingOAForDB()
-    // -------------------------------------------------------------------------
-
-    public function testFormatFundingOAForDBExtractsProjectTypeRelationsOnly(): void
-    {
-        $fileFound = [
-            [
-                'to'      => ['@type' => 'project'],
-                'title'   => ['$' => 'Test Project'],
-                'code'    => ['$' => 'CODE-001'],
-                'funding' => ['funder' => ['@name' => 'Test Funder']],
-            ],
-            [
-                // type is 'organization' → must be ignored
-                'to' => ['@type' => 'organization'],
-                'title' => ['$' => 'Should be ignored'],
-                'funding' => ['funder' => ['@name' => 'Should be ignored']],
-            ],
-        ];
-
-        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, [], []);
-
-        self::assertCount(1, $result);
-        self::assertSame('Test Project', $result[0]['projectTitle']);
-        self::assertSame('Test Funder', $result[0]['funderName']);
-        self::assertSame('CODE-001', $result[0]['code']);
-    }
-
-    public function testFormatFundingOAForDBIgnoresNonProjectRelations(): void
-    {
-        $fileFound = [
-            [
-                'to'      => ['@type' => 'publication'],
-                'title'   => ['$' => 'A paper'],
-                'funding' => [],
-            ],
-        ];
-
-        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, [], []);
-
-        self::assertSame([], $result);
-    }
-
-    public function testFormatFundingOAForDBPreservesExistingGlobalArray(): void
-    {
-        $existing = [['projectTitle' => 'Existing Project', 'funderName' => 'Existing Funder', 'code' => 'EX-001']];
-        $fileFound = [
-            [
-                'to'      => ['@type' => 'project'],
-                'title'   => ['$' => 'New Project'],
-                'code'    => ['$' => 'NEW-001'],
-                'funding' => ['funder' => ['@name' => 'New Funder']],
-            ],
-        ];
-
-        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, [], $existing);
-
-        self::assertCount(2, $result);
-        self::assertSame('Existing Project', $result[0]['projectTitle']);
-        self::assertSame('New Project', $result[1]['projectTitle']);
-    }
-
-    // -------------------------------------------------------------------------
     // formatFundingOAForDB() — OpenAire Graph v3 direct project entries
     // -------------------------------------------------------------------------
 
@@ -172,7 +109,7 @@ final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
             ],
         ];
 
-        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, [], []);
+        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, []);
 
         self::assertCount(1, $result);
         self::assertSame('European Open Science Cloud Pillar', $result[0]['projectTitle']);
@@ -194,7 +131,7 @@ final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
             ],
         ];
 
-        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, [], []);
+        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, []);
 
         self::assertCount(1, $result);
         self::assertArrayNotHasKey('acronym', $result[0]);
@@ -212,7 +149,7 @@ final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
             ],
         ];
 
-        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, [], []);
+        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, []);
 
         self::assertSame('European Commission', $result[0]['funderName']);
     }
@@ -236,10 +173,42 @@ final class Episciences_Paper_Projects_EnrichmentServiceTest extends TestCase
             ],
         ];
 
-        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, [], []);
+        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, []);
 
         self::assertCount(2, $result);
         self::assertSame('EOSC-Pillar', $result[0]['acronym']);
         self::assertSame('DRIIHM / IRDHEI', $result[1]['acronym']);
+    }
+
+    public function testFormatFundingOAForDBv3IgnoresEntriesWithoutScalarTitle(): void
+    {
+        $fileFound = [
+            ['code' => 'CODE-001', 'title' => ['$' => 'legacy-shaped title, must be ignored']],
+            ['code' => 'CODE-002'], // no 'title' key at all
+        ];
+
+        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, []);
+
+        self::assertSame([], $result);
+    }
+
+    public function testFormatFundingOAForDBv3PreservesExistingGlobalArray(): void
+    {
+        $existing = [['projectTitle' => 'Existing Project', 'funderName' => 'Existing Funder', 'code' => 'EX-001']];
+        $fileFound = [
+            [
+                'code'    => 'NEW-001',
+                'acronym' => null,
+                'title'   => 'New Project',
+                'funder'  => 'New Funder',
+                'pids'    => null,
+            ],
+        ];
+
+        $result = Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB($fileFound, $existing);
+
+        self::assertCount(2, $result);
+        self::assertSame('Existing Project', $result[0]['projectTitle']);
+        self::assertSame('New Project', $result[1]['projectTitle']);
     }
 }

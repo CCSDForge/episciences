@@ -100,12 +100,10 @@ class Episciences_Paper_ProjectsManager
 
     public static function formatFundingOAForDB(
         array $fileFound,
-        array $fundingArray,
         array $globalfundingArray
     ): array {
         return Episciences_Paper_Projects_EnrichmentService::formatFundingOAForDB(
             $fileFound,
-            $fundingArray,
             $globalfundingArray
         );
     }

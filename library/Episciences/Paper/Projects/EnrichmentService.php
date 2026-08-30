@@ -141,50 +141,24 @@ class Episciences_Paper_Projects_EnrichmentService
 
     /**
      * Map OpenAire Graph v3 project entries (results[0].projects) to the DB funding structure.
-     * Also accepts the legacy v1 relation format (rels.rel with to.@type === 'project')
-     * as a fallback, so residual v1 caches keep working during the transition.
      *
      * Replaces formatFundingOAForDB().
      */
     public static function formatFundingOAForDB(
         array $fileFound,
-        array $fundingArray,
         array $globalFundingArray
     ): array {
         foreach ($fileFound as $valueOpenAire) {
-            if (self::isV3ProjectEntry($valueOpenAire)) {
-                $globalFundingArray[] = self::mapV3ProjectEntry($valueOpenAire);
+            if (!self::isV3ProjectEntry($valueOpenAire)) {
                 continue;
             }
-
-            // v1 fallback (residual caches)
-            if (
-                !array_key_exists('to', $valueOpenAire) ||
-                !array_key_exists('@type', $valueOpenAire['to']) ||
-                $valueOpenAire['to']['@type'] !== 'project'
-            ) {
-                continue;
-            }
-            if (array_key_exists('title', $valueOpenAire)) {
-                $fundingArray['projectTitle'] = $valueOpenAire['title']['$'];
-            }
-            if (array_key_exists('acronym', $valueOpenAire)) {
-                $fundingArray['acronym'] = $valueOpenAire['acronym']['$'];
-            }
-            if (array_key_exists('funder', $valueOpenAire['funding'])) {
-                $fundingArray['funderName'] = $valueOpenAire['funding']['funder']['@name'];
-            }
-            if (array_key_exists('code', $valueOpenAire)) {
-                $fundingArray['code'] = $valueOpenAire['code']['$'];
-            }
-            $globalFundingArray[] = $fundingArray;
+            $globalFundingArray[] = self::mapV3ProjectEntry($valueOpenAire);
         }
         return $globalFundingArray;
     }
 
     /**
-     * A v3 project entry carries a direct scalar 'title', unlike the v1 relation format
-     * where 'title' is a nested {"$": "..."} structure.
+     * A valid v3 project entry carries a direct scalar 'title'.
      *
      * @param array<string, mixed> $entry
      */
