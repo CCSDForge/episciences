@@ -190,8 +190,7 @@ try {
                 $tags = (array_key_exists('tags', $recipient)) ? $recipient['tags'] : [];
                 $paper = null;
 
-                $mail = new Episciences_Mail('UTF-8');
-
+                $mail = new Episciences_Mail('UTF-8', $rvCode);
                 if (isset($tags['%%ARTICLE_ID%%'])) {
                     $paper = Episciences_PapersManager::get($tags['%%ARTICLE_ID%%']);
                     $mail->setDocid($paper->getDocid());
@@ -200,7 +199,7 @@ try {
 
                 $mail->setFrom($rvCode . '@' . DOMAIN, $rvCode);
                 $mail->setRvid($review->getRvid());
-                $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, $rvCode);
+                $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, $review->getMailDisplayCode());
                 $mail->addTag(Episciences_Mail_Tags::TAG_REVIEW_NAME, $review->getName());
 
                 if (isset($recipient['deadline'])) {
@@ -253,5 +252,6 @@ try {
     }
 
 } catch (Exception $e) {
+    error_log('APPLICATION EXCEPTION : ' . $e->getCode() . ' ' . $e->getMessage());
     displayMessage('APPLICATION EXCEPTION : ' . $e->getCode() . ' ' . $e->getMessage(), 'red', true);
 }

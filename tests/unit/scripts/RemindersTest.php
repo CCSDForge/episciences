@@ -22,4 +22,22 @@ class RemindersTest extends TestCase
         self::assertEquals(9, $interval2);
 
     }
+
+    public function testRemindersScriptUsesMailDisplayCodeForReviewCodeTag(): void
+    {
+        $scriptPath = realpath(__DIR__ . '/../../../scripts/reminders.php');
+        self::assertFileExists($scriptPath);
+
+        $source = file_get_contents($scriptPath);
+        self::assertStringContainsString(
+            'addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, $review->getMailDisplayCode())',
+            $source,
+            'reminders.php must use $review->getMailDisplayCode() for TAG_REVIEW_CODE so custom mail display code is respected'
+        );
+        self::assertStringNotContainsString(
+            'addTag(Episciences_Mail_Tags::TAG_REVIEW_CODE, $rvCode)',
+            $source,
+            'reminders.php must not overwrite TAG_REVIEW_CODE with raw $rvCode'
+        );
+    }
 }
