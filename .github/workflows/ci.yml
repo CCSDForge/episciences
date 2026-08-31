@@ -145,22 +145,51 @@ jobs:
         github.event.pull_request.head.repo.full_name == github.repository
       with:
         script: |
+          // Hidden marker: lets a later run find this comment and edit it in
+          // place, instead of piling up one comment per push.
+          const MARKER = '<!-- ci-test-results -->';
+
           const phpResult = '${{ needs.php-tests.result }}';
           const jsResult = '${{ needs.js-tests.result }}';
-          
-          let message = '## Test Results\n\n';
+
+          let message = MARKER + '\n## Test Results\n\n';
           message += phpResult === 'success' ? '✅ PHP Tests: Passed\n' : '❌ PHP Tests: Failed\n';
           message += jsResult === 'success' ? '✅ JavaScript Tests: Passed\n' : '❌ JavaScript Tests: Failed\n';
-          
+
           if (phpResult === 'success' && jsResult === 'success') {
             message += '\n🎉 All tests are passing! Ready to merge.';
           } else {
             message += '\n🔍 Please check the failed tests before merging.';
           }
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: message
+
+          message += `\n\n<sub>Last updated for ${context.sha.substring(0, 7)}.</sub>`;
+
+          const { owner, repo } = context.repo;
+          const issue_number = context.issue.number;
+
+          const comments = await github.paginate(github.rest.issues.listComments, {
+            owner,
+            repo,
+            issue_number,
+            per_page: 100,
           });
+
+          const existing = comments.find(
+            (c) => c.user?.type === 'Bot' && c.body?.includes(MARKER)
+          );
+
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner,
+              repo,
+              comment_id: existing.id,
+              body: message,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: message,
+            });
+          }
