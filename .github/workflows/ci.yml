@@ -11,6 +11,15 @@ permissions:
   pull-requests: write
   issues: write
 
+# The integration job edits a single marked comment on the pull request. Two
+# runs racing there would either create the comment twice or let an older run
+# overwrite a newer verdict, so keep one run at a time per pull request.
+# Pushes are keyed on run_id, i.e. never grouped: no push run is ever cancelled
+# or dropped while pending.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   php-tests:
     name: PHP Tests
