@@ -8,6 +8,14 @@ use Monolog\Logger;
 use Psr\Cache\CacheItemInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
+/**
+ * @deprecated Not called from any production code path (verified: no callers outside this
+ *             class's own test suite and one direct call to the already-deprecated
+ *             getOrcidApiForDb() in Episciences_Paper_AuthorsManagerTest). Superseded by
+ *             \Episciences\Api\OpenAireApiClient, which targets the OpenAIRE Graph v3 API.
+ *             This class still targets the retired v1 search API and is kept only for
+ *             backward compatibility; do not add new callers.
+ */
 class Episciences_OpenAireResearchGraphTools
 {
     // Cache TTL

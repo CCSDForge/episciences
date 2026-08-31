@@ -11,6 +11,7 @@ require_once __DIR__ . '/GetLicenceDataCommand.php';
 require_once __DIR__ . '/GetLinkDataCommand.php';
 require_once __DIR__ . '/GetFundingDataCommand.php';
 require_once __DIR__ . '/GetClassificationJelCommand.php';
+require_once __DIR__ . '/ClearOpenAireCacheCommand.php';
 require_once __DIR__ . '/GetClassificationMscCommand.php';
 require_once __DIR__ . '/GetZbReviewsCommand.php';
 require_once __DIR__ . '/GenerateSitemapCommand.php';
@@ -61,6 +62,7 @@ $application->add(new GetLicenceDataCommand());
 $application->add(new GetLinkDataCommand());
 $application->add(new GetFundingDataCommand());
 $application->add(new GetClassificationJelCommand());
+$application->add(new ClearOpenAireCacheCommand());
 $application->add(new GetClassificationMscCommand());
 $application->add(new GetZbReviewsCommand());
 
