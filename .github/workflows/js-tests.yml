@@ -52,7 +52,7 @@ jobs:
       uses: codecov/codecov-action@v7
       if: matrix.node-version == '20.x'
       with:
-        file: ./coverage/lcov.info
+        files: ./coverage/lcov.info
         flags: javascript
         name: javascript-coverage
       env:
