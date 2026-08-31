@@ -60,14 +60,14 @@ load-dev-db: wait-for-db ## Load development SQL datasets (src/mysql/docker/...)
 	@printf "Are you sure you want to proceed and re-import development datasets? (y/N): "; \
 	read -r answer; \
 	if [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
-		echo "Resetting databases..."; \
-		$(DOCKER) exec episciences-db-episciences mysql -u root -p$(DB_PASS) -h localhost -e "DROP DATABASE IF EXISTS episciences; CREATE DATABASE episciences;"; \
-		$(DOCKER) exec episciences-db-auth mysql -u root -p$(DB_PASS) -h localhost -e "DROP DATABASE IF EXISTS cas_users; CREATE DATABASE cas_users;"; \
-		echo "Loading $(DEV_SQL_EPISCIENCES)..."; \
-		$(DOCKER) exec -i episciences-db-episciences mysql -u root -p$(DB_PASS) -h localhost episciences < $(DEV_SQL_EPISCIENCES); \
-		echo "Loading $(DEV_SQL_AUTH)..."; \
-		$(DOCKER) exec -i episciences-db-auth mysql -u root -p$(DB_PASS) -h localhost cas_users < $(DEV_SQL_AUTH); \
-		echo "Development databases reset and loaded successfully!"; \
+		echo "Resetting databases..." && \
+		$(DOCKER) exec episciences-db-episciences mysql -u root -p$(DB_PASS) -h localhost -e "DROP DATABASE IF EXISTS episciences; CREATE DATABASE episciences;" && \
+		$(DOCKER) exec episciences-db-auth mysql -u root -p$(DB_PASS) -h localhost -e "DROP DATABASE IF EXISTS cas_users; CREATE DATABASE cas_users;" && \
+		echo "Loading $(DEV_SQL_EPISCIENCES)..." && \
+		$(DOCKER) exec -i episciences-db-episciences mysql -u root -p$(DB_PASS) -h localhost episciences < $(DEV_SQL_EPISCIENCES) && \
+		echo "Loading $(DEV_SQL_AUTH)..." && \
+		$(DOCKER) exec -i episciences-db-auth mysql -u root -p$(DB_PASS) -h localhost cas_users < $(DEV_SQL_AUTH) && \
+		echo "Development databases reset and loaded successfully!" \
 	else \
 		echo "Skipping database re-import."; \
 	fi

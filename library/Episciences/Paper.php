@@ -88,6 +88,13 @@ class Episciences_Paper
     public const STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION = 31;
     public const STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION = 32;
     public const STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION = 33; // Journal formatting approved by author
+    // Alternative editorial pipeline statuses
+    public const STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION = 34;
+    public const STATUS_ALT_FINAL_VERSION_SUBMITTED = 35;
+    public const STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS = 36;
+    public const STATUS_ALT_PROOF_SENT_TO_AUTHOR = 37;
+    public const STATUS_ALT_AWAITING_PUBLICATION = 38;
+    public const STATUS_ALT_AUTHOR_PROOF_APPROVED = 39;
 
     // paper settings
     public const SETTING_UNWANTED_REVIEWER = 'unwantedReviewer';
@@ -122,7 +129,13 @@ class Episciences_Paper
         self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION,
         self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
         self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION,
-        self::STATUS_NO_REVISION
+        self::STATUS_NO_REVISION,
+        self::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
+        self::STATUS_ALT_FINAL_VERSION_SUBMITTED,
+        self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
+        self::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
+        self::STATUS_ALT_AWAITING_PUBLICATION,
+        self::STATUS_ALT_AUTHOR_PROOF_APPROVED
     ];
 
     // Non présents dans le filtre de recherche
@@ -183,6 +196,12 @@ class Episciences_Paper
         self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION => "AcceptedWaitingForAuthorsValidation",
         self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION => 'AcceptedWaitingForFinalPublication',
         self::STATUS_REMOVED => 'deletedByTheJournal',
+        self::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION => 'altPasswordAndFinalVersionRequested',
+        self::STATUS_ALT_FINAL_VERSION_SUBMITTED => 'altPasswordAndFinalVersionSubmitted',
+        self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS => 'altLayoutEditingInProgress',
+        self::STATUS_ALT_PROOF_SENT_TO_AUTHOR => 'altProofSentToAuthor',
+        self::STATUS_ALT_AWAITING_PUBLICATION => 'altAwaitingPublication',
+        self::STATUS_ALT_AUTHOR_PROOF_APPROVED => 'altAuthorProofApproved',
     ];
 
     // status order (for sorting)
@@ -195,7 +214,9 @@ class Episciences_Paper
         self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
         self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
         self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION,
-        self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED
+        self::STATUS_CE_AUTHOR_FINAL_VERSION_DEPOSED,
+        self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
+        self::STATUS_ALT_PROOF_SENT_TO_AUTHOR
     ];
     public const ACCEPTED_SUBMISSIONS = [
         self::STATUS_ACCEPTED,
@@ -212,7 +233,13 @@ class Episciences_Paper
         self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
         self::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION,
         self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION,
-        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION
+        self::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION,
+        self::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
+        self::STATUS_ALT_FINAL_VERSION_SUBMITTED,
+        self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
+        self::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
+        self::STATUS_ALT_AWAITING_PUBLICATION,
+        self::STATUS_ALT_AUTHOR_PROOF_APPROVED
     ];
     public const NOT_LISTED_STATUS = [
         Episciences_Paper::STATUS_OBSOLETE,
@@ -346,6 +373,12 @@ class Episciences_Paper
         self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION => "accepté - en attente de validation par l'auteur",
         self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION => "approuvé - en attente de publication",
         self::STATUS_REMOVED => 'supprimé par la revue',
+        self::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION => 'mot de passe et version finale demandés',
+        self::STATUS_ALT_FINAL_VERSION_SUBMITTED => 'mot de passe et version finale soumis',
+        self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS => 'mise en page en cours',
+        self::STATUS_ALT_PROOF_SENT_TO_AUTHOR => "épreuve envoyée à l'auteur",
+        self::STATUS_ALT_AWAITING_PUBLICATION => 'en attente de publication',
+        self::STATUS_ALT_AUTHOR_PROOF_APPROVED => "épreuve approuvée par l'auteur",
     ];
     public static array $_noEditableStatus = [
         self::STATUS_PUBLISHED,
@@ -369,7 +402,11 @@ class Episciences_Paper
         self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
         self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
         self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION,
-        self::STATUS_TMP_VERSION_ACCEPTED
+        self::STATUS_TMP_VERSION_ACCEPTED,
+        self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
+        self::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
+        self::STATUS_ALT_AWAITING_PUBLICATION,
+        self::STATUS_ALT_AUTHOR_PROOF_APPROVED
     ];
     public static array $validMetadataFormats = ['bibtex', 'tei', 'dc', 'datacite', 'openaire', 'crossref', 'doaj', 'zbjats', 'json'];
     /**
@@ -1196,6 +1233,11 @@ class Episciences_Paper
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $docId = $this->getDocid();
+
+        // Repository update credentials must not survive publication.
+        if ($this->getStatus() === self::STATUS_PUBLISHED) {
+            $this->setPassword();
+        }
 
         $type = $this->getType();
 
@@ -2128,7 +2170,22 @@ class Episciences_Paper
             $metadata['publication_date'] = Episciences_Tools::xpath($xml, '/episciences/publication_date');
             $metadata['version'] = Episciences_Tools::xpath($xml, '/episciences/version');
             $metadata['title'] = Episciences_Tools::xpath($xml, '//dc:title', true);
-            $metadata['description'] = Episciences_Tools::xpath($xml, '//dc:description', true);
+
+            $descriptions = Episciences_Tools::xpath($xml, '//dc:description', true);
+            if ($this->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID && is_array($descriptions)) {
+                // xpath($xml, ..., true) overwrites entries sharing the same xml:lang in place,
+                // so array_slice(0, 1) could silently keep a later node's text instead of the true
+                // first <dc:description>. Re-query without lang-collapsing to get the real document order.
+                $orderedDescriptions = Episciences_Tools::xpath($xml, '//dc:description', true, false);
+                if (is_array($orderedDescriptions) && $orderedDescriptions !== []) {
+                    $firstDescription = reset($orderedDescriptions);
+                    $descriptions = is_array($firstDescription) ? $firstDescription : [$firstDescription];
+                } else {
+                    $descriptions = [];
+                }
+            }
+            $metadata['description'] = $descriptions;
+
             $metadata['authors'] = Episciences_Tools::xpath($xml, '//dc:creator', true);
             $metadata['subjects'] = Episciences_Tools::xpath($xml, '//dc:subject', true, false);
             $metadata['language'] = Episciences_Tools::xpath($xml, '//dc:language');
@@ -2855,15 +2912,56 @@ class Episciences_Paper
             self::STATUS_CE_REVIEW_FORMATTING_DEPOSED,
             self::STATUS_CE_AUTHOR_FORMATTING_DEPOSED,
             self::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING,
-            self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION
+            self::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION,
+            self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
+            self::STATUS_ALT_PROOF_SENT_TO_AUTHOR
         ], true);
     }
 
     public function isReadyToPublish(): bool
     {
-        return in_array($this->getStatus(),
-            [self::STATUS_CE_READY_TO_PUBLISH, self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION],
-            true);
+        return in_array($this->getStatus(), [
+            self::STATUS_CE_READY_TO_PUBLISH,
+            self::STATUS_APPROVED_BY_AUTHOR_WAITING_FOR_FINAL_PUBLICATION,
+            self::STATUS_ALT_AWAITING_PUBLICATION
+            ], true);
+    }
+
+    public function isLayoutEditingInProgress(): bool
+    {
+        return $this->getStatus() === self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS;
+    }
+
+    public function isAltProofSentToAuthor(): bool
+    {
+        return $this->getStatus() === self::STATUS_ALT_PROOF_SENT_TO_AUTHOR;
+    }
+
+    public function isAltAwaitingPublication(): bool
+    {
+        return $this->getStatus() === self::STATUS_ALT_AWAITING_PUBLICATION;
+    }
+
+    public function isAltAuthorProofApproved(): bool
+    {
+        return $this->getStatus() === self::STATUS_ALT_AUTHOR_PROOF_APPROVED;
+    }
+
+    public function isAltFinalVersionSubmitted(): bool
+    {
+        return $this->getStatus() === self::STATUS_ALT_FINAL_VERSION_SUBMITTED;
+    }
+
+    public function isAlternativePipelineStatus(): bool
+    {
+        return in_array($this->getStatus(), [
+            self::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
+            self::STATUS_ALT_FINAL_VERSION_SUBMITTED,
+            self::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
+            self::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
+            self::STATUS_ALT_AWAITING_PUBLICATION,
+            self::STATUS_ALT_AUTHOR_PROOF_APPROVED,
+        ], true);
     }
 
     /**
@@ -5864,8 +5962,3 @@ class Episciences_Paper
     }
 
 }
-
-
-
-
-

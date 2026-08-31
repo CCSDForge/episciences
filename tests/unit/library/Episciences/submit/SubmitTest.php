@@ -496,4 +496,5 @@ class SubmitTest extends TestCase
         $result = $method->invoke(null, $record);
         self::assertSame('2099-12-31', $result);
     }
+
 }

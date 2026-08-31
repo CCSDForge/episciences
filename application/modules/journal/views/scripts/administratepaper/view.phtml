@@ -70,6 +70,8 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
                     <div class="panel-body in">
                         <?php
                         $isWaitingForAuthorValidation = (Episciences_Paper::STATUS_ACCEPTED_WAITING_FOR_AUTHOR_VALIDATION === $status);
+                        $isAltWaitingForAuthorFinalVersion = (Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION === $status);
+                        $isAltProofSentToAuthor = (Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR === $status);
                         ?>
 
                         <?php if ($isWaitingForAuthorValidation): ?>
@@ -79,6 +81,52 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
                                 <?= $this->translate($info) ?>
                                 <?= $this->partial('partials/user-contact.phtml', ['docId' => $paper->getDocid(), 'uid' => $paper->getUid(), 'title' => 'Contacter ce contributeur']) ?>
                             </div>
+                        <?php endif; ?>
+
+                        <?php if ($isAltWaitingForAuthorFinalVersion): ?>
+                            <?php $info = "En attente de la réponse de l'auteur : le mot de passe et la version finale ont été demandés à l'auteur"; ?>
+                            <div class="alert alert-warning alert-fixed">
+                                <i class="fas fa-hourglass-half" style="color:chocolate"></i>
+                                <?= $this->translate($info) ?>
+                                <div style="margin-top: 10px;">
+                                    <a class="btn btn-primary" href="/paper/finalversiondeposit/id/<?= (int)$paper->getDocid() ?>">
+                                        <?= $this->translate("Déposer la version finale au nom de l'auteur") ?>
+                                    </a>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ($isAltProofSentToAuthor): ?>
+                            <?php $info = "En attente de la réponse de l'auteur : l'épreuve a été envoyée à l'auteur pour vérification"; ?>
+                            <div class="alert alert-warning alert-fixed">
+                                <i class="fas fa-hourglass-half" style="color:chocolate"></i>
+                                <?= $this->translate($info) ?>
+                                <div style="margin-top: 10px;">
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                                            <?= $this->translate("Répondre au nom de l'auteur") ?> <span class="caret"></span>
+                                        </button>
+                                        <ul class="dropdown-menu" role="menu">
+                                            <li><a href="#" data-toggle="modal" data-target=".alt-author-approve-proof-modal"><?= $this->translate('Approuver') ?></a></li>
+                                            <li><a href="#" data-toggle="modal" data-target=".alt-author-reject-proof-modal"><?= $this->translate('Refuser') ?></a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php if (isset($this->altAuthorApproveProofForm)): ?>
+                                <?= $this->partial('partials/paper-status-modal.phtml', [
+                                        'target' => 'alt-author-approve-proof-modal',
+                                        'title' => $this->translate("Approuver la mise en page au nom de l'auteur"),
+                                        'body' => $this->altAuthorApproveProofForm,
+                                ]) ?>
+                            <?php endif; ?>
+                            <?php if (isset($this->altAuthorRejectProofForm)): ?>
+                                <?= $this->partial('partials/paper-status-modal.phtml', [
+                                        'target' => 'alt-author-reject-proof-modal',
+                                        'title' => $this->translate("Refuser la mise en page au nom de l'auteur"),
+                                        'body' => $this->altAuthorRejectProofForm,
+                                ]) ?>
+                            <?php endif; ?>
                         <?php endif; ?>
 
                         <p>
@@ -128,7 +176,13 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
         <?php endif; ?>
 
         <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper, 'metadata' => $this->metadata]) ?>
-        <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
+        <?= $this->partial('partials/paper_password_form.phtml', [
+                'paper' => $paper,
+                'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc,
+                'paperPassword' => $this->paperPassword,
+                'hasStoredPaperPassword' => $this->hasStoredPaperPassword,
+                'paperPasswordDecryptionFailed' => $this->paperPasswordDecryptionFailed,
+        ]) ?>
 
     </div>
 

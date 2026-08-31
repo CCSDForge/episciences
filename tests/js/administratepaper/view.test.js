@@ -76,8 +76,45 @@ global.isRequiredRevisionDeadline = false;
 const {
     validateDoiInput,
     updateDoiDisplay,
+    removeEmptyStatusMenus,
     DOI_PATTERN,
 } = require('../../../public/js/administratepaper/view');
+
+describe('removeEmptyStatusMenus', () => {
+    beforeEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    test('removes the status button when its menu has no options', () => {
+        document.body.innerHTML = `
+            <div class="btn-group" id="empty-status-group">
+                <button class="btn dropdown-toggle">Change article status</button>
+                <ul class="status-menu dropdown-menu"></ul>
+            </div>
+        `;
+
+        removeEmptyStatusMenus();
+
+        expect(document.querySelector('#empty-status-group')).toBeNull();
+        expect(document.querySelector('.dropdown-toggle')).toBeNull();
+    });
+
+    test('keeps the status button when its menu has an option', () => {
+        document.body.innerHTML = `
+            <div class="btn-group" id="populated-status-group">
+                <button class="btn dropdown-toggle">Change article status</button>
+                <ul class="status-menu dropdown-menu"><li><a href="#">Publish</a></li></ul>
+            </div>
+        `;
+
+        removeEmptyStatusMenus();
+
+        expect(
+            document.querySelector('#populated-status-group')
+        ).not.toBeNull();
+        expect(document.querySelector('.dropdown-toggle')).not.toBeNull();
+    });
+});
 
 // ---------------------------------------------------------------------------
 // DOI_PATTERN

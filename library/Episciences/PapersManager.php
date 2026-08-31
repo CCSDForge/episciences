@@ -1975,6 +1975,415 @@ class Episciences_PapersManager
         return $form;
     }
 
+    public static function getAltSendProofToAuthorForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-send-proof-to-author-form',
+            '/administratepaper/altsendprooftoauthor/id/' . $default['id'],
+            'csrf_altsendprooftoauthor_' . (int)$default['id'],
+            'altproofsubject',
+            'altproofmessage'
+        );
+    }
+
+    public static function getAltReturnToLayoutEditingForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-return-to-layout-editing-form',
+            '/administratepaper/altreturntolayoutediting/id/' . $default['id'],
+            'csrf_altreturntolayoutediting_' . (int)$default['id'],
+            'altreturnsubject',
+            'altreturnmessage'
+        );
+    }
+
+    public static function getAltApproveForPublicationForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-approve-for-publication-form',
+            '/administratepaper/altapproveforpublication/id/' . $default['id'],
+            'csrf_altapproveforpublication_' . (int)$default['id'],
+            'altapprovesubject',
+            'altapprovemessage'
+        );
+    }
+
+    public static function getAltStartLayoutEditingForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-start-layout-editing-form',
+            '/administratepaper/altstartlayoutediting/id/' . $default['id'],
+            'csrf_altstartlayoutediting_' . (int)$default['id'],
+            'altstartlayoutsubject',
+            'altstartlayoutmessage'
+        );
+    }
+
+    public static function getAltRequestFinalVersionForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-request-final-version-form',
+            '/administratepaper/altrequestfinalversion/id/' . $default['id'],
+            'csrf_altrequestfinalversion_' . (int)$default['id'],
+            'altrequestfinalversionsubject',
+            'altrequestfinalversionmessage'
+        );
+    }
+
+    public static function getAltIncorrectPasswordForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-incorrect-password-form',
+            '/administratepaper/altincorrectpassword/id/' . $default['id'],
+            'csrf_altincorrectpassword_' . (int)$default['id'],
+            'altincorrectpwdsubject',
+            'altincorrectpwdmessage'
+        );
+    }
+
+    public static function getAltIncorrectLatexForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-incorrect-latex-form',
+            '/administratepaper/altincorrectlatex/id/' . $default['id'],
+            'csrf_altincorrectlatex_' . (int)$default['id'],
+            'altincorrectlatexsubject',
+            'altincorrectlatexmessage'
+        );
+    }
+
+    public static function getAltPublishForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-publish-form',
+            '/administratepaper/altpublish/id/' . $default['id'],
+            'csrf_altpublish_' . (int)$default['id'],
+            'altpublishsubject',
+            'altpublishmessage'
+        );
+    }
+
+    public static function getAltAuthorApproveProofForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-author-approve-proof-form',
+            '/paper/altauthorapproveproof/id/' . $default['id'],
+            'csrf_altauthorapproveproof_' . (int)$default['id'],
+            'altauthorapprovesubject',
+            'altauthorapprovemessage'
+        );
+    }
+
+    public static function getAltAuthorRejectProofForm(array $default): \Ccsd_Form
+    {
+        return self::buildAlternativePipelineForm(
+            $default,
+            'alt-author-reject-proof-form',
+            '/paper/altauthorrejectproof/id/' . $default['id'],
+            'csrf_altauthorrejectproof_' . (int)$default['id'],
+            'altauthorrejectsubject',
+            'altauthorrejectmessage'
+        );
+    }
+
+    public static function getAlternativePipelineFormDefault(
+        Episciences_Paper $paper,
+        Episciences_User $contributor,
+        string $templateKey,
+        string $recipientType = 'author'
+    ): array {
+        $languages = Episciences_Tools::getLanguages();
+        $contributorLocale = $contributor->getLangueid(true);
+        $locale = (Episciences_Tools::getLocale() !== $contributorLocale)
+            ? Episciences_Review::getDefaultLanguage()
+            : $contributorLocale;
+
+        if (!array_key_exists($locale, $languages)) {
+            $locale = key($languages);
+        }
+
+        $template = new Episciences_Mail_Template();
+        $template->setLocale($locale);
+        $template->findByKey($templateKey);
+        $template->loadTranslations();
+
+        $mail = new Episciences_Mail('UTF-8');
+        $mail->setDocid($paper->getDocid());
+
+        $urlHelper = new Zend_View_Helper_Url();
+        $site = SERVER_PROTOCOL . '://' . ($_SERVER['SERVER_NAME'] ?? DOMAIN);
+        $publicUrl = $site . $urlHelper->url([
+                'controller' => 'paper',
+                'action' => 'view',
+                'id' => $paper->getDocid()
+            ]);
+        $adminUrl = $site . $urlHelper->url([
+                'controller' => 'administratepaper',
+                'action' => 'view',
+                'id' => $paper->getDocid()
+            ]);
+
+        $toValue = $contributor->getFullName() . ' <' . $contributor->getEmail() . '>';
+        $paperUrl = $publicUrl;
+        $recipientTags = [
+            Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => $contributor->getScreenName(),
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => $contributor->getUsername(),
+            Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => $contributor->getFullName(),
+        ];
+
+        if ($recipientType !== 'author') {
+            $paperUrl = $adminUrl;
+            $toValue = self::formatAlternativePipelineRecipientsForDisplay($paper);
+            $recipientTags = [
+                Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME => Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+                Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME => Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+                Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME => Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+            ];
+        }
+
+        $tags = array_merge($mail->getTags(), [
+            Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle($locale, true),
+            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata($locale),
+            Episciences_Mail_Tags::TAG_SUBMISSION_DATE => Episciences_View_Helper_Date::Date($paper->getSubmission_date(), $locale),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $paperUrl,
+            Episciences_Mail_Tags::TAG_COMMENT => '',
+            Episciences_Mail_Tags::TAG_ACTION_DATE => Episciences_View_Helper_Date::Date(date('Y-m-d'), $locale),
+            Episciences_Mail_Tags::TAG_ACTION_TIME => Zend_Date::now()->get(Zend_Date::TIME_MEDIUM),
+            Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME => $contributor->getFullName(),
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN => $site . '/user/lostlogin',
+            Episciences_Mail_Tags::TAG_OBSOLETE_RECIPIENT_USERNAME_LOST_LOGIN => $site . '/user/lostlogin',
+        ], $recipientTags);
+
+        $subject = $template->getSubject();
+        if ($subject) {
+            $subject = str_replace(array_keys($tags), array_values($tags), $subject);
+            $subject = Ccsd_Tools::clear_nl($subject);
+        }
+
+        $body = $template->getBody();
+        if ($body) {
+            $body = str_replace(array_keys($tags), array_values($tags), $body);
+            $body = nl2br($body);
+            $body = Ccsd_Tools::clear_nl($body);
+        }
+
+        return [
+            'id' => $paper->getDocid(),
+            'subject' => $subject,
+            'body' => $body,
+            'author' => $contributor,
+            'coAuthor' => $paper->getCoAuthors(),
+            'to' => $toValue,
+        ];
+    }
+
+    private static function formatAlternativePipelineRecipientsForDisplay(Episciences_Paper $paper): string
+    {
+        $recipients = self::getAlternativePipelineManagerRecipients($paper);
+
+        if (empty($recipients)) {
+            return '';
+        }
+
+        return implode('; ', array_map(static function (Episciences_User $recipient): string {
+            return $recipient->getFullName() . ' <' . $recipient->getEmail() . '>';
+        }, $recipients));
+    }
+
+    /** @return Episciences_User[] */
+    public static function getAlternativePipelineManagerRecipients(Episciences_Paper $paper): array
+    {
+        $recipients = $paper->getCopyEditors(true, true);
+        if (empty($recipients)) {
+            $recipients = $paper->getEditors(true, true);
+        }
+
+        $uniqueRecipients = [];
+        foreach ($recipients as $recipient) {
+            $key = $recipient->getUid() ?: strtolower((string)$recipient->getEmail());
+            if ($key !== '' && !isset($uniqueRecipients[$key])) {
+                $uniqueRecipients[$key] = $recipient;
+            }
+        }
+
+        return array_values($uniqueRecipients);
+    }
+
+    public static function getAltFinalVersionDepositForm(Episciences_Paper $paper, array $defaults = []): \Ccsd_Form
+    {
+        $docId = (int)$paper->getDocid();
+        $form = new \Ccsd_Form();
+        $form->setName('final_version_deposit_form_' . $docId);
+        $form->setAttrib('id', 'final_version_deposit_form_' . $docId);
+        $form->setAttrib('enctype', 'multipart/form-data');
+        $form->setAttrib('class', 'form-horizontal');
+        $form->setMethod('post');
+        $form->setAction('/paper/savefinalversiondeposit/id/' . $docId);
+        $form->addElementPrefixPath('Episciences_Form_Decorator', 'Episciences/Form/Decorator/', 'decorator');
+
+        $form->addElement('hash', 'csrf_finalversiondeposit_' . $docId, ['salt' => 'unique']);
+
+        $form->addElement('text', 'version', [
+            'label' => 'Version arXiv',
+            'description' => sprintf(
+                Zend_Registry::get('Zend_Translate')->translate(
+                    "Indiquez la version de l'article disponible sur arXiv que vous souhaitez déposer. Elle doit être au moins égale à %s."
+                ),
+                (int)$paper->getVersion()
+            ),
+            'required' => true,
+            'value' => (string)$paper->getVersion(),
+            'style' => 'width:33%;',
+        ]);
+
+        // Reuse the stored password when only the final version changes.
+        \Episciences_Submit::addPaperArxivPwdElement($form, empty($paper->getPassword()));
+
+        // The decorator template inspects a hidden element for pcId/docId attributes;
+        // pcId is unused here (no parent comment) but kept for compatibility.
+        $form->addElement('hidden', 'attachments_path_type', [
+            'value' => 'final_version_deposit',
+            'docId' => $docId,
+            'pcId' => 0,
+        ]);
+        $form->addElement('hidden', 'docid', [
+            'value' => $docId,
+            'decorators' => [['ViewHelper']],
+        ]);
+
+        $form->addElement('submit', 'submitFinalVersionDeposit', [
+            'label' => 'Déposer',
+            'class' => 'btn btn-primary',
+            'decorators' => [['ViewHelper']],
+        ]);
+
+        $form->setDecorators([
+            ['ViewScript', ['viewScript' => '/paper/final_version_deposit_form.phtml']],
+            $form->getDecorator('FormRequired'),
+        ]);
+
+        $preservedAttachments = $defaults[Episciences_Mail_Send::ATTACHMENTS] ?? [];
+        if (is_array($preservedAttachments) && $preservedAttachments) {
+            $form->setAttrib('preservedAttachments', $preservedAttachments);
+        }
+        unset($defaults[Episciences_Mail_Send::ATTACHMENTS]);
+
+        if ($defaults) {
+            $form->setDefaults($defaults);
+        }
+
+        return $form;
+    }
+
+    private static function buildAlternativePipelineForm(
+        array $default,
+        string $formId,
+        string $action,
+        string $csrfName,
+        string $subjectName,
+        string $messageName
+    ): \Ccsd_Form
+    {
+        $form = new Ccsd_Form([
+            'class' => 'form-horizontal',
+            'action' => $action,
+            'id' => $formId
+        ]);
+
+        $form->addElement('hash', $csrfName, ['salt' => 'unique']);
+        $form->getElement($csrfName)->setTimeout(3600);
+
+        $form->setDecorators([[
+            'ViewScript', [
+                'viewScript' => '/administratemail/form.phtml'
+            ]],
+            'FormActions',
+            'Form',
+            'FormCss',
+            'FormJavascript',
+            'FormRequired'
+        ]);
+
+        $author = $default['author'] ?? null;
+        $toValue = $default['to'] ?? (($author instanceof Episciences_User)
+            ? $author->getFullName() . ' <' . $author->getEmail() . '>'
+            : '');
+
+        $form->addElement('text', 'to', [
+            'id' => $formId . '-to',
+            'label' => 'À',
+            'disabled' => true,
+            'value' => $toValue,
+        ]);
+
+        $existingMails = '';
+        if (!empty($default['coAuthor'])) {
+            $existingMails = self::getCoAuthorsMails($default['coAuthor']);
+        }
+        $translator = Zend_Registry::get('Zend_Translate');
+        $title = $translator->translate('Ajouter des destinataires');
+        $form->addElement('text', 'cc', [
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=cc">' . $translator->translate('Cc') . '</a>',
+            'id' => $formId . '-cc',
+            'value' => $existingMails,
+            'class' => 'autocomplete'
+        ]);
+
+        $form->addElement('text', 'bcc', [
+            'label' => '<a class="show_contacts_button" title="' . $title . '" href="/administratemail/getcontacts?target=bcc">' . $translator->translate('Bcc') . '</a>',
+            'id' => $formId . '-bcc',
+            'class' => 'autocomplete'
+        ]);
+
+        $form->addElement('text', 'from', [
+            'id' => $formId . '-from',
+            'label' => 'De',
+            'disabled' => true,
+            'placeholder' => RVCODE . '@' . DOMAIN,
+            'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>',
+        ]);
+
+        $form->addElement('text', 'reply-to', [
+            'id' => $formId . '-reply-to',
+            'label' => 'Répondre à',
+            'disabled' => true,
+            'placeholder' => RVCODE . '@' . DOMAIN,
+            'value' => Episciences_Auth::getFullName() . ' <' . Episciences_Auth::getEmail() . '>',
+        ]);
+
+        $form->addElement(new Ccsd_Form_Element_Text([
+            'name' => $subjectName,
+            'label' => 'Sujet',
+            'value' => $default['subject'] ?? '',
+        ]));
+
+        $form->addElement(new Ccsd_Form_Element_Textarea([
+            'name' => $messageName,
+            'class' => 'full_mce',
+            'label' => 'Message',
+            'value' => $default['body'] ?? '',
+        ]));
+
+        self::addHiddenDocIdElement($form, $formId, $default['id']);
+
+        if (!empty($default['coAuthor'])) {
+            self::getCoAuthorsForm($default['coAuthor'], $form);
+        }
+
+        return $form;
+    }
+
     /**
      * @param $default
      * @return Ccsd_Form

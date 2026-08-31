@@ -239,7 +239,10 @@ $this->jQuery()->addJavascriptFile('/js/paper/edit_master_file.js');
     <?php endif; ?>
     <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
     <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper, 'metadata' => $metadata]) ?>
-    <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
+    <?php $isAltPipeline = $this->review->isAlternativePipelineEnabled(); ?>
+    <?php if (!$isAltPipeline): ?>
+        <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
+    <?php endif; ?>
 
 </div>
 
@@ -257,6 +260,43 @@ $this->jQuery()->addJavascriptFile('/js/paper/edit_master_file.js');
                         class="label label-status-<?= $status ?>"><?= ucfirst($this->translate(Episciences_PapersManager::getStatusLabel($status))) ?></span>
                 <?= $this->partial('partials/paper-revision-deadline.phtml', ['paper' => $paper]) ?>
             </p>
+            <?php if ($isAltPipeline): ?>
+                <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
+                <?php if ($paper->isOwner() && $status === Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR): ?>
+                    <div class="alert alert-info" style="margin-top: 10px;">
+                        <p><?= $this->translate("Utilisez le lien figurant dans le courriel de demande d'approbation pour consulter l'épreuve de votre article, puis approuvez ou refusez la mise en page.") ?></p>
+                        <div class="btn-group" style="margin-top: 10px;">
+                            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                                <?= $this->translate("Répondre") ?> <span class="caret" style="margin-left: 5px"></span>
+                            </button>
+                            <ul class="dropdown-menu" role="menu">
+                                <li>
+                                    <a href="#" data-toggle="modal"
+                                       data-target=".alt-author-approve-proof-modal"><?= $this->translate('Approuver') ?></a>
+                                </li>
+                                <li>
+                                    <a href="#" data-toggle="modal"
+                                       data-target=".alt-author-reject-proof-modal"><?= $this->translate('Refuser') ?></a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <?php if (isset($this->altAuthorApproveProofForm)): ?>
+                        <?= $this->partial('partials/paper-status-modal.phtml', [
+                            'target' => 'alt-author-approve-proof-modal',
+                            'title' => $this->translate('Approuver la mise en page'),
+                            'body' => $this->altAuthorApproveProofForm
+                        ]) ?>
+                    <?php endif; ?>
+                    <?php if (isset($this->altAuthorRejectProofForm)): ?>
+                        <?= $this->partial('partials/paper-status-modal.phtml', [
+                            'target' => 'alt-author-reject-proof-modal',
+                            'title' => $this->translate('Refuser la mise en page'),
+                            'body' => $this->altAuthorRejectProofForm
+                        ]) ?>
+                    <?php endif; ?>
+                <?php endif; ?>
+            <?php endif; ?>
         </div>
     </div>
 

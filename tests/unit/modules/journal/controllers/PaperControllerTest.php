@@ -183,6 +183,71 @@ final class PaperControllerTest extends TestCase
         );
     }
 
+    public function testFinalVersionDepositRejectsOlderAndNonIntegerArxivVersions(): void
+    {
+        $method = $this->extractMethod('savefinalversiondepositAction');
+
+        self::assertStringContainsString('ctype_digit($version)', $method);
+        self::assertStringContainsString('(int)$version < $currentVersion', $method);
+    }
+
+    public function testHigherFinalVersionCreatesANewPaperFromRepositoryMetadata(): void
+    {
+        $method = $this->extractMethod('createAltFinalVersionPaper');
+
+        self::assertStringContainsString('Episciences_Submit::getDoc(', $method);
+        self::assertStringContainsString('$newPaper = clone $paper', $method);
+        self::assertStringContainsString('$newPaper->setDocid(null)', $method);
+        self::assertStringContainsString('STATUS_ALT_FINAL_VERSION_SUBMITTED', $method);
+        self::assertStringContainsString('updatePreviousVersionStatus($paper)', $method);
+    }
+
+    public function testInvalidFinalVersionDepositPreservesSubmittedValues(): void
+    {
+        $method = $this->extractMethod('redirectAltFinalVersionDepositWithError');
+
+        self::assertStringContainsString("'version' =>", $method);
+        self::assertStringContainsString("'paperPassword' =>", $method);
+        self::assertStringContainsString('Episciences_Mail_Send::ATTACHMENTS', $method);
+        self::assertStringContainsString('AltFinalVersionDeposit_', $method);
+    }
+
+    public function testFinalVersionAccompanyingFilesAreSavedAsAComment(): void
+    {
+        $method = $this->extractMethod('saveAltFinalVersionAccompanyingFiles');
+
+        self::assertStringContainsString('TYPE_CE_AUTHOR_FINAL_VERSION_SUBMITTED', $method);
+        self::assertStringContainsString('Episciences_Mail_Send::ATTACHMENTS', $method);
+        self::assertStringContainsString('$comment->logComment()', $method);
+    }
+
+    public function testManagersCanActAsAlternativePipelineAuthorProxy(): void
+    {
+        $method = $this->extractMethod('isAlternativePipelineAuthorProxy');
+
+        self::assertStringContainsString('Episciences_Auth::isSecretary()', $method);
+        self::assertStringContainsString('$paper->getEditor($uid)', $method);
+        self::assertStringContainsString('$paper->getCopyEditor($uid)', $method);
+    }
+
+    public function testProxyActionsAreRecordedInStatusLog(): void
+    {
+        $finalVersionMethod = $this->extractMethod('savefinalversiondepositAction');
+        $proofMethod = $this->extractMethod('processAuthorProofAction');
+
+        self::assertStringContainsString("'actedOnBehalfOfAuthor'", $finalVersionMethod);
+        self::assertStringContainsString("'actedOnBehalfOfAuthor'", $proofMethod);
+        self::assertStringContainsString("'authorUid'", $proofMethod);
+    }
+
+    public function testProofActionAllowsAuthorizedProxyAndReturnsToManagementPage(): void
+    {
+        $method = $this->extractMethod('processAuthorProofAction');
+
+        self::assertStringContainsString('isAlternativePipelineAuthorProxy($paper)', $method);
+        self::assertStringContainsString('ADMINISTRATE_PAPER_CONTROLLER', $method);
+    }
+
     // -----------------------------------------------------------------------
     // deleteattachmentreportAction
     // -----------------------------------------------------------------------

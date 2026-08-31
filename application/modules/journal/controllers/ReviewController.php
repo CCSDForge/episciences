@@ -80,6 +80,7 @@ class ReviewController extends Zend_Controller_Action
                     Episciences_Review::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
                     Episciences_Review::SETTING_DISPLAY_EMPTY_VOLUMES,
                     Episciences_Review::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
+                    Episciences_Review::SETTING_ALTERNATIVE_PIPELINE,
                 ];
 
                 foreach ($checkboxSettings as $checkboxSetting) {
@@ -87,6 +88,17 @@ class ReviewController extends Zend_Controller_Action
                     if (!isset($reviewSettingsToSave[$checkboxSetting]) || $reviewSettingsToSave[$checkboxSetting] === '' || $reviewSettingsToSave[$checkboxSetting] === null) {
                         $reviewSettingsToSave[$checkboxSetting] = '0';
                     }
+                }
+
+                $selectedRepositories = array_values(array_unique(array_map(
+                    'intval',
+                    (array)($reviewSettingsToSave[Episciences_Review::SETTING_REPOSITORIES] ?? [])
+                )));
+                if (
+                    count($selectedRepositories) !== 1
+                    || $selectedRepositories[0] !== (int)Episciences_Repositories::ARXIV_REPO_ID
+                ) {
+                    $reviewSettingsToSave[Episciences_Review::SETTING_ALTERNATIVE_PIPELINE] = '0';
                 }
 
                 $review->setOptions($reviewSettingsToSave);
@@ -277,4 +289,3 @@ class ReviewController extends Zend_Controller_Action
         }
     }
 }
-
