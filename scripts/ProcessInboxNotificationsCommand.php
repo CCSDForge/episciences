@@ -85,6 +85,9 @@ class ProcessInboxNotificationsCommand extends Command
             $io->note('Dry-run mode enabled — no database writes or emails will be dispatched.');
         }
 
+        // Constants (incl. EPISCIENCES_LOG_PATH) must be defined before the logger is built
+        $this->bootstrapConstants();
+
         $logger = new Logger('inboxNotifications');
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'inboxNotifications_' . date('Y-m-d') . '.log',
@@ -1587,7 +1590,7 @@ class ProcessInboxNotificationsCommand extends Command
     // Bootstrap
     // -------------------------------------------------------------------------
 
-    private function bootstrap(): void
+    private function bootstrapConstants(): void
     {
         if (!defined('APPLICATION_PATH')) {
             define('APPLICATION_PATH', realpath(__DIR__ . '/../application'));
@@ -1601,14 +1604,22 @@ class ProcessInboxNotificationsCommand extends Command
         defineApplicationConstants();
         defineJournalConstants();
 
+        // Include path and fallback autoloader must be set up before any Episciences_*
+        // or namespaced Episciences\* class (e.g. AppRegistry) can be autoloaded.
         $libraries = [realpath(APPLICATION_PATH . '/../library')];
         set_include_path(implode(PATH_SEPARATOR, array_merge($libraries, [get_include_path()])));
         require_once 'Zend/Application.php';
 
-        $application = new Zend_Application('production', APPLICATION_PATH . '/configs/application.ini');
-
         $autoloader = Zend_Loader_Autoloader::getInstance();
         $autoloader->setFallbackAutoloader(true);
+    }
+
+    private function bootstrap(): void
+    {
+        // Constants, include path and the fallback autoloader are already set up by
+        // bootstrapConstants(), called earlier in execute() to build the logger.
+
+        $application = new Zend_Application('production', APPLICATION_PATH . '/configs/application.ini');
 
         $db = Zend_Db::factory('PDO_MYSQL', $application->getOption('resources')['db']['params']);
         Zend_Db_Table::setDefaultAdapter($db);
