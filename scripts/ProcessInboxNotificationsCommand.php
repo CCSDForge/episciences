@@ -224,6 +224,17 @@ class ProcessInboxNotificationsCommand extends Command
 
         try {
             $notifyPayloads = json_decode($nOriginal, true, 512, JSON_THROW_ON_ERROR);
+
+            // Some notifications are stored double-JSON-encoded by the inbox writer
+            // (the "original" column holds a JSON string of the JSON payload), in
+            // which case the first decode only yields the inner JSON as a string.
+            if (is_string($notifyPayloads)) {
+                $notifyPayloads = json_decode($notifyPayloads, true, 512, JSON_THROW_ON_ERROR);
+            }
+
+            if (!is_array($notifyPayloads)) {
+                throw new \JsonException('Decoded payload is not an object/array');
+            }
         } catch (\JsonException $e) {
             $logger->critical(sprintf(
                 'Notification [%s] contains invalid JSON payload: %s. Raw snippet: %.250s',
