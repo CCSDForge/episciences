@@ -53,6 +53,13 @@ class ProcessInboxNotificationsCommand extends Command
 
     private PreprintUrlParser $urlParser;
 
+    /**
+     * Set when the current notification was rejected because the state it
+     * describes is already superseded (not a genuine processing error).
+     * @see notificationsProcess()
+     */
+    private bool $isOutdatedNotification = false;
+
     public function __construct()
     {
         parent::__construct();
@@ -154,9 +161,10 @@ class ProcessInboxNotificationsCommand extends Command
 
         $io->progressStart($count);
 
-        $successCount = 0;
-        $failedCount  = 0;
-        $deletedCount = 0;
+        $successCount  = 0;
+        $failedCount   = 0;
+        $deletedCount  = 0;
+        $outdatedCount = 0;
 
         foreach ($notifications as $index => $notification) {
             $notifId = $notification->getId();
@@ -180,6 +188,19 @@ class ProcessInboxNotificationsCommand extends Command
                             ]);
                         }
                     }
+                } elseif ($this->isOutdatedNotification) {
+                    $outdatedCount++;
+                    $logger->info(sprintf('Notification ID %s is outdated (already superseded); excluding it from future runs.', $notifId));
+
+                    if (!$isDryRun) {
+                        try {
+                            $reader->getRepository()->updateStatus($notifId, Notification::STATUS_OUTDATED);
+                        } catch (\Throwable $statusEx) {
+                            $logger->error(sprintf('Failed to mark notification ID %s as outdated: %s', $notifId, $statusEx->getMessage()), [
+                                'trace' => $statusEx->getTraceAsString(),
+                            ]);
+                        }
+                    }
                 } else {
                     $failedCount++;
                     $logger->warning(sprintf('Notification ID %s could not be processed.', $notifId));
@@ -200,12 +221,16 @@ class ProcessInboxNotificationsCommand extends Command
         $io->progressFinish();
 
         $io->table(
-            ['Total', 'Succeeded', 'Failed / Skipped', 'Deleted from inbox'],
-            [[$count, $successCount, $failedCount, $deletedCount]]
+            ['Total', 'Succeeded', 'Outdated', 'Failed', 'Deleted from inbox'],
+            [[$count, $successCount, $outdatedCount, $failedCount, $deletedCount]]
         );
 
+        if ($outdatedCount > 0) {
+            $io->note(sprintf('%d notification(s) were outdated (already superseded) and excluded from future runs.', $outdatedCount));
+        }
+
         if ($failedCount > 0) {
-            $io->warning(sprintf('%d notification(s) failed or were skipped. Check log file for details.', $failedCount));
+            $io->warning(sprintf('%d notification(s) failed. Check log file for details.', $failedCount));
         } else {
             $io->success('All notifications processed successfully.');
         }
@@ -219,6 +244,8 @@ class ProcessInboxNotificationsCommand extends Command
         LoggerInterface      $logger,
         bool                 $isDryRun = false
     ): bool {
+        $this->isOutdatedNotification = false;
+
         $nOriginal = $notification->getOriginal();
         $notifId   = $notification->getId();
 
@@ -505,7 +532,14 @@ class ProcessInboxNotificationsCommand extends Command
 
         $logger->info(sprintf('Notification [%s]: version check status: %s', $notifId, $newVerErrors['message']));
 
-        return (bool) ($newVerErrors['canBeReplaced'] || isset($newVerErrors[self::PAPER_CONTEXT]));
+        $canApply = (bool) ($newVerErrors['canBeReplaced'] || isset($newVerErrors[self::PAPER_CONTEXT]));
+
+        if (!$canApply) {
+            // Not an error: this version was already applied, there is nothing to do.
+            $this->isOutdatedNotification = true;
+        }
+
+        return $canApply;
     }
 
     /**
@@ -543,8 +577,10 @@ class ProcessInboxNotificationsCommand extends Command
             }
 
             if ($context !== null && $context->getVersion() >= $paper->getVersion()) {
+                // Not an error: this version was already applied, there is nothing to do.
+                $this->isOutdatedNotification = true;
                 if ($logger !== null) {
-                    $logger->warning(sprintf('Abort processing paper %s: identical or older version (%d <= %d).', $data['identifier'], $paper->getVersion(), $context->getVersion()));
+                    $logger->info(sprintf('Skipping paper %s: identical or older version (%d <= %d).', $data['identifier'], $paper->getVersion(), $context->getVersion()));
                 }
                 return false;
             }

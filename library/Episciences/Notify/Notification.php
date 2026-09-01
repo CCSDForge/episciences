@@ -9,8 +9,15 @@ class Notification
     public const DIRECTION_INBOUND  = 'INBOUND';
     public const DIRECTION_OUTBOUND = 'OUTBOUND';
 
-    public const STATUS_PENDING = 0;
-    public const STATUS_FAILED  = -1;
+    public const STATUS_PENDING  = 0;
+    public const STATUS_FAILED   = -1;
+
+    /**
+     * The notification is moot, not erroneous: the state it describes has
+     * already been superseded (e.g. this paper version was already applied
+     * or a newer one already exists). Excluded from future inbound fetches.
+     */
+    public const STATUS_OUTDATED = -2;
 
     private string $id;
     private string $fromId;
