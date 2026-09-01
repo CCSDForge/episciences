@@ -4688,11 +4688,9 @@ class Episciences_PapersManager
         }
 
         if (!empty($fileFound[0])) {
-            $fundingArray       = [];
             $globalfundingArray = [];
             $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB(
                 $fileFound,
-                $fundingArray,
                 $globalfundingArray
             );
             $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId(

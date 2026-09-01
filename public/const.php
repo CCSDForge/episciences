@@ -424,6 +424,10 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('OPENCITATIONS_MAILTO', '');
         define('OPENCITATIONS_APIURL', '');
         define('OPENCITATIONS_TOKEN', '');
+        define('OPENAIRE_AUTH_URL', '');
+        define('OPENAIRE_API_URL', '');
+        define('OPENAIRE_CLIENT_ID', '');
+        define('OPENAIRE_CLIENT_SECRET', '');
 
         // DOI Configuration
         define('DOI_AGENCY', '');

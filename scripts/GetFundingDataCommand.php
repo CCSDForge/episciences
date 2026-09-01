@@ -94,6 +94,10 @@ class GetFundingDataCommand extends Command
         $io->progressStart(count($rows));
 
         $oaClient = \Episciences\Api\OpenAireApiClient::create();
+        $logger->info($oaClient->isAuthenticated()
+            ? 'OpenAIRE: authenticated mode (client credentials configured)'
+            : 'OpenAIRE: anonymous fallback mode (no client credentials configured) — throttling at 60s/request'
+        );
 
         foreach ($rows as $value) {
             $paperId = (int) $value['PAPERID'];
@@ -123,11 +127,9 @@ class GetFundingDataCommand extends Command
                     try {
                         $fileFound = json_decode($fundingItem->get(), true, 512, JSON_THROW_ON_ERROR);
                         if (!empty($fileFound[0])) {
-                            $fundingArray       = [];
                             $globalfundingArray = [];
                             $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB(
                                 $fileFound,
-                                $fundingArray,
                                 $globalfundingArray
                             );
                             $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId(

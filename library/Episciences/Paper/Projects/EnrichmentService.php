@@ -140,37 +140,60 @@ class Episciences_Paper_Projects_EnrichmentService
     }
 
     /**
-     * Filter OpenAire relations to keep only project-type entries.
+     * Map OpenAire Graph v3 project entries (results[0].projects) to the DB funding structure.
+     *
      * Replaces formatFundingOAForDB().
      */
     public static function formatFundingOAForDB(
         array $fileFound,
-        array $fundingArray,
         array $globalFundingArray
     ): array {
         foreach ($fileFound as $valueOpenAire) {
-            if (
-                !array_key_exists('to', $valueOpenAire) ||
-                !array_key_exists('@type', $valueOpenAire['to']) ||
-                $valueOpenAire['to']['@type'] !== 'project'
-            ) {
+            if (!self::isV3ProjectEntry($valueOpenAire)) {
                 continue;
             }
-            if (array_key_exists('title', $valueOpenAire)) {
-                $fundingArray['projectTitle'] = $valueOpenAire['title']['$'];
-            }
-            if (array_key_exists('acronym', $valueOpenAire)) {
-                $fundingArray['acronym'] = $valueOpenAire['acronym']['$'];
-            }
-            if (array_key_exists('funder', $valueOpenAire['funding'])) {
-                $fundingArray['funderName'] = $valueOpenAire['funding']['funder']['@name'];
-            }
-            if (array_key_exists('code', $valueOpenAire)) {
-                $fundingArray['code'] = $valueOpenAire['code']['$'];
-            }
-            $globalFundingArray[] = $fundingArray;
+            $globalFundingArray[] = self::mapV3ProjectEntry($valueOpenAire);
         }
         return $globalFundingArray;
+    }
+
+    /**
+     * A valid v3 project entry carries a direct scalar 'title'.
+     *
+     * @param array<string, mixed> $entry
+     */
+    private static function isV3ProjectEntry(array $entry): bool
+    {
+        return array_key_exists('title', $entry) && is_string($entry['title']);
+    }
+
+    /**
+     * Map a single v3 project entry ({title, acronym, code, funder}) to the DB funding structure.
+     * 'funder' may be a scalar name (current REST serialization) or a Data Model object
+     * ({name, shortName, jurisdiction, fundingStream}); both are supported.
+     *
+     * @param array<string, mixed> $entry
+     * @return array<string, mixed>
+     */
+    private static function mapV3ProjectEntry(array $entry): array
+    {
+        $fundingArray = ['projectTitle' => $entry['title']];
+
+        if (!empty($entry['code'])) {
+            $fundingArray['code'] = $entry['code'];
+        }
+        if (!empty($entry['acronym'])) {
+            $fundingArray['acronym'] = $entry['acronym'];
+        }
+
+        $funder = $entry['funder'] ?? null;
+        if (is_string($funder) && $funder !== '') {
+            $fundingArray['funderName'] = $funder;
+        } elseif (is_array($funder) && !empty($funder['name'])) {
+            $fundingArray['funderName'] = $funder['name'];
+        }
+
+        return $fundingArray;
     }
 
     /**
