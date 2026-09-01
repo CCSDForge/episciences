@@ -9,14 +9,17 @@ namespace Episciences\Notify;
  */
 final class ValidationResult
 {
+    /** @param string[] $warnings Non-blocking deviations from spec tolerated during validation. */
     private function __construct(
         private readonly bool    $valid,
-        private readonly ?string $errorMessage = null
+        private readonly ?string $errorMessage = null,
+        private readonly array   $warnings = []
     ) {}
 
-    public static function success(): self
+    /** @param string[] $warnings */
+    public static function success(array $warnings = []): self
     {
-        return new self(true);
+        return new self(true, null, $warnings);
     }
 
     public static function failure(string $message): self
@@ -32,5 +35,11 @@ final class ValidationResult
     public function getErrorMessage(): ?string
     {
         return $this->errorMessage;
+    }
+
+    /** @return string[] */
+    public function getWarnings(): array
+    {
+        return $this->warnings;
     }
 }
