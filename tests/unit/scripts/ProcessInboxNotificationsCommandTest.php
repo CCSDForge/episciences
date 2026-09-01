@@ -328,6 +328,46 @@ class ProcessInboxNotificationsCommandTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // Outdated notifications (already superseded, not a genuine failure)
+    // -------------------------------------------------------------------------
+
+    public function testResolveSubmissionApplyFlagsOutdatedWhenVersionCannotBeReplaced(): void
+    {
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'resolveSubmissionApply');
+        $method->setAccessible(true);
+
+        $result = $method->invoke(
+            $this->command,
+            2,
+            ['message' => 'This version [v2] of the document already exists in journal.', 'canBeReplaced' => false],
+            $this->logger,
+            'urn:uuid:outdated-test'
+        );
+
+        $this->assertFalse($result);
+        $this->assertTrue($this->isOutdatedFlag());
+    }
+
+    public function testResolveSubmissionApplyDoesNotFlagOutdatedOnUnexpectedStatus(): void
+    {
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'resolveSubmissionApply');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->command, 99, [], $this->logger, 'urn:uuid:unexpected-status');
+
+        $this->assertFalse($result);
+        $this->assertFalse($this->isOutdatedFlag());
+    }
+
+    private function isOutdatedFlag(): bool
+    {
+        $property = new \ReflectionProperty(ProcessInboxNotificationsCommand::class, 'isOutdatedNotification');
+        $property->setAccessible(true);
+
+        return $property->getValue($this->command);
+    }
+
+    // -------------------------------------------------------------------------
     // Constants
     // -------------------------------------------------------------------------
 
