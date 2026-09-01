@@ -98,7 +98,7 @@ class ProcessInboxNotificationsCommandTest extends TestCase
             label:        'DIFFERENT',
             originId:     'https://different.url/',
             originInbox:  'https://different.inbox/',
-            acceptedTypes: ['Offer', 'coar-notify:ReviewAction']
+            acceptedTypes: [['Offer', 'coar-notify:ReviewAction']]
         );
 
         $result = $this->command->checkNotifyPayloads($validPayload, $source, $this->logger);
@@ -116,6 +116,28 @@ class ProcessInboxNotificationsCommandTest extends TestCase
 
         $this->assertFalse($result);
         $this->assertTrue($this->testHandler->hasWarningRecords());
+    }
+
+    public function testCheckNotifyPayloadsReturnsTrueForEndorsementActionWhenSourceAcceptsIt(): void
+    {
+        $payload         = json_decode($this->payloadTest('hal-02558198v1'), true, 512, JSON_THROW_ON_ERROR);
+        $payload['type'] = ['Offer', 'coar-notify:EndorsementAction'];
+
+        $source = new NotifySourceConfig(
+            repoId:       1,
+            label:        'HAL',
+            originId:     defined('NOTIFY_TARGET_HAL_URL') ? NOTIFY_TARGET_HAL_URL : 'https://hal.science/',
+            originInbox:  defined('NOTIFY_TARGET_HAL_INBOX') ? NOTIFY_TARGET_HAL_INBOX : 'https://inbox-preprod.hal.science/',
+            acceptedTypes: [
+                ['Offer', 'coar-notify:ReviewAction'],
+                ['Offer', 'coar-notify:EndorsementAction'],
+            ],
+        );
+
+        $result = $this->command->checkNotifyPayloads($payload, $source, $this->logger);
+
+        $this->assertTrue($result);
+        $this->assertFalse($this->testHandler->hasWarningRecords());
     }
 
     // -------------------------------------------------------------------------
@@ -320,7 +342,7 @@ class ProcessInboxNotificationsCommandTest extends TestCase
             label:        'HAL',
             originId:     defined('NOTIFY_TARGET_HAL_URL') ? NOTIFY_TARGET_HAL_URL : 'https://hal.science/',
             originInbox:  defined('NOTIFY_TARGET_HAL_INBOX') ? NOTIFY_TARGET_HAL_INBOX : 'https://inbox-preprod.hal.science/',
-            acceptedTypes: ['Offer', 'coar-notify:ReviewAction']
+            acceptedTypes: [['Offer', 'coar-notify:ReviewAction']]
         );
     }
 

@@ -93,7 +93,7 @@ class NotifySourceRegistryTest extends TestCase
             label:        'HAL',
             originId:     'https://hal.science/',
             originInbox:  self::HAL_INBOX,
-            acceptedTypes: ['Offer', 'coar-notify:ReviewAction'],
+            acceptedTypes: [['Offer', 'coar-notify:ReviewAction']],
         );
     }
 }

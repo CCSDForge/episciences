@@ -317,27 +317,29 @@ class ProcessInboxNotificationsCommand extends Command
      */
     public function checkNotifyPayloads(array $notifyPayloads, NotifySourceConfig $source, ?LoggerInterface $logger = null): bool
     {
-        $domain    = defined('DOMAIN') ? DOMAIN : 'episciences.org';
-        $validator = new PayloadValidator(
-            $source->getAcceptedTypes(),
-            $source->getOriginInbox(),
-            $domain
-        );
+        $domain = defined('DOMAIN') ? DOMAIN : 'episciences.org';
+        $result = null;
 
-        $result = $validator->validate($notifyPayloads);
+        // A source may accept several COAR Notify patterns (e.g. Request Review vs
+        // Request Endorsement); the payload is valid if it matches any one of them.
+        foreach ($source->getAcceptedTypes() as $typePattern) {
+            $result = (new PayloadValidator($typePattern, $source->getOriginInbox(), $domain))
+                ->validate($notifyPayloads);
 
-        if (!$result->isValid()) {
-            $msg = sprintf(
-                'Notification payload validation failed for payload ID "%s": %s',
-                $notifyPayloads['id'] ?? 'unknown',
-                $result->getErrorMessage()
-            );
-            if ($logger !== null) {
-                $logger->warning($msg);
+            if ($result->isValid()) {
+                return true;
             }
         }
 
-        return $result->isValid();
+        if ($result !== null && $logger !== null) {
+            $logger->warning(sprintf(
+                'Notification payload validation failed for payload ID "%s": %s',
+                $notifyPayloads['id'] ?? 'unknown',
+                $result->getErrorMessage()
+            ));
+        }
+
+        return false;
     }
 
     /**
