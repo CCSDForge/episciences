@@ -53,6 +53,13 @@ class ProcessInboxNotificationsCommand extends Command
 
     private PreprintUrlParser $urlParser;
 
+    /**
+     * Set when the current notification was rejected because the state it
+     * describes is already superseded (not a genuine processing error).
+     * @see notificationsProcess()
+     */
+    private bool $isOutdatedNotification = false;
+
     public function __construct()
     {
         parent::__construct();
@@ -84,6 +91,9 @@ class ProcessInboxNotificationsCommand extends Command
         if ($isDryRun) {
             $io->note('Dry-run mode enabled — no database writes or emails will be dispatched.');
         }
+
+        // Constants (incl. EPISCIENCES_LOG_PATH) must be defined before the logger is built
+        $this->bootstrapConstants();
 
         $logger = new Logger('inboxNotifications');
         $logger->pushHandler(new StreamHandler(
@@ -151,9 +161,10 @@ class ProcessInboxNotificationsCommand extends Command
 
         $io->progressStart($count);
 
-        $successCount = 0;
-        $failedCount  = 0;
-        $deletedCount = 0;
+        $successCount  = 0;
+        $failedCount   = 0;
+        $deletedCount  = 0;
+        $outdatedCount = 0;
 
         foreach ($notifications as $index => $notification) {
             $notifId = $notification->getId();
@@ -177,6 +188,19 @@ class ProcessInboxNotificationsCommand extends Command
                             ]);
                         }
                     }
+                } elseif ($this->isOutdatedNotification) {
+                    $outdatedCount++;
+                    $logger->info(sprintf('Notification ID %s is outdated (already superseded); excluding it from future runs.', $notifId));
+
+                    if (!$isDryRun) {
+                        try {
+                            $reader->getRepository()->updateStatus($notifId, Notification::STATUS_OUTDATED);
+                        } catch (\Throwable $statusEx) {
+                            $logger->error(sprintf('Failed to mark notification ID %s as outdated: %s', $notifId, $statusEx->getMessage()), [
+                                'trace' => $statusEx->getTraceAsString(),
+                            ]);
+                        }
+                    }
                 } else {
                     $failedCount++;
                     $logger->warning(sprintf('Notification ID %s could not be processed.', $notifId));
@@ -197,12 +221,16 @@ class ProcessInboxNotificationsCommand extends Command
         $io->progressFinish();
 
         $io->table(
-            ['Total', 'Succeeded', 'Failed / Skipped', 'Deleted from inbox'],
-            [[$count, $successCount, $failedCount, $deletedCount]]
+            ['Total', 'Succeeded', 'Outdated', 'Failed', 'Deleted from inbox'],
+            [[$count, $successCount, $outdatedCount, $failedCount, $deletedCount]]
         );
 
+        if ($outdatedCount > 0) {
+            $io->note(sprintf('%d notification(s) were outdated (already superseded) and excluded from future runs.', $outdatedCount));
+        }
+
         if ($failedCount > 0) {
-            $io->warning(sprintf('%d notification(s) failed or were skipped. Check log file for details.', $failedCount));
+            $io->warning(sprintf('%d notification(s) failed. Check log file for details.', $failedCount));
         } else {
             $io->success('All notifications processed successfully.');
         }
@@ -216,11 +244,24 @@ class ProcessInboxNotificationsCommand extends Command
         LoggerInterface      $logger,
         bool                 $isDryRun = false
     ): bool {
+        $this->isOutdatedNotification = false;
+
         $nOriginal = $notification->getOriginal();
         $notifId   = $notification->getId();
 
         try {
             $notifyPayloads = json_decode($nOriginal, true, 512, JSON_THROW_ON_ERROR);
+
+            // Some notifications are stored double-JSON-encoded by the inbox writer
+            // (the "original" column holds a JSON string of the JSON payload), in
+            // which case the first decode only yields the inner JSON as a string.
+            if (is_string($notifyPayloads)) {
+                $notifyPayloads = json_decode($notifyPayloads, true, 512, JSON_THROW_ON_ERROR);
+            }
+
+            if (!is_array($notifyPayloads)) {
+                throw new \JsonException('Decoded payload is not an object/array');
+            }
         } catch (\JsonException $e) {
             $logger->critical(sprintf(
                 'Notification [%s] contains invalid JSON payload: %s. Raw snippet: %.250s',
@@ -303,27 +344,37 @@ class ProcessInboxNotificationsCommand extends Command
      */
     public function checkNotifyPayloads(array $notifyPayloads, NotifySourceConfig $source, ?LoggerInterface $logger = null): bool
     {
-        $domain    = defined('DOMAIN') ? DOMAIN : 'episciences.org';
-        $validator = new PayloadValidator(
-            $source->getAcceptedTypes(),
-            $source->getOriginInbox(),
-            $domain
-        );
+        $domain = defined('DOMAIN') ? DOMAIN : 'episciences.org';
+        $result = null;
 
-        $result = $validator->validate($notifyPayloads);
+        // A source may accept several COAR Notify patterns (e.g. Request Review vs
+        // Request Endorsement); the payload is valid if it matches any one of them.
+        foreach ($source->getAcceptedTypes() as $typePattern) {
+            $result = (new PayloadValidator($typePattern, $source->getOriginInbox(), $domain))
+                ->validate($notifyPayloads);
 
-        if (!$result->isValid()) {
-            $msg = sprintf(
-                'Notification payload validation failed for payload ID "%s": %s',
-                $notifyPayloads['id'] ?? 'unknown',
-                $result->getErrorMessage()
-            );
-            if ($logger !== null) {
-                $logger->warning($msg);
+            if ($result->isValid()) {
+                foreach ($result->getWarnings() as $warning) {
+                    $logger?->warning(sprintf(
+                        'Notification [%s] accepted from a non-conformant payload: %s',
+                        $notifyPayloads['id'] ?? 'unknown',
+                        $warning
+                    ));
+                }
+
+                return true;
             }
         }
 
-        return $result->isValid();
+        if ($result !== null && $logger !== null) {
+            $logger->warning(sprintf(
+                'Notification payload validation failed for payload ID "%s": %s',
+                $notifyPayloads['id'] ?? 'unknown',
+                $result->getErrorMessage()
+            ));
+        }
+
+        return false;
     }
 
     /**
@@ -481,7 +532,14 @@ class ProcessInboxNotificationsCommand extends Command
 
         $logger->info(sprintf('Notification [%s]: version check status: %s', $notifId, $newVerErrors['message']));
 
-        return (bool) ($newVerErrors['canBeReplaced'] || isset($newVerErrors[self::PAPER_CONTEXT]));
+        $canApply = (bool) ($newVerErrors['canBeReplaced'] || isset($newVerErrors[self::PAPER_CONTEXT]));
+
+        if (!$canApply) {
+            // Not an error: this version was already applied, there is nothing to do.
+            $this->isOutdatedNotification = true;
+        }
+
+        return $canApply;
     }
 
     /**
@@ -519,8 +577,10 @@ class ProcessInboxNotificationsCommand extends Command
             }
 
             if ($context !== null && $context->getVersion() >= $paper->getVersion()) {
+                // Not an error: this version was already applied, there is nothing to do.
+                $this->isOutdatedNotification = true;
                 if ($logger !== null) {
-                    $logger->warning(sprintf('Abort processing paper %s: identical or older version (%d <= %d).', $data['identifier'], $paper->getVersion(), $context->getVersion()));
+                    $logger->info(sprintf('Skipping paper %s: identical or older version (%d <= %d).', $data['identifier'], $paper->getVersion(), $context->getVersion()));
                 }
                 return false;
             }
@@ -1587,7 +1647,7 @@ class ProcessInboxNotificationsCommand extends Command
     // Bootstrap
     // -------------------------------------------------------------------------
 
-    private function bootstrap(): void
+    private function bootstrapConstants(): void
     {
         if (!defined('APPLICATION_PATH')) {
             define('APPLICATION_PATH', realpath(__DIR__ . '/../application'));
@@ -1601,14 +1661,22 @@ class ProcessInboxNotificationsCommand extends Command
         defineApplicationConstants();
         defineJournalConstants();
 
+        // Include path and fallback autoloader must be set up before any Episciences_*
+        // or namespaced Episciences\* class (e.g. AppRegistry) can be autoloaded.
         $libraries = [realpath(APPLICATION_PATH . '/../library')];
         set_include_path(implode(PATH_SEPARATOR, array_merge($libraries, [get_include_path()])));
         require_once 'Zend/Application.php';
 
-        $application = new Zend_Application('production', APPLICATION_PATH . '/configs/application.ini');
-
         $autoloader = Zend_Loader_Autoloader::getInstance();
         $autoloader->setFallbackAutoloader(true);
+    }
+
+    private function bootstrap(): void
+    {
+        // Constants, include path and the fallback autoloader are already set up by
+        // bootstrapConstants(), called earlier in execute() to build the logger.
+
+        $application = new Zend_Application('production', APPLICATION_PATH . '/configs/application.ini');
 
         $db = Zend_Db::factory('PDO_MYSQL', $application->getOption('resources')['db']['params']);
         Zend_Db_Table::setDefaultAdapter($db);

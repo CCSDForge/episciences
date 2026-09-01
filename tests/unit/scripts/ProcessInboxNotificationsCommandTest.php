@@ -98,7 +98,7 @@ class ProcessInboxNotificationsCommandTest extends TestCase
             label:        'DIFFERENT',
             originId:     'https://different.url/',
             originInbox:  'https://different.inbox/',
-            acceptedTypes: ['Offer', 'coar-notify:ReviewAction']
+            acceptedTypes: [['Offer', 'coar-notify:ReviewAction']]
         );
 
         $result = $this->command->checkNotifyPayloads($validPayload, $source, $this->logger);
@@ -116,6 +116,40 @@ class ProcessInboxNotificationsCommandTest extends TestCase
 
         $this->assertFalse($result);
         $this->assertTrue($this->testHandler->hasWarningRecords());
+    }
+
+    public function testCheckNotifyPayloadsAcceptsAndLogsNonConformantObjectUrlFallback(): void
+    {
+        $payload = json_decode($this->payloadTest('hal-02558198v1'), true, 512, JSON_THROW_ON_ERROR);
+        $payload['object']['url'] = $payload['object']['ietf:item'];
+        unset($payload['object']['ietf:item']);
+
+        $result = $this->command->checkNotifyPayloads($payload, $this->buildHalSource(), $this->logger);
+
+        $this->assertTrue($result);
+        $this->assertTrue($this->testHandler->hasWarningThatContains("non-conformant payload"));
+    }
+
+    public function testCheckNotifyPayloadsReturnsTrueForEndorsementActionWhenSourceAcceptsIt(): void
+    {
+        $payload         = json_decode($this->payloadTest('hal-02558198v1'), true, 512, JSON_THROW_ON_ERROR);
+        $payload['type'] = ['Offer', 'coar-notify:EndorsementAction'];
+
+        $source = new NotifySourceConfig(
+            repoId:       1,
+            label:        'HAL',
+            originId:     defined('NOTIFY_TARGET_HAL_URL') ? NOTIFY_TARGET_HAL_URL : 'https://hal.science/',
+            originInbox:  defined('NOTIFY_TARGET_HAL_INBOX') ? NOTIFY_TARGET_HAL_INBOX : 'https://inbox-preprod.hal.science/',
+            acceptedTypes: [
+                ['Offer', 'coar-notify:ReviewAction'],
+                ['Offer', 'coar-notify:EndorsementAction'],
+            ],
+        );
+
+        $result = $this->command->checkNotifyPayloads($payload, $source, $this->logger);
+
+        $this->assertTrue($result);
+        $this->assertFalse($this->testHandler->hasWarningRecords());
     }
 
     // -------------------------------------------------------------------------
@@ -294,6 +328,46 @@ class ProcessInboxNotificationsCommandTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // Outdated notifications (already superseded, not a genuine failure)
+    // -------------------------------------------------------------------------
+
+    public function testResolveSubmissionApplyFlagsOutdatedWhenVersionCannotBeReplaced(): void
+    {
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'resolveSubmissionApply');
+        $method->setAccessible(true);
+
+        $result = $method->invoke(
+            $this->command,
+            2,
+            ['message' => 'This version [v2] of the document already exists in journal.', 'canBeReplaced' => false],
+            $this->logger,
+            'urn:uuid:outdated-test'
+        );
+
+        $this->assertFalse($result);
+        $this->assertTrue($this->isOutdatedFlag());
+    }
+
+    public function testResolveSubmissionApplyDoesNotFlagOutdatedOnUnexpectedStatus(): void
+    {
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'resolveSubmissionApply');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->command, 99, [], $this->logger, 'urn:uuid:unexpected-status');
+
+        $this->assertFalse($result);
+        $this->assertFalse($this->isOutdatedFlag());
+    }
+
+    private function isOutdatedFlag(): bool
+    {
+        $property = new \ReflectionProperty(ProcessInboxNotificationsCommand::class, 'isOutdatedNotification');
+        $property->setAccessible(true);
+
+        return $property->getValue($this->command);
+    }
+
+    // -------------------------------------------------------------------------
     // Constants
     // -------------------------------------------------------------------------
 
@@ -320,7 +394,7 @@ class ProcessInboxNotificationsCommandTest extends TestCase
             label:        'HAL',
             originId:     defined('NOTIFY_TARGET_HAL_URL') ? NOTIFY_TARGET_HAL_URL : 'https://hal.science/',
             originInbox:  defined('NOTIFY_TARGET_HAL_INBOX') ? NOTIFY_TARGET_HAL_INBOX : 'https://inbox-preprod.hal.science/',
-            acceptedTypes: ['Offer', 'coar-notify:ReviewAction']
+            acceptedTypes: [['Offer', 'coar-notify:ReviewAction']]
         );
     }
 
