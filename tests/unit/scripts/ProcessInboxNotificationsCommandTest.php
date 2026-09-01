@@ -118,6 +118,18 @@ class ProcessInboxNotificationsCommandTest extends TestCase
         $this->assertTrue($this->testHandler->hasWarningRecords());
     }
 
+    public function testCheckNotifyPayloadsAcceptsAndLogsNonConformantObjectUrlFallback(): void
+    {
+        $payload = json_decode($this->payloadTest('hal-02558198v1'), true, 512, JSON_THROW_ON_ERROR);
+        $payload['object']['url'] = $payload['object']['ietf:item'];
+        unset($payload['object']['ietf:item']);
+
+        $result = $this->command->checkNotifyPayloads($payload, $this->buildHalSource(), $this->logger);
+
+        $this->assertTrue($result);
+        $this->assertTrue($this->testHandler->hasWarningThatContains("non-conformant payload"));
+    }
+
     public function testCheckNotifyPayloadsReturnsTrueForEndorsementActionWhenSourceAcceptsIt(): void
     {
         $payload         = json_decode($this->payloadTest('hal-02558198v1'), true, 512, JSON_THROW_ON_ERROR);

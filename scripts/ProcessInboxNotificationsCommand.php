@@ -327,6 +327,14 @@ class ProcessInboxNotificationsCommand extends Command
                 ->validate($notifyPayloads);
 
             if ($result->isValid()) {
+                foreach ($result->getWarnings() as $warning) {
+                    $logger?->warning(sprintf(
+                        'Notification [%s] accepted from a non-conformant payload: %s',
+                        $notifyPayloads['id'] ?? 'unknown',
+                        $warning
+                    ));
+                }
+
                 return true;
             }
         }
