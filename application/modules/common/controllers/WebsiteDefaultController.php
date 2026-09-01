@@ -109,7 +109,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
         try {
             $translator = Zend_Registry::get('Zend_Translate');
         } catch (Zend_Exception $e) {
-            error_log($e->getMessage);
+            error_log($e->getMessage());
         }
 
         if (isset($params['method']) && $request->isPost()) {
