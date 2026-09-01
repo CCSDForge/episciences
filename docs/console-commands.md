@@ -50,6 +50,7 @@ php scripts/console.php <command> --help
 | [`episciences:worker`](#episciencesworker) | Continuously consume one Messenger queue (`solr_index` or `next_revalidation`) |
 | [`episciences:queue`](#episciencesqueue) | Inspect and manage one Messenger queue |
 | [`next:revalidate-cache`](#nextrevalidate-cache) | Immediately trigger (or enqueue) Next.js cache revalidation for a journal and one or more tags |
+| [`notify:process-inbox`](#notifyprocess-inbox) | Process inbound COAR Notify notifications from repository inboxes (e.g. HAL) |
 
 ---
 
@@ -1031,3 +1032,25 @@ php scripts/console.php episciences:queue --transport=<solr_index|next_revalidat
 Exactly one of `--stats`, `--list-failed`, `--retry`, `--setup`,
 `--list-dispatch-failures` or `--retry-dispatch-failure` is required, and
 both it and `--transport` are validated before any bootstrap.
+
+---
+
+## Notifications
+
+### `notify:process-inbox`
+
+Processes inbound COAR Notify notifications from repository inboxes (e.g. HAL).
+Aliases: `inbox:process`.
+
+```bash
+php scripts/console.php notify:process-inbox [options]
+```
+
+| Option | Shortcut | Default | Description |
+|--------|----------|---------|-------------|
+| `--dry-run` | | | Simulate processing without writing to the database or dispatching notification emails |
+| `--delNotifs` | `-d` | | Delete successfully processed notifications from the inbox table |
+| `--limit` | `-l` | `1000` | Maximum number of inbound notifications to fetch and process |
+| `--notification-id` | | | Process only this specific notification ID (UUID) — useful for debugging issues |
+
+**Logs:** Output is written to `logs/inboxNotifications_YYYY-MM-DD.log` and printed to stdout.
