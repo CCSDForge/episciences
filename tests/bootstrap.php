@@ -43,3 +43,16 @@ try {
 } catch (Zend_Application_Exception $e) {
     trigger_error($e->getMessage(), E_USER_ERROR);
 }
+
+// Episciences_Translation_Plugin only registers Zend_Translate on a real HTTP dispatch,
+// which never happens in unit tests. Without it, any code path calling Ccsd_Tools::translate()
+// (or similar) hits Zend_Registry::get('Zend_Translate') and logs a "Panic: ... not defined"
+// line per call. Register a real array-adapter instance once here — same pattern individual
+// test files already used — so tests get a working translator instead of that noisy fallback.
+if (!Zend_Registry::isRegistered('Zend_Translate')) {
+    Zend_Registry::set('Zend_Translate', new Zend_Translate([
+        'adapter' => Zend_Translate::AN_ARRAY,
+        'content' => ['' => ''],
+        'locale'  => 'en',
+    ]));
+}
