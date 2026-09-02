@@ -407,4 +407,65 @@ XML;
         self::assertSame(['en' => 'Main abstract text'], $this->paper->getMetadata('description'));
         self::assertSame('Main abstract text', $this->paper->getAbstract());
     }
+
+    // -----------------------------------------------------------------------
+    // setMetadata / getMetadata: title vs title_translations on a source
+    // record with two <dc:title xml:lang="en"> nodes (e.g. HAL short + long
+    // English title alongside a French and a Romanian title) — real-world
+    // case: docid 18446 (Slovo journal, hal-05645304)
+    // -----------------------------------------------------------------------
+
+    private const RECORD_WITH_MULTIPLE_TITLES = <<<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<episciences xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title xml:lang="en">Shaping the Memoryscapes of the 1989 Revolution in Timișoara (Romania)</dc:title>
+    <dc:title xml:lang="fr">Façonner les paysages mémoriels de la Révolution de 1989 à Timișoara (Roumanie)</dc:title>
+    <dc:title xml:lang="en">Shaping the Memoryscapes of the 1989 Revolution in Timișoara (Romania): Continuity and Change</dc:title>
+    <dc:title xml:lang="ro">Modelarea peisajelor memoriale ale Revoluției din 1989 din Timișoara (România)</dc:title>
+</episciences>
+XML;
+
+    public function testGetMetadataTitleTranslationsKeepsEveryTitlePerLanguage(): void
+    {
+        $this->paper->setMetadata(self::RECORD_WITH_MULTIPLE_TITLES);
+        self::assertSame(
+            [
+                'en' => [
+                    'Shaping the Memoryscapes of the 1989 Revolution in Timișoara (Romania)',
+                    'Shaping the Memoryscapes of the 1989 Revolution in Timișoara (Romania): Continuity and Change',
+                ],
+                'fr' => ['Façonner les paysages mémoriels de la Révolution de 1989 à Timișoara (Roumanie)'],
+                'ro' => ['Modelarea peisajelor memoriale ale Revoluției din 1989 din Timișoara (România)'],
+            ],
+            $this->paper->getMetadata('title_translations')
+        );
+    }
+
+    public function testGetMetadataTitleOverwritesOnLanguageCollisionUnlikeTitleTranslations(): void
+    {
+        $this->paper->setMetadata(self::RECORD_WITH_MULTIPLE_TITLES);
+        // 'title' (used by getTitle()/getAllTitles()) keeps a single title per language:
+        // the second <dc:title xml:lang="en"> overwrites the first one.
+        self::assertSame(
+            [
+                'en' => 'Shaping the Memoryscapes of the 1989 Revolution in Timișoara (Romania): Continuity and Change',
+                'fr' => 'Façonner les paysages mémoriels de la Révolution de 1989 à Timișoara (Roumanie)',
+                'ro' => 'Modelarea peisajelor memoriale ale Revoluției din 1989 din Timișoara (România)',
+            ],
+            $this->paper->getMetadata('title')
+        );
+    }
+
+    private const RECORD_WITH_SINGLE_UNLABELED_TITLE = <<<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<episciences xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Untitled document</dc:title>
+</episciences>
+XML;
+
+    public function testGetMetadataTitleTranslationsWithoutLanguageAttributeIsIndexedNumerically(): void
+    {
+        $this->paper->setMetadata(self::RECORD_WITH_SINGLE_UNLABELED_TITLE);
+        self::assertSame(['Untitled document'], $this->paper->getMetadata('title_translations'));
+    }
 }

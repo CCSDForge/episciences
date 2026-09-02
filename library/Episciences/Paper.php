@@ -1423,7 +1423,8 @@ class Episciences_Paper
         $extraData = [
 
             Episciences_Paper_XmlExportManager::JOURNAL_ARTICLE_KEY => [
-                'keywords' => $this->getMetadata('subjects')
+                'keywords' => $this->getMetadata('subjects'),
+                'title_translations' => $this->getMetadata('title_translations')
             ],
             Episciences_Paper_XmlExportManager::DATABASE_KEY => [
                 'current' => [
@@ -2079,13 +2080,13 @@ class Episciences_Paper
 
             $currentMeta = $metadata[$name];
 
-            if ($name === 'subjects') {
+            if ($name === 'subjects' || $name === 'title_translations') {
                 $processedResult = [];
                 foreach ($currentMeta as $index => $value) {
                     if (is_array($value)) {
-                        $this->processArraySubject($value, $processedResult);
+                        $this->processArrayValueByLanguage($value, $processedResult);
                     } else {
-                        $this->processSingleSubject($index, $value, $processedResult);
+                        $this->processSingleValueByLanguage($index, $value, $processedResult);
                     }
                 }
 
@@ -2130,6 +2131,8 @@ class Episciences_Paper
             $metadata['publication_date'] = Episciences_Tools::xpath($xml, '/episciences/publication_date');
             $metadata['version'] = Episciences_Tools::xpath($xml, '/episciences/version');
             $metadata['title'] = Episciences_Tools::xpath($xml, '//dc:title', true);
+            // unlike 'title', keeps every <dc:title> node, including duplicate xml:lang values (e.g. short/long title in the same language)
+            $metadata['title_translations'] = Episciences_Tools::xpath($xml, '//dc:title', true, false);
             $metadata['description'] = Episciences_Tools::xpath($xml, '//dc:description', true);
             $metadata['authors'] = Episciences_Tools::xpath($xml, '//dc:creator', true);
             $metadata['subjects'] = Episciences_Tools::xpath($xml, '//dc:subject', true, false);
@@ -2154,10 +2157,10 @@ class Episciences_Paper
         return $this;
     }
 
-    private function processArraySubject($subjectCollection, &$result = []): void
+    private function processArrayValueByLanguage($valueCollection, &$result = []): void
     {
-        foreach ($subjectCollection as $languageCode => $subject) {
-            $subject = trim($subject);
+        foreach ($valueCollection as $languageCode => $value) {
+            $value = trim($value);
             $isStringKey = is_string($languageCode);
             try {
                 $languageCode = ($isStringKey && $translatedKey = Languages::getAlpha2Code($languageCode)) ? $translatedKey : $languageCode;
@@ -2166,17 +2169,17 @@ class Episciences_Paper
             }
 
             if ($isStringKey) {
-                $result[$languageCode][] = $subject;
+                $result[$languageCode][] = $value;
             } else {
-                $result[] = $subject;
+                $result[] = $value;
             }
         }
     }
 
-    private function processSingleSubject($languageCode, $subject, &$result = []): void
+    private function processSingleValueByLanguage($languageCode, $value, &$result = []): void
     {
         $isStringIndex = is_string($languageCode);
-        $subject = trim($subject);
+        $value = trim($value);
         try {
             $languageCode = ($isStringIndex && $translatedIndex = Languages::getAlpha2Code($languageCode)) ? $translatedIndex : $languageCode;
         } catch (MissingResourceException $missingResourceException) {
@@ -2184,9 +2187,9 @@ class Episciences_Paper
         }
 
         if ($isStringIndex) {
-            $result[$languageCode][] = $subject;
+            $result[$languageCode][] = $value;
         } else {
-            $result[] = $subject;
+            $result[] = $value;
         }
     }
 

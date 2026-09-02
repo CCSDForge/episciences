@@ -70,12 +70,19 @@ class NotifySourceRegistryTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // createFromConstants — test environment has empty NOTIFY_TARGET_HAL_INBOX
+    // createFromConstants — only meaningful when NOTIFY_TARGET_HAL_INBOX is empty
     // -------------------------------------------------------------------------
 
     public function testCreateFromConstantsReturnsEmptyRegistryWhenHalInboxIsEmpty(): void
     {
-        // In the test environment NOTIFY_TARGET_HAL_INBOX is defined as '' (see public/const.php).
+        // NOTIFY_TARGET_HAL_INBOX comes from the untracked config/pwd.json (via
+        // public/bdd_const.php), not from anything this test suite controls — even
+        // config/dist-pwd.json and config/dist-dev.pwd.json ship a non-empty
+        // placeholder. Skip rather than fail when this environment has it configured.
+        if (defined('NOTIFY_TARGET_HAL_INBOX') && NOTIFY_TARGET_HAL_INBOX !== '') {
+            self::markTestSkipped('NOTIFY_TARGET_HAL_INBOX is configured in this environment (config/pwd.json); this test only applies when it is empty.');
+        }
+
         $registry = NotifySourceRegistry::createFromConstants();
 
         self::assertNull($registry->findByOriginInbox(''));
