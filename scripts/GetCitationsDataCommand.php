@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
@@ -40,8 +41,10 @@ class GetCitationsDataCommand extends Command
 
         $logger = new Logger('citationsEnrichment');
         $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'citationsEnrichment_' . date('Y-m-d') . '.log', Logger::INFO));
+        $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Logger::INFO);
+            $logger->pushHandler($stdoutHandler);
         }
 
         if ($dryRun) {
@@ -71,7 +74,9 @@ class GetCitationsDataCommand extends Command
 
         $rows  = $db->fetchAll($select);
         $total = count($rows);
-        $io->progressStart($total);
+        $progressBar = $io->createProgressBar($total);
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         foreach ($rows as $value) {
             // getOpenCitationCitedByDoi() now returns ?array directly (no PSR-6 CacheItem)
@@ -79,7 +84,7 @@ class GetCitationsDataCommand extends Command
 
             if ($apiCallCitationCache === null) {
                 $logger->error('OpenCitations API error for DOI ' . $value['DOI']);
-                $io->progressAdvance();
+                $progressBar->advance();
                 continue;
             }
 
@@ -97,10 +102,12 @@ class GetCitationsDataCommand extends Command
                 $logger->info('No citations found for doc ' . $value['DOCID']);
             }
 
-            $io->progressAdvance();
+            $progressBar->advance();
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
         $io->success('Citation data enrichment completed.');
 
         return Command::SUCCESS;

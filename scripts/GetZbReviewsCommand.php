@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -43,8 +44,10 @@ class GetZbReviewsCommand extends Command
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'zbReviews_' . date('Y-m-d') . '.log', Logger::INFO
         ));
+        $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Logger::INFO);
+            $logger->pushHandler($stdoutHandler);
         }
         if ($dryRun) {
             $io->note('Dry-run mode enabled — no data will be written.');
@@ -77,7 +80,9 @@ class GetZbReviewsCommand extends Command
         $papers = $db->fetchAll($select);
 
         $logger->info('Starting zbMATH reviews discovery for ' . count($papers) . ' papers');
-        $io->progressStart(count($papers));
+        $progressBar = $io->createProgressBar(count($papers));
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         foreach ($papers as $row) {
             $doi   = $row['DOI'];
@@ -108,10 +113,12 @@ class GetZbReviewsCommand extends Command
             } catch (\Throwable $e) {
                 $logger->error("zbMATH review error for DOI {$doi}: " . $e->getMessage());
             }
-            $io->progressAdvance();
+            $progressBar->advance();
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
         $io->success('zbMATH Open reviews discovery completed.');
         return Command::SUCCESS;
     }

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../library/Episciences/Trait/Tools.php';
 
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
@@ -63,9 +64,11 @@ class UpdatePapersDocumentCommand extends Command
         ));
 
         // In JSON mode stdout must stay clean for piping to jq — log to stderr only.
+        $stdoutHandler = null;
         if (!$io->isQuiet()) {
             $handle = $isJsonOutput ? 'php://stderr' : 'php://stdout';
-            $logger->pushHandler(new StreamHandler($handle, Logger::INFO));
+            $stdoutHandler = new ProgressAwareStreamHandler($handle, Logger::INFO);
+            $logger->pushHandler($stdoutHandler);
         }
 
         // bootstrap() skips $application->bootstrap(), so AppRegistry's 'appLogger' is never
@@ -119,8 +122,11 @@ class UpdatePapersDocumentCommand extends Command
 
         $logger->info(sprintf('Total pages: %d', $totalPages));
 
+        $progressBar = null;
         if (!$isJsonOutput) {
-            $io->progressStart($count);
+            $progressBar = $io->createProgressBar($count);
+            $stdoutHandler?->setProgressBar($progressBar);
+            $progressBar->start();
         }
 
         for ($page = 1; $page <= $totalPages; $page++) {
@@ -160,7 +166,7 @@ class UpdatePapersDocumentCommand extends Command
                     $failureCount++;
 
                     if (!$isJsonOutput) {
-                        $io->progressAdvance();
+                        $progressBar->advance();
                     }
 
                     continue;
@@ -185,7 +191,7 @@ class UpdatePapersDocumentCommand extends Command
                         $logger->warning(sprintf('[DOCID %d] toJson() returned null — skipped.', $docId));
 
                         if (!$isJsonOutput) {
-                            $io->progressAdvance();
+                            $progressBar->advance();
                         }
 
                         continue;
@@ -212,7 +218,7 @@ class UpdatePapersDocumentCommand extends Command
                 }
 
                 if (!$isJsonOutput) {
-                    $io->progressAdvance();
+                    $progressBar->advance();
                 }
             }
 
@@ -243,7 +249,9 @@ class UpdatePapersDocumentCommand extends Command
         }
 
         if (!$isJsonOutput) {
-            $io->progressFinish();
+            $progressBar->finish();
+            $stdoutHandler?->setProgressBar(null);
+            $io->newLine();
         }
 
         $summary = sprintf(

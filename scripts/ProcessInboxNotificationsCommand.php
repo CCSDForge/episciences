@@ -17,6 +17,7 @@ use Episciences\Notify\NotifySourceConfig;
 use Episciences\Notify\NotifySourceRegistry;
 use Episciences\Notify\PayloadValidator;
 use Episciences\Notify\PreprintUrlParser;
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
@@ -101,8 +102,10 @@ class ProcessInboxNotificationsCommand extends Command
             Logger::DEBUG
         ));
 
+        $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Logger::INFO);
+            $logger->pushHandler($stdoutHandler);
         }
 
         \Episciences\AppRegistry::set('appLogger', $logger);
@@ -159,7 +162,9 @@ class ProcessInboxNotificationsCommand extends Command
 
         $registry = NotifySourceRegistry::createFromConstants();
 
-        $io->progressStart($count);
+        $progressBar = $io->createProgressBar($count);
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         $successCount  = 0;
         $failedCount   = 0;
@@ -215,10 +220,12 @@ class ProcessInboxNotificationsCommand extends Command
                 ]);
             }
 
-            $io->progressAdvance();
+            $progressBar->advance();
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
 
         $io->table(
             ['Total', 'Succeeded', 'Outdated', 'Failed', 'Deleted from inbox'],

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
@@ -72,8 +73,10 @@ class ExtractBiblioRefsCommand extends Command
             EPISCIENCES_LOG_PATH . 'extractBiblioRefs_' . date('Y-m-d') . '.log',
             Logger::INFO
         ));
+        $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Logger::INFO);
+            $logger->pushHandler($stdoutHandler);
         }
 
         if ($dryRun) {
@@ -138,7 +141,9 @@ class ExtractBiblioRefsCommand extends Command
         $failed           = 0;
         $skipped          = 0;
 
-        $io->progressStart($total);
+        $progressBar = $io->createProgressBar($total);
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         foreach ($rows as $row) {
             $paperDocId = (int) $row['DOCID'];
@@ -149,7 +154,7 @@ class ExtractBiblioRefsCommand extends Command
             if ((int) $row['REPOID'] === 0) {
                 $logger->info(sprintf('DOCID %d — temporary version, skipped', $paperDocId));
                 $skipped++;
-                $io->progressAdvance();
+                $progressBar->advance();
                 continue;
             }
 
@@ -180,14 +185,14 @@ class ExtractBiblioRefsCommand extends Command
             if ($articleUrl === '') {
                 $logger->warning(sprintf('DOCID %d — could not determine article URL (REPOID %d), skipping', $paperDocId, (int) $row['REPOID']));
                 $failed++;
-                $io->progressAdvance();
+                $progressBar->advance();
                 continue;
             }
 
             if ($dryRun) {
                 $source = $isPublished ? 'journal' : 'archive';
                 $logger->info(sprintf('[dry-run] Would call /api/extract for DOCID %d [%s] — %s', $paperDocId, $source, $articleUrl));
-                $io->progressAdvance();
+                $progressBar->advance();
                 continue;
             }
 
@@ -207,10 +212,12 @@ class ExtractBiblioRefsCommand extends Command
                 $extracted++;
             }
 
-            $io->progressAdvance();
+            $progressBar->advance();
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
 
         if (!$dryRun) {
             $logger->info(sprintf(

@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -44,8 +45,10 @@ class GetFundingDataCommand extends Command
 
         $logger = new Logger('fundingEnrichment');
         $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'fundingEnrichment_' . date('Y-m-d') . '.log', Logger::INFO));
+        $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Logger::INFO);
+            $logger->pushHandler($stdoutHandler);
         }
 
         if ($dryRun) {
@@ -91,7 +94,9 @@ class GetFundingDataCommand extends Command
         }
 
         $logger->info('Starting funding enrichment for ' . count($rows) . ' papers');
-        $io->progressStart(count($rows));
+        $progressBar = $io->createProgressBar(count($rows));
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         $oaClient = \Episciences\Api\OpenAireApiClient::create();
         $logger->info($oaClient->isAuthenticated()
@@ -193,10 +198,12 @@ class GetFundingDataCommand extends Command
                 }
             }
 
-            $io->progressAdvance();
+            $progressBar->advance();
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
         $io->success('Funding data enrichment completed.');
         $logger->info('Funding enrichment completed');
 
