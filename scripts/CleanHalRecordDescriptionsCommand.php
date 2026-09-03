@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
@@ -63,8 +64,10 @@ class CleanHalRecordDescriptionsCommand extends Command
             Logger::INFO
         ));
 
+        $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Logger::INFO);
+            $logger->pushHandler($stdoutHandler);
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -101,7 +104,9 @@ class CleanHalRecordDescriptionsCommand extends Command
         $untouchedIds = [];
         $failureCount = 0;
 
-        $io->progressStart($candidates);
+        $progressBar = $io->createProgressBar($candidates);
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         for ($page = 1; $page <= $totalPages; $page++) {
             $paginator->setCurrentPageNumber($page);
@@ -133,7 +138,7 @@ class CleanHalRecordDescriptionsCommand extends Command
                     $pageUpdates[$docId] = $cleaned;
                 }
 
-                $io->progressAdvance();
+                $progressBar->advance();
             }
 
             if ($pageUpdates === []) {
@@ -166,7 +171,9 @@ class CleanHalRecordDescriptionsCommand extends Command
             }
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
 
         $logger->info(sprintf(
             'Candidates: %d | Modified: %d | Untouched: %d | Failures: %d%s',

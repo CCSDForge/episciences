@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -46,8 +47,10 @@ class GetLinkDataCommand extends Command
 
         $logger = new Logger('linkEnrichment');
         $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'linkEnrichment_' . date('Y-m-d') . '.log', Logger::INFO));
+        $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Logger::INFO);
+            $logger->pushHandler($stdoutHandler);
         }
 
         if ($dryRun) {
@@ -80,7 +83,9 @@ class GetLinkDataCommand extends Command
         }
 
         $rows = $db->fetchAll($select);
-        $io->progressStart(count($rows));
+        $progressBar = $io->createProgressBar(count($rows));
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         foreach ($rows as $value) {
             $docId   = (int) $value['DOCID'];
@@ -110,7 +115,7 @@ class GetLinkDataCommand extends Command
                     ])->getBody()->getContents();
                 } catch (GuzzleException $e) {
                     $logger->error('Scholexplorer API error for DOI ' . $doiTrim . ': ' . $e->getMessage());
-                    $io->progressAdvance();
+                    $progressBar->advance();
                     continue;
                 }
 
@@ -124,7 +129,7 @@ class GetLinkDataCommand extends Command
 
             $decoded = json_decode($apiResult, true, 512, JSON_THROW_ON_ERROR);
             if (empty($decoded)) {
-                $io->progressAdvance();
+                $progressBar->advance();
                 sleep(1);
                 continue;
             }
@@ -179,11 +184,13 @@ class GetLinkDataCommand extends Command
                 }
             }
 
-            $io->progressAdvance();
+            $progressBar->advance();
             sleep(1);
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
         $io->success('Link data enrichment completed.');
 
         return Command::SUCCESS;
