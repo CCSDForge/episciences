@@ -37,7 +37,7 @@ class GetDoiCommand extends Command
             ->addOption('check',            null, InputOption::VALUE_NONE,     'Check Crossref submission status')
             ->addOption('update',           null, InputOption::VALUE_NONE,     'Re-send metadata to Crossref for already-registered DOIs (free update)')
             ->addOption('fetch-journals',   null, InputOption::VALUE_NONE,     'Fetch active journals list from the API')
-            ->addOption('dry-run',          null, InputOption::VALUE_NONE,     'Use Crossref test API instead of production');
+            ->addOption('dry-run',          null, InputOption::VALUE_NONE,     'Simulate without writing: no DOI assigned/saved for --assign-*, Crossref test API used for --request/--check/--update');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -56,7 +56,7 @@ class GetDoiCommand extends Command
         }
 
         if ($dryRun) {
-            $io->note('Dry-run mode — using Crossref test API.');
+            $io->note('Dry-run mode — no DOI will be assigned/saved; Crossref calls (if any) use the test API.');
         }
 
         $http = new Client();
@@ -84,6 +84,14 @@ class GetDoiCommand extends Command
         $review->loadSettings();
         $doiSettings = $review->getDoiSettings();
 
+        // Episciences_PapersManager::getList() falls back to the global RVID constant
+        // whenever its 'is' filter doesn't carry an (uppercase) 'RVID' key — which is
+        // exactly the shape assignDois() below passes. Without this, that fallback hits
+        // an undefined constant and fatals with no console-visible error message.
+        if (!defined('RVID')) {
+            define('RVID', $review->getRvid());
+        }
+
         $this->setJournalConstants($review->getCode(), $io);
 
         $crossrefClient = new CrossrefSubmissionApiClient(
@@ -98,11 +106,11 @@ class GetDoiCommand extends Command
         );
 
         if ($input->getOption('assign-accepted')) {
-            return $this->assignDois(Episciences_Paper::STATUS_ACCEPTED, $io, $review, $doiSettings, $logger);
+            return $this->assignDois(Episciences_Paper::STATUS_ACCEPTED, $io, $review, $doiSettings, $logger, $dryRun);
         }
 
         if ($input->getOption('assign-published')) {
-            return $this->assignDois(Episciences_Paper::STATUS_PUBLISHED, $io, $review, $doiSettings, $logger);
+            return $this->assignDois(Episciences_Paper::STATUS_PUBLISHED, $io, $review, $doiSettings, $logger, $dryRun);
         }
 
         if ($input->getOption('request')) {
@@ -172,7 +180,8 @@ class GetDoiCommand extends Command
         SymfonyStyle                   $io,
         Episciences_Review             $review,
         Episciences_Review_DoiSettings $doiSettings,
-        Logger                         $logger
+        Logger                         $logger,
+        bool                           $dryRun = false
     ): int {
         $rvid   = $review->getRvid();
         $rvcode = $review->getCode();
@@ -192,6 +201,14 @@ class GetDoiCommand extends Command
             }
 
             $doi = $doiSettings->createDoiWithTemplate($paper, $rvcode);
+
+            if ($dryRun) {
+                $assigned++;
+                $logger->info(sprintf('[dry-run] Would assign %s to paper #%d (%d/%d)', $doi, $paper->getPaperId(), $assigned, $total));
+                $io->progressAdvance();
+                continue;
+            }
+
             $paper->setDoi($doi);
             $paper->save();
 
@@ -214,7 +231,7 @@ class GetDoiCommand extends Command
         }
 
         $io->progressFinish();
-        $io->success(sprintf('Assigned %d DOI(s) for journal %s.', $assigned, $rvcode));
+        $io->success(sprintf('%s %d DOI(s) for journal %s.', $dryRun ? 'Would assign' : 'Assigned', $assigned, $rvcode));
         return Command::SUCCESS;
     }
 
@@ -280,9 +297,11 @@ class GetDoiCommand extends Command
 
             try {
                 $response = $crossrefClient->postMetadata($body, $xmlFileName, $dryRun);
-                $doiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_REQUESTED);
-                Episciences_Paper_DoiQueueManager::update($doiQueue);
-                $logger->info(sprintf('%s: Crossref answered: %s', $rvcode, $response->getBody()));
+                if (!$dryRun) {
+                    $doiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_REQUESTED);
+                    Episciences_Paper_DoiQueueManager::update($doiQueue);
+                }
+                $logger->info(sprintf('%s%s: Crossref answered: %s', $dryRun ? '[dry-run] ' : '', $rvcode, $response->getBody()));
             } catch (GuzzleException $e) {
                 $logger->error("Crossref submission failed for paper #{$paperId}: " . $e->getMessage());
             }
@@ -357,9 +376,13 @@ class GetDoiCommand extends Command
             }
 
             if ($result->isSuccess() && $doiQueue->getDoi_status() !== Episciences_Paper_DoiQueue::STATUS_PUBLIC) {
-                $doiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_PUBLIC);
-                Episciences_Paper_DoiQueueManager::update($doiQueue);
-                $logger->info("Paper #{$paperId}: DOI status is now public.");
+                if ($dryRun) {
+                    $logger->info("[dry-run] Paper #{$paperId}: DOI status would become public.");
+                } else {
+                    $doiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_PUBLIC);
+                    Episciences_Paper_DoiQueueManager::update($doiQueue);
+                    $logger->info("Paper #{$paperId}: DOI status is now public.");
+                }
             } elseif ($result->doiFound && !$result->isSuccess()) {
                 $logger->warning(sprintf('Paper #%d: DOI not confirmed as successful (status: %s).', $paperId, $result->doiStatus));
             }
@@ -450,11 +473,13 @@ class GetDoiCommand extends Command
 
             try {
                 $response = $crossrefClient->postMetadata($body, $xmlFileName, $dryRun);
-                /** @var Episciences_Paper_DoiQueue $doiQueue */
-                $doiQueue = $doiToProcess['doiq'];
-                $doiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_UPDATE_PENDING);
-                Episciences_Paper_DoiQueueManager::update($doiQueue);
-                $logger->info(sprintf('%s: Crossref answered: %s', $rvcode, $response->getBody()));
+                if (!$dryRun) {
+                    /** @var Episciences_Paper_DoiQueue $doiQueue */
+                    $doiQueue = $doiToProcess['doiq'];
+                    $doiQueue->setDoi_status(Episciences_Paper_DoiQueue::STATUS_UPDATE_PENDING);
+                    Episciences_Paper_DoiQueueManager::update($doiQueue);
+                }
+                $logger->info(sprintf('%s%s: Crossref answered: %s', $dryRun ? '[dry-run] ' : '', $rvcode, $response->getBody()));
             } catch (GuzzleException $e) {
                 $logger->error("Crossref update failed for paper #{$currentPaperId}: " . $e->getMessage());
             }
