@@ -245,5 +245,18 @@ final class ImportPapersCommand extends Command
 
         Zend_Registry::set('metadataSources', Episciences_Paper_MetaDataSourcesManager::all(false));
         Zend_Registry::set('Zend_Locale', new Zend_Locale('en'));
+
+        // Episciences_Translation_Plugin (which normally registers Zend_Translate) only runs on
+        // a real HTTP dispatch, never here. Without this, lockJournal()'s addTranslation() call
+        // hits Zend_Registry::get('Zend_Translate') on an unregistered key and fails hard for any
+        // journal that has custom translations under REVIEW_PATH/languages.
+        if (!Zend_Registry::isRegistered('Zend_Translate')) {
+            Zend_Registry::set('Zend_Translate', new Zend_Translate([
+                'adapter' => Zend_Translate::AN_ARRAY,
+                'content' => ['' => ''],
+                'locale' => 'en',
+            ]));
+        }
+        Zend_Registry::isRegistered('lang') || Zend_Registry::set('lang', 'en');
     }
 }
