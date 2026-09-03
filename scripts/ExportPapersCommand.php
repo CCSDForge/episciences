@@ -42,7 +42,10 @@ final class ExportPapersCommand extends Command
             ->addOption('year', null, InputOption::VALUE_REQUIRED, 'Only export papers published in this year')
             ->addOption('docid', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Only export this docid (repeatable)')
             ->addOption('identifier', null, InputOption::VALUE_REQUIRED, 'Only export papers matching this archive identifier')
-            ->addOption('version', null, InputOption::VALUE_REQUIRED, 'Only export this version of --identifier (ignored without --identifier)')
+            // Named 'paper-version', not 'version': Symfony's Application reserves --version/-V
+            // globally, so a command-local option of that exact name fatals every invocation
+            // ("An option named 'version' already exists.") the moment it's registered.
+            ->addOption('paper-version', null, InputOption::VALUE_REQUIRED, 'Only export this version of --identifier (ignored without --identifier)')
             ->addOption('status', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Only export papers with this status (repeatable)')
             ->addOption('repoid', null, InputOption::VALUE_REQUIRED, 'Only export papers from this source repository')
             ->addOption('uid', null, InputOption::VALUE_REQUIRED, 'Only export papers submitted by this user')
@@ -95,7 +98,7 @@ final class ExportPapersCommand extends Command
             'year' => $input->getOption('year'),
             'docid' => $input->getOption('docid'),
             'identifier' => $input->getOption('identifier'),
-            'version' => $input->getOption('version'),
+            'version' => $input->getOption('paper-version'),
             'status' => $input->getOption('status'),
             'repoid' => $input->getOption('repoid'),
             'uid' => $input->getOption('uid'),
@@ -104,7 +107,7 @@ final class ExportPapersCommand extends Command
         ], $review->getRvid());
 
         if ($filters->versionIgnored) {
-            $logger->warning('--version given without --identifier — ignored (a version alone does not uniquely identify a paper)');
+            $logger->warning('--paper-version given without --identifier — ignored (a version alone does not uniquely identify a paper)');
         }
 
         $handle = @fopen($csvFile, 'wb');

@@ -4,6 +4,7 @@ namespace unit\scripts;
 
 use ExportPapersCommand;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputDefinition;
 
 require_once __DIR__ . '/../../../scripts/ExportPapersCommand.php';
@@ -18,6 +19,23 @@ class ExportPapersCommandTest extends TestCase
     public function testCommandName(): void
     {
         $this->assertSame('export:papers', (new ExportPapersCommand())->getName());
+    }
+
+    /**
+     * A command-local option sharing a name with one of the Application's own
+     * (--version, --help, --quiet, ...) fatals every real invocation via console.php
+     * with "An option named '...' already exists.", but getDefinition() alone — used by
+     * the other tests below — never exercises that merge, so it wouldn't have caught it.
+     */
+    public function testCommandDefinitionDoesNotCollideWithApplicationOptions(): void
+    {
+        $application = new Application();
+        $application->add(new ExportPapersCommand());
+
+        $command = $application->find('export:papers');
+        $command->mergeApplicationDefinition();
+
+        $this->addToAssertionCount(1);
     }
 
     public function testCommandHasRvidOption(): void
@@ -45,7 +63,7 @@ class ExportPapersCommandTest extends TestCase
             'section-id' => ['section-id'],
             'year' => ['year'],
             'identifier' => ['identifier'],
-            'version' => ['version'],
+            'paper-version' => ['paper-version'],
             'repoid' => ['repoid'],
             'uid' => ['uid'],
             'sql-where' => ['sql-where'],
