@@ -150,6 +150,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgrade `@fortawesome/fontawesome-free` to 7.3.0 and `tinymce` to 8.7.0.
+- Self-host all third-party vendor assets (jQuery, jQuery UI, DOMPurify, Tom Select, SortableJS, TinyMCE, MathJax, Bootstrap, Font Awesome, Cookie Consent, Bootbox, Chart.js, DataTables) via Webpack bundles instead of loading them from external CDNs (like `cdnjs`).
+- Upgrade MathJax from v2.7.7 to v4.1.3 (self-hosted).
+- Replace archived jQuery File Upload with FilePond.
+- Replace `jquery.fastLiveFilter` with vanilla JS implementation.
+- Remove `jquery-url-parser` (`purl`) dependency in favor of vanilla `parseUrl()`.
 - Remove redundant per-type add buttons in linked-data panels.
 - Add Subresource Integrity (SRI) to CDN-hosted `cookieconsent.min.js`.
 - Remove flag emojis from language-switcher dropdown links.
@@ -184,6 +190,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Performances
 
+- Skip loading editor-only JavaScript assets (TinyMCE, FilePond, etc.) on the paper view page for anonymous visitors to reduce page load size by ~1MB.
 - Eliminate N+1 query patterns on the volume list page (reducing SQL queries from 894 to ~4).
 - Batch-load mail templates in 2 SQL queries instead of 2×N.
 - Implemented PSR-6 request-scoped caching for database entities (authors, projects, comments, and user assignments repositories) to reduce database queries.
@@ -197,6 +204,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Restore jQuery UI datepicker/autocomplete theme lost during the self-host migration.
+- Bundle jQuery UI's `disable-selection` module to prevent JavaScript errors.
+- Stop double-execution of `bootstrap.min.js` via raw script echo in volumes/sections partial.
+- Correlate the clear-file button by input ID instead of list position.
+- Correct curly apostrophe in English translation key for cover letter notice.
 - Fix PHP 8 compatibility by explicitly declaring `Ccsd_Website_Header::$_langDir` as `string` to prevent fatal type variance errors in subclasses.
 - Fix deprecation warning "Implicit conversion from float to int loses precision" when updating metadata.
 - Fix missing translation caused by a curly apostrophe character (`’`) in templates.
@@ -254,6 +266,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Remove unused `jquery.ui.autocomplete.html.js` vendor dependency.
+- Remove unused `bootstrap-colorpicker` widget (and its `colorpicker` CSS class hooks in `website/style` and `website/header` admin forms) — not self-hosted as part of the vendor asset migration since it had no actual usage.
+- Remove obsolete `cdnjs.cloudflare.com` preconnect and dns-prefetch link tags.
 - [#1088](https://github.com/CCSDForge/episciences/pull/1088) Remove unused `AGENT`, `CITY`, `LAT`, and `LON` columns from the `PAPER_STAT` table and delete the legacy `scripts/stat.php` script (superseded by the `stats:process` console command).
 - Remove obsolete `google/recaptcha` and `neverbehave/hcaptcha` libraries from `composer.json`.
 - Removed obsolete, unused, and deprecated authentication adapters: `Asso`, `DbTable`, `Idp`, `Asso/Ext`, and `Orcid` (`Ccsd/Auth`).

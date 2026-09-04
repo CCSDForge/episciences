@@ -30,8 +30,6 @@ echo $this->doctype('HTML5');
     ?>
     <?php echo $this->headMeta(); ?>
     <?php echo $this->headTitle(); ?>
-    <link href="https://cdnjs.cloudflare.com" rel="preconnect" crossorigin>
-    <link href="https://cdnjs.cloudflare.com" rel="dns-prefetch">
     <link href="https://cas.ccsd.cnrs.fr" rel="dns-prefetch">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20211124">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=20211124">
@@ -51,29 +49,58 @@ echo $this->doctype('HTML5');
     if ($this->cssFile) {
         $this->jQuery()->addStylesheet($this->cssFile);
     }
-    // Episciences Main CSS
+    // Episciences Main CSS (includes Bootstrap, Font Awesome and Cookie Consent, bundled via webpack)
     $this->jQuery()->addStylesheet("/css/main.css");
 
-    $this->jQuery()->addStylesheet(VENDOR_BOOTSTRAP);
-    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME);
-    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_SOLID);
-    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_BRAND);
-    $this->jQuery()->addStylesheet(VENDOR_COOKIE_CONSENT_CSS);
-
-
     // JS
+    // jQuery / jQuery UI: self-hosted via webpack (see assets/jquery.js, assets/jquery-ui.js). Still
+    // rendered through enable()/UiEnable() rather than webpackAssets()->queueScript(), because the
+    // RENDER_LIBRARY block is guaranteed to render before any page's own addJavascriptFile() sources
+    // (view scripts run, and can queue their own JS, before the layout does) — see
+    // Episciences_View_Helper_JQuery_Container::_renderScriptTags().
+    $this->jQuery()->enable()->UiEnable();
     $this->jQuery()->addJavascriptFile("/js/translation.php?lang=" . Zend_Registry::get('lang'));
-    $this->jQuery()->addJavascriptFile(VENDOR_BOOTBOX);
     $this->jQuery()->addJavascriptFile("/js/functions.js");
     $this->jQuery()->addJavascriptFile("/js/form.js");
-    $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_URL_PARSER);
-    $this->jQuery()->setLocalPath(VENDOR_JQUERY)->enable();
-    $this->jQuery()->setUiLocalPath(VENDOR_JQUERY_UI)->UiEnable();
-    $this->jQuery()->addJavascriptFile(VENDOR_BOOTSTRAP_JS);
+    // Episciences Main JS bundle (Bootstrap, Bootbox, Cookie Consent, bundled via webpack). Queued via
+    // the jQuery container so it inherits its APPLICATION_VERSION cache-busting (see
+    // Episciences_View_Helper_JQuery_Container).
+    $this->getHelper('webpackAssets')->queueScript('app');
     echo $this->jQuery();
     ?>
+    <script>
+        // MathJax v3+ requires this configuration to be set on window.MathJax before the library script
+        // loads — the old <script type="text/x-mathjax-config"> block is no longer supported.
+        // loader.paths.fonts points at the self-hosted font package (see webpack.config.js /
+        // public/const.php) since MathJax otherwise fetches its default font from cdn.jsdelivr.net.
+        // Turns off the accessibility Web Worker MathJax v4 spawns by default (absent in v2) — its
+        // per-language speech-rule data isn't self-hostable without errors as of 4.1.3 (worker crashes
+        // loading mathmaps even when served from the same origin), so this keeps v2's behavior instead
+        // of shipping a broken feature. The enableSpeech/enableBraille/enableEnrichment options flags
+        // alone don't reliably stop it — the "menu" sub-component reasserts its own defaults after
+        // startup regardless of what's configured here — so the "attachSpeech" render action itself is
+        // removed instead (MathJax's documented way to disable a render step: set it to []).
+        window.MathJax = {
+            loader: {
+                paths: {fonts: '<?php echo VENDOR_MATHJAX_FONTS_PATH ?>'}
+            },
+            output: {
+                font: 'mathjax-newcm'
+            },
+            options: {
+                enableSpeech: false,
+                enableBraille: false,
+                enableEnrichment: false,
+                renderActions: {
+                    attachSpeech: []
+                }
+            },
+            tex: {
+                inlineMath: [['$', '$'], ['$$', '$$']]
+            }
+        };
+    </script>
     <script src="<?php echo VENDOR_MATHJAX ?>" async></script>
-    <script type='text/x-mathjax-config'>MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['$$','$$']]}});</script>
 </head>
 
 <body>
@@ -161,9 +188,6 @@ echo $this->doctype('HTML5');
         echo $this->render('commons/matomo.phtml');
     }
     ?>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent/3.1.1/cookieconsent.min.js"
-            integrity="sha512-yXXqOFjdjHNH1GND+1EO0jbvvebABpzGKD66djnUfiKlYME5HGMUJHoCaeE4D5PTG2YsSJf6dwqyUUvQvS0vaA=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         window.cookieconsent.initialise({
             "palette": {

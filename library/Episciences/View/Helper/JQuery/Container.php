@@ -73,22 +73,39 @@ class Episciences_View_Helper_JQuery_Container extends ZendX_JQuery_View_Helper_
     /**
      * Renders all javascript file related stuff of the jQuery enviroment.
      *
+     * jQuery / jQuery UI are self-hosted via webpack (see assets/jquery.js, assets/jquery-ui.js) rather
+     * than a single CDN/local URL, so unlike the base ZendX behaviour this can emit several <script>
+     * tags (webpack's runtime.js chunk plus the entry itself) for what used to be one "library" tag.
+     * This still renders as part of RENDER_LIBRARY so it's guaranteed to appear before any page's own
+     * addJavascriptFile() sources — those are queued from view scripts, which run before the layout,
+     * so without this ordering guarantee page scripts could load before jQuery does.
+     *
      * @return string
      */
     protected function _renderScriptTags(): string
     {
 
         $scriptTags = '';
-        if (($this->getRenderMode() & ZendX_JQuery::RENDER_LIBRARY) > 0) {
-            $source = $this->_getJQueryLibraryPath();
-            $source = self::addApplicationVersionToUrl($source);
+        $seenUrls = [];
+        $emitScript = function (string $url) use (&$scriptTags, &$seenUrls) {
+            if (isset($seenUrls[$url])) {
+                return;
+            }
+            $seenUrls[$url] = true;
+            $scriptTags .= '<script src="' . self::addApplicationVersionToUrl($url) . '"></script>' . PHP_EOL;
+        };
 
-            $scriptTags .= '<script src="' . $source . '"></script>' . PHP_EOL;
+        if (($this->getRenderMode() & ZendX_JQuery::RENDER_LIBRARY) > 0) {
+            $webpackAssets = new Episciences_View_Helper_WebpackAssets();
+
+            foreach ($webpackAssets->getEntryUrls('jquery') as $url) {
+                $emitScript($url);
+            }
 
             if ($this->uiIsEnabled()) {
-                $uiPath = $this->_getJQueryUiLibraryPath();
-                $uiPath = self::addApplicationVersionToUrl($uiPath);
-                $scriptTags .= '<script src="' . $uiPath . '"></script>' . PHP_EOL;
+                foreach ($webpackAssets->getEntryUrls('jquery-ui') as $url) {
+                    $emitScript($url);
+                }
             }
 
             if (ZendX_JQuery_View_Helper_JQuery::getNoConflictMode() == true) {
@@ -97,9 +114,11 @@ class Episciences_View_Helper_JQuery_Container extends ZendX_JQuery_View_Helper_
         }
 
         if (($this->getRenderMode() & ZendX_JQuery::RENDER_SOURCES) > 0) {
+            // De-duplicated against the library block above: webpack entries queued here (e.g. 'app')
+            // can share files with jquery/jquery-ui (namely runtime.js), which would otherwise load —
+            // and re-execute — twice.
             foreach ($this->getJavascriptFiles() as $javascriptFile) {
-                $javascriptFile = self::addApplicationVersionToUrl($javascriptFile);
-                $scriptTags .= '<script src="' . $javascriptFile . '"></script>' . PHP_EOL;
+                $emitScript($javascriptFile);
             }
         }
 

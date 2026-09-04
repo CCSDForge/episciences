@@ -14,6 +14,7 @@ global.getLoader = jest.fn().mockReturnValue('<span class="loader"></span>');
 global.nl2br = jest.fn((val) => val);
 global.createUserAutocomplete = jest.fn().mockReturnValue({ inputId: 'autocomplete' });
 global.clearErrors = jest.fn();
+global.parseUrl = jest.fn(() => ({ param: (name) => '42' }));
 
 // Mock TinyMCE
 const mockTinyMCEEditor = {
@@ -222,11 +223,6 @@ const jQueryMock = (selector) => {
                 return params.toString();
             }
             return '';
-        },
-        url: function () {
-            return {
-                param: (name) => '42'
-            };
         },
         dataTable: function (opts) {
             return this;

@@ -29,11 +29,129 @@ Encore
      */
     .addEntry('app', './assets/app.js')
     .addEntry('altcha', './assets/altcha.js')
+    // jQuery / jQuery UI: self-hosted via webpack but loaded as plain global <script> tags through
+    // VENDOR_JQUERY / VENDOR_JQUERY_UI (see public/const.php and layout.phtml), not queued via
+    // webpackAssets()->queueScript(). Each sets/uses window.jQuery so non-bundled inline scripts and
+    // ZendX_JQuery_Form_Element widgets keep working against one shared instance — see
+    // addExternals() below and assets/jquery.js / assets/jquery-ui.js.
+    .addEntry('jquery', './assets/jquery.js')
+    .addEntry('jquery-ui', './assets/jquery-ui.js')
+    // CSS-only entries for vendor libraries only needed on specific pages (not the whole site),
+    // loaded on demand via webpackAssets()->queueStylesheet() where used.
+    .addEntry('datatables-bootstrap', './assets/datatables-bootstrap.js')
+    .addEntry('chartjs', './assets/chartjs.js')
+    .addEntry('sortablejs', './assets/sortablejs.js')
+    .addEntry('filepond', './assets/filepond.js')
+    .addEntry('jquery-ui-theme', './assets/jquery-ui-theme.js')
+    .addEntry('dompurify', './assets/dompurify.js')
+    .addEntry('tom-select', './assets/tom-select.js')
     //.addEntry('page1', './assets/page1.js')
     //.addEntry('page2', './assets/page2.js')
 
+    // TinyMCE: self-hosted (previously loaded from cdnjs via VENDOR_TINYMCE, see public/const.php)
+    // but NOT bundled as an addEntry() — TinyMCE dynamically fetches its own theme/model/icons/plugins
+    // /skin siblings at runtime via plain string concatenation off its own script URL, so it must be
+    // copied as-is rather than tree-shaken through webpack's module graph. Only the pieces actually
+    // used (theme "silver", model "dom", icons "default", skin "oxide", plugins "link image code
+    // fullscreen table" — see Ccsd_Form_Decorator_FormTinymce / FormControls and
+    // public/js/tinymce/tinymce_patch.js) are copied, keeping the same on-disk layout TinyMCE expects
+    // relative to tinymce.min.js. None of the "to" patterns use [hash] so filenames stay literal —
+    // TinyMCE's own loader doesn't consult entrypoints.json/manifest.json to resolve them.
+    .copyFiles({
+        from: './node_modules/tinymce',
+        to: 'tinymce/[name].[ext]',
+        pattern: /tinymce\.min\.js$/,
+        includeSubdirectories: false
+    })
+    .copyFiles({
+        from: './node_modules/tinymce/themes/silver',
+        to: 'tinymce/themes/silver/[name].[ext]',
+        pattern: /theme\.min\.js$/
+    })
+    .copyFiles({
+        from: './node_modules/tinymce/models/dom',
+        to: 'tinymce/models/dom/[name].[ext]',
+        pattern: /model\.min\.js$/
+    })
+    .copyFiles({
+        from: './node_modules/tinymce/icons/default',
+        to: 'tinymce/icons/default/[name].[ext]',
+        pattern: /icons\.min\.js$/
+    })
+    .copyFiles({
+        from: './node_modules/tinymce/skins/ui/oxide',
+        to: 'tinymce/skins/ui/oxide/[name].[ext]',
+        pattern: /(skin|content)\.min\.css$/
+    })
+    .copyFiles({
+        from: './node_modules/tinymce/skins/content/default',
+        to: 'tinymce/skins/content/default/[name].[ext]',
+        pattern: /content\.min\.css$/
+    })
+    .copyFiles([
+        { from: './node_modules/tinymce/plugins/link', to: 'tinymce/plugins/link/[name].[ext]', pattern: /plugin\.min\.js$/ },
+        { from: './node_modules/tinymce/plugins/image', to: 'tinymce/plugins/image/[name].[ext]', pattern: /plugin\.min\.js$/ },
+        { from: './node_modules/tinymce/plugins/code', to: 'tinymce/plugins/code/[name].[ext]', pattern: /plugin\.min\.js$/ },
+        { from: './node_modules/tinymce/plugins/fullscreen', to: 'tinymce/plugins/fullscreen/[name].[ext]', pattern: /plugin\.min\.js$/ },
+        { from: './node_modules/tinymce/plugins/table', to: 'tinymce/plugins/table/[name].[ext]', pattern: /plugin\.min\.js$/ }
+    ])
+
+    // MathJax: self-hosted (previously loaded from cdnjs via VENDOR_MATHJAX, see public/const.php),
+    // NOT bundled as an addEntry() for the same reason as TinyMCE above. tex-mml-chtml.js resolves its
+    // font glyphs at runtime by string concatenation off window.MathJax.loader.paths.fonts (see
+    // layout.phtml), which defaults to cdn.jsdelivr.net if left unset — so both the script and its
+    // font package must be copied, or math rendering silently keeps depending on a third-party CDN
+    // that copying the script alone doesn't remove. Only the "chtml" subtree of the font package is
+    // needed (woff2 glyph files + the "dynamic" chunks MathJax fetches on demand for less common
+    // character ranges) since svg/cjs/mjs outputs aren't used. Its accessibility Web Worker (speech
+    // generation, on by default in v4, absent in v2) is turned off instead of self-hosted — see the
+    // options block in layout.phtml — because its speech-rule data loading crashes even when served
+    // from the same origin as of 4.1.3.
+    .copyFiles({
+        from: './node_modules/mathjax',
+        to: 'mathjax/[name].[ext]',
+        // The npm package ships tex-mml-chtml.js unsuffixed but already minified/bundled (byte-identical
+        // to cdnjs's tex-mml-chtml.min.js up to build metadata) — there's no separate ".min.js" to match.
+        pattern: /tex-mml-chtml\.js$/,
+        includeSubdirectories: false
+    })
+    .copyFiles({
+        from: './node_modules/@mathjax/mathjax-newcm-font/chtml/woff2',
+        to: 'mathjax-fonts/mathjax-newcm-font/chtml/woff2/[name].[ext]'
+    })
+    .copyFiles({
+        from: './node_modules/@mathjax/mathjax-newcm-font/chtml/dynamic',
+        to: 'mathjax-fonts/mathjax-newcm-font/chtml/dynamic/[name].[ext]'
+    })
+
+    // Any other bundled jQuery plugin (Bootstrap JS, DataTables, bootbox) must attach to the global
+    // jQuery instance set up by assets/jquery.js rather than bundling its own private copy — otherwise
+    // plugins wouldn't be visible to non-bundled inline scripts calling $(...).plugin(). FilePond is
+    // standalone and has no such requirement (see assets/filepond.js).
+    .addExternals({ jquery: 'jQuery' })
+
     // When enabled, Webpack "splits" your files into smaller pieces for greater optimization.
     .splitEntryChunks()
+
+    // Layout templates reference each entry's CSS output as a single static file (e.g. /css/main.css,
+    // symlinked to build/app.css) rather than through entrypoints.json, so CSS pulled in from
+    // node_modules (e.g. Bootstrap) must stay merged into that file instead of being split into its
+    // own "vendors-*.css" chunk.
+    .configureSplitChunks((splitChunks) => {
+        splitChunks.cacheGroups = {
+            ...splitChunks.cacheGroups,
+            defaultVendors: {
+                test: /[\\/]node_modules[\\/].*\.js$/,
+                priority: -10,
+                reuseExistingChunk: true,
+                // jquery/jquery-ui are referenced as single static files by VENDOR_JQUERY/VENDOR_JQUERY_UI
+                // (see public/const.php, layout.phtml), not through entrypoints.json like other webpack
+                // entries — so they must stay self-contained single files instead of being split into a
+                // shared vendors chunk that a plain <script src> tag wouldn't know to also load.
+                chunks: (chunk) => chunk.name !== 'jquery' && chunk.name !== 'jquery-ui'
+            }
+        };
+    })
 
     // will require an extra script tag for runtime.js
     // but, you probably want this, unless you're building a single-page app

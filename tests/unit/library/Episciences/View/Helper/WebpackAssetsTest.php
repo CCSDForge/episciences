@@ -6,6 +6,7 @@ namespace unit\library\Episciences\View\Helper;
 
 use Episciences_View_Helper_WebpackAssets;
 use PHPUnit\Framework\TestCase;
+use Zend_View_Interface;
 
 /**
  * @covers Episciences_View_Helper_WebpackAssets
@@ -120,5 +121,155 @@ class WebpackAssetsTest extends TestCase
         $result = $this->helper()->webpackAssets('altcha');
 
         $this->assertStringContainsString('<script src="/build/altcha.js"></script>', $result);
+    }
+
+    public function testGetEntryUrlsReturnsRawJsUrls(): void
+    {
+        $this->writeEntrypoints([
+            'entrypoints' => [
+                'app' => ['js' => ['/build/runtime.js', '/build/app.js']],
+            ],
+        ]);
+
+        $this->assertSame(['/build/runtime.js', '/build/app.js'], $this->helper()->getEntryUrls('app'));
+    }
+
+    public function testGetEntryUrlsReturnsEmptyArrayForUnknownEntry(): void
+    {
+        $this->writeEntrypoints([
+            'entrypoints' => ['app' => ['js' => ['/build/app.js']]],
+        ]);
+
+        $this->assertSame([], $this->helper()->getEntryUrls('unknown'));
+    }
+
+    public function testQueueScriptAddsUrlsToJQueryContainer(): void
+    {
+        $this->writeEntrypoints([
+            'entrypoints' => ['app' => ['js' => ['/build/runtime.js', '/build/app.js']]],
+        ]);
+
+        $jQueryContainer = new WebpackAssetsFakeJQueryContainer();
+        $helper = $this->helper();
+        $helper->setView(new WebpackAssetsFakeView($jQueryContainer));
+
+        $helper->queueScript('app');
+
+        $this->assertSame(['/build/runtime.js', '/build/app.js'], $jQueryContainer->javascriptFiles);
+        $this->assertSame([], $jQueryContainer->stylesheets);
+    }
+
+    public function testQueueStylesheetAddsUrlsToJQueryContainer(): void
+    {
+        $this->writeEntrypoints([
+            'entrypoints' => ['app' => ['css' => ['/build/app.css']]],
+        ]);
+
+        $jQueryContainer = new WebpackAssetsFakeJQueryContainer();
+        $helper = $this->helper();
+        $helper->setView(new WebpackAssetsFakeView($jQueryContainer));
+
+        $helper->queueStylesheet('app');
+
+        $this->assertSame(['/build/app.css'], $jQueryContainer->stylesheets);
+        $this->assertSame([], $jQueryContainer->javascriptFiles);
+    }
+
+    public function testQueueScriptDoesNothingForUnknownEntry(): void
+    {
+        $this->writeEntrypoints([
+            'entrypoints' => ['app' => ['js' => ['/build/app.js']]],
+        ]);
+
+        $jQueryContainer = new WebpackAssetsFakeJQueryContainer();
+        $helper = $this->helper();
+        $helper->setView(new WebpackAssetsFakeView($jQueryContainer));
+
+        $helper->queueScript('unknown');
+
+        $this->assertSame([], $jQueryContainer->javascriptFiles);
+    }
+}
+
+/** Records addJavascriptFile()/addStylesheet() calls, standing in for the real jQuery container. */
+class WebpackAssetsFakeJQueryContainer
+{
+    /** @var list<string> */
+    public array $javascriptFiles = [];
+
+    /** @var list<string> */
+    public array $stylesheets = [];
+
+    public function addJavascriptFile(string $url): self
+    {
+        $this->javascriptFiles[] = $url;
+        return $this;
+    }
+
+    public function addStylesheet(string $url): self
+    {
+        $this->stylesheets[] = $url;
+        return $this;
+    }
+}
+
+/** Minimal Zend_View_Interface stand-in exposing a jQuery() accessor, for testing queueScript()/queueStylesheet(). */
+class WebpackAssetsFakeView implements Zend_View_Interface
+{
+    public function __construct(private readonly WebpackAssetsFakeJQueryContainer $jQueryContainer)
+    {
+    }
+
+    public function jQuery(): WebpackAssetsFakeJQueryContainer
+    {
+        return $this->jQueryContainer;
+    }
+
+    public function getEngine()
+    {
+        return $this;
+    }
+
+    public function setScriptPath($path)
+    {
+    }
+
+    public function getScriptPaths()
+    {
+        return [];
+    }
+
+    public function setBasePath($path, $classPrefix = 'Zend_View')
+    {
+    }
+
+    public function addBasePath($path, $classPrefix = 'Zend_View')
+    {
+    }
+
+    public function __set($key, $val)
+    {
+    }
+
+    public function __isset($key)
+    {
+        return false;
+    }
+
+    public function __unset($key)
+    {
+    }
+
+    public function assign($spec, $value = null)
+    {
+    }
+
+    public function clearVars()
+    {
+    }
+
+    public function render($name)
+    {
+        return '';
     }
 }
