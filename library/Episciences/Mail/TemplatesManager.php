@@ -508,6 +508,7 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_COI_EDITOR_FULL_NAME,
         Episciences_Mail_Tags::TAG_COI_LAST_EDITOR_MESSAGE,
         Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID,
         Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
         Episciences_Mail_Tags::TAG_PAPER_URL,
     ];
@@ -521,6 +522,7 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME_LOST_LOGIN,
         Episciences_Mail_Tags::TAG_COI_EDITOR_FULL_NAME,
         Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID,
         Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
         Episciences_Mail_Tags::TAG_PAPER_URL,
     ];
