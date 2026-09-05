@@ -1126,7 +1126,7 @@ class UserDefaultController extends Zend_Controller_Action
         $form->setDefault('EMAIL', $target->getEmail());
         $form->setDefault('USER_UID', $target->getUid());
 
-        $this->processChangeEmail($request, $form, $targetUid, (string)$target->getEmail());
+        $this->processChangeEmail($request, $form, $target);
 
         $this->view->form = $form;
     }
@@ -1878,8 +1878,8 @@ class UserDefaultController extends Zend_Controller_Action
     /**
      * @param Zend_Controller_Request_Http $request
      * @param Ccsd_User_Form_AccountEditEmail $form
-     * @param int $targetUid Account whose email is being changed (self, or another account for a secretary).
-     * @param string $currentEmail The target account's email as currently stored.
+     * @param Episciences_User $target Already-loaded, detached account whose email is being changed
+     *                                  (self, or another account for a secretary).
      * @return void
      * @throws Zend_Form_Exception
      * @throws Exception
@@ -1888,10 +1888,11 @@ class UserDefaultController extends Zend_Controller_Action
     private function processChangeEmail(
         Zend_Controller_Request_Http $request,
         Ccsd_User_Form_AccountEditEmail $form,
-        int $targetUid,
-        string $currentEmail
+        Episciences_User $target
     ): void
     {
+        $targetUid = $target->getUid();
+        $currentEmail = (string)$target->getEmail();
 
         $userMapper = new Ccsd_User_Models_UserMapper();
 
@@ -1940,8 +1941,7 @@ class UserDefaultController extends Zend_Controller_Action
         $self = (int)Episciences_Auth::getUid();
 
         if ($isNotAllowedToChangeEmail) {
-            $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
-            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+            $this->flashChangeEmailMessage(self::ERROR, Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
             return;
         }
 
@@ -1952,48 +1952,26 @@ class UserDefaultController extends Zend_Controller_Action
         $newEmail = EmailPolicy::normalize((string)$form->getValue('EMAIL'));
 
         if ($newEmail === '') {
-            $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
-            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+            $this->flashChangeEmailMessage(self::ERROR, Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
             return;
         }
 
         // Nothing to do: submitting the address already on the account is a success, not a conflict.
         if (EmailPolicy::isSameAddress($newEmail, $currentEmail)) {
-            $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_SUCCESS);
-            $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
-            $url = $fController . '/' . $fAction;
-            if ($targetUid !== $self) {
-                $url .= '?userid=' . $targetUid;
-            }
-            $this->redirect($url);
+            $this->flashChangeEmailMessage(self::SUCCESS, Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_SUCCESS);
+            $this->redirectToForward($fController, $fAction, $targetUid, $self);
             return;
         }
 
         if (EmailPolicy::findConflictingUid($newEmail, $targetUid) !== null) {
-            $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
-            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
-            return;
-        }
-
-        // Load a detached object: never mutate the session identity object directly.
-        $target = new Episciences_User();
-        try {
-            $target->findWithCAS($targetUid);
-        } catch (Zend_Db_Statement_Exception $e) {
-            trigger_error($e->getMessage(), E_USER_ERROR);
-        }
-
-        if (!$target->getUid()) {
-            $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
-            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+            $this->flashChangeEmailMessage(self::ERROR, Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
             return;
         }
 
         $target->setEmail($newEmail);
 
         if (!$target->save()) {
-            $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
-            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+            $this->flashChangeEmailMessage(self::ERROR, Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
             return;
         }
 
@@ -2005,15 +1983,33 @@ class UserDefaultController extends Zend_Controller_Action
             Episciences_Auth::updateIdentity($fresh);
         }
 
-        $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_SUCCESS);
-        $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
+        $this->flashChangeEmailMessage(self::SUCCESS, Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_SUCCESS);
+        $this->redirectToForward($fController, $fAction, $targetUid, $self);
+    }
 
+    /**
+     * Translates $translationKey and pushes it to the flash messenger under $namespace
+     * (self::SUCCESS / self::ERROR). Factors out the pattern repeated across every
+     * outcome branch of processChangeEmail().
+     */
+    private function flashChangeEmailMessage(string $namespace, string $translationKey): void
+    {
+        $message = $this->view->translate($translationKey);
+        $this->_helper->FlashMessenger->setNamespace($namespace)->addMessage($message);
+    }
+
+    /**
+     * Redirects to the forward controller/action, appending ?userid= when the
+     * target isn't the acting user's own account. Factors out the pattern
+     * repeated across every success branch of processChangeEmail().
+     */
+    private function redirectToForward(string $fController, string $fAction, int $targetUid, int $self): void
+    {
         $url = $fController . '/' . $fAction;
         if ($targetUid !== $self) {
             $url .= '?userid=' . $targetUid;
         }
         $this->redirect($url);
-
     }
 
     /**

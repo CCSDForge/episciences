@@ -168,6 +168,7 @@ class Episciences_Reviewer_AccountResolver
      *
      * @param int $uid
      * @return Episciences_Reviewer|null Null when the CAS account cannot be loaded.
+     * @throws RuntimeException When the screen name / language backfill fails to save.
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
@@ -193,8 +194,8 @@ class Episciences_Reviewer_AccountResolver
             $needsSave = true;
         }
 
-        if ($needsSave) {
-            $user->save();
+        if ($needsSave && $user->save() === false) {
+            throw new RuntimeException(sprintf('Failed to save CAS account #%d while attaching reviewer role', $uid));
         }
 
         $user->addRole(Episciences_Acl::ROLE_REVIEWER);
@@ -217,6 +218,7 @@ class Episciences_Reviewer_AccountResolver
      * @throws EmailAlreadyInUseException When the email is already used by another account
      *         (including a non-validated one: {@see findValidAccountByEmail()} only filters VALID=1,
      *         which is not enough to prevent a duplicate here).
+     * @throws RuntimeException When the new account fails to save.
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
@@ -247,8 +249,11 @@ class Episciences_Reviewer_AccountResolver
         $user->setTime_registered();
         $user->setValid(1);
 
-        $uid = (int)$user->save();
-        $user->setUid($uid);
+        $result = $user->save();
+        if ($result === false) {
+            throw new RuntimeException(sprintf('Failed to save new CAS reviewer account for email "%s"', $normalizedEmail));
+        }
+        $user->setUid((int)$result);
 
         $user->addRole(Episciences_Acl::ROLE_REVIEWER);
         $user->setScreenName($user->getFullName());

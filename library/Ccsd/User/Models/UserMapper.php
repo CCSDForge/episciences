@@ -311,7 +311,9 @@ class Ccsd_User_Models_UserMapper {
     }
 
     /**
-     * Returns the UIDs of every account currently using the given email.
+     * Returns the UIDs of every account currently using the given email, ordered
+     * by UID so that callers picking the first match (e.g. to resolve which
+     * duplicate account to attach to) get a deterministic result.
      * Comparison is delegated to MySQL (utf8mb3_general_ci: case- and
      * trailing-space-insensitive), consistently with the form validator.
      *
@@ -321,7 +323,8 @@ class Ccsd_User_Models_UserMapper {
     {
         $select = $this->getDbTable()->select()
             ->from($this->getDbTable(), ['UID'])
-            ->where('EMAIL = ?', $email);
+            ->where('EMAIL = ?', $email)
+            ->order('UID ASC');
 
         $uids = [];
 
@@ -330,20 +333,6 @@ class Ccsd_User_Models_UserMapper {
         }
 
         return $uids;
-    }
-
-    /**
-     * Checks whether the given email is already used by an account other than $excludeUid.
-     */
-    public function emailIsUsedByAnotherAccount(string $email, int $excludeUid): bool
-    {
-        foreach ($this->findUidsByEmail($email) as $uid) {
-            if ($uid !== $excludeUid) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
