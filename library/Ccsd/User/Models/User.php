@@ -404,8 +404,24 @@ class Ccsd_User_Models_User
      */
     public function setEmail($_email)
     {
-        $this->_email = filter_var($_email, FILTER_SANITIZE_EMAIL);
+        $this->_email = self::normalizeEmail((string)$_email);
         return $this;
+    }
+
+    /**
+     * Normalizes an email the same way it will be stored: this is the single
+     * source of truth for what counts as "the same address" written to
+     * T_UTILISATEURS.EMAIL, so that an availability check never diverges from
+     * the value actually persisted.
+     *
+     * No case-folding: T_UTILISATEURS has no explicit COLLATE, so it defaults
+     * to utf8mb3_general_ci, already case- and trailing-space-insensitive at
+     * the SQL comparison level.
+     */
+    public static function normalizeEmail(string $email): string
+    {
+        $normalized = filter_var(trim($email), FILTER_SANITIZE_EMAIL);
+        return $normalized === false ? '' : $normalized;
     }
 
     /**

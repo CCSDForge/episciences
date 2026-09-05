@@ -3,6 +3,7 @@
 use Ccsd\Auth\AdapterFactory;
 use Episciences\Altcha\ChallengeHelper;
 use Episciences\Trait\LocaleByCookieTrait;
+use Episciences\User\EmailPolicy;
 
 
 class UserDefaultController extends Zend_Controller_Action
@@ -580,6 +581,21 @@ class UserDefaultController extends Zend_Controller_Action
             $user->setRegistrationDate(); // Episciences registration
             $user->setScreenName();
 
+            // Revalidate against the value actually stored: the form validator alone
+            // cannot see a conflict created between its check and this write.
+            if (EmailPolicy::findConflictingUid($user->getEmail(), 0) !== null) {
+                $form->getElement('EMAIL')->addError(
+                    str_replace(
+                        '%value%',
+                        $user->getEmail(),
+                        $this->view->translate('A record matching email (%value%) was found.  Use login retrieve tools')
+                    )
+                );
+                $this->view->form = $form;
+                $this->render('create');
+                return;
+            }
+
             if ($isAllowedToAddUserAccounts) {
                 // admin: new account does not need to be activated, no mail is sent
                 $user->setValid(1);
@@ -1082,7 +1098,24 @@ class UserDefaultController extends Zend_Controller_Action
 
         $request = $this->getRequest();
 
-        $form = new Ccsd_User_Form_AccountEditEmail();
+        $targetUid = $this->resolveEmailChangeTargetUid($request);
+
+        if ($targetUid === 0) {
+            return;
+        }
+
+        $target = new Episciences_User();
+        try {
+            $target->findWithCAS($targetUid);
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_ERROR);
+        }
+
+        if (!$target->getUid()) {
+            return;
+        }
+
+        $form = new Ccsd_User_Form_AccountEditEmail(['excludeUid' => $targetUid]);
 
         $form->setAction($this->view->url());
         $form->setActions(true)->createSubmitButton('submit', [
@@ -1090,33 +1123,43 @@ class UserDefaultController extends Zend_Controller_Action
             'class' => 'btn btn-primary'
         ]);
 
-        $userUid = $request->isPost() ? $request->getPost('USER_UID') : $request->getParam('userid');
-        $userUid = (int)$userUid;
+        $form->setDefault('EMAIL', $target->getEmail());
+        $form->setDefault('USER_UID', $target->getUid());
 
-        if (
-            $userUid &&
-            $userUid !== Episciences_Auth::getUid() &&
-            Episciences_Auth::isSecretary()
-        ) {
-            $user = new Episciences_User();
-            try {
-                $user->find($userUid);
-            } catch (Zend_Db_Statement_Exception $e) {
-                trigger_error($e->getMessage(), E_USER_ERROR);
-            }
-        } else {
-            $user = Episciences_Auth::getUser();
-        }
-
-        if (!$user->getUid()) {
-            return;
-        }
-
-        $form->setDefault('EMAIL', $user->getEmail());
-        $form->setDefault('USER_UID', $user->getUid());
-        $this->processChangeEmail($request, $form);
+        $this->processChangeEmail($request, $form, $targetUid, (string)$target->getEmail());
 
         $this->view->form = $form;
+    }
+
+    /**
+     * Resolves which account this request is allowed to change the email of.
+     *
+     * Returns the acting user's own UID by default. A secretary may target
+     * another account (?userid= / hidden USER_UID field), but only one
+     * holding a role in the current review, unless they are an administrator.
+     * Returns 0 when the request targets an account the caller isn't allowed
+     * to touch.
+     */
+    private function resolveEmailChangeTargetUid(Zend_Controller_Request_Http $request): int
+    {
+        $self = (int)Episciences_Auth::getUid();
+        $requested = (int)($request->isPost()
+            ? $request->getPost('USER_UID')
+            : $request->getParam('userid'));
+
+        if ($requested === 0 || $requested === $self) {
+            return $self;
+        }
+
+        if (!Episciences_Auth::isSecretary()) {
+            return 0;
+        }
+
+        if (Episciences_Auth::isAdministrator()) {
+            return $requested;
+        }
+
+        return (new Episciences_User())->hasRoles($requested, RVID) ? $requested : 0;
     }
 
     /**
@@ -1835,19 +1878,26 @@ class UserDefaultController extends Zend_Controller_Action
     /**
      * @param Zend_Controller_Request_Http $request
      * @param Ccsd_User_Form_AccountEditEmail $form
+     * @param int $targetUid Account whose email is being changed (self, or another account for a secretary).
+     * @param string $currentEmail The target account's email as currently stored.
      * @return void
      * @throws Zend_Form_Exception
      * @throws Exception
      */
 
-    private function processChangeEmail(Zend_Controller_Request_Http $request, Ccsd_User_Form_AccountEditEmail $form): void
+    private function processChangeEmail(
+        Zend_Controller_Request_Http $request,
+        Ccsd_User_Form_AccountEditEmail $form,
+        int $targetUid,
+        string $currentEmail
+    ): void
     {
 
         $userMapper = new Ccsd_User_Models_UserMapper();
 
-        $userLogins = $userMapper->findLoginByEmail($form->getValue('EMAIL'));
+        $userLogins = $userMapper->findLoginByEmail($currentEmail);
 
-        $isNotAllowedToChangeEmail = isset($userLogins) && count($userLogins) > 1;
+        $isNotAllowedToChangeEmail = $userLogins !== null && count($userLogins) > 1;
 
 
         if ($isNotAllowedToChangeEmail) {
@@ -1876,87 +1926,91 @@ class UserDefaultController extends Zend_Controller_Action
 
         $this->view->isNotAllowedToChangeEmail = $isNotAllowedToChangeEmail;
 
+        if (!$request->isPost() || !$request->get('submit')) {
+            return;
+        }
 
         $post = $request->getPost();
 
         $fController = $request->getParam('forward-controller', 'user');
         $fAction = $request->getParam('forward-action', 'change_account_email');
 
+        $self = (int)Episciences_Auth::getUid();
 
-        if ($request->isPost() && $request->get('submit') && $form->isValid($post)) {
-
-            $postedUid = (int)$post['USER_UID'];
-
-
-            $resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE;
-
-
-            if (!$isNotAllowedToChangeEmail) {
-
-                if ($postedUid && Episciences_Auth::isSecretary()) {
-                    $user = new Episciences_User();
-                    try {
-                        $user->find($post['USER_UID']);
-                    } catch (Zend_Db_Statement_Exception $e) {
-                        trigger_error($e->getMessage(), E_USER_ERROR);
-                    }
-                } else {
-                    $user = Episciences_Auth::getUser();
-                }
-
-                $newEmail = filter_var((string)$form->getValue('EMAIL'), FILTER_SANITIZE_EMAIL);
-
-                if ($newEmail !== '' && !$userMapper->emailIsUsedByAnotherAccount($newEmail, (int)$user->getUid())) {
-
-                    $user->setEmail($newEmail);
-
-                    if ($user->save()) {
-
-                        if (Episciences_Auth::getUid() === $postedUid) {
-                            //If you modify your own account, you update the session
-                            Episciences_User::forgetStaticCache((int)Episciences_Auth::getUid());
-                            $user = new Episciences_User();
-                            $user->find(Episciences_Auth::getUid());
-                            Episciences_Auth::getInstance()->clearIdentity();
-                            Episciences_Auth::setIdentity($user);
-
-                        }
-
-                        $resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_SUCCESS;
-                    }
-                } else {
-                    $form->getElement('EMAIL')->addError(
-                        str_replace(
-                            '%value%',
-                            (string)$form->getValue('EMAIL'),
-                            $this->view->translate('A record matching email (%value%) was found. Use login retrieve tools')
-                        )
-                    );
-                }
-
-            }
-
-            $alertType = ($resultMessage === Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_SUCCESS) ? self::SUCCESS : self::ERROR;
-
-
-            $message = $this->view->translate($resultMessage);
-            $this->_helper->FlashMessenger->setNamespace($alertType)->addMessage($message);
-
-
-            if ($alertType === self::SUCCESS) {
-                $url = $fController . '/' . $fAction;
-
-                if ($postedUid) {
-
-                    $url .= '?userid=' . $postedUid;
-
-                }
-
-                $this->redirect($url);
-            }
-
-
+        if ($isNotAllowedToChangeEmail) {
+            $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+            return;
         }
+
+        if (!$form->isValid($post)) {
+            return;
+        }
+
+        $newEmail = EmailPolicy::normalize((string)$form->getValue('EMAIL'));
+
+        if ($newEmail === '') {
+            $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+            return;
+        }
+
+        // Nothing to do: submitting the address already on the account is a success, not a conflict.
+        if (EmailPolicy::isSameAddress($newEmail, $currentEmail)) {
+            $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_SUCCESS);
+            $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
+            $url = $fController . '/' . $fAction;
+            if ($targetUid !== $self) {
+                $url .= '?userid=' . $targetUid;
+            }
+            $this->redirect($url);
+            return;
+        }
+
+        if (EmailPolicy::findConflictingUid($newEmail, $targetUid) !== null) {
+            $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+            return;
+        }
+
+        // Load a detached object: never mutate the session identity object directly.
+        $target = new Episciences_User();
+        try {
+            $target->findWithCAS($targetUid);
+        } catch (Zend_Db_Statement_Exception $e) {
+            trigger_error($e->getMessage(), E_USER_ERROR);
+        }
+
+        if (!$target->getUid()) {
+            $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+            return;
+        }
+
+        $target->setEmail($newEmail);
+
+        if (!$target->save()) {
+            $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_FAILURE);
+            $this->_helper->FlashMessenger->setNamespace(self::ERROR)->addMessage($message);
+            return;
+        }
+
+        if ($targetUid === $self) {
+            // Modifying your own account: refresh the session from a fresh read, not the stale request-level cache.
+            Episciences_User::forgetStaticCache($targetUid);
+            $fresh = new Episciences_User();
+            $fresh->findWithCAS($targetUid);
+            Episciences_Auth::updateIdentity($fresh);
+        }
+
+        $message = $this->view->translate(Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_SUCCESS);
+        $this->_helper->FlashMessenger->setNamespace(self::SUCCESS)->addMessage($message);
+
+        $url = $fController . '/' . $fAction;
+        if ($targetUid !== $self) {
+            $url .= '?userid=' . $targetUid;
+        }
+        $this->redirect($url);
 
     }
 

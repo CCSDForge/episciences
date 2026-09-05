@@ -109,81 +109,30 @@ class Ccsd_User_Models_UserMapperTest extends TestCase
 
     // -------------------------------------------------------------------------
     // emailIsUsedByAnotherAccount() — UID exclusion logic, no DB adapter required
+    // findUidsByEmail() itself is left untested: the Zend_Db_Table_Select it
+    // returns requires a real adapter.
     // -------------------------------------------------------------------------
-
-    /**
-     * @param array<string, int[]> $uidsByEmail
-     */
-    private function makeFakeTable(array $uidsByEmail): object
-    {
-        return new class($uidsByEmail) {
-            private ?string $email = null;
-            private ?int $excludeUid = null;
-
-            public function __construct(private readonly array $uidsByEmail)
-            {
-            }
-
-            public function select(): self
-            {
-                return $this;
-            }
-
-            public function from(self $table, $cols = '*'): self
-            {
-                return $this;
-            }
-
-            public function where(string $cond, $value = null): self
-            {
-                if ($cond === 'EMAIL = ?') {
-                    $this->email = (string)$value;
-                }
-                if ($cond === 'UID != ?') {
-                    $this->excludeUid = (int)$value;
-                }
-
-                return $this;
-            }
-
-            public function limit($count, $offset = null): self
-            {
-                return $this;
-            }
-
-            public function fetchRow($select): ?array
-            {
-                foreach ($this->uidsByEmail[$this->email] ?? [] as $uid) {
-                    if ($uid !== $this->excludeUid) {
-                        return ['UID' => $uid];
-                    }
-                }
-
-                return null;
-            }
-        };
-    }
 
     public function testEmailIsUsedByAnotherAccountReturnsFalseWhenOnlyExcludedUidMatches(): void
     {
-        $mapper = $this->createPartialMock(Ccsd_User_Models_UserMapper::class, ['getDbTable']);
-        $mapper->method('getDbTable')->willReturn($this->makeFakeTable(['a@b.org' => [42]]));
+        $mapper = $this->createPartialMock(Ccsd_User_Models_UserMapper::class, ['findUidsByEmail']);
+        $mapper->method('findUidsByEmail')->willReturn([42]);
 
         $this->assertFalse($mapper->emailIsUsedByAnotherAccount('a@b.org', 42));
     }
 
     public function testEmailIsUsedByAnotherAccountReturnsTrueWhenAnotherUidMatches(): void
     {
-        $mapper = $this->createPartialMock(Ccsd_User_Models_UserMapper::class, ['getDbTable']);
-        $mapper->method('getDbTable')->willReturn($this->makeFakeTable(['a@b.org' => [42, 77]]));
+        $mapper = $this->createPartialMock(Ccsd_User_Models_UserMapper::class, ['findUidsByEmail']);
+        $mapper->method('findUidsByEmail')->willReturn([42, 77]);
 
         $this->assertTrue($mapper->emailIsUsedByAnotherAccount('a@b.org', 42));
     }
 
     public function testEmailIsUsedByAnotherAccountReturnsFalseWhenNoRowMatches(): void
     {
-        $mapper = $this->createPartialMock(Ccsd_User_Models_UserMapper::class, ['getDbTable']);
-        $mapper->method('getDbTable')->willReturn($this->makeFakeTable([]));
+        $mapper = $this->createPartialMock(Ccsd_User_Models_UserMapper::class, ['findUidsByEmail']);
+        $mapper->method('findUidsByEmail')->willReturn([]);
 
         $this->assertFalse($mapper->emailIsUsedByAnotherAccount('nobody@b.org', 0));
     }
