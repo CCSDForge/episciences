@@ -53,12 +53,16 @@ class EmailAvailabilityTest extends TestCase
 
     public function testMessagesAreResetBetweenCalls(): void
     {
-        $validator = new EmailAvailability(0, EmailAvailability::DEFAULT_MESSAGE, static fn(string $email): array => [77]);
+        $calls = 0;
+        $finder = function (string $email) use (&$calls): array {
+            $calls++;
+            return $calls === 1 ? [77] : [];
+        };
+        $validator = new EmailAvailability(0, EmailAvailability::DEFAULT_MESSAGE, $finder);
 
         self::assertFalse($validator->isValid('a@b.org'));
         self::assertNotEmpty($validator->getMessages());
 
-        $validator = new EmailAvailability(0, EmailAvailability::DEFAULT_MESSAGE, static fn(string $email): array => []);
         self::assertTrue($validator->isValid('a@b.org'));
         self::assertSame([], $validator->getMessages());
     }

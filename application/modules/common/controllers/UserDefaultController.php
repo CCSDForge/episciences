@@ -1932,8 +1932,10 @@ class UserDefaultController extends Zend_Controller_Action
 
         $post = $request->getPost();
 
-        $fController = $request->getParam('forward-controller', 'user');
-        $fAction = $request->getParam('forward-action', 'change_account_email');
+        // Restrict to safe internal route segments: rejects anything containing a
+        // scheme/host/path separator, so this can never become an off-site redirect.
+        $fController = $this->sanitizeForwardRouteSegment($request->getParam('forward-controller', 'user'), 'user');
+        $fAction = $this->sanitizeForwardRouteSegment($request->getParam('forward-action', 'change_account_email'), 'change_account_email');
 
         $self = (int)Episciences_Auth::getUid();
 
@@ -2014,6 +2016,17 @@ class UserDefaultController extends Zend_Controller_Action
 
     }
 
+    /**
+     * Restricts a 'forward-controller' / 'forward-action' request value to a safe
+     * internal route segment (letters, digits, underscore, hyphen), falling back
+     * to $default otherwise. Prevents it from being used to build an off-site
+     * redirect URL (e.g. a scheme/host smuggled in as "forward-controller").
+     */
+    private function sanitizeForwardRouteSegment(mixed $value, string $default): string
+    {
+        $value = (string)$value;
+        return preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/', $value) ? $value : $default;
+    }
 
     /**
      * @param array $userLogins

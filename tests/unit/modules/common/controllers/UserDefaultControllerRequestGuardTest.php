@@ -227,4 +227,60 @@ final class UserDefaultControllerRequestGuardTest extends TestCase
         self::assertStringContainsString('resolveEmailChangeTargetUid(', $method,
             'changeaccountemailAction must resolve its target the same way processChangeEmail does (D8)');
     }
+
+    // -----------------------------------------------------------------------
+    // processChangeEmail — open-redirect guard on forward-controller/forward-action
+    // -----------------------------------------------------------------------
+
+    public function testProcessChangeEmailSanitizesForwardRouteSegments(): void
+    {
+        $method = $this->extractMethod('processChangeEmail');
+        self::assertStringContainsString(
+            "sanitizeForwardRouteSegment(\$request->getParam('forward-controller'",
+            $method,
+            'processChangeEmail must sanitize forward-controller before using it to build a redirect URL (CWE-601)'
+        );
+        self::assertStringContainsString(
+            "sanitizeForwardRouteSegment(\$request->getParam('forward-action'",
+            $method,
+            'processChangeEmail must sanitize forward-action before using it to build a redirect URL (CWE-601)'
+        );
+    }
+
+    /**
+     * Extracts the validation regex from sanitizeForwardRouteSegment() and exercises
+     * it directly: proves the pattern itself rejects anything that could turn the
+     * redirect into an off-site URL, independently of how the method is wired in.
+     */
+    public function testSanitizeForwardRouteSegmentRegexRejectsUnsafeValues(): void
+    {
+        $method = $this->extractMethod('sanitizeForwardRouteSegment');
+        self::assertMatchesRegularExpression('/preg_match\(/', $method,
+            'sanitizeForwardRouteSegment must validate the value with preg_match()');
+
+        self::assertMatchesRegularExpression("/preg_match\\('([^']+)'/", $method, 'could not locate the validation pattern');
+        preg_match("/preg_match\\('([^']+)'/", $method, $matches);
+        $pattern = $matches[1];
+
+        $unsafe = [
+            'http://evil.example',
+            'https://evil.example',
+            '//evil.example',
+            '../../etc/passwd',
+            'a/b',
+            "a\nb",
+            '',
+            '1action',
+        ];
+
+        foreach ($unsafe as $value) {
+            self::assertSame(0, preg_match($pattern, $value), "expected \"$value\" to be rejected");
+        }
+
+        $safe = ['user', 'change_account_email', 'some-action', 'a1'];
+
+        foreach ($safe as $value) {
+            self::assertSame(1, preg_match($pattern, $value), "expected \"$value\" to be accepted");
+        }
+    }
 }
