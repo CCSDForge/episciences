@@ -6,37 +6,46 @@ use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Symfony Console command: purge the OpenAIRE Research Graph enrichment caches.
+ * Symfony Console command: purge the OpenAIRE Research Graph / Scholexplorer enrichment caches.
  *
- * Clears the three PSR-6 pools shared by GetCreatorDataCommand, GetFundingDataCommand
- * and GetClassificationJelCommand in one shot, without querying the API. Needed after
- * an OpenAIRE API format migration (e.g. v1 -> Graph v3): cache keys carry no version
- * marker (md5($doi)), so a cache hit on a pre-migration entry silently returns the old
- * format to the new extraction code instead of triggering a fresh API call.
+ * Clears the PSR-6 pools shared by GetCreatorDataCommand, GetFundingDataCommand,
+ * GetClassificationJelCommand and (with --scholexplorer/--all) GetLinkDataCommand, without
+ * querying the API. Needed after an API format migration (e.g. v1 -> v3): cache keys carry
+ * no version marker (md5($doi)), so a cache hit on a pre-migration entry silently returns
+ * the old format to the new extraction code instead of triggering a fresh API call.
  */
 class ClearOpenAireCacheCommand extends Command
 {
     protected static $defaultName = 'enrichment:clear-cache';
 
-    private const CACHE_POOLS = [
+    private const OPENAIRE_CACHE_POOLS = [
         'openAireResearchGraph',
         'enrichmentAuthors',
         'enrichmentFunding',
     ];
 
+    private const SCHOLEXPLORER_CACHE_POOLS = [
+        'scholexplorerLinkData',
+        'scholexplorerAuthToken',
+    ];
+
     protected function configure(): void
     {
-        $this->setDescription('Purge the OpenAIRE Research Graph enrichment caches (global, creators, funding)');
+        $this
+            ->setDescription('Purge the OpenAIRE Research Graph / Scholexplorer enrichment caches')
+            ->addOption('scholexplorer', null, InputOption::VALUE_NONE, 'Also purge the Scholexplorer cache pools')
+            ->addOption('all', null, InputOption::VALUE_NONE, 'Purge every cache pool (OpenAIRE + Scholexplorer)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $io->title('OpenAIRE enrichment cache purge');
+        $io->title('OpenAIRE / Scholexplorer enrichment cache purge');
 
         $this->bootstrap();
 
@@ -51,7 +60,12 @@ class ClearOpenAireCacheCommand extends Command
         $cacheDir   = dirname(APPLICATION_PATH) . '/cache/';
         $allCleared = true;
 
-        foreach (self::CACHE_POOLS as $pool) {
+        $pools = self::OPENAIRE_CACHE_POOLS;
+        if ($input->getOption('scholexplorer') || $input->getOption('all')) {
+            $pools = array_merge($pools, self::SCHOLEXPLORER_CACHE_POOLS);
+        }
+
+        foreach ($pools as $pool) {
             $cache   = new FilesystemAdapter($pool, 0, $cacheDir);
             $cleared = $cache->clear();
             $allCleared = $allCleared && $cleared;
