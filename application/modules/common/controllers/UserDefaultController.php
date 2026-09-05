@@ -1912,6 +1912,7 @@ class UserDefaultController extends Zend_Controller_Action
 
                         if (Episciences_Auth::getUid() === $postedUid) {
                             //If you modify your own account, you update the session
+                            Episciences_User::forgetStaticCache((int)Episciences_Auth::getUid());
                             $user = new Episciences_User();
                             $user->find(Episciences_Auth::getUid());
                             Episciences_Auth::getInstance()->clearIdentity();
