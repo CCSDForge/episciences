@@ -308,6 +308,22 @@ class Ccsd_User_Models_UserMapper {
     }
 
     /**
+     * Checks whether the given email is already used by an account other than $excludeUid.
+     * Comparison is delegated to MySQL (utf8mb3_general_ci: case- and
+     * trailing-space-insensitive), consistently with the form validator.
+     */
+    public function emailIsUsedByAnotherAccount(string $email, int $excludeUid): bool
+    {
+        $select = $this->getDbTable()->select()
+            ->from($this->getDbTable(), ['UID'])
+            ->where('EMAIL = ?', $email)
+            ->where('UID != ?', $excludeUid)
+            ->limit(1);
+
+        return (bool)$this->getDbTable()->fetchRow($select);
+    }
+
+    /**
      * Trouve un utilisateur avec un compte actif, par son login, sinon renvoi
      * null
      *
