@@ -355,6 +355,7 @@ return array(
     'Numéro' => 'Number',
     'Année du volume' => 'Year of the volume',
     'Numéro du volume' => "Volume Number",
+    '%u caractères maximum' => '%u characters maximum',
     "Volume de l'article" => "Volume of the article",
     "Volume de l'article (seulement les nombres)" => 'Volume of the article (numbers only)',
     "Volume de l'article (seulement les nombres) [Caractère de remplacement des espaces]" => 'Volume of the article (numbers only) [Replacement char for spaces]',

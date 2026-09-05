@@ -1914,20 +1914,34 @@ class UserDefaultController extends Episciences_Controller_Action
                     $user = Episciences_Auth::getUser();
                 }
 
-                $user->setEmail($form->getValue('EMAIL'));
+                $newEmail = filter_var((string)$form->getValue('EMAIL'), FILTER_SANITIZE_EMAIL);
 
-                if ($user->save()) {
+                if ($newEmail !== '' && !$userMapper->emailIsUsedByAnotherAccount($newEmail, (int)$user->getUid())) {
 
-                    if (Episciences_Auth::getUid() === $postedUid) {
-                        //If you modify your own account, you update the session
-                        $user = new Episciences_User();
-                        $user->find(Episciences_Auth::getUid());
-                        Episciences_Auth::getInstance()->clearIdentity();
-                        Episciences_Auth::setIdentity($user);
+                    $user->setEmail($newEmail);
 
+                    if ($user->save()) {
+
+                        if (Episciences_Auth::getUid() === $postedUid) {
+                            //If you modify your own account, you update the session
+                            Episciences_User::forgetStaticCache((int)Episciences_Auth::getUid());
+                            $user = new Episciences_User();
+                            $user->find(Episciences_Auth::getUid());
+                            Episciences_Auth::getInstance()->clearIdentity();
+                            Episciences_Auth::setIdentity($user);
+
+                        }
+
+                        $resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_SUCCESS;
                     }
-
-                    $resultMessage = Ccsd_User_Models_User::ACCOUNT_RESET_EMAIL_SUCCESS;
+                } else {
+                    $form->getElement('EMAIL')->addError(
+                        str_replace(
+                            '%value%',
+                            (string)$form->getValue('EMAIL'),
+                            $this->view->translate('A record matching email (%value%) was found. Use login retrieve tools')
+                        )
+                    );
                 }
 
             }
