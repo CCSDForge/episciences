@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use Episciences\User\EmailAlreadyInUseException;
+use Episciences\User\EmailPolicy;
+
 /**
  * Resolves (looks up or creates) a real CAS reviewer account from an invitation
  * that was sent to a temporary account / bare email address.
@@ -165,6 +168,7 @@ class Episciences_Reviewer_AccountResolver
      *
      * @param int $uid
      * @return Episciences_Reviewer|null Null when the CAS account cannot be loaded.
+     * @throws RuntimeException When the screen name / language backfill fails to save.
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
@@ -190,8 +194,8 @@ class Episciences_Reviewer_AccountResolver
             $needsSave = true;
         }
 
-        if ($needsSave) {
-            $user->save();
+        if ($needsSave && $user->save() === false) {
+            throw new RuntimeException(sprintf('Failed to save CAS account #%d while attaching reviewer role', $uid));
         }
 
         $user->addRole(Episciences_Acl::ROLE_REVIEWER);
@@ -209,7 +213,12 @@ class Episciences_Reviewer_AccountResolver
      * @param string|null $lang Two-letter language code; defaults to the review default.
      * @param string $login Pre-resolved, available login.
      * @param string $plainPassword Strong random password (will be hashed by the entity).
+     * @param (callable(string): int[])|null $uidsFinder Injectable for tests; defaults to EmailPolicy's own lookup.
      * @return Episciences_Reviewer
+     * @throws EmailAlreadyInUseException When the email is already used by another account
+     *         (including a non-validated one: {@see findValidAccountByEmail()} only filters VALID=1,
+     *         which is not enough to prevent a duplicate here).
+     * @throws RuntimeException When the new account fails to save.
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
@@ -219,21 +228,32 @@ class Episciences_Reviewer_AccountResolver
         string  $email,
         ?string $lang,
         string  $login,
-        string  $plainPassword
+        string  $plainPassword,
+        ?callable $uidsFinder = null
     ): Episciences_Reviewer
     {
+        $normalizedEmail = EmailPolicy::normalize($email);
+        $conflictingUid = EmailPolicy::findConflictingUid($normalizedEmail, 0, $uidsFinder);
+
+        if ($conflictingUid !== null) {
+            throw new EmailAlreadyInUseException($conflictingUid, $normalizedEmail);
+        }
+
         $user = new Episciences_Reviewer();
         $user->setFirstname($firstname);
         $user->setLastname($lastname);
-        $user->setEmail($email);
+        $user->setEmail($normalizedEmail);
         $user->setUsername($login);
         $user->setPassword($plainPassword);
         $user->setLangueid($lang ?: Episciences_Review::DEFAULT_LANG);
         $user->setTime_registered();
         $user->setValid(1);
 
-        $uid = (int)$user->save();
-        $user->setUid($uid);
+        $result = $user->save();
+        if ($result === false) {
+            throw new RuntimeException(sprintf('Failed to save new CAS reviewer account for email "%s"', $normalizedEmail));
+        }
+        $user->setUid((int)$result);
 
         $user->addRole(Episciences_Acl::ROLE_REVIEWER);
         $user->setScreenName($user->getFullName());
@@ -362,14 +382,21 @@ class Episciences_Reviewer_AccountResolver
 
         $password = self::generateStrongPassword();
 
-        $user = self::createReviewerAccount(
-            $identity['firstname'],
-            $identity['lastname'],
-            $identity['email'],
-            $identity['lang'],
-            $login,
-            $password
-        );
+        try {
+            $user = self::createReviewerAccount(
+                $identity['firstname'],
+                $identity['lastname'],
+                $identity['email'],
+                $identity['lang'],
+                $login,
+                $password
+            );
+        } catch (EmailAlreadyInUseException $e) {
+            // Someone (including a non-validated account) already holds this address:
+            // attach to it instead of creating a duplicate.
+            $user = self::attachExistingAccount($e->getUid());
+            return $user ? ['user' => $user, 'created' => false] : null;
+        }
 
         return ['user' => $user, 'created' => true];
     }

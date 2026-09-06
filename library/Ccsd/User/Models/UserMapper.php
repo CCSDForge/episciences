@@ -119,7 +119,10 @@ class Ccsd_User_Models_UserMapper {
             ));
 
             if (1 != $result) {
-                return false;
+                // 0 rows affected: either the UID is gone (real failure) or the
+                // UPDATE was a same-second no-op (MySQL reports 0 when the row's
+                // data is already identical). Only the former is an error.
+                return $this->uidExists((int)$user->getUid()) ? $user->getUid() : false;
             } else {
                 return $user->getUid();
             }
@@ -308,16 +311,38 @@ class Ccsd_User_Models_UserMapper {
     }
 
     /**
-     * Checks whether the given email is already used by an account other than $excludeUid.
+     * Returns the UIDs of every account currently using the given email, ordered
+     * by UID so that callers picking the first match (e.g. to resolve which
+     * duplicate account to attach to) get a deterministic result.
      * Comparison is delegated to MySQL (utf8mb3_general_ci: case- and
      * trailing-space-insensitive), consistently with the form validator.
+     *
+     * @return int[]
      */
-    public function emailIsUsedByAnotherAccount(string $email, int $excludeUid): bool
+    public function findUidsByEmail(string $email): array
     {
         $select = $this->getDbTable()->select()
             ->from($this->getDbTable(), ['UID'])
             ->where('EMAIL = ?', $email)
-            ->where('UID != ?', $excludeUid)
+            ->order('UID ASC');
+
+        $uids = [];
+
+        foreach ($this->getDbTable()->fetchAll($select) as $row) {
+            $uids[] = (int)$row['UID'];
+        }
+
+        return $uids;
+    }
+
+    /**
+     * Checks whether an account with the given UID still exists.
+     */
+    public function uidExists(int $uid): bool
+    {
+        $select = $this->getDbTable()->select()
+            ->from($this->getDbTable(), ['UID'])
+            ->where('UID = ?', $uid)
             ->limit(1);
 
         return (bool)$this->getDbTable()->fetchRow($select);

@@ -250,6 +250,31 @@ class Ccsd_User_Models_UserTest extends TestCase
         $this->assertSame('user@example.com', $this->user->getEmail());
     }
 
+    /**
+     * @return list<array{string}>
+     */
+    public static function normalizeEmailMatchesSetEmailProvider(): array
+    {
+        return [
+            ['user@example.com'],
+            [' user@example.com '],
+            ['user name@example.com'],
+            ['user<>name@example.com'],
+            ['John@Example.ORG'],
+            [''],
+        ];
+    }
+
+    /**
+     * @dataProvider normalizeEmailMatchesSetEmailProvider
+     */
+    public function testNormalizeEmailMatchesSetEmailGetEmail(string $raw): void
+    {
+        $this->user->setEmail($raw);
+
+        $this->assertSame($this->user->getEmail(), Ccsd_User_Models_User::normalizeEmail($raw));
+    }
+
     // -------------------------------------------------------------------------
     // setFirstname / getFirstname / setLastname / getLastname
     // -------------------------------------------------------------------------
