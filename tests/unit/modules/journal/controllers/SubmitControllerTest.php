@@ -12,7 +12,6 @@ use PHPUnit\Framework\TestCase;
  * Strategy: source-code pattern analysis (static analysis via PHP string inspection).
  * No database or HTTP dispatch needed — tests are fast and run without side effects.
  *
- * @covers SubmitController
  */
 final class SubmitControllerTest extends TestCase
 {
