@@ -369,6 +369,10 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('OPENAIRE_API_URL', '');
         define('OPENAIRE_CLIENT_ID', '');
         define('OPENAIRE_CLIENT_SECRET', '');
+        define('SCHOLEXPLORER_AUTH_URL', '');
+        define('SCHOLEXPLORER_API_URL', 'https://api.scholexplorer.openaire.eu/v3/Links');
+        define('SCHOLEXPLORER_CLIENT_ID', '');
+        define('SCHOLEXPLORER_CLIENT_SECRET', '');
 
         // DOI Configuration
         define('DOI_AGENCY', '');

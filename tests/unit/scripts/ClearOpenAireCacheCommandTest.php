@@ -27,11 +27,14 @@ class ClearOpenAireCacheCommandTest extends TestCase
         $this->assertSame('enrichment:clear-cache', $this->command->getName());
     }
 
-    public function testCommandHasNoOptions(): void
+    public function testCommandHasScholexplorerAndAllOptions(): void
     {
         $definition = $this->command->getDefinition();
         $this->assertInstanceOf(InputDefinition::class, $definition);
-        $this->assertSame([], $definition->getOptions());
+        $this->assertTrue($definition->hasOption('scholexplorer'));
+        $this->assertTrue($definition->hasOption('all'));
+        $this->assertFalse($definition->getOption('scholexplorer')->acceptValue());
+        $this->assertFalse($definition->getOption('all')->acceptValue());
     }
 
     public function testCommandHasDescription(): void

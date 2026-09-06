@@ -155,10 +155,16 @@
     "PLUS_API_TOKEN": "Ash-nazg-durbatulûk"
   },
   "OPENAIRE": {
-    "AUTH_URL": "https://aai.openaire.eu/token",
+    "AUTH_URL": "https://aai.openaire.eu/oidc/token",
     "API_URL": "https://api.openaire.eu/graph/v3/research-products",
     "CLIENT_ID": "YOUR-OPENAIRE-CLIENT-ID",
     "CLIENT_SECRET": "YOUR-OPENAIRE-CLIENT-SECRET"
+  },
+  "SCHOLEXPLORER": {
+    "AUTH_URL": "https://aai.openaire.eu/oidc/token",
+    "API_URL": "https://api.scholexplorer.openaire.eu/v3/Links",
+    "CLIENT_ID": "YOUR-SCHOLEXPLORER-CLIENT-ID",
+    "CLIENT_SECRET": "YOUR-SCHOLEXPLORER-CLIENT-SECRET"
   },
   "NEXT": {
     "BASE_URL": "https://next.example.org",
