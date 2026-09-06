@@ -1,18 +1,11 @@
 <?php
+$this->getHelper('webpackAssets')->queueScript('sortablejs');
 $this->jQuery()
-    ->addStylesheet(VENDOR_BOOTSTRAP_COLORPICKER_CSS)
     ->addStylesheet('/css/website/menu.css')
-    ->addJavascriptFile(VENDOR_BOOTSTRAP_COLORPICKER)
-    ->addJavascriptFile(VENDOR_SORTABLE_JS)
     ->addJavascriptFile('/js/website/header-manager.js')
     ->addJavascriptFile('/js/website/header.js');
 ?>
 <meta name="csrf-token" content="<?php echo $this->escape($this->csrfToken); ?>">
-<script>
-    $(function () {
-        $('.colorpicker').colorpicker();
-    });
-</script>
 <?php
 
 $this->layout()->description = $this->translate("Personnalisez le bandeau en-tête du site") ?>

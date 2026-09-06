@@ -1,9 +1,8 @@
 <?php
-$this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
 $this->jQuery()
     ->addJavascriptFile('/js/search/autocomplete.js')
-    ->addJavascriptFile('/js/search/search.js')
-    ->addJavascriptFile('/js/vendor/jquery.fastLiveFilter.js');
+    ->addJavascriptFile('/js/search/search.js');
+$this->getHelper('webpackAssets')->queueStylesheet('jquery-ui-theme');
 ?>
 
 

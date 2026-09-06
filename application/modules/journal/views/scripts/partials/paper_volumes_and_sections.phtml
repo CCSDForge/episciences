@@ -3,8 +3,14 @@
 $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerName();
 $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
 
-// CSS via helper → rendered in <head>, avoids forced reflow from a body <link>
-$this->jQuery()->addStylesheet('https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.min.css');
+// CSS/JS via helper → queued on the deduplicated jQuery container and rendered once in <head>.
+// A raw inline <script> here (as before) would re-execute the shared webpack runtime.js — and
+// therefore rebind Bootstrap's modal/dropdown/etc. data-api handlers a second time — every time
+// this partial's markup is re-inserted into the DOM, which caused other Bootstrap modals on the
+// page to open and immediately close.
+$this->getHelper('webpackAssets')->queueStylesheet('tom-select');
+$this->getHelper('webpackAssets')->queueScript('tom-select');
+$this->jQuery()->addJavascriptFile('/js/administratepaper/paper-assignment-modal.js');
 
 $vid = $this->article->getVid();
 $docId = $this->article->getDocid();
@@ -23,9 +29,6 @@ if (!$isAllowed) {
 }
 
 ?>
-
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js"></script>
-<script src="/js/administratepaper/paper-assignment-modal.js?_=v<?= APPLICATION_VERSION ?>"></script>
 
 <?= $this->partial('partials/paper_volumes.phtml', [
         'article' => $this->article,

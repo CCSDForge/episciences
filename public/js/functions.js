@@ -843,7 +843,7 @@ function openModal(url, title, params, source) {
 
     // load content from remote url (ajax)
     if (url) {
-        let oUrl = $.url(url);
+        let oUrl = parseUrl(url);
         let urlParams = oUrl.param();
         urlParams['ajax'] = true;
 
@@ -1053,6 +1053,28 @@ function clearErrors(selector = '.errors') {
             $(selector).empty();
         }
     }
+}
+
+/**
+ * Parses a URL string and exposes the subset of the jquery-url-parser (purl)
+ * API still used across the codebase: path lookup and query param access.
+ * @param {string} url
+ * @returns {{attr: function(string): (string|undefined), param: function(string=): (Object|string|null)}}
+ */
+function parseUrl(url) {
+    const parsed = new URL(url, window.location.origin);
+
+    return {
+        attr(name) {
+            return name === 'path' ? parsed.pathname : undefined;
+        },
+        param(name) {
+            if (name === undefined) {
+                return Object.fromEntries(parsed.searchParams.entries());
+            }
+            return parsed.searchParams.get(name);
+        },
+    };
 }
 
 function isValidHttpUrl(string) {
