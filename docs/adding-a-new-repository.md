@@ -15,7 +15,7 @@ runtime:
    and the URL templates used to build links to it (OAI base URL, document page,
    PDF, API). Loaded once per request into `Zend_Registry::get('metadataSources')`
    by `Episciences_Paper_MetaDataSourcesManager::all()`
-   (`application/Bootstrap.php::_initSession()`), and read everywhere through
+   (`application/Bootstrap.php::_initModule()`), and read everywhere through
    `Episciences_Repositories::getRepositories()`.
 2. **A hooks class** — a plain static class the platform looks up **by naming
    convention**, not by explicit registration. Given a `repoId`,
@@ -49,16 +49,73 @@ appears in the submission form and every consumer that calls
 `Episciences_Repositories::callHook(...)` or the capability methods picks it up
 automatically.
 
+## Metadata Formats & Ingestion Pipeline
+
+### 1. Ingestion Pipeline & Canonical Storage
+
+Regardless of the external source's protocol or native serialization (REST JSON,
+OpenAIRE XML, DataCite XML, or JATS XML), Episciences uses a two-tier storage model:
+
+1. **Canonical Dublin Core XML (`PAPERS.RECORD`)**:
+   Episciences normalizes the primary record into standard OAI Dublin Core XML
+   (`<record><header>...</header><metadata><oai_dc:dc>...</oai_dc:dc></metadata></record>`).
+   Every consumer across the platform — including document view pages, XSLT
+   transforms (`Paper::getXslt()`), TEI exports, and the platform's own OAI-PMH
+   server — relies on this normalized XML structure.
+
+   When fetching from non-DC sources, the hooks class compiles Dublin Core XML
+   using `Episciences_Repositories_Common::toDublinCore()` or `assembleData()`.
+
+2. **Structured Relational Enrichments**:
+   Metadata that exceeds basic Dublin Core (rich author affiliations, ORCIDs,
+   licensing terms, cited bibliographic references, linked datasets, and downloadable
+   files) is extracted by the hooks class into an `$enrichment` array structure and
+   persisted into dedicated relational tables:
+   - `PAPER_AUTHORS` (via `Episciences_Paper_AuthorsManager`): names, affiliations,
+     normalized ORCIDs.
+   - `PAPER_FILES` (via `Episciences_Paper_FilesManager`): file name, MIME type,
+     file size, checksum, and download URL.
+   - `PAPER_DATASETS` (via `Episciences_Submit::processDatasets()`): related DOIs/handles,
+     relation types (`IsSupplementTo`, `References`, etc.).
+   - `PAPER_CITATIONS`: parsed bibliographic reference strings from article reference lists.
+
+### 2. Supported Metadata Formats
+
+| Format / Schema | Namespace / MIME | Used By / Ingested Via | Key Elements Extracted | Episciences Processing Helpers |
+|---|---|---|---|---|
+| **Dublin Core (`oai_dc`)** | `http://www.openarchives.org/OAI/2.0/oai_dc/` | Generic OAI-PMH, EPrints, HAL, arXiv | `dc:title`, `dc:creator`, `dc:subject`, `dc:description`, `dc:date`, `dc:type`, `dc:identifier`, `dc:rights`, `dc:source` | `Episciences_Oai_Client`, `DataSanitizerInterface::hookCleanXMLRecordInput()` |
+| **OpenAIRE v4 (`oai_openaire`)** | Combination of DataCite Kernel 4 & OpenAIRE namespaces | DSpace (v7+) OAI-PMH | `datacite:titles`, `datacite:creators` (names, ORCID, affiliations), `datacite:subjects`, `oaire:resourceType`, `datacite:rights` | `Episciences_Repositories_Common::extractPersons()`, `toDublinCore()` |
+| **DataCite XML (`oai_datacite`)** | `http://datacite.org/schema/kernel-3` or `kernel-4` | ARCHE OAI-PMH, DataCite providers | `titles` (multilingual), `creators` & `contributors` (names, affiliations, nameIdentifiers), `subjects`, `descriptions`, `rightsList`, `relatedIdentifiers` | `extractPersons()`, `extractMultilingualContent()`, `extractRelatedIdentifiersFromMetadata()` |
+| **JATS XML** | NLM / ISO JATS Journal Archiving and Interchange Tag Suite | bioRxiv, medRxiv (secondary fetch) | `front/article-meta` (`contrib-group` with authors, affiliations, ORCIDs; `permissions`/`license`; `kwd-group`), `back/ref-list` (structured citations: `article-title`, `authorsStr`, `fpage`, `lpage`) | `Episciences_Repositories_BioMedRxiv::enrichmentFromJatsXmlProcess()`, `referencesProcess()`, `formatReferences()` |
+| **InvenioRDM JSON** | `application/json` | Zenodo REST API | `metadata` (title, publication_date, description, creators, keywords, license, access_right), `files.entries` (key, size, checksum, links.self), `conceptdoi` | `Episciences_Repositories_Zenodo_Hooks::hookApiRecords()`, `toDublinCore()` |
+| **Dataverse JSON** | `application/json` | Dataverse Native REST API | `metadataBlocks.citation.fields` (title, author, dsDescription, subject, keyword...), `files` (dataFile.id, filename, filesize, checksum, contentType) | `Episciences_Repositories_Dataverse_Hooks::hookApiRecords()`, `toDublinCore()` |
+| **bioRxiv / medRxiv API JSON** | `application/json` | Cold Spring Harbor REST API | Collection of versions, DOI, server, authors, title, type, category, date, license | `Episciences_Repositories_BioMedRxiv::hookApiRecords()` |
+| **Scholexplorer JSON** | `application/json` | ScholeXplorer API (`metadata_sources.api_url`) | Links between literature and research data (source, target, relationship) | `Episciences_Submit::datasetsProcessing()` (generic fallback for repositories without `LinkedDataEnrichmentInterface`) |
+
+### 3. Supported Repository Platforms & APIs
+
+| Platform | Type in DB (`metadata_sources`) | Ingestion Protocol & APIs | Consumed Formats | Extracted Enrichments & Capabilities | Existing Hook Implementation |
+|---|---|---|---|---|---|
+| **DSpace (v7+)** | `dspace` | OAI-PMH (`GetRecord`) + DSpace 7 REST API (`/server/api/core/bitstreams/{uuid}`) | `oai_openaire` (OpenAIRE XML) + DSpace JSON | Authors with ORCID & affiliations, mirrored files with MD5/SHA checksums (`FilesEnrichmentInterface`), Handle cleaning (`InputSanitizerInterface`), stable concept identifier (`ConceptIdentifierInterface`) | `Episciences_Repositories_Dspace_Hooks` (shared by all DSpace instances) |
+| **Dataverse** | `dataverse` | Dataverse Native REST API v1 (`/api/v1/datasets/:persistentId/?persistentId=...`) | Dataverse JSON (Citation metadataBlock & files) | Authors with affiliations, license, mirrored files with checksums (`FilesEnrichmentInterface`), persistent identifier cleaning (`InputSanitizerInterface`), minor/major version management | `Episciences_Repositories_Dataverse_Hooks` (shared by all Dataverse instances) |
+| **InvenioRDM / Zenodo** | `repository` | Zenodo / InvenioRDM REST API v1 (`/api/records/{id}`) | InvenioRDM JSON | Authors with ORCIDs, license (Open Access check), mirrored files (`FilesEnrichmentInterface`), related datasets (`LinkedDataEnrichmentInterface`), concept DOI (`ConceptIdentifierInterface`), XML sanitization (`DataSanitizerInterface`) | `Episciences_Repositories_Zenodo_Hooks` |
+| **EPrints** | `repository` | OAI-PMH 2.0 (`GetRecord`) | `oai_dc` (Dublin Core XML) | Resource types, mirrored PDF file (`FilesEnrichmentInterface`), identifier URL cleaning (`InputSanitizerInterface`), stable identifier & timestamped versioning (`ConceptIdentifierInterface`) | `Episciences_Repositories_CryptologyePrint_Hooks` (IACR Cryptology ePrint Archive) |
+| **bioRxiv / medRxiv** | `repository` | CSHL REST API (`/details/...`) + HTTP retrieval of JATS XML | API JSON + JATS XML | Authors with institutional affiliations and ORCIDs, Creative Commons license detection, bibliographic references and citations, keywords, version tracking | `Episciences_Repositories_BioRxiv_Hooks` / `Episciences_Repositories_MedRxiv_Hooks` (extends `Episciences_Repositories_BioMedRxiv`) |
+| **HAL** | `repository` | Generic OAI-PMH 2.0 (`https://api.archives-ouvertes.fr/oai/hal/`) | `oai_dc` (Dublin Core XML) | XML sanitation stripping non-abstract audience notes (`DataSanitizerInterface::hookCleanXMLRecordInput`), direct PDF link via `paper_url` | `Episciences_Repositories_HAL_Hooks` |
+| **arXiv** | `repository` | Generic OAI-PMH 2.0 (`https://oaipmh.arxiv.org/oai`) | `oai_dc` (Dublin Core XML) | XML and metadata sanitation keeping only primary abstract (`hookFilterMetadata`, `hookCleanXMLRecordInput`), direct PDF link via `paper_url` | `Episciences_Repositories_ArXiv_Hooks` |
+| **ARCHE (ACDH-CH)** | `repository` | OAI-PMH 2.0 (`https://arche.acdh.oeaw.ac.at/oaipmh/`) + ACDH-CH REST API | `oai_datacite` (DataCite Kernel 3 XML) | Multilingual titles & descriptions (`extractMultilingualContent`), authors (`extractPersons`), license, related dataset identifiers (`LinkedDataEnrichmentInterface`) | `Episciences_Repositories_ARCHE_Hooks` |
+| **Generic OAI-PMH Archive** | `repository` | Standard OAI-PMH 2.0 (`metadata_sources.base_url`) | `oai_dc` (Dublin Core XML) | Standard Dublin Core XML directly into `PAPERS.RECORD`, direct PDF linking via `metadata_sources.paper_url` | No custom hook needed (or minimal `CommonHooksInterface` returning `[]`) |
+
 ## Checklist
 
-- [ ] Insert the repository into `metadata_sources` (new numbered SQL file under
-      `src/mysql/`), picking a `type` of `repository` (default), `dataverse` or
-      `dspace`.
+- [ ] Insert the repository into `metadata_sources` (new date-prefixed SQL file
+      under `src/mysql/`, e.g. `YYYY-MM-DD-<description>.sql`), picking a `type`
+      of `repository` (default), `dataverse` or `dspace`. Update the dev seed dump
+      in `src/mysql/docker/episciences/dev-episciences.sql` if applicable.
 - [ ] Add a `public const <NAME>_REPO_ID` to `Episciences_Repositories` if other
-      code will need to special-case this repository by id (optional — most
-      repositories never need this).
+      code will need to reference this repository by id.
 - [ ] Create `library/Episciences/Repositories/<Name>/Hooks.php`, named to match
-      the database `name` column exactly (see naming rule above).
+      the database `name` column exactly (spaces stripped, first letter upper-cased).
 - [ ] Implement `Episciences\Repositories\CommonHooksInterface` (required — see
       [Hook reference](#hook-reference-required)).
 - [ ] Implement only the optional capability interfaces this repository actually
@@ -68,6 +125,9 @@ automatically.
       [Capability interfaces](#capability-interfaces). Do not implement one "just
       in case"; an unused capability flag changes behaviour for every caller that
       asks about it.
+- [ ] Add full PHPDoc iterable typing on all hook parameters and returns (e.g.
+      `@param array<string, mixed> $hookParams`, `@return array<string, mixed>`)
+      to ensure clean analysis at PHPStan level 6.
 - [ ] If the repository needs credentials (API token, OAuth), read them through
       `config/pwd.json` (see existing entries for the pattern) — never hardcode
       secrets in the hooks class.
@@ -78,14 +138,18 @@ automatically.
       covering every public hook method (see [Testing](#testing)).
 - [ ] Add the new repository to the fake sources map in
       `Episciences_Repositories_CapabilitiesTest::setUpBeforeClass()` and assert
-      its actual capabilities there.
-- [ ] If the repository exposes a concept identifier shared across versions, also
-      extend `Episciences_Paper_MainPaperUrlTest` (`hasConceptIdentifier()` /
-      `setConcept_identifier()` tests).
+      its capabilities across all providers (`hookClassProvider`,
+      `filesEnrichmentProvider`, `linkedDataEnrichmentProvider`,
+      `ownEnrichmentProvider`, `conceptIdentifierProvider`, `versionRequiredProvider`).
+- [ ] Extend `tests/unit/library/Episciences/paper/Episciences_Paper_MainPaperUrlTest.php`:
+      add the repository to `setUpBeforeClass()`, and test `hasFilesEnrichment()`,
+      direct PDF URL resolution in `getMainPaperUrl()`, or `hasConceptIdentifier()`
+      / `setConcept_identifier()` if applicable.
 - [ ] Run `make phpstan LEVEL=6 TARGET=library/Episciences/Repositories/<Name>`
       — new files must be clean at level 6.
-- [ ] Run `make test-php` (or a filtered `phpunit` run inside the container) and
-      confirm nothing that reads `hasHook()`/capability methods regressed.
+- [ ] Run PHPUnit inside the container (e.g.
+      `docker compose exec -u www-data -w /var/www/htdocs php-fpm ./vendor/bin/phpunit --no-coverage tests/unit/library/Episciences/Repositories/`
+      or `make test-php`) and confirm all repository tests pass.
 - [ ] Add an entry under `### Added` in `CHANGELOG.md`.
 - [ ] Manually submit a real paper from the new repository in a dev environment
       and confirm: metadata retrieval, file download link (or mirrored file, if
@@ -165,22 +229,29 @@ fixtures, and assert on the returned array shape.
 
 Two shared suites also need extending whenever capabilities change:
 
-- `Episciences_Repositories_CapabilitiesTest` — add the new repository to
-  `setUpBeforeClass()`'s fake sources map (label matters: it drives hook class
-  resolution exactly like production), then assert `hasFilesEnrichment()`,
-  `hasLinkedDataEnrichment()`, `hasConceptIdentifier()` and `isVersionRequired()`
-  return what you expect for it.
-- `Episciences_Paper_MainPaperUrlTest` — if the repository implements
-  `ConceptIdentifierInterface` and/or `FilesEnrichmentInterface`, extend the
-  corresponding data providers so a regression there is caught the same way it
-  would be for Zenodo/DSpace/Cryptology ePrint today.
+- `Episciences_Repositories_CapabilitiesTest` (`tests/unit/library/Episciences/Repositories/Episciences_Repositories_CapabilitiesTest.php`)
+  — add the new repository to `setUpBeforeClass()`'s fake sources map (label matters:
+  it drives hook class resolution exactly like production), then extend each relevant data
+  provider:
+  - `hookClassProvider` (sanity check: label resolves to hook class)
+  - `filesEnrichmentProvider` (mirrors files to `PAPER_FILES`)
+  - `linkedDataEnrichmentProvider` (resolves datasets itself)
+  - `ownEnrichmentProvider` (bypasses generic `datasetsProcessing`)
+  - `conceptIdentifierProvider` (stable cross-version identifier)
+  - `versionRequiredProvider` (mandatory vs optional version)
+- `Episciences_Paper_MainPaperUrlTest` (`tests/unit/library/Episciences/paper/Episciences_Paper_MainPaperUrlTest.php`
+  — note lowercase `paper/`) — add the repository to `setUpBeforeClass()`'s fake sources,
+  and add dedicated assertions to verify:
+  - `hasFilesEnrichment()` behaviour
+  - `getMainPaperUrl()` resolution (especially for repositories with direct external PDF links)
+  - `hasConceptIdentifier()` / `setConcept_identifier()` if `ConceptIdentifierInterface` is implemented.
 
-`Episciences_Repositories_CapabilityDeclarationTest` needs no extending: it
-discovers `library/Episciences/Repositories/*/Hooks.php` on its own and fails if a
-new class declares a capability it does not implement, or implements one it does
-not declare. It is what catches a `hookApiRecords()` writing
-`CONCEPT_IDENTIFIER_KEY` without `ConceptIdentifierInterface` — the marker
-interface has no method, so nothing else can.
+`Episciences_Repositories_CapabilityDeclarationTest` needs no manual test cases: it
+discovers `library/Episciences/Repositories/*/Hooks.php` automatically and fails if a
+hooks class declares a capability interface it does not implement, or implements one
+it does not declare (including writing `CONCEPT_IDENTIFIER_KEY` without
+`ConceptIdentifierInterface`). Note: update its `MINIMUM_HOOK_CLASSES` constant if
+needed to account for the new class.
 
 ## Common pitfall: `hasHook()` is not a capability
 
