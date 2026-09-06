@@ -231,15 +231,7 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
      */
     private static function checkResponse(array $hookParams): array
     {
-        $response = [];
-        if (isset($hookParams[Episciences_Repositories_Common::META_IDENTIFIER]) && empty($hookParams['response'])) {
-            $response = self::hookApiRecords([Episciences_Repositories_Common::META_IDENTIFIER => $hookParams[Episciences_Repositories_Common::META_IDENTIFIER]]);
-        } elseif (isset($hookParams['response'])) {
-            $response = $hookParams['response'];
-        }
-
-        return $response;
-
+        return Episciences_Repositories_Common::resolveResponse($hookParams, [self::class, 'hookApiRecords']);
     }
 
     /**
@@ -485,59 +477,7 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
 
     private static function extractDescriptions($metadata, $language): array
     {
-        $descriptions = [];
-        $descriptionNodes = $metadata->xpath('//datacite:descriptions/datacite:description');
-        foreach ($descriptionNodes as $descNode) {
-
-            $desValue = Episciences_Tools::epi_html_decode((string)$descNode, ['HTML.AllowedElements' => 'p']);
-            $value = trim(str_replace(['<p>', '</p>'], '', $desValue));
-            if (!empty($value)) {
-                // Extract xml:lang attribute correctly
-                $nodeLanguage = '';
-
-                // Get all attributes including xml:lang
-                $allAttributes = [];
-                foreach ($descNode->attributes() as $attrName => $attrValue) {
-                    $allAttributes[$attrName] = (string)$attrValue;
-                }
-
-                // Check XML namespace attributes
-                $xmlAttributes = $descNode->attributes('xml', true);
-                if ($xmlAttributes) {
-                    foreach ($xmlAttributes as $attrName => $attrValue) {
-                        $allAttributes['xml:' . $attrName] = (string)$attrValue;
-                    }
-                }
-
-                // Extract xml:lang from the attributes array we just built
-                if (isset($allAttributes[Episciences_Repositories_Common::XML_LANG_ATTR])) {
-                    $nodeLanguage = $allAttributes[Episciences_Repositories_Common::XML_LANG_ATTR];
-                }
-
-                // Convert 3-letter language codes to 2-letter codes if needed
-                if (strlen($nodeLanguage) > 2) {
-                    try {
-                        $nodeLanguage = Languages::getAlpha2Code($nodeLanguage);
-                    } catch (\Exception $e) {
-                        // If conversion fails, keep the original
-                        // It will fallback to document language below
-                        $nodeLanguage = '';
-                    }
-                }
-
-                // Fallback to document language
-                if (empty($nodeLanguage)) {
-                    $nodeLanguage = $language;
-                }
-
-                $descriptions[] = [
-                    'value' => $value,
-                    'language' => $nodeLanguage
-                ];
-            }
-        }
-
-        return $descriptions;
+        return Episciences_Repositories_Common::extractDescriptions($metadata, $language, false, true);
     }
 
     private static function enrichmentProcessFromOAI(string $xmlString): array

@@ -707,4 +707,85 @@ class Episciences_Repositories_Common
         $dt = date_create($datestamp);
         return $dt !== false ? $dt->format('Y-m-d') : '';
     }
+
+    /**
+     * Returns $hookParams['response'] as is, or fetches it via $fetchRecord when
+     * absent — the common body of the per-repository checkResponse() hooks.
+     *
+     * @param array<string, mixed> $hookParams
+     * @param callable(array<string, mixed>): array<string, mixed> $fetchRecord
+     * @return array<string, mixed>
+     */
+    public static function resolveResponse(array $hookParams, callable $fetchRecord): array
+    {
+        if (isset($hookParams[self::META_IDENTIFIER]) && empty($hookParams['response'])) {
+            return $fetchRecord([self::META_IDENTIFIER => $hookParams[self::META_IDENTIFIER]]);
+        }
+
+        return $hookParams['response'] ?? [];
+    }
+
+    /**
+     * Compiles a DataCite <descriptions> block into value/language pairs,
+     * decoding the <p>-wrapped HTML each repository's descriptions carry.
+     *
+     * $preferAbstractType and $convertLanguageCodeToAlpha2 default to false so
+     * every existing caller keeps its exact prior behavior when opting in only
+     * to what it already relied on.
+     *
+     * @return array<int, array<string, string>>
+     */
+    public static function extractDescriptions(
+        SimpleXMLElement $metadata,
+        string $language,
+        bool $preferAbstractType = false,
+        bool $convertLanguageCodeToAlpha2 = false
+    ): array {
+        $xpath = '//datacite:descriptions/datacite:description';
+        $nodes = $preferAbstractType ? $metadata->xpath($xpath . '[@descriptionType="Abstract"]') : [];
+
+        if (empty($nodes)) {
+            $nodes = $metadata->xpath($xpath);
+        }
+
+        $descriptions = [];
+
+        foreach ($nodes as $node) {
+            $decoded = Episciences_Tools::epi_html_decode((string)$node, ['HTML.AllowedElements' => 'p']);
+            $value = trim(str_replace(['<p>', '</p>'], '', $decoded));
+
+            if ($value === '') {
+                continue;
+            }
+
+            $nodeLanguage = '';
+            $xmlAttributes = $node->attributes('xml', true);
+
+            if (isset($xmlAttributes['lang'])) {
+                $nodeLanguage = (string)$xmlAttributes['lang'];
+            }
+
+            if ($nodeLanguage === '') {
+                $langXpath = $node->xpath('@xml:lang');
+                if (!empty($langXpath)) {
+                    $nodeLanguage = (string)$langXpath[0];
+                }
+            }
+
+            if ($convertLanguageCodeToAlpha2 && strlen($nodeLanguage) > 2) {
+                try {
+                    $nodeLanguage = Languages::getAlpha2Code($nodeLanguage);
+                } catch (Exception $e) {
+                    $nodeLanguage = '';
+                }
+            }
+
+            $descriptions[] = [
+                'value' => $value,
+                'language' => $nodeLanguage !== '' ? $nodeLanguage : $language,
+            ];
+        }
+
+        return $descriptions;
+    }
 }

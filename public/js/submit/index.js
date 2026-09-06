@@ -25,8 +25,17 @@ $(document).ready(function () {
 
         setPlaceholder();
 
+        // isRequiredVersion is only known once this request resolves; block the
+        // identifier field in the meantime so removeVersionFromIdentifier() can't
+        // run against the previous repository's stale value (e.g. wrongly
+        // stripping "v1011" from a BAOBAB slug pasted right after switching repo).
+        $searchDocDocId.prop('disabled', true);
+
         let hasHookRequest = ajaxRequest('/submit/ajaxhashook', {
             repoId: repoValue,
+        });
+        hasHookRequest.always(function () {
+            $searchDocDocId.prop('disabled', false);
         });
         hasHookRequest.done(function (response) {
             let oResponse = JSON.parse(response);
@@ -165,7 +174,12 @@ $(document).ready(function () {
     //Extracts version information from an identifier string and populates the version field.
     function removeVersionFromIdentifier(identifier) {
         const versionField = document.getElementById('search_doc-version');
-        const versionMatch = identifier.match(/v(\d+)$/);
+        // A trailing "vN" is only a real version marker for repositories where the
+        // version must be typed inline (HAL, arXiv). Repositories whose version is
+        // auto-detected instead (isRequiredVersion === false: Zenodo, ARCHE, BAOBAB...)
+        // can have identifiers that end in "v" + digits by pure coincidence of their
+        // own slug format (e.g. BAOBAB's "s9g8r-v1011"), which must not be split.
+        const versionMatch = isRequiredVersion ? identifier.match(/v(\d+)$/) : null;
 
         if (versionMatch && versionField) {
             // Extract the version number (without the 'v' prefix)

@@ -60,6 +60,7 @@ final class Episciences_Paper_MainPaperUrlTest extends TestCase
             (int)Episciences_Repositories::BIO_RXIV_ID => $source('bioRxiv', 'https://www.biorxiv.org/content/%%IDv%%VERSION.full.pdf'),
             (int)Episciences_Repositories::ZENODO_REPO_ID => $source('Zenodo', ''),
             (int)Episciences_Repositories::CRYPTOLOGY_EPRINT => $source('Cryptology ePrint', ''),
+            (int)Episciences_Repositories::BAOBAB_REPO_ID => $source('BAOBAB', ''),
             self::DATAVERSE_REPO_ID => $source('ADataverse', '', 'dataverse'),
             self::DSPACE_REPO_ID => $source('ADspace', '', 'dspace'),
         ];
@@ -137,6 +138,11 @@ final class Episciences_Paper_MainPaperUrlTest extends TestCase
     public function testDataversePaperHasFilesEnrichment(): void
     {
         self::assertTrue($this->makePaper(self::DATAVERSE_REPO_ID)->hasFilesEnrichment());
+    }
+
+    public function testBaobabPaperHasFilesEnrichment(): void
+    {
+        self::assertTrue($this->makePaper((int)Episciences_Repositories::BAOBAB_REPO_ID)->hasFilesEnrichment());
     }
 
     public function testTemporaryPaperHasNoFilesEnrichment(): void
@@ -226,6 +232,7 @@ final class Episciences_Paper_MainPaperUrlTest extends TestCase
         self::assertTrue($this->makePaper((int)Episciences_Repositories::ZENODO_REPO_ID)->hasConceptIdentifier());
         self::assertTrue($this->makePaper((int)Episciences_Repositories::CRYPTOLOGY_EPRINT)->hasConceptIdentifier());
         self::assertTrue($this->makePaper(self::DSPACE_REPO_ID)->hasConceptIdentifier());
+        self::assertTrue($this->makePaper((int)Episciences_Repositories::BAOBAB_REPO_ID)->hasConceptIdentifier());
         self::assertFalse($this->makePaper((int)Episciences_Repositories::HAL_REPO_ID)->hasConceptIdentifier());
         self::assertFalse($this->makePaper((int)Episciences_Repositories::ARXIV_REPO_ID)->hasConceptIdentifier());
         self::assertFalse($this->makePaper(self::DATAVERSE_REPO_ID)->hasConceptIdentifier());
@@ -253,6 +260,14 @@ final class Episciences_Paper_MainPaperUrlTest extends TestCase
         $paper->setConcept_identifier('oai:dspace:123');
 
         self::assertSame('oai:dspace:123', $paper->getConcept_identifier());
+    }
+
+    public function testConceptIdentifierIsAcceptedForBaobab(): void
+    {
+        $paper = $this->makePaper((int)Episciences_Repositories::BAOBAB_REPO_ID, 'xkpt8-rjr81');
+        $paper->setConcept_identifier('0992e-h4x54');
+
+        self::assertSame('0992e-h4x54', $paper->getConcept_identifier());
     }
 
     public function testConceptIdentifierIsRejectedForHal(): void

@@ -73,6 +73,36 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
     }
 
     // =========================================================================
+    // GROUP E — isDataCiteShapedRepo() — processDatasets() DataCite-shaped
+    // repositories guard
+    // =========================================================================
+    //
+    // processDatasets() itself touches the database and cannot be exercised end
+    // to end here, but the repository-shape guard it delegates to is pure and
+    // is exercised directly. Without BAOBAB listed here, a BAOBAB submission's
+    // related identifiers would be iterated key-by-key and
+    // "IsDerivedFrom"/"dataset" would be typed as if they were identifiers
+    // themselves.
+
+    public function testIsDataCiteShapedRepoRecognisesBaobab(): void
+    {
+        $result = $this->invoke('isDataCiteShapedRepo', [(int)Episciences_Repositories::BAOBAB_REPO_ID]);
+        self::assertTrue($result);
+    }
+
+    public function testIsDataCiteShapedRepoRecognisesZenodoAndArche(): void
+    {
+        self::assertTrue($this->invoke('isDataCiteShapedRepo', [(int)Episciences_Repositories::ZENODO_REPO_ID]));
+        self::assertTrue($this->invoke('isDataCiteShapedRepo', [(int)Episciences_Repositories::ARCHE_ID]));
+    }
+
+    public function testIsDataCiteShapedRepoRejectsOtherRepos(): void
+    {
+        $result = $this->invoke('isDataCiteShapedRepo', [(int)Episciences_Repositories::HAL_REPO_ID]);
+        self::assertFalse($result);
+    }
+
+    // =========================================================================
     // GROUP A — assertDateTimeVersion()
     // =========================================================================
 
