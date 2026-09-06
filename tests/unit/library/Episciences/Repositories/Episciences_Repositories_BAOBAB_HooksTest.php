@@ -6,7 +6,6 @@ use Episciences_Repositories;
 use Episciences_Repositories_BAOBAB_Hooks;
 use Episciences_Repositories_Common;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 use ReflectionMethod;
 
 /**
@@ -103,6 +102,18 @@ XML;
     {
         $result = Episciences_Repositories_BAOBAB_Hooks::hookCleanIdentifiers([
             'id' => 'https://baobab.wacren.net/records/xkpt8-rjr81/files/preview.pdf',
+        ]);
+        self::assertSame(['identifier' => 'xkpt8-rjr81'], $result);
+    }
+
+    /**
+     * A trailing slash (e.g. copy-pasted straight from a browser's address bar)
+     * must not survive, or it reaches the API as a bogus extra path segment.
+     */
+    public function testHookCleanIdentifiersStripsTrailingSlash(): void
+    {
+        $result = Episciences_Repositories_BAOBAB_Hooks::hookCleanIdentifiers([
+            'id' => 'https://baobab.wacren.net/records/xkpt8-rjr81/',
         ]);
         self::assertSame(['identifier' => 'xkpt8-rjr81'], $result);
     }
@@ -208,15 +219,57 @@ XML;
      */
     public function testHookFilesProcessingPrefersLinksContentOverSelf(): void
     {
-        $source = file_get_contents(
-            (new ReflectionClass(Episciences_Repositories_BAOBAB_Hooks::class))->getFileName()
-        );
+        $entry = [
+            'key' => 'preprint.pdf',
+            'checksum' => 'md5:abc123',
+            'size' => 42,
+            'ext' => 'pdf',
+            'links' => [
+                'content' => 'https://baobab.wacren.net/api/records/xkpt8-rjr81/files/preprint.pdf/content',
+                'self' => 'https://baobab.wacren.net/api/records/xkpt8-rjr81/files/preprint.pdf',
+            ],
+        ];
 
-        self::assertStringContainsString(
-            "\$entry['links']['content'] ?? \$entry['links']['self']",
-            $source,
-            'hookFilesProcessing() must prefer links.content over links.self'
+        $row = $this->invokePrivate('buildFileRow', [$entry, 999999, (int)Episciences_Repositories::BAOBAB_REPO_ID]);
+
+        self::assertSame(
+            'https://baobab.wacren.net/api/records/xkpt8-rjr81/files/preprint.pdf/content',
+            $row['self_link']
         );
+    }
+
+    /**
+     * When links.content is absent (contrary to the InvenioRDM 13.1 contract),
+     * the file is still registered rather than dropped, falling back to
+     * links.self even though it points to file metadata, not content.
+     */
+    public function testHookFilesProcessingFallsBackToSelfLinkWhenContentMissing(): void
+    {
+        $entry = [
+            'key' => 'preprint.pdf',
+            'checksum' => 'md5:abc123',
+            'size' => 42,
+            'ext' => 'pdf',
+            'links' => [
+                'self' => 'https://baobab.wacren.net/api/records/xkpt8-rjr81/files/preprint.pdf',
+            ],
+        ];
+
+        $row = $this->invokePrivate('buildFileRow', [$entry, 999999, (int)Episciences_Repositories::BAOBAB_REPO_ID]);
+
+        self::assertSame(
+            'https://baobab.wacren.net/api/records/xkpt8-rjr81/files/preprint.pdf',
+            $row['self_link']
+        );
+    }
+
+    public function testHookFilesProcessingSelfLinkNullWhenNeitherLinkPresent(): void
+    {
+        $entry = ['key' => 'preprint.pdf', 'checksum' => 'md5:abc123', 'size' => 42, 'ext' => 'pdf', 'links' => []];
+
+        $row = $this->invokePrivate('buildFileRow', [$entry, 999999, (int)Episciences_Repositories::BAOBAB_REPO_ID]);
+
+        self::assertNull($row['self_link']);
     }
 
     // =========================================================================
@@ -225,15 +278,14 @@ XML;
 
     public function testConceptIdentifierSourcedFromParentId(): void
     {
-        $source = file_get_contents(
-            (new ReflectionClass(Episciences_Repositories_BAOBAB_Hooks::class))->getFileName()
-        );
+        $result = $this->invokePrivate('extractConceptIdentifier', [['parent' => ['id' => 'xkpt8-rjr81']]]);
+        self::assertSame('xkpt8-rjr81', $result);
+    }
 
-        self::assertStringContainsString(
-            "CONCEPT_IDENTIFIER_KEY] = \$json['parent']['id'] ?? null;",
-            $source,
-            "hookApiRecords() must set CONCEPT_IDENTIFIER_KEY from the JSON's parent.id"
-        );
+    public function testConceptIdentifierNullWhenNoParent(): void
+    {
+        $result = $this->invokePrivate('extractConceptIdentifier', [[]]);
+        self::assertNull($result);
     }
 
     // =========================================================================

@@ -25,8 +25,17 @@ $(document).ready(function () {
 
         setPlaceholder();
 
+        // isRequiredVersion is only known once this request resolves; block the
+        // identifier field in the meantime so removeVersionFromIdentifier() can't
+        // run against the previous repository's stale value (e.g. wrongly
+        // stripping "v1011" from a BAOBAB slug pasted right after switching repo).
+        $searchDocDocId.prop('disabled', true);
+
         let hasHookRequest = ajaxRequest('/submit/ajaxhashook', {
             repoId: repoValue,
+        });
+        hasHookRequest.always(function () {
+            $searchDocDocId.prop('disabled', false);
         });
         hasHookRequest.done(function (response) {
             let oResponse = JSON.parse(response);

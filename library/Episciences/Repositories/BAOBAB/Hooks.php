@@ -28,7 +28,6 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     public const API_RECORDS_URL = 'https://baobab.wacren.net/api/records';
     public const DATACITE_MIME = 'application/vnd.datacite.datacite+xml';
     public const DATACITE_NS = 'http://datacite.org/schema/kernel-4';
-    public const RECORD_URL_PREFIX = 'https://baobab.wacren.net/records/';
     public const COMMUNITY_URL_PREFIX = 'https://baobab.wacren.net/communities/';
 
     /**
@@ -111,7 +110,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
             $data[Episciences_Repositories_Common::ENRICHMENT][Episciences_Repositories_Common::LICENSE_ENRICHMENT] = $license;
         }
 
-        $data[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY] = $json['parent']['id'] ?? null;
+        $data[Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY] = self::extractConceptIdentifier($json);
 
         $enrichment = [
             Episciences_Repositories_Common::CONTRIB_ENRICHMENT => $authors,
@@ -152,6 +151,9 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         // over from a notice URL; a bare slug has neither and passes through as is.
         $identifier = preg_replace('#\?.*$#', '', (string)$identifier);
         $identifier = preg_replace('#/files/.*$#', '', (string)$identifier);
+        // A trailing slash left over from a browser address bar (copy-pasted with it)
+        // would otherwise reach the API as an extra path segment and fail to resolve.
+        $identifier = rtrim((string)$identifier, '/');
 
         return [Episciences_Repositories_Common::META_IDENTIFIER => $identifier];
     }
@@ -210,25 +212,44 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         $data = [];
 
         foreach ($entries as $entry) {
-            $explodedChecksum = explode(':', (string)($entry['checksum'] ?? ''));
-
-            $data[] = [
-                'doc_id' => $hookParams['docId'],
-                'source' => $hookParams['repoId'],
-                'file_name' => $entry['key'],
-                'file_type' => $entry['ext'] ?? pathinfo($entry['key'], PATHINFO_EXTENSION),
-                'file_size' => $entry['size'] ?? 0,
-                'checksum' => $explodedChecksum[array_key_last($explodedChecksum)] ?? null,
-                'checksum_type' => $explodedChecksum[array_key_first($explodedChecksum)] ?? null,
-                // links.self is the file's JSON metadata on InvenioRDM 13.1, not its
-                // content, unlike the legacy Zenodo API: links.content is mandatory here.
-                'self_link' => $entry['links']['content'] ?? $entry['links']['self'] ?? null,
-            ];
+            $data[] = self::buildFileRow($entry, $hookParams['docId'], $hookParams['repoId']);
         }
 
         $hookParams['affectedRows'] = Episciences_Paper_FilesManager::insert($data);
 
         return $hookParams;
+    }
+
+    /**
+     * @param array<string, mixed> $entry
+     * @return array<string, mixed>
+     */
+    private static function buildFileRow(array $entry, int $docId, int $repoId): array
+    {
+        $explodedChecksum = explode(':', (string)($entry['checksum'] ?? ''));
+
+        // links.self is the file's JSON metadata on InvenioRDM 13.1, not its
+        // content, unlike the legacy Zenodo API: links.content is mandatory here.
+        $selfLink = $entry['links']['content'] ?? null;
+
+        if ($selfLink === null && isset($entry['links']['self'])) {
+            Episciences_View_Helper_Log::log(sprintf(
+                'BAOBAB file "%s" has no links.content; falling back to links.self, which points to file metadata, not content',
+                (string)($entry['key'] ?? '')
+            ));
+            $selfLink = $entry['links']['self'];
+        }
+
+        return [
+            'doc_id' => $docId,
+            'source' => $repoId,
+            'file_name' => $entry['key'],
+            'file_type' => $entry['ext'] ?? pathinfo($entry['key'], PATHINFO_EXTENSION),
+            'file_size' => $entry['size'] ?? 0,
+            'checksum' => $explodedChecksum[array_key_last($explodedChecksum)] ?? null,
+            'checksum_type' => $explodedChecksum[array_key_first($explodedChecksum)] ?? null,
+            'self_link' => $selfLink,
+        ];
     }
 
     /**
@@ -265,15 +286,15 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      */
     private static function checkResponse(array $hookParams): array
     {
-        $response = [];
+        return Episciences_Repositories_Common::resolveResponse($hookParams, [self::class, 'hookApiRecords']);
+    }
 
-        if (isset($hookParams[Episciences_Repositories_Common::META_IDENTIFIER]) && empty($hookParams['response'])) {
-            $response = self::hookApiRecords([Episciences_Repositories_Common::META_IDENTIFIER => $hookParams[Episciences_Repositories_Common::META_IDENTIFIER]]);
-        } elseif (isset($hookParams['response'])) {
-            $response = $hookParams['response'];
-        }
-
-        return $response;
+    /**
+     * @param array<string, mixed> $json
+     */
+    private static function extractConceptIdentifier(array $json): ?string
+    {
+        return $json['parent']['id'] ?? null;
     }
 
     /**
@@ -398,36 +419,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
      */
     private static function extractDescriptions(SimpleXMLElement $metadata, string $language): array
     {
-        $nodes = $metadata->xpath('//datacite:descriptions/datacite:description[@descriptionType="Abstract"]');
-
-        if (empty($nodes)) {
-            $nodes = $metadata->xpath('//datacite:descriptions/datacite:description');
-        }
-
-        $descriptions = [];
-
-        foreach ($nodes as $node) {
-            $decoded = Episciences_Tools::epi_html_decode((string)$node, ['HTML.AllowedElements' => 'p']);
-            $value = trim(str_replace(['<p>', '</p>'], '', $decoded));
-
-            if ($value === '') {
-                continue;
-            }
-
-            $nodeLanguage = '';
-            $xmlAttributes = $node->attributes('xml', true);
-
-            if (isset($xmlAttributes['lang'])) {
-                $nodeLanguage = (string)$xmlAttributes['lang'];
-            }
-
-            $descriptions[] = [
-                'value' => $value,
-                'language' => $nodeLanguage !== '' ? $nodeLanguage : $language,
-            ];
-        }
-
-        return $descriptions;
+        return Episciences_Repositories_Common::extractDescriptions($metadata, $language, true);
     }
 
     /**
