@@ -139,7 +139,7 @@ class OpenAireTokenProviderTest extends TestCase
 
         $provider->getAccessToken();
 
-        $this->assertSame('https://aai.openaire.eu/token', (string) $history[0]['request']->getUri());
+        $this->assertSame('https://aai.openaire.eu/oidc/token', (string) $history[0]['request']->getUri());
     }
 
     public function testGetAccessToken_CustomAuthUrl_IsUsed(): void

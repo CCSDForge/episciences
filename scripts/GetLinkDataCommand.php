@@ -1,12 +1,10 @@
 <?php
 declare(strict_types=1);
 
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
+use Episciences\Api\ScholexplorerApiClient;
 use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -14,25 +12,28 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Symfony Console command: enrich dataset link data from Scholexplorer.
+ * Symfony Console command: enrich dataset link data from Scholexplorer API v3
+ * (Scholix 3.0 schema).
  *
- * Replaces: scripts/getLinkData.php (JournalScript)
- *
- * Uses Symfony Cache instead of custom file-based cache.
+ * Replaces: scripts/getLinkData.php (JournalScript), then the Scholexplorer API v1 client.
  */
 class GetLinkDataCommand extends Command
 {
     protected static $defaultName = 'enrichment:links';
 
-    private const API_URL = 'https://api.scholexplorer.openaire.eu';
-    private const ONE_MONTH = 3600 * 24 * 31;
+    private const VALID_TYPES = ['dataset', 'software', 'all'];
 
     protected function configure(): void
     {
         $this
-            ->setDescription('Enrich dataset link data from Scholexplorer (OpenAIRE)')
+            ->setDescription('Enrich dataset link data from Scholexplorer (OpenAIRE v3)')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
-            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
+            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)')
+            ->addOption('doi', null, InputOption::VALUE_REQUIRED, 'Target a single DOI')
+            ->addOption('docid', null, InputOption::VALUE_REQUIRED, 'Target a single paper doc_id')
+            ->addOption('type', null, InputOption::VALUE_OPTIONAL, 'Target typology (dataset|software|all)', 'dataset')
+            ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Bypass cache and force network request')
+            ->addOption('no-bidirectional', null, InputOption::VALUE_NONE, 'Disable reciprocal targetPid lookup');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -40,8 +41,18 @@ class GetLinkDataCommand extends Command
         $io     = new SymfonyStyle($input, $output);
         $dryRun = (bool) $input->getOption('dry-run');
         $rvcode = $input->getOption('rvcode');
+        $doiOption   = $input->getOption('doi');
+        $docIdOption = $input->getOption('docid');
+        $type        = (string) $input->getOption('type');
+        $noCache       = (bool) $input->getOption('no-cache');
+        $bidirectional = !$input->getOption('no-bidirectional');
 
-        $io->title('Link data enrichment (Scholexplorer)');
+        if (!in_array($type, self::VALID_TYPES, true)) {
+            $io->error(sprintf("Invalid --type value '%s'. Expected one of: %s.", $type, implode(', ', self::VALID_TYPES)));
+            return Command::FAILURE;
+        }
+
+        $io->title('Link data enrichment (Scholexplorer API v3)');
 
         $this->bootstrap();
 
@@ -68,8 +79,10 @@ class GetLinkDataCommand extends Command
             $logger->info("Filtering on journal: {$rvcode} (RVID {$rvid})");
         }
 
-        $client = new Client();
-        $cache  = new FilesystemAdapter('scholexplorerLinkData', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
+        $client = ScholexplorerApiClient::create(null, $logger);
+        $logger->info($client->isAuthenticated()
+            ? 'Scholexplorer client authenticated (7200 req/h)'
+            : 'Scholexplorer client anonymous (60 req/h)');
 
         $db     = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()
@@ -78,8 +91,15 @@ class GetLinkDataCommand extends Command
             ->where('DOI IS NOT NULL')
             ->where('DOI != ""')
             ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+
         if ($rvid !== null) {
             $select->where('RVID = ?', $rvid);
+        }
+        if ($doiOption !== null) {
+            $select->where('DOI = ?', (string) $doiOption);
+        }
+        if ($docIdOption !== null) {
+            $select->where('DOCID = ?', (int) $docIdOption);
         }
 
         $rows = $db->fetchAll($select);
@@ -87,105 +107,32 @@ class GetLinkDataCommand extends Command
         $stdoutHandler?->setProgressBar($progressBar);
         $progressBar->start();
 
+        $requestedTypes = $type === 'all' ? ['dataset', 'software'] : [$type];
+
         foreach ($rows as $value) {
             $docId   = (int) $value['DOCID'];
             $doiTrim = trim($value['DOI']);
 
-            // Use DOI suffix as cache key (same as old file-name scheme)
-            $doiParts = explode('/', $doiTrim, 2);
-            $cacheKey = isset($doiParts[1]) ? md5($doiParts[1]) : md5($doiTrim);
-            $cacheKey .= '_link';
+            // Each requested type is fetched, purged and re-inserted independently: a
+            // type whose fetch failed or returned nothing must not touch the previously
+            // stored links of the OTHER requested type (see purgeExistingLinks()).
+            foreach ($requestedTypes as $requestedType) {
+                $typeLinks = $client->fetchLinksForDoi($doiTrim, $docId, $requestedType, $bidirectional, $noCache);
 
-            $cacheItem = $cache->getItem($cacheKey);
-
-            if ($cacheItem->isHit()) {
-                $apiResult = (string) $cacheItem->get();
-                $logger->info('Dataset links from cache for DOI ' . $doiTrim);
-            } else {
-                $apiUrl = self::API_URL . '/v1/linksFromPid?pid=' . $doiTrim;
-                $logger->info('Fetching dataset links from Scholexplorer for DOI ' . $doiTrim);
-
-                try {
-                    $apiResult = $client->get($apiUrl, [
-                        'headers' => [
-                            'User-Agent'   => 'CCSD Episciences support@episciences.org',
-                            'Content-Type' => 'application/json',
-                            'Accept'       => 'application/json',
-                        ],
-                    ])->getBody()->getContents();
-                } catch (GuzzleException $e) {
-                    $logger->error('Scholexplorer API error for DOI ' . $doiTrim . ': ' . $e->getMessage());
-                    $progressBar->advance();
+                if (empty($typeLinks)) {
                     continue;
                 }
 
-                $decoded = json_decode($apiResult, true, 512, JSON_THROW_ON_ERROR);
-                if (!empty($decoded)) {
-                    $cacheItem->set($apiResult);
-                    $cacheItem->expiresAfter(self::ONE_MONTH);
-                    $cache->save($cacheItem);
-                }
-            }
+                if (!$dryRun) {
+                    $this->purgeExistingLinks($db, $docId, $requestedType);
 
-            $decoded = json_decode($apiResult, true, 512, JSON_THROW_ON_ERROR);
-            if (empty($decoded)) {
-                $progressBar->advance();
-                sleep(1);
-                continue;
-            }
-
-            $filtered = array_filter(array_map(static function (array $valuesResult): array|false {
-                if (!isset($valuesResult['target']['objectType'])) {
-                    return false;
-                }
-                $objectType = $valuesResult['target']['objectType'];
-                if ($objectType !== 'dataset' && $objectType !== 'datasets') {
-                    return false;
-                }
-                return $valuesResult;
-            }, $decoded));
-
-            if (!empty($filtered) && !$dryRun) {
-                // Remove existing Scholexplorer data for this paper
-                $getTargetId = $db->select()
-                    ->distinct()
-                    ->from('paper_datasets', ['id_paper_datasets_meta'])
-                    ->where('doc_id IS NOT NULL')
-                    ->where('source_id = ?', Episciences_Repositories::SCHOLEXPLORER_ID)
-                    ->where('doc_id = ?', $docId);
-                $idToDelete = $db->fetchOne($getTargetId);
-                if (is_string($idToDelete)) {
-                    Episciences_Paper_DatasetsMetadataManager::deleteMetaDataAndDatasetsByIdMd((int) $idToDelete);
-                    $logger->info('Old dataset links removed for DOI ' . $doiTrim);
-                }
-
-                foreach ($filtered as $ar) {
-                    foreach ($ar['target']['identifiers'] as $identifier) {
-                        try {
-                            $csl                 = Episciences_DoiTools::getMetadataFromDoi($identifier['identifier']);
-                            $lastMetatextInserted = Episciences_Paper_DatasetsMetadataManager::insert(['metatext' => $csl]);
-                            $enrichment          = Episciences_Paper_DatasetsManager::insert([[
-                                'docId'                => $docId,
-                                'code'                 => 'dataset',
-                                'name'                 => $identifier['schema'],
-                                'value'                => $identifier['identifier'],
-                                'link'                 => $identifier['schema'],
-                                'sourceId'             => Episciences_Repositories::SCHOLEXPLORER_ID,
-                                'relationship'         => $ar['relationship']['name'],
-                                'idPaperDatasetsMeta'  => $lastMetatextInserted,
-                            ]]);
-                            if ($enrichment >= 1) {
-                                $logger->info('Dataset link saved for DOI ' . $doiTrim);
-                            }
-                        } catch (Exception $e) {
-                            $logger->error('Dataset link insert error for DOI ' . $doiTrim . ': ' . $e->getMessage());
-                        }
+                    foreach ($typeLinks as $linkItem) {
+                        $this->insertLink($client, $docId, $linkItem, $logger, $doiTrim);
                     }
                 }
             }
 
             $progressBar->advance();
-            sleep(1);
         }
 
         $progressBar->finish();
@@ -194,6 +141,80 @@ class GetLinkDataCommand extends Command
         $io->success('Link data enrichment completed.');
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Remove every existing Scholexplorer-sourced link (and its metadata row) of the
+     * given type for this paper, ahead of a fresh insertion of that type's deduplicated
+     * link set. Scoped to $type so purging one type (e.g. 'dataset') never deletes the
+     * other type's previously stored links (e.g. 'software').
+     *
+     * Fetches all matching id_paper_datasets_meta values (fetchAll, not fetchOne) so
+     * a paper with several pre-existing links does not leave orphaned metadata rows.
+     */
+    private function purgeExistingLinks(Zend_Db_Adapter_Abstract $db, int $docId, string $type): void
+    {
+        $existingMetaIds = $db->fetchCol(
+            $db->select()
+                ->distinct()
+                ->from(T_PAPER_DATASETS, ['id_paper_datasets_meta'])
+                ->where('doc_id = ?', $docId)
+                ->where('source_id = ?', Episciences_Repositories::SCHOLEXPLORER_ID)
+                ->where('code = ?', $type)
+                ->where('id_paper_datasets_meta IS NOT NULL')
+        );
+
+        $db->delete(T_PAPER_DATASETS, [
+            'doc_id = ?'    => $docId,
+            'source_id = ?' => Episciences_Repositories::SCHOLEXPLORER_ID,
+            'code = ?'      => $type,
+        ]);
+
+        if (!empty($existingMetaIds)) {
+            $db->delete(T_PAPER_DATASETS_META, ['id IN (?)' => $existingMetaIds]);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $linkItem
+     */
+    private function insertLink(ScholexplorerApiClient $client, int $docId, array $linkItem, Logger $logger, string $doiTrim): void
+    {
+        $canonicalId = (string) $linkItem['identifier'];
+        $scheme      = (string) $linkItem['scheme'];
+        $url         = $linkItem['link'];
+        $relName     = (string) $linkItem['relationship'];
+        $code        = (string) $linkItem['type'];
+        $rawEntity   = is_array($linkItem['raw']) ? $linkItem['raw'] : [];
+
+        $csl = null;
+        if ($scheme === 'doi') {
+            $fetched = Episciences_DoiTools::getMetadataFromDoi($canonicalId);
+            $csl = $fetched !== '' ? $fetched : null;
+        }
+        if ($csl === null) {
+            $csl = json_encode(
+                $client->buildFallbackCsl($rawEntity, $relName),
+                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+            );
+        }
+
+        $metaId = Episciences_Paper_DatasetsMetadataManager::insert(['metatext' => $csl]);
+
+        $enrichment = Episciences_Paper_DatasetsManager::insert([[
+            'docId'               => $docId,
+            'code'                => $code,
+            'name'                => $scheme,
+            'value'               => $canonicalId,
+            'link'                => is_string($url) && $url !== '' ? $url : $scheme,
+            'sourceId'            => Episciences_Repositories::SCHOLEXPLORER_ID,
+            'relationship'        => $relName,
+            'idPaperDatasetsMeta' => $metaId,
+        ]]);
+
+        if ($enrichment >= 1) {
+            $logger->info("Dataset link saved for DOI {$doiTrim}: {$canonicalId}");
+        }
     }
 
     private function bootstrap(): void

@@ -22,7 +22,7 @@ use Psr\Log\LoggerInterface;
 class OpenAireTokenProvider
 {
     private const CACHE_KEY = 'openaire_access_token';
-    private const DEFAULT_AUTH_URL = 'https://aai.openaire.eu/token';
+    private const DEFAULT_AUTH_URL = 'https://aai.openaire.eu/oidc/token';
     private const SAFETY_MARGIN_SECONDS = 120; // renew 2 minutes before actual expiry
     private const MIN_TTL_SECONDS = 60;
     private const JSON_MAX_DEPTH = 512;

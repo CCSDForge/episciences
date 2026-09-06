@@ -61,6 +61,16 @@ class Episciences_User extends Ccsd_User_Models_User
         self::$_identityMap = [];
     }
 
+    /**
+     * Drop one entry from the static request-level memory cache, so the next
+     * find() re-reads the row from the database instead of a value cached
+     * earlier in the same request.
+     */
+    public static function forgetStaticCache(int $uid): void
+    {
+        unset(self::$_identityMap[$uid]);
+    }
+
     protected ?string $_orcid = null;
     protected ?array $_affiliations = null;
 
@@ -465,6 +475,11 @@ class Episciences_User extends Ccsd_User_Models_User
 
         if ($isCasRecording) {
             $casId = parent::save($forceInsert);
+
+            if ($casId === false) {
+                trigger_error('CAS write failed for UID ' . $this->getUid(), E_USER_WARNING);
+                return false;
+            }
         }
 
         $uid = ($casId) ?: $this->getUid();
@@ -559,11 +574,17 @@ class Episciences_User extends Ccsd_User_Models_User
                 return false;
             }
 
+            // hasLocalData() above may have cached this UID's row before this write;
+            // drop it so the next find() re-reads the row this save() just wrote.
+            self::forgetStaticCache((int)$uid);
+
             return $uid;
         }
 
         // Mise à jour des données locales
         $this->_db->update(T_USERS, $data, ['UID = ?' => $this->getUid()]);
+
+        self::forgetStaticCache((int)$this->getUid());
 
         return $this->getUid();
 
