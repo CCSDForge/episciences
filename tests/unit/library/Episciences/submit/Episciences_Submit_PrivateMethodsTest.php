@@ -73,6 +73,35 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
     }
 
     // =========================================================================
+    // GROUP E — processDatasets() DataCite-shaped repositories guard
+    // =========================================================================
+    //
+    // processDatasets() touches the database and cannot be exercised end to end
+    // here; this is a source-level guard that BAOBAB_REPO_ID stays listed
+    // alongside Zenodo/ARCHE/DSpace, whose related identifiers arrive as
+    // DataCite-shaped arrays (identifier/relation/resource_type/scheme) rather
+    // than a plain list. Without it, a BAOBAB submission's related identifiers
+    // would be iterated key-by-key and "IsDerivedFrom"/"dataset" would be typed
+    // as if they were identifiers themselves.
+
+    public function testProcessDatasetsRecognisesBaobabAsDataCiteShaped(): void
+    {
+        $method = new ReflectionMethod(Episciences_Submit::class, 'processDatasets');
+        $filePath = $method->getFileName();
+
+        self::assertNotFalse($filePath, 'Could not determine source file path via ReflectionMethod');
+
+        $source = file_get_contents($filePath);
+        self::assertNotFalse($source, 'Could not read source file: ' . $filePath);
+
+        self::assertStringContainsString(
+            'Episciences_Repositories::BAOBAB_REPO_ID',
+            $source,
+            'processDatasets() must list BAOBAB_REPO_ID among the DataCite-shaped related identifiers repositories'
+        );
+    }
+
+    // =========================================================================
     // GROUP A — assertDateTimeVersion()
     // =========================================================================
 

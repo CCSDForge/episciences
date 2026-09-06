@@ -2723,6 +2723,7 @@ class Episciences_Submit
                 if (
                     $repoId === (int)Episciences_Repositories::ZENODO_REPO_ID ||
                     $repoId === (int)Episciences_Repositories::ARCHE_ID ||
+                    $repoId === (int)Episciences_Repositories::BAOBAB_REPO_ID ||
                     Episciences_Repositories::isDspace($repoId)) {
 
                     if ($key !== 'identifier') {
