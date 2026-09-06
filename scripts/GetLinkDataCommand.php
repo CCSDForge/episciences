@@ -113,24 +113,22 @@ class GetLinkDataCommand extends Command
             $docId   = (int) $value['DOCID'];
             $doiTrim = trim($value['DOI']);
 
-            $links = [];
+            // Each requested type is fetched, purged and re-inserted independently: a
+            // type whose fetch failed or returned nothing must not touch the previously
+            // stored links of the OTHER requested type (see purgeExistingLinks()).
             foreach ($requestedTypes as $requestedType) {
-                $links = array_merge(
-                    $links,
-                    $client->fetchLinksForDoi($doiTrim, $docId, $requestedType, $bidirectional, $noCache)
-                );
-            }
+                $typeLinks = $client->fetchLinksForDoi($doiTrim, $docId, $requestedType, $bidirectional, $noCache);
 
-            if (empty($links)) {
-                $progressBar->advance();
-                continue;
-            }
+                if (empty($typeLinks)) {
+                    continue;
+                }
 
-            if (!$dryRun) {
-                $this->purgeExistingLinks($db, $docId);
+                if (!$dryRun) {
+                    $this->purgeExistingLinks($db, $docId, $requestedType);
 
-                foreach ($links as $linkItem) {
-                    $this->insertLink($client, $docId, $linkItem, $logger, $doiTrim);
+                    foreach ($typeLinks as $linkItem) {
+                        $this->insertLink($client, $docId, $linkItem, $logger, $doiTrim);
+                    }
                 }
             }
 
@@ -146,13 +144,15 @@ class GetLinkDataCommand extends Command
     }
 
     /**
-     * Remove every existing Scholexplorer-sourced dataset link (and its metadata row)
-     * for this paper, ahead of a fresh insertion of the deduplicated link set.
+     * Remove every existing Scholexplorer-sourced link (and its metadata row) of the
+     * given type for this paper, ahead of a fresh insertion of that type's deduplicated
+     * link set. Scoped to $type so purging one type (e.g. 'dataset') never deletes the
+     * other type's previously stored links (e.g. 'software').
      *
      * Fetches all matching id_paper_datasets_meta values (fetchAll, not fetchOne) so
      * a paper with several pre-existing links does not leave orphaned metadata rows.
      */
-    private function purgeExistingLinks(Zend_Db_Adapter_Abstract $db, int $docId): void
+    private function purgeExistingLinks(Zend_Db_Adapter_Abstract $db, int $docId, string $type): void
     {
         $existingMetaIds = $db->fetchCol(
             $db->select()
@@ -160,12 +160,14 @@ class GetLinkDataCommand extends Command
                 ->from(T_PAPER_DATASETS, ['id_paper_datasets_meta'])
                 ->where('doc_id = ?', $docId)
                 ->where('source_id = ?', Episciences_Repositories::SCHOLEXPLORER_ID)
+                ->where('code = ?', $type)
                 ->where('id_paper_datasets_meta IS NOT NULL')
         );
 
         $db->delete(T_PAPER_DATASETS, [
             'doc_id = ?'    => $docId,
             'source_id = ?' => Episciences_Repositories::SCHOLEXPLORER_ID,
+            'code = ?'      => $type,
         ]);
 
         if (!empty($existingMetaIds)) {

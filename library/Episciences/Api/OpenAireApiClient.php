@@ -3,15 +3,12 @@ declare(strict_types=1);
 
 namespace Episciences\Api;
 
-use GuzzleHttp\Exception\ClientException;
-use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\InvalidArgumentException;
 use Psr\Cache\CacheItemPoolInterface;
 use GuzzleHttp\Client;
-use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
@@ -34,15 +31,9 @@ class OpenAireApiClient extends AbstractApiClient
     private const MAX_RESPONSE_SIZE = 5242880; // 5 MB
     private const ORCID_SCHEMES = ['orcid', 'orcid_pending'];
 
-    // Rate limits per https://graph.openaire.eu/docs/apis/terms#authentication--limits
-    private const AUTH_THROTTLE_MICROSECONDS = 500000; // 500ms (~2 req/s, quota 7200 req/h, authenticated)
-    private const UNAUTH_THROTTLE_SECONDS    = 60;      // 60s (1 req/min, quota 60 req/h, anonymous)
-    private const MAX_RETRIES = 3;
-
     private CacheItemPoolInterface $globalCache;
     private CacheItemPoolInterface $authorsCache;
     private CacheItemPoolInterface $fundingCache;
-    private ?OpenAireTokenProvider $tokenProvider;
 
     public function __construct(
         Client               $client,
@@ -58,14 +49,6 @@ class OpenAireApiClient extends AbstractApiClient
         $this->authorsCache  = $authorsCache;
         $this->fundingCache  = $fundingCache;
         $this->tokenProvider = $tokenProvider;
-    }
-
-    /**
-     * True when a token provider is set up with client credentials (authenticated mode).
-     */
-    public function isAuthenticated(): bool
-    {
-        return $this->tokenProvider?->isConfigured() ?? false;
     }
 
     // -------------------------------------------------------------------------
@@ -97,7 +80,7 @@ class OpenAireApiClient extends AbstractApiClient
         $url = rtrim($apiBaseUrl, '/') . '?pid=' . urlencode($doi);
         $this->logger->info("Fetching OpenAIRE data for DOI {$doi}");
 
-        $body = $this->requestWithRetry($url, $paperId);
+        $body = $this->requestWithRetry($url, $paperId, 'OpenAIRE');
         if ($body === null) {
             return null;
         }
@@ -129,176 +112,6 @@ class OpenAireApiClient extends AbstractApiClient
         $this->globalCache->save($item);
 
         return $decoded;
-    }
-
-    // -------------------------------------------------------------------------
-    // HTTP request with bi-mode auth, adaptive throttling, and 401/429 retry
-    // -------------------------------------------------------------------------
-
-    /**
-     * Issue the GET request, handling authentication, throttling, and 401/429 retry.
-     * Returns the raw response body, or null on unrecoverable error / exhausted retries.
-     */
-    private function requestWithRetry(string $url, int $paperId): ?string
-    {
-        $token   = $this->tokenProvider?->getAccessToken();
-        $headers = $this->defaultHeaders();
-
-        if ($token !== null) {
-            $headers['Authorization'] = 'Bearer ' . $token;
-            $this->throttleAuthenticated();
-        } else {
-            $this->logger->warning(
-                'OpenAIRE unauthenticated mode active: throttling for ' . self::UNAUTH_THROTTLE_SECONDS . 's (rate limit: 60 req/h)'
-            );
-            $this->throttleUnauthenticated();
-        }
-
-        $attempt = 0;
-        while ($attempt < self::MAX_RETRIES) {
-            $attempt++;
-            try {
-                $response = $this->client->get($url, [
-                    'headers'         => $headers,
-                    'timeout'         => 30,
-                    'allow_redirects' => [
-                        'max'       => 2,
-                        'strict'    => true,
-                        'referer'   => true,
-                        'protocols' => ['https'],
-                    ],
-                    'verify'          => true,
-                ]);
-
-                $this->logRateLimitStatus($response);
-                return $response->getBody()->getContents();
-            } catch (ClientException $e) {
-                $statusCode = $e->getResponse()->getStatusCode();
-
-                // 401 Unauthorized: token revoked/expired in authenticated mode -> refresh and retry once.
-                if ($statusCode === 401 && $token !== null && $this->tokenProvider !== null && $attempt === 1) {
-                    $this->logger->warning('OpenAIRE 401 Unauthorized received, refreshing token...');
-                    $this->tokenProvider->clearTokenCache();
-                    $token = $this->tokenProvider->getAccessToken();
-                    if ($token !== null) {
-                        $headers['Authorization'] = 'Bearer ' . $token;
-                        continue;
-                    }
-                }
-
-                // 429 Too Many Requests: back off and retry, up to MAX_RETRIES attempts.
-                if ($statusCode === 429) {
-                    // Never block the request thread: this path is also reachable synchronously
-                    // from PaperController/AdministratepaperController via updateRecordData().
-                    if (!$this->isCliContext()) {
-                        $this->logger->warning(
-                            "OpenAIRE 429 Too Many Requests for paper {$paperId}; not retrying outside CLI execution (would block the request)"
-                        );
-                        return null;
-                    }
-
-                    if ($attempt >= self::MAX_RETRIES) {
-                        $this->logger->critical(
-                            "OpenAIRE API: rate limit (429) exhausted after {$attempt} attempts for paper {$paperId}, giving up"
-                        );
-                        return null;
-                    }
-
-                    $retryAfter   = (int) $e->getResponse()->getHeaderLine('Retry-After');
-                    $sleepSeconds = $token !== null
-                        ? ($retryAfter > 0 ? $retryAfter : ($attempt * 3))
-                        : max(self::UNAUTH_THROTTLE_SECONDS, $retryAfter);
-
-                    $this->logger->warning(
-                        "OpenAIRE 429 Too Many Requests for paper {$paperId} (attempt {$attempt}/" . self::MAX_RETRIES . "). Waiting {$sleepSeconds}s..."
-                    );
-                    $this->backoff($sleepSeconds);
-                    continue;
-                }
-
-                $this->logger->error("OpenAIRE API error for paper {$paperId} (HTTP {$statusCode}): " . $e->getMessage());
-                return null;
-            } catch (GuzzleException $e) {
-                $this->logger->error("OpenAIRE API connection error for paper {$paperId}: " . $e->getMessage());
-                return null;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Log OpenAIRE rate-limit response headers (x-ratelimit-used / x-ratelimit-limit), if present.
-     */
-    private function logRateLimitStatus(ResponseInterface $response): void
-    {
-        $used  = $response->getHeaderLine('x-ratelimit-used');
-        $limit = $response->getHeaderLine('x-ratelimit-limit');
-        if ($used === '' || $limit === '') {
-            return;
-        }
-
-        $this->logger->debug("OpenAIRE Rate Limit status: {$used}/{$limit}");
-        if ((int) $limit > 0 && (int) $used > ((int) $limit * 0.85)) {
-            $this->logger->warning("OpenAIRE Rate Limit threshold > 85%: {$used}/{$limit}");
-        }
-    }
-
-    /**
-     * Proactive throttle before an authenticated request (~2 req/s, quota 7200 req/h).
-     * Extracted as an overridable seam so tests can skip the real delay.
-     *
-     * Restricted to CLI execution for the same reason as throttleUnauthenticated(): a
-     * request triggered from PaperController/AdministratepaperController must never be
-     * delayed for UI/UX reasons. Skipping the 500ms pacing on an isolated HTTP-triggered
-     * call is safe — the pacing only matters for back-to-back CLI batch requests.
-     */
-    protected function throttleAuthenticated(): void
-    {
-        if (!$this->isCliContext()) {
-            $this->logger->debug('OpenAIRE authenticated throttle skipped outside CLI execution (HTTP request path)');
-            return;
-        }
-        usleep(self::AUTH_THROTTLE_MICROSECONDS);
-    }
-
-    /**
-     * Proactive throttle before an anonymous request (1 req/min, quota 60 req/h).
-     * Extracted as an overridable seam so tests can skip the real delay.
-     *
-     * Restricted to CLI execution: this path is also reachable synchronously from
-     * PaperController/AdministratepaperController via PapersManager::updateRecordData(),
-     * and a 60s sleep() would block a PHP-FPM worker for a full minute per request.
-     */
-    protected function throttleUnauthenticated(): void
-    {
-        if (!$this->isCliContext()) {
-            $this->logger->debug('OpenAIRE unauthenticated throttle skipped outside CLI execution (HTTP request path)');
-            return;
-        }
-        sleep(self::UNAUTH_THROTTLE_SECONDS);
-    }
-
-    /**
-     * Reactive backoff wait after an HTTP 429 response.
-     * Extracted as an overridable seam so tests can skip the real delay.
-     *
-     * Only ever called from a CLI context: requestWithRetry() returns before reaching
-     * this call outside CLI execution, so the request thread is never blocked here.
-     */
-    protected function backoff(int $seconds): void
-    {
-        sleep($seconds);
-    }
-
-    /**
-     * True when running under the CLI SAPI (batch commands), false for an HTTP request
-     * (e.g. PaperController/AdministratepaperController). Extracted as an overridable
-     * seam so tests can simulate the HTTP path without faking the global PHP_SAPI value.
-     */
-    protected function isCliContext(): bool
-    {
-        return PHP_SAPI === 'cli';
     }
 
     // -------------------------------------------------------------------------

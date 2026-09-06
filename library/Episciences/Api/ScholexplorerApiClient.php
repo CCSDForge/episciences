@@ -4,12 +4,9 @@ declare(strict_types=1);
 namespace Episciences\Api;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ClientException;
-use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Logger;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Cache\InvalidArgumentException;
-use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
@@ -19,7 +16,7 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
  * @see https://graph.openaire.eu/docs/apis/scholexplorer/v3/version
  *
  * Cache namespaces:
- *  - scholexplorerLinkData  : md5($doi) . '_v3_links.json'
+ *  - scholexplorerLinkData  : md5($doi . '|' . $targetType . '|' . $bidirectional) . '_v3_links.json'
  *  - scholexplorerAuthToken : dedicated FilesystemAdapter pool for OpenAireTokenProvider
  *                             (same 'openaire_access_token' cache key as the OpenAIRE Graph
  *                             client, but isolated in its own pool — no collision).
@@ -30,27 +27,50 @@ class ScholexplorerApiClient extends AbstractApiClient
     private const MAX_RESPONSE_SIZE = 5242880; // 5 MB
     private const PAGE_SIZE = 50; // max 100
 
-    // Rate limits per https://graph.openaire.eu/docs/apis/terms#authentication--limits
-    private const AUTH_THROTTLE_MICROSECONDS = 500000; // 500ms (~2 req/s, quota 7200 req/h, authenticated)
-    private const UNAUTH_THROTTLE_SECONDS    = 60;      // 60s (1 req/min, quota 60 req/h, anonymous)
-    private const MAX_RETRIES = 3;
-
     // Priority order for canonical identifier selection (Identifier[].IDScheme).
     private const IDENTIFIER_SCHEME_PRIORITY = ['doi', 'handle', 'swhid', 'url'];
 
     // Reciprocal relationship mapping applied when the connected entity was found via
     // a targetPid query (i.e. it declared our DOI as its target): the relationship name
     // carried by the Scholix record describes "entity -> our article", so it must be
-    // flipped to describe "our article -> entity" before being stored.
+    // flipped to describe "our article -> entity" before being stored. Covers the full
+    // DataCite/Scholix relation-type vocabulary as a symmetric involution.
     private const RELATIONSHIP_INVERSES = [
-        'IsSupplementTo'     => 'IsSupplementedBy',
-        'IsSupplementedBy'   => 'IsSupplementTo',
-        'References'         => 'IsReferencedBy',
-        'IsReferencedBy'     => 'References',
-        'IsRelatedTo'        => 'IsRelatedTo',
+        'IsCitedBy'           => 'Cites',
+        'Cites'               => 'IsCitedBy',
+        'IsSupplementTo'      => 'IsSupplementedBy',
+        'IsSupplementedBy'    => 'IsSupplementTo',
+        'IsContinuedBy'       => 'Continues',
+        'Continues'           => 'IsContinuedBy',
+        'IsDescribedBy'       => 'Describes',
+        'Describes'           => 'IsDescribedBy',
+        'HasMetadata'         => 'IsMetadataFor',
+        'IsMetadataFor'       => 'HasMetadata',
+        'HasVersion'          => 'IsVersionOf',
+        'IsVersionOf'         => 'HasVersion',
+        'IsNewVersionOf'      => 'IsPreviousVersionOf',
+        'IsPreviousVersionOf' => 'IsNewVersionOf',
+        'IsPartOf'            => 'HasPart',
+        'HasPart'             => 'IsPartOf',
+        'IsReferencedBy'      => 'References',
+        'References'          => 'IsReferencedBy',
+        'IsDocumentedBy'      => 'Documents',
+        'Documents'           => 'IsDocumentedBy',
+        'IsCompiledBy'        => 'Compiles',
+        'Compiles'            => 'IsCompiledBy',
+        'IsVariantFormOf'     => 'IsOriginalFormOf',
+        'IsOriginalFormOf'    => 'IsVariantFormOf',
+        'IsIdenticalTo'       => 'IsIdenticalTo',
+        'IsReviewedBy'        => 'Reviews',
+        'Reviews'             => 'IsReviewedBy',
+        'IsDerivedFrom'       => 'IsSourceOf',
+        'IsSourceOf'          => 'IsDerivedFrom',
+        'IsRequiredBy'        => 'Requires',
+        'Requires'            => 'IsRequiredBy',
+        'IsObsoletedBy'       => 'Obsoletes',
+        'Obsoletes'           => 'IsObsoletedBy',
+        'IsRelatedTo'         => 'IsRelatedTo',
     ];
-
-    private ?OpenAireTokenProvider $tokenProvider;
 
     public function __construct(
         Client $client,
@@ -60,14 +80,6 @@ class ScholexplorerApiClient extends AbstractApiClient
     ) {
         parent::__construct($client, $cache, $logger);
         $this->tokenProvider = $tokenProvider;
-    }
-
-    /**
-     * True when a token provider is set up with client credentials (authenticated mode).
-     */
-    public function isAuthenticated(): bool
-    {
-        return $this->tokenProvider?->isConfigured() ?? false;
     }
 
     // -------------------------------------------------------------------------
@@ -94,7 +106,7 @@ class ScholexplorerApiClient extends AbstractApiClient
         bool $bidirectional = true,
         bool $forceRefresh = false
     ): array {
-        $cacheKey = md5($doi) . '_v3_links.json';
+        $cacheKey = md5($doi . '|' . $targetType . '|' . ($bidirectional ? '1' : '0')) . '_v3_links.json';
 
         if (!$forceRefresh) {
             $cached = $this->getCached($cacheKey);
@@ -149,7 +161,7 @@ class ScholexplorerApiClient extends AbstractApiClient
 
         do {
             $url  = $this->buildUrl($doi, $pidParam, $typeParam, $entityType, $page);
-            $body = $this->requestWithRetry($url, $docId);
+            $body = $this->requestWithRetry($url, $docId, 'Scholexplorer');
 
             if ($body === null) {
                 break;
@@ -239,9 +251,19 @@ class ScholexplorerApiClient extends AbstractApiClient
                 continue;
             }
 
-            $relationshipName = $item['RelationshipType']['Name'] ?? 'IsRelatedTo';
+            $relationshipTypeNode = $item['RelationshipType'] ?? null;
+            $relationshipName = is_array($relationshipTypeNode) ? ($relationshipTypeNode['Name'] ?? null) : null;
+            if (!is_string($relationshipName) || $relationshipName === '') {
+                $relationshipName = 'IsRelatedTo';
+            }
             if ($direction === 'targetPid') {
-                $relationshipName = self::RELATIONSHIP_INVERSES[$relationshipName] ?? $relationshipName;
+                if (isset(self::RELATIONSHIP_INVERSES[$relationshipName])) {
+                    $relationshipName = self::RELATIONSHIP_INVERSES[$relationshipName];
+                } else {
+                    $this->logger->warning(
+                        "Scholexplorer: no known inverse for relationship type '{$relationshipName}'; storing as-is"
+                    );
+                }
             }
 
             $publisher = $connectedEntity['Publisher'][0]['name'] ?? null;
@@ -411,174 +433,41 @@ class ScholexplorerApiClient extends AbstractApiClient
         return ['literal' => $name];
     }
 
+    /**
+     * Extract a plausible year from a Scholix PublicationDate. Only accepts a bare
+     * "YYYY" or an ISO 8601 "YYYY-MM-DD" prefix, so non-date strings (e.g. an epoch
+     * millisecond timestamp) are rejected rather than mismatched to their leading digits.
+     */
     private function extractYear(string $date): ?int
     {
-        if (preg_match('/(\d{4})/', $date, $matches) === 1) {
+        if (preg_match('/^(\d{4})(?:-\d{2}-\d{2})?$/', trim($date), $matches) === 1) {
             return (int) $matches[1];
         }
         return null;
     }
 
     // -------------------------------------------------------------------------
-    // HTTP request with bi-mode auth, adaptive throttling, and 401/429 retry
-    // -------------------------------------------------------------------------
-
-    /**
-     * Issue the GET request, handling authentication, throttling, and 401/429 retry.
-     * Returns the raw response body, or null on unrecoverable error / exhausted retries.
-     */
-    private function requestWithRetry(string $url, int $paperId): ?string
-    {
-        $token   = $this->tokenProvider?->getAccessToken();
-        $headers = $this->defaultHeaders();
-
-        if ($token !== null) {
-            $headers['Authorization'] = 'Bearer ' . $token;
-            $this->throttleAuthenticated();
-        } else {
-            $this->logger->warning(
-                'Scholexplorer unauthenticated mode active: throttling for ' . self::UNAUTH_THROTTLE_SECONDS . 's (rate limit: 60 req/h)'
-            );
-            $this->throttleUnauthenticated();
-        }
-
-        $attempt = 0;
-        while ($attempt < self::MAX_RETRIES) {
-            $attempt++;
-            try {
-                $response = $this->client->get($url, [
-                    'headers'         => $headers,
-                    'timeout'         => 30,
-                    'allow_redirects' => [
-                        'max'       => 2,
-                        'strict'    => true,
-                        'referer'   => true,
-                        'protocols' => ['https'],
-                    ],
-                    'verify'          => true,
-                ]);
-
-                $this->logRateLimitStatus($response);
-                return $response->getBody()->getContents();
-            } catch (ClientException $e) {
-                $statusCode = $e->getResponse()->getStatusCode();
-
-                // 401 Unauthorized: token revoked/expired in authenticated mode -> refresh and retry once.
-                if ($statusCode === 401 && $token !== null && $this->tokenProvider !== null && $attempt === 1) {
-                    $this->logger->warning('Scholexplorer 401 Unauthorized received, refreshing token...');
-                    $this->tokenProvider->clearTokenCache();
-                    $token = $this->tokenProvider->getAccessToken();
-                    if ($token !== null) {
-                        $headers['Authorization'] = 'Bearer ' . $token;
-                        continue;
-                    }
-                }
-
-                // 429 Too Many Requests: back off and retry, up to MAX_RETRIES attempts.
-                if ($statusCode === 429) {
-                    // Never block the request thread: enrichment:links only runs in CLI,
-                    // but this seam matches OpenAireApiClient's guard for consistency and safety.
-                    if (!$this->isCliContext()) {
-                        $this->logger->warning(
-                            "Scholexplorer 429 Too Many Requests for paper {$paperId}; not retrying outside CLI execution (would block the request)"
-                        );
-                        return null;
-                    }
-
-                    if ($attempt >= self::MAX_RETRIES) {
-                        $this->logger->critical(
-                            "Scholexplorer API: rate limit (429) exhausted after {$attempt} attempts for paper {$paperId}, giving up"
-                        );
-                        return null;
-                    }
-
-                    $retryAfter   = (int) $e->getResponse()->getHeaderLine('Retry-After');
-                    $sleepSeconds = $token !== null
-                        ? ($retryAfter > 0 ? $retryAfter : ($attempt * 3))
-                        : max(self::UNAUTH_THROTTLE_SECONDS, $retryAfter);
-
-                    $this->logger->warning(
-                        "Scholexplorer 429 Too Many Requests for paper {$paperId} (attempt {$attempt}/" . self::MAX_RETRIES . "). Waiting {$sleepSeconds}s..."
-                    );
-                    $this->backoff($sleepSeconds);
-                    continue;
-                }
-
-                $this->logger->error("Scholexplorer API error for paper {$paperId} (HTTP {$statusCode}): " . $e->getMessage());
-                return null;
-            } catch (GuzzleException $e) {
-                $this->logger->error("Scholexplorer API connection error for paper {$paperId}: " . $e->getMessage());
-                return null;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Log Scholexplorer rate-limit response headers (x-ratelimit-used / x-ratelimit-limit), if present.
-     */
-    private function logRateLimitStatus(ResponseInterface $response): void
-    {
-        $used  = $response->getHeaderLine('x-ratelimit-used');
-        $limit = $response->getHeaderLine('x-ratelimit-limit');
-        if ($used === '' || $limit === '') {
-            return;
-        }
-
-        $this->logger->debug("Scholexplorer Rate Limit status: {$used}/{$limit}");
-        if ((int) $limit > 0 && (int) $used > ((int) $limit * 0.85)) {
-            $this->logger->warning("Scholexplorer Rate Limit threshold > 85%: {$used}/{$limit}");
-        }
-    }
-
-    /**
-     * Proactive throttle before an authenticated request (~2 req/s, quota 7200 req/h).
-     * Extracted as an overridable seam so tests can skip the real delay.
-     */
-    protected function throttleAuthenticated(): void
-    {
-        if (!$this->isCliContext()) {
-            $this->logger->debug('Scholexplorer authenticated throttle skipped outside CLI execution');
-            return;
-        }
-        usleep(self::AUTH_THROTTLE_MICROSECONDS);
-    }
-
-    /**
-     * Proactive throttle before an anonymous request (1 req/min, quota 60 req/h).
-     * Extracted as an overridable seam so tests can skip the real delay.
-     */
-    protected function throttleUnauthenticated(): void
-    {
-        if (!$this->isCliContext()) {
-            $this->logger->debug('Scholexplorer unauthenticated throttle skipped outside CLI execution');
-            return;
-        }
-        sleep(self::UNAUTH_THROTTLE_SECONDS);
-    }
-
-    /**
-     * Reactive backoff wait after an HTTP 429 response.
-     * Extracted as an overridable seam so tests can skip the real delay.
-     */
-    protected function backoff(int $seconds): void
-    {
-        sleep($seconds);
-    }
-
-    /**
-     * True when running under the CLI SAPI (batch commands), false for an HTTP request.
-     * Extracted as an overridable seam so tests can simulate the HTTP path.
-     */
-    protected function isCliContext(): bool
-    {
-        return PHP_SAPI === 'cli';
-    }
-
-    // -------------------------------------------------------------------------
     // Static factory
     // -------------------------------------------------------------------------
+
+    /**
+     * Read a credential/config constant, falling back to a second constant, then to
+     * a default. Used by create() to prefer SCHOLEXPLORER_* config over OPENAIRE_*.
+     */
+    private static function resolveConfigConstant(string $constant, ?string $fallbackConstant, ?string $default = null): ?string
+    {
+        // @phpstan-ignore notIdentical.alwaysTrue
+        if (defined($constant) && (string) constant($constant) !== '') {
+            return (string) constant($constant);
+        }
+
+        // @phpstan-ignore notIdentical.alwaysTrue
+        if ($fallbackConstant !== null && defined($fallbackConstant) && (string) constant($fallbackConstant) !== '') {
+            return (string) constant($fallbackConstant);
+        }
+
+        return $default;
+    }
 
     /**
      * Build a production-ready instance using FilesystemAdapter caches and a file logger.
@@ -596,23 +485,9 @@ class ScholexplorerApiClient extends AbstractApiClient
         $logger   = $logger ?? new Logger('scholexplorer_api_client');
 
         if ($tokenProvider === null) {
-            // @phpstan-ignore notIdentical.alwaysTrue
-            $clientId = defined('SCHOLEXPLORER_CLIENT_ID') && (string) constant('SCHOLEXPLORER_CLIENT_ID') !== ''
-                ? (string) constant('SCHOLEXPLORER_CLIENT_ID')
-                // @phpstan-ignore notIdentical.alwaysTrue
-                : (defined('OPENAIRE_CLIENT_ID') && (string) constant('OPENAIRE_CLIENT_ID') !== '' ? (string) constant('OPENAIRE_CLIENT_ID') : null);
-
-            // @phpstan-ignore notIdentical.alwaysTrue
-            $clientSecret = defined('SCHOLEXPLORER_CLIENT_SECRET') && (string) constant('SCHOLEXPLORER_CLIENT_SECRET') !== ''
-                ? (string) constant('SCHOLEXPLORER_CLIENT_SECRET')
-                // @phpstan-ignore notIdentical.alwaysTrue
-                : (defined('OPENAIRE_CLIENT_SECRET') && (string) constant('OPENAIRE_CLIENT_SECRET') !== '' ? (string) constant('OPENAIRE_CLIENT_SECRET') : null);
-
-            // @phpstan-ignore notIdentical.alwaysTrue
-            $authUrl = defined('SCHOLEXPLORER_AUTH_URL') && (string) constant('SCHOLEXPLORER_AUTH_URL') !== ''
-                ? (string) constant('SCHOLEXPLORER_AUTH_URL')
-                // @phpstan-ignore notIdentical.alwaysTrue
-                : (defined('OPENAIRE_AUTH_URL') && (string) constant('OPENAIRE_AUTH_URL') !== '' ? (string) constant('OPENAIRE_AUTH_URL') : 'https://aai.openaire.eu/oidc/token');
+            $clientId     = self::resolveConfigConstant('SCHOLEXPLORER_CLIENT_ID', 'OPENAIRE_CLIENT_ID');
+            $clientSecret = self::resolveConfigConstant('SCHOLEXPLORER_CLIENT_SECRET', 'OPENAIRE_CLIENT_SECRET');
+            $authUrl      = self::resolveConfigConstant('SCHOLEXPLORER_AUTH_URL', 'OPENAIRE_AUTH_URL', 'https://aai.openaire.eu/oidc/token');
 
             $tokenProvider = new OpenAireTokenProvider(
                 new Client(),
