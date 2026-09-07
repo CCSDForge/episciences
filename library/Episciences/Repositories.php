@@ -44,6 +44,7 @@ class Episciences_Repositories
 
     public const ARCHE_ID = '18';
     public const  CRYPTOLOGY_EPRINT = '19';
+    public const BAOBAB_REPO_ID = '21';
 
 
     public const EPI_USER_ID = '12';
@@ -60,7 +61,8 @@ class Episciences_Repositories
         self::BIO_RXIV_ID => '10.1101/339747',
         self::MED_RXIV_ID => '10.1101/339747',
         self::ARCHE_ID => '(Handle) 21.11115/0000-000B-C715-D',
-        self::CRYPTOLOGY_EPRINT => '2026/1234'
+        self::CRYPTOLOGY_EPRINT => '2026/1234',
+        self::BAOBAB_REPO_ID => 'https://baobab.wacren.net/records/xkpt8-rjr81'
     ];
 
     /**

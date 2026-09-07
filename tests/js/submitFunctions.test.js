@@ -72,6 +72,28 @@ describe('Submit Functions', () => {
             expect(result).toBe('hal-v1-05191818');
             expect(mockVersionField.value).toBe('');
         });
+
+        test('should not strip a trailing vN when isRequiredVersion is false (BAOBAB-style slug)', () => {
+            const mockVersionField = createMockElement('');
+            const result = removeVersionFromIdentifier('s9g8r-v1011', {
+                mockVersionField,
+                isRequiredVersion: false,
+            });
+
+            expect(result).toBe('s9g8r-v1011');
+            expect(mockVersionField.value).toBe('');
+        });
+
+        test('should still strip a trailing vN when isRequiredVersion is true', () => {
+            const mockVersionField = createMockElement('');
+            const result = removeVersionFromIdentifier('hal-05191818v1', {
+                mockVersionField,
+                isRequiredVersion: true,
+            });
+
+            expect(result).toBe('hal-05191818');
+            expect(mockVersionField.value).toBe('1');
+        });
     });
 
     describe('processUrlIdentifier', () => {
@@ -122,6 +144,23 @@ describe('Submit Functions', () => {
                 );
 
                 expect(result).toBe('hal-05191818');
+                expect(mockVersionField.value).toBe('');
+            });
+        });
+
+        describe('BAOBAB URLs', () => {
+            test('should not truncate a slug that coincidentally ends in vN', () => {
+                const mockVersionField = createMockElement('');
+                const result = processUrlIdentifier(
+                    'https://baobab.wacren.net/records/s9g8r-v1011',
+                    { mockVersionField, isRequiredVersion: false }
+                );
+
+                // The JS helper has no BAOBAB-specific branch (unlike arXiv), so it
+                // only strips the scheme+host here; the leftover "records/" prefix
+                // is stripped server-side by Episciences_Repositories_BAOBAB_Hooks::hookCleanIdentifiers().
+                // What matters for this bug is that "v1011" is no longer chopped off.
+                expect(result).toBe('records/s9g8r-v1011');
                 expect(mockVersionField.value).toBe('');
             });
         });
