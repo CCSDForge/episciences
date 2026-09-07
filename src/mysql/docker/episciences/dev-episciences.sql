@@ -7825,7 +7825,10 @@ INSERT INTO `metadata_sources` (`id`, `name`, `type`, `status`, `identifier`, `b
 (15, 'Recherche Data Gouv', 'dataverse', 1, NULL, NULL, '10.15454', 'https://entrepot.recherche.data.gouv.fr/api/v1/', 'https://entrepot.recherche.data.gouv.fr/dataset.xhtml?persistentId=%%ID&version=%%VERSION.%%V_MINOR_NUMBER', ''),
 (16, 'HAL-PREPROD', 'repository', 1, 'oai-preprod:HAL:%%IDv%%VERSION', 'https://api-preprod.archives-ouvertes.fr/oai/hal/', '', 'https://api-preprod.archives-ouvertes.fr', 'https://hal.halpreprod.archives-ouvertes.fr/%%IDv%%VERSION', 'https://hal.halpreprod.archives-ouvertes.fr/%%IDv%%VERSION/document'),
 (17, 'zbMATH Open', 'metadataRepository', 1, NULL, NULL, '', '', '', ''),
-(18, 'ARCHE', 'repository', 1, 'https://hdl.handle.net/%%ID', 'https://arche.acdh.oeaw.ac.at/oaipmh/', '', 'https://arche.acdh.oeaw.ac.at/api/', 'https://hdl.handle.net/%%ID', '');
+(18, 'ARCHE', 'repository', 1, 'https://hdl.handle.net/%%ID', 'https://arche.acdh.oeaw.ac.at/oaipmh/', '', 'https://arche.acdh.oeaw.ac.at/api/', 'https://hdl.handle.net/%%ID', ''),
+(19, 'Cryptology ePrint', 'repository', 1, 'oai:eprint.iacr.org:%%ID', 'https://eprint.iacr.org/oai', '', '', 'https://eprint.iacr.org/archive/%%ID', 'https://eprint.iacr.org/archive/%%ID.pdf'),
+(20, 'RepositóriUM', 'dspace', 1, 'oai:repositorium.uminho.pt:%%ID', 'https://repositorium.uminho.pt/server/oai/openaire4', '', '', 'https://hdl.handle.net/%%ID', ''),
+(22, 'BAOBAB', 'repository', 1, 'oai:baobab.wacren.net:%%ID', NULL, '', 'https://baobab.wacren.net/api', 'https://baobab.wacren.net/records/%%ID', '');
 
 -- --------------------------------------------------------
 
