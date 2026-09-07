@@ -64,6 +64,7 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
             (int)Episciences_Repositories::MED_RXIV_ID => $source('medRxiv'),
             (int)Episciences_Repositories::ARCHE_ID => $source('ARCHE'),
             (int)Episciences_Repositories::CRYPTOLOGY_EPRINT => $source('Cryptology ePrint'),
+            (int)Episciences_Repositories::BAOBAB_REPO_ID => $source('BAOBAB'),
             self::DATAVERSE_REPO_ID => $source('ADataverse', 'dataverse'),
             self::DSPACE_REPO_ID => $source('ADspace', 'dspace'),
         ];
@@ -121,6 +122,7 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
             'medRxiv' => [(int)Episciences_Repositories::MED_RXIV_ID, 'Episciences_Repositories_MedRxiv_Hooks'],
             'ARCHE' => [(int)Episciences_Repositories::ARCHE_ID, 'Episciences_Repositories_ARCHE_Hooks'],
             'Cryptology ePrint' => [(int)Episciences_Repositories::CRYPTOLOGY_EPRINT, 'Episciences_Repositories_CryptologyePrint_Hooks'],
+            'BAOBAB' => [(int)Episciences_Repositories::BAOBAB_REPO_ID, 'Episciences_Repositories_BAOBAB_Hooks'],
             'Dataverse' => [self::DATAVERSE_REPO_ID, 'Episciences_Repositories_Dataverse_Hooks'],
             'DSpace' => [self::DSPACE_REPO_ID, 'Episciences_Repositories_Dspace_Hooks'],
         ];
@@ -154,6 +156,7 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
             'ARCHE has no files enrichment' => [(int)Episciences_Repositories::ARCHE_ID, false],
             'Zenodo mirrors its files' => [(int)Episciences_Repositories::ZENODO_REPO_ID, true],
             'Cryptology ePrint mirrors its files' => [(int)Episciences_Repositories::CRYPTOLOGY_EPRINT, true],
+            'BAOBAB mirrors its files' => [(int)Episciences_Repositories::BAOBAB_REPO_ID, true],
             'Dataverse mirrors its files' => [self::DATAVERSE_REPO_ID, true],
             'DSpace mirrors its files' => [self::DSPACE_REPO_ID, true],
             'unknown repository' => [self::UNKNOWN_REPO_ID, false],
@@ -184,6 +187,7 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
             'medRxiv' => [(int)Episciences_Repositories::MED_RXIV_ID, false],
             'Zenodo' => [(int)Episciences_Repositories::ZENODO_REPO_ID, true],
             'ARCHE' => [(int)Episciences_Repositories::ARCHE_ID, true],
+            'BAOBAB' => [(int)Episciences_Repositories::BAOBAB_REPO_ID, true],
             'Dataverse mirrors files only' => [self::DATAVERSE_REPO_ID, false],
             'DSpace mirrors files only' => [self::DSPACE_REPO_ID, false],
             'unknown repository' => [self::UNKNOWN_REPO_ID, false],
@@ -216,6 +220,7 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
             'Dataverse enriches itself' => [self::DATAVERSE_REPO_ID, true],
             'DSpace enriches itself' => [self::DSPACE_REPO_ID, true],
             'Cryptology ePrint enriches itself' => [(int)Episciences_Repositories::CRYPTOLOGY_EPRINT, true],
+            'BAOBAB enriches itself' => [(int)Episciences_Repositories::BAOBAB_REPO_ID, true],
             'unknown repository' => [self::UNKNOWN_REPO_ID, false],
         ];
     }
@@ -241,6 +246,7 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
             'Zenodo' => [(int)Episciences_Repositories::ZENODO_REPO_ID, true],
             'Cryptology ePrint' => [(int)Episciences_Repositories::CRYPTOLOGY_EPRINT, true],
             'DSpace' => [self::DSPACE_REPO_ID, true],
+            'BAOBAB' => [(int)Episciences_Repositories::BAOBAB_REPO_ID, true],
             'HAL' => [(int)Episciences_Repositories::HAL_REPO_ID, false],
             'arXiv' => [(int)Episciences_Repositories::ARXIV_REPO_ID, false],
             'Dataverse' => [self::DATAVERSE_REPO_ID, false],
@@ -278,6 +284,7 @@ final class Episciences_Repositories_CapabilitiesTest extends TestCase
             'DSpace does not' => [self::DSPACE_REPO_ID, false],
             'ARCHE does not' => [(int)Episciences_Repositories::ARCHE_ID, false],
             'Cryptology ePrint does not' => [(int)Episciences_Repositories::CRYPTOLOGY_EPRINT, false],
+            'BAOBAB does not' => [(int)Episciences_Repositories::BAOBAB_REPO_ID, false],
         ];
     }
 

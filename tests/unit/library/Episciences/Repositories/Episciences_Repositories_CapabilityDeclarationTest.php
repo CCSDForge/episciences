@@ -42,7 +42,7 @@ final class Episciences_Repositories_CapabilityDeclarationTest extends TestCase
      * Lower bound on the number of shipped hooks classes. A moved directory or a
      * renamed file would otherwise turn every assertion below into a no-op.
      */
-    private const MINIMUM_HOOK_CLASSES = 9;
+    private const MINIMUM_HOOK_CLASSES = 10;
 
     /**
      * Writes of Episciences_Repositories_Common::CONCEPT_IDENTIFIER_KEY, in the two

@@ -2678,6 +2678,19 @@ class Episciences_Submit
     }
 
 
+    /**
+     * Whether $repoId's related identifiers arrive DataCite-shaped
+     * (identifier/relation/resource_type/scheme) rather than as a plain list
+     * of identifier strings.
+     */
+    private static function isDataCiteShapedRepo(int $repoId): bool
+    {
+        return $repoId === (int)Episciences_Repositories::ZENODO_REPO_ID
+            || $repoId === (int)Episciences_Repositories::ARCHE_ID
+            || $repoId === (int)Episciences_Repositories::BAOBAB_REPO_ID
+            || Episciences_Repositories::isDspace($repoId);
+    }
+
     public static function processDatasets(Episciences_Paper|int $paper, ?array $allDatasets = []): int
     {
         $affectedRows = 0;
@@ -2720,17 +2733,13 @@ class Episciences_Submit
                     continue;
                 }
 
-                if (
-                    $repoId === (int)Episciences_Repositories::ZENODO_REPO_ID ||
-                    $repoId === (int)Episciences_Repositories::ARCHE_ID ||
-                    Episciences_Repositories::isDspace($repoId)) {
+                if (self::isDataCiteShapedRepo($repoId)) {
 
                     if ($key !== 'identifier') {
                         continue;
                     }
 
                     $options['relationship'] = $datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
-                    $datasets = $value;
                 }
 
 
@@ -2765,7 +2774,11 @@ class Episciences_Submit
                         $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $code, $idMetaDataLastId, $options);
 
                     } else {
-                        $noProcessed[$typeLd] = $datasets;
+                        // forceAddingDatasets() expects an array of plain identifier
+                        // values per type (no 'relation' key, or it would itself be
+                        // iterated and inserted as a spurious dataset value): append,
+                        // don't overwrite, so failures don't lose siblings sharing $typeLd.
+                        $noProcessed[$typeLd][] = $value;
                     }
                 } elseif ($typeLd === Episciences_Paper_Dataset::SOFTWARE_CODE) {
                     $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);

@@ -104,7 +104,25 @@ OpenAIRE XML, DataCite XML, or JATS XML), Episciences uses a two-tier storage mo
 | **HAL** | `repository` | Generic OAI-PMH 2.0 (`https://api.archives-ouvertes.fr/oai/hal/`) | `oai_dc` (Dublin Core XML) | XML sanitation stripping non-abstract audience notes (`DataSanitizerInterface::hookCleanXMLRecordInput`), direct PDF link via `paper_url` | `Episciences_Repositories_HAL_Hooks` |
 | **arXiv** | `repository` | Generic OAI-PMH 2.0 (`https://oaipmh.arxiv.org/oai`) | `oai_dc` (Dublin Core XML) | XML and metadata sanitation keeping only primary abstract (`hookFilterMetadata`, `hookCleanXMLRecordInput`), direct PDF link via `paper_url` | `Episciences_Repositories_ArXiv_Hooks` |
 | **ARCHE (ACDH-CH)** | `repository` | OAI-PMH 2.0 (`https://arche.acdh.oeaw.ac.at/oaipmh/`) + ACDH-CH REST API | `oai_datacite` (DataCite Kernel 3 XML) | Multilingual titles & descriptions (`extractMultilingualContent`), authors (`extractPersons`), license, related dataset identifiers (`LinkedDataEnrichmentInterface`) | `Episciences_Repositories_ARCHE_Hooks` |
+| **BAOBAB (WACREN, InvenioRDM 13.1)** | `repository` | InvenioRDM REST API v1 (`/api/records/{id}`); OAI-PMH is broken (500 on any verb that must emit a record) and bypassed entirely (`base_url` left `NULL`) | InvenioRDM JSON (files, authors, access, concept id) + DataCite Kernel 4 XML fetched by content negotiation (`Accept: application/vnd.datacite.datacite+xml`) for the Dublin Core body | Authors from `person_or_org` (not `creatorName`, which InvenioRDM writes "Family, Given"), mirrored files via `links.content` (`FilesEnrichmentInterface`), related datasets filtered for community memberships (`LinkedDataEnrichmentInterface`), concept identifier from `parent.id` (`ConceptIdentifierInterface`), ARK resolution via a PID search query | `Episciences_Repositories_BAOBAB_Hooks` |
 | **Generic OAI-PMH Archive** | `repository` | Standard OAI-PMH 2.0 (`metadata_sources.base_url`) | `oai_dc` (Dublin Core XML) | Standard Dublin Core XML directly into `PAPERS.RECORD`, direct PDF linking via `metadata_sources.paper_url` | No custom hook needed (or minimal `CommonHooksInterface` returning `[]`) |
+
+### A reusable lesson: when an InvenioRDM instance's OAI-PMH is broken
+
+BAOBAB's OAI-PMH endpoint answers `Identify`/`ListMetadataFormats`/`ListSets`
+correctly but returns HTTP 500 (as an HTML error page, not an OAI-PMH error
+document) on every verb that must emit at least one record —
+`GetRecord`/`ListIdentifiers`/`ListRecords` alike. The fix is not
+instance-specific: InvenioRDM exposes the same metadata serializers on its REST
+API through content negotiation, so `GET /api/records/{id}` with
+`Accept: application/vnd.datacite.datacite+xml` returns the DataCite XML that
+OAI-PMH would otherwise have served, without touching the broken endpoint at
+all. If another InvenioRDM-based repository shows the same symptom, the same
+workaround applies: fetch metadata over the REST API instead of OAI-PMH, and
+compile `PAPERS.RECORD` from DataCite rather than from InvenioRDM's `oai_dc`
+(which double-escapes HTML in `dc:description` on at least this instance).
+Keep `metadata_sources.base_url` `NULL` so the platform never falls back to
+the broken OAI endpoint (see `Episciences_Submit::loadRecord()`).
 
 ## Checklist
 
