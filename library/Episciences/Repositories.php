@@ -44,7 +44,7 @@ class Episciences_Repositories
 
     public const ARCHE_ID = '18';
     public const  CRYPTOLOGY_EPRINT = '19';
-    public const BAOBAB_REPO_ID = '21';
+    public const BAOBAB_REPO_ID = '22';
 
 
     public const EPI_USER_ID = '12';
