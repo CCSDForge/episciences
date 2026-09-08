@@ -2491,6 +2491,7 @@ class Episciences_PapersManager
         'VERSION',
         'REPOID',
         'TYPE',
+        'RECORD',
         'CONCEPT_IDENTIFIER',
         'FLAG',
         'WHEN',
