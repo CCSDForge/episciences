@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add BAOBAB (WACREN InvenioRDM instance) as a submission repository (`Episciences_Repositories_BAOBAB_Hooks`): records and files are fetched over the REST API, with the Dublin Core body compiled from the DataCite serializer (content negotiation) instead of BAOBAB's own broken OAI-PMH endpoint.
+- Add BAOBAB (WACREN InvenioRDM instance) as a submission repository (`Episciences_Repositories_BAOBAB_Hooks`): files, authors, access status and the concept identifier are fetched over the REST API, and the Dublin Core body is compiled from the DataCite serializer, fetched over OAI-PMH now that BAOBAB's endpoint has been fixed (content negotiation on the REST API was used as a workaround while it was broken).
 - Add `export:papers` CLI command (`scripts/ExportPapersCommand.php`, `make export-papers`) to export papers to a CSV file, in the same format `import:papers` reads — for a journal, optionally filtered by volume, section, publication year, docid(s), archive identifier+version, status, repoid, uid, or a raw SQL `WHERE` clause.
 - Add `import:papers` CLI command (`scripts/ImportPapersCommand.php`, `make import-papers`) to import new papers or update existing ones from a CSV file.
 - Add `num` and `year` CSV column support to `import:volumes` (`scripts/ImportVolumesCommand.php`).
