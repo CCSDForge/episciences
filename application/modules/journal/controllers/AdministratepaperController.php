@@ -4905,7 +4905,12 @@ class AdministratepaperController extends PaperDefaultController
 
                 $url = $api . '/search/?indent=true&q=' . $paper->getIdentifier() . '&fl=label_xml';
 
-                $result = Episciences_Tools::callApi($url);
+                try {
+                    $result = Episciences_Tools::callApi($url);
+                } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+                    trigger_error($e->getMessage());
+                    return [];
+                }
 
                 if ($result && is_array($result)) {
                     $xml = $result['response']['docs'][array_key_first($result['response']['docs'])]['label_xml'] ?? '';
@@ -4929,26 +4934,43 @@ class AdministratepaperController extends PaperDefaultController
                 }
 
             } elseif ((int)Episciences_Repositories::ZENODO_REPO_ID === $repoId) {
+                // last identifier known to the journal
+                $latestIdentifier = $paper->getIdentifier();
+                $baseUri = 'https://zenodo.org';
+                $url = sprintf('%s/api/records/%s/versions', $baseUri, $latestIdentifier);
 
-                $dataCiteUrl = 'https://api.datacite.org/dois/';
-                $dataCiteUrl .= Episciences_Repositories::getRepoDoiPrefix($repoId);
-                $dataCiteUrl .= '/';
-                $dataCiteUrl .= mb_strtolower(Episciences_Repositories::getLabel($repoId));
-                $dataCiteUrl .= '.';
+                $options = [
+                    'headers' => ['Accept' => 'application/json', 'Content-type' => 'application/json'],
+                    'query' => ['size' => 25],
+                    'timeout' => 10,
+                ];
 
-                $conceptIdentifierUrl = $dataCiteUrl . $paper->getConcept_identifier();
-                $responseWithConceptId = Episciences_Tools::callApi($conceptIdentifierUrl);
+                try {
+                    $result = Episciences_Tools::callApi($url, $options)['hits']['hits'] ?? [];
+                } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+                    trigger_error($e->getMessage(), E_USER_WARNING);
+                    return [];
 
-                $doisVersions = $responseWithConceptId['data']['relationships']['versions']['data'];
-
-                foreach ($doisVersions as $index => $value) {
-
-                    $cleanedIdentifier = Episciences_Repositories_Zenodo_Hooks::hookCleanIdentifiers(['id' => $value['id'], 'repoId' => $repoId])['identifier'];
-
-                    if ($cleanedIdentifier > $paper->getIdentifier()) {
-                        $versions[$index + 1] = $cleanedIdentifier;
-                    }
                 }
+
+                $maxIndex = count($result);
+
+                foreach ($result as $index => $hit) {
+
+                    if (!isset($hit['id'])) {
+                        continue;
+                    }
+
+                    $currentIdentifier = $hit['id'];
+
+                    // We only keep IDs that are higher than the last known identifier
+                    if ($currentIdentifier > $latestIdentifier) {
+                        $versions[$maxIndex - $index] = $currentIdentifier;
+                    }
+
+                }
+
+                return $versions;
 
             } elseif (
                 $repoId === (int)Episciences_Repositories::BIO_RXIV_ID ||
