@@ -201,8 +201,8 @@ $(function () {
             showResult(xml);
         });
 
-        request.fail(function () {
-            fail();
+        request.fail(function (response) {
+            fail(response);
         });
     }
 
@@ -387,16 +387,35 @@ $(function () {
     }
 
     // display an error if document not found
-    function fail() {
-        let message =
+    function fail(response = null) {
+        let genericMessage =
             '<div class="panel panel-danger"><div class="panel-body">' +
             translate(
                 "Une erreur s'est produite pendant la récupération des informations. Parfois l'archive ouverte ne répond pas assez vite. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue."
             ) +
             '</div></div>';
+
+        let responseText = response && response.responseText;
+
+        let message = responseText
+            ? genericMessage +
+              '<div class="panel panel-danger"><div class="panel-body"><pre>' +
+              escapeHtml(responseText) +
+              '</pre></div></div>'
+            : genericMessage;
+
         $result_container.html(message);
         $search_button.prop('disabled', false);
         $search_button.toggleClass('disabled');
+    }
+
+    // Encode a value for safe inclusion in markup by relying on the browser's
+    // text-node encoding (mirrors the helper used in public/js/administratemail/get-contacts.js).
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent =
+            value === undefined || value === null ? '' : String(value);
+        return div.innerHTML;
     }
 
     // if there was an error at form submission
