@@ -48,6 +48,10 @@ require_once __DIR__ . '/EpisciencesQueueCommand.php';
 // COAR Notify inbox processing command
 require_once __DIR__ . '/ProcessInboxNotificationsCommand.php';
 
+// Journal provisioning commands
+require_once __DIR__ . '/CreateJournalCommand.php';
+require_once __DIR__ . '/SeedJournalDemoCommand.php';
+
 use Symfony\Component\Console\Application;
 
 $application = new Application('Episciences CLI', '1.0.0');
@@ -125,5 +129,9 @@ $application->add(new RevalidateNextCacheCommand());
 
 // COAR Notify inbox processing command
 $application->add(new ProcessInboxNotificationsCommand());
+
+// Journal provisioning commands
+$application->add(new CreateJournalCommand());
+$application->add(new SeedJournalDemoCommand());
 
 $application->run();

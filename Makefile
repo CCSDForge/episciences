@@ -34,6 +34,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 # =============================================================================
 .PHONY: help build up down status logs restart clean clean-mysql
 .PHONY: collection collection-ref-pps import-ref-pps download-ref-pps dev-setup setup-logs copy-config generate-users init-dev-users create-bot-user init-data-dir yarn-encore-dev
+.PHONY: create-journal seed-journal-demo
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
@@ -258,6 +259,45 @@ init-dev-users: ## Initialize journal 'dev' with 30 users (1 chief, 2 admins, 5 
 
 create-bot-user: ## Create the fixed episciences-bot user
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) php scripts/console.php app:create-bot-user
+
+create-journal: ## Create a new journal from a template (requires code=CODE name=NAME template=RVCODE admin-uid=UID; optional: subtitle=TEXT piwikid=ID status=0|1 new-front=yes|no reset-doi=1 complete=1 dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php journal:create --code=CODE --name=NAME --template-rvcode=RVCODE --admin-uid=UID --no-interaction [options]
+	@if [ -z "$(code)" ] || [ -z "$(name)" ] || [ -z "$(template)" ] || [ -z "$(admin-uid)" ]; then \
+		echo "Error: code, name, template and admin-uid parameters are required"; \
+		echo "Usage: make create-journal code=CODE name=NAME template=RVCODE admin-uid=UID [subtitle=TEXT] [piwikid=ID] [status=0|1] [new-front=yes|no] [reset-doi=1] [complete=1] [dry-run=1]"; \
+		exit 1; \
+	fi
+	@echo "Creating journal '$(code)' from template '$(template)'..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php journal:create \
+		--code=$(call shell_quote,$(code)) \
+		--name=$(call shell_quote,$(name)) \
+		--template-rvcode=$(call shell_quote,$(template)) \
+		--admin-uid=$(call shell_quote,$(admin-uid)) \
+		$(if $(subtitle),--subtitle=$(call shell_quote,$(subtitle))) \
+		$(if $(piwikid),--piwikid=$(call shell_quote,$(piwikid))) \
+		$(if $(status),--status=$(call shell_quote,$(status))) \
+		$(if $(new-front),--new-front=$(call shell_quote,$(new-front))) \
+		$(if $(filter 1,$(reset-doi)),--reset-doi) \
+		$(if $(filter 1,$(complete)),--complete) \
+		$(if $(filter 1,$(dry-run)),--dry-run) \
+		--no-interaction
+
+seed-journal-demo: ## Seed a journal with demo submissions (requires rvcode=RVCODE uid=UID; optional: csv-file=PATH force=1 dry-run=1)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php journal:seed-demo --rvcode=RVCODE --uid=UID [options]
+	@if [ -z "$(rvcode)" ] || [ -z "$(uid)" ]; then \
+		echo "Error: rvcode and uid parameters are required"; \
+		echo "Usage: make seed-journal-demo rvcode=RVCODE uid=UID [csv-file=PATH] [force=1] [dry-run=1]"; \
+		exit 1; \
+	fi
+	@echo "Seeding demo content into journal '$(rvcode)'..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php journal:seed-demo \
+		--rvcode=$(call shell_quote,$(rvcode)) \
+		--uid=$(call shell_quote,$(uid)) \
+		$(if $(csv-file),--csv-file=$(call shell_quote,$(csv-file))) \
+		$(if $(filter 1,$(force)),--force) \
+		$(if $(filter 1,$(dry-run)),--dry-run)
 
 
 # =============================================================================
