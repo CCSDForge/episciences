@@ -3,6 +3,9 @@ $controller = Zend_Controller_Front::getInstance()->getRequest()->getControllerN
 $action = Zend_Controller_Front::getInstance()->getRequest()->getActionName();
 /** @var Episciences_Paper $paper */
 $paper = $this->paper;
+if (!$paper->isRevisionRequested()){
+    return;
+}
 ?>
 <div>
     <?php
