@@ -72,7 +72,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         $oaiIdentifier = Episciences_Repositories::getIdentifier($repoId, $identifier);
 
         try {
-            if ($baseUrl !== null && $oaiIdentifier !== null) {
+            if ($baseUrl !== null && $baseUrl !== '' && $oaiIdentifier !== null) {
                 $dataciteXml = Episciences_Repositories_Common::getRecord($baseUrl, $oaiIdentifier, 'datacite');
 
                 if (is_string($dataciteXml) && trim($dataciteXml) !== '') {
@@ -336,7 +336,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
 
     /**
      * Compiles the Dublin Core body and the raw related identifiers from the
-     * DataCite XML obtained by content negotiation. The document uses a default
+     * DataCite XML obtained over OAI-PMH. The document uses a default
      * namespace (no "datacite:" prefix at the source); registering the prefix on
      * our side is enough for the xpaths below to resolve regardless.
      *
