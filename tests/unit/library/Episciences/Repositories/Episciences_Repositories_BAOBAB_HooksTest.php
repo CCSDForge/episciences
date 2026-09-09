@@ -11,12 +11,12 @@ use ReflectionMethod;
 /**
  * Unit tests for Episciences_Repositories_BAOBAB_Hooks.
  *
- * BAOBAB (WACREN, InvenioRDM 13.1) has a broken OAI-PMH endpoint: every verb that
- * must emit at least one record returns a 500. Records are fetched over the REST
- * API instead, and the Dublin Core body is compiled from the DataCite serializer
- * obtained by content negotiation (Accept: application/vnd.datacite.datacite+xml)
- * rather than from InvenioRDM's own oai_dc, which double-escapes HTML on this
- * corpus.
+ * BAOBAB (WACREN, InvenioRDM 14)'s OAI-PMH endpoint was fixed on the WACREN
+ * side (verified 2026-09-08), so the Dublin Core body is now compiled from the
+ * DataCite serializer fetched over OAI-PMH (metadata_sources.base_url) rather
+ * than from InvenioRDM's own oai_dc, which double-escapes HTML on this corpus.
+ * The REST API remains the source for files, authors, access status and the
+ * concept identifier, none of which OAI-PMH carries.
  *
  * All tests are DB-free and network-free: no Guzzle mock exists for the hooks
  * classes in this codebase, so hookApiRecords()/hookVersion()/hookLinkedDataProcessing()
@@ -214,7 +214,7 @@ XML;
     }
 
     /**
-     * links.self points to a file's JSON metadata on InvenioRDM 13.1, not to its
+     * links.self points to a file's JSON metadata on InvenioRDM 14, not to its
      * binary content, unlike the legacy Zenodo API: links.content is mandatory.
      */
     public function testHookFilesProcessingPrefersLinksContentOverSelf(): void
@@ -239,7 +239,7 @@ XML;
     }
 
     /**
-     * When links.content is absent (contrary to the InvenioRDM 13.1 contract),
+     * When links.content is absent (contrary to the InvenioRDM 14 contract),
      * the file is still registered rather than dropped, falling back to
      * links.self even though it points to file metadata, not content.
      */
