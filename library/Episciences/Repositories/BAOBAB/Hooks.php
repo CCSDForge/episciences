@@ -9,12 +9,14 @@ use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
 
 /**
- * BAOBAB (WACREN), an InvenioRDM 13.1 instance whose OAI-PMH endpoint returns
- * a 500 as soon as a record must be emitted (GetRecord/ListIdentifiers/ListRecords).
- * Records are therefore fetched over the REST API instead; the Dublin Core body
- * compiled into PAPERS.RECORD is built from the DataCite serializer (obtained by
- * content negotiation on the same endpoint), not from InvenioRDM's oai_dc, which
- * double-escapes HTML in dc:description on this corpus.
+ * BAOBAB (WACREN), an InvenioRDM 14 instance. Its OAI-PMH endpoint used to
+ * return a 500 as soon as a record had to be emitted (GetRecord/ListIdentifiers/
+ * ListRecords); this was fixed by an InvenioRDM upgrade on the WACREN side
+ * (verified 2026-09-08), so the DataCite body compiled into PAPERS.RECORD is now
+ * fetched over OAI-PMH (metadata_sources.base_url), not InvenioRDM's oai_dc,
+ * which double-escapes HTML in dc:description on this corpus. The REST API
+ * remains the source for files, authors, access status and the concept
+ * identifier, none of which OAI-PMH carries.
  *
  * @see https://baobab.wacren.net/
  */
@@ -26,7 +28,6 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     ConceptIdentifierInterface
 {
     public const API_RECORDS_URL = 'https://baobab.wacren.net/api/records';
-    public const DATACITE_MIME = 'application/vnd.datacite.datacite+xml';
     public const DATACITE_NS = 'http://datacite.org/schema/kernel-4';
     public const COMMUNITY_URL_PREFIX = 'https://baobab.wacren.net/communities/';
 
@@ -66,16 +67,19 @@ class Episciences_Repositories_BAOBAB_Hooks implements
         $body = [];
         $relatedIdentifiers = [];
 
-        try {
-            $dataciteXml = Episciences_Tools::callApi(
-                self::API_RECORDS_URL . '/' . $identifier,
-                ['headers' => ['Accept' => self::DATACITE_MIME]]
-            );
+        $repoId = $hookParams['repoId'] ?? Episciences_Repositories::BAOBAB_REPO_ID;
+        $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
+        $oaiIdentifier = Episciences_Repositories::getIdentifier($repoId, $identifier);
 
-            if (is_string($dataciteXml) && trim($dataciteXml) !== '') {
-                [$body, $relatedIdentifiers] = self::extractFromDataCite($dataciteXml, $language);
+        try {
+            if ($baseUrl !== null && $baseUrl !== '' && $oaiIdentifier !== null) {
+                $dataciteXml = Episciences_Repositories_Common::getRecord($baseUrl, $oaiIdentifier, 'datacite');
+
+                if (is_string($dataciteXml) && trim($dataciteXml) !== '') {
+                    [$body, $relatedIdentifiers] = self::extractFromDataCite($dataciteXml, $language);
+                }
             }
-        } catch (GuzzleException|InvalidArgumentException $e) {
+        } catch (Ccsd_Error|InvalidArgumentException $e) {
             Episciences_View_Helper_Log::log($e->getMessage());
         }
 
@@ -228,7 +232,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     {
         $explodedChecksum = explode(':', (string)($entry['checksum'] ?? ''));
 
-        // links.self is the file's JSON metadata on InvenioRDM 13.1, not its
+        // links.self is the file's JSON metadata on InvenioRDM 14, not its
         // content, unlike the legacy Zenodo API: links.content is mandatory here.
         $selfLink = $entry['links']['content'] ?? null;
 
@@ -332,7 +336,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
 
     /**
      * Compiles the Dublin Core body and the raw related identifiers from the
-     * DataCite XML obtained by content negotiation. The document uses a default
+     * DataCite XML obtained over OAI-PMH. The document uses a default
      * namespace (no "datacite:" prefix at the source); registering the prefix on
      * our side is enough for the xpaths below to resolve regardless.
      *
