@@ -9,7 +9,7 @@ use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use GuzzleHttp\Exception\GuzzleException;
 
 /**
- * BAOBAB (WACREN), an InvenioRDM 13.1 instance. Its OAI-PMH endpoint used to
+ * BAOBAB (WACREN), an InvenioRDM 14 instance. Its OAI-PMH endpoint used to
  * return a 500 as soon as a record had to be emitted (GetRecord/ListIdentifiers/
  * ListRecords); this was fixed by an InvenioRDM upgrade on the WACREN side
  * (verified 2026-09-08), so the DataCite body compiled into PAPERS.RECORD is now
@@ -232,7 +232,7 @@ class Episciences_Repositories_BAOBAB_Hooks implements
     {
         $explodedChecksum = explode(':', (string)($entry['checksum'] ?? ''));
 
-        // links.self is the file's JSON metadata on InvenioRDM 13.1, not its
+        // links.self is the file's JSON metadata on InvenioRDM 14, not its
         // content, unlike the legacy Zenodo API: links.content is mandatory here.
         $selfLink = $entry['links']['content'] ?? null;
 
