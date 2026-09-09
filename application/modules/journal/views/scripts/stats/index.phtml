@@ -6,13 +6,12 @@ $this->layout()->description = $description;
 <?php if ($this->errorMessage): ?>
     <div class="alert alert-danger"><?= $this->translate($this->errorMessage) ?></div>
 <?php else: ?>
-    <?php $this->jQuery()->addJavascriptFile(VENDOR_CHART); ?>
-    <?php $this->jQuery()->addJavascriptFile(VENDOR_CHART_PLUGIN_DATALABELS); ?>
+    <?php $this->getHelper('webpackAssets')->queueScript('chartjs'); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/index.js'); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/common.js'); ?>
     <?php $this->jQuery()->addJavascriptFile('/js/stats/submissions.js'); ?>
 
-    <?php $this->jQuery()->addStylesheet(VENDOR_CHART_CSS); ?>
+    <?php $this->getHelper('webpackAssets')->queueStylesheet('chartjs'); ?>
 
     <?= $this->partial('stats/year-categories.phtml', ['yearQuery' => $this->yearQuery, 'yearCategories' => $this->yearCategories]) ?>
 

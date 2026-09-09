@@ -380,7 +380,12 @@ $(function () {
         }
 
         $result_container.html(message);
-        MathJax.Hub.Typeset();
+        // typesetPromise() (not the synchronous typeset()) because font glyphs are loaded dynamically
+        // per character range (see webpack.config.js) — typeset() throws a "MathJax retry" error
+        // whenever a range used by this record isn't loaded yet.
+        if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise === 'function') {
+            MathJax.typesetPromise();
+        }
 
         $search_button.prop('disabled', false);
         $search_button.toggleClass('disabled');

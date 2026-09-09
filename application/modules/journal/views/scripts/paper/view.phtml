@@ -447,17 +447,31 @@ echo $this->partial('partials/modal.phtml', ['style' => $style]);
 ?>
 
 <?php
-$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
-$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
-$this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
-$this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
-$this->jQuery()->addJavascriptFile('/js/paper/copy_editing_form.js');
-$this->jQuery()->addJavascriptFile('/js/components/collapsible-message.js');
-$this->jQuery()->addJavascriptFile('/js/paper/updateOrcidAuthors.js');
-$this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');
-$this->jQuery()->addJavascriptFile('/js/user/affiliations.js');
+if (Episciences_Auth::isLogged()) {
+    // Only needed for the revision-request answer form and other authenticated editing actions on this
+    // page (see partials/answer_revision_request_form.phtml) — anonymous visitors just reading a
+    // published paper never trigger any of it, so skip these payloads (TinyMCE ~1MB, filepond) for them.
+    $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
+    $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
+    $this->getHelper('webpackAssets')->queueScript('filepond');
+    $this->getHelper('webpackAssets')->queueStylesheet('filepond');
+    // Same reasoning: these only act on elements from the reply/edit forms above (updateOrcidAuthors.js
+    // and affiliations.js target #authors-list / #affiliations, which aren't even in this page's markup
+    // — they're only present on administratepaper/view.phtml, itself ACL-restricted to editors).
+    $this->jQuery()->addJavascriptFile('/js/common/visualDeleteFile.js');
+    $this->jQuery()->addJavascriptFile('/js/paper/copy_editing_form.js');
+    $this->jQuery()->addJavascriptFile('/js/paper/updateOrcidAuthors.js');
+    $this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');
+    $this->jQuery()->addJavascriptFile('/js/user/affiliations.js');
+    // collapsible-message.js targets .timeline-item-message/.timeline-comment-message, which on this
+    // page only render inside the $isAllowedToSeeNoPublicDetails block above (author comments,
+    // copy-editing panel, author/editor communication — all require Episciences_Auth::isLogged()), or
+    // are unreachable by guests anyway since unpublished papers redirect them to login.
+    $this->jQuery()->addJavascriptFile('/js/components/collapsible-message.js');
+}
+// biblioRef.js is not gated: it drives the public references/citations panel (#biblio-refs, below the
+// $isAllowedToSeeNoPublicDetails block), visible to anonymous visitors too.
 $this->jQuery()->addJavascriptFile('/js/paper/biblioRef.js');
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
 ?>
 <script>
     let isRequiredVersion = <?= json_encode($this->isRequiredVersion) ?>;

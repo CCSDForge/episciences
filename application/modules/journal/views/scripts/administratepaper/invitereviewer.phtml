@@ -1,22 +1,19 @@
 <?php
 
-$this->jQuery()->addJavascriptFile('/js/vendor/jquery.ui.autocomplete.html.js');
 $this->jQuery()->addJavascriptFile('/js/autocomplete-utils.js');
 $this->jQuery()->addJavascriptFile('/js/library/es.mail.js');
 // Security: DOMPurify for XSS prevention (needed by es.contacts-list.js)
-$this->jQuery()->addJavascriptFile("https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js");
+$this->getHelper('webpackAssets')->queueScript('dompurify');
 $this->jQuery()->addJavascriptFile("/js/utils/sanitizer.js");
 $this->jQuery()->addJavascriptFile("/js/library/es.contacts-list.js");
 $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker-" . Zend_Registry::get('lang') . ".js");
 $this->jQuery()->addJavascriptFile("/js/datepicker/datepicker.js");
-$this->jQuery()->addJavascriptFile(VENDOR_TINYMCE_JQUERY);
 $this->jQuery()->addJavascriptFile(VENDOR_TINYMCE);
 $this->jQuery()->addJavascriptFile(TINYMCE_DIR . "tinymce_patch.js");
 //datatable
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
-$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
-$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
-$this->jQuery()->addStylesheet(VENDOR_JQUERY_UI_THEME_CSS);
+$this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');
+$this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
+$this->getHelper('webpackAssets')->queueStylesheet('jquery-ui-theme');
 ?>
 
 <?php $this->layout()->pageTitle = $this->translate('Inviter un relecteur'); ?>

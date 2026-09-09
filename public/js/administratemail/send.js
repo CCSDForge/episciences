@@ -77,7 +77,7 @@ $(document).ready(function () {
         e.preventDefault();
         e.stopPropagation(); // Prevent es.contacts-list.js from handling this
         // fetch and parse button url
-        let oUrl = $.url($(this).attr('href'));
+        let oUrl = parseUrl(this.getAttribute('href'));
         let urlParams = oUrl.param();
 
         // Set form reference for addRecipient() to find tags containers

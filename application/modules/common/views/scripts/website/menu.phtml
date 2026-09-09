@@ -1,7 +1,7 @@
 <?php
+$this->getHelper('webpackAssets')->queueScript('sortablejs');
 $this->jQuery()
     ->addStylesheet('/css/website/menu.css')
-    ->addJavascriptFile(VENDOR_SORTABLE_JS)
     ->addJavascriptFile('/js/website/menu-manager.js')
     ->addJavascriptFile('/js/website/menu.js');
 ?>

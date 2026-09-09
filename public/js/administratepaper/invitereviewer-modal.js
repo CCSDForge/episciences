@@ -206,7 +206,7 @@ $(document).ready(function () {
 
 // send reviewer invitation
 function submit() {
-    let url = $('#invitation-form').url();
+    let url = parseUrl(document.getElementById('invitation-form').action);
     let docid = url.param('docid');
 
     if (validate_step2()) {

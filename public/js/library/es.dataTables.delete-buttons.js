@@ -1,6 +1,6 @@
 $(document).ready(function () {
     $('.dataTable, #grid-actions').on('click', 'a.delete', function () {
-        let url = $(this).url();
+        let url = parseUrl(this.getAttribute('href'));
         let action = url.attr('path');
         let params = url.param();
         let isDeleteGridAction = action === '/grid/delete';

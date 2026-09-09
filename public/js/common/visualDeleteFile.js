@@ -1,33 +1,34 @@
 /**
  * Deletes contents
- * @param index
+ * @param fileInputId the id of the <input type="file"> to clear (see
+ *   Episciences_Form_Decorator_BootstrapInputFile, which renders it alongside a
+ *   paired "value_<fileInputId>" text input)
  */
-function clearFile(index) {
-    let object_inputs = getElements('input', 'value');
-    let self_id = object_inputs[index].id;
-    let $identifier = $('#' + self_id.replace('value_', ''));
-    $('#' + self_id).val(''); // to clear the value from the input field
-    $identifier.val('').trigger('change'); // The .trigger('change') is crucial here: if the input is marked as required in a form to prevent submission (for example data descriptor file; if a listener "change" is attached to it)
-    $('#tempFile_content_' + index).html('');
+function clearFile(fileInputId) {
+    $('#value_' + fileInputId).val(''); // to clear the value from the input field
+    $('#' + fileInputId)
+        .val('')
+        .trigger('change'); // The .trigger('change') is crucial here: if the input is marked as required in a form to prevent submission (for example data descriptor file; if a listener "change" is attached to it)
+    $('#tempFile_content_' + fileInputId).html('');
 }
 
 /**
  *
  * @param label
- * @param index
+ * @param fileInputId
  * @returns {string}
  */
 
-function formatFileLabel(label, index) {
+function formatFileLabel(label, fileInputId) {
     let html = '';
     html += '<div class="small grey">';
     html +=
         '<span class="glyphicon glyphicon-remove-circle" title="' +
         translate('Annuler') +
         '"' +
-        'onclick="clearFile(' +
-        index +
-        ')" style="margin-right: 5px; cursor: pointer">' +
+        'onclick="clearFile(\'' +
+        fileInputId +
+        '\')" style="margin-right: 5px; cursor: pointer">' +
         '</span>';
     html += $('<div>').text(label).html();
     html += '</div>';
@@ -37,12 +38,12 @@ function formatFileLabel(label, index) {
 /**
  *
  * @param element
- * @param index
+ * @param fileInputId
  * @returns {string}
  */
 
-function getContainer(element, index) {
-    let container_id = 'tempFile_content_' + index;
+function getContainer(element, fileInputId) {
+    let container_id = 'tempFile_content_' + fileInputId;
     if (!$('#' + container_id).length) {
         $(element)
             .parent('div')
@@ -56,38 +57,16 @@ function getContainer(element, index) {
     return '#' + container_id;
 }
 
-/**
- *
- * @param element
- * @param attr
- * @returns {*|jQuery|HTMLElement}
- */
-function getElements(element, attr) {
-    let object_elements = element + '[id^=' + attr + ']';
-    return $(object_elements);
-}
-
 $(document).ready(function () {
-    // Use event delegation to handle both existing and dynamically added file inputs
+    // Use event delegation to handle both existing and dynamically added file inputs.
+    // Each file input's own id (unique per form/element) directly identifies its
+    // paired "value_<id>" input and "tempFile_content_<id>" container — no need to
+    // correlate positions across separately-selected lists of inputs on the page.
     $(document)
         .off('change', 'input[id^=file]')
         .on('change', 'input[id^=file]', function () {
-            // Get all file inputs to determine the correct index for this input
-            let object_inputs = getElements('input', 'file');
-            let index = -1;
-            for (let i = 0; i < object_inputs.length; i++) {
-                if (object_inputs[i].id === this.id) {
-                    index = i;
-                    break;
-                }
-            }
-
-            if (index !== -1) {
-                let container = getContainer($(this), index);
-                let filename = $(this)[0].files.length
-                    ? $(this)[0].files[0].name
-                    : '';
-                $(container).html(formatFileLabel(filename, index));
-            }
+            let container = getContainer($(this), this.id);
+            let filename = this.files.length ? this.files[0].name : '';
+            $(container).html(formatFileLabel(filename, this.id));
         });
 });

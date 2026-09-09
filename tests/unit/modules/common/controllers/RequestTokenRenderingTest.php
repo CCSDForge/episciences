@@ -52,12 +52,13 @@ final class RequestTokenRenderingTest extends TestCase
      */
     public function testFileUploadWidgetSendsTheToken(): void
     {
-        $js = $this->fileContents('public/js/library/es.fileupload.js');
+        $js = $this->fileContents('public/js/library/es.filepond.js');
 
         self::assertStringContainsString('meta[name="csrf-token"]', $js,
             'the widget must read the token from the meta tag');
-        self::assertStringContainsString('formData.csrf_token', $js,
-            'the token must be part of the form data sent to /file/upload and /file/delete');
+        self::assertSame(2, substr_count($js, "setRequestHeader('X-CSRF-Token', csrfToken)")
+            + substr_count($js, "'X-CSRF-Token': csrfToken"),
+            'the token must be sent as a header with both the upload and the delete call');
     }
 
     /**

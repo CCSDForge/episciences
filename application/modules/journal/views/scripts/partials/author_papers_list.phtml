@@ -16,11 +16,10 @@ echo $form;
 <?php //if ($this->papers) : ?>
 
 <?php
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
-$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
-$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
-$this->jQuery()->addStylesheet(VENDOR_TOM_SELECT_CSS);
-$this->jQuery()->addJavascriptFile(VENDOR_TOM_SELECT);
+$this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');
+$this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
+$this->getHelper('webpackAssets')->queueStylesheet('tom-select');
+$this->getHelper('webpackAssets')->queueScript('tom-select');
 $this->jQuery()->addJavascriptFile('/js/common/tomselect-filters.js');
 ?>
 

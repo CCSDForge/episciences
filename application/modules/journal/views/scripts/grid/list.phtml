@@ -1,9 +1,8 @@
 <?php
-$this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
-$this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
+$this->getHelper('webpackAssets')->queueScript('datatables-bootstrap');
 $this->jQuery()->addJavascriptFile('/js/library/es.dataTables.delete-buttons.js');
 $this->jQuery()->addJavascriptFile('/js/grid/list.js');
-$this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+$this->getHelper('webpackAssets')->queueStylesheet('datatables-bootstrap');
 ?>
 
 
