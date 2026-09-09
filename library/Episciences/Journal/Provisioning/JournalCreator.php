@@ -75,7 +75,14 @@ final class JournalCreator
                 $this->settingsCloner->resetDoiSettings($rvid);
                 $report->add('DOI settings', 'reset to manual mode with an empty prefix (--reset-doi)');
             } elseif (
-                $this->settingsCloner->readSetting($rvid, Episciences_Review_DoiSettings::SETTING_DOI_ASSIGN_MODE)
+                // readSetting() returns null when the template has no explicit doiAssignMode
+                // row — which does NOT mean manual mode: Episciences_Review_DoiSettings defaults
+                // $_doiAssignMode to automatic (DOI_DEFAULT_ASSIGN_MODE) whenever no row is
+                // found, so a missing setting must be treated the same as an explicit
+                // 'automatic' one, or a template with a real doiPrefix but no doiAssignMode row
+                // would clone that prefix with no warning at all.
+                ($this->settingsCloner->readSetting($rvid, Episciences_Review_DoiSettings::SETTING_DOI_ASSIGN_MODE)
+                    ?? Episciences_Review_DoiSettings::DOI_DEFAULT_ASSIGN_MODE)
                 === Episciences_Review_DoiSettings::DOI_ASSIGN_MODE_AUTO
             ) {
                 $report->warn(
@@ -84,7 +91,11 @@ final class JournalCreator
                 );
             }
 
-            $createdPaths = $this->dataDirectoryProvisioner->provision($spec->code, $spec->templateRvcode, false);
+            // Passed by reference: even if provision() throws partway through (e.g. the first
+            // mkdir() of a series succeeds but a later one fails), $createdPaths already holds
+            // whatever was created up to that point, since writes through a reference parameter
+            // are visible to the caller regardless of how the function exits.
+            $this->dataDirectoryProvisioner->provision($spec->code, $spec->templateRvcode, false, $createdPaths);
             $report->add('Data directory', count($createdPaths) . ' path(s) created under data/' . $spec->code . '/');
 
             $this->defineJournalConstantsFor($spec->code, $rvid);
@@ -112,7 +123,22 @@ final class JournalCreator
             $db->commit();
         } catch (Throwable $e) {
             $db->rollBack();
-            $this->dataDirectoryProvisioner->rollback($spec->code, $createdPaths);
+
+            if ($existingRvid === null) {
+                // A brand-new journal: guardCodeAndResolveRvid() already established that no
+                // REVIEW row existed for this code, so nothing legitimate can have been under
+                // data/<code>/ either. Removing the whole tree also cleans up files WebsiteCloner
+                // and PagesCloner wrote (style.css, header.<lang>.html, logo images, menu.php,
+                // cloned page files) that $createdPaths never tracked, not just the directories
+                // DataDirectoryProvisioner itself created.
+                $this->dataDirectoryProvisioner->rollbackAll($spec->code);
+            } else {
+                // --complete resuming an existing journal: the data directory may already hold
+                // real content from a previously successful run, so only remove the paths this
+                // run is actually aware of having created.
+                $this->dataDirectoryProvisioner->rollback($spec->code, $createdPaths);
+            }
+
             throw $e;
         }
 

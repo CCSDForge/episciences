@@ -24,8 +24,12 @@ In order:
 7. Grants the given `--admin-uid` the administrator role on the new journal.
 
 Everything from step 2 onward runs inside one database transaction; a failure rolls the
-transaction back and removes any directory or file the run itself created (never anything that
-pre-existed). `--dry-run` shows the same plan without writing anything.
+transaction back. On a fresh journal (no `--complete`), the whole `data/<rvcode>/` tree is then
+removed as well, since nothing could have legitimately existed there before this run. Under
+`--complete` on an already-provisioned journal, only the directories and files this run is aware
+of having created are removed, since the directory may already hold real content from an earlier
+successful run — never anything that pre-existed. `--dry-run` shows the same plan without writing
+anything.
 
 ## What it does NOT do
 

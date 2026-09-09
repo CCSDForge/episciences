@@ -6,6 +6,7 @@ namespace Episciences\Journal\Provisioning;
 
 use Episciences_Page;
 use Episciences_Page_Manager;
+use RuntimeException;
 use Zend_Db_Table_Abstract;
 
 /**
@@ -14,10 +15,11 @@ use Zend_Db_Table_Abstract;
  * a new one.
  *
  * Episciences_Page_Manager has no bulk enumeration method (only findByCodeAndPageCode()), so
- * this reads the source rows directly. title/content/visibility are copied as the
- * already-serialized JSON strings the source row holds, rather than re-encoded through
- * Episciences_Page's setters: setContent() converts HTML to Markdown on every call, and the
- * stored value is already Markdown — running it through that conversion again would corrupt it.
+ * this reads the source rows directly. title/content/visibility are passed to Episciences_Page's
+ * setters with $serialize = false: the source row already holds the serialized JSON string
+ * Episciences_Page itself would produce, so re-serializing it would double-encode it. The
+ * $serialize flag is also what keeps setContent() from running its HTML-to-Markdown conversion —
+ * that conversion only triggers when given an array (raw form input), never a string.
  */
 final class PagesCloner
 {
@@ -49,7 +51,11 @@ final class PagesCloner
             $newPage->setContent((string)$row['content'], false);
             $newPage->setVisibility((string)$row['visibility'], false);
 
-            Episciences_Page_Manager::add($newPage);
+            $newId = Episciences_Page_Manager::add($newPage);
+            if ($newId <= 0) {
+                throw new RuntimeException("Failed to insert cloned page '$pageCode' for journal '$toCode'.");
+            }
+
             $this->clonePageFiles($fromCode, $toCode, $pageCode);
             $cloned++;
         }
@@ -68,10 +74,13 @@ final class PagesCloner
                 continue;
             }
 
-            if (!is_dir($targetDir)) {
-                mkdir($targetDir, 0770, true);
+            if (!is_dir($targetDir) && !mkdir($targetDir, 0770, true) && !is_dir($targetDir)) {
+                throw new RuntimeException("Directory \"$targetDir\" was not created");
             }
-            copy($sourceFile, $targetFile);
+
+            if (!copy($sourceFile, $targetFile)) {
+                throw new RuntimeException("Failed to copy page file \"$sourceFile\" to \"$targetFile\"");
+            }
             chmod($targetFile, 0644);
         }
     }

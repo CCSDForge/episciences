@@ -103,7 +103,7 @@ Creates a new journal: inserts its `REVIEW` row (nothing else in the codebase do
 `Episciences_Review::save()` only writes `REVIEW_SETTING`), clones settings/menu/pages/appearance
 from an existing "template" journal, creates the `data/<rvcode>/` directory tree, and grants an
 existing user the administrator role. Business logic lives in
-`Episciences\Journal\Provisioning\{JournalSpec,ReviewRowWriter,SettingsCloner,DataDirectoryProvisioner,WebsiteCloner,PagesCloner,AdminRoleAssigner,JournalCreator}`.
+`Episciences\Journal\Provisioning\{JournalSpec,ReviewRowWriter,SettingsCloner,DataDirectoryProvisioner,WebsiteCloner,ClonableWebsiteStyle,ClonableWebsiteHeader,PagesCloner,AdminRoleAssigner,Report,JournalCreator}`.
 
 See [`docs/journal-provisioning.md`](journal-provisioning.md) for the full procedure, what is
 cloned versus deliberately excluded, and the manual steps left after this command runs

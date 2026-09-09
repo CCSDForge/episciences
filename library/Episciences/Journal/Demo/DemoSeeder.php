@@ -125,6 +125,10 @@ final class DemoSeeder
             $data[Episciences_Volume::VOLUME_PREFIX_TITLE . $lang] = $title;
         }
 
+        foreach ($volume->getDescriptions() ?? [] as $lang => $description) {
+            $data[Episciences_Volume::VOLUME_PREFIX_DESCRIPTION . $lang] = $description;
+        }
+
         $volume->save($data, $vid);
         $report->add('Volume flag', "VID $vid marked as $flagSetting");
     }

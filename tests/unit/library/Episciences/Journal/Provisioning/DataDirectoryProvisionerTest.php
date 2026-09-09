@@ -67,6 +67,30 @@ class DataDirectoryProvisionerTest extends TestCase
         $this->assertDirectoryDoesNotExist($emptyDir);
     }
 
+    public function testRollbackAllRemovesTheWholeTreeRegardlessOfWhatWasTracked(): void
+    {
+        $base = DataDirectoryProvisioner::pathFor(self::FIXTURE_RVCODE);
+        mkdir($base . 'config', 0770, true);
+        mkdir($base . 'public', 0770, true);
+        file_put_contents($base . 'config/navigation.json', '{}');
+        file_put_contents($base . 'public/style.css', 'body{}');
+
+        $provisioner = new DataDirectoryProvisioner();
+        $provisioner->rollbackAll(self::FIXTURE_RVCODE);
+
+        $this->assertDirectoryDoesNotExist($base, 'rollbackAll() must remove the whole data/<rvcode>/ tree');
+    }
+
+    public function testRollbackAllIsANoOpWhenTheDirectoryDoesNotExist(): void
+    {
+        $provisioner = new DataDirectoryProvisioner();
+
+        // Must not throw even though nothing was ever created for this code.
+        $provisioner->rollbackAll(self::FIXTURE_RVCODE);
+
+        $this->assertDirectoryDoesNotExist(DataDirectoryProvisioner::pathFor(self::FIXTURE_RVCODE));
+    }
+
     private function removeDirRecursive(string $dir): void
     {
         if (!is_dir($dir)) {

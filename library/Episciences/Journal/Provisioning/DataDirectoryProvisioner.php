@@ -71,14 +71,16 @@ final class DataDirectoryProvisioner
     }
 
     /**
-     * @return string[] paths this call actually created (directories and files) — the exact
-     *                   compensation list for rollback(), so pre-existing paths are never
-     *                   reported as ours to delete
+     * @param string[] $created out-parameter, appended to as paths are created — passed by
+     *                          reference so the caller still has the paths created so far even
+     *                          if this method throws partway through (e.g. one mkdir() in a
+     *                          series fails): the exact compensation list for rollback(), so
+     *                          pre-existing paths are never reported as ours to delete
+     * @return string[] paths this call actually created (directories and files), same as $created
      */
-    public function provision(string $rvcode, ?string $templateRvcode, bool $dryRun): array
+    public function provision(string $rvcode, ?string $templateRvcode, bool $dryRun, array &$created = []): array
     {
         $target = self::pathFor($rvcode);
-        $created = [];
 
         foreach (self::DIRECTORIES as $dir) {
             $path = $target . $dir;
@@ -93,7 +95,7 @@ final class DataDirectoryProvisioner
         if ($templateRvcode !== null) {
             $templatePath = self::pathFor($templateRvcode);
             foreach (self::TEMPLATE_COPYABLE_DIRECTORIES as $dir) {
-                array_push($created, ...$this->copyMissing($templatePath . $dir, $target . $dir, $dryRun));
+                $this->copyMissing($templatePath . $dir, $target . $dir, $dryRun, $created);
             }
         }
 
@@ -101,15 +103,13 @@ final class DataDirectoryProvisioner
     }
 
     /**
-     * @return string[] paths created
+     * @param string[] $created appended to by reference, see provision()
      */
-    private function copyMissing(string $sourceDir, string $targetDir, bool $dryRun): array
+    private function copyMissing(string $sourceDir, string $targetDir, bool $dryRun, array &$created): void
     {
         if (!is_dir($sourceDir)) {
-            return [];
+            return;
         }
-
-        $created = [];
 
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($sourceDir, FilesystemIterator::SKIP_DOTS),
@@ -135,19 +135,29 @@ final class DataDirectoryProvisioner
                 continue;
             }
 
-            if (!file_exists($destination)) {
-                $created[] = $destination;
-                if (!$dryRun) {
-                    if (!is_dir(dirname($destination))) {
-                        $this->mkdir(dirname($destination));
-                    }
-                    copy($item->getPathname(), $destination);
-                    chmod($destination, 0644);
-                }
+            if (file_exists($destination)) {
+                continue;
             }
-        }
 
-        return $created;
+            if ($dryRun) {
+                $created[] = $destination;
+                continue;
+            }
+
+            if (!is_dir(dirname($destination))) {
+                $this->mkdir(dirname($destination));
+            }
+
+            // Only reported as created once the copy actually succeeds, so a disk-full or
+            // permission-denied failure never gets recorded as if the file were provisioned —
+            // and the RuntimeException below routes the failure into JournalCreator's rollback
+            // instead of letting the transaction commit over a missing file.
+            if (!copy($item->getPathname(), $destination)) {
+                throw new RuntimeException("Failed to copy \"{$item->getPathname()}\" to \"$destination\"");
+            }
+            chmod($destination, 0644);
+            $created[] = $destination;
+        }
     }
 
     private function isSecret(string $filename): bool
@@ -194,5 +204,40 @@ final class DataDirectoryProvisioner
                 rmdir($path);
             }
         }
+    }
+
+    /**
+     * Removes the whole data/<rvcode>/ tree, unconditionally. Only safe to call for a journal
+     * that did not exist before this run: JournalCreator's own guard (Episciences_Review::exist())
+     * already established that no REVIEW row existed for this code, so nothing legitimate can
+     * have been under data/<rvcode>/ either — anything found there is either this run's own
+     * writes or debris from an earlier failed attempt, safe to discard either way. Never call
+     * this for a --complete run resuming an existing journal: rollback() (the path-list variant)
+     * is the only safe option there, since the directory may already hold real content from a
+     * previously successful step.
+     */
+    public function rollbackAll(string $rvcode): void
+    {
+        $target = self::pathFor($rvcode);
+
+        if (!is_dir($target)) {
+            return;
+        }
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($target, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        /** @var SplFileInfo $item */
+        foreach ($iterator as $item) {
+            if ($item->isDir()) {
+                rmdir($item->getPathname());
+            } else {
+                unlink($item->getPathname());
+            }
+        }
+
+        rmdir($target);
     }
 }

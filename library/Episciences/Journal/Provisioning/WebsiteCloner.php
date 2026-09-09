@@ -7,6 +7,7 @@ namespace Episciences\Journal\Provisioning;
 use Ccsd_Lang_Reader;
 use Ccsd_Lang_Writer;
 use Ccsd_Website_Header;
+use RuntimeException;
 use Zend_Db_Table_Abstract;
 
 /**
@@ -58,7 +59,7 @@ final class WebsiteCloner
         $this->cloneNavigationRows($fromRvid, $toRvid);
         $this->cloneMenuLabels($fromRvcode, $toRvcode, $languages);
         $this->cloneLanguagesSetting($fromRvid, $toRvid);
-        $this->cloneStyles($fromRvid, $toRvid, $toRvcode, $targetPublicUrl);
+        $this->cloneStyles($fromRvid, $toRvid, $fromRvcode, $toRvcode, $targetPublicUrl);
         $this->cloneHeader($fromRvid, $toRvid, $fromRvcode, $toRvcode, $languages, $targetPublicUrl);
 
         return true;
@@ -112,7 +113,7 @@ final class WebsiteCloner
         );
     }
 
-    private function cloneStyles(int $fromRvid, int $toRvid, string $toRvcode, string $targetPublicUrl): void
+    private function cloneStyles(int $fromRvid, int $toRvid, string $fromRvcode, string $toRvcode, string $targetPublicUrl): void
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $select = $db->select()->from('WEBSITE_STYLES', ['SETTING', 'VALUE'])->where('RVID = ?', $fromRvid);
@@ -122,11 +123,26 @@ final class WebsiteCloner
             return;
         }
 
-        $target = new ClonableWebsiteStyle($toRvid, DataDirectoryProvisioner::pathFor($toRvcode) . 'public/', $targetPublicUrl);
+        $targetPublicDir = DataDirectoryProvisioner::pathFor($toRvcode) . 'public/';
+
+        $target = new ClonableWebsiteStyle($toRvid, $targetPublicDir, $targetPublicUrl);
         // save() deletes any existing WEBSITE_STYLES rows for $toRvid (none yet) then rewrites
         // style.css on disk from the cloned tags, so the new journal gets correctly
         // domain-qualified asset URLs rather than the template's.
         $target->save($styles);
+
+        // save() only copies an uploaded file's tmp path via the settings form (getFileName()),
+        // which is null here since $styles comes straight from the database, not a form
+        // submission — so the background image referenced by the cloned bg_img_file row would
+        // otherwise never actually reach the new journal's public/, leaving style.css pointing
+        // at a file that doesn't exist. Reuses copyLogoFile()'s same bare-filename validation.
+        if (!empty($styles['bg_img_file'])) {
+            $this->copyLogoFile(
+                DataDirectoryProvisioner::pathFor($fromRvcode) . 'public/',
+                $targetPublicDir,
+                (string)$styles['bg_img_file']
+            );
+        }
     }
 
     /**
@@ -191,18 +207,29 @@ final class WebsiteCloner
             return;
         }
 
-        $sourceFile = $sourcePublicDir . $filename;
-        $targetFile = $targetPublicDir . $filename;
+        // WEBSITE_HEADER.img is expected to be a bare file name; reject anything that isn't,
+        // since Ccsd_File::renameFile() (which produced it on the template journal) does not
+        // itself forbid path separators — a stray one here would let the concatenation below
+        // escape the journal's public/ directory.
+        $safeName = basename($filename);
+        if ($safeName === '' || $safeName !== $filename) {
+            return;
+        }
+
+        $sourceFile = $sourcePublicDir . $safeName;
+        $targetFile = $targetPublicDir . $safeName;
 
         if (!is_file($sourceFile) || file_exists($targetFile)) {
             return;
         }
 
-        if (!is_dir($targetPublicDir)) {
-            mkdir($targetPublicDir, 0770, true);
+        if (!is_dir($targetPublicDir) && !mkdir($targetPublicDir, 0770, true) && !is_dir($targetPublicDir)) {
+            throw new RuntimeException("Directory \"$targetPublicDir\" was not created");
         }
 
-        copy($sourceFile, $targetFile);
+        if (!copy($sourceFile, $targetFile)) {
+            throw new RuntimeException("Failed to copy logo file \"$sourceFile\" to \"$targetFile\"");
+        }
         chmod($targetFile, 0644);
     }
 }
