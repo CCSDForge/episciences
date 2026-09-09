@@ -21,6 +21,8 @@ php scripts/console.php <command> --help
 | [`app:generate-users`](#appgenerate-users) | Generate random test users |
 | [`app:init-dev-users`](#appinit-dev-users) | Seed the dev journal with 30 predefined users |
 | [`app:create-bot-user`](#appcreate-bot-user) | Create the `episciences-bot` service account |
+| [`journal:create`](#journalcreate) | Create a new journal by cloning settings, menu, pages and appearance from a template journal |
+| [`journal:seed-demo`](#journalseed-demo) | Seed a journal with a small set of real demo submissions (volumes, sections, papers) for sandbox testing |
 | [`enrichment:extract-biblio-refs`](#enrichmentextract-biblio-refs) | Pre-extract bibliographic references via the Biblioref API (designed for cron) |
 | [`enrichment:citations`](#enrichmentcitations) | Enrich citation metadata from OpenCitations, OpenAlex, and Crossref |
 | [`enrichment:creators`](#enrichmentcreators) | Enrich author ORCID data from OpenAIRE Research Graph and HAL |
@@ -89,6 +91,83 @@ Creates the `episciences-bot` service account with a predefined UID and credenti
 
 ```bash
 php scripts/console.php app:create-bot-user
+```
+
+---
+
+## Journal Provisioning
+
+### `journal:create`
+
+Creates a new journal: inserts its `REVIEW` row (nothing else in the codebase does this —
+`Episciences_Review::save()` only writes `REVIEW_SETTING`), clones settings/menu/pages/appearance
+from an existing "template" journal, creates the `data/<rvcode>/` directory tree, and grants an
+existing user the administrator role. Business logic lives in
+`Episciences\Journal\Provisioning\{JournalSpec,ReviewRowWriter,SettingsCloner,DataDirectoryProvisioner,WebsiteCloner,ClonableWebsiteStyle,ClonableWebsiteHeader,PagesCloner,AdminRoleAssigner,Report,JournalCreator}`.
+
+See [`docs/journal-provisioning.md`](journal-provisioning.md) for the full procedure, what is
+cloned versus deliberately excluded, and the manual steps left after this command runs
+(Apache vhost, DNS, Matomo, editorial identity).
+
+```bash
+php scripts/console.php journal:create [options]
+```
+
+Run with no options for an interactive wizard; every question also has a CLI option so the
+command can be scripted with `--no-interaction`.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--code` | — | New journal code (rvcode); required under `--no-interaction` |
+| `--name` | — | New journal name; required under `--no-interaction` |
+| `--subtitle` | `''` | New journal subtitle |
+| `--template-rvcode` | — | Existing journal code to clone settings/menu/pages/appearance from; required under `--no-interaction` |
+| `--admin-uid` | — | UID of the existing user to make administrator of the new journal; required under `--no-interaction` |
+| `--piwikid` | `0` | Matomo (Piwik) site id — no Matomo API call is ever made |
+| `--status` | `0` (disabled) | Initial status: `0` (disabled) or `1` (enabled) |
+| `--new-front` | `no` | Serve through the new (Next.js) front-end: `yes` or `no` |
+| `--reset-doi` | off | Reset cloned DOI settings to manual mode with an empty prefix |
+| `--complete` | off | Finish provisioning an existing journal instead of refusing because its code already exists |
+| `--dry-run` | off | Show the plan without writing anything |
+
+Example:
+
+```bash
+php scripts/console.php journal:create \
+  --code=sandbox1 --name='Sandbox Journal' --template-rvcode=dmtcs \
+  --admin-uid=1 --reset-doi --no-interaction
+```
+
+---
+
+### `journal:seed-demo`
+
+Seeds a journal with a small set of real, fixed submissions (HAL, arXiv, Zenodo, BAOBAB) across
+3 volumes and 3 sections, in submitted/accepted/published status only — for manually testing a
+journal end-to-end without touching production data. A thin wrapper around the same import
+machinery `import:papers` uses: volumes/sections are created on the fly from the CSV's titles,
+and a second run updates the same papers instead of duplicating them. Business logic lives in
+`Episciences\Journal\Demo\{DemoCsvRewriter,DemoSeeder}`.
+
+```bash
+php scripts/console.php journal:seed-demo [options]
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--rvcode` | — | Journal RVID or RVCODE to seed; required |
+| `--uid` | — | UID to own all demo papers; required |
+| `--csv-file` | `scripts/importSamples/demo-papers.csv` | Path to the demo CSV file (same format as `import:papers`) |
+| `--force` | off | Allow seeding a journal whose status is enabled (production) |
+| `--dry-run` | off | Simulate the seeding without writing to the database |
+
+Refuses to run on an enabled (production) journal unless `--force` is given, to avoid injecting
+demo content into a live journal by mistake.
+
+Example:
+
+```bash
+php scripts/console.php journal:seed-demo --rvcode=sandbox1 --uid=1
 ```
 
 ---
