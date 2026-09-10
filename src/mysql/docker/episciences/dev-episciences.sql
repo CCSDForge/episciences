@@ -7828,7 +7828,7 @@ INSERT INTO `metadata_sources` (`id`, `name`, `type`, `status`, `identifier`, `b
 (18, 'ARCHE', 'repository', 1, 'https://hdl.handle.net/%%ID', 'https://arche.acdh.oeaw.ac.at/oaipmh/', '', 'https://arche.acdh.oeaw.ac.at/api/', 'https://hdl.handle.net/%%ID', ''),
 (19, 'Cryptology ePrint', 'repository', 1, 'oai:eprint.iacr.org:%%ID', 'https://eprint.iacr.org/oai', '', '', 'https://eprint.iacr.org/archive/%%ID', 'https://eprint.iacr.org/archive/%%ID.pdf'),
 (20, 'RepositóriUM', 'dspace', 1, 'oai:repositorium.uminho.pt:%%ID', 'https://repositorium.uminho.pt/server/oai/openaire4', '', '', 'https://hdl.handle.net/%%ID', ''),
-(22, 'BAOBAB', 'repository', 1, 'oai:baobab.wacren.net:%%ID', NULL, '', 'https://baobab.wacren.net/api', 'https://baobab.wacren.net/records/%%ID', '');
+(22, 'BAOBAB', 'repository', 1, 'oai:baobab.wacren.net:%%ID', 'https://baobab.wacren.net/oai2d', '', 'https://baobab.wacren.net/api', 'https://baobab.wacren.net/records/%%ID', '');
 
 -- --------------------------------------------------------
 
