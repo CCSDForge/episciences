@@ -31,7 +31,7 @@
   },
   "packageManager": "yarn@4.17.0",
   "resolutions": {
-    "find-up": "5.0.0",
+    "find-up": "8.0.0",
     "fast-uri": "^3.1.1",
     "tmp": "^0.2.6",
     "serialize-javascript": "^7.0.5",
