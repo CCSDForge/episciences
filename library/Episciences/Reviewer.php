@@ -510,7 +510,17 @@ class Episciences_Reviewer extends Episciences_User
     }
 
     /**
-     * fetch paper reviewer active assignments
+     * Fetches the papers this reviewer is assigned to, keyed by their latest assignment.
+     *
+     * 'pending' is part of the retained statuses so that an invitation which has been sent but not
+     * answered yet shows up on the reviewer dashboard. It has to be handled with care: no
+     * USER_ASSIGNMENT row is ever inserted when an invitation expires -- expiry is derived from
+     * USER_INVITATION.EXPIRATION_DATE at read time -- so an expired invitation stays 'pending'
+     * forever. Retaining it unconditionally would pin the paper to the reviewer's list for good,
+     * which is also what loadAssignedPapers() explicitly avoids on its own invitation branch
+     * ('hasExpired' => false). Hence the join below, which keeps a 'pending' assignment only while
+     * its invitation is still open.
+     *
      * @return Zend_Db_Select
      */
     private function fetchPaperReviewerAssignmentsQuery(): \Zend_Db_Select
@@ -525,10 +535,36 @@ class Episciences_Reviewer extends Episciences_User
             ->where('RVID = ?', RVID)
             ->group('ITEMID');
 
+        // Built as a single grouped expression on purpose: chaining orWhere() would OR itself with
+        // every preceding where(), dropping the UID / ITEM / ROLEID / RVID restrictions below.
+        $answeredStatuses = $this->_db->quoteInto(
+            'a.STATUS IN (?)',
+            [
+                Episciences_User_Assignment::STATUS_ACTIVE,
+                Episciences_User_Assignment::STATUS_INACTIVE,
+                Episciences_User_Assignment::STATUS_DECLINED,
+            ]
+        );
+
+        // An assignment with no invitation attached (a reviewer added directly by an editor) has
+        // no expiry to check, so it is kept.
+        $openInvitation = $this->_db->quoteInto(
+            '(a.STATUS = ? AND (i.EXPIRATION_DATE IS NULL OR i.EXPIRATION_DATE > NOW()))',
+            Episciences_User_Assignment::STATUS_PENDING
+        );
+
         return $this->_db->select()
             ->from(['a' => T_ASSIGNMENTS], ['ITEMID', 'STATUS', 'WHEN'])
             ->join(['b' => $subquery], 'a.ITEMID = b.ITEMID AND a.`WHEN` = b.`WHEN`', [])
-            ->where('a.STATUS IN (?)', [Episciences_User_Assignment::STATUS_ACTIVE, Episciences_User_Assignment::STATUS_INACTIVE, Episciences_User_Assignment::STATUS_DECLINED]);
+            ->joinLeft(['i' => T_USER_INVITATIONS], 'i.ID = a.INVITATION_ID', [])
+            // The subquery only narrows down ITEMID and WHEN. Without repeating them here, any
+            // assignment sharing that paper id and that timestamp would match -- including another
+            // user's, another role's, or a volume assignment whose id collides with a paper id.
+            ->where('a.UID = ?', $this->getUid())
+            ->where('a.ITEM = ?', 'paper')
+            ->where('a.ROLEID = ?', 'reviewer')
+            ->where('a.RVID = ?', RVID)
+            ->where(sprintf('(%s OR %s)', $answeredStatuses, $openInvitation));
     }
 
     /**

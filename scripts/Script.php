@@ -180,7 +180,10 @@ abstract class Script {
                 $this->setParam($name, $this->_zend_console->$name);
             }
         } catch (Zend_Console_Getopt_Exception $e) {
-            die($e->getMessage() . PHP_EOL);
+            // exit code 1, not die(): die() with a message returns 0, so a cron or a CI job
+            // calling a script with a bad option was told it had succeeded.
+            fwrite(STDERR, $e->getMessage() . PHP_EOL);
+            exit(1);
         }
 
         // if -help param exists, display help and stop execution

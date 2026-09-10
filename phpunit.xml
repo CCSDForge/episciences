@@ -15,6 +15,19 @@
       <directory>tests</directory>
     </testsuite>
   </testsuites>
+  <!--
+    Code the coverage reports are computed from. Without it PHPUnit raises the "No filter is
+    configured, code coverage will not be processed" runner warning, which makes it exit with 1:
+    the workflows ask for a clover report and upload it to Codecov, so the whole suite was failing
+    on a configuration gap rather than on a test.
+  -->
+  <source>
+    <include>
+      <directory>application</directory>
+      <directory>library</directory>
+      <directory>scripts</directory>
+    </include>
+  </source>
   <logging>
     <junit outputFile="build/junit.xml"/>
   </logging>

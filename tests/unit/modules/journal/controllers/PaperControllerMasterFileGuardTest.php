@@ -31,8 +31,6 @@ use PHPUnit\Framework\TestCase;
  *     wrapped in a try/catch so a JSON-sync failure cannot abort the response
  *     after the file's is_main flag has already been persisted.
  *
- * @covers PaperController::getmasterfileformAction
- * @covers PaperController::savemasterfileAction
  */
 final class PaperControllerMasterFileGuardTest extends TestCase
 {

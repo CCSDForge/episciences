@@ -836,76 +836,73 @@ class Episciences_PapersManager
         // fetch assignments (invitations don't have a docid, and are linked to an assignment)
         $select = self::getLatestInvitationByDocIdQuery($docId);
 
-        //$debugQuery = $select->__toString();
-
         $data = $db?->fetchAll($select);
 
-        //reviewers array
+        // Reviewer cache, shared by every invitation of this paper.
+        // Regular users are stored under their UID, temporary ones under $reviewers['tmp'][UID],
+        // because the two identity spaces use independent auto-increment sequences.
         $reviewers = ['tmp' => []];
 
-        //prepare array
+        // Group the assignment history rows by invitation.
+        // USER_ASSIGNMENT is insert-only: a single invitation accumulates one row per status
+        // transition ('pending' -> 'active' -> 'inactive' ...), and all of them carry the same
+        // INVITATION_AID.
         $source = [];
         foreach ($data as $row) {
 
-            if (array_key_exists($row['ASSIGNMENT_ID'], $source)) { // remove duplicated invitations
+            // WARNING -- this test does not do what its original comment ("remove duplicated
+            // invitations") claimed: it compares an ASSIGNMENT_ID against the *first-level* keys
+            // of $source, which are INVITATION_AIDs. Since the row that created the invitation
+            // always has ASSIGNMENT_ID === INVITATION_AID (Episciences_User_Invitation::setAid()
+            // stores the id of the 'pending' assignment), what it actually does is drop that
+            // original row as soon as the invitation has more than one row.
+            //
+            // It is deliberately left untouched here: removing it is a behaviour change, not a
+            // clean-up. The original row would come back, the $assignmentId === $invitationAid
+            // branch of mergeAssignmentHistory() would start firing, and ASSIGNMENT_DATE would
+            // switch from "date of the last status change" to "date of the invitation".
+            // Episciences_Mail_Reminder::getLatestInvitationDate() reads exactly that field to
+            // schedule reviewer reminders, so reminders would suddenly be computed from the
+            // invitation date instead of the acceptance date. That deserves its own pull request.
+            //
+            // Note that the guard is redundant for actual duplicates anyway: the assignment
+            // below is keyed by ASSIGNMENT_ID, so a repeated row would simply overwrite itself.
+            if (array_key_exists($row['ASSIGNMENT_ID'], $source)) {
                 continue;
             }
+
             self::addAnswersDate($row);
             $source[$row['INVITATION_AID']][$row['ASSIGNMENT_ID']] = $row;
         }
 
-        //sort array
         $invitations = [];
-        foreach ($source as $aid => $row) {
-            $reviewer = null;
-            $tmp = [];
-            foreach ($row as $id => $invitation) {
-                $isTmpUser = false;
-                //recuperation du dernier état connu de l'invitation
-                if (empty($tmp)) {
-                    $tmp = $invitation;
-                }
-                //recuperation des infos de l'invitation d'origine, s'il y a eu une réponse à l'invitation
-                if (!empty($tmp) && $aid === $id) {
-                    $tmp['ASSIGNMENT_DATE'] = $invitation['ASSIGNMENT_DATE'];
-                }
 
-                //fetch reviewer detail
-                if ($invitation['TMP_USER']) {
-                    $isTmpUser = true;
-                    if (!array_key_exists($invitation['UID'], $reviewers['tmp'])) {
-                        $reviewer = new Episciences_User_Tmp();
+        foreach ($source as $aid => $historyRows) {
 
-                        if (!empty($reviewer->find($invitation['UID']))) {
-                            $reviewer->generateScreen_name();
-                            $reviewers['tmp'][$invitation['UID']] = $reviewer;
-                        }
+            // One entry per invitation, whatever the number of history rows it holds.
+            // This push used to sit inside the loop over the history rows, which appended the
+            // very same invitation once per row: reviewers were then listed several times by
+            // sortInvitations().
+            $invitation = self::mergeAssignmentHistory($historyRows, (int)$aid);
 
-                    }
-                } elseif (!array_key_exists($invitation['UID'], $reviewers)) {
-                    $reviewer = new Episciences_Reviewer();
-                    if ($reviewer->findWithCAS($invitation['UID'])) {
-                        $reviewers[$invitation['UID']] = $reviewer;
-                    } else {
-                        trigger_error('CAS USER UID = ' . $invitation['UID'] . ' NOT FOUND', E_USER_WARNING);
-                        continue;
-                    }
-                }
-
-
-                if ($reviewer) {
-                    $tmp['reviewer'] = self::reviewerProcess($reviewer, $docId, $rvId, $isTmpUser);
-                }
-
-                $key = !$isTmpUser ? $invitation['UID'] : 'tmp_' . $invitation['UID'];
-
-                if (!array_key_exists('reviewer', $tmp) && array_key_exists($key, $reviewers)) {
-
-                    $tmp['reviewer'] = self::reviewerProcess($reviewers[$key], $docId, $rvId, $isTmpUser);
-                }
-                $invitations[$key][] = $tmp;
+            if ($invitation === []) {
+                continue;
             }
 
+            $isTmpUser = (bool)$invitation['TMP_USER'];
+            $uid = (int)$invitation['UID'];
+            $reviewer = self::findInvitationReviewer($uid, $isTmpUser, $reviewers);
+
+            if ($reviewer === null) {
+                // No CAS identity: there is nothing to display for this invitation.
+                trigger_error('CAS USER UID = ' . $uid . ' NOT FOUND', E_USER_WARNING);
+                continue;
+            }
+
+            $invitation['reviewer'] = self::reviewerProcess($reviewer, $docId, $rvId, $isTmpUser);
+
+            $key = $isTmpUser ? 'tmp_' . $uid : $uid;
+            $invitations[$key][] = $invitation;
         }
 
         if ($sorted) {
@@ -915,6 +912,87 @@ class Episciences_PapersManager
         }
 
         return $result;
+    }
+
+    /**
+     * Collapses the assignment history of a single invitation into the one row to display.
+     *
+     * USER_ASSIGNMENT is insert-only, so an invitation is represented by as many rows as it went
+     * through status transitions. Only one of them is meaningful to the caller: the most recent
+     * state of the invitation.
+     *
+     * @param array<int, array<string, mixed>> $historyRows rows of one invitation, keyed by
+     *                                                      ASSIGNMENT_ID and ordered by
+     *                                                      ASSIGNMENT_DATE DESC (most recent first)
+     * @param int $invitationAid ASSIGNMENT_ID of the row that created the invitation
+     * @return array<string, mixed> empty when $historyRows is empty
+     */
+    private static function mergeAssignmentHistory(array $historyRows, int $invitationAid): array
+    {
+        $merged = [];
+
+        foreach ($historyRows as $assignmentId => $row) {
+
+            // The query orders by ASSIGNMENT_DATE DESC: the first row is the latest known state.
+            if ($merged === []) {
+                $merged = $row;
+            }
+
+            // ... but the date of the original assignment (when the reviewer was invited) is the
+            // one worth showing once the invitation has been answered.
+            //
+            // In practice this branch only fires for invitations that still have a single row:
+            // the guard in getInvitations() drops the original row from any longer history. See
+            // the comment there before relying on this.
+            if ($assignmentId === $invitationAid) {
+                $merged['ASSIGNMENT_DATE'] = $row['ASSIGNMENT_DATE'];
+            }
+        }
+
+        return $merged;
+    }
+
+    /**
+     * Resolves, and caches, the user an invitation was sent to.
+     *
+     * @param int $uid
+     * @param bool $isTmpUser
+     * @param array<int|string, mixed> $reviewers cache shared across the invitations of a paper,
+     *                                            updated in place
+     * @return Episciences_User|null null only when the CAS lookup of a regular user fails, which
+     *                               makes the invitation undisplayable
+     */
+    private static function findInvitationReviewer(int $uid, bool $isTmpUser, array &$reviewers): ?Episciences_User
+    {
+        if ($isTmpUser) {
+
+            if (!array_key_exists($uid, $reviewers['tmp'])) {
+                $tmpReviewer = new Episciences_User_Tmp();
+
+                // find() legitimately fails when the temporary account has been removed, typically
+                // after the reviewer created a real one. The invitation is still returned rather
+                // than hidden from the editors, which is the pre-existing behaviour.
+                if (!empty($tmpReviewer->find($uid))) {
+                    $tmpReviewer->generateScreen_name();
+                }
+
+                $reviewers['tmp'][$uid] = $tmpReviewer;
+            }
+
+            return $reviewers['tmp'][$uid];
+        }
+
+        if (!array_key_exists($uid, $reviewers)) {
+            $reviewer = new Episciences_Reviewer();
+
+            if (!$reviewer->findWithCAS($uid)) {
+                return null;
+            }
+
+            $reviewers[$uid] = $reviewer;
+        }
+
+        return $reviewers[$uid];
     }
 
     /**
@@ -4153,6 +4231,17 @@ class Episciences_PapersManager
         return $coAuthorsList;
     }
 
+    /**
+     * Dispatches invitations into one bucket per assignment status.
+     *
+     * Every entry received is classified: this method neither deduplicates nor merges anything.
+     * getInvitations() is responsible for handing over a single entry per invitation -- a reviewer
+     * invited twice on the same paper legitimately yields two entries here.
+     *
+     * @param string|string[]|null $status status(es) to keep, null keeps everything
+     * @param array<int|string, array<int, array<string, mixed>>> $invitations invitations per reviewer key
+     * @return array<string, array<int, array<string, mixed>>>
+     */
     private static function sortInvitations($status, array $invitations = []): array
     {
 
@@ -4165,32 +4254,26 @@ class Episciences_PapersManager
         ];
 
         foreach ($invitations as $invitation_list) {
-            $invitation = array_shift($invitation_list);
+            foreach ($invitation_list as $invitation) {
 
-            //si l'invitation a expiré, on la place dans une catégorie à part
-            if (
-                $invitation['ASSIGNMENT_STATUS'] === Episciences_User_Assignment::STATUS_PENDING &&
-                self::compareToCurrentTime($invitation['EXPIRATION_DATE'])
-            ) {
-                if (
-                    (!is_array($status) && $status !== Episciences_User_Assignment::STATUS_EXPIRED) ||
-                    (is_array($status) && !in_array(Episciences_User_Assignment::STATUS_EXPIRED, $status, true))
-                ) {
-                    //si on a passé des statuts en paramètre, et que 'expired' n'en fait pas partie, on le saute
+                $assignmentStatus = $invitation['ASSIGNMENT_STATUS'];
+
+                // If the invitation has expired, its status changes to "expired."
+                $effectiveStatus = (
+                        $assignmentStatus === Episciences_User_Assignment::STATUS_PENDING &&
+                        self::compareToCurrentTime($invitation['EXPIRATION_DATE'])
+                )
+                        ? Episciences_User_Assignment::STATUS_EXPIRED
+                        : $assignmentStatus;
+
+                // Filter by status: if statuses are passed as parameters
+                // and the current status is not among them, move on to the next one
+                if (!self::matchesStatusFilter($effectiveStatus, $status)) {
                     continue;
                 }
-                $result['expired'][] = $invitation;
-            } else {
-                if (
-                    (!is_array($status) && $status !== $invitation['ASSIGNMENT_STATUS']) ||
-                    (is_array($status) && !in_array($invitation['ASSIGNMENT_STATUS'], $status, true))
-                ) {
-                    //si on a passé des statuts en paramètre, et que ce statut n'en fait pas partie, on le saute
-                    continue;
-                }
-                $result[$invitation['ASSIGNMENT_STATUS']][] = $invitation;
+
+                $result[$effectiveStatus][] = $invitation;
             }
-
         }
 
         return $result;
@@ -4545,6 +4628,30 @@ class Episciences_PapersManager
         $data = $sql?->query()->fetch();
         return !empty($data) ? new Episciences_Paper($data) : null;
 
+    }
+
+    /**
+     * Tells whether a status passes the requested filter.
+     *
+     * A null filter means "no filtering": it keeps everything. Before this method existed the
+     * null case fell through a condition that rejected every status, so getInvitations() -- whose
+     * $status parameter defaults to null -- silently returned empty buckets.
+     *
+     * @param string $effectiveStatus
+     * @param string|string[]|null $status
+     * @return bool
+     */
+    private static function matchesStatusFilter(string $effectiveStatus, $status): bool
+    {
+        if ($status === null) {
+            return true;
+        }
+
+        if (is_array($status)) {
+            return in_array($effectiveStatus, $status, true);
+        }
+
+        return $effectiveStatus === $status;
     }
 
 }
