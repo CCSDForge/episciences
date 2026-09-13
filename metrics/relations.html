@@ -49,7 +49,7 @@
 <div class="page">
     <div class="content content-first">
         <div class="report-details">
-            Created at 2026-09-06 03:21:06        , with PHPMetrics 2.11.0 (<a href="https://twitter.com/Halleck45">Jean-François Lépine</a>).
+            Created at 2026-09-13 03:38:06        , with PHPMetrics 2.11.0 (<a href="https://twitter.com/Halleck45">Jean-François Lépine</a>).
         </div>
 
         
@@ -3733,7 +3733,24 @@
     {
         "name": "\\Episciences_Repositories_Zenodo_Hooks",
         "size": 3000,
-        "relations": []
+        "relations": [
+            "\\Episciences\\Repositories\\CommonHooksInterface",
+            "\\Episciences\\Repositories\\InputSanitizerInterface",
+            "\\Episciences\\Repositories\\FilesEnrichmentInterface",
+            "\\Episciences\\Repositories\\LinkedDataEnrichmentInterface",
+            "\\Episciences\\Repositories\\DataSanitizerInterface",
+            "\\Episciences\\Repositories\\Zenodo\\HooksInterface",
+            "\\Episciences_Repositories_Common",
+            "\\Episciences_Paper_FilesManager",
+            "\\Episciences_Repositories",
+            "\\Episciences_Tools",
+            "\\Ccsd_Error",
+            "\\Episciences_Submit",
+            "\\Episciences_Paper_AuthorsManager",
+            "\\GuzzleHttp\\Client",
+            "\\Symfony\\Component\\Intl\\Languages",
+            "\\InvalidArgumentException"
+        ]
     },
     {
         "name": "\\Episciences\\Repositories\\FilesEnrichmentInterface",
@@ -6099,7 +6116,6 @@
             "\\Episciences_View_Helper_Date",
             "\\Ccsd_Tools_String",
             "\\Episciences_Repositories",
-            "\\Episciences_Repositories_Zenodo_Hooks",
             "\\Episciences_Oai_Client",
             "\\Episciences_Repositories_Common",
             "\\Ccsd_User_Models_UserMapper",
