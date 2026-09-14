@@ -15,7 +15,6 @@ use PHPUnit\Framework\TestCase;
  * done inside each action. Source-analysis tests (ZF1 controllers are not
  * instantiable in isolation) assert that the binding stays in place.
  *
- * @covers PaperController
  */
 final class PaperControllerContributorGuardTest extends TestCase
 {

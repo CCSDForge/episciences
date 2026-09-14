@@ -9,7 +9,6 @@ use PHPUnit\Framework\TestCase;
 /**
  * Source-level check for RobotsDefaultController.
  *
- * @covers RobotsDefaultController
  */
 final class RobotsDefaultControllerTest extends TestCase
 {

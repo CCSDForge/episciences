@@ -17,7 +17,6 @@ use PHPUnit\Framework\TestCase;
  *   2. extract the actual pattern used in the source and check its behaviour, so
  *      the test follows the real validation rule rather than a copy of it.
  *
- * @covers PaperController::deleteattachmentreportAction
  */
 final class PaperControllerReportAttachmentTest extends TestCase
 {
