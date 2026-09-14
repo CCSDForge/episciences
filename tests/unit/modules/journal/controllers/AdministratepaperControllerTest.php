@@ -1479,4 +1479,39 @@ class AdministratepaperControllerTest extends TestCase
             . 'the posted identifier ends up written into VERSION while IDENTIFIER is left untouched'
         );
     }
+
+    // ---------------------------------------------------------------
+    // BUG — reviewer invitation e-mail never sets %%PERMANENT_ARTICLE_ID%%
+    // ---------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savereviewerinvitationAction
+     *
+     * Bug (present, unchanged, since this controller's very first commit):
+     * unlike every other paper-related e-mail in this controller — which all
+     * pass the paper's permanent id to Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID
+     * explicitly, a pattern generalised across the codebase in a later
+     * "make the tag available everywhere" pass — the reviewer invitation
+     * e-mail only ever called setDocid($docId), with no permanent id supplied
+     * and no TAG_PERMANENT_ARTICLE_ID added afterwards. That later pass missed
+     * this call site, so %%PERMANENT_ARTICLE_ID%% has always been empty in
+     * this specific template.
+     *
+     * setDocid() now resolves the permanent id itself when none is given
+     * (via a DB lookup), so the tag would no longer be empty either way —
+     * but $paper is already loaded here, so passing its id explicitly avoids
+     * that lookup entirely, consistent with every other call site fixed in
+     * this change.
+     */
+    public function testSaveReviewerInvitationActionPassesPaperIdToSetDocid(): void
+    {
+        $method = $this->extractMethod('savereviewerinvitationAction');
+
+        $this->assertMatchesRegularExpression(
+            '/setDocid\(\s*\$docId\s*,\s*\$paper->getPaperid\(\)\s*\)/',
+            $method,
+            'BUG: setDocid() must be given $paper->getPaperid() so %%PERMANENT_ARTICLE_ID%% is set '
+            . 'in the reviewer invitation e-mail'
+        );
+    }
 }
