@@ -3,6 +3,7 @@
 namespace unit\library\Episciences\Mail;
 
 use Episciences_Mail;
+use Episciences_Mail_Tags;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -529,5 +530,114 @@ final class Episciences_MailTest extends TestCase
         $safe  = array_map('intval', array_filter($input, 'is_numeric'));
 
         self::assertSame([0, 1, 999], array_values($safe));
+    }
+
+    // =========================================================================
+    // setDocid / getPaperId / static $_cache
+    //
+    // getPaperId() falls back to a real DB query (Episciences_PapersManager::
+    // partialGetQuery()) only on a cache miss, so these tests either supply
+    // $paperId explicitly to setDocid() (no query) or pre-seed the private
+    // static $_cache via reflection to force a cache hit. The real query path
+    // is not covered here for the same reason as getHistory()/log()/find():
+    // it requires a live DB (see class docblock).
+    // =========================================================================
+
+    protected function tearDown(): void
+    {
+        Episciences_Mail::clearCache();
+    }
+
+    private function seedPaperIdCache(array $cache): void
+    {
+        $rp = new \ReflectionProperty(Episciences_Mail::class, '_cache');
+        $rp->setAccessible(true);
+        $rp->setValue(null, $cache);
+    }
+
+    private function invokeGetPaperId(Episciences_Mail $mail): ?int
+    {
+        $rm = new ReflectionMethod(Episciences_Mail::class, 'getPaperId');
+        $rm->setAccessible(true);
+        return $rm->invoke($mail);
+    }
+
+    public function testSetDocidCastsDocidToInt(): void
+    {
+        $this->mail->setDocid('5', 1);
+        self::assertSame(5, $this->mail->getDocid());
+    }
+
+    public function testSetDocidReturnsFluent(): void
+    {
+        self::assertInstanceOf(Episciences_Mail::class, $this->mail->setDocid(1, 1));
+    }
+
+    public function testSetDocidAlwaysSetsPaperIdTag(): void
+    {
+        $this->mail->setDocid(42, 42);
+        self::assertSame(42, $this->mail->getTags()[Episciences_Mail_Tags::TAG_PAPER_ID]);
+    }
+
+    public function testSetDocidWithExplicitPaperIdSetsPermanentArticleIdTag(): void
+    {
+        $this->mail->setDocid(10, 999);
+        self::assertSame(999, $this->mail->getTags()[Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID]);
+    }
+
+    public function testSetDocidWithExplicitPaperIdDoesNotConsultCache(): void
+    {
+        // seed a decoy value under the same docid: the explicit $paperId must win
+        $this->seedPaperIdCache([10 => 111]);
+
+        $this->mail->setDocid(10, 999);
+
+        self::assertSame(999, $this->mail->getTags()[Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID]);
+    }
+
+    public function testSetDocidFallsBackToCachedPaperIdWhenNoneGiven(): void
+    {
+        $this->seedPaperIdCache([10 => 777]);
+
+        $this->mail->setDocid(10);
+
+        self::assertSame(777, $this->mail->getTags()[Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID]);
+    }
+
+    public function testSetDocidRemovesStalePermanentArticleIdTagWhenResolutionFails(): void
+    {
+        // simulate an Episciences_Mail instance reused across documents: the
+        // previous document's tag must not leak into the new one
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, 555);
+        $this->seedPaperIdCache([20 => null]);
+
+        $this->mail->setDocid(20);
+
+        self::assertArrayNotHasKey(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $this->mail->getTags());
+    }
+
+    public function testGetPaperIdCacheIsKeyedPerDocid(): void
+    {
+        $this->seedPaperIdCache([1 => 100, 2 => 200]);
+
+        $rp = new \ReflectionProperty(Episciences_Mail::class, '_docid');
+        $rp->setAccessible(true);
+
+        $rp->setValue($this->mail, 1);
+        self::assertSame(100, $this->invokeGetPaperId($this->mail));
+
+        $rp->setValue($this->mail, 2);
+        self::assertSame(200, $this->invokeGetPaperId($this->mail));
+    }
+
+    public function testClearCacheResetsStaticCache(): void
+    {
+        $this->seedPaperIdCache([1 => 100]);
+
+        Episciences_Mail::clearCache();
+
+        $rp = new \ReflectionProperty(Episciences_Mail::class, '_cache');
+        $rp->setAccessible(true);
+        self::assertSame([], $rp->getValue());
     }
 }
