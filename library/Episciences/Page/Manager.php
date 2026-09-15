@@ -2,8 +2,7 @@
 
 class Episciences_Page_Manager
 {
-<<<<<<< HEAD
-    /** Direct mapping from page_code to tag template (placeholder {rvcode} resolved at runtime). */
+/** Direct mapping from page_code to tag template (placeholder {rvcode} resolved at runtime). */
     private const NEXT_PAGE_CODE_TAGS = [
         'about'                     => 'about',
         'indexing'                  => 'indexing',
@@ -18,7 +17,7 @@ class Episciences_Page_Manager
         'ethical-charter'           => 'ethical-charter',
         'prepare-submission'        => 'prepare-submission',
     ];
-=======
+
     /**
      * Convert visibility SET value to JSON format for legacy column synchronization
      * Example: "editor,chief_editor" -> '["editor","chief_editor"]'
@@ -31,6 +30,7 @@ class Episciences_Page_Manager
         $values = explode(',', $visibility);
         return json_encode($values, JSON_UNESCAPED_UNICODE);
     }
+
     /**
      * Find all pages for a given review code
      *
@@ -58,7 +58,6 @@ class Episciences_Page_Manager
 
         return $pages;
     }
->>>>>>> b68db9591 (fix(pages): fix custom page visibility persistence and styling)
 
     public static function findByCodeAndPageCode(string $code, string $page_code): Episciences_Page
     {

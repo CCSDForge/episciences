@@ -2639,7 +2639,6 @@ return array(
     "Toutes les suggestions" => "All suggestions",
     "Suggestion d'acceptation" => "Suggested acceptance",
     "Suggestion de refus" => "Suggested refusal",
-<<<<<<< HEAD
     "Suggestion de modification" => "Suggested revision",
 
     // Contributor change
