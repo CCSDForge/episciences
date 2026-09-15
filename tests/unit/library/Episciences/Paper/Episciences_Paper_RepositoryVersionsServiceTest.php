@@ -301,6 +301,25 @@ final class Episciences_Paper_RepositoryVersionsServiceTest extends TestCase
         $this->assertSame([], $service->getAvailableVersions($paper));
     }
 
+    public function testDataverseKeepsMajorAndMinorSeparate(): void
+    {
+        $paper = $this->mockPaper(['repoid' => 99, 'identifier' => 'doi:10.5072/FK2/ABC']);
+
+        $response = [
+            'status' => Episciences_Repositories_Dataverse_Hooks::SUCCESS_CODE,
+            'data' => [
+                'latestVersion' => [
+                    'versionNumber' => 2,
+                    'versionMinorNumber' => 1,
+                ],
+            ],
+        ];
+
+        $service = $this->buildService(static fn() => $response);
+
+        $this->assertSame(['2.1', '1.1'], $service->getAvailableVersions($paper));
+    }
+
     // =========================================================================
     // Hook-based repositories (no API url, not arXiv)
     // =========================================================================

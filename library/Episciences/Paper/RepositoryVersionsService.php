@@ -236,14 +236,12 @@ class Episciences_Paper_RepositoryVersionsService
             isset($response['status']) &&
             mb_strtolower($response['status']) === Episciences_Repositories_Dataverse_Hooks::SUCCESS_CODE
         ) {
-            $latestVersion = $response['data']['latestVersion']['versionNumber'] ?? 1;
-            $versionMinorNumber = $response['data']['latestVersion']['versionMinorNumber'] ?? 0;
+            $latestVersion = (int)($response['data']['latestVersion']['versionNumber'] ?? 1);
+            $versionMinorNumber = (int)($response['data']['latestVersion']['versionMinorNumber'] ?? 0);
 
-            $version = (float)($latestVersion . '.' . $versionMinorNumber);
-
-            while ($version > 0) {
-                $versions[] = $version . '.' . $versionMinorNumber;
-                $version -= 1.0;
+            while ($latestVersion > 0) {
+                $versions[] = $latestVersion . '.' . $versionMinorNumber;
+                --$latestVersion;
             }
         }
 
