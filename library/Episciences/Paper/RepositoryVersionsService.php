@@ -192,7 +192,12 @@ class Episciences_Paper_RepositoryVersionsService
     {
         $url = $api . $paper->getIdentifier() . DIRECTORY_SEPARATOR . 'na' . DIRECTORY_SEPARATOR . 'json';
 
-        $response = ($this->apiCaller)($url);
+        try {
+            $response = ($this->apiCaller)($url);
+        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+            trigger_error($e->getMessage());
+            return [];
+        }
         $messages = (is_array($response)) ? ($response['messages'][array_key_first($response['messages'])] ?? null) : null;
         $collection = (is_array($response)) ? ($response['collection'] ?? []) : [];
 
@@ -214,7 +219,12 @@ class Episciences_Paper_RepositoryVersionsService
     {
         $url = $api . 'datasets/:persistentId/?persistentId=' . $paper->getIdentifier();
 
-        $response = ($this->apiCaller)($url);
+        try {
+            $response = ($this->apiCaller)($url);
+        } catch (\GuzzleHttp\Exception\GuzzleException $e) {
+            trigger_error($e->getMessage());
+            return [];
+        }
         $versions = [];
 
         if (
