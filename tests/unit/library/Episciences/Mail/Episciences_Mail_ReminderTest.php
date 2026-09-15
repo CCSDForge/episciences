@@ -470,6 +470,39 @@ final class Episciences_Mail_ReminderTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // BUG history — %%ARTICLE_ID%% / %%PERMANENT_ARTICLE_ID%% must stay paired
+    //
+    // loadRecipients() builds one $tags array per recipient across 7 private
+    // get*Recipients() methods; scripts/reminders.php later merges that array
+    // into the outgoing Episciences_Mail unconditionally (it overrides whatever
+    // Episciences_Mail::setDocid() resolved on its own). Historically, one
+    // Episciences_Mail call site (the reviewer invitation e-mail, unrelated to
+    // this class) set %%ARTICLE_ID%% without ever setting %%PERMANENT_ARTICLE_ID%%,
+    // leaving that tag empty in its template since the software's first public
+    // release. This test locks down the invariant for every recipient-tags
+    // array built here, so a future reminder type can't reintroduce the same
+    // class of bug: whenever %%ARTICLE_ID%% is set, %%PERMANENT_ARTICLE_ID%%
+    // must be set alongside it.
+    // -------------------------------------------------------------------------
+
+    public function testEveryArticleIdTagIsPairedWithPermanentArticleIdTag(): void
+    {
+        $source = file_get_contents((new ReflectionClass(Episciences_Mail_Reminder::class))->getFileName());
+
+        $articleIdCount = preg_match_all('/Episciences_Mail_Tags::TAG_ARTICLE_ID\s*=>/', $source);
+        $permanentArticleIdCount = preg_match_all('/Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID\s*=>/', $source);
+
+        self::assertGreaterThan(0, $articleIdCount, 'Sanity check: expected at least one TAG_ARTICLE_ID assignment in Reminder.php');
+        self::assertSame(
+            $articleIdCount,
+            $permanentArticleIdCount,
+            'BUG: every TAG_ARTICLE_ID => ... assignment in Reminder.php must be paired with a '
+            . 'TAG_PERMANENT_ARTICLE_ID => ... assignment, otherwise %%PERMANENT_ARTICLE_ID%% is left '
+            . 'empty for that reminder type'
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
