@@ -150,7 +150,7 @@ WHERE visibility_set = ''
 -- !!!                                                                        !!!
 -- !!!   DO NOT EXECUTE PHASE 4 BEFORE REMOVING DUAL-WRITE CODE!              !!!
 -- !!!                                                                        !!!
--- !!!   If you drop the columns while the code still writes to them,         !!!
+-- !!!   If we drop the columns while the code still writes to them,         !!!
 -- !!!   all INSERT/UPDATE operations on pages and news will FAIL with:       !!!
 -- !!!   ERROR 1054: Unknown column 'visibility' in 'field list'              !!!
 -- !!!                                                                        !!!
@@ -206,9 +206,9 @@ WHERE visibility_set = ''
 --    - JournalNews.php lines 234-240: visibilityToJson()
 --
 --
--- WHY THIS ORDER MATTERS:
+-- Why this order matters:
 -- -----------------------
--- The application currently writes to BOTH columns (dual-write):
+-- The application currently writes to both columns (dual-write):
 --   - visibility_set / visibility_enum (new columns)
 --   - visibility (old JSON column)
 --
