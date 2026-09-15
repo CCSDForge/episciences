@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -61,12 +62,12 @@ class CleanHalRecordDescriptionsCommand extends Command
         $logger = new Logger('cleanHalRecordDescriptions');
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'cleanHalRecordDescriptions_' . date('Y-m-d') . '.log',
-            Logger::INFO
+            Level::Info
         ));
 
         $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Logger::INFO);
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }
 

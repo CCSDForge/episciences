@@ -10,6 +10,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -824,7 +825,7 @@ class OpenAireApiClientTest extends TestCase
         $client = $this->makeBiModeClient($guzzle, $this->makeAuthenticatedTokenProvider(), $logger);
         $client->fetchPublication('10.1234/no-ratelimit-headers', 1);
 
-        $this->assertFalse($testHandler->hasRecordThatContains('Rate Limit', Logger::DEBUG));
+        $this->assertFalse($testHandler->hasRecordThatContains('Rate Limit', Level::Debug));
     }
 
     // -------------------------------------------------------------------------

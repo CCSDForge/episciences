@@ -5,6 +5,7 @@ use Episciences\Paper\Export\Csv\Filters;
 use Episciences\Paper\Export\Csv\PaperCsvExporter;
 use Episciences\Paper\Import\ReviewResolver;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -75,10 +76,10 @@ final class ExportPapersCommand extends Command
         $logger = new Logger('export-papers');
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'export-papers_' . date('Y-m-d') . '.log',
-            Logger::DEBUG
+            Level::Debug
         ));
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         $review = ReviewResolver::resolve($rvidOrCode);

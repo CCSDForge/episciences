@@ -8,8 +8,8 @@ use Doctrine\DBAL\Connection as DbalConnection;
 use Doctrine\DBAL\Schema\Schema;
 use Episciences\Messenger\Bus\BusFactory;
 use Episciences\Messenger\Dbal\DbalConnectionFactory;
+use Episciences\Log\LoggerFactory;
 use Episciences\Messenger\Enqueue\AbstractDbalEnqueueFailureStore;
-use Episciences\Messenger\Log\CliLoggerFactory;
 use Episciences\Messenger\Transport\TransportConfig;
 use Episciences\Messenger\Transport\TransportFactory;
 use Monolog\Logger;
@@ -84,7 +84,7 @@ class EpisciencesQueueCommand extends Command
         $io->title($profile->label());
 
         $profile->bootstrap();
-        $logger = CliLoggerFactory::create($profile->logPrefix() . 'Queue', !$io->isQuiet());
+        $logger = LoggerFactory::cli($profile->logPrefix() . 'Queue', !$io->isQuiet());
 
         $connection = DbalConnectionFactory::fromZendAdapter(Zend_Db_Table_Abstract::getDefaultAdapter());
         $transportConfig = $profile->config();

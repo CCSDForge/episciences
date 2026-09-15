@@ -11,11 +11,10 @@ use coarnotify\patterns\announce_endorsement\AnnounceEndorsementItem;
 use coarnotify\core\notify\NotifyActor;
 use coarnotify\core\notify\NotifyObject;
 use coarnotify\core\notify\NotifyService;
+use Episciences\Log\LoggerFactory;
 use Episciences\Notify\CoarNotifyHttpLayer;
 use Episciences\Notify\Notification;
 use Episciences\Notify\NotificationsRepository;
-use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
 use Ramsey\Uuid\Uuid;
 
@@ -110,13 +109,7 @@ class Episciences_Notify_Hal
      */
     private function initLogging(): void
     {
-        $cn_logger = new Logger('NotifyCOARLogger');
-
-        $handler = new RotatingFileHandler(EPISCIENCES_LOG_PATH . 'NotifyCOARLogger.log',
-            0, Logger::DEBUG, true, 0664);
-        $formatter = new LineFormatter(null, null, false, true);
-        $handler->setFormatter($formatter);
-        $cn_logger->pushHandler($handler);
+        $cn_logger = LoggerFactory::rotating('NotifyCOARLogger');
 
         $this->setLogger($cn_logger);
     }

@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -485,11 +486,11 @@ class GenerateDownloadKpiCommand extends Command
         $logDir  = dirname($logFile);
 
         if (is_dir($logDir) && is_writable($logDir)) {
-            $logger->pushHandler(new StreamHandler($logFile, Logger::INFO));
+            $logger->pushHandler(new StreamHandler($logFile, Level::Info));
         }
 
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         return $logger;

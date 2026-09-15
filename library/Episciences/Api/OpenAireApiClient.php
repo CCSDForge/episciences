@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Episciences\Api;
 
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\InvalidArgumentException;
@@ -247,7 +248,7 @@ class OpenAireApiClient extends AbstractApiClient
         $logger = new Logger('openaire_api_client');
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'openAireResearchGraph_' . date('Y-m-d') . '.log',
-            Logger::INFO
+            Level::Info
         ));
 
         $tokenProvider = new OpenAireTokenProvider(

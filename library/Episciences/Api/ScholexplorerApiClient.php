@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace Episciences\Api;
 
+use Episciences\Log\LoggerFactory;
 use GuzzleHttp\Client;
-use Monolog\Logger;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Cache\InvalidArgumentException;
 use Psr\Log\LoggerInterface;
@@ -482,7 +482,7 @@ class ScholexplorerApiClient extends AbstractApiClient
     public static function create(?OpenAireTokenProvider $tokenProvider = null, ?LoggerInterface $logger = null): self
     {
         $cacheDir = dirname(APPLICATION_PATH) . '/cache/';
-        $logger   = $logger ?? new Logger('scholexplorer_api_client');
+        $logger   = $logger ?? LoggerFactory::cli('scholexplorer_api_client');
 
         if ($tokenProvider === null) {
             $clientId     = self::resolveConfigConstant('SCHOLEXPLORER_CLIENT_ID', 'OPENAIRE_CLIENT_ID');

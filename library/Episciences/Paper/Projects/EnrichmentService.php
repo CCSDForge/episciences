@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
@@ -284,7 +285,7 @@ class Episciences_Paper_Projects_EnrichmentService
         if (!self::$logger instanceof \Monolog\Logger) {
             $logFile      = EPISCIENCES_LOG_PATH . self::LOG_FILE_PREFIX . date('Y-m-d') . '.log';
             self::$logger = new Logger(self::LOGGER_CHANNEL);
-            self::$logger->pushHandler(new StreamHandler($logFile, Logger::INFO));
+            self::$logger->pushHandler(new StreamHandler($logFile, Level::Info));
         }
         return self::$logger;
     }
