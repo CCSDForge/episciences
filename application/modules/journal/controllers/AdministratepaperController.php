@@ -2755,6 +2755,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if ($request->isPost()) {
 
+            $errors = [];
             $docid = $request->getPost('docid');
             $paper = Episciences_PapersManager::get($docid);
 
@@ -2799,7 +2800,7 @@ class AdministratepaperController extends PaperDefaultController
                 }
             }
 
-            echo true;
+            echo empty($errors);
         }
     }
 
