@@ -11,6 +11,38 @@
  */
 class Episciences_Paper_RepositoryVersionsService
 {
+    /** @var callable(string, array): mixed */
+    private $apiCaller;
+
+    /** @var callable(string, string): array */
+    private $oaiFetcher;
+
+    /** @var callable(string, array): array */
+    private $hookCaller;
+
+    /** @var callable(string): string */
+    private $dateTimePattern;
+
+    /**
+     * The collaborators are injectable for testability, but default to the real
+     * static implementations so the controller can keep instantiating the service
+     * with no arguments.
+     */
+    public function __construct(
+        ?callable $apiCaller = null,
+        ?callable $oaiFetcher = null,
+        ?callable $hookCaller = null,
+        ?callable $dateTimePattern = null,
+    ) {
+        $this->apiCaller = $apiCaller ?? [Episciences_Tools::class, 'callApi'];
+        $this->oaiFetcher = $oaiFetcher ?? static function (string $baseUrl, string $identifier): array {
+            $oai = new Episciences_Oai_Client($baseUrl, 'xml');
+            return Episciences_Submit::extractVersionsFromArXivRaw($oai->getArXivRawRecord($identifier));
+        };
+        $this->hookCaller = $hookCaller ?? [Episciences_Repositories::class, 'callHook'];
+        $this->dateTimePattern = $dateTimePattern ?? [Episciences_Repositories_Common::class, 'getDateTimePattern'];
+    }
+
     public function getAvailableVersions(Episciences_Paper $paper): array
     {
         $repoId = $paper->getRepoid();
@@ -62,7 +94,7 @@ class Episciences_Paper_RepositoryVersionsService
         $url = $api . '/search/?indent=true&q=' . $paper->getIdentifier() . '&fl=label_xml';
 
         try {
-            $result = Episciences_Tools::callApi($url);
+            $result = ($this->apiCaller)($url);
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
             trigger_error($e->getMessage());
             return [];
@@ -84,24 +116,38 @@ class Episciences_Paper_RepositoryVersionsService
             return [];
         }
 
-        $xmlObject = simplexml_load_string($xml);
+        return $this->extractTeiVersions($xml);
+    }
 
-        if (!$xmlObject) {
+    /**
+     * Extract the edition (version) numbers from a HAL TEI record.
+     *
+     * @return int[]
+     */
+    private function extractTeiVersions(string $teiXml): array
+    {
+        $dom = new DOMDocument();
+        $loaded = @$dom->loadXML($teiXml);
+
+        if (!$loaded) {
             return [];
         }
 
-        $editions = $xmlObject->text->body->listBibl->biblFull->editionStmt->edition;
+        $xpath = new DOMXPath($dom);
+        $xpath->registerNamespace('tei', 'http://www.tei-c.org/ns/1.0');
+
         $versions = [];
 
-        foreach ($editions as $edition) {
-            $editionNumber = (string)$edition['n'];
+        foreach ($xpath->query('//tei:edition') as $node) {
+            $editionNumber = $node->getAttribute('n');
+            preg_match('/v?(\d+)/', $editionNumber, $matches);
 
-            if ('' !== $editionNumber) {
-                $versions[] = substr($editionNumber, 1);
+            if (!empty($matches[1])) {
+                $versions[] = (int)$matches[1];
             }
         }
 
-        return $versions;
+        return array_values(array_unique($versions));
     }
 
     private function getVersionsFromZenodo(Episciences_Paper $paper): array
@@ -117,7 +163,7 @@ class Episciences_Paper_RepositoryVersionsService
         ];
 
         try {
-            $result = Episciences_Tools::callApi($url, $options)['hits']['hits'] ?? [];
+            $result = ($this->apiCaller)($url, $options)['hits']['hits'] ?? [];
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
             trigger_error($e->getMessage(), E_USER_WARNING);
             return [];
@@ -146,7 +192,7 @@ class Episciences_Paper_RepositoryVersionsService
     {
         $url = $api . $paper->getIdentifier() . DIRECTORY_SEPARATOR . 'na' . DIRECTORY_SEPARATOR . 'json';
 
-        $response = Episciences_Tools::callApi($url);
+        $response = ($this->apiCaller)($url);
         $messages = (is_array($response)) ? ($response['messages'][array_key_first($response['messages'])] ?? null) : null;
         $collection = (is_array($response)) ? ($response['collection'] ?? []) : [];
 
@@ -168,7 +214,7 @@ class Episciences_Paper_RepositoryVersionsService
     {
         $url = $api . 'datasets/:persistentId/?persistentId=' . $paper->getIdentifier();
 
-        $response = Episciences_Tools::callApi($url);
+        $response = ($this->apiCaller)($url);
         $versions = [];
 
         if (
@@ -193,19 +239,18 @@ class Episciences_Paper_RepositoryVersionsService
     {
         $identifier = Episciences_Repositories::getIdentifier($repoId, $paper->getIdentifier());
         $baseUrl = Episciences_Repositories::getBaseUrl($repoId);
-        $oai = new Episciences_Oai_Client($baseUrl, 'xml');
 
         if ((int)Episciences_Repositories::ARXIV_REPO_ID === $repoId) {
-            return $this->getVersionsFromArXivOai($oai, $identifier);
+            return $this->fetchArXivVersions($baseUrl, $identifier);
         }
 
         return $this->getVersionsFromHook($paper, $repoId);
     }
 
-    private function getVersionsFromArXivOai(Episciences_Oai_Client $oai, string $identifier): array
+    private function fetchArXivVersions(string $baseUrl, string $identifier): array
     {
         try {
-            return Episciences_Submit::extractVersionsFromArXivRaw($oai->getArXivRawRecord($identifier));
+            return ($this->oaiFetcher)($baseUrl, $identifier);
         } catch (Exception $e) {
             trigger_error($e->getMessage());
             return [];
@@ -214,7 +259,7 @@ class Episciences_Paper_RepositoryVersionsService
 
     private function getVersionsFromHook(Episciences_Paper $paper, int $repoId): array
     {
-        $hookApiRecord = Episciences_Repositories::callHook('hookApiRecords', [
+        $hookApiRecord = ($this->hookCaller)('hookApiRecords', [
             'identifier' => $paper->getConcept_identifier(),
             'repoId' => $paper->getRepoid()
         ]);
@@ -224,7 +269,7 @@ class Episciences_Paper_RepositoryVersionsService
         }
 
         $latestVersionDateTime = $hookApiRecord[Episciences_Repositories_CryptologyePrint_Hooks::UPDATE_DATETIME] ?? null;
-        $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($paper->getIdentifier());
+        $previousPaperVersionDateTime = ($this->dateTimePattern)($paper->getIdentifier());
         $latestIdentifier = sprintf('%s/%s', $paper->getConcept_identifier(), $latestVersionDateTime);
 
         // This behavior is intentional because a submission without a specific version is the most recent version.
