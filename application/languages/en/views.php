@@ -2561,8 +2561,7 @@ return array(
     "Si activé, les volumes secondaires seront visibles sur la page publique de l'article" => "If enabled, secondary volumes will be visible on the public article page",
     "Volumes secondaires: " => "Secondary volumes: ",
 
-<<<<<<< HEAD
-    // Activity timeline (ActivityController)
+// Activity timeline (ActivityController)
     "Activité" => "Activity",
     "Activité de l'article" => "Article activity",
     "Retour à la gestion de l'article" => "Back to article management",
@@ -2598,12 +2597,11 @@ return array(
     "Toutes les suggestions" => "All suggestions",
     "Suggestion d'acceptation" => "Suggested acceptance",
     "Suggestion de refus" => "Suggested refusal",
-    "Suggestion de modification" => "Suggested revision"
-=======
+    "Suggestion de modification" => "Suggested revision",
+
     // Website pages
     "Le permalien '%s' est réservé aux pages prédéfinies. Veuillez choisir un autre permalien." => "The permalink '%s' is reserved for predefined pages. Please choose a different permalink.",
     "Le permalien '%s' est déjà utilisé par une autre page. Veuillez choisir un autre permalien." => "The permalink '%s' is already used by another page. Please choose a different permalink.",
     "Codes réservés (non utilisables) :" => "Reserved codes (cannot be used):",
     "Le titre des pages prédéfinies ne peut pas être modifié" => "The title of predefined pages cannot be modified"
->>>>>>> b68db9591 (fix(pages): fix custom page visibility persistence and styling)
 );

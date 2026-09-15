@@ -83,9 +83,9 @@ AFTER visibility;
 -- If the JSON is invalid or contains unexpected values, defaults to 'private'.
 UPDATE news
 SET visibility_enum = CASE
-                          WHEN JSON_UNQUOTE(JSON_EXTRACT(visibility, '$[0]')) = 'public' THEN 'public'
-                          ELSE 'private'
-    END
+    WHEN JSON_UNQUOTE(JSON_EXTRACT(visibility, '$[0]')) = 'public' THEN 'public'
+    ELSE 'private'
+END
 WHERE visibility IS NOT NULL;
 
 -- PAGES: JSON array -> SET
@@ -99,13 +99,15 @@ WHERE visibility IS NOT NULL;
 --   '["chief_editor","administrator"]'  -> 'chief_editor,administrator'
 --   '["editor","member","public"]'      -> 'editor,member,public'
 UPDATE pages
-SET visibility_set = (
-    SELECT GROUP_CONCAT(JSON_UNQUOTE(jt.val) SEPARATOR ',')
-    FROM JSON_TABLE(
-                 visibility,
-                 '$[*]' COLUMNS (val JSON PATH '$')
-         ) AS jt
-)
+SET visibility_set = COALESCE(
+        (SELECT GROUP_CONCAT(JSON_UNQUOTE(jt.val) SEPARATOR ',')
+         FROM JSON_TABLE(
+                      visibility,
+                      '$[*]' COLUMNS (val JSON PATH '$')
+              ) AS jt
+         ),
+       'public'
+    )
 WHERE JSON_VALID(visibility);
 
 -- ============================================================================
@@ -117,14 +119,12 @@ WHERE JSON_VALID(visibility);
 -- 3.1: Visual inspection of NEWS migration
 -- Compare JSON values with their ENUM equivalents
 SELECT id, visibility AS json_value, visibility_enum AS enum_value
-FROM news
-LIMIT 20;
+FROM news LIMIT 20;
 
 -- 3.2: Visual inspection of PAGES migration
 -- Compare JSON values with their SET equivalents
 SELECT id, visibility AS json_value, visibility_set AS set_value
-FROM pages
-LIMIT 50;
+FROM pages LIMIT 50;
 
 -- 3.3: Check for NULL values in new columns
 -- Both queries should return 0 (no NULL values after migration)
@@ -143,57 +143,21 @@ WHERE visibility_set = ''
   AND visibility != '[]';
 
 -- ============================================================================
--- PHASE 4: Cleanup (FINAL STEP - IRREVERSIBLE)
+-- PHASE 4: Cleanup (FINAL STEP - Only after all projects are migrated)
 -- ============================================================================
 -- WARNING: Execute this phase ONLY when:
 --   1. All verification queries in Phase 3 pass
 --   2. Application code has been updated to use new columns
 --   3. Application code no longer writes to old `visibility` column
 --   4. A database backup has been taken
---
--- You have TWO options for cleanup. Choose ONE based on your preference:
---
--- ============================================================================
--- OPTION A: Keep current column names (RECOMMENDED)
--- ============================================================================
+
 -- Advantages:
 --   - No code changes required after cleanup
 --   - Application already uses `visibility_enum` and `visibility_set`
 --   - Simpler migration process
 --   - Column names clearly indicate the data type (ENUM vs SET)
---
--- Disadvantages:
---   - Column names are slightly longer
---   - Different naming convention from original design
 
--- 4.1a: Drop the old JSON columns only
+
+-- Drop the old JSON columns only
 ALTER TABLE news DROP COLUMN visibility;
 ALTER TABLE pages DROP COLUMN visibility;
-
--- ============================================================================
--- OPTION B: Rename columns to original `visibility` name
--- ============================================================================
--- Advantages:
---   - Cleaner column name (just `visibility`)
---   - Consistent with original schema design
---   - Shorter column name
---
--- Disadvantages:
---   - Requires updating application code AFTER cleanup to use `visibility`
---     instead of `visibility_enum` / `visibility_set`
---   - Two-step code deployment:
---     1. First deploy: code reads from new columns, writes to both
---     2. Run cleanup SQL (drop + rename)
---     3. Second deploy: code uses renamed `visibility` column
---
--- If we choose this option, comment out OPTION A above and uncomment below:
-
--- 4.1b: Drop the old JSON columns
--- ALTER TABLE news DROP COLUMN visibility;
--- ALTER TABLE pages DROP COLUMN visibility;
-
--- 4.2b: Rename new columns to `visibility`
--- This makes the schema cleaner but requires code updates after execution.
--- ALTER TABLE news CHANGE visibility_enum visibility ENUM('public', 'private') NOT NULL DEFAULT 'public';
--- ALTER TABLE pages CHANGE visibility_set visibility SET('public','member','editor','chief_editor','administrator','secretary','webmaster','guest_editor') NOT NULL DEFAULT 'public';
-

@@ -45,6 +45,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1089](https://github.com/CCSDForge/episciences/pull/1089) Automatic Solr reindexing on primary volume or section updates, volume/section metadata changes, and paper enrichments (authors, funding, citations, datasets).
 - [#1149](https://github.com/CCSDForge/episciences/pull/1149) On-demand Next.js cache revalidation for frontend pages, articles, volumes, sections, news, and editorial board member updates, with the `next:revalidate-cache` CLI command.
 - Add Docker Compose worker services (`solr-worker`, `worker-next-revalidation`) and systemd service units for background queue processing.
+- [#1042](https://github.com/CCSDForge/episciences/issues/1042) refactor: replace JSON visibility columns with enum/set types
+- Custom pages: visibility (Public/Member/Custom) is now correctly saved to database and restored after reload.
+- Custom pages: role checkboxes now display correctly when selecting "Custom" visibility.
+- Custom pages: changing permalien now updates existing entry instead of creating duplicate (preserves ID).
+- Custom pages: permalien field now displays list of reserved codes that cannot be used.
+- Custom pages: validation prevents using predefined page codes (about, credits, editorial-board, etc.) as permalien.
+- Custom pages: delete button now correctly removes entry from database.
+- Custom pages: validation prevents using a permalien already in use by another custom page.
+- Predefined pages: title field is now read-only (disabled) in the menu editor.
+- Predefined pages: visibility selection is now disabled (always public).
 
 ### Performances
 
@@ -246,36 +256,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mailing lists: `v_mailing_lists_resolved` view now exposes `list_created_at` and `list_updated_at`.
 - Mailing lists: "Last updated" column displayed after "Name" in the dashboard table.
 - Mailing lists: creation date displayed (read-only) in the list edit form.
-<<<<<<< HEAD
 - Fix an unterminated SQL string literal in `Episciences_User::filterUsers()` when filtering users without roles.
 - Fix history filter date popover sizing, correct jQuery UI datepicker positioning/z-index, and fix calendar-icon click interaction in the paper administration view.
 - Fix multiple bugs and potential XSS issues found during a public JavaScript audit (including strict tooltip option defaults, escaping regex patterns in search inputs, and removing incorrect JSON dataType requirements).
 - Improve `Episciences_Paper_FilesManager::syncFiles()`: generate unique self-link hashes to prevent database collisions when file links are empty or set to `#`, resolve argument order in file difference checking, and clean up paper file deletion logic.
 - [#1125](https://github.com/CCSDForge/episciences/pull/1125) Improve report attachment access control: allow paper authors to download, block users with declared COI.
+
 ### Deprecated
 
 - Deprecate obsolete `Ccsd_Form_Element_Thesaurus` form element (scheduled for removal).
-=======
-- [#1042](https://github.com/CCSDForge/episciences/issues/1042) refactor: replace JSON visibility columns with enum/set types
-- Custom pages: visibility (Public/Member/Custom) is now correctly saved to database and restored after reload.
-- Custom pages: role checkboxes now display correctly when selecting "Custom" visibility.
-- Custom pages: changing permalien now updates existing entry instead of creating duplicate (preserves ID).
-- Custom pages: permalien field now displays list of reserved codes that cannot be used.
-- Custom pages: validation prevents using predefined page codes (about, credits, editorial-board, etc.) as permalien.
-- Custom pages: delete button now correctly removes entry from database.
-- Custom pages: validation prevents using a permalien already in use by another custom page.
-- Predefined pages: title field is now read-only (disabled) in the menu editor.
-- Predefined pages: visibility selection is now disabled (always public).
-
-### Performances
-
-- Avoid repeated `REVIEW_SETTING` queries in a single request by caching loaded review settings on the current review object and sharing cached review instances between `RVID` and `RVCODE` lookups.
-
-### Changed
-- [#998](https://github.com/CCSDForge/episciences/issues/998) Improved COI declaration
-  button labels: "Continue (No conflict of interest)" / "Stop (I have a conflict of interest)"
-- Modernized `Ccsd_Form_Filter_Clean` filter and `Ccsd_Form_Validate_NotSame` validator (introduced strict typing, comprehensive type hinting, and robust recursive array filtering for the `Clean` filter).
->>>>>>> b68db9591 (fix(pages): fix custom page visibility persistence and styling)
 
 ### Removed
 
@@ -302,8 +291,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - [#1010](https://github.com/CCSDForge/episciences/issues/1010) The allowed range for modifying the deadline is now between the original deadline minus "rating_deadline_min" and the original deadline plus "rating_deadline_max".
-- [#998](https://github.com/CCSDForge/episciences/issues/998) Improved COI declaration
-  button labels: "Continue (No conflict of interest)" / "Stop (I have a conflict of interest)"
+- [#998](https://github.com/CCSDForge/episciences/issues/998) Improved COI declaration button labels: "Continue (No conflict of interest)" / "Stop (I have a conflict of interest)"
 
 ## v1.0.55.2 - 2026-05-19
 
