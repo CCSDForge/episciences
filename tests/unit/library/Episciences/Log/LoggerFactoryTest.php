@@ -129,7 +129,14 @@ class LoggerFactoryTest extends TestCase
         $logger = LoggerFactory::cli($channel, false);
         $logger->info('hello');
 
-        $expectedFile = LoggerFactory::logPath() . $channel . '_' . date('Y-m-d') . '.log';
+        /** @var StreamHandler $fileHandler */
+        $fileHandler = $logger->getHandlers()[0];
+        $expectedFile = $fileHandler->getUrl();
+        self::assertNotNull($expectedFile);
+        self::assertMatchesRegularExpression(
+            '#' . preg_quote($channel, '#') . '_\d{4}-\d{2}-\d{2}\.log$#',
+            $expectedFile
+        );
         $this->cliFilesToClean[] = $expectedFile;
 
         self::assertFileExists($expectedFile);

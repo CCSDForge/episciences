@@ -482,7 +482,7 @@ class ScholexplorerApiClient extends AbstractApiClient
     public static function create(?OpenAireTokenProvider $tokenProvider = null, ?LoggerInterface $logger = null): self
     {
         $cacheDir = dirname(APPLICATION_PATH) . '/cache/';
-        $logger   = $logger ?? LoggerFactory::cli('scholexplorer_api_client');
+        $logger   = $logger ?? LoggerFactory::cli('scholexplorer_api_client', false);
 
         if ($tokenProvider === null) {
             $clientId     = self::resolveConfigConstant('SCHOLEXPLORER_CLIENT_ID', 'OPENAIRE_CLIENT_ID');
