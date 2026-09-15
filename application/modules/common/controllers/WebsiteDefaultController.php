@@ -204,6 +204,14 @@ class WebsiteDefaultController extends Zend_Controller_Action
         }
 
         if ($request->isPost()) {
+            if (!$this->_validateCsrf()) {
+                $this->_helper->FlashMessenger
+                    ->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)
+                    ->addMessage("Requête invalide.");
+                $this->redirect('/website/menu');
+                return;
+            }
+
             $valid = true;
             $pagesDisplay = [];
             $hasPermalienError = false;

@@ -143,20 +143,82 @@ WHERE visibility_set = ''
   AND visibility != '[]';
 
 -- ============================================================================
--- PHASE 4: Cleanup (FINAL STEP - Only after all projects are migrated)
+-- PHASE 4: Cleanup (FINAL STEP - Only after dual-write code is removed)
 -- ============================================================================
--- WARNING: Execute this phase ONLY when:
---   1. All verification queries in Phase 3 pass
---   2. Application code has been updated to use new columns
---   3. Application code no longer writes to old `visibility` column
---   4. A database backup has been taken
-
--- Advantages:
---   - No code changes required after cleanup
---   - Application already uses `visibility_enum` and `visibility_set`
---   - Simpler migration process
---   - Column names clearly indicate the data type (ENUM vs SET)
-
+--
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+-- !!!                                                                        !!!
+-- !!!   DO NOT EXECUTE PHASE 4 BEFORE REMOVING DUAL-WRITE CODE!              !!!
+-- !!!                                                                        !!!
+-- !!!   If you drop the columns while the code still writes to them,         !!!
+-- !!!   all INSERT/UPDATE operations on pages and news will FAIL with:       !!!
+-- !!!   ERROR 1054: Unknown column 'visibility' in 'field list'              !!!
+-- !!!                                                                        !!!
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+--
+-- MIGRATION STEPS (2 deployments required):
+-- ==========================================
+--
+-- ┌─────────────────────────────────────────────────────────────────┐
+-- │ STEP 1: Deploy current PR (with dual-write)                    │
+-- │         → Execute Phase 1, 2, 3 of this SQL script             │
+-- │         → Code writes to BOTH columns (old + new)              │
+-- │         → Rollback possible if issues                          │
+-- └─────────────────────────────────────────────────────────────────┘
+--                               ↓
+-- ┌─────────────────────────────────────────────────────────────────┐
+-- │ STEP 2: Validate in production                                  │
+-- │         → Monitor for errors                                    │
+-- │         → Run Phase 3 verification queries                      │
+-- └─────────────────────────────────────────────────────────────────┘
+--                               ↓
+-- ┌─────────────────────────────────────────────────────────────────┐
+-- │ STEP 3: Remove 5 dual-write lines (NEW PR) + Deploy            │
+-- │         → Remove lines listed below                            │
+-- │         → Deploy to production (2nd deployment)                │
+-- │         → Code now writes ONLY to new columns                  │
+-- └─────────────────────────────────────────────────────────────────┘
+--                               ↓
+-- ┌─────────────────────────────────────────────────────────────────┐
+-- │ STEP 4: Execute Phase 4 (this section)                          │
+-- │         → Take database backup first                           │
+-- │         → Run DROP COLUMN statements below                     │
+-- │         → Migration complete                                   │
+-- └─────────────────────────────────────────────────────────────────┘
+--
+--
+-- STEP 3 DETAILS - Lines to remove:
+-- ==================================
+--
+--    File: library/Episciences/Page/Manager.php
+--    --------------------------------------------
+--    Line 95  (in add()):                   'visibility' => self::visibilityToJson($visibilityValue),
+--    Line 127 (in update()):                'visibility' => self::visibilityToJson($visibilityValue),
+--    Line 161 (in updateWithNewPageCode()): 'visibility' => self::visibilityToJson($visibilityValue),
+--
+--    File: library/Episciences/JournalNews.php
+--    ------------------------------------------
+--    Line 250 (in insert()): $news['visibility'] = self::visibilityToJson($visibilityValue);
+--    Line 281 (in update()): 'visibility' => self::visibilityToJson($visibilityValue),
+--
+--    (Optional) Remove unused helper methods after removing the 5 lines:
+--    - Page/Manager.php lines 25-32: visibilityToJson()
+--    - JournalNews.php lines 234-240: visibilityToJson()
+--
+--
+-- WHY THIS ORDER MATTERS:
+-- -----------------------
+-- The application currently writes to BOTH columns (dual-write):
+--   - visibility_set / visibility_enum (new columns)
+--   - visibility (old JSON column)
+--
+-- After Phase 4, the old 'visibility' column no longer exists.
+-- If the code still tries to write to it, MySQL will return an error.
+--
+-- Reading is NOT affected because SELECT queries use SQL aliases:
+--   'visibility' => 'visibility_set'  (reads from new column)
+--
+-- ============================================================================
 
 -- Drop the old JSON columns only
 ALTER TABLE news DROP COLUMN visibility;
