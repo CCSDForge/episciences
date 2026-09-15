@@ -198,8 +198,13 @@ class Episciences_Paper_RepositoryVersionsService
             trigger_error($e->getMessage());
             return [];
         }
-        $messages = (is_array($response)) ? ($response['messages'][array_key_first($response['messages'])] ?? null) : null;
-        $collection = (is_array($response)) ? ($response['collection'] ?? []) : [];
+        $messages = [];
+        $collection = [];
+        if (is_array($response)) {
+            $responseMessages = (is_array($response['messages'] ?? null)) ? $response['messages'] : [];
+            $messages = $responseMessages[array_key_first($responseMessages)] ?? null;
+            $collection = $response['collection'] ?? [];
+        }
 
         $versions = [];
 

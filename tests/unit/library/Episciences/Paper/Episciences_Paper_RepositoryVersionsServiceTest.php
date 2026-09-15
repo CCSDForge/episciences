@@ -245,6 +245,30 @@ final class Episciences_Paper_RepositoryVersionsServiceTest extends TestCase
         $this->assertSame([], $service->getAvailableVersions($paper));
     }
 
+    public function testBioMedRxivReturnsEmptyWhenMessagesMissing(): void
+    {
+        $paper = $this->mockPaper([
+            'repoid' => (int)Episciences_Repositories::BIO_RXIV_ID,
+            'identifier' => '10.1101/123456',
+        ]);
+
+        $service = $this->buildService(static fn() => ['collection' => [['version' => '1']]]);
+
+        $this->assertSame([], $service->getAvailableVersions($paper));
+    }
+
+    public function testBioMedRxivReturnsEmptyWhenMessagesNotAnArray(): void
+    {
+        $paper = $this->mockPaper([
+            'repoid' => (int)Episciences_Repositories::BIO_RXIV_ID,
+            'identifier' => '10.1101/123456',
+        ]);
+
+        $service = $this->buildService(static fn() => ['messages' => 'unexpected', 'collection' => []]);
+
+        $this->assertSame([], $service->getAvailableVersions($paper));
+    }
+
     // =========================================================================
     // Dataverse
     // =========================================================================
