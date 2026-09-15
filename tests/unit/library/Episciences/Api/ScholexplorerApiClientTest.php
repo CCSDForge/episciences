@@ -4,6 +4,7 @@ namespace unit\library\Episciences\Api;
 
 use Episciences\Api\OpenAireTokenProvider;
 use Episciences\Api\ScholexplorerApiClient;
+use Episciences\Log\LoggerFactory;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
@@ -304,6 +305,32 @@ class ScholexplorerApiClientTest extends TestCase
         $this->assertSame('DRYAD', $csl['publisher']);
         $this->assertSame('10.5061/dryad.j2c4g/4', $csl['DOI']);
         $this->assertSame('https://dx.doi.org/10.5061/dryad.j2c4g/4', $csl['URL']);
+    }
+
+    // -------------------------------------------------------------------------
+    // create() — logger fallback
+    //
+    // Monolog 1 pushed an implicit php://stderr StreamHandler onto a
+    // handler-less Logger; that fallback was removed in 2.0, so without an
+    // explicit handler here, every record create() ever logs would be
+    // silently dropped.
+    //
+    // create() itself depends on APPLICATION_PATH and writes real
+    // FilesystemAdapter cache pools under dirname(APPLICATION_PATH) . '/cache/',
+    // which is too costly/invasive to exercise from a unit test (see the
+    // migration plan's note on this). Its fallback is a one-line delegation —
+    // `$logger ?? LoggerFactory::cli('scholexplorer_api_client')` — verified by
+    // reading ScholexplorerApiClient::create() — so this asserts the delegate
+    // directly instead, which LoggerFactoryTest also covers more generally.
+    // -------------------------------------------------------------------------
+
+    public function testCreateDefaultLoggerFallbackAlwaysHasAHandler(): void
+    {
+        // No record is ever emitted here, so StreamHandler's lazily-opened
+        // stream never actually creates a file on disk.
+        $logger = LoggerFactory::cli('scholexplorer_api_client');
+
+        self::assertNotEmpty($logger->getHandlers());
     }
 
     // -------------------------------------------------------------------------

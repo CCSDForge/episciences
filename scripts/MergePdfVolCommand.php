@@ -4,6 +4,7 @@ declare(strict_types=1);
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Console\Command\Command;
@@ -52,10 +53,10 @@ class MergePdfVolCommand extends Command
 
         $this->logger = new Logger('mergePdfVol');
         $this->logger->pushHandler(new StreamHandler(
-            EPISCIENCES_LOG_PATH . 'mergePdfVol_' . date('Y-m-d') . '.log', Logger::INFO
+            EPISCIENCES_LOG_PATH . 'mergePdfVol_' . date('Y-m-d') . '.log', Level::Info
         ));
         if (!$io->isQuiet()) {
-            $this->logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         if ($dryRun) {

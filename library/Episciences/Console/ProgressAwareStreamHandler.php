@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Episciences\Console;
 
 use Monolog\Handler\StreamHandler;
+use Monolog\LogRecord;
 use Symfony\Component\Console\Helper\ProgressBar;
 
 /**
@@ -28,10 +29,7 @@ class ProgressAwareStreamHandler extends StreamHandler
         $this->progressBar = $progressBar;
     }
 
-    /**
-     * @param array<string, mixed> $record
-     */
-    protected function write(array $record): void
+    protected function write(LogRecord $record): void
     {
         if ($this->progressBar === null) {
             parent::write($record);
@@ -39,7 +37,7 @@ class ProgressAwareStreamHandler extends StreamHandler
         }
 
         $this->progressBar->clear();
-        $record['formatted'] = PHP_EOL . ($record['formatted'] ?? '');
+        $record->formatted = PHP_EOL . ($record->formatted ?? '');
         parent::write($record);
         $this->progressBar->display();
     }

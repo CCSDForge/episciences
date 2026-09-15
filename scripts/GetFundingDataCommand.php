@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Console\Command\Command;
@@ -44,10 +45,10 @@ class GetFundingDataCommand extends Command
         $this->bootstrap();
 
         $logger = new Logger('fundingEnrichment');
-        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'fundingEnrichment_' . date('Y-m-d') . '.log', Logger::INFO));
+        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'fundingEnrichment_' . date('Y-m-d') . '.log', Level::Info));
         $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Logger::INFO);
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }
 

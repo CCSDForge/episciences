@@ -5,6 +5,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -71,11 +72,11 @@ class ExtractBiblioRefsCommand extends Command
         $logger = new Logger('extractBiblioRefs');
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'extractBiblioRefs_' . date('Y-m-d') . '.log',
-            Logger::INFO
+            Level::Info
         ));
         $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Logger::INFO);
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }
 

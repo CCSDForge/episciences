@@ -4,6 +4,7 @@ declare(strict_types=1);
 use Episciences\Api\OpenAireApiClient;
 use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Console\Command\Command;
@@ -43,11 +44,11 @@ class GetClassificationJelCommand extends Command
 
         $logger = new Logger('jelEnrichment');
         $logger->pushHandler(new StreamHandler(
-            EPISCIENCES_LOG_PATH . 'jelEnrichment_' . date('Y-m-d') . '.log', Logger::INFO
+            EPISCIENCES_LOG_PATH . 'jelEnrichment_' . date('Y-m-d') . '.log', Level::Info
         ));
         $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Logger::INFO);
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }
         if ($dryRun) {

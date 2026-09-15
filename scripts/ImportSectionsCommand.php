@@ -5,6 +5,7 @@ use Episciences\Section\Import\Importer;
 use Episciences\Section\Import\Row;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -57,12 +58,12 @@ final class ImportSectionsCommand extends Command
         $this->logger = new Logger('import-sections');
         $fileHandler  = new StreamHandler(
             EPISCIENCES_LOG_PATH . 'import-sections_' . date('Y-m-d') . '.log',
-            Logger::DEBUG
+            Level::Debug
         );
         $fileHandler->setFormatter(new LineFormatter("[%datetime%] %level_name%: %message% %context%\n", null, false, true));
         $this->logger->pushHandler($fileHandler);
         if (!$io->isQuiet()) {
-            $consoleHandler = new StreamHandler('php://stdout', Logger::INFO);
+            $consoleHandler = new StreamHandler('php://stdout', Level::Info);
             $consoleHandler->setFormatter(new LineFormatter("%level_name%: %message%\n", null, false, false));
             $this->logger->pushHandler($consoleHandler);
         }

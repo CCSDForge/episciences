@@ -4,6 +4,7 @@ declare(strict_types=1);
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -51,10 +52,10 @@ class GenerateSitemapCommand extends Command
 
         $logger = new Logger('sitemapGeneration');
         $logger->pushHandler(new StreamHandler(
-            EPISCIENCES_LOG_PATH . 'sitemapGeneration_' . date('Y-m-d') . '.log', Logger::INFO
+            EPISCIENCES_LOG_PATH . 'sitemapGeneration_' . date('Y-m-d') . '.log', Level::Info
         ));
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         $rvcodes = $all ? $this->fetchActiveRvcodes($logger) : [$rvcode];
