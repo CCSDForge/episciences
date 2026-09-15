@@ -108,9 +108,11 @@ class Episciences_Website_Navigation_Page_Custom extends Episciences_Website_Nav
     public function setPermalien($permalien)
     {
         if ($this->_permalien !== '' && $this->_permalien !== $permalien) {
-            // Conserver l'ancien permalien pour la mise à jour en base de données
-            $this->_previousPermalien = $this->_permalien;
-            //L'utilisateur a changé le nom du permalien, on déplace les fichiers s'il y en a
+            // Store previous permalien only on first change to preserve original DB lookup key
+            if ($this->_previousPermalien === null) {
+                $this->_previousPermalien = $this->_permalien;
+            }
+            // User changed the permalink, rename associated files if any
             $this->renamePage($this->_permalien, $permalien);
         }
         $this->_permalien = $permalien;

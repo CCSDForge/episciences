@@ -169,6 +169,12 @@ class Episciences_Page_Manager
             $resUpdate = 0;
         }
 
+        if ($resUpdate > 0) {
+            // Revalidate both old and new permalien routes
+            self::tryRevalidate($page->getCode(), self::resolvePageTag($oldPageCode, $page->getCode()), 'updateWithNewPageCode-old');
+            self::tryRevalidate($page->getCode(), self::resolvePageTag($page->getPageCode(), $page->getCode()), 'updateWithNewPageCode-new');
+        }
+
         return $resUpdate;
     }
 

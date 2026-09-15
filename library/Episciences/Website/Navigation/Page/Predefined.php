@@ -147,7 +147,8 @@ class Episciences_Website_Navigation_Page_Predefined extends Episciences_Website
         }
         $this->_form->getElement('labels')->setOptions(['class' => 'inputlangmulti permalien-src']);
 
-        // Predefined pages are always public - disable visibility selection
+        // Predefined pages are always public - clear ACL and disable visibility selection
+        $this->setAcl([]);
         $visibilityElement = $this->_form->getElement('visibility');
         if ($visibilityElement) {
             $visibilityElement->setAttrib('disabled', 'disabled');
