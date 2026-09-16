@@ -608,4 +608,16 @@ class Episciences_Repositories_Common
         $dt = date_create($datestamp);
         return $dt !== false ? $dt->format('Y-m-d') : '';
     }
+
+
+    public static function normalizeVersion(string|int|float $version): float
+    {
+        if (is_numeric($version)) {
+            return (float)$version;
+        }
+
+        preg_match('/\d+(?:\.\d+)*/', (string)$version, $matches);
+        $version = $matches[0] ?? 1;
+        return (float)$version;
+    }
 }

@@ -349,7 +349,7 @@ final class Episciences_Repositories_Zenodo_HooksTest extends TestCase
             'response' => ['metadata' => ['version' => '3']],
         ]);
 
-        self::assertSame(['version' => '3'], $result);
+        self::assertSame(['version' => 3.0], $result);
     }
 
     /**
@@ -362,7 +362,7 @@ final class Episciences_Repositories_Zenodo_HooksTest extends TestCase
             'context'  => ['previousVersion' => 2],
         ]);
 
-        self::assertSame(['version' => 3], $result);
+        self::assertSame(['version' => 3.0], $result);
     }
 
     /**

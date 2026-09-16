@@ -157,7 +157,6 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
 
         //@see https://semver.org/
         $response = self::checkResponse($hookParams);
-
         $previousVersion = $hookParams['context']['previousVersion'] ?? null;
         $version = $response['metadata']['version'] ?? ($previousVersion !== null ? $previousVersion + 1 : null);
 
@@ -165,7 +164,7 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
             return [];
         }
 
-        return ['version' => $version];
+        return ['version' => Episciences_Repositories_Common::normalizeVersion($version)];
     }
 
     /**
