@@ -5123,7 +5123,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if (isset($hookedVersion['version']) || $hasDateTime) {
 
-            if ($isFromZenodo){
+            if ($isFromZenodo || $hasDateTime){
                 $paper->setIdentifier($latestPostedVersion); // posted identifier
             }
 
