@@ -586,6 +586,12 @@ class Episciences_Repositories_Common
     }
 
     /**
+     * Extract the version from a repository identifier of the form `xxx/yyy.z`
+     * (e.g. DSpace/Dataverse `1822/79894.3`). Targets a specific identifier
+     * format and returns a string. Do NOT change its regex here without also
+     * reviewing normalizeVersion() (and vice versa): the two extract versions
+     * differently on purpose.
+     *
      * @param string $identifier
      * @return string
      * If the version has multiple parts (1.1), keep it intact.
@@ -610,6 +616,13 @@ class Episciences_Repositories_Common
     }
 
 
+    /**
+     * Normalize an arbitrary scalar (string|int|float) into a float version,
+     * extracting the leading dotted number from free-form values (e.g. "v1.2.3").
+     * This is the generic counterpart of getVersionFromIdentifier(), which targets
+     * the `xxx/yyy.z` identifier format. Keep the two regexes in sync: a fix to one
+     * of them is likely intended for the other as well.
+     */
     public static function normalizeVersion(string|int|float $version): float
     {
         if (is_numeric($version)) {
