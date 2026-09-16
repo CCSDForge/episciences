@@ -5116,7 +5116,7 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         $hookedVersion = Episciences_Repositories::callHook('hookVersion', [
-            'identifier' => $isFromZenodo ? $latestPostedVersion : $paper->getIdentifier(),
+            'identifier' => ($isFromZenodo || $hasDateTime) ? $latestPostedVersion : $paper->getIdentifier(),
             'repoId' => $paper->getRepoid(),
             'context' => ['previousVersion' => $paper->getVersion()],
         ]);
