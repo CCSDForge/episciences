@@ -776,7 +776,11 @@ class Episciences_Repositories_Common
                 try {
                     $nodeLanguage = Languages::getAlpha2Code($nodeLanguage);
                 } catch (Exception $e) {
-                    $nodeLanguage = '';
+                    // Conversion failed (e.g. an ISO 639-3 code with no alpha-2
+                    // equivalent, such as "cpg" for Cappadocian Greek): keep the
+                    // original code as-is. Falling back to the document language
+                    // here would tag this description with the same language as
+                    // another one and silently overwrite it later.
                 }
             }
 
