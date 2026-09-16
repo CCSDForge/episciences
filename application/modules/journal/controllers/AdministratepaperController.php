@@ -5084,7 +5084,16 @@ class AdministratepaperController extends PaperDefaultController
 
         $latestPostedVersion = $post['latest-repository-version'] ?? 0; // version or identifier
 
-        if (!$latestPostedVersion) {
+        // The posted value must be a scalar: an array (e.g. latest-repository-version[]=x)
+        // would otherwise reach getDateTimePattern() and raise an uncaught TypeError before
+        // the paper rights check, making the endpoint exploitable by any authenticated user.
+        if (is_array($latestPostedVersion)) {
+            return false;
+        }
+
+        $latestPostedVersion = (string)$latestPostedVersion;
+
+        if ($latestPostedVersion === '') {
             return false;
         }
 
