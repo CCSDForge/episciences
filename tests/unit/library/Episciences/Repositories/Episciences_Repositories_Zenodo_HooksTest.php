@@ -740,6 +740,40 @@ XML;
     }
 
     /**
+     * An ORCID match must take priority over a homonym name match that appears
+     * earlier in the OAI creator list.
+     */
+    public function testMergeOaiAffiliationsOrcidMatchTakesPriorityOverEarlierHomonym(): void
+    {
+        $method = new ReflectionMethod(Episciences_Repositories_Zenodo_Hooks::class, 'mergeOaiAffiliationsIntoCreators');
+        $method->setAccessible(true);
+
+        $restCreators = [
+            ['name' => 'Martin, Jean', 'affiliation' => 'Correct University', 'orcid' => '0000-0002-1825-0097'],
+        ];
+        $oaiCreators = [
+            [
+                'name' => 'Martin, Jean',
+                'orcid' => null,
+                'affiliations' => [
+                    ['name' => 'Wrong University'],
+                ],
+            ],
+            [
+                'name' => 'Martin, J.',
+                'orcid' => '0000-0002-1825-0097',
+                'affiliations' => [
+                    ['name' => 'Correct University', 'ROR' => 'https://ror.org/05t8bcz72'],
+                ],
+            ],
+        ];
+
+        $result = $method->invoke(null, $restCreators, $oaiCreators);
+
+        self::assertSame('Correct University', $result[0]['affiliations'][0]['name']);
+    }
+
+    /**
      * Without an ORCID match, creators are matched by exact full name.
      */
     public function testMergeOaiAffiliationsFallsBackToExactName(): void

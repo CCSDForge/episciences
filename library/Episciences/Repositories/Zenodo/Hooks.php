@@ -595,19 +595,35 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
                 ? Episciences_Paper_AuthorsManager::normalizeOrcid($restCreator['orcid'])
                 : null;
 
-            foreach ($oaiCreators as $oaiCreator) {
-                if ($oaiCreator['affiliations'] === []) {
-                    continue;
-                }
+            $matchedAffiliations = null;
 
-                $isSamePerson = ($restOrcid !== null && $oaiCreator['orcid'] === $restOrcid)
-                    || $restCreator['name'] === $oaiCreator['name']
-                    || Episciences_Tools::replaceAccents($restCreator['name']) === Episciences_Tools::replaceAccents($oaiCreator['name']);
-
-                if ($isSamePerson) {
-                    $restCreator['affiliations'] = $oaiCreator['affiliations'];
-                    break;
+            if ($restOrcid !== null) {
+                foreach ($oaiCreators as $oaiCreator) {
+                    if ($oaiCreator['affiliations'] !== [] && $oaiCreator['orcid'] === $restOrcid) {
+                        $matchedAffiliations = $oaiCreator['affiliations'];
+                        break;
+                    }
                 }
+            }
+
+            if ($matchedAffiliations === null) {
+                foreach ($oaiCreators as $oaiCreator) {
+                    if ($oaiCreator['affiliations'] === []) {
+                        continue;
+                    }
+
+                    $isSameName = $restCreator['name'] === $oaiCreator['name']
+                        || Episciences_Tools::replaceAccents($restCreator['name']) === Episciences_Tools::replaceAccents($oaiCreator['name']);
+
+                    if ($isSameName) {
+                        $matchedAffiliations = $oaiCreator['affiliations'];
+                        break;
+                    }
+                }
+            }
+
+            if ($matchedAffiliations !== null) {
+                $restCreator['affiliations'] = $matchedAffiliations;
             }
         }
         unset($restCreator);
