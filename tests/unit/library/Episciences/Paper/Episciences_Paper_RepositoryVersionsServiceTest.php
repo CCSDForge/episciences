@@ -162,6 +162,13 @@ final class Episciences_Paper_RepositoryVersionsServiceTest extends TestCase
         $this->assertSame([], $service->getAvailableVersions($this->mockPaper()));
     }
 
+    public function testHalReturnsEmptyWhenDocsIsNotArray(): void
+    {
+        $service = $this->buildService(static fn() => ['response' => ['docs' => 'not-an-array']]);
+
+        $this->assertSame([], $service->getAvailableVersions($this->mockPaper()));
+    }
+
     public function testHalReturnsEmptyWhenNoLabelXml(): void
     {
         $service = $this->buildService(static fn() => ['response' => ['docs' => [[]]]]);

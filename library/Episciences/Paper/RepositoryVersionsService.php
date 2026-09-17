@@ -121,7 +121,7 @@ class RepositoryVersionsService
 
         $docs = $result['response']['docs'] ?? [];
 
-        if (empty($docs)) {
+        if (!is_array($docs) || empty($docs)) {
             return [];
         }
 
