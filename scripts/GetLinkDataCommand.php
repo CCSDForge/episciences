@@ -4,6 +4,7 @@ declare(strict_types=1);
 use Episciences\Api\ScholexplorerApiClient;
 use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -57,10 +58,10 @@ class GetLinkDataCommand extends Command
         $this->bootstrap();
 
         $logger = new Logger('linkEnrichment');
-        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'linkEnrichment_' . date('Y-m-d') . '.log', Logger::INFO));
+        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'linkEnrichment_' . date('Y-m-d') . '.log', Level::Info));
         $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Logger::INFO);
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }
 

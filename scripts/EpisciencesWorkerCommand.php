@@ -6,8 +6,8 @@ require_once __DIR__ . '/Messenger/TransportProfileRegistry.php';
 require_once __DIR__ . '/Messenger/ParsesMemoryLimit.php';
 
 use Episciences\Messenger\Bus\BusFactory;
+use Episciences\Log\LoggerFactory;
 use Episciences\Messenger\Dbal\DbalConnectionFactory;
-use Episciences\Messenger\Log\CliLoggerFactory;
 use Episciences\Messenger\Transport\TransportFactory;
 use Episciences\Messenger\Worker\WorkerEventDispatcherFactory;
 use Symfony\Component\Console\Command\Command;
@@ -64,7 +64,7 @@ class EpisciencesWorkerCommand extends Command
         $io->title($profile->label() . ' worker');
 
         $profile->bootstrap();
-        $logger = CliLoggerFactory::create($profile->logPrefix() . 'Worker', !$io->isQuiet());
+        $logger = LoggerFactory::cli($profile->logPrefix() . 'Worker', !$io->isQuiet());
 
         $connection = DbalConnectionFactory::fromZendAdapter(Zend_Db_Table_Abstract::getDefaultAdapter());
         $transportConfig = $profile->config();

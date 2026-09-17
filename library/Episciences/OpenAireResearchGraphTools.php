@@ -4,6 +4,7 @@ declare(strict_types=1);
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Psr\Cache\CacheItemInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -133,7 +134,7 @@ class Episciences_OpenAireResearchGraphTools
             self::$logger->pushHandler(
                 new StreamHandler(
                     EPISCIENCES_LOG_PATH . 'openAireResearchGraph_' . date('Y-m-d') . '.log',
-                    Logger::INFO
+                    Level::Info
                 )
             );
         }
@@ -166,7 +167,7 @@ class Episciences_OpenAireResearchGraphTools
                     }
                 }
                 if (!$hasConsoleHandler) {
-                    $logger->pushHandler(new StreamHandler('php://stdout', Logger::DEBUG));
+                    $logger->pushHandler(new StreamHandler('php://stdout', Level::Debug));
                 }
             }
 

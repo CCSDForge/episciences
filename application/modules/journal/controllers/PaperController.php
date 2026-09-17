@@ -4154,6 +4154,7 @@ class PaperController extends PaperDefaultController
             } catch (Exception $e) {
                 $message = "Une erreur interne s'est produite, veuillez recommencer.";
                 $jsonResult['error'] = $e->getMessage();
+                trigger_error($e->getMessage());
             }
 
             $message = $this->view->translate($message);

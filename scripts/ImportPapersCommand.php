@@ -7,6 +7,7 @@ use Episciences\Paper\Import\ReviewResolver;
 use Episciences\Paper\Import\Row;
 use Episciences\Paper\Import\VolumeSectionResolver;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -70,10 +71,10 @@ final class ImportPapersCommand extends Command
         $this->logger = new Logger('import-papers');
         $this->logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'import-papers_' . date('Y-m-d') . '.log',
-            Logger::DEBUG
+            Level::Debug
         ));
         if (!$io->isQuiet()) {
-            $this->logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         if ($dryRun) {

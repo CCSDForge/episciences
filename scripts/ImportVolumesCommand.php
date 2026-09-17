@@ -4,6 +4,7 @@ declare(strict_types=1);
 use Episciences\Volume\Import\Importer;
 use Episciences\Volume\Import\Row;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -62,10 +63,10 @@ final class ImportVolumesCommand extends Command
         $this->logger = new Logger('import-volumes');
         $this->logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'import-volumes_' . date('Y-m-d') . '.log',
-            Logger::DEBUG
+            Level::Debug
         ));
         if (!$io->isQuiet()) {
-            $this->logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         if ($dryRun) {

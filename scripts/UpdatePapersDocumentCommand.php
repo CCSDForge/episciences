@@ -5,6 +5,7 @@ require_once __DIR__ . '/../library/Episciences/Trait/Tools.php';
 
 use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -60,14 +61,14 @@ class UpdatePapersDocumentCommand extends Command
         $logger = new Logger('updatePapersDocument');
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'updatePapersDocument_' . date('Y-m-d') . '.log',
-            Logger::INFO
+            Level::Info
         ));
 
         // In JSON mode stdout must stay clean for piping to jq — log to stderr only.
         $stdoutHandler = null;
         if (!$io->isQuiet()) {
             $handle = $isJsonOutput ? 'php://stderr' : 'php://stdout';
-            $stdoutHandler = new ProgressAwareStreamHandler($handle, Logger::INFO);
+            $stdoutHandler = new ProgressAwareStreamHandler($handle, Level::Info);
             $logger->pushHandler($stdoutHandler);
         }
 

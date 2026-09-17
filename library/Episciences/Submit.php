@@ -928,8 +928,7 @@ class Episciences_Submit
             }
 
             if (isset($hookVersion['version'])) {
-                $version = (float)$hookVersion['version'];
-                $result['hookVersion'] = $version;
+                $version = Episciences_Repositories_Common::normalizeVersion($hookVersion['version']);
             }
 
             //OAI identifier

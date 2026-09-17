@@ -2,6 +2,7 @@
 
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 
 require_once "JournalScript.php";
@@ -26,12 +27,12 @@ class AutoDeclarationCOI extends JournalScript
         $this->logger = new Logger(basename(__FILE__));
 
         // File handler
-        $fileHandler = new StreamHandler(EPISCIENCES_LOG_PATH . 'COI.log', Logger::DEBUG);
+        $fileHandler = new StreamHandler(EPISCIENCES_LOG_PATH . 'COI.log', Level::Debug);
         $fileHandler->setFormatter(new LineFormatter(null, null, false, true));
         $this->logger->pushHandler($fileHandler);
 
         // Console handler
-        $consoleHandler = new StreamHandler('php://stdout', Logger::INFO);
+        $consoleHandler = new StreamHandler('php://stdout', Level::Info);
         $consoleHandler->setFormatter(new LineFormatter("[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n", null, false, true));
         $this->logger->pushHandler($consoleHandler);
 

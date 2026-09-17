@@ -9,7 +9,7 @@ use Episciences\Solr\Indexing\Build\ExportFieldsBuilder;
 use Episciences\Solr\Indexing\Build\KeywordFieldsBuilder;
 use Episciences\Solr\Indexing\Build\LocaleFieldsBuilder;
 use Episciences\Solr\Indexing\Build\VolumeSectionResolver;
-use Episciences\Messenger\Log\CliLoggerFactory;
+use Episciences\Log\LoggerFactory;
 use Monolog\Logger;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -90,7 +90,7 @@ trait BootstrapsSolrEnvironment
 
     private function createSolrLogger(SymfonyStyle $io, string $channel): Logger
     {
-        return CliLoggerFactory::create($channel, !$io->isQuiet());
+        return LoggerFactory::cli($channel, !$io->isQuiet());
     }
 
     /**

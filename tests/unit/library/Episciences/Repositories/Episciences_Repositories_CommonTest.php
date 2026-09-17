@@ -214,6 +214,31 @@ final class Episciences_Repositories_CommonTest extends TestCase
     }
 
     // =========================================================================
+    // normalizeVersion()
+    // =========================================================================
+
+    public function testNormalizeVersionWithLeadingPrefix(): void
+    {
+        self::assertSame(1.2, Episciences_Repositories_Common::normalizeVersion('v1.2.3'));
+    }
+
+    public function testNormalizeVersionWithDottedVersion(): void
+    {
+        self::assertSame(1.2, Episciences_Repositories_Common::normalizeVersion('1.2.3'));
+    }
+
+    public function testNormalizeVersionNumeric(): void
+    {
+        self::assertSame(2.0, Episciences_Repositories_Common::normalizeVersion(2));
+        self::assertSame(1.5, Episciences_Repositories_Common::normalizeVersion(1.5));
+    }
+
+    public function testNormalizeVersionNoDigit(): void
+    {
+        self::assertSame(1.0, Episciences_Repositories_Common::normalizeVersion('not-a-version'));
+    }
+
+    // =========================================================================
     // getConceptIdentifierFromString()
     // =========================================================================
 
@@ -275,6 +300,39 @@ XML;
         self::assertNotEmpty($result);
         self::assertArrayHasKey('value', $result[0]);
         self::assertArrayHasKey('language', $result[0]);
+    }
+
+    // =========================================================================
+    // extractDescriptions()
+    // =========================================================================
+
+    /**
+     * extractDescriptions() must not collapse a description whose xml:lang has no
+     * alpha-2 equivalent (e.g. "cpg", the ISO 639-3 code for Cappadocian Greek) onto
+     * the document's default language. Doing so would tag it the same as another,
+     * unrelated description, and a later consumer (Episciences_Tools::xpath()) would
+     * then silently overwrite one description's text with the other's.
+     */
+    public function testExtractDescriptionsKeepsUnmappableLanguageCodeDistinct(): void
+    {
+        $xmlStr = <<<'XML'
+<resource xmlns:datacite="http://datacite.org/schema/kernel-4">
+    <datacite:descriptions>
+        <datacite:description descriptionType="Abstract">English abstract</datacite:description>
+        <datacite:description descriptionType="Abstract" xml:lang="cpg">Greek abstract mistagged as Cappadocian Greek</datacite:description>
+    </datacite:descriptions>
+</resource>
+XML;
+        $metadata = new SimpleXMLElement($xmlStr);
+        $metadata->registerXPathNamespace('datacite', 'http://datacite.org/schema/kernel-4');
+
+        $result = Episciences_Repositories_Common::extractDescriptions($metadata, 'en', false, true);
+
+        self::assertCount(2, $result);
+        self::assertSame('en', $result[0]['language']);
+        self::assertSame('English abstract', $result[0]['value']);
+        self::assertNotSame('en', $result[1]['language']);
+        self::assertSame('Greek abstract mistagged as Cappadocian Greek', $result[1]['value']);
     }
 
     // =========================================================================

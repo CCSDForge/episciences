@@ -19,6 +19,7 @@ use Episciences\Notify\PayloadValidator;
 use Episciences\Notify\PreprintUrlParser;
 use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -99,12 +100,12 @@ class ProcessInboxNotificationsCommand extends Command
         $logger = new Logger('inboxNotifications');
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'inboxNotifications_' . date('Y-m-d') . '.log',
-            Logger::DEBUG
+            Level::Debug
         ));
 
         $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Logger::INFO);
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
             $logger->pushHandler($stdoutHandler);
         }
 

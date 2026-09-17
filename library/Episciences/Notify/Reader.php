@@ -2,18 +2,15 @@
 
 declare(strict_types=1);
 
+use Episciences\Log\LoggerFactory;
 use Episciences\Notify\Notification;
 use Episciences\Notify\NotificationsRepository;
-use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
 
 class Episciences_Notify_Reader
 {
 
     public const NOTIFY_READER_LOGGER = 'notifyReaderLogger';
-    public const FILE_PERMISSION_LOGGER = 0664;
-    public const MAX_FILE_LOGGER = 0;
     protected Logger $logger;
     private NotificationsRepository $repository;
 
@@ -44,18 +41,10 @@ class Episciences_Notify_Reader
      */
     private function initLogging(): void
     {
-        $cnLogger = new Logger(self::NOTIFY_READER_LOGGER);
-
-        $handler = new RotatingFileHandler(
-            EPISCIENCES_LOG_PATH . self::NOTIFY_READER_LOGGER . 'log' ,
-            self::MAX_FILE_LOGGER,
-            Logger::DEBUG,
-            true,
-            self::FILE_PERMISSION_LOGGER
+        $cnLogger = LoggerFactory::rotating(
+            self::NOTIFY_READER_LOGGER,
+            EPISCIENCES_LOG_PATH . self::NOTIFY_READER_LOGGER . 'log'
         );
-        $formatter = new LineFormatter(null, null, false, true);
-        $handler->setFormatter($formatter);
-        $cnLogger->pushHandler($handler);
 
         $this->setLogger($cnLogger);
     }

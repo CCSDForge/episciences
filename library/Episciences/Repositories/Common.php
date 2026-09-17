@@ -776,7 +776,11 @@ class Episciences_Repositories_Common
                 try {
                     $nodeLanguage = Languages::getAlpha2Code($nodeLanguage);
                 } catch (Exception $e) {
-                    $nodeLanguage = '';
+                    // Conversion failed (e.g. an ISO 639-3 code with no alpha-2
+                    // equivalent, such as "cpg" for Cappadocian Greek): keep the
+                    // original code as-is. Falling back to the document language
+                    // here would tag this description with the same language as
+                    // another one and silently overwrite it later.
                 }
             }
 
@@ -788,4 +792,23 @@ class Episciences_Repositories_Common
 
         return $descriptions;
     }
+
+    /**
+     * Normalize an arbitrary scalar (string|int|float) into a float version,
+     * extracting the leading dotted number from free-form values (e.g. "v1.2.3").
+     * This is the generic counterpart of getVersionFromIdentifier(), which targets
+     * the `xxx/yyy.z` identifier format. Keep the two regexes in sync: a fix to one
+     * of them is likely intended for the other as well.
+     */
+    public static function normalizeVersion(string|int|float $version): float
+    {
+        if (is_numeric($version)) {
+            return (float)$version;
+        }
+
+        preg_match('/\d+(?:\.\d+)*/', (string)$version, $matches);
+        $version = $matches[0] ?? 1;
+        return (float)$version;
+    }
+
 }
