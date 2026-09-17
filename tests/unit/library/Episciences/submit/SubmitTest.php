@@ -3,6 +3,7 @@
 namespace unit\library\Episciences\submit;
 
 use Episciences_Paper;
+use Episciences_Repositories_ArXiv_Hooks;
 use Episciences_Submit;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -498,7 +499,7 @@ class SubmitTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // stripSurplusArxivDescriptions() — private, tested via ReflectionMethod
+    // arXiv record cleanup — Episciences_Repositories_ArXiv_Hooks::hookCleanXMLRecordInput()
     // -------------------------------------------------------------------------
 
     private const RAW_ARXIV_RECORD_WITH_COMMENT = <<<'XML'
@@ -529,10 +530,8 @@ XML;
 
     public function testStripSurplusArxivDescriptionsDiscardsSurplusNode(): void
     {
-        $method = new ReflectionMethod(Episciences_Submit::class, 'stripSurplusArxivDescriptions');
-        $method->setAccessible(true);
-
-        $result = $method->invoke(null, self::RAW_ARXIV_RECORD_WITH_COMMENT);
+        $input = ['record' => self::RAW_ARXIV_RECORD_WITH_COMMENT];
+        $result = Episciences_Repositories_ArXiv_Hooks::hookCleanXMLRecordInput($input)['record'];
 
         self::assertSame(1, substr_count($result, '<dc:description>'));
         self::assertStringContainsString('Main abstract text', $result);
@@ -542,29 +541,24 @@ XML;
 
     public function testStripSurplusArxivDescriptionsLeavesSingleDescriptionUntouched(): void
     {
-        $method = new ReflectionMethod(Episciences_Submit::class, 'stripSurplusArxivDescriptions');
-        $method->setAccessible(true);
-
-        $result = $method->invoke(null, self::RAW_ARXIV_RECORD_WITH_SINGLE_DESCRIPTION);
+        $input = ['record' => self::RAW_ARXIV_RECORD_WITH_SINGLE_DESCRIPTION];
+        $result = Episciences_Repositories_ArXiv_Hooks::hookCleanXMLRecordInput($input)['record'];
 
         self::assertSame(1, substr_count($result, '<dc:description>'));
         self::assertStringContainsString('Only abstract', $result);
     }
 
-    public function testStripSurplusArxivDescriptionsWithEmptyRecordReturnsEmptyString(): void
+    public function testStripSurplusArxivDescriptionsWithEmptyRecordReturnsInputUnchanged(): void
     {
-        $method = new ReflectionMethod(Episciences_Submit::class, 'stripSurplusArxivDescriptions');
-        $method->setAccessible(true);
+        $input = ['record' => ''];
 
-        self::assertSame('', $method->invoke(null, ''));
+        self::assertSame($input, Episciences_Repositories_ArXiv_Hooks::hookCleanXMLRecordInput($input));
     }
 
     public function testStripSurplusArxivDescriptionsWithInvalidXmlReturnsRecordUnchanged(): void
     {
-        $method = new ReflectionMethod(Episciences_Submit::class, 'stripSurplusArxivDescriptions');
-        $method->setAccessible(true);
+        $input = ['record' => '<not-valid-xml'];
 
-        $invalidRecord = '<not-valid-xml';
-        self::assertSame($invalidRecord, $method->invoke(null, $invalidRecord));
+        self::assertSame($input, Episciences_Repositories_ArXiv_Hooks::hookCleanXMLRecordInput($input));
     }
 }
