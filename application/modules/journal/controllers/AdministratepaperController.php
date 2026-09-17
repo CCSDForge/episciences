@@ -5067,25 +5067,21 @@ class AdministratepaperController extends PaperDefaultController
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $post = $request->getPost();
-        $hasDateTime = false;
 
-        if (isset($post['latest-repository-version'])) {
-            $latestPostedVersion = $post['latest-repository-version'];
-            $hasDateTime = Episciences_Repositories_Common::getDateTimePattern($latestPostedVersion) !== '';
+        $latestPostedVersion = $post['latest-repository-version'] ?? 0; // version or identifier
 
-            if (!$hasDateTime) {
-                $latestPostedVersion = (float)$latestPostedVersion;
-            }
-
-        } else {
-            $latestPostedVersion = 0;
-        } // version or identifier
-
-        if (!$latestPostedVersion) {
+        // The posted value must be a scalar: an array (e.g. latest-repository-version[]=x)
+        // would otherwise reach getDateTimePattern() and raise an uncaught TypeError before
+        // the paper rights check, making the endpoint exploitable by any authenticated user.
+        if (is_array($latestPostedVersion)) {
             return false;
         }
 
-        $isReadyToPublish = isset($post['ready-to-publish']) && $post['ready-to-publish'] === 'on';
+        $latestPostedVersion = (string)$latestPostedVersion;
+
+        if ($latestPostedVersion === '') {
+            return false;
+        }
 
         $docId = (int)$request->getPost('docid');
 
@@ -5099,6 +5095,10 @@ class AdministratepaperController extends PaperDefaultController
             return false;
         }
 
+        $isReadyToPublish = isset($post['ready-to-publish']) && $post['ready-to-publish'] === 'on';
+        $hasDateTime = Episciences_Repositories_Common::getDateTimePattern($latestPostedVersion) !== '';
+        $isFromZenodo = Episciences_Repositories::ZENODO_REPO_ID === (string)$paper->getRepoid();
+
         if (
             !$paper->isEditableVersion() ||
             (
@@ -5111,25 +5111,28 @@ class AdministratepaperController extends PaperDefaultController
         }
 
         $hookedVersion = Episciences_Repositories::callHook('hookVersion', [
-            'identifier' => $latestPostedVersion,
+            'identifier' => ($isFromZenodo || $hasDateTime) ? $latestPostedVersion : $paper->getIdentifier(),
             'repoId' => $paper->getRepoid(),
             'context' => ['previousVersion' => $paper->getVersion()],
         ]);
 
         if (isset($hookedVersion['version']) || $hasDateTime) {
-            $paper->setIdentifier($latestPostedVersion); // posted identifier
+
+            if ($isFromZenodo || $hasDateTime){
+                $paper->setIdentifier($latestPostedVersion); // posted identifier
+            }
 
             if ($hasDateTime) {
                 $latestPostedVersion = $paper->getVersion() + 1;
 
             } else {
-                $latestPostedVersion = (float)$hookedVersion['version'];
+                $latestPostedVersion = $hookedVersion['version'];
             }
         }
 
-        $currentVersion = $paper->getVersion();
-
         $result = ['version' => 0, 'isDataRecordUpdated' => false];
+        $latestPostedVersion = Episciences_Repositories_Common::normalizeVersion($latestPostedVersion);
+        $currentVersion = $paper->getVersion();
 
         if ($latestPostedVersion > $currentVersion) {
 
