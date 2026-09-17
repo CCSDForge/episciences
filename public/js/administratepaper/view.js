@@ -1074,10 +1074,15 @@ function getVersionEditingForm(button, docId) {
 
         $('form[action^="' + actionStr + '"]').on('submit', function () {
             let $inProgress = $('#in-progress');
+            // CSRF token expected by savenewpostedversionAction
+            let csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            let csrfToken = csrfMeta ? csrfMeta.content : '';
             // Traitement AJAX du formulaire
             let sRequest = ajaxRequest(
                 actionStr,
-                $(this).serialize() + '&docid=' + docId,
+                $(this).serialize() +
+                    '&docid=' + docId +
+                    '&csrf_token=' + encodeURIComponent(csrfToken),
                 'POST',
                 'json'
             );
