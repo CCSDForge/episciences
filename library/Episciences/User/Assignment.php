@@ -126,15 +126,16 @@ class Episciences_User_Assignment
     }
 
     /**
-     * Enregistre l'assignation en BDD
+     * Database Entry
      * @return boolean
      * @throws Zend_Db_Adapter_Exception
      */
+
     public function save(): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        // Préparation des valeurs à insérer
+        //Preparing Common Values
         $values = [
             'INVITATION_ID' => $this->getInvitation_id(),
             'ITEMID' => $this->getItemid(),
@@ -145,16 +146,19 @@ class Episciences_User_Assignment
             'TMP_USER' => $this->isTmp_user(),
             'ROLEID' => $this->getRoleid(),
             'STATUS' => $this->getStatus(),
-            'WHEN' => new Zend_Db_Expr('NOW()'),
             'DEADLINE' => $this->getDeadline()
         ];
 
-        // Enregistrement en BDD
+        // Update
         if ($this->getId()) {
-            $db->update(T_ASSIGNMENTS, $values, array('ID = ?' => $this->getId()));
+            // We preserve the existing value of 'WHEN' @see RT#294893
+            $db->update(T_ASSIGNMENTS, $values, ['ID = ?' => $this->getId()]);
             Episciences_User_AssignmentsManager::getCachePool()->clear();
             return true;
         }
+
+        // Création: We timestamp the creation
+        $values['WHEN'] = new Zend_Db_Expr('NOW()');
 
         if ($db->insert(T_ASSIGNMENTS, $values)) {
             $this->setId((int)$db->lastInsertId());

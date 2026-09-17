@@ -214,6 +214,31 @@ final class Episciences_Repositories_CommonTest extends TestCase
     }
 
     // =========================================================================
+    // normalizeVersion()
+    // =========================================================================
+
+    public function testNormalizeVersionWithLeadingPrefix(): void
+    {
+        self::assertSame(1.2, Episciences_Repositories_Common::normalizeVersion('v1.2.3'));
+    }
+
+    public function testNormalizeVersionWithDottedVersion(): void
+    {
+        self::assertSame(1.2, Episciences_Repositories_Common::normalizeVersion('1.2.3'));
+    }
+
+    public function testNormalizeVersionNumeric(): void
+    {
+        self::assertSame(2.0, Episciences_Repositories_Common::normalizeVersion(2));
+        self::assertSame(1.5, Episciences_Repositories_Common::normalizeVersion(1.5));
+    }
+
+    public function testNormalizeVersionNoDigit(): void
+    {
+        self::assertSame(1.0, Episciences_Repositories_Common::normalizeVersion('not-a-version'));
+    }
+
+    // =========================================================================
     // getConceptIdentifierFromString()
     // =========================================================================
 

@@ -792,4 +792,23 @@ class Episciences_Repositories_Common
 
         return $descriptions;
     }
+
+    /**
+     * Normalize an arbitrary scalar (string|int|float) into a float version,
+     * extracting the leading dotted number from free-form values (e.g. "v1.2.3").
+     * This is the generic counterpart of getVersionFromIdentifier(), which targets
+     * the `xxx/yyy.z` identifier format. Keep the two regexes in sync: a fix to one
+     * of them is likely intended for the other as well.
+     */
+    public static function normalizeVersion(string|int|float $version): float
+    {
+        if (is_numeric($version)) {
+            return (float)$version;
+        }
+
+        preg_match('/\d+(?:\.\d+)*/', (string)$version, $matches);
+        $version = $matches[0] ?? 1;
+        return (float)$version;
+    }
+
 }
