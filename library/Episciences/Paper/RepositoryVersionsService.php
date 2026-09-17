@@ -1,5 +1,20 @@
 <?php
 
+namespace Episciences\Paper;
+
+use DOMDocument;
+use DOMXPath;
+use Episciences_Oai_Client;
+use Episciences_Paper;
+use Episciences_Repositories;
+use Episciences_Repositories_BioMedRxiv;
+use Episciences_Repositories_Common;
+use Episciences_Repositories_CryptologyePrint_Hooks;
+use Episciences_Repositories_Dataverse_Hooks;
+use Episciences_Submit;
+use Episciences_Tools;
+use Exception;
+
 /**
  * Service class handling the retrieval of the versions of a paper that are
  * available in its source repository.
@@ -9,7 +24,7 @@
  * the public entry point dispatches to the right one depending on the paper's
  * repository.
  */
-class Episciences_Paper_RepositoryVersionsService
+class RepositoryVersionsService
 {
     /** @var callable(string, array): mixed */
     private $apiCaller;

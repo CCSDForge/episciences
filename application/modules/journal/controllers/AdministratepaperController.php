@@ -1,6 +1,7 @@
 <?php
 require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
 
+use Episciences\Paper\RepositoryVersionsService;
 use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 
 /**
@@ -4946,7 +4947,7 @@ class AdministratepaperController extends PaperDefaultController
 
     private function availableRepositoryVersions(Episciences_Paper $paper): array
     {
-        $service = new Episciences_Paper_RepositoryVersionsService();
+        $service = new RepositoryVersionsService();
         return $service->getAvailableVersions($paper);
     }
 

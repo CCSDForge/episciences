@@ -2,8 +2,8 @@
 
 namespace unit\library\Episciences\Paper;
 
+use Episciences\Paper\RepositoryVersionsService;
 use Episciences_Paper;
-use Episciences_Paper_RepositoryVersionsService;
 use Episciences_Repositories;
 use Episciences_Repositories_BioMedRxiv;
 use Episciences_Repositories_Dataverse_Hooks;
@@ -12,7 +12,7 @@ use ReflectionProperty;
 use Zend_Registry;
 
 /**
- * Unit tests for Episciences_Paper_RepositoryVersionsService.
+ * Unit tests for Episciences\Paper\RepositoryVersionsService.
  *
  * The service fetches the versions of a paper available in its source
  * repository (HAL, Zenodo, bioRxiv/medRxiv, Dataverse, arXiv, cryptology...).
@@ -24,7 +24,7 @@ use Zend_Registry;
  *    between tests via ReflectionProperty.
  *  - Network/HOAI collaborators are injected as fakes through the constructor.
  *
- * @covers Episciences_Paper_RepositoryVersionsService
+ * @covers \Episciences\Paper\RepositoryVersionsService
  */
 final class Episciences_Paper_RepositoryVersionsServiceTest extends TestCase
 {
@@ -123,9 +123,9 @@ final class Episciences_Paper_RepositoryVersionsServiceTest extends TestCase
         return $paper;
     }
 
-    private function buildService(?callable $apiCaller = null): Episciences_Paper_RepositoryVersionsService
+    private function buildService(?callable $apiCaller = null): RepositoryVersionsService
     {
-        return new Episciences_Paper_RepositoryVersionsService($apiCaller);
+        return new RepositoryVersionsService($apiCaller);
     }
 
     // =========================================================================
@@ -333,7 +333,7 @@ final class Episciences_Paper_RepositoryVersionsServiceTest extends TestCase
             return [];
         };
 
-        $service = new Episciences_Paper_RepositoryVersionsService(null, null, $hookCaller);
+        $service = new RepositoryVersionsService(null, null, $hookCaller);
 
         $this->assertSame([], $service->getAvailableVersions($paper));
     }
@@ -342,7 +342,7 @@ final class Episciences_Paper_RepositoryVersionsServiceTest extends TestCase
     {
         $paper = $this->mockPaper(['repoid' => 42, 'identifier' => 'whatever']);
 
-        $service = new Episciences_Paper_RepositoryVersionsService(null, null, static fn() => []);
+        $service = new RepositoryVersionsService(null, null, static fn() => []);
 
         $this->assertSame([], $service->getAvailableVersions($paper));
     }
@@ -361,7 +361,7 @@ final class Episciences_Paper_RepositoryVersionsServiceTest extends TestCase
             return ['v3'];
         };
 
-        $service = new Episciences_Paper_RepositoryVersionsService(null, $oaiFetcher);
+        $service = new RepositoryVersionsService(null, $oaiFetcher);
 
         $this->assertSame(['v3'], $service->getAvailableVersions($paper));
     }
