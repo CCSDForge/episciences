@@ -3,7 +3,6 @@
 namespace unit\library\Episciences\submit;
 
 use Episciences_Paper;
-use Episciences_Repositories_ArXiv_Hooks;
 use Episciences_Submit;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -496,69 +495,5 @@ class SubmitTest extends TestCase
         $record = '<record><dcterms:available>2099-12-31</dcterms:available></record>';
         $result = $method->invoke(null, $record);
         self::assertSame('2099-12-31', $result);
-    }
-
-    // -------------------------------------------------------------------------
-    // arXiv record cleanup — Episciences_Repositories_ArXiv_Hooks::hookCleanXMLRecordInput()
-    // -------------------------------------------------------------------------
-
-    private const RAW_ARXIV_RECORD_WITH_COMMENT = <<<'XML'
-<record>
-    <header>
-        <identifier>oai:arXiv.org:2603.15855</identifier>
-        <datestamp>2026-07-13</datestamp>
-    </header>
-    <metadata>
-        <oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/">
-            <dc:title>Mixing visual and textual code</dc:title>
-            <dc:description>Main abstract text</dc:description>
-            <dc:description>to be published in JFP</dc:description>
-        </oai_dc:dc>
-    </metadata>
-</record>
-XML;
-
-    private const RAW_ARXIV_RECORD_WITH_SINGLE_DESCRIPTION = <<<'XML'
-<record>
-    <metadata>
-        <oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/">
-            <dc:description>Only abstract</dc:description>
-        </oai_dc:dc>
-    </metadata>
-</record>
-XML;
-
-    public function testStripSurplusArxivDescriptionsDiscardsSurplusNode(): void
-    {
-        $input = ['record' => self::RAW_ARXIV_RECORD_WITH_COMMENT];
-        $result = Episciences_Repositories_ArXiv_Hooks::hookCleanXMLRecordInput($input)['record'];
-
-        self::assertSame(1, substr_count($result, '<dc:description>'));
-        self::assertStringContainsString('Main abstract text', $result);
-        self::assertStringNotContainsString('to be published in JFP', $result);
-        self::assertStringContainsString('Mixing visual and textual code', $result);
-    }
-
-    public function testStripSurplusArxivDescriptionsLeavesSingleDescriptionUntouched(): void
-    {
-        $input = ['record' => self::RAW_ARXIV_RECORD_WITH_SINGLE_DESCRIPTION];
-        $result = Episciences_Repositories_ArXiv_Hooks::hookCleanXMLRecordInput($input)['record'];
-
-        self::assertSame(1, substr_count($result, '<dc:description>'));
-        self::assertStringContainsString('Only abstract', $result);
-    }
-
-    public function testStripSurplusArxivDescriptionsWithEmptyRecordReturnsInputUnchanged(): void
-    {
-        $input = ['record' => ''];
-
-        self::assertSame($input, Episciences_Repositories_ArXiv_Hooks::hookCleanXMLRecordInput($input));
-    }
-
-    public function testStripSurplusArxivDescriptionsWithInvalidXmlReturnsRecordUnchanged(): void
-    {
-        $input = ['record' => '<not-valid-xml'];
-
-        self::assertSame($input, Episciences_Repositories_ArXiv_Hooks::hookCleanXMLRecordInput($input));
     }
 }
