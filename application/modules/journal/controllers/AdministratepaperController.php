@@ -5104,6 +5104,14 @@ class AdministratepaperController extends PaperDefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
+
+        // This action persists a repository version/identifier, so it must only run on
+        // an authenticated POST carrying a valid per-session request token (CSRF).
+        if (!$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return false;
+        }
+
         $post = $request->getPost();
 
         $latestPostedVersion = $post['latest-repository-version'] ?? 0; // version or identifier
