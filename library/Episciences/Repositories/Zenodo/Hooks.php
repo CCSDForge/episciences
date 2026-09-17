@@ -157,15 +157,14 @@ class Episciences_Repositories_Zenodo_Hooks implements CommonHooksInterface, Inp
 
         //@see https://semver.org/
         $response = self::checkResponse($hookParams);
-
         $previousVersion = $hookParams['context']['previousVersion'] ?? null;
-        $version = $response['metadata']['version'] ?? ($previousVersion !== null ? $previousVersion + 1 : null);
+        $version = $response['metadata']['version'] ?? ($previousVersion !== null ? $previousVersion + 1 : 1);
 
-        if (!$version) {
-            return [];
+        if (!is_string($version) && !is_int($version) && !is_float($version)) {
+            $version = 1;
         }
 
-        return ['version' => $version];
+        return ['version' => Episciences_Repositories_Common::normalizeVersion($version)];
     }
 
     /**

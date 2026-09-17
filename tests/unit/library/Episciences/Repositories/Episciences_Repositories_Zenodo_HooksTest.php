@@ -349,7 +349,7 @@ final class Episciences_Repositories_Zenodo_HooksTest extends TestCase
             'response' => ['metadata' => ['version' => '3']],
         ]);
 
-        self::assertSame(['version' => '3'], $result);
+        self::assertSame(['version' => 3.0], $result);
     }
 
     /**
@@ -362,19 +362,41 @@ final class Episciences_Repositories_Zenodo_HooksTest extends TestCase
             'context'  => ['previousVersion' => 2],
         ]);
 
-        self::assertSame(['version' => 3], $result);
+        self::assertSame(['version' => 3.0], $result);
     }
 
     /**
-     * When neither metadata.version nor previousVersion is set, hookVersion() returns [].
+     * When neither metadata.version nor previousVersion is set, hookVersion() falls back to version 1.
      */
-    public function testHookVersionReturnsEmptyWhenNoVersionInfo(): void
+    public function testHookVersionFallsBackToOneWhenNoVersionInfo(): void
     {
         $result = Episciences_Repositories_Zenodo_Hooks::hookVersion([
             'response' => ['metadata' => []],
         ]);
 
-        self::assertSame([], $result);
+        self::assertSame(['version' => 1.0], $result);
+    }
+
+    /**
+     * A non-scalar metadata.version (array or bool) is replaced by 1 before normalization,
+     * otherwise normalizeVersion() would raise a TypeError.
+     */
+    public function testHookVersionRejectsNonScalarVersion(): void
+    {
+        $result = Episciences_Repositories_Zenodo_Hooks::hookVersion([
+            'response' => ['metadata' => ['version' => ['1.2.3']]],
+        ]);
+
+        self::assertSame(['version' => 1.0], $result);
+    }
+
+    public function testHookVersionRejectsBooleanVersion(): void
+    {
+        $result = Episciences_Repositories_Zenodo_Hooks::hookVersion([
+            'response' => ['metadata' => ['version' => true]],
+        ]);
+
+        self::assertSame(['version' => 1.0], $result);
     }
 
     // =========================================================================
