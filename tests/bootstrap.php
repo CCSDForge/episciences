@@ -1,17 +1,50 @@
 <?php
+
+/**
+ * Aborts the test run with a real failure exit code.
+ *
+ * Both `exit($string)` and `die($string)` return exit code 0. Bailing out that way made the
+ * whole suite look successful to CI while not a single test had run, so every missing
+ * prerequisite must go through this function instead.
+ */
+function abortTestBootstrap(string $message): never
+{
+    fwrite(STDERR, $message . PHP_EOL);
+    exit(1);
+}
+
 $configPath = dirname(__DIR__) . '/tests/config/';
 $envFile = 'env-test.php'; // needed to define review constants
 
-if (file_exists($configPath . $envFile)) {
-    require $configPath . $envFile;
+if (!file_exists($configPath . $envFile)) {
+    abortTestBootstrap(
+        sprintf('** File not found : %s **', $envFile) . PHP_EOL .
+        'See /tests/config/env-test.php.dist, or run: php .github/scripts/setup-test-config.php'
+    );
+}
+
+require $configPath . $envFile;
+
+// public/bdd_const.php reads a pwd.json to define every database constant. It reports a missing
+// or invalid file with die() -- harmless for a web request, but a silent success on the CLI --
+// so the case is caught here, before it can be swallowed.
+//
+// Its location follows the same resolution order as best_define(): an already defined PWD_PATH
+// constant, then a PWD_PATH environment variable, then config/. CI sets the environment variable
+// so that the generated test configuration never overwrites a developer's own config/pwd.json.
+if (defined('PWD_PATH')) {
+    $credentialsDir = PWD_PATH;
 } else {
+    $credentialsDir = getenv('PWD_PATH') ?: dirname(__DIR__) . '/config';
+}
 
-    $message = sprintf('** File not found : %s **', $envFile);
-    $message .= PHP_EOL;
-    $message .= 'See /tests/config/env-test.php.dist';
-    $message .= PHP_EOL;
+$credentialsPath = rtrim($credentialsDir, '/') . '/pwd.json';
 
-    exit($message);
+if (!file_exists($credentialsPath)) {
+    abortTestBootstrap(
+        sprintf('** File not found : %s **', $credentialsPath) . PHP_EOL .
+        'See /config/dist-pwd.json, or run: php .github/scripts/setup-test-config.php'
+    );
 }
 
 require_once dirname(__DIR__) . '/public/const.php';
