@@ -659,7 +659,7 @@ class Episciences_Mail extends Zend_Mail
     {
         $this->_docid = (int)$docid;
 
-        $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ID, $docid);
+        $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ID, $this->_docid);
 
         $resolvedPaperId = $paperId ?? $this->getPaperId();
 
@@ -673,9 +673,9 @@ class Episciences_Mail extends Zend_Mail
 
         if (defined('RVCODE')) {
             $baseurl = SERVER_PROTOCOL . '://' . RVCODE . '.' . DOMAIN;
-            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL, $baseurl . '/administratepaper/view/id/' . $docid);
-            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_VIEW_URL, $baseurl . '/' . $docid);
-            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_RATING_URL, $baseurl . '/paper/rating/id/' . $docid);
+            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL, $baseurl . '/administratepaper/view/id/' . $this->_docid);
+            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_VIEW_URL, $baseurl . '/' . $this->_docid);
+            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_RATING_URL, $baseurl . '/paper/rating/id/' . $this->_docid);
         }
 
         return $this;

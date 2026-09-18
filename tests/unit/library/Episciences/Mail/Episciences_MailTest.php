@@ -568,6 +568,15 @@ final class Episciences_MailTest extends TestCase
         self::assertSame(5, $this->mail->getDocid());
     }
 
+    public function testSetDocidUsesNormalizedDocidForTagsAndUrls(): void
+    {
+        $this->mail->setDocid('5foo', 1);
+
+        $tags = $this->mail->getTags();
+        self::assertSame(5, $tags[Episciences_Mail_Tags::TAG_PAPER_ID]);
+        self::assertSame(5, $this->mail->getDocid());
+    }
+
     public function testSetDocidReturnsFluent(): void
     {
         self::assertInstanceOf(Episciences_Mail::class, $this->mail->setDocid(1, 1));
