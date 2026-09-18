@@ -489,16 +489,52 @@ final class Episciences_Mail_ReminderTest extends TestCase
     {
         $source = file_get_contents((new ReflectionClass(Episciences_Mail_Reminder::class))->getFileName());
 
-        $articleIdCount = preg_match_all('/Episciences_Mail_Tags::TAG_ARTICLE_ID\s*=>/', $source);
-        $permanentArticleIdCount = preg_match_all('/Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID\s*=>/', $source);
+        // Split the source into one segment per private get*Recipients() method,
+        // so each recipient-tag construction is checked independently. Comparing
+        // only file-wide aggregate counts could mask a missing permanent tag in
+        // one path with an extra occurrence in another.
+        $segments = preg_split(
+            '/^\s*private function (get\w+Recipients)\(/m',
+            $source,
+            -1,
+            PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY
+        );
 
-        self::assertGreaterThan(0, $articleIdCount, 'Sanity check: expected at least one TAG_ARTICLE_ID assignment in Reminder.php');
-        self::assertSame(
-            $articleIdCount,
-            $permanentArticleIdCount,
-            'BUG: every TAG_ARTICLE_ID => ... assignment in Reminder.php must be paired with a '
-            . 'TAG_PERMANENT_ARTICLE_ID => ... assignment, otherwise %%PERMANENT_ARTICLE_ID%% is left '
-            . 'empty for that reminder type'
+        // The first element is the pre-match file header (imports/class
+        // declaration), not a recipient-construction method: discard it so
+        // [name, body, name, body, ...] pairs align.
+        array_shift($segments);
+
+        $checkedMethods = 0;
+
+        foreach (array_chunk($segments, 2) as [$methodName, $segment]) {
+            $articleIdCount = preg_match_all('/Episciences_Mail_Tags::TAG_ARTICLE_ID\s*=>/', $segment);
+            $permanentArticleIdCount = preg_match_all('/Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID\s*=>/', $segment);
+
+            if ($articleIdCount === 0 && $permanentArticleIdCount === 0) {
+                continue;
+            }
+
+            ++$checkedMethods;
+
+            self::assertGreaterThan(
+                0,
+                $articleIdCount,
+                "$methodName(): expected at least one TAG_ARTICLE_ID assignment"
+            );
+            self::assertSame(
+                $articleIdCount,
+                $permanentArticleIdCount,
+                "$methodName(): every TAG_ARTICLE_ID => ... assignment must be paired with a "
+                . 'TAG_PERMANENT_ARTICLE_ID => ... assignment, otherwise %%PERMANENT_ARTICLE_ID%% '
+                . 'is left empty for that reminder type'
+            );
+        }
+
+        self::assertGreaterThan(
+            0,
+            $checkedMethods,
+            'Sanity check: expected at least one recipient-construction method to define tags'
         );
     }
 
