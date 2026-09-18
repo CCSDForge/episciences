@@ -1763,7 +1763,7 @@ class AdministratepaperController extends PaperDefaultController
 
         // reviewer invitation e-mail
         $mail = new Episciences_Mail('UTF-8');
-        $mail->setDocid($docId);
+        $mail->setDocid($docId, $paper->getPaperid());
         $mail->setSubject($post['subject']);
         $mail->setRawBody(Ccsd_Tools::clear_nl($post['body']));
         $mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_URL, $invitation_url);

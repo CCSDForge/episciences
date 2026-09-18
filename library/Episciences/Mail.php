@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\AppRegistry;
+
 class Episciences_Mail extends Zend_Mail
 {
     /**
@@ -46,6 +48,7 @@ class Episciences_Mail extends Zend_Mail
     private $_rawBody;
     protected bool $_isAutomatic = false;
     private ?int $uid = null ;
+    private static array $_cache = [];
 
     /**
      * Episciences_Mail constructor.
@@ -647,20 +650,66 @@ class Episciences_Mail extends Zend_Mail
         return $this->_docid;
     }
 
-    public function setDocid($docid)
+    /**
+     * @param $docid
+     * @param int|null $paperId Permanent article id, when the caller already has it (avoids a DB lookup).
+     * @return $this
+     */
+    public function setDocid($docid, int $paperId = null): self
     {
-        $this->_docid = $docid;
+        $this->_docid = (int)$docid;
 
-        $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ID, $docid);
+        $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ID, $this->_docid);
+
+        $resolvedPaperId = $paperId ?? $this->getPaperId();
+
+        if ($resolvedPaperId !== null) {
+            $this->addTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID, $resolvedPaperId);
+        } else {
+            // Instances can be reused across documents: never let a previous docid's
+            // permanent article id leak into a mail whose resolution just failed.
+            $this->removeTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID);
+        }
 
         if (defined('RVCODE')) {
             $baseurl = SERVER_PROTOCOL . '://' . RVCODE . '.' . DOMAIN;
-            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL, $baseurl . '/administratepaper/view/id/' . $docid);
-            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_VIEW_URL, $baseurl . '/' . $docid);
-            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_RATING_URL, $baseurl . '/paper/rating/id/' . $docid);
+            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL, $baseurl . '/administratepaper/view/id/' . $this->_docid);
+            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_VIEW_URL, $baseurl . '/' . $this->_docid);
+            $this->addTag(Episciences_Mail_Tags::TAG_PAPER_RATING_URL, $baseurl . '/paper/rating/id/' . $this->_docid);
         }
 
         return $this;
+    }
+
+    private function getPaperId(): ?int
+    {
+        if (array_key_exists($this->_docid, self::$_cache)) {
+            return self::$_cache[$this->_docid];
+        }
+
+        $select = Episciences_PapersManager::partialGetQuery($this->_docid, 'PAPERID');
+        $paperId = $select?->getAdapter()->fetchOne($select);
+        $paperId = ($paperId !== false && $paperId !== null) ? (int)$paperId : null;
+
+        if ($paperId === null) {
+            AppRegistry::getMonoLogger()?->warning(sprintf(
+                'Episciences_Mail::getPaperId() - PAPERID not found for DOCID=%d, %%%%PERMANENT_ARTICLE_ID%%%% tag left unset',
+                $this->_docid
+            ));
+        }
+
+        self::$_cache[$this->_docid] = $paperId;
+        return $paperId;
+    }
+
+    /**
+     * Clear the internal PAPERID cache.
+     * Also handy for isolating static state between unit tests.
+     * @return void
+     */
+    public static function clearCache(): void
+    {
+        self::$_cache = [];
     }
 
     public function getDecodedBody()

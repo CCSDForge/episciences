@@ -253,7 +253,7 @@ class Episciences_Mail_Send
         $mail = new Episciences_Mail(self::ENCODING_TYPE, $journalOptions['rvCode']);
 
         if ($paper) {
-            $mail->setDocid($paper->getDocid());
+            $mail->setDocid($paper->getDocid(), $paper->getPaperid());
         }
 
         $existingTags = $mail->getTags();

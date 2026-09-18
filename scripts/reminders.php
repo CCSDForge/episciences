@@ -186,7 +186,7 @@ try {
                 $mail = new Episciences_Mail('UTF-8', $rvCode);
                 if (isset($tags['%%ARTICLE_ID%%'])) {
                     $paper = Episciences_PapersManager::get($tags['%%ARTICLE_ID%%']);
-                    $mail->setDocid($paper->getDocid());
+                    $mail->setDocid($paper->getDocid(), $paper->getPaperid());
                     displayMessage('DOCID > #' . $paper->getDocid(), 'default', true);
                 }
 
