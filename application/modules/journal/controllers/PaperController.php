@@ -625,11 +625,22 @@ class PaperController extends PaperDefaultController
                 } else {
                     $paper->setPassword($postedPwd, true);
 
-                    if ($paper->getStatus() === Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION) {
+                    $isFinalVersionSubmitted = $paper->getStatus() === Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION;
+                    if ($isFinalVersionSubmitted) {
                         $paper->setStatus(Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED);
                     }
 
                     if ($paper->save()) {
+                        if ($isFinalVersionSubmitted) {
+                            $paper->log(Episciences_Paper_Logger::CODE_STATUS, Episciences_Auth::getUid(), [
+                                self::STATUS => $paper->getStatus(),
+                            ]);
+                            if (!$this->notifyAltFinalVersionSubmitted($paper, [])) {
+                                $this->_helper->FlashMessenger->setNamespace('warning')->addMessage(
+                                    $this->view->translate("Le dépôt a été enregistré, mais au moins un courriel n'a pas pu être envoyé.")
+                                );
+                            }
+                        }
                         $message = $this->view->translate("Votre mot de passe a bien été enregistré.");
                         $isErrors = false;
                     }
@@ -1573,7 +1584,6 @@ class PaperController extends PaperDefaultController
         $formState = new Zend_Session_Namespace('AltFinalVersionDeposit_' . (int)$paper->getDocid());
         $formState->values = [
             'version' => trim((string)($post['version'] ?? $paper->getVersion())),
-            'paperPassword' => (string)($post['paperPassword'] ?? ''),
             Episciences_Mail_Send::ATTACHMENTS => is_array($post[Episciences_Mail_Send::ATTACHMENTS] ?? null)
                 ? Episciences_Tools::arrayFilterEmptyValues($post[Episciences_Mail_Send::ATTACHMENTS])
                 : [],

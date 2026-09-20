@@ -920,7 +920,7 @@ class AdministratepaperController extends PaperDefaultController
 
         if (
             $review->isAlternativePipelineEnabled()
-            && Episciences_Auth::isAllowedToManagePaper()
+            && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isCopyEditor())
         ) {
             if ($paper->isAccepted()) {
                 $this->view->altRequestFinalVersionForm = Episciences_PapersManager::getAltRequestFinalVersionForm(
@@ -2341,7 +2341,9 @@ class AdministratepaperController extends PaperDefaultController
         $journal->loadSettings();
         $paper = Episciences_PapersManager::get($docId);
 
-        $this->checkPermissions($journal, $paper);
+        if (!$this->checkPermissions($journal, $paper)) {
+            return;
+        }
 
         $redirectUrl = $this->_helper->url('view', self::ADMINISTRATE_PAPER_CONTROLLER, null, ['id' => $docId]);
 

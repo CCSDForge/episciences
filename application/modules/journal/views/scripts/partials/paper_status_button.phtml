@@ -323,7 +323,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                         <a href="#" data-toggle="modal"
                            data-target=".alt-approve-for-publication-modal"><?= $this->translate('Approuver pour publication') ?></a>
                     </li>
-                <?php elseif ($paper->isAltAwaitingPublication()) : ?>
+                <?php elseif ($paper->isAltAwaitingPublication() && $this->review->getSetting('editorsCanPublishPapers')) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
                            data-target=".alt-publish-modal"><?= $this->translate('Publish') ?></a>
@@ -514,35 +514,30 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 </li>
             <?php endif; ?>
 
-            <?php if ($paper->isAltFinalVersionSubmitted()): ?>
-                <li>
-                    <a href="#" data-toggle="modal"
-                       data-target=".alt-start-layout-editing-modal"><?= $this->translate('Start layout editing') ?></a>
-                </li>
-                <li>
-                    <a href="#" data-toggle="modal"
-                       data-target=".alt-incorrect-password-modal"><?= $this->translate('Incorrect password') ?></a>
-                </li>
-                <li>
-                    <a href="#" data-toggle="modal"
-                       data-target=".alt-incorrect-latex-modal"><?= $this->translate('Incorrect LaTeX') ?></a>
-                </li>
-            <?php endif; ?>
-
-            <?php if ($paper->isAltAwaitingPublication()): ?>
-                <li>
-                    <a href="#" data-toggle="modal"
-                       data-target=".alt-publish-modal"><?= $this->translate('Publish') ?></a>
-                </li>
-            <?php endif; ?>
-
             </ul>
             </div>
 
     <?php // Copy editor?>
 <?php elseif (Episciences_Auth::isCopyEditor()) : ?>
     <div class="btn-group">
-        <?php if ($paper->isAccepted()) : ?>
+        <?php if ($isAltPipelineOn && ($paper->isAltFinalVersionSubmitted() || $paper->isLayoutEditingInProgress())) : ?>
+            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                <?= $this->translate($changeStatusMsg) ?> <span class="caret" style="margin-left: 5px"></span>
+            </button>
+            <ul class="status-menu dropdown-menu" role="menu">
+                <?php if ($paper->isAltFinalVersionSubmitted()) : ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-start-layout-editing-modal"><?= $this->translate('Start layout editing') ?></a>
+                    </li>
+                <?php else : ?>
+                    <li>
+                        <a href="#" data-toggle="modal"
+                           data-target=".alt-send-proof-to-author-modal"><?= $this->translate("Envoyer l'épreuve à l'auteur") ?></a>
+                    </li>
+                <?php endif; ?>
+            </ul>
+        <?php elseif ($paper->isAccepted()) : ?>
             <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
                 <?= $this->translate($changeStatusMsg) ?> <span class="caret" style="margin-left: 5px"></span>
             </button>
@@ -752,7 +747,10 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
 
     <?php endif; ?>
 
-    <?php // Alternative editorial pipeline modals (gated by SETTING_ALTERNATIVE_PIPELINE) ?>
+<?php endif; ?>
+
+<?php if ($isAltPipelineOn && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isCopyEditor())) : ?>
+    <?php // Alternative editorial pipeline modals ?>
     <?php if (isset($this->altRequestFinalVersionForm) && $paper->isAccepted()) : ?>
         <?=
         $this->partial('partials/paper-status-modal.phtml', [

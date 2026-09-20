@@ -202,16 +202,6 @@ final class PaperControllerTest extends TestCase
         self::assertStringContainsString('updatePreviousVersionStatus($paper)', $method);
     }
 
-    public function testInvalidFinalVersionDepositPreservesSubmittedValues(): void
-    {
-        $method = $this->extractMethod('redirectAltFinalVersionDepositWithError');
-
-        self::assertStringContainsString("'version' =>", $method);
-        self::assertStringContainsString("'paperPassword' =>", $method);
-        self::assertStringContainsString('Episciences_Mail_Send::ATTACHMENTS', $method);
-        self::assertStringContainsString('AltFinalVersionDeposit_', $method);
-    }
-
     public function testFinalVersionAccompanyingFilesAreSavedAsAComment(): void
     {
         $method = $this->extractMethod('saveAltFinalVersionAccompanyingFiles');

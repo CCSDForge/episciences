@@ -128,7 +128,7 @@ trait Episciences_Paper_AccessControlControllerTrait
 
         $action = $this->getRequest()->getActionName();
 
-        if ($action === 'publish') {
+        if (in_array($action, ['publish', 'altpublish'], true)) {
             // a copy editor assigned to a paper approved by its author may publish it even when
             // the journal settings do not allow editors to publish
             $isAllowed = $review->getSetting(Episciences_Review::SETTING_EDITORS_CAN_PUBLISH_PAPERS) ||

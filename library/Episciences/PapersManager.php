@@ -2120,7 +2120,7 @@ class Episciences_PapersManager
         $mail->setDocid($paper->getDocid());
 
         $urlHelper = new Zend_View_Helper_Url();
-        $site = SERVER_PROTOCOL . '://' . ($_SERVER['SERVER_NAME'] ?? DOMAIN);
+        $site = APPLICATION_URL;
         $publicUrl = $site . $urlHelper->url([
                 'controller' => 'paper',
                 'action' => 'view',
@@ -2216,6 +2216,9 @@ class Episciences_PapersManager
                 $uniqueRecipients[$key] = $recipient;
             }
         }
+
+        Episciences_Review::checkReviewNotifications($uniqueRecipients);
+        self::keepOnlyUsersWithoutConflict($paper->getPaperid(), $uniqueRecipients);
 
         return array_values($uniqueRecipients);
     }

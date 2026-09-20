@@ -101,19 +101,28 @@ class ReviewController extends Zend_Controller_Action
                     $reviewSettingsToSave[Episciences_Review::SETTING_ALTERNATIVE_PIPELINE] = '0';
                 }
 
-                $review->setOptions($reviewSettingsToSave);
-                if ($review->save()) {
-                    $message = '<strong>' . $this->view->translate("Les modifications ont bien été enregistrées.") . '</strong>';
-                    $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
-                    $url = $this->_helper->url($this->getRequest()->getActionName(), $this->getRequest()->getControllerName());
-                    $this->_helper->redirector->gotoUrl($url);
+                if (
+                    (int)$reviewSettingsToSave[Episciences_Review::SETTING_ALTERNATIVE_PIPELINE] !== 1
+                    && !$review->canDisableAlternativePipeline()
+                ) {
+                    $message = $this->view->translate("Impossible de désactiver le pipeline éditorial alternatif ou de modifier les archives autorisées tant que des articles sont en cours dans ce pipeline. Terminez leur publication avant de modifier ces paramètres.");
+                    $form->getElement(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE)->addError($message);
+                    $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
                 } else {
-                    if ($reviewSettingsToSave[self::SETTING_JOURNAL_PUBLISHER] === '' && $reviewSettingsToSave[self::SETTING_JOURNAL_PUBLISHER_LOC] !== ''){
-                        $message = '<strong>' . $this->view->translate("Le lieu de publication est renseigné, veuillez saisir l'éditeur également") . '</strong>';
-                        $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
+                    $review->setOptions($reviewSettingsToSave);
+                    if ($review->save()) {
+                        $message = '<strong>' . $this->view->translate("Les modifications ont bien été enregistrées.") . '</strong>';
+                        $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+                        $url = $this->_helper->url($this->getRequest()->getActionName(), $this->getRequest()->getControllerName());
+                        $this->_helper->redirector->gotoUrl($url);
+                    } else {
+                        if ($reviewSettingsToSave[self::SETTING_JOURNAL_PUBLISHER] === '' && $reviewSettingsToSave[self::SETTING_JOURNAL_PUBLISHER_LOC] !== ''){
+                            $message = '<strong>' . $this->view->translate("Le lieu de publication est renseigné, veuillez saisir l'éditeur également") . '</strong>';
+                            $this->_helper->FlashMessenger->setNamespace('warning')->addMessage($message);
+                        }
+                        $message = '<strong>' . $this->view->translate("Les modifications n'ont pas pu être enregistrées.") . '</strong>';
+                        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                     }
-                    $message = '<strong>' . $this->view->translate("Les modifications n'ont pas pu être enregistrées.") . '</strong>';
-                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
                 }
             } else {
                 $message = '<strong>' . $this->view->translate("Le formulaire comporte des erreurs.") . '</strong>';

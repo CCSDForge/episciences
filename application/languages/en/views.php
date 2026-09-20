@@ -1,6 +1,7 @@
 <?php
 
 return array(
+    "Impossible de désactiver le pipeline éditorial alternatif ou de modifier les archives autorisées tant que des articles sont en cours dans ce pipeline. Terminez leur publication avant de modifier ces paramètres." => "The alternative editorial pipeline cannot be disabled and the allowed repositories cannot be changed while articles are still in this pipeline. Finish publishing them before changing these settings.",
 
     // Termes génériques
     '(optionnel)' => '(optional)',

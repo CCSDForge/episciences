@@ -633,6 +633,18 @@ class Episciences_Review
             && $repositories[0] === (int)Episciences_Repositories::ARXIV_REPO_ID;
     }
 
+    public function canDisableAlternativePipeline(): bool
+    {
+        return (int)$this->getPapersCount(['is' => ['status' => [
+            Episciences_Paper::STATUS_ALT_WAITING_FOR_AUTHOR_FINAL_VERSION,
+            Episciences_Paper::STATUS_ALT_FINAL_VERSION_SUBMITTED,
+            Episciences_Paper::STATUS_ALT_LAYOUT_EDITING_IN_PROGRESS,
+            Episciences_Paper::STATUS_ALT_PROOF_SENT_TO_AUTHOR,
+            Episciences_Paper::STATUS_ALT_AWAITING_PUBLICATION,
+            Episciences_Paper::STATUS_ALT_AUTHOR_PROOF_APPROVED,
+        ]]]) === 0;
+    }
+
     public function isAlternativePipelineEnabled(): bool
     {
         return $this->isAlternativePipelineAvailable()
@@ -1226,7 +1238,8 @@ class Episciences_Review
         // display group : volume settings
         $form->addDisplayGroup([
             self::SETTING_DISPLAY_EMPTY_VOLUMES,
-            self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES
+            self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
+            self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE
         ], 'volumes', ["legend" => "Paramètres des volumes"]);
         $form->getDisplayGroup('volumes')->removeDecorator('DtDdWrapper');
 
@@ -1761,6 +1774,13 @@ class Episciences_Review
         $form->addElement('checkbox', self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, [
                 'label' => $translator->translate("Autoriser la modification du titre du volume avec des articles publiés"),
                 'description' => $translator->translate("Si activé, le titre d'un volume pourra être modifié même s'il contient des articles publiés"),
+                'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
+                'decorators' => $checkboxDecorators]
+        );
+
+        $form->addElement('checkbox', self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE, [
+                'label' => $translator->translate("Afficher les volumes secondaires sur la page publique de l'article"),
+                'description' => $translator->translate("Si activé, les volumes secondaires seront visibles sur la page publique de l'article"),
                 'options' => ['uncheckedValue' => 0, 'checkedValue' => 1],
                 'decorators' => $checkboxDecorators]
         );

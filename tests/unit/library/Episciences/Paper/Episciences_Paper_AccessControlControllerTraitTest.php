@@ -406,6 +406,11 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
             Episciences_Review::SETTING_EDITORS_CAN_PUBLISH_PAPERS,
             "Vous n'avez pas les droits suffisants pour publier cet article",
         ];
+        yield 'altpublish' => [
+            'altpublish',
+            Episciences_Review::SETTING_EDITORS_CAN_PUBLISH_PAPERS,
+            "Vous n'avez pas les droits suffisants pour publier cet article",
+        ];
         yield 'refuse' => [
             'refuse',
             Episciences_Review::SETTING_EDITORS_CAN_REJECT_PAPERS,
@@ -418,10 +423,11 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         ];
     }
 
-    public function testPublishIsAllowedForTheCopyEditorOfAnAuthorApprovedPaper(): void
+    /** @dataProvider publicationActions */
+    public function testPublishIsAllowedForTheCopyEditorOfAnAuthorApprovedPaper(string $action): void
     {
         $this->loginUser(42, [Episciences_Acl::ROLE_COPY_EDITOR]);
-        $this->harness->setActionName('publish');
+        $this->harness->setActionName($action);
 
         $allowed = $this->harness->callCheckPermissions(
             $this->createReview([Episciences_Review::SETTING_EDITORS_CAN_PUBLISH_PAPERS => 0]),
@@ -432,10 +438,11 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
         self::assertNull($this->harness->_helper->redirectedTo);
     }
 
-    public function testPublishIsDeniedForTheCopyEditorWhenThePaperIsNotAuthorApproved(): void
+    /** @dataProvider publicationActions */
+    public function testPublishIsDeniedForTheCopyEditorWhenThePaperIsNotAuthorApproved(string $action): void
     {
         $this->loginUser(42, [Episciences_Acl::ROLE_COPY_EDITOR]);
-        $this->harness->setActionName('publish');
+        $this->harness->setActionName($action);
 
         $allowed = $this->harness->callCheckPermissions(
             $this->createReview([Episciences_Review::SETTING_EDITORS_CAN_PUBLISH_PAPERS => 0]),
@@ -447,6 +454,12 @@ final class Episciences_Paper_AccessControlControllerTraitTest extends TestCase
             ["Vous n'avez pas les droits suffisants pour publier cet article"],
             $this->harness->_helper->messages
         );
+    }
+
+    public static function publicationActions(): iterable
+    {
+        yield 'classic' => ['publish'];
+        yield 'alternative' => ['altpublish'];
     }
 
     public function testNonDecisionActionIsNotRestrictedByDecisionSettings(): void
