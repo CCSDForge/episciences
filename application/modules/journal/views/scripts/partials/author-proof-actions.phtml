@@ -1,0 +1,15 @@
+<?php if (isset($this->approveForm) || isset($this->rejectForm)): ?>
+    <div class="btn-group">
+        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+            <?= $this->translate($this->label) ?> <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu" role="menu">
+            <?php if (isset($this->approveForm)): ?>
+                <li><a href="#" data-toggle="modal" data-target=".alt-author-approve-proof-modal"><?= $this->translate('Approuver') ?></a></li>
+            <?php endif; ?>
+            <?php if (isset($this->rejectForm)): ?>
+                <li><a href="#" data-toggle="modal" data-target=".alt-author-reject-proof-modal"><?= $this->translate('Refuser') ?></a></li>
+            <?php endif; ?>
+        </ul>
+    </div>
+<?php endif; ?>

@@ -67,7 +67,7 @@ load-dev-db: wait-for-db ## Load development SQL datasets (src/mysql/docker/...)
 		$(DOCKER) exec -i episciences-db-episciences mysql -u root -p$(DB_PASS) -h localhost episciences < $(DEV_SQL_EPISCIENCES) && \
 		echo "Loading $(DEV_SQL_AUTH)..." && \
 		$(DOCKER) exec -i episciences-db-auth mysql -u root -p$(DB_PASS) -h localhost cas_users < $(DEV_SQL_AUTH) && \
-		echo "Development databases reset and loaded successfully!" \
+		echo "Development databases reset and loaded successfully!"; \
 	else \
 		echo "Skipping database re-import."; \
 	fi

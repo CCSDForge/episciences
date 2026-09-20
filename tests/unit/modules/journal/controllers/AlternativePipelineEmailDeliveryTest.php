@@ -4,61 +4,59 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
+require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultController.php';
+
 final class AlternativePipelineEmailDeliveryTest extends TestCase
 {
-    private string $projectRoot;
-
-    protected function setUp(): void
+    /** @dataProvider deliveryResults */
+    public function testMailIsLoggedOnlyAfterSuccessfulDelivery(bool $sent): void
     {
-        $this->projectRoot = dirname(__DIR__, 5);
+        $mail = $this->createMock(Episciences_Mail::class);
+        $mail->method('setTo')->willReturn(true);
+        $mail->method('writeMail')->willReturn($sent);
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->expects($sent ? self::once() : self::never())->method('log');
+        $controller = $this->getMockBuilder(PaperDefaultController::class)->disableOriginalConstructor()
+            ->onlyMethods(['createModalMail'])->getMock();
+        $controller->method('createModalMail')->willReturn($mail);
+        $method = new ReflectionMethod(PaperDefaultController::class, 'sendMailFromModal');
+        $method->setAccessible(true);
+        self::assertSame($sent, $method->invoke($controller, $this->createMock(Episciences_User::class), $paper, 'Subject', 'Body', []));
     }
 
-    public function testFinalVersionSubmissionNotifiesAuthorAndLayoutEditor(): void
+    public static function deliveryResults(): iterable
     {
-        $source = file_get_contents(
-            $this->projectRoot . '/application/modules/journal/controllers/PaperController.php'
-        );
-
-        self::assertStringContainsString('notifyAltFinalVersionSubmitted($paper, $post)', $source);
-        self::assertStringContainsString('TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_AUTHOR_COPY', $source);
-        self::assertStringContainsString('TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_EDITOR_COPY', $source);
+        yield 'success' => [true];
+        yield 'failure' => [false];
     }
 
-    public function testStartLayoutEditingTargetsTheAuthor(): void
+    public function testMissingTemplateDoesNotSendOrLogAnEmptyMail(): void
     {
-        $source = file_get_contents(
-            $this->projectRoot . '/application/modules/journal/controllers/AdministratepaperController.php'
-        );
-        $start = strpos($source, 'public function altstartlayouteditingAction');
-        $request = strpos($source, 'public function altrequestfinalversionAction');
-        $method = substr($source, $start, $request - $start);
-
-        self::assertStringContainsString("'author'", $method);
-        self::assertStringNotContainsString("'copyEditors'", $method);
-    }
-
-    public function testProofResponsesUseTheSharedManagerRecipientResolver(): void
-    {
-        $source = file_get_contents(
-            $this->projectRoot . '/application/modules/journal/controllers/PaperController.php'
-        );
-
-        self::assertStringContainsString(
-            'Episciences_PapersManager::getAlternativePipelineManagerRecipients($paper)',
-            $source
-        );
-    }
-
-    public function testFailedMailIsNotLoggedAsSent(): void
-    {
-        $source = file_get_contents(
-            $this->projectRoot . '/application/modules/common/controllers/PaperDefaultController.php'
-        );
-        $write = strpos($source, 'if (!$mail->writeMail())');
-        $log = strpos($source, 'Episciences_Paper_Logger::CODE_MAIL_SENT', $write);
-
-        self::assertNotFalse($write);
-        self::assertNotFalse($log);
-        self::assertStringContainsString('return false;', substr($source, $write, $log - $write));
+        $mail = $this->createMock(Episciences_Mail::class);
+        $mail->method('setTo')->willReturn(true);
+        $mail->expects(self::never())->method('writeMail');
+        $template = $this->createMock(Episciences_Mail_Template::class);
+        $template->method('findByKey')->with('missing-template')->willReturn(false);
+        $template->expects(self::never())->method('loadTranslations');
+        $paper = $this->createMock(Episciences_Paper::class);
+        $paper->expects(self::never())->method('log');
+        $controller = $this->getMockBuilder(PaperDefaultController::class)->disableOriginalConstructor()
+            ->onlyMethods(['createModalMail', 'createModalMailTemplate'])->getMock();
+        $controller->method('createModalMail')->willReturn($mail);
+        $controller->method('createModalMailTemplate')->willReturn($template);
+        $method = new ReflectionMethod(PaperDefaultController::class, 'sendMailFromModal');
+        $method->setAccessible(true);
+        $warnings = [];
+        set_error_handler(static function ($level, $message) use (&$warnings) {
+            $warnings[] = $message;
+            return true;
+        }, E_USER_NOTICE);
+        try {
+            self::assertFalse($method->invoke($controller, $this->createMock(Episciences_User::class), $paper, '', '', [], [], 'missing-template'));
+            self::assertCount(1, $warnings);
+            self::assertStringContainsString('mail not sent', $warnings[0]);
+        } finally {
+            restore_error_handler();
+        }
     }
 }

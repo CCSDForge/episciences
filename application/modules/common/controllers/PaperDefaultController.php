@@ -139,7 +139,7 @@ class PaperDefaultController extends DefaultController
     protected function sendMailFromModal(Episciences_User $submitter, Episciences_Paper $paper, string $subject, string $message, array $data, array $tags = [], ?string $templateKey = null): bool
     {
 
-        $mail = new Episciences_Mail('UTF-8');
+        $mail = $this->createModalMail();
         $mail->setDocid($paper->getDocid());
 
         foreach ($tags as $tag => $value) {
@@ -153,11 +153,12 @@ class PaperDefaultController extends DefaultController
         }
 
         if ($templateKey !== null) {
-            $template = new Episciences_Mail_Template();
+            $template = $this->createModalMailTemplate();
             $template->setRvcode(RVCODE);
 
             if (!$template->findByKey($templateKey)) {
-                trigger_error(sprintf('Template key [%s] was not found in [MAIL_TEMPLATE]: Empty mail sent to: [%s<%s>]', $templateKey, $submitter->getScreenName(), $submitter->getEmail()));
+                trigger_error(sprintf('Template key [%s] was not found in [MAIL_TEMPLATE]: mail not sent.', $templateKey));
+                return false;
             }
 
             $template->loadTranslations(null, RVCODE);
@@ -194,6 +195,16 @@ class PaperDefaultController extends DefaultController
             ['id' => $mail->getId(), 'mail' => $mail->toArray()]);
 
         return true;
+    }
+
+    protected function createModalMail(): Episciences_Mail
+    {
+        return new Episciences_Mail('UTF-8');
+    }
+
+    protected function createModalMailTemplate(): Episciences_Mail_Template
+    {
+        return new Episciences_Mail_Template();
     }
 
     /**

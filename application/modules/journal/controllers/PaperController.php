@@ -303,9 +303,13 @@ class PaperController extends PaperDefaultController
             $displayPaperPasswordBloc = true;
         }
 
+        $this->view->paperPassword = '';
+        $this->view->paperPasswordDecryptionFailed = false;
         if ($displayPaperPasswordBloc) {
             $plainPaperPassword = $this->getPlainPaperPassword($paper);
             $this->view->paperPassword = $plainPaperPassword;
+            $this->view->paperPasswordDecryptionFailed =
+                !$paper->isOwner() && !empty($paper->getPassword()) && $plainPaperPassword === '';
         }
 
 
@@ -1474,7 +1478,12 @@ class PaperController extends PaperDefaultController
 
         $requestedVersion = (int)$version;
         if ($requestedVersion > $currentVersion) {
-            $newPaper = $this->createAltFinalVersionPaper($paper, $requestedVersion, $password);
+            try {
+                $newPaper = $this->createAltFinalVersionPaper($paper, $requestedVersion, $password);
+            } catch (DomainException $e) {
+                $this->redirectAltFinalVersionDepositWithError($paper, $post, $e->getMessage());
+                return;
+            }
             if (!$newPaper instanceof Episciences_Paper) {
                 $this->redirectAltFinalVersionDepositWithError(
                     $paper,
@@ -1595,7 +1604,7 @@ class PaperController extends PaperDefaultController
         $this->_helper->redirector->gotoUrl('/paper/finalversiondeposit/id/' . $paper->getDocid());
     }
 
-    private function createAltFinalVersionPaper(
+    protected function createAltFinalVersionPaper(
         Episciences_Paper $paper,
         int $requestedVersion,
         string $password
@@ -1634,7 +1643,7 @@ class PaperController extends PaperDefaultController
         }
 
         if ($newPaper->alreadyExists()) {
-            return null;
+            throw new DomainException("Cette version arXiv a déjà été déposée dans la revue. Consultez le dépôt existant ou choisissez une autre version.");
         }
 
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
@@ -1851,7 +1860,7 @@ class PaperController extends PaperDefaultController
      * the viewer must be its author or an assigned/authorized manager, and the
      * status must be the alt-pipeline wait-state.
      */
-    private function loadAltFinalVersionDepositPaperOrRedirect(): ?Episciences_Paper
+    protected function loadAltFinalVersionDepositPaperOrRedirect(): ?Episciences_Paper
     {
         $docId = (int)$this->getRequest()->getParam('id');
         $paper = Episciences_PapersManager::get($docId);

@@ -2349,6 +2349,8 @@ class Episciences_PapersManager
             'class' => 'autocomplete'
         ]);
 
+        self::addMailModalCcBccWithTags($form, $formId, $existingMails, '');
+
         $form->addElement('text', 'from', [
             'id' => $formId . '-from',
             'label' => 'De',

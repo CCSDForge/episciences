@@ -146,6 +146,7 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
         $paperStatus[36] = '#1E7FCB'; // alt: layout editing in progress
         $paperStatus[37] = '#ca6d00'; // alt: proof sent to author
         $paperStatus[38] = '#689D71'; // alt: awaiting publication
+        $paperStatus[39] = '#175732'; // alt: author proof approved
 
         return $paperStatus;
     }

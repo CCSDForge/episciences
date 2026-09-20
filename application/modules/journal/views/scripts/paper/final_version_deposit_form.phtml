@@ -65,6 +65,8 @@ foreach ($selfElement->getElements() as $element) {
         </div>
     </div>
 
+    <p class="help-block"><?= $this->translate("Lors du dépôt d'une nouvelle version arXiv, les relecteurs ne sont pas réaffectés automatiquement. Leurs rapports restent consultables sur la version précédente.") ?></p>
+
     <div class="form-actions text-center">
         <a class="btn btn-default" href="/paper/view?id=<?= $docId ?>"><?= $this->translate('Annuler') ?></a>
         <?= $submitElement ?>

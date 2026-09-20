@@ -6,56 +6,23 @@ use PHPUnit\Framework\TestCase;
 
 final class AlternativePipelineConfigurationTest extends TestCase
 {
-    private string $projectRoot;
-
-    protected function setUp(): void
+    /** @dataProvider configurations */
+    public function testAvailabilityAndActivation(array $repositories, int $setting, bool $available, bool $enabled): void
     {
-        $this->projectRoot = dirname(__DIR__, 5);
+        $review = $this->getMockBuilder(Episciences_Review::class)->onlyMethods(['loadSettings'])->getMock();
+        $review->setSetting(Episciences_Review::SETTING_REPOSITORIES, $repositories);
+        $review->setSetting(Episciences_Review::SETTING_ALTERNATIVE_PIPELINE, $setting);
+        self::assertSame($available, $review->isAlternativePipelineAvailable());
+        self::assertSame($enabled, $review->isAlternativePipelineEnabled());
     }
 
-    public function testPipelineRequiresArxivAsTheOnlyRepository(): void
+    public static function configurations(): iterable
     {
-        $reviewSource = file_get_contents($this->projectRoot . '/library/Episciences/Review.php');
-
-        self::assertStringContainsString('public function isAlternativePipelineAvailable(): bool', $reviewSource);
-        self::assertStringContainsString('count($repositories) === 1', $reviewSource);
-        self::assertStringContainsString('Episciences_Repositories::ARXIV_REPO_ID', $reviewSource);
-        self::assertStringNotContainsString("'disabled' => !\$this->isAlternativePipelineAvailable()", $reviewSource);
-    }
-
-    public function testPostedSettingsCannotEnablePipelineForOtherRepositorySelections(): void
-    {
-        $controllerSource = file_get_contents(
-            $this->projectRoot . '/application/modules/journal/controllers/ReviewController.php'
-        );
-
-        self::assertStringContainsString('count($selectedRepositories) !== 1', $controllerSource);
-        self::assertStringContainsString(
-            '$reviewSettingsToSave[Episciences_Review::SETTING_ALTERNATIVE_PIPELINE] = \'0\';',
-            $controllerSource
-        );
-    }
-
-    public function testRuntimeEntryPointsUseTheEligibilityAwareGuard(): void
-    {
-        foreach ([
-            '/application/modules/journal/controllers/AdministratepaperController.php',
-            '/application/modules/journal/controllers/PaperController.php',
-            '/application/modules/journal/views/scripts/paper/view.phtml',
-            '/application/modules/journal/views/scripts/partials/paper_status_button.phtml',
-        ] as $relativePath) {
-            $source = file_get_contents($this->projectRoot . $relativePath);
-            self::assertStringContainsString('isAlternativePipelineEnabled()', $source, $relativePath);
-        }
-    }
-
-    public function testProofInstructionsPointAuthorsToTheApprovalRequestEmail(): void
-    {
-        $viewSource = file_get_contents(
-            $this->projectRoot . '/application/modules/journal/views/scripts/paper/view.phtml'
-        );
-
-        self::assertStringContainsString("lien figurant dans le courriel de demande d'approbation", $viewSource);
-        self::assertStringContainsString("consulter l'épreuve", $viewSource);
+        yield 'enabled' => [[Episciences_Repositories::ARXIV_REPO_ID], 1, true, true];
+        yield 'disabled' => [[Episciences_Repositories::ARXIV_REPO_ID], 0, true, false];
+        yield 'no repositories' => [[], 1, false, false];
+        yield 'other repository' => [[999], 1, false, false];
+        yield 'multiple repositories' => [[Episciences_Repositories::ARXIV_REPO_ID, 999], 1, false, false];
+        yield 'duplicate ids' => [[Episciences_Repositories::ARXIV_REPO_ID, (int)Episciences_Repositories::ARXIV_REPO_ID], 1, true, true];
     }
 }

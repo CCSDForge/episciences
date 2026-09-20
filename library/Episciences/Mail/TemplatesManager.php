@@ -1645,6 +1645,51 @@ class Episciences_Mail_TemplatesManager
     ];
 
     public const TEMPLATE_DESCRIPTION_AND_RECIPIENT = [
+        self::TYPE_PAPER_ALT_REQUEST_FINAL_VERSION_AUTHOR_COPY => [
+            self::DESCRIPTION => "pipeline alternatif : demande de la version finale et du mot de passe arXiv",
+            self::RECIPIENT => self::AUTHOR_RECEP_EXP,
+        ],
+        self::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_AUTHOR_COPY => [
+            self::DESCRIPTION => "pipeline alternatif : confirmation du dépôt de la version finale et du mot de passe arXiv",
+            self::RECIPIENT => self::AUTHOR_RECEP_EXP,
+        ],
+        self::TYPE_PAPER_ALT_FINAL_VERSION_DEPOSIT_EDITOR_COPY => [
+            self::DESCRIPTION => "pipeline alternatif : notification du dépôt de la version finale et du mot de passe arXiv",
+            self::RECIPIENT => self::MANAGERS_RECEP_EXP,
+        ],
+        self::TYPE_PAPER_ALT_START_LAYOUT_EDITING_AUTHOR_COPY => [
+            self::DESCRIPTION => "pipeline alternatif : notification du début de la mise en page",
+            self::RECIPIENT => self::AUTHOR_RECEP_EXP,
+        ],
+        self::TYPE_PAPER_ALT_INCORRECT_PASSWORD_AUTHOR_COPY => [
+            self::DESCRIPTION => "pipeline alternatif : demande de correction du mot de passe arXiv",
+            self::RECIPIENT => self::AUTHOR_RECEP_EXP,
+        ],
+        self::TYPE_PAPER_ALT_INCORRECT_LATEX_AUTHOR_COPY => [
+            self::DESCRIPTION => "pipeline alternatif : demande de correction des sources LaTeX",
+            self::RECIPIENT => self::AUTHOR_RECEP_EXP,
+        ],
+        self::TYPE_PAPER_ALT_SEND_PROOF_TO_AUTHOR_AUTHOR_COPY => [
+            self::DESCRIPTION => "pipeline alternatif : envoi de l'épreuve à l'auteur pour validation",
+            self::RECIPIENT => self::AUTHOR_RECEP_EXP,
+        ],
+        self::TYPE_PAPER_ALT_RETURN_TO_LAYOUT_EDITING_COPYEDITOR_COPY => [
+            self::DESCRIPTION => "pipeline alternatif : retour de l'épreuve en mise en page",
+            self::RECIPIENT => self::MANAGERS_RECEP_EXP,
+        ],
+        self::TYPE_PAPER_ALT_AUTHOR_APPROVED_PROOF_EDITOR_COPY => [
+            self::DESCRIPTION => "pipeline alternatif : notification de l'approbation de l'épreuve par l'auteur",
+            self::RECIPIENT => self::MANAGERS_RECEP_EXP,
+        ],
+        self::TYPE_PAPER_ALT_AUTHOR_REJECTED_PROOF_EDITOR_COPY => [
+            self::DESCRIPTION => "pipeline alternatif : notification des corrections de l'épreuve demandées par l'auteur",
+            self::RECIPIENT => self::MANAGERS_RECEP_EXP,
+        ],
+        self::TYPE_PAPER_ALT_APPROVE_FOR_PUBLICATION_AUTHOR_COPY => [
+            self::DESCRIPTION => "pipeline alternatif : confirmation de l'approbation de l'épreuve pour publication",
+            self::RECIPIENT => self::AUTHOR_RECEP_EXP,
+        ],
+
         self::TYPE_USER_REGISTRATION => [self::DESCRIPTION => "confirmation et de validation d'un nouveau compte", self::RECIPIENT => "l'utilisateur qui vient de se créer un compte"],
         self::TYPE_USER_LOST_PASSWORD => [self::DESCRIPTION => 'réinitialisation de mot de passe', self::RECIPIENT => "l'utilisateur qui a oublié son mot de passe"],
         self::TYPE_USER_LOST_LOGIN => [self::DESCRIPTION => "rappel de l'identifiant de connexion", self::RECIPIENT => "l'utilisateur qui a oublié ses identifiants"],

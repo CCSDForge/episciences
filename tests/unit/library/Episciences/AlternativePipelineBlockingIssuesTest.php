@@ -60,6 +60,9 @@ final class AlternativePipelineBlockingIssuesTest extends TestCase
         $html = $view->render('partials/paper_status_button.phtml');
         preg_match_all('/data-target="(\.alt-[^"]+)"/', $html, $matches);
         self::assertSame($targets, $matches[1]);
+        if (!$targets) {
+            self::assertStringNotContainsString('status-menu', $html);
+        }
         foreach ($targets as $target) {
             if ($role === Episciences_Acl::ROLE_COPY_EDITOR) {
                 self::assertStringContainsString('class="' . substr($target, 1) . '"', $html);
@@ -69,6 +72,8 @@ final class AlternativePipelineBlockingIssuesTest extends TestCase
 
     public static function menuCases(): iterable
     {
+        yield 'secretary, waiting for author' => ['secretary', 34, true, true, []];
+        yield 'editor, waiting for proof approval' => ['editor', 37, true, true, []];
         yield 'editor, disabled pipeline' => ['editor', 35, false, true, []];
         yield 'editor, disabled publication' => ['editor', 38, true, false, []];
         yield 'editor, publication' => ['editor', 38, true, true, ['.alt-publish-modal']];

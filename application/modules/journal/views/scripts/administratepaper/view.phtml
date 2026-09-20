@@ -102,15 +102,11 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
                                 <i class="fas fa-hourglass-half" style="color:chocolate"></i>
                                 <?= $this->translate($info) ?>
                                 <div style="margin-top: 10px;">
-                                    <div class="btn-group">
-                                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-                                            <?= $this->translate("Répondre au nom de l'auteur") ?> <span class="caret"></span>
-                                        </button>
-                                        <ul class="dropdown-menu" role="menu">
-                                            <li><a href="#" data-toggle="modal" data-target=".alt-author-approve-proof-modal"><?= $this->translate('Approuver') ?></a></li>
-                                            <li><a href="#" data-toggle="modal" data-target=".alt-author-reject-proof-modal"><?= $this->translate('Refuser') ?></a></li>
-                                        </ul>
-                                    </div>
+                                    <?= $this->partial('partials/author-proof-actions.phtml', [
+                                'approveForm' => $this->altAuthorApproveProofForm,
+                                'rejectForm' => $this->altAuthorRejectProofForm,
+                                'label' => "Répondre au nom de l'auteur",
+                            ]) ?>
                                 </div>
                             </div>
                             <?php if (isset($this->altAuthorApproveProofForm)): ?>

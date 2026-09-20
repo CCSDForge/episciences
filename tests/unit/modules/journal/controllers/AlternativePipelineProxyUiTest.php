@@ -2,21 +2,33 @@
 
 declare(strict_types=1);
 
-namespace unit\modules\journal\controllers;
-
 use PHPUnit\Framework\TestCase;
 
 final class AlternativePipelineProxyUiTest extends TestCase
 {
-    public function testManagementPageOffersBothProxyWorkflows(): void
+    /** @dataProvider availableForms */
+    public function testActionsOnlyExistForAvailableForms(bool $approve, bool $reject): void
     {
-        $source = (string)file_get_contents(
-            APPLICATION_PATH . '/modules/journal/views/scripts/administratepaper/view.phtml'
-        );
+        $view = new Zend_View();
+        $view->setScriptPath(APPLICATION_PATH . '/modules/journal/views/scripts');
+        $view->label = "Répondre au nom de l'auteur";
+        if ($approve) {
+            $view->approveForm = new Zend_Form();
+        }
+        if ($reject) {
+            $view->rejectForm = new Zend_Form();
+        }
+        $html = $view->render('partials/author-proof-actions.phtml');
+        self::assertSame($approve, str_contains($html, 'data-target=".alt-author-approve-proof-modal"'));
+        self::assertSame($reject, str_contains($html, 'data-target=".alt-author-reject-proof-modal"'));
+        self::assertSame($approve || $reject, str_contains($html, '<button'));
+    }
 
-        self::assertStringContainsString('/paper/finalversiondeposit/id/', $source);
-        self::assertStringContainsString('alt-author-approve-proof-modal', $source);
-        self::assertStringContainsString('alt-author-reject-proof-modal', $source);
-        self::assertStringNotContainsString('class="btn-group" style="margin-top: 10px; display: block;"', $source);
+    public static function availableForms(): iterable
+    {
+        yield [false, false];
+        yield [true, false];
+        yield [false, true];
+        yield [true, true];
     }
 }

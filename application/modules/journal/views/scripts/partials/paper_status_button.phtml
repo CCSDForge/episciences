@@ -61,6 +61,20 @@ if (array_key_exists(Episciences_Auth::getUid(), $assignedCopyEditors)) {
 }
 
 
+$showStatusMenu = true;
+if ($paper->isAlternativePipelineStatus()) {
+    $isManager = Episciences_Auth::isAllowedToManagePaper();
+    $showStatusMenu = $isAltPipelineOn && (
+        $paper->isAltFinalVersionSubmitted() || $paper->isLayoutEditingInProgress() ||
+        ($isManager && $paper->isAltAuthorProofApproved()) ||
+        ($isManager && $paper->isAltAwaitingPublication() &&
+            (Episciences_Auth::isSecretary() || $this->review->getSetting('editorsCanPublishPapers')))
+    );
+} elseif ($isAltPipelineOn && $paper->isAccepted() && !Episciences_Auth::isAllowedToManagePaper()) {
+    $showStatusMenu = false;
+}
+
+if ($showStatusMenu) :
 // **** CHIEF EDITORS, administrator and secretary (git #235) : can do whatever they want *****************************
 if (Episciences_Auth::isSecretary()) : ?>
     <div class="btn-group">
@@ -72,20 +86,20 @@ if (Episciences_Auth::isSecretary()) : ?>
                 <?php if ($paper->isAccepted()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".alt-request-final-version-modal"><?= $this->translate('Request final version + password') ?></a>
+                           data-target=".alt-request-final-version-modal"><?= $this->translate("Demander la version finale et le mot de passe arXiv") ?></a>
                     </li>
                 <?php elseif ($paper->isAltFinalVersionSubmitted()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".alt-start-layout-editing-modal"><?= $this->translate('Start layout editing') ?></a>
+                           data-target=".alt-start-layout-editing-modal"><?= $this->translate("Démarrer la mise en page") ?></a>
                     </li>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".alt-incorrect-password-modal"><?= $this->translate('Incorrect password') ?></a>
+                           data-target=".alt-incorrect-password-modal"><?= $this->translate("Mot de passe incorrect") ?></a>
                     </li>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".alt-incorrect-latex-modal"><?= $this->translate('Incorrect LaTeX') ?></a>
+                           data-target=".alt-incorrect-latex-modal"><?= $this->translate("Sources LaTeX incorrectes") ?></a>
                     </li>
                 <?php elseif ($paper->isLayoutEditingInProgress()) : ?>
                     <li>
@@ -100,7 +114,7 @@ if (Episciences_Auth::isSecretary()) : ?>
                 <?php elseif ($paper->isAltAwaitingPublication()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".alt-publish-modal"><?= $this->translate('Publish') ?></a>
+                           data-target=".alt-publish-modal"><?= $this->translate("Publier l'article") ?></a>
                     </li>
                 <?php endif; ?>
             <?php endif; ?>
@@ -303,15 +317,15 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?php if ($paper->isAltFinalVersionSubmitted()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".alt-start-layout-editing-modal"><?= $this->translate('Start layout editing') ?></a>
+                           data-target=".alt-start-layout-editing-modal"><?= $this->translate("Démarrer la mise en page") ?></a>
                     </li>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".alt-incorrect-password-modal"><?= $this->translate('Incorrect password') ?></a>
+                           data-target=".alt-incorrect-password-modal"><?= $this->translate("Mot de passe incorrect") ?></a>
                     </li>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".alt-incorrect-latex-modal"><?= $this->translate('Incorrect LaTeX') ?></a>
+                           data-target=".alt-incorrect-latex-modal"><?= $this->translate("Sources LaTeX incorrectes") ?></a>
                     </li>
                 <?php elseif ($paper->isLayoutEditingInProgress()) : ?>
                     <li>
@@ -326,7 +340,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?php elseif ($paper->isAltAwaitingPublication() && $this->review->getSetting('editorsCanPublishPapers')) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".alt-publish-modal"><?= $this->translate('Publish') ?></a>
+                           data-target=".alt-publish-modal"><?= $this->translate("Publier l'article") ?></a>
                     </li>
                 <?php endif; ?>
             <?php endif; ?>
@@ -510,7 +524,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
             <?php if ($isAltPipelineOn && $paper->isAccepted()): ?>
                 <li>
                     <a href="#" data-toggle="modal"
-                       data-target=".alt-request-final-version-modal"><?= $this->translate('Request final version + password') ?></a>
+                       data-target=".alt-request-final-version-modal"><?= $this->translate("Demander la version finale et le mot de passe arXiv") ?></a>
                 </li>
             <?php endif; ?>
 
@@ -528,7 +542,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
                 <?php if ($paper->isAltFinalVersionSubmitted()) : ?>
                     <li>
                         <a href="#" data-toggle="modal"
-                           data-target=".alt-start-layout-editing-modal"><?= $this->translate('Start layout editing') ?></a>
+                           data-target=".alt-start-layout-editing-modal"><?= $this->translate("Démarrer la mise en page") ?></a>
                     </li>
                 <?php else : ?>
                     <li>
@@ -677,6 +691,8 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
 
 <?php endif ?>
 
+<?php endif; ?>
+
 <?php // ******* MODALS (FORMS) ***************** ?>
 <?php if (Episciences_Auth::isAllowedToManagePaper()) : ?>
     <?php // *** publication form ************ ?>
@@ -755,7 +771,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
         <?=
         $this->partial('partials/paper-status-modal.phtml', [
             'target' => 'alt-request-final-version-modal',
-            'title' => 'Request final version + password',
+            'title' => "Demander la version finale et le mot de passe arXiv",
             'body' => $this->altRequestFinalVersionForm
         ]) ?>
     <?php endif; ?>
@@ -771,7 +787,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
         <?=
         $this->partial('partials/paper-status-modal.phtml', [
             'target' => 'alt-start-layout-editing-modal',
-            'title' => "Start layout editing",
+            'title' => "Démarrer la mise en page",
             'body' => $this->altStartLayoutEditingForm
         ]) ?>
     <?php endif; ?>
@@ -779,7 +795,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
         <?=
         $this->partial('partials/paper-status-modal.phtml', [
             'target' => 'alt-incorrect-password-modal',
-            'title' => "Incorrect password",
+            'title' => "Mot de passe incorrect",
             'body' => $this->altIncorrectPasswordForm
         ]) ?>
     <?php endif; ?>
@@ -787,7 +803,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
         <?=
         $this->partial('partials/paper-status-modal.phtml', [
             'target' => 'alt-incorrect-latex-modal',
-            'title' => "Incorrect LaTeX",
+            'title' => "Sources LaTeX incorrectes",
             'body' => $this->altIncorrectLatexForm
         ]) ?>
     <?php endif; ?>
@@ -811,7 +827,7 @@ elseif (Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor()) : ?>
         <?=
         $this->partial('partials/paper-status-modal.phtml', [
             'target' => 'alt-publish-modal',
-            'title' => "Publish",
+            'title' => "Publier l'article",
             'body' => $this->altPublishForm
         ]) ?>
     <?php endif; ?>

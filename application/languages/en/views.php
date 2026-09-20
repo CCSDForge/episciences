@@ -1,6 +1,13 @@
 <?php
 
 return array(
+    "Demander la version finale et le mot de passe arXiv" => "Request final version and arXiv paper password",
+    "Démarrer la mise en page" => "Start layout editing",
+    "Mot de passe incorrect" => "Incorrect password",
+    "Sources LaTeX incorrectes" => "Incorrect LaTeX sources",
+    "Lors du dépôt d'une nouvelle version arXiv, les relecteurs ne sont pas réaffectés automatiquement. Leurs rapports restent consultables sur la version précédente." => "When submitting a new arXiv version, reviewers are not automatically reassigned. Their reports remain available on the previous version.",
+    "Cette version arXiv a déjà été déposée dans la revue. Consultez le dépôt existant ou choisissez une autre version." => "This arXiv version has already been submitted to the journal. View the existing submission or choose another version.",
+
     "Impossible de désactiver le pipeline éditorial alternatif ou de modifier les archives autorisées tant que des articles sont en cours dans ce pipeline. Terminez leur publication avant de modifier ces paramètres." => "The alternative editorial pipeline cannot be disabled and the allowed repositories cannot be changed while articles are still in this pipeline. Finish publishing them before changing these settings.",
 
     // Termes génériques
