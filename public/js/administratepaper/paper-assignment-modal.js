@@ -19,9 +19,7 @@ let _callToken = 0;
 function _el(tag, attrs, text) {
     var node = document.createElement(tag);
     if (attrs) {
-        Object.keys(attrs).forEach(function (k) {
-            node.setAttribute(k, attrs[k]);
-        });
+        Object.keys(attrs).forEach(function (k) { node.setAttribute(k, attrs[k]); });
     }
     if (text !== undefined) node.textContent = text;
     return node;
@@ -35,22 +33,11 @@ function _el(tag, attrs, text) {
 function _ensureDialog() {
     if (_dialog) return _dialog;
 
-    _dialog = _el('dialog', {
-        class: 'paper-modal',
-        'aria-modal': 'true',
-        'aria-labelledby': 'paper-modal-title',
-    });
+    _dialog = _el('dialog', { class: 'paper-modal', 'aria-modal': 'true', 'aria-labelledby': 'paper-modal-title' });
 
     var header = _el('div', { class: 'paper-modal__header' });
-    var titleEl = _el('h2', {
-        class: 'paper-modal__title',
-        id: 'paper-modal-title',
-    });
-    var closeBtn = _el('button', {
-        type: 'button',
-        class: 'paper-modal__close',
-        'aria-label': translate('Fermer'),
-    });
+    var titleEl = _el('h2', { class: 'paper-modal__title', id: 'paper-modal-title' });
+    var closeBtn = _el('button', { type: 'button', class: 'paper-modal__close', 'aria-label': translate('Fermer') });
     closeBtn.appendChild(_el('span', { 'aria-hidden': 'true' }, '×'));
     header.appendChild(titleEl);
     header.appendChild(closeBtn);
@@ -58,16 +45,8 @@ function _ensureDialog() {
     var body = _el('div', { class: 'paper-modal__body' });
 
     var footer = _el('div', { class: 'paper-modal__footer' });
-    var cancelBtn = _el(
-        'button',
-        { type: 'button', class: 'btn btn-default paper-modal__cancel' },
-        translate('Annuler')
-    );
-    var saveBtn = _el(
-        'button',
-        { type: 'submit', class: 'btn btn-primary paper-modal__save' },
-        translate('Enregistrer')
-    );
+    var cancelBtn = _el('button', { type: 'button', class: 'btn btn-default paper-modal__cancel' }, translate('Annuler'));
+    var saveBtn = _el('button', { type: 'submit', class: 'btn btn-primary paper-modal__save' }, translate('Enregistrer'));
     footer.appendChild(cancelBtn);
     footer.appendChild(saveBtn);
 
@@ -88,13 +67,7 @@ function _ensureDialog() {
     _dialog.addEventListener('close', function () {
         _isOpen = false;
         _callToken++;
-        _activeTomSelects.forEach(function (ts) {
-            try {
-                ts.destroy();
-            } catch (e) {
-                /* ignore */
-            }
-        });
+        _activeTomSelects.forEach(function (ts) { try { ts.destroy(); } catch (e) { /* ignore */ } });
         _activeTomSelects = [];
     });
 
@@ -107,13 +80,7 @@ function _ensureDialog() {
 function _closeDialog() {
     _isOpen = false;
     _callToken++;
-    _activeTomSelects.forEach(function (ts) {
-        try {
-            ts.destroy();
-        } catch (e) {
-            /* ignore */
-        }
-    });
+    _activeTomSelects.forEach(function (ts) { try { ts.destroy(); } catch (e) { /* ignore */ } });
     _activeTomSelects = [];
     if (_dialog && _dialog.open) _dialog.close();
 }
@@ -143,8 +110,7 @@ function _showModal(title, bodyHtml, formId) {
 function _showLoading(title) {
     var dialog = _ensureDialog();
     dialog.querySelector('.paper-modal__title').textContent = title;
-    dialog.querySelector('.paper-modal__body').textContent =
-        translate('Chargement…');
+    dialog.querySelector('.paper-modal__body').textContent = translate('Chargement…');
     dialog.querySelector('.paper-modal__save').removeAttribute('form');
     if (!dialog.open) dialog.showModal();
 }
@@ -183,9 +149,7 @@ function _initTomSelectSingle(selectEl) {
         maxOptions: null,
         create: false,
         allowEmptyOption: true,
-        onItemAdd: function () {
-            this.setTextboxValue('');
-        },
+        onItemAdd: function () { this.setTextboxValue(''); },
     });
     selectEl.style.setProperty('display', 'none', 'important');
     ts.wrapper.classList.remove('form-control');
@@ -204,9 +168,7 @@ function _initTomSelectMulti(selectEl) {
         plugins: ['checkbox_options', 'dropdown_input', 'remove_button'],
         maxOptions: null,
         create: false,
-        onItemAdd: function () {
-            this.setTextboxValue('');
-        },
+        onItemAdd: function () { this.setTextboxValue(''); },
     });
     selectEl.style.setProperty('display', 'none', 'important');
     ts.wrapper.classList.remove('form-control');
@@ -245,9 +207,7 @@ function _initSectionAssignEditors() {
         } else {
             checkbox.disabled = true;
             checkbox.checked = false;
-            wrapper.title = translate(
-                "Cette rubrique n'a pas de rédacteurs assignés"
-            );
+            wrapper.title = translate("Cette rubrique n'a pas de rédacteurs assignés");
         }
     }
 
@@ -261,14 +221,12 @@ function _initSectionAssignEditors() {
 // ---------------------------------------------------------------------------
 
 function _refreshOtherVolumes(docid) {
-    _post(
-        '/administratepaper/refreshothervolumes',
-        new URLSearchParams({ docid: docid })
-    ).then(function (html) {
-        var container = document.getElementById('other_volumes_list_' + docid);
-        // Server-rendered list of volume names (escaped PHP output)
-        if (container) container.innerHTML = html;
-    });
+    _post('/administratepaper/refreshothervolumes', new URLSearchParams({ docid: docid }))
+        .then(function (html) {
+            var container = document.getElementById('other_volumes_list_' + docid);
+            // Server-rendered list of volume names (escaped PHP output)
+            if (container) container.innerHTML = html;
+        });
 }
 
 function _refreshPaperHistory(docid) {
@@ -276,26 +234,17 @@ function _refreshPaperHistory(docid) {
 }
 
 function _refreshMasterVolumesInList(docid, newVid, oldVid) {
-    _post(
-        '/administratepaper/refreshallmastervolumes',
-        new URLSearchParams({
-            docid: docid,
-            vid: newVid,
-            old_vid: oldVid,
-            from: 'list',
-        })
-    ).then(function (result) {
+    _post('/administratepaper/refreshallmastervolumes', new URLSearchParams({
+        docid: docid,
+        vid: newVid,
+        old_vid: oldVid,
+        from: 'list',
+    })).then(function (result) {
         if (!result) return;
         var parsed;
-        try {
-            parsed = JSON.parse(result);
-        } catch (e) {
-            return;
-        }
+        try { parsed = JSON.parse(result); } catch (e) { return; }
         Object.keys(parsed).forEach(function (idx) {
-            var container = document.getElementById(
-                'master_volume_name_' + idx
-            );
+            var container = document.getElementById('master_volume_name_' + idx);
             // Server-rendered volume name (escaped PHP output)
             if (container) container.innerHTML = parsed[idx]; // eslint-disable-line no-unsanitized/property
         });
@@ -303,33 +252,25 @@ function _refreshMasterVolumesInList(docid, newVid, oldVid) {
 }
 
 function _refreshMasterVolumeView(docid, newVid) {
-    _post(
-        '/administratepaper/refreshmastervolume',
-        new URLSearchParams({
-            docId: docid,
-            vid: newVid,
-            from: 'view',
-        })
-    ).then(function (html) {
+    _post('/administratepaper/refreshmastervolume', new URLSearchParams({
+        docId: docid,
+        vid: newVid,
+        from: 'view',
+    })).then(function (html) {
         var container = document.getElementById('master_volume_name_' + docid);
         // Server-rendered volume name + position (escaped PHP output)
         if (container) container.innerHTML = html; // eslint-disable-line no-unsanitized/property
         // Keep data-vid in sync so the next modal open passes the correct oldVid
-        var btn = document.querySelector(
-            '[data-modal="master-volume"][data-docid="' + docid + '"]'
-        );
+        var btn = document.querySelector('[data-modal="master-volume"][data-docid="' + docid + '"]');
         if (btn) btn.dataset.vid = newVid;
     });
 }
 
 function _refreshSectionBlock(docid, isPartial) {
-    _post(
-        '/administratepaper/displaysection',
-        new URLSearchParams({
-            docid: docid,
-            partial: isPartial ? '1' : '0',
-        })
-    ).then(function (html) {
+    _post('/administratepaper/displaysection', new URLSearchParams({
+        docid: docid,
+        partial: isPartial ? '1' : '0',
+    })).then(function (html) {
         var container = document.getElementById('section_block_' + docid);
         // Server-rendered section block (escaped PHP output)
         if (container) container.innerHTML = html; // eslint-disable-line no-unsanitized/property
@@ -337,13 +278,10 @@ function _refreshSectionBlock(docid, isPartial) {
 }
 
 function _refreshEditorsBlock(docid, isPartial) {
-    _post(
-        '/administratepaper/displayeditors',
-        new URLSearchParams({
-            docid: docid,
-            partial: isPartial ? '1' : '0',
-        })
-    ).then(function (html) {
+    _post('/administratepaper/displayeditors', new URLSearchParams({
+        docid: docid,
+        partial: isPartial ? '1' : '0',
+    })).then(function (html) {
         var container = document.getElementById('editors');
         // Server-rendered editors block (escaped PHP output)
         if (container) container.innerHTML = html;
@@ -370,10 +308,7 @@ function openVolumeModal(btn) {
 
     _showLoading(title);
 
-    _post(
-        '/administratepaper/volumeform',
-        new URLSearchParams({ docid: docid })
-    )
+    _post('/administratepaper/volumeform', new URLSearchParams({ docid: docid }))
         .then(function (html) {
             if (_callToken !== token) return;
             var formId = 'volume-form-' + docid;
@@ -393,15 +328,9 @@ function openVolumeModal(btn) {
                 var vidSelect = document.getElementById('master_volume_select');
                 var newVid = vidSelect ? vidSelect.value : '';
 
-                _post(
-                    '/administratepaper/savemastervolume',
-                    new URLSearchParams({ docid: docid, vid: newVid })
-                )
+                _post('/administratepaper/savemastervolume', new URLSearchParams({ docid: docid, vid: newVid }))
                     .then(function (result) {
-                        if (parseInt(result, 10) !== 1) {
-                            delete form.dataset.submitting;
-                            return;
-                        }
+                        if (parseInt(result, 10) !== 1) { delete form.dataset.submitting; return; }
                         _closeDialog();
                         if (isPartial) {
                             // Keep data-vid in sync so the next modal open has the correct oldVid
@@ -411,9 +340,7 @@ function openVolumeModal(btn) {
                             _refreshMasterVolumeView(docid, newVid);
                         }
                     })
-                    .catch(function () {
-                        delete form.dataset.submitting;
-                    });
+                    .catch(function () { delete form.dataset.submitting; });
             });
         })
         .catch(_closeDialog);
@@ -433,10 +360,7 @@ function openOtherVolumesModal(btn) {
 
     _showLoading(title);
 
-    _post(
-        '/administratepaper/othervolumesform',
-        new URLSearchParams({ docid: docid })
-    )
+    _post('/administratepaper/othervolumesform', new URLSearchParams({ docid: docid }))
         .then(function (html) {
             if (_callToken !== token) return;
             var formId = 'volumes-form-' + docid;
@@ -458,17 +382,12 @@ function openOtherVolumesModal(btn) {
 
                 _post('/administratepaper/saveothervolumes', data)
                     .then(function (result) {
-                        if (result.trim() !== '1') {
-                            delete form.dataset.submitting;
-                            return;
-                        }
+                        if (result.trim() !== '1') { delete form.dataset.submitting; return; }
                         _closeDialog();
                         _refreshOtherVolumes(docid);
                         _refreshPaperHistory(docid);
                     })
-                    .catch(function () {
-                        delete form.dataset.submitting;
-                    });
+                    .catch(function () { delete form.dataset.submitting; });
             });
         })
         .catch(_closeDialog);
@@ -489,10 +408,7 @@ function openSectionModal(btn) {
 
     _showLoading(title);
 
-    _post(
-        '/administratepaper/sectionform',
-        new URLSearchParams({ docid: docid })
-    )
+    _post('/administratepaper/sectionform', new URLSearchParams({ docid: docid }))
         .then(function (html) {
             if (_callToken !== token) return;
             var formId = 'section-assignment-form-' + docid;
@@ -512,33 +428,20 @@ function openSectionModal(btn) {
                 form.dataset.submitting = '1';
 
                 var assignEditors = document.getElementById('assignEditors');
-                var shouldRefreshEditors =
-                    assignEditors &&
-                    assignEditors.checked &&
-                    !assignEditors.disabled;
+                var shouldRefreshEditors = assignEditors && assignEditors.checked && !assignEditors.disabled;
 
                 var data = new URLSearchParams(new FormData(form));
                 data.set('docid', docid);
 
                 _post('/administratepaper/savesection', data)
                     .then(function (result) {
-                        var ok =
-                            result &&
-                            result.trim() !== '' &&
-                            result.trim() !== 'false' &&
-                            result.trim() !== '0';
-                        if (!ok) {
-                            delete form.dataset.submitting;
-                            return;
-                        }
+                        var ok = result && result.trim() !== '' && result.trim() !== 'false' && result.trim() !== '0';
+                        if (!ok) { delete form.dataset.submitting; return; }
                         _closeDialog();
                         _refreshSectionBlock(docid, isPartial);
-                        if (shouldRefreshEditors)
-                            _refreshEditorsBlock(docid, isPartial);
+                        if (shouldRefreshEditors) _refreshEditorsBlock(docid, isPartial);
                     })
-                    .catch(function () {
-                        delete form.dataset.submitting;
-                    });
+                    .catch(function () { delete form.dataset.submitting; });
             });
         })
         .catch(_closeDialog);
@@ -555,8 +458,7 @@ if (!window._paperAssignmentModalLoaded) {
     document.addEventListener('click', function (e) {
         var btn = e.target.closest('[data-modal]');
         if (!btn) return;
-        if (btn.disabled || btn.getAttribute('aria-disabled') === 'true')
-            return;
+        if (btn.disabled || btn.getAttribute('aria-disabled') === 'true') return;
 
         // Dismiss any Bootstrap tooltips or popovers open in the background;
         // they stay visible behind the native <dialog> top-layer backdrop otherwise.
