@@ -1,0 +1,72 @@
+<?php
+/**
+ * Modal for changing the contributor of a paper
+ * @var Episciences_Paper $paper
+ * @var Episciences_User $contributor
+ */
+$paper = $this->paper;
+$contributor = $this->contributor;
+?>
+<div class="modal fade" id="changeContributorModal" tabindex="-1" role="dialog" aria-labelledby="changeContributorModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?= $this->translate('Fermer') ?>">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="changeContributorModalLabel">
+                    <?= $this->translate('Changer le contributeur') ?>
+                </h4>
+            </div>
+            <div class="modal-body">
+                <!-- Current contributor display -->
+                <div class="form-group">
+                    <label><?= $this->translate('Contributeur actuel') ?></label>
+                    <div class="well well-sm">
+                        <span class="glyphicon glyphicon-user"></span>
+                        <strong id="currentContributorName"><?= htmlspecialchars($contributor->getFullName()) ?></strong>
+                        <span class="text-muted">&bull; <?= htmlspecialchars($contributor->getEmail()) ?></span>
+                    </div>
+                </div>
+
+                <!-- New contributor autocomplete -->
+                <div class="form-group">
+                    <label for="newContributorInput"><?= $this->translate('Nouveau contributeur') ?></label>
+                    <div class="input-group">
+                        <div class="input-group-addon">
+                            <span class="glyphicon glyphicon-search"></span>
+                        </div>
+                        <input type="text"
+                               class="form-control"
+                               id="newContributorInput"
+                               placeholder="<?= $this->translate('Rechercher un utilisateur...') ?>"
+                               autocomplete="off">
+                    </div>
+                </div>
+
+                <!-- Checkbox: add old contributor as co-author -->
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" id="addAsCoauthorCheckbox" name="add_as_coauthor" value="1" checked>
+                        <?= $this->translate("Ajouter l'ancien contributeur comme co-auteur") ?>
+                        <p class="help-block small">
+                            <?= $this->translate('Il continuera à recevoir les notifications') ?>
+                        </p>
+                    </label>
+                </div>
+
+                <!-- Hidden fields -->
+                <input type="hidden" id="newContributorUid" name="new_contributor_uid" value="0">
+                <input type="hidden" id="changeContributorDocId" name="docId" value="<?= $paper->getDocid() ?>">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">
+                    <?= $this->translate('Annuler') ?>
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmChangeContributor" disabled>
+                    <?= $this->translate('Confirmer') ?>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

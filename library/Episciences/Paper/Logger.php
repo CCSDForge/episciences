@@ -35,6 +35,9 @@ class Episciences_Paper_Logger
     public const CODE_ABANDON_PUBLICATION_PROCESS = 'abandon_publication_process';
     // Continue publication process
     public const CODE_CONTINUE_PUBLICATION_PROCESS = 'continue_publication_process';
+
+    public const CODE_CONTRIBUTOR_CHANGED = 'contributor_changed';
+
     // COPY EDITOR
     public const CODE_COPY_EDITOR_ASSIGNMENT = 'copy_editor_assignment';
     public const CODE_COPY_EDITOR_UNASSIGNMENT = 'copy_editor_unassignment';
@@ -103,6 +106,7 @@ class Episciences_Paper_Logger
         self::CODE_COI_REPORTED                         => self::DANGER,
         self::CODE_COI_REVERTED                         => self::SUCCESS,
         self::CODE_CONTINUE_PUBLICATION_PROCESS         => self::WARNING,
+        self::CODE_CONTRIBUTOR_CHANGED                  => self::WARNING,
         self::CODE_CE_AUTHOR_FINAL_VERSION_SUBMITTED    => self::VIOLET,
         self::CODE_CE_AUTHOR_FINALE_VERSION_DEPOSED     => self::VIOLET,
         self::CODE_CE_AUTHOR_FINALE_VERSION_REQUEST     => self::VIOLET,
@@ -167,6 +171,7 @@ class Episciences_Paper_Logger
         self::CODE_COI_REPORTED                         => "Conflit d'intérêts (CI)",
         self::CODE_COI_REVERTED                         => "Conflit d'intérêts (CI) : annulé",
         self::CODE_CONTINUE_PUBLICATION_PROCESS         => "Reprise du processus de publication",
+        self::CODE_CONTRIBUTOR_CHANGED                  => 'Changement de contributeur',
         self::CODE_CE_AUTHOR_FINAL_VERSION_SUBMITTED    => "Version finale soumise par l'auteur (édition)",
         self::CODE_CE_AUTHOR_FINALE_VERSION_DEPOSED     => "Version finale de l'auteur déposée (édition)",
         self::CODE_CE_AUTHOR_FINALE_VERSION_REQUEST     => "Demande de la version finale à l'auteur (édition)",
@@ -238,6 +243,7 @@ class Episciences_Paper_Logger
         self::CODE_COI_REPORTED                         => self::CATEGORY_EDITORIAL,
         self::CODE_COI_REVERTED                         => self::CATEGORY_EDITORIAL,
         self::CODE_CONTINUE_PUBLICATION_PROCESS         => self::CATEGORY_EDITORIAL,
+        self::CODE_CONTRIBUTOR_CHANGED                  => self::CATEGORY_EDITORIAL,
         self::CODE_CE_AUTHOR_FINAL_VERSION_SUBMITTED    => self::CATEGORY_EDITORIAL,
         self::CODE_CE_AUTHOR_FINALE_VERSION_DEPOSED     => self::CATEGORY_EDITORIAL,
         self::CODE_CE_AUTHOR_FINALE_VERSION_REQUEST     => self::CATEGORY_EDITORIAL,
@@ -377,6 +383,7 @@ class Episciences_Paper_Logger
         self::CODE_COI_REVERTED => 'glyphicon-ok',
         self::CODE_ABANDON_PUBLICATION_PROCESS => 'glyphicon-pause',
         self::CODE_CONTINUE_PUBLICATION_PROCESS => 'glyphicon-play',
+        self::CODE_CONTRIBUTOR_CHANGED => 'glyphicon-user',
         self::CODE_MONITORING_REFUSED => 'glyphicon-eye-close',
         self::CODE_ALTER_PUBLICATION_DATE => 'glyphicon-calendar',
         self::CODE_REVISION_DEADLINE_UPDATED => 'glyphicon-calendar',
@@ -442,6 +449,7 @@ class Episciences_Paper_Logger
         self::CODE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR,
         self::CODE_COI_REPORTED,
         self::CODE_COI_REVERTED,
+        self::CODE_CONTRIBUTOR_CHANGED,
         self::CODE_ACCEPTED_ASK_AUTHORS_FINAL_VERSION,
         self::CODE_NEW_REVIEWING_DEADLINE,
         self::CODE_LD_ADDED,

@@ -1210,6 +1210,7 @@ return array(
     "Demande des sources à l'auteur (édition)" => "Request for author's sources (copy editing)",
     "Prêt pour la publication (édition)" => "Ready to publish (copy editing)",
     "Mise en forme déposée par la revue (édition)" => "Formatting submitted by journal (copy editing)",
+    "Changement de contributeur" => "Contributor changed",
     "Assignation d'un rédacteur copiste" => "Copy editor assigned",
     "Désassignation d'un rédacteur copiste" => "Copy editor unassigned",
     'Descripteur de données chargé' => 'Data descriptor uploaded',
@@ -2597,5 +2598,11 @@ return array(
     "Toutes les suggestions" => "All suggestions",
     "Suggestion d'acceptation" => "Suggested acceptance",
     "Suggestion de refus" => "Suggested refusal",
-    "Suggestion de modification" => "Suggested revision"
+    "Suggestion de modification" => "Suggested revision",
+
+    // Contributor change
+    "Vous avez été ajouté comme co-auteur et continuerez à recevoir les notifications relatives à cet article." => "You have been added as a co-author and will continue to receive notifications related to this article.",
+    "Vous ne recevrez plus les notifications relatives à cet article." => "You will no longer receive notifications related to this article.",
+    "Contributor changed successfully" => "Contributor changed successfully.",
+    "Vous pouvez consulter l'article ici :" => "You can view the article here:",
 );

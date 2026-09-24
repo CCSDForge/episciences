@@ -208,6 +208,14 @@ return [
     // PAPER - COMMENTAIRES ****************************************************************************************************************************
     "paper_comment_tpl_group" => "Article - commentaires",
 
+    // Notification to the new contributor when the paper's contributor is changed
+    "paper_contributor_changed_tpl_name" => "Changement de contributeur",
+    "paper_contributor_changed_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Vous êtes le nouveau contributeur de l'article",
+
+    // Notification to the former contributor when the paper's contributor is changed
+    "paper_former_contributor_notification_tpl_name" => "Notification à l'ancien contributeur",
+    "paper_former_contributor_notification_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Vous n'êtes plus le contributeur de l'article",
+
     // Commentaire d'un relecteur sur un article – copie destinée à l'auteur
     "paper_comment_author_copy_tpl_name" => "Commentaire d'un relecteur sur un article (copie destinée à l'auteur)",
     "paper_comment_author_copy_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - Un relecteur a posté un commentaire concernant votre article",

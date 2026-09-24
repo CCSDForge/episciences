@@ -112,6 +112,10 @@ $isRequiredRevisionDeadline = Zend_Json::encode((bool)$this->review->getSetting(
         <?php // contributor section  ?>
         <?php if ($paper->getUid()): ?>
             <?php echo $this->partial('partials/paper_contributor.phtml', ['article' => $paper, 'id' => 'contributor', 'socialMedia' => $this->contributorSocialMedia, "coAuthorsList" => $coAuthorsList]) ?>
+            <?php // Change contributor modal (Admin/Chief Editor only) ?>
+            <?php if (Episciences_Auth::isAdministrator() || Episciences_Auth::isChiefEditor()): ?>
+                <?= $this->partial('partials/change_contributor_modal.phtml', ['paper' => $paper, 'contributor' => $paper->getSubmitter()]) ?>
+            <?php endif; ?>
         <?php endif; ?>
 
         <?php // Cover letter?>
@@ -424,5 +428,6 @@ $this->jQuery()->addJavascriptFile('/js/common/updateMetaData.js');
 $this->jQuery()->addJavascriptFile('/js/paper/updateOrcidAuthors.js');
 $this->jQuery()->addJavascriptFile('/js/paper/paperAffiAuthors.js');
 $this->jQuery()->addJavascriptFile('/js/administratepaper/coauthors.js');
+$this->jQuery()->addJavascriptFile('/js/administratepaper/change-contributor.js');
 $this->jQuery()->addJavascriptFile('/js/paper/biblioRef.js');
 $this->jQuery()->addJavascriptFile('/js/administratepaper/editor-availability.js');
