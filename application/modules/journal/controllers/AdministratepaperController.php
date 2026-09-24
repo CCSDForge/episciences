@@ -5272,6 +5272,12 @@ class AdministratepaperController extends PaperDefaultController
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
+        if (!$request->isPost() || !$request->isXmlHttpRequest()
+            || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo json_encode(['success' => false, 'error' => 'Invalid request']);
+            return;
+        }
 
         // 2. Get POST parameters
         $docId = (int)$request->getPost('docId');
@@ -5306,32 +5312,38 @@ class AdministratepaperController extends PaperDefaultController
             return;
         }
 
-        // 7. If checkbox checked, add old contributor as co-author
-        if ($addAsCoAuthor) {
-            $this->addRoleCoAuthor($docId, $oldUid);
-        }
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $db->beginTransaction();
+        try {
+            // Step 9: Update contributor first - if this fails, nothing else changes
+            if (!Episciences_PapersManager::updateContributor($paper->getPaperid(), $newUid)) {
+                throw new RuntimeException('Failed to update contributor');
+            }
 
-        // 8. Remove co-author role from new contributor if exists
-        // Scenario: If the new contributor was previously a co-author of this paper,
-        // we remove that role since they are now becoming the main contributor.
-        // This avoids having duplicate roles (contributor + co-author) for the same user.
-        $existingAssignment = Episciences_User_AssignmentsManager::find([
-            'RVID' => RVID,
-            'ITEMID' => $docId,
-            'UID' => $newUid
-        ]);
-        if ($existingAssignment instanceof Episciences_User_Assignment
-            && $existingAssignment->getId() > 0
-            && $existingAssignment->getRoleid() === Episciences_Acl::ROLE_CO_AUTHOR) {
-            Episciences_User_AssignmentsManager::removeAssignment($existingAssignment->getId());
-        }
+            // Step 7: Add old contributor as co-author (if requested)
+            if ($addAsCoAuthor) {
+                $this->addRoleCoAuthor($docId, $oldUid);
+            }
 
-        // 9. Update contributor in database
-        $updated = Episciences_PapersManager::updateContributor($paper->getPaperid(), $newUid);
-        if (!$updated) {
+            // Step 8: Remove existing co-author assignment of new contributor (avoid duplicate role)
+            $existingAssignment = Episciences_User_AssignmentsManager::find([
+                'RVID' => RVID,
+                'ITEMID' => $docId,
+                'UID' => $newUid
+            ]);
+            if ($existingAssignment !== false
+                && $existingAssignment->getId() !== 0
+                && $existingAssignment->getRoleid() === Episciences_Acl::ROLE_CO_AUTHOR) {
+                Episciences_User_AssignmentsManager::removeAssignment($existingAssignment->getId());
+            }
+
+            $db->commit();
+        } catch (Exception $e) {
+            $db->rollBack();
             echo json_encode(['success' => false, 'error' => 'Failed to update contributor']);
             return;
         }
+
 
         // 10. Log the action
         $paper->log(
@@ -5367,10 +5379,10 @@ class AdministratepaperController extends PaperDefaultController
         $oldContributorLang = $oldContributor->getLangueid() ?: Episciences_Review::DEFAULT_LANG;
         $translator = Zend_Registry::get('Zend_Translate');
 
-        // Co-author status message (conditional)
+        // Co-author status message (conditional) - in recipient's language
         $coauthorStatusMessage = $addAsCoAuthor
-            ? $translator->translate("Vous avez été ajouté comme co-auteur et continuerez à recevoir les notifications relatives à cet article.")
-            : $translator->translate("Vous ne recevrez plus les notifications relatives à cet article.");
+            ? $translator->translate("Vous avez été ajouté comme co-auteur et continuerez à recevoir les notifications relatives à cet article.", $oldContributorLang)
+            : $translator->translate("Vous ne recevrez plus les notifications relatives à cet article.", $oldContributorLang);
         $formerContributorTags[Episciences_Mail_Tags::TAG_COAUTHOR_STATUS_MESSAGE] = $coauthorStatusMessage;
 
         // Paper URL line (only if added as co-author)

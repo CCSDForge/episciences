@@ -938,7 +938,6 @@ if (typeof module !== 'undefined' && module.exports) {
         showElements,
         ajaxAlertFail,
         translateInvitationDeadline,
-        submit
+        submit,
     };
 }
-
