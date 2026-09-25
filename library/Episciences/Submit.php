@@ -1760,10 +1760,6 @@ class Episciences_Submit
         $recipients = $this->filterConflictRecipients($recipients, $paper);
         unset($recipients[$paper->getUid()]);
 
-        if (empty($recipients)) {
-            return;
-        }
-
         $oldDocId = (int)Ccsd_Tools::ifsetor($data['old_docid'], 0);
         $oldStatus = (int)Ccsd_Tools::ifsetor($data['old_paper_status'], 0);
         $canReplace = (bool)Ccsd_Tools::ifsetor($data['can_replace'], false);
@@ -1801,7 +1797,10 @@ class Episciences_Submit
         // Mail à l'auteur
         Episciences_Mail_Send::sendMailFromReview($author, $authorTemplateKy, $authorTags, $paper, null, [], false, $paper->getCoAuthors());
 
-        self::notifyManagers($paper, $recipients, $oldDocId, $oldStatus, $commonTags, $canReplace);
+        // The author acknowledgment must not depend on the editorial committee being notifiable
+        if (!empty($recipients)) {
+            self::notifyManagers($paper, $recipients, $oldDocId, $oldStatus, $commonTags, $canReplace);
+        }
     }
 
     /**
@@ -1826,13 +1825,18 @@ class Episciences_Submit
             ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], 'paper_id' => $paper->getPaperid()]
         );
 
-        foreach ($recipients as $uid => $recipient) {
-            if (isset($conflictUids[$uid])) {
-                unset($recipients[$uid]);
-            }
-        }
+        return self::removeConflictingRecipients($recipients, $conflictUids);
+    }
 
-        return $recipients;
+    /**
+     * @param array<int, mixed> $recipients recipients indexed by UID
+     * @param array<int, int|string> $conflictUids list of UIDs having declared a conflict of interest
+     * @return array<int, mixed>
+     */
+    private static function removeConflictingRecipients(array $recipients, array $conflictUids): array
+    {
+        // fetchCol() returns a list: UIDs are values, not keys
+        return array_diff_key($recipients, array_flip(array_map('intval', $conflictUids)));
     }
 
     /**
