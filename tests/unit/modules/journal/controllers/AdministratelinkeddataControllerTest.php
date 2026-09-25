@@ -10,7 +10,6 @@ use PHPUnit\Framework\TestCase;
  * Regression tests for AdministratelinkeddataController.
  * Ensures PHP 8.1 deprecations are fixed and security checks are in place.
  *
- * @covers AdministratelinkeddataController
  */
 class AdministratelinkeddataControllerTest extends TestCase
 {
@@ -36,7 +35,6 @@ class AdministratelinkeddataControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratelinkeddataController::removeldAction
      */
     public function testRemoveldActionFixesDeprecations(): void
     {
@@ -62,7 +60,6 @@ class AdministratelinkeddataControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratelinkeddataController::addldAction
      */
     public function testAddldActionFixesDeprecations(): void
     {
@@ -76,7 +73,6 @@ class AdministratelinkeddataControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratelinkeddataController::setnewinfoldAction
      */
     public function testSetnewinfoldActionFixesDeprecations(): void
     {
