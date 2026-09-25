@@ -121,7 +121,7 @@ class ProcessInboxNotificationsCommand extends Command
                 'line'      => $e->getLine(),
                 'trace'     => $e->getTraceAsString(),
             ]);
-            $io->error('Database error connecting to main Episciences database: ' . $e->getMessage());
+            $io->error('Failed to bootstrap Episciences environment or connect to main database: ' . $e->getMessage());
             return Command::FAILURE;
         }
 
