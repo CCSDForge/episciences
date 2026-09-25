@@ -894,6 +894,7 @@ return array(
     "Utilisez ce formulaire pour envoyer un message aux rédacteurs assignés à votre article." => 'Use this form to send a message to the editors assigned to your article.',
     "Utilisez ce formulaire pour envoyer un message à l'auteur de cet article." => 'Use this form to send a message to the author of this article.',
     "Votre message a bien été envoyé à l'auteur." => 'Your message has been sent to the author.',
+    "Votre message a bien été enregistré, mais la notification par e-mail n'a pas pu être envoyée à tous les destinataires." => 'Your message has been saved, but the email notification could not be sent to all recipients.',
     "Vous n'êtes pas autorisé à envoyer un message à cet auteur." => 'You are not authorized to send a message to this author.',
     "Erreur lors de l'envoi de votre message." => 'Error sending your message.',
     "Rédacteur" => 'Editor',
