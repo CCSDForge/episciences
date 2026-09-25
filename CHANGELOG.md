@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix COAR Notify inbox processing (`notify:process-inbox`) failing to notify editors or notifying the wrong journal's editors: `Undefined constant "RVID"` when conflict-of-interest is enabled (`PapersManager::keepOnlyUsersWithoutConflict()` and `User::hasOnlyAdministratorRole()` now accept an RVID), stale `Episciences_Review::$_currentReviewId` with cached journals, email write failures logged as successes, a translator initialisation failure silenced, `http://` links in emails, and `%%PAPER_VIEW_URL%%`/`%%PAPER_ADMINISTRATION_URL%%`/`%%PAPER_RATING_URL%%` built with a null `RVCODE` (`Episciences_Mail::setDocid()` now uses the mail's own journal code).
 - Default invalid or missing CSV paper status to `accepted` (`STATUS_ACCEPTED`), not published, in `import:papers`.
 - Fix `Episciences_Volume::save()` silently dropping titles passed as a nested array instead of flat `title_{lang}` keys.
 - Fix `import:volumes` never defining the `RVID` constant on a real (non-dry-run) write.

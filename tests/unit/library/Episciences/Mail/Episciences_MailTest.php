@@ -649,4 +649,29 @@ final class Episciences_MailTest extends TestCase
         $rp->setAccessible(true);
         self::assertSame([], $rp->getValue());
     }
+
+    // =========================================================================
+    // setDocid: generated URLs use the mail's own journal code
+    // (RVCODE is null in CLI commands processing several journals)
+    // =========================================================================
+
+    private function setReviewCode(?string $code): void
+    {
+        $rp = new \ReflectionProperty(Episciences_Mail::class, '_reviewCode');
+        $rp->setAccessible(true);
+        $rp->setValue($this->mail, $code);
+    }
+
+    public function testSetDocidBuildsUrlsWithMailReviewCode(): void
+    {
+        $this->setReviewCode('myjournal');
+        $this->mail->setDocid(42, 7);
+
+        $tags = $this->mail->getTags();
+        $baseUrl = SERVER_PROTOCOL . '://myjournal.' . DOMAIN;
+
+        self::assertSame($baseUrl . '/42', $tags[Episciences_Mail_Tags::TAG_PAPER_VIEW_URL]);
+        self::assertSame($baseUrl . '/administratepaper/view/id/42', $tags[Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL]);
+        self::assertSame($baseUrl . '/paper/rating/id/42', $tags[Episciences_Mail_Tags::TAG_PAPER_RATING_URL]);
+    }
 }
