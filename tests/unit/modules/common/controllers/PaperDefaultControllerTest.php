@@ -356,7 +356,36 @@ final class PaperDefaultControllerTest extends TestCase
 
         self::assertStringContainsString('$authorNotificationSent = Episciences_Mail_Send::sendMailFromReview(', $method);
         self::assertStringNotContainsString('$authorNotificationSent = true;', $method);
-        self::assertStringContainsString('($authorNotificationExpected ? 1 : 0)', $method);
+        self::assertStringContainsString('$expectedNotifications = count($recipients) + 1;', $method);
+    }
+
+    /**
+     * An unresolved author or an exception before the send must not be reported as a success:
+     * the author expectation must not depend on the author being found.
+     */
+    public function testAuthorAlwaysExpectedForEditorToAuthorMessages(): void
+    {
+        $method = $this->extractMethodBody('newCommentNotifyManager');
+
+        self::assertStringNotContainsString('$authorNotificationExpected', $method);
+    }
+
+    /**
+     * Co-author notifications must count only successful sends, and a former co-author
+     * skipped at send time must no longer be expected.
+     */
+    public function testCoAuthorNotificationsUseSendResultAndFilteredCount(): void
+    {
+        $method = $this->extractMethodBody('newCommentNotifyManager');
+
+        self::assertStringContainsString('$coAuthorNotificationSent = Episciences_Mail_Send::sendMailFromReview(', $method);
+        self::assertStringContainsString('if (!$coAuthorNotificationSent)', $method);
+
+        self::assertMatchesRegularExpression(
+            '/if \(!\$paper->isCoAuthorByUid\(\$coAuthorUid\)\) \{[^}]*--\$totalCoAuthorsToNotify;[^}]*continue;/s',
+            $method,
+            'A skipped former co-author must be removed from the expected count'
+        );
     }
 
     /**
