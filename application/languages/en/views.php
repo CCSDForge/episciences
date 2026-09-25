@@ -1175,7 +1175,7 @@ return array(
     'Préparation de copie : en attente des sources auteurs' => 'Copy editing: waiting for authors sources',
     'Préparation de copie : sources déposées' => 'Copy editing: sources submitted',
     "Posté le" => 'Posted on',
-    "Effectué par" => "Done by",
+    "Effectué(e) par" => "Done by",
     "Fait le" => "Done on",
     "Dernier statut connu" => "Last known status",
     "Type de donnée liée" => "Linked data type",

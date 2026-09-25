@@ -28,7 +28,7 @@ When this option is **checked**:
 - They can still view the paper in their author space
 
 When this option is **unchecked**:
-- The former contributor loses all access to the paper
+- The former contributor is not added as a co-author
 - They will no longer receive notifications about the paper
 
 ## Co-author Becoming Contributor
