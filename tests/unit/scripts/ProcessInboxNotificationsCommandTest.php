@@ -470,7 +470,11 @@ class ProcessInboxNotificationsCommandTest extends TestCase
 
     public function testTranslatorFailureIsNotSilenced(): void
     {
-        $this->assertStringNotContainsString('// Keep silent if already loaded or fallback', $this->commandSource());
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'createTranslator');
+        $method->setAccessible(true);
+
+        $this->expectException(\Zend_Translate_Exception::class);
+        $method->invoke($this->command, __DIR__ . '/nonexistent-languages-dir');
     }
 
     public function testHttpsIsForcedBeforeDefineProtocol(): void

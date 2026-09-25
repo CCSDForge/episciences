@@ -1711,13 +1711,20 @@ class ProcessInboxNotificationsCommand extends Command
         // Every email needs the translator (template names, subjects): fail the whole run
         // instead of failing each email later on.
         if (!Zend_Registry::isRegistered('Zend_Translate')) {
-            $translator = new Zend_Translate(
-                Zend_Translate::AN_ARRAY,
-                APPLICATION_PATH . '/languages',
-                Episciences_Review::DEFAULT_LANG,
-                ['scan' => Zend_Translate::LOCALE_DIRECTORY]
-            );
-            Zend_Registry::set('Zend_Translate', $translator);
+            Zend_Registry::set('Zend_Translate', $this->createTranslator(APPLICATION_PATH . '/languages'));
         }
+    }
+
+    /**
+     * @throws Zend_Translate_Exception when the languages directory cannot be loaded
+     */
+    private function createTranslator(string $languagesDir): Zend_Translate
+    {
+        return new Zend_Translate(
+            Zend_Translate::AN_ARRAY,
+            $languagesDir,
+            Episciences_Review::DEFAULT_LANG,
+            ['scan' => Zend_Translate::LOCALE_DIRECTORY]
+        );
     }
 }
