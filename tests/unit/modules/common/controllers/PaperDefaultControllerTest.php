@@ -304,4 +304,102 @@ final class PaperDefaultControllerTest extends TestCase
             'postMailValidation() performs no format check; callers must not treat it as a validator'
         );
     }
+
+    // -----------------------------------------------------------------------
+    // Notification failures must not be hidden (editor -> author messages)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Like extractMethod(), but stops at the next method declaration instead of the
+     * next "function " token, so closures inside the method body are kept.
+     */
+    private function extractMethodBody(string $methodName): string
+    {
+        $start = strpos($this->source, 'function ' . $methodName . '(');
+        self::assertNotFalse($start, "Method $methodName not found in PaperDefaultController");
+
+        $matched = preg_match(
+            '/\n\s*(?:public|protected|private)\s+(?:static\s+)?function\s/',
+            $this->source,
+            $m,
+            PREG_OFFSET_CAPTURE,
+            (int) $start + 1
+        );
+
+        return $matched === 1
+            ? substr($this->source, (int) $start, $m[0][1] - (int) $start)
+            : substr($this->source, (int) $start);
+    }
+
+    /**
+     * A plain Exception raised while notifying another editor used to escape the
+     * narrow Zend-only catch and abort the method before the author block.
+     */
+    public function testEditorsLoopCatchesAnyException(): void
+    {
+        $method = $this->extractMethodBody('newCommentNotifyManager');
+
+        self::assertStringNotContainsString(
+            'catch (Zend_Db_Adapter_Exception|Zend_Mail_Exception|Zend_Exception|Zend_Session_Exception $e)',
+            $method,
+            'The editors loop must not let a plain Exception skip the author notification'
+        );
+    }
+
+    /**
+     * The author notification must count as sent only when sendMailFromReview() succeeds,
+     * and the expected count must not depend on that outcome.
+     */
+    public function testAuthorNotificationUsesSendResult(): void
+    {
+        $method = $this->extractMethodBody('newCommentNotifyManager');
+
+        self::assertStringContainsString('$authorNotificationSent = Episciences_Mail_Send::sendMailFromReview(', $method);
+        self::assertStringNotContainsString('$authorNotificationSent = true;', $method);
+        self::assertStringContainsString('$expectedNotifications = count($recipients) + 1;', $method);
+    }
+
+    /**
+     * An unresolved author or an exception before the send must not be reported as a success:
+     * the author expectation must not depend on the author being found.
+     */
+    public function testAuthorAlwaysExpectedForEditorToAuthorMessages(): void
+    {
+        $method = $this->extractMethodBody('newCommentNotifyManager');
+
+        self::assertStringNotContainsString('$authorNotificationExpected', $method);
+    }
+
+    /**
+     * Co-author notifications must count only successful sends, and a former co-author
+     * skipped at send time must no longer be expected.
+     */
+    public function testCoAuthorNotificationsUseSendResultAndFilteredCount(): void
+    {
+        $method = $this->extractMethodBody('newCommentNotifyManager');
+
+        self::assertStringContainsString('$coAuthorNotificationSent = Episciences_Mail_Send::sendMailFromReview(', $method);
+        self::assertStringContainsString('if (!$coAuthorNotificationSent)', $method);
+
+        self::assertMatchesRegularExpression(
+            '/if \(!\$paper->isCoAuthorByUid\(\$coAuthorUid\)\) \{[^}]*--\$totalCoAuthorsToNotify;[^}]*continue;/s',
+            $method,
+            'A skipped former co-author must be removed from the expected count'
+        );
+    }
+
+    /**
+     * sendMailFromModal() must not record CODE_MAIL_SENT when writeMail() failed.
+     */
+    public function testSendMailFromModalChecksWriteMailResult(): void
+    {
+        $method = $this->extractMethodBody('sendMailFromModal');
+
+        $guardPos = strpos($method, 'if (!$mail->writeMail())');
+        $logPos = strpos($method, 'CODE_MAIL_SENT');
+
+        self::assertNotFalse($guardPos, 'writeMail() result must be checked');
+        self::assertNotFalse($logPos);
+        self::assertLessThan($logPos, $guardPos, 'The writeMail() check must come before logging CODE_MAIL_SENT');
+    }
 }

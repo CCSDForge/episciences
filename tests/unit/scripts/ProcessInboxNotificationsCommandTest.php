@@ -440,4 +440,51 @@ class ProcessInboxNotificationsCommandTest extends TestCase
             ],
         ], JSON_THROW_ON_ERROR);
     }
+
+    // -------------------------------------------------------------------------
+    // CLI context regressions (source-level: these paths need a full journal + DB)
+    // -------------------------------------------------------------------------
+
+    private function commandSource(): string
+    {
+        return (string) file_get_contents(__DIR__ . '/../../../scripts/ProcessInboxNotificationsCommand.php');
+    }
+
+    public function testConflictFilterReceivesJournalRvid(): void
+    {
+        $this->assertStringContainsString(
+            'keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients, $journal->getRvid())',
+            $this->commandSource(),
+            'Without an explicit RVID, the COI filter hits the undefined RVID constant in CLI'
+        );
+    }
+
+    public function testCurrentReviewIdIsSetForEachJournal(): void
+    {
+        $this->assertStringContainsString(
+            'Episciences_Review::setCurrentReviewId($journal->getRvid());',
+            $this->commandSource(),
+            'Cached journals do not reset Episciences_Review::$_currentReviewId used by role lookups'
+        );
+    }
+
+    public function testTranslatorFailureIsNotSilenced(): void
+    {
+        $method = new \ReflectionMethod(ProcessInboxNotificationsCommand::class, 'createTranslator');
+        $method->setAccessible(true);
+
+        $this->expectException(\Zend_Translate_Exception::class);
+        $method->invoke($this->command, __DIR__ . '/nonexistent-languages-dir');
+    }
+
+    public function testHttpsIsForcedBeforeDefineProtocol(): void
+    {
+        $source = $this->commandSource();
+        $httpsPos = strpos($source, "define('SERVER_PROTOCOL', 'https')");
+        $protocolPos = strpos($source, 'defineProtocol();');
+
+        $this->assertNotFalse($httpsPos);
+        $this->assertNotFalse($protocolPos);
+        $this->assertLessThan($protocolPos, $httpsPos);
+    }
 }
