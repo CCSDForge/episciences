@@ -48,6 +48,8 @@ class Episciences_Mail extends Zend_Mail
     private $_rawBody;
     protected bool $_isAutomatic = false;
     private ?int $uid = null ;
+    // Code of the journal this mail is sent for (RVCODE may be undefined or null in CLI)
+    private ?string $_reviewCode = null;
     private static array $_cache = [];
 
     /**
@@ -68,6 +70,7 @@ class Episciences_Mail extends Zend_Mail
         $review = Episciences_ReviewsManager::find($rvCode);
         if ($review instanceof Episciences_Review) {
             $review->loadSettings();
+            $this->_reviewCode = $review->getCode();
         }
 
         if (defined('RVCODE')) {
@@ -671,8 +674,10 @@ class Episciences_Mail extends Zend_Mail
             $this->removeTag(Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID);
         }
 
-        if (defined('RVCODE')) {
-            $baseurl = SERVER_PROTOCOL . '://' . RVCODE . '.' . DOMAIN;
+        $reviewCode = $this->_reviewCode ?? (defined('RVCODE') ? RVCODE : null);
+
+        if (!empty($reviewCode)) {
+            $baseurl = SERVER_PROTOCOL . '://' . $reviewCode . '.' . DOMAIN;
             $this->addTag(Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL, $baseurl . '/administratepaper/view/id/' . $this->_docid);
             $this->addTag(Episciences_Mail_Tags::TAG_PAPER_VIEW_URL, $baseurl . '/' . $this->_docid);
             $this->addTag(Episciences_Mail_Tags::TAG_PAPER_RATING_URL, $baseurl . '/paper/rating/id/' . $this->_docid);
