@@ -3017,6 +3017,27 @@ class Episciences_PapersManager
     }
 
     /**
+     * Update the contributor (owner) of a paper across all versions.
+     *
+     * @param int $paperId The PAPERID (applies to all versions of the article)
+     * @param int $newUid  The UID of the new contributor
+     * @return bool True if at least one row was updated
+     */
+    public static function updateContributor(int $paperId, int $newUid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $affectedRows = $db->update(
+            T_PAPERS,
+            [
+                'UID' => $newUid,
+                'MODIFICATION_DATE' => new Zend_Db_Expr('NOW()')
+            ],
+            ['PAPERID = ?' => $paperId]
+        );
+        return $affectedRows > 0;
+    }
+
+    /**
      * renome l'identifiant d'un article
      * @param $old
      * @param $new

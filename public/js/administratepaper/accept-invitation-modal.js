@@ -15,7 +15,9 @@ function submit() {
     // Extract docid from the form action URL query string.
     var docid = new URL(action, window.location.href).searchParams.get('docid');
 
-    var errorsEl = document.querySelector('#modal-box .accept-invitation-errors');
+    var errorsEl = document.querySelector(
+        '#modal-box .accept-invitation-errors'
+    );
     var errorsMsg = document.querySelector('#modal-box .errors-message');
 
     function showError(message) {
@@ -50,7 +52,10 @@ function submit() {
                 fetch('/administratepaper/displayinvitations', {
                     method: 'POST',
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    body: new URLSearchParams({ docid: docid, partial: 'false' }),
+                    body: new URLSearchParams({
+                        docid: docid,
+                        partial: 'false',
+                    }),
                 }).then(function (r) {
                     return r.text();
                 }),

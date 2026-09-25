@@ -470,4 +470,10 @@ return [
     'T_VOLUME_YEAR_INVALID_RANGE'  => 'La deuxième année du volume doit être strictement supérieure à la première (ex: 2003-2004).',
     'T_VOLUME_YEAR_OUTSIDE_BOUNDS' => 'L\'année doit être comprise entre %s et %s (Année courante + 5 ans).',
 
+    // Contributor change
+    "Vous avez été ajouté comme co-auteur et continuerez à recevoir les notifications relatives à cet article." => "Vous avez été ajouté comme co-auteur et continuerez à recevoir les notifications relatives à cet article.",
+    "Vous ne recevrez plus les notifications relatives à cet article." => "Vous ne recevrez plus les notifications relatives à cet article.",
+    "Contributor changed successfully" => "Contributeur modifié avec succès.",
+    "Vous pouvez consulter l'article ici :" => "Vous pouvez consulter l'article ici :",
+
 ];

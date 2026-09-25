@@ -5247,6 +5247,193 @@ class AdministratepaperController extends PaperDefaultController
     }
 
     /**
+     * Change the contributor (owner) of a paper.
+     * Only accessible to administrators and chief editors.
+     *
+     * POST params:
+     *   - docId: int - Document ID
+     *   - newUid: int - UID of the new contributor
+     *   - add_as_coauthor: bool - Whether to add old contributor as co-author (default: true)
+     *
+     * @return void
+     */
+    public function changecontributorAction(): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender();
+
+        // 1. Check permissions
+        if (!Episciences_Auth::isAdministrator() && !Episciences_Auth::isChiefEditor()) {
+            $this->_helper->FlashMessenger->setNamespace('error')
+                ->addMessage("You don't have permission to change the contributor.");
+            echo json_encode(['success' => false, 'error' => 'Permission denied']);
+            return;
+        }
+
+        /** @var Zend_Controller_Request_Http $request */
+        $request = $this->getRequest();
+        if (!$request->isPost() || !$request->isXmlHttpRequest()
+            || !Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            echo json_encode(['success' => false, 'error' => 'Invalid request']);
+            return;
+        }
+
+        // 2. Get POST parameters
+        $docId = (int)$request->getPost('docId');
+        $newUid = (int)$request->getPost('new_contributor_uid');
+        $addAsCoAuthor = filter_var(
+            $request->getPost('add_as_coauthor', true),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        // 3. Load paper and validate journal
+        $paper = Episciences_PapersManager::get($docId);
+        if (!$paper || $paper->getRvid() !== RVID) {
+            echo json_encode(['success' => false, 'error' => 'Paper not found']);
+            return;
+        }
+
+        // 4. Get old contributor
+        $oldUid = $paper->getUid();
+        if ($oldUid === $newUid) {
+            echo json_encode(['success' => false, 'error' => 'New contributor is the same as current']);
+            return;
+        }
+
+        // 5. Load old contributor details
+        $oldContributor = new Episciences_User();
+        $oldContributor->findWithCAS($oldUid);
+
+        // 6. Load and validate new contributor
+        $newContributor = new Episciences_User();
+        if (!$newContributor->findWithCAS($newUid)) {
+            echo json_encode(['success' => false, 'error' => 'New contributor not found']);
+            return;
+        }
+
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $db->beginTransaction();
+        try {
+            // Step 7: Update contributor first - if this fails, nothing else changes
+            if (!Episciences_PapersManager::updateContributor($paper->getPaperid(), $newUid)) {
+                throw new RuntimeException('Failed to update contributor');
+            }
+
+            // Step 8: Add old contributor as co-author (if requested)
+            if ($addAsCoAuthor) {
+                $this->addRoleCoAuthor($docId, $oldUid);
+            }
+
+            // Step 9: Remove existing co-author assignment of new contributor (avoid duplicate role)
+            $existingAssignment = Episciences_User_AssignmentsManager::find([
+                'RVID' => RVID,
+                'ITEMID' => $docId,
+                'UID' => $newUid
+            ]);
+            if ($existingAssignment !== false
+                && $existingAssignment->getId() !== 0
+                && $existingAssignment->getRoleid() === Episciences_Acl::ROLE_CO_AUTHOR) {
+                Episciences_User_AssignmentsManager::removeAssignment($existingAssignment->getId());
+            }
+
+            $db->commit();
+        } catch (Exception $e) {
+            $db->rollBack();
+            echo json_encode(['success' => false, 'error' => 'Failed to update contributor']);
+            return;
+        }
+
+
+        // 10. Log the action
+        $paper->log(
+            Episciences_Paper_Logger::CODE_CONTRIBUTOR_CHANGED,
+            Episciences_Auth::getUid(),
+            [
+                'oldContributor' => [
+                    'uid' => $oldUid,
+                    'fullname' => $oldContributor->getFullName()
+                ],
+                'newContributor' => [
+                    'uid' => $newUid,
+                    'fullname' => $newContributor->getFullName()
+                ],
+                'addedAsCoAuthor' => $addAsCoAuthor,
+            ]
+        );
+
+        // 11. Send email
+
+        $commonTags = [
+            Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocid(),
+            Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
+            Episciences_Mail_Tags::TAG_ARTICLE_TITLE => $paper->getTitle(),
+            Episciences_Mail_Tags::TAG_AUTHORS_NAMES => $paper->formatAuthorsMetadata(),
+            Episciences_Mail_Tags::TAG_PAPER_URL => $this->buildPublicPaperUrl($paper->getDocid()),
+        ];
+        // 11a. Email to former contributor (TAG_CONTRIBUTOR_FULL_NAME = new contributor)
+        $formerContributorTags = $commonTags;
+        $formerContributorTags[Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME] = $newContributor->getFullName();
+
+        // Get recipient's preferred language
+        $oldContributorLang = $oldContributor->getLangueid() ?: Episciences_Review::DEFAULT_LANG;
+        $translator = Zend_Registry::get('Zend_Translate');
+
+        // Co-author status message (conditional) - in recipient's language
+        $coauthorStatusMessage = $addAsCoAuthor
+            ? $translator->translate("Vous avez été ajouté comme co-auteur et continuerez à recevoir les notifications relatives à cet article.", $oldContributorLang)
+            : $translator->translate("Vous ne recevrez plus les notifications relatives à cet article.", $oldContributorLang);
+        $formerContributorTags[Episciences_Mail_Tags::TAG_COAUTHOR_STATUS_MESSAGE] = $coauthorStatusMessage;
+
+        // Paper URL line (only if added as co-author)
+        $paperUrlLine = $addAsCoAuthor
+            ? Zend_Registry::get('Zend_Translate')->translate("Vous pouvez consulter l'article ici :", $oldContributorLang) . ' ' . $this->buildPublicPaperUrl($paper->getDocid())
+            : '';
+        $formerContributorTags[Episciences_Mail_Tags::TAG_PAPER_URL_LINE] = $paperUrlLine;
+
+        try {
+            Episciences_Mail_Send::sendMailFromReview(
+                $oldContributor,
+                Episciences_Mail_TemplatesManager::TYPE_PAPER_FORMER_CONTRIBUTOR_NOTIFICATION,
+                $formerContributorTags,
+                $paper,
+                Episciences_Auth::getUid()
+            );
+        } catch (Exception $e) {
+            error_log('Failed to send former contributor notification email: ' . $e->getMessage());
+        }
+
+        // 11b. Email to new contributor (TAG_CONTRIBUTOR_FULL_NAME = old contributor)
+        $newContributorTags = $commonTags;
+        $newContributorTags[Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME] = $oldContributor->getFullName();
+
+        try {
+            Episciences_Mail_Send::sendMailFromReview(
+                $newContributor,
+                Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_CONTRIBUTOR_NOTIFICATION,
+                $newContributorTags,
+                $paper,
+                Episciences_Auth::getUid()
+            );
+        } catch (Exception $e) {
+            error_log('Failed to send contributor change email: ' . $e->getMessage());
+        }
+
+
+        // 12. Success response
+        $this->_helper->FlashMessenger->setNamespace('success')
+            ->addMessage(Zend_Registry::get('Zend_Translate')->translate('Contributor changed successfully'));
+
+        echo json_encode([
+            'success' => true,
+            'newContributor' => [
+                'uid' => $newUid,
+                'fullname' => $newContributor->getFullName()
+            ]
+        ]);
+    }
+
+    /**
      * @param int $docId
      * @return Ccsd_Form|null
      * @throws Zend_Form_Exception

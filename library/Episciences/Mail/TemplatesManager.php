@@ -100,6 +100,11 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_AUTHOR_COPY = 'paper_ce_waiting_for_author_formatting_author_copy';
     public const TYPE_PAPER_CE_WAITING_FOR_AUTHOR_FORMATTING_EDITOR_AND_COPYEDITOR_COPY = 'paper_ce_waiting_for_author_formatting_editor_and_copyeditor_copy';
 
+    // Contributor change - new contributor notification
+    public const TYPE_PAPER_NEW_CONTRIBUTOR_NOTIFICATION = 'paper_new_contributor_notification';
+    // Contributor change - former contributor notification
+    public const TYPE_PAPER_FORMER_CONTRIBUTOR_NOTIFICATION = 'paper_former_contributor_notification';
+    public const TAG_PAPER_URL_LINE = '%%PAPER_URL_LINE%%';
     // editor comments
     public const TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY = 'paper_comment_by_editor_editor_copy';
     public const TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_AUTHOR_COPY = 'paper_ce_author_sources_deposed_response_author_copy';
@@ -496,6 +501,34 @@ class Episciences_Mail_TemplatesManager
         Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
         Episciences_Mail_Tags::TAG_SUBMISSION_DATE,
         Episciences_Mail_Tags::TAG_PAPER_URL
+    ];
+
+    public const paper_new_contributor_notification_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME, //previous contributor
+    ];
+
+    public const paper_former_contributor_notification_tags = [
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_SCREEN_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_FULL_NAME,
+        Episciences_Mail_Tags::TAG_RECIPIENT_EMAIL,
+        Episciences_Mail_Tags::TAG_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID,
+        Episciences_Mail_Tags::TAG_ARTICLE_TITLE,
+        Episciences_Mail_Tags::TAG_AUTHORS_NAMES,
+        Episciences_Mail_Tags::TAG_PAPER_URL,
+        Episciences_Mail_Tags::TAG_CONTRIBUTOR_FULL_NAME,  // new contributor
+        Episciences_Mail_Tags::TAG_COAUTHOR_STATUS_MESSAGE,
+        Episciences_Mail_Tags::TAG_PAPER_URL_LINE,
     ];
 
     /** @see CoiController::conflictProcessing() */
@@ -1704,7 +1737,14 @@ class Episciences_Mail_TemplatesManager
         self::TYPE_REMINDER_REVIEWED_ARTICLE_EDITOR_VERSION => [self::DESCRIPTION => "notification informant les rédacteurs que le travail de révision a été effectué par les relecteurs", self::RECIPIENT => self::EDITORS_RECEP_EXP],
         self::TYPE_REMINDER_SUBMITTED_ARTICLE_EDITOR_VERSION => [self::DESCRIPTION => "notification informant les rédacteurs des articles bloqués à l'état soumis", self::RECIPIENT => self::EDITORS_RECEP_EXP],
         self::TYPE_PAPER_AUTHOR_COMMENT_EDITOR_COPY => [self::DESCRIPTION => "notification informant le comité éditorial qu'un auteur vient d'ajouter / éditer son commentaire (lettre d'accompagnement)", self::RECIPIENT => self::MANAGERS_COPY_EDITORS_EXCEPTED_EXP],
-
+        self::TYPE_PAPER_NEW_CONTRIBUTOR_NOTIFICATION => [
+            self::DESCRIPTION => "notification informant le nouveau contributeur qu'il est désormais responsable de l'article",
+            self::RECIPIENT => "le nouveau contributeur de l'article"
+        ],
+        self::TYPE_PAPER_FORMER_CONTRIBUTOR_NOTIFICATION => [
+            self::DESCRIPTION => "notification informant l'ancien contributeur qu'il n'est plus responsable de l'article",
+            self::RECIPIENT => "l'ancien contributeur de l'article"
+        ],
 
     ];
 
@@ -2130,6 +2170,8 @@ class Episciences_Mail_TemplatesManager
             self::TYPE_PAPER_TMP_VERSION_REVIEWER_REASSIGN => self::paper_tmp_version_reviewer_reassign_tags,
             self::TYPE_PAPER_TMP_VERSION_SUBMITTED => self::paper_tmp_version_submitted_tags,
             self::TYPE_PAPER_UPDATED_RATING_DEADLINE => self::paper_updated_rating_deadline_tags,
+            self::TYPE_PAPER_NEW_CONTRIBUTOR_NOTIFICATION => self::paper_new_contributor_notification_tags,
+            self::TYPE_PAPER_FORMER_CONTRIBUTOR_NOTIFICATION => self::paper_former_contributor_notification_tags,
             self::TYPE_REMINDER_AFTER_RATING_DEADLINE_EDITOR_VERSION => self::reminder_after_deadline_editor_version_tags,
             self::TYPE_REMINDER_AFTER_RATING_DEADLINE_REVIEWER_VERSION => self::reminder_after_deadline_reviewer_version_tags,
             self::TYPE_REMINDER_AFTER_REVISION_DEADLINE_AUTHOR_VERSION => self::reminder_after_revision_deadline_author_version_tags,

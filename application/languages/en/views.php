@@ -29,6 +29,12 @@ return array(
     "Auteurs" => "Authors",
     "Contributeur" => "Contributor",
     "Contributeurs" => "Contributors",
+    "Contributeur actuel / Contributrice actuelle" => "Current contributor",
+    "Ancien contributeur / Ancienne contributrice" => "Former contributor",
+    "Nouveau contributeur / Nouvelle contributrice" => "New contributor",
+    "L'ancien contributeur / L'ancienne contributrice a été ajouté(e) comme co-auteur / co-autrice" => "The former contributor has been added as co-author",
+    "Ajouter l'ancien contributeur / l'ancienne contributrice comme co-auteur / co-autrice" => "Add the former contributor as co-author",
+    "Changer le contributeur" => "Change contributor",
 
     "Rédacteur" => "Editor",
     "Un rédacteur" => "An editor",
@@ -1169,7 +1175,7 @@ return array(
     'Préparation de copie : en attente des sources auteurs' => 'Copy editing: waiting for authors sources',
     'Préparation de copie : sources déposées' => 'Copy editing: sources submitted',
     "Posté le" => 'Posted on',
-    "Effectué par" => "Done by",
+    "Effectué(e) par" => "Done by",
     "Fait le" => "Done on",
     "Dernier statut connu" => "Last known status",
     "Type de donnée liée" => "Linked data type",
@@ -1210,6 +1216,7 @@ return array(
     "Demande des sources à l'auteur (édition)" => "Request for author's sources (copy editing)",
     "Prêt pour la publication (édition)" => "Ready to publish (copy editing)",
     "Mise en forme déposée par la revue (édition)" => "Formatting submitted by journal (copy editing)",
+    "Changement de contributeur" => "Contributor changed",
     "Assignation d'un rédacteur copiste" => "Copy editor assigned",
     "Désassignation d'un rédacteur copiste" => "Copy editor unassigned",
     'Descripteur de données chargé' => 'Data descriptor uploaded',
@@ -2425,6 +2432,7 @@ return array(
 
     // co-author
     "Co-auteur" => "Co-author",
+    "Co-auteur / Co-autrice" => "Co-author",
     "Utilisateur ajouté en tant que co-auteur" => "User added as co-author",
     "L'utilisateur est déjà co-auteur de ce document" => "The user is already a co-author for this document",
     "Supprimer ce co-auteur" => "Delete this co-author",
@@ -2597,5 +2605,11 @@ return array(
     "Toutes les suggestions" => "All suggestions",
     "Suggestion d'acceptation" => "Suggested acceptance",
     "Suggestion de refus" => "Suggested refusal",
-    "Suggestion de modification" => "Suggested revision"
+    "Suggestion de modification" => "Suggested revision",
+
+    // Contributor change
+    "Vous avez été ajouté comme co-auteur et continuerez à recevoir les notifications relatives à cet article." => "You have been added as a co-author and will continue to receive notifications related to this article.",
+    "Vous ne recevrez plus les notifications relatives à cet article." => "You will no longer receive notifications related to this article.",
+    "Contributor changed successfully" => "Contributor changed successfully.",
+    "Vous pouvez consulter l'article ici :" => "You can view the article here:",
 );
