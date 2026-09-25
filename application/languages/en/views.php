@@ -29,6 +29,12 @@ return array(
     "Auteurs" => "Authors",
     "Contributeur" => "Contributor",
     "Contributeurs" => "Contributors",
+    "Contributeur actuel / Contributrice actuelle" => "Current contributor",
+    "Ancien contributeur / Ancienne contributrice" => "Former contributor",
+    "Nouveau contributeur / Nouvelle contributrice" => "New contributor",
+    "L'ancien contributeur / L'ancienne contributrice a été ajouté(e) comme co-auteur / co-autrice" => "The former contributor has been added as co-author",
+    "Ajouter l'ancien contributeur / l'ancienne contributrice comme co-auteur / co-autrice" => "Add the former contributor as co-author",
+    "Changer le contributeur / la contributrice" => "Change contributor",
 
     "Rédacteur" => "Editor",
     "Un rédacteur" => "An editor",
@@ -2426,6 +2432,7 @@ return array(
 
     // co-author
     "Co-auteur" => "Co-author",
+    "Co-auteur / Co-autrice" => "Co-author",
     "Utilisateur ajouté en tant que co-auteur" => "User added as co-author",
     "L'utilisateur est déjà co-auteur de ce document" => "The user is already a co-author for this document",
     "Supprimer ce co-auteur" => "Delete this co-author",

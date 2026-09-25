@@ -192,25 +192,54 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
             $language = self::LANG_FR;
         }
 
-        $translator = new Zend_Translate(Zend_Translate::AN_ARRAY, PATH_TRANSLATION, null, array(
-            'scan' => Zend_Translate::LOCALE_DIRECTORY,
-            'disableNotices' => true
-        ));
+        $translator = null;
 
-        if (is_dir(APPLICATION_PATH . '/languages') && count(scandir(APPLICATION_PATH . '/languages')) > 2) {
-            $translator->addTranslation(APPLICATION_PATH . '/languages');
-        }
+        // Charger tous les fichiers de traduction du répertoire principal
+        $this->loadAllTranslationFiles($translator, PATH_TRANSLATION);
 
+        // Charger les traductions spécifiques à la revue (surcharge)
         if (is_dir(REVIEW_PATH . 'languages') && count(scandir(REVIEW_PATH . 'languages')) > 2) {
-            $translator->addTranslation(REVIEW_PATH . 'languages');
+            $this->loadAllTranslationFiles($translator, REVIEW_PATH . 'languages');
         }
 
-        if ($translator->isAvailable($language)) {
+        if ($translator !== null && $translator->isAvailable($language)) {
             $translator->setLocale($language);
             return $translator;
         }
 
         return null;
+    }
+
+    /**
+     * Charge tous les fichiers PHP de traduction d'un répertoire
+     *
+     * Fix: In English mode, some texts were displayed in French, and vice versa.
+     * This was caused by the translation files being loaded in an inconsistent order,
+     * leading to locale/content mismatches in the Zend_Translate adapter.
+     *
+     * @param Zend_Translate|null $translator
+     * @param string $basePath
+     * @return void
+     */
+    private function loadAllTranslationFiles(?Zend_Translate &$translator, string $basePath): void
+    {
+        foreach (self::getAvailableLanguages() as $lang) {
+            $langPath = $basePath . '/' . $lang;
+            if (!is_dir($langPath)) {
+                continue;
+            }
+
+            $files = glob($langPath . '/*.php');
+            foreach ($files as $file) {
+                if ($translator === null) {
+                    $translator = new Zend_Translate(Zend_Translate::AN_ARRAY, $file, $lang, [
+                        'disableNotices' => true
+                    ]);
+                } else {
+                    $translator->addTranslation($file, $lang);
+                }
+            }
+        }
     }
 
 }

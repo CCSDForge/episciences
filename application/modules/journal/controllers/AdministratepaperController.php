@@ -5410,7 +5410,7 @@ class AdministratepaperController extends PaperDefaultController
         try {
             Episciences_Mail_Send::sendMailFromReview(
                 $newContributor,
-                Episciences_Mail_TemplatesManager::TYPE_PAPER_CONTRIBUTOR_CHANGED,
+                Episciences_Mail_TemplatesManager::TYPE_PAPER_NEW_CONTRIBUTOR_NOTIFICATION,
                 $newContributorTags,
                 $paper,
                 Episciences_Auth::getUid()

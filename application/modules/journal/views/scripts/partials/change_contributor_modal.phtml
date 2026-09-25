@@ -15,13 +15,13 @@ $contributor = $this->contributor;
                     <span aria-hidden="true">&times;</span>
                 </button>
                 <h4 class="modal-title" id="changeContributorModalLabel">
-                    <?= $this->translate('Changer le contributeur') ?>
+                    <?= $this->translate('Changer le contributeur / la contributrice') ?>
                 </h4>
             </div>
             <div class="modal-body">
                 <!-- Current contributor display -->
                 <div class="form-group">
-                    <label><?= $this->translate('Contributeur actuel') ?></label>
+                    <label><?= $this->translate('Contributeur actuel / Contributrice actuelle') ?></label>
                     <div class="well well-sm">
                         <span class="glyphicon glyphicon-user"></span>
                         <strong id="currentContributorName"><?= htmlspecialchars($contributor->getFullName()) ?></strong>
@@ -31,7 +31,7 @@ $contributor = $this->contributor;
 
                 <!-- New contributor autocomplete -->
                 <div class="form-group">
-                    <label for="newContributorInput"><?= $this->translate('Nouveau contributeur') ?></label>
+                    <label for="newContributorInput"><?= $this->translate('Nouveau contributeur / Nouvelle contributrice') ?></label>
                     <div class="input-group">
                         <div class="input-group-addon">
                             <span class="glyphicon glyphicon-search"></span>
@@ -48,7 +48,7 @@ $contributor = $this->contributor;
                 <div class="checkbox">
                     <label>
                         <input type="checkbox" id="addAsCoauthorCheckbox" name="add_as_coauthor" value="1" checked>
-                        <?= $this->translate("Ajouter l'ancien contributeur comme co-auteur") ?>
+                        <?= $this->translate("Ajouter l'ancien contributeur / l'ancienne contributrice comme co-auteur / co-autrice") ?>
                         <p class="help-block small">
                             <?= $this->translate('Il continuera à recevoir les notifications') ?>
                         </p>

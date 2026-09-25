@@ -309,19 +309,19 @@
                 <td class="small"><?= $this->escape($this->user['fullname']) ?></td>
             </tr>
             <tr>
-                <td class="td-label"><?= $this->translate("Ancien contributeur") ?></td>
+                <td class="td-label"><?= $this->translate("Ancien contributeur / Ancienne contributrice") ?></td>
                 <td class="small"><?= $this->escape($this->log['detail']['oldContributor']['fullname']) ?></td>
             </tr>
             <tr>
-                <td class="td-label"><?= $this->translate("Nouveau contributeur") ?></td>
+                <td class="td-label"><?= $this->translate("Nouveau contributeur / Nouvelle contributrice") ?></td>
                 <td class="small"><strong><?= $this->escape($this->log['detail']['newContributor']['fullname']) ?></strong></td>
             </tr>
             <?php if (!empty($this->log['detail']['addedAsCoAuthor'])): ?>
             <tr>
-                <td class="td-label"><?= $this->translate("Co-auteur") ?></td>
+                <td class="td-label"><?= $this->translate("Co-auteur / Co-autrice") ?></td>
                 <td class="small text-info">
                     <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
-                    <?= $this->translate("L'ancien contributeur a été ajouté comme co-auteur") ?>
+                    <?= $this->translate("L'ancien contributeur / L'ancienne contributrice a été ajouté(e) comme co-auteur / co-autrice") ?>
                 </td>
             </tr>
             <?php endif; ?>

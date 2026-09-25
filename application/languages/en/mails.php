@@ -209,8 +209,8 @@ return [
     "paper_comment_tpl_group" => "Paper - comments",
 
     // Notification to the new contributor when the paper's contributor is changed
-    "paper_contributor_changed_tpl_name" => "Contributor changed",
-    "paper_contributor_changed_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - You are now the contributor of the article",
+    "paper_new_contributor_notification_tpl_name" => "New contributor notification",
+    "paper_new_contributor_notification_mail_subject" => "%%REVIEW_CODE%% #%%ARTICLE_ID%% - You are now the contributor of the article",
 
     // Notification to the former contributor when the paper's contributor is changed
     "paper_former_contributor_notification_tpl_name" => "Former contributor notification",
