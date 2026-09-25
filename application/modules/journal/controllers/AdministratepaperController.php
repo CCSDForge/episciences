@@ -5315,17 +5315,17 @@ class AdministratepaperController extends PaperDefaultController
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $db->beginTransaction();
         try {
-            // Step 9: Update contributor first - if this fails, nothing else changes
+            // Step 7: Update contributor first - if this fails, nothing else changes
             if (!Episciences_PapersManager::updateContributor($paper->getPaperid(), $newUid)) {
                 throw new RuntimeException('Failed to update contributor');
             }
 
-            // Step 7: Add old contributor as co-author (if requested)
+            // Step 8: Add old contributor as co-author (if requested)
             if ($addAsCoAuthor) {
                 $this->addRoleCoAuthor($docId, $oldUid);
             }
 
-            // Step 8: Remove existing co-author assignment of new contributor (avoid duplicate role)
+            // Step 9: Remove existing co-author assignment of new contributor (avoid duplicate role)
             $existingAssignment = Episciences_User_AssignmentsManager::find([
                 'RVID' => RVID,
                 'ITEMID' => $docId,
