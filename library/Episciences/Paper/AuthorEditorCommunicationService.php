@@ -21,6 +21,7 @@ class Episciences_Paper_AuthorEditorCommunicationService
     public const MSG_SUCCESS_EDITOR_SENT = "Votre message a bien été envoyé à l'auteur.";
     public const MSG_SUCCESS_EDITOR_REPLY = "Votre réponse a bien été envoyée à l'auteur.";
     public const MSG_ERROR_SEND_FAILED = "Votre message n'a pas pu être envoyé.";
+    public const MSG_WARNING_NOTIFICATION_FAILED = "Votre message a bien été enregistré, mais la notification par e-mail n'a pas pu être envoyée à tous les destinataires.";
     public const MSG_ERROR_SAVE_FAILED = "Erreur lors de la sauvegarde de votre réponse.";
     public const MSG_ERROR_GENERAL = "Une erreur s'est produite lors de l'envoi du message.";
     public const MSG_ERROR_UNAUTHORIZED_AUTHOR = "Vous n'êtes pas autorisé à répondre.";
