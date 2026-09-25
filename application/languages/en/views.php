@@ -34,7 +34,7 @@ return array(
     "Nouveau contributeur / Nouvelle contributrice" => "New contributor",
     "L'ancien contributeur / L'ancienne contributrice a été ajouté(e) comme co-auteur / co-autrice" => "The former contributor has been added as co-author",
     "Ajouter l'ancien contributeur / l'ancienne contributrice comme co-auteur / co-autrice" => "Add the former contributor as co-author",
-    "Changer le contributeur / la contributrice" => "Change contributor",
+    "Changer le contributeur" => "Change contributor",
 
     "Rédacteur" => "Editor",
     "Un rédacteur" => "An editor",
