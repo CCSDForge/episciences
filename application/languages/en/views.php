@@ -1218,7 +1218,7 @@ return array(
     'DOI mis à jour' => 'DOI updated',
     "Le document a été importé" => "Document imported",
     "Assignation d'un rédacteur" => "Editor assigned",
-    "Commentaire du rédacteur" => "Editor comment",
+    "Commentaire du rédacteur" => "editor's comment",
     "Désassignation d'un rédacteur" => "Editor unassigned",
     "Ajout d'une donnée liée" => "Linked data added",
     "Changement d'une donnée liée" => "Linked data updated",
