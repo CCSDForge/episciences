@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Trait\LocaleByCookieTrait;
+use Episciences\Translation\TranslatorFactory;
 use Psr\Log\LogLevel;
 
 /**
@@ -13,12 +14,6 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
 
     public const LANG_FR = 'fr';
     public const LANG_EN = 'en';
-
-    /**
-     * E-mail templates (<locale>/emails/*.phtml) live next to the dictionaries but are not
-     * translation arrays: they must never be loaded by Zend_Translate.
-     */
-    public const EMAIL_TEMPLATES_IGNORE_REGEX = '#/[a-z]{2,3}(_[A-Z]{2})?/emails(/|$)#';
 
     /**
      * @var string[] Application languages
@@ -46,7 +41,7 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
         $this->initLanguages();
 
         try {
-            $translator = self::createTranslator(PATH_TRANSLATION, defined('REVIEW_PATH') ? REVIEW_PATH . 'languages' : null);
+            $translator = TranslatorFactory::create(PATH_TRANSLATION, defined('REVIEW_PATH') ? REVIEW_PATH . 'languages' : null);
         } catch (Zend_Exception $e) {
             Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
             throw $e;
@@ -122,71 +117,6 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
         }
 
         return in_array(self::LANG_FR, $allowed, true) ? self::LANG_FR : (string)reset($allowed);
-    }
-
-    /**
-     * Builds the translator from the application dictionaries, then the journal ones.
-     *
-     * Application files are loaded explicitly in a fixed (sorted) order because, on duplicate keys,
-     * the last loaded file wins: a directory scan would depend on the filesystem order.
-     * Journal dictionaries are loaded last so that they override the application ones.
-     *
-     * The 'scan' and 'ignore' options are kept by the adapter: later addTranslation() calls on a
-     * languages directory (journal translations in OAI, TEI...) still detect the locale from the
-     * sub-directory name and skip the e-mail templates.
-     *
-     * @throws Zend_Translate_Exception when no dictionary is found
-     */
-    public static function createTranslator(string $applicationLanguagesPath, ?string $journalLanguagesPath = null): Zend_Translate
-    {
-        $translator = null;
-
-        foreach (self::getLanguageDirectories($applicationLanguagesPath) as $lang => $directory) {
-            $files = glob($directory . '/*.php') ?: [];
-            sort($files, SORT_STRING);
-
-            foreach ($files as $file) {
-                $options = ['content' => $file, 'locale' => $lang];
-
-                if ($translator === null) {
-                    $translator = new Zend_Translate(['adapter' => Zend_Translate::AN_ARRAY] + $options + [
-                            'scan' => Zend_Translate::LOCALE_DIRECTORY,
-                            'disableNotices' => true,
-                            'ignore' => ['.', 'regex_emails' => self::EMAIL_TEMPLATES_IGNORE_REGEX],
-                        ]);
-                } else {
-                    $translator->addTranslation($options);
-                }
-            }
-        }
-
-        if ($translator === null) {
-            throw new Zend_Translate_Exception('No translation file found in ' . $applicationLanguagesPath);
-        }
-
-        if ($journalLanguagesPath !== null && is_dir($journalLanguagesPath)) {
-            $translator->addTranslation($journalLanguagesPath);
-        }
-
-        return $translator;
-    }
-
-    /**
-     * @return array<string, string> locale => directory, sorted by locale
-     */
-    private static function getLanguageDirectories(string $languagesPath): array
-    {
-        $directories = [];
-
-        foreach (glob(rtrim($languagesPath, '/') . '/*', GLOB_ONLYDIR) ?: [] as $directory) {
-            $lang = basename($directory);
-            if (Zend_Locale::isLocale($lang, true, false)) {
-                $directories[$lang] = $directory;
-            }
-        }
-
-        ksort($directories, SORT_STRING);
-        return $directories;
     }
 
     /**
