@@ -512,7 +512,8 @@ class StatsQuery
             $sql .= ' AND LOWER(COALESCE(u.EMAIL, ut.EMAIL)) = :email';
             $params['email'] = strtolower($email);
         } else {
-            $sql .= ' AND ua.UID = :uid AND ua.TMP_USER = :tmp_user';
+            // Disabled accounts are ignored, like the list and the e-mail lookup above
+            $sql .= ' AND ua.UID = :uid AND ua.TMP_USER = :tmp_user AND (ua.TMP_USER = 1 OR u.UID IS NOT NULL)';
             $params['uid'] = $uid;
             $params['tmp_user'] = $tmpUser;
         }

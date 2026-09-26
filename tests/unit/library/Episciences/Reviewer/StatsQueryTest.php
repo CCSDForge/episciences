@@ -521,6 +521,17 @@ final class StatsQueryTest extends TestCase
         self::assertStringContainsString('ua.UID = u.UID AND u.IS_VALID = 1', $adapter->calls[0]['sql']);
     }
 
+    public function testUidDetailIgnoresDisabledAccounts(): void
+    {
+        // The list shows a disabled account as "deleted", with a uid link: following it
+        // must not bring that account's assignments (and profile) back.
+        $adapter = new StatsQueryTestAdapter([[]]);
+        (new StatsQuery($adapter))->getReviewerInvitationDetails(1, '', 7, 0, false, 42, 24);
+
+        self::assertStringContainsString('(ua.TMP_USER = 1 OR u.UID IS NOT NULL)', $adapter->calls[0]['sql']);
+        self::assertSame(7, $adapter->calls[0]['bind']['uid']);
+    }
+
     /**
      * @dataProvider coiFilterResolutionProvider
      */
