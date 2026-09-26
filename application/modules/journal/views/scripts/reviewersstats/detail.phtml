@@ -5,7 +5,7 @@ $backParams = array_filter([
 ], static fn($value) => $value !== null);
 $backUrl = '/reviewersstats' . ($backParams !== [] ? '?' . http_build_query($backParams) : '');
 
-$reviewerDisplayName = $this->reviewerName !== '' ? $this->reviewerName : (string)($this->reviewerEmail ?? '');
+$reviewerDisplayName = (string)$this->reviewerName;
 $this->headTitle($reviewerDisplayName . ' - ' . $this->translate('Statistiques des relecteurs'));
 
 // Empty cells: a visual dash that screen readers don't spell out as "dash"

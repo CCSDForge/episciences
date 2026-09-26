@@ -15,10 +15,15 @@ use Episciences\User\ProfileCard;
 $card = ProfileCard::fromArray((array)$this->user, (int)RVID);
 $viewerUid = (int)Episciences_Auth::getUid();
 // /user/view and /user/card load any account by its id: a manager's role only covers the
-// people who hold a role in their own journal.
+// people who hold a role in their own journal. Guest editors and encapsulated editors only
+// manage their own papers, not the journal's members: same rule as the "Gérer la revue"
+// dashboard block (journal UserController::dashboardAction()).
+$journal = Episciences_ReviewsManager::find((int)RVID);
+$managesJournalMembers = Episciences_Auth::isSecretary()
+    || (Episciences_Auth::isEditor(RVID, true) && $journal instanceof Episciences_Review
+        && !$journal->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS));
 $managesThisPerson = $card->isRegistered()
-    && (Episciences_Auth::isSecretary() || Episciences_Auth::isChiefEditor()
-        || Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor())
+    && $managesJournalMembers
     && (new Episciences_User())->hasRoles((int)$card->uid, (int)RVID);
 $showPrivate = $this->showPrivate ?? $card->canShowPrivateDetailsTo($viewerUid, $managesThisPerson);
 $languageName = $card->languageCode !== null

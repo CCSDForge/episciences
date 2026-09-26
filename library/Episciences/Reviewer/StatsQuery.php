@@ -6,6 +6,7 @@ namespace Episciences\Reviewer;
 
 use Episciences_Acl;
 use Episciences_Paper_Conflict;
+use Episciences_User_Assignment;
 use Zend_Db_Adapter_Abstract;
 use Zend_Db_Table_Abstract;
 
@@ -395,25 +396,38 @@ class StatsQuery
      * Same "does this editor manage this paper" test used by the restricted global view,
      * shared with getReviewerInvitationDetails() so a drill-down can never show more than
      * the aggregate row it was reached from. Binds :current_user_uid and :rvid.
+     *
+     * USER_ASSIGNMENT is insert-only: an unassignment adds an 'inactive' row and leaves the
+     * earlier 'active' one in place, so only the viewer's latest row per paper and role counts
+     * (same rule as Episciences_PapersManager::allPapersAssignedToRole()). The invitations the
+     * viewer sent (ui.SENDER_UID) or the assignments they made (ua.FROM_UID) stay visible to
+     * them even once they no longer manage the paper.
      */
     private static function restrictionClauseSql(): string
     {
-        // Roles are fixed class constants (not user input), safe to inline.
+        // Roles and status are fixed class constants (not user input), safe to inline.
         $managerRoles = "'" . implode("','", [
             Episciences_Acl::ROLE_EDITOR,
             Episciences_Acl::ROLE_GUEST_EDITOR,
             Episciences_Acl::ROLE_CHIEF_EDITOR,
         ]) . "'";
 
+        // ROW_NUMBER() rather than a MAX(WHEN) self-join: a derived table MySQL cannot merge
+        // into the outer query and re-evaluate per row.
         return '(ui.SENDER_UID = :current_user_uid OR ua.FROM_UID = :current_user_uid OR ua.ITEMID IN (
-            SELECT ITEMID FROM `' . T_ASSIGNMENTS . '` WHERE UID = :current_user_uid AND TMP_USER = 0 AND ITEM = \'paper\' AND RVID = :rvid AND ROLEID IN (' . $managerRoles . ')
+            SELECT managed.ITEMID FROM (
+                SELECT ITEMID, STATUS, ROW_NUMBER() OVER (PARTITION BY ITEMID, ROLEID ORDER BY `WHEN` DESC, ID DESC) AS rn
+                FROM `' . T_ASSIGNMENTS . '`
+                WHERE UID = :current_user_uid AND TMP_USER = 0 AND ITEM = \'paper\' AND RVID = :rvid AND ROLEID IN (' . $managerRoles . ')
+            ) managed
+            WHERE managed.rn = 1 AND managed.STATUS = \'' . Episciences_User_Assignment::STATUS_ACTIVE . '\'
         ))';
     }
 
     /**
-     * Papers whose reviewers the viewer must not see, whatever their role: their own
-     * submissions (an author must not learn who reviews them, same rule as the paper lists'
-     * reviewer filter) and, when the journal has COI enabled, the papers $coiFilter hides.
+     * Papers whose reviewers the viewer must not see, whatever their role: the ones they
+     * submitted or co-author, in any version (an author must not learn who reviews them,
+     * same rule as the paper lists' reviewer filter) and, when the journal has COI enabled, the papers $coiFilter hides.
      * Shared by the list, the suggestions and the drill-down so they always agree.
      * Requires the `p` (T_PAPERS) join; binds :viewer_uid and, if needed, :coi_answer.
      *
@@ -423,6 +437,10 @@ class StatsQuery
     {
         $params['viewer_uid'] = $viewerUid;
         $sql = ' AND (p.UID IS NULL OR p.UID <> :viewer_uid)';
+        // Any co-author row, whatever its status: hiding a paper too many is the safe side.
+        $sql .= ' AND NOT EXISTS (SELECT 1 FROM `' . T_ASSIGNMENTS . '` co JOIN `' . T_PAPERS . '` cp ON co.ITEMID = cp.DOCID'
+            . ' WHERE cp.PAPERID = p.PAPERID AND co.ITEM = \'paper\' AND co.ROLEID = \'' . Episciences_Acl::ROLE_CO_AUTHOR . '\''
+            . ' AND co.UID = :viewer_uid AND co.TMP_USER = 0)';
 
         if ($coiFilter === StatsCoiFilter::None) {
             return $sql;

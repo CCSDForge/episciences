@@ -9,6 +9,7 @@ use Episciences\Reviewer\StatsQuery;
 use Episciences_Acl;
 use Episciences_Paper;
 use Episciences_Paper_Conflict;
+use Episciences_User_Assignment;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -70,6 +71,29 @@ final class StatsQueryTest extends TestCase
         self::assertStringContainsString("'" . Episciences_Acl::ROLE_EDITOR . "'", $sql);
         self::assertStringContainsString("'" . Episciences_Acl::ROLE_GUEST_EDITOR . "'", $sql);
         self::assertStringContainsString("'" . Episciences_Acl::ROLE_CHIEF_EDITOR . "'", $sql);
+    }
+
+    public function testRestrictedViewOnlyCountsTheViewersLatestActiveAssignment(): void
+    {
+        // USER_ASSIGNMENT is insert-only: an editor removed from a paper keeps their old
+        // 'active' row, so only their latest row per paper and role may grant access.
+        $adapter = new StatsQueryTestAdapter([0, []]);
+        (new StatsQuery($adapter))->getReviewersGlobalStats(1, true, 42, 12);
+
+        $sql = $adapter->calls[0]['sql'];
+        self::assertStringContainsString('ROW_NUMBER() OVER (PARTITION BY ITEMID, ROLEID ORDER BY `WHEN` DESC, ID DESC)', $sql);
+        self::assertStringContainsString("managed.rn = 1 AND managed.STATUS = '" . Episciences_User_Assignment::STATUS_ACTIVE . "'", $sql);
+    }
+
+    public function testViewerKeepsSeeingTheInvitationsTheySentOrTheAssignmentsTheyMade(): void
+    {
+        // Even once unassigned from the paper: only the "papers I manage" branch depends on
+        // the viewer's current assignment.
+        $adapter = new StatsQueryTestAdapter([0, []]);
+        (new StatsQuery($adapter))->getReviewersGlobalStats(1, true, 42, 12);
+
+        $sql = $adapter->calls[0]['sql'];
+        self::assertStringContainsString('(ui.SENDER_UID = :current_user_uid OR ua.FROM_UID = :current_user_uid OR ua.ITEMID IN (', $sql);
     }
 
     public function testPendingInvitationsExcludeObsoletePapers(): void
@@ -438,6 +462,8 @@ final class StatsQueryTest extends TestCase
         foreach ($adapter->calls as $call) {
             self::assertStringContainsString('LEFT JOIN `' . T_PAPERS . '` p ON ua.ITEMID = p.DOCID', $call['sql']);
             self::assertStringContainsString('(p.UID IS NULL OR p.UID <> :viewer_uid)', $call['sql']);
+            self::assertStringContainsString("co.ROLEID = '" . Episciences_Acl::ROLE_CO_AUTHOR . "'", $call['sql'], 'co-authors are authors too');
+            self::assertStringContainsString('cp.PAPERID = p.PAPERID', $call['sql'], 'every version of the paper');
             self::assertSame(42, $call['bind']['viewer_uid']);
             self::assertStringNotContainsString(T_PAPER_CONFLICTS, $call['sql'], 'COI disabled: no conflict filter');
         }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Episciences\Reviewer\StatsCoiFilter;
 use Episciences\Reviewer\StatsQuery;
+use Episciences\User\ProfileCard;
 
 class ReviewersstatsController extends Zend_Controller_Action
 {
@@ -204,7 +205,6 @@ class ReviewersstatsController extends Zend_Controller_Action
         $email = is_string($email) && $email !== '' ? $email : null;
         $uid = (int)$request->getParam('uid', 0);
         $tmpUser = (int)$request->getParam('tmp_user', 0);
-        $reviewerName = (string)$request->getParam('name', '');
         $period = min(24, max(1, (int)$request->getParam('period', 24)));
         $onlyMyResponsibility = !$isRoleRestricted && $request->getParam('only_my_responsibility', false);
         $isRestricted = $isRoleRestricted || $onlyMyResponsibility;
@@ -229,13 +229,40 @@ class ReviewersstatsController extends Zend_Controller_Action
         $docIds = array_values(array_unique(array_map(static fn(array $row): int => (int)$row['docid'], $rows)));
         $papers = Episciences_PapersManager::getByDocIds($docIds);
 
+        $reviewerProfile = self::loadReviewerProfile($rows);
+
         $this->view->rows = self::enrichAndGroupRows($rows, $papers);
         $this->view->papers = $papers;
-        $this->view->reviewerName = $reviewerName;
-        $this->view->reviewerEmail = $email;
+        $this->view->reviewerName = self::reviewerDisplayName($reviewerProfile, $rows, $email, $rvid, $this->view->translate('Compte supprimé'));
         $this->view->period = $period;
         $this->view->onlyMyResponsibility = $onlyMyResponsibility;
-        $this->view->reviewerProfile = self::loadReviewerProfile($rows);
+        $this->view->reviewerProfile = $reviewerProfile;
+    }
+
+    /**
+     * Page title and breadcrumb of the detail page. The list's links still carry a `name`
+     * parameter, but it is never trusted: a forged link would otherwise put any name above
+     * another reviewer's reviews and profile card.
+     *
+     * @param array<string, mixed>|null $reviewerProfile loadReviewerProfile() result
+     * @param array<int, array<string, mixed>> $rows
+     */
+    private static function reviewerDisplayName(?array $reviewerProfile, array $rows, ?string $email, int $rvid, string $deletedLabel): string
+    {
+        if ($reviewerProfile !== null) {
+            $name = ProfileCard::fromArray($reviewerProfile, $rvid)->name;
+            if ($name !== '') {
+                return $name;
+            }
+        }
+
+        // Rows without a loadable account: a deleted one (the list shows the same label)
+        if ($rows !== []) {
+            return $deletedLabel;
+        }
+
+        // Nothing visible: only echo back what was searched for, the page shows no data
+        return $email ?? '';
     }
 
     /**

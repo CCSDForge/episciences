@@ -301,12 +301,14 @@ them can ever show a reviewer or an invitation the others would hide:
   open" rows (see the staleness section). A reviewer's own `/myreviewstats` has no cap.
 - **Restricted view.** Guest editors, editors when the journal setting
   `encapsulateEditors` is on, and any manager who ticks "only the papers I am responsible
-  for" only see reviewers they invited (`ui.SENDER_UID`), assigned (`ua.FROM_UID`), or
-  assigned to a paper they manage (a `USER_ASSIGNMENT` row of theirs on the same `ITEMID`
-  with role `editor`, `guest_editor` or `chief_editor`) —
-  `StatsQuery::restrictionClauseSql()`.
+  for" only see reviewers they invited (`ui.SENDER_UID`) or assigned (`ua.FROM_UID`), even
+  once unassigned from the paper, and the reviewers of papers they currently manage: their
+  *latest* `USER_ASSIGNMENT` row on the same `ITEMID` with role `editor`, `guest_editor` or
+  `chief_editor` must be `active` (the table is insert-only, an unassignment leaves the
+  older `active` row in place) — `StatsQuery::restrictionClauseSql()`.
 - **Paper visibility.** Whatever their role, managers never see the reviewers of papers
-  they submitted (`PAPERS.UID`). When the journal has conflicts of interest enabled
+  they submitted (`PAPERS.UID`) or co-author (a `coauthor` `USER_ASSIGNMENT` row on any
+  version of the paper). When the journal has conflicts of interest enabled
   (`isCoiEnabled`), editorial staff only see papers they answered "no conflict" for in
   `paper_conflicts`, and administrators without an editorial role (who cannot declare a
   conflict) see every paper except those recorded with a conflict; root is exempt —
