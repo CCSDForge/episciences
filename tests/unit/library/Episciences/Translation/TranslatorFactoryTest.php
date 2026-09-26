@@ -117,14 +117,24 @@ final class TranslatorFactoryTest extends TestCase
     }
 
     /**
-     * views.php (loaded after js.php) wins: role labels keep their icon on server-rendered pages.
+     * views.php (loaded after js.php) wins on the keys allowed to differ (see Episciences_Translation_DictionariesTest).
      */
     public function testViewsDictionaryWinsOverJsDictionary(): void
     {
         $translator = TranslatorFactory::create(PATH_TRANSLATION);
 
-        self::assertStringContainsString('fa-user-tag', $translator->getAdapter()->translate('editorial_board', 'en'));
-        self::assertStringContainsString('fa-user-tag', $translator->getAdapter()->translate('editorial_board', 'fr'));
+        self::assertSame('Show', $translator->getAdapter()->translate('Afficher', 'en'));
+    }
+
+    /**
+     * Role labels are plain text: the badge icon is added by Episciences_Acl::getRoleLabelHtml().
+     */
+    public function testRoleLabelsArePlainText(): void
+    {
+        $translator = TranslatorFactory::create(PATH_TRANSLATION);
+
+        self::assertSame('Editorial board', $translator->getAdapter()->translate('editorial_board', 'en'));
+        self::assertSame('Comité éditorial', $translator->getAdapter()->translate('editorial_board', 'fr'));
     }
 
     // =========================================================================

@@ -2,7 +2,7 @@
     <ul class="list-unstyled">
         <?php foreach ($this->roles as $role) : ?>
             <li>
-                <span class="label role-<?php echo $role ?>"><?php echo $this->translate($role) ?></span>
+                <span class="label role-<?php echo $role ?>"><?php echo Episciences_Acl::getRoleLabelHtml($role) ?></span>
             </li>
 
 

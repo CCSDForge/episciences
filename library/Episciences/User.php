@@ -1021,7 +1021,6 @@ class Episciences_User extends Ccsd_User_Models_User
             $roles = $acl->getRolesCodes();
             $acl = new Episciences_Acl();
             unset($roles[$acl::ROLE_GUEST], $roles[$acl::ROLE_MEMBER], $roles[$acl::ROLE_ROOT]);
-            $translator = Zend_Registry::get('Zend_Translate');
 
             foreach ($users as $uid => $user) {
 
@@ -1061,7 +1060,7 @@ class Episciences_User extends Ccsd_User_Models_User
                         $class = '';
                     }
 
-                    $tag = '<span class="label ' . $class . '">' . $translator->translate($role) . '</span>';
+                    $tag = '<span class="label ' . $class . '">' . Episciences_Acl::getRoleLabelHtml($role) . '</span>';
                     $form->addElement('html', 'tag_' . $uid . '_' . $role, ['value' => $tag]);
 
                 }
