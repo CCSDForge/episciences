@@ -7,6 +7,7 @@ use Episciences\Reviewer\StatsQuery;
 class ReviewersstatsController extends Zend_Controller_Action
 {
     private const LIMIT = 50;
+    private const SUGGEST_MIN_LENGTH = 2;
 
     /**
      * Display-only pseudo status (not one of Episciences_Reviewer_Reviewing's real status
@@ -106,6 +107,79 @@ class ReviewersstatsController extends Zend_Controller_Action
         $this->view->canFilterByResponsibility = !$isRoleRestricted;
         $this->view->sort = $sort;
         $this->view->direction = $direction;
+    }
+
+    /**
+     * JSON suggestions for the list's search field (public/js/reviewersstats/reviewer-suggest.js):
+     * picking one opens that reviewer's detail page. Same scope as indexAction() for the given
+     * period/responsibility filters, restriction included.
+     */
+    public function suggestAction(): void
+    {
+        $this->getResponse()->setHeader('Cache-Control', 'no-store', true);
+
+        $request = $this->getRequest();
+        $query = trim((string)$request->getParam('q', ''));
+        if (mb_strlen($query) < self::SUGGEST_MIN_LENGTH) {
+            $this->_helper->json([]);
+            return;
+        }
+
+        $rvid = (int)RVID;
+        $isRoleRestricted = $this->isRestrictedView($rvid);
+        $period = min(24, max(1, (int)$request->getParam('period', 12)));
+        $onlyMyResponsibility = !$isRoleRestricted && $request->getParam('only_my_responsibility', false);
+
+        $rows = (new StatsQuery())->getReviewerSuggestions(
+            $rvid,
+            $isRoleRestricted || $onlyMyResponsibility,
+            (int)Episciences_Auth::getUid(),
+            $period,
+            $query
+        );
+
+        $deletedLabel = $this->view->translate('Compte supprimé');
+        $suggestions = [];
+        foreach ($rows as $row) {
+            $params = self::detailUrlParams($row, $period, (bool)$onlyMyResponsibility, $deletedLabel);
+            $suggestions[] = [
+                'name' => $params['name'],
+                'email' => $row['EMAIL'] !== null ? (string)$row['EMAIL'] : '',
+                'overdue' => (int)$row['reviews_overdue'],
+                'url' => $this->view->url($params, null, true),
+            ];
+        }
+
+        $this->_helper->json($suggestions);
+    }
+
+    /**
+     * Route params of a reviewer's detail page, shared by the list's links and the search
+     * suggestions so both always open the same page. The e-mail is the identity when known
+     * (rows are grouped by it), UID + TMP_USER otherwise.
+     *
+     * @param array<string, mixed> $row aggregate row of StatsQuery
+     * @return array<string, int|string>
+     */
+    public static function detailUrlParams(array $row, int $period, bool $onlyMyResponsibility, string $deletedLabel): array
+    {
+        $params = [
+            'controller' => 'reviewersstats',
+            'action' => 'detail',
+            'period' => $period,
+            'name' => $row['SCREEN_NAME'] !== null && $row['SCREEN_NAME'] !== '' ? (string)$row['SCREEN_NAME'] : $deletedLabel,
+        ];
+        if ($onlyMyResponsibility) {
+            $params['only_my_responsibility'] = 1;
+        }
+        if (!empty($row['EMAIL'])) {
+            $params['email'] = (string)$row['EMAIL'];
+        } else {
+            $params['uid'] = (int)$row['UID'];
+            $params['tmp_user'] = (int)$row['TMP_USER'];
+        }
+
+        return $params;
     }
 
     /**

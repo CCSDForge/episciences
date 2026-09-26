@@ -176,6 +176,39 @@ class StatsQuery
     }
 
     /**
+     * Reviewer search suggestions (autocomplete of the list's search field): the same core
+     * query as getReviewersGlobalStats() — identity grouping, period cap and, above all, the
+     * editors' restriction — so a suggestion can never reveal a reviewer missing from the list.
+     * No count query: only the first rows are needed.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getReviewerSuggestions(
+        int $rvid,
+        bool $isRestricted,
+        int $currentUserId,
+        int $periodMonths,
+        string $search,
+        int $limit = 10
+    ): array {
+        [$coreSql, $params] = $this->buildCoreQuery(
+            $rvid,
+            $isRestricted,
+            $currentUserId,
+            min(24, max(1, $periodMonths)),
+            $search,
+            false
+        );
+
+        $sql = $coreSql . ' GROUP BY identity_key ORDER BY no_identity ASC, SCREEN_NAME ASC LIMIT ' . max(1, min(20, $limit));
+
+        /** @var array<int, array<string, mixed>> $rows */
+        $rows = $this->db->fetchAll($sql, $params);
+
+        return $rows;
+    }
+
+    /**
      * `Episciences_User_Invitation::save()` always INSERTs a new row (never updates one in
      * place): answering or cancelling an invitation inserts a new row under the same AID and
      * leaves the original one behind, still 'pending'. Most assignments therefore have more

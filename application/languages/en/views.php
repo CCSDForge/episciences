@@ -2655,6 +2655,11 @@ return array(
     "Aucune statistique disponible pour cette revue." => "No statistics available for this journal.",
     "Mes statistiques" => "My statistics",
     "Compte du relecteur" => "Reviewer account",
+    "Aucun relecteur trouvé" => "No reviewer found",
+    "1 suggestion, flèches haut et bas pour parcourir" => "1 suggestion, use up and down arrows to browse",
+    "%d suggestions, flèches haut et bas pour parcourir" => "%d suggestions, use up and down arrows to browse",
+    "Relecteurs suggérés" => "Suggested reviewers",
+    "Choisissez une suggestion pour ouvrir la fiche du relecteur, ou validez pour filtrer la liste." => "Pick a suggestion to open the reviewer's page, or press Enter to filter the list.",
 
     // Shared user profile card (user/user_profile.phtml)
     "Inscription" => "Registered on",

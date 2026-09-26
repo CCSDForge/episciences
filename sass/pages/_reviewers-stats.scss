@@ -224,3 +224,66 @@
     opacity: 0.4;
   }
 }
+
+// Reviewer search suggestions (public/js/reviewersstats/reviewer-suggest.js)
+.reviewer-suggest {
+  position: relative;
+}
+
+.reviewer-suggest-list {
+  position: absolute;
+  z-index: 1000;
+  left: 15px;
+  right: 15px;
+  max-height: 320px;
+  margin: 2px 0 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  list-style: none;
+  background-color: $white;
+  border: 1px solid $lighter-grey;
+  border-radius: 4px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175);
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.reviewer-suggest-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  padding: 6px 12px;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+
+  &:hover,
+  &[aria-selected="true"] {
+    background-color: $almost-white;
+    border-left-color: $blue;
+  }
+}
+
+.reviewer-suggest-name {
+  font-weight: bold;
+}
+
+.reviewer-suggest-overdue {
+  font-size: 0.9em;
+}
+
+.reviewer-suggest-email {
+  flex-basis: 100%;
+  color: $dark-grey;
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+
+// $dark-grey: the journal theme's help text falls below a 4.5:1 contrast
+.reviewer-suggest-help {
+  margin-bottom: 0;
+  color: $dark-grey;
+  font-size: 0.9em;
+}

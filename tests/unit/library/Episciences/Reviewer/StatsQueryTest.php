@@ -292,6 +292,45 @@ final class StatsQueryTest extends TestCase
         self::assertStringContainsString('COALESCE(ui.FIRST_SENDING_DATE, ua.WHEN) >= DATE_SUB', $sql);
     }
 
+    // =========================================================================
+    // getReviewerSuggestions() — autocomplete of the list's search field
+    // =========================================================================
+
+    public function testSuggestionsApplyTheSameRestrictionAsTheList(): void
+    {
+        // A suggestion must never reveal a reviewer the restricted list would hide.
+        $adapter = new StatsQueryTestAdapter([[]]);
+        (new StatsQuery($adapter))->getReviewerSuggestions(1, true, 42, 12, 'jan');
+
+        $call = $adapter->calls[0];
+        self::assertStringContainsString("'" . Episciences_Acl::ROLE_GUEST_EDITOR . "'", $call['sql']);
+        self::assertSame(42, $call['bind']['current_user_uid']);
+    }
+
+    public function testSuggestionsReuseTheSearchPeriodAndIdentityGrouping(): void
+    {
+        $adapter = new StatsQueryTestAdapter([[]]);
+        (new StatsQuery($adapter))->getReviewerSuggestions(1, false, 42, 99, 'jan');
+
+        $call = $adapter->calls[0];
+        self::assertCount(1, $adapter->calls, 'no count query');
+        self::assertSame('%jan%', $call['bind']['search']);
+        self::assertSame(24, $call['bind']['period_months'], 'GDPR cap');
+        self::assertStringContainsString('GROUP BY identity_key ORDER BY no_identity ASC, SCREEN_NAME ASC LIMIT 10', $call['sql']);
+    }
+
+    public function testSuggestionsLimitIsBounded(): void
+    {
+        $adapter = new StatsQueryTestAdapter([[], []]);
+        $query = new StatsQuery($adapter);
+
+        $query->getReviewerSuggestions(1, false, 42, 12, 'jan', 500);
+        $query->getReviewerSuggestions(1, false, 42, 12, 'jan', 0);
+
+        self::assertStringEndsWith('LIMIT 20', $adapter->calls[0]['sql']);
+        self::assertStringEndsWith('LIMIT 1', $adapter->calls[1]['sql']);
+    }
+
     private function capturedSql(string $which): string
     {
         if ($which === 'list') {

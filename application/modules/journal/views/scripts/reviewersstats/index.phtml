@@ -1,4 +1,6 @@
 <?php
+$this->jQuery()->addJavascriptFile('/js/reviewersstats/reviewer-suggest.js');
+
 /** @var array<string, int|string|null> $baseParams */
 $baseParams = array_filter([
     'search' => $this->search,
@@ -90,24 +92,12 @@ $pageUrl = fn(int $p) => $this->escape($this->url(array_merge($baseParams, [
     'page' => $p,
 ]), null, true));
 
-$detailUrl = function (array $row) use ($baseParams) {
-    $params = [
-        'controller' => 'reviewersstats',
-        'action' => 'detail',
-        'period' => $baseParams['period'] ?? $this->period,
-        'name' => $row['SCREEN_NAME'] !== null && $row['SCREEN_NAME'] !== '' ? $row['SCREEN_NAME'] : $this->translate('Compte supprimé'),
-    ];
-    if (!empty($baseParams['only_my_responsibility'])) {
-        $params['only_my_responsibility'] = 1;
-    }
-    if (!empty($row['EMAIL'])) {
-        $params['email'] = $row['EMAIL'];
-    } else {
-        $params['uid'] = (int)$row['UID'];
-        $params['tmp_user'] = (int)$row['TMP_USER'];
-    }
-    return $this->escape($this->url($params, null, true));
-};
+$detailUrl = fn(array $row) => $this->escape($this->url(ReviewersstatsController::detailUrlParams(
+    $row,
+    (int)($baseParams['period'] ?? $this->period),
+    !empty($baseParams['only_my_responsibility']),
+    $this->translate('Compte supprimé')
+), null, true));
 ?>
 <div class="row">
     <div class="col-md-12">
@@ -121,12 +111,26 @@ $detailUrl = function (array $row) use ($baseParams) {
         <form method="get" action="/reviewersstats" class="panel panel-default reviewers-stats-filters" autocomplete="off">
             <div class="panel-body">
                 <div class="row">
-                    <div class="col-sm-6 form-group">
+                    <div class="col-sm-6 form-group reviewer-suggest">
                         <label for="search"><?= $this->translate('Rechercher un relecteur') ?></label>
+                        <?php // ARIA 1.2 combobox, driven by public/js/reviewersstats/reviewer-suggest.js;
+                        // without JS it stays a plain search field that filters the list ?>
                         <div class="input-group">
                             <span class="input-group-addon" aria-hidden="true"><span class="glyphicon glyphicon-search"></span></span>
-                            <input type="search" id="search" name="search" class="form-control" value="<?= $this->escape($this->search ?? '') ?>" placeholder="<?= $this->translate('Nom, email...') ?>">
+                            <input type="search" id="search" name="search" class="form-control"
+                                   value="<?= $this->escape($this->search ?? '') ?>"
+                                   placeholder="<?= $this->translate('Nom, email...') ?>"
+                                   aria-describedby="search-help"
+                                   data-suggest-url="/reviewersstats/suggest"
+                                   data-label-overdue="<?= $this->escape($this->translate('En retard')) ?>"
+                                   data-label-none="<?= $this->escape($this->translate('Aucun relecteur trouvé')) ?>"
+                                   data-label-one="<?= $this->escape($this->translate('1 suggestion, flèches haut et bas pour parcourir')) ?>"
+                                   data-label-many="<?= $this->escape($this->translate('%d suggestions, flèches haut et bas pour parcourir')) ?>">
                         </div>
+                        <ul id="reviewer-suggestions" class="reviewer-suggest-list" role="listbox"
+                            aria-label="<?= $this->escape($this->translate('Relecteurs suggérés')) ?>" hidden></ul>
+                        <p id="search-help" class="help-block reviewer-suggest-help"><?= $this->translate('Choisissez une suggestion pour ouvrir la fiche du relecteur, ou validez pour filtrer la liste.') ?></p>
+                        <div class="sr-only" aria-live="polite" data-suggest-status></div>
                     </div>
                     <div class="col-sm-3 form-group">
                         <label for="period"><?= $this->translate('Période') ?></label>
