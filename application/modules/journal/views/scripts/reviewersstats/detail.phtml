@@ -5,6 +5,9 @@ $backParams = array_filter([
 ], static fn($value) => $value !== null);
 $backUrl = '/reviewersstats' . ($backParams !== [] ? '?' . http_build_query($backParams) : '');
 
+$reviewerDisplayName = $this->reviewerName !== '' ? $this->reviewerName : (string)($this->reviewerEmail ?? '');
+$this->headTitle($reviewerDisplayName . ' - ' . $this->translate('Statistiques des relecteurs'));
+
 // Empty cells: a visual dash that screen readers don't spell out as "dash"
 $emptyCell = '<span aria-hidden="true">–</span><span class="sr-only">' . $this->translate('Non renseigné') . '</span>';
 
@@ -41,16 +44,15 @@ $tableTitle = sprintf($this->translate(['Invitations de relecture du dernier moi
 ?>
 <div class="row">
     <div class="col-md-12 reviewers-stats-detail">
-        <p>
-            <a href="<?= $this->escape($backUrl) ?>"><span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span> <?= $this->translate('Retour à la liste') ?></a>
-        </p>
+        <?php // The list link keeps the list's period/scope filters ?>
+        <nav aria-label="<?= $this->escape($this->translate('Fil d’Ariane')) ?>">
+            <ol class="breadcrumb reviewers-stats-breadcrumb">
+                <li><a href="<?= $this->escape($backUrl) ?>"><?= $this->translate('Statistiques des relecteurs') ?></a></li>
+                <li class="active" aria-current="page"><?= $this->escape($reviewerDisplayName) ?></li>
+            </ol>
+        </nav>
 
-        <h1>
-            <?= sprintf(
-                $this->translate('Détail des invitations — %s'),
-                $this->escape($this->reviewerName !== '' ? $this->reviewerName : ($this->reviewerEmail ?? ''))
-            ) ?>
-        </h1>
+        <h1><?= $this->escape($reviewerDisplayName) ?></h1>
 
         <?php if ($this->reviewerProfile !== null): ?>
             <section class="panel panel-default reviewers-stats-profile" aria-labelledby="reviewer-profile-title">
@@ -62,7 +64,6 @@ $tableTitle = sprintf($this->translate(['Invitations de relecture du dernier moi
                         'user' => $this->reviewerProfile,
                         'showName' => false,
                         'showPrivate' => true,
-                        'profileLink' => true,
                     ]) ?>
                 </div>
             </section>

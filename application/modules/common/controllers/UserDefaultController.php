@@ -99,7 +99,6 @@ class UserDefaultController extends Zend_Controller_Action
         $this->getResponse()->setBody($this->view->partial('user/user_profile.phtml', [
             'user' => $identity,
             'showName' => false,
-            'profileLink' => true,
         ]));
     }
 

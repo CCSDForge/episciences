@@ -2626,8 +2626,7 @@ return array(
     "%d jour" => array("%d day", "%d days"),
     "%s relecteur trouvé." => array("%s reviewer found.", "%s reviewers found."),
     "Pagination" => "Pagination",
-    "Retour à la liste" => "Back to the list",
-    "Détail des invitations — %s" => "Invitation detail — %s",
+    "Fil d’Ariane" => "Breadcrumb",
     "Invitations de relecture du dernier mois, groupées par article" => array("Review invitations from the last month, grouped by paper", "Review invitations from the last %d months, grouped by paper"),
     "Afficher la tentative remplacée" => array("Show the replaced attempt", "Show the %d replaced attempts"),
     "Une nouvelle invitation pour la même version d’un article remplace les précédentes." => "A new invitation for the same version of a paper replaces the previous ones.",
@@ -2660,7 +2659,6 @@ return array(
     // Shared user profile card (user/user_profile.phtml)
     "Inscription" => "Registered on",
     "Aucun compte : invité par e-mail" => "No account: invited by e-mail",
-    "Voir le profil public" => "View public profile",
     "Chargement…" => "Loading…",
     "Fermer" => "Close"
 );

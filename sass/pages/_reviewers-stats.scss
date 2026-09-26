@@ -75,6 +75,22 @@
 }
 
 // Invitation detail page (/reviewersstats/detail)
+// Breadcrumb back to the list: plain background (the page title right below carries the weight),
+// and a separator colour that keeps a 4.5:1 contrast (Bootstrap's #ccc does not)
+.reviewers-stats-breadcrumb {
+  padding: 0;
+  margin-bottom: 10px;
+  background: none;
+
+  > li + li::before {
+    color: $dark-grey;
+  }
+
+  > .active {
+    color: $dark-grey;
+  }
+}
+
 // Toolbar above the table: what is listed (left), how to widen it (right)
 .reviewers-stats-detail-toolbar {
   display: flex;
