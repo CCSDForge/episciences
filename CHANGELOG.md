@@ -51,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Memoise the paper's primary volume on the `Episciences_Paper` instance, so `toJson()`, `getXml()` and `XmlExportManager::xmlExport()` share a single lookup instead of loading it twice: 38 to 34 queries per paper export.
 - Stop reloading volume settings from `Episciences_Volume::getProceedingInfo()`; every caller reaches it through `isProceeding()`, which already needs them loaded.
 - Load every volume's settings in one query on `/browse/volumes` via `Episciences_VolumesManager::loadSettingsForVolumes()`, instead of one query per volume.
-- Build the web translator once per request from an explicit, sorted list of dictionaries (`Episciences_Translation_Plugin::createTranslator()`): the application languages directory is no longer scanned twice and the 220 e-mail templates (`<locale>/emails/*.phtml`) are no longer included and rejected on every request (~10 ms to ~2 ms, CLI measure). Duplicate keys now resolve in a filesystem-independent order.
+- Build the web translator once per request from an explicit, sorted list of dictionaries (`Episciences_Translation_Plugin::createTranslator()`): the application languages directory is no longer scanned twice and the 220 e-mail templates (`<locale>/emails/*.phtml`) are no longer included and rejected on every request (~3.7 ms to ~0.4 ms per request under PHP-FPM with OPcache). Duplicate keys now resolve in a filesystem-independent order.
 
 ### Fixed
 
