@@ -2660,5 +2660,7 @@ return array(
     // Shared user profile card (user/user_profile.phtml)
     "Inscription" => "Registered on",
     "Aucun compte : invité par e-mail" => "No account: invited by e-mail",
-    "Voir le profil public" => "View public profile"
+    "Voir le profil public" => "View public profile",
+    "Chargement…" => "Loading…",
+    "Fermer" => "Close"
 );

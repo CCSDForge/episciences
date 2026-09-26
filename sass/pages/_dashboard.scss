@@ -107,3 +107,55 @@ $dashboard-collapse-box: 40px;
   }
 }
 
+// User card dialog (user/profile_card_dialog.phtml, public/js/user/profile-card-dialog.js)
+.user-card-dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  padding: 0;
+  border: 1px solid $lighter-grey;
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .user-card-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid $almost-white;
+
+    form {
+      margin: 0;
+    }
+  }
+
+  .user-card-dialog-title {
+    margin: 0;
+    font-size: 1.25em;
+  }
+
+  // Bootstrap's .close is faded (opacity .2): keep the close button clearly visible
+  .user-card-dialog-close {
+    opacity: 0.7;
+    font-size: 28px;
+
+    &:hover,
+    &:focus-visible {
+      opacity: 1;
+    }
+  }
+
+  .user-card-dialog-body {
+    padding: 16px;
+    overflow-y: auto;
+  }
+
+  .user-card-dialog-loading {
+    margin: 20px 0;
+    color: $dark-grey;
+  }
+}

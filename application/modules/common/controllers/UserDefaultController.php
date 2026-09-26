@@ -67,22 +67,56 @@ class UserDefaultController extends Zend_Controller_Action
         }
 
 
-        $identity['editorSections'] = null;
-        $user->loadRoles();
-
-
-        if ($user->isChiefEditor() || $user->isEditor() || $user->isGuestEditor()) {
-            $userEditor = new Episciences_Editor(['UID' => $user->getUid()]);
-
-            $sections = $userEditor->getAssignedSections();
-
-            if ($sections) {
-                $identity['editorSections'] = $sections;
-            }
-        }
-
+        $identity['editorSections'] = self::editorSections($user);
 
         $this->view->user = $identity;
+    }
+
+    /**
+     * Profile card fragment (no layout) for the user card dialog
+     * (public/js/user/profile-card-dialog.js): same data and visibility rules as viewAction().
+     */
+    public function cardAction(): void
+    {
+        $this->_helper->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender(true);
+        $this->getResponse()->setHeader('Cache-Control', 'no-store', true);
+
+        $uid = (int)$this->getRequest()->getParam('userid', 0);
+        $user = new Episciences_User();
+
+        if ($uid <= 0 || $user->find($uid) === []) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
+        // CAS data
+        (new Ccsd_User_Models_UserMapper())->find($uid, $user);
+
+        $identity = $user->toArray();
+        $identity['editorSections'] = self::editorSections($user);
+
+        $this->getResponse()->setBody($this->view->partial('user/user_profile.phtml', [
+            'user' => $identity,
+            'showName' => false,
+            'profileLink' => true,
+        ]));
+    }
+
+    /**
+     * @return array<int, Episciences_Section>|null sections assigned to an editor, null otherwise
+     */
+    private static function editorSections(Episciences_User $user): ?array
+    {
+        $user->loadRoles();
+
+        if (!$user->isChiefEditor() && !$user->isEditor() && !$user->isGuestEditor()) {
+            return null;
+        }
+
+        $sections = (new Episciences_Editor(['UID' => $user->getUid()]))->getAssignedSections();
+
+        return $sections ?: null;
     }
 
 
