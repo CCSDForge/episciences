@@ -51,8 +51,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Memoise the paper's primary volume on the `Episciences_Paper` instance, so `toJson()`, `getXml()` and `XmlExportManager::xmlExport()` share a single lookup instead of loading it twice: 38 to 34 queries per paper export.
 - Stop reloading volume settings from `Episciences_Volume::getProceedingInfo()`; every caller reaches it through `isProceeding()`, which already needs them loaded.
 - Load every volume's settings in one query on `/browse/volumes` via `Episciences_VolumesManager::loadSettingsForVolumes()`, instead of one query per volume.
+- Build the web translator once per request from an explicit, sorted list of dictionaries (`Episciences_Translation_Plugin::createTranslator()`): the application languages directory is no longer scanned twice and the 220 e-mail templates (`<locale>/emails/*.phtml`) are no longer included and rejected on every request (~10 ms to ~2 ms, CLI measure). Duplicate keys now resolve in a filesystem-independent order.
 
 ### Fixed
+
+- Fix interface language resolution (`Episciences_Translation_Plugin::resolveLocale()`): an unsupported `?lang=` or cookie value now falls through to the next source (cookie, then browser) instead of forcing French, and the `lang` cookie now stores the language actually used (an English-only journal no longer sets `lang=fr`). The language is resolved once per request: an internal forward (journal home page to `page/index`) no longer rebuilds the translator nor sends the `lang` cookie twice.
 
 - Fix submission acknowledgment never reaching the author (and co-authors) when no editorial committee member is left to notify, e.g. a chief editor submitting to their own journal (`Episciences_Submit::sendNotifications()`, regression from v1.0.54).
 - Fix conflict-of-interest filtering of submission recipients comparing UIDs against list positions instead of UID values (`Episciences_Submit::filterConflictRecipients()`).
