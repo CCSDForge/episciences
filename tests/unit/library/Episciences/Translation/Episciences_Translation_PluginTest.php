@@ -167,26 +167,29 @@ final class Episciences_Translation_PluginTest extends TestCase
      * @dataProvider resolveLocaleProvider
      * @param string[] $allowed
      */
-    public function testResolveLocale(?string $url, ?string $cookie, ?string $browser, array $allowed, string $expected): void
+    public function testResolveLocale(?string $url, ?string $cookie, ?string $account, ?string $browser, array $allowed, string $expected): void
     {
-        self::assertSame($expected, Episciences_Translation_Plugin::resolveLocale($url, $cookie, $browser, $allowed));
+        self::assertSame($expected, Episciences_Translation_Plugin::resolveLocale($url, $cookie, $account, $browser, $allowed));
     }
 
     /**
-     * @return array<string, array{?string, ?string, ?string, string[], string}>
+     * @return array<string, array{?string, ?string, ?string, ?string, string[], string}>
      */
     public static function resolveLocaleProvider(): array
     {
         return [
-            'URL wins over cookie and browser' => ['en', 'fr', 'fr', ['en', 'fr'], 'en'],
-            'invalid URL falls through to cookie' => ['de', 'en', 'fr', ['en', 'fr'], 'en'],
-            'cookie wins over browser' => [null, 'en', 'fr', ['en', 'fr'], 'en'],
-            'invalid cookie falls through to browser' => [null, 'xx', 'en', ['en', 'fr'], 'en'],
-            'unsupported browser falls back to French' => [null, null, 'de', ['en', 'fr'], 'fr'],
-            'nothing falls back to French' => [null, null, null, ['en', 'fr'], 'fr'],
-            'English-only journal never gets French' => ['fr', 'fr', 'fr', ['en'], 'en'],
-            'English-only journal default' => [null, null, null, ['en'], 'en'],
-            'extra journal language is accepted' => ['es', null, null, ['fr', 'en', 'es'], 'es'],
+            'URL wins over everything' => ['en', 'fr', 'fr', 'fr', ['en', 'fr'], 'en'],
+            'invalid URL falls through to cookie' => ['de', 'en', 'fr', 'fr', ['en', 'fr'], 'en'],
+            'cookie (explicit switch) wins over account' => [null, 'en', 'fr', 'fr', ['en', 'fr'], 'en'],
+            'account wins over browser' => [null, null, 'en', 'fr', ['en', 'fr'], 'en'],
+            'invalid cookie falls through to account' => [null, 'xx', 'en', 'fr', ['en', 'fr'], 'en'],
+            'unsupported account falls through to browser' => [null, null, 'de', 'en', ['en', 'fr'], 'en'],
+            'anonymous: browser' => [null, null, null, 'en', ['en', 'fr'], 'en'],
+            'unsupported browser falls back to French' => [null, null, null, 'de', ['en', 'fr'], 'fr'],
+            'nothing falls back to French' => [null, null, null, null, ['en', 'fr'], 'fr'],
+            'English-only journal never gets French' => ['fr', 'fr', 'fr', 'fr', ['en'], 'en'],
+            'English-only journal default' => [null, null, null, null, ['en'], 'en'],
+            'extra journal language is accepted' => ['es', null, null, null, ['fr', 'en', 'es'], 'es'],
         ];
     }
 

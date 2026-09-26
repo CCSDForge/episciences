@@ -59,15 +59,21 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
         }
 
         $urlLang = $request->getParam('lang');
+        $urlLang = is_string($urlLang) ? $urlLang : null;
         $locale = self::resolveLocale(
-            is_string($urlLang) ? $urlLang : null,
+            $urlLang,
             $this->getLocaleCookie(),
+            $this->getAccountLanguage(),
             $this->getBrowserLanguage(),
             $allowed
         );
 
         $translator->setLocale($locale);
-        $this->setLocaleCookie($locale);
+
+        // Only an explicit choice is remembered: otherwise the same sources give the same result next time
+        if ($locale === $urlLang) {
+            $this->setLocaleCookie($locale);
+        }
 
         Zend_Registry::set('lang', $locale);
         Zend_Registry::set('Zend_Translate', $translator);
@@ -100,15 +106,16 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
     }
 
     /**
-     * Picks the interface language: URL parameter, then cookie, then browser.
+     * Picks the interface language: URL parameter, then cookie (last explicit choice),
+     * then the logged-in user's account language, then browser.
      * A missing or unsupported value falls through to the next source.
      * Defaults to French when allowed, otherwise to the first allowed language.
      *
      * @param string[] $allowed languages offered by the journal (must not be empty)
      */
-    public static function resolveLocale(?string $urlLang, ?string $cookieLang, ?string $browserLang, array $allowed): string
+    public static function resolveLocale(?string $urlLang, ?string $cookieLang, ?string $accountLang, ?string $browserLang, array $allowed): string
     {
-        foreach ([$urlLang, $cookieLang, $browserLang] as $candidate) {
+        foreach ([$urlLang, $cookieLang, $accountLang, $browserLang] as $candidate) {
             if ($candidate !== null && in_array($candidate, $allowed, true)) {
                 return $candidate;
             }
@@ -180,6 +187,20 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
 
         ksort($directories, SORT_STRING);
         return $directories;
+    }
+
+    /**
+     * Language saved in the logged-in user's account
+     */
+    private function getAccountLanguage(): ?string
+    {
+        try {
+            $lang = Episciences_Auth::isLogged() ? Episciences_Auth::getLangueid() : null;
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        return is_string($lang) && $lang !== '' ? $lang : null;
     }
 
     /**
