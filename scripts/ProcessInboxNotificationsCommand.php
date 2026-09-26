@@ -18,6 +18,7 @@ use Episciences\Notify\NotifySourceRegistry;
 use Episciences\Notify\PayloadValidator;
 use Episciences\Notify\PreprintUrlParser;
 use Episciences\Console\ProgressAwareStreamHandler;
+use Episciences\Translation\TranslatorFactory;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
@@ -1720,11 +1721,6 @@ class ProcessInboxNotificationsCommand extends Command
      */
     private function createTranslator(string $languagesDir): Zend_Translate
     {
-        return new Zend_Translate(
-            Zend_Translate::AN_ARRAY,
-            $languagesDir,
-            Episciences_Review::DEFAULT_LANG,
-            ['scan' => Zend_Translate::LOCALE_DIRECTORY]
-        );
+        return TranslatorFactory::create($languagesDir, null, Episciences_Review::DEFAULT_LANG);
     }
 }
