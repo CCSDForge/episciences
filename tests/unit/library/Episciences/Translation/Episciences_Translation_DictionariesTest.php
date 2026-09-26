@@ -8,8 +8,8 @@ use PHPUnit\Framework\TestCase;
  * Guards the application dictionaries (application/languages/<lang>/*.php) against silent conflicts:
  * when two files define the same key with different values, only the last loaded one is used.
  *
- * js.php is also served alone to the browser (public/js/translation.php): a few keys intentionally
- * differ from views.php (plain text for JS, HTML icon for server-side views).
+ * js.php is also served alone to the browser (public/js/translation.php): a few keys still differ
+ * from views.php and are listed below until they are aligned.
  */
 final class Episciences_Translation_DictionariesTest extends TestCase
 {
@@ -17,15 +17,8 @@ final class Episciences_Translation_DictionariesTest extends TestCase
      * Keys allowed to differ between js.php and views.php.
      */
     private const JS_VIEWS_ALLOWED_CONFLICTS = [
-        'en' => [
-            'editorial_board', 'technical_board', 'scientific_advisory_board', 'advisory_board',
-            'managing_editor', 'handling_editor', 'former_member',
-            'Note globale', 'Ma photo', 'Créer un utilisateur', 'Afficher',
-        ],
-        'fr' => [
-            'editorial_board', 'technical_board', 'scientific_advisory_board', 'advisory_board',
-            'managing_editor', 'handling_editor', 'former_member',
-        ],
+        'en' => ['Note globale', 'Ma photo', 'Créer un utilisateur', 'Afficher'],
+        'fr' => [],
     ];
 
     /**

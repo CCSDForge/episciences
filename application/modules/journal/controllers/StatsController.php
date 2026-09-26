@@ -392,7 +392,7 @@ class StatsController extends Zend_Controller_Action
             }
 
             foreach ($roles as $role) {
-                $rolesJs[] = strip_tags($this->view->translate($role)); // to fix [#875] caused by @ see commit Replaced emoji with FA CSS
+                $rolesJs[] = $this->view->translate($role);
                 $data[] = $usersDetails[$role][self::NB_USERS];
             }
 

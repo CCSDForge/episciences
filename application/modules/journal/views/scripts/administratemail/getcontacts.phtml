@@ -96,7 +96,7 @@
                     asort($rolesTranslated);
                     echo "<td>";
                     foreach ($rolesTranslated as $untranslatedRole => $translatedRole): ?>
-                        <span class="label label-default role-<?= $untranslatedRole ?>" ><?= $translatedRole ?></span>
+                        <span class="label label-default role-<?= $untranslatedRole ?>" ><?= Episciences_Acl::getRoleLabelHtml($untranslatedRole) ?></span>
                     <?php endforeach; ?>
                     <?php echo "</td>"; ?>
                     <td><?= $contact['mail'] ?></td>
