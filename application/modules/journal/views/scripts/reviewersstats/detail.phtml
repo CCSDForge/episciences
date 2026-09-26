@@ -1,0 +1,169 @@
+<?php
+$backParams = array_filter([
+    'period' => $this->period,
+    'only_my_responsibility' => $this->onlyMyResponsibility ? 1 : null,
+], static fn($value) => $value !== null);
+$backUrl = '/reviewersstats' . ($backParams !== [] ? '?' . http_build_query($backParams) : '');
+
+$reviewerDisplayName = (string)$this->reviewerName;
+$this->headTitle($reviewerDisplayName . ' - ' . $this->translate('Statistiques des relecteurs'));
+
+// Empty cells: a visual dash that screen readers don't spell out as "dash"
+$emptyCell = '<span aria-hidden="true">–</span><span class="sr-only">' . $this->translate('Non renseigné') . '</span>';
+
+$formatDate = static function (?string $date) use ($emptyCell): string {
+    if ($date === null || $date === '' || ($timestamp = strtotime($date)) === false) {
+        return $emptyCell;
+    }
+    return sprintf('<time datetime="%s">%s</time>', date('Y-m-d', $timestamp), date('Y-m-d', $timestamp));
+};
+
+// Icon + contextual class per status: the label text always carries the meaning,
+// the color and the icon only reinforce it (WCAG 1.4.1)
+$statusDisplay = [
+    Episciences_Reviewer_Reviewing::STATUS_PENDING => ['glyphicon-time', ''],
+    Episciences_Reviewer_Reviewing::STATUS_WIP => ['glyphicon-pencil', 'text-warning'],
+    Episciences_Reviewer_Reviewing::STATUS_COMPLETE => ['glyphicon-ok', 'text-success'],
+    Episciences_Reviewer_Reviewing::STATUS_UNANSWERED => ['glyphicon-envelope', ''],
+    Episciences_Reviewer_Reviewing::STATUS_OBSOLETE => ['glyphicon-ban-circle', 'reviewers-stats-inactive'],
+    Episciences_Reviewer_Reviewing::STATUS_DECLINED => ['glyphicon-remove', 'text-danger'],
+    Episciences_Reviewer_Reviewing::STATUS_NOT_NEED_REVIEWING => ['glyphicon-ban-circle', 'reviewers-stats-inactive'],
+    ReviewersstatsController::STATUS_SUPERSEDED_REPLACED => ['glyphicon-retweet', 'reviewers-stats-inactive'],
+];
+// Not a real Episciences_Reviewer_Reviewing status: a superseded attempt that was never
+// individually resolved (see ReviewersstatsController::STATUS_SUPERSEDED_REPLACED docblock)
+// — showing "obsolete"/"unanswered" there is misleading once a later attempt for the same
+// reviewer/paper did complete a review.
+$statusLabels = Episciences_Reviewer_Reviewing::$_statusLabel;
+$statusLabels[ReviewersstatsController::STATUS_SUPERSEDED_REPLACED] = 'invitation remplacée';
+
+$supersededCount = count(array_filter($this->rows, static fn(array $row): bool => (bool)$row['is_superseded']));
+$period = (int)$this->period;
+// 'fr': source-string plural rule (0 is singular in French), see Zend_Translate_Adapter::translate()
+$tableTitle = sprintf($this->translate(['Invitations de relecture du dernier mois, groupées par article', 'Invitations de relecture des %d derniers mois, groupées par article', $period, 'fr']), $period);
+?>
+<div class="row">
+    <div class="col-md-12 reviewers-stats-detail">
+        <?php // The list link keeps the list's period/scope filters ?>
+        <nav aria-label="<?= $this->escape($this->translate('Fil d’Ariane')) ?>">
+            <ol class="breadcrumb reviewers-stats-breadcrumb">
+                <li><a href="<?= $this->escape($backUrl) ?>"><?= $this->translate('Statistiques des relecteurs') ?></a></li>
+                <li class="active" aria-current="page"><?= $this->escape($reviewerDisplayName) ?></li>
+            </ol>
+        </nav>
+
+        <h1><?= $this->escape($reviewerDisplayName) ?></h1>
+
+        <?php if ($this->reviewerProfile !== null): ?>
+            <section class="panel panel-default reviewers-stats-profile" aria-labelledby="reviewer-profile-title">
+                <div class="panel-heading">
+                    <h2 class="panel-title" id="reviewer-profile-title"><?= $this->translate('Compte du relecteur') ?></h2>
+                </div>
+                <div class="panel-body">
+                    <?= $this->partial('user/user_profile.phtml', [
+                        'user' => $this->reviewerProfile,
+                        'showName' => false,
+                    ]) ?>
+                </div>
+            </section>
+        <?php endif; ?>
+
+        <div class="reviewers-stats-detail-toolbar">
+            <p class="reviewers-stats-detail-period"><?= $this->escape($tableTitle) ?></p>
+            <?php if ($supersededCount > 0): ?>
+                <div class="reviewers-stats-detail-toggle">
+                    <label class="reviewers-stats-chip reviewers-stats-toggle-superseded">
+                        <input type="checkbox" autocomplete="off" aria-describedby="superseded-help">
+                        <span class="glyphicon glyphicon-retweet" aria-hidden="true"></span>
+                        <?= sprintf($this->translate(['Afficher la tentative remplacée', 'Afficher les %d tentatives remplacées', $supersededCount, 'fr']), $supersededCount) ?>
+                    </label>
+                    <p id="superseded-help" class="reviewers-stats-help"><?= $this->translate('Une nouvelle invitation pour la même version d’un article remplace les précédentes.') ?></p>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered reviewers-stats-detail-table">
+                <?php // Shown visually in the toolbar above, next to the control that filters the table ?>
+                <caption class="sr-only"><?= $this->escape($tableTitle) ?></caption>
+                <thead>
+                    <tr>
+                        <th scope="col"><?= $this->translate('Version') ?></th>
+                        <th scope="col"><?= $this->translate('Date d’envoi') ?></th>
+                        <th scope="col"><?= $this->translate('Statut de la relecture') ?></th>
+                        <th scope="col"><?= $this->translate('Échéance') ?></th>
+                        <th scope="col"><?= $this->translate('Date de complétion') ?></th>
+                    </tr>
+                </thead>
+                <?php if (empty($this->rows)): ?>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="text-center"><?= $this->translate('Aucune invitation trouvée.') ?></td>
+                        </tr>
+                    </tbody>
+                <?php else: ?>
+                    <?php $isGroupOpen = false; ?>
+                    <?php foreach ($this->rows as $row): ?>
+                        <?php
+                        $docId = (int)$row['docid'];
+                        /** @var Episciences_Paper|null $paper */
+                        $paper = $this->papers[$docId] ?? null;
+                        $statusCode = $row['status_code'];
+                        [$statusIcon, $statusClass] = $statusDisplay[$statusCode] ?? ['glyphicon-question-sign', ''];
+                        $deadline = !empty($row['deadline']) ? strtotime($row['deadline']) : false;
+                        $isOverdue = in_array($statusCode, [Episciences_Reviewer_Reviewing::STATUS_PENDING, Episciences_Reviewer_Reviewing::STATUS_WIP], true)
+                            && !$row['is_superseded'] && $deadline !== false && $deadline < time();
+                        $overdueDays = $isOverdue ? (int)floor((time() - $deadline) / 86400) : 0;
+                        $completionDate = $statusCode === Episciences_Reviewer_Reviewing::STATUS_COMPLETE ? $row['review_update_date'] : null;
+                        ?>
+                        <?php if ($row['is_new_paper_group']): ?>
+                            <?php if ($isGroupOpen): ?>
+                                </tbody>
+                            <?php endif; ?>
+                            <?php $isGroupOpen = true; ?>
+                            <tbody>
+                                <tr class="reviewers-stats-group-header">
+                                    <th colspan="5" scope="rowgroup">
+                                        <?php if ($paper !== null): ?>
+                                            <a href="/administratepaper/view?id=<?= $docId ?>"><?= $this->escape($paper->getTitle()) ?></a>
+                                        <?php endif; ?>
+                                        <span class="reviewers-stats-docid">#<?= $docId ?></span>
+                                    </th>
+                                </tr>
+                        <?php endif; ?>
+                        <tr class="<?= $row['is_superseded'] ? 'reviewers-stats-superseded' : '' ?>">
+                            <th scope="row">
+                                <?php if ($row['version'] !== null): ?>
+                                    <?= sprintf($this->translate('Version %s'), $this->escape((string)$row['version'])) ?>
+                                <?php else: ?>
+                                    #<?= $docId ?>
+                                <?php endif; ?>
+                                <?php if ($row['is_superseded']): ?>
+                                    <span class="reviewers-stats-superseded-note"><?= $this->translate('Remplacée par une tentative ultérieure') ?></span>
+                                <?php endif; ?>
+                            </th>
+                            <td><?= $formatDate($row['sending_date'] ?? null) ?></td>
+                            <td>
+                                <span class="<?= $statusClass ?>">
+                                    <span class="glyphicon <?= $statusIcon ?>" aria-hidden="true"></span>
+                                    <?= $this->translate($statusLabels[$statusCode] ?? (string)$statusCode) ?>
+                                </span>
+                                <?php if ($isOverdue): ?>
+                                    <strong class="text-danger reviewers-stats-overdue">
+                                        <span class="glyphicon glyphicon-alert" aria-hidden="true"></span>
+                                        <?= sprintf($this->translate(['En retard de %d jour', 'En retard de %d jours', $overdueDays, 'fr']), $overdueDays) ?>
+                                    </strong>
+                                <?php endif; ?>
+                            </td>
+                            <td<?= $isOverdue ? ' class="text-danger"' : '' ?>><?= $formatDate($row['deadline'] ?? null) ?></td>
+                            <td><?= $formatDate($completionDate) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if ($isGroupOpen): ?>
+                        </tbody>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </table>
+        </div>
+    </div>
+</div>

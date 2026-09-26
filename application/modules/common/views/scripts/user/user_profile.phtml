@@ -1,48 +1,90 @@
-<div class="row">
+<?php
+/**
+ * Shared user profile card: /user/view, the "Mon compte" dashboard panel (journal and portal)
+ * and the reviewer statistics detail page.
+ *
+ * @var array<string, mixed> $this->user Episciences_User::toArray() (+ 'editorSections'),
+ *                                        or Episciences_User_Tmp::toArray() for an account-less reviewer
+ * Optional:
+ * @var bool|null $this->showName    default true (false when the page title already shows it)
+ * @var bool|null $this->showPrivate default: the person themself, and the managers of a journal they belong to
+ */
 
-    <div class="col-md-2">
-        <img src="/user/photo/size/large?v=<?php echo Episciences_Auth::getPhotoVersion(); ?>"
-             class="user-photo-normal" alt="<?= $this->translate('Ma photo'); ?>"/>
+use Episciences\User\ProfileCard;
+
+$card = ProfileCard::fromArray((array)$this->user, (int)RVID);
+$viewerUid = (int)Episciences_Auth::getUid();
+// /user/view and /user/card load any account by its id: a manager's role only covers the
+// people who hold a role in their own journal. Guest editors and encapsulated editors only
+// manage their own papers, not the journal's members: same rule as the "Gérer la revue"
+// dashboard block (journal UserController::dashboardAction()).
+$journal = Episciences_ReviewsManager::find((int)RVID);
+$managesJournalMembers = Episciences_Auth::isSecretary()
+    || (Episciences_Auth::isEditor(RVID, true) && $journal instanceof Episciences_Review
+        && !$journal->getSetting(Episciences_Review::SETTING_ENCAPSULATE_EDITORS));
+$managesThisPerson = $card->isRegistered()
+    && $managesJournalMembers
+    && (new Episciences_User())->hasRoles((int)$card->uid, (int)RVID);
+$showPrivate = $this->showPrivate ?? $card->canShowPrivateDetailsTo($viewerUid, $managesThisPerson);
+$languageName = $card->languageCode !== null
+    ? ucfirst((string)Zend_Locale::getTranslation($card->languageCode, 'language', Episciences_Tools::getLocale()))
+    : null;
+?>
+<div class="user-profile-card">
+    <div class="user-profile-card-avatar">
+        <?php // Decorative: the name is right next to it ?>
+        <img src="<?= $this->escape($card->avatarSrc($viewerUid, (string)Episciences_Auth::getPhotoVersion())) ?>"
+             class="user-photo-normal" alt="" width="90" height="90">
     </div>
 
-    <div class="col-md-10">
-        <div class="row">
-            <div class="col-md-3">
+    <div class="user-profile-card-body">
+        <?php if ($this->showName ?? true) : ?>
+            <p class="user-profile-card-name"><strong><?= $this->escape($card->name) ?></strong></p>
+        <?php endif; ?>
 
-                <ul class="list-inline">
-                    <?php if ($this->user['SCREEN_NAME']) : ?>
-                        <li><?php echo $this->escape($this->user['SCREEN_NAME']); ?></li>
-                    <?php else : ?>
+        <?php if ($card->orcid !== null) : ?>
+            <p class="user-profile-card-orcid">
+                <a href="https://orcid.org/<?= $this->escape($card->orcid) ?>" target="_blank" rel="noopener">
+                    <img src="/img/orcid_id.svg" alt="" width="16" height="16">
+                    <span class="sr-only">ORCID</span>
+                    <?= $this->escape($card->orcid) ?>
+                </a>
+            </p>
+        <?php endif; ?>
 
-                        <li>
-                            <?php if ($this->user['civ']) {
-                                echo $this->escape($this->user['civ']) . ' ';
-                            } ?>
-                            <?php if ($this->user['firstname']) {
-                                echo $this->escape($this->user['firstname']) . ' ';
-                            } ?>
-                            <?php if ($this->user['middlename']) {
-                                echo $this->escape($this->user['middlename']) . ' ';
-                            } ?>
-                            <?php if ($this->user['lastname']) {
-                                echo $this->escape($this->user['lastname']);
-                            } ?>
-                        </li>
-                    <?php endif; ?>
+        <?= $this->partial('user/user_affiliations.phtml', ['affiliations' => $card->affiliations]) ?>
+        <?= $this->partial('user/user_additional_profile_informations.phtml', ['webSites' => $card->webSites, 'socialMedias' => $card->socialMedias]) ?>
 
-                </ul>
+        <?php // Never displayed publicly before this card existed: kept with the private details ?>
+        <?php if ($showPrivate && $card->biography !== null) : ?>
+            <p class="user-profile-card-biography"><?= nl2br($this->escape($card->biography)) ?></p>
+        <?php endif; ?>
 
+        <?php if (!$card->isRegistered() || ($showPrivate && ($card->email !== null || $languageName !== null || $card->registrationDate !== null))) : ?>
+            <dl class="user-profile-card-details">
+                <?php if ($showPrivate && $card->email !== null) : ?>
+                    <dt><?= $this->translate('E-mail') ?></dt>
+                    <dd><?= $this->escape($card->email) ?></dd>
+                <?php endif; ?>
+                <?php if ($showPrivate && $languageName !== null) : ?>
+                    <dt><?= $this->translate('Langue') ?></dt>
+                    <dd><?= $this->escape($languageName) ?></dd>
+                <?php endif; ?>
+                <?php if ($showPrivate && $card->registrationDate !== null) : ?>
+                    <dt><?= $this->translate('Inscription') ?></dt>
+                    <dd><time datetime="<?= $card->registrationDate ?>"><?= $card->registrationDate ?></time></dd>
+                <?php endif; ?>
+                <?php if (!$card->isRegistered()) : ?>
+                    <dt><?= $this->translate('Compte') ?></dt>
+                    <dd><?= $this->translate('Aucun compte : invité par e-mail') ?></dd>
+                <?php endif; ?>
+            </dl>
+        <?php endif; ?>
 
+        <?php if ($card->roles !== []) : ?>
+            <div class="row user-profile-card-roles">
+                <?= $this->partial('user/roles_tags.phtml', ['roles' => $card->roles, 'editorSections' => $this->user['editorSections'] ?? null]) ?>
             </div>
-
-
-            <?php if (is_array($this->user['ROLES']) && count($this->user['ROLES'])) : ?>
-                <?php echo $this->partial('user/roles_tags.phtml', ['roles' => $this->user['ROLES'][RVID], 'editorSections' => $this->user['editorSections']]); ?>
-            <?php endif; ?>
-
-
-        </div>
-
+        <?php endif; ?>
     </div>
-
 </div>

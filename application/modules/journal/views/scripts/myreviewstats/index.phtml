@@ -1,0 +1,69 @@
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?= $this->translate('Mes statistiques de relecture') ?></h2>
+            </div>
+            <div class="panel-body">
+                <div class="alert alert-info" role="note">
+                    <?= $this->translate("Cette page affiche l'intégralité de votre historique. Les responsables de la revue, eux, n'ont accès qu'aux 24 derniers mois glissants de vos statistiques.") ?>
+                </div>
+
+                <?php if ($this->stats): ?>
+                    <table class="table">
+                        <caption class="sr-only"><?= $this->translate('Mes statistiques de relecture') ?></caption>
+                        <tbody>
+                            <tr>
+                                <th scope="row"><?= $this->translate('Invitations en attente :') ?></th>
+                                <td><?= (int)$this->stats['invitations_pending'] ?></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?= $this->translate('Relectures en cours :') ?></th>
+                                <td><?= (int)$this->stats['reviews_pending'] ?></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?= $this->translate('Relectures effectuées :') ?></th>
+                                <td><?= (int)$this->stats['reviews_completed'] ?></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?= $this->translate('Relectures en retard :') ?></th>
+                                <td>
+                                    <?php if ($this->stats['reviews_overdue'] > 0): ?>
+                                        <span class="label label-danger"><?= (int)$this->stats['reviews_overdue'] ?></span> (<?= sprintf($this->translate(['%d jour max', '%d jours max', (int)$this->stats['max_overdue_days'], 'fr']), $this->stats['max_overdue_days']) ?>)
+                                    <?php else: ?>
+                                        0
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?= $this->translate('Relances reçues :') ?></th>
+                                <td><?= (int)$this->totalReminders ?></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?= $this->translate('Taux d’acceptation :') ?></th>
+                                <td><?= sprintf('%.1f%%', (float)$this->stats['acceptance_rate']) ?></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?= $this->translate('Taux de réponse :') ?></th>
+                                <td><?= sprintf('%.1f%%', (float)$this->stats['response_rate']) ?></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?= $this->translate('Délai moyen de relecture :') ?></th>
+                                <td>
+                                    <?php if ($this->stats['avg_review_delay_seconds'] !== null): ?>
+                                        <?php $avgDays = (int)round($this->stats['avg_review_delay_seconds'] / 86400); ?>
+                                        <?= sprintf($this->translate(['%d jour', '%d jours', $avgDays, 'fr']), $avgDays) ?>
+                                    <?php else: ?>
+                                        -
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                <?php else: ?>
+                    <p class="text-center"><?= $this->translate('Aucune statistique disponible pour cette revue.') ?></p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>

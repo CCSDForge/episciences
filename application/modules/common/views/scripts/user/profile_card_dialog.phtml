@@ -1,0 +1,24 @@
+<?php
+/**
+ * Dialog opened by public/js/user/profile-card-dialog.js on `a[data-user-card]` links.
+ * Include once per page; the including view script also loads that script (a partial
+ * renders on a cloned view, so it can't register it reliably itself).
+ */
+?>
+<dialog id="user-card-dialog" class="user-card-dialog" aria-labelledby="user-card-dialog-title">
+    <div class="user-card-dialog-header">
+        <h2 id="user-card-dialog-title" class="user-card-dialog-title" data-user-card-title></h2>
+        <form method="dialog">
+            <button type="submit" class="close user-card-dialog-close" aria-label="<?= $this->escape($this->translate('Fermer')) ?>">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </form>
+    </div>
+    <div class="user-card-dialog-body" data-user-card-body aria-live="polite"></div>
+    <template data-user-card-loading>
+        <p class="text-center user-card-dialog-loading">
+            <span class="fas fa-spinner fa-spin" aria-hidden="true"></span>
+            <?= $this->translate('Chargement…') ?>
+        </p>
+    </template>
+</dialog>

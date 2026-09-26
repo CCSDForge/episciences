@@ -1,0 +1,305 @@
+<?php
+$this->jQuery()->addJavascriptFile('/js/reviewersstats/reviewer-suggest.js');
+
+/** @var array<string, int|string|null> $baseParams */
+$baseParams = array_filter([
+    'search' => $this->search,
+    'period' => $this->period,
+    'only_pending_inv' => $this->onlyPendingInv ? 1 : null,
+    'only_pending_rev' => $this->onlyPendingRev ? 1 : null,
+    'only_overdue' => $this->onlyOverdue ? 1 : null,
+    'only_my_responsibility' => $this->onlyMyResponsibility ? 1 : null,
+], static fn($value) => $value !== null && $value !== '');
+
+// Mirrors the controller defaults (12-month period, no filter): the reset link is only
+// offered when the list is actually narrowed down.
+$hasActiveFilters = ($this->search ?? '') !== ''
+    || (int)$this->period !== 12
+    || $this->onlyPendingInv
+    || $this->onlyPendingRev
+    || $this->onlyOverdue
+    || $this->onlyMyResponsibility;
+
+// Default direction applied the first time a column is sorted; clicking an
+// already-active column toggles between asc/desc instead.
+$defaultSortDirection = [
+    'name' => 'asc',
+    'invitations_pending' => 'desc',
+    'reviews_pending' => 'desc',
+    'reviews_completed' => 'desc',
+    'reviews_overdue' => 'desc',
+    'max_overdue_days' => 'desc',
+    'last_invitation_date' => 'desc',
+    'last_review_completed_date' => 'desc',
+    'response_rate' => 'desc',
+    'acceptance_rate' => 'desc',
+    'avg_review_delay_seconds' => 'desc',
+];
+
+$sortUrl = function (string $key) use ($baseParams, $defaultSortDirection) {
+    $isActive = $this->sort === $key;
+    $nextDir = $isActive ? ($this->direction === 'asc' ? 'desc' : 'asc') : $defaultSortDirection[$key];
+    return $this->escape($this->url(array_merge($baseParams, [
+        'controller' => 'reviewersstats',
+        'action' => 'index',
+        'sort' => $key,
+        'dir' => $nextDir,
+    ]), null, true));
+};
+
+// Decorative only: the sort state is conveyed to assistive technologies by aria-sort on the <th>
+$sortIndicator = function (string $key) {
+    if ($this->sort !== $key) {
+        return ' <span class="glyphicon glyphicon-sort reviewers-stats-sort-idle" aria-hidden="true"></span>';
+    }
+    $icon = $this->direction === 'asc' ? 'glyphicon-triangle-top' : 'glyphicon-triangle-bottom';
+    return ' <span class="glyphicon ' . $icon . '" aria-hidden="true"></span>';
+};
+
+// Empty cells: a visual dash that screen readers don't spell out as "dash"
+$emptyCell = '<span aria-hidden="true">–</span><span class="sr-only">' . $this->translate('Non renseigné') . '</span>';
+
+$formatDate = static function (?string $date) use ($emptyCell): string {
+    if ($date === null || $date === '' || ($timestamp = strtotime($date)) === false) {
+        return $emptyCell;
+    }
+    return sprintf('<time datetime="%1$s">%1$s</time>', date('Y-m-d', $timestamp));
+};
+
+// Counts: zeros recede, non-zero values stand out, so the eye lands on what needs attention
+$formatCount = static function ($value): string {
+    $count = (int)$value;
+    return $count > 0 ? '<strong>' . $count . '</strong>' : '<span class="reviewers-stats-zero">0</span>';
+};
+
+// A rate over zero invitations/answers is undefined, not 0 %
+$formatRate = static function ($rate, $denominator) use ($emptyCell): string {
+    return (int)$denominator > 0 ? sprintf('%.1f%%', (float)$rate) : $emptyCell;
+};
+
+$ariaSort = function (string $key) {
+    if ($this->sort !== $key) {
+        return 'none';
+    }
+    return $this->direction === 'asc' ? 'ascending' : 'descending';
+};
+
+$pageUrl = fn(int $p) => $this->escape($this->url(array_merge($baseParams, [
+    'controller' => 'reviewersstats',
+    'action' => 'index',
+    'sort' => $this->sort,
+    'dir' => $this->direction,
+    'page' => $p,
+]), null, true));
+
+$detailUrl = fn(array $row) => $this->escape($this->url(ReviewersstatsController::detailUrlParams(
+    $row,
+    (int)($baseParams['period'] ?? $this->period),
+    !empty($baseParams['only_my_responsibility']),
+    $this->translate('Compte supprimé')
+), null, true));
+?>
+<div class="row">
+    <div class="col-md-12">
+        <h1><?= $this->translate('Statistiques des relecteurs') ?></h1>
+
+        <?php // Explicit action to a clean, segment-free URL: without it, the browser submits
+        // this GET form onto whatever URL is currently in the address bar, and if that URL
+        // still carries stale filter values as ZF1 default-route path segments (e.g. after
+        // following a sort link), Zend_Controller_Request_Http::getParam() reads those stale
+        // route params *before* the fresh query string this form just submitted. ?>
+        <form method="get" action="/reviewersstats" class="panel panel-default reviewers-stats-filters" autocomplete="off">
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-sm-6 form-group reviewer-suggest">
+                        <label for="search"><?= $this->translate('Rechercher un relecteur') ?></label>
+                        <?php // ARIA 1.2 combobox, driven by public/js/reviewersstats/reviewer-suggest.js;
+                        // without JS it stays a plain search field that filters the list ?>
+                        <div class="input-group">
+                            <span class="input-group-addon" aria-hidden="true"><span class="glyphicon glyphicon-search"></span></span>
+                            <input type="search" id="search" name="search" class="form-control"
+                                   value="<?= $this->escape($this->search ?? '') ?>"
+                                   placeholder="<?= $this->translate('Nom, email...') ?>"
+                                   aria-describedby="search-help"
+                                   data-suggest-url="/reviewersstats/suggest"
+                                   data-label-overdue="<?= $this->escape($this->translate('En retard')) ?>"
+                                   data-label-none="<?= $this->escape($this->translate('Aucun relecteur trouvé')) ?>"
+                                   data-label-one="<?= $this->escape($this->translate('1 suggestion, flèches haut et bas pour parcourir')) ?>"
+                                   data-label-many="<?= $this->escape($this->translate('%d suggestions, flèches haut et bas pour parcourir')) ?>">
+                        </div>
+                        <ul id="reviewer-suggestions" class="reviewer-suggest-list" role="listbox"
+                            aria-label="<?= $this->escape($this->translate('Relecteurs suggérés')) ?>" hidden></ul>
+                        <p id="search-help" class="help-block reviewer-suggest-help"><?= $this->translate('Choisissez une suggestion pour ouvrir la fiche du relecteur, ou validez pour filtrer la liste.') ?></p>
+                        <div class="sr-only" aria-live="polite" data-suggest-status></div>
+                    </div>
+                    <div class="col-sm-3 form-group">
+                        <label for="period"><?= $this->translate('Période') ?></label>
+                        <select id="period" name="period" class="form-control">
+                            <?php for ($i = 3; $i <= 24; $i += 3): ?>
+                                <option value="<?= $i ?>" <?php if ($this->period == $i) echo 'selected'; ?>><?= sprintf($this->translate('%d derniers mois'), $i) ?></option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
+                    <?php if ($this->canFilterByResponsibility): ?>
+                        <div class="col-sm-3 form-group">
+                            <span class="reviewers-stats-filters-label" aria-hidden="true"><?= $this->translate('Périmètre') ?></span>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="only_my_responsibility" value="1" autocomplete="off" <?php if ($this->onlyMyResponsibility) echo 'checked'; ?>>
+                                    <?= $this->translate('Uniquement les articles dont je suis responsable') ?>
+                                </label>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <fieldset class="reviewers-stats-filters-chips">
+                    <legend><?= $this->translate('Afficher uniquement les relecteurs ayant') ?></legend>
+                    <label class="reviewers-stats-chip">
+                        <input type="checkbox" name="only_pending_inv" value="1" autocomplete="off" <?php if ($this->onlyPendingInv) echo 'checked'; ?>>
+                        <span class="glyphicon glyphicon-envelope" aria-hidden="true"></span>
+                        <?= $this->translate('Invitations en attente') ?>
+                    </label>
+                    <label class="reviewers-stats-chip">
+                        <input type="checkbox" name="only_pending_rev" value="1" autocomplete="off" <?php if ($this->onlyPendingRev) echo 'checked'; ?>>
+                        <span class="glyphicon glyphicon-hourglass" aria-hidden="true"></span>
+                        <?= $this->translate('Relectures en cours') ?>
+                    </label>
+                    <label class="reviewers-stats-chip reviewers-stats-chip-danger">
+                        <input type="checkbox" name="only_overdue" value="1" autocomplete="off" <?php if ($this->onlyOverdue) echo 'checked'; ?>>
+                        <span class="glyphicon glyphicon-alert text-danger" aria-hidden="true"></span>
+                        <?= $this->translate('En retard') ?>
+                    </label>
+                </fieldset>
+            </div>
+
+            <div class="panel-footer reviewers-stats-filters-footer">
+                <p class="reviewers-stats-count" aria-live="polite">
+                    <?php // 'fr': source-string plural rule (0 is singular in French), see Zend_Translate_Adapter::translate() ?>
+                    <?= sprintf($this->translate(['%s relecteur trouvé.', '%s relecteurs trouvés.', (int)$this->totalCount, 'fr']), '<strong>' . (int)$this->totalCount . '</strong>') ?>
+                </p>
+                <div>
+                    <input type="hidden" name="sort" value="<?= $this->escape($this->sort) ?>">
+                    <input type="hidden" name="dir" value="<?= $this->escape($this->direction) ?>">
+                    <?php if ($hasActiveFilters): ?>
+                        <a class="btn btn-link" href="/reviewersstats"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span> <?= $this->translate('Réinitialiser les filtres') ?></a>
+                    <?php endif; ?>
+                    <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-filter" aria-hidden="true"></span> <?= $this->translate('Filtrer') ?></button>
+                </div>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover reviewers-stats-table">
+                <?php // 'fr': source-string plural rule (0 is singular in French), see Zend_Translate_Adapter::translate() ?>
+                <caption><?= sprintf($this->translate(['Statistiques des relecteurs sur le dernier mois', 'Statistiques des relecteurs sur les %d derniers mois', (int)$this->period, 'fr']), (int)$this->period) ?></caption>
+                <thead>
+                    <tr>
+                        <?php foreach ([
+                            'name' => 'Relecteur',
+                            'invitations_pending' => 'Invitations en attente',
+                            'reviews_pending' => 'Relectures en cours',
+                            'reviews_completed' => 'Relectures effectuées',
+                            'reviews_overdue' => 'En retard',
+                            'max_overdue_days' => 'Retard max (jours)',
+                            'reminders' => 'Relances envoyées',
+                            'last_invitation_date' => 'Dernière sollicitation',
+                            'last_review_completed_date' => 'Dernier rapport soumis',
+                            'response_rate' => 'Taux de réponse',
+                            'acceptance_rate' => 'Taux d’acceptation',
+                            'avg_review_delay_seconds' => 'Délai moyen de relecture',
+                        ] as $key => $label): ?>
+                            <?php $isSortable = isset($defaultSortDirection[$key]); ?>
+                            <th scope="col"<?= $key !== 'name' ? ' class="reviewers-stats-num"' : '' ?><?= $isSortable ? ' aria-sort="' . $ariaSort($key) . '"' : '' ?>>
+                                <?php if ($isSortable): ?>
+                                    <a href="<?= $sortUrl($key) ?>"><?= $this->translate($label) ?><?= $sortIndicator($key) ?></a>
+                                <?php else: ?>
+                                    <?= $this->translate($label) ?>
+                                <?php endif; ?>
+                            </th>
+                        <?php endforeach; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($this->stats)): ?>
+                        <tr>
+                            <td colspan="12" class="text-center"><?= $this->translate('Aucun résultat trouvé.') ?></td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($this->stats as $row): ?>
+                            <?php
+                            $emailKey = strtolower($row['EMAIL'] ?? '');
+                            $displayName = $row['SCREEN_NAME'] !== null && $row['SCREEN_NAME'] !== '' ? $row['SCREEN_NAME'] : $this->translate('Compte supprimé');
+                            $isOverdue = (int)$row['reviews_overdue'] > 0;
+                            ?>
+                            <tr>
+                                <th scope="row">
+                                    <a href="<?= $detailUrl($row) ?>"><?= $this->escape($displayName) ?></a>
+                                    <?php if ($row['EMAIL']): ?>
+                                        <span class="reviewers-stats-email"><?= $this->escape($row['EMAIL']) ?></span>
+                                    <?php endif; ?>
+                                </th>
+                                <td class="reviewers-stats-num"><?= $formatCount($row['invitations_pending']) ?></td>
+                                <td class="reviewers-stats-num"><?= $formatCount($row['reviews_pending']) ?></td>
+                                <td class="reviewers-stats-num"><?= $formatCount($row['reviews_completed']) ?></td>
+                                <td class="reviewers-stats-num">
+                                    <?php if ($isOverdue): ?>
+                                        <strong class="text-danger"><span class="glyphicon glyphicon-alert" aria-hidden="true"></span> <?= (int)$row['reviews_overdue'] ?></strong>
+                                    <?php else: ?>
+                                        <?= $formatCount(0) ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="reviewers-stats-num">
+                                    <?= $isOverdue ? '<strong class="text-danger">' . (int)$row['max_overdue_days'] . '</strong>' : $emptyCell ?>
+                                </td>
+                                <td class="reviewers-stats-num"><?= $formatCount($this->remindersCount[$emailKey] ?? 0) ?></td>
+                                <td class="reviewers-stats-num"><?= $formatDate($row['last_invitation_date']) ?></td>
+                                <td class="reviewers-stats-num"><?= $formatDate($row['last_review_completed_date']) ?></td>
+                                <td class="reviewers-stats-num"><?= $formatRate($row['response_rate'], $row['total_invitations']) ?></td>
+                                <td class="reviewers-stats-num"><?= $formatRate($row['acceptance_rate'], $row['total_responses']) ?></td>
+                                <td class="reviewers-stats-num">
+                                    <?php if ($row['avg_review_delay_seconds'] !== null): ?>
+                                        <?php $avgDays = (int)round($row['avg_review_delay_seconds'] / 86400); ?>
+                                        <?= sprintf($this->translate(['%d jour', '%d jours', $avgDays, 'fr']), $avgDays) ?>
+                                    <?php else: ?>
+                                        <?= $emptyCell ?>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <?php if ($this->totalPages > 1): ?>
+            <nav aria-label="<?= $this->translate('Pagination') ?>">
+                <ul class="pagination">
+                    <li class="<?= $this->currentPage <= 1 ? 'disabled' : '' ?>">
+                        <?php if ($this->currentPage > 1): ?>
+                            <a href="<?= $pageUrl($this->currentPage - 1) ?>"><span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span> <?= $this->translate('Précédente') ?></a>
+                        <?php else: ?>
+                            <span><span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span> <?= $this->translate('Précédente') ?></span>
+                        <?php endif; ?>
+                    </li>
+                    <?php foreach ($this->pageRange as $p): ?>
+                        <?php if ($p === null): ?>
+                            <li class="disabled"><span>&hellip;</span></li>
+                        <?php elseif ($p === $this->currentPage): ?>
+                            <li class="active"><span aria-current="page"><span class="sr-only"><?= $this->translate('Page') ?> </span><?= $p ?></span></li>
+                        <?php else: ?>
+                            <li><a href="<?= $pageUrl($p) ?>"><span class="sr-only"><?= $this->translate('Page') ?> </span><?= $p ?></a></li>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                    <li class="<?= $this->currentPage >= $this->totalPages ? 'disabled' : '' ?>">
+                        <?php if ($this->currentPage < $this->totalPages): ?>
+                            <a href="<?= $pageUrl($this->currentPage + 1) ?>"><?= $this->translate('Suivante') ?> <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span></a>
+                        <?php else: ?>
+                            <span><?= $this->translate('Suivante') ?> <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span></span>
+                        <?php endif; ?>
+                    </li>
+                </ul>
+            </nav>
+        <?php endif; ?>
+    </div>
+</div>

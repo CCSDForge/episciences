@@ -1,5 +1,10 @@
 <?php // Bloc "Gérer la revue" ************************************************ ?>
 <?php $isAllowedToManegeReview = Episciences_Auth::isSecretary() || (Episciences_Auth::isEditor(RVID, true) && !$this->review->getSetting('encapsulateEditors')); ?>
+<?php // Guest editors and encapsulated editors don't get the "Gérer la revue" panel above
+// (it exposes journal-wide paper/volume management they shouldn't have), but they still have
+// ACL access to /reviewersstats (their own restricted view of it) with no other link to reach
+// it from the dashboard. ?>
+<?php $canViewReviewersStats = Episciences_Auth::isGuestEditor() || Episciences_Auth::isEditor() || Episciences_Auth::isSecretary(); ?>
 <?php if (isset($this->onlyEditablePapersWithoutEditors) && !empty($this->onlyEditablePapersWithoutEditors) && Episciences_Auth::isSecretary()) : ?>
 
     <?php //Alert on the existence of papers without assigned editors ?>
@@ -44,6 +49,9 @@
             <a class="btn btn-default btn-sm" href="/grid/list"><span
                         class="glyphicon glyphicon-tasks"></span> <?= $this->translate("Grilles de relecture") ?>
             </a>&nbsp;
+            <a class="btn btn-default btn-sm" href="/reviewersstats"><span
+                        class="glyphicon glyphicon-stats"></span> <?= $this->translate("Statistiques des relecteurs") ?>
+            </a>&nbsp;
             <?php if (Episciences_Auth::isSecretary()) : ?>
                 <a class="btn btn-default btn-sm" href="/review/settings"><span
                             class="glyphicon glyphicon-cog"></span> <?= $this->translate("Paramètres de la revue") ?>
@@ -51,6 +59,19 @@
             <?php endif; ?>
         </div>
 
+    </div>
+<?php endif; ?>
+
+<?php if ($canViewReviewersStats && !$isAllowedToManegeReview) : ?>
+    <div class="panel panel-default collapsable">
+        <div class="panel-heading">
+            <h2 class="panel-title"><?= $this->translate('Statistiques des relecteurs') ?></h2>
+        </div>
+        <div class="panel-footer">
+            <a class="btn btn-default btn-sm" href="/reviewersstats"><span
+                        class="glyphicon glyphicon-stats"></span> <?= $this->translate("Statistiques des relecteurs") ?>
+            </a>
+        </div>
     </div>
 <?php endif; ?>
 
@@ -274,11 +295,16 @@
 
         </div>
 
-        <?php if ($this->reviewings && (Episciences_Auth::isReviewer() || Episciences_Auth::isAllowedToUploadPaperReport())) : ?>
+        <?php if (Episciences_Auth::isReviewer()) : ?>
             <div class="panel-footer">
                 <div class="small">
-                    <a href="/paper/ratings" class="btn btn-default btn-sm" role="button">
-                        <span class="glyphicon glyphicon-file"></span> <?= $this->translate("Relire les articles") ?>
+                    <?php if ($this->reviewings && (Episciences_Auth::isReviewer() || Episciences_Auth::isAllowedToUploadPaperReport())) : ?>
+                        <a href="/paper/ratings" class="btn btn-default btn-sm" role="button">
+                            <span class="glyphicon glyphicon-file"></span> <?= $this->translate("Relire les articles") ?>
+                        </a>&nbsp;
+                    <?php endif; ?>
+                    <a href="/myreviewstats" class="btn btn-default btn-sm" role="button">
+                        <span class="glyphicon glyphicon-stats"></span> <?= $this->translate("Mes statistiques") ?>
                     </a>
                 </div>
             </div>

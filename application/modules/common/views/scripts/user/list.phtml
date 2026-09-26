@@ -4,6 +4,7 @@ $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
 $this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
 $this->jQuery()->addJavascriptFile('/js/library/es.dataTables.delete-buttons.js');
 $this->jQuery()->addJavascriptFile('/js/user/dataTableInit.js');
+$this->jQuery()->addJavascriptFile('/js/user/profile-card-dialog.js');
 
 $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 
@@ -110,9 +111,11 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 
                 </td>
                 <td style="text-align:right;">
-                    <a href="/user/view?userid=<?php echo $user['uid']; ?>"><span data-toggle="tooltip"
+                    <a href="/user/view?userid=<?php echo (int)$user['uid']; ?>"
+                       data-user-card="<?php echo (int)$user['uid']; ?>"
+                       data-user-name="<?php echo $this->escape($user['SCREEN_NAME'] ?? ''); ?>"><span data-toggle="tooltip"
                                                                                   title="<?php echo $this->translate("Voir ce compte."); ?>"
-                                                                                  class="fa-regular fa-address-card"></span></a>&nbsp;
+                                                                                  class="fa-regular fa-address-card" aria-hidden="true"></span><span class="sr-only"><?php echo $this->translate("Voir ce compte."); ?></span></a>&nbsp;
                     <?php if (Episciences_Auth::isSecretary()) : ?>
                         <?php if ($user['uid'] == Episciences_Auth::getUid()) : ?>
                             <span style="cursor: pointer" data-toggle="tooltip"
@@ -167,3 +170,5 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
     <?php echo $this->translate('Aucun utilisateur enregistré'); ?>.
 
 <?php endif; ?>
+
+<?= $this->partial('user/profile_card_dialog.phtml') ?>
