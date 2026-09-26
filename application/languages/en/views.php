@@ -2654,5 +2654,11 @@ return array(
     "Taux de réponse :" => "Response rate:",
     "Délai moyen de relecture :" => "Average review time:",
     "Aucune statistique disponible pour cette revue." => "No statistics available for this journal.",
-    "Mes statistiques" => "My statistics"
+    "Mes statistiques" => "My statistics",
+    "Compte du relecteur" => "Reviewer account",
+
+    // Shared user profile card (user/user_profile.phtml)
+    "Inscription" => "Registered on",
+    "Aucun compte : invité par e-mail" => "No account: invited by e-mail",
+    "Voir le profil public" => "View public profile"
 );

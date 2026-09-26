@@ -156,6 +156,55 @@ class ReviewersstatsController extends Zend_Controller_Action
         $this->view->reviewerEmail = $email;
         $this->view->period = $period;
         $this->view->onlyMyResponsibility = $onlyMyResponsibility;
+        $this->view->reviewerProfile = self::loadReviewerProfile($rows, $email === null ? $uid : 0, $tmpUser);
+    }
+
+    /**
+     * Identity shown on the detail page's profile card. Rows are grouped by e-mail, so the same
+     * person may appear both as an account-less invitee (TMP_USER = 1) and, after registering,
+     * as a real account: the registered account wins since it carries the full profile.
+     *
+     * @param array<int, array<string, mixed>> $rows
+     * @param int $fallbackUid reviewer reached by UID (no e-mail on record), 0 otherwise
+     * @return array<string, mixed>|null Episciences_User::toArray() or Episciences_User_Tmp::toArray()
+     */
+    private static function loadReviewerProfile(array $rows, int $fallbackUid, int $fallbackTmpUser): ?array
+    {
+        $registeredUid = 0;
+        $tmpUserId = 0;
+        foreach ($rows as $row) {
+            if ((int)$row['tmp_user'] === 0) {
+                $registeredUid = (int)$row['uid'];
+                break;
+            }
+            $tmpUserId = $tmpUserId ?: (int)$row['uid'];
+        }
+        if ($registeredUid === 0 && $tmpUserId === 0 && $fallbackUid > 0) {
+            if ($fallbackTmpUser === 0) {
+                $registeredUid = $fallbackUid;
+            } else {
+                $tmpUserId = $fallbackUid;
+            }
+        }
+
+        if ($registeredUid > 0) {
+            $user = new Episciences_User();
+            if ($user->find($registeredUid) !== []) {
+                // CAS data: e-mail, names, registration date — same as UserDefaultController::viewAction()
+                (new Ccsd_User_Models_UserMapper())->find($registeredUid, $user);
+                return $user->toArray() + ['editorSections' => null];
+            }
+        }
+
+        if ($tmpUserId > 0) {
+            $tmpUser = new Episciences_User_Tmp();
+            if ($tmpUser->find($tmpUserId) !== []) {
+                $tmpUser->generateScreen_name();
+                return $tmpUser->toArray();
+            }
+        }
+
+        return null;
     }
 
     /**

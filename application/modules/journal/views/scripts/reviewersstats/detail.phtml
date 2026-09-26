@@ -52,6 +52,22 @@ $tableTitle = sprintf($this->translate(['Invitations de relecture du dernier moi
             ) ?>
         </h1>
 
+        <?php if ($this->reviewerProfile !== null): ?>
+            <section class="panel panel-default reviewers-stats-profile" aria-labelledby="reviewer-profile-title">
+                <div class="panel-heading">
+                    <h2 class="panel-title" id="reviewer-profile-title"><?= $this->translate('Compte du relecteur') ?></h2>
+                </div>
+                <div class="panel-body">
+                    <?= $this->partial('user/user_profile.phtml', [
+                        'user' => $this->reviewerProfile,
+                        'showName' => false,
+                        'showPrivate' => true,
+                        'profileLink' => true,
+                    ]) ?>
+                </div>
+            </section>
+        <?php endif; ?>
+
         <div class="reviewers-stats-detail-toolbar">
             <p class="reviewers-stats-detail-period"><?= $this->escape($tableTitle) ?></p>
             <?php if ($supersededCount > 0): ?>

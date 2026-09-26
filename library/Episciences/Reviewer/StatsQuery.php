@@ -390,6 +390,8 @@ class StatsQuery
         $sql = '
             SELECT
                 ua.ITEMID AS docid,
+                ua.UID AS uid,
+                ua.TMP_USER AS tmp_user,
                 ua.STATUS AS assignment_status,
                 ua.WHEN AS assignment_date,
                 ua.DEADLINE AS deadline,
