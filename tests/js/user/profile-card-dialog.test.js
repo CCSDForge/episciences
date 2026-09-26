@@ -42,11 +42,13 @@ describe('profile-card-dialog.js', () => {
         dialog = renderPage();
         global.fetch = jest.fn();
         ProfileCardDialog.lastTrigger = null;
+        ProfileCardDialog.pending = null;
         ProfileCardDialog.init(document);
     });
 
     afterEach(() => {
         delete global.fetch;
+        jest.restoreAllMocks();
     });
 
     test('opens the dialog with the name and loads the card fragment', async () => {
@@ -79,9 +81,21 @@ describe('profile-card-dialog.js', () => {
         ['shift', { shiftKey: true }],
         ['middle button', { button: 1 }],
     ])('lets a %s click follow the link (new tab/window)', (_label, init) => {
-        const event = click(document.getElementById('trigger'), init);
+        // Window listeners run last: record what the script decided, then stop jsdom from
+        // attempting the (unimplemented) navigation, which would log in a later test.
+        let preventedByScript = null;
+        window.addEventListener(
+            'click',
+            event => {
+                preventedByScript = event.defaultPrevented;
+                event.preventDefault();
+            },
+            { once: true }
+        );
 
-        expect(event.defaultPrevented).toBe(false);
+        click(document.getElementById('trigger'), init);
+
+        expect(preventedByScript).toBe(false);
         expect(dialog.showModal).not.toHaveBeenCalled();
     });
 
@@ -95,6 +109,79 @@ describe('profile-card-dialog.js', () => {
 
         expect(dialog.close).toHaveBeenCalled();
         expect(document.activeElement).toBe(trigger);
+    });
+
+    test("never shows a late response under another user's name", async () => {
+        document.body.insertAdjacentHTML(
+            'afterbegin',
+            '<a id="other" href="/user/view?userid=7" data-user-card="7" data-user-name="John Roe">card</a>'
+        );
+        const responses = {};
+        global.fetch.mockImplementation(
+            (url, options) =>
+                new Promise((resolve, reject) => {
+                    responses[url] = resolve;
+                    options.signal.addEventListener('abort', () =>
+                        reject(new DOMException('Aborted', 'AbortError'))
+                    );
+                })
+        );
+        const jane = {
+            ok: true,
+            text: () => Promise.resolve('<div class="card">Jane</div>'),
+        };
+        const john = {
+            ok: true,
+            text: () => Promise.resolve('<div class="card">John</div>'),
+        };
+
+        click(document.getElementById('trigger'));
+        click(document.getElementById('other'));
+        responses['/user/card?userid=7'](john);
+        responses['/user/card?userid=42'](jane);
+        await flush();
+
+        expect(dialog.querySelector('[data-user-card-title]').textContent).toBe(
+            'John Roe'
+        );
+        expect(dialog.querySelector('.card').textContent).toBe('John');
+        expect(dialog.hasAttribute('aria-busy')).toBe(false);
+    });
+
+    test('does not navigate away when a request fails after the user closed the dialog', async () => {
+        let fail;
+        global.fetch.mockImplementation(
+            () =>
+                new Promise((_resolve, reject) => {
+                    fail = reject;
+                })
+        );
+        const assign = jest
+            .spyOn(ProfileCardDialog, 'navigate')
+            .mockImplementation(() => {});
+
+        click(document.getElementById('trigger'));
+        dialog.close();
+        fail(new TypeError('network error'));
+        await flush();
+
+        expect(assign).not.toHaveBeenCalled();
+        expect(dialog.hasAttribute('aria-busy')).toBe(false);
+    });
+
+    test('falls back to the profile page when the request fails', async () => {
+        global.fetch.mockResolvedValue({ ok: false, status: 500 });
+        const assign = jest
+            .spyOn(ProfileCardDialog, 'navigate')
+            .mockImplementation(() => {});
+
+        click(document.getElementById('trigger'));
+        await flush();
+
+        expect(dialog.close).toHaveBeenCalled();
+        expect(assign).toHaveBeenCalledWith(
+            expect.stringContaining('/user/view?userid=42')
+        );
     });
 
     test('ignores clicks elsewhere', () => {

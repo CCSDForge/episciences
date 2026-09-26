@@ -10,6 +10,8 @@
 const ProfileCardDialog = {
     dialog: null,
     lastTrigger: null,
+    // Request of the card currently shown: aborted when the dialog closes or another card opens
+    pending: null,
 
     init(root = document) {
         this.dialog = root.getElementById('user-card-dialog');
@@ -27,10 +29,23 @@ const ProfileCardDialog = {
             }
         });
         this.dialog.addEventListener('close', () => {
+            this.abortPending();
+            this.dialog.removeAttribute('aria-busy');
             if (this.lastTrigger) {
                 this.lastTrigger.focus();
             }
         });
+    },
+
+    abortPending() {
+        if (this.pending) {
+            this.pending.abort();
+            this.pending = null;
+        }
+    },
+
+    navigate(url) {
+        window.location.assign(url);
     },
 
     isModifiedClick(event) {
@@ -53,6 +68,9 @@ const ProfileCardDialog = {
     },
 
     async open(trigger) {
+        this.abortPending();
+        const request = new AbortController();
+        this.pending = request;
         this.lastTrigger = trigger;
         const body = this.dialog.querySelector('[data-user-card-body]');
 
@@ -73,18 +91,31 @@ const ProfileCardDialog = {
                 {
                     credentials: 'same-origin',
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: request.signal,
                 }
             );
             if (!response.ok) {
                 throw new Error('HTTP ' + response.status);
             }
-            body.innerHTML = await response.text();
+            const html = await response.text();
+            if (request.signal.aborted) {
+                return;
+            }
+            body.innerHTML = html;
         } catch (error) {
+            // Closed by the user, or superseded by another card: nothing to fall back to
+            if (request.signal.aborted) {
+                return;
+            }
+            this.pending = null;
             this.dialog.close();
-            window.location.assign(trigger.href);
+            this.navigate(trigger.href);
             return;
         } finally {
-            this.dialog.removeAttribute('aria-busy');
+            if (this.pending === request) {
+                this.pending = null;
+                this.dialog.removeAttribute('aria-busy');
+            }
         }
     },
 };

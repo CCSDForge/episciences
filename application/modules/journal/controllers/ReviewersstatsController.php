@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Episciences\Reviewer\StatsCoiFilter;
 use Episciences\Reviewer\StatsQuery;
 
 class ReviewersstatsController extends Zend_Controller_Action
@@ -73,7 +74,8 @@ class ReviewersstatsController extends Zend_Controller_Action
             self::LIMIT,
             $offset,
             $sort,
-            $direction
+            $direction,
+            $this->coiFilter($rvid)
         );
 
         $emails = [];
@@ -135,7 +137,9 @@ class ReviewersstatsController extends Zend_Controller_Action
             $isRoleRestricted || $onlyMyResponsibility,
             (int)Episciences_Auth::getUid(),
             $period,
-            $query
+            $query,
+            10,
+            $this->coiFilter($rvid)
         );
 
         $deletedLabel = $this->view->translate('Compte supprimé');
@@ -218,7 +222,8 @@ class ReviewersstatsController extends Zend_Controller_Action
             $tmpUser,
             $isRestricted,
             $currentUserId,
-            $period
+            $period,
+            $this->coiFilter($rvid)
         );
 
         $docIds = array_values(array_unique(array_map(static fn(array $row): int => (int)$row['docid'], $rows)));
@@ -230,7 +235,7 @@ class ReviewersstatsController extends Zend_Controller_Action
         $this->view->reviewerEmail = $email;
         $this->view->period = $period;
         $this->view->onlyMyResponsibility = $onlyMyResponsibility;
-        $this->view->reviewerProfile = self::loadReviewerProfile($rows, $email === null ? $uid : 0, $tmpUser);
+        $this->view->reviewerProfile = self::loadReviewerProfile($rows);
     }
 
     /**
@@ -238,11 +243,14 @@ class ReviewersstatsController extends Zend_Controller_Action
      * person may appear both as an account-less invitee (TMP_USER = 1) and, after registering,
      * as a real account: the registered account wins since it carries the full profile.
      *
+     * Only ever resolved from the rows the viewer is allowed to see (restriction, period,
+     * conflicts of interest): never from the URL's uid/email, which would otherwise turn this
+     * page into a lookup of any account's private details.
+     *
      * @param array<int, array<string, mixed>> $rows
-     * @param int $fallbackUid reviewer reached by UID (no e-mail on record), 0 otherwise
      * @return array<string, mixed>|null Episciences_User::toArray() or Episciences_User_Tmp::toArray()
      */
-    private static function loadReviewerProfile(array $rows, int $fallbackUid, int $fallbackTmpUser): ?array
+    private static function loadReviewerProfile(array $rows): ?array
     {
         $registeredUid = 0;
         $tmpUserId = 0;
@@ -252,13 +260,6 @@ class ReviewersstatsController extends Zend_Controller_Action
                 break;
             }
             $tmpUserId = $tmpUserId ?: (int)$row['uid'];
-        }
-        if ($registeredUid === 0 && $tmpUserId === 0 && $fallbackUid > 0) {
-            if ($fallbackTmpUser === 0) {
-                $registeredUid = $fallbackUid;
-            } else {
-                $tmpUserId = $fallbackUid;
-            }
         }
 
         if ($registeredUid > 0) {
@@ -462,6 +463,22 @@ class ReviewersstatsController extends Zend_Controller_Action
         $range[] = $totalPages;
 
         return $range;
+    }
+
+    /**
+     * Conflict-of-interest rule of the current viewer, see StatsCoiFilter.
+     */
+    private function coiFilter(int $rvid): StatsCoiFilter
+    {
+        $review = Episciences_ReviewsManager::find($rvid);
+        $isCoiEnabled = $review instanceof Episciences_Review
+            && (bool)$review->getSetting(Episciences_Review::SETTING_SYSTEM_IS_COI_ENABLED);
+
+        return StatsCoiFilter::resolve(
+            $isCoiEnabled,
+            Episciences_Auth::isRoot(),
+            Episciences_Auth::isAllowedToDeclareConflict()
+        );
     }
 
     /**

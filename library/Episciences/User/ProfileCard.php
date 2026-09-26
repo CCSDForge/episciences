@@ -66,12 +66,14 @@ final class ProfileCard
     }
 
     /**
-     * E-mail, language, registration date and biography: for the journal's managers and the
-     * person themself. The public profile (/user/view) is reachable anonymously for any account.
+     * E-mail, language, registration date and biography: for the person themself and the
+     * managers of a journal this person belongs to (the caller checks that membership, the
+     * viewer's role alone is not enough). The public profile (/user/view) is reachable
+     * anonymously for any account.
      */
-    public function canShowPrivateDetailsTo(int $viewerUid, bool $viewerIsManager): bool
+    public function canShowPrivateDetailsTo(int $viewerUid, bool $viewerManagesThisPerson): bool
     {
-        return $viewerIsManager || ($this->uid !== null && $this->uid === $viewerUid);
+        return $viewerManagesThisPerson || ($this->uid !== null && $this->uid === $viewerUid);
     }
 
     /**
@@ -130,11 +132,15 @@ final class ProfileCard
     }
 
     /**
+     * A single value becomes a one-item list: Episciences_User::getSocialMedias() is a string.
+     *
      * @return array<int, string>
      */
     private static function listOfStrings(mixed $value): array
     {
-        if (!is_array($value)) {
+        if (is_scalar($value)) {
+            $value = [$value];
+        } elseif (!is_array($value)) {
             return [];
         }
         return array_values(array_filter(

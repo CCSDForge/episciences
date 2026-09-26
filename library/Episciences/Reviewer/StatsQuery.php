@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Episciences\Reviewer;
 
 use Episciences_Acl;
+use Episciences_Paper_Conflict;
 use Zend_Db_Adapter_Abstract;
 use Zend_Db_Table_Abstract;
 
@@ -101,6 +102,7 @@ class StatsQuery
      * @param int $offset Pagination offset
      * @param string $sort Sort key, must be a key of self::SORTABLE_COLUMNS (falls back to 'name' otherwise)
      * @param string $direction 'asc' or 'desc' (falls back to 'asc' otherwise)
+     * @param StatsCoiFilter $coiFilter Conflict-of-interest rule of the viewer (ignored when $isPersonal is true)
      * @return array{total: int, data: array<int, array<string, mixed>>}
      */
     public function getReviewersGlobalStats(
@@ -116,7 +118,8 @@ class StatsQuery
         int $limit = 50,
         int $offset = 0,
         string $sort = self::DEFAULT_SORT,
-        string $direction = 'asc'
+        string $direction = 'asc',
+        StatsCoiFilter $coiFilter = StatsCoiFilter::None
     ): array {
         // GDPR: the rolling-history cap only makes sense for the editors' view of
         // someone else's data. A reviewer looking at their own stats sees everything.
@@ -128,7 +131,8 @@ class StatsQuery
             $currentUserId,
             $periodMonths,
             $search,
-            $isPersonal
+            $isPersonal,
+            $coiFilter
         );
 
         $havingClauses = [];
@@ -189,7 +193,8 @@ class StatsQuery
         int $currentUserId,
         int $periodMonths,
         string $search,
-        int $limit = 10
+        int $limit = 10,
+        StatsCoiFilter $coiFilter = StatsCoiFilter::None
     ): array {
         [$coreSql, $params] = $this->buildCoreQuery(
             $rvid,
@@ -197,7 +202,8 @@ class StatsQuery
             $currentUserId,
             min(24, max(1, $periodMonths)),
             $search,
-            false
+            false,
+            $coiFilter
         );
 
         $sql = $coreSql . ' GROUP BY identity_key ORDER BY no_identity ASC, SCREEN_NAME ASC LIMIT ' . max(1, min(20, $limit));
@@ -284,7 +290,8 @@ class StatsQuery
         int $currentUserId,
         ?int $periodMonths,
         ?string $search,
-        bool $isPersonal
+        bool $isPersonal,
+        StatsCoiFilter $coiFilter
     ): array {
         // Use of backticks is mandatory (MySQL 8.4 compatibility, `USER` is a reserved keyword).
         // Identity columns are wrapped in MAX() because they are functionally single-valued
@@ -368,9 +375,12 @@ class StatsQuery
             // Strict check on TMP_USER = 0 for personal stats (registered user only).
             $sql .= ' AND ua.UID = :current_user_uid AND ua.TMP_USER = 0';
             $params['current_user_uid'] = $currentUserId;
-        } elseif ($isRestricted) {
-            $sql .= ' AND ' . self::restrictionClauseSql();
-            $params['current_user_uid'] = $currentUserId;
+        } else {
+            if ($isRestricted) {
+                $sql .= ' AND ' . self::restrictionClauseSql();
+                $params['current_user_uid'] = $currentUserId;
+            }
+            $sql .= self::appendPaperVisibility($params, $currentUserId, $coiFilter);
         }
 
         if (!empty($search)) {
@@ -401,11 +411,40 @@ class StatsQuery
     }
 
     /**
+     * Papers whose reviewers the viewer must not see, whatever their role: their own
+     * submissions (an author must not learn who reviews them, same rule as the paper lists'
+     * reviewer filter) and, when the journal has COI enabled, the papers $coiFilter hides.
+     * Shared by the list, the suggestions and the drill-down so they always agree.
+     * Requires the `p` (T_PAPERS) join; binds :viewer_uid and, if needed, :coi_answer.
+     *
+     * @param array<string, int|string> $params
+     */
+    private static function appendPaperVisibility(array &$params, int $viewerUid, StatsCoiFilter $coiFilter): string
+    {
+        $params['viewer_uid'] = $viewerUid;
+        $sql = ' AND (p.UID IS NULL OR p.UID <> :viewer_uid)';
+
+        if ($coiFilter === StatsCoiFilter::None) {
+            return $sql;
+        }
+
+        $conflictSql = 'SELECT 1 FROM `' . T_PAPER_CONFLICTS . '` pc WHERE pc.paper_id = p.PAPERID AND pc.`by` = :viewer_uid AND pc.answer = :coi_answer';
+
+        if ($coiFilter === StatsCoiFilter::ConfirmedNoConflictOnly) {
+            $params['coi_answer'] = Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'];
+            return $sql . ' AND EXISTS (' . $conflictSql . ')';
+        }
+
+        $params['coi_answer'] = Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'];
+        return $sql . ' AND NOT EXISTS (' . $conflictSql . ')';
+    }
+
+    /**
      * Lists individual invitations/assignments behind one aggregate row of
      * getReviewersGlobalStats() — the drill-down "which papers made up this number".
      * Matches the same identity resolution (email primarily, UID+TMP_USER as a last-resort
      * fallback for reviewers with no email on record) and applies the same
-     * restriction/period rules, so the detail can never show more than the aggregate implied.
+     * restriction/period/visibility rules, so the detail can never show more than the aggregate implied.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -416,7 +455,8 @@ class StatsQuery
         int $tmpUser,
         bool $isRestricted,
         int $currentUserId,
-        ?int $periodMonths = 24
+        ?int $periodMonths = 24,
+        StatsCoiFilter $coiFilter = StatsCoiFilter::None
     ): array {
         $periodMonths = $periodMonths !== null ? min(24, max(1, $periodMonths)) : null;
 
@@ -435,11 +475,12 @@ class StatsQuery
                 rr.STATUS AS review_status,
                 rr.UPDATE_DATE AS review_update_date
             FROM `' . T_ASSIGNMENTS . '` ua
-            LEFT JOIN `' . T_USERS . '` u ON ua.TMP_USER = 0 AND ua.UID = u.UID
+            LEFT JOIN `' . T_USERS . '` u ON ua.TMP_USER = 0 AND ua.UID = u.UID AND u.IS_VALID = 1
             LEFT JOIN `' . T_TMP_USER . '` ut ON ua.TMP_USER = 1 AND ua.UID = ut.ID
             LEFT JOIN ' . self::latestInvitationPerAssignmentSql() . ' ui ON ua.ID = ui.AID
             LEFT JOIN ' . self::latestAnswerPerAssignmentSql() . ' uia ON ua.ID = uia.AID
             LEFT JOIN `' . T_REVIEWER_REPORTS . '` rr ON ua.TMP_USER = 0 AND ua.UID = rr.UID AND ua.ITEMID = rr.DOCID
+            LEFT JOIN `' . T_PAPERS . '` p ON ua.ITEMID = p.DOCID
             WHERE ua.RVID = :rvid
               AND ua.ROLEID = :role_reviewer
         ';
@@ -467,6 +508,8 @@ class StatsQuery
             $sql .= ' AND ' . self::restrictionClauseSql();
             $params['current_user_uid'] = $currentUserId;
         }
+
+        $sql .= self::appendPaperVisibility($params, $currentUserId, $coiFilter);
 
         $sql .= ' ORDER BY COALESCE(ui.FIRST_SENDING_DATE, ua.WHEN) DESC';
 

@@ -7,16 +7,20 @@
  *                                        or Episciences_User_Tmp::toArray() for an account-less reviewer
  * Optional:
  * @var bool|null $this->showName    default true (false when the page title already shows it)
- * @var bool|null $this->showPrivate default: journal managers and the person themself
+ * @var bool|null $this->showPrivate default: the person themself, and the managers of a journal they belong to
  */
 
 use Episciences\User\ProfileCard;
 
 $card = ProfileCard::fromArray((array)$this->user, (int)RVID);
 $viewerUid = (int)Episciences_Auth::getUid();
-$isManager = Episciences_Auth::isSecretary() || Episciences_Auth::isChiefEditor()
-    || Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor();
-$showPrivate = $this->showPrivate ?? $card->canShowPrivateDetailsTo($viewerUid, $isManager);
+// /user/view and /user/card load any account by its id: a manager's role only covers the
+// people who hold a role in their own journal.
+$managesThisPerson = $card->isRegistered()
+    && (Episciences_Auth::isSecretary() || Episciences_Auth::isChiefEditor()
+        || Episciences_Auth::isEditor() || Episciences_Auth::isGuestEditor())
+    && (new Episciences_User())->hasRoles((int)$card->uid, (int)RVID);
+$showPrivate = $this->showPrivate ?? $card->canShowPrivateDetailsTo($viewerUid, $managesThisPerson);
 $languageName = $card->languageCode !== null
     ? ucfirst((string)Zend_Locale::getTranslation($card->languageCode, 'language', Episciences_Tools::getLocale()))
     : null;

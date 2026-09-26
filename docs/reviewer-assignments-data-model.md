@@ -305,6 +305,13 @@ them can ever show a reviewer or an invitation the others would hide:
   assigned to a paper they manage (a `USER_ASSIGNMENT` row of theirs on the same `ITEMID`
   with role `editor`, `guest_editor` or `chief_editor`) —
   `StatsQuery::restrictionClauseSql()`.
+- **Paper visibility.** Whatever their role, managers never see the reviewers of papers
+  they submitted (`PAPERS.UID`). When the journal has conflicts of interest enabled
+  (`isCoiEnabled`), editorial staff only see papers they answered "no conflict" for in
+  `paper_conflicts`, and administrators without an editorial role (who cannot declare a
+  conflict) see every paper except those recorded with a conflict; root is exempt —
+  `StatsQuery::appendPaperVisibility()` and `Episciences\Reviewer\StatsCoiFilter`. The
+  detail page's profile card is only resolved from these visible rows, never from the URL.
 - **Personal view.** `/myreviewstats` is limited to the logged-in user's registered
   identity (`ua.UID = :uid AND ua.TMP_USER = 0`) in the current journal.
 

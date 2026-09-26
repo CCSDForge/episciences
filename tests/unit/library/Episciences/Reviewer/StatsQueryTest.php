@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences\Reviewer;
 
+use Episciences\Reviewer\StatsCoiFilter;
 use Episciences\Reviewer\StatsQuery;
 use Episciences_Acl;
 use Episciences_Paper;
+use Episciences_Paper_Conflict;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -405,6 +407,113 @@ final class StatsQueryTest extends TestCase
 
         self::assertStringContainsString('DATE >= DATE_SUB', $adapter->calls[0]['sql']);
         self::assertSame(24, $adapter->calls[0]['bind']['period_months']);
+    }
+
+    // =========================================================================
+    // Paper visibility — own submissions and conflicts of interest
+    // =========================================================================
+
+    /**
+     * @return array<string, array{0: callable(StatsQuery, StatsCoiFilter): mixed, 1: list<mixed>}>
+     */
+    public static function everyEditorsViewQuery(): array
+    {
+        // second item: the stub adapter's results, in call order
+        return [
+            'list' => [static fn(StatsQuery $q, StatsCoiFilter $f) => $q->getReviewersGlobalStats(1, false, 42, 12, null, false, false, false, false, 50, 0, 'name', 'asc', $f), [0, []]],
+            'suggestions' => [static fn(StatsQuery $q, StatsCoiFilter $f) => $q->getReviewerSuggestions(1, false, 42, 12, 'jan', 10, $f), [[]]],
+            'detail' => [static fn(StatsQuery $q, StatsCoiFilter $f) => $q->getReviewerInvitationDetails(1, 'jane@x.com', 0, 0, false, 42, 24, $f), [[]]],
+        ];
+    }
+
+    /**
+     * @param list<mixed> $results
+     * @dataProvider everyEditorsViewQuery
+     */
+    public function testViewerNeverSeesTheReviewersOfTheirOwnSubmissions(callable $run, array $results): void
+    {
+        $adapter = new StatsQueryTestAdapter($results);
+        $run(new StatsQuery($adapter), StatsCoiFilter::None);
+
+        foreach ($adapter->calls as $call) {
+            self::assertStringContainsString('LEFT JOIN `' . T_PAPERS . '` p ON ua.ITEMID = p.DOCID', $call['sql']);
+            self::assertStringContainsString('(p.UID IS NULL OR p.UID <> :viewer_uid)', $call['sql']);
+            self::assertSame(42, $call['bind']['viewer_uid']);
+            self::assertStringNotContainsString(T_PAPER_CONFLICTS, $call['sql'], 'COI disabled: no conflict filter');
+        }
+    }
+
+    /**
+     * @param list<mixed> $results
+     * @dataProvider everyEditorsViewQuery
+     */
+    public function testEditorialStaffOnlySeePapersTheyConfirmedHavingNoConflictWith(callable $run, array $results): void
+    {
+        $adapter = new StatsQueryTestAdapter($results);
+        $run(new StatsQuery($adapter), StatsCoiFilter::ConfirmedNoConflictOnly);
+
+        foreach ($adapter->calls as $call) {
+            self::assertStringContainsString(' AND EXISTS (SELECT 1 FROM `' . T_PAPER_CONFLICTS . '` pc WHERE pc.paper_id = p.PAPERID AND pc.`by` = :viewer_uid AND pc.answer = :coi_answer)', $call['sql']);
+            self::assertSame(Episciences_Paper_Conflict::AVAILABLE_ANSWER['no'], $call['bind']['coi_answer']);
+        }
+    }
+
+    /**
+     * @param list<mixed> $results
+     * @dataProvider everyEditorsViewQuery
+     */
+    public function testAdministratorsOnlyLosePapersTheyDeclaredAConflictWith(callable $run, array $results): void
+    {
+        $adapter = new StatsQueryTestAdapter($results);
+        $run(new StatsQuery($adapter), StatsCoiFilter::ExcludeDeclaredConflicts);
+
+        foreach ($adapter->calls as $call) {
+            self::assertStringContainsString(' AND NOT EXISTS (SELECT 1 FROM `' . T_PAPER_CONFLICTS . '`', $call['sql']);
+            self::assertSame(Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], $call['bind']['coi_answer']);
+        }
+    }
+
+    public function testPersonalViewIgnoresPaperVisibility(): void
+    {
+        // A reviewer's own stats: their assignments, whoever submitted the papers.
+        $adapter = new StatsQueryTestAdapter([0, []]);
+        (new StatsQuery($adapter))->getReviewersGlobalStats(1, false, 42, null, null, false, false, false, true, 50, 0, 'name', 'asc', StatsCoiFilter::ConfirmedNoConflictOnly);
+
+        foreach ($adapter->calls as $call) {
+            self::assertArrayNotHasKey('viewer_uid', $call['bind']);
+            self::assertStringNotContainsString(T_PAPER_CONFLICTS, $call['sql']);
+        }
+    }
+
+    public function testDetailIgnoresDisabledAccountsLikeTheList(): void
+    {
+        // The list groups a disabled account apart from an invitee sharing its e-mail:
+        // the e-mail drill-down must not pull that account's assignments back in.
+        $adapter = new StatsQueryTestAdapter([[]]);
+        (new StatsQuery($adapter))->getReviewerInvitationDetails(1, 'jane@x.com', 0, 0, false, 42, 24);
+
+        self::assertStringContainsString('ua.UID = u.UID AND u.IS_VALID = 1', $adapter->calls[0]['sql']);
+    }
+
+    /**
+     * @dataProvider coiFilterResolutionProvider
+     */
+    public function testCoiFilterResolution(bool $isCoiEnabled, bool $isRoot, bool $canDeclare, StatsCoiFilter $expected): void
+    {
+        self::assertSame($expected, StatsCoiFilter::resolve($isCoiEnabled, $isRoot, $canDeclare));
+    }
+
+    /**
+     * @return array<string, array{bool, bool, bool, StatsCoiFilter}>
+     */
+    public static function coiFilterResolutionProvider(): array
+    {
+        return [
+            'COI disabled' => [false, false, true, StatsCoiFilter::None],
+            'root' => [true, true, true, StatsCoiFilter::None],
+            'editorial staff' => [true, false, true, StatsCoiFilter::ConfirmedNoConflictOnly],
+            'administrator only' => [true, false, false, StatsCoiFilter::ExcludeDeclaredConflicts],
+        ];
     }
 }
 

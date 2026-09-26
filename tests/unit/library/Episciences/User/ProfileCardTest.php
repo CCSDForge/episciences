@@ -72,11 +72,19 @@ final class ProfileCardTest extends TestCase
         self::assertSame('2025-01-02', $card->registrationDate);
     }
 
+    public function testSocialMediaStoredAsASingleStringIsKept(): void
+    {
+        // Episciences_User::getSocialMedias() returns a string, not a list
+        $card = ProfileCard::fromArray(['social_medias' => ' @jane@mastodon.social '], 7);
+
+        self::assertSame(['@jane@mastodon.social'], $card->socialMedias);
+    }
+
     public function testPrivateDetailsAreForManagersAndTheOwnerOnly(): void
     {
         $card = ProfileCard::fromArray(['uid' => 42], 7);
 
-        self::assertTrue($card->canShowPrivateDetailsTo(99, true), 'journal manager');
+        self::assertTrue($card->canShowPrivateDetailsTo(99, true), 'manager of a journal the person belongs to');
         self::assertTrue($card->canShowPrivateDetailsTo(42, false), 'the person themself');
         self::assertFalse($card->canShowPrivateDetailsTo(99, false), 'another member');
         self::assertFalse($card->canShowPrivateDetailsTo(0, false), 'anonymous visitor');
