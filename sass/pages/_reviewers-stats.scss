@@ -1,0 +1,210 @@
+// Filter panel of the reviewer statistics page (/reviewersstats)
+.reviewers-stats-filters {
+  // Aligns the "scope" checkbox with the labelled search/period fields next to it
+  .reviewers-stats-filters-label {
+    display: inline-block;
+    max-width: 100%;
+    margin-bottom: 5px;
+  }
+
+  .checkbox {
+    margin-top: 0;
+  }
+}
+
+.reviewers-stats-filters-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  legend {
+    flex: 0 0 100%;
+    margin-bottom: 4px;
+    border: 0;
+    font-size: inherit;
+    font-weight: bold;
+  }
+}
+
+// Toggle "chip": the native checkbox stays visible and focusable, the chip only frames it
+.reviewers-stats-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 5px 12px;
+  border: 1px solid $lighter-grey;
+  border-radius: 999px;
+  font-weight: normal;
+  cursor: pointer;
+  transition: border-color 120ms ease-out, background-color 120ms ease-out;
+
+  input[type="checkbox"] {
+    margin: 0;
+  }
+
+  &:hover {
+    border-color: $light-grey;
+  }
+
+  &:has(input:checked) {
+    border-color: $blue;
+    background-color: $almost-white;
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid $blue;
+    outline-offset: 2px;
+  }
+
+  &.reviewers-stats-chip-danger:has(input:checked) {
+    border-color: $strawberry-red;
+  }
+}
+
+.reviewers-stats-filters-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  .reviewers-stats-count {
+    margin: 0;
+  }
+}
+
+// Invitation detail page (/reviewersstats/detail)
+// Toolbar above the table: what is listed (left), how to widen it (right)
+.reviewers-stats-detail-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 20px;
+  margin-bottom: 10px;
+}
+
+.reviewers-stats-detail-period {
+  margin: 6px 0 0;
+  color: $dark-grey;
+}
+
+.reviewers-stats-detail-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 100%;
+
+  // Bootstrap's "sm" breakpoint: on narrow screens the toolbar stacks, so keep it left-aligned
+  @media (min-width: 768px) {
+    align-items: flex-end;
+    text-align: right;
+  }
+}
+
+// $dark-grey: the journal theme's help text (#aaa, italic) falls below a 4.5:1 contrast
+.reviewers-stats-help {
+  margin: 0;
+  color: $dark-grey;
+  font-size: 0.9em;
+}
+
+// Replaced attempts are hidden until the toggle is checked; browsers without :has()
+// simply keep showing them all
+.reviewers-stats-detail:has(.reviewers-stats-toggle-superseded input:not(:checked)) .reviewers-stats-superseded {
+  display: none;
+}
+
+.reviewers-stats-detail-table {
+  // one <tbody> per paper: separate groups visually
+  > tbody + tbody {
+    border-top-width: 2px;
+  }
+
+  .reviewers-stats-group-header th {
+    background-color: $almost-white;
+    font-size: 1.05em;
+  }
+
+  .reviewers-stats-docid {
+    margin-left: 6px;
+    color: $dark-grey;
+    font-weight: normal;
+    white-space: nowrap;
+  }
+
+  .reviewers-stats-superseded {
+    font-style: italic;
+  }
+
+  .reviewers-stats-superseded-note {
+    display: block;
+    font-size: 0.9em;
+    font-weight: normal;
+  }
+
+  // Inactive statuses stay readable: $dark-grey keeps a > 4.5:1 contrast, unlike .text-muted
+  .reviewers-stats-inactive,
+  .reviewers-stats-superseded-note {
+    color: $dark-grey;
+  }
+
+  .reviewers-stats-overdue {
+    display: block;
+    margin-top: 2px;
+  }
+
+  time {
+    white-space: nowrap;
+  }
+}
+
+// Reviewer list (/reviewersstats)
+.reviewers-stats-table {
+  > caption {
+    color: $dark-grey;
+  }
+
+  > thead > tr > th {
+    vertical-align: bottom;
+
+    a {
+      display: inline-block;
+    }
+  }
+
+  // Numbers and dates: right-aligned with fixed-width digits so columns compare at a glance
+  .reviewers-stats-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  // Wrapping header labels stay readable even though their cells don't wrap
+  > thead .reviewers-stats-num {
+    white-space: normal;
+  }
+
+  // The reviewer column absorbs the spare width: most e-mails then fit on one line
+  > tbody > tr > th {
+    min-width: 16em;
+  }
+
+  .reviewers-stats-email {
+    display: block;
+    color: $dark-grey;
+    font-size: 0.9em;
+    font-weight: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .reviewers-stats-zero {
+    color: $dark-grey;
+  }
+
+  .reviewers-stats-sort-idle {
+    opacity: 0.4;
+  }
+}
