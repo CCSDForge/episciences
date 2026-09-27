@@ -52,9 +52,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Memoise the paper's primary volume on the `Episciences_Paper` instance, so `toJson()`, `getXml()` and `XmlExportManager::xmlExport()` share a single lookup instead of loading it twice: 38 to 34 queries per paper export.
 - Stop reloading volume settings from `Episciences_Volume::getProceedingInfo()`; every caller reaches it through `isProceeding()`, which already needs them loaded.
 - Load every volume's settings in one query on `/browse/volumes` via `Episciences_VolumesManager::loadSettingsForVolumes()`, instead of one query per volume.
+- Build the web translator once per request from an explicit, sorted list of dictionaries (`Episciences\Translation\TranslatorFactory::create()`): the application languages directory is no longer scanned twice and the 220 e-mail templates (`<locale>/emails/*.phtml`) are no longer included and rejected on every request (~3.7 ms to ~0.4 ms per request under PHP-FPM with OPcache). Duplicate keys now resolve in a filesystem-independent order.
+- Build the CLI translators (`Script::initTranslator()`, `reminders.php`, `inbox:process`, `solr:*`, `UpdatePapersDocumentCommand`) with the same `TranslatorFactory` as the web: same dictionary order, e-mail templates no longer included, journal dictionaries loaded last. The locale each script used is unchanged.
 
 ### Fixed
 
+- Fix interface language resolution (`Episciences_Translation_Plugin::resolveLocale()`): an unsupported `?lang=` or cookie value now falls through to the next source (cookie, then browser) instead of forcing French, and the `lang` cookie now stores the language actually used (an English-only journal no longer sets `lang=fr`). The `lang` cookie is now only set on an explicit choice (`?lang=` or language URL prefix), no longer on every response; a logged-in user without such a choice gets their account language before the browser one. The language is resolved once per request: an internal forward (journal home page to `page/index`) no longer rebuilds the translator nor sends the `lang` cookie twice.
+- Fix submission acknowledgment never reaching the author (and co-authors) when no editorial committee member is left to notify, e.g. a chief editor submitting to their own journal (`Episciences_Submit::sendNotifications()`, regression from v1.0.54).
+- Fix conflict-of-interest filtering of submission recipients comparing UIDs against list positions instead of UID values (`Episciences_Submit::filterConflictRecipients()`).
+- Fix editor-to-author message notifications being lost or reported as sent when they were not: a plain exception while notifying another assigned editor no longer skips the author email, the author send result is checked, an unresolved author is reported as a failure, and the editor is warned when a notification could not be queued (`PaperDefaultController::newCommentNotifyManager()`, `AuthorEditorCommunicationControllerTrait`).
+- Fix paper status/revision emails sent from modals being logged as `CODE_MAIL_SENT` in the paper history even when `writeMail()` failed (`PaperDefaultController::sendMailFromModal()`).
+- Fix author-to-editor message notifications to co-authors: a failed co-author send is no longer counted as sent, and a former co-author skipped at send time no longer triggers a false failure warning (`PaperDefaultController::newCommentNotifyManager()`).
+- Fix COAR Notify inbox processing (`notify:process-inbox`) failing to notify editors or notifying the wrong journal's editors: `Undefined constant "RVID"` when conflict-of-interest is enabled (`PapersManager::keepOnlyUsersWithoutConflict()` and `User::hasOnlyAdministratorRole()` now accept an RVID), stale `Episciences_Review::$_currentReviewId` with cached journals, email write failures logged as successes, a translator initialisation failure silenced, `http://` links in emails, and `%%PAPER_VIEW_URL%%`/`%%PAPER_ADMINISTRATION_URL%%`/`%%PAPER_RATING_URL%%` built with a null `RVCODE` (`Episciences_Mail::setDocid()` now uses the mail's own journal code).
 - Default invalid or missing CSV paper status to `accepted` (`STATUS_ACCEPTED`), not published, in `import:papers`.
 - Fix `Episciences_Volume::save()` silently dropping titles passed as a nested array instead of flat `title_{lang}` keys.
 - Fix `import:volumes` never defining the `RVID` constant on a real (non-dry-run) write.
@@ -110,6 +119,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update dependencies.
+- Store the board role labels (`editorial_board`, `technical_board`, ..., `former_member`) as plain text in `views.php`, like in `js.php`; the tag icon is now added by `Episciences_Acl::getRoleLabelHtml()` in the role badges (user lists, contacts, mailing lists, permissions, role editing), which also escapes the label. The users-by-role chart on the stats page no longer strips HTML from the labels.
 
 ## v1.0.56.1 - 2026-08-04
 

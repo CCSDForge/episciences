@@ -218,4 +218,52 @@ class Episciences_AclTest extends TestCase
         $result = Episciences_Acl::getCode('someRole');
         self::assertNull($result);
     }
+
+    // ==================== getRoleLabelHtml ====================
+
+    public function testGetRoleLabelHtmlAddsIconToBoardRoles(): void
+    {
+        $this->withTranslator(['editorial_board' => 'Editorial board'], function (): void {
+            self::assertSame(
+                '<i class="fa-regular fa-user-tag" aria-hidden="true"></i> Editorial board',
+                Episciences_Acl::getRoleLabelHtml(Episciences_Acl::ROLE_EDITORIAL_BOARD)
+            );
+        });
+    }
+
+    public function testGetRoleLabelHtmlHasNoIconForOtherRoles(): void
+    {
+        $this->withTranslator(['editor' => 'Editor'], function (): void {
+            self::assertSame('Editor', Episciences_Acl::getRoleLabelHtml(Episciences_Acl::ROLE_EDITOR));
+        });
+    }
+
+    public function testGetRoleLabelHtmlEscapesTheLabel(): void
+    {
+        $this->withTranslator(['reviewer' => '<b>Rapporteur</b> & co'], function (): void {
+            self::assertSame(
+                '&lt;b&gt;Rapporteur&lt;/b&gt; &amp; co',
+                Episciences_Acl::getRoleLabelHtml(Episciences_Acl::ROLE_REVIEWER)
+            );
+        });
+    }
+
+    /**
+     * @param array<string, string> $messages
+     */
+    private function withTranslator(array $messages, callable $test): void
+    {
+        $previous = Zend_Registry::isRegistered('Zend_Translate') ? Zend_Registry::get('Zend_Translate') : null;
+        Zend_Registry::set('Zend_Translate', new Zend_Translate([
+            'adapter' => Zend_Translate::AN_ARRAY,
+            'content' => $messages,
+            'locale' => 'en',
+        ]));
+
+        try {
+            $test();
+        } finally {
+            Zend_Registry::set('Zend_Translate', $previous);
+        }
+    }
 }

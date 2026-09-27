@@ -4546,9 +4546,10 @@ class Episciences_PapersManager
     /**
      * @param int $paperId
      * @param array $recipients
+     * @param int|null $rvId journal used for role checks; required in CLI where the RVID constant is not defined
      * @return void
      */
-    public static function keepOnlyUsersWithoutConflict(int $paperId, array &$recipients = []): void
+    public static function keepOnlyUsersWithoutConflict(int $paperId, array &$recipients = [], ?int $rvId = null): void
     {
 
         $isCoiEnabled = false;
@@ -4569,7 +4570,7 @@ class Episciences_PapersManager
 
             foreach ($recipients as $recipient) {
 
-                if ($recipient->hasOnlyAdministratorRole()) {
+                if ($recipient->hasOnlyAdministratorRole($rvId)) {
                     continue;
                 }
 

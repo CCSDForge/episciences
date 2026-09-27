@@ -1553,8 +1553,8 @@ class UserDefaultController extends Zend_Controller_Action
             ];
 
             foreach ($roles as $roleId => $roleLabel) {
-                // Translate the role label
-                $translatedLabel = $translator->translate($roleId);
+                // Translate the role label (HTML: the checkboxes are not escaped)
+                $translatedLabel = Episciences_Acl::getRoleLabelHtml($roleId);
 
                 if (in_array($roleId, $editorRoles)) {
                     // Check only if the user has this specific role and is unavailable.

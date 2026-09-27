@@ -36,7 +36,7 @@
                                 <label style="display: flex; align-items: center; width: 100%; cursor: pointer; margin-bottom: 0; font-weight: normal;">
                                     <input type="checkbox" name="roles[]" value="<?php echo $roleId; ?>" <?php echo in_array($roleId, $this->list->getRoles()) ? 'checked' : ''; ?> class="role-checkbox" style="margin: 0 12px 0 0;">
                                     <span class="label <?php echo $roleClass; ?>" style="flex-grow: 0; margin-right: 10px; font-size: 0.9em; padding: 4px 10px;">
-                                        <?php echo $this->translate($roleName); ?>
+                                        <?php echo Episciences_Acl::getRoleLabelHtml($roleId); ?>
                                     </span>
                                     <span class="badge" style="background: #f0f0f0; color: #777; font-weight: normal; margin-left: auto;">
                                         <?php echo $count; ?> <small style="opacity: 0.7; font-size: 0.8em;"><?php echo $this->translate('users'); ?></small>
