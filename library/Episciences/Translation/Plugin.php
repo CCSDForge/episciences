@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Trait\LocaleByCookieTrait;
+use Episciences\Translation\TranslatorFactory;
 use Psr\Log\LogLevel;
 
 /**
@@ -19,80 +20,60 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
      */
     protected static array $_availableLanguages = [self::LANG_EN, self::LANG_FR];
 
+    /**
+     * preDispatch() runs again for every internal forward (e.g. journal index -> page):
+     * the language is resolved once per request.
+     */
+    private bool $translatorRegistered = false;
+
 
     /**
-     * Essaie de trouver une langue disponible d'après :
-     * 1 - Une URL en paramètre
-     * 2 - la session
-     * 3 - La langue envoyée par la navigateur
-     * 4 - La langue par défaut
+     * Resolves the interface language and registers the translator
      * @throws Zend_Exception
      */
     public function preDispatch(Zend_Controller_Request_Abstract $request): void
     {
+        if ($this->translatorRegistered && Zend_Registry::isRegistered('Zend_Translate')) {
+            return;
+        }
+
         //Initialisation des langues de l'interface
         $this->initLanguages();
-        $translator = null;
 
-        // teste url
         try {
-            $translator = $this->getLocaleByUrl($request);
+            $translator = TranslatorFactory::create(PATH_TRANSLATION, defined('REVIEW_PATH') ? REVIEW_PATH . 'languages' : null);
         } catch (Zend_Exception $e) {
             Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
+            throw $e;
         }
 
-        // sinon teste session
-        if ($translator === null) {
-            try {
-                $translator = $this->getLocalFromCookie();
-            } catch (Zend_Exception $e) {
-                Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
-            }
+        $languages = array_values(Zend_Registry::get('languages'));
+        $allowed = array_values(array_intersect($languages, $translator->getList() ?? []));
+        if ($allowed === []) {
+            $allowed = $languages;
         }
 
-        // sinon teste browser
-        if ($translator === null) {
-            $translator = $this->getLocaleByBrowser();
+        $urlLang = $request->getParam('lang');
+        $urlLang = is_string($urlLang) ? $urlLang : null;
+        $locale = self::resolveLocale(
+            $urlLang,
+            $this->getLocaleCookie(),
+            $this->getAccountLanguage(),
+            $this->getBrowserLanguage(),
+            $allowed
+        );
+
+        $translator->setLocale($locale);
+
+        // Only an explicit choice is remembered: otherwise the same sources give the same result next time
+        if ($locale === $urlLang) {
+            $this->setLocaleCookie($locale);
         }
 
-        // sinon teste lang par default
-        if ($translator === null) {
-            try {
-                $translator = $this->checkTranslator(self::LANG_FR);
-            } catch (Zend_Exception $e) {
-                Episciences_View_Helper_Log::log($e->getMessage(), LogLevel::CRITICAL);
-            }
-        }
-
-        $locale = $translator->getLocale();
-        $this->setLocaleCookie($locale);
-
-        if (!in_array($locale, Zend_Registry::get('languages'), true)) {
-            $translator->setLocale(Zend_Registry::get('languages')[0]);
-        }
-
-        /**
-         * log des chaines non traduites
-         */
-
-        /*if (APPLICATION_ENV == 'development') {
-
-            if ($translator->getLocale() != self::LANG_FR) {
-
-                $writer = new Zend_Log_Writer_Stream(realpath(sys_get_temp_dir()) . '/traductionsManquantes_' . $translator->getLocale() . '.log');
-                $log = new Zend_Log($writer);
-
-                $translator->setOptions(array(
-                        'log' => $log,
-                        'logMessage' => "Locale %locale% - manque : '%message%'",
-                        'logUntranslated' => true
-                ));
-            }
-        }*/
-
-        Zend_Registry::set('lang', $translator->getLocale());
+        Zend_Registry::set('lang', $locale);
         Zend_Registry::set('Zend_Translate', $translator);
-        Zend_Registry::set('Zend_Locale', new Zend_Locale($translator->getLocale()));
+        Zend_Registry::set('Zend_Locale', new Zend_Locale($locale));
+        $this->translatorRegistered = true;
     }
 
     /**
@@ -112,7 +93,7 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
 
     /**
      * Retourne les langues disponibles de la plateforme
-     * @return array
+     * @return string[]
      */
     public static function getAvailableLanguages(): array
     {
@@ -120,126 +101,50 @@ class Episciences_Translation_Plugin extends Zend_Controller_Plugin_Abstract
     }
 
     /**
-     * Retourne la langue en fonction du navigateur
+     * Picks the interface language: URL parameter, then cookie (last explicit choice),
+     * then the logged-in user's account language, then browser.
+     * A missing or unsupported value falls through to the next source.
+     * Defaults to French when allowed, otherwise to the first allowed language.
      *
-     * @return Zend_Translate|null
+     * @param string[] $allowed languages offered by the journal (must not be empty)
      */
-    private function getLocaleByBrowser(): ?Zend_Translate
+    public static function resolveLocale(?string $urlLang, ?string $cookieLang, ?string $accountLang, ?string $browserLang, array $allowed): string
+    {
+        foreach ([$urlLang, $cookieLang, $accountLang, $browserLang] as $candidate) {
+            if ($candidate !== null && in_array($candidate, $allowed, true)) {
+                return $candidate;
+            }
+        }
+
+        return in_array(self::LANG_FR, $allowed, true) ? self::LANG_FR : (string)reset($allowed);
+    }
+
+    /**
+     * Language saved in the logged-in user's account
+     */
+    private function getAccountLanguage(): ?string
     {
         try {
-            $browserLocale = new Zend_Locale(Zend_Locale::BROWSER);
-            if (strlen($browserLocale) > 2) {
-                $browserLocale = substr($browserLocale, 0, 2);
-            }
-            return $this->checkTranslator($browserLocale);
+            $lang = Episciences_Auth::isLogged() ? Episciences_Auth::getLangueid() : null;
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        return is_string($lang) && $lang !== '' ? $lang : null;
+    }
+
+    /**
+     * Retourne la langue préférée du navigateur (code sur 2 lettres)
+     */
+    private function getBrowserLanguage(): ?string
+    {
+        try {
+            $browserLocale = (string)new Zend_Locale(Zend_Locale::BROWSER);
         } catch (Zend_Exception $e) {
             return null;
         }
-    }
 
-    /**
-     * Retourne la langue en fonction du paramètre dans l'URL
-     *
-     * @param Zend_Controller_Request_Abstract $request
-     * @return Zend_Translate|null
-     * @throws Zend_Exception
-     * @throws Zend_Translate_Exception
-     */
-    private function getLocaleByUrl(Zend_Controller_Request_Abstract $request): ?Zend_Translate
-    {
-        return $this->checkTranslator($request->getParam('lang'));
-    }
-
-    /**
-     * Retourne la langue en fonction de la session
-     *
-     * @return Zend_Translate|null
-     * @throws Zend_Exception
-     * @throws Zend_Translate_Exception
-     */
-    private function getLocaleBySession(): ?Zend_Translate
-    {
-        $localeSession = new Zend_Session_Namespace('Zend_Translate');
-        $lang = $localeSession->lang ?? null;
-        return $this->checkTranslator($lang);
-    }
-
-    /**
-     * @return Zend_Translate|null
-     * @throws Zend_Exception
-     * @throws Zend_Translate_Exception
-     */
-    private function getLocalFromCookie(): ?Zend_Translate
-    {
-        return $this->checkTranslator($this->getLocaleCookie());
-    }
-
-    /**
-     * Ajoute une traduction si la langue existe
-     *
-     * @param string|null $language
-     * @return Zend_Translate|null Zend_Translate
-     * @throws Zend_Exception
-     * @throws Zend_Translate_Exception
-     */
-    private function checkTranslator(string $language = null): ?Zend_Translate
-    {
-        if ($language === null) {
-            return null;
-        }
-
-        if (!in_array($language, Zend_Registry::get('languages'), true)) {
-            $language = self::LANG_FR;
-        }
-
-        $translator = null;
-
-        // Charger tous les fichiers de traduction du répertoire principal
-        $this->loadAllTranslationFiles($translator, PATH_TRANSLATION);
-
-        // Charger les traductions spécifiques à la revue (surcharge)
-        if (is_dir(REVIEW_PATH . 'languages') && count(scandir(REVIEW_PATH . 'languages')) > 2) {
-            $this->loadAllTranslationFiles($translator, REVIEW_PATH . 'languages');
-        }
-
-        if ($translator !== null && $translator->isAvailable($language)) {
-            $translator->setLocale($language);
-            return $translator;
-        }
-
-        return null;
-    }
-
-    /**
-     * Charge tous les fichiers PHP de traduction d'un répertoire
-     *
-     * Fix: In English mode, some texts were displayed in French, and vice versa.
-     * This was caused by the translation files being loaded in an inconsistent order,
-     * leading to locale/content mismatches in the Zend_Translate adapter.
-     *
-     * @param Zend_Translate|null $translator
-     * @param string $basePath
-     * @return void
-     */
-    private function loadAllTranslationFiles(?Zend_Translate &$translator, string $basePath): void
-    {
-        foreach (self::getAvailableLanguages() as $lang) {
-            $langPath = $basePath . '/' . $lang;
-            if (!is_dir($langPath)) {
-                continue;
-            }
-
-            $files = glob($langPath . '/*.php');
-            foreach ($files as $file) {
-                if ($translator === null) {
-                    $translator = new Zend_Translate(Zend_Translate::AN_ARRAY, $file, $lang, [
-                        'disableNotices' => true
-                    ]);
-                } else {
-                    $translator->addTranslation($file, $lang);
-                }
-            }
-        }
+        return $browserLocale !== '' ? substr($browserLocale, 0, 2) : null;
     }
 
 }
