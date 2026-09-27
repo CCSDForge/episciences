@@ -5195,10 +5195,15 @@ class AdministratepaperController extends PaperDefaultController
         }
     }
 
-    private function addRoleCoAuthor(int $docId, int $uid)
+    private function addRoleCoAuthor(int $docId, int $uid): bool
     {
-        $exist = Episciences_User_AssignmentsManager::find(['RVID' => RVID, "ITEMID" => $docId, "UID" => $uid]);
-        if (!$exist) {
+        $existingCoAuthor = Episciences_User_AssignmentsManager::findAll([
+            'RVID' => RVID,
+            'ITEMID' => $docId,
+            'UID' => $uid,
+            'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR
+        ]);
+        if (empty($existingCoAuthor)) {
             $assignment = new Episciences_User_Assignment();
             $assignment->setRvid(RVID);
             $assignment->setItemid($docId);
@@ -5206,9 +5211,10 @@ class AdministratepaperController extends PaperDefaultController
             $assignment->setUid($uid);
             $assignment->setRoleid(Episciences_Acl::ROLE_CO_AUTHOR);
             $assignment->setStatus(Episciences_User_Assignment::STATUS_ACTIVE);
-            return $assignment->save();
+            return $assignment->save() !== false;
         }
-        return false;
+        // Already a co-author
+        return true;
     }
 
     /**
@@ -5312,6 +5318,21 @@ class AdministratepaperController extends PaperDefaultController
             return;
         }
 
+        // 6b. Prevent conflict of interest: new contributor must not be assigned to this paper
+        $reviewerStatuses = [
+            Episciences_User_Assignment::STATUS_ACTIVE,
+            Episciences_User_Assignment::STATUS_PENDING
+        ];
+        if ($paper->isEditor($newUid)
+            || array_key_exists($newUid, $paper->getReviewers($reviewerStatuses))
+            || array_key_exists($newUid, $paper->getCopyEditors())) {
+            echo json_encode([
+                'success' => false,
+                'error' => 'The new contributor is assigned to this paper (editor/reviewer/copy editor)'
+            ]);
+            return;
+        }
+
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
         $db->beginTransaction();
         try {
@@ -5320,21 +5341,36 @@ class AdministratepaperController extends PaperDefaultController
                 throw new RuntimeException('Failed to update contributor');
             }
 
+            // Step 7b: Grant author role in this journal (as done at submission time)
+            $newContributor->addRole(Episciences_Acl::ROLE_AUTHOR);
+
             // Step 8: Add old contributor as co-author (if requested)
             if ($addAsCoAuthor) {
-                $this->addRoleCoAuthor($docId, $oldUid);
+                if (!$this->addRoleCoAuthor($docId, $oldUid)) {
+                    throw new RuntimeException('Failed to add former contributor as co-author');
+                }
+            } else {
+                // Remove all existing co-author assignments of old contributor
+                $oldCoAuthorRows = Episciences_User_AssignmentsManager::findAll([
+                    'RVID' => RVID,
+                    'ITEMID' => $docId,
+                    'UID' => $oldUid,
+                    'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR
+                ]);
+                foreach ($oldCoAuthorRows as $row) {
+                    Episciences_User_AssignmentsManager::removeAssignment($row->getId());
+                }
             }
 
-            // Step 9: Remove existing co-author assignment of new contributor (avoid duplicate role)
-            $existingAssignment = Episciences_User_AssignmentsManager::find([
+            // Step 9: Remove all existing co-author assignments of new contributor (avoid duplicate role)
+            $newCoAuthorRows = Episciences_User_AssignmentsManager::findAll([
                 'RVID' => RVID,
                 'ITEMID' => $docId,
-                'UID' => $newUid
+                'UID' => $newUid,
+                'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR
             ]);
-            if ($existingAssignment !== false
-                && $existingAssignment->getId() !== 0
-                && $existingAssignment->getRoleid() === Episciences_Acl::ROLE_CO_AUTHOR) {
-                Episciences_User_AssignmentsManager::removeAssignment($existingAssignment->getId());
+            foreach ($newCoAuthorRows as $row) {
+                Episciences_User_AssignmentsManager::removeAssignment($row->getId());
             }
 
             $db->commit();
