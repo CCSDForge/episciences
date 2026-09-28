@@ -104,7 +104,7 @@ class Episciences_Mail_TemplatesManager
     public const TYPE_PAPER_NEW_CONTRIBUTOR_NOTIFICATION = 'paper_new_contributor_notification';
     // Contributor change - former contributor notification
     public const TYPE_PAPER_FORMER_CONTRIBUTOR_NOTIFICATION = 'paper_former_contributor_notification';
-    public const TAG_PAPER_URL_LINE = '%%PAPER_URL_LINE%%';
+
     // editor comments
     public const TYPE_PAPER_COMMENT_BY_EDITOR_EDITOR_COPY = 'paper_comment_by_editor_editor_copy';
     public const TYPE_PAPER_CE_AUTHOR_SOURCES_DEPOSED_RESPONSE_AUTHOR_COPY = 'paper_ce_author_sources_deposed_response_author_copy';

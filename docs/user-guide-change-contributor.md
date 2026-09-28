@@ -29,7 +29,7 @@ When this option is **checked**:
 
 When this option is **unchecked**:
 - The former contributor is not added as a co-author
-- They will no longer receive notifications about the paper
+- The former contributor receives a notification of the change, but will no longer receive notifications about this article afterwards.
 
 ## Co-author Becoming Contributor
 

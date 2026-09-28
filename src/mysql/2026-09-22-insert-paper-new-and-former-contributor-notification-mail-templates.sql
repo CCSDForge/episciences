@@ -4,10 +4,10 @@
 -- Date: 2026-09-22
 
 INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
-SELECT NULL, NULL, NULL, 'paper_new_contributor_notification', 'paper_submission', 1
+SELECT NULL, NULL, NULL, 'paper_new_contributor_notification', 'paper_submission', null
 WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'paper_new_contributor_notification');
 
 
 INSERT INTO MAIL_TEMPLATE (PARENTID, RVID, RVCODE, `KEY`, `TYPE`, POSITION)
-SELECT NULL, NULL, NULL, 'paper_former_contributor_notification', 'paper_submission', 1
+SELECT NULL, NULL, NULL, 'paper_former_contributor_notification', 'paper_submission', null
     WHERE NOT EXISTS (SELECT 1 FROM MAIL_TEMPLATE WHERE `KEY` = 'paper_former_contributor_notification');

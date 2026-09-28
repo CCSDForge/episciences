@@ -5272,7 +5272,7 @@ class AdministratepaperController extends PaperDefaultController
         if (!Episciences_Auth::isAdministrator() && !Episciences_Auth::isChiefEditor()) {
             $this->_helper->FlashMessenger->setNamespace('error')
                 ->addMessage("You don't have permission to change the contributor.");
-            echo json_encode(['success' => false, 'error' => 'Permission denied']);
+            echo json_encode(['success' => false, 'error' => $this->view->translate('Permission denied')]);
             return;
         }
 
@@ -5281,7 +5281,7 @@ class AdministratepaperController extends PaperDefaultController
         if (!$request->isPost() || !$request->isXmlHttpRequest()
             || !Episciences_Csrf_Helper::validateRequestToken($request)) {
             $this->getResponse()->setHttpResponseCode(403);
-            echo json_encode(['success' => false, 'error' => 'Invalid request']);
+            echo json_encode(['success' => false, 'error' => $this->view->translate('Invalid request')]);
             return;
         }
 
@@ -5296,14 +5296,14 @@ class AdministratepaperController extends PaperDefaultController
         // 3. Load paper and validate journal
         $paper = Episciences_PapersManager::get($docId);
         if (!$paper || $paper->getRvid() !== RVID) {
-            echo json_encode(['success' => false, 'error' => 'Paper not found']);
+            echo json_encode(['success' => false, 'error' => $this->view->translate('Paper not found')]);
             return;
         }
 
         // 4. Get old contributor
         $oldUid = $paper->getUid();
         if ($oldUid === $newUid) {
-            echo json_encode(['success' => false, 'error' => 'New contributor is the same as current']);
+            echo json_encode(['success' => false, 'error' => $this->view->translate('New contributor is the same as current')]);
             return;
         }
 
@@ -5314,7 +5314,7 @@ class AdministratepaperController extends PaperDefaultController
         // 6. Load and validate new contributor
         $newContributor = new Episciences_User();
         if (!$newContributor->findWithCAS($newUid)) {
-            echo json_encode(['success' => false, 'error' => 'New contributor not found']);
+            echo json_encode(['success' => false, 'error' => $this->view->translate('New contributor not found')]);
             return;
         }
 
@@ -5328,7 +5328,7 @@ class AdministratepaperController extends PaperDefaultController
             || array_key_exists($newUid, $paper->getCopyEditors())) {
             echo json_encode([
                 'success' => false,
-                'error' => 'The new contributor is assigned to this paper (editor/reviewer/copy editor)'
+                'error' =>  $this->view->translate('The new contributor is assigned to this paper (editor/reviewer/copy editor)')
             ]);
             return;
         }
@@ -5349,17 +5349,6 @@ class AdministratepaperController extends PaperDefaultController
                 if (!$this->addRoleCoAuthor($docId, $oldUid)) {
                     throw new RuntimeException('Failed to add former contributor as co-author');
                 }
-            } else {
-                // Remove all existing co-author assignments of old contributor
-                $oldCoAuthorRows = Episciences_User_AssignmentsManager::findAll([
-                    'RVID' => RVID,
-                    'ITEMID' => $docId,
-                    'UID' => $oldUid,
-                    'ROLEID' => Episciences_Acl::ROLE_CO_AUTHOR
-                ]);
-                foreach ($oldCoAuthorRows as $row) {
-                    Episciences_User_AssignmentsManager::removeAssignment($row->getId());
-                }
             }
 
             // Step 9: Remove all existing co-author assignments of new contributor (avoid duplicate role)
@@ -5376,7 +5365,7 @@ class AdministratepaperController extends PaperDefaultController
             $db->commit();
         } catch (Exception $e) {
             $db->rollBack();
-            echo json_encode(['success' => false, 'error' => 'Failed to update contributor']);
+            echo json_encode(['success' => false, 'error' => $this->view->translate('Failed to update contributor')]);
             return;
         }
 

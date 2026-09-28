@@ -9,27 +9,71 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!btn || !modal) return;
 
-    // Open modal on button click
-    btn.addEventListener('click', function () {
-        resetModal();
-        $('#changeContributorModal').modal('show');
-    });
+    /**
+     * Show a modal
+     * @param {HTMLElement} modalElement - The modal element
+     * @param {Function} onShown - Callback executed after modal is shown
+     */
+    function showModal(modalElement, onShown) {
+        modalElement.style.display = 'block';
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade in';
+        backdrop.id = 'modal-backdrop';
+        document.body.appendChild(backdrop);
 
-    // Initialize autocomplete and make modal draggable when it opens
-    $(modal).on('shown.bs.modal', function () {
-        // Make modal draggable by its header
-        $(this).find('.modal-dialog').draggable({ handle: '.modal-header' });
+        setTimeout(() => {
+            modalElement.classList.add('in');
+            document.body.classList.add('modal-open');
+            if (onShown) onShown();
+        }, 10);
+    }
 
-        createUserAutocomplete({
-            inputId: 'newContributorInput',
-            selectedUserIdField: 'newContributorUid',
-            selectButtonId: 'confirmChangeContributor',
+    /**
+     * Hide a modal
+     * @param {HTMLElement} modalElement - The modal element
+     */
+    function hideModal(modalElement) {
+        modalElement.style.display = 'none';
+        modalElement.classList.remove('in');
+        document.body.classList.remove('modal-open');
+        const backdrop = document.getElementById('modal-backdrop');
+        if (backdrop) backdrop.remove();
+    }
+
+    /**
+     * Make an element draggable by a handle
+     * @param {HTMLElement} element - The element to make draggable
+     * @param {string} handleSelector - CSS selector for the drag handle
+     */
+    function makeDraggable(element, handleSelector) {
+        const headerEl = element.querySelector(handleSelector);
+        if (!headerEl) return;
+
+        let offsetX = 0, offsetY = 0, isDragging = false;
+        headerEl.style.cursor = 'move';
+        element.style.position = 'relative';
+
+        headerEl.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            const rect = element.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+            e.preventDefault();
         });
-        document.getElementById('newContributorInput')?.focus();
-    });
 
-    // Handle confirm button click
-    btnConfirm?.addEventListener('click', submitChangeContributor);
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const newLeft = e.clientX - offsetX;
+            const newTop = e.clientY - offsetY;
+            element.style.left = newLeft + 'px';
+            element.style.top = newTop + 'px';
+            element.style.margin = '0';
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+    }
 
     /**
      * Reset modal to initial state
@@ -45,6 +89,34 @@ document.addEventListener('DOMContentLoaded', function () {
             btnConfirm.disabled = true;
         }
     }
+
+    // Open modal on button click
+    btn.addEventListener('click', function () {
+        resetModal();
+        showModal(modal, function () {
+            // Make modal draggable by its header
+            makeDraggable(modal.querySelector('.modal-dialog'), '.modal-header');
+
+            // Initialize autocomplete
+            createUserAutocomplete({
+                inputId: 'newContributorInput',
+                selectedUserIdField: 'newContributorUid',
+                selectButtonId: 'confirmChangeContributor',
+            });
+
+            document.getElementById('newContributorInput')?.focus();
+        });
+    });
+
+    // Handle close buttons (X and Cancel)
+    modal.querySelectorAll('[data-dismiss="modal"]').forEach(function (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+            hideModal(modal);
+        });
+    });
+
+    // Handle confirm button click
+    btnConfirm?.addEventListener('click', submitChangeContributor);
 
     /**
      * Submit the change contributor form via AJAX
@@ -94,13 +166,13 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 if (data.success) {
                     // Close modal and redirect to force GET request (avoids POST resubmission dialog)
-                    $('#changeContributorModal').modal('hide');
+                    hideModal(modal);
                     window.location.href =
                         window.location.pathname + window.location.search;
                 } else {
                     // Show error message and re-enable button
                     alert(
-                        data.message || translate('Une erreur est survenue.')
+                        data.error || translate('Une erreur est survenue.')
                     );
                     btnConfirm.disabled = false;
                 }

@@ -1176,7 +1176,7 @@ return array(
     'Préparation de copie : en attente des sources auteurs' => 'Copy editing: waiting for authors sources',
     'Préparation de copie : sources déposées' => 'Copy editing: sources submitted',
     "Posté le" => 'Posted on',
-    "Effectué(e) par" => "Done by",
+    "Effectué par" => "Done by",
     "Fait le" => "Done on",
     "Dernier statut connu" => "Last known status",
     "Type de donnée liée" => "Linked data type",
@@ -2609,8 +2609,16 @@ return array(
     "Suggestion de modification" => "Suggested revision",
 
     // Contributor change
+    "Effectué(e) par" => "Done by",
     "Vous avez été ajouté comme co-auteur et continuerez à recevoir les notifications relatives à cet article." => "You have been added as a co-author and will continue to receive notifications related to this article.",
     "Vous ne recevrez plus les notifications relatives à cet article." => "You will no longer receive notifications related to this article.",
     "Contributor changed successfully" => "Contributor changed successfully.",
     "Vous pouvez consulter l'article ici :" => "You can view the article here:",
+    'Permission denied' => 'Permission denied',
+    'Invalid request' => 'Invalid request',
+    'Paper not found' => 'Paper not found',
+    'New contributor is the same as current' => 'New contributor is the same as current',
+    'New contributor not found' => 'New contributor not found',
+    'The new contributor is assigned to this paper (editor/reviewer/copy editor)' => 'The new contributor is assigned to this paper (editor/reviewer/copy editor)',
+    'Failed to update contributor' => 'Failed to update contributor',
 );

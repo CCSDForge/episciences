@@ -118,9 +118,6 @@ return [
     // users permissions
     "administrategraphabstract-addgraphabs" => "Ajouter/Modifier un abstract graphique",
     "administrategraphabstract-deletegraphabs" => "Supprimer un abstract graphique",
-    "administratelinkeddata-setnewinfoldAction" => "Jeu de donnée/lien de publication : Modifier un jeu de donnée",
-    "administratelinkeddata-addld" => "Jeu de données/lien de publication : Ajouter un nouveau de donnée",
-    "administratelinkeddata-removeld" => "Jeu de données/lien de publication : Supprimer un jeu de donnée",
     "administratemail-deletetemplate" => "Supprimer le template personnalisé et rétablir celui par défaut",
     "administratemail-edittemplate" => "Modifier un template",
     "administratemail-history" => "Lister l'historique de e-mails",
@@ -475,5 +472,13 @@ return [
     "Vous ne recevrez plus les notifications relatives à cet article." => "Vous ne recevrez plus les notifications relatives à cet article.",
     "Contributor changed successfully" => "Contributeur modifié avec succès.",
     "Vous pouvez consulter l'article ici :" => "Vous pouvez consulter l'article ici :",
+    'Permission denied' => 'Permission refusée',
+    'Invalid request' => 'Requête invalide',
+    'Paper not found' => 'Article non trouvé',
+    'New contributor is the same as current' => 'Le nouveau contributeur est identique au contributeur actuel',
+    'New contributor not found' => 'Nouveau contributeur non trouvé',
+    'The new contributor is assigned to this paper (editor/reviewer/copy editor)' => 'Le nouveau contributeur est assigné à cet article (rédacteur/relecteur/préparateur de      
+  copie)',
+    'Failed to update contributor' => 'Échec de la mise à jour du contributeur',
 
 ];
