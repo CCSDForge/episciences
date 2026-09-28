@@ -45,6 +45,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1089](https://github.com/CCSDForge/episciences/pull/1089) Automatic Solr reindexing on primary volume or section updates, volume/section metadata changes, and paper enrichments (authors, funding, citations, datasets).
 - [#1149](https://github.com/CCSDForge/episciences/pull/1149) On-demand Next.js cache revalidation for frontend pages, articles, volumes, sections, news, and editorial board member updates, with the `next:revalidate-cache` CLI command.
 - Add Docker Compose worker services (`solr-worker`, `worker-next-revalidation`) and systemd service units for background queue processing.
+- [#1154](https://github.com/CCSDForge/episciences/pull/1154) Migrate OpenAIRE integration to OpenAIRE Graph API v3 with AAI authentication (client-credentials token flow) and rate-limit handling (`OpenAireApiClient`).
+- [#1163](https://github.com/CCSDForge/episciences/pull/1163) Migrate Scholexplorer dataset link enrichment to API v3 (`ScholexplorerApiClient`, `enrichment:links`).
+- [#1156](https://github.com/CCSDForge/episciences/pull/1156) Migrate legacy COAR Notify inbox processing script (`scripts/process_inbox_notifications.php`) to the Symfony Console command `notify:process-inbox` (`ProcessInboxNotificationsCommand`).
+- [#1150](https://github.com/CCSDForge/episciences/pull/1150) Allow customizing the review code shown in automatic email subjects via the journal settings (`Episciences_Review`), capped to 100 characters.
+- Add `title_translations` to the `PAPERS.DOCUMENT` JSON column.
+- Display bibliographic references count in `papers:update-document` with `-vv`.
 
 ### Performances
 
@@ -96,6 +102,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ensure Solr indexing only processes published papers (`STATUS_PUBLISHED`).
 - Scope Messenger transports to distinct `queue_name` identifiers (`solr_index` and `next_revalidation`) to avoid cross-queue message collisions.
 - Prevent Next.js cache revalidation exceptions from interrupting paper deletion in `Episciences_PapersManager::delete()`.
+- [#1174](https://github.com/CCSDForge/episciences/pull/1174) Fix `%%PERMANENT_ARTICLE_ID%%` tag availability in reviewer invitation and reminder email templates, use normalized docid in `%%PAPER_ID%%` tag and generated URLs, and scope article-id/permanent-id pairing to each recipient construction.
+- [#1186](https://github.com/CCSDForge/episciences/pull/1186) Require POST and validate CSRF token in `savenewpostedversionAction`, and send CSRF token from version editing form AJAX submissions.
+- [#1184](https://github.com/CCSDForge/episciences/pull/1184) Normalize hook version parsing for posted repository versions, ensure Zenodo's `hookVersion` returns a normalized version, and reject non-scalar latest repository versions before rights checks.
+- [#1182](https://github.com/CCSDForge/episciences/pull/1182), [#1183](https://github.com/CCSDForge/episciences/pull/1183) Recover all creator affiliations (not just the first one) from DataCite OAI records for Zenodo, and ensure ORCID matching takes precedence over name matching.
+- Prevent description language fallback from overwriting existing abstracts when updating paper metadata.
+- [#1161](https://github.com/CCSDForge/episciences/pull/1161), [#1162](https://github.com/CCSDForge/episciences/pull/1162) Centralize account email availability checks and enforce uniqueness (`User_EmailPolicy`), revalidate email availability against the saved value, invalidate stale identity cache before refreshing session after email changes, and restrict `forward-controller`/`forward-action` to safe route segments.
+- [#1157](https://github.com/CCSDForge/episciences/pull/1157) Handle COAR Notify inbox edge cases: add `STATUS_OUTDATED` to stop retrying superseded notifications, tolerate `object.url` as fallback for `ietf:item`, accept `coar-notify:EndorsementAction` from HAL, handle double-JSON-encoded payloads, and fix bootstrap ordering in `ProcessInboxNotificationsCommand`.
+- [#1153](https://github.com/CCSDForge/episciences/pull/1153) Honor custom review mail display code in automatic reminders (`reminders.php`).
+- [#1150](https://github.com/CCSDForge/episciences/pull/1150) Escape email subjects in paper history and log views to prevent stored XSS.
+- Retain existing `WHEN` timestamp value during assignment updates in `Episciences_Assignment::save()` ([RT#294893](https://github.com/CCSDForge/episciences/pull/1171)).
+- Prevent paper registration failure when the OAI `RECORD` value is null, allow marking older versions obsolete ([RT#296898](https://github.com/CCSDForge/episciences/pull/1165)), and fix failure to update to the latest version ([RT#296918](https://github.com/CCSDForge/episciences/pull/1166)).
+- Simplify paper modification request cancellation by linking the action form directly to the article's current status instead of requiring a new parent-linked comment.
+- Resolve bibliographic reference PDF URL from the paper's own journal and front version.
+- Define `RVID` and ensure write-free execution in `doi:manage --dry-run`.
+- Rename `--version` option to `--paper-version` in `export:papers` to prevent collision with Symfony Console's application version option.
+- Register `Zend_Translate` before journal locking in `import:papers`.
+- Stop console progress bars from garbling interleaved log output.
+- Fix BAOBAB repository ID collision with existing id 21.
 
 ### Removed
 
@@ -114,6 +138,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1089](https://github.com/CCSDForge/episciences/pull/1089) Replace legacy Solr indexing (`Ccsd_Search_Solr_Indexer*`, `solrJob.php`, `INDEX_QUEUE` polling) with decomposed `DocumentBuilder` field builders and Messenger message handlers.
 - Migrate Next.js cache revalidation off the legacy `queue_messages` table and its cron consumer (`scripts/NextRevalidationQueue.php`) onto the same Symfony Messenger + Doctrine DBAL infrastructure as Solr indexing, on its own `next_revalidation` transport so a slow Solr document build never blocks a cheap revalidation POST. The Messenger plumbing itself (transports, buses, worker event dispatcher, bounded-retry dispatch, dispatch-failure store) is extracted out of the Solr-only code into a generic `Episciences\Messenger\*` library that both producers now share, and `solr:worker`/`solr:queue` are replaced by transport-agnostic `episciences:worker`/`episciences:queue --transport=<solr_index|next_revalidation>` commands (see `docs/console-commands.md#messenger-queues`, `docs/next-revalidation.md`). `RevalidationService::revalidateOrEnqueue()` (synchronous POST with queue fallback) is removed — every call site is now fully asynchronous — and `next:revalidate-cache` gains a variadic tag argument and a `--queue` option.
 - [#1179](https://github.com/CCSDForge/episciences/pull/1179) Bump `monolog/monolog` to `^3.0` (`psr/log` to `3.x`) and add `Episciences\Log\LoggerFactory` (`rotating()` / `cli()`), routing the previously duplicated `RotatingFileHandler`/CLI logger setup through it (`MonologFactory`, `Notify/Hal`, `Notify/Reader`, both CAS adapters, `AbstractScript`, the Messenger queue/worker commands, `Solr/BootstrapsSolrEnvironment`), and dropping `Episciences\Messenger\Log\CliLoggerFactory`. `ProgressAwareStreamHandler::write()` is adapted to the Monolog 3 `LogRecord` handler contract, and `ScholexplorerApiClient::create()` now builds an explicit fallback logger (Monolog 2 removed the implicit `php://stderr` handler-less fallback, so records would otherwise be silently dropped). Log lines now use Monolog 3's default ISO 8601 timestamp instead of the previous `Y-m-d H:i:s` format.
+- [#1178](https://github.com/CCSDForge/episciences/pull/1178) Extract available repository version lookup into `Episciences\Paper\RepositoryVersionsService`, make collaborators injectable, distinguish Dataverse major and minor versions, and handle Guzzle exceptions on bioRxiv and Dataverse API calls.
 
 ### Changed
 
