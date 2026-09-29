@@ -28,8 +28,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 10);
     }
 
+    let autocompleteInitialized = false;
+    let cleanupDraggable = null;
+
+    /**
+     * Close the modal when the Escape key is pressed
+     * @param {KeyboardEvent} e
+     */
+    function onKeydown(e) {
+        if (e.key === 'Escape') hideModal(modal);
+    }
+
     /**
      * Hide a modal
+     * Also releases the listeners bound while the modal was open
      * @param {HTMLElement} modalElement - The modal element
      */
     function hideModal(modalElement) {
@@ -38,41 +50,64 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.classList.remove('modal-open');
         const backdrop = document.getElementById('modal-backdrop');
         if (backdrop) backdrop.remove();
+
+        document.removeEventListener('keydown', onKeydown);
+        if (cleanupDraggable) {
+            cleanupDraggable();
+            cleanupDraggable = null;
+        }
+
+        // Reopen centered: drop the position set by dragging
+        modalElement.querySelector('.modal-dialog')?.removeAttribute('style');
+
+        // Give the focus back to the trigger (WCAG 2.4.3)
+        btn.focus();
     }
 
     /**
      * Make an element draggable by a handle
      * @param {HTMLElement} element - The element to make draggable
      * @param {string} handleSelector - CSS selector for the drag handle
+     * @returns {Function} Cleanup function removing the bound listeners
      */
     function makeDraggable(element, handleSelector) {
         const headerEl = element.querySelector(handleSelector);
-        if (!headerEl) return;
+        if (!headerEl) return () => {};
 
-        let offsetX = 0, offsetY = 0, isDragging = false;
+        let offsetX = 0,
+            offsetY = 0,
+            isDragging = false;
         headerEl.style.cursor = 'move';
         element.style.position = 'relative';
 
-        headerEl.addEventListener('mousedown', (e) => {
+        const onMouseDown = e => {
             isDragging = true;
             const rect = element.getBoundingClientRect();
             offsetX = e.clientX - rect.left;
             offsetY = e.clientY - rect.top;
             e.preventDefault();
-        });
+        };
 
-        document.addEventListener('mousemove', (e) => {
+        const onMouseMove = e => {
             if (!isDragging) return;
-            const newLeft = e.clientX - offsetX;
-            const newTop = e.clientY - offsetY;
-            element.style.left = newLeft + 'px';
-            element.style.top = newTop + 'px';
+            element.style.left = e.clientX - offsetX + 'px';
+            element.style.top = e.clientY - offsetY + 'px';
             element.style.margin = '0';
-        });
+        };
 
-        document.addEventListener('mouseup', () => {
+        const onMouseUp = () => {
             isDragging = false;
-        });
+        };
+
+        headerEl.addEventListener('mousedown', onMouseDown);
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+
+        return () => {
+            headerEl.removeEventListener('mousedown', onMouseDown);
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
     }
 
     /**
@@ -95,15 +130,22 @@ document.addEventListener('DOMContentLoaded', function () {
         resetModal();
         showModal(modal, function () {
             // Make modal draggable by its header
-            makeDraggable(modal.querySelector('.modal-dialog'), '.modal-header');
+            cleanupDraggable = makeDraggable(
+                modal.querySelector('.modal-dialog'),
+                '.modal-header'
+            );
 
-            // Initialize autocomplete
-            createUserAutocomplete({
-                inputId: 'newContributorInput',
-                selectedUserIdField: 'newContributorUid',
-                selectButtonId: 'confirmChangeContributor',
-            });
+            // The autocomplete binds its own listeners: create it only once
+            if (!autocompleteInitialized) {
+                createUserAutocomplete({
+                    inputId: 'newContributorInput',
+                    selectedUserIdField: 'newContributorUid',
+                    selectButtonId: 'confirmChangeContributor',
+                });
+                autocompleteInitialized = true;
+            }
 
+            document.addEventListener('keydown', onKeydown);
             document.getElementById('newContributorInput')?.focus();
         });
     });
@@ -113,6 +155,11 @@ document.addEventListener('DOMContentLoaded', function () {
         closeBtn.addEventListener('click', function () {
             hideModal(modal);
         });
+    });
+
+    // Close on backdrop click (the .modal wrapper itself, not its content)
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) hideModal(modal);
     });
 
     // Handle confirm button click
