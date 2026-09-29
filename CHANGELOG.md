@@ -45,15 +45,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1089](https://github.com/CCSDForge/episciences/pull/1089) Automatic Solr reindexing on primary volume or section updates, volume/section metadata changes, and paper enrichments (authors, funding, citations, datasets).
 - [#1149](https://github.com/CCSDForge/episciences/pull/1149) On-demand Next.js cache revalidation for frontend pages, articles, volumes, sections, news, and editorial board member updates, with the `next:revalidate-cache` CLI command.
 - Add Docker Compose worker services (`solr-worker`, `worker-next-revalidation`) and systemd service units for background queue processing.
+- [#1154](https://github.com/CCSDForge/episciences/pull/1154) Migrate OpenAIRE integration to OpenAIRE Graph API v3 with AAI authentication (client-credentials token flow) and rate-limit handling (`OpenAireApiClient`).
+- [#1163](https://github.com/CCSDForge/episciences/pull/1163) Migrate Scholexplorer dataset link enrichment to API v3 (`ScholexplorerApiClient`, `enrichment:links`).
+- [#1156](https://github.com/CCSDForge/episciences/pull/1156) Migrate legacy COAR Notify inbox processing script (`scripts/process_inbox_notifications.php`) to the Symfony Console command `notify:process-inbox` (`ProcessInboxNotificationsCommand`).
+- [#1150](https://github.com/CCSDForge/episciences/pull/1150) Allow customizing the review code shown in automatic email subjects via the journal settings (`Episciences_Review`), capped to 100 characters.
+- Add `title_translations` to the `PAPERS.DOCUMENT` JSON column.
+- Display bibliographic references count in `papers:update-document` with `-vv`.
 
 ### Performances
 
 - Memoise the paper's primary volume on the `Episciences_Paper` instance, so `toJson()`, `getXml()` and `XmlExportManager::xmlExport()` share a single lookup instead of loading it twice: 38 to 34 queries per paper export.
 - Stop reloading volume settings from `Episciences_Volume::getProceedingInfo()`; every caller reaches it through `isProceeding()`, which already needs them loaded.
 - Load every volume's settings in one query on `/browse/volumes` via `Episciences_VolumesManager::loadSettingsForVolumes()`, instead of one query per volume.
+- Build the web translator once per request from an explicit, sorted list of dictionaries (`Episciences\Translation\TranslatorFactory::create()`): the application languages directory is no longer scanned twice and the 220 e-mail templates (`<locale>/emails/*.phtml`) are no longer included and rejected on every request (~3.7 ms to ~0.4 ms per request under PHP-FPM with OPcache). Duplicate keys now resolve in a filesystem-independent order.
+- Build the CLI translators (`Script::initTranslator()`, `reminders.php`, `inbox:process`, `solr:*`, `UpdatePapersDocumentCommand`) with the same `TranslatorFactory` as the web: same dictionary order, e-mail templates no longer included, journal dictionaries loaded last. The locale each script used is unchanged.
 
 ### Fixed
 
+- Fix interface language resolution (`Episciences_Translation_Plugin::resolveLocale()`): an unsupported `?lang=` or cookie value now falls through to the next source (cookie, then browser) instead of forcing French, and the `lang` cookie now stores the language actually used (an English-only journal no longer sets `lang=fr`). The `lang` cookie is now only set on an explicit choice (`?lang=` or language URL prefix), no longer on every response; a logged-in user without such a choice gets their account language before the browser one. The language is resolved once per request: an internal forward (journal home page to `page/index`) no longer rebuilds the translator nor sends the `lang` cookie twice.
+- Fix submission acknowledgment never reaching the author (and co-authors) when no editorial committee member is left to notify, e.g. a chief editor submitting to their own journal (`Episciences_Submit::sendNotifications()`, regression from v1.0.54).
+- Fix conflict-of-interest filtering of submission recipients comparing UIDs against list positions instead of UID values (`Episciences_Submit::filterConflictRecipients()`).
+- Fix editor-to-author message notifications being lost or reported as sent when they were not: a plain exception while notifying another assigned editor no longer skips the author email, the author send result is checked, an unresolved author is reported as a failure, and the editor is warned when a notification could not be queued (`PaperDefaultController::newCommentNotifyManager()`, `AuthorEditorCommunicationControllerTrait`).
+- Fix paper status/revision emails sent from modals being logged as `CODE_MAIL_SENT` in the paper history even when `writeMail()` failed (`PaperDefaultController::sendMailFromModal()`).
+- Fix author-to-editor message notifications to co-authors: a failed co-author send is no longer counted as sent, and a former co-author skipped at send time no longer triggers a false failure warning (`PaperDefaultController::newCommentNotifyManager()`).
+- Fix COAR Notify inbox processing (`notify:process-inbox`) failing to notify editors or notifying the wrong journal's editors: `Undefined constant "RVID"` when conflict-of-interest is enabled (`PapersManager::keepOnlyUsersWithoutConflict()` and `User::hasOnlyAdministratorRole()` now accept an RVID), stale `Episciences_Review::$_currentReviewId` with cached journals, email write failures logged as successes, a translator initialisation failure silenced, `http://` links in emails, and `%%PAPER_VIEW_URL%%`/`%%PAPER_ADMINISTRATION_URL%%`/`%%PAPER_RATING_URL%%` built with a null `RVCODE` (`Episciences_Mail::setDocid()` now uses the mail's own journal code).
 - Default invalid or missing CSV paper status to `accepted` (`STATUS_ACCEPTED`), not published, in `import:papers`.
 - Fix `Episciences_Volume::save()` silently dropping titles passed as a nested array instead of flat `title_{lang}` keys.
 - Fix `import:volumes` never defining the `RVID` constant on a real (non-dry-run) write.
@@ -87,6 +102,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ensure Solr indexing only processes published papers (`STATUS_PUBLISHED`).
 - Scope Messenger transports to distinct `queue_name` identifiers (`solr_index` and `next_revalidation`) to avoid cross-queue message collisions.
 - Prevent Next.js cache revalidation exceptions from interrupting paper deletion in `Episciences_PapersManager::delete()`.
+- [#1174](https://github.com/CCSDForge/episciences/pull/1174) Fix `%%PERMANENT_ARTICLE_ID%%` tag availability in reviewer invitation and reminder email templates, use normalized docid in `%%PAPER_ID%%` tag and generated URLs, and scope article-id/permanent-id pairing to each recipient construction.
+- [#1186](https://github.com/CCSDForge/episciences/pull/1186) Require POST and validate CSRF token in `savenewpostedversionAction`, and send CSRF token from version editing form AJAX submissions.
+- [#1184](https://github.com/CCSDForge/episciences/pull/1184) Normalize hook version parsing for posted repository versions, ensure Zenodo's `hookVersion` returns a normalized version, and reject non-scalar latest repository versions before rights checks.
+- [#1182](https://github.com/CCSDForge/episciences/pull/1182), [#1183](https://github.com/CCSDForge/episciences/pull/1183) Recover all creator affiliations (not just the first one) from DataCite OAI records for Zenodo, and ensure ORCID matching takes precedence over name matching.
+- Prevent description language fallback from overwriting existing abstracts when updating paper metadata.
+- [#1161](https://github.com/CCSDForge/episciences/pull/1161), [#1162](https://github.com/CCSDForge/episciences/pull/1162) Centralize account email availability checks and enforce uniqueness (`User_EmailPolicy`), revalidate email availability against the saved value, invalidate stale identity cache before refreshing session after email changes, and restrict `forward-controller`/`forward-action` to safe route segments.
+- [#1157](https://github.com/CCSDForge/episciences/pull/1157) Handle COAR Notify inbox edge cases: add `STATUS_OUTDATED` to stop retrying superseded notifications, tolerate `object.url` as fallback for `ietf:item`, accept `coar-notify:EndorsementAction` from HAL, handle double-JSON-encoded payloads, and fix bootstrap ordering in `ProcessInboxNotificationsCommand`.
+- [#1153](https://github.com/CCSDForge/episciences/pull/1153) Honor custom review mail display code in automatic reminders (`reminders.php`).
+- [#1150](https://github.com/CCSDForge/episciences/pull/1150) Escape email subjects in paper history and log views to prevent stored XSS.
+- Retain existing `WHEN` timestamp value during assignment updates in `Episciences_Assignment::save()` ([RT#294893](https://github.com/CCSDForge/episciences/pull/1171)).
+- Prevent paper registration failure when the OAI `RECORD` value is null, allow marking older versions obsolete ([RT#296898](https://github.com/CCSDForge/episciences/pull/1165)), and fix failure to update to the latest version ([RT#296918](https://github.com/CCSDForge/episciences/pull/1166)).
+- Simplify paper modification request cancellation by linking the action form directly to the article's current status instead of requiring a new parent-linked comment.
+- Resolve bibliographic reference PDF URL from the paper's own journal and front version.
+- Define `RVID` and ensure write-free execution in `doi:manage --dry-run`.
+- Rename `--version` option to `--paper-version` in `export:papers` to prevent collision with Symfony Console's application version option.
+- Register `Zend_Translate` before journal locking in `import:papers`.
+- Stop console progress bars from garbling interleaved log output.
+- Fix BAOBAB repository ID collision with existing id 21.
 
 ### Removed
 
@@ -105,10 +138,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1089](https://github.com/CCSDForge/episciences/pull/1089) Replace legacy Solr indexing (`Ccsd_Search_Solr_Indexer*`, `solrJob.php`, `INDEX_QUEUE` polling) with decomposed `DocumentBuilder` field builders and Messenger message handlers.
 - Migrate Next.js cache revalidation off the legacy `queue_messages` table and its cron consumer (`scripts/NextRevalidationQueue.php`) onto the same Symfony Messenger + Doctrine DBAL infrastructure as Solr indexing, on its own `next_revalidation` transport so a slow Solr document build never blocks a cheap revalidation POST. The Messenger plumbing itself (transports, buses, worker event dispatcher, bounded-retry dispatch, dispatch-failure store) is extracted out of the Solr-only code into a generic `Episciences\Messenger\*` library that both producers now share, and `solr:worker`/`solr:queue` are replaced by transport-agnostic `episciences:worker`/`episciences:queue --transport=<solr_index|next_revalidation>` commands (see `docs/console-commands.md#messenger-queues`, `docs/next-revalidation.md`). `RevalidationService::revalidateOrEnqueue()` (synchronous POST with queue fallback) is removed — every call site is now fully asynchronous — and `next:revalidate-cache` gains a variadic tag argument and a `--queue` option.
 - [#1179](https://github.com/CCSDForge/episciences/pull/1179) Bump `monolog/monolog` to `^3.0` (`psr/log` to `3.x`) and add `Episciences\Log\LoggerFactory` (`rotating()` / `cli()`), routing the previously duplicated `RotatingFileHandler`/CLI logger setup through it (`MonologFactory`, `Notify/Hal`, `Notify/Reader`, both CAS adapters, `AbstractScript`, the Messenger queue/worker commands, `Solr/BootstrapsSolrEnvironment`), and dropping `Episciences\Messenger\Log\CliLoggerFactory`. `ProgressAwareStreamHandler::write()` is adapted to the Monolog 3 `LogRecord` handler contract, and `ScholexplorerApiClient::create()` now builds an explicit fallback logger (Monolog 2 removed the implicit `php://stderr` handler-less fallback, so records would otherwise be silently dropped). Log lines now use Monolog 3's default ISO 8601 timestamp instead of the previous `Y-m-d H:i:s` format.
+- [#1178](https://github.com/CCSDForge/episciences/pull/1178) Extract available repository version lookup into `Episciences\Paper\RepositoryVersionsService`, make collaborators injectable, distinguish Dataverse major and minor versions, and handle Guzzle exceptions on bioRxiv and Dataverse API calls.
 
 ### Changed
 
 - Update dependencies.
+- Store the board role labels (`editorial_board`, `technical_board`, ..., `former_member`) as plain text in `views.php`, like in `js.php`; the tag icon is now added by `Episciences_Acl::getRoleLabelHtml()` in the role badges (user lists, contacts, mailing lists, permissions, role editing), which also escapes the label. The users-by-role chart on the stats page no longer strips HTML from the labels.
 
 ## v1.0.56.1 - 2026-08-04
 

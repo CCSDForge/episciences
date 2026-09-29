@@ -18,6 +18,7 @@ use Episciences\Notify\NotifySourceRegistry;
 use Episciences\Notify\PayloadValidator;
 use Episciences\Notify\PreprintUrlParser;
 use Episciences\Console\ProgressAwareStreamHandler;
+use Episciences\Translation\TranslatorFactory;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger;
@@ -121,7 +122,7 @@ class ProcessInboxNotificationsCommand extends Command
                 'line'      => $e->getLine(),
                 'trace'     => $e->getTraceAsString(),
             ]);
-            $io->error('Database error connecting to main Episciences database: ' . $e->getMessage());
+            $io->error('Failed to bootstrap Episciences environment or connect to main database: ' . $e->getMessage());
             return Command::FAILURE;
         }
 
@@ -324,6 +325,9 @@ class ProcessInboxNotificationsCommand extends Command
 
         $logger->info(sprintf('Matched journal: %s (RVID #%d)', $journal->getCode(), $journal->getRvid()));
         Zend_Registry::set('reviewSettings', $journal->getSettings());
+        // findByRvcode() may return a cached instance whose constructor does not run again:
+        // role lookups (chief editors, secretaries, administrators) rely on this static value.
+        Episciences_Review::setCurrentReviewId($journal->getRvid());
 
         $actor = $notifyPayloads['actor']['id'] ?? null;
         if (!$actor) {
@@ -1033,8 +1037,12 @@ class ProcessInboxNotificationsCommand extends Command
                 $journalOptions
             );
 
-            if ($isSent && $logger !== null) {
-                $logger->info(sprintf('Author (%s) notified successfully.', $author->getScreenName()));
+            if ($logger !== null) {
+                if ($isSent) {
+                    $logger->info(sprintf('Author (%s) notified successfully.', $author->getScreenName()));
+                } else {
+                    $logger->error(sprintf('Notification email to author (%s) could not be queued (see the journal .mail exceptions log).', $author->getScreenName()));
+                }
             }
         } catch (\Throwable $e) {
             if ($logger !== null) {
@@ -1078,7 +1086,8 @@ class ProcessInboxNotificationsCommand extends Command
             }
         }
 
-        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+        // Pass the RVID explicitly: the RVID constant is not defined in CLI
+        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients, $journal->getRvid());
         unset($recipients[$paper->getUid()]);
 
         if (!$isFirstSubmission && $originalRequest !== null) {
@@ -1185,7 +1194,12 @@ class ProcessInboxNotificationsCommand extends Command
                 $unsent[]   = $recipient->getUid();
             }
 
-            if ($isNotified && $logger !== null) {
+            if (!$isNotified) {
+                // sendMailFromReview() returns false without throwing when writeMail() fails
+                if (!in_array($recipient->getUid(), $unsent, true)) {
+                    $unsent[] = $recipient->getUid();
+                }
+            } elseif ($logger !== null) {
                 $logger->info(sprintf('Editor %s notified successfully.', $recipient->getScreenName()));
             }
         }
@@ -1663,6 +1677,8 @@ class ProcessInboxNotificationsCommand extends Command
         require_once __DIR__ . '/../public/const.php';
         require_once __DIR__ . '/../public/bdd_const.php';
 
+        // No $_SERVER['HTTPS'] in CLI: defineProtocol() alone would build http:// links in emails
+        defined('SERVER_PROTOCOL') || define('SERVER_PROTOCOL', 'https');
         defineProtocol();
         defineSimpleConstants();
         defineSQLTableConstants();
@@ -1693,16 +1709,18 @@ class ProcessInboxNotificationsCommand extends Command
         Zend_Registry::set('languages', ['fr', Episciences_Review::DEFAULT_LANG]);
         Zend_Registry::set('Zend_Locale', new Zend_Locale(Episciences_Review::DEFAULT_LANG));
 
-        try {
-            $translator = new Zend_Translate(
-                Zend_Translate::AN_ARRAY,
-                APPLICATION_PATH . '/languages',
-                Episciences_Review::DEFAULT_LANG,
-                ['scan' => Zend_Translate::LOCALE_DIRECTORY]
-            );
-            Zend_Registry::set('Zend_Translate', $translator);
-        } catch (\Throwable $e) {
-            // Keep silent if already loaded or fallback
+        // Every email needs the translator (template names, subjects): fail the whole run
+        // instead of failing each email later on.
+        if (!Zend_Registry::isRegistered('Zend_Translate')) {
+            Zend_Registry::set('Zend_Translate', $this->createTranslator(APPLICATION_PATH . '/languages'));
         }
+    }
+
+    /**
+     * @throws Zend_Translate_Exception when the languages directory cannot be loaded
+     */
+    private function createTranslator(string $languagesDir): Zend_Translate
+    {
+        return TranslatorFactory::create($languagesDir, null, Episciences_Review::DEFAULT_LANG);
     }
 }

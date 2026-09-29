@@ -10,6 +10,7 @@ use Episciences\Solr\Indexing\Build\KeywordFieldsBuilder;
 use Episciences\Solr\Indexing\Build\LocaleFieldsBuilder;
 use Episciences\Solr\Indexing\Build\VolumeSectionResolver;
 use Episciences\Log\LoggerFactory;
+use Episciences\Translation\TranslatorFactory;
 use Monolog\Logger;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -77,12 +78,7 @@ trait BootstrapsSolrEnvironment
         // registry entry, normally populated by the full web bootstrap. Mirrors
         // the initTranslator() helper already used for the same reason by the
         // legacy scripts/solr/solrJob.php CLI entrypoint.
-        $translator = new Zend_Translate(
-            Zend_Translate::AN_ARRAY,
-            APPLICATION_PATH . '/languages',
-            null,
-            ['scan' => Zend_Translate::LOCALE_DIRECTORY]
-        );
+        $translator = TranslatorFactory::create(APPLICATION_PATH . '/languages', null, 'auto');
         Zend_Registry::set('Zend_Translate', $translator);
         Zend_Registry::set('Zend_Locale', new Zend_Locale($translator->getLocale()));
         Zend_Registry::set('lang', $translator->getLocale());

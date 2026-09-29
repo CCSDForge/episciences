@@ -40,4 +40,54 @@ class RemindersTest extends TestCase
             'reminders.php must not overwrite TAG_REVIEW_CODE with raw $rvCode'
         );
     }
+
+    // -------------------------------------------------------------------------
+    // %%PERMANENT_ARTICLE_ID%% — must not regress to a per-recipient DB lookup
+    // -------------------------------------------------------------------------
+
+    /**
+     * $paper is already loaded (it's how $paper->getDocid() is obtained on the
+     * same line); passing $paper->getPaperid() to setDocid() lets it resolve
+     * %%PERMANENT_ARTICLE_ID%% without a DB lookup. This guards against a
+     * regression back to setDocid($paper->getDocid()) alone, which would
+     * silently reintroduce a per-recipient query in this cron's hottest loop
+     * (reminder types x reviews x recipients).
+     */
+    public function testRemindersScriptPassesPaperIdToSetDocid(): void
+    {
+        $scriptPath = realpath(__DIR__ . '/../../../scripts/reminders.php');
+        $source = file_get_contents($scriptPath);
+
+        self::assertMatchesRegularExpression(
+            '/setDocid\(\s*\$paper->getDocid\(\)\s*,\s*\$paper->getPaperid\(\)\s*\)/',
+            $source,
+            'BUG: setDocid() must be given $paper->getPaperid() to avoid a per-recipient DB lookup '
+            . 'for %%PERMANENT_ARTICLE_ID%% in the reminders cron'
+        );
+    }
+
+    /**
+     * The per-recipient $tags array (built by Episciences_Mail_Reminder::loadRecipients())
+     * is merged into $mail *after* setDocid(), and unconditionally overwrites any tag
+     * it also defines — including %%PERMANENT_ARTICLE_ID%% when present. Losing this
+     * ordering would make setDocid()'s resolution the final word instead of the
+     * per-recipient value, which is what every reminder type is actually built to supply.
+     */
+    public function testRemindersScriptMergesRecipientTagsAfterSetDocid(): void
+    {
+        $scriptPath = realpath(__DIR__ . '/../../../scripts/reminders.php');
+        $source = file_get_contents($scriptPath);
+
+        $setDocidPos = strpos($source, 'setDocid(');
+        $tagsMergePos = strpos($source, 'foreach ($tags as $name => $value)');
+
+        self::assertNotFalse($setDocidPos, 'setDocid( call not found in reminders.php');
+        self::assertNotFalse($tagsMergePos, 'Recipient $tags merge loop not found in reminders.php');
+        self::assertGreaterThan(
+            $setDocidPos,
+            $tagsMergePos,
+            'BUG: the per-recipient $tags merge loop must run after setDocid(), '
+            . 'so recipient-supplied tags (including %%PERMANENT_ARTICLE_ID%%) take precedence'
+        );
+    }
 }

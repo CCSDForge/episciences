@@ -187,4 +187,27 @@ final class Episciences_Mail_SendTest extends TestCase
 
         self::assertSame(RVCODE, $this->invokeGetMailDisplayCode());
     }
+
+    // =========================================================================
+    // sendMailFromReview() — %%PERMANENT_ARTICLE_ID%% must not regress to a
+    // per-call DB lookup. $paper is already loaded here (it's how
+    // $paper->getDocid() is obtained); passing $paper->getPaperid() lets
+    // setDocid() resolve the tag without a query. This method is the shared
+    // backbone for most application mails (COI, editor assignment, etc.), not
+    // just the reminders cron.
+    // =========================================================================
+
+    public function testSendMailFromReviewPassesPaperIdToSetDocid(): void
+    {
+        $method = new ReflectionMethod(Episciences_Mail_Send::class, 'sendMailFromReview');
+        $lines  = file($method->getFileName());
+        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        self::assertMatchesRegularExpression(
+            '/setDocid\(\s*\$paper->getDocid\(\)\s*,\s*\$paper->getPaperid\(\)\s*\)/',
+            $source,
+            'BUG: setDocid() must be given $paper->getPaperid() to avoid a DB lookup '
+            . 'for %%PERMANENT_ARTICLE_ID%% in sendMailFromReview()'
+        );
+    }
 }

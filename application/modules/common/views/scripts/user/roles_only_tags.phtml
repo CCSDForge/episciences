@@ -1,6 +1,6 @@
 <?php foreach ($this->roles as $role) : ?>
     <span class="label role-<?php echo $role ?>">
-        <?php echo $this->translate($role) ?>
+        <?php echo Episciences_Acl::getRoleLabelHtml($role) ?>
     </span>&nbsp;
 <?php endforeach; ?>
 

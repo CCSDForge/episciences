@@ -72,14 +72,9 @@ $autoloader->setFallbackAutoloader(true);
 $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
 
-// init translator
-$default = 'fr';
+// init translator (locale detected from the environment)
 try {
-    $translator = new Zend_Translate(Zend_Translate::AN_ARRAY, PATH_TRANSLATION, null, [
-        'scan' => Zend_Translate::LOCALE_DIRECTORY,
-        'locale' => $default,
-        'disableNotices' => true
-    ]);
+    $translator = \Episciences\Translation\TranslatorFactory::create(PATH_TRANSLATION, null, 'auto');
 
     Zend_Registry::set('Zend_Translate', $translator);
     Zend_Registry::set('Zend_Locale', new Zend_Locale($translator->getLocale()));
@@ -193,7 +188,7 @@ try {
                 $mail = new Episciences_Mail('UTF-8', $rvCode);
                 if (isset($tags['%%ARTICLE_ID%%'])) {
                     $paper = Episciences_PapersManager::get($tags['%%ARTICLE_ID%%']);
-                    $mail->setDocid($paper->getDocid());
+                    $mail->setDocid($paper->getDocid(), $paper->getPaperid());
                     displayMessage('DOCID > #' . $paper->getDocid(), 'default', true);
                 }
 

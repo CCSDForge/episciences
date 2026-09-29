@@ -504,11 +504,6 @@ class UpdatePapersDocumentCommand extends Command
         // Episciences_Translation_Plugin::preDispatch() normally registers this, but it
         // never runs here since we skip $application->bootstrap() (see comment above).
         // Without it, Paper::getStatusLabel() logs a "No entry is registered" notice.
-        \Zend_Registry::set('Zend_Translate', new \Zend_Translate([
-            'adapter' => \Zend_Translate::AN_ARRAY,
-            'content' => PATH_TRANSLATION,
-            'scan' => \Zend_Translate::LOCALE_DIRECTORY,
-            'disableNotices' => true,
-        ]));
+        \Zend_Registry::set('Zend_Translate', \Episciences\Translation\TranslatorFactory::create(PATH_TRANSLATION, null, 'auto'));
     }
 }

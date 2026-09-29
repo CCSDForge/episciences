@@ -942,15 +942,32 @@ class Episciences_User extends Ccsd_User_Models_User
     }
 
 
-    public function hasOnlyAdministratorRole(): bool
+    /**
+     * @param int|null $rvId journal to check; defaults to the current journal (RVID constant, web context only)
+     */
+    public function hasOnlyAdministratorRole(?int $rvId = null): bool
     {
+        if ($rvId === null) {
+            return
+                $this->isAdministrator() &&
+                !$this->isChiefEditor() &&
+                !$this->isSecretary() &&
+                !$this->isEditor() &&
+                !$this->isGuestEditor() &&
+                !$this->isCopyEditor();
+        }
+
+        $roles = $this->getRoles($rvId) ?? [];
+
         return
-            $this->isAdministrator() &&
-            !$this->isChiefEditor() &&
-            !$this->isSecretary() &&
-            !$this->isEditor() &&
-            !$this->isGuestEditor() &&
-            !$this->isCopyEditor();
+            in_array(Episciences_Acl::ROLE_ADMIN, $roles) &&
+            empty(array_intersect([
+                Episciences_Acl::ROLE_CHIEF_EDITOR,
+                Episciences_Acl::ROLE_SECRETARY,
+                Episciences_Acl::ROLE_EDITOR,
+                Episciences_Acl::ROLE_GUEST_EDITOR,
+                Episciences_Acl::ROLE_COPY_EDITOR,
+            ], $roles));
     }
 
     public function getReviews()
@@ -1004,7 +1021,6 @@ class Episciences_User extends Ccsd_User_Models_User
             $roles = $acl->getRolesCodes();
             $acl = new Episciences_Acl();
             unset($roles[$acl::ROLE_GUEST], $roles[$acl::ROLE_MEMBER], $roles[$acl::ROLE_ROOT]);
-            $translator = Zend_Registry::get('Zend_Translate');
 
             foreach ($users as $uid => $user) {
 
@@ -1044,7 +1060,7 @@ class Episciences_User extends Ccsd_User_Models_User
                         $class = '';
                     }
 
-                    $tag = '<span class="label ' . $class . '">' . $translator->translate($role) . '</span>';
+                    $tag = '<span class="label ' . $class . '">' . Episciences_Acl::getRoleLabelHtml($role) . '</span>';
                     $form->addElement('html', 'tag_' . $uid . '_' . $role, ['value' => $tag]);
 
                 }
