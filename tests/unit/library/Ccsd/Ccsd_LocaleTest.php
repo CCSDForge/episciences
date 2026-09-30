@@ -51,6 +51,11 @@ class Ccsd_LocaleTest extends TestCase
         $this->assertSame('xx', Ccsd_Locale::getLanguageName('xx', 'en'));
     }
 
+    public function testGetLanguageNameIsCaseInsensitive(): void
+    {
+        $this->assertSame('French', Ccsd_Locale::getLanguageName('FR', 'en'));
+    }
+
     public function testGetLanguageNameEmptyCodeReturnsEmptyString(): void
     {
         $this->assertSame('', Ccsd_Locale::getLanguageName(''));

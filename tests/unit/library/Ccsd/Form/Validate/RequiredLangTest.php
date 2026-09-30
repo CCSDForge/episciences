@@ -4,6 +4,7 @@ namespace unit\library\Ccsd\Form\Validate;
 
 use Ccsd_Form_Validate_RequiredLang;
 use PHPUnit\Framework\TestCase;
+use Zend_Registry;
 
 /**
  * Unit tests for Ccsd_Form_Validate_RequiredLang validator
@@ -12,11 +13,33 @@ class RequiredLangTest extends TestCase
 {
     private Ccsd_Form_Validate_RequiredLang $validator;
 
+    /** @var mixed */
+    private $previousLocale = null;
+
     protected function setUp(): void
     {
         parent::setUp();
+        // getLanguageName() reads the display locale from the registry: start from a clean state
+        $this->previousLocale = Zend_Registry::isRegistered('Zend_Locale') ? Zend_Registry::get('Zend_Locale') : null;
+        $this->unsetRegistryLocale();
         // Ccsd_Form_Validate_RequiredLang expects 'langs' or 'populate' in constructor
         $this->validator = new Ccsd_Form_Validate_RequiredLang(['langs' => ['fr', 'en']]);
+    }
+
+    protected function tearDown(): void
+    {
+        $this->unsetRegistryLocale();
+        if ($this->previousLocale !== null) {
+            Zend_Registry::set('Zend_Locale', $this->previousLocale);
+        }
+        parent::tearDown();
+    }
+
+    private function unsetRegistryLocale(): void
+    {
+        if (Zend_Registry::isRegistered('Zend_Locale')) {
+            Zend_Registry::getInstance()->offsetUnset('Zend_Locale');
+        }
     }
 
     /**

@@ -365,7 +365,7 @@ class Ccsd_Locale
         $displayLocale ??= self::getCurrentLanguage();
 
         try {
-            return Languages::getName($code, $displayLocale);
+            return Languages::getName(strtolower($code), $displayLocale);
         } catch (MissingResourceException) {
             return $code;
         }
