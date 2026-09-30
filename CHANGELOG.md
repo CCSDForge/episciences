@@ -34,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#793](https://github.com/CCSDForge/episciences/issues/793) [arXiv] Keep only the first `<dc:description>` tag as paper abstract during record harvest in `Episciences_Paper::setMetadata()` and `Episciences_Submit`.
 - [#1132](https://github.com/CCSDForge/episciences/pull/1132) [Zenodo] Pass `previousVersion` context to `hookVersion()` in `savenewpostedversionAction()` to prevent overwriting `VERSION` with the raw Zenodo identifier when creating a new posted version.
 - [zbJATS] Define `RVID` constant in `ZbjatsZipperCommand` CLI bootstrap to fix uncaught "Undefined constant RVID" error during volume processing.
+- Fix editor-to-author message notifications being lost or reported as sent when they were not: a plain exception while notifying another assigned editor no longer skips the author email, the author send result is checked, and the editor is warned when a notification could not be queued (`PaperDefaultController::newCommentNotifyManager()`, `AuthorEditorCommunicationControllerTrait`).
+- Fix paper status/revision emails sent from modals being logged as `CODE_MAIL_SENT` in the paper history even when `writeMail()` failed (`PaperDefaultController::sendMailFromModal()`).
+- Fix submission acknowledgment never reaching the author (and co-authors) when no editorial committee member is left to notify, e.g. a chief editor submitting to their own journal (`Episciences_Submit::sendNotifications()`, regression from v1.0.54).
+- Fix conflict-of-interest filtering of submission recipients comparing UIDs against list positions instead of UID values (`Episciences_Submit::filterConflictRecipients()`).
 
 ### Changed
 
