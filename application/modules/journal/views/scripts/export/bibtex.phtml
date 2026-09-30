@@ -43,6 +43,6 @@ $paperPositionInVolume = $paper->getPaperPositionInVolume();
     keywords   = {<?= Ccsd_Tools::protectLatex(implode(', ', $subjects)) ?>},
 <?php endif; ?>
 <?php if ($paperLanguage != ''): ?>
-    language   = {<?= Ccsd_Tools::translate('lang_' . $paperLanguage, 'en') ?>},
+    language   = {<?= Ccsd_Locale::getLanguageName($paperLanguage, 'en') ?>},
 <?php endif; ?>
 }

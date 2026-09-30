@@ -42,6 +42,16 @@ class RequiredLangTest extends TestCase
     }
 
     /**
+     * The error message contains the localized name of the missing language
+     */
+    public function testMissingLangMessageContainsLanguageName(): void
+    {
+        $this->assertFalse($this->validator->isValid(['fr' => 'Bonjour']));
+        $messages = $this->validator->getMessages();
+        $this->assertStringContainsString('English', $messages[Ccsd_Form_Validate_RequiredLang::REQUIRED_LANG]);
+    }
+
+    /**
      * Test validation with empty string value for a required language
      */
     public function testIsInvalidWithEmptyStringLang(): void

@@ -1,5 +1,8 @@
 <?php
 
+use Symfony\Component\Intl\Exception\MissingResourceException;
+use Symfony\Component\Intl\Languages;
+
 /**
  * Class Ccsd_Locale
  */
@@ -345,6 +348,41 @@ class Ccsd_Locale
         return array_merge($topItem, $languages);
     }
 
+
+    /**
+     * Returns the localized name of a language from its ISO 639 code.
+     *
+     * @param string $code language code (e.g. 'fr', 'en')
+     * @param string|null $displayLocale locale of the returned name; null = current application locale
+     * @return string the language name, or $code itself when it cannot be resolved
+     */
+    public static function getLanguageName(string $code, ?string $displayLocale = null): string
+    {
+        if ($code === '') {
+            return '';
+        }
+
+        $displayLocale ??= self::getCurrentLanguage();
+
+        try {
+            return Languages::getName($code, $displayLocale);
+        } catch (MissingResourceException) {
+            return $code;
+        }
+    }
+
+    /**
+     * Current application language: registry 'Zend_Locale' (set in web requests and by every
+     * CLI entry point), 'en' when unavailable (tests).
+     */
+    private static function getCurrentLanguage(): string
+    {
+        if (Zend_Registry::isRegistered('Zend_Locale')) {
+            $locale = Zend_Registry::get('Zend_Locale');
+            return $locale instanceof Zend_Locale ? $locale->getLanguage() : (string)$locale;
+        }
+        return 'en';
+    }
 
     /**
      * Conversion d'une langue au format Iso2 à son équivalent Iso1 s'il existe
