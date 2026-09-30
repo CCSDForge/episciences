@@ -670,6 +670,10 @@ class PaperDefaultController extends DefaultController
         $authorNotificationSent = false;
         $authorNotificationExpected = false;
         if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
+            // The author notification is always expected for this comment type: if the author
+            // cannot be resolved, it must still count as a missed notification so the editor
+            // is warned instead of being told the message was delivered.
+            $authorNotificationExpected = true;
             try {
                 $parentCommentId = $oComment->getParentid();
                 $parentComment = null;
@@ -696,7 +700,6 @@ class PaperDefaultController extends DefaultController
                 if (!$author) {
                     $logger?->warning('EDITOR_TO_AUTHOR_NOTIFICATION_RECIPIENT_NOT_FOUND_DOCID_' . $docId . '_PCID_' . $oComment->getPcid());
                 } else {
-                    $authorNotificationExpected = true;
                     $authorLocale = $author->getLangueid();
 
                     // Build paper URL for author (public URL, not admin URL)
