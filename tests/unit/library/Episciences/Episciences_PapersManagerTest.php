@@ -716,6 +716,41 @@ final class Episciences_PapersManagerTest extends TestCase
         self::assertStringNotContainsString('st.RVID = ' . RVID . ' ', $sql . ' ');
     }
 
+    /**
+     * Reproduces VolumeController::editAction(), which re-indexes a volume's published papers with
+     * a scalar volume id (['is' => ['vid' => 5, 'status' => ...]]); it used to raise a TypeError.
+     */
+    public function testApplyFiltersAcceptsAScalarVidFilter(): void
+    {
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, 'applyFilters');
+        $reflection->setAccessible(true);
+
+        /** @var \Zend_Db_Select $select */
+        $select = $reflection->invoke(
+            null,
+            $this->newPapersSelect(),
+            ['is' => ['vid' => 5, 'status' => Episciences_Paper::STATUS_PUBLISHED]]
+        );
+
+        self::assertStringContainsString('st.VID IN (5)', $select->assemble());
+    }
+
+    public function testApplyFiltersScalarAndArrayVidFiltersProduceTheSameSql(): void
+    {
+        $reflection = new \ReflectionMethod(Episciences_PapersManager::class, 'applyFilters');
+        $reflection->setAccessible(true);
+
+        $assemble = function (int|array $vid) use ($reflection): string {
+            return $reflection->invoke(
+                null,
+                $this->newPapersSelect(),
+                ['is' => ['vid' => $vid]]
+            )->assemble();
+        };
+
+        self::assertSame($assemble([5]), $assemble(5));
+    }
+
     // -----------------------------------------------------------------------
     // dataTableSearchQuery(): the DataTable "search" box must scope its secondary-volume
     // subquery to the rvid being filtered on, not to the global RVID constant.
