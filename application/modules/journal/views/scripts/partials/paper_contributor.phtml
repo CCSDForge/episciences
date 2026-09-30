@@ -49,6 +49,15 @@ $rvid = RVID;
                     </span>
                 </a>
 
+                <?php if (Episciences_Auth::isAdministrator() || Episciences_Auth::isChiefEditor()) : ?>
+                    <button type="button"
+                            class="btn btn-default modal-opener"
+                            id="btn-change-contributor"
+                            data-docid="<?= $paper->getDocid() ?>"
+                            title="<?php echo $this->translate('Changer le contributeur'); ?>">
+                        <span class="fas fa-user-pen" style="margin: 0.2rem"></span>
+                    </button>
+                <?php endif; ?>
 
                 <?php if (Episciences_Auth::isSecretary()) : ?>
                     <a class="btn btn-default" href="/user/su/uid/<?php echo $paper->getUid(); ?>">

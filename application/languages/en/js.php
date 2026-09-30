@@ -131,6 +131,13 @@ return [
     "Contacter ce rédacteur" => "Contact this editor",
     "Contacter un contributeur" => "Contact a contributor",
     "Contacter ce contributeur" => "Contact this contributor",
+    "Changer le contributeur" => "Change contributor",
+    "Contributeur actuel / Contributrice actuelle" => "Current contributor",
+    "Nouveau contributeur / Nouvelle contributrice" => "New contributor",
+    "Rechercher un utilisateur..." => "Search for a user...",
+    "Ajouter l'ancien contributeur / l'ancienne contributrice comme co-auteur / co-autrice" => "Add the former contributor as co-author",
+    "Il/Elle continuera à recevoir les notifications" => "They will continue to receive notifications",
+    "Veuillez sélectionner un nouveau contributeur" => "Please select a new contributor",
     "Contacter ce préparateur de copie" => "Contact this copy editor",
     "Contacter un préparateur de copie" => "Contact a copy editor",
 

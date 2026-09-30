@@ -130,6 +130,15 @@ $tag = $this->tag;
         ]);
         break;
 
+    // Contributor changed (displays old -> new contributor and co-author status)
+    case Episciences_Paper_Logger::CODE_CONTRIBUTOR_CHANGED:
+        echo $this->partial('partials/paper_history_logs_contributor_changed.phtml', [
+            'oldContributor' => $detail['oldContributor'],
+            'newContributor' => $detail['newContributor'],
+            'addedAsCoAuthor' => $detail['addedAsCoAuthor'] ?? false
+        ]);
+        break;
+
     // Publication date / Revision deadline alterations
     case Episciences_Paper_Logger::CODE_ALTER_PUBLICATION_DATE:
     case Episciences_Paper_Logger::CODE_REVISION_DEADLINE_UPDATED:
