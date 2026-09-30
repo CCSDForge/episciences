@@ -1,0 +1,16 @@
+<?php
+/**
+ * Log summary for contributor change action (timeline view).
+ * Full details are available in the modal (/administratepaper/log?id=).
+ *
+ * Expected view vars:
+ *   - oldContributor: array with 'uid' and 'fullname'
+ *   - newContributor: array with 'uid' and 'fullname'
+ *   - addedAsCoAuthor: bool (not displayed here, shown in modal)
+ */
+$oldContributor = $this->oldContributor;
+$newContributor = $this->newContributor;
+?>
+<span class="text-muted"><?= $this->escape($oldContributor['fullname']) ?></span>
+<span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+<strong><?= $this->escape($newContributor['fullname']) ?></strong>

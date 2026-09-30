@@ -120,9 +120,6 @@ return [
     // users permissions
     "administrategraphabstract-addgraphabs" => "Ajouter/Modifier un abstract graphique",
     "administrategraphabstract-deletegraphabs" => "Supprimer un abstract graphique",
-    "administratelinkeddata-setnewinfoldAction" => "Jeu de donnée/lien de publication : Modifier un jeu de donnée",
-    "administratelinkeddata-addld" => "Jeu de données/lien de publication : Ajouter un nouveau de donnée",
-    "administratelinkeddata-removeld" => "Jeu de données/lien de publication : Supprimer un jeu de donnée",
     "administratemail-deletetemplate" => "Supprimer le template personnalisé et rétablir celui par défaut",
     "administratemail-edittemplate" => "Modifier un template",
     "administratemail-history" => "Lister l'historique de e-mails",
@@ -480,5 +477,19 @@ return [
     'T_VOLUME_YEAR_INVALID_FORMAT' => 'Le format d\'année du volume est invalide. Il doit être "AAAA" (ex: 2001) ou "AAAA-AAAA" (ex: 2001-2002).',
     'T_VOLUME_YEAR_INVALID_RANGE'  => 'La deuxième année du volume doit être strictement supérieure à la première (ex: 2003-2004).',
     'T_VOLUME_YEAR_OUTSIDE_BOUNDS' => 'L\'année doit être comprise entre %s et %s (Année courante + 5 ans).',
+
+    // Contributor change
+    "Vous avez été ajouté comme co-auteur et continuerez à recevoir les notifications relatives à cet article." => "Vous avez été ajouté comme co-auteur et continuerez à recevoir les notifications relatives à cet article.",
+    "Vous ne recevrez plus les notifications relatives à cet article." => "Vous ne recevrez plus les notifications relatives à cet article.",
+    "Contributor changed successfully" => "Contributeur modifié avec succès.",
+    "Vous pouvez consulter l'article ici :" => "Vous pouvez consulter l'article ici :",
+    'Permission denied' => 'Permission refusée',
+    'Invalid request' => 'Requête invalide',
+    'Paper not found' => 'Article non trouvé',
+    'New contributor is the same as current' => 'Le nouveau contributeur est identique au contributeur actuel',
+    'New contributor not found' => 'Nouveau contributeur non trouvé',
+    'The new contributor is assigned to this paper (editor/reviewer/copy editor)' => 'Le nouveau contributeur est assigné à cet article (rédacteur/relecteur/préparateur de      
+  copie)',
+    'Failed to update contributor' => 'Échec de la mise à jour du contributeur',
 
 ];

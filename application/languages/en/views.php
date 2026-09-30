@@ -29,6 +29,12 @@ return array(
     "Auteurs" => "Authors",
     "Contributeur" => "Contributor",
     "Contributeurs" => "Contributors",
+    "Contributeur actuel / Contributrice actuelle" => "Current contributor",
+    "Ancien contributeur / Ancienne contributrice" => "Former contributor",
+    "Nouveau contributeur / Nouvelle contributrice" => "New contributor",
+    "L'ancien contributeur / L'ancienne contributrice a été ajouté(e) comme co-auteur / co-autrice" => "The former contributor has been added as co-author",
+    "Ajouter l'ancien contributeur / l'ancienne contributrice comme co-auteur / co-autrice" => "Add the former contributor as co-author",
+    "Changer le contributeur" => "Change contributor",
 
     "Rédacteur" => "Editor",
     "Un rédacteur" => "An editor",
@@ -499,6 +505,7 @@ return array(
     "nombre uniquement" => "number only",
     "supérieur à " => "greater than ",
     "dernière version soumise à la revue" => "latest version submitted to the journal",
+    'dernière version' => 'latest version',
     "La nouvelle version a bien été mise en ligne dans l'archive ouverte/l'entrepôt" => "The new version is online in the open archive/repository",
 
 
@@ -905,6 +912,7 @@ return array(
     "Votre message a bien été enregistré, mais la notification par e-mail n'a pas pu être envoyée à tous les destinataires." => 'Your message has been saved, but the email notification could not be sent to all recipients.',
     "Vous n'êtes pas autorisé à envoyer un message à cet auteur." => 'You are not authorized to send a message to this author.',
     "Erreur lors de l'envoi de votre message." => 'Error sending your message.',
+    "Rédacteur" => 'Editor',
     "Anciens messages" => 'Older messages',
     "Evaluation" => 'Review',
     "Grille de relecture" => 'Review Grid',
@@ -1218,6 +1226,7 @@ return array(
     "Demande des sources à l'auteur (édition)" => "Request for author's sources (copy editing)",
     "Prêt pour la publication (édition)" => "Ready to publish (copy editing)",
     "Mise en forme déposée par la revue (édition)" => "Formatting submitted by journal (copy editing)",
+    "Changement de contributeur" => "Contributor changed",
     "Assignation d'un rédacteur copiste" => "Copy editor assigned",
     "Désassignation d'un rédacteur copiste" => "Copy editor unassigned",
     'Descripteur de données chargé' => 'Data descriptor uploaded',
@@ -1518,6 +1527,7 @@ return array(
     // Erreurs de soumission d'une nouvelle version
     "Rechercher un document" => "Search a document",
     "Saisir l'identifiant du document" => "Enter the document identifier",
+    "Version" => "Version",
     "Archive" => "Repository",
     "Rechercher" => "Search",
     "Envoyer" => "Send",
@@ -1581,6 +1591,7 @@ return array(
 
     "Vous êtes connecté avec un compte différent de celui ayant été utilisé pour soumettre ce document. Veuillez vous déconnecter et vous reconnecter avec le bon compte pour continuer." => "You’re signed in with a different account than the one used to submit this document. Please sign out and log in with the correct account to continue.",
     "Souhaitez-vous remplacer la version précédente ?" => "Do you want to replace the previous version?",
+    "ou" => 'or',
     "Attention : " => "Warning: ",
     "Pour déposer votre nouvelle version, veuillez utiliser le lien figurant dans le courriel qui vous a été envoyé par la revue, " => "To submit your new version, please use the link in the email you received from the journal, ",
     "pour répondre à la demande de modification." => "to meet the demand of requested changes.",
@@ -1970,6 +1981,7 @@ return array(
     "Number of users" => "Number of users",
     "Total unique members" => "Total unique members",
     "Add" => "Add",
+    "Actions" => "Actions",
     "Edit list" => "Edit list",
     "A mailing list with this name already exists." => "A mailing list with this name already exists.",
     "This name collides with an existing journal code." => "This name collides with an existing journal code.",
@@ -2085,7 +2097,6 @@ return array(
 
     "article refusé" => 'rejected article',
     "articles refusés" => 'rejected articles',
-    'articles acceptés'=> 'accepted articles',
 
     "%s article refusé" => array("%s rejected article", "%s rejected articles"),
 
@@ -2099,6 +2110,7 @@ return array(
     "articles en attente d'éclaircissements" => 'articles waiting for clarifications',
 
     "article accepté" => 'accepted article',
+    "articles acceptés" => 'accepted articles',
     "article soumis" => 'submitted article',
     "articles soumis" => 'submitted articles',
     "article proposé" => 'submitted article',
@@ -2435,6 +2447,7 @@ return array(
 
     // co-author
     "Co-auteur" => "Co-author",
+    "Co-auteur / Co-autrice" => "Co-author",
     "Utilisateur ajouté en tant que co-auteur" => "User added as co-author",
     "L'utilisateur est déjà co-auteur de ce document" => "The user is already a co-author for this document",
     "Supprimer ce co-auteur" => "Delete this co-author",
@@ -2553,7 +2566,6 @@ return array(
     'classification_msc2020' => 'Mathematics Subject Classification 2020',
 
     //DD
-    'dernière version' => 'latest version',
     'Ajouter une nouvelle version' => 'Add a new version',
     'Descripteur de données' => 'Data descriptor',
     'Descripteur de logiciel' => 'Software descriptor',
@@ -2608,6 +2620,20 @@ return array(
     "Suggestion d'acceptation" => "Suggested acceptance",
     "Suggestion de refus" => "Suggested refusal",
     "Suggestion de modification" => "Suggested revision",
+
+    // Contributor change
+    "Effectué(e) par" => "Done by",
+    "Vous avez été ajouté comme co-auteur et continuerez à recevoir les notifications relatives à cet article." => "You have been added as a co-author and will continue to receive notifications related to this article.",
+    "Vous ne recevrez plus les notifications relatives à cet article." => "You will no longer receive notifications related to this article.",
+    "Contributor changed successfully" => "Contributor changed successfully.",
+    "Vous pouvez consulter l'article ici :" => "You can view the article here:",
+    'Permission denied' => 'Permission denied',
+    'Invalid request' => 'Invalid request',
+    'Paper not found' => 'Paper not found',
+    'New contributor is the same as current' => 'New contributor is the same as current',
+    'New contributor not found' => 'New contributor not found',
+    'The new contributor is assigned to this paper (editor/reviewer/copy editor)' => 'The new contributor is assigned to this paper (editor/reviewer/copy editor)',
+    'Failed to update contributor' => 'Failed to update contributor',
      // Website > menu
     'Choisissez une page' => 'Select a page',
 );
