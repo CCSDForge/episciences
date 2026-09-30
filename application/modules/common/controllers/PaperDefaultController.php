@@ -667,7 +667,6 @@ class PaperDefaultController extends DefaultController
         }
 
         // For editor messages to authors, notify the author (main author + co-authors in CC)
-        $authorNotificationSent = false;
         $authorNotificationExpected = false;
         if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
             // The author notification is always expected for this comment type: if the author
