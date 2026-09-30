@@ -715,4 +715,25 @@ final class Episciences_Submit_PrivateMethodsTest extends TestCase
             }
         }
     }
+
+    // =========================================================================
+    // removeConflictingRecipients()
+    // =========================================================================
+
+    public function testRemoveConflictingRecipientsMatchesUidValuesNotListPositions(): void
+    {
+        $recipients = [0 => 'uid0', 1 => 'uid1', 42 => 'uid42', 1234 => 'uid1234'];
+
+        // fetchCol() list: [0 => '42', 1 => '1234']
+        $result = $this->invoke('removeConflictingRecipients', [$recipients, ['42', '1234']]);
+
+        self::assertSame([0 => 'uid0', 1 => 'uid1'], $result);
+    }
+
+    public function testRemoveConflictingRecipientsWithoutConflictsKeepsEveryone(): void
+    {
+        $recipients = [7 => 'uid7', 8 => 'uid8'];
+
+        self::assertSame($recipients, $this->invoke('removeConflictingRecipients', [$recipients, []]));
+    }
 }
