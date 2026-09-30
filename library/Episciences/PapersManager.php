@@ -208,7 +208,7 @@ class Episciences_PapersManager
                         }
 
                     } else {
-                        $select = self::volumesFilter($select, $value, $isFilterInfos, $filteredRvid);
+                        $select = self::volumesFilter($select, (array)$value, $isFilterInfos, $filteredRvid);
                     }
 
                 }
