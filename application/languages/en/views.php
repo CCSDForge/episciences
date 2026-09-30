@@ -912,7 +912,6 @@ return array(
     "Votre message a bien été enregistré, mais la notification par e-mail n'a pas pu être envoyée à tous les destinataires." => 'Your message has been saved, but the email notification could not be sent to all recipients.',
     "Vous n'êtes pas autorisé à envoyer un message à cet auteur." => 'You are not authorized to send a message to this author.',
     "Erreur lors de l'envoi de votre message." => 'Error sending your message.',
-    "Rédacteur" => 'Editor',
     "Anciens messages" => 'Older messages',
     "Evaluation" => 'Review',
     "Grille de relecture" => 'Review Grid',
@@ -1835,7 +1834,6 @@ return array(
     "Titre du répertoire" => "Folder title",
     "Déplacer" => "Move",
     "Structure du menu" => "Menu structure",
-    "ou" => "or",
     "Erreur de saisie" => "Input error",
 
     "Visibilité de la page" => "Page visibility",
@@ -1981,7 +1979,6 @@ return array(
     "Number of users" => "Number of users",
     "Total unique members" => "Total unique members",
     "Add" => "Add",
-    "Actions" => "Actions",
     "Edit list" => "Edit list",
     "A mailing list with this name already exists." => "A mailing list with this name already exists.",
     "This name collides with an existing journal code." => "This name collides with an existing journal code.",
@@ -2540,7 +2537,6 @@ return array(
     "Same as" => "Same as",
     "Identical" => "Identical",
     "Variant form" => "Variant form",
-    "Version" => "Version",
     "Format" => "Format",
 
 
@@ -2601,8 +2597,6 @@ return array(
     "PDF" => "PDF",
     "Voir le PDF de cette version" => "View the PDF of this version",
     "Voir la page de gestion de cette version" => "View the management page for this version",
-
-
 
     // "Évaluation" is deliberately not redefined here: it is already translated above ("Review")
     // and that translation is reused by the dashboard quadrant title.
