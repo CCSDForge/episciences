@@ -114,4 +114,20 @@ describe('change-contributor modal', () => {
 
         expect(dialog.getAttribute('style')).toBeNull();
     });
+
+    test('cancels the showTimer when closing before the delay elapses', () => {
+        // Open modal but do NOT advance timers (the 10ms callback is pending)
+        document.getElementById('btn-change-contributor').click();
+
+        // Close immediately before the timer fires
+        modal().querySelector('[data-dismiss="modal"]').click();
+
+        // Now advance timers past the 10ms delay
+        jest.advanceTimersByTime(20);
+
+        // The onShown callback should NOT have run: no keydown listener added
+        expect(count(addSpy, 'keydown')).toBe(0);
+        // Modal should remain closed (no 'in' class added by the cancelled callback)
+        expect(modal().classList.contains('in')).toBe(false);
+    });
 });

@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', function () {
         backdrop.id = 'modal-backdrop';
         document.body.appendChild(backdrop);
 
-        setTimeout(() => {
+        showTimer = setTimeout(() => {
+            showTimer = null;
             modalElement.classList.add('in');
             document.body.classList.add('modal-open');
             if (onShown) onShown();
@@ -30,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let autocompleteInitialized = false;
     let cleanupDraggable = null;
+    let showTimer = null;
 
     /**
      * Close the modal when the Escape key is pressed
@@ -45,6 +47,10 @@ document.addEventListener('DOMContentLoaded', function () {
      * @param {HTMLElement} modalElement - The modal element
      */
     function hideModal(modalElement) {
+        if (showTimer !== null) {
+            clearTimeout(showTimer);
+            showTimer = null;
+        }
         modalElement.style.display = 'none';
         modalElement.classList.remove('in');
         document.body.classList.remove('modal-open');
