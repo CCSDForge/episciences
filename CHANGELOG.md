@@ -55,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Move the volume DOAJ export button from the public volume page to the volume edit page (next to "Review Grids") and add a button to download the complete volume as a single PDF. Buttons are disabled until the files are generated (`doaj:export-volumes`, `volume:merge-pdf`); URLs are prefixed with the journal code when the journal has switched to the new front-end.
+- [#1215](https://github.com/CCSDForge/episciences/pull/1215) Move the volume DOAJ export button from the public volume page to the volume edit page (next to "Review Grids") and add a button to download the complete volume as a single PDF. Buttons are disabled until the files are generated (`doaj:export-volumes`, `volume:merge-pdf`); URLs are prefixed with the journal code when the journal has switched to the new front-end.
 
 ### Performances
 
