@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1150](https://github.com/CCSDForge/episciences/pull/1150) Allow customizing the review code shown in automatic email subjects via the journal settings (`Episciences_Review`), capped to 100 characters.
 - Add `title_translations` to the `PAPERS.DOCUMENT` JSON column.
 - Display bibliographic references count in `papers:update-document` with `-vv`.
+- [#1214](https://github.com/CCSDForge/episciences/pull/1214) Add volume editors to CrossRef XML export. When a paper belongs to a volume with assigned editors, their names and ORCID identifiers are now included in the `<journal_issue><contributors>` block.
 
 ### Performances
 

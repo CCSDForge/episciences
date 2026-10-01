@@ -91,6 +91,21 @@ $paperLanguageRaw = $this->paperLanguage;
         </journal_metadata>
         <?php if ($publicationDate || $this->volume !== '' || $this->section !== ''): ?>
             <journal_issue>
+                <?php if (!empty($this->volumeEditors)): ?>
+                <contributors>
+                    <?php foreach (array_values($this->volumeEditors) as $index => $editor): ?>
+                    <person_name sequence="<?= $index === 0 ? 'first' : 'additional' ?>" contributor_role="editor">
+                        <?php if ($editor->getFirstname() !== '') : ?>
+                        <given_name><?= $this->escape($editor->getFirstname())?></given_name>
+                        <?php endif; ?>
+                        <surname><?= $this->escape($editor->getLastname()) ?></surname>
+                        <?php if ($editor->getOrcid()): ?>
+                            <ORCID>https://orcid.org/<?= strtoupper($editor->getOrcid()) ?></ORCID>
+                        <?php endif; ?>
+                    </person_name>
+                    <?php endforeach; ?>
+                </contributors>
+                <?php endif; ?>
                 <?php if ($publicationDate) : ?>
                     <publication_date media_type="<?= $onlineType ?>">
                         <month><?php echo $publicationDate->format('m'); ?></month>

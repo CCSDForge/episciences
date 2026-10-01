@@ -43,7 +43,7 @@ class Export
     {
 
         $previousVersionsUrl = self::getPreviousVersionsUrls($paper);
-        list($volume, $section, $proceedingInfo) = self::getPaperVolumeAndSection($paper);
+        list($volume, $section, $proceedingInfo, $volumeEditors) = self::getPaperVolumeAndSection($paper);
         $journal = self::getJournalSettings($paper);
 
         // Create new DOI if none exist
@@ -75,6 +75,7 @@ class Export
             'paperLanguage' => $paperLanguage,
             'previousVersionsUrl' => $previousVersionsUrl,
             'emailAddress' => $emailAddress,
+            'volumeEditors' => $volumeEditors,
         ]));
 
     }
@@ -108,6 +109,7 @@ class Export
         $volume = '';
         $section = '';
         $proceedingInfo = '';
+        $volumeEditors = [];
 
         if ($paper->getVid()) {
             $volumeCacheKey = 'volume-' . $paper->getVid();
@@ -122,6 +124,7 @@ class Export
 
             if ($oVolume) {
                 $volume = $oVolume->getName('en', true);
+                $volumeEditors = $oVolume->getEditors(true);
                 if ($oVolume->isProceeding()) {
                     $proceedingInfo = $oVolume->getProceedingInfo();
                 }
@@ -144,7 +147,7 @@ class Export
                 $section = $oSection->getName('en', true);
             }
         }
-        return array($volume, $section, $proceedingInfo);
+        return array($volume, $section, $proceedingInfo, $volumeEditors);
     }
 
     /**
