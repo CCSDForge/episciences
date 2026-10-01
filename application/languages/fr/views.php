@@ -116,8 +116,8 @@ return [
 
 
     // users permissions
-    "administrategraphabstract-addgraphabs" => "Ajouter/Modifier un abstract graphique",
-    "administrategraphabstract-deletegraphabs" => "Supprimer un abstract graphique",
+    "administrategraphabstract-addgraphabs" => "Ajouter/Modifier une illustration ou un résumé graphique",
+    "administrategraphabstract-deletegraphabs" => "Supprimer une illustration ou un résumé graphique",
     "administratemail-deletetemplate" => "Supprimer le template personnalisé et rétablir celui par défaut",
     "administratemail-edittemplate" => "Modifier un template",
     "administratemail-history" => "Lister l'historique de e-mails",

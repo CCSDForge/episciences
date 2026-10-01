@@ -4,6 +4,7 @@ use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\Export;
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
@@ -480,7 +481,6 @@ class Episciences_Paper
 
     private array $_linkedData;
     private ?string $_password = null;
-    private ?string $_graphical_abstract = null;
     private ?array $_data_descriptors = null;
 
     /**
@@ -1469,6 +1469,8 @@ class Episciences_Paper
                     'cited_by' => $citedBy,
                     'classifications' => $classifications,
                     'graphical_abstract_file' => $this->getGraphicalAbstractFileToJson(),
+                    'graphical_abstract_alt' => $this->getStoredCurrentStringToJson('graphical_abstract_alt'),
+                    'graphical_abstract_license' => $this->getStoredCurrentStringToJson('graphical_abstract_license'),
                     'metrics' => Episciences_Paper_Visits::getPaperMetricsByPaperId($this->getPaperid()),
 
                 ],
@@ -1636,9 +1638,9 @@ class Episciences_Paper
     /**
      * Filename of the paper's graphical abstract, carried over from the stored JSON.
      *
-     * The file is written straight into PAPERS.DOCUMENT by
-     * AdministrategraphabstractController (JSON_SET on upload, JSON_REMOVE on delete),
-     * so toJson() has to read the previous value back rather than rebuild it.
+     * The graphical abstract keys (file, alt, license) are written straight into
+     * PAPERS.DOCUMENT by GraphicalAbstractRepository, so toJson() has to read the
+     * previous values back rather than rebuild them.
      *
      * Returns null, not an empty string, when the paper has no graphical abstract:
      * consistent with the other empty keys of database.current (volume, section,
@@ -1646,10 +1648,18 @@ class Episciences_Paper
      */
     private function getGraphicalAbstractFileToJson(): ?string
     {
-        $current = $this->getDocument()[Episciences_Paper_XmlExportManager::DATABASE_KEY]['current'] ?? null;
-        $file = trim((string)($current['graphical_abstract_file'] ?? ''));
+        return $this->getStoredCurrentStringToJson('graphical_abstract_file');
+    }
 
-        return $file !== '' ? $file : null;
+    /**
+     * Trimmed string value of a database.current key of the stored JSON, null if absent or blank.
+     */
+    private function getStoredCurrentStringToJson(string $key): ?string
+    {
+        $current = $this->getDocument()[Episciences_Paper_XmlExportManager::DATABASE_KEY]['current'] ?? null;
+        $value = is_array($current) && is_scalar($current[$key] ?? null) ? trim((string)$current[$key]) : '';
+
+        return $value !== '' ? $value : null;
     }
 
     private function processTmpVersion(Episciences_Paper $paper): void
@@ -5327,23 +5337,14 @@ class Episciences_Paper
     }
 
     /**
-     * @return string | null
+     * File name of the paper's illustration (graphical abstract), see GraphicalAbstractRepository::find()
+     * for its text alternative and license.
+     *
+     * @param int|string $docId
      */
     public function getGraphical_abstract($docId): ?string
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $query = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(`DOCUMENT`, " . $db->quote(self::JSON_PATH_ABS_FILE) . ")) FROM " . T_PAPERS . " WHERE DOCID = ?", [$docId]);
-        try {
-            foreach ($query->fetch() as $val) {
-                // JSON_UNQUOTE(JSON_EXTRACT()) returns the string "null" (not SQL NULL) when the JSON value itself is null
-                if (!is_null($val) && $val !== 'null') {
-                    return trim($val);
-                }
-            }
-        } catch (Zend_Db_Statement_Exception $e) {
-            return null;
-        }
-        return null;
+        return GraphicalAbstractRepository::find((int)$docId)?->file;
     }
 
     public function updateDocument(): Episciences_Paper
