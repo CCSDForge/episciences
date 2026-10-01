@@ -53,6 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `title_translations` to the `PAPERS.DOCUMENT` JSON column.
 - Display bibliographic references count in `papers:update-document` with `-vv`.
 
+### Changed
+
+- [#1215](https://github.com/CCSDForge/episciences/pull/1215) Move the volume DOAJ export button from the public volume page to the volume edit page (next to "Review Grids") and add a button to download the complete volume as a single PDF. Buttons are disabled until the files are generated (`doaj:export-volumes`, `volume:merge-pdf`); URLs are prefixed with the journal code when the journal has switched to the new front-end.
+
 ### Performances
 
 - [#1143](https://github.com/CCSDForge/episciences/pull/1143) Memoise the paper's primary volume on the `Episciences_Paper` instance, so `toJson()`, `getXml()` and `XmlExportManager::xmlExport()` share a single lookup instead of loading it twice: 38 to 34 queries per paper export.

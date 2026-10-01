@@ -24,6 +24,29 @@
                 <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
                 <?= $this->translate('Grilles de relecture'); ?>
             </a>
+            <?php
+            // Volume exports are generated offline (doaj:export-volumes, volume:merge-pdf).
+            // Apache aliases are prefixed with the journal code once the journal has switched to the new front-end.
+            $vid = (int)$this->volume->getVid();
+            $exportUrlPrefix = Episciences_ReviewsManager::isNewFrontSwitched((int)RVID) ? '/' . RVCODE . '/' : '/';
+            $volumeExports = [
+                ['url' => "{$exportUrlPrefix}volumes-doaj/$vid/$vid.xml", 'file' => "volume-doaj/$vid/$vid.xml", 'icon' => 'glyphicon-export', 'label' => 'Exporter le volume au format DOAJ'],
+                ['url' => "{$exportUrlPrefix}volumes-full/$vid/$vid.pdf", 'file' => "volume-pdf/$vid/$vid.pdf", 'icon' => 'glyphicon-download-alt', 'label' => 'Exporter le volume complet (PDF)'],
+            ];
+            ?>
+            <?php foreach ($volumeExports as $export) : ?>
+                <?php if (is_file(REVIEW_PUBLIC_PATH . $export['file'])) : ?>
+                    <a href="<?= $this->escape($export['url']) ?>" class="btn btn-default" role="button" target="_blank" rel="noopener">
+                        <span class="glyphicon <?= $export['icon'] ?>" aria-hidden="true"></span>
+                        <?= $this->translate($export['label']) ?>
+                    </a>
+                <?php else : ?>
+                    <span class="btn btn-default disabled" aria-disabled="true" title="<?= $this->escape($this->translate("Ce fichier n'a pas encore été généré")) ?>">
+                        <span class="glyphicon <?= $export['icon'] ?>" aria-hidden="true"></span>
+                        <?= $this->translate($export['label']) ?>
+                    </span>
+                <?php endif; ?>
+            <?php endforeach; ?>
         </div>
     </div>
 
