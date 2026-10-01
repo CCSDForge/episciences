@@ -2373,6 +2373,7 @@ return array(
     // volume export
     "Exporter le volume au format DOAJ" => "Export the volume to DOAJ format",
     "Exporter le volume complet (PDF)" => "Export complete volume (PDF)",
+    "Ce fichier n'a pas encore été généré" => "This file has not been generated yet",
 
     // affiliation desc
     "Affiliation en texte libre ou issue du " => "Free text affiliation or from the ",
