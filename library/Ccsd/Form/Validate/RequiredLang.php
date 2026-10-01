@@ -221,10 +221,10 @@ class Ccsd_Form_Validate_RequiredLang extends Zend_Validate_Abstract
         }
 
         if (!empty ($missing)) {
-            $this->_error(self::REQUIRED_LANG, implode(", ", array_map(function ($v) {
-                $translator = Ccsd_Form::getDefaultTranslator();
-                return $translator ? $translator->translate("lang_$v") : "lang_$v";
-            }, $missing)));
+            $this->_error(self::REQUIRED_LANG, implode(', ', array_map(
+                static fn(string $v): string => Ccsd_Locale::getLanguageName($v),
+                $missing
+            )));
             return false;
         }
 

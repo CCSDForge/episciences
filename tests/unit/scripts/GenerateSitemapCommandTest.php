@@ -139,7 +139,7 @@ class GenerateSitemapCommandTest extends TestCase
 
     public function testGetSitemapGenericEntries_ReturnsSixEntries(): void
     {
-        // 1 (home) + 2 (articles, authors) + 3 (volumes, sections, about) = 6
+        // home, articles, authors, volumes, sections, boards
         $entries = $this->getSitemapGenericEntries('dmtcs');
         $this->assertCount(6, $entries);
     }
@@ -172,7 +172,7 @@ class GenerateSitemapCommandTest extends TestCase
         $entries = $this->getSitemapGenericEntries('dmtcs');
         $locs    = array_column($entries, 'loc');
 
-        foreach (['/articles', '/authors', '/volumes', '/sections', '/about'] as $path) {
+        foreach (['/articles', '/authors', '/volumes', '/sections', '/boards'] as $path) {
             $found = array_filter($locs, fn($l) => str_ends_with($l, $path));
             $this->assertCount(1, $found, "Missing path {$path}");
         }
@@ -231,7 +231,8 @@ class GenerateSitemapCommandTest extends TestCase
         $body = json_encode([
             'hydra:member' => [
                 [
-                    'docid'    => 42,
+                    'docid'    => 99,
+                    'paperid'  => 42,
                     'document' => [
                         'database' => [
                             'current' => [
@@ -258,7 +259,7 @@ class GenerateSitemapCommandTest extends TestCase
     public function testGetSitemapArticleEntries_NullModificationDate_OmitsLastmod(): void
     {
         $body = json_encode([
-            'hydra:member' => [['docid' => 7]],
+            'hydra:member' => [['docid' => 70, 'paperid' => 7]],
             'hydra:view'   => [],
         ]);
 
@@ -273,7 +274,7 @@ class GenerateSitemapCommandTest extends TestCase
     public function testGetSitemapArticleEntries_WithLanguages_GeneratesOneUrlPerLang(): void
     {
         $body = json_encode([
-            'hydra:member' => [['docid' => 5]],
+            'hydra:member' => [['docid' => 50, 'paperid' => 5]],
             'hydra:view'   => [],
         ]);
 
@@ -294,7 +295,7 @@ class GenerateSitemapCommandTest extends TestCase
     {
         $body = json_encode([
             ['page_code' => 'about',   'date_updated' => '2026-05-25T10:30:51+02:00'],
-            ['page_code' => 'contact', 'date_updated' => null],
+            ['page_code' => 'credits', 'date_updated' => null],
         ]);
 
         $client  = $this->makeClient([new Response(200, [], $body)]);
@@ -303,7 +304,7 @@ class GenerateSitemapCommandTest extends TestCase
 
         $this->assertCount(2, $entries);
         $this->assertStringEndsWith('/about', $entries[0]['loc']);
-        $this->assertStringEndsWith('/contact', $entries[1]['loc']);
+        $this->assertStringEndsWith('/credits', $entries[1]['loc']);
     }
 
     public function testGetSitemapPageEntries_UsesDateUpdatedAsLastmod(): void
@@ -359,5 +360,60 @@ class GenerateSitemapCommandTest extends TestCase
 
         $this->assertArrayNotHasKey('changefreq', $entries[0]);
         $this->assertArrayNotHasKey('priority', $entries[0]);
+    }
+
+    public function testGetSitemapPageEntries_NonWhitelistedPageCodesAreSkipped(): void
+    {
+        $body = json_encode([
+            ['page_code' => 'https-mbjepisciencesorgpageoperating-charter', 'date_updated' => null],
+            ['page_code' => 'editorial-workflow', 'date_updated' => null],
+            ['page_code' => 'for-authors', 'date_updated' => null],
+        ]);
+
+        $client  = $this->makeClient([new Response(200, [], $body)]);
+        $logger  = $this->createMock(\Monolog\Logger::class);
+        $entries = $this->callPrivate('getSitemapPageEntries', ['mbj', $client, $logger, ['en']]);
+
+        $this->assertCount(1, $entries);
+        $this->assertStringEndsWith('/en/for-authors', $entries[0]['loc']);
+    }
+
+    public function testGetSitemapArticleEntries_UsesPaperIdAndDeduplicates(): void
+    {
+        $body = json_encode([
+            'hydra:member' => [
+                ['docid' => 10, 'paperid' => 3],
+                ['docid' => 11, 'paperid' => 3],
+                ['docid' => 12],
+            ],
+            'hydra:view' => [],
+        ]);
+
+        $client  = $this->makeClient([new Response(200, [], $body)]);
+        $logger  = $this->createMock(\Monolog\Logger::class);
+        $entries = $this->callPrivate('getSitemapArticleEntries', ['jfp', $client, $logger, []]);
+
+        $this->assertCount(1, $entries);
+        $this->assertStringEndsWith('/articles/3', $entries[0]['loc']);
+    }
+
+    public function testGetSitemapNewsEntries_WithNews_ReturnsNewsUrls(): void
+    {
+        $body    = json_encode(['hydra:totalItems' => 2, 'hydra:member' => [['id' => 1]]]);
+        $client  = $this->makeClient([new Response(200, [], $body)]);
+        $logger  = $this->createMock(\Monolog\Logger::class);
+        $entries = $this->callPrivate('getSitemapNewsEntries', ['jfp', $client, $logger, ['en']]);
+
+        $this->assertCount(1, $entries);
+        $this->assertStringEndsWith('/en/news', $entries[0]['loc']);
+    }
+
+    public function testGetSitemapNewsEntries_NoNews_ReturnsNothing(): void
+    {
+        $body    = json_encode(['hydra:totalItems' => 0, 'hydra:member' => []]);
+        $client  = $this->makeClient([new Response(200, [], $body)]);
+        $logger  = $this->createMock(\Monolog\Logger::class);
+
+        $this->assertSame([], $this->callPrivate('getSitemapNewsEntries', ['jfp', $client, $logger, ['en']]));
     }
 }
