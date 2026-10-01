@@ -850,7 +850,10 @@ class InboxNotifications extends AbstractScript
         }
 
         // Pass the RVID explicitly: the RVID constant is not defined in CLI
-        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients, $journal->getRvid());
+        // On a first submission no conflict declaration exists yet, so keep every recipient
+        if (!$isFirstSubmission) {
+            Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients, $journal->getRvid());
+        }
         unset($recipients[$paper->getUid()]);
 
         if (!$isFirstSubmission && $originalRequest !== null) {
