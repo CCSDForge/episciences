@@ -149,6 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Language names now come from CLDR through Symfony Intl (`Ccsd_Locale::getLanguageName()`) instead of the `lang_*` keys of the Zend dictionaries (`application/languages/{en,fr}/Zend.php`), which are removed. Used by the BibTeX export, `Ccsd_Form_Validate_RequiredLang` and `Ccsd_Form_Trait_Populate`. Nine rare English labels change in the BibTeX `language` field: `bn` Bangla, `ff` Fula, `ht` Haitian Creole, `ky` Kyrgyz, `mi` Māori, `or` Odia, `rm` Romansh, `to` Tongan, `ug` Uyghur.
 - Update dependencies.
 - [#1205](https://github.com/CCSDForge/episciences/pull/1205) Store the board role labels (`editorial_board`, `technical_board`, ..., `former_member`) as plain text in `views.php`, like in `js.php`; the tag icon is now added by `Episciences_Acl::getRoleLabelHtml()` in the role badges (user lists, contacts, mailing lists, permissions, role editing), which also escapes the label. The users-by-role chart on the stats page no longer strips HTML from the labels.
 
