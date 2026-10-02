@@ -912,8 +912,6 @@ class AdministratepaperControllerTest extends TestCase
     }
 
     /**
-     * @covers AdministratepaperController::savemastervolumeAction
-     *
      * Changing the master volume of an already published paper must enqueue
      * a Solr reindex, mirroring the pattern already in saveothervolumesAction().
      */
@@ -949,8 +947,6 @@ class AdministratepaperControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savesectionAction
-     *
      * Changing the section of an already published paper must enqueue
      * a Solr reindex, mirroring the pattern already in saveothervolumesAction().
      */
@@ -1437,8 +1433,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savereviewerinvitationAction
-     *
      * Bug (present, unchanged, since this controller's very first commit):
      * unlike every other paper-related e-mail in this controller — which all
      * pass the paper's permanent id to Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID

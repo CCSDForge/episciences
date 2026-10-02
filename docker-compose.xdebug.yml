@@ -1,0 +1,15 @@
+# Opt-in override that turns Xdebug step-debugging back on for the php-fpm
+# service. The base docker-compose.yml ships with XDEBUG_MODE=off so that every
+# PHP process (tests, console, cron) runs without Xdebug overhead or the stderr
+# noise that breaks phpunit's #[RunInSeparateProcess] tests.
+#
+# Use when you need to step-debug:
+#   docker compose -f docker-compose.yml -f docker-compose.xdebug.yml up
+#
+# These keys override the base file's environment (compose merges by key, the
+# later file wins).
+services:
+  php-fpm:
+    environment:
+      - XDEBUG_MODE=debug
+      - XDEBUG_CONFIG=client_host=host.docker.internal client_port=9003 start_with_request=yes
