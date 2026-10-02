@@ -105,6 +105,11 @@ up: ## Start all docker containers
 	@echo "  Mailpit     : https://mailpit.episciences.org/"
 	@echo "====================================================================="
 
+up-xdebug: ## Start all docker containers with Xdebug step-debugging enabled
+	@echo "Starting Docker containers with Xdebug enabled..."
+	$(DOCKER_COMPOSE) -f docker-compose.yml -f docker-compose.xdebug.yml up -d
+	@echo "Xdebug is active. Attach your IDE to host.docker.internal:9003 to step-debug."
+
 down: ## Stop all docker containers and remove orphans
 	@echo "Stopping Docker containers..."
 	$(DOCKER_COMPOSE) down --remove-orphans
