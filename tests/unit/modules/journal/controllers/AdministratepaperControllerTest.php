@@ -949,6 +949,73 @@ class AdministratepaperControllerTest extends TestCase
         );
     }
 
+    /**
+     * @covers AdministratepaperController::savemastervolumeAction
+     *
+     * Changing the master volume of an already published paper must enqueue
+     * a Solr reindex, mirroring the pattern already in saveothervolumesAction().
+     */
+    public function testSavemastervolumeActionEnqueuesSolrIndexWhenPublished(): void
+    {
+        $method = $this->extractMethod('savemastervolumeAction');
+
+        $this->assertStringContainsString(
+            'isPublished()',
+            $method,
+            'savemastervolumeAction must guard the Solr reindex with isPublished()'
+        );
+        $this->assertStringContainsString(
+            'SolrIndexing::enqueueIndex',
+            $method,
+            'savemastervolumeAction must enqueue a Solr reindex for a published paper on volume change'
+        );
+        // The two assertions above only check that both tokens appear
+        // somewhere in the method — an unconditional enqueue call, or an
+        // unrelated isPublished() check elsewhere, would still pass them.
+        // This asserts the actual nesting: no closing brace between the
+        // isPublished() check's opening brace and the enqueue call, i.e. the
+        // enqueue really is inside that branch.
+        $this->assertMatchesRegularExpression(
+            '/isPublished\(\)\s*\)\s*\{[^}]*SolrIndexing::enqueueIndex/',
+            $method,
+            'savemastervolumeAction must enqueue the Solr reindex from inside the isPublished() branch, not merely alongside it'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // savesectionAction
+    // -----------------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savesectionAction
+     *
+     * Changing the section of an already published paper must enqueue
+     * a Solr reindex, mirroring the pattern already in saveothervolumesAction().
+     */
+    public function testSavesectionActionEnqueuesSolrIndexWhenPublished(): void
+    {
+        $method = $this->extractMethod('savesectionAction');
+
+        $this->assertStringContainsString(
+            'isPublished()',
+            $method,
+            'savesectionAction must guard the Solr reindex with isPublished()'
+        );
+        $this->assertStringContainsString(
+            'SolrIndexing::enqueueIndex',
+            $method,
+            'savesectionAction must enqueue a Solr reindex for a published paper on section change'
+        );
+        // See the equivalent assertion in
+        // testSavemastervolumeActionEnqueuesSolrIndexWhenPublished() for why
+        // the two checks above are not enough on their own.
+        $this->assertMatchesRegularExpression(
+            '/isPublished\(\)\s*\)\s*\{[^}]*SolrIndexing::enqueueIndex/',
+            $method,
+            'savesectionAction must enqueue the Solr reindex from inside the isPublished() branch, not merely alongside it'
+        );
+    }
+
     // -----------------------------------------------------------------------
     // saveeditorsAction
     // -----------------------------------------------------------------------
@@ -1382,6 +1449,69 @@ class AdministratepaperControllerTest extends TestCase
             "\$today = date('Y-m-d')",
             $savenewdeadline,
             'BUG #1010: savenewdeadlineAction should no longer use today\'s date for range calculation'
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // BUG — Zenodo: posted identifier overwrites VERSION, IDENTIFIER not saved
+    // ---------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savenewpostedversionAction
+     *
+     * Bug: for repositories where the posted value is an identifier rather than
+     * a version number (e.g. Zenodo), the 'hookVersion' hook must be given
+     * 'context' => ['previousVersion' => ...] so it can fall back to
+     * previousVersion + 1 when the repository does not expose an explicit
+     * version number. Without it, Episciences_Repositories_Zenodo_Hooks::hookVersion()
+     * returns [], the whole conversion block is skipped, and the raw posted
+     * identifier is written into VERSION while IDENTIFIER is never updated.
+     */
+    public function testSavenewpostedversionActionPassesPreviousVersionContextToHookVersion(): void
+    {
+        $method = $this->extractMethod('savenewpostedversionAction');
+
+        $this->assertMatchesRegularExpression(
+            '/callHook\(\s*\'hookVersion\'\s*,\s*\[.*?\'context\'\s*=>\s*\[\s*\'previousVersion\'\s*=>\s*\$paper->getVersion\(\)/s',
+            $method,
+            "BUG: savenewpostedversionAction must pass 'context' => ['previousVersion' => \$paper->getVersion()] "
+            . "to the 'hookVersion' hook, otherwise Zenodo's hookVersion() cannot increment the version and "
+            . 'the posted identifier ends up written into VERSION while IDENTIFIER is left untouched'
+        );
+    }
+
+    // ---------------------------------------------------------------
+    // BUG — reviewer invitation e-mail never sets %%PERMANENT_ARTICLE_ID%%
+    // ---------------------------------------------------------------
+
+    /**
+     * @covers AdministratepaperController::savereviewerinvitationAction
+     *
+     * Bug (present, unchanged, since this controller's very first commit):
+     * unlike every other paper-related e-mail in this controller — which all
+     * pass the paper's permanent id to Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID
+     * explicitly, a pattern generalised across the codebase in a later
+     * "make the tag available everywhere" pass — the reviewer invitation
+     * e-mail only ever called setDocid($docId), with no permanent id supplied
+     * and no TAG_PERMANENT_ARTICLE_ID added afterwards. That later pass missed
+     * this call site, so %%PERMANENT_ARTICLE_ID%% has always been empty in
+     * this specific template.
+     *
+     * setDocid() now resolves the permanent id itself when none is given
+     * (via a DB lookup), so the tag would no longer be empty either way —
+     * but $paper is already loaded here, so passing its id explicitly avoids
+     * that lookup entirely, consistent with every other call site fixed in
+     * this change.
+     */
+    public function testSaveReviewerInvitationActionPassesPaperIdToSetDocid(): void
+    {
+        $method = $this->extractMethod('savereviewerinvitationAction');
+
+        $this->assertMatchesRegularExpression(
+            '/setDocid\(\s*\$docId\s*,\s*\$paper->getPaperid\(\)\s*\)/',
+            $method,
+            'BUG: setDocid() must be given $paper->getPaperid() so %%PERMANENT_ARTICLE_ID%% is set '
+            . 'in the reviewer invitation e-mail'
         );
     }
 }

@@ -712,7 +712,13 @@ function applyCollapse(object) {
     }
 
     $('.collapseButton', object).tooltip();
-    $('.panel-heading:first', object).click(function () {
+    $('.panel-heading:first', object).click(function (e) {
+        // A panel header may embed its own controls (e.g. the dashboard paper search box):
+        // interacting with them must not collapse the panel.
+        if ($(e.target).closest('[data-component="dashboard-paper-search"]').length) {
+            return;
+        }
+
         $(this).closest('.panel').find('.panel-body').toggle();
         if (
             $(this)

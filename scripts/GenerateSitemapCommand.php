@@ -4,6 +4,7 @@ declare(strict_types=1);
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,6 +20,30 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class GenerateSitemapCommand extends Command
 {
     protected static $defaultName = 'sitemap:generate';
+
+    /**
+     * Static paths always advertised for every journal.
+     */
+    private const GENERIC_PATHS = ['/', '/articles', '/authors', '/volumes', '/sections', '/boards'];
+
+    /**
+     * Whitelist of page codes that exist as public routes on the front-end
+     * (see episciences-front-next docs/PUBLIC_URLS.md, section 3.1).
+     * Any other page code returned by the API is not a public URL and must not be advertised.
+     */
+    private const PUBLIC_PAGE_CODES = [
+        'about',
+        'accessibility',
+        'acknowledgements',
+        'credits',
+        'ethical-charter',
+        'indexing',
+        'proposing-special-issues',
+        'for-authors',
+        'for-editors',
+        'for-reviewers',
+        'for-conference-organisers',
+    ];
 
     protected function configure(): void
     {
@@ -51,10 +76,10 @@ class GenerateSitemapCommand extends Command
 
         $logger = new Logger('sitemapGeneration');
         $logger->pushHandler(new StreamHandler(
-            EPISCIENCES_LOG_PATH . 'sitemapGeneration_' . date('Y-m-d') . '.log', Logger::INFO
+            EPISCIENCES_LOG_PATH . 'sitemapGeneration_' . date('Y-m-d') . '.log', Level::Info
         ));
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         $rvcodes = $all ? $this->fetchActiveRvcodes($logger) : [$rvcode];
@@ -106,6 +131,8 @@ class GenerateSitemapCommand extends Command
             $this->getSitemapGenericEntries($rvcode, $languages),
             $this->getSitemapVolumeAndSectionEntries($rvcode, $rvid, $languages),
             $this->getSitemapPageEntries($rvcode, $client, $logger, $languages),
+            $this->getSitemapNewsEntries($rvcode, $client, $logger, $languages),
+            $this->getSitemapAcceptedEntries($rvcode, $rvid, $languages),
             $this->getSitemapArticleEntries($rvcode, $client, $logger, $languages),
         );
 
@@ -131,6 +158,7 @@ class GenerateSitemapCommand extends Command
         $base    = sprintf('https://%s.%s', $rvcode, DOMAIN);
         $url     = EPISCIENCES_API_URL . "papers/?rvcode={$rvcode}&itemsPerPage=30&pagination=true";
         $entries = [];
+        $seen    = [];
 
         try {
             do {
@@ -138,11 +166,17 @@ class GenerateSitemapCommand extends Command
                 $data     = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
 
                 foreach ($data['hydra:member'] as $paper) {
+                    // The new front-end identifies articles by PAPERID (not DOCID)
+                    $paperId = $paper['paperid'] ?? null;
+                    if ($paperId === null || isset($seen[$paperId])) {
+                        continue;
+                    }
+                    $seen[$paperId] = true;
                     $modDate = $paper['document']['database']['current']['dates']['modification_date']
                         ?? $paper['modification_date']
                         ?? null;
                     $lastmod = $modDate ? date('Y-m-d', strtotime($modDate)) : null;
-                    foreach ($this->buildLocUrls($base, '/articles/' . $paper['docid'], $languages) as $loc) {
+                    foreach ($this->buildLocUrls($base, '/articles/' . $paperId, $languages) as $loc) {
                         $entries[] = [
                             'loc'     => $loc,
                             'lastmod' => $lastmod,
@@ -160,7 +194,7 @@ class GenerateSitemapCommand extends Command
     }
 
     /**
-     * Fetch visible page entries from the Episciences API.
+     * Fetch page entries from the Episciences API, restricted to the public pages whitelist.
      *
      * @param string[] $languages
      * @return array<int, array<string, mixed>>
@@ -176,9 +210,13 @@ class GenerateSitemapCommand extends Command
             $pages    = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
 
             foreach ($pages as $page) {
+                $pageCode = $page['page_code'] ?? null;
+                if (!in_array($pageCode, self::PUBLIC_PAGE_CODES, true)) {
+                    continue;
+                }
                 $dateUpdated = $page['date_updated'] ?? null;
                 $lastmod     = $dateUpdated ? date('Y-m-d', strtotime($dateUpdated)) : null;
-                foreach ($this->buildLocUrls($base, '/' . $page['page_code'], $languages) as $loc) {
+                foreach ($this->buildLocUrls($base, '/' . $pageCode, $languages) as $loc) {
                     $entries[] = [
                         'loc'     => $loc,
                         'lastmod' => $lastmod,
@@ -193,7 +231,54 @@ class GenerateSitemapCommand extends Command
     }
 
     /**
-     * Build static generic URL entries (home, articles, authors, volumes, sections, about).
+     * Advertise /news only when the journal has at least one news item.
+     *
+     * @param string[] $languages
+     * @return array<int, array<string, mixed>>
+     */
+    private function getSitemapNewsEntries(string $rvcode, Client $client, Logger $logger, array $languages): array
+    {
+        $base = sprintf('https://%s.%s', $rvcode, DOMAIN);
+        $url  = EPISCIENCES_API_URL . "news/?page=1&itemsPerPage=1&rvcode={$rvcode}";
+
+        try {
+            $response = $client->get($url, ['headers' => ['Accept' => 'application/ld+json']]);
+            $data     = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
+        } catch (GuzzleException | \JsonException $e) {
+            $logger->error('Error fetching news from API', ['rvcode' => $rvcode, 'error' => $e->getMessage()]);
+            return [];
+        }
+
+        if ((int) ($data['hydra:totalItems'] ?? 0) === 0) {
+            return [];
+        }
+
+        return array_map(
+            static fn(string $loc): array => ['loc' => $loc],
+            $this->buildLocUrls($base, '/news', $languages)
+        );
+    }
+
+    /**
+     * Advertise /articles-accepted only when the journal has accepted papers awaiting publication.
+     *
+     * @param string[] $languages
+     * @return array<int, array<string, mixed>>
+     */
+    private function getSitemapAcceptedEntries(string $rvcode, int $rvid, array $languages): array
+    {
+        if (empty(\Episciences_PapersManager::getAcceptedPapersByRvid($rvid, 1))) {
+            return [];
+        }
+
+        return array_map(
+            static fn(string $loc): array => ['loc' => $loc],
+            $this->buildLocUrls(sprintf('https://%s.%s', $rvcode, DOMAIN), '/articles-accepted', $languages)
+        );
+    }
+
+    /**
+     * Build static generic URL entries (home, articles, authors, volumes, sections, boards).
      *
      * @param string[] $languages
      * @return array<int, array<string, mixed>>
@@ -201,10 +286,9 @@ class GenerateSitemapCommand extends Command
     private function getSitemapGenericEntries(string $rvcode, array $languages): array
     {
         $base  = sprintf('https://%s.%s', $rvcode, DOMAIN);
-        $paths = ['/', '/articles', '/authors', '/volumes', '/sections', '/about'];
 
         $entries = [];
-        foreach ($paths as $path) {
+        foreach (self::GENERIC_PATHS as $path) {
             foreach ($this->buildLocUrls($base, $path, $languages) as $loc) {
                 $entries[] = ['loc' => $loc];
             }

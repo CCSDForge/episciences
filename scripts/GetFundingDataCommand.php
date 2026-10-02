@@ -1,7 +1,9 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Console\Command\Command;
@@ -9,6 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 
 /**
  * Symfony Console command: enrich funding data from OpenAIRE Research Graph + HAL.
@@ -42,9 +45,11 @@ class GetFundingDataCommand extends Command
         $this->bootstrap();
 
         $logger = new Logger('fundingEnrichment');
-        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'fundingEnrichment_' . date('Y-m-d') . '.log', Logger::INFO));
+        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'fundingEnrichment_' . date('Y-m-d') . '.log', Level::Info));
+        $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
+            $logger->pushHandler($stdoutHandler);
         }
 
         if ($dryRun) {
@@ -67,20 +72,20 @@ class GetFundingDataCommand extends Command
         if ($input->getOption('doi')) {
             $doi = (string) $input->getOption('doi');
             $select = $db->select()
-                ->from(T_PAPERS, ['PAPERID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
+                ->from(T_PAPERS, ['PAPERID', 'DOCID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
                 ->where('DOI = ?', trim($doi))
                 ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
             $rows = $db->fetchAll($select);
         } elseif ($input->getOption('paperid')) {
             $paperId = (int) $input->getOption('paperid');
             $select = $db->select()
-                ->from(T_PAPERS, ['PAPERID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
+                ->from(T_PAPERS, ['PAPERID', 'DOCID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
                 ->where('PAPERID = ?', $paperId)
                 ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
             $rows = $db->fetchAll($select);
         } else {
             $select = $db->select()
-                ->from(T_PAPERS, ['PAPERID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
+                ->from(T_PAPERS, ['PAPERID', 'DOCID', 'DOI', 'IDENTIFIER', 'VERSION', 'REPOID'])
                 ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
                 ->order('REPOID DESC');
             if ($rvid !== null) {
@@ -90,12 +95,19 @@ class GetFundingDataCommand extends Command
         }
 
         $logger->info('Starting funding enrichment for ' . count($rows) . ' papers');
-        $io->progressStart(count($rows));
+        $progressBar = $io->createProgressBar(count($rows));
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         $oaClient = \Episciences\Api\OpenAireApiClient::create();
+        $logger->info($oaClient->isAuthenticated()
+            ? 'OpenAIRE: authenticated mode (client credentials configured)'
+            : 'OpenAIRE: anonymous fallback mode (no client credentials configured) — throttling at 60s/request'
+        );
 
         foreach ($rows as $value) {
             $paperId = (int) $value['PAPERID'];
+            $docId   = (int) $value['DOCID'];
 
             // Process OpenAIRE funding for papers with DOI (all rows are already STATUS_PUBLISHED)
             if (!empty($value['DOI'])) {
@@ -121,11 +133,9 @@ class GetFundingDataCommand extends Command
                     try {
                         $fileFound = json_decode($fundingItem->get(), true, 512, JSON_THROW_ON_ERROR);
                         if (!empty($fileFound[0])) {
-                            $fundingArray       = [];
                             $globalfundingArray = [];
                             $globalfundingArray = Episciences_Paper_ProjectsManager::formatFundingOAForDB(
                                 $fileFound,
-                                $fundingArray,
                                 $globalfundingArray
                             );
                             $rowInDBGraph = Episciences_Paper_ProjectsManager::getProjectsByPaperIdAndSourceId(
@@ -181,10 +191,20 @@ class GetFundingDataCommand extends Command
                 }
             }
 
-            $io->progressAdvance();
+            if (!$dryRun) {
+                try {
+                    SolrIndexing::enqueueIndex($docId);
+                } catch (Exception $e) {
+                    $logger->error("Solr enqueue error for paper {$docId}: " . $e->getMessage());
+                }
+            }
+
+            $progressBar->advance();
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
         $io->success('Funding data enrichment completed.');
         $logger->info('Funding enrichment completed');
 

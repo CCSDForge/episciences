@@ -145,6 +145,8 @@ class Episciences_Review
         'refusedArticleAuthorsMsgSentToReviewers';
     public const SETTING_TO_REQUIRE_REVISION_DEADLINE = 'toRequireRevisionDeadline';
     public const SETTING_START_STATS_AFTER_DATE = 'startStatsAfterDate';
+    // Label displayed in place of the review code (RVCODE) in the subject/body of automatic emails
+    public const SETTING_MAIL_DISPLAY_CODE = 'mailDisplayCode';
 
     /** @var int */
     public static $_currentReviewId = null;
@@ -248,6 +250,7 @@ class Episciences_Review
             self::SETTING_DISPLAY_EMPTY_VOLUMES,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
             self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE,
+            self::SETTING_MAIL_DISPLAY_CODE,
         ];
 
 
@@ -729,6 +732,16 @@ class Episciences_Review
     }
 
     /**
+     * Code displayed in the subject/body of automatic emails: the review's custom
+     * mail display code (SETTING_MAIL_DISPLAY_CODE) if set, its own code otherwise.
+     */
+    public function getMailDisplayCode(): string
+    {
+        $customMailDisplayCode = trim((string)$this->getSetting(self::SETTING_MAIL_DISPLAY_CODE));
+        return $customMailDisplayCode !== '' ? $customMailDisplayCode : $this->getCode();
+    }
+
+    /**
      * @param $code
      * @return $this
      */
@@ -1068,6 +1081,14 @@ class Episciences_Review
             ]
         );
 
+        $form->addElement('text', self::SETTING_MAIL_DISPLAY_CODE, [
+                'label' => "Code affiché dans les courriels",
+                'description' => "Remplace le code de la revue dans le sujet et le corps des courriels automatiques. Laisser vide pour utiliser le code par défaut. 100 caractères maximum.",
+                'maxlength' => '100',
+                'validators' => [new Zend_Validate_StringLength(['max' => 100])]
+            ]
+        );
+
         $form->getElement(self::SETTING_ISSN)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_ISSN_PRINT)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_JOURNAL_DOI)->getDecorator('label')->setOption('class', 'col-md-2');
@@ -1080,9 +1101,10 @@ class Episciences_Review
         $form->getElement(self::SETTING_JOURNAL_DESCRIPTION)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_JOURNAL_KEYWORDS)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_JOURNAL_CREATION_YEAR)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_MAIL_DISPLAY_CODE)->getDecorator('label')->setOption('class', 'col-md-2');
 
         // display group: global settings
-        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL, self::SETTING_JOURNAL_DESCRIPTION, self::SETTING_JOURNAL_KEYWORDS, self::SETTING_JOURNAL_CREATION_YEAR], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
+        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL, self::SETTING_JOURNAL_DESCRIPTION, self::SETTING_JOURNAL_KEYWORDS, self::SETTING_JOURNAL_CREATION_YEAR, self::SETTING_MAIL_DISPLAY_CODE], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
         $form->getDisplayGroup('global')->removeDecorator('DtDdWrapper');
 
         // publication settings **********************************************
@@ -1970,6 +1992,8 @@ class Episciences_Review
         foreach ($settings as $setting) {
             $allSettings[$setting] = $this->getSetting($setting);
         }
+
+        $allSettings[self::SETTING_MAIL_DISPLAY_CODE] = trim(strip_tags((string)$this->getSetting(self::SETTING_MAIL_DISPLAY_CODE)));
 
         // Deadlines with units
         $deadlines = [

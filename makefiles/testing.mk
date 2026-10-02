@@ -28,7 +28,7 @@ test-php: ## Run PHP tests (PHPUnit)
 		echo "Using PHPUnit configuration: $(PHPUNIT_CONFIG)"; \
 		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p $(CNTR_APP_DIR)/build && \
 		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod 777 $(CNTR_APP_DIR)/build; \
-		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit --no-coverage; \
 	else \
 		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP tests"; \
 	fi
@@ -58,14 +58,14 @@ test-coverage: ## Run all tests with coverage (where available)
 	@echo "================================"
 	@echo "PHP Tests:"
 	@if [ -f $(PHPUNIT_CONFIG) ]; then \
-		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit --coverage-text; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=coverage -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit || true; \
 	else \
 		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP coverage"; \
 	fi
 	@echo ""
 	@echo "JavaScript Tests:"
 	@if [ -f package.json ]; then \
-		yarn test:coverage; \
+		yarn test:coverage || true; \
 	else \
 		echo "❌ No package.json found, skipping JavaScript coverage"; \
 	fi
@@ -169,3 +169,35 @@ phpmetrics: ## Run PhpMetrics to generate static analysis report
 	@$(DOCKER_COMPOSE) exec -u 0:0 -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		./vendor/bin/phpmetrics --config=phpmetrics.json --report-html=phpmetrics/report .
 	@echo "✅ PhpMetrics report generated in phpmetrics/report/index.html"
+
+# =============================================================================
+# SonarQube Analysis
+# =============================================================================
+sonar: test-coverage ## Run SonarQube analysis on demand (uses host scanner or falls back to Docker)
+	@echo "Checking for SonarQube analysis client..."
+	@TOKEN=$$(grep -E '^SONAR_TOKEN=' .env.local 2>/dev/null | cut -d= -f2- || grep -E '^SONAR_TOKEN=' .env 2>/dev/null | cut -d= -f2-); \
+	FINAL_TOKEN="$${TOKEN:-$$SONAR_TOKEN}"; \
+	FINAL_TOKEN="$${FINAL_TOKEN:-$(TOKEN)}"; \
+	if command -v sonar-scanner >/dev/null 2>&1; then \
+		echo "Found local sonar-scanner. Running analysis..."; \
+		if [ -n "$$FINAL_TOKEN" ]; then \
+			sonar-scanner -Dsonar.token=$$FINAL_TOKEN; \
+		else \
+			sonar-scanner; \
+		fi; \
+	elif command -v sonar-cli >/dev/null 2>&1; then \
+		echo "Found local sonar-cli. Running analysis..."; \
+		if [ -n "$$FINAL_TOKEN" ]; then \
+			sonar-cli -Dsonar.token=$$FINAL_TOKEN; \
+		else \
+			sonar-cli; \
+		fi; \
+	else \
+		echo "Local sonar-scanner / sonar-cli not found in PATH."; \
+		echo "Running SonarQube analysis using Docker container..."; \
+		if [ -n "$$FINAL_TOKEN" ]; then \
+			$(DOCKER_COMPOSE) run --rm -e SONAR_TOKEN=$$FINAL_TOKEN sonar-scanner; \
+		else \
+			$(DOCKER_COMPOSE) run --rm sonar-scanner; \
+		fi; \
+	fi

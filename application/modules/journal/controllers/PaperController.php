@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Files\Uploader;
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
@@ -483,18 +484,15 @@ class PaperController extends PaperDefaultController
             }
         }
 
-        $hasHook = $paper->hasHook;
+        // A temporary paper carries no repository of its own (repoId = 0): the
+        // repository to reason about is the one of its first version.
+        $repositoryPaper = $paper->isTmp()
+            ? (Episciences_PapersManager::get($paper->getPaperid(), false) ?: $paper)
+            : $paper;
 
-        if ($paper->isTmp()) {
-            $firstPaper = Episciences_PapersManager::get($paper->getPaperid(), false);
-            $hasHook = $firstPaper->hasHook;
-        }
-
-        $this->view->hasHook = $hasHook;
-        $this->view->isRequiredVersion = $hasHook ? Episciences_Repositories::callHook(
-            'hookIsRequiredVersion', [
-            'repoId' => $paper->getRepoid()
-        ])['result'] : true;
+        // Read by submit/functions.js, which the new version form pulls in with
+        // $.getScript() from paper/new_version_show_result.phtml.
+        $this->view->isRequiredVersion = Episciences_Repositories::isVersionRequired($repositoryPaper->getRepoid());
 
         $this->view->isAllowedToBackToAdminPage = Episciences_Auth::isLogged() && $commonTest;
 
@@ -550,6 +548,7 @@ class PaperController extends PaperDefaultController
         }
         $this->view->enabledBib = $enabledBib;
         $this->view->enabledManageFromPublicPage = $enabledManageFromPublicPage;
+        $this->view->showAllBib = $isAllowedToSeeNoPublicDetails || $paper->isCoauthor();
 
         // Author to editor communication - extracted to helper method
         $this->handleAuthorToEditorCommunication($paper, $review);
@@ -1544,6 +1543,8 @@ class PaperController extends PaperDefaultController
         // save tmp version
         if ($tmpPaper->save()) {
 
+            GraphicalAbstractRepository::copyToVersion((int)$paper->getDocid(), (int)$tmpPaper->getDocid());
+
             if ($tmpPaper->getOtherVolumes()) {
                 $tmpPaper->saveOtherVolumes();
             }
@@ -1911,6 +1912,8 @@ class PaperController extends PaperDefaultController
             );
             return;
         }
+
+        GraphicalAbstractRepository::copyToVersion((int)$paper->getDocid(), (int)$newPaper->getDocid());
 
         $this->postSaveProcessing(
             $paper,
@@ -4171,6 +4174,7 @@ class PaperController extends PaperDefaultController
             } catch (Exception $e) {
                 $message = "Une erreur interne s'est produite, veuillez recommencer.";
                 $jsonResult['error'] = $e->getMessage();
+                trigger_error($e->getMessage());
             }
 
             $message = $this->view->translate($message);

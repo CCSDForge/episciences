@@ -1,0 +1,30 @@
+[Unit]
+Description=Episciences Messenger queue worker (%i)
+Documentation=https://github.com/CCSDForge/episciences-gpl/blob/main/docs/console-commands.md#messenger-queues
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/htdocs
+ExecStart=/usr/bin/php /var/www/htdocs/scripts/console.php episciences:worker --transport=%i --time-limit=3600 --memory-limit=512M
+# --time-limit/--memory-limit bound each run so Restart=always periodically
+# recycles the process (fresh PHP opcache/memory) instead of running forever
+# in a single invocation; Restart=always keeps it "continuous" across those
+# planned exits and any crash.
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/www/logs/%i-worker.log
+StandardError=append:/var/www/logs/%i-worker.log
+
+# Hardening: this process only ever calls out to MySQL and Solr/Next.js over
+# HTTP(S) and reads/writes the app's own directories.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/www/logs /var/www/data /var/www/cache
+
+[Install]
+WantedBy=multi-user.target

@@ -165,7 +165,16 @@ class PaperDefaultController extends DefaultController
         $cc = $this->extractModalRecipientEmails($data, 'cc');
         $bcc = $this->extractModalRecipientEmails($data, 'bcc');
         $this->addOtherRecipients($mail, $cc, $bcc);
-        $mail->writeMail();
+
+        if (!$mail->writeMail()) {
+            // Do not record a CODE_MAIL_SENT entry in the paper history for a mail that was never queued
+            AppRegistry::getMonoLogger()?->warning(sprintf(
+                'SEND_MAIL_FROM_MODAL_FAILED_DOCID_%s_UID_%s',
+                $paper->getDocid(),
+                $submitter->getUid()
+            ));
+            return;
+        }
 
         // log mail sending
         $paper->log(
@@ -541,7 +550,6 @@ class PaperDefaultController extends DefaultController
         foreach ($recipients as $uid => $recipient) {
 
             $locale = $recipient->getLangueid();
-            $recipientTags[Episciences_Mail_Tags::TAG_SUBMISSION_DATE] = $this->view->Date($paper->getSubmission_date(), $locale);
 
             // Add article relationship and action tags for author-to-editor messages (for editors)
             if ($isAuthorEditorCommunication && $oComment->getType() === Episciences_CommentsManager::TYPE_AUTHOR_TO_EDITOR) {
@@ -553,12 +561,17 @@ class PaperDefaultController extends DefaultController
             }
 
             try {
+                $recipientTags[Episciences_Mail_Tags::TAG_SUBMISSION_DATE] = $this->view->Date($paper->getSubmission_date(), $locale);
                 $recipientTags[Episciences_Mail_Tags::TAG_ARTICLE_TITLE] = $paper->getTitle($locale, true);
                 $recipientTags[Episciences_Mail_Tags::TAG_AUTHORS_NAMES] = $paper->formatAuthorsMetadata($locale);
-                Episciences_Mail_Send::sendMailFromReview($recipient, $templateType, $recipientTags, $paper, Episciences_Auth::getUid(), $attachmentsFiles, $makeCopy, $CC);
-                ++$nbNotifications;
+                if (Episciences_Mail_Send::sendMailFromReview($recipient, $templateType, $recipientTags, $paper, Episciences_Auth::getUid(), $attachmentsFiles, $makeCopy, $CC)) {
+                    ++$nbNotifications;
+                } else {
+                    $logger?->warning('FAILED_TO_WRITE_NEW_COMMENT_NOTIFICATION_TO_RECIPIENT_' . $uid);
+                }
                 $makeCopy = false;
-            } catch (Zend_Db_Adapter_Exception|Zend_Mail_Exception|Zend_Exception|Zend_Session_Exception $e) {
+            } catch (Exception $e) {
+                // Catch-all: a failure on one editor must not prevent notifying the others nor the author
                 $logger?->warning('FAILED_TO_SEND_NEW_COMMENT_NOTIFICATION_TO_RECIPIENT_' . $uid . ' : ' . $e);
                 continue;
             }
@@ -596,6 +609,8 @@ class PaperDefaultController extends DefaultController
                         try {
                             // Verify co-author is still valid before sending (race condition protection)
                             if (!$paper->isCoAuthorByUid($coAuthorUid)) {
+                                // A former co-author is not a recipient: do not expect a notification
+                                --$totalCoAuthorsToNotify;
                                 $logger?->info('Skipping notification to former co-author UID ' . $coAuthorUid);
                                 continue;
                             }
@@ -630,7 +645,7 @@ class PaperDefaultController extends DefaultController
                             }
 
                             // Send email to co-author using the dedicated co-author template
-                            Episciences_Mail_Send::sendMailFromReview(
+                            $coAuthorNotificationSent = Episciences_Mail_Send::sendMailFromReview(
                                 $coAuthor,
                                 Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_AUTHOR_TO_EDITOR_COAUTHOR_COPY,
                                 $coAuthorTags,
@@ -640,6 +655,12 @@ class PaperDefaultController extends DefaultController
                                 true,
                                 []
                             );
+
+                            if (!$coAuthorNotificationSent) {
+                                $logger?->warning('FAILED_TO_WRITE_AUTHOR_MESSAGE_NOTIFICATION_TO_COAUTHOR_UID_' . $coAuthorUid);
+                                continue;
+                            }
+
                             ++$nbNotifications;
                             ++$coAuthorsNotifiedCount;
                         } catch (Exception $e) {
@@ -679,7 +700,9 @@ class PaperDefaultController extends DefaultController
                     $author = $paper->getOwner();
                 }
 
-                if ($author) {
+                if (!$author) {
+                    $logger?->warning('EDITOR_TO_AUTHOR_NOTIFICATION_RECIPIENT_NOT_FOUND_DOCID_' . $docId . '_PCID_' . $oComment->getPcid());
+                } else {
                     $authorLocale = $author->getLangueid();
 
                     // Build paper URL for author (public URL, not admin URL)
@@ -687,7 +710,9 @@ class PaperDefaultController extends DefaultController
 
                     // Check if editor names should be disclosed to authors
                     $review = Episciences_ReviewsManager::find($paper->getRvid());
-                    $discloseEditorNames = $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS);
+                    $discloseEditorNames = $review instanceof Episciences_Review
+                        ? $review->getSetting(Episciences_Review::SETTING_DISCLOSE_EDITOR_NAMES_TO_AUTHORS)
+                        : false;
                     $discloseEditorNames = filter_var($discloseEditorNames, FILTER_VALIDATE_BOOLEAN);
 
                     // Use anonymous name if option is disabled
@@ -745,7 +770,7 @@ class PaperDefaultController extends DefaultController
                     }, ARRAY_FILTER_USE_BOTH);
 
                     // Send email to author with co-authors in CC
-                    Episciences_Mail_Send::sendMailFromReview(
+                    $authorNotificationSent = Episciences_Mail_Send::sendMailFromReview(
                         $author,
                         Episciences_Mail_TemplatesManager::TYPE_PAPER_COMMENT_FROM_EDITOR_TO_AUTHOR_AUTHOR_COPY,
                         $authorTags,
@@ -755,8 +780,12 @@ class PaperDefaultController extends DefaultController
                         true,
                         $coAuthors
                     );
-                    ++$nbNotifications;
-                    $authorNotificationSent = true;
+
+                    if ($authorNotificationSent) {
+                        ++$nbNotifications;
+                    } else {
+                        $logger?->warning('FAILED_TO_WRITE_EDITOR_RESPONSE_NOTIFICATION_TO_AUTHOR_UID_' . $author->getUid());
+                    }
                 }
             } catch (Exception $e) {
                 $logger?->warning('FAILED_TO_SEND_EDITOR_RESPONSE_NOTIFICATION_TO_AUTHOR: ' . $e->getMessage());
@@ -775,11 +804,12 @@ class PaperDefaultController extends DefaultController
 
         // For TYPE_EDITOR_TO_AUTHOR, success if:
         // - All editors in $recipients were notified (if any), AND
-        // - The author was notified (if parent comment exists)
+        // - The author was notified
         // This handles the case where $recipients is empty (editor responding is the only assigned editor)
         if ($oComment->getType() === Episciences_CommentsManager::TYPE_EDITOR_TO_AUTHOR) {
-            // Expected notifications: editors (if any) + author (if parent exists)
-            $expectedNotifications = count($recipients) + ($authorNotificationSent ? 1 : 0);
+            // Expected notifications: editors (if any) + the author, always expected:
+            // an unresolved author or an exception before the send is a failure, not a success
+            $expectedNotifications = count($recipients) + 1;
             return $nbNotifications === $expectedNotifications;
         }
 

@@ -432,7 +432,7 @@ return array(
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_ACCEPTED_FINAL_VERSION_SUBMITTED_WAITING_FOR_COPY_EDITORS_FORMATTING] => "Accepted - final version submitted, waiting for formatting by copy editors",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_AFTER_AUTHOR_MODIFICATION] => "accepted temporary version after author's modifications",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MINOR_REVISION] => "accepted temporary version, waiting for minor revision",
-    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted temporary version , waiting for major revision",
+    Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_TMP_VERSION_ACCEPTED_WAITING_FOR_MAJOR_REVISION] => "accepted temporary version, waiting for major revision",
     Episciences_Paper::$_statusLabel[Episciences_Paper::STATUS_NO_REVISION] => "revision request answer: without any modifications",
 
 );

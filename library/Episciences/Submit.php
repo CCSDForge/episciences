@@ -112,8 +112,7 @@ class Episciences_Submit
         // Champ texte : identifiant du document
         $subform->addElement('text', 'docId', $docIdElementOptions);
 
-        $hookVersion = isset($defaults['repoId']) ? Episciences_Repositories::callHook('hookIsRequiredVersion', ['repoId' => $defaults['repoId']]) : [];
-        $isRequiredVersionField = empty($hookVersion) || (isset($hookVersion['result']) && $hookVersion['result']);
+        $isRequiredVersionField = !isset($defaults['repoId']) || Episciences_Repositories::isVersionRequired((int)$defaults['repoId']);
 
         // Champ texte : version du document
 
@@ -624,8 +623,7 @@ class Episciences_Submit
 
             $subform->addElement('hidden', 'h_docId');
 
-            $isRequiredVersionFromHook = Episciences_Repositories::callHook('hookIsRequiredVersion', ['repoId' => $defaults['repoId']]);
-            $isRequiredVersion = $isRequiredVersionFromHook['result'] ?? true;
+            $isRequiredVersion = Episciences_Repositories::isVersionRequired((int)$defaults['repoId']);
 
             if ($isRequiredVersion) {
 
@@ -657,11 +655,6 @@ class Episciences_Submit
                 $subform->addElement('hidden', 'newVersionOf', ['value' => $settings['newVersionOf']]);
 
                 // Submission of a new version following a request for changes to the temporary version
-
-                if (isset($defaults['hasHook']) && $defaults['hasHook']) {
-                    $subform->addElement('hidden', 'h_hasHook', ['value' => $defaults['hasHook']]);
-                }
-
                 if ($paper->isTmp()) {
 
                     //#git 259 : Leave the version field empty when submitting a new one (request: ask for the final version)
@@ -886,11 +879,17 @@ class Episciences_Submit
         $hookVersion = [];
 
         if ($isNewVersionOf) {
+            // $latestObsoleteDocId comes straight from the request, so partialGet()
+            // returns null for a stale docid or one belonging to another journal.
+            // Leave $oldPaper null in that case: assertDateTimeVersion(),
+            // assertVersion() and assertNewVersionConsistency() all treat that as
+            // "nothing to compare against", and findExistingDocId() below still
+            // locates the real latest version if there is one.
             $oldPaper = Episciences_PapersManager::partialGet((int)$latestObsoleteDocId, $rvId);
 
-            if ($oldPaper->isTmp()) {
-                $previousVersions = $oldPaper->getPreviousVersions(false, false);
-                $oldPaper = $previousVersions[array_key_first($previousVersions)];
+            if ($oldPaper?->isTmp()) {
+                $previousVersions = $oldPaper->getPreviousVersions(false, false) ?? [];
+                $oldPaper = $previousVersions[array_key_first($previousVersions)] ?? null;
             }
 
         }
@@ -913,7 +912,11 @@ class Episciences_Submit
                     'response' => $hookApiRecord,
                 ];
 
-                if ($isNewVersionOf) {
+                // $oldPaper is null whenever $latestObsoleteDocId could not be
+                // resolved above: addContext() takes a non-nullable paper, and the
+                // TypeError it would raise is an Error, which the catch clauses
+                // below do not intercept.
+                if ($isNewVersionOf && $oldPaper) {
                     self::addContext($oldPaper, $parms);
                 }
 
@@ -921,8 +924,7 @@ class Episciences_Submit
             }
 
             if (isset($hookVersion['version'])) {
-                $version = (float)$hookVersion['version'];
-                $result['hookVersion'] = $version;
+                $version = Episciences_Repositories_Common::normalizeVersion($hookVersion['version']);
             }
 
             //OAI identifier
@@ -998,6 +1000,12 @@ class Episciences_Submit
 
     /**
      * Define the version based on the date/time and validation of the new submission
+     *
+     * Only applies to repositories that version by date-time rather than by an
+     * OAI version number. They are identified by the UPDATE_DATETIME key, which
+     * reaches $result from hookApiRecords() through fillConceptAndUpdateInfo():
+     * absent for every other repository, so no further guard is needed.
+     *
      * @param $docId
      * @param Episciences_Paper|null $previousPaper
      * @param array $result
@@ -1007,9 +1015,7 @@ class Episciences_Submit
 
     private static function assertDateTimeVersion(&$docId, ?Episciences_Paper $previousPaper, array &$result, bool $isNewVersion): void
     {
-        if(
-            !$docId ||
-            !$previousPaper->hasHook){
+        if (!$docId || !$previousPaper) {
             return;
         }
 
@@ -1019,7 +1025,7 @@ class Episciences_Submit
             return;
         }
 
-        $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($previousPaper?->getIdentifier());
+        $previousPaperVersionDateTime = Episciences_Repositories_Common::getDateTimePattern($previousPaper->getIdentifier());
 
         if ($previousPaperVersionDateTime < $currentVersionDateTime) {
 
@@ -1028,8 +1034,7 @@ class Episciences_Submit
             }
 
             $result['status'] = 2;
-            $version = $previousPaper?->getVersion() + 1;
-            $result['hookVersion'] = $version;
+            $result['hookVersion'] = $previousPaper->getVersion() + 1;
         }
     }
 
@@ -1107,6 +1112,15 @@ class Episciences_Submit
         if ($baseUrl) {
             $oai = new Episciences_Oai_Client($baseUrl, 'xml');
             $record = $oai->getRecord($identifier);
+
+            $cleanedRecord = Episciences_Repositories::callHook('hookCleanXMLRecordInput', [
+                'record' => $record,
+                'repoId' => (int)$repoId
+            ]);
+
+            if (isset($cleanedRecord['record'])) {
+                $record = $cleanedRecord['record'];
+            }
 
             $type = Episciences_Tools::xpath($record, '//dc:type');
 
@@ -1666,7 +1680,10 @@ class Episciences_Submit
         Episciences_Repositories::callHook('hookFilesProcessing', $filesHookParams);
         Episciences_Repositories::callHook('hookLinkedDataProcessing', $hookParams);
 
-        if (Episciences_Repositories::hasHook($paper->getRepoid()) === '' && Episciences_Repositories::getApiUrl($paper->getRepoid())) {
+        if (
+            !Episciences_Repositories::handlesOwnEnrichment($paper->getRepoid()) &&
+            Episciences_Repositories::getApiUrl($paper->getRepoid()) !== ''
+        ) {
             self::datasetsProcessing($paper);
         }
     }
@@ -1743,10 +1760,6 @@ class Episciences_Submit
         $recipients = $this->filterConflictRecipients($recipients, $paper);
         unset($recipients[$paper->getUid()]);
 
-        if (empty($recipients)) {
-            return;
-        }
-
         $oldDocId = (int)Ccsd_Tools::ifsetor($data['old_docid'], 0);
         $oldStatus = (int)Ccsd_Tools::ifsetor($data['old_paper_status'], 0);
         $canReplace = (bool)Ccsd_Tools::ifsetor($data['can_replace'], false);
@@ -1784,7 +1797,10 @@ class Episciences_Submit
         // Mail à l'auteur
         Episciences_Mail_Send::sendMailFromReview($author, $authorTemplateKy, $authorTags, $paper, null, [], false, $paper->getCoAuthors());
 
-        self::notifyManagers($paper, $recipients, $oldDocId, $oldStatus, $commonTags, $canReplace);
+        // The author acknowledgment must not depend on the editorial committee being notifiable
+        if (!empty($recipients)) {
+            self::notifyManagers($paper, $recipients, $oldDocId, $oldStatus, $commonTags, $canReplace);
+        }
     }
 
     /**
@@ -1809,13 +1825,18 @@ class Episciences_Submit
             ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], 'paper_id' => $paper->getPaperid()]
         );
 
-        foreach ($recipients as $uid => $recipient) {
-            if (isset($conflictUids[$uid])) {
-                unset($recipients[$uid]);
-            }
-        }
+        return self::removeConflictingRecipients($recipients, $conflictUids);
+    }
 
-        return $recipients;
+    /**
+     * @param array<int, mixed> $recipients recipients indexed by UID
+     * @param array<int, int|string> $conflictUids list of UIDs having declared a conflict of interest
+     * @return array<int, mixed>
+     */
+    private static function removeConflictingRecipients(array $recipients, array $conflictUids): array
+    {
+        // fetchCol() returns a list: UIDs are values, not keys
+        return array_diff_key($recipients, array_flip(array_map('intval', $conflictUids)));
     }
 
     /**
@@ -2426,7 +2447,6 @@ class Episciences_Submit
 
         $isTmp = $paper->isTmp();
 
-        //$hasHook = $paper->hasHook;  // @see Episciences_Paper::setRepoid() todo à vérifier où il est utilisé et voir s'il peut être supprimé
         $repository = $paper->getRepoid();
         $identifier = $paper->getIdentifier();
         $version = (int)$paper->getVersion();
@@ -2437,7 +2457,6 @@ class Episciences_Submit
 
             if ($firstSubmission) {
                 $repository = $firstSubmission->getRepoid();
-                //$hasHook = $firstSubmission->hasHook;
                 $identifier = $firstSubmission->getIdentifier();
                 $repoId = $firstSubmission->getRepoid();
             }
@@ -2449,9 +2468,6 @@ class Episciences_Submit
 
         $identifier = rtrim(Episciences_Repositories_Common::removeDateTimePattern($identifier), '/');
 
-        //$isIdentifierCommonToAllVersions = !$hasHook || $repository !== (int)Episciences_Repositories::ZENODO_REPO_ID; //  The identifier field will be empty
-
-        //$defaults['hasHook'] = $hasHook;
         $defaults['isIdentifierCommonToAllVersions'] = $isIdentifierCommonToAllVersions;
         $defaults['repoId'] = $repository;
         $defaults['docId'] = $isIdentifierCommonToAllVersions ? $identifier : ''; //NB. Pour Zenodo, un identifiant différent par version, d’où l’initialisation de sa valeur par défaut à ''
@@ -2665,6 +2681,19 @@ class Episciences_Submit
     }
 
 
+    /**
+     * Whether $repoId's related identifiers arrive DataCite-shaped
+     * (identifier/relation/resource_type/scheme) rather than as a plain list
+     * of identifier strings.
+     */
+    private static function isDataCiteShapedRepo(int $repoId): bool
+    {
+        return $repoId === (int)Episciences_Repositories::ZENODO_REPO_ID
+            || $repoId === (int)Episciences_Repositories::ARCHE_ID
+            || $repoId === (int)Episciences_Repositories::BAOBAB_REPO_ID
+            || Episciences_Repositories::isDspace($repoId);
+    }
+
     public static function processDatasets(Episciences_Paper|int $paper, ?array $allDatasets = []): int
     {
         $affectedRows = 0;
@@ -2707,17 +2736,13 @@ class Episciences_Submit
                     continue;
                 }
 
-                if (
-                    $repoId === (int)Episciences_Repositories::ZENODO_REPO_ID ||
-                    $repoId === (int)Episciences_Repositories::ARCHE_ID ||
-                    Episciences_Repositories::isDspace($repoId)) {
+                if (self::isDataCiteShapedRepo($repoId)) {
 
                     if ($key !== 'identifier') {
                         continue;
                     }
 
                     $options['relationship'] = $datasets['relation'] ?? Episciences_Paper_DatasetsManager::RELATION_TYPE_SOFTWARE;
-                    $datasets = $value;
                 }
 
 
@@ -2752,7 +2777,11 @@ class Episciences_Submit
                         $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $code, $idMetaDataLastId, $options);
 
                     } else {
-                        $noProcessed[$typeLd] = $datasets;
+                        // forceAddingDatasets() expects an array of plain identifier
+                        // values per type (no 'relation' key, or it would itself be
+                        // iterated and inserted as a spurious dataset value): append,
+                        // don't overwrite, so failures don't lose siblings sharing $typeLd.
+                        $noProcessed[$typeLd][] = $value;
                     }
                 } elseif ($typeLd === Episciences_Paper_Dataset::SOFTWARE_CODE) {
                     $affectedRows += Episciences_Paper_DatasetsManager::addDatasetFromSubmission($docId, $typeLd, $value, $typeLd, null, $options);

@@ -20,6 +20,10 @@ class DashboardPaperSearch {
             return;
         }
 
+        // Note: when this component sits inside a collapsible .panel-heading, the collapse
+        // toggle in public/js/functions.js ignores clicks originating here, so there is no
+        // need to stop propagation (which would also break document-level handlers).
+
         this.init();
     }
 

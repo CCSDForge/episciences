@@ -23,9 +23,9 @@ class Episciences_Notify_NotificationsRepositoryTest extends TestCase
             ]
         ];
 
-        // bindValue is called twice: once for :direction, once for :limit
+        // bindValue is called three times: :direction, :statusOutdated, :limit
         $stmt = $this->createMock(\PDOStatement::class);
-        $stmt->expects(self::exactly(2))
+        $stmt->expects(self::exactly(3))
             ->method('bindValue');
         $stmt->expects(self::once())
             ->method('execute');
@@ -37,7 +37,10 @@ class Episciences_Notify_NotificationsRepositoryTest extends TestCase
         $pdo = $this->createMock(\PDO::class);
         $pdo->expects(self::once())
             ->method('prepare')
-            ->with(self::stringContains('WHERE direction = :direction'))
+            ->with(self::logicalAnd(
+                self::stringContains('WHERE direction = :direction'),
+                self::stringContains('status != :statusOutdated')
+            ))
             ->willReturn($stmt);
 
         $repository = new NotificationsRepository($pdo);
@@ -113,5 +116,23 @@ class Episciences_Notify_NotificationsRepositoryTest extends TestCase
 
         $repository = new NotificationsRepository($pdo);
         $repository->deleteById('urn:uuid:del-test');
+    }
+
+    public function testUpdateStatusExecutesUpdate(): void
+    {
+        $stmt = $this->createMock(\PDOStatement::class);
+        $stmt->expects(self::exactly(2))
+            ->method('bindValue');
+        $stmt->expects(self::once())
+            ->method('execute');
+
+        $pdo = $this->createMock(\PDO::class);
+        $pdo->expects(self::once())
+            ->method('prepare')
+            ->with(self::stringContains('UPDATE notifications SET status = :status WHERE id = :id'))
+            ->willReturn($stmt);
+
+        $repository = new NotificationsRepository($pdo);
+        $repository->updateStatus('urn:uuid:status-test', Notification::STATUS_OUTDATED);
     }
 }

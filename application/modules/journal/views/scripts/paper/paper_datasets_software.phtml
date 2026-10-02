@@ -84,8 +84,7 @@ $isAllowedToManageRelations = Episciences_Auth::isAllowedToManagePaper() || $pap
                         </div>
                     <?php endif; ?>
                     <div style="margin-bottom: 4px"></div>
-                    <?php if ((string)$source !== Episciences_Repositories::SCHOLEXPLORER_ID
-                        && ($software->getName() === 'doi'
+                    <?php if (($software->getName() === 'doi'
                             || Episciences_Tools::isDoiWithUrl($software->getValue()) || $software->getName() === 'arXiv')
                         && $software->getMetatext() !== null) {
                         try {

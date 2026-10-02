@@ -61,6 +61,16 @@ class Episciences_User extends Ccsd_User_Models_User
         self::$_identityMap = [];
     }
 
+    /**
+     * Drop one entry from the static request-level memory cache, so the next
+     * find() re-reads the row from the database instead of a value cached
+     * earlier in the same request.
+     */
+    public static function forgetStaticCache(int $uid): void
+    {
+        unset(self::$_identityMap[$uid]);
+    }
+
     protected ?string $_orcid = null;
     protected ?array $_affiliations = null;
 
@@ -465,6 +475,11 @@ class Episciences_User extends Ccsd_User_Models_User
 
         if ($isCasRecording) {
             $casId = parent::save($forceInsert);
+
+            if ($casId === false) {
+                trigger_error('CAS write failed for UID ' . $this->getUid(), E_USER_WARNING);
+                return false;
+            }
         }
 
         $uid = ($casId) ?: $this->getUid();
@@ -559,11 +574,17 @@ class Episciences_User extends Ccsd_User_Models_User
                 return false;
             }
 
+            // hasLocalData() above may have cached this UID's row before this write;
+            // drop it so the next find() re-reads the row this save() just wrote.
+            self::forgetStaticCache((int)$uid);
+
             return $uid;
         }
 
         // Mise à jour des données locales
         $this->_db->update(T_USERS, $data, ['UID = ?' => $this->getUid()]);
+
+        self::forgetStaticCache((int)$this->getUid());
 
         return $this->getUid();
 
@@ -921,15 +942,32 @@ class Episciences_User extends Ccsd_User_Models_User
     }
 
 
-    public function hasOnlyAdministratorRole(): bool
+    /**
+     * @param int|null $rvId journal to check; defaults to the current journal (RVID constant, web context only)
+     */
+    public function hasOnlyAdministratorRole(?int $rvId = null): bool
     {
+        if ($rvId === null) {
+            return
+                $this->isAdministrator() &&
+                !$this->isChiefEditor() &&
+                !$this->isSecretary() &&
+                !$this->isEditor() &&
+                !$this->isGuestEditor() &&
+                !$this->isCopyEditor();
+        }
+
+        $roles = $this->getRoles($rvId) ?? [];
+
         return
-            $this->isAdministrator() &&
-            !$this->isChiefEditor() &&
-            !$this->isSecretary() &&
-            !$this->isEditor() &&
-            !$this->isGuestEditor() &&
-            !$this->isCopyEditor();
+            in_array(Episciences_Acl::ROLE_ADMIN, $roles) &&
+            empty(array_intersect([
+                Episciences_Acl::ROLE_CHIEF_EDITOR,
+                Episciences_Acl::ROLE_SECRETARY,
+                Episciences_Acl::ROLE_EDITOR,
+                Episciences_Acl::ROLE_GUEST_EDITOR,
+                Episciences_Acl::ROLE_COPY_EDITOR,
+            ], $roles));
     }
 
     public function getReviews()
@@ -983,7 +1021,6 @@ class Episciences_User extends Ccsd_User_Models_User
             $roles = $acl->getRolesCodes();
             $acl = new Episciences_Acl();
             unset($roles[$acl::ROLE_GUEST], $roles[$acl::ROLE_MEMBER], $roles[$acl::ROLE_ROOT]);
-            $translator = Zend_Registry::get('Zend_Translate');
 
             foreach ($users as $uid => $user) {
 
@@ -1023,7 +1060,7 @@ class Episciences_User extends Ccsd_User_Models_User
                         $class = '';
                     }
 
-                    $tag = '<span class="label ' . $class . '">' . $translator->translate($role) . '</span>';
+                    $tag = '<span class="label ' . $class . '">' . Episciences_Acl::getRoleLabelHtml($role) . '</span>';
                     $form->addElement('html', 'tag_' . $uid . '_' . $role, ['value' => $tag]);
 
                 }
@@ -1140,6 +1177,22 @@ class Episciences_User extends Ccsd_User_Models_User
         $removedRoles = array_diff($currentRoles, $roles);
         $this->disableAssignmentsForRemovedRoles($uid, $rvId, $removedRoles);
 
+        // Enqueue Next.js cache revalidation if any board role was added or removed
+        $boardRoles = [
+            Episciences_Acl::ROLE_EDITORIAL_BOARD,
+            Episciences_Acl::ROLE_TECHNICAL_BOARD,
+            Episciences_Acl::ROLE_SCIENTIFIC_ADVISORY_BOARD,
+            Episciences_Acl::ROLE_ADVISORY_BOARD,
+        ];
+        $affectedRoles = array_merge((array) $roles, $removedRoles);
+        if (!empty(array_intersect($affectedRoles, $boardRoles))) {
+            $journal = Episciences_ReviewsManager::find($rvId);
+            if ($journal !== false) {
+                $rvcode = $journal->getCode();
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "members-{$rvcode}");
+            }
+        }
+
         return true;
     }
 
@@ -1176,6 +1229,21 @@ class Episciences_User extends Ccsd_User_Models_User
         if (!$db->getConnection()->query($sql)) {
             trigger_error(sprintf('Failed to execute SQL query: %s', $sql));
             return false;
+        }
+
+        // Enqueue Next.js cache revalidation if any board role was added
+        $boardRoles = [
+            Episciences_Acl::ROLE_EDITORIAL_BOARD,
+            Episciences_Acl::ROLE_TECHNICAL_BOARD,
+            Episciences_Acl::ROLE_SCIENTIFIC_ADVISORY_BOARD,
+            Episciences_Acl::ROLE_ADVISORY_BOARD,
+        ];
+        if (!empty(array_intersect($roles, $boardRoles))) {
+            $journal = Episciences_ReviewsManager::find($rvId);
+            if ($journal !== false) {
+                $rvcode = $journal->getCode();
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "members-{$rvcode}");
+            }
         }
 
         return true;

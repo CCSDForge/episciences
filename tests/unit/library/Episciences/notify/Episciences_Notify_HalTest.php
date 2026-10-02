@@ -18,6 +18,12 @@ use PHPUnit\Framework\TestCase;
 
 class Episciences_Notify_HalTest extends TestCase
 {
+    // Injected directly into Episciences_Notify_Hal rather than relying on
+    // NOTIFY_TARGET_HAL_INBOX/URL, which come from the untracked config/pwd.json
+    // and are empty in this test environment (see NotifySourceRegistryTest).
+    private const HAL_INBOX = 'https://inbox.hal.science/';
+    private const HAL_URL = 'https://hal.science/';
+
     /** @var MockObject&Episciences_Paper */
     private MockObject $paper;
     /** @var MockObject&Episciences_Review */
@@ -50,7 +56,19 @@ class Episciences_Notify_HalTest extends TestCase
         $httpLayer = $this->createMock(HttpLayer::class);
         $httpLayer->method('post')->willReturn($httpResponse);
 
-        return new COARNotifyClient(NOTIFY_TARGET_HAL_INBOX, $httpLayer);
+        return new COARNotifyClient(self::HAL_INBOX, $httpLayer);
+    }
+
+    private function buildHal(?COARNotifyClient $client = null): Episciences_Notify_Hal
+    {
+        return new Episciences_Notify_Hal(
+            $this->paper,
+            $this->journal,
+            $this->repository,
+            $client,
+            self::HAL_INBOX,
+            self::HAL_URL
+        );
     }
 
     public function testAnnounceEndorsementReturnUrnUuidId(): void
@@ -59,7 +77,7 @@ class Episciences_Notify_HalTest extends TestCase
 
         $this->repository->expects(self::once())->method('save');
 
-        $hal = new Episciences_Notify_Hal($this->paper, $this->journal, $this->repository, $client);
+        $hal = $this->buildHal($client);
         $id = $hal->announceEndorsement();
 
         self::assertNotEmpty($id);
@@ -79,7 +97,7 @@ class Episciences_Notify_HalTest extends TestCase
                     && str_starts_with($n->getId(), 'urn:uuid:');
             }));
 
-        $hal = new Episciences_Notify_Hal($this->paper, $this->journal, $this->repository, $client);
+        $hal = $this->buildHal($client);
         $hal->announceEndorsement();
     }
 
@@ -92,7 +110,7 @@ class Episciences_Notify_HalTest extends TestCase
             ->method('save')
             ->with(self::callback(fn(Notification $n): bool => $n->getStatus() === 201));
 
-        $hal = new Episciences_Notify_Hal($this->paper, $this->journal, $this->repository, $client);
+        $hal = $this->buildHal($client);
         $hal->announceEndorsement();
     }
 
@@ -106,7 +124,7 @@ class Episciences_Notify_HalTest extends TestCase
             ->method('save')
             ->with(self::callback(fn(Notification $n): bool => $n->getStatus() === Notification::STATUS_FAILED));
 
-        $hal = new Episciences_Notify_Hal($this->paper, $this->journal, $this->repository, $client);
+        $hal = $this->buildHal($client);
         $id = $hal->announceEndorsement();
 
         self::assertNotEmpty($id);
@@ -128,11 +146,23 @@ class Episciences_Notify_HalTest extends TestCase
                 $savedNotification = $n;
             });
 
-        $hal = new Episciences_Notify_Hal($this->paper, $this->journal, $this->repository, $client);
+        $hal = $this->buildHal($client);
         $hal->announceEndorsement();
 
         self::assertNotNull($savedNotification);
         $original = json_decode($savedNotification->getOriginal(), true);
         self::assertIsArray($original);
+    }
+
+    public function testAnnounceEndorsementThrowsWhenTargetInboxIsEmpty(): void
+    {
+        $this->repository->expects(self::never())->method('save');
+
+        $hal = new Episciences_Notify_Hal($this->paper, $this->journal, $this->repository, null, '');
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('NOTIFY_TARGET_HAL_INBOX is not configured');
+
+        $hal->announceEndorsement();
     }
 }

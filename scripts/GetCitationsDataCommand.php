@@ -1,13 +1,16 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 
 /**
  * Symfony Console command: enrich citations data from OpenCitations + OpenAlex + Crossref.
@@ -38,9 +41,11 @@ class GetCitationsDataCommand extends Command
         $this->bootstrap();
 
         $logger = new Logger('citationsEnrichment');
-        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'citationsEnrichment_' . date('Y-m-d') . '.log', Logger::INFO));
+        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'citationsEnrichment_' . date('Y-m-d') . '.log', Level::Info));
+        $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
+            $logger->pushHandler($stdoutHandler);
         }
 
         if ($dryRun) {
@@ -70,7 +75,9 @@ class GetCitationsDataCommand extends Command
 
         $rows  = $db->fetchAll($select);
         $total = count($rows);
-        $io->progressStart($total);
+        $progressBar = $io->createProgressBar($total);
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         foreach ($rows as $value) {
             // getOpenCitationCitedByDoi() now returns ?array directly (no PSR-6 CacheItem)
@@ -78,7 +85,7 @@ class GetCitationsDataCommand extends Command
 
             if ($apiCallCitationCache === null) {
                 $logger->error('OpenCitations API error for DOI ' . $value['DOI']);
-                $io->progressAdvance();
+                $progressBar->advance();
                 continue;
             }
 
@@ -86,6 +93,7 @@ class GetCitationsDataCommand extends Command
                 if (!$dryRun) {
                     try {
                         Episciences_Paper_Citations_EnrichmentService::extractAndStore($apiCallCitationCache, (int) $value['DOCID']);
+                        SolrIndexing::enqueueIndex((int) $value['DOCID']);
                     } catch (\Throwable $e) {
                         $logger->error('Citation enrichment error for doc ' . $value['DOCID'] . ': ' . get_class($e) . ': ' . $e->getMessage());
                     }
@@ -95,10 +103,12 @@ class GetCitationsDataCommand extends Command
                 $logger->info('No citations found for doc ' . $value['DOCID']);
             }
 
-            $io->progressAdvance();
+            $progressBar->advance();
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
         $io->success('Citation data enrichment completed.');
 
         return Command::SUCCESS;

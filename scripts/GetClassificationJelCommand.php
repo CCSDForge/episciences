@@ -2,8 +2,9 @@
 declare(strict_types=1);
 
 use Episciences\Api\OpenAireApiClient;
-use GuzzleHttp\Client;
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Console\Command\Command;
@@ -20,30 +21,35 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class GetClassificationJelCommand extends Command
 {
     protected static $defaultName = 'enrichment:classifications-jel';
-    private const ONE_MONTH = 3600 * 24 * 31;
 
     protected function configure(): void
     {
         $this
             ->setDescription('Enrich JEL classification data from the OpenAIRE Research Graph')
+            ->addOption('doi', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by DOI')
+            ->addOption('paperid', null, InputOption::VALUE_OPTIONAL, 'Process a single paper by paper ID')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Run without writing to the database')
-            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code)');
+            ->addOption('no-cache', null, InputOption::VALUE_NONE, 'Bypass cache and fetch fresh data')
+            ->addOption('rvcode', null, InputOption::VALUE_REQUIRED, 'Restrict processing to one journal (RV code); ignored when --doi or --paperid is used');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io      = new SymfonyStyle($input, $output);
         $dryRun  = (bool) $input->getOption('dry-run');
+        $noCache = (bool) $input->getOption('no-cache');
         $rvcode  = $input->getOption('rvcode');
         $io->title('JEL classification enrichment');
         $this->bootstrap();
 
         $logger = new Logger('jelEnrichment');
         $logger->pushHandler(new StreamHandler(
-            EPISCIENCES_LOG_PATH . 'jelEnrichment_' . date('Y-m-d') . '.log', Logger::INFO
+            EPISCIENCES_LOG_PATH . 'jelEnrichment_' . date('Y-m-d') . '.log', Level::Info
         ));
+        $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
+            $logger->pushHandler($stdoutHandler);
         }
         if ($dryRun) {
             $io->note('Dry-run mode enabled — no data will be written.');
@@ -61,32 +67,51 @@ class GetClassificationJelCommand extends Command
         }
 
         $cacheDir  = dirname(APPLICATION_PATH) . '/cache/';
-        $apiClient = new OpenAireApiClient(
-            new Client(),
-            new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, $cacheDir),
-            new FilesystemAdapter('enrichmentAuthors',     self::ONE_MONTH, $cacheDir),
-            new FilesystemAdapter('enrichmentFunding',     self::ONE_MONTH, $cacheDir),
-            $logger
+        $apiClient = OpenAireApiClient::create();
+        $logger->info($apiClient->isAuthenticated()
+            ? 'OpenAIRE: authenticated mode (client credentials configured)'
+            : 'OpenAIRE: anonymous fallback mode (no client credentials configured) — throttling at 60s/request'
         );
 
         $db       = Zend_Db_Table_Abstract::getDefaultAdapter();
         $allCodes = $db->fetchCol($db->select()->from(T_PAPER_CLASSIFICATION_JEL, ['code']));
-        $select   = $db->select()
-            ->from(T_PAPERS, ['DOI', 'DOCID'])
-            ->where('DOI != ""')
-            ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
-            ->order('DOCID ASC');
-        if ($rvid !== null) {
-            $select->where('RVID = ?', $rvid);
+        if ($input->getOption('doi')) {
+            $select = $db->select()
+                ->from(T_PAPERS, ['DOI', 'DOCID'])
+                ->where('DOI = ?', trim((string) $input->getOption('doi')))
+                ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+        } elseif ($input->getOption('paperid')) {
+            $select = $db->select()
+                ->from(T_PAPERS, ['DOI', 'DOCID'])
+                ->where('PAPERID = ?', (int) $input->getOption('paperid'))
+                ->where('DOI != ""')
+                ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED);
+        } else {
+            $select = $db->select()
+                ->from(T_PAPERS, ['DOI', 'DOCID'])
+                ->where('DOI != ""')
+                ->where('STATUS = ?', Episciences_Paper::STATUS_PUBLISHED)
+                ->order('DOCID ASC');
+            if ($rvid !== null) {
+                $select->where('RVID = ?', $rvid);
+            }
         }
         $papers = $db->fetchAll($select);
 
         $logger->info('Starting JEL enrichment for ' . count($papers) . ' papers');
-        $io->progressStart(count($papers));
+        $progressBar = $io->createProgressBar(count($papers));
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         foreach ($papers as $row) {
-            $doi   = $row['DOI'];
+            $doi   = trim($row['DOI']);
             $docId = (int) $row['DOCID'];
+
+            if ($noCache && $doi !== '') {
+                $cacheOARG = new FilesystemAdapter('openAireResearchGraph', 0, $cacheDir);
+                $cacheOARG->deleteItem(md5($doi) . '.json');
+            }
+
             try {
                 $response = $apiClient->fetchPublication($doi, $docId);
                 $codes    = $response !== null ? $apiClient->extractJelCodes($response) : [];
@@ -106,10 +131,12 @@ class GetClassificationJelCommand extends Command
             } catch (\Throwable $e) {
                 $logger->error("JEL enrichment error for DOI {$doi}: " . $e->getMessage());
             }
-            $io->progressAdvance();
+            $progressBar->advance();
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
         $io->success('JEL classification enrichment completed.');
         return Command::SUCCESS;
     }

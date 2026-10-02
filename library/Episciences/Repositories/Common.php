@@ -201,6 +201,105 @@ class Episciences_Repositories_Common
 
     }
 
+    /**
+     * Remove every <dc:description> node whose text content exactly matches one of
+     * $exactTexts, comparing on whitespace normalized by
+     * Episciences_Tools::spaceCleaner() and ignoring case.
+     *
+     * Some repositories push non-descriptive boilerplate through dc:description
+     * (HAL's audience marker, for instance). Dropping those nodes from the raw XML
+     * before it reaches PAPERS.RECORD keeps the two independent render paths -
+     * Paper::getMetadata() on one side, Paper::getXslt() feeding public/xsl/*.xsl on
+     * the other - consistent without a filter in each consumer.
+     *
+     * Matching is content-based, never positional: only text we explicitly name is
+     * ever removed, so a real (possibly multilingual) abstract cannot be lost.
+     *
+     * The record is returned untouched when it cannot be parsed or when nothing
+     * matches, so callers never have to guard against a corrupted result.
+     *
+     * @param string $record raw OAI-PMH XML
+     * @param string[] $exactTexts description texts to drop
+     */
+    public static function removeDcDescriptionByText(string $record, array $exactTexts): string
+    {
+        if (trim($record) === '' || $exactTexts === []) {
+            return $record;
+        }
+
+        $needles = [];
+        foreach ($exactTexts as $exactText) {
+            $normalized = (string)Episciences_Tools::spaceCleaner($exactText);
+            if ($normalized !== '') {
+                $needles[] = mb_strtolower($normalized);
+            }
+        }
+
+        if ($needles === []) {
+            return $record;
+        }
+
+        $dom = new DOMDocument();
+
+        try {
+            set_error_handler('\Ccsd\Xml\Exception::HandleXmlError');
+            $loaded = $dom->loadXML($record);
+        } catch (\Ccsd\Xml\Exception $e) {
+            $loaded = false;
+        } finally {
+            restore_error_handler();
+        }
+
+        if (!$loaded || !$dom->documentElement) {
+            return $record;
+        }
+
+        // Match on namespace URI rather than on a registered prefix: callers hand over
+        // records at different stages of cleaning, some of which have already had the
+        // default xmlns stripped (@see Episciences_PapersManager::cleanRecord()). An
+        // empty namespace URI is therefore accepted too, while a same-named node from
+        // another vocabulary (datacite:description) stays out of reach.
+        $query = "//*[local-name()='description' and (namespace-uri()='http://purl.org/dc/elements/1.1/' or namespace-uri()='')]";
+
+        $descriptions = (new DOMXPath($dom))->query($query);
+
+        if ($descriptions === false || $descriptions->length === 0) {
+            return $record;
+        }
+
+        $removed = 0;
+
+        foreach ($descriptions as $description) {
+            $text = mb_strtolower((string)Episciences_Tools::spaceCleaner($description->textContent));
+
+            if (!in_array($text, $needles, true)) {
+                continue;
+            }
+
+            // Drop the indentation left over from the removed node so the stored XML
+            // keeps its original formatting instead of gaining a blank line.
+            $previous = $description->previousSibling;
+            if ($previous instanceof DOMText && trim($previous->nodeValue) === '') {
+                $previous->parentNode?->removeChild($previous);
+            }
+
+            $description->parentNode?->removeChild($description);
+            $removed++;
+        }
+
+        if ($removed === 0) {
+            return $record;
+        }
+
+        // Preserve the prolog only when the input had one: callers store the serialized
+        // result straight back into RECORD, next to records nobody rewrote.
+        $cleaned = str_starts_with(ltrim($record), '<?xml')
+            ? $dom->saveXML()
+            : $dom->saveXML($dom->documentElement);
+
+        return $cleaned !== false ? $cleaned : $record;
+    }
+
     public static function formatReferences(array $reference = []): array
     {
         if (empty($reference)) {
@@ -608,4 +707,108 @@ class Episciences_Repositories_Common
         $dt = date_create($datestamp);
         return $dt !== false ? $dt->format('Y-m-d') : '';
     }
+
+    /**
+     * Returns $hookParams['response'] as is, or fetches it via $fetchRecord when
+     * absent — the common body of the per-repository checkResponse() hooks.
+     *
+     * @param array<string, mixed> $hookParams
+     * @param callable(array<string, mixed>): array<string, mixed> $fetchRecord
+     * @return array<string, mixed>
+     */
+    public static function resolveResponse(array $hookParams, callable $fetchRecord): array
+    {
+        if (isset($hookParams[self::META_IDENTIFIER]) && empty($hookParams['response'])) {
+            return $fetchRecord([self::META_IDENTIFIER => $hookParams[self::META_IDENTIFIER]]);
+        }
+
+        return $hookParams['response'] ?? [];
+    }
+
+    /**
+     * Compiles a DataCite <descriptions> block into value/language pairs,
+     * decoding the <p>-wrapped HTML each repository's descriptions carry.
+     *
+     * $preferAbstractType and $convertLanguageCodeToAlpha2 default to false so
+     * every existing caller keeps its exact prior behavior when opting in only
+     * to what it already relied on.
+     *
+     * @return array<int, array<string, string>>
+     */
+    public static function extractDescriptions(
+        SimpleXMLElement $metadata,
+        string $language,
+        bool $preferAbstractType = false,
+        bool $convertLanguageCodeToAlpha2 = false
+    ): array {
+        $xpath = '//datacite:descriptions/datacite:description';
+        $nodes = $preferAbstractType ? $metadata->xpath($xpath . '[@descriptionType="Abstract"]') : [];
+
+        if (empty($nodes)) {
+            $nodes = $metadata->xpath($xpath);
+        }
+
+        $descriptions = [];
+
+        foreach ($nodes as $node) {
+            $decoded = Episciences_Tools::epi_html_decode((string)$node, ['HTML.AllowedElements' => 'p']);
+            $value = trim(str_replace(['<p>', '</p>'], '', $decoded));
+
+            if ($value === '') {
+                continue;
+            }
+
+            $nodeLanguage = '';
+            $xmlAttributes = $node->attributes('xml', true);
+
+            if (isset($xmlAttributes['lang'])) {
+                $nodeLanguage = (string)$xmlAttributes['lang'];
+            }
+
+            if ($nodeLanguage === '') {
+                $langXpath = $node->xpath('@xml:lang');
+                if (!empty($langXpath)) {
+                    $nodeLanguage = (string)$langXpath[0];
+                }
+            }
+
+            if ($convertLanguageCodeToAlpha2 && strlen($nodeLanguage) > 2) {
+                try {
+                    $nodeLanguage = Languages::getAlpha2Code($nodeLanguage);
+                } catch (Exception $e) {
+                    // Conversion failed (e.g. an ISO 639-3 code with no alpha-2
+                    // equivalent, such as "cpg" for Cappadocian Greek): keep the
+                    // original code as-is. Falling back to the document language
+                    // here would tag this description with the same language as
+                    // another one and silently overwrite it later.
+                }
+            }
+
+            $descriptions[] = [
+                'value' => $value,
+                'language' => $nodeLanguage !== '' ? $nodeLanguage : $language,
+            ];
+        }
+
+        return $descriptions;
+    }
+
+    /**
+     * Normalize an arbitrary scalar (string|int|float) into a float version,
+     * extracting the leading dotted number from free-form values (e.g. "v1.2.3").
+     * This is the generic counterpart of getVersionFromIdentifier(), which targets
+     * the `xxx/yyy.z` identifier format. Keep the two regexes in sync: a fix to one
+     * of them is likely intended for the other as well.
+     */
+    public static function normalizeVersion(string|int|float $version): float
+    {
+        if (is_numeric($version)) {
+            return (float)$version;
+        }
+
+        preg_match('/\d+(?:\.\d+)*/', (string)$version, $matches);
+        $version = $matches[0] ?? 1;
+        return (float)$version;
+    }
+
 }

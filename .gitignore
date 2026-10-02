@@ -81,9 +81,15 @@ assets/node_modules/
 
 /scripts/stats/stats.conf
 /scripts/stats/sites_config.csv
+/scripts/zbjats/journals.ini
 /tools/
 /.gemini/
 /scripts/checkcasusers.php
 /scripts/checkDoi.php
 /build/
 /composer
+
+# SonarQube
+/.scannerwork/
+/.sonar/
+/.phpunit.cache/

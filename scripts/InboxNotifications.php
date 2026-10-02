@@ -762,7 +762,7 @@ class InboxNotifications extends AbstractScript
     ): array
     {
         return [
-            Episciences_Mail_Tags::TAG_REVIEW_CODE => $journal->getCode(),
+            Episciences_Mail_Tags::TAG_REVIEW_CODE => $journal->getMailDisplayCode(),
             Episciences_Mail_Tags::TAG_REVIEW_NAME => $journal->getName(),
             Episciences_Mail_Tags::TAG_ARTICLE_ID => $paper->getDocId(),
             Episciences_Mail_Tags::TAG_PERMANENT_ARTICLE_ID => $paper->getPaperid(),
@@ -849,7 +849,11 @@ class InboxNotifications extends AbstractScript
             $this->logger->critical($e->getMessage());
         }
 
-        Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients);
+        // Pass the RVID explicitly: the RVID constant is not defined in CLI
+        // On a first submission no conflict declaration exists yet, so keep every recipient
+        if (!$isFirstSubmission) {
+            Episciences_PapersManager::keepOnlyUsersWithoutConflict($paper->getPaperid(), $recipients, $journal->getRvid());
+        }
         unset($recipients[$paper->getUid()]);
 
         if (!$isFirstSubmission && $originalRequest !== null) {

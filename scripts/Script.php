@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Translation\TranslatorFactory;
 use Symfony\Component\Dotenv\Dotenv;
 
 require_once dirname(__DIR__) . '/public/const.php';
@@ -513,21 +514,14 @@ abstract class Script {
     public function initTranslator(string $locale = null)
     {
 
-        $locale = $locale ?: null;
-
-        $translator = new Zend_Translate(
-            Zend_Translate::AN_ARRAY,
+        $translator = TranslatorFactory::create(
             APPLICATION_PATH . '/languages',
-            $locale
-            ,
-            array('scan' => Zend_Translate::LOCALE_DIRECTORY));
+            defined('REVIEW_PATH') ? REVIEW_PATH . 'languages' : null,
+            $locale ?: 'auto'
+        );
 
         Zend_Registry::set('Zend_Translate', $translator);
         Zend_Registry::set('Zend_Locale', new Zend_Locale($translator->getLocale()));
-
-        if (defined('REVIEW_PATH') && is_dir(REVIEW_PATH . 'languages') && count(scandir(REVIEW_PATH . 'languages')) > 2) {
-            $translator->addTranslation(REVIEW_PATH . 'languages');
-        }
 
         $this->_translator = $translator;
     }

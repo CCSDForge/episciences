@@ -16,21 +16,19 @@
 
 <?php if ($isAllowedToManegeReview) : ?>
     <div class="panel panel-default collapsable">
-        <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate('Gérer la revue') ?></h2>
+        <div class="panel-heading dashboard-panel-header">
+            <h2 class="panel-title dashboard-panel-title"><?= $this->translate('Gérer la revue') ?></h2>
+            <?= $this->partial('partials/dashboard_paper_search.phtml') ?>
         </div>
         <div class="panel-body in">
-            <div class="col-md-8">
+            <div class="col-md-12">
                 <?= $this->partial('partials/user_dashboard.phtml', [
                     'controllerName' => 'administratepaper',
                     'actionName' => 'list',
-                    'papers' => $this->allPapers
+                    'papers' => $this->allPapers,
+                    'gridLayout' => true
                 ])
                 ?>
-            </div>
-            <div class="col-md-4">
-                <?php // Bloc Accèder à un article?>
-                <?= $this->partial('partials/dashboard_paper_search.phtml') ?>
             </div>
         </div>
 
@@ -54,9 +52,6 @@
         </div>
 
     </div>
-</div>
-
-
 <?php endif; ?>
 
 <?php // Bloc "Articles assignés" ************************************************ ?>
@@ -67,13 +62,17 @@
     ?>
     <div class="panel panel-default collapsable">
 
-        <div class="panel-heading">
-            <h2 class="panel-title"><?= $assignedMsg ?></h2>
+        <div class="panel-heading dashboard-panel-header">
+            <h2 class="panel-title dashboard-panel-title"><?= $assignedMsg ?></h2>
+            <?= $this->partial('partials/dashboard_paper_search.phtml', [
+                    'from' => UserController::ASSIGNED_ARTICLES_STR,
+                    'title' => "Accès à un article assigné"
+            ]) ?>
         </div>
 
         <div class="panel-body in">
 
-            <div class="col-md-8">
+            <div class="col-md-12">
                 <?= $this->partial('partials/user_dashboard.phtml', [
                     'controllerName' => 'administratepaper',
                     'actionName' => 'assigned',
@@ -82,16 +81,6 @@
                 ?>
 
             </div>
-
-
-            <div class="col-md-4">
-                <?php // Bloc Accèder à un article?>
-                <?= $this->partial('partials/dashboard_paper_search.phtml',  [
-                        'from' => UserController::ASSIGNED_ARTICLES_STR, 'title' => "Accès à un article assigné"
-                ]
-                ) ?>
-            </div>
-
 
         </div>
 
@@ -108,8 +97,8 @@
     <?php $countCePapers = count($this->assignedPapersToCopyEditing); ?>
     <div class="panel panel-default collapsable">
 
-        <div class="panel-heading">
-            <h2 class="panel-title"><?= $this->translate("Préparation de copie") ?></h2>
+        <div class="panel-heading dashboard-panel-header">
+            <h2 class="panel-title dashboard-panel-title"><?= $this->translate("Préparation de copie") ?></h2>
         </div>
 
         <div class="panel-body in">
@@ -126,13 +115,19 @@
 
 <?php // Bloc "Mes articles" ************************************************ ?>
 <div class="panel panel-default collapsable">
-    <div class="panel-heading">
-        <h2 class="panel-title"><?= $this->translate('Mes articles') ?></h2>
+    <div class="panel-heading dashboard-panel-header">
+        <h2 class="panel-title dashboard-panel-title"><?= $this->translate('Mes articles') ?></h2>
+        <?php if ($this->submittedPapers) : ?>
+            <?= $this->partial('partials/dashboard_paper_search.phtml', [
+                    'from' => UserController::MY_SUBMISSIONS_STR,
+                    'title' => 'Accès à mon article'
+            ]) ?>
+        <?php endif; ?>
     </div>
 
     <div class="panel-body in">
         <?php if ($this->submittedPapers) : ?>
-            <div class="col-md-8">
+            <div class="col-md-12">
                 <p>
                     <?= $this->partial('partials/user_dashboard.phtml', [
                         'controllerName' => 'paper',
@@ -143,14 +138,6 @@
                 </p>
 
             </div>
-            <div class="col-md-4">
-                <?php // Bloc Accèder à un article?>
-                <?= $this->partial('partials/dashboard_paper_search.phtml', [
-                        'from' => UserController::MY_SUBMISSIONS_STR, 'title' => 'Accès à mon article'
-                ]
-                ) ?>
-            </div>
-
         <?php else : ?>
             <p><?= $this->translate("Vous n'avez soumis aucun article pour le moment") ?>.</p>
         <?php endif; ?>
@@ -335,6 +322,3 @@
         ?>
     </small>
 </div>
-
-
-

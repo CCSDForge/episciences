@@ -4,6 +4,7 @@ declare(strict_types=1);
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Console\Command\Command;
@@ -67,7 +68,7 @@ class CreateDoajVolumeExportsCommand extends Command
             $this->initLoggerForJournal($journal, $io->isQuiet());
             try {
                 if ($removeCache) {
-                    $cache = new FilesystemAdapter("doaj-volume-export-{$journal}", 0, CACHE_PATH_METADATA);
+                    $cache = new FilesystemAdapter('doaj-volume-export', 0, CACHE_PATH_METADATA . $journal);
                     $cache->clear();
                     $this->logger->info("Cache cleared for RV code: {$journal}");
                 }
@@ -252,7 +253,7 @@ class CreateDoajVolumeExportsCommand extends Command
      */
     public static function getCacheDocIdsList(string $vid, string $rvCode): string
     {
-        $cache = new FilesystemAdapter("doaj-volume-export-{$rvCode}", 0, CACHE_PATH_METADATA);
+        $cache = new FilesystemAdapter('doaj-volume-export', 0, CACHE_PATH_METADATA . $rvCode);
         $item  = $cache->getItem($vid);
         if (!$item->isHit()) {
             return json_encode([''], JSON_THROW_ON_ERROR);
@@ -269,7 +270,7 @@ class CreateDoajVolumeExportsCommand extends Command
      */
     public static function setCacheDocIdsList(string $vid, array $jsonVidList, string $rvCode): void
     {
-        $cache = new FilesystemAdapter("doaj-volume-export-{$rvCode}", 0, CACHE_PATH_METADATA);
+        $cache = new FilesystemAdapter('doaj-volume-export', 0, CACHE_PATH_METADATA . $rvCode);
         $item  = $cache->getItem($vid);
         $item->set(json_encode($jsonVidList, JSON_THROW_ON_ERROR));
         $cache->save($item);
@@ -306,10 +307,10 @@ class CreateDoajVolumeExportsCommand extends Command
         $loggerName   = 'doajVolumeExports-' . $journalCode;
         $this->logger = new Logger($loggerName);
         $this->logger->pushHandler(new StreamHandler(
-            EPISCIENCES_LOG_PATH . $loggerName . '_' . date('Y-m-d') . '.log', Logger::INFO
+            EPISCIENCES_LOG_PATH . $loggerName . '_' . date('Y-m-d') . '.log', Level::Info
         ));
         if (!$quiet) {
-            $this->logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
     }
 

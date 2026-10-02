@@ -367,6 +367,59 @@ class PayloadValidatorTest extends TestCase
         self::assertStringContainsString("'object.ietf:item.mediaType'", $result->getErrorMessage());
     }
 
+    public function testValidPayloadHasNoWarnings(): void
+    {
+        $result = $this->validator->validate($this->buildValidPayload());
+
+        self::assertTrue($result->isValid());
+        self::assertSame([], $result->getWarnings());
+    }
+
+    // -------------------------------------------------------------------------
+    // Object item fallback: 'object.url' when 'object.ietf:item' is missing
+    // (observed on real-world HAL payloads, which do not use 'ietf:item')
+    // -------------------------------------------------------------------------
+
+    public function testObjectUrlFallbackIsAcceptedWithWarningWhenIetfItemMissing(): void
+    {
+        $payload = $this->buildValidPayload();
+        $item    = $payload['object']['ietf:item'];
+        unset($payload['object']['ietf:item']);
+        $payload['object']['url'] = $item;
+
+        $result = $this->validator->validate($payload);
+
+        self::assertTrue($result->isValid());
+        self::assertNotEmpty($result->getWarnings());
+        self::assertStringContainsString("'object.ietf:item' is missing", $result->getWarnings()[0]);
+        self::assertStringContainsString("'object.url'", $result->getWarnings()[0]);
+    }
+
+    public function testObjectUrlFallbackMissingIdReturnsFailure(): void
+    {
+        $payload = $this->buildValidPayload();
+        $item    = $payload['object']['ietf:item'];
+        unset($item['id'], $payload['object']['ietf:item']);
+        $payload['object']['url'] = $item;
+
+        $result = $this->validator->validate($payload);
+
+        self::assertFalse($result->isValid());
+        self::assertStringContainsString("'object.url.id'", $result->getErrorMessage());
+    }
+
+    public function testMissingBothIetfItemAndUrlReturnsFailure(): void
+    {
+        $payload = $this->buildValidPayload();
+        unset($payload['object']['ietf:item']);
+
+        $result = $this->validator->validate($payload);
+
+        self::assertFalse($result->isValid());
+        self::assertStringContainsString("'object.ietf:item'", $result->getErrorMessage());
+        self::assertStringContainsString("'object.url'", $result->getErrorMessage());
+    }
+
     // -------------------------------------------------------------------------
     // Target validation
     // -------------------------------------------------------------------------

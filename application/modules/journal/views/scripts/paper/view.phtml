@@ -233,10 +233,8 @@ $this->jQuery()->addJavascriptFile('/js/paper/edit_master_file.js');
         echo $this->partial('paper/paper_classifications.phtml', ['classifications' => $this->classifications]);
     }
     ?>
-    <?php $graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId())) ?>
-    <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor() || $graphAbs) : ?>
-        <?= $this->partial('paper/paper_graphical_abstract.phtml', ['paper' => $paper]) ?>
-    <?php endif; ?>
+    <?php // rendered only if the paper has an illustration or the user can edit it ?>
+    <?= $this->partial('paper/paper_graphical_abstract.phtml', ['paper' => $paper]) ?>
     <?= $this->partial('paper/paper_files.phtml', ['paper' => $paper]) ?>
     <?= $this->partial('paper/paper_datasets.phtml', ['paper' => $paper, 'metadata' => $metadata]) ?>
     <?= $this->partial('partials/paper_password_form.phtml', ['paper' => $paper, 'displayPaperPasswordBloc' => $this->displayPaperPasswordBloc, 'paperPassword' => $this->paperPassword]) ?>
@@ -460,7 +458,6 @@ $this->jQuery()->addJavascriptFile('/js/paper/biblioRef.js');
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_FILE_UPLOAD);
 ?>
 <script>
-    let hasHook = <?= json_encode($this->hasHook) ?>;
     let isRequiredVersion = <?= json_encode($this->isRequiredVersion) ?>;
     let isFromZSubmit = <?= $this->isFromZSubmit ?>;
     let zSubmitStatus = <?= json_encode($this->zSubmitStatus) ?>;

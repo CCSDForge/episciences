@@ -19,6 +19,9 @@ echo $form;
 $this->jQuery()->addJavascriptFile(VENDOR_JQUERY_DATATABLES);
 $this->jQuery()->addJavascriptFile(VENDOR_DATATABLES_BOOTSTRAP);
 $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
+$this->jQuery()->addStylesheet(VENDOR_TOM_SELECT_CSS);
+$this->jQuery()->addJavascriptFile(VENDOR_TOM_SELECT);
+$this->jQuery()->addJavascriptFile('/js/common/tomselect-filters.js');
 ?>
 
 
@@ -41,6 +44,11 @@ $this->jQuery()->addStylesheet(VENDOR_DATATABLES_CSS);
 <script type="text/javascript">
     let selfAction = <?php echo "'$action'"; ?>;
     let selfController = <?php echo "'$controller'"; ?>;
+
+    bootTomSelectFilters(
+        ['status', 'ratingStatus', 'vid', 'sid', 'editors', 'reviewers', 'doi', 'repositories'],
+        {plugins: ['checkbox_options', 'dropdown_input', 'remove_button']}
+    );
 </script>
 
 <?php $this->jQuery()->addJavascriptFile('/js/paper/submitted.js'); ?>

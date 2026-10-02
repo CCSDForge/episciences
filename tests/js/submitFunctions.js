@@ -18,6 +18,7 @@ function mockQuerySelector(selector) {
 // Mock global variables
 let mockGlobals = {
     $isDataverseRepo: false,
+    isRequiredVersion: true,
     examples: {},
     translate: text => text,
 };
@@ -28,12 +29,19 @@ function setMockGlobals(globals) {
 
 // Extracted function: removeVersionFromIdentifier
 function removeVersionFromIdentifier(identifier, options = {}) {
-    const { mockVersionField = null } = options;
+    const {
+        mockVersionField = null,
+        isRequiredVersion = mockGlobals.isRequiredVersion,
+    } = options;
 
     // For testing, use mockVersionField if provided, otherwise try DOM
     const versionField =
         mockVersionField || mockGetElementById('search_doc-version');
-    const versionMatch = identifier.match(/v(\d+)$/);
+    // A trailing "vN" is only a real version marker for repositories where the
+    // version must be typed inline (HAL, arXiv); repositories whose version is
+    // auto-detected (isRequiredVersion === false) may have identifiers that end
+    // in "v" + digits by coincidence of their own slug format.
+    const versionMatch = isRequiredVersion ? identifier.match(/v(\d+)$/) : null;
 
     if (versionMatch && versionField) {
         // Extract the version number (without the 'v' prefix)
@@ -55,6 +63,7 @@ function processUrlIdentifier(input, options = {}) {
     const {
         mockVersionField = null,
         isDataverseRepo = mockGlobals.$isDataverseRepo,
+        isRequiredVersion = mockGlobals.isRequiredVersion,
     } = options;
 
     try {
@@ -106,12 +115,16 @@ function processUrlIdentifier(input, options = {}) {
         } else {
             return removeVersionFromIdentifier(identifier, {
                 mockVersionField,
+                isRequiredVersion,
             });
         }
     } catch (error) {
         // If URL parsing fails, return the original input
         console.warn('URL parsing failed for:', input, error);
-        return removeVersionFromIdentifier(input, { mockVersionField });
+        return removeVersionFromIdentifier(input, {
+            mockVersionField,
+            isRequiredVersion,
+        });
     }
 }
 

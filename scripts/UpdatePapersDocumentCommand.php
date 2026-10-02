@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../library/Episciences/Trait/Tools.php';
 
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -59,14 +61,22 @@ class UpdatePapersDocumentCommand extends Command
         $logger = new Logger('updatePapersDocument');
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'updatePapersDocument_' . date('Y-m-d') . '.log',
-            Logger::INFO
+            Level::Info
         ));
 
         // In JSON mode stdout must stay clean for piping to jq — log to stderr only.
+        $stdoutHandler = null;
         if (!$io->isQuiet()) {
             $handle = $isJsonOutput ? 'php://stderr' : 'php://stdout';
-            $logger->pushHandler(new StreamHandler($handle, Logger::INFO));
+            $stdoutHandler = new ProgressAwareStreamHandler($handle, Level::Info);
+            $logger->pushHandler($stdoutHandler);
         }
+
+        // bootstrap() skips $application->bootstrap(), so AppRegistry's 'appLogger' is never
+        // registered here. Without it, Episciences_BibliographicalsReferencesTools::getClient()
+        // falls back to a NullLogger and swallows biblioref API failures silently — register
+        // this command's logger so those errors surface in updatePapersDocument_*.log.
+        \Episciences\AppRegistry::set('appLogger', $logger);
 
         $db = \Zend_Db_Table_Abstract::getDefaultAdapter();
 
@@ -109,11 +119,15 @@ class UpdatePapersDocumentCommand extends Command
         $totalPages     = $paginator->count();
         $processedCount = 0;
         $failureCount   = 0;
+        $totalBibRefs   = 0;
 
         $logger->info(sprintf('Total pages: %d', $totalPages));
 
+        $progressBar = null;
         if (!$isJsonOutput) {
-            $io->progressStart($count);
+            $progressBar = $io->createProgressBar($count);
+            $stdoutHandler?->setProgressBar($progressBar);
+            $progressBar->start();
         }
 
         for ($page = 1; $page <= $totalPages; $page++) {
@@ -153,7 +167,7 @@ class UpdatePapersDocumentCommand extends Command
                     $failureCount++;
 
                     if (!$isJsonOutput) {
-                        $io->progressAdvance();
+                        $progressBar->advance();
                     }
 
                     continue;
@@ -178,7 +192,7 @@ class UpdatePapersDocumentCommand extends Command
                         $logger->warning(sprintf('[DOCID %d] toJson() returned null — skipped.', $docId));
 
                         if (!$isJsonOutput) {
-                            $io->progressAdvance();
+                            $progressBar->advance();
                         }
 
                         continue;
@@ -189,7 +203,15 @@ class UpdatePapersDocumentCommand extends Command
                     }
 
                     $pageStatements[] = $this->buildUpdateStatement($docId, (string) $db->quote($paperJson));
-                    $logger->info(sprintf('[DOCID %d] JSON generated.', $docId));
+                    $bibRefCount = $this->countBibliographicReferences($paperJson);
+                    $totalBibRefs += $bibRefCount;
+
+                    if ($io->isVeryVerbose()) {
+                        $logger->info(sprintf('[DOCID %d] JSON generated (%d bibliographic reference(s)).', $docId, $bibRefCount));
+                    } else {
+                        $logger->info(sprintf('[DOCID %d] JSON generated.', $docId));
+                    }
+
                     $processedCount++;
                 } catch (\Zend_Db_Statement_Exception|\JsonException $e) {
                     $logger->error(sprintf('[DOCID %d] toJson() failed: %s', $docId, $e->getMessage()));
@@ -197,7 +219,7 @@ class UpdatePapersDocumentCommand extends Command
                 }
 
                 if (!$isJsonOutput) {
-                    $io->progressAdvance();
+                    $progressBar->advance();
                 }
             }
 
@@ -228,13 +250,16 @@ class UpdatePapersDocumentCommand extends Command
         }
 
         if (!$isJsonOutput) {
-            $io->progressFinish();
+            $progressBar->finish();
+            $stdoutHandler?->setProgressBar(null);
+            $io->newLine();
         }
 
         $summary = sprintf(
-            'Done. Processed: %d | Failures: %d%s',
+            'Done. Processed: %d | Failures: %d%s%s',
             $processedCount,
             $failureCount,
+            $io->isVeryVerbose() ? sprintf(' | Bibliographic references: %d', $totalBibRefs) : '',
             $isDryRun ? ' (dry-run)' : ''
         );
 
@@ -254,6 +279,39 @@ class UpdatePapersDocumentCommand extends Command
     // -------------------------------------------------------------------------
     // Public pure helpers — testable without bootstrap or DB
     // -------------------------------------------------------------------------
+
+    /**
+     * Count the number of bibliographic references in a paper's DOCUMENT JSON.
+     *
+     * @param string|array<string, mixed> $json
+     */
+    public function countBibliographicReferences(string|array $json): int
+    {
+        $data = is_string($json) ? json_decode($json, true) : $json;
+
+        if (!is_array($data)) {
+            return 0;
+        }
+
+        $citation = $data['journal']['journal_article']['citation_list']['citation']
+            ?? $data['conference']['conference_paper']['citation_list']['citation']
+            ?? $data['body']['journal']['journal_article']['citation_list']['citation']
+            ?? $data['body']['conference']['conference_paper']['citation_list']['citation']
+            ?? null;
+
+        if ($citation === null || $citation === [] || $citation === '') {
+            return 0;
+        }
+
+        if (is_array($citation)) {
+            if (isset($citation[0])) {
+                return count($citation);
+            }
+            return 1;
+        }
+
+        return 0;
+    }
 
     /**
      * Return the ordered list of columns to SELECT from PAPERS.
@@ -446,11 +504,6 @@ class UpdatePapersDocumentCommand extends Command
         // Episciences_Translation_Plugin::preDispatch() normally registers this, but it
         // never runs here since we skip $application->bootstrap() (see comment above).
         // Without it, Paper::getStatusLabel() logs a "No entry is registered" notice.
-        \Zend_Registry::set('Zend_Translate', new \Zend_Translate([
-            'adapter' => \Zend_Translate::AN_ARRAY,
-            'content' => PATH_TRANSLATION,
-            'scan' => \Zend_Translate::LOCALE_DIRECTORY,
-            'disableNotices' => true,
-        ]));
+        \Zend_Registry::set('Zend_Translate', \Episciences\Translation\TranslatorFactory::create(PATH_TRANSLATION, null, 'auto'));
     }
 }

@@ -131,6 +131,13 @@ return [
     "Contacter ce rédacteur" => "Contact this editor",
     "Contacter un contributeur" => "Contact a contributor",
     "Contacter ce contributeur" => "Contact this contributor",
+    "Changer le contributeur" => "Change contributor",
+    "Contributeur actuel / Contributrice actuelle" => "Current contributor",
+    "Nouveau contributeur / Nouvelle contributrice" => "New contributor",
+    "Rechercher un utilisateur..." => "Search for a user...",
+    "Ajouter l'ancien contributeur / l'ancienne contributrice comme co-auteur / co-autrice" => "Add the former contributor as co-author",
+    "Il/Elle continuera à recevoir les notifications" => "They will continue to receive notifications",
+    "Veuillez sélectionner un nouveau contributeur" => "Please select a new contributor",
     "Contacter ce préparateur de copie" => "Contact this copy editor",
     "Contacter un préparateur de copie" => "Contact a copy editor",
 
@@ -304,4 +311,11 @@ return [
 
     // Activity timeline filters
     'activity_timeline_events_shown' => 'event(s) shown',
+
+    // Illustration or graphical abstract
+    'Le texte alternatif est obligatoire.' => 'The alternative text is required.',
+    'Veuillez corriger les erreurs du formulaire.' => 'Please correct the errors in the form.',
+    'Une erreur est survenue, veuillez réessayer.' => 'An error occurred, please try again.',
+    'Enregistrement en cours…' => 'Saving…',
+    'Voulez-vous supprimer cette illustration ?' => 'Do you want to delete this illustration?',
 ];

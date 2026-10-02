@@ -26,6 +26,10 @@ defineJournalConstants();
 defined('APPLICATION_ENV') || define('APPLICATION_ENV', (getenv('APPLICATION_ENV') ?: ENV_DEV));
 defined('APPLICATION_MODULE') || define('APPLICATION_MODULE', (getenv('APPLICATION_MODULE') ?: PORTAL));
 
+// Review id under test. Defined once here rather than by whichever test case happens to run
+// first: a constant cannot be redefined, so per-test values leak into every later test.
+defined('RVID') || define('RVID', 1);
+
 
 set_include_path(implode(PATH_SEPARATOR, array_merge([__DIR__ . '/library'], [get_include_path()])));
 
@@ -39,3 +43,20 @@ try {
 } catch (Zend_Application_Exception $e) {
     trigger_error($e->getMessage(), E_USER_ERROR);
 }
+
+// Episciences_Translation_Plugin only registers Zend_Translate on a real HTTP dispatch,
+// which never happens in unit tests. Without it, any code path calling Ccsd_Tools::translate()
+// (or similar) hits Zend_Registry::get('Zend_Translate') and logs a "Panic: ... not defined"
+// line per call. Register a real array-adapter instance once here — same pattern individual
+// test files already used — so tests get a working translator instead of that noisy fallback.
+if (!Zend_Registry::isRegistered('Zend_Translate')) {
+    Zend_Registry::set('Zend_Translate', new Zend_Translate([
+        'adapter' => Zend_Translate::AN_ARRAY,
+        'content' => ['' => ''],
+        'locale'  => 'en',
+    ]));
+}
+// Ccsd_Tools::translate() falls back to Zend_Registry::get('lang') when called without
+// an explicit language, which panics the same way if unset. 'en' matches what code reading
+// this key already assumes when it's absent (e.g. GetAvatar::asPaperStatusSvg's own catch).
+Zend_Registry::isRegistered('lang') || Zend_Registry::set('lang', 'en');

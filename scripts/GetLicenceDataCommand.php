@@ -1,7 +1,9 @@
 <?php
 declare(strict_types=1);
 
+use Episciences\Console\ProgressAwareStreamHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -40,9 +42,11 @@ class GetLicenceDataCommand extends Command
         $this->bootstrap();
 
         $logger = new Logger('licenceEnrichment');
-        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'licenceEnrichment_' . date('Y-m-d') . '.log', Logger::INFO));
+        $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'licenceEnrichment_' . date('Y-m-d') . '.log', Level::Info));
+        $stdoutHandler = null;
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $stdoutHandler = new ProgressAwareStreamHandler('php://stdout', Level::Info);
+            $logger->pushHandler($stdoutHandler);
         }
 
         if ($dryRun) {
@@ -71,7 +75,9 @@ class GetLicenceDataCommand extends Command
         }
 
         $rows = $db->fetchAll($select);
-        $io->progressStart(count($rows));
+        $progressBar = $io->createProgressBar(count($rows));
+        $stdoutHandler?->setProgressBar($progressBar);
+        $progressBar->start();
 
         $cache = new FilesystemAdapter('enrichmentLicences', self::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
 
@@ -104,10 +110,12 @@ class GetLicenceDataCommand extends Command
                 $logger->info("Licence data from cache for {$identifier}");
             }
 
-            $io->progressAdvance();
+            $progressBar->advance();
         }
 
-        $io->progressFinish();
+        $progressBar->finish();
+        $stdoutHandler?->setProgressBar(null);
+        $io->newLine();
         $io->success('Licence data enrichment completed.');
 
         return Command::SUCCESS;

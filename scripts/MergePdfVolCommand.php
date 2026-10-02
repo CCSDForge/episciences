@@ -4,6 +4,7 @@ declare(strict_types=1);
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Console\Command\Command;
@@ -52,10 +53,10 @@ class MergePdfVolCommand extends Command
 
         $this->logger = new Logger('mergePdfVol');
         $this->logger->pushHandler(new StreamHandler(
-            EPISCIENCES_LOG_PATH . 'mergePdfVol_' . date('Y-m-d') . '.log', Logger::INFO
+            EPISCIENCES_LOG_PATH . 'mergePdfVol_' . date('Y-m-d') . '.log', Level::Info
         ));
         if (!$io->isQuiet()) {
-            $this->logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $this->logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         if ($dryRun) {
@@ -84,7 +85,7 @@ class MergePdfVolCommand extends Command
             ]);
 
             if ($removeCache) {
-                $cache = new FilesystemAdapter("volume-pdf-{$rvCode}", 0, CACHE_PATH_METADATA);
+                $cache = new FilesystemAdapter('volume-pdf', 0, CACHE_PATH_METADATA . $rvCode);
                 $cache->clear();
                 $this->logger->info('Cache cleared', ['rvCode' => $rvCode]);
             }
@@ -404,7 +405,7 @@ class MergePdfVolCommand extends Command
      */
     public static function getCacheDocIdsList(string $vid, string $rvCode): string
     {
-        $cache  = new FilesystemAdapter("volume-pdf-{$rvCode}", 0, CACHE_PATH_METADATA);
+        $cache  = new FilesystemAdapter('volume-pdf', 0, CACHE_PATH_METADATA . $rvCode);
         $item   = $cache->getItem($vid);
         if (!$item->isHit()) {
             return json_encode([''], JSON_THROW_ON_ERROR);
@@ -419,7 +420,7 @@ class MergePdfVolCommand extends Command
      */
     public static function setCacheDocIdsList(string $vid, array $jsonVidList, string $rvCode): void
     {
-        $cache = new FilesystemAdapter("volume-pdf-{$rvCode}", 0, CACHE_PATH_METADATA);
+        $cache = new FilesystemAdapter('volume-pdf', 0, CACHE_PATH_METADATA . $rvCode);
         $item  = $cache->getItem($vid);
         $item->set(json_encode($jsonVidList, JSON_THROW_ON_ERROR));
         $cache->save($item);

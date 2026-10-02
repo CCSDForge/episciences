@@ -12,29 +12,82 @@ use PHPUnit\Framework\TestCase;
 final class Episciences_Paper_ProjectsManagerTest extends TestCase {
 
     /**
-     * @dataProvider sampleOaProjects
-     * @param $sampleOaProjects
+     * OpenAire Graph v3 direct project entries (results[0].projects), the current API format.
+     *
+     * @dataProvider sampleOaProjectsV3
+     * @param array $sampleOaProjectsV3
      * @return void
      */
-    public function testFormatFundingOAForDB($sampleOaProjects): void {
-        $filterFundingsFromOaApiAndFormatForDB = Episciences_Paper_ProjectsManager::formatFundingOAForDB($sampleOaProjects,[],[]);
-        self::assertIsArray($filterFundingsFromOaApiAndFormatForDB);
-        self::assertCount(2,$filterFundingsFromOaApiAndFormatForDB);
-        // mandatory keys
+    public function testFormatFundingOAForDBv3(array $sampleOaProjectsV3): void {
+        $result = Episciences_Paper_ProjectsManager::formatFundingOAForDB($sampleOaProjectsV3, []);
 
-        self::assertArrayHasKey("projectTitle",$filterFundingsFromOaApiAndFormatForDB[0]);
-        self::assertArrayHasKey("projectTitle",$filterFundingsFromOaApiAndFormatForDB[1]);
-        self::assertArrayHasKey("funderName",$filterFundingsFromOaApiAndFormatForDB[0]);
-        self::assertArrayHasKey("funderName",$filterFundingsFromOaApiAndFormatForDB[1]);
-        self::assertArrayHasKey("code",$filterFundingsFromOaApiAndFormatForDB[0]);
-        self::assertArrayHasKey("code",$filterFundingsFromOaApiAndFormatForDB[1]);
+        self::assertCount(2, $result);
 
-        // extra info if exist
+        self::assertSame('European Open Science Cloud Pillar', $result[0]['projectTitle']);
+        self::assertSame('EOSC-Pillar', $result[0]['acronym']);
+        self::assertSame('824087', $result[0]['code']);
+        self::assertSame('European Commission', $result[0]['funderName']);
 
-        self::assertArrayNotHasKey("acronym",$filterFundingsFromOaApiAndFormatForDB[0]);
-        self::assertArrayHasKey("acronym",$filterFundingsFromOaApiAndFormatForDB[1]);
-        self::assertEquals("ANR-11-LABX-0010",$filterFundingsFromOaApiAndFormatForDB[1]['code']);
-        self::assertEquals("DRIIHM / IRDHEI",$filterFundingsFromOaApiAndFormatForDB[1]['acronym']);
+        self::assertSame('Dispositif de recherche interdisciplinaire sur les Interactions Hommes-Milieux', $result[1]['projectTitle']);
+        self::assertSame('DRIIHM / IRDHEI', $result[1]['acronym']);
+        self::assertSame('ANR-11-LABX-0010', $result[1]['code']);
+        self::assertSame('French National Research Agency (ANR)', $result[1]['funderName']);
+    }
+
+    /**
+     * A v3 project with a null acronym must not carry a stale acronym over from a
+     * previously processed entry (regression guard for the v1 "no reset" quirk).
+     */
+    public function testFormatFundingOAForDBv3NullAcronymNotLeakedFromPreviousEntry(): void
+    {
+        $entries = [
+            [
+                'id' => 'corda_______::824087',
+                'code' => '824087',
+                'acronym' => 'EOSC-Pillar',
+                'title' => 'European Open Science Cloud Pillar',
+                'funder' => 'European Commission',
+                'pids' => null,
+            ],
+            [
+                'id' => 'nih_________::01713ce3da46fe56c2b11399f029007c',
+                'code' => '5T15LM007059-20',
+                'acronym' => null,
+                'title' => 'Pittsburgh Biomedical Informatics Training Program',
+                'funder' => 'National Institutes of Health',
+                'pids' => null,
+            ],
+        ];
+
+        $result = Episciences_Paper_ProjectsManager::formatFundingOAForDB($entries, []);
+
+        self::assertArrayHasKey('acronym', $result[0]);
+        self::assertArrayNotHasKey('acronym', $result[1]);
+    }
+
+    /**
+     * @return array<string, array<int, array<int, array<string, mixed>>>>
+     */
+    public static function sampleOaProjectsV3(): array
+    {
+        return [[[
+            [
+                'id' => 'corda_______::824087',
+                'code' => '824087',
+                'acronym' => 'EOSC-Pillar',
+                'title' => 'European Open Science Cloud Pillar',
+                'funder' => 'European Commission',
+                'pids' => null,
+            ],
+            [
+                'id' => 'anr_________::9fb7cc85ed5f1c9819dd26f41e8528a7',
+                'code' => 'ANR-11-LABX-0010',
+                'acronym' => 'DRIIHM / IRDHEI',
+                'title' => 'Dispositif de recherche interdisciplinaire sur les Interactions Hommes-Milieux',
+                'funder' => 'French National Research Agency (ANR)',
+                'pids' => null,
+            ],
+        ]]];
     }
 
     /**
@@ -94,227 +147,6 @@ final class Episciences_Paper_ProjectsManagerTest extends TestCase {
         self::assertArrayHasKey('funderName',$formatAnrHal[0]);
         self::assertEquals('French National Research Agency (ANR)',$formatAnrHal[0]['funderName']);
 
-    }
-
-
-    /**
-     * Open Aire sample ANR funding (same thing for European)
-     * @return array
-     */
-    public static function sampleOaProjects(): array {
-        return [[json_decode('{
-  "0": {
-    "@inferred": true,
-    "@trust": "0.72",
-    "@inferenceprovenance": "iis::document_referencedProjects",
-    "@provenanceaction": "iis",
-    "to": {
-      "@class": "isProducedBy",
-      "@scheme": "dnet:result_project_relations",
-      "@type": "project",
-      "$": "nserc_______::1e5e62235d094afd01cd56e65112fc63"
-    },
-    "title": {
-      "$": "unidentified"
-    },
-    "code": {
-      "$": "unidentified"
-    },
-    "funding": {
-      "funder": {
-        "@id": "nserc_______::NSERC",
-        "@shortname": "NSERC",
-        "@name": "Natural Sciences and Engineering Research Council of Canada",
-        "@jurisdiction": "CA"
-      }
-    }
-  },
-  "1": {
-    "@inferred": true,
-    "@trust": "0.85",
-    "@inferenceprovenance": "propagation",
-    "@provenanceaction": "result:organization:instrepo",
-    "to": {
-      "@class": "hasAuthorInstitution",
-      "@scheme": "dnet:result_organization_relations",
-      "@type": "organization",
-      "$": "openorgs____::c80a8243a5e5c620d7931c88d93bf17a"
-    },
-    "country": {
-      "@classid": "FR",
-      "@classname": "France",
-      "@schemeid": "dnet:countries",
-      "@schemename": "dnet:countries"
-    },
-    "legalname": {
-      "$": "Université Paris Diderot"
-    },
-    "legalshortname": {
-      "$": "Université Paris Diderot"
-    }
-  },
-  "2": {
-    "@inferred": true,
-    "@trust": "0.9",
-    "@inferenceprovenance": "iis::document_similarities_standard",
-    "@provenanceaction": "iis",
-    "to": {
-      "@class": "IsAmongTopNSimilarDocuments",
-      "@scheme": "dnet:result_result_relations",
-      "@type": "publication",
-      "$": "doi_dedup___::d7f1413afbde675d1bce14a2ecabf9b4"
-    },
-    "collectedfrom": {
-      "0": {
-        "@name": "Hyper Article en Ligne - Sciences de l\'Homme et de la Société",
-        "@id": "opendoar____::96da2f590cd7246bbde0051047b0d6f7"
-      },
-      "1": {
-        "@name": "HAL-Pasteur",
-        "@id": "opendoar____::2cad8fa47bbef282badbb8de5374b894"
-      },
-      "2": {
-        "@name": "HAL-Inserm",
-        "@id": "opendoar____::d9731321ef4e063ebbee79298fa36f56"
-      },
-      "3": {
-        "@name": "Mémoires en Sciences de l\'Information et de la Communication",
-        "@id": "opendoar____::1534b76d325a8f591b52d302e7181331"
-      },
-      "4": {
-        "@name": "HAL - UPEC / UPEM",
-        "@id": "opendoar____::d3e8fc83b3e886a0dc2aa9845a5215bf"
-      },
-      "5": {
-        "@name": "Hyper Article en Ligne",
-        "@id": "opendoar____::7e7757b1e12abcb736ab9a754ffb617a"
-      },
-      "6": {
-        "@name": "UnpayWall",
-        "@id": "openaire____::8ac8380272269217cb09a928c8caa993"
-      },
-      "7": {
-        "@name": "ORCID",
-        "@id": "openaire____::806360c771262b4d6770e7cdf04b5c5a"
-      },
-      "8": {
-        "@name": "Hal-Diderot",
-        "@id": "opendoar____::18bb68e2b38e4a8ce7cf4f6b2625768c"
-      },
-      "9": {
-        "@name": "Crossref",
-        "@id": "openaire____::081b82f96300b6a6e3d282bad31cb6e2"
-      },
-      "10": {
-        "@name": "HAL Clermont Université",
-        "@id": "opendoar____::e98741479a7b998f88b8f8c9f0b6b6f1"
-      },
-      "11": {
-        "@name": "Microsoft Academic Graph",
-        "@id": "openaire____::5f532a3fc4f1ea403f37070f59a7a53a"
-      }
-    },
-    "pid": {
-      "@classid": "doi",
-      "@classname": "Digital Object Identifier",
-      "@schemeid": "dnet:pid_types",
-      "@schemename": "dnet:pid_types",
-      "$": "10.1080/11956860.2018.1542783"
-    },
-    "dateofacceptance": {
-      "$": "2018-01-31"
-    },
-    "publisher": {
-      "$": "HAL CCSD"
-    },
-    "title": {
-      "@classid": "alternative title",
-      "@classname": "alternative title",
-      "@schemeid": "dnet:dataCite_title",
-      "@schemename": "dnet:dataCite_title",
-      "$": "OHMi-Nunavik: a multi-thematic and cross-cultural research program studying the cumulative effects of climate and socio-economic changes on Inuit communities"
-    }
-  },
-  "3": {
-    "@inferred": true,
-    "@trust": "0.72",
-    "@inferenceprovenance": "iis::document_referencedProjects",
-    "@provenanceaction": "iis",
-    "to": {
-      "@class": "isProducedBy",
-      "@scheme": "dnet:result_project_relations",
-      "@type": "project",
-      "$": "anr_________::9fb7cc85ed5f1c9819dd26f41e8528a7"
-    },
-    "code": {
-      "$": "ANR-11-LABX-0010"
-    },
-    "acronym": {
-      "$": "DRIIHM / IRDHEI"
-    },
-    "title": {
-      "$": "Dispositif de recherche interdisciplinaire sur les Interactions Hommes-Milieux"
-    },
-    "funding": {
-      "funder": {
-        "@id": "anr_________::ANR",
-        "@shortname": "ANR",
-        "@name": "French National Research Agency (ANR)",
-        "@jurisdiction": "FR"
-      }
-    }
-  },
-  "4": {
-    "@inferred": true,
-    "@trust": "0.9",
-    "@inferenceprovenance": "iis::document_similarities_standard",
-    "@provenanceaction": "iis",
-    "to": {
-      "@class": "IsAmongTopNSimilarDocuments",
-      "@scheme": "dnet:result_result_relations",
-      "@type": "otherresearchproduct",
-      "$": "dedup_wf_001::ac6050cff2576c4ed3a7f774a18b70c2"
-    },
-    "dateofacceptance": {
-      "$": "2021-09-06"
-    },
-    "collectedfrom": {
-      "0": {
-        "@name": "Hyper Article en Ligne - Sciences de l\'Homme et de la Société",
-        "@id": "opendoar____::96da2f590cd7246bbde0051047b0d6f7"
-      },
-      "1": {
-        "@name": "Mémoires en Sciences de l\'Information et de la Communication",
-        "@id": "opendoar____::1534b76d325a8f591b52d302e7181331"
-      },
-      "2": {
-        "@name": "Hal-Diderot",
-        "@id": "opendoar____::18bb68e2b38e4a8ce7cf4f6b2625768c"
-      },
-      "3": {
-        "@name": "Hyper Article en Ligne",
-        "@id": "opendoar____::7e7757b1e12abcb736ab9a754ffb617a"
-      },
-      "4": {
-        "@name": "HAL AMU",
-        "@id": "opendoar____::2d2c8394e31101a261abf1784302bf75"
-      }
-    },
-    "title": {
-      "@classid": "main title",
-      "@classname": "main title",
-      "@schemeid": "dnet:dataCite_title",
-      "@schemename": "dnet:dataCite_title",
-      "@inferred": false,
-      "@provenanceaction": "sysimport:crosswalk:repository",
-      "@trust": "0.9",
-      "$": "OHMi Patagonia - Bahia Exploradores (Chili)"
-    },
-    "publisher": {
-      "$": "HAL CCSD"
-    }
-  }
-}',true, 512, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE)]];
     }
 
     /**
