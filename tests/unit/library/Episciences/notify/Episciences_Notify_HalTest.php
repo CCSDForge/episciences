@@ -3,8 +3,6 @@
 namespace unit\library\Episciences\notify;
 
 use coarnotify\client\COARNotifyClient;
-use coarnotify\client\NotifyResponse;
-use coarnotify\exceptions\NotifyException;
 use coarnotify\http\HttpLayer;
 use coarnotify\http\HttpResponse;
 use Episciences\Notify\Notification;
