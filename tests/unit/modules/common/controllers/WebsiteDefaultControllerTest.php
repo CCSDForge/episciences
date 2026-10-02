@@ -9,7 +9,6 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for WebsiteDefaultController and associated views.
  *
- * @covers WebsiteDefaultController
  */
 class WebsiteDefaultControllerTest extends TestCase
 {
@@ -44,7 +43,6 @@ class WebsiteDefaultControllerTest extends TestCase
     }
 
     /**
-     * @covers WebsiteDefaultController::ajaxheaderAction
      */
     public function testAjaxheaderActionRendersCorrectPartial(): void
     {
@@ -149,7 +147,6 @@ class WebsiteDefaultControllerTest extends TestCase
      * The remove branch must reduce the posted name to its base file name before
      * unlink(), so the removal stays within the directory being listed.
      *
-     * @covers WebsiteDefaultController::publicAction
      */
     public function testPublicActionRemovalUsesBasename(): void
     {
