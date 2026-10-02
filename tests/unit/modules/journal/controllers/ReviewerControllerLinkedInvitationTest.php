@@ -16,8 +16,6 @@ use PHPUnit\Framework\TestCase;
  * request/response/view stack to instantiate and cannot be unit-tested by
  * direct invocation, so the private methods below are exercised through their
  * source text instead.
- *
- * @covers ReviewerController
  */
 final class ReviewerControllerLinkedInvitationTest extends TestCase
 {
