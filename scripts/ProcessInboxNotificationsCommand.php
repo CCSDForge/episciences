@@ -12,6 +12,7 @@ require_once __DIR__ . '/../library/Episciences/Notify/PreprintUrlParser.php';
 require_once __DIR__ . '/../library/Episciences/Notify/Reader.php';
 
 use Episciences\Notify\Notification;
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\Notify\NotificationsRepository;
 use Episciences\Notify\NotifySourceConfig;
 use Episciences\Notify\NotifySourceRegistry;
@@ -1398,6 +1399,14 @@ class ProcessInboxNotificationsCommand extends Command
 
         $newPaper->setStatus($status);
         $newPaper->save();
+
+        if ($newPaper->getDocid()) {
+            // REVIEW_PATH is not defined from CLI
+            $journalPath = realpath(APPLICATION_PATH . '/../data/' . $journal->getCode());
+            if ($journalPath !== false) {
+                GraphicalAbstractRepository::copyToVersion((int)$context->getDocid(), (int)$newPaper->getDocid(), $journalPath . '/');
+            }
+        }
 
         $newPaperStatusDetails = ['status' => $status];
         if ($isAlreadyAccepted) {

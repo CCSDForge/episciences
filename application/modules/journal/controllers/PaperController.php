@@ -1,6 +1,7 @@
 <?php
 
 use Episciences\Files\Uploader;
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
@@ -1542,6 +1543,8 @@ class PaperController extends PaperDefaultController
         // save tmp version
         if ($tmpPaper->save()) {
 
+            GraphicalAbstractRepository::copyToVersion((int)$paper->getDocid(), (int)$tmpPaper->getDocid());
+
             if ($tmpPaper->getOtherVolumes()) {
                 $tmpPaper->saveOtherVolumes();
             }
@@ -1909,6 +1912,8 @@ class PaperController extends PaperDefaultController
             );
             return;
         }
+
+        GraphicalAbstractRepository::copyToVersion((int)$paper->getDocid(), (int)$newPaper->getDocid());
 
         $this->postSaveProcessing(
             $paper,
