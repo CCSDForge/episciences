@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstractPolicy;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractValidator;
 
@@ -7,7 +8,7 @@ use Episciences\Paper\GraphicalAbstract\GraphicalAbstractValidator;
 $paper = $this->paper;
 $docId = (int)$paper->getDocid();
 $illustration = GraphicalAbstractRepository::find($docId);
-$canEdit = Episciences_Auth::isAllowedToManagePaper() || $paper->isOwnerOrCoAuthor();
+$canEdit = GraphicalAbstractPolicy::canEdit($paper);
 
 if ($illustration === null && !$canEdit) {
     return;
@@ -34,7 +35,7 @@ $licenseSuggestions = ['CC BY 4.0', 'CC BY-SA 4.0', 'CC BY-NC 4.0', 'CC BY-ND 4.
         <?php if ($illustration !== null) : ?>
             <figure class="graphical-abstract-figure">
                 <?php // images uploaded before the text alternative was required fall back on the paper title ?>
-                <img src="<?= $this->escape(GraphicalAbstractRepository::publicUrl($docId, $illustration->file)) ?>"
+                <img src="<?= $this->escape(GraphicalAbstractRepository::versionedPublicUrl($docId, $illustration->file)) ?>"
                      alt="<?= $this->escape($illustration->alt ?? (string)$paper->getTitle(null, true)) ?>"
                      loading="lazy">
                 <?php if ($illustration->license !== null) : ?>

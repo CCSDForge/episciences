@@ -2,6 +2,7 @@
 
 use Episciences\AppRegistry;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstract;
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstractPolicy;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\Paper\GraphicalAbstract\GraphicalAbstractValidator;
 
@@ -53,13 +54,29 @@ class AdministrategraphabstractController extends Zend_Controller_Action
             return;
         }
 
+        $file = $current?->file;
+        $isNewFile = false;
+
         try {
-            $file = $upload === null ? $current->file : $this->storeUploadedFile($docId, $upload, $current);
-            GraphicalAbstractRepository::save($docId, new GraphicalAbstract($file, $text['alt'], $text['license']));
+            if ($upload !== null) {
+                $file = $this->storeUploadedFile($docId, $upload);
+                $isNewFile = $current === null || basename($current->file) !== $file;
+            }
+
+            GraphicalAbstractRepository::save($docId, new GraphicalAbstract((string)$file, $text['alt'], $text['license']));
         } catch (Throwable $e) {
             AppRegistry::getMonoLogger()?->error(sprintf('Failed to save the graphical abstract of document #%d: %s', $docId, $e->getMessage()));
+            // the database still references the previous file: only the new one is dropped
+            if ($isNewFile) {
+                GraphicalAbstractRepository::removeFile($docId, (string)$file);
+            }
             $this->sendErrors(500, [self::GLOBAL_MESSAGE => $this->view->translate("L'illustration n'a pas pu être enregistrée.")]);
             return;
+        }
+
+        // the previous file (other image type) is removed once the database no longer references it
+        if ($isNewFile && $current !== null) {
+            GraphicalAbstractRepository::removeFile($docId, $current->file);
         }
 
         $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage($this->view->translate('Illustration enregistrée'));
@@ -99,13 +116,18 @@ class AdministrategraphabstractController extends Zend_Controller_Action
     }
 
     /**
-     * Common request guard: AJAX POST with a valid request token, on a paper of the journal
-     * that the user manages, owns or co-authors. Sends the error response otherwise.
+     * Common request guard: AJAX POST with a valid request token, on a paper version of the journal
+     * whose illustration the user may change (see GraphicalAbstractPolicy). Sends the error response otherwise.
      */
     private function loadAuthorizedPaper(): ?Episciences_Paper
     {
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
+
+        if ($request->isXmlHttpRequest() && $this->exceedsPostMaxSize($request)) {
+            $this->sendErrors(413, $this->translateErrors([GraphicalAbstractValidator::FIELD_FILE => GraphicalAbstractValidator::ERROR_FILE_TOO_LARGE]));
+            return null;
+        }
 
         if (!$request->isXmlHttpRequest() || !$request->isPost() || !Episciences_Csrf_Helper::validateRequestToken($request)) {
             $this->sendForbidden();
@@ -120,12 +142,24 @@ class AdministrategraphabstractController extends Zend_Controller_Action
             return null;
         }
 
-        if (!Episciences_Auth::isAllowedToManagePaper() && !$paper->isOwnerOrCoAuthor()) {
+        if (!GraphicalAbstractPolicy::canEdit($paper)) {
             $this->sendForbidden();
             return null;
         }
 
         return $paper;
+    }
+
+    /**
+     * PHP empties $_POST and $_FILES when the body is larger than post_max_size, so the request
+     * token cannot be read: this case must not be reported as an authorization failure.
+     */
+    private function exceedsPostMaxSize(Zend_Controller_Request_Http $request): bool
+    {
+        return $request->isPost()
+            && empty($_POST)
+            && empty($_FILES)
+            && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0;
     }
 
     /**
@@ -166,12 +200,13 @@ class AdministrategraphabstractController extends Zend_Controller_Action
 
     /**
      * Moves the (already validated) upload to the paper's public documents directory,
-     * named after its actual MIME type, and removes the previous file if its name differs.
+     * named after its actual MIME type. The previous file is left to the caller, which
+     * removes it once the new file name is saved.
      *
      * @param array{name: string, tmp_name: string, error: int} $upload
      * @return string stored file name
      */
-    private function storeUploadedFile(int $docId, array $upload, ?GraphicalAbstract $current): string
+    private function storeUploadedFile(int $docId, array $upload): string
     {
         $extension = GraphicalAbstractValidator::extensionFor($upload['tmp_name']);
 
@@ -187,13 +222,6 @@ class AdministrategraphabstractController extends Zend_Controller_Action
         }
 
         chmod($target, 0644);
-
-        if ($current !== null && basename($current->file) !== $file) {
-            $previous = GraphicalAbstractRepository::filePath($docId, $current->file);
-            if (is_file($previous)) {
-                unlink($previous);
-            }
-        }
 
         return $file;
     }

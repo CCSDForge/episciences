@@ -85,20 +85,17 @@ final class GraphicalAbstractRepository
         self::writeKeys($docId, null, null, null);
 
         if ($graphicalAbstract !== null) {
-            $path = self::filePath($docId, $graphicalAbstract->file, $reviewPath);
-            if (is_file($path)) {
-                unlink($path);
-            }
+            self::removeFile($docId, $graphicalAbstract->file, $reviewPath);
         }
     }
 
     /**
      * Carries the illustration of a paper version over to a newer version.
      *
-     * Does nothing if the source version has no illustration on disk, or if the
-     * target version already has its own. A new version cloned from the previous
-     * Episciences_Paper inherits the stored keys but not the file, so the target is
-     * only considered as having an illustration if its file exists.
+     * Does nothing if the target version already has its own illustration. A new version
+     * cloned from the previous Episciences_Paper inherits the stored keys but not the file,
+     * so the target is only considered as having an illustration if its file exists.
+     * If the source version has no illustration on disk, the keys inherited by the target are removed.
      *
      * Never throws: a failure is logged and must not prevent the version from being created.
      *
@@ -113,20 +110,20 @@ final class GraphicalAbstractRepository
 
         try {
             $source = self::find($fromDocId);
-
-            if ($source === null) {
-                return false;
-            }
-
-            $sourcePath = self::filePath($fromDocId, $source->file, $reviewPath);
-
-            if (!is_file($sourcePath)) {
-                return false;
-            }
-
+            $sourcePath = $source !== null ? self::filePath($fromDocId, $source->file, $reviewPath) : null;
             $target = self::find($toDocId);
+            $targetHasFile = $target !== null && is_file(self::filePath($toDocId, $target->file, $reviewPath));
 
-            if ($target !== null && is_file(self::filePath($toDocId, $target->file, $reviewPath))) {
+            if ($targetHasFile) {
+                return false;
+            }
+
+            if ($source === null || $sourcePath === null || !is_file($sourcePath)) {
+                // a clone inherits the stored keys: without a file to carry over, they would point to nothing
+                if ($target !== null) {
+                    self::writeKeys($toDocId, null, null, null);
+                }
+
                 return false;
             }
 
@@ -149,6 +146,20 @@ final class GraphicalAbstractRepository
         }
 
         return true;
+    }
+
+    /**
+     * Removes an image file of the paper, if it exists.
+     *
+     * @param string|null $reviewPath journal data directory, defaults to REVIEW_PATH
+     */
+    public static function removeFile(int $docId, string $file, ?string $reviewPath = null): void
+    {
+        $path = self::filePath($docId, $file, $reviewPath);
+
+        if (is_file($path)) {
+            unlink($path);
+        }
     }
 
     /**
@@ -175,6 +186,25 @@ final class GraphicalAbstractRepository
     public static function publicUrl(int $docId, string $file): string
     {
         return self::PUBLIC_URL_PREFIX . $docId . '/' . rawurlencode(basename($file));
+    }
+
+    /**
+     * Public URL with the modification time of the file, so that a replaced image of the same
+     * type (same file name) is not served from a browser or proxy cache.
+     *
+     * @param string|null $reviewPath journal data directory, defaults to REVIEW_PATH
+     */
+    public static function versionedPublicUrl(int $docId, string $file, ?string $reviewPath = null): string
+    {
+        $url = self::publicUrl($docId, $file);
+
+        try {
+            $mtime = @filemtime(self::filePath($docId, $file, $reviewPath));
+        } catch (RuntimeException) {
+            $mtime = false;
+        }
+
+        return $mtime !== false ? $url . '?v=' . $mtime : $url;
     }
 
     /**

@@ -167,13 +167,27 @@ final class GraphicalAbstractRepositoryTest extends TestCase
         self::assertCount(2, $this->adapter->queries, 'no write expected');
     }
 
-    public function testCopyToVersionDoesNothingWhenTheSourceFileIsMissing(): void
+    public function testCopyToVersionDropsTheInheritedKeysWhenTheSourceFileIsMissing(): void
     {
         $this->reviewPath = $this->makeReviewPath();
-        $this->adapter->rows = [['graphical_abstract.png', 'A chart', null]];
+        $this->adapter->rows = [
+            ['graphical_abstract.png', 'A chart', null], // source, no file on disk
+            ['graphical_abstract.png', 'A chart', null], // target, inherited keys
+        ];
 
         self::assertFalse(GraphicalAbstractRepository::copyToVersion(10, 11, $this->reviewPath));
-        self::assertCount(1, $this->adapter->queries);
+
+        $lastQuery = end($this->adapter->queries);
+        self::assertSame([null, null, null, 11], $lastQuery[1]);
+    }
+
+    public function testCopyToVersionLeavesTheTargetAloneWhenItHasNoKeys(): void
+    {
+        $this->reviewPath = $this->makeReviewPath();
+        $this->adapter->rows = [['graphical_abstract.png', 'A chart', null], [null, null, null]];
+
+        self::assertFalse(GraphicalAbstractRepository::copyToVersion(10, 11, $this->reviewPath));
+        self::assertCount(2, $this->adapter->queries, 'no write expected');
     }
 
     public function testCopyToVersionDoesNothingWithoutSourceIllustration(): void
@@ -194,6 +208,33 @@ final class GraphicalAbstractRepositoryTest extends TestCase
         self::assertSame('/data/rvcode/public/documents/42/', GraphicalAbstractRepository::documentsDir(42, '/data/rvcode'));
         self::assertSame('/data/rvcode/public/documents/42/x.png', GraphicalAbstractRepository::filePath(42, '../x.png', '/data/rvcode/'));
         self::assertSame('/public/documents/42/a%20b.png', GraphicalAbstractRepository::publicUrl(42, 'dir/a b.png'));
+    }
+
+    public function testVersionedPublicUrlAppendsTheModificationTime(): void
+    {
+        $this->createDocument(42, 'graphical_abstract.png');
+        $path = $this->reviewPath . 'public/documents/42/graphical_abstract.png';
+        touch($path, 1700000000);
+        clearstatcache();
+
+        self::assertSame(
+            '/public/documents/42/graphical_abstract.png?v=1700000000',
+            GraphicalAbstractRepository::versionedPublicUrl(42, 'graphical_abstract.png', $this->reviewPath)
+        );
+        self::assertSame(
+            '/public/documents/42/missing.png',
+            GraphicalAbstractRepository::versionedPublicUrl(42, 'missing.png', $this->reviewPath)
+        );
+    }
+
+    public function testRemoveFileIgnoresAMissingFile(): void
+    {
+        $this->createDocument(42, 'graphical_abstract.png');
+
+        GraphicalAbstractRepository::removeFile(42, 'graphical_abstract.png', $this->reviewPath);
+        GraphicalAbstractRepository::removeFile(42, 'graphical_abstract.png', $this->reviewPath);
+
+        self::assertFileDoesNotExist($this->reviewPath . 'public/documents/42/graphical_abstract.png');
     }
 
     public function testDocumentsDirRequiresAJournalDirectory(): void

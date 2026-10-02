@@ -82,9 +82,9 @@ final class AdministrategraphabstractControllerRequestTest extends TestCase
         $guard = $this->extractMethod('loadAuthorizedPaper');
 
         self::assertStringContainsString(
-            '!Episciences_Auth::isAllowedToManagePaper() && !$paper->isOwnerOrCoAuthor()',
+            '!GraphicalAbstractPolicy::canEdit($paper)',
             $guard,
-            'the guard must reject users who neither manage, own nor co-author the paper'
+            'the guard must apply the version and role rules to the paper'
         );
         self::assertStringNotContainsString('isAuthor()', $this->source,
             'the rights must be checked on the paper');
@@ -92,6 +92,34 @@ final class AdministrategraphabstractControllerRequestTest extends TestCase
             'docId must be cast to int before being used to build paths');
         self::assertStringContainsString('Episciences_PapersManager::get($docId, false, RVID)', $guard,
             'the paper must be loaded from the current journal');
+    }
+
+    /**
+     * A body larger than post_max_size empties $_POST: it must not be reported as a forbidden request.
+     */
+    public function testPostMaxSizeOverflowIsReportedAsTooLarge(): void
+    {
+        $guard = $this->extractMethod('loadAuthorizedPaper');
+
+        $overflowPos = strpos($guard, 'exceedsPostMaxSize(');
+        self::assertNotFalse($overflowPos);
+        self::assertStringContainsString('sendErrors(413,', $guard);
+        self::assertLessThan(strpos($guard, 'Episciences_Csrf_Helper::validateRequestToken('), $overflowPos);
+    }
+
+    /**
+     * The database is saved before the previous file is removed, and a failed save drops only the new file.
+     */
+    public function testPreviousFileIsRemovedOnlyAfterTheSave(): void
+    {
+        $add = $this->extractMethod('addgraphabsAction');
+
+        $savePos = strpos($add, 'GraphicalAbstractRepository::save(');
+        $removePreviousPos = strpos($add, 'removeFile($docId, $current->file)');
+        self::assertNotFalse($savePos);
+        self::assertNotFalse($removePreviousPos);
+        self::assertLessThan($removePreviousPos, $savePos);
+        self::assertStringNotContainsString('unlink(', $this->extractMethod('storeUploadedFile'));
     }
 
     public function testDeleteUsesBasenameOnFileName(): void
