@@ -25,9 +25,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
-- Sorting by invitation status does not reflect the actual situation.
+[RT#293890]:
+- Sorting by invitation status does not reflect the actual situation:
+    A reviewer’s report is categorised as an "Additional reviewer’s report",
+    whereas this should only occur in cases where an editor adds a review directly 
+- The dashboard does not display pending invitations that were sent via a temporary account.
+- Reviewers were listed once per assignment history row on the paper page, instead of once per invitation.
+- An expired invitation no longer keeps its paper pinned to the reviewer's assigned papers list.
+- A reviewer holding a temporary account and invited more than once on the same paper was returned
+  without any identity, which made the paper page fail.
 - [#1009](https://github.com/CCSDForge/episciences/pull/1009): remove redundant account linking confirmation when emails match
 - Avoid suggesting that an invitation be linked to another account if it has already been accepted, has expired or has been cancelled.
+
+### Changed
+- The continuous integration workflows now generate the configuration and the database the PHPUnit
+  bootstrap requires. The test suite was aborting before its first test and reporting success: no
+  PHP test had ever actually run on CI.
+- A command line script called with an unknown option now exits with an error code instead of 0,
+  so a cron or a CI job is no longer told it succeeded.
 
 ### Added
 

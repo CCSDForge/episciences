@@ -24,10 +24,6 @@ use ReflectionMethod;
  * regress, either shape could leak into ADDITIONAL_PROFILE_INFORMATION and break any
  * consumer expecting a single, consistent format (see UserDefaultController::createAction()
  * bug fixed alongside this test).
- *
- * @covers UserDefaultController::processAffiliations
- * @covers UserDefaultController::disassembleAffiliation
- * @covers UserDefaultController::assembleAffiliation
  */
 final class UserDefaultControllerAffiliationsTest extends TestCase
 {

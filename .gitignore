@@ -27,6 +27,7 @@ coverage-*.xml
 # Private configs
 /config/pwd.json
 /tests/config/env-test.php
+/tests/config/pwd.json
 # Mappings of Episicences journals Id HAL referential Ids
 /config/halJournalMappings.json
 
@@ -71,6 +72,7 @@ assets/node_modules/
 
 #PHPunit
 /.phpunit.result.cache
+/.phpunit.cache/
 
 /tmp/
 /docker-compose.override.yml
