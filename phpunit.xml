@@ -23,9 +23,10 @@
   -->
   <source>
     <include>
-      <directory>application</directory>
-      <directory>library</directory>
-      <directory>scripts</directory>
+      <directory suffix=".php">application</directory>
+      <directory suffix=".php">library</directory>
+      <directory suffix=".php">scripts</directory>
+      <directory suffix=".php">src</directory>
     </include>
   </source>
   <logging>
@@ -37,13 +38,6 @@
       <text outputFile="php://stdout" showOnlySummary="true"/>
     </report>
   </coverage>
-  <source>
-    <include>
-      <directory suffix=".php">application</directory>
-      <directory suffix=".php">library</directory>
-      <directory suffix=".php">src</directory>
-    </include>
-  </source>
   <!-- Run `composer require symfony/panther` before enabling this extension -->
   <!--
     <extensions>
