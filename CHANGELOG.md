@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An expired invitation no longer keeps its paper pinned to the reviewer's assigned papers list.
 - A reviewer holding a temporary account and invited more than once on the same paper was returned
   without any identity, which made the paper page fail.
+- [#1009](https://github.com/CCSDForge/episciences/pull/1009): remove redundant account linking confirmation when emails match
+- Avoid suggesting that an invitation be linked to another account if it has already been accepted, has expired or has been cancelled.
 
 ### Changed
 - The continuous integration workflows now generate the configuration and the database the PHPUnit
