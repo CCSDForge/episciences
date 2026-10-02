@@ -218,8 +218,14 @@ class Episciences_VolumeTest extends TestCase
     {
         $v = new Episciences_Volume();
         $v->setVol_num('3');
-        // setVol_num() casts to int internally
-        $this->assertSame(3, $v->getVol_num());
+        $this->assertSame('3', $v->getVol_num());
+    }
+
+    public function testSetVolNumAcceptsNonNumericString(): void
+    {
+        $v = new Episciences_Volume();
+        $v->setVol_num(' S1 ');
+        $this->assertSame('S1', $v->getVol_num());
     }
 
     // =========================================================================
@@ -351,7 +357,7 @@ class Episciences_VolumeTest extends TestCase
         $v->setDescriptions(['en' => 'English description']);
         $v->setVol_type('proceedings');
         $v->setVol_year('2026');
-        $v->setVol_num(3);
+        $v->setVol_num('3');
 
         $method = new ReflectionMethod(Episciences_Volume::class, 'getVolumeDataForSave');
         $method->setAccessible(true);
@@ -364,7 +370,7 @@ class Episciences_VolumeTest extends TestCase
         $this->assertSame(json_encode(['en' => 'English description']), $result['descriptions']);
         $this->assertSame('proceedings', $result['vol_type']);
         $this->assertSame('2026', $result['vol_year']);
-        $this->assertSame(3, $result['vol_num']);
+        $this->assertSame('3', $result['vol_num']);
     }
 }
 

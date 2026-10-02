@@ -921,8 +921,7 @@ class Episciences_Submit
             }
 
             if (isset($hookVersion['version'])) {
-                $version = (float)$hookVersion['version'];
-                $result['hookVersion'] = $version;
+                $version = Episciences_Repositories_Common::normalizeVersion($hookVersion['version']);
             }
 
             //OAI identifier
@@ -1108,6 +1107,10 @@ class Episciences_Submit
             $oai = new Episciences_Oai_Client($baseUrl, 'xml');
             $record = $oai->getRecord($identifier);
 
+            if ((int)$repoId === (int)Episciences_Repositories::ARXIV_REPO_ID) {
+                $record = self::stripSurplusArxivDescriptions($record);
+            }
+
             $type = Episciences_Tools::xpath($record, '//dc:type');
 
             if (!empty($type)) {
@@ -1119,6 +1122,54 @@ class Episciences_Submit
 
 
         return null;
+    }
+
+    /**
+     * arXiv's OAI-PMH oai_dc record carries the "Comments" field (e.g. "to be
+     * published in JFP") as a second, separate <dc:description> sibling after the
+     * real abstract. The paper view page (Episciences_Paper::getXslt() ->
+     * public/xsl/full_paper.xsl) renders every <dc:description> node directly
+     * from the stored RECORD XML, so discard the surplus node here, before it's
+     * ever persisted, instead of only filtering it out on every read.
+     */
+    private static function stripSurplusArxivDescriptions(string $record): string
+    {
+        if ($record === '') {
+            return $record;
+        }
+
+        $dom = new DOMDocument();
+
+        try {
+            set_error_handler('\Ccsd\Xml\Exception::HandleXmlError');
+            $loaded = $dom->loadXML($record);
+        } catch (\Ccsd\Xml\Exception $e) {
+            $loaded = false;
+        } finally {
+            restore_error_handler();
+        }
+
+        if (!$loaded || !$dom->documentElement) {
+            return $record;
+        }
+
+        $xpath = new DOMXPath($dom);
+        foreach (Ccsd_Tools::getNamespaces($dom->documentElement) as $prefix => $namespace) {
+            $xpath->registerNamespace($prefix, $namespace);
+        }
+
+        $descriptions = $xpath->query('//dc:description');
+
+        if ($descriptions === false || $descriptions->length <= 1) {
+            return $record;
+        }
+
+        for ($i = $descriptions->length - 1; $i > 0; $i--) {
+            $node = $descriptions->item($i);
+            $node->parentNode->removeChild($node);
+        }
+
+        return $dom->saveXML($dom->documentElement);
     }
 
     /**
@@ -1743,10 +1794,6 @@ class Episciences_Submit
         $recipients = $this->filterConflictRecipients($recipients, $paper);
         unset($recipients[$paper->getUid()]);
 
-        if (empty($recipients)) {
-            return;
-        }
-
         $oldDocId = (int)Ccsd_Tools::ifsetor($data['old_docid'], 0);
         $oldStatus = (int)Ccsd_Tools::ifsetor($data['old_paper_status'], 0);
         $canReplace = (bool)Ccsd_Tools::ifsetor($data['can_replace'], false);
@@ -1784,7 +1831,10 @@ class Episciences_Submit
         // Mail à l'auteur
         Episciences_Mail_Send::sendMailFromReview($author, $authorTemplateKy, $authorTags, $paper, null, [], false, $paper->getCoAuthors());
 
-        self::notifyManagers($paper, $recipients, $oldDocId, $oldStatus, $commonTags, $canReplace);
+        // The author acknowledgment must not depend on the editorial committee being notifiable
+        if (!empty($recipients)) {
+            self::notifyManagers($paper, $recipients, $oldDocId, $oldStatus, $commonTags, $canReplace);
+        }
     }
 
     /**
@@ -1809,13 +1859,18 @@ class Episciences_Submit
             ['answer' => Episciences_Paper_Conflict::AVAILABLE_ANSWER['yes'], 'paper_id' => $paper->getPaperid()]
         );
 
-        foreach ($recipients as $uid => $recipient) {
-            if (isset($conflictUids[$uid])) {
-                unset($recipients[$uid]);
-            }
-        }
+        return self::removeConflictingRecipients($recipients, $conflictUids);
+    }
 
-        return $recipients;
+    /**
+     * @param array<int, mixed> $recipients recipients indexed by UID
+     * @param array<int, int|string> $conflictUids list of UIDs having declared a conflict of interest
+     * @return array<int, mixed>
+     */
+    private static function removeConflictingRecipients(array $recipients, array $conflictUids): array
+    {
+        // fetchCol() returns a list: UIDs are values, not keys
+        return array_diff_key($recipients, array_flip(array_map('intval', $conflictUids)));
     }
 
     /**

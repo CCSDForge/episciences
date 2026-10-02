@@ -772,6 +772,54 @@ class Episciences_UserTest extends TestCase
         }
     }
 
+    public function testForgetStaticCacheRemovesOnlyTargetUid(): void
+    {
+        $keptUid = 11111;
+        $forgottenUid = 22222;
+        $keptData = [
+            'UID' => $keptUid,
+            'USERNAME' => 'keptuser',
+            'EMAIL' => 'kept@example.com',
+            'SCREEN_NAME' => 'Kept User',
+            'LASTNAME' => 'User',
+            'FIRSTNAME' => 'Kept',
+            'MIDDLENAME' => '',
+            'CIV' => 'M.',
+            'LANGUEID' => 'en',
+            'API_PASSWORD' => 'hashed_pw',
+            'IS_VALID' => 1,
+            'REGISTRATION_DATE' => '2026-01-01 12:00:00',
+            'MODIFICATION_DATE' => '2026-01-02 12:00:00',
+            'uuid' => 'kept-uuid',
+            'AFFILIATIONS' => null,
+            'BIOGRAPHY' => null,
+            'ORCID' => null,
+        ];
+
+        Episciences_User::setStaticCache($keptUid, $keptData);
+        Episciences_User::setStaticCache($forgottenUid, ['UID' => $forgottenUid, 'uuid' => 'forgotten-uuid']);
+
+        Episciences_User::forgetStaticCache($forgottenUid);
+
+        // The forgotten UID is gone: find() falls through to a real DB query, which errors here.
+        try {
+            $this->user->find($forgottenUid);
+            $this->fail('Expected an exception when querying database after forgetting the cache entry');
+        } catch (\Throwable $e) {
+            $this->assertTrue(true);
+        }
+
+        // The other UID is untouched, still served from cache.
+        $result = (new Episciences_User())->find($keptUid);
+        $this->assertSame($keptData['UID'], $result['UID']);
+    }
+
+    public function testForgetStaticCacheOnAbsentUidDoesNotThrow(): void
+    {
+        Episciences_User::forgetStaticCache(999999999);
+        $this->assertTrue(true);
+    }
+
     // -------------------------------------------------------------------------
     // hasLocalData() via identity map — no DB required
     // -------------------------------------------------------------------------

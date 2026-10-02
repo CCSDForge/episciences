@@ -61,6 +61,16 @@ class Episciences_User extends Ccsd_User_Models_User
         self::$_identityMap = [];
     }
 
+    /**
+     * Drop one entry from the static request-level memory cache, so the next
+     * find() re-reads the row from the database instead of a value cached
+     * earlier in the same request.
+     */
+    public static function forgetStaticCache(int $uid): void
+    {
+        unset(self::$_identityMap[$uid]);
+    }
+
     protected ?string $_orcid = null;
     protected ?array $_affiliations = null;
 

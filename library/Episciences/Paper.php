@@ -1975,7 +1975,22 @@ class Episciences_Paper
             $metadata['publication_date'] = Episciences_Tools::xpath($xml, '/episciences/publication_date');
             $metadata['version'] = Episciences_Tools::xpath($xml, '/episciences/version');
             $metadata['title'] = Episciences_Tools::xpath($xml, '//dc:title', true);
-            $metadata['description'] = Episciences_Tools::xpath($xml, '//dc:description', true);
+
+            $descriptions = Episciences_Tools::xpath($xml, '//dc:description', true);
+            if ($this->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID && is_array($descriptions)) {
+                // xpath($xml, ..., true) overwrites entries sharing the same xml:lang in place,
+                // so array_slice(0, 1) could silently keep a later node's text instead of the true
+                // first <dc:description>. Re-query without lang-collapsing to get the real document order.
+                $orderedDescriptions = Episciences_Tools::xpath($xml, '//dc:description', true, false);
+                if (is_array($orderedDescriptions) && $orderedDescriptions !== []) {
+                    $firstDescription = reset($orderedDescriptions);
+                    $descriptions = is_array($firstDescription) ? $firstDescription : [$firstDescription];
+                } else {
+                    $descriptions = [];
+                }
+            }
+            $metadata['description'] = $descriptions;
+
             $metadata['authors'] = Episciences_Tools::xpath($xml, '//dc:creator', true);
             $metadata['subjects'] = Episciences_Tools::xpath($xml, '//dc:subject', true, false);
             $metadata['language'] = Episciences_Tools::xpath($xml, '//dc:language');
@@ -5120,11 +5135,13 @@ class Episciences_Paper
     public function getBibRef(string $rvCode = null): array
     {
 
-        if (!$rvCode && !Ccsd_Tools::isFromCli()) {
-            $rvCode = RVCODE;
+        if (!$rvCode) {
+            $journal = Episciences_ReviewsManager::find($this->getRvid());
+            $rvCode = $journal instanceof Episciences_Review ? $journal->getCode() : null;
         }
 
         if (
+            $rvCode &&
             (isset(EPISCIENCES_BIBLIOREF['ENABLE']) && EPISCIENCES_BIBLIOREF['ENABLE']) &&
             $this->getDocid() &&
             (
@@ -5132,7 +5149,10 @@ class Episciences_Paper
                 $this->getStatus() === self::STATUS_PUBLISHED
             )
         ) {
-            $urlPdf = SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN . '/' . $this->getDocid() . '/pdf';
+            $path = Episciences_ReviewsManager::isNewFrontSwitched($this->getRvid())
+                ? '/articles/' . $this->getDocid() . '/download'
+                : '/' . $this->getDocid() . '/pdf';
+            $urlPdf = SERVER_PROTOCOL . '://' . $rvCode . '.' . DOMAIN . $path;
             return Episciences_BibliographicalsReferencesTools::getBibRefFromApi($urlPdf);
         }
         return [];
@@ -5196,7 +5216,8 @@ class Episciences_Paper
         $query = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(`DOCUMENT`, " . $db->quote(self::JSON_PATH_ABS_FILE) . ")) FROM " . T_PAPERS . " WHERE DOCID = ?", [$docId]);
         try {
             foreach ($query->fetch() as $val) {
-                if (!is_null($val)) {
+                // JSON_UNQUOTE(JSON_EXTRACT()) returns the string "null" (not SQL NULL) when the JSON value itself is null
+                if (!is_null($val) && $val !== 'null') {
                     return trim($val);
                 }
             }
