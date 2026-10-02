@@ -14,8 +14,6 @@ use ReflectionMethod;
  * caught by ActivityController::assertConstantsAreConsistent() throwing a LogicException
  * on the first production request to /activity/view after the mistake ships — this test
  * catches it at merge time instead.
- *
- * @covers ActivityController
  */
 class ActivityControllerConstantsTest extends TestCase
 {

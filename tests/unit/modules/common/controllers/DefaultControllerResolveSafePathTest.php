@@ -17,8 +17,6 @@ use ReflectionMethod;
  * DB, no MVC stack), so we instantiate DefaultController without its constructor and
  * invoke the protected method by reflection. Real temporary directories/files are
  * created under the project build/ directory and removed in tearDown().
- *
- * @covers DefaultController::resolveSafePath
  */
 final class DefaultControllerResolveSafePathTest extends TestCase
 {

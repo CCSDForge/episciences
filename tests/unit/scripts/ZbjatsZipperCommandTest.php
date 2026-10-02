@@ -55,8 +55,11 @@ class ZbjatsZipperCommandTest extends TestCase
         if (!defined('DOMAIN')) {
             define('DOMAIN', 'episciences.org');
         }
-        $url = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 42, 'pdf');
-        $this->assertSame('https://dmtcs.episciences.org/42/pdf', $url);
+        $legacyUrl = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 42, 1001, 'pdf', false);
+        $this->assertSame('https://dmtcs.episciences.org/42/pdf', $legacyUrl);
+
+        $newFrontUrl = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 42, 1001, 'pdf', true);
+        $this->assertSame('https://dmtcs.episciences.org/articles/1001/download', $newFrontUrl);
     }
 
     public function testBuildPaperUrlZbjats(): void
@@ -64,8 +67,11 @@ class ZbjatsZipperCommandTest extends TestCase
         if (!defined('DOMAIN')) {
             define('DOMAIN', 'episciences.org');
         }
-        $url = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 99, 'zbjats');
-        $this->assertSame('https://dmtcs.episciences.org/99/zbjats', $url);
+        $legacyUrl = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 99, 1002, 'zbjats', false);
+        $this->assertSame('https://dmtcs.episciences.org/99/zbjats', $legacyUrl);
+
+        $newFrontUrl = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 99, 1002, 'zbjats', true);
+        $this->assertSame('https://dmtcs.episciences.org/articles/1002/zbjats', $newFrontUrl);
     }
 
     public function testBuildPaperUrlContainsRvCode(): void
@@ -73,7 +79,7 @@ class ZbjatsZipperCommandTest extends TestCase
         if (!defined('DOMAIN')) {
             define('DOMAIN', 'episciences.org');
         }
-        $url = ZbjatsZipperCommand::buildPaperUrl('jtcam', 7, 'pdf');
+        $url = ZbjatsZipperCommand::buildPaperUrl('jtcam', 7, 1003, 'pdf', false);
         $this->assertStringContainsString('jtcam.', $url);
         $this->assertStringStartsWith('https://', $url);
     }
