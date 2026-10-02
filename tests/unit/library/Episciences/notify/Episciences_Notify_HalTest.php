@@ -33,6 +33,10 @@ class Episciences_Notify_HalTest extends TestCase
     /** @var MockObject&NotificationsRepository */
     private MockObject $repository;
 
+    private bool $hadMetadataSources;
+    /** @var mixed */
+    private $originalMetadataSources;
+
     protected function setUp(): void
     {
         $this->paper = $this->createMock(Episciences_Paper::class);
@@ -48,7 +52,25 @@ class Episciences_Notify_HalTest extends TestCase
         $this->journal->method('getUrl')->willReturn('https://test-journal.episciences.org');
         $this->journal->method('getName')->willReturn('Test Journal');
 
+        $this->hadMetadataSources = Zend_Registry::isRegistered('metadataSources');
+        if ($this->hadMetadataSources) {
+            $this->originalMetadataSources = Zend_Registry::get('metadataSources');
+        }
+
         self::registerHalMetadataSource();
+    }
+
+    protected function tearDown(): void
+    {
+        // Zend_Registry is a process-wide singleton: restore whatever was registered
+        // before this test so the fake HAL source and the emptied repository cache
+        // don't leak into other test files running later in the same PHPUnit process.
+        if ($this->hadMetadataSources) {
+            Zend_Registry::set('metadataSources', $this->originalMetadataSources);
+        } else {
+            Zend_Registry::getInstance()->offsetUnset('metadataSources');
+        }
+        self::resetRepositoriesCache();
     }
 
     /**
@@ -62,7 +84,9 @@ class Episciences_Notify_HalTest extends TestCase
      */
     private static function registerHalMetadataSource(): void
     {
-        $metadataSources = Zend_Registry::get('metadataSources');
+        $metadataSources = Zend_Registry::isRegistered('metadataSources')
+            ? Zend_Registry::get('metadataSources')
+            : [];
         $metadataSources[(string) Episciences_Repositories::HAL_REPO_ID] = [
             Episciences_Repositories::REPO_LABEL => Episciences_Repositories::HAL_LABEL,
             Episciences_Repositories::REPO_TYPE => Episciences_Repositories::TYPE_PAPERS_REPOSITORY,
@@ -70,6 +94,11 @@ class Episciences_Notify_HalTest extends TestCase
         ];
         Zend_Registry::set('metadataSources', $metadataSources);
 
+        self::resetRepositoriesCache();
+    }
+
+    private static function resetRepositoriesCache(): void
+    {
         $repositories = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
         $repositories->setAccessible(true);
         $repositories->setValue(null, []);
