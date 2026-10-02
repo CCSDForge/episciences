@@ -103,8 +103,7 @@ $paperLanguageRaw = $this->paperLanguage;
                                     <?php endif; ?>
                                     <surname><?= $this->escape($editor->getLastname()) ?></surname>
                                     <?php if (!empty($editor->getOrcid())): ?>
-                                        <ORCID>
-                                            https://orcid.org/<?= strtoupper($this->escape($editor->getOrcid())) ?></ORCID>
+                                        <ORCID>https://orcid.org/<?= strtoupper($this->escape($editor->getOrcid())) ?></ORCID>
                                     <?php endif; ?>
                                 </person_name>
                             <?php endforeach; ?>
