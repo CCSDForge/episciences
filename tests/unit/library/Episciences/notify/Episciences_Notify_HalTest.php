@@ -15,6 +15,8 @@ use Episciences_Repositories;
 use Episciences_Review;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use ReflectionProperty;
+use Zend_Registry;
 
 class Episciences_Notify_HalTest extends TestCase
 {
@@ -45,6 +47,32 @@ class Episciences_Notify_HalTest extends TestCase
 
         $this->journal->method('getUrl')->willReturn('https://test-journal.episciences.org');
         $this->journal->method('getName')->willReturn('Test Journal');
+
+        self::registerHalMetadataSource();
+    }
+
+    /**
+     * Hal::announceEndorsement() builds the "in repository" URI through
+     * Episciences_Repositories::getDocUrl(), which reads the metadataSources
+     * Zend_Registry entry (normally populated from the metadata_sources table).
+     * The test DB has no such rows, so getDocUrl() returns null and the
+     * context item URI collapses to a relative "/pdf", which coarnotify rejects
+     * with "URI requires a scheme". Register a minimal HAL entry so the URI is
+     * absolute, and reset the memoized repository list so it is picked up.
+     */
+    private static function registerHalMetadataSource(): void
+    {
+        $metadataSources = Zend_Registry::get('metadataSources');
+        $metadataSources[(string) Episciences_Repositories::HAL_REPO_ID] = [
+            Episciences_Repositories::REPO_LABEL => Episciences_Repositories::HAL_LABEL,
+            Episciences_Repositories::REPO_TYPE => Episciences_Repositories::TYPE_PAPERS_REPOSITORY,
+            Episciences_Repositories::REPO_DOCURL => 'https://hal.science/%%ID',
+        ];
+        Zend_Registry::set('metadataSources', $metadataSources);
+
+        $repositories = new ReflectionProperty(Episciences_Repositories::class, '_repositories');
+        $repositories->setAccessible(true);
+        $repositories->setValue(null, []);
     }
 
     private function buildClientWithStatus(int $httpStatus): COARNotifyClient
