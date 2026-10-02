@@ -14,7 +14,6 @@ use PHPUnit\Framework\TestCase;
  *
  * Each test documents one concrete bug found during a security audit.
  * Currently failing tests mark existing bugs (red). They will turn green once fixed.
- *
  */
 class AdministratepaperControllerTest extends TestCase
 {
@@ -522,7 +521,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     *
      * Bug: line 165 echoes an error JSON but has NO `return` statement.
      * Execution falls through to line 173+ where it reads $docId and
      * calls Episciences_PapersManager::get($docId) on behalf of an
@@ -1345,7 +1343,6 @@ class AdministratepaperControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     /**
-     * @covers AdministratepaperController::savenewpostedversionAction
      *
      * Bug: for repositories where the posted value is an identifier rather than
      * a version number (e.g. Zenodo), the 'hookVersion' hook must be given

@@ -13,8 +13,6 @@ use PHPUnit\Framework\TestCase;
  * ZF1 module controllers are not Composer-autoloaded and require the full request
  * stack to instantiate, so — consistent with the other controller tests in this
  * suite — we analyse the source to assert the preconditions stay in place.
- *
- * @covers UserDefaultController
  */
 final class UserDefaultControllerRequestGuardTest extends TestCase
 {

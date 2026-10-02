@@ -15,8 +15,6 @@ use ReflectionMethod;
  * fabricated PAPER_LOG rows (same shape as Episciences_Paper::getHistory()); no
  * paper/version needs to exist in the DB, since a non-existent DOCID simply makes
  * resolveVersionPdfUrl() degrade to a null PDF link, which these tests don't assert on.
- *
- * @covers ActivityController::buildReviewTableBlock
  */
 final class ActivityControllerReviewTableTest extends TestCase
 {
