@@ -15,7 +15,6 @@ use PHPUnit\Framework\TestCase;
  * user's rights on the paper itself, and that the file handling stays safe.
  * The validation rules themselves are unit-tested in GraphicalAbstractValidatorTest.
  *
- * @covers AdministrategraphabstractController
  */
 final class AdministrategraphabstractControllerRequestTest extends TestCase
 {

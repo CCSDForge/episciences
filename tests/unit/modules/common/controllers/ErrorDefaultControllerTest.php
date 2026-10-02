@@ -14,8 +14,6 @@ use ReflectionClass;
  * the application log. It is pure (array walk, no $this state, no DB, no MVC stack),
  * so the controller is instantiated without its constructor and the public method is
  * called directly.
- *
- * @covers ErrorDefaultController::redactSensitiveParams
  */
 final class ErrorDefaultControllerTest extends TestCase
 {

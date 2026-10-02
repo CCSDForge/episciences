@@ -1484,7 +1484,7 @@ class PaperDefaultController extends DefaultController
 
 
         } catch (Zend_Exception $e) {
-            error_log($e->getMessage);
+            error_log($e->getMessage());
         }
     }
 
