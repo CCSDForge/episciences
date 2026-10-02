@@ -92,19 +92,24 @@ $paperLanguageRaw = $this->paperLanguage;
         <?php if ($publicationDate || $this->volume !== '' || $this->section !== ''): ?>
             <journal_issue>
                 <?php if (!empty($this->volumeEditors)): ?>
-                <contributors>
-                    <?php foreach (array_values($this->volumeEditors) as $index => $editor): ?>
-                    <person_name sequence="<?= $index === 0 ? 'first' : 'additional' ?>" contributor_role="editor">
-                        <?php if ($editor->getFirstname() !== '') : ?>
-                        <given_name><?= $this->escape($editor->getFirstname())?></given_name>
-                        <?php endif; ?>
-                        <surname><?= $this->escape($editor->getLastname()) ?></surname>
-                        <?php if ($editor->getOrcid()): ?>
-                            <ORCID>https://orcid.org/<?= strtoupper($editor->getOrcid()) ?></ORCID>
-                        <?php endif; ?>
-                    </person_name>
-                    <?php endforeach; ?>
-                </contributors>
+                    <?php $validEditors = array_filter($this->volumeEditors, static fn($e) => !empty($e->getLastname())); ?>
+                    <?php if (!empty($validEditors)): ?>
+                        <contributors>
+                            <?php foreach (array_values($validEditors) as $index => $editor): ?>
+                                <person_name sequence="<?= $index === 0 ? 'first' : 'additional' ?>"
+                                             contributor_role="editor">
+                                    <?php if (!empty($editor->getFirstname())) : ?>
+                                        <given_name><?= $this->escape($editor->getFirstname()) ?></given_name>
+                                    <?php endif; ?>
+                                    <surname><?= $this->escape($editor->getLastname()) ?></surname>
+                                    <?php if (!empty($editor->getOrcid())): ?>
+                                        <ORCID>
+                                            https://orcid.org/<?= strtoupper($this->escape($editor->getOrcid())) ?></ORCID>
+                                    <?php endif; ?>
+                                </person_name>
+                            <?php endforeach; ?>
+                        </contributors>
+                    <?php endif; ?>
                 <?php endif; ?>
                 <?php if ($publicationDate) : ?>
                     <publication_date media_type="<?= $onlineType ?>">
@@ -158,7 +163,9 @@ $paperLanguageRaw = $this->paperLanguage;
             <?php
             if (is_array($authors)) : ?>
                 <contributors>
-                    <?php foreach ($authors as $order => $creatorName) : ?>
+                    <?php foreach ($authors
+
+                    as $order => $creatorName) : ?>
                     <?php
                     $givenName = '';
                     $familyName = '';
@@ -303,16 +310,19 @@ $paperLanguageRaw = $this->paperLanguage;
             <program xmlns="http://www.crossref.org/relations.xsd">
                 <?php if ($paper->getRepoid() === (int)Episciences_Repositories::ARXIV_REPO_ID) : ?>
                     <related_item>
-                        <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                        <intra_work_relation identifier-type="arxiv" relationship-type="isSameAs">
+                            arXiv:<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
                     <related_item>
                         <intra_work_relation identifier-type="doi"
-                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>
+                            /arXiv.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
                 <?php elseif ($paper->getRepoid() === (int)Episciences_Repositories::ZENODO_REPO_ID) : ?>
                     <related_item>
                         <intra_work_relation identifier-type="doi"
-                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>/zenodo.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
+                                             relationship-type="isSameAs"><?= Episciences_Repositories::getRepoDoiPrefix($paper->getRepoid()) ?>
+                            /zenodo.<?php echo $this->escape($paper->getIdentifier()); ?></intra_work_relation>
                     </related_item>
                 <?php elseif ($paper->getRepoid() === (int)Episciences_Repositories::HAL_REPO_ID) : ?>
                     <related_item>
@@ -357,7 +367,7 @@ $paperLanguageRaw = $this->paperLanguage;
                                     $identifierType = 'uri';
                                     $linkedData['value'] = 'https://hal.science/' . $linkedData['value'];
                                 } elseif ($identifierType === 'doi') {
-                                    $linkedData['value'] = Episciences_DoiTools::cleanDoi( $linkedData['value']);
+                                    $linkedData['value'] = Episciences_DoiTools::cleanDoi($linkedData['value']);
                                 }
                                 ?>
                                 <?php if ($isIntra) : ?>
