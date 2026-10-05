@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 
 /**
- * @coversDefaultClass LicenseSpdxResolver
+ * @coversDefaultClass \Episciences\Paper\Spdx\LicenseSpdxResolver
  */
 class LicenseSpdxResolverTest extends TestCase
 {
