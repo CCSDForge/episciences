@@ -38,6 +38,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
+.PHONY: import-SPDX-license-list
 .PHONY: enter-container-php
 .PHONY: update-geoip stats-process stats-update-robots-list stats-download-kpi
 .PHONY: format format-check format-tests format-file sonar
@@ -77,7 +78,7 @@ help: ## Display this help message
 	@grep -h -E '^deploy.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No deployment commands found"
 	@echo ""
 	@echo "📦 Other Commands:"
-	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use|import-apache-logs):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use|import-apache-logs|import-SPDX-license-list):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 
 # =============================================================================
 # Core Docker Commands
@@ -409,6 +410,14 @@ enrich-zb-reviews: ## Enrich zbMATH review data
 	@echo "Enriching zbMATH review data..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php enrichment:zb-reviews
+
+# --- SPDX License List -------------------------------------------------------
+
+import-SPDX-license-list: ## Import / update the official SPDX license list into the license_spdx table (dry-run by default; use dry-run=0 to write)
+	# Prod: sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php import:spdx-license-list [--dry-run]
+	@echo "Importing the official SPDX license list (dry-run)..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php import:spdx-license-list $(if $(filter 0,$(dry-run)),,--dry-run)
 
 # --- Sitemap --------------------------------------------------------------------
 

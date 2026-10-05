@@ -37,6 +37,7 @@ require_once __DIR__ . '/GetDoiCommand.php';
 require_once __DIR__ . '/Command/AbstractCommand.php';
 require_once __DIR__ . '/Command/Bootstrapper.php';
 require_once __DIR__ . '/UpdateLicensesCommand.php';
+require_once __DIR__ . '/ImportSpdxLicenseListCommand.php';
 require_once __DIR__ . '/NormalizeUserAffiliationsCommand.php';
 require_once __DIR__ . '/RevalidateNextCacheCommand.php';
 
@@ -115,6 +116,7 @@ $application->add(new UpdateGeoIpCommand());
 // Papers commands
 $application->add(new UpdatePapersDocumentCommand());
 $application->add(new UpdateLicensesCommand());
+$application->add(new ImportSpdxLicenseListCommand());
 $application->add(new CleanHalRecordDescriptionsCommand());
 
 // Translation commands
