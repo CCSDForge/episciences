@@ -106,4 +106,31 @@ final class CommonModuleAclCoverageTest extends TestCase
         self::assertContains('editor', $this->rolesFor('user-rolesform'));
         self::assertContains('editor', $this->rolesFor('user-saveroles'));
     }
+
+    /**
+     * XHR endpoints called by the front-end JavaScript. An XHR request on a resource that is
+     * absent from the ACL is denied by Episciences_Auth_Plugin, so each one must be declared.
+     *
+     * @dataProvider xhrEndpoints
+     * @param list<string> $expectedRoles roles that must declare the resource
+     */
+    public function testXhrEndpointIsDeclaredForItsRoles(string $resource, array $expectedRoles): void
+    {
+        $roles = $this->rolesFor($resource);
+        foreach ($expectedRoles as $role) {
+            self::assertContains($role, $roles, "'$resource' must be declared for '$role' in acl.ini");
+        }
+        self::assertNotContains('guest', $roles, "'$resource' must not be declared for guest");
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     */
+    public static function xhrEndpoints(): iterable
+    {
+        yield 'user photo deletion'  => ['user-ajaxdeletephoto', ['member']];
+        yield 'website menu add'     => ['website-ajaxformpage', ['webmaster', 'secretary']];
+        yield 'website menu order'   => ['website-ajaxorder', ['webmaster', 'secretary']];
+        yield 'website menu removal' => ['website-ajaxrmpage', ['webmaster', 'secretary']];
+    }
 }
