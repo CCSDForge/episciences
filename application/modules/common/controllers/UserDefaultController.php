@@ -1715,9 +1715,15 @@ class UserDefaultController extends Zend_Controller_Action
 
         //Retourne une liste de destinataires
         if ($request->isXmlHttpRequest()) {
-            $users = Episciences_User::filterUsers($query, false);
-            foreach ($users as &$user) {
-                $user['label'] = htmlentities($user['SCREENNAME'] . ' <' . $user['EMAIL'] . '>');
+            $users = [];
+            foreach (Episciences_User::filterUsers($query, false) ?? [] as $user) {
+                $name = $user['SCREEN_NAME'] !== '' ? $user['SCREEN_NAME'] : trim($user['FIRSTNAME'] . ' ' . $user['LASTNAME']);
+                $users[] = [
+                    'uid' => $user['UID'],
+                    'name' => $name,
+                    'mail' => $user['EMAIL'],
+                    'label' => htmlentities($name . ' <' . $user['EMAIL'] . '>'),
+                ];
             }
             echo Zend_Json::encode($users);
         }
