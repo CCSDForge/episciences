@@ -1773,6 +1773,40 @@ class Episciences_Tools
 
     }
 
+    /**
+     * Resolve an attachment name inside the attachments directory.
+     *
+     * Only a flat file name is accepted. The resolved file must be a regular file
+     * located under $baseDir (symbolic links pointing outside are rejected).
+     * The returned path is built from $baseDir (not from realpath()) so that it keeps
+     * the same prefix as the other attachment paths of the application.
+     *
+     * @param string $baseDir attachments directory
+     * @param mixed $name name submitted by the client
+     * @return string|null full path, or null if the name is not acceptable
+     */
+    public static function resolveAttachmentPath(string $baseDir, mixed $name): ?string
+    {
+        if (!is_string($name) || $name === '' || $name === '.' || $name === '..'
+            || $name !== basename($name) || str_contains($name, "\0") || str_contains($name, '\\')) {
+            return null;
+        }
+
+        $baseDir = rtrim($baseDir, '/\\') . DIRECTORY_SEPARATOR;
+        $realBase = realpath($baseDir);
+        $realFile = realpath($baseDir . $name);
+
+        if ($realBase === false || $realFile === false || !is_file($realFile)) {
+            return null;
+        }
+
+        if (!str_starts_with($realFile, $realBase . DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return $baseDir . $name;
+    }
+
     public static function startsWithNumber(string $string): bool
     {
         return $string !== '' && ctype_digit($string[0]);
