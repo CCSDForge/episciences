@@ -5,6 +5,8 @@ namespace unit\library\Episciences;
 use Episciences_Paper_Logger;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Zend_Registry;
+use Zend_Translate;
 
 final class Episciences_Paper_LoggerTest extends TestCase
 {
@@ -253,5 +255,306 @@ final class Episciences_Paper_LoggerTest extends TestCase
     public function testUpdateUidReturnsZeroWithDefaultArguments(): void
     {
         self::assertSame(0, Episciences_Paper_Logger::updateUid());
+    }
+
+    // -------------------------------------------------------------------------
+    // Activity timeline categories — getCategory()/$_category
+    // -------------------------------------------------------------------------
+
+    private const VALID_CATEGORIES = [
+        Episciences_Paper_Logger::CATEGORY_SUBMISSION,
+        Episciences_Paper_Logger::CATEGORY_EDITORIAL,
+        Episciences_Paper_Logger::CATEGORY_REVIEW,
+        Episciences_Paper_Logger::CATEGORY_COMMUNICATION,
+    ];
+
+    /**
+     * Every CODE_ constant must be present as a key in $_category and map to one
+     * of the four known CATEGORY_* constants — otherwise ActivityController's
+     * timeline filters silently mis-file that action (see getCategory()'s
+     * CATEGORY_EDITORIAL fallback for actions absent from this map).
+     */
+    public function testEveryCodeConstantHasACategoryEntry(): void
+    {
+        foreach (Episciences_Paper_Logger::getLogTypes() as $constantName => $codeValue) {
+            self::assertArrayHasKey(
+                $codeValue,
+                Episciences_Paper_Logger::$_category,
+                "Missing \$_category entry for constant $constantName ('$codeValue')"
+            );
+
+            self::assertContains(
+                Episciences_Paper_Logger::$_category[$codeValue],
+                self::VALID_CATEGORIES,
+                "Invalid category value for constant $constantName ('$codeValue')"
+            );
+        }
+    }
+
+    public function testGetCategoryReturnsMappedCategory(): void
+    {
+        self::assertSame(
+            Episciences_Paper_Logger::CATEGORY_REVIEW,
+            Episciences_Paper_Logger::getCategory(Episciences_Paper_Logger::CODE_REVIEWER_ASSIGNMENT)
+        );
+
+        self::assertSame(
+            Episciences_Paper_Logger::CATEGORY_COMMUNICATION,
+            Episciences_Paper_Logger::getCategory(Episciences_Paper_Logger::CODE_MAIL_SENT)
+        );
+
+        self::assertSame(
+            Episciences_Paper_Logger::CATEGORY_SUBMISSION,
+            Episciences_Paper_Logger::getCategory(Episciences_Paper_Logger::CODE_DOCUMENT_IMPORTED)
+        );
+    }
+
+    public function testGetCategoryFallsBackToEditorialForUnknownAction(): void
+    {
+        self::assertSame(
+            Episciences_Paper_Logger::CATEGORY_EDITORIAL,
+            Episciences_Paper_Logger::getCategory('some_future_action_not_yet_categorized')
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // getCategoryLabel() / getCategoryIcon()
+    // -------------------------------------------------------------------------
+
+    public function testGetCategoryLabelReturnsKnownLabels(): void
+    {
+        foreach (self::VALID_CATEGORIES as $category) {
+            self::assertArrayHasKey($category, Episciences_Paper_Logger::$_categoryLabel);
+            self::assertSame(
+                Episciences_Paper_Logger::$_categoryLabel[$category],
+                Episciences_Paper_Logger::getCategoryLabel($category)
+            );
+        }
+    }
+
+    public function testGetCategoryLabelFallsBackToRawCategoryForUnknownCategory(): void
+    {
+        self::assertSame('some_unknown_category', Episciences_Paper_Logger::getCategoryLabel('some_unknown_category'));
+    }
+
+    public function testGetCategoryIconReturnsKnownIcons(): void
+    {
+        foreach (self::VALID_CATEGORIES as $category) {
+            self::assertArrayHasKey($category, Episciences_Paper_Logger::$_categoryIcon);
+            self::assertSame(
+                Episciences_Paper_Logger::$_categoryIcon[$category],
+                Episciences_Paper_Logger::getCategoryIcon($category)
+            );
+        }
+    }
+
+    public function testGetCategoryIconFallsBackToGlyphiconRecordForUnknownCategory(): void
+    {
+        self::assertSame('glyphicon-record', Episciences_Paper_Logger::getCategoryIcon('some_unknown_category'));
+    }
+
+    // -------------------------------------------------------------------------
+    // getActionIcon() / getActionIconClasses()
+    // -------------------------------------------------------------------------
+
+    public function testGetActionIconFallsBackToGlyphiconRecordForUnknownAction(): void
+    {
+        self::assertSame('glyphicon-record', Episciences_Paper_Logger::getActionIcon('some_future_action'));
+    }
+
+    public function testGetActionIconClassesPrependsGlyphiconBaseClass(): void
+    {
+        self::assertSame(
+            'glyphicon glyphicon-log-in',
+            Episciences_Paper_Logger::getActionIconClasses(Episciences_Paper_Logger::CODE_REVIEWER_ASSIGNMENT)
+        );
+    }
+
+    public function testGetActionIconClassesUsesFontAwesomeClassesAsIs(): void
+    {
+        self::assertSame(
+            'fa-regular fa-flag',
+            Episciences_Paper_Logger::getActionIconClasses(Episciences_Paper_Logger::CODE_STATUS)
+        );
+    }
+
+    public function testGetActionIconClassesFallsBackToGlyphiconRecordForUnknownAction(): void
+    {
+        self::assertSame('glyphicon glyphicon-record', Episciences_Paper_Logger::getActionIconClasses('some_future_action'));
+    }
+
+    // -------------------------------------------------------------------------
+    // hasDetailModal()
+    // -------------------------------------------------------------------------
+
+    public function testHasDetailModalReturnsTrueForListedActions(): void
+    {
+        self::assertTrue(Episciences_Paper_Logger::hasDetailModal(Episciences_Paper_Logger::CODE_MAIL_SENT));
+        self::assertTrue(Episciences_Paper_Logger::hasDetailModal(Episciences_Paper_Logger::CODE_REVIEWER_INVITATION));
+    }
+
+    public function testHasDetailModalReturnsFalseForUnlistedActions(): void
+    {
+        self::assertFalse(Episciences_Paper_Logger::hasDetailModal(Episciences_Paper_Logger::CODE_STATUS));
+        self::assertFalse(Episciences_Paper_Logger::hasDetailModal('some_future_action'));
+    }
+
+    // -------------------------------------------------------------------------
+    // extractLogDisplayData()
+    // -------------------------------------------------------------------------
+
+    /** Snapshot of whatever was registered under 'Zend_Translate', restored in tearDown(). */
+    private bool $hadTranslate = false;
+    private mixed $savedTranslate = null;
+
+    private function removeRegisteredTranslator(): void
+    {
+        $registry = Zend_Registry::getInstance();
+        $this->hadTranslate = $registry->offsetExists('Zend_Translate');
+
+        if ($this->hadTranslate) {
+            $this->savedTranslate = $registry->offsetGet('Zend_Translate');
+            $registry->offsetUnset('Zend_Translate');
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->hadTranslate) {
+            Zend_Registry::set('Zend_Translate', $this->savedTranslate);
+            $this->hadTranslate = false;
+        }
+    }
+
+    public function testExtractLogDisplayDataDecodesValidJsonDetail(): void
+    {
+        $log = [
+            'ACTION' => Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT,
+            'DETAIL' => json_encode(['user' => ['fullname' => 'Marie Dupont']]),
+        ];
+
+        $data = Episciences_Paper_Logger::extractLogDisplayData($log);
+
+        self::assertSame(['user' => ['fullname' => 'Marie Dupont']], $data['detail']);
+        self::assertSame('Marie Dupont', $data['fullName']);
+    }
+
+    public function testExtractLogDisplayDataHandlesEmptyDetail(): void
+    {
+        $data = Episciences_Paper_Logger::extractLogDisplayData(['ACTION' => Episciences_Paper_Logger::CODE_STATUS, 'DETAIL' => '']);
+
+        self::assertSame([], $data['detail']);
+        self::assertSame('undefined', $data['fullName']);
+    }
+
+    public function testExtractLogDisplayDataHandlesMalformedJsonWithoutThrowing(): void
+    {
+        $data = Episciences_Paper_Logger::extractLogDisplayData([
+            'ACTION' => Episciences_Paper_Logger::CODE_STATUS,
+            'DETAIL' => '{not valid json',
+        ]);
+
+        self::assertSame([], $data['detail']);
+    }
+
+    public function testExtractLogDisplayDataFallsBackToScreenNameWhenFullnameMissing(): void
+    {
+        $data = Episciences_Paper_Logger::extractLogDisplayData([
+            'ACTION' => Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT,
+            'DETAIL' => json_encode(['user' => ['SCREEN_NAME' => 'mdupont']]),
+        ]);
+
+        self::assertSame('mdupont', $data['fullName']);
+    }
+
+    public function testExtractLogDisplayDataDefaultsFullNameToUndefinedWhenMissing(): void
+    {
+        $data = Episciences_Paper_Logger::extractLogDisplayData([
+            'ACTION' => Episciences_Paper_Logger::CODE_STATUS,
+            'DETAIL' => json_encode(['status' => 1]),
+        ]);
+
+        self::assertSame('undefined', $data['fullName']);
+    }
+
+    public function testExtractLogDisplayDataExtractsTagWhenPresent(): void
+    {
+        $this->removeRegisteredTranslator();
+
+        $data = Episciences_Paper_Logger::extractLogDisplayData([
+            'ACTION' => Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT,
+            'DETAIL' => json_encode(['user' => ['fullname' => 'Marie Dupont', 'tag' => 'editor']]),
+        ]);
+
+        self::assertSame(' [ editor ]', $data['tag']);
+    }
+
+    public function testExtractLogDisplayDataOmitsTagWhenAbsent(): void
+    {
+        $data = Episciences_Paper_Logger::extractLogDisplayData([
+            'ACTION' => Episciences_Paper_Logger::CODE_EDITOR_ASSIGNMENT,
+            'DETAIL' => json_encode(['user' => ['fullname' => 'Marie Dupont']]),
+        ]);
+
+        self::assertSame('', $data['tag']);
+    }
+
+    public function testExtractLogDisplayDataResolvesKnownStatusCode(): void
+    {
+        $data = Episciences_Paper_Logger::extractLogDisplayData([
+            'ACTION' => Episciences_Paper_Logger::CODE_STATUS,
+            'DETAIL' => json_encode(['status' => \Episciences_Paper::STATUS_PUBLISHED]),
+        ]);
+
+        self::assertSame(\Episciences_Paper::STATUS_PUBLISHED, $data['statusCode']);
+    }
+
+    public function testExtractLogDisplayDataStatusCodeNullForMissingOrInvalidStatus(): void
+    {
+        $data = Episciences_Paper_Logger::extractLogDisplayData([
+            'ACTION' => Episciences_Paper_Logger::CODE_STATUS,
+            'DETAIL' => json_encode(['status' => 999999]),
+        ]);
+
+        self::assertNull($data['statusCode']);
+        self::assertSame('undefined status', $data['status']);
+    }
+
+    /**
+     * Guards the fix this PR made: extractLogDisplayData() must degrade to the raw
+     * message id (like the Zend_View_Helper_Translate it replaces) instead of throwing
+     * when no translator is bootstrapped in the registry — the normal state for console
+     * scripts and PHPUnit tests.
+     */
+    public function testExtractLogDisplayDataDegradesGracefullyWithoutRegisteredTranslator(): void
+    {
+        $this->removeRegisteredTranslator();
+
+        $data = Episciences_Paper_Logger::extractLogDisplayData([
+            'ACTION' => Episciences_Paper_Logger::CODE_STATUS,
+            'DETAIL' => json_encode(['status' => 999999]),
+        ]);
+
+        self::assertSame('undefined status', $data['status']);
+    }
+
+    public function testExtractLogDisplayDataUsesRegisteredTranslatorWhenPresent(): void
+    {
+        $this->removeRegisteredTranslator();
+
+        Zend_Registry::set('Zend_Translate', new Zend_Translate([
+            'adapter' => 'array',
+            'content' => ['undefined status' => 'statut inconnu'],
+            'locale' => 'fr',
+        ]));
+
+        $data = Episciences_Paper_Logger::extractLogDisplayData([
+            'ACTION' => Episciences_Paper_Logger::CODE_STATUS,
+            'DETAIL' => json_encode(['status' => 999999]),
+        ]);
+
+        self::assertSame('statut inconnu', $data['status']);
+
+        Zend_Registry::getInstance()->offsetUnset('Zend_Translate');
     }
 }

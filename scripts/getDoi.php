@@ -8,6 +8,7 @@
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Psr\Http\Message\ResponseInterface;
 use GuzzleHttp\RequestOptions;
@@ -82,9 +83,9 @@ class getDoi extends JournalScript
         $this->_verbose = (bool)$this->getParam('v');
 
         $this->_logger = new Logger('getDoi');
-        $this->_logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . '/getDoi.log', Logger::DEBUG));
+        $this->_logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . '/getDoi.log', Level::Debug));
         if ($this->_verbose) {
-            $this->_logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $this->_logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         $this->httpClient = new Client();

@@ -1,4 +1,7 @@
-<?php 
+<?php
+
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
+
 /**
  * @deprecated
  */
@@ -22,6 +25,8 @@ class Episciences_Import
     protected $_publication_date;
     protected $_position;
     protected $_editor_id;
+    /** @var Episciences_Paper|false|null Last paper produced by load()/save(). */
+    protected $paper;
 
     public function __construct(array $options = null)
     {
@@ -232,6 +237,15 @@ class Episciences_Import
             return false;
         }
 
+        // load() returns false (not a paper) when the docid already exists in another
+        // journal; calling ->save() on false would be a fatal error.
+        if (!$paper instanceof Episciences_Paper) {
+            if (!$this->getError()) {
+                $this->setError("ERREUR : L'article (" . $this->getId() . ") n'a pas pu être chargé.");
+            }
+            return false;
+        }
+
         if (!$paper->save()) {
             $this->setError("ERREUR : L'article (" . $this->getId() . ") n'a pas pu être importé.");
             return false;
@@ -249,7 +263,7 @@ class Episciences_Import
         }
 
         // indexation
-        Ccsd_Search_Solr_Indexer::addToIndexQueue(array($paper->getDocid()), 'episciences', 'UPDATE', 'episciences');
+        SolrIndexing::enqueueIndex($paper->getDocid());
 
         return true;
     }

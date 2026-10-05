@@ -339,18 +339,18 @@ class Episciences_Mail_Template
         foreach ($body as $lang => $translation) {
             $path = $this->getTranslationsFolder() . $lang . '/emails/';
 
-            if (!is_dir($path) && !mkdir($path)) {
-                trigger_error('Directory "%s" was not created', $path);
+            if (!is_dir($path) && !mkdir($path) && !is_dir($path)) {
+                trigger_error(sprintf('Directory "%s" was not created', $path));
+                $result = false;
 
             } else {
 
                 $filePutContent = file_put_contents($path . $key . '.phtml', $translation);
 
-                if (!$filePutContent) {
+                if ($filePutContent === false) {
                     trigger_error('TEMPLATE::SAVE_WRITE_DATA_TO_FILE_IS_EMPTY');
+                    $result = false;
                 }
-
-                $result = $filePutContent;
             }
 
         }

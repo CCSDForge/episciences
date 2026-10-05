@@ -4,6 +4,20 @@
  */
 
 /* ============================================================================
+   Panel Heading "Timeline" Link
+   ========================================================================= */
+
+/* Link to the full activity timeline (/activity/view), shown next to a panel's title
+   (currently "Historique" and "Versions" on /administratepaper/view). Kept inline —
+   not floated — so it doesn't fight the collapse chevron that applyCollapse() (in
+   functions.js) appends after it inside the same .panel-title. */
+.panel-title-timeline-link {
+    margin-left: 10px;
+    font-weight: normal;
+    vertical-align: middle;
+}
+
+/* ============================================================================
    History Filters
    ========================================================================= */
 
@@ -111,6 +125,17 @@
 .log-timestamp {
     font-size: 0.85rem; /* ~11px but scalable */
     margin-right: 5px;
+}
+
+/* Log entry user action: avatar + name inline */
+.log-user-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.log-user-action .user-photo-thumb {
+    flex-shrink: 0;
 }
 
 /* Log detail icon */

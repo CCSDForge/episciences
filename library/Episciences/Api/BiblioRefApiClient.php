@@ -107,6 +107,14 @@ class BiblioRefApiClient extends AbstractApiClient
             return [];
         }
 
+        // A missing/non-numeric referenceOrder sorts last (PHP_INT_MAX sentinel); mirrored in
+        // public/js/paper/biblioRef.js (BiblioRefParser.parseCitation + the citations.sort comparator).
+        uasort($decoded, static function ($a, $b): int {
+            $orderA = is_array($a) && isset($a['referenceOrder']) && is_numeric($a['referenceOrder']) ? (int) $a['referenceOrder'] : PHP_INT_MAX;
+            $orderB = is_array($b) && isset($b['referenceOrder']) && is_numeric($b['referenceOrder']) ? (int) $b['referenceOrder'] : PHP_INT_MAX;
+            return $orderA <=> $orderB;
+        });
+
         $result = [];
         foreach ($decoded as $citation) {
             if (!is_array($citation) || !isset($citation['ref'])) {
@@ -140,8 +148,24 @@ class BiblioRefApiClient extends AbstractApiClient
                 $entry['doi'] = $reference['doi'];
             }
 
+            // Handle both old API (csl is a JSON-encoded string) and new API (csl is already decoded)
             if (isset($citation['csl'])) {
-                $entry['csl'] = $citation['csl'];
+                if (is_string($citation['csl'])) {
+                    try {
+                        $csl = json_decode($citation['csl'], true, 512, JSON_THROW_ON_ERROR);
+                    } catch (\JsonException $e) {
+                        $this->logger->warning(sprintf('BiblioRef: skipping citation with invalid csl JSON: %s', $e->getMessage()));
+                        $csl = null;
+                    }
+                } elseif (is_array($citation['csl'])) {
+                    $csl = $citation['csl'];
+                } else {
+                    $csl = null;
+                }
+
+                if (is_array($csl)) {
+                    $entry['csl'] = $csl;
+                }
             }
 
             $result[] = $entry;

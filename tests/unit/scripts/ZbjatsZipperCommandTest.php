@@ -32,6 +32,21 @@ class ZbjatsZipperCommandTest extends TestCase
         $this->assertTrue($definition->getOption('rvid')->isValueRequired(), 'rvid must require a value');
     }
 
+    public function testCommandHasRvcodeOption(): void
+    {
+        $definition = (new ZbjatsZipperCommand())->getDefinition();
+        $this->assertInstanceOf(InputDefinition::class, $definition);
+        $this->assertTrue($definition->hasOption('rvcode'));
+        $this->assertTrue($definition->getOption('rvcode')->isValueRequired(), 'rvcode must require a value');
+    }
+
+    public function testCommandHasConfigOption(): void
+    {
+        $definition = (new ZbjatsZipperCommand())->getDefinition();
+        $this->assertTrue($definition->hasOption('config'));
+        $this->assertTrue($definition->getOption('config')->isValueRequired(), 'config must require a value');
+    }
+
     public function testCommandHasZipPrefixOption(): void
     {
         $definition = (new ZbjatsZipperCommand())->getDefinition();
@@ -47,6 +62,68 @@ class ZbjatsZipperCommandTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // parseJournalsIniFile() — public static, pure file parsing
+    // -------------------------------------------------------------------------
+
+    public function testParseJournalsIniFile_SectionArray(): void
+    {
+        $tmpFile = tempnam(sys_get_temp_dir(), 'zbjats_ini_');
+        file_put_contents($tmpFile, "[journals]\njournals[] = \"jfp\"\njournals[] = \"dmtcs\"\n");
+
+        try {
+            $journals = ZbjatsZipperCommand::parseJournalsIniFile($tmpFile);
+            $this->assertSame(['jfp', 'dmtcs'], $journals);
+        } finally {
+            @unlink($tmpFile);
+        }
+    }
+
+    public function testParseJournalsIniFile_RvcodeKeys(): void
+    {
+        $tmpFile = tempnam(sys_get_temp_dir(), 'zbjats_ini_');
+        file_put_contents($tmpFile, "[journals]\njfp = 1\ndmtcs = 1\n");
+
+        try {
+            $journals = ZbjatsZipperCommand::parseJournalsIniFile($tmpFile);
+            $this->assertSame(['jfp', 'dmtcs'], $journals);
+        } finally {
+            @unlink($tmpFile);
+        }
+    }
+
+    public function testParseJournalsIniFile_Deduplicates(): void
+    {
+        $tmpFile = tempnam(sys_get_temp_dir(), 'zbjats_ini_');
+        file_put_contents($tmpFile, "journals[] = \"jfp\"\njournals[] = \"jfp\"\n");
+
+        try {
+            $journals = ZbjatsZipperCommand::parseJournalsIniFile($tmpFile);
+            $this->assertSame(['jfp'], $journals);
+        } finally {
+            @unlink($tmpFile);
+        }
+    }
+
+    public function testParseJournalsIniFile_ThrowsOnMissingFile(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('does not exist');
+        ZbjatsZipperCommand::parseJournalsIniFile('/non/existent/path/journals.ini');
+    }
+
+    public function testDefaultConfigFileExistsAndParses(): void
+    {
+        // The default config (scripts/zbjats/journals.ini) is gitignored because it holds
+        // environment-specific journals, so it cannot be asserted against on CI. The shipped
+        // template is journals.ini.dist; parsing it proves the default-file format round-trips.
+        $distConfigPath = __DIR__ . '/../../../scripts/zbjats/journals.ini.dist';
+        $this->assertFileExists($distConfigPath);
+        $journals = ZbjatsZipperCommand::parseJournalsIniFile($distConfigPath);
+        $this->assertIsArray($journals);
+        $this->assertContains('dev', $journals);
+    }
+
+    // -------------------------------------------------------------------------
     // buildPaperUrl() — public static, pure (depends on DOMAIN constant)
     // -------------------------------------------------------------------------
 
@@ -55,8 +132,11 @@ class ZbjatsZipperCommandTest extends TestCase
         if (!defined('DOMAIN')) {
             define('DOMAIN', 'episciences.org');
         }
-        $url = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 42, 'pdf');
-        $this->assertSame('https://dmtcs.episciences.org/42/pdf', $url);
+        $legacyUrl = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 42, 1001, 'pdf', false);
+        $this->assertSame('https://dmtcs.episciences.org/42/pdf', $legacyUrl);
+
+        $newFrontUrl = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 42, 1001, 'pdf', true);
+        $this->assertSame('https://dmtcs.episciences.org/articles/1001/download', $newFrontUrl);
     }
 
     public function testBuildPaperUrlZbjats(): void
@@ -64,8 +144,11 @@ class ZbjatsZipperCommandTest extends TestCase
         if (!defined('DOMAIN')) {
             define('DOMAIN', 'episciences.org');
         }
-        $url = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 99, 'zbjats');
-        $this->assertSame('https://dmtcs.episciences.org/99/zbjats', $url);
+        $legacyUrl = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 99, 1002, 'zbjats', false);
+        $this->assertSame('https://dmtcs.episciences.org/99/zbjats', $legacyUrl);
+
+        $newFrontUrl = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 99, 1002, 'zbjats', true);
+        $this->assertSame('https://dmtcs.episciences.org/articles/1002/zbjats', $newFrontUrl);
     }
 
     public function testBuildPaperUrlContainsRvCode(): void
@@ -73,9 +156,27 @@ class ZbjatsZipperCommandTest extends TestCase
         if (!defined('DOMAIN')) {
             define('DOMAIN', 'episciences.org');
         }
-        $url = ZbjatsZipperCommand::buildPaperUrl('jtcam', 7, 'pdf');
+        $url = ZbjatsZipperCommand::buildPaperUrl('jtcam', 7, 1003, 'pdf', false);
         $this->assertStringContainsString('jtcam.', $url);
         $this->assertStringStartsWith('https://', $url);
+    }
+
+    public function testBuildPaperUrlNewFrontUsesPaperIdAndDownloadFormat(): void
+    {
+        if (!defined('DOMAIN')) {
+            define('DOMAIN', 'episciences.org');
+        }
+        $url = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 42, 99, 'pdf', true);
+        $this->assertSame('https://dmtcs.episciences.org/articles/99/download', $url);
+    }
+
+    public function testBuildPaperUrlNewFrontKeepsZbjatsFormat(): void
+    {
+        if (!defined('DOMAIN')) {
+            define('DOMAIN', 'episciences.org');
+        }
+        $url = ZbjatsZipperCommand::buildPaperUrl('dmtcs', 42, 99, 'zbjats', true);
+        $this->assertSame('https://dmtcs.episciences.org/articles/99/zbjats', $url);
     }
 
     // -------------------------------------------------------------------------

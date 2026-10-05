@@ -13,35 +13,62 @@ $currentPaper = $this->paper;
 $loggedUid = Episciences_Auth::getUid();
 $isAllowedToEditVersion = $currentPaper->getEditor($loggedUid) || $currentPaper->getCopyEditor($loggedUid);
 ?>
+<style>
+    #versions .versions-table > tbody > tr:first-child > td {
+        border-top: none;
+    }
+</style>
 <div id="versions" class="panel panel-default collapsable">
     <div class="panel-heading">
-        <h2 class="panel-title"><?= $this->translate('Versions') ?></h2>
+        <h2 class="panel-title">
+            <?= $this->translate('Versions') ?>
+            <?php // the activity timeline is only ACL-allowed for guest_editor/editor/secretary
+            // (see acl.ini's activity-view resource) — this partial is also rendered on the
+            // public paper/view page for reviewers/authors, who must not see a link they'd be
+            // denied access to ?>
+            <?php if (Episciences_Auth::isAllowedToManagePaper()) : ?>
+                <?php // stopPropagation: the panel-heading itself toggles the collapse on click
+                // (see applyCollapse() in functions.js) — without it, following this link would
+                // also flip the panel open/closed right as the browser navigates away ?>
+                <a href="/activity/view?id=<?= $currentPaper->getDocid() ?>"
+                   class="btn btn-default btn-xs panel-title-timeline-link"
+                   onclick="event.stopPropagation()">
+                    <i class="fa-solid fa-timeline" aria-hidden="true"></i>
+                    <?= $this->translate('Voir la timeline complète') ?>
+                </a>
+            <?php endif; ?>
+        </h2>
     </div>
-    <div class="panel-body in" style="overflow: visible">
-        <ol class="list-unstyled">
+    <div class="panel-body in" style="overflow: visible; padding: 5px 0;">
+        <table class="table table-condensed versions-table" style="margin-bottom: 0;">
+            <tbody>
             <?php /** @var Episciences_Paper $paper */ ?>
             <?php foreach ($this->versions as $v => $paper) : ?>
                 <?php $docId = $paper->getDocid(); ?>
-                <li>
-                    <?php if ($currentPaper->getDocid() !== $docId) : ?><a href="/<?= $controller ?>/<?= $action ?>/id/<?= $docId ?>"><?php endif; ?>
+                <tr>
+                    <td style="vertical-align: middle; border-top-color: #eee; padding-left: 15px;">
+                        <?php if ($currentPaper->getDocid() !== $docId) : ?><a href="/<?= $controller ?>/<?= $action ?>/id/<?= $docId ?>"><?php endif; ?>
+                            <?= $this->translate("Version") ?>&nbsp;<span id="version-of-paper-<?= $docId ?>"><?= $v ?></span>
+                            <?php if ($currentPaper->getDocid() !== $docId) : ?></a><?php endif; ?>
+
+                        <?php if (
+                            $controller === PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER &&
+                            !$paper->isTmp() && ($docId === $this->versions[array_key_first($this->versions)]->getDocId()) &&
+                            $this->isEditableVersion
+                        ) : ?>
+                            <a class="btn btn-default btn-xs" role="button" title="<?= $this->translate('Modifier') ?>" aria-label="<?= $this->translate('Modifier') ?>"
+                               onclick="getVersionEditingForm(this, <?= $docId ?>)"><i class="fas fa-edit" aria-hidden="true"></i></a>
+                        <?php endif; ?>
+                        <?php if($paper->isTmp()) : ?><span class="badge text-bg-light"><?= $this->translate('temporaire')?></span><?php endif; ?>
+                    </td>
+                    <td class="text-left" style="vertical-align: middle; white-space: nowrap; border-top-color: #eee; padding-right: 15px;">
                         <?php $sourceMsg = (!$paper->isImported()) ? $this->translate('Soumise le : ') : $this->translate('Importée le : ') ?>
-                        <?= $this->translate("Version") ?>&nbsp;<span id="version-of-paper-<?= $docId ?>"><?= $v ?></span>
-                        <span class="label label-status-0 pull-right"><?= $sourceMsg . Episciences_View_Helper_Date::Date($paper->getWhen()) ?></span>
-                        <?php if ($currentPaper->getDocid() !== $docId) : ?></a><?php endif; ?>
-
-                    <?php if (
-                        $controller === PaperDefaultController::ADMINISTRATE_PAPER_CONTROLLER &&
-                        !$paper->isTmp() && ($docId === $this->versions[array_key_first($this->versions)]->getDocId()) &&
-                        $this->isEditableVersion
-                    ) : ?>
-                        <a class="btn btn-default btn-xs" role="button"
-                           onclick="getVersionEditingForm(this, <?= $docId ?>)"><i class="fas fa-edit" style="margin-right: 5px"></i><?= $this->translate('Modifier') ?></a>
-                    <?php endif; ?>
-                    <?php if($paper->isTmp()) : ?><span class="label label-status-0"><?= $this->translate('temporaire')?></span><?php endif; ?>
-                </li>
-
+                        <span class="badge text-bg-light"><?= $sourceMsg . Episciences_View_Helper_Date::Date($paper->getWhen()) ?></span>
+                    </td>
+                </tr>
             <?php endforeach; ?>
-        </ol>
+            </tbody>
+        </table>
     </div>
 </div>
 

@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace Episciences\Api;
 
-use GuzzleHttp\Exception\GuzzleException;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\InvalidArgumentException;
@@ -14,7 +14,9 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 /**
- * OpenAire Research Graph REST API client.
+ * OpenAire Research Graph v3 REST API client.
+ *
+ * @see https://graph.openaire.eu/docs/apis/search-api
  *
  * Cache namespaces:
  *  - openAireResearchGraph : md5($doi) . '.json'
@@ -26,8 +28,9 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
  */
 class OpenAireApiClient extends AbstractApiClient
 {
-    private const API_BASE_URL  = 'https://api.openaire.eu/search/publications';
+    private const API_BASE_URL  = 'https://api.openaire.eu/graph/v3/research-products';
     private const MAX_RESPONSE_SIZE = 5242880; // 5 MB
+    private const ORCID_SCHEMES = ['orcid', 'orcid_pending'];
 
     private CacheItemPoolInterface $globalCache;
     private CacheItemPoolInterface $authorsCache;
@@ -38,13 +41,15 @@ class OpenAireApiClient extends AbstractApiClient
         CacheItemPoolInterface $globalCache,
         CacheItemPoolInterface $authorsCache,
         CacheItemPoolInterface $fundingCache,
-        LoggerInterface      $logger
+        LoggerInterface      $logger,
+        ?OpenAireTokenProvider $tokenProvider = null
     ) {
         // Parent constructor requires a single CacheItemPoolInterface; pass globalCache as primary.
         parent::__construct($client, $globalCache, $logger);
-        $this->globalCache  = $globalCache;
-        $this->authorsCache = $authorsCache;
-        $this->fundingCache = $fundingCache;
+        $this->globalCache   = $globalCache;
+        $this->authorsCache  = $authorsCache;
+        $this->fundingCache  = $fundingCache;
+        $this->tokenProvider = $tokenProvider;
     }
 
     // -------------------------------------------------------------------------
@@ -65,32 +70,19 @@ class OpenAireApiClient extends AbstractApiClient
         $item = $this->globalCache->getItem($key);
 
         if ($item->isHit()) {
-            $data = json_decode((string) $item->get(), true, self::JSON_MAX_DEPTH, JSON_THROW_ON_ERROR);
-            return $data;
+            $this->logger->info("OpenAIRE data from cache for DOI {$doi}");
+            return json_decode((string) $item->get(), true, self::JSON_MAX_DEPTH, JSON_THROW_ON_ERROR);
         }
 
-        $url = self::API_BASE_URL . '/?doi=' . urlencode($doi) . '&format=json';
+        // @phpstan-ignore notIdentical.alwaysTrue
+        $apiBaseUrl = (defined('OPENAIRE_API_URL') && (string) constant('OPENAIRE_API_URL') !== '')
+            ? (string) constant('OPENAIRE_API_URL')
+            : self::API_BASE_URL;
+        $url = rtrim($apiBaseUrl, '/') . '?pid=' . urlencode($doi);
         $this->logger->info("Fetching OpenAIRE data for DOI {$doi}");
 
-        try {
-            $response = $this->client->get($url, [
-                'headers'         => $this->defaultHeaders(),
-                'timeout'         => 30,
-                'allow_redirects' => [
-                    'max'       => 2,
-                    'strict'    => true,
-                    'referer'   => true,
-                    'protocols' => ['https'],
-                ],
-                'verify'          => true,
-            ]);
-            $body = $response->getBody()->getContents();
-        } catch (GuzzleException $e) {
-            $this->logger->error(sprintf(
-                'OpenAIRE API error for paper %d: %s',
-                $paperId,
-                $e->getMessage()
-            ));
+        $body = $this->requestWithRetry($url, $paperId, 'OpenAIRE');
+        if ($body === null) {
             return null;
         }
 
@@ -102,9 +94,6 @@ class OpenAireApiClient extends AbstractApiClient
             ));
             return null;
         }
-
-        // Rate limiting
-        sleep(1);
 
         try {
             $decoded = json_decode($body, true, self::JSON_MAX_DEPTH, JSON_THROW_ON_ERROR);
@@ -131,18 +120,18 @@ class OpenAireApiClient extends AbstractApiClient
     // -------------------------------------------------------------------------
 
     /**
-     * Extract creator array from OpenAire response, or null if unavailable.
+     * Extract author array from an OpenAire Graph v3 response, or null if unavailable.
      *
      * @param array<string, mixed> $response
      * @return array<mixed>|null
      */
     public function extractCreators(array $response): ?array
     {
-        if (empty($response['response']['results']['result'][0])) {
+        if (empty($response['results'][0])) {
             return null;
         }
-        $result = $response['response']['results']['result'][0];
-        return $result['metadata']['oaf:entity']['oaf:result']['creator'] ?? null;
+        $authors = $response['results'][0]['authors'] ?? null;
+        return !empty($authors) ? $authors : null;
     }
 
     // -------------------------------------------------------------------------
@@ -150,21 +139,18 @@ class OpenAireApiClient extends AbstractApiClient
     // -------------------------------------------------------------------------
 
     /**
-     * Extract funding array from OpenAire response, or null if unavailable.
+     * Extract project array from an OpenAire Graph v3 response, or null if unavailable.
      *
      * @param array<string, mixed> $response
      * @return array<mixed>|null
      */
     public function extractFunding(array $response): ?array
     {
-        if (empty($response['response']['results']['result'][0])) {
+        if (empty($response['results'][0])) {
             return null;
         }
-        $rels = $response['response']['results']['result'][0]['metadata']['oaf:entity']['oaf:result']['rels'] ?? null;
-        if ($rels === null || !array_key_exists('rel', $rels)) {
-            return null;
-        }
-        return $rels['rel'];
+        $projects = $response['results'][0]['projects'] ?? null;
+        return !empty($projects) ? $projects : null;
     }
 
     // -------------------------------------------------------------------------
@@ -172,7 +158,11 @@ class OpenAireApiClient extends AbstractApiClient
     // -------------------------------------------------------------------------
 
     /**
-     * Extract JEL classification codes from an OpenAire publication response.
+     * Extract JEL classification codes from an OpenAire Graph v3 publication response.
+     *
+     * A subject is retained as a JEL code when its scheme is 'jel', or when its value
+     * is prefixed with 'jel:' (some sources tag JEL values under a different scheme,
+     * e.g. 'keyword').
      *
      * @param array<string, mixed> $response
      * @return array<string> unique JEL codes (e.g. "A10", "B23")
@@ -180,32 +170,24 @@ class OpenAireApiClient extends AbstractApiClient
     public function extractJelCodes(array $response): array
     {
         $codes = [];
-        if (!isset($response['response']['results']['result'])) {
-            return $codes;
-        }
-        foreach ($response['response']['results']['result'] as $result) {
-            $subjects = $result['metadata']['oaf:entity']['oaf:result']['subject'] ?? null;
-            if ($subjects === null) {
+        $subjects = $response['results'][0]['subjects'] ?? [];
+
+        foreach ($subjects as $item) {
+            $scheme = $item['subject']['scheme'] ?? null;
+            $value  = $item['subject']['value'] ?? null;
+
+            if (!is_string($value) || ($scheme !== 'jel' && !str_starts_with($value, 'jel:'))) {
                 continue;
             }
-            // subject may be a single object or an array of objects
-            if (!is_array($subjects) || isset($subjects['@classid'])) {
-                $subjects = [$subjects];
-            }
-            foreach ($subjects as $subject) {
-                if (($subject['@classid'] ?? '') !== 'jel' || !isset($subject['$'])) {
-                    continue;
-                }
-                $value = $subject['$'];
-                if (str_starts_with($value, 'jel:')) {
-                    $code = substr($value, 4); // fix: ltrim('jel:') strips chars, not the prefix string
-                    if ($code !== '') {
-                        $codes[] = $code;
-                    }
-                }
+
+            $code = str_starts_with($value, 'jel:') ? substr($value, 4) : $value;
+            $code = trim($code);
+            if ($code !== '') {
+                $codes[] = $code;
             }
         }
-        return array_unique($codes);
+
+        return array_values(array_unique($codes));
     }
 
     // -------------------------------------------------------------------------
@@ -235,7 +217,6 @@ class OpenAireApiClient extends AbstractApiClient
     {
         $key  = md5($doi) . '_funding.json';
         $item = $this->fundingCache->getItem($key);
-        $item->expiresAfter(self::ONE_MONTH);
         return [$this->fundingCache, $key, $item];
     }
 
@@ -257,6 +238,8 @@ class OpenAireApiClient extends AbstractApiClient
      * Build a production-ready instance using FilesystemAdapter caches and a file logger.
      *
      * Constants APPLICATION_PATH and EPISCIENCES_LOG_PATH must be defined by the bootstrap.
+     * The token provider falls back to unauthenticated mode when OPENAIRE_CLIENT_ID /
+     * OPENAIRE_CLIENT_SECRET are not configured.
      */
     public static function create(): self
     {
@@ -265,15 +248,25 @@ class OpenAireApiClient extends AbstractApiClient
         $logger = new Logger('openaire_api_client');
         $logger->pushHandler(new StreamHandler(
             EPISCIENCES_LOG_PATH . 'openAireResearchGraph_' . date('Y-m-d') . '.log',
-            Logger::INFO
+            Level::Info
         ));
+
+        $tokenProvider = new OpenAireTokenProvider(
+            new Client(),
+            new FilesystemAdapter('openAireAuthToken', self::ONE_MONTH, $cacheDir),
+            $logger,
+            defined('OPENAIRE_CLIENT_ID') ? (string) constant('OPENAIRE_CLIENT_ID') : null,
+            defined('OPENAIRE_CLIENT_SECRET') ? (string) constant('OPENAIRE_CLIENT_SECRET') : null,
+            defined('OPENAIRE_AUTH_URL') ? (string) constant('OPENAIRE_AUTH_URL') : null
+        );
 
         return new self(
             new Client(),
             new FilesystemAdapter('openAireResearchGraph', self::ONE_MONTH, $cacheDir),
             new FilesystemAdapter('enrichmentAuthors',     self::ONE_MONTH, $cacheDir),
             new FilesystemAdapter('enrichmentFunding',     self::ONE_MONTH, $cacheDir),
-            $logger
+            $logger,
+            $tokenProvider
         );
     }
 
@@ -424,27 +417,33 @@ class OpenAireApiClient extends AbstractApiClient
     // -------------------------------------------------------------------------
 
     /**
-     * Search API data for a matching ORCID for the given author full name.
+     * Search OpenAire Graph v3 author data for a matching ORCID for the given full name.
+     *
+     * Matching is case-insensitive and accent-insensitive against `fullName`. The ORCID
+     * is read exclusively from `pid.id.value` when `pid.id.scheme` is 'orcid' or
+     * 'orcid_pending' — `id` (an OpenAire-internal hash) must never be used as an ORCID.
      *
      * @param array<int, array<string, mixed>> $apiData
      */
     public function findOrcidForAuthor(string $fullName, array $apiData): ?string
     {
-        foreach ($apiData as $authorInfoFromApi) {
-            $isMatch = false;
+        $needle = \Episciences_Tools::replaceAccents(mb_strtolower($fullName));
 
-            if (array_search($fullName, $authorInfoFromApi, true) !== false
-                || array_search(\Episciences_Tools::replaceAccents($fullName), $authorInfoFromApi, true) !== false
-            ) {
-                $isMatch = true;
-            } elseif (isset($authorInfoFromApi['$'])
-                && \Episciences_Tools::replaceAccents($fullName) === \Episciences_Tools::replaceAccents($authorInfoFromApi['$'])
-            ) {
-                $isMatch = true;
+        foreach ($apiData as $authorInfoFromApi) {
+            $rawFullName = $authorInfoFromApi['fullName'] ?? '';
+            if (!is_string($rawFullName)) {
+                continue;
+            }
+            $candidate = \Episciences_Tools::replaceAccents(mb_strtolower($rawFullName));
+            if ($candidate === '' || $candidate !== $needle) {
+                continue;
             }
 
-            if ($isMatch && array_key_exists('@orcid', $authorInfoFromApi)) {
-                return \Episciences_Paper_AuthorsManager::cleanLowerCaseOrcid($authorInfoFromApi['@orcid']);
+            $scheme = $authorInfoFromApi['pid']['id']['scheme'] ?? null;
+            $value  = $authorInfoFromApi['pid']['id']['value'] ?? null;
+
+            if (is_string($value) && $value !== '' && in_array($scheme, self::ORCID_SCHEMES, true)) {
+                return \Episciences_Paper_AuthorsManager::normalizeOrcid($value);
             }
         }
         return null;

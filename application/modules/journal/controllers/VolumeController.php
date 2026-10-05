@@ -462,6 +462,19 @@ class VolumeController extends Zend_Controller_Action
                 if ($resVol) {
                     $message = '<strong>' . $this->view->translate("Vos modifications ont bien été prises en compte.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+
+                    if ($volumeHasPublishedPapers) {
+                        $publishedPapers = Episciences_PapersManager::getList(
+                            ['is' => ['vid' => $vid, 'status' => Episciences_Paper::STATUS_PUBLISHED]]
+                        );
+                        foreach ($publishedPapers as $publishedPaper) {
+                            try {
+                                \Episciences\Solr\Indexing\Enqueue\SolrIndexing::enqueueIndex($publishedPaper->getDocid());
+                            } catch (Exception $e) {
+                                trigger_error($e->getMessage());
+                            }
+                        }
+                    }
                 } else {
                     $message = '<strong>' . $this->view->translate("Les modifications n'ont pas pu être enregistrées.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);
@@ -522,21 +535,18 @@ class VolumeController extends Zend_Controller_Action
 
         $volume->loadMetadatas();
 
+        $dateString = '';
         try {
             $dateString =  $volume->getEarliestPublicationDateFromVolume();
         } catch (Exception $exception) {
             trigger_error($exception->getMessage(), E_USER_WARNING);
         }
 
-        $dateObject = DateTime::createFromFormat('d/m/Y', $dateString);
-
-        // Check if the date object was created successfully
-        if ($dateObject) {
-            // Return the date in the desired format Y-m-d
-            $publicationDate =  $dateObject->format('Y');
-        } else {
-            $publicationDate =  date('Y');
-        }
+        // getEarliestPublicationDateFromVolume() returns a SQL date (Y-m-d[ H:i:s]),
+        // not d/m/Y: parsing it with the wrong format always failed and silently fell
+        // back to the current year, so the Crossref deposit carried a wrong publication year.
+        $timestamp = $dateString ? strtotime($dateString) : false;
+        $publicationDate = $timestamp ? date('Y', $timestamp) : date('Y');
 
         $journal = Episciences_ReviewsManager::findByRvcode(RVCODE);
 

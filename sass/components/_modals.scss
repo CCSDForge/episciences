@@ -10,6 +10,10 @@
   opacity: 0.7;
 }
 
-.datepicker {
+// jQuery UI datepicker's floating calendar is a singleton appended to <body>
+// with id="ui-datepicker-div" — not class="datepicker" (that class stays on
+// the static input, where z-index has no effect). Without this, the calendar
+// can render behind a Bootstrap popover/modal that triggered it.
+#ui-datepicker-div {
   z-index: 9999 !important
 }

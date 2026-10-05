@@ -2,12 +2,18 @@ $(function () {
     let flagError = 0;
 
     if (window.location.hash === '#manage-linked-data') {
-        $('#container-manager-linkeddatas').collapse('show');
+        const $linkedDataPanel = $('#manage-linked-data');
+        if (!$linkedDataPanel.find('.panel-body:first').is(':visible')) {
+            $linkedDataPanel.find('.panel-heading:first').trigger('click');
+        }
     }
 
     function callAddForm(typeld, option = []) {
         removeFormLd();
-        $('#container-manager-linkeddatas').collapse('show');
+        const $linkedDataPanel = $('#manage-linked-data');
+        if (!$linkedDataPanel.find('.panel-body:first').is(':visible')) {
+            $linkedDataPanel.find('.panel-heading:first').trigger('click');
+        }
 
         $.ajax({
             type: 'POST',
@@ -78,19 +84,6 @@ $(function () {
     $('button#add-linkdata').on('click', function () {
         removeFormLd();
         callAddForm('dataset');
-    });
-
-    $('#anchor-dataset-add').on('click', function () {
-        removeFormLd();
-        callAddForm('dataset');
-    });
-    $('#anchor-software-add').on('click', function () {
-        removeFormLd();
-        callAddForm('software');
-    });
-    $('#anchor-publication-add').on('click', function () {
-        removeFormLd();
-        callAddForm('publication');
     });
 
     function ajaxModifyLd() {

@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\User\Validate\EmailAvailability;
+
 /**
  * Formulaire de création de compte
  * @author rtournoy
@@ -30,13 +32,10 @@ class Ccsd_User_Form_Accountcreate extends Ccsd_Form
 
         $email = $this->getElement('EMAIL');
         if ($email) {
-            $options = array(
-                'table' => 'T_UTILISATEURS',
-                'field' => 'EMAIL',
-                'adapter' => Ccsd_Db_Adapter_Cas::getAdapter()
+            $validator = new EmailAvailability(
+                0,
+                "A record matching email (%value%) was found.  Use login retrieve tools"
             );
-            $validator = new Zend_Validate_Db_NoRecordExists($options);
-            $validator -> setMessage("A record matching email (%value%) was found.  Use login retrieve tools");
             $email->addValidator($validator);
         }
     }

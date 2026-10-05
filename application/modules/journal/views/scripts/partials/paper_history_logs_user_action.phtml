@@ -2,18 +2,20 @@
 /**
  * Log Detail Partial: User Action
  * Handles: 15+ cases with simple user display (assignments, invitations, comments, etc.)
- * Display: fullName + optional tag + optional uninvited flag
+ * Display: avatar (when SCREEN_NAME/UID is available) + fullName + optional tag + optional uninvited flag
  */
+$user = $this->user;
+$hasAvatarData = is_array($user) && (!empty($user['SCREEN_NAME']) || !empty($user['UID']) || !empty($user['uid']));
 ?>
 <?php if (!empty($this->uninvitedFlag)) : ?>
     <span class="label label-default" aria-label="<?= $this->translate('Status') ?>">
         <?= '[ ' . $this->translate(Episciences_Reviewer::STATUS_UNINVITED) . ' ]' ?>
     </span>
 <?php endif; ?>
-<?php if (empty($this->noPrefix)) : ?>
-    <?= $this->translate(' :') ?>
-<?php endif; ?>
-<span class="log-user-name">
-    <?= $this->fullName ?>
+<span class="log-user-action">
+    <?php if ($hasAvatarData) : ?>
+        <?= $this->userAvatar($user, 'initials') ?>
+    <?php endif; ?>
+    <span class="log-user-name"><?= $this->escape($this->fullName) ?></span>
+    <?= $this->tag ?>
 </span>
-<?= $this->tag ?>

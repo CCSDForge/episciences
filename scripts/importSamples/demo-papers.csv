@@ -1,0 +1,7 @@
+identifier;repoid;version;status;volume_id;volume_title_fr;volume_title_en;volume_num;volume_year;section_id;section_title_fr;section_title_en;uid;publication_date;editors;doi;docid;rvid;submission_date
+2103.16574;2;1;0;;Volume 1 (démo, numéro courant);Volume 1 (demo, current issue);1;2026;;Section A (démo);Section A (demo);;;;;;;
+hal-03454510;1;1;4;;Volume 1 (démo, numéro courant);Volume 1 (demo, current issue);1;2026;;Section B (démo);Section B (demo);;;;;;;
+2303.17328;2;1;4;;Volume 2 (démo);Volume 2 (demo);2;2026;;Section B (démo);Section B (demo);;;;;;;
+20054131;4;;16;;Volume 2 (démo);Volume 2 (demo);2;2026;;Section C (démo);Section C (demo);;2024-06-15 00:00:00;;;;;
+hal-01114989;1;1;16;;Volume 3 (démo, numéro spécial);Volume 3 (demo, special issue);3;2026;;Section C (démo);Section C (demo);;2021-03-01 00:00:00;;;;;
+ark:/50962/bb67854916j2h6w6;22;;0;;Volume 3 (démo, numéro spécial);Volume 3 (demo, special issue);3;2026;;Section A (démo);Section A (demo);;;;;;;

@@ -2,6 +2,7 @@
 
 use Episciences\Repositories\CommonHooksInterface;
 use Episciences\Repositories\LinkedDataEnrichmentInterface;
+use Episciences\Solr\Indexing\Enqueue\SolrIndexing;
 use Episciences\Tools\Translations;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -157,32 +158,7 @@ class Episciences_Repositories_ARCHE_Hooks implements CommonHooksInterface, Link
 
     private static function extractDescriptions($metadata, $language): array
     {
-        $descriptions = [];
-        $descriptionNodes = $metadata->xpath('//datacite:descriptions/datacite:description');
-
-        foreach ($descriptionNodes as $descNode) {
-            $desValue = Episciences_Tools::epi_html_decode((string)$descNode, ['HTML.AllowedElements' => 'p']);
-            $value = trim(str_replace(['<p>', '</p>'], '', $desValue));
-            if (!empty($value)) {
-                $nodeLanguage = '';
-                $xmlAttrs = $descNode->attributes('xml', true);
-                if (isset($xmlAttrs['lang'])) {
-                    $nodeLanguage = (string)$xmlAttrs['lang'];
-                }
-                if (empty($nodeLanguage)) {
-                    $langXpath = $descNode->xpath('@xml:lang');
-                    if (!empty($langXpath)) {
-                        $nodeLanguage = (string)$langXpath[0];
-                    }
-                }
-                $descriptions[] = [
-                    'value'    => $value,
-                    'language' => $nodeLanguage ?: $language,
-                ];
-            }
-        }
-
-        return $descriptions;
+        return Episciences_Repositories_Common::extractDescriptions($metadata, $language);
     }
 
     public static function hookIsRequiredVersion(): array
@@ -217,6 +193,17 @@ class Episciences_Repositories_ARCHE_Hooks implements CommonHooksInterface, Link
         }
 
         $affectedRows = Episciences_Submit::processDatasets($hookParams['docId'], $relatedIdentifiers);
+
+        if ($affectedRows > 0) {
+            $paper = Episciences_PapersManager::get((int) $hookParams['docId'], false);
+            if ($paper && $paper->isPublished()) {
+                try {
+                    SolrIndexing::enqueueIndex($paper->getDocid());
+                } catch (Exception $e) {
+                    trigger_error($e->getMessage());
+                }
+            }
+        }
 
         $response['affectedRows'] = $affectedRows;
         return $response;

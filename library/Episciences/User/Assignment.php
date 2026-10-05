@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\User\UserNotFoundException;
+
 class Episciences_User_Assignment
 {
 
@@ -126,15 +128,16 @@ class Episciences_User_Assignment
     }
 
     /**
-     * Enregistre l'assignation en BDD
+     * Database Entry
      * @return boolean
      * @throws Zend_Db_Adapter_Exception
      */
+
     public function save(): bool
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        // Préparation des valeurs à insérer
+        //Preparing Common Values
         $values = [
             'INVITATION_ID' => $this->getInvitation_id(),
             'ITEMID' => $this->getItemid(),
@@ -145,16 +148,19 @@ class Episciences_User_Assignment
             'TMP_USER' => $this->isTmp_user(),
             'ROLEID' => $this->getRoleid(),
             'STATUS' => $this->getStatus(),
-            'WHEN' => new Zend_Db_Expr('NOW()'),
             'DEADLINE' => $this->getDeadline()
         ];
 
-        // Enregistrement en BDD
+        // Update
         if ($this->getId()) {
-            $db->update(T_ASSIGNMENTS, $values, array('ID = ?' => $this->getId()));
+            // We preserve the existing value of 'WHEN' @see RT#294893
+            $db->update(T_ASSIGNMENTS, $values, ['ID = ?' => $this->getId()]);
             Episciences_User_AssignmentsManager::getCachePool()->clear();
             return true;
         }
+
+        // Création: We timestamp the creation
+        $values['WHEN'] = new Zend_Db_Expr('NOW()');
 
         if ($db->insert(T_ASSIGNMENTS, $values)) {
             $this->setId((int)$db->lastInsertId());
@@ -377,5 +383,31 @@ class Episciences_User_Assignment
         }
 
         return $reviewer;
+    }
+
+    /**
+     * Determines the recipient based on their type (temporary or non-temporary).
+     * @return Episciences_User|Episciences_User_Tmp
+     * @throws Zend_Db_Statement_Exception
+     * @throws Exception
+     */
+    public function resolveFromUser(): Episciences_User|Episciences_User_Tmp
+    {
+        $fromUid = $this->getUid();
+
+        if ($this->isTmp_user()) {
+            $tmpUser = Episciences_TmpUsersManager::findById($fromUid);
+
+            if (!$tmpUser) {
+                throw new UserNotFoundException($fromUid);
+            }
+
+            return $tmpUser;
+        }
+
+        $fromUser = new Episciences_User();
+        $fromUser->findWithCAS($fromUid);
+
+        return $fromUser;
     }
 }

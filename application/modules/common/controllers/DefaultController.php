@@ -435,4 +435,10 @@ class DefaultController extends Zend_Controller_Action
 
         return $real;
     }
+
+    protected function getSession(): Zend_Session_Namespace
+    {
+        return new Zend_Session_Namespace(SESSION_NAMESPACE);
+    }
+
 }

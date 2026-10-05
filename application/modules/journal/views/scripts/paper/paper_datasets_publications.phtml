@@ -113,10 +113,5 @@ $keepOnlySourceUsed = [];
                 <li><span class="label label-default"><?= $this->escape($id) ?></span> <?= $label ?></li>
             <?php endforeach; ?>
         </ul>
-        <?php if ($isAllowedToManageRelations): ?>
-            <a class="btn btn-default btn-sm" href="#manage-linked-data" id="anchor-publication-add"><span
-                        class="fa-regular fa-file-lines"
-                        style="margin-right: 5px"></span><?= $this->translate("Ajouter une publication") ?></a>
-        <?php endif; ?>
     </div>
 </div>

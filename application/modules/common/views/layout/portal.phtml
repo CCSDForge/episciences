@@ -1,0 +1,193 @@
+<?php
+$lang = Zend_Registry::get('lang');
+$isFr = ($lang === 'fr');
+echo $this->doctype('HTML5');
+?>
+<!DOCTYPE html>
+<html lang="<?= $this->escape($lang) ?>">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <title><?= $isFr ? 'Episciences - Plateforme d\'accès ouvert Diamant' : 'Episciences - Diamond Open Access Platform' ?></title>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20211124">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=20211124">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=20211124">
+    <link rel="shortcut icon" href="/favicon.ico?v=20211124">
+
+    <?php
+    $this->jQuery()->addStylesheet("/css/main.css");
+    $this->jQuery()->addStylesheet(VENDOR_BOOTSTRAP);
+    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME);
+    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_SOLID);
+    $this->jQuery()->addStylesheet(VENDOR_FONT_AWESOME_BRAND);
+    echo $this->jQuery();
+    ?>
+
+    <style>
+        :root {
+            --primary-color: #143CAA;
+            --secondary-color: #008080;
+            --text-color: #212529;
+            --bg-light: #f8f9fa;
+            --focus-ring: #005fcc;
+        }
+
+        .skip-link {
+            position: absolute;
+            top: -50px;
+            left: 10px;
+            background: var(--primary-color);
+            color: #ffffff;
+            padding: 8px 14px;
+            z-index: 10000;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 600;
+            transition: top 0.2s ease;
+        }
+        .skip-link:focus {
+            top: 10px;
+            outline: 3px solid var(--focus-ring);
+            color: #ffffff;
+        }
+
+        .portal-header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 10px 0;
+        }
+
+        .portal-header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .portal-logo-link {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+            border-radius: 6px;
+            padding: 2px;
+        }
+        .portal-logo-link:focus-visible {
+            outline: 3px solid var(--focus-ring);
+            outline-offset: 2px;
+        }
+        .portal-logo-img {
+            height: 44px;
+            width: auto;
+        }
+
+        /* Simplified, clean language switcher */
+        .lang-switch-nav {
+            display: flex;
+            align-items: center;
+        }
+        .lang-switch-list {
+            display: flex;
+            align-items: center;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            gap: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .lang-switch-link {
+            color: #4b5563;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: background-color 0.15s, color 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            min-height: 40px;
+        }
+        .lang-switch-link:hover {
+            color: var(--primary-color);
+            background-color: #f3f4f6;
+            text-decoration: none;
+        }
+        .lang-switch-link:focus-visible {
+            outline: 3px solid var(--focus-ring);
+            outline-offset: 2px;
+        }
+        .lang-switch-link[aria-current="true"] {
+            color: #ffffff;
+            background-color: var(--primary-color);
+        }
+        .lang-separator {
+            color: #d1d5db;
+            user-select: none;
+        }
+
+        .portal-main {
+            padding: 30px 0;
+        }
+    </style>
+</head>
+
+<body style="background-color: var(--bg-light); color: var(--text-color); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+
+    <!-- Accessible Skip Link -->
+    <a href="#main-content" class="skip-link">
+        <?= $isFr ? 'Aller au contenu principal' : 'Skip to main content' ?>
+    </a>
+
+    <!-- Header Section -->
+    <header class="portal-header" role="banner">
+        <div class="container">
+            <div class="portal-header-content">
+                <!-- Logo with Link to https://www.episciences.org/ -->
+                <a href="https://www.episciences.org/" class="portal-logo-link" title="Episciences - <?= $isFr ? 'Aller sur episciences.org' : 'Go to episciences.org' ?>">
+                    <img src="/img/episciences.svg" alt="Episciences" class="portal-logo-img">
+                </a>
+
+                <!-- Simplified Language Switcher -->
+                <nav class="lang-switch-nav" aria-label="<?= $isFr ? 'Choix de la langue' : 'Language selection' ?>">
+                    <ul class="lang-switch-list">
+                        <li>
+                            <a href="?lang=fr" 
+                               class="lang-switch-link" 
+                               lang="fr" 
+                               hreflang="fr"
+                               <?= $isFr ? 'aria-current="true"' : '' ?>
+                               title="Afficher la page en français">
+                               FR
+                            </a>
+                        </li>
+                        <li class="lang-separator" aria-hidden="true">|</li>
+                        <li>
+                            <a href="?lang=en" 
+                               class="lang-switch-link" 
+                               lang="en" 
+                               hreflang="en"
+                               <?= !$isFr ? 'aria-current="true"' : '' ?>
+                               title="Display page in English">
+                               EN
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="portal-main" role="main" tabindex="-1">
+        <div class="container">
+            <?php echo $this->layout()->content; ?>
+        </div>
+    </main>
+
+</body>
+</html>

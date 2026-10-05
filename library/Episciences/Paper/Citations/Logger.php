@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 
 /**
@@ -49,7 +50,7 @@ class Episciences_Paper_Citations_Logger
             self::$logger->pushHandler(
                 new StreamHandler(
                     EPISCIENCES_LOG_PATH . self::LOG_FILE_PREFIX . date('Y-m-d') . '.log',
-                    Logger::INFO
+                    Level::Info
                 )
             );
         }

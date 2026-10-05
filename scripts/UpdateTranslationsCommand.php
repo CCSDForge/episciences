@@ -5,6 +5,7 @@ require_once __DIR__ . '/../library/Episciences/Translation/Replacer.php';
 
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -166,13 +167,13 @@ class UpdateTranslationsCommand extends Command
         $this->logger = new Logger('translations-update');
 
         if (is_string($logFile) && $logFile !== '') {
-            $fileHandler = new StreamHandler($logFile, Logger::DEBUG);
+            $fileHandler = new StreamHandler($logFile, Level::Debug);
             $fileHandler->setFormatter(new LineFormatter("[%datetime%] %level_name%: %message% %context%\n", null, false, true));
             $this->logger->pushHandler($fileHandler);
         }
 
         if (!$quiet) {
-            $consoleHandler = new StreamHandler('php://stdout', Logger::INFO);
+            $consoleHandler = new StreamHandler('php://stdout', Level::Info);
             $consoleHandler->setFormatter(new LineFormatter("%level_name%: %message%\n", null, false, false));
             $this->logger->pushHandler($consoleHandler);
         }

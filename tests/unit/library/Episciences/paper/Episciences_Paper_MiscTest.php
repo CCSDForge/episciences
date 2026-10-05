@@ -25,6 +25,33 @@ final class Episciences_Paper_MiscTest extends TestCase
     protected function setUp(): void
     {
         $this->paper = new Episciences_Paper();
+
+        if (!defined('SESSION_NAMESPACE')) {
+            define('SESSION_NAMESPACE', 'Episciences_Auth');
+        }
+
+        \Episciences_Auth::getInstance()->clearIdentity();
+        $session = new \Zend_Session_Namespace(SESSION_NAMESPACE);
+        unset($session->realIdentities);
+    }
+
+    protected function tearDown(): void
+    {
+        \Episciences_Auth::getInstance()->clearIdentity();
+        $session = new \Zend_Session_Namespace(SESSION_NAMESPACE);
+        unset($session->realIdentities);
+    }
+
+    private function createMockUser(int $uid): \Episciences_User
+    {
+        $user = $this->createMock(\Episciences_User::class);
+        $user->method('getUid')->willReturn($uid);
+        return $user;
+    }
+
+    private function loginUser(\Episciences_User $user): void
+    {
+        \Episciences_Auth::getInstance()->getStorage()->write($user);
     }
 
     // -----------------------------------------------------------------------
@@ -166,14 +193,58 @@ final class Episciences_Paper_MiscTest extends TestCase
 
     public function testIsOwnerReturnsTrueWhenCurrentUserMatchesPaperUid(): void
     {
-        // isOwner() calls Episciences_Auth::getUid() which returns 0 in test env
         $paper = new Episciences_Paper();
-        $paper->setUid(0); // match the default test-environment uid
+        $paper->setUid(42);
 
-        // We can only verify that the method is callable without error in a
-        // no-auth environment; the actual return value depends on Auth state.
-        $result = $paper->isOwner();
-        self::assertIsBool($result);
+        $this->loginUser($this->createMockUser(42));
+
+        self::assertTrue($paper->isOwner());
+    }
+
+    public function testIsOwnerReturnsFalseWhenNoIdentityMatchesPaperUid(): void
+    {
+        $paper = new Episciences_Paper();
+        $paper->setUid(42);
+
+        $this->loginUser($this->createMockUser(99));
+
+        self::assertFalse($paper->isOwner());
+    }
+
+    /**
+     * When an admin uses "switch user" (su) to act as someone else, the paper
+     * author should still be recognized as owner via the original identity —
+     * this is the case Episciences_Auth::getOriginalIdentity() exists for.
+     */
+    public function testIsOwnerReturnsTrueWhenOriginalIdentityMatchesPaperUidDuringSu(): void
+    {
+        $paper = new Episciences_Paper();
+        $paper->setUid(99); // the admin's own uid, i.e. the paper they authored
+
+        $admin = $this->createMockUser(99);
+        $impersonated = $this->createMockUser(42);
+
+        $this->loginUser($admin);
+        \Episciences_Auth::saveRealIdentity();
+        $this->loginUser($impersonated);
+
+        // Current identity (42) doesn't match, but the original identity (99) does
+        self::assertTrue($paper->isOwner());
+    }
+
+    public function testIsOwnerReturnsFalseWhenNeitherCurrentNorOriginalIdentityMatchesDuringSu(): void
+    {
+        $paper = new Episciences_Paper();
+        $paper->setUid(123); // belongs to some other, unrelated user
+
+        $admin = $this->createMockUser(99);
+        $impersonated = $this->createMockUser(42);
+
+        $this->loginUser($admin);
+        \Episciences_Auth::saveRealIdentity();
+        $this->loginUser($impersonated);
+
+        self::assertFalse($paper->isOwner());
     }
 
     // -----------------------------------------------------------------------

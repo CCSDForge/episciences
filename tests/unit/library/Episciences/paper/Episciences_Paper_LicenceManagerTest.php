@@ -41,7 +41,7 @@ final class Episciences_Paper_LicenceManagerTest extends TestCase {
     /**
      * @dataProvider getApiResponseByRepoIdDataProvider
      */
-    public function testGetApiResponseByRepoId(string $repoId, string $identifier, int $version, string $expectedResult, bool $shouldCallMethods)
+    public function testGetApiResponseByRepoId(string $repoId, string $identifier, float $version, string $expectedResult, bool $shouldCallMethods)
     {
         // For testing without external API calls, we'll just test the basic flow and edge cases
         if ($repoId === '999' || $identifier === '') {

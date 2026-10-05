@@ -44,6 +44,16 @@ class Episciences_Acl extends Ccsd_Acl
     public const ROLE_AUTHOR_PLURAL = 'authors';
     public const ROLE_GUEST_PLURAL = 'guests';
     public const ROLE_CO_AUTHOR_PLURAL = 'coauthors';
+    /** @var list<string> Roles shown with a tag icon in role badges (see getRoleLabelHtml()) */
+    public const ROLES_WITH_TAG_ICON = [
+        self::ROLE_EDITORIAL_BOARD,
+        self::ROLE_TECHNICAL_BOARD,
+        self::ROLE_SCIENTIFIC_ADVISORY_BOARD,
+        self::ROLE_ADVISORY_BOARD,
+        self::ROLE_MANAGING_EDITOR,
+        self::ROLE_HANDLING_EDITOR,
+        self::ROLE_FORMER_MEMBER,
+    ];
     public const CONFIGURABLE_RESOURCE = true; // configurable by review
     public const NOT_CONFIGURABLE_RESOURCE = false; //  public resource but restricted to certain roles
 
@@ -256,6 +266,26 @@ class Episciences_Acl extends Ccsd_Acl
         // Resources to add in the ACL
         $config = new Zend_Config_Ini(APPLICATION_PATH . '/configs/acl.ini');
         $this->_defaultAcl = $config->toArray();
+    }
+
+    /**
+     * Translated role label for HTML output (role badges): escaped, with a tag icon for board roles.
+     * The dictionaries hold plain text so that the same label can be used in text contexts
+     * (charts, selects, JS).
+     *
+     * @throws Zend_Exception when no translator is registered
+     */
+    public static function getRoleLabelHtml(string $role): string
+    {
+        /** @var Zend_Translate $translator */
+        $translator = Zend_Registry::get('Zend_Translate');
+        $label = htmlspecialchars((string)$translator->translate($role), ENT_QUOTES, 'UTF-8');
+
+        if (in_array($role, self::ROLES_WITH_TAG_ICON, true)) {
+            return '<i class="fa-regular fa-user-tag" aria-hidden="true"></i> ' . $label;
+        }
+
+        return $label;
     }
 
     public static function getCode(mixed $rightid): void

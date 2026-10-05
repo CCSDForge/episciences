@@ -190,6 +190,58 @@ class Episciences_ReviewTest extends TestCase
     }
 
     // =========================================================================
+    // getCoverLetterRequirement (git #922)
+    // =========================================================================
+
+    public function testCoverLetterRequirementConstants(): void
+    {
+        self::assertSame(0, Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED);
+        self::assertSame(1, Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL);
+        self::assertSame(2, Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED);
+    }
+
+    public function testGetCoverLetterRequirementDefaultsToOptionalWhenUnset(): void
+    {
+        // Reviews created before this setting existed have no stored value in DB.
+        // Regression: must default to optional, not disabled, otherwise the cover
+        // letter file field silently disappears for every pre-existing journal.
+        $this->review->applySettingsFromRows([]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsDisabledWhenExplicitlySetToZero(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '0'],
+        ]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_DISABLED, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsOptionalWhenExplicitlySet(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '1'],
+        ]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_OPTIONAL, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementReturnsRequired(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '2'],
+        ]);
+        self::assertSame(Episciences_Review::COVER_LETTER_REQUIREMENT_REQUIRED, $this->review->getCoverLetterRequirement());
+    }
+
+    public function testGetCoverLetterRequirementCastsStoredValueToInt(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_COVER_LETTER_REQUIREMENT, 'VALUE' => '2'],
+        ]);
+        self::assertIsInt($this->review->getCoverLetterRequirement());
+    }
+
+    // =========================================================================
     // getRepositories (reads from $_settings)
     // =========================================================================
 
@@ -371,6 +423,76 @@ class Episciences_ReviewTest extends TestCase
         self::assertSame('journalDescription', Episciences_Review::SETTING_JOURNAL_DESCRIPTION);
         self::assertSame('journalKeywords', Episciences_Review::SETTING_JOURNAL_KEYWORDS);
         self::assertSame('journalCreationYear', Episciences_Review::SETTING_JOURNAL_CREATION_YEAR);
+    }
+
+    // =========================================================================
+    // SETTING_MAIL_DISPLAY_CODE (custom rvcode label in automatic emails)
+    // =========================================================================
+
+    public function testMailDisplayCodeSettingConstant(): void
+    {
+        self::assertSame('mailDisplayCode', Episciences_Review::SETTING_MAIL_DISPLAY_CODE);
+    }
+
+    public function testSetAndGetMailDisplayCodeSetting(): void
+    {
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, 'custom-code');
+        self::assertSame('custom-code', $this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
+    }
+
+    public function testMailDisplayCodeSettingDefaultsToFalseWhenUnset(): void
+    {
+        self::assertFalse($this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
+    }
+
+    public function testGetMailDisplayCodeFallsBackToCodeWhenSettingUnset(): void
+    {
+        $this->review->setCode('epijinfo');
+        self::assertSame('epijinfo', $this->review->getMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeFallsBackToCodeWhenSettingBlank(): void
+    {
+        $this->review->setCode('epijinfo');
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, '   ');
+        self::assertSame('epijinfo', $this->review->getMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeUsesCustomSettingWhenSet(): void
+    {
+        $this->review->setCode('epijinfo');
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, 'Épijournal Info');
+        self::assertSame('Épijournal Info', $this->review->getMailDisplayCode());
+    }
+
+    public function testGetMailDisplayCodeTrimsCustomSetting(): void
+    {
+        $this->review->setSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE, '  custom  ');
+        self::assertSame('custom', $this->review->getMailDisplayCode());
+    }
+
+    public function testApplySettingsFromRowsSetsMailDisplayCode(): void
+    {
+        $this->review->applySettingsFromRows([
+            ['SETTING' => Episciences_Review::SETTING_MAIL_DISPLAY_CODE, 'VALUE' => 'epij-custom'],
+        ]);
+
+        self::assertSame('epij-custom', $this->review->getSetting(Episciences_Review::SETTING_MAIL_DISPLAY_CODE));
+    }
+
+    /**
+     * settingsForm() pulls in Zend_Registry-dependent sub-forms (translator, repositories),
+     * so it cannot be instantiated in isolation here; verified via source inspection instead,
+     * consistent with other DB/registry-dependent methods in this codebase's test suite.
+     */
+    public function testSettingsFormSourceAddsMailDisplayCodeElement(): void
+    {
+        $method = new ReflectionMethod(Episciences_Review::class, 'settingsForm');
+        $lines = file($method->getFileName());
+        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        self::assertStringContainsString("addElement('text', self::SETTING_MAIL_DISPLAY_CODE", $source);
+        self::assertStringContainsString('self::SETTING_MAIL_DISPLAY_CODE], \'global\'', $source);
     }
 
     // =========================================================================

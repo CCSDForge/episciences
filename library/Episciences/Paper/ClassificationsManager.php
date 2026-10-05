@@ -32,7 +32,7 @@ class Episciences_Paper_ClassificationsManager
         if (!empty($values)) {
             try {
                 // Prepare the ON DUPLICATE KEY UPDATE clause
-                $onDuplicateKeySql = ' ON DUPLICATE KEY UPDATE `classification_name` = VALUES(`classification_name`), `source_id` = VALUES(`source_id`)';
+                $onDuplicateKeySql = ' AS new_row ON DUPLICATE KEY UPDATE `classification_name` = new_row.`classification_name`, `source_id` = new_row.`source_id`';
 
                 // Execute the query
                 $result = $db->query($sql . implode(', ', $values) . $onDuplicateKeySql);

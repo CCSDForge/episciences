@@ -55,6 +55,10 @@ class Episciences_Section
      * @var int number of papers in a section
      */
     private $_countOfPapers;
+    /**
+     * @var mixed indexed papers of the section
+     */
+    private $_indexedPapers;
 
     /**
      * Episciences_Section constructor.
@@ -326,8 +330,27 @@ class Episciences_Section
             }
 
             $this->_db->insert(T_SECTION_SETTINGS, $sectionSettings);
-        } else { // update exiting section
-            return $this->update($sectionData, $sectionSettings) >= 0;
+
+            // Enqueue Next.js cache revalidation for new section
+            $rvcode = defined('RVCODE') ? RVCODE : null;
+            if ($rvcode !== null) {
+                \Episciences\Next\RevalidationService::enqueueTag($rvcode, "sections-{$rvcode}");
+            }
+        } else { // update existing section
+            $updated = $this->update($sectionData, $sectionSettings) >= 0;
+
+            if ($updated) {
+                $sid = $this->getSid();
+                $rvcode = defined('RVCODE') ? RVCODE : null;
+                if ($rvcode !== null) {
+                    \Episciences\Next\RevalidationService::enqueueTags($rvcode, [
+                        "section-{$sid}-{$rvcode}",
+                        "sections-{$rvcode}",
+                    ]);
+                }
+            }
+
+            return $updated;
         }
 
         return true;
@@ -428,22 +451,14 @@ class Episciences_Section
 
         if ($result) {
 
-            $positions = [];
-            // $positions = $this->getPaperPositions();
-
             $response = unserialize($result, ['allowed_classes' => false])['response'];
-            $unsorted_papers = [];
+
+            // Sections are not manually ordered the way volumes are (Section has no
+            // getPaperPositions()): keep the Solr order (publication_date desc) from
+            // the query above, keyed by docid.
             $sorted_papers = [];
             foreach ($response['docs'] as $paper) {
-                $unsorted_papers[$paper['docid']] = $paper;
-            }
-
-            if (is_array($positions) && !empty($positions)) {
-                foreach ($positions as $position => $docid) {
-                    $sorted_papers[$position] = $unsorted_papers[$docid];
-                }
-            } else {
-                $sorted_papers = $unsorted_papers;
+                $sorted_papers[$paper['docid']] = $paper;
             }
 
             $this->setIndexedPapers($sorted_papers);
@@ -633,7 +648,7 @@ class Episciences_Section
             $result = $this->_db->update(T_SECTIONS, $data, $where);
 
             if (!empty($settings)) {
-                $sql = $this->_db->quoteInto('INSERT INTO ' . T_SECTION_SETTINGS . ' (SID, SETTING, VALUE) VALUES (?) ON DUPLICATE KEY UPDATE VALUE = VALUES(VALUE)', $settings);
+                $sql = $this->_db->quoteInto('INSERT INTO ' . T_SECTION_SETTINGS . ' (SID, SETTING, VALUE) VALUES (?) AS new_row ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE', $settings);
                 $query = $this->_db->query($sql);
 
                 $result += $query->rowCount();

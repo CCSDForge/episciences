@@ -281,4 +281,26 @@ class Episciences_VolumesManagerTest extends TestCase
 
         $this->assertIsInt($uids[0]);
     }
+
+    // =========================================================================
+    // isPapersInVolumeQuery(): must scope its lookup to the rvid being filtered
+    // on, not to the global RVID constant, when one is explicitly provided.
+    // =========================================================================
+
+    public function testIsPapersInVolumeQueryScopesLookupToTheProvidedRvid(): void
+    {
+        $otherRvid = RVID + 41;
+
+        $sql = $this->callPrivate('isPapersInVolumeQuery', [5, ['COUNT(st.DOCID)'], $otherRvid])->assemble();
+
+        $this->assertStringContainsString('st.RVID = ' . $otherRvid, $sql);
+        $this->assertStringNotContainsString('st.RVID = ' . RVID . ' ', $sql . ' ');
+    }
+
+    public function testIsPapersInVolumeQueryFallsBackToGlobalRvidConstantWhenNoneGiven(): void
+    {
+        $sql = $this->callPrivate('isPapersInVolumeQuery', [5])->assemble();
+
+        $this->assertStringContainsString('st.RVID = ' . RVID, $sql);
+    }
 }

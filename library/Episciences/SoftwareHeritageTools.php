@@ -4,6 +4,7 @@ declare(strict_types=1);
 use Episciences\Api\SoftwareHeritageApiClient;
 use GuzzleHttp\Client;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
@@ -34,7 +35,7 @@ class Episciences_SoftwareHeritageTools
         if (self::$client === null) {
             $cache = new FilesystemAdapter('softwareHeritage', SoftwareHeritageApiClient::ONE_MONTH, dirname(APPLICATION_PATH) . '/cache/');
             $logger = new Logger('softwareHeritage');
-            $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'softwareHeritage_' . date('Y-m-d') . '.log', Logger::INFO));
+            $logger->pushHandler(new StreamHandler(EPISCIENCES_LOG_PATH . 'softwareHeritage_' . date('Y-m-d') . '.log', Level::Info));
             self::$client = new SoftwareHeritageApiClient(new Client(), $cache, $logger);
         }
         return self::$client;

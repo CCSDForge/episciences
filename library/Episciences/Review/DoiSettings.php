@@ -360,13 +360,11 @@ class Episciences_Review_DoiSettings
             return 1;
         }
 
+        // explode() always returns an array; the last segment may not be numeric, so
+        // cast it before incrementing to avoid a TypeError on "abc" + 1 under PHP 8.
         $autoIncrementValueArray = explode($templateAutoIncrementSeparatorChar, $latestDoi);
-        if (is_array($autoIncrementValueArray)) {
-            $autoIncrementValue = end($autoIncrementValueArray) + 1;
-        } else {
-            $autoIncrementValue = 1;
-        }
+        $lastSegment = end($autoIncrementValueArray);
 
-        return (int) $autoIncrementValue;
+        return (int) $lastSegment + 1;
     }
 }

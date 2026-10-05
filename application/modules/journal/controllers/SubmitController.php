@@ -162,6 +162,10 @@ class SubmitController extends DefaultController
         $this->adjustFormForReplacementOrSuggestions($request, $form, $canReplace);
         $this->setDdFileRequiredFlag($form, $post);
 
+        if (!$this->handleCoverLetterValidation($form, $post)) {
+            return;
+        }
+
         if (!$form->isValid($post)) {
             $this->renderFormErrors($form);
             return;
@@ -213,6 +217,29 @@ class SubmitController extends DefaultController
 
         $form->getElement(Episciences_Submit::DD_FILE_ELEMENT_NAME)
             ?->setRequired($post[$requiredDdKey] === 'true');
+    }
+
+    /**
+     * Validate cover letter requirement.
+     * When required, at least one of comment or file must be provided.
+     *
+     * @throws Zend_Db_Statement_Exception
+     */
+    private function handleCoverLetterValidation(Zend_Form $form, array $post): bool
+    {
+        $validation = Episciences_Submit::validateCoverLetterRequirement($post);
+
+        if ($validation !== true) {
+            $element = $form->getElement(Episciences_Submit::COVER_LETTER_FILE_ELEMENT_NAME);
+            if ($element) {
+                $element->addError($validation);
+            }
+
+            $this->renderFormErrors($form);
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -376,7 +403,7 @@ class SubmitController extends DefaultController
     private function extractVersion(array &$params): void
     {
         $params['version'] = (isset($params['version']) && is_numeric($params['version']))
-            ? (int)$params['version']
+            ? (float)$params['version']
             : 1;
     }
 
@@ -563,20 +590,12 @@ class SubmitController extends DefaultController
         $this->_helper->viewRenderer->setNoRender();
 
         $repoId = (int)$request->get('repoId');
-        $hasHook = !empty(Episciences_Repositories::hasHook($repoId));
 
-        if ($repoId !== (int)Episciences_Repositories::CWI_REPO_ID) {
+        $isRequiredVersion = $repoId !== (int)Episciences_Repositories::CWI_REPO_ID
+            && Episciences_Repositories::isVersionRequired($repoId);
 
-            $isRequiredVersion = $hasHook ?
-                Episciences_Repositories::callHook('hookIsRequiredVersion', ['repoId' => $repoId]) :
-                ['result' => true];
-
-        } else {
-            $isRequiredVersion = ['result' => false];
-
-        }
-
-        $response = ['hasHook' => $hasHook, 'isRequiredVersion' => $isRequiredVersion];
+        // Kept nested: public/js/submit/index.js reads isRequiredVersion.result
+        $response = ['isRequiredVersion' => ['result' => $isRequiredVersion]];
 
         try {
             echo json_encode($response, JSON_THROW_ON_ERROR);

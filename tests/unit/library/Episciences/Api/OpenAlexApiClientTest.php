@@ -6,6 +6,7 @@ use Episciences\Api\OpenAlexApiClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -171,5 +172,31 @@ class OpenAlexApiClientTest extends TestCase
 
         $this->assertIsArray($result);
         $this->assertEquals('Cached Title', $result['title']);
+    }
+
+    /**
+     * The requested URL must carry api_key only when OPENALEX_APIKEY is a non-empty string;
+     * an empty key must never be sent as a query parameter.
+     */
+    public function testFetchMetadata_UrlReflectsApiKeyConstantState(): void
+    {
+        if (!defined('OPENALEX_APIURL')) {
+            $this->markTestSkipped('OPENALEX_APIURL constant not available in test env');
+        }
+
+        $history = [];
+        $handlerStack = HandlerStack::create(new MockHandler([new Response(200, [], '{}')]));
+        $handlerStack->push(Middleware::history($history));
+        $guzzle = new Client(['handler' => $handlerStack]);
+
+        $this->makeClient($guzzle)->fetchMetadata('10.1234/apikeytest');
+
+        $requestedUrl = (string) $history[0]['request']->getUri();
+
+        if (defined('OPENALEX_APIKEY') && (string) constant('OPENALEX_APIKEY') !== '') {
+            $this->assertStringContainsString('api_key=' . constant('OPENALEX_APIKEY'), $requestedUrl);
+        } else {
+            $this->assertStringNotContainsString('api_key=', $requestedUrl);
+        }
     }
 }

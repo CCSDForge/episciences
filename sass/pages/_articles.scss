@@ -65,6 +65,12 @@
   cursor: pointer;
 }
 
+// The default .popover max-width (800px) is meant for wide content elsewhere;
+// this popover only holds two short date fields, so it needs its own cap.
+.popover.history-date-popover {
+  max-width: 260px;
+}
+
 .history-datepicker-input,
 .history-datepicker-button,
 .history-search {

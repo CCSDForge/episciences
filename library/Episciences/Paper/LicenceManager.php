@@ -18,12 +18,12 @@ class Episciences_Paper_LicenceManager
     /**
      * @param string|int $repoId
      * @param string $identifier
-     * @param int $version
+     * @param float $version
      * @return string
      * @throws GuzzleException
      * @throws InvalidArgumentExceptionAlias
      */
-    public static function getApiResponseByRepoId($repoId, string $identifier, int $version): string
+    public static function getApiResponseByRepoId($repoId, string $identifier, float $version): string
     {
         if (empty(trim($identifier))) {
             return '';
@@ -352,7 +352,7 @@ class Episciences_Paper_LicenceManager
         if (!empty($values)) {
             try {
                 $sql = sprintf(
-                        'INSERT INTO %s (`licence`,`docid`,`source_id`,`uid`) VALUES %s ON DUPLICATE KEY UPDATE `licence`=VALUES(licence), `uid`=VALUES(uid) ',
+                        'INSERT INTO %s (`licence`,`docid`,`source_id`,`uid`) VALUES %s AS new_row ON DUPLICATE KEY UPDATE `licence`=new_row.licence, `uid`=new_row.uid ',
                         $db->quoteIdentifier(T_PAPER_LICENCES),
                         implode(', ', $values)
                 );

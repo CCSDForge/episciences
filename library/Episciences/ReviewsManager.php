@@ -162,6 +162,23 @@ class Episciences_ReviewsManager
         return $review;
     }
 
+    /**
+     * Whether a journal has already switched over to the new (external) front-end
+     * (REVIEW.is_new_front_switched = 'yes'). Search-engine indexing of this legacy
+     * front should then be disabled for that journal (see RobotsDefaultController).
+     * @param int $rvid
+     * @return bool
+     */
+    public static function isNewFrontSwitched(int $rvid): bool
+    {
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()
+            ->from(T_REVIEW, ['is_new_front_switched'])
+            ->where('RVID = ?', $rvid);
+
+        return $db->fetchOne($select) === 'yes';
+    }
+
 
     /**
      * OpenAIRE Metrics

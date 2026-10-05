@@ -1,0 +1,102 @@
+// Shared Bootstrap/TomSelect integration fixes for the paper-filter
+// <select multiple> fields (status, ratingStatus, vid, sid, editors,
+// reviewers, doi, repositories), used on administratepaper/list,
+// paper/submitted and paper/ratings via public/js/common/tomselect-filters.js.
+//
+// Intentionally NOT consolidated with the near-duplicate block scoped under
+// .paper-modal__body in _paper-assignment-modal.scss: that one applies inside
+// a <dialog> with its own stacking context (lower z-index), a different
+// scoping selector, and single-select-specific rules — merging them would
+// risk an unrelated regression in the assignment modal for no benefit here.
+
+select.tomselected,
+select.ts-hidden-accessible {
+  display: none !important;
+}
+
+.ts-wrapper {
+  position: relative;
+}
+
+.ts-wrapper.form-control {
+  height: auto !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.ts-wrapper.multi .ts-control {
+  min-height: 34px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 28px 4px 8px;
+  cursor: pointer;
+  background: #fff;
+  position: relative;
+}
+
+// Dropdown chevron (▾) positioned at the right edge of the control
+.ts-wrapper.multi .ts-control::after {
+  content: '▾';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #777;
+  pointer-events: none;
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.15s;
+}
+
+.ts-wrapper.multi.focus .ts-control::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+// Visible keyboard focus indicator
+.ts-wrapper.multi.focus .ts-control {
+  outline: 2px solid #337ab7;
+  outline-offset: 2px;
+}
+
+.ts-dropdown {
+  position: absolute !important;
+  z-index: 1050 !important;
+}
+
+.ts-dropdown .option {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ts-dropdown .option.active,
+.ts-dropdown .option:hover {
+  background-color: #337ab7;
+  color: #fff;
+}
+
+// checkbox_options plugin markers (only present on submitted/ratings)
+.ts-dropdown .option input[type='checkbox'] {
+  margin-right: 6px;
+  vertical-align: middle;
+  pointer-events: none;
+}
+
+.ts-wrapper.multi .ts-control > .item {
+  background-color: #337ab7;
+  color: #fff;
+  border-color: #2e6da4;
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+
+.ts-wrapper.multi .ts-control > .item .remove {
+  color: rgba(255, 255, 255, 0.7);
+  border-left-color: rgba(255, 255, 255, 0.3);
+}
+
+.ts-wrapper.multi .ts-control > .item .remove:hover {
+  color: #fff;
+}

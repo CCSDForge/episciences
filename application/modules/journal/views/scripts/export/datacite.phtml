@@ -149,10 +149,6 @@
             $abstract = trim($abstract);
             $langId = '';
 
-            if ('International audience' === $abstract) {
-                continue;
-            }
-
             if ($lang && Zend_Locale::isLocale($lang)) {
                 $langId = ' xml:lang="' . $lang . '"';
             }

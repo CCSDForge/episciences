@@ -38,8 +38,9 @@ if (file_exists($path)) {
     die('Unexpected Application Error: the configuration file is missing. We cannot continue until it is fixed. Please try again in 12O seconds.');
 }
 
-// Define default value for CAPTCHA_BRAND if not provided in pwd.json
+// Define default values for ALTCHA if not provided in pwd.json
 defined('CAPTCHA_BRAND') || define('CAPTCHA_BRAND', '');
+defined('ALTCHA_HMAC_SECRET') || define('ALTCHA_HMAC_SECRET', '');
 
 /**
  * S'assure que la constante de nom $name est definie

@@ -64,6 +64,9 @@ class Episciences_Mail_Tags
     public const TAG_REQUEST_MESSAGE = '%%REQUEST_MESSAGE%%';
     public const TAG_REQUEST_ANSWER = '%%REQUEST_ANSWER%%';
     public const TAG_CONTRIBUTOR_FULL_NAME = '%%CONTRIBUTOR_FULL_NAME%%';
+    // Contributor change - co-author status message
+    public const TAG_COAUTHOR_STATUS_MESSAGE = '%%COAUTHOR_STATUS_MESSAGE%%';
+    public const TAG_PAPER_URL_LINE = '%%PAPER_URL_LINE%%';
     public const TAG_REVIEWER_FULLNAME = '%%REVIEWER_FULLNAME%%';
     public const TAG_REVIEWER_SCREEN_NAME = '%%REVIEWER_SCREEN_NAME%%';
     public const TAG_PAPER_RATINGS = '%%PAPER_RATINGS%%';

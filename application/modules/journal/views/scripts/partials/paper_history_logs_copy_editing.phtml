@@ -6,9 +6,8 @@
  * Display: fullName > submitterFullName
  */
 ?>
-<?= $this->translate(' :') ?>
 <span class="log-copy-editing">
-    <span class="log-user-name"><?= $this->fullName ?></span>
+    <span class="log-user-name"><?= $this->escape($this->fullName) ?></span>
     <?= ' > ' ?>
     <span class="log-submitter-name"><?= $this->escape($this->submitterFullName) ?></span>
 </span>

@@ -180,7 +180,7 @@
                 <td class="td-label"><?= $this->translate('Sujet') ?></td>
                 <td class="small">
                     <?php if (array_key_exists('Subject', $this->log['detail']['mail']) && $this->log['detail']['mail']['Subject']) : ?>
-                        <?= htmlspecialchars_decode($this->log['detail']['mail']['Subject']) ?>
+                        <?= htmlentities($this->log['detail']['mail']['Subject']) ?>
                     <?php else : ?>
                         -
                     <?php endif; ?>
@@ -296,6 +296,36 @@
 
     <?php case Episciences_Paper_Logger::CODE_NEW_REVIEWING_DEADLINE : ?>
         <?= $this->partial('administratepaper/new-deadline-log-details.phtml', ['log' => $this->log, 'user' => $this->user]) ?>
+        <?php break; ?>
+
+    <?php case Episciences_Paper_Logger::CODE_CONTRIBUTOR_CHANGED: ?>
+        <table class="log-details">
+            <tr>
+                <td class="td-label"><?= $this->translate("Date") ?></td>
+                <td class="small"><?= $this->Date($this->log['date'], null, Zend_Date::DATE_LONG . ' - ' . Zend_Date::TIME_SHORT) ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Effectué(e) par") ?></td>
+                <td class="small"><?= $this->escape($this->user['fullname']) ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Ancien contributeur / Ancienne contributrice") ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['oldContributor']['fullname']) ?></td>
+            </tr>
+            <tr>
+                <td class="td-label"><?= $this->translate("Nouveau contributeur / Nouvelle contributrice") ?></td>
+                <td class="small"><strong><?= $this->escape($this->log['detail']['newContributor']['fullname']) ?></strong></td>
+            </tr>
+            <?php if (!empty($this->log['detail']['addedAsCoAuthor'])): ?>
+            <tr>
+                <td class="td-label"><?= $this->translate("Co-auteur / Co-autrice") ?></td>
+                <td class="small text-info">
+                    <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+                    <?= $this->translate("L'ancien contributeur / L'ancienne contributrice a été ajouté(e) comme co-auteur / co-autrice") ?>
+                </td>
+            </tr>
+            <?php endif; ?>
+        </table>
         <?php break; ?>
 
     <?php

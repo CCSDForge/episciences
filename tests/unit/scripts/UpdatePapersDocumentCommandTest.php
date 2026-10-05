@@ -235,4 +235,124 @@ class UpdatePapersDocumentCommandTest extends TestCase
         $this->assertStringStartsWith('UPDATE', $sql);
         $this->assertStringEndsWith(';', $sql);
     }
+
+    // -------------------------------------------------------------------------
+    // countBibliographicReferences()
+    // -------------------------------------------------------------------------
+
+    public function testCountBibliographicReferences_emptyJson_returnsZero(): void
+    {
+        $this->assertSame(0, $this->command->countBibliographicReferences('{}'));
+        $this->assertSame(0, $this->command->countBibliographicReferences([]));
+    }
+
+    public function testCountBibliographicReferences_invalidJson_returnsZero(): void
+    {
+        $this->assertSame(0, $this->command->countBibliographicReferences('invalid-json'));
+    }
+
+    public function testCountBibliographicReferences_journalArticleWithoutCitations_returnsZero(): void
+    {
+        $json = json_encode([
+            'journal' => [
+                'journal_article' => [
+                    'titles' => ['title' => 'Sample Title'],
+                ],
+            ],
+        ]);
+
+        $this->assertSame(0, $this->command->countBibliographicReferences($json));
+    }
+
+    public function testCountBibliographicReferences_singleCitationInJournalArticle_returnsOne(): void
+    {
+        $json = json_encode([
+            'journal' => [
+                'journal_article' => [
+                    'citation_list' => [
+                        'citation' => [
+                            '@key' => 'ref1',
+                            'doi' => '10.1000/182',
+                            'unstructured_citation' => 'Author A., Title, 2024.',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->assertSame(1, $this->command->countBibliographicReferences($json));
+    }
+
+    public function testCountBibliographicReferences_multipleCitationsInJournalArticle_returnsCount(): void
+    {
+        $json = json_encode([
+            'journal' => [
+                'journal_article' => [
+                    'citation_list' => [
+                        'citation' => [
+                            ['@key' => 'ref1', 'unstructured_citation' => 'Ref 1'],
+                            ['@key' => 'ref2', 'unstructured_citation' => 'Ref 2'],
+                            ['@key' => 'ref3', 'unstructured_citation' => 'Ref 3'],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->assertSame(3, $this->command->countBibliographicReferences($json));
+    }
+
+    public function testCountBibliographicReferences_singleCitationInConferencePaper_returnsOne(): void
+    {
+        $json = json_encode([
+            'conference' => [
+                'conference_paper' => [
+                    'citation_list' => [
+                        'citation' => [
+                            '@key' => 'ref1',
+                            'unstructured_citation' => 'Conf Ref 1',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->assertSame(1, $this->command->countBibliographicReferences($json));
+    }
+
+    public function testCountBibliographicReferences_multipleCitationsInConferencePaper_returnsCount(): void
+    {
+        $json = json_encode([
+            'conference' => [
+                'conference_paper' => [
+                    'citation_list' => [
+                        'citation' => [
+                            ['@key' => 'ref1', 'unstructured_citation' => 'Conf Ref 1'],
+                            ['@key' => 'ref2', 'unstructured_citation' => 'Conf Ref 2'],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->assertSame(2, $this->command->countBibliographicReferences($json));
+    }
+
+    public function testCountBibliographicReferences_passesArrayDirectly(): void
+    {
+        $array = [
+            'journal' => [
+                'journal_article' => [
+                    'citation_list' => [
+                        'citation' => [
+                            ['@key' => 'ref1', 'unstructured_citation' => 'Ref 1'],
+                            ['@key' => 'ref2', 'unstructured_citation' => 'Ref 2'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $this->assertSame(2, $this->command->countBibliographicReferences($array));
+    }
 }

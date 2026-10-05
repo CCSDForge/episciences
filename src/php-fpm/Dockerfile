@@ -22,6 +22,7 @@ RUN apt-get update  \
     unzip \
     git \
     vim \
+    cron \
     poppler-utils \
     jq \
     less \
@@ -58,6 +59,20 @@ COPY ./src/php-fpm/upload.ini /usr/local/etc/php/conf.d/
 
 # disable opcache configuration
 #COPY ./src/php-fpm/opcache.ini /usr/local/etc/php/conf.d/
+
+# Install mail queue crontab
+COPY ./src/php-fpm/crontab /etc/cron.d/episciences-mails
+RUN chmod 0644 /etc/cron.d/episciences-mails
+
+# Ship the episciences:worker systemd template unit inside the image so
+# every build/deploy carries the current version of it — this container
+# doesn't run systemd itself, this is just so ops can pull the up-to-date
+# unit file straight off a running/built image (e.g. `docker cp`) instead of
+# hunting for it separately. See docs/console-commands.md#messenger-queues
+# for install steps on the actual host (one instance per transport, e.g.
+# `systemctl enable --now episciences-worker@solr_index episciences-worker@next_revalidation`).
+COPY ./src/php-fpm/episciences-worker@.service /etc/systemd/system/episciences-worker@.service
+RUN chmod 0644 /etc/systemd/system/episciences-worker@.service
 
 # Copy entrypoint script and set permissions
 COPY ./src/php-fpm/entrypoint.sh /usr/local/bin/entrypoint.sh

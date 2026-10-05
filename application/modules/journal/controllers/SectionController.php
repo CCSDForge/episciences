@@ -111,6 +111,19 @@ class SectionController extends Zend_Controller_Action
 
                     $message = '<strong>' . $this->view->translate("Vos modifications ont bien été prises en compte.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($message);
+
+                    if (Episciences_SectionsManager::isPublishedPapersInSection((int)$id)) {
+                        $publishedPapers = Episciences_PapersManager::getList(
+                            ['is' => ['sid' => (int)$id, 'status' => Episciences_Paper::STATUS_PUBLISHED]]
+                        );
+                        foreach ($publishedPapers as $publishedPaper) {
+                            try {
+                                \Episciences\Solr\Indexing\Enqueue\SolrIndexing::enqueueIndex($publishedPaper->getDocid());
+                            } catch (Exception $e) {
+                                trigger_error($e->getMessage());
+                            }
+                        }
+                    }
                 } else {
                     $message = '<strong>' . $this->view->translate("Les modifications n'ont pas pu être enregistrées.") . '</strong>';
                     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage($message);

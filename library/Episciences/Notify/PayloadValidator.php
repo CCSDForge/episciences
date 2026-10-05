@@ -104,21 +104,35 @@ final class PayloadValidator
         if (empty($payload['object']['type'])) {
             return ValidationResult::failure("'object.type' is required");
         }
-        $ietfItem = $payload['object']['ietf:item'] ?? null;
-        if (!is_array($ietfItem)) {
-            return ValidationResult::failure("'object.ietf:item' is required");
+
+        $warnings = [];
+        $itemField = 'ietf:item';
+        $item      = $payload['object']['ietf:item'] ?? null;
+        if (!is_array($item)) {
+            // Some senders (e.g. HAL) put the item descriptor under 'object.url'
+            // instead of the spec-preferred 'object.ietf:item'. Tolerate it so the
+            // notification can still be processed, but flag the deviation so it
+            // can be reported back to the sender.
+            $item      = $payload['object']['url'] ?? null;
+            $itemField = 'url';
+            if (is_array($item)) {
+                $warnings[] = "'object.ietf:item' is missing; accepted non-conformant 'object.url' as a fallback";
+            }
         }
-        $ietfItemId = $ietfItem['id'] ?? null;
-        if ($ietfItemId === null || !filter_var($ietfItemId, FILTER_VALIDATE_URL)) {
+        if (!is_array($item)) {
+            return ValidationResult::failure("'object.ietf:item' (or 'object.url' fallback) is required");
+        }
+        $itemId = $item['id'] ?? null;
+        if ($itemId === null || !filter_var($itemId, FILTER_VALIDATE_URL)) {
             return ValidationResult::failure(
-                sprintf("'object.ietf:item.id' must be an HTTP URI: %s", $ietfItemId ?? 'null')
+                sprintf("'object.%s.id' must be an HTTP URI: %s", $itemField, $itemId ?? 'null')
             );
         }
-        if (empty($ietfItem['type'])) {
-            return ValidationResult::failure("'object.ietf:item.type' is required");
+        if (empty($item['type'])) {
+            return ValidationResult::failure(sprintf("'object.%s.type' is required", $itemField));
         }
-        if (empty($ietfItem['mediaType'])) {
-            return ValidationResult::failure("'object.ietf:item.mediaType' is required");
+        if (empty($item['mediaType'])) {
+            return ValidationResult::failure(sprintf("'object.%s.mediaType' is required", $itemField));
         }
 
         // --- target ----------------------------------------------------------
@@ -144,6 +158,6 @@ final class PayloadValidator
             );
         }
 
-        return ValidationResult::success();
+        return ValidationResult::success($warnings);
     }
 }

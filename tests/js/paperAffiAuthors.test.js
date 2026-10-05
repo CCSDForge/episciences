@@ -664,6 +664,77 @@ describe('PaperAffiAuthorsManager', () => {
         });
     });
 
+    describe('Affiliation badge handlers (edit/delete buttons)', () => {
+        beforeEach(() => {
+            manager.initialize();
+        });
+
+        function renderBadge(value) {
+            mockDOM.affiBody.innerHTML = `
+                <div class="input-group">
+                    <span class="label label-primary">
+                        ${value}
+                        <input type="hidden" name="affiliations[0]" value="${value}">
+                        <button type="button" class="btn btn-xs btn-primary">
+                            <i class="glyphicon glyphicon-pencil"></i>
+                        </button>
+                        <button type="button" class="btn btn-xs btn-primary">
+                            <i class="glyphicon glyphicon-trash"></i>
+                        </button>
+                    </span>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="affiliations" class="form-control">
+                </div>
+            `;
+        }
+
+        test('delete button removes the corresponding badge', () => {
+            renderBadge('Canadian Council #https://ror.org/abcd1234');
+
+            const trashIcon =
+                mockDOM.affiBody.querySelector('.glyphicon-trash');
+            trashIcon.click();
+
+            expect(mockDOM.affiBody.querySelector('.label-primary')).toBeNull();
+        });
+
+        test('edit button moves the badge value back into the free-text input and removes the badge', () => {
+            const value = 'Canadian Council #https://ror.org/abcd1234';
+            renderBadge(value);
+
+            const pencilIcon =
+                mockDOM.affiBody.querySelector('.glyphicon-pencil');
+            pencilIcon.click();
+
+            const freeTextInput =
+                mockDOM.affiBody.querySelector('#affiliations');
+            expect(freeTextInput.value).toBe(value);
+            expect(mockDOM.affiBody.querySelector('.label-primary')).toBeNull();
+        });
+
+        test('badge handlers survive innerHTML being replaced (e.g. after switching author)', () => {
+            renderBadge('First affiliation #https://ror.org/first');
+            renderBadge('Second affiliation #https://ror.org/second');
+
+            const trashIcon =
+                mockDOM.affiBody.querySelector('.glyphicon-trash');
+            trashIcon.click();
+
+            expect(mockDOM.affiBody.querySelector('.label-primary')).toBeNull();
+        });
+
+        test('clicking outside a button does nothing', () => {
+            renderBadge('Some affiliation #https://ror.org/xyz');
+
+            mockDOM.affiBody.querySelector('.label-primary').click();
+
+            expect(
+                mockDOM.affiBody.querySelector('.label-primary')
+            ).not.toBeNull();
+        });
+    });
+
     describe('Edge cases', () => {
         beforeEach(() => {
             manager.initialize();

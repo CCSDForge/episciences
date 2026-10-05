@@ -115,10 +115,5 @@ $keepOnlySourceUsed = [];
                 <li><span class="label label-default"><?= $this->escape($id) ?></span> <?= $label ?></li>
             <?php endforeach; ?>
         </ul>
-        <?php if ($isAllowedToManageRelations): ?>
-            <a class="btn btn-default btn-sm" id="anchor-dataset-add" href="#manage-linked-data"><span
-                        class="fas fa-database"
-                        style="margin-right: 5px"></span><?= $this->translate("Ajouter un jeu de données") ?></a>
-        <?php endif; ?>
     </div>
 </div>

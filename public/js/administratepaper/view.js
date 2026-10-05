@@ -1,5 +1,3 @@
-var openedPopover = null;
-
 function getTags() {
     let paper_title = '';
 
@@ -189,6 +187,8 @@ $(document).ready(function () {
         .popover({
             html: true,
             placement: 'bottom',
+            template:
+                '<div class="popover history-date-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>',
             content: function () {
                 return history_popover_content.html();
             },
@@ -200,7 +200,9 @@ $(document).ready(function () {
             history_filter_start.datepicker();
             history_filter_end.datepicker();
             $('.history-filters .datepicker-button').click(function () {
-                $(this).next().datepicker('show');
+                // .next() would hit the sr-only <label> sitting between the
+                // icon and the input; target the input itself instead.
+                $(this).siblings('input').datepicker('show');
             });
 
             // default values
@@ -241,7 +243,7 @@ $(document).ready(function () {
         });
 
     // update deadline
-    $("[id$='-revision-deadline']").on('change keyup past', function () {
+    $("[id$='-revision-deadline']").on('change keyup paste', function () {
         let $minorSubmit = $('button[id^="submit-modal-minor-revision"]');
         let $majorSubmit = $('button[id^="submit-modal-major-revision"]');
 
@@ -373,7 +375,9 @@ function searchLogs() {
         $('.history-search').css('border', '1px solid #ccc');
     }
 
-    let re = new RegExp(input, 'i'); // "i" means it's case-insensitive
+    // Escape regex special characters: the input is a plain-text search term
+    let escapedInput = input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let re = new RegExp(escapedInput, 'i'); // "i" means it's case-insensitive
     $('.history-logs div.log-entry')
         .show()
         .filter(function () {
@@ -662,71 +666,55 @@ function cancel() {
  *
  * @param button
  * @param docId
- * @param url
- * @param popoverParams
- * @returns {boolean|*}
  */
-function getCommunForm(
-    button,
-    docId,
-    url = '/administratepaper/doiform',
-    popoverParams = {}
-) {
-    const defaultParams = {
+function getPublicationDateForm(button, docId) {
+    let request = getCommonForm(
+        button,
+        docId,
+        '/administratepaper/publicationdateform'
+    );
+
+    let popoverParams = {
         placement: 'bottom',
         container: 'body',
         html: true,
         content: getLoader(),
     };
 
-    if (typeof popoverParams.placement === 'undefined') {
-        popoverParams.placement = defaultParams.placement;
-    }
-
-    if (typeof popoverParams.container === 'undefined') {
-        popoverParams.container = defaultParams.container;
-    }
-
-    if (typeof popoverParams.html === 'undefined') {
-        popoverParams.html = defaultParams.html;
-    }
-
-    if (typeof popoverParams.content === 'undefined') {
-        popoverParams.content = defaultParams.content;
-    }
-
-    // Destruction des anciens popups
-    $(button).popover('destroy');
-
-    // Toggle : est-ce qu'on ouvre ou est-ce qu'on ferme le popup ?
-    if (openedPopover && openedPopover == docId) {
+    request.done(function (result) {
+        // Destruction du popup de chargement
+        $(button).popover('destroy');
         openedPopover = null;
-        return false;
-    } else {
-        openedPopover = docId;
-    }
+        // Affichage du formulaire dans le popover
+        popoverParams.content = result;
+        $(button).popover(popoverParams).popover('show');
 
-    $(button).popover(popoverParams).popover('show');
+        $('form[action^="/administratepaper/savepublicationdate"]').on(
+            'submit',
+            function () {
+                let $publicationDate = $('#publication-date');
+                // Traitement AJAX du formulaire
+                // The action returns a localized date as plain text, not JSON
+                let sRequest = ajaxRequest(
+                    '/administratepaper/savepublicationdate',
+                    $(this).serialize() + '&docid=' + docId,
+                    'POST'
+                );
+                sRequest.done(function (response) {
+                    // Destruction du popup
+                    $(button).popover('destroy');
 
-    // Récupération du formulaire
-    return ajaxRequest(url, {docid: docId});
-}
-
-/**
- *
- * @param button
- * @param docId
- */
-function getPublicationDateForm(button, docId) {
-
-    getEditingPopover(
-        button,
-        docId,
-        '/administratepaper/publicationdateform',
-        '/administratepaper/savepublicationdate',
-        'publication-date'
-    );
-
+                    if (response) {
+                        $publicationDate.html(response);
+                        refreshPaperHistory(docId);
+                    } else {
+                        alert(translate('Veuillez indiquer une date valide'));
+                    }
+                });
+                return false;
+            }
+        );
+    });
 }
 
 /** DOI regex pattern — must match the pattern used in savedoiAction PHP. */
@@ -790,7 +778,7 @@ function updateDoiDisplay(doi) {
  * @param {string} [url]
  */
 function getDoiForm(button, docId, url = '/administratepaper/doiform') {
-    const jqxhr = getCommunForm(button, docId, url);
+    const jqxhr = getCommonForm(button, docId, url);
     if (jqxhr === false) {
         return;
     }
@@ -1059,7 +1047,7 @@ function editAttachmentDescription(target) {
  */
 
 function getVersionEditingForm(button, docId) {
-    let request = getCommunForm(
+    let request = getCommonForm(
         button,
         docId,
         '/administratepaper/latestversioneditingform'
@@ -1084,23 +1072,26 @@ function getVersionEditingForm(button, docId) {
 
         $('form[action^="' + actionStr + '"]').on('submit', function () {
             let $inProgress = $('#in-progress');
+            // CSRF token expected by savenewpostedversionAction
+            let csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            let csrfToken = csrfMeta ? csrfMeta.content : '';
             // Traitement AJAX du formulaire
             let sRequest = ajaxRequest(
                 actionStr,
-                $(this).serialize() + '&docid=' + docId,
+                $(this).serialize() +
+                    '&docid=' + docId +
+                    '&csrf_token=' + encodeURIComponent(csrfToken),
                 'POST',
                 'json'
             );
 
-            popoverParams.content = getLoader;
+            popoverParams.content = getLoader();
 
             $inProgress.html(getLoader());
 
-            sRequest.done(function (response) {
+            sRequest.done(function (result) {
                 $inProgress.html('');
                 $(button).popover('destroy');
-
-                let result = JSON.parse(response);
 
                 if (result.version > 0) {
                     if (result.isDataRecordUpdated) {
@@ -1110,15 +1101,16 @@ function getVersionEditingForm(button, docId) {
                         refreshPaperHistory(docId);
                     }
                 }
+            });
 
-                sRequest.fail(function () {
-                    alert(
-                        '<span class="fas fa-exclamation-triangle fa-lg" style="margin-right: 5px"></span>' +
-                        translate(
-                            "Une erreur interne s'est produite, veuillez recommencer."
-                        )
-                    );
-                });
+            sRequest.fail(function () {
+                $inProgress.html('');
+                $(button).popover('destroy');
+                alert(
+                    translate(
+                        "Une erreur interne s'est produite, veuillez recommencer."
+                    )
+                );
             });
 
             return false;
@@ -1292,7 +1284,7 @@ function removeCoAuthor(docId, uid, rvid) {
 }
 
 function getRevisionDeadlineForm(button, docId, commentId = null) {
-    let request = getCommunForm(
+    let request = getCommonForm(
         button,
         docId,
         '/administratepaper/revisiondeadlineform'
@@ -1318,15 +1310,15 @@ function getRevisionDeadlineForm(button, docId, commentId = null) {
             function () {
                 let $revisionDeadline = $('#revision-deadline');
                 // Traitement AJAX du formulaire
+                // The action returns a localized date as plain text, not JSON
                 let sRequest = ajaxRequest(
                     '/administratepaper/updaterevisiondeadline',
                     $(this).serialize() +
-                    '&docid=' +
-                    docId +
-                    '&pcid=' +
-                    commentId,
-                    'POST',
-                    'json'
+                        '&docid=' +
+                        docId +
+                        '&pcid=' +
+                        commentId,
+                    'POST'
                 );
                 sRequest.done(function (response) {
                     // Destruction du popup
@@ -1378,7 +1370,7 @@ function getLicensesForm(button, docId) {
  * @param forceHistoryRefresh
  */
 function getEditingPopover(button, docId, preAction, postAction, targetToRefreshId, forceHistoryRefresh = true) {
-    let request = getCommunForm(
+    let request = getCommonForm(
         button,
         docId,
         preAction
@@ -1460,3 +1452,5 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {validateDoiInput, updateDoiDisplay, DOI_PATTERN};
 }
+
+

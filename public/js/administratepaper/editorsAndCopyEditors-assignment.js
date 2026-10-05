@@ -86,7 +86,8 @@ function getAssignUserForm(button, docid, vid, partial) {
                     'json'
                 );
                 saveActionRequest.done(function (response) {
-                    if (JSON.parse(response).result) {
+                    // dataType 'json': jQuery already parsed the response
+                    if (response && response.result) {
                         let displayAction =
                             '/administratepaper/display' + buttonId;
                         let container = $(button)

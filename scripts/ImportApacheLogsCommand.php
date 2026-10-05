@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -28,13 +29,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class ImportApacheLogsCommand extends Command
 {
     protected static $defaultName = 'stats:import-logs';
-
-    /** Apache combined-log patterns mapped to CONSULT type. */
-    private const PATTERNS = [
-        'notice'   => '/GET \/articles\/(\d+) HTTP/',
-        'file'     => '/GET \/articles\/(\d+)\/download HTTP/',
-        'file'     => '/GET \/articles\/(\d+)\/preview HTTP/',
-    ];
 
     private string $logsBasePath = '../logs/httpd';
 
@@ -356,12 +350,12 @@ class ImportApacheLogsCommand extends Command
     /** Match a log line against article patterns; returns ['accessType', 'docId'] or null. */
     private function matchAccessPattern(string $line): ?array
     {
-        // notice pattern
-        if (preg_match('/GET \/articles\/(\d+) HTTP/', $line, $m)) {
+        // notice pattern (optional 2-letter language prefix, e.g. /fr/articles/123)
+        if (preg_match('#GET (?:/[a-z]{2})?/articles/(\d+) HTTP#', $line, $m)) {
             return ['accessType' => 'notice', 'docId' => $m[1]];
         }
         // file download or preview
-        if (preg_match('/GET \/articles\/(\d+)\/(?:download|preview) HTTP/', $line, $m)) {
+        if (preg_match('#GET (?:/[a-z]{2})?/articles/(\d+)/(?:download|preview) HTTP#', $line, $m)) {
             return ['accessType' => 'file', 'docId' => $m[1]];
         }
         return null;
@@ -488,12 +482,12 @@ class ImportApacheLogsCommand extends Command
     {
         $db  = Zend_Db_Table_Abstract::getDefaultAdapter();
         $sql = 'INSERT INTO STAT_PROCESSING_LOG (JOURNAL_CODE, PROCESSED_DATE, FILE_PATH, RECORDS_PROCESSED, STATUS)
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?) AS new_row
                 ON DUPLICATE KEY UPDATE
                     PROCESSED_AT      = CURRENT_TIMESTAMP,
-                    FILE_PATH         = VALUES(FILE_PATH),
-                    RECORDS_PROCESSED = VALUES(RECORDS_PROCESSED),
-                    STATUS            = VALUES(STATUS)';
+                    FILE_PATH         = new_row.FILE_PATH,
+                    RECORDS_PROCESSED = new_row.RECORDS_PROCESSED,
+                    STATUS            = new_row.STATUS';
         $stmt = $db->prepare($sql);
         $stmt->execute([$rvcode, $date, $filePath, $records, $status]);
     }
@@ -541,11 +535,11 @@ class ImportApacheLogsCommand extends Command
         $logDir  = dirname($logFile);
 
         if (is_dir($logDir) && is_writable($logDir)) {
-            $logger->pushHandler(new StreamHandler($logFile, Logger::INFO));
+            $logger->pushHandler(new StreamHandler($logFile, Level::Info));
         }
 
         if (!$io->isQuiet()) {
-            $logger->pushHandler(new StreamHandler('php://stdout', Logger::INFO));
+            $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
         }
 
         return $logger;

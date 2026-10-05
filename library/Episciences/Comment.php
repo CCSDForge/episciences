@@ -89,7 +89,10 @@ class Episciences_Comment
             $method = 'set' . ucfirst($key);
 
             if (in_array($method, $methods)) {
-                if (Episciences_Tools::isJson($value)) {
+                // Only OPTIONS is stored as JSON (see find() and save()): decoding any
+                // value that merely looks like JSON would corrupt a MESSAGE whose text
+                // happens to be valid JSON (e.g. "42", "true", "[x]") into a non-string.
+                if ($key === 'options' && Episciences_Tools::isJson($value)) {
                     $value = Zend_Json::decode($value);
                 }
                 $this->$method($value);

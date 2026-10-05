@@ -60,7 +60,6 @@ function assignReviewers(button, docid) {
             $.ajax({
                 url: '/administratepaper/assignreviewers',
                 type: 'POST',
-                datatype: 'json',
                 data: $(this).serialize() + '&docid=' + docid,
                 success: function (result) {
                     if (result == 1) {

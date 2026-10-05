@@ -114,16 +114,32 @@ class Episciences_Rating_ReportManager
         $sql .= ' (ID, UID, ONBEHALF_UID, DOCID, STATUS, CREATION_DATE, UPDATE_DATE) VALUES ';
         $sql .= implode(',', $values);
 
+        // Reentrant-safe: only open/close a transaction when none is already active.
+        // Episciences_Merge_MergingManager::updateDataTables() wraps this whole call in
+        // its own transaction; PDO throws "There is already an active transaction" if
+        // beginTransaction() is called again on the same connection. When we don't own
+        // the transaction, rethrow on failure instead of swallowing it, so the caller's
+        // transaction gets rolled back too.
+        $connection = $db->getConnection();
+        $ownsTransaction = !($connection instanceof PDO) || !$connection->inTransaction();
+
         try {
-            $db->beginTransaction();
+            if ($ownsTransaction) {
+                $db->beginTransaction();
+            }
             $db->delete(self::TABLE, $where);
             $insert = $db->prepare($sql);
             $insert->execute();
-            $db->commit();
+            if ($ownsTransaction) {
+                $db->commit();
+            }
         } catch (Exception $e) {
-            $db->rollBack();
             error_log($e->getMessage());
-            return 0;
+            if ($ownsTransaction) {
+                $db->rollBack();
+                return 0;
+            }
+            throw $e;
         }
 
         return $insert->rowCount();

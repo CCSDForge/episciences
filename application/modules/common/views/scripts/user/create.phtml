@@ -28,12 +28,8 @@ $this->layout()->pageDescription = $this->translate("Création d'un compte sur l
 
 <?php
 if ($this->form) {
-    if (CAPTCHA_BRAND != '') {
-        if (CAPTCHA_BRAND == 'RECAPTCHA') {
-            echo '<script src="https://www.google.com/recaptcha/api.js?hl=' . Zend_Registry::get('lang') . '" async defer></script>';
-        } elseif (CAPTCHA_BRAND == 'HCAPTCHA') {
-            echo '<script src="https://hcaptcha.com/1/api.js?hl=' . Zend_Registry::get('lang') . '" async defer></script>';
-        }
+    if (CAPTCHA_BRAND === 'ALTCHA') {
+        echo $this->webpackAssets('altcha');
     }
 
     echo $this->form;

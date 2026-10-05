@@ -179,6 +179,26 @@ class Episciences_View_Helper_PaperFilter extends Zend_View_Helper_Abstract
 
         }
 
+        // decision suggestion: paper management lists only, see isSuggestionFilterAllowed()
+        if (Episciences_PapersManager::isSuggestionFilterAllowed()) {
+            $form->addElement(new Zend_Form_Element_Multiselect([
+                'name' => 'suggestion',
+                'label' => "Suggestion de décision",
+                'class' => 'form-control',
+                'multiOptions' => [
+                    '' => $this->view->translate('Tous'),
+                    Episciences_PapersManager::ANY_SUGGESTION_FILTER => $this->view->translate('Toutes les suggestions'),
+                    Episciences_CommentsManager::TYPE_SUGGESTION_ACCEPTATION => $this->view->translate("Suggestion d'acceptation"),
+                    Episciences_CommentsManager::TYPE_SUGGESTION_REFUS => $this->view->translate("Suggestion de refus"),
+                    Episciences_CommentsManager::TYPE_SUGGESTION_NEW_VERSION => $this->view->translate("Suggestion de modification")
+                ],
+                'value' => '',
+                'required' => true,
+                'decorators' => $decorators
+            ]));
+
+        }
+
         $form->addElement(new Zend_Form_Element_Button([
                 'name'		=> 'submit',
                 'type'		=> 'submit',

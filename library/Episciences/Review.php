@@ -44,6 +44,11 @@ class Episciences_Review
     // git #155
     public const SETTING_CAN_RESUBMIT_REFUSED_PAPER = 'canResubmitRefusedPaper';
     public const SETTING_ARXIV_PAPER_PASSWORD = 'canSharePaperPassword';
+    // git #922
+    public const SETTING_COVER_LETTER_REQUIREMENT = 'coverLetterRequirement';
+    public const COVER_LETTER_REQUIREMENT_DISABLED = 0;
+    public const COVER_LETTER_REQUIREMENT_OPTIONAL = 1;
+    public const COVER_LETTER_REQUIREMENT_REQUIRED = 2;
 
     //const SETTING_EDITORS_CAN_MAKE_DECISIONS = 'editorsCanMakeDecisions';
     public const SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS = 'editorsCanAbandonPublicationProcess';
@@ -140,6 +145,8 @@ class Episciences_Review
         'refusedArticleAuthorsMsgSentToReviewers';
     public const SETTING_TO_REQUIRE_REVISION_DEADLINE = 'toRequireRevisionDeadline';
     public const SETTING_START_STATS_AFTER_DATE = 'startStatsAfterDate';
+    // Label displayed in place of the review code (RVCODE) in the subject/body of automatic emails
+    public const SETTING_MAIL_DISPLAY_CODE = 'mailDisplayCode';
 
     /** @var int */
     public static $_currentReviewId = null;
@@ -229,6 +236,7 @@ class Episciences_Review
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION,
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
             self::SETTING_ARXIV_PAPER_PASSWORD,
+            self::SETTING_COVER_LETTER_REQUIREMENT,
             self::SETTING_CONTACT_ERROR_MAIL,
             self::SETTING_DISPLAY_STATISTICS,
             self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
@@ -242,6 +250,7 @@ class Episciences_Review
             self::SETTING_DISPLAY_EMPTY_VOLUMES,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES,
             self::SETTING_DISPLAY_SECONDARY_VOLUMES_ON_PUBLIC_PAGE,
+            self::SETTING_MAIL_DISPLAY_CODE,
         ];
 
 
@@ -612,6 +621,25 @@ class Episciences_Review
     }
 
     /**
+     * Get the cover letter requirement setting (see COVER_LETTER_REQUIREMENT_* constants).
+     * Reviews created before this setting existed have no stored value: default to
+     * COVER_LETTER_REQUIREMENT_OPTIONAL so the cover letter file field keeps being
+     * displayed, matching the behavior that existed for every journal prior to git #922.
+     */
+    public function getCoverLetterRequirement(): int
+    {
+        if (!$this->_settingsLoaded) {
+            $this->loadSettings();
+        }
+
+        if (!array_key_exists(self::SETTING_COVER_LETTER_REQUIREMENT, $this->_settings)) {
+            return self::COVER_LETTER_REQUIREMENT_OPTIONAL;
+        }
+
+        return (int)$this->_settings[self::SETTING_COVER_LETTER_REQUIREMENT];
+    }
+
+    /**
      * load review settings from database
      */
     public function loadSettings(bool $forceReload = false): void
@@ -701,6 +729,16 @@ class Episciences_Review
     public function getCode(): string
     {
         return $this->_code;
+    }
+
+    /**
+     * Code displayed in the subject/body of automatic emails: the review's custom
+     * mail display code (SETTING_MAIL_DISPLAY_CODE) if set, its own code otherwise.
+     */
+    public function getMailDisplayCode(): string
+    {
+        $customMailDisplayCode = trim((string)$this->getSetting(self::SETTING_MAIL_DISPLAY_CODE));
+        return $customMailDisplayCode !== '' ? $customMailDisplayCode : $this->getCode();
     }
 
     /**
@@ -1043,6 +1081,14 @@ class Episciences_Review
             ]
         );
 
+        $form->addElement('text', self::SETTING_MAIL_DISPLAY_CODE, [
+                'label' => "Code affiché dans les courriels",
+                'description' => "Remplace le code de la revue dans le sujet et le corps des courriels automatiques. Laisser vide pour utiliser le code par défaut. 100 caractères maximum.",
+                'maxlength' => '100',
+                'validators' => [new Zend_Validate_StringLength(['max' => 100])]
+            ]
+        );
+
         $form->getElement(self::SETTING_ISSN)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_ISSN_PRINT)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_JOURNAL_DOI)->getDecorator('label')->setOption('class', 'col-md-2');
@@ -1055,9 +1101,10 @@ class Episciences_Review
         $form->getElement(self::SETTING_JOURNAL_DESCRIPTION)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_JOURNAL_KEYWORDS)->getDecorator('label')->setOption('class', 'col-md-2');
         $form->getElement(self::SETTING_JOURNAL_CREATION_YEAR)->getDecorator('label')->setOption('class', 'col-md-2');
+        $form->getElement(self::SETTING_MAIL_DISPLAY_CODE)->getDecorator('label')->setOption('class', 'col-md-2');
 
         // display group: global settings
-        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL, self::SETTING_JOURNAL_DESCRIPTION, self::SETTING_JOURNAL_KEYWORDS, self::SETTING_JOURNAL_CREATION_YEAR], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
+        $form->addDisplayGroup([self::SETTING_ISSN, self::SETTING_ISSN_PRINT, self::SETTING_JOURNAL_DOI, self::SETTING_CONTACT_JOURNAL, self::SETTING_JOURNAL_NOTICE, self::SETTING_JOURNAL_PUBLISHER, self::SETTING_JOURNAL_PUBLISHER_LOC, self::SETTING_CONTACT_JOURNAL_EMAIL, self::SETTING_CONTACT_TECH_SUPPORT_EMAIL, self::SETTING_JOURNAL_DESCRIPTION, self::SETTING_JOURNAL_KEYWORDS, self::SETTING_JOURNAL_CREATION_YEAR, self::SETTING_MAIL_DISPLAY_CODE], 'global', ["legend" => "Paramètres généraux (affichés dans le pied de page)"]);
         $form->getDisplayGroup('global')->removeDecorator('DtDdWrapper');
 
         // publication settings **********************************************
@@ -1103,6 +1150,7 @@ class Episciences_Review
             self::SETTING_REPOSITORIES,
             self::SETTING_CAN_PICK_SECTION,
             self::SETTING_CAN_PICK_EDITOR,
+            self::SETTING_COVER_LETTER_REQUIREMENT,
             self::SETTING_DO_NOT_ALLOW_EDITOR_IN_CHIEF_SELECTION,
             self::SETTING_CAN_SUGGEST_REVIEWERS,
             self::SETTING_CAN_SPECIFY_UNWANTED_REVIEWERS,
@@ -1325,6 +1373,20 @@ class Episciences_Review
 
             ]
         );
+
+        // Cover letter requirement (controls only the file, comment is always optional)
+        $form->addElement('select', self::SETTING_COVER_LETTER_REQUIREMENT, [
+                'label' => "Lettre d'accompagnement",
+                'value' => self::COVER_LETTER_REQUIREMENT_OPTIONAL,
+                'multioptions' => [
+                    self::COVER_LETTER_REQUIREMENT_DISABLED => 'Désactivée',
+                    self::COVER_LETTER_REQUIREMENT_OPTIONAL => 'Facultative',
+                    self::COVER_LETTER_REQUIREMENT_REQUIRED => 'Requise',
+                ],
+            ]
+        );
+
+        $form->getElement(self::SETTING_COVER_LETTER_REQUIREMENT)->getDecorator('label')->setOption('class', 'col-md-2');
 
         return $form;
 
@@ -1918,7 +1980,8 @@ class Episciences_Review
             self::SETTING_EDITORS_CAN_ABANDON_CONTINUE_PUBLICATION_PROCESS, self::SETTING_CAN_RESUBMIT_REFUSED_PAPER,
             self::SETTING_SYSTEM_IS_COI_ENABLED, self::SETTING_SYSTEM_COI_COMMENTS_TO_EDITORS_ENABLED,
             self::SETTING_SYSTEM_PAPER_FINAL_DECISION_ALLOW_REVISION, self::SETTING_SYSTEM_AUTO_EDITORS_ASSIGNMENT,
-            self::SETTING_ARXIV_PAPER_PASSWORD, self::SETTING_DISPLAY_STATISTICS, self::SETTING_CONTACT_ERROR_MAIL,
+            self::SETTING_ARXIV_PAPER_PASSWORD, self::SETTING_COVER_LETTER_REQUIREMENT,
+            self::SETTING_DISPLAY_STATISTICS, self::SETTING_CONTACT_ERROR_MAIL,
             self::SETTING_REFUSED_ARTICLE_AUTHORS_MESSAGE_AUTOMATICALLY_SENT_TO_REVIEWERS,
             self::SETTING_TO_REQUIRE_REVISION_DEADLINE, self::SETTING_START_STATS_AFTER_DATE,
             self::SETTING_ALLOW_EDIT_VOLUME_TITLE_WITH_PUBLISHED_ARTICLES, self::SETTING_DISPLAY_EMPTY_VOLUMES,
@@ -1930,6 +1993,8 @@ class Episciences_Review
             $allSettings[$setting] = $this->getSetting($setting);
         }
 
+        $allSettings[self::SETTING_MAIL_DISPLAY_CODE] = trim(strip_tags((string)$this->getSetting(self::SETTING_MAIL_DISPLAY_CODE)));
+
         // Deadlines with units
         $deadlines = [
             self::SETTING_RATING_DEADLINE => self::SETTING_RATING_DEADLINE_UNIT,
@@ -1939,7 +2004,12 @@ class Episciences_Review
         ];
 
         foreach ($deadlines as $key => $unitKey) {
-            $allSettings[$key] = $this->getSetting($key) . ' ' . $this->getSetting($unitKey);
+            // Only combine value and unit when the deadline value is set, otherwise store
+            // '' rather than ' ' or ' weeks', which would break strtotime() downstream.
+            $value = trim((string)$this->getSetting($key));
+            $allSettings[$key] = ($value === '')
+                ? ''
+                : $value . ' ' . trim((string)$this->getSetting($unitKey));
         }
 
         // Publisher information
@@ -1966,18 +2036,21 @@ class Episciences_Review
         // Enregistrement des paramètres
         foreach ($allSettings as $setting => $value) {
             $setting = $this->_db->quote($setting);
-            if (is_array($value) && !empty($value)) {
+            // Encode every array, including an empty one, so [] is stored as '[]' rather
+            // than quoted to '' (which json_decode()s back to null on reload).
+            if (is_array($value)) {
                 $value = Zend_Json::encode($value);
             }
             $value = $this->_db->quote($value);
-            $values[] = '(' . $this->_rvid . ',' . $setting . ',' . $value . ')';
+            $values[] = '(' . (int)$this->_rvid . ',' . $setting . ',' . $value . ')';
         }
 
+        // MySQL 8.0.20+: VALUES() in ON DUPLICATE KEY UPDATE is deprecated; use a row alias.
         $sql = 'INSERT INTO ';
         $sql .= T_REVIEW_SETTINGS;
         $sql .= ' (RVID, SETTING, VALUE) VALUES ';
         $sql .= implode(',', $values);
-        $sql .= ' ON DUPLICATE KEY UPDATE VALUE = VALUES(VALUE)';
+        $sql .= ' AS new_row ON DUPLICATE KEY UPDATE VALUE = new_row.VALUE';
 
         if (!$this->_db->getConnection()?->query($sql)) {
             return false;

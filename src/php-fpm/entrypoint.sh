@@ -5,5 +5,7 @@ chmod -R 775 /var/www/logs
 # Run Composer as www-data
 su - www-data -c "cd /var/www/htdocs/;composer install --no-interaction --prefer-dist --optimize-autoloader"
 
+cron
+
 exec "$@"
 

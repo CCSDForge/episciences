@@ -49,7 +49,7 @@ class Episciences_Reviewer_AliasManager
             $sql .= $db->quoteIdentifier(self::TABLE);
             $sql .= ' (`UID`, `DOCID`, `ALIAS`) VALUES ';
             $sql .= implode(',', $values);
-            $sql .= ' ON DUPLICATE KEY UPDATE ALIAS = VALUES(ALIAS)';
+            $sql .= ' AS new_row ON DUPLICATE KEY UPDATE ALIAS = new_row.ALIAS';
 
             $insert = $db->prepare($sql);
 

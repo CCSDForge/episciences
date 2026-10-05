@@ -11,6 +11,15 @@ permissions:
   pull-requests: write
   issues: write
 
+# The integration job edits a single marked comment on the pull request. Two
+# runs racing there would either create the comment twice or let an older run
+# overwrite a newer verdict, so keep one run at a time per pull request.
+# Pushes are keyed on run_id, i.e. never grouped: no push run is ever cancelled
+# or dropped while pending.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   php-tests:
     name: PHP Tests
@@ -43,7 +52,7 @@ jobs:
         tools: composer:v2
         
     - name: Cache Composer dependencies
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: vendor
         key: ${{ runner.os }}-php${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.lock') }}
@@ -59,25 +68,41 @@ jobs:
           sleep 1
         done
         
+    # The application bootstrap queries the journal by its code and exits when it finds nothing,
+    # so the schemas and the seed row have to be in place before the first test runs.
     - name: Setup test database
       run: |
         mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences;"
         mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS test_episciences_auth;"
-      
-    - name: Run PHP tests
-      run: vendor/bin/phpunit --coverage-clover=coverage-php.xml
+        mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/schema-episciences.sql
+        mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences < tests/fixtures/seed.sql
+        mysql -h 127.0.0.1 -P 3306 -u root -proot test_episciences_auth < tests/fixtures/schema-cas.sql
+
+    # tests/config/env-test.php and tests/config/pwd.json are gitignored but required by
+    # tests/bootstrap.php. Without them the bootstrap aborts and, until this step existed,
+    # it did so with exit code 0: PHPUnit ran zero tests and this job still reported success.
+    - name: Setup test configuration
+      run: php .github/scripts/setup-test-config.php
       env:
         DB_HOST: 127.0.0.1
         DB_PORT: 3306
         DB_USER: root
         DB_PASSWORD: root
         DB_NAME: test_episciences
+        DB_AUTH_NAME: test_episciences_auth
+
+    # PWD_PATH makes public/bdd_const.php read the generated tests/config/pwd.json instead of
+    # config/pwd.json, which does not exist here and belongs to the deployed environments.
+    - name: Run PHP tests
+      run: vendor/bin/phpunit --coverage-clover=coverage-php.xml
+      env:
+        PWD_PATH: ${{ github.workspace }}/tests/config
         
     - name: Upload PHP coverage
       uses: codecov/codecov-action@v7
       if: matrix.php-version == '8.2'
       with:
-        file: ./coverage-php.xml
+        files: ./coverage-php.xml
         flags: php
         name: php-coverage
       env:
@@ -111,7 +136,7 @@ jobs:
       uses: codecov/codecov-action@v7
       if: matrix.node-version == '20.x'
       with:
-        file: ./coverage/lcov.info
+        files: ./coverage/lcov.info
         flags: javascript
         name: javascript-coverage
       env:
@@ -136,27 +161,60 @@ jobs:
           exit 1
         fi
         
+    # GITHUB_TOKEN is read-only for pull_request events coming from a fork,
+    # whatever the `permissions:` block above declares, so commenting would 403.
     - name: Comment on PR
       uses: actions/github-script@v9
-      if: github.event_name == 'pull_request'
+      if: >-
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.full_name == github.repository
       with:
         script: |
+          // Hidden marker: lets a later run find this comment and edit it in
+          // place, instead of piling up one comment per push.
+          const MARKER = '<!-- ci-test-results -->';
+
           const phpResult = '${{ needs.php-tests.result }}';
           const jsResult = '${{ needs.js-tests.result }}';
-          
-          let message = '## Test Results\n\n';
+
+          let message = MARKER + '\n## Test Results\n\n';
           message += phpResult === 'success' ? '✅ PHP Tests: Passed\n' : '❌ PHP Tests: Failed\n';
           message += jsResult === 'success' ? '✅ JavaScript Tests: Passed\n' : '❌ JavaScript Tests: Failed\n';
-          
+
           if (phpResult === 'success' && jsResult === 'success') {
             message += '\n🎉 All tests are passing! Ready to merge.';
           } else {
             message += '\n🔍 Please check the failed tests before merging.';
           }
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: message
+
+          message += `\n\n<sub>Last updated for ${context.sha.substring(0, 7)}.</sub>`;
+
+          const { owner, repo } = context.repo;
+          const issue_number = context.issue.number;
+
+          const comments = await github.paginate(github.rest.issues.listComments, {
+            owner,
+            repo,
+            issue_number,
+            per_page: 100,
           });
+
+          const existing = comments.find(
+            (c) => c.user?.type === 'Bot' && c.body?.includes(MARKER)
+          );
+
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner,
+              repo,
+              comment_id: existing.id,
+              body: message,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: message,
+            });
+          }

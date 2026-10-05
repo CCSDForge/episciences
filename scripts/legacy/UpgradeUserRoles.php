@@ -210,7 +210,7 @@ class UpgradeUserRoles extends JournalScript
         $sql .= $db->quoteIdentifier($this->_table);
         $sql .= ' (`UID`, `RVID`, `ROLEID`) VALUES ';
         $sql .= implode(',', $values);
-        $sql .= ' ON DUPLICATE KEY UPDATE ROLEID = VALUES(ROLEID)';
+        $sql .= ' AS new_row ON DUPLICATE KEY UPDATE ROLEID = new_row.ROLEID';
 
         $insert = $db->prepare($sql);
 

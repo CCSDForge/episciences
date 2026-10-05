@@ -15,8 +15,11 @@
 <a class="btn" href="<?php echo $url?>"><?php echo $this->translate('Connexion')?></a>
 <?php endif; ?>
 
-<?php 
+<?php
 if ($this->form) {
+    if (CAPTCHA_BRAND === 'ALTCHA') {
+        echo $this->webpackAssets('altcha');
+    }
     $this->form->setAction($this->url());
     echo $this->form;
 }

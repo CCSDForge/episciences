@@ -365,7 +365,8 @@ class Episciences_UsersManager
             $sql .= $db->quoteIdentifier(T_USER_ROLES);
             $sql .= ' (`UID`, `RVID`, `ROLEID`) VALUES ';
             $sql .= implode(',', $values);
-            $sql .= ' ON DUPLICATE KEY UPDATE ROLEID = VALUES(ROLEID)';
+            // MySQL 8.0.20+: VALUES() in ON DUPLICATE KEY UPDATE is deprecated; use a row alias.
+            $sql .= ' AS new_row ON DUPLICATE KEY UPDATE ROLEID = new_row.ROLEID';
 
             $insert = $db->prepare($sql);
 
@@ -373,7 +374,9 @@ class Episciences_UsersManager
                 $insert->execute();
             } catch (Exception $e) {
                 $insert = null;
-                trigger_error($e->getMessage(), E_USER_ERROR);
+                // E_USER_WARNING, not E_USER_ERROR: the latter halts execution, making the
+                // $insert = null / return 0 recovery below unreachable.
+                trigger_error($e->getMessage(), E_USER_WARNING);
             }
         }
 

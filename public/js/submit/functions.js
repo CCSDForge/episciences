@@ -21,6 +21,8 @@ $(function () {
     let $searchRequiredPwd = $('#' + subform + '-h_requiredPwd');
     let $fileDescriptor = $("#file_data_descriptor");
     let $isRequiredDescriptor = $("#file_data_descriptor_is_required");
+    let $coverLetterFile = $("#file_comment_author");
+    let $coverLetterRequirement = $("#cover_letter_requirement");
 
     // if it is a modal, disable submit button
     disableModalSubmitButton();
@@ -50,6 +52,9 @@ $(function () {
         activateDeactivateSubmitButton();
     });
 
+    $coverLetterFile.on('change', function () {
+        activateDeactivateSubmitButton();
+    });
 
     $search_button.on('click', function () {
         doSearching();
@@ -335,26 +340,11 @@ $(function () {
                         }
                     }
 
-                    let hideResultMessage = function hideResultMessage() {
-                        $('#result_message').hide(); // Cacher le message indiquant l'existance d'une ancienne version
-                        $('#submitForm').fadeIn();
-                        $('#form_required').show();
-                        applyAction(
-                            [
-                                'specialIssueAccessCode-element',
-                                'volumes-element',
-                                'sections-element',
-                                'suggestEditors-element',
-                            ],
-                            'hide'
-                        );
-                    };
-
                     message =
                         '<div id="result_message" class="panel panel-danger">';
                     message += '<div class="panel-body red">';
                     message += '<span class="badge">';
-                    message += newVersionErrors.oldIdentifier;
+                    message += htmlEntities(newVersionErrors.oldIdentifier);
                     message += '</span>';
                     message += '<br>';
                     message += '<strong>';
@@ -362,9 +352,6 @@ $(function () {
                     message += '</strong>';
                     message += '</div>';
                     message += '</div>';
-                    message += '<script>';
-                    message += hideResultMessage;
-                    message += '</script>';
                 }
                 $submit_form.fadeOut();
             } else {
@@ -401,16 +388,34 @@ $(function () {
 
     // display an error if document not found
     function fail(response = null) {
-        let message = !response
-            ? '<div class="panel panel-danger"><div class="panel-body">' +
-              translate(
-                  "Une erreur s'est produite pendant la récupération des informations. Parfois l'archive ouverte ne répond pas assez vite. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue."
-              ) +
-              '</div></div>'
-            : response;
+        let genericMessage =
+            '<div class="panel panel-danger"><div class="panel-body">' +
+            translate(
+                "Une erreur s'est produite pendant la récupération des informations. Parfois l'archive ouverte ne répond pas assez vite. Nous vous suggérons de ré-essayer dans quelques instants. Si le problème persiste vous devriez contacter le support de la revue."
+            ) +
+            '</div></div>';
+
+        let responseText = response && response.responseText;
+
+        let message = responseText
+            ? genericMessage +
+              '<div class="panel panel-danger"><div class="panel-body"><pre>' +
+              escapeHtml(responseText) +
+              '</pre></div></div>'
+            : genericMessage;
+
         $result_container.html(message);
         $search_button.prop('disabled', false);
         $search_button.toggleClass('disabled');
+    }
+
+    // Encode a value for safe inclusion in markup by relying on the browser's
+    // text-node encoding (mirrors the helper used in public/js/administratemail/get-contacts.js).
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent =
+            value === undefined || value === null ? '' : String(value);
+        return div.innerHTML;
     }
 
     // if there was an error at form submission
@@ -510,6 +515,17 @@ $(function () {
             return false;
         }
 
+        // Cover letter file check (required = 2 means file must be provided)
+        if (
+            $coverLetterRequirement.length > 0 &&
+            $coverLetterRequirement.val() === '2'
+        ) {
+            const hasFile = $coverLetterFile.length > 0 && $coverLetterFile.val() !== '';
+            if (!hasFile) {
+                return false;
+            }
+        }
+
         // data/software descriptor check
         return !(
             $isRequiredDescriptor.length > 0 &&
@@ -580,6 +596,26 @@ $(function () {
         search();
     }
 }); // end Ready
+
+/**
+ * Hide the "an older version exists" message and show the submission form.
+ * Called from server-generated markup (see Episciences_Paper::…
+ * onclick="hideResultMessage();"), so it must stay global.
+ */
+function hideResultMessage() {
+    $('#result_message').hide(); // Cacher le message indiquant l'existance d'une ancienne version
+    $('#submitForm').fadeIn();
+    $('#form_required').show();
+    applyAction(
+        [
+            'specialIssueAccessCode-element',
+            'volumes-element',
+            'sections-element',
+            'suggestEditors-element',
+        ],
+        'hide'
+    );
+}
 
 /**
  *
