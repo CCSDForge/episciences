@@ -29,10 +29,6 @@ use ReflectionClass;
  *
  * DB-free: the classes are only reflected upon and read as source, never called,
  * so no metadata source, registry or repository lookup is involved.
- *
- * @covers \Episciences\Repositories\ConceptIdentifierInterface
- * @covers \Episciences\Repositories\FilesEnrichmentInterface
- * @covers \Episciences\Repositories\LinkedDataEnrichmentInterface
  */
 final class Episciences_Repositories_CapabilityDeclarationTest extends TestCase
 {

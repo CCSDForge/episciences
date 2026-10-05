@@ -113,10 +113,14 @@ class ZbjatsZipperCommandTest extends TestCase
 
     public function testDefaultConfigFileExistsAndParses(): void
     {
-        $this->assertFileExists(ZbjatsZipperCommand::DEFAULT_CONFIG_PATH);
-        $journals = ZbjatsZipperCommand::parseJournalsIniFile(ZbjatsZipperCommand::DEFAULT_CONFIG_PATH);
+        // The default config (scripts/zbjats/journals.ini) is gitignored because it holds
+        // environment-specific journals, so it cannot be asserted against on CI. The shipped
+        // template is journals.ini.dist; parsing it proves the default-file format round-trips.
+        $distConfigPath = __DIR__ . '/../../../scripts/zbjats/journals.ini.dist';
+        $this->assertFileExists($distConfigPath);
+        $journals = ZbjatsZipperCommand::parseJournalsIniFile($distConfigPath);
         $this->assertIsArray($journals);
-        $this->assertContains('jfp', $journals);
+        $this->assertContains('dev', $journals);
     }
 
     // -------------------------------------------------------------------------
