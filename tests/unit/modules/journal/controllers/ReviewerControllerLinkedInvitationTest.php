@@ -51,7 +51,7 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
         self::assertStringContainsString('isCancelled()', $method);
     }
 
-    public function testResolveFromUserCallIsGuardedAgainstDbStatementException(): void
+    public function testResolveFromUserCallIsGuardedAgainstException(): void
     {
         $method = $this->extractMethod('checkAndProcessLinkedInvitation');
 
@@ -61,10 +61,10 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
 
         self::assertNotFalse($tryPos, 'resolveFromUser() must be called inside a try block');
         self::assertNotFalse($resolvePos);
-        self::assertNotFalse($catchPos, 'checkAndProcessLinkedInvitation() must catch Zend_Db_Statement_Exception from resolveFromUser()');
+        self::assertNotFalse($catchPos, 'checkAndProcessLinkedInvitation() must catch Exception from resolveFromUser() (covers Zend_Db_Statement_Exception and UserNotFoundException)');
         self::assertTrue(
             $tryPos < $resolvePos && $resolvePos < $catchPos,
-            'try { ... resolveFromUser() ... } catch (Zend_Db_Statement_Exception must appear in that order'
+            'try { ... resolveFromUser() ... } catch (Exception must appear in that order'
         );
     }
 
@@ -81,7 +81,7 @@ final class ReviewerControllerLinkedInvitationTest extends TestCase
     // invitationAction() — loadAnswer() must run before isAnswered() is checked
     // -------------------------------------------------------------------------
 
-    public function testInvitationActionLoadsAnswerBeforeFetchingAssignment(): void
+    public function testInvitationActionLoadsAnswerAfterFetchingAssignment(): void
     {
         $method = $this->extractMethod('invitationAction');
 
