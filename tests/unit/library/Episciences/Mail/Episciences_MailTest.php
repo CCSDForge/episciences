@@ -492,6 +492,21 @@ final class Episciences_MailTest extends TestCase
         );
     }
 
+    /**
+     * Regression: the DataTable search term must be bound (quoted by the adapter),
+     * never interpolated into the WHERE clause.
+     */
+    public function testDataTableMailsSearchQueryBindsSearchTerm(): void
+    {
+        $method = new ReflectionMethod(Episciences_Mail::class, 'dataTableMailsSearchQuery');
+        $lines  = file($method->getFileName());
+        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        self::assertStringNotContainsString('$word%', $source, 'Search term must not be interpolated into SQL');
+        self::assertStringContainsString('->where($where, $pattern)', $source);
+        self::assertStringContainsString("addcslashes(\$word, '%_\\\\')", $source);
+    }
+
     // =========================================================================
     // Sanitisation logic (pure, no DB)
     // =========================================================================
