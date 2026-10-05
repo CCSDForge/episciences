@@ -8,15 +8,15 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
 
-        if ((!$request->isXmlHttpRequest() || !$request->isPost()) && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
-            echo json_encode([false], JSON_THROW_ON_ERROR);
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
+        $docId = (int)$request->getPost('docId');
+        $paper = $this->getManageablePaper($docId);
+        if ($paper === null) {
+            $this->denyLinkedDataChange();
             return;
         }
         $inputTypeLd = filter_var(trim($this->getRequest()->getPost('typeld') ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
         $rawValueLd = str_replace(' ','',trim($this->getRequest()->getPost('valueld')));
-        $docId = (int)$this->getRequest()->getPost('docId');
-        $paperId = filter_var(trim($this->getRequest()->getPost('paperId')), FILTER_SANITIZE_SPECIAL_CHARS);
+        $paperId = (string)$paper->getPaperid();
         $relationship = htmlspecialchars(trim($this->getRequest()->getPost('relationship')), ENT_QUOTES, 'UTF-8');
         
         // Validate the format first with raw input, then sanitize for storage
@@ -161,22 +161,26 @@ class AdministratelinkeddataController extends Zend_Controller_Action
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        if ((!$request->isXmlHttpRequest() || !$request->isPost()) && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
-            ob_clean();
-            echo json_encode([false], JSON_THROW_ON_ERROR);
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
+        if (!$this->isAuthenticatedAjaxPost()) {
+            $this->denyLinkedDataChange();
             return;
         }
 
-        $docId = (int)$request->getPost('docId');
-        $paperId = filter_var(trim($request->getPost('paperId') ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
         $idLd = filter_var($request->getPost('id'), FILTER_SANITIZE_NUMBER_INT);
-        $datasetInDb = Episciences_Paper_DatasetsManager::findById($idLd);
+        $datasetInDb = Episciences_Paper_DatasetsManager::findById((int)$idLd);
         if (!$datasetInDb instanceof Episciences_Paper_Dataset) {
-            ob_clean();
-            echo json_encode([false], JSON_THROW_ON_ERROR);
+            $this->denyLinkedDataChange();
             return;
         }
+
+        // The paper is derived from the stored dataset, never from the request
+        $docId = $datasetInDb->getDocId();
+        $paper = $this->getManageablePaper($docId);
+        if ($paper === null) {
+            $this->denyLinkedDataChange();
+            return;
+        }
+        $paperId = (string)$paper->getPaperid();
         $typeLd = htmlspecialchars($datasetInDb->getName() ?? '', ENT_QUOTES, 'UTF-8');
         $valueLd = htmlspecialchars($datasetInDb->getValue(), ENT_QUOTES, 'UTF-8');
         if (($ds = $datasetInDb->getIdPaperDatasetsMeta()) !== null){
@@ -196,11 +200,49 @@ class AdministratelinkeddataController extends Zend_Controller_Action
     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage('Suppression de la donnée liée bien prise en compte');
     }
 
+    private function denyLinkedDataChange(): void
+    {
+        if (ob_get_level() > 0) {
+            ob_clean();
+        }
+        echo json_encode([false], JSON_THROW_ON_ERROR);
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
+    }
+
+    private function isAuthenticatedAjaxPost(): bool
+    {
+        $request = $this->getRequest();
+
+        return $request->isXmlHttpRequest() && $request->isPost() && Episciences_Auth::isLogged();
+    }
+
+    /**
+     * Returns the paper of the current journal when the request is an AJAX POST
+     * and the user is a secretary, an editor assigned to the paper, or its owner or a co-author.
+     */
+    private function getManageablePaper(int $docId): ?Episciences_Paper
+    {
+        if (!$this->isAuthenticatedAjaxPost()) {
+            return null;
+        }
+
+        $paper = Episciences_PapersManager::get($docId, false, RVID);
+        if (!$paper instanceof Episciences_Paper) {
+            return null;
+        }
+
+        $isAllowed = Episciences_Auth::isSecretary()
+            || $paper->isEditor((int)Episciences_Auth::getUid())
+            || $paper->isOwnerOrCoAuthor();
+
+        return $isAllowed ? $paper : null;
+    }
+
     public function ajaxgetldformAction()
     {
         $request = $this->getRequest();
         $this->_helper->layout()->disableLayout();
-        if (($request->isXmlHttpRequest() || $request->isPost())
+        if ($request->isXmlHttpRequest() && $request->isPost()
             && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
             $valueLd = '';
             $idLd = '';
@@ -237,17 +279,19 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         $request = $this->getRequest();
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
-        if (($request->isXmlHttpRequest() || $request->isPost())
-            && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
-            
+        $ldId = (int)filter_var($request->getPost('ldId'), FILTER_SANITIZE_NUMBER_INT);
+        $datasetInDb = $this->isAuthenticatedAjaxPost() ? Episciences_Paper_DatasetsManager::findById($ldId) : null;
+        // The paper is derived from the stored dataset, never from the request
+        $paper = $datasetInDb instanceof Episciences_Paper_Dataset ? $this->getManageablePaper($datasetInDb->getDocId()) : null;
+
+        if ($paper !== null) {
             // Sanitize all input parameters
-            $ldId = filter_var($request->getPost('ldId'), FILTER_SANITIZE_NUMBER_INT);
             $relationship = htmlspecialchars(trim($request->getPost('relationship') ?? ''), ENT_QUOTES, 'UTF-8');
             $typeLd = filter_var(trim($request->getPost('typeld')), FILTER_SANITIZE_SPECIAL_CHARS);
             $valueLd = htmlspecialchars(trim($request->getPost('valueLd')), ENT_QUOTES, 'UTF-8');
-            $docId = filter_var($request->getPost('docId'), FILTER_SANITIZE_NUMBER_INT);
-            $paperId = filter_var(trim($request->getPost('paperId')), FILTER_SANITIZE_SPECIAL_CHARS);
-            
+            $docId = $paper->getDocid();
+            $paperId = (string)$paper->getPaperid();
+
             $ld = new Episciences_Paper_Dataset();
             $ld->setId($ldId);
             $ld->setRelationship($relationship);
