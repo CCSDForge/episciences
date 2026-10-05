@@ -568,6 +568,10 @@ class ReviewerController extends PaperDefaultController
 
         $decision = $post['linkInvitation'];
 
+        // Cleanup: The invitation has been processed (accepted or declined).
+        // Done before the redirect below, which exits and would skip any code after it.
+        unset($session->linkedInvitationIds[$invitationId]);
+
         if ($decision === 'acceptToLink') {
             $this->linkToLoggedAccount($assignment);
 
@@ -578,8 +582,6 @@ class ReviewerController extends PaperDefaultController
             $this->redirect($this->view->url(['controller' => 'paper', 'action' => 'ratings']));
         }
 
-        // Cleanup: The invitation has been processed (accepted or declined)
-        unset($session->linkedInvitationIds[$invitationId]);
         return $decision;
     }
 
