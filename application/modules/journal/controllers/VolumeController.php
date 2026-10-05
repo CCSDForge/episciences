@@ -150,7 +150,10 @@ class VolumeController extends Zend_Controller_Action
             return false;
         }
 
-        $volume = Episciences_VolumesManager::find($vid);
+        $volume = Episciences_VolumesManager::find($vid, RVID);
+        if (!$volume) {
+            return false;
+        }
         $currentEditors = $volume->getEditors();
         $formData = Episciences_VolumesManager::getEditorsForm($currentEditors);
 
@@ -182,7 +185,10 @@ class VolumeController extends Zend_Controller_Action
             $editors = ($submittedEditors) ? array_map('intval', $submittedEditors) : [];
 
             // Rédacteurs déjà assignés
-            $volume = Episciences_VolumesManager::find($vid);
+            $volume = Episciences_VolumesManager::find($vid, RVID);
+            if (!$volume) {
+                return;
+            }
             $currentEditors = ($volume->getEditors()) ? array_keys($volume->getEditors()) : [];
 
             // Tri des rédacteurs ajoutés des rédacteurs supprimés
@@ -217,7 +223,10 @@ class VolumeController extends Zend_Controller_Action
         $params = $request->getPost();
         $vid = $params['vid'];
 
-        $volume = Episciences_VolumesManager::find($vid);
+        $volume = Episciences_VolumesManager::find($vid, RVID);
+        if (!$volume) {
+            return;
+        }
         $editors = $volume->getEditors();
 
         $this->view->editors = $editors;
