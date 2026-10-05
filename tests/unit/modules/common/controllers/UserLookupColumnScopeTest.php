@@ -29,15 +29,16 @@ final class UserLookupColumnScopeTest extends TestCase
         ], static fn($v) => $v !== false);
         $stop = $candidates ? min($candidates) : strlen($source);
 
-        return substr($source, $start, $stop - $start);
+        // Collapse whitespace so that reformatting (line breaks, indentation) cannot break the assertions
+        return (string) preg_replace('/\s+/', ' ', substr($source, $start, $stop - $start));
     }
 
     public function testFilterUsersNamesItsColumns(): void
     {
         $method = $this->extractMethod(dirname(APPLICATION_PATH) . '/library/Episciences/User.php', 'filterUsers');
 
-        self::assertMatchesRegularExpression('/from\(T_CAS_USERS,\s*self::FILTER_USERS_COLUMNS\)/', $method);
-        self::assertDoesNotMatchRegularExpression('/from\(T_CAS_USERS\)/', $method);
+        self::assertMatchesRegularExpression('/->from\( ?T_CAS_USERS ?, ?self::FILTER_USERS_COLUMNS ?,? ?\)/', $method);
+        self::assertDoesNotMatchRegularExpression('/->from\( ?T_CAS_USERS ?\)/', $method);
     }
 
     public function testFilterUsersColumnsExcludeCredentials(): void
@@ -60,5 +61,7 @@ final class UserLookupColumnScopeTest extends TestCase
         self::assertStringNotContainsString('as &$user', $method, 'whole rows must not be echoed back');
         self::assertStringContainsString("'mail' =>", $method);
         self::assertStringNotContainsString('PASSWORD', $method);
+        self::assertStringNotContainsString('SCREENNAME', $method, 'the column is SCREEN_NAME');
+        self::assertStringContainsString("['SCREEN_NAME']", $method);
     }
 }
