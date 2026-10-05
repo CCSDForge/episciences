@@ -103,4 +103,52 @@ class Episciences_Auth_PluginTest extends TestCase
         self::assertSame('findusers', Episciences_Auth_Plugin::normalizeName('Find-Users'));
         self::assertSame('a1b', Episciences_Auth_Plugin::normalizeName('A.1_b'));
     }
+
+    /**
+     * @return Episciences_Auth_Plugin plugin whose ACL declares the "user-findusers" resource only
+     */
+    private function pluginWithAclStub(): Episciences_Auth_Plugin
+    {
+        $acl = $this->createMock(Episciences_Acl::class);
+        $acl->method('has')->willReturnCallback(static fn($resource): bool => $resource === 'user-findusers');
+        $acl->method('getResources')->willReturn(['user-findusers']);
+
+        return new class($acl) extends Episciences_Auth_Plugin {
+            public function __construct(private readonly Episciences_Acl $stub)
+            {
+            }
+
+            public function getAcl(): ?Episciences_Acl
+            {
+                return $this->stub;
+            }
+        };
+    }
+
+    public function testPreDispatchDeniesUnknownResourceForXhrRequests(): void
+    {
+        $request = new class extends Zend_Controller_Request_Http {
+            public function isXmlHttpRequest(): bool
+            {
+                return true;
+            }
+        };
+        $request->setControllerName('website')->setActionName('notdeclared');
+
+        $this->pluginWithAclStub()->preDispatch($request);
+
+        self::assertSame(Ccsd_Auth_Plugin::FAIL_AUTH_CONTROLLER, $request->getControllerName());
+        self::assertSame(Ccsd_Auth_Plugin::FAIL_AUTH_ACTION, $request->getActionName());
+    }
+
+    public function testPreDispatchSendsUnknownResourceToNotFoundForRegularRequests(): void
+    {
+        $request = new Zend_Controller_Request_Http();
+        $request->setControllerName('website')->setActionName('notdeclared');
+
+        $this->pluginWithAclStub()->preDispatch($request);
+
+        self::assertSame('index', $request->getControllerName());
+        self::assertSame('notfound', $request->getActionName());
+    }
 }
