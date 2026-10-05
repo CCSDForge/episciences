@@ -1,47 +1,120 @@
-<?php $graphAbs = $this->escape($this->paper->getGraphical_abstract($this->paper->getDocId())) ?>
+<?php
+
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstractPolicy;
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstractValidator;
+
+/** @var Episciences_Paper $paper */
+$paper = $this->paper;
+$docId = (int)$paper->getDocid();
+$illustration = GraphicalAbstractRepository::find($docId);
+$canEdit = GraphicalAbstractPolicy::canEdit($paper);
+
+if ($illustration === null && !$canEdit) {
+    return;
+}
+
+if ($canEdit) {
+    $this->getHelper('webpackAssets')->queueScript('filepond');
+    $this->getHelper('webpackAssets')->queueStylesheet('filepond');
+    $this->jQuery()->addJavascriptFile('/js/paper/graphicalAbstract.js');
+}
+
+$fileField = GraphicalAbstractValidator::FIELD_FILE;
+$altField = GraphicalAbstractValidator::FIELD_ALT;
+$licenseField = GraphicalAbstractValidator::FIELD_LICENSE;
+$maxSizeKb = GraphicalAbstractValidator::MAX_SIZE / 1024;
+$acceptedTypes = implode(',', GraphicalAbstractValidator::ACCEPTED_MIME_TYPES);
+$licenseSuggestions = ['CC BY 4.0', 'CC BY-SA 4.0', 'CC BY-NC 4.0', 'CC BY-ND 4.0', 'CC0 1.0'];
+?>
 <div class="panel panel-default collapsable">
     <div class="panel-heading">
-        <h2 class="panel-title"><?= $this->translate('Graphical Abstract') ?></h2>
+        <h2 class="panel-title"><?= $this->translate('Illustration ou résumé graphique') ?></h2>
     </div>
-    <div class="panel-body <?= ($graphAbs !== "") ? 'in' : '' ?>">
-        <form id="f-graph-abs">
-            <div style="max-height:480px;overflow: auto;">
-                <?php if ($graphAbs !== "") : ?>
-                    <img alt="graphical abstract"
-                         style="max-width: 100%;max-height: 100%; object-fit: contain; overflow: scroll"
-                         src="<?= sprintf('%spublic/documents/%s/%s',PREFIX_URL, $this->paper->getDocId(), $graphAbs) ?>">
+    <div class="panel-body <?= $illustration !== null ? 'in' : '' ?>">
+        <?php if ($illustration !== null) : ?>
+            <figure class="graphical-abstract-figure">
+                <?php // images uploaded before the text alternative was required fall back on the paper title ?>
+                <img src="<?= $this->escape(GraphicalAbstractRepository::versionedPublicUrl($docId, $illustration->file)) ?>"
+                     alt="<?= $this->escape($illustration->alt ?? (string)$paper->getTitle(null, true)) ?>"
+                     loading="lazy">
+                <?php if ($illustration->license !== null) : ?>
+                    <figcaption><?= $this->escape(sprintf($this->translate('Licence : %s'), $illustration->license)) ?></figcaption>
                 <?php endif; ?>
-            </div>
-            <?php if (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor()) : ?>
-                <div style="display: inline-block; margin-top: 10px;">
-                    <div>
-                        <input name="paper_docId" class="hidden" id="paper_docId"
-                               value="<?= $this->paper->getDocid() ?>">
-                        <input name="paper_id" class="hidden" id="paper_id" value="<?= $this->paper->getPaperid() ?>">
-                        <input type="file" name="upload-gabs" id="upload-gabs" class="hidden" accept="image/*"/>
-                        <label class="btn btn-default btn-sm" for="upload-gabs">
-                            <i class="fa-solid fa-chart-area"
-                               style="margin-right: 5px"></i><?php echo ($graphAbs !== "") ? $this->translate("Modifier l'abstract graphique") : $this->translate("Ajouter un abstract graphique") ?>
-                        </label>
-                        <span id="file-chosen"></span>
-                        <button id="btn-cancel-graph" type="button"
-                                class="btn btn-default"><?= $this->translate('Annuler') ?></button>
-                        <input type="submit" class="btn btn-primary" id="i-graph-abs" value="<?= $this->translate('Envoyer')?>">
-                        <?php if ($graphAbs !== "") : ?>
-                            <button class="btn btn-danger btn-xs" type="button" id="b-graph-abs-delete"
-                                    data-img="<?= $graphAbs ?>">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        <?php endif; ?>
-                    </div>
+            </figure>
+        <?php endif; ?>
+
+        <?php if ($canEdit) : ?>
+            <form id="f-graph-abs" class="graphical-abstract-form" method="post" enctype="multipart/form-data" novalidate
+                  action="<?= PREFIX_URL ?>administrategraphabstract/addgraphabs/"
+                  data-delete-url="<?= PREFIX_URL ?>administrategraphabstract/deletegraphabs/">
+                <input type="hidden" name="docId" value="<?= $docId ?>">
+
+                <div id="graph-abs-status" class="graphical-abstract-status" role="status" aria-live="polite"></div>
+
+                <div class="form-group" data-field="<?= $fileField ?>">
+                    <label for="<?= $fileField ?>">
+                        <?= $illustration !== null ? $this->translate("Remplacer l'image (facultatif)") : $this->translate('Image') . ' <span class="text-danger" aria-hidden="true">*</span>' ?>
+                    </label>
+                    <input type="file" id="<?= $fileField ?>" name="<?= $fileField ?>"
+                           accept="<?= $acceptedTypes ?>"
+                           data-max-file-size="<?= GraphicalAbstractValidator::MAX_SIZE ?>"
+                           data-accepted-types="<?= $acceptedTypes ?>"
+                           <?= $illustration === null ? 'required aria-required="true"' : '' ?>
+                           aria-describedby="<?= $fileField ?>-help <?= $fileField ?>-error">
+                    <p class="help-block" id="<?= $fileField ?>-help">
+                        <?= $this->escape(sprintf($this->translate('Formats : JPEG, PNG, WebP, GIF. Poids maximum : %s ko'), $maxSizeKb)) ?>
+                    </p>
+                    <p class="help-block graphical-abstract-error" id="<?= $fileField ?>-error" hidden></p>
                 </div>
-                <div class="help-block" style="margin:4px;">
-                        <span>
-                                <?= $this->translate('Poids maximum du fichier : 100 ko, Hauteur maximale : 880px') ?>
-                        </span>
+
+                <div class="form-group" data-field="<?= $altField ?>">
+                    <label for="<?= $altField ?>">
+                        <?= $this->translate('Texte alternatif') ?> <span class="text-danger" aria-hidden="true">*</span>
+                    </label>
+                    <textarea id="<?= $altField ?>" name="<?= $altField ?>" class="form-control" rows="3"
+                              maxlength="<?= GraphicalAbstractValidator::ALT_MAX_LENGTH ?>"
+                              required aria-required="true"
+                              aria-describedby="<?= $altField ?>-help <?= $altField ?>-error"><?= $this->escape($illustration?->alt ?? '') ?></textarea>
+                    <p class="help-block" id="<?= $altField ?>-help">
+                        <?= $this->translate("Décrivez ce que montre l'image pour les personnes qui ne peuvent pas la voir.") ?>
+                    </p>
+                    <p class="help-block graphical-abstract-counter" id="<?= $altField ?>-counter">
+                        <span data-counter-value><?= mb_strlen($illustration?->alt ?? '') ?></span> / <?= GraphicalAbstractValidator::ALT_MAX_LENGTH ?>
+                    </p>
+                    <p class="help-block graphical-abstract-error" id="<?= $altField ?>-error" hidden></p>
                 </div>
-            <?php endif; ?>
-        </form>
+
+                <div class="form-group" data-field="<?= $licenseField ?>">
+                    <label for="<?= $licenseField ?>"><?= $this->translate('Licence') ?></label>
+                    <input type="text" id="<?= $licenseField ?>" name="<?= $licenseField ?>" class="form-control"
+                           list="<?= $licenseField ?>-suggestions"
+                           maxlength="<?= GraphicalAbstractValidator::LICENSE_MAX_LENGTH ?>"
+                           value="<?= $this->escape($illustration?->license ?? '') ?>"
+                           aria-describedby="<?= $licenseField ?>-help <?= $licenseField ?>-error">
+                    <datalist id="<?= $licenseField ?>-suggestions">
+                        <?php foreach ($licenseSuggestions as $suggestion) : ?>
+                            <option value="<?= $this->escape($suggestion) ?>"></option>
+                        <?php endforeach; ?>
+                    </datalist>
+                    <p class="help-block" id="<?= $licenseField ?>-help">
+                        <?= $this->translate("Licence de l'image, par exemple CC BY 4.0 (facultatif).") ?>
+                    </p>
+                    <p class="help-block graphical-abstract-error" id="<?= $licenseField ?>-error" hidden></p>
+                </div>
+
+                <div class="graphical-abstract-actions">
+                    <button type="submit" class="btn btn-primary btn-sm"><?= $this->translate('Enregistrer') ?></button>
+                    <button type="reset" class="btn btn-default btn-sm"><?= $this->translate('Annuler') ?></button>
+                    <?php if ($illustration !== null) : ?>
+                        <button type="button" class="btn btn-danger btn-sm" data-graph-abs-delete
+                                data-file="<?= $this->escape(basename($illustration->file)) ?>">
+                            <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                            <?= $this->translate("Supprimer l'illustration") ?>
+                        </button>
+                    <?php endif; ?>
+                </div>
+            </form>
+        <?php endif; ?>
     </div>
 </div>
-<?php $this->jQuery()->addJavascriptFile('/js/paper/graphicalAbstract.js'); ?>

@@ -14,7 +14,6 @@ use PHPUnit\Framework\TestCase;
  * analyse the source to assert the expected handling stays in place. The actual
  * path-confinement behaviour is covered by DefaultControllerResolveSafePathTest.
  *
- * @covers FileController
  */
 final class FileControllerPathHandlingTest extends TestCase
 {
@@ -172,5 +171,25 @@ final class FileControllerPathHandlingTest extends TestCase
         // No document targeted: the session-scoped directory needs no relation.
         self::assertStringContainsString('if (!$docId && !$paperId)', $method,
             'the guard must keep allowing the session-scoped attachments directory');
+    }
+
+    // -----------------------------------------------------------------------
+    // indexAction() input validation
+    // -----------------------------------------------------------------------
+
+    public function testIndexActionOnlyServesFlatFileNames(): void
+    {
+        $method = $this->extractMethod('indexAction');
+        self::assertStringContainsString('preg_match(\'/^[\\w ]+$/\', $filename)', $method,
+            'indexAction() must only accept flat file names');
+        self::assertStringContainsString('preg_match(\'/^\\w+$/\', $extension)', $method,
+            'indexAction() must restrict the extension to word characters');
+    }
+
+    public function testIndexActionRefusesReservedFileNames(): void
+    {
+        $method = $this->extractMethod('indexAction');
+        self::assertStringContainsString("-crypto", $method,
+            'indexAction() must refuse reserved file names');
     }
 }

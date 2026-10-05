@@ -24,9 +24,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [2021](changelogs/CHANGELOG-2021.md)
 
 ## Unreleased
+### Fixed
+[RT#293890]:
+- Sorting by invitation status does not reflect the actual situation:
+    A reviewer’s report is categorised as an "Additional reviewer’s report",
+    whereas this should only occur in cases where an editor adds a review directly 
+- The dashboard does not display pending invitations that were sent via a temporary account.
+- Reviewers were listed once per assignment history row on the paper page, instead of once per invitation.
+- An expired invitation no longer keeps its paper pinned to the reviewer's assigned papers list.
+- A reviewer holding a temporary account and invited more than once on the same paper was returned
+  without any identity, which made the paper page fail.
+
+### Changed
+- The continuous integration workflows now generate the configuration and the database the PHPUnit
+  bootstrap requires. The test suite was aborting before its first test and reporting success: no
+  PHP test had ever actually run on CI.
+- A command line script called with an unknown option now exits with an error code instead of 0,
+  so a cron or a CI job is no longer told it succeeded.
 
 ### Added
 
+- [#1216](https://github.com/CCSDForge/episciences/pull/1216) Paper illustration (graphical abstract): required text alternative (WCAG 1.1.1) and optional free-text license, stored as `graphical_abstract_alt` and `graphical_abstract_license` next to `graphical_abstract_file` in `PAPERS.DOCUMENT` and exposed in the JSON v2 export; the license is shown as the image caption.
 - [#865](https://github.com/CCSDForge/episciences/issues/865), [#1208](https://github.com/CCSDForge/episciences/pull/1208) Allow administrators and chief editors to change the contributor (owner) of a paper. A modal dialog lets users search for and select a new contributor, with an option to add the former contributor as co-author (checked by default) so they continue receiving notifications. Both the new and former contributors receive email notifications. The action is logged with full details (old/new contributor, co-author status) and displayed in the paper history timeline.
 - [#1168](https://github.com/CCSDForge/episciences/pull/1168) Add `journal:create` CLI command (`scripts/CreateJournalCommand.php`, `make create-journal`) to create a new journal — inserting its `REVIEW` row, cloning settings/menu/pages/appearance from a template journal (excluding editorial identity, outgoing notifications and secrets), creating its `data/<rvcode>/` directory tree, and granting an existing user the administrator role. Business logic lives in `Episciences\Journal\Provisioning\{JournalSpec,ReviewRowWriter,SettingsCloner,DataDirectoryProvisioner,WebsiteCloner,ClonableWebsiteStyle,ClonableWebsiteHeader,PagesCloner,AdminRoleAssigner,Report,JournalCreator}`. See `docs/journal-provisioning.md`.
 - [#1168](https://github.com/CCSDForge/episciences/pull/1168) Add `journal:seed-demo` CLI command (`scripts/SeedJournalDemoCommand.php`, `make seed-journal-demo`) to seed a journal with a small set of real, fixed HAL/arXiv/Zenodo/BAOBAB submissions (`scripts/importSamples/demo-papers.csv`) across 3 volumes/sections in submitted/accepted/published status, for sandbox testing. Reuses the `import:papers` machinery via `Episciences\Journal\Demo\{DemoCsvRewriter,DemoSeeder}`.
@@ -52,6 +70,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1150](https://github.com/CCSDForge/episciences/pull/1150) Allow customizing the review code shown in automatic email subjects via the journal settings (`Episciences_Review`), capped to 100 characters.
 - Add `title_translations` to the `PAPERS.DOCUMENT` JSON column.
 - Display bibliographic references count in `papers:update-document` with `-vv`.
+- [#1214](https://github.com/CCSDForge/episciences/pull/1214) Add volume editors to CrossRef XML export. When a paper belongs to a volume with assigned editors, their names and ORCID identifiers are now included in the `<journal_issue><contributors>` block.
+
+### Changed
+
+- [#1216](https://github.com/CCSDForge/episciences/pull/1216) "Graphical Abstract" is renamed "Illustration or Graphical Abstract" and uses FilePond (self-hosted webpack entry imported from #1108) instead of a bare file input; the maximum size goes from 100 KB to 500 KB. Validation reuses `Zend_Validate_File_Size`/`Zend_Validate_File_Extension` and `Episciences_Form_Validate_MimeType` (`Episciences\Paper\GraphicalAbstract\GraphicalAbstractValidator`), storage moves to `Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository`.
+- [#1216](https://github.com/CCSDForge/episciences/pull/1216) The illustration of a paper can only be changed on the version in progress, by secretaries, assigned editors and guest editors, and the author and co-authors (`Episciences\Paper\GraphicalAbstract\GraphicalAbstractPolicy`): never on a refused, obsolete or non-latest version, and on a published version only by a chief editor or an administrator. The image URL carries its modification time, and a failed save no longer leaves the previous image deleted.
+- [#1215](https://github.com/CCSDForge/episciences/pull/1215) Move the volume DOAJ export button from the public volume page to the volume edit page (next to "Review Grids") and add a button to download the complete volume as a single PDF. Buttons are disabled until the files are generated (`doaj:export-volumes`, `volume:merge-pdf`); URLs are prefixed with the journal code when the journal has switched to the new front-end.
 
 ### Performances
 
@@ -63,6 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#1216](https://github.com/CCSDForge/episciences/pull/1216) Paper illustration (graphical abstract): every error now returns a JSON response with a proper HTTP status (the "file too large" case returned nothing), the result of `move_uploaded_file()` is checked, and the illustration is carried over to new versions (temporary version, new version, COAR Notify new version) instead of being lost.
 - [#1208](https://github.com/CCSDForge/episciences/pull/1208) Fix change contributor modal: bind listeners once and release document event listeners on close, prevent race condition when closing modal quickly, close on Escape and backdrop click, and restore focus to the trigger button (WCAG 2.4.3).
 - [#1203](https://github.com/CCSDForge/episciences/pull/1203) Fix interface language resolution (`Episciences_Translation_Plugin::resolveLocale()`): an unsupported `?lang=` or cookie value now falls through to the next source (cookie, then browser) instead of forcing French, and the `lang` cookie now stores the language actually used (an English-only journal no longer sets `lang=fr`). The `lang` cookie is now only set on an explicit choice (`?lang=` or language URL prefix), no longer on every response; a logged-in user without such a choice gets their account language before the browser one. The language is resolved once per request: an internal forward (journal home page to `page/index`) no longer rebuilds the translator nor sends the `lang` cookie twice.
 - [#1198](https://github.com/CCSDForge/episciences/pull/1198) Fix submission acknowledgment never reaching the author (and co-authors) when no editorial committee member is left to notify, e.g. a chief editor submitting to their own journal (`Episciences_Submit::sendNotifications()`, regression from v1.0.54).
@@ -125,6 +151,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- [#1216](https://github.com/CCSDForge/episciences/pull/1216) Paper illustration (graphical abstract) upload: the actual MIME type is now checked (the extension alone, case-sensitive, was trusted), SVG is no longer accepted, and access checks are tightened.
 - [#1176](https://github.com/CCSDForge/episciences/pull/1176) Update `league/commonmark` to 2.10.1 to patch DoS vulnerability in Attributes extension.
 - [#1175](https://github.com/CCSDForge/episciences/pull/1175) Patch transitive npm vulnerabilities flagged by Dependabot in the build/test toolchain via yarn resolutions.
 

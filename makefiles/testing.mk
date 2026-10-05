@@ -28,7 +28,7 @@ test-php: ## Run PHP tests (PHPUnit)
 		echo "Using PHPUnit configuration: $(PHPUNIT_CONFIG)"; \
 		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) mkdir -p $(CNTR_APP_DIR)/build && \
 		$(DOCKER_COMPOSE) exec -u 0:0 $(CNTR_NAME_PHP) chmod 777 $(CNTR_APP_DIR)/build; \
-		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit --no-coverage; \
+		$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -e XDEBUG_MODE=off -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) ./vendor/bin/phpunit --no-coverage; \
 	else \
 		echo "❌ No $(PHPUNIT_CONFIG) found, skipping PHP tests"; \
 	fi

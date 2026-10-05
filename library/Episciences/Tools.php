@@ -2361,8 +2361,20 @@ class Episciences_Tools
             $warning = $errstr;
             return true;
         });
-        $dateInterval = DateInterval::createFromDateString($interval);
-        restore_error_handler();
+
+        try {
+            // PHP 8.3 replaced the "return false and raise a warning" behaviour with a thrown
+            // DateMalformedIntervalStringException. Both shapes are normalised into the
+            // InvalidArgumentException this method is documented to raise, so callers do not have
+            // to care which PHP version they run on.
+            $dateInterval = DateInterval::createFromDateString($interval);
+        } catch (\Throwable $e) {
+            throw new \InvalidArgumentException("Invalid interval format: {$interval}", 0, $e);
+        } finally {
+            // In a finally block: on PHP 8.3 the call above throws, and the handler would
+            // otherwise stay installed and swallow warnings for the rest of the process.
+            restore_error_handler();
+        }
 
         if ($dateInterval === false || $warning !== null) {
             throw new \InvalidArgumentException("Invalid interval format: {$interval}");

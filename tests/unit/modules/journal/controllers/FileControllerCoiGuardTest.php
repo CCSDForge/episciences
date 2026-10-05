@@ -17,8 +17,6 @@ use PHPUnit\Framework\TestCase;
  * The check must treat an unresolved ('later') COI response as a conflict, not
  * only an explicit 'yes', and must exempt root/admin-only users, consistent
  * with DefaultController::isConflictDetected().
- *
- * @covers FileController::reportAction
  */
 final class FileControllerCoiGuardTest extends TestCase
 {

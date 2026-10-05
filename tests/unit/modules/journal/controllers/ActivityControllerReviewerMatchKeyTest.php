@@ -12,8 +12,6 @@ use ReflectionMethod;
  * fallback used by buildReviewTableBlock() to group a reviewer's log entries when
  * none of them carry a uid. Pure static method (no $this, no DB), so it's invoked
  * directly by reflection.
- *
- * @covers ActivityController::reviewerMatchKey
  */
 final class ActivityControllerReviewerMatchKeyTest extends TestCase
 {

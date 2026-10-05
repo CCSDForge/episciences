@@ -4049,6 +4049,40 @@ __metadata:
   languageName: node
   linkType: hard
 
+"filepond-plugin-file-validate-size@npm:2.2.8":
+  version: 2.2.8
+  resolution: "filepond-plugin-file-validate-size@npm:2.2.8"
+  peerDependencies:
+    filepond: ">=3.1.2 <5.x"
+  checksum: 10/b6024735abb99a51f429abef8a8659fb89d0880647089f080db5c2d33a8972c7b4e77714f9c94b2545556f6960b4e0c2dfc035df4d005fb44f93a7f46dcd52be
+  languageName: node
+  linkType: hard
+
+"filepond-plugin-file-validate-type@npm:1.2.9":
+  version: 1.2.9
+  resolution: "filepond-plugin-file-validate-type@npm:1.2.9"
+  peerDependencies:
+    filepond: ">=1.x <5.x"
+  checksum: 10/d697ffef5e5412a172eceba72b5442ec1f2b61e707df8ca494e8fd9b804125df9dcd2fbcb52e3cc9572b97feec09f25b31ee4f3281464d14fa80fac6de2229bc
+  languageName: node
+  linkType: hard
+
+"filepond-plugin-image-preview@npm:4.6.12":
+  version: 4.6.12
+  resolution: "filepond-plugin-image-preview@npm:4.6.12"
+  peerDependencies:
+    filepond: ">=4.x <5.x"
+  checksum: 10/2f42993b3cfd7a694d833125c2652893d43ddd168aa538cd1b2f9ff2ac5cfd134fe08d98878b282b578b310c8b7b48ecd8e21286761e1802943877a05910fd5f
+  languageName: node
+  linkType: hard
+
+"filepond@npm:4.32.12":
+  version: 4.32.12
+  resolution: "filepond@npm:4.32.12"
+  checksum: 10/dda95621f408080520bc09de739f5307922f7ce1cbae2da474dad5c3e096f697bbac5e3671d20231d1d861871d3bcfc848957d98c6bc3588f47b221e22bfa989
+  languageName: node
+  linkType: hard
+
 "fill-range@npm:^7.1.1":
   version: 7.1.1
   resolution: "fill-range@npm:7.1.1"
@@ -6276,6 +6310,10 @@ __metadata:
     "@playwright/test": "npm:^1.60.0"
     "@symfony/webpack-encore": "npm:^5.3.1"
     altcha: "npm:3.1.0"
+    filepond: "npm:4.32.12"
+    filepond-plugin-file-validate-size: "npm:2.2.8"
+    filepond-plugin-file-validate-type: "npm:1.2.9"
+    filepond-plugin-image-preview: "npm:4.6.12"
     jest: "npm:^30.4.2"
     jest-environment-jsdom: "npm:^30.4.1"
     jsdom: "npm:^29.0.0"

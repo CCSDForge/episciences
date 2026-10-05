@@ -15,11 +15,20 @@ class FileController extends DefaultController
         $this->_helper->viewRenderer->setNoRender();
         $params = $this->getRequest()->getParams();
 
-        $filename = $params['filename'];
-        $extension = $params['extension'];
-        $file = $filename . '.' . $extension;
+        $filename = (string)($params['filename'] ?? '');
+        $extension = (string)($params['extension'] ?? '');
 
-        $this->loadFile(REVIEW_FILES_PATH, $file);
+        // Only serve flat file names (same shape as the "files" route).
+        if (
+            !preg_match('/^[\w ]+$/', $filename) ||
+            !preg_match('/^\w+$/', $extension) ||
+            str_ends_with($filename, '-crypto')
+        ) {
+            $this->getResponse()->setHttpResponseCode(404);
+            return;
+        }
+
+        $this->loadFile(REVIEW_FILES_PATH, $filename . '.' . $extension);
     }
 
     public function docfilesAction(): void

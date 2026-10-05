@@ -4,6 +4,7 @@ use Episciences\Classification\jel;
 use Episciences\Classification\msc2020;
 use Episciences\Paper\DataDescriptorManager;
 use Episciences\Paper\Export;
+use Episciences\Paper\GraphicalAbstract\GraphicalAbstractRepository;
 use Episciences\QueueMessage;
 use Episciences\QueueMessageManager;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
@@ -476,17 +477,15 @@ class Episciences_Paper
     private $_licence;
     /** @var Episciences_Paper_Projects $_fundings */
     private $_fundings;
-    /** @var array $_linkedData */
+    /** @var Episciences_Paper_Dataset $_linkedData */
 
     private array $_linkedData;
     private ?string $_password = null;
-    private ?string $_graphical_abstract = null;
     private ?array $_data_descriptors = null;
 
     /**
      * Episciences_Paper constructor.
      * @param array|null $options
-     * @throws DOMException
      * @throws Zend_Db_Statement_Exception
      */
     public function __construct(array $options = null)
@@ -1470,6 +1469,8 @@ class Episciences_Paper
                     'cited_by' => $citedBy,
                     'classifications' => $classifications,
                     'graphical_abstract_file' => $this->getGraphicalAbstractFileToJson(),
+                    'graphical_abstract_alt' => $this->getStoredCurrentStringToJson('graphical_abstract_alt'),
+                    'graphical_abstract_license' => $this->getStoredCurrentStringToJson('graphical_abstract_license'),
                     'metrics' => Episciences_Paper_Visits::getPaperMetricsByPaperId($this->getPaperid()),
 
                 ],
@@ -1637,9 +1638,9 @@ class Episciences_Paper
     /**
      * Filename of the paper's graphical abstract, carried over from the stored JSON.
      *
-     * The file is written straight into PAPERS.DOCUMENT by
-     * AdministrategraphabstractController (JSON_SET on upload, JSON_REMOVE on delete),
-     * so toJson() has to read the previous value back rather than rebuild it.
+     * The graphical abstract keys (file, alt, license) are written straight into
+     * PAPERS.DOCUMENT by GraphicalAbstractRepository, so toJson() has to read the
+     * previous values back rather than rebuild them.
      *
      * Returns null, not an empty string, when the paper has no graphical abstract:
      * consistent with the other empty keys of database.current (volume, section,
@@ -1647,10 +1648,18 @@ class Episciences_Paper
      */
     private function getGraphicalAbstractFileToJson(): ?string
     {
-        $current = $this->getDocument()[Episciences_Paper_XmlExportManager::DATABASE_KEY]['current'] ?? null;
-        $file = trim((string)($current['graphical_abstract_file'] ?? ''));
+        return $this->getStoredCurrentStringToJson('graphical_abstract_file');
+    }
 
-        return $file !== '' ? $file : null;
+    /**
+     * Trimmed string value of a database.current key of the stored JSON, null if absent or blank.
+     */
+    private function getStoredCurrentStringToJson(string $key): ?string
+    {
+        $current = $this->getDocument()[Episciences_Paper_XmlExportManager::DATABASE_KEY]['current'] ?? null;
+        $value = is_array($current) && is_scalar($current[$key] ?? null) ? trim((string)$current[$key]) : '';
+
+        return $value !== '' ? $value : null;
     }
 
     private function processTmpVersion(Episciences_Paper $paper): void
@@ -1849,7 +1858,6 @@ class Episciences_Paper
      * @param bool $isCurrentVersionIncluded
      * @param bool $includeTempVersions
      * @return array|null
-     * @throws DOMException
      * @throws Zend_Db_Statement_Exception
      */
     public function getPreviousVersions(bool $isCurrentVersionIncluded = false, bool $includeTempVersions = true): ?array
@@ -2418,7 +2426,7 @@ class Episciences_Paper
 
     /**
      *delete paper volume position
-     * @return bool
+     * @return int
      */
     public function deletePosition()
     {
@@ -2564,7 +2572,7 @@ class Episciences_Paper
     /**
      * filter an array of rating reports criterion, according to a given user
      * @param Episciences_Rating_Report[] $reports
-     * @param Episciences_User|null $user
+     * @param Episciences_User $user
      * @return Episciences_Rating_Report[]
      * @throws Zend_Db_Statement_Exception
      */
@@ -2607,7 +2615,6 @@ class Episciences_Paper
      * fetch an editor
      * @param $uid
      * @return Episciences_Editor|bool
-     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function getEditor($uid)
@@ -2640,7 +2647,6 @@ class Episciences_Paper
     /**
      * @param int|null $uid
      * @return bool
-     * @throws JsonException
      */
     public function isEditor(int $uid = null): bool
     {
@@ -3036,7 +3042,7 @@ class Episciences_Paper
     }
 
     /**
-     * @return array
+     * @return mixed
      */
     public function getVersionsIds()
     {
@@ -3174,7 +3180,6 @@ class Episciences_Paper
      * @param null $status
      * @param bool $priority
      * @return int|null
-     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function updateStatus($status = null, $priority = false)
@@ -3909,9 +3914,7 @@ class Episciences_Paper
     }
 
     /**
-     * Gère les erreurs de soumission d'une nouvelle version
      * @param array $options
-     *
      * @return array|string
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
@@ -4230,10 +4233,9 @@ class Episciences_Paper
     }
 
     /**
-     * fetch a copy editor
+     * fetch an copy editor
      * @param $uid
      * @return Episciences_CopyEditor|bool
-     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function getCopyEditor($uid)
@@ -4249,7 +4251,6 @@ class Episciences_Paper
      * @param bool $active
      * @param bool $getCASdata
      * @return Episciences_CopyEditor[]
-     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function getCopyEditors(bool $active = true, bool $getCASdata = false): array
@@ -4403,7 +4404,7 @@ class Episciences_Paper
         return $this->_solrData;
     }
 
-    public function getDataDescriptors(): array | null
+    public function getDataDescriptors(): array|null
     {
         return $this->_data_descriptors;
     }
@@ -4427,7 +4428,6 @@ class Episciences_Paper
     }
 
     /**
-     * @throws InvalidArgumentExceptionAlias
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
      */
@@ -4501,7 +4501,6 @@ class Episciences_Paper
 
     /**
      * @return array
-     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function getRatingInvitations(): array
@@ -4657,14 +4656,12 @@ class Episciences_Paper
     }
 
     /**
-     * @param string|null $locale = null (ISO FORMAT)
-     * @return string
-     * @throws DOMException
+     * @param string $locale = null (ISO FORMAT)
+     * @return false|string
      * @throws Zend_Date_Exception
-     * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    public function buildRevisionDates(string $locale = null): string
+    public function buildRevisionDates(string $locale = null)
     {
         $revisionDates = '';
         $previousVersions = $this->getPreviousVersions(true);
@@ -4700,7 +4697,6 @@ class Episciences_Paper
      * @param array $recipients
      * @param int|null $principalRecipient
      * @return array
-     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
     public function extractCCRecipients(array &$recipients = [], int $principalRecipient = null): array
@@ -4724,7 +4720,6 @@ class Episciences_Paper
     }
 
     /**
-     * @param string $yearFormat
      * @return string
      */
     public function getPublicationYear(string $yearFormat = 'Y'): string
@@ -5317,7 +5312,6 @@ class Episciences_Paper
     /**
      * @param bool $strict : [true] only if the document has already been assigned (excepted for secretary and owner)
      * @return bool
-     * @throws JsonException
      * @throws Zend_Db_Statement_Exception
      */
 
@@ -5344,24 +5338,14 @@ class Episciences_Paper
     }
 
     /**
-     * @param $docId
-     * @return string | null
+     * File name of the paper's illustration (graphical abstract), see GraphicalAbstractRepository::find()
+     * for its text alternative and license.
+     *
+     * @param int|string $docId
      */
     public function getGraphical_abstract($docId): ?string
     {
-        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $query = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(`DOCUMENT`, " . $db->quote(self::JSON_PATH_ABS_FILE) . ")) FROM " . T_PAPERS . " WHERE DOCID = ?", [$docId]);
-        try {
-            foreach ($query->fetch() as $val) {
-                // JSON_UNQUOTE(JSON_EXTRACT()) returns the string "null" (not SQL NULL) when the JSON value itself is null
-                if (!is_null($val) && $val !== 'null') {
-                    return trim($val);
-                }
-            }
-        } catch (Zend_Db_Statement_Exception $e) {
-            return null;
-        }
-        return null;
+        return GraphicalAbstractRepository::find((int)$docId)?->file;
     }
 
     public function updateDocument(): Episciences_Paper

@@ -38,6 +38,7 @@
 - writing outside the project directory is forbidden, even in /tmp
 - when asked to write a plan, write it in the ./tmp/ directory of the project
 - when creating new code files, chmod 644
+- never use `git add -A` or `git add .`: list the files to commit explicitly (`git add path/to/file ...`)
 
 # Directories to ignore
 - `data/`

@@ -312,4 +312,11 @@ return [
 
     // Activity timeline filters
     'activity_timeline_events_shown' => 'event(s) shown',
+
+    // Illustration or graphical abstract
+    'Le texte alternatif est obligatoire.' => 'The alternative text is required.',
+    'Veuillez corriger les erreurs du formulaire.' => 'Please correct the errors in the form.',
+    'Une erreur est survenue, veuillez réessayer.' => 'An error occurred, please try again.',
+    'Enregistrement en cours…' => 'Saving…',
+    'Voulez-vous supprimer cette illustration ?' => 'Do you want to delete this illustration?',
 ];

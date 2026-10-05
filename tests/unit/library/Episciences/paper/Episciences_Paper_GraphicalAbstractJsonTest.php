@@ -7,11 +7,11 @@ use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
 /**
- * Unit tests for the graphical_abstract_file key of the JSON v2 paper export.
+ * Unit tests for the graphical_abstract_* keys (file, alt, license) of the JSON v2 paper export.
  *
- * The value is carried over from the stored PAPERS.DOCUMENT column, which
- * AdministrategraphabstractController writes to directly (JSON_SET on upload,
- * JSON_REMOVE on delete). It must be null, not '', when there is no file.
+ * The values are carried over from the stored PAPERS.DOCUMENT column, which
+ * GraphicalAbstractRepository writes to directly. They must be null, not '',
+ * when absent.
  *
  * All tests are DB-free: the value is read from the in-memory document set
  * through Episciences_Paper::setDocument().
@@ -26,6 +26,14 @@ final class Episciences_Paper_GraphicalAbstractJsonTest extends TestCase
         $method->setAccessible(true);
 
         return $method->invoke($paper);
+    }
+
+    private function callGetStoredCurrentStringToJson(Episciences_Paper $paper, string $key): ?string
+    {
+        $method = new ReflectionMethod(Episciences_Paper::class, 'getStoredCurrentStringToJson');
+        $method->setAccessible(true);
+
+        return $method->invoke($paper, $key);
     }
 
     /**
@@ -90,5 +98,37 @@ final class Episciences_Paper_GraphicalAbstractJsonTest extends TestCase
         $paper->setDocument(json_encode(['journal' => []], JSON_THROW_ON_ERROR));
 
         self::assertNull($this->callGetGraphicalAbstractFileToJson($paper));
+    }
+
+    public function testCarriesOverTheAltAndTheLicense(): void
+    {
+        $paper = $this->makePaperWithCurrent([
+            'graphical_abstract_file' => 'graphical_abstract.png',
+            'graphical_abstract_alt' => ' A chart ',
+            'graphical_abstract_license' => 'CC BY 4.0',
+        ]);
+
+        self::assertSame('A chart', $this->callGetStoredCurrentStringToJson($paper, 'graphical_abstract_alt'));
+        self::assertSame('CC BY 4.0', $this->callGetStoredCurrentStringToJson($paper, 'graphical_abstract_license'));
+    }
+
+    public function testReturnsNullForAnAbsentOrNonScalarAltOrLicense(): void
+    {
+        $paper = $this->makePaperWithCurrent([
+            'graphical_abstract_file' => 'graphical_abstract.png',
+            'graphical_abstract_alt' => ['unexpected'],
+        ]);
+
+        self::assertNull($this->callGetStoredCurrentStringToJson($paper, 'graphical_abstract_alt'));
+        self::assertNull($this->callGetStoredCurrentStringToJson($paper, 'graphical_abstract_license'));
+    }
+
+    public function testToJsonExportsTheThreeKeys(): void
+    {
+        $source = (string)file_get_contents(dirname(APPLICATION_PATH) . '/library/Episciences/Paper.php');
+
+        foreach (['graphical_abstract_file', 'graphical_abstract_alt', 'graphical_abstract_license'] as $key) {
+            self::assertStringContainsString("'$key' => \$this->get", $source, "toJson() must export $key");
+        }
     }
 }
