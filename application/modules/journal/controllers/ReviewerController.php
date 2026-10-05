@@ -45,7 +45,7 @@ class ReviewerController extends PaperDefaultController
 
             $tmpUser = Episciences_TmpUsersManager::findById($assignment->getUid());
 
-            if (md5($tmpUser->getEmail()) !== $request->getParam('tmp')) {
+            if (!$tmpUser || md5($tmpUser->getEmail()) !== $request->getParam('tmp')) {
                 $this->view->errors = 'Lien non valide; le jeton transmis dans la requête est erroné.';
                 return;
             }
