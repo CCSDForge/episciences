@@ -80,5 +80,87 @@ class Episciences_ToolsTest extends TestCase
         );
     }
 
+
+    private function makeAttachmentSandbox(): array
+    {
+        $root = sys_get_temp_dir() . '/attach_' . bin2hex(random_bytes(4));
+        mkdir($root . '/base', 0755, true);
+        file_put_contents($root . '/base/report 1.pdf', 'ok');
+        file_put_contents($root . '/base/é.txt', 'ok');
+        file_put_contents($root . '/secret.txt', 'secret');
+        mkdir($root . '/base/sub');
+        file_put_contents($root . '/base/sub/x.txt', 'x');
+
+        return [$root, $root . '/base/'];
+    }
+
+    private function removeSandbox(string $root): void
+    {
+        foreach (new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        ) as $f) {
+            $f->isLink() || $f->isFile() ? unlink($f->getPathname()) : rmdir($f->getPathname());
+        }
+        rmdir($root);
+    }
+
+    public function testResolveAttachmentPathAcceptsFlatExistingFiles(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            self::assertSame($base . 'report 1.pdf', Episciences_Tools::resolveAttachmentPath($base, 'report 1.pdf'));
+            self::assertSame($base . 'é.txt', Episciences_Tools::resolveAttachmentPath($base, 'é.txt'));
+            // base directory without trailing separator
+            self::assertSame($base . 'report 1.pdf', Episciences_Tools::resolveAttachmentPath(rtrim($base, '/'), 'report 1.pdf'));
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
+
+    public function testResolveAttachmentPathRejectsTraversalAndInvalidNames(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            $invalid = [
+                '../secret.txt', '..', '.', '', 'sub/x.txt', '/etc/passwd', '..\\secret.txt',
+                "report 1.pdf\0.txt", 'nonexistent.txt', 'sub', ['../secret.txt'], null, 12,
+            ];
+            foreach ($invalid as $name) {
+                self::assertNull(
+                    Episciences_Tools::resolveAttachmentPath($base, $name),
+                    'Must reject: ' . var_export($name, true)
+                );
+            }
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
+
+    public function testResolveAttachmentPathRejectsSymlinkOutsideBase(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            symlink($root . '/secret.txt', $base . 'link.txt');
+            self::assertNull(Episciences_Tools::resolveAttachmentPath($base, 'link.txt'));
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
+
+    public function testResolveAttachmentPathRejectsMissingBaseDirectory(): void
+    {
+        self::assertNull(Episciences_Tools::resolveAttachmentPath('/nonexistent/dir/', 'a.txt'));
+    }
+
+    public function testMailAttachmentCallersUseResolveAttachmentPath(): void
+    {
+        $root = dirname(__DIR__, 4) . '/application/modules/';
+        foreach (['journal/controllers/AdministratemailController.php', 'common/controllers/PaperDefaultController.php'] as $file) {
+            $source = file_get_contents($root . $file);
+            self::assertStringContainsString('Episciences_Tools::resolveAttachmentPath(', $source, $file);
+            self::assertStringNotContainsString('$filepath = $path . $attachment;', $source, $file);
+        }
+    }
 }
 

@@ -516,8 +516,8 @@ class AdministratemailController extends Episciences_Controller_Action
             $attachments = Episciences_Tools::arrayFilterEmptyValues($post[Episciences_Mail_Send::ATTACHMENTS]);
             $path = Episciences_Tools::getAttachmentsPath();
             foreach ($attachments as $attachment) {
-                $filepath = $path . $attachment;
-                if (file_exists($filepath)) {
+                $filepath = Episciences_Tools::resolveAttachmentPath($path, $attachment);
+                if ($filepath !== null) {
                     $mail->addAttachedFile($filepath);
                 }
             }
