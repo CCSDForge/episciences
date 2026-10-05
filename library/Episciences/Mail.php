@@ -448,7 +448,7 @@ class Episciences_Mail extends Zend_Mail
         } else {
             $body = $this->replaceTags($this->getRawBody());
         }
-        
+
         return $body ? htmlspecialchars($body) : '';
     }
 
@@ -1001,7 +1001,6 @@ class Episciences_Mail extends Zend_Mail
 
     public function setSubject($subject = '', $charset = null, $encoding = Zend_Mime::ENCODING_QUOTEDPRINTABLE): void
     {
-        $subject = htmlspecialchars($subject);
         $subject = $this->replaceTags($subject);
         parent::setSubject($subject);
     }
