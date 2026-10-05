@@ -108,7 +108,8 @@ class VolumeController extends Zend_Controller_Action
         $params = $request->getPost('params');
         $id = (int) $params['id'] ?? $request->getQuery('id');
 
-        $respond = Episciences_VolumesManager::delete($id);
+        // Only volumes of the current journal can be deleted
+        $respond = Episciences_VolumesManager::find($id, RVID) ? Episciences_VolumesManager::delete($id) : false;
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;

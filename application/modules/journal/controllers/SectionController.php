@@ -157,7 +157,8 @@ class SectionController extends Zend_Controller_Action
         if ($isAjax){
             $params = $request->getPost('params');
             $id = ($params['id']) ?: $request->getQuery('id');
-            $respond = Episciences_SectionsManager::delete($id);
+            // Only sections of the current journal can be deleted
+            $respond = Episciences_SectionsManager::find((int) $id, RVID) ? Episciences_SectionsManager::delete((int) $id) : false;
         }
 
         $this->_helper->viewRenderer->setNoRender();
