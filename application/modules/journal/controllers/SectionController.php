@@ -157,7 +157,8 @@ class SectionController extends Zend_Controller_Action
         if ($isAjax){
             $params = $request->getPost('params');
             $id = ($params['id']) ?: $request->getQuery('id');
-            $respond = Episciences_SectionsManager::delete($id);
+            // Only sections of the current journal can be deleted
+            $respond = Episciences_SectionsManager::find((int) $id, RVID) ? Episciences_SectionsManager::delete((int) $id) : false;
         }
 
         $this->_helper->viewRenderer->setNoRender();
@@ -193,7 +194,12 @@ class SectionController extends Zend_Controller_Action
             return false;
         }
 
-        $section = Episciences_SectionsManager::find($sid);
+        $section = Episciences_SectionsManager::find($sid, RVID);
+        if (!$section) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            return false;
+        }
         $currentEditors = $section->getEditors();
         $this->view->editorsForm = Episciences_SectionsManager::getEditorsForm($currentEditors);
 
@@ -216,7 +222,10 @@ class SectionController extends Zend_Controller_Action
             $editors = ($submittedEditors) ? array_map('intval', $submittedEditors) : [];
 
             // Rédacteurs déjà assignés
-            $section = Episciences_SectionsManager::find($sid);
+            $section = Episciences_SectionsManager::find($sid, RVID);
+            if (!$section) {
+                return;
+            }
             $currentEditors = ($section->getEditors()) ? array_keys($section->getEditors()) : [];
 
             // Tri des rédacteurs ajoutés des rédacteurs supprimés
@@ -253,7 +262,12 @@ class SectionController extends Zend_Controller_Action
         $params = $request->getPost();
         $sid = $params['sid'];
 
-        $section = Episciences_SectionsManager::find($sid);
+        $section = Episciences_SectionsManager::find($sid, RVID);
+        if (!$section) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
         $editors = $section->getEditors();
 
         $this->view->editors = $editors;

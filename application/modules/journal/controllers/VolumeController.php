@@ -108,7 +108,8 @@ class VolumeController extends Zend_Controller_Action
         $params = $request->getPost('params');
         $id = (int) $params['id'] ?? $request->getQuery('id');
 
-        $respond = Episciences_VolumesManager::delete($id);
+        // Only volumes of the current journal can be deleted
+        $respond = Episciences_VolumesManager::find($id, RVID) ? Episciences_VolumesManager::delete($id) : false;
         $this->_helper->viewRenderer->setNoRender();
         $this->_helper->getHelper('layout')->disableLayout();
         echo $respond;
@@ -149,7 +150,12 @@ class VolumeController extends Zend_Controller_Action
             return false;
         }
 
-        $volume = Episciences_VolumesManager::find($vid);
+        $volume = Episciences_VolumesManager::find($vid, RVID);
+        if (!$volume) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            return false;
+        }
         $currentEditors = $volume->getEditors();
         $formData = Episciences_VolumesManager::getEditorsForm($currentEditors);
 
@@ -181,7 +187,10 @@ class VolumeController extends Zend_Controller_Action
             $editors = ($submittedEditors) ? array_map('intval', $submittedEditors) : [];
 
             // Rédacteurs déjà assignés
-            $volume = Episciences_VolumesManager::find($vid);
+            $volume = Episciences_VolumesManager::find($vid, RVID);
+            if (!$volume) {
+                return;
+            }
             $currentEditors = ($volume->getEditors()) ? array_keys($volume->getEditors()) : [];
 
             // Tri des rédacteurs ajoutés des rédacteurs supprimés
@@ -216,7 +225,12 @@ class VolumeController extends Zend_Controller_Action
         $params = $request->getPost();
         $vid = $params['vid'];
 
-        $volume = Episciences_VolumesManager::find($vid);
+        $volume = Episciences_VolumesManager::find($vid, RVID);
+        if (!$volume) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
+            return;
+        }
         $editors = $volume->getEditors();
 
         $this->view->editors = $editors;
