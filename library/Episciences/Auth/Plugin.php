@@ -65,7 +65,8 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
      *
      * An exact match wins. Otherwise the names are compared in their dispatcher-normalized form, so that
      * a case or delimiter variant of a protected action is checked against the rules of that action.
-     * When nothing matches, the raw "controller-action" key is returned (unknown resource).
+     * When nothing matches, or when several resources match (ambiguous), the raw "controller-action" key
+     * is returned (unknown resource), so that the request fails closed.
      */
     public function resolveResource(string $controller, string $action): string
     {
@@ -74,15 +75,38 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
             return $raw;
         }
 
-        $wanted = self::normalizeName($controller) . '-' . self::normalizeName($action);
+        $matches = [];
         foreach ($this->_acl->getResources() as $candidate) {
-            $parts = explode('-', (string)$candidate, 2);
-            if (count($parts) === 2 && self::normalizeName($parts[0]) . '-' . self::normalizeName($parts[1]) === $wanted) {
-                return (string)$candidate;
+            if ($this->matchesRequest((string)$candidate, $controller, $action)) {
+                $matches[] = (string)$candidate;
             }
         }
 
-        return $raw;
+        return count($matches) === 1 ? $matches[0] : $raw;
+    }
+
+    /**
+     * Check whether an ACL resource key ("controller-action") matches the request once both sides are
+     * dispatcher-normalized. Every hyphen is tried as the controller/action boundary, because both parts
+     * may themselves contain hyphens.
+     */
+    private function matchesRequest(string $resource, string $controller, string $action): bool
+    {
+        $wantedController = self::normalizeName($controller);
+        $wantedAction = self::normalizeName($action);
+
+        $offset = 0;
+        while (($pos = strpos($resource, '-', $offset)) !== false) {
+            if (
+                self::normalizeName(substr($resource, 0, $pos)) === $wantedController
+                && self::normalizeName(substr($resource, $pos + 1)) === $wantedAction
+            ) {
+                return true;
+            }
+            $offset = $pos + 1;
+        }
+
+        return false;
     }
 
     public function getAcl(): ?Episciences_Acl

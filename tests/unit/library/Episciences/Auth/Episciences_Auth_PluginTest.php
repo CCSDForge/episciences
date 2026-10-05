@@ -14,7 +14,7 @@ class Episciences_Auth_PluginTest extends TestCase
     protected function setUp(): void
     {
         $acl = new Zend_Acl();
-        foreach (['user-findusers', 'api-openaire-metrics', 'file-index'] as $resource) {
+        foreach (['user-findusers', 'api-openaire-metrics', 'file-index', 'my-ctrl-index', 'dup-openaire-metrics', 'dup-openairemetrics'] as $resource) {
             $acl->addResource(new Zend_Acl_Resource($resource));
         }
 
@@ -49,6 +49,21 @@ class Episciences_Auth_PluginTest extends TestCase
             'dot and underscore variant' => ['user', 'find.users', 'user-findusers'],
             'camel case for hyphenated key' => ['api', 'openaireMetrics', 'api-openaire-metrics'],
         ];
+    }
+
+    public function testHyphenatedControllerVariantResolves(): void
+    {
+        self::assertSame('my-ctrl-index', $this->plugin->resolveResource('myCtrl', 'index'));
+    }
+
+    public function testAmbiguousVariantFailsClosed(): void
+    {
+        self::assertSame('dup-OpenaireMetrics', $this->plugin->resolveResource('dup', 'OpenaireMetrics'));
+    }
+
+    public function testExactMatchWinsOverAmbiguity(): void
+    {
+        self::assertSame('dup-openairemetrics', $this->plugin->resolveResource('dup', 'openairemetrics'));
     }
 
     public function testUnknownResourceKeepsRawKey(): void
