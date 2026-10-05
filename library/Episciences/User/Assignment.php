@@ -398,9 +398,11 @@ class Episciences_User_Assignment
         if ($this->isTmp_user()) {
             $tmpUser = Episciences_TmpUsersManager::findById($fromUid);
 
-            if(!$tmpUser) {
+            if (!$tmpUser) {
                 throw new UserNotFoundException($fromUid);
             }
+
+            return $tmpUser;
         }
 
         $fromUser = new Episciences_User();
