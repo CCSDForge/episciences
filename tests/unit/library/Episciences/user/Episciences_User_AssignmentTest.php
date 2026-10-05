@@ -7,7 +7,6 @@ use Episciences_TmpUsersManager;
 use Episciences_User;
 use Episciences_User_Assignment;
 use PHPUnit\Framework\TestCase;
-use TypeError;
 
 /**
  * Unit tests for Episciences_User_Assignment
@@ -276,19 +275,12 @@ class Episciences_User_AssignmentTest extends TestCase
     }
 
     /**
-     * Confirmed bug: resolveFromUser() declares a strict return type of
-     * `Episciences_User|Episciences_User_Tmp`, but for a tmp-user assignment it
-     * returns whatever Episciences_TmpUsersManager::findById() yields — and that
-     * method returns the scalar `false` (not an object) when the tmp user row is
-     * not found. PHP therefore raises a TypeError instead of letting the caller
-     * (ReviewerController::checkAndProcessLinkedInvitation()) handle a graceful
-     * "not found" case.
-     *
-     * This test documents the current (buggy) behaviour. It should be updated
-     * (or removed) once resolveFromUser() is changed to handle the "not found"
-     * case without violating its own return type.
+     * For a tmp-user assignment whose recipient no longer exists,
+     * resolveFromUser() must throw a UserNotFoundException so the caller
+     * (ReviewerController::checkAndProcessLinkedInvitation()) can handle the
+     * "not found" case gracefully.
      */
-    public function testResolveFromUserThrowsTypeErrorWhenTmpUserIsNotFound(): void
+    public function testResolveFromUserThrowsUserNotFoundExceptionWhenTmpUserIsNotFound(): void
     {
         // Sanity check: this uid must not exist as a tmp user in the test DB.
         $this->assertFalse(Episciences_TmpUsersManager::findById(999999999));
