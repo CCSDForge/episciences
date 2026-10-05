@@ -161,11 +161,15 @@ class AdministratelinkeddataController extends Zend_Controller_Action
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
+        if (!$this->isAuthenticatedAjaxPost()) {
+            $this->denyLinkedDataChange();
+            return;
+        }
+
         $idLd = filter_var($request->getPost('id'), FILTER_SANITIZE_NUMBER_INT);
         $datasetInDb = Episciences_Paper_DatasetsManager::findById((int)$idLd);
         if (!$datasetInDb instanceof Episciences_Paper_Dataset) {
-            ob_clean();
-            echo json_encode([false], JSON_THROW_ON_ERROR);
+            $this->denyLinkedDataChange();
             return;
         }
 
@@ -205,14 +209,20 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
     }
 
+    private function isAuthenticatedAjaxPost(): bool
+    {
+        $request = $this->getRequest();
+
+        return $request->isXmlHttpRequest() && $request->isPost() && Episciences_Auth::isLogged();
+    }
+
     /**
      * Returns the paper of the current journal when the request is an AJAX POST
      * and the user is a secretary, an editor assigned to the paper, or its owner or a co-author.
      */
     private function getManageablePaper(int $docId): ?Episciences_Paper
     {
-        $request = $this->getRequest();
-        if (!$request->isXmlHttpRequest() || !$request->isPost() || !Episciences_Auth::isLogged()) {
+        if (!$this->isAuthenticatedAjaxPost()) {
             return null;
         }
 
@@ -270,7 +280,7 @@ class AdministratelinkeddataController extends Zend_Controller_Action
         $this->_helper->layout()->disableLayout();
         $this->_helper->viewRenderer->setNoRender();
         $ldId = (int)filter_var($request->getPost('ldId'), FILTER_SANITIZE_NUMBER_INT);
-        $datasetInDb = Episciences_Paper_DatasetsManager::findById($ldId);
+        $datasetInDb = $this->isAuthenticatedAjaxPost() ? Episciences_Paper_DatasetsManager::findById($ldId) : null;
         // The paper is derived from the stored dataset, never from the request
         $paper = $datasetInDb instanceof Episciences_Paper_Dataset ? $this->getManageablePaper($datasetInDb->getDocId()) : null;
 
