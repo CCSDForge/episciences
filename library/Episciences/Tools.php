@@ -1807,6 +1807,19 @@ class Episciences_Tools
         return $baseDir . $name;
     }
 
+    /**
+     * Keep only the attachment names that resolve inside the attachments directory
+     * (see resolveAttachmentPath()). Keys are preserved.
+     *
+     * @param string $baseDir attachments directory
+     * @param array<mixed> $names names submitted by the client
+     * @return array<string> accepted names
+     */
+    public static function filterAttachmentNames(string $baseDir, array $names): array
+    {
+        return array_filter($names, static fn($name) => self::resolveAttachmentPath($baseDir, $name) !== null);
+    }
+
     public static function startsWithNumber(string $string): bool
     {
         return $string !== '' && ctype_digit($string[0]);
