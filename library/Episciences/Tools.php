@@ -1817,7 +1817,7 @@ class Episciences_Tools
      */
     public static function filterAttachmentNames(string $baseDir, array $names): array
     {
-        return array_filter($names, static fn($name) => self::resolveAttachmentPath($baseDir, $name) !== null);
+        return array_values(array_filter($names, static fn($name) => self::resolveAttachmentPath($baseDir, $name) !== null));
     }
 
     public static function startsWithNumber(string $string): bool

@@ -159,7 +159,7 @@ class Episciences_ToolsTest extends TestCase
         try {
             $names = [0 => 'report 1.pdf', 1 => '../secret.txt', 2 => '', 3 => 'é.txt', 4 => 'sub/x.txt', 5 => ['a']];
             self::assertSame(
-                [0 => 'report 1.pdf', 3 => 'é.txt'],
+                [0 => 'report 1.pdf', 1 => 'é.txt'],
                 Episciences_Tools::filterAttachmentNames($base, $names)
             );
             self::assertSame([], Episciences_Tools::filterAttachmentNames($base, []));
