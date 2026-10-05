@@ -674,4 +674,54 @@ final class Episciences_MailTest extends TestCase
         self::assertSame($baseUrl . '/administratepaper/view/id/42', $tags[Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL]);
         self::assertSame($baseUrl . '/paper/rating/id/42', $tags[Episciences_Mail_Tags::TAG_PAPER_RATING_URL]);
     }
+
+    // =========================================================================
+    // isInHistory: a single mail log entry is scoped like the history list
+    // =========================================================================
+
+    public function testIsInHistoryRejectsNonPositiveIdWithoutQuerying(): void
+    {
+        self::assertFalse($this->mail->isInHistory(0, [1, 2]));
+        self::assertFalse($this->mail->isInHistory(-5, [1, 2]));
+    }
+
+    private function assembleHistoryEntryQuery(int $id, array $docIds, array $options = []): string
+    {
+        $this->mail->setRvid(3);
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getHistoryEntryQuery');
+        $method->setAccessible(true);
+        return $method->invoke($this->mail, $id, $docIds, $options)->assemble();
+    }
+
+    public function testHistoryEntryQueryIsScopedByIdAndJournal(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, [10, 11]);
+
+        self::assertStringContainsString('(ID = 42)', $sql);
+        self::assertStringContainsString('(RVID = 3)', $sql);
+        self::assertStringContainsString('DOCID IN (10,11)', $sql);
+    }
+
+    public function testHistoryEntryQueryStrictModeExcludesMailsWithoutDocument(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, [10], ['strict' => true]);
+
+        self::assertStringNotContainsString('DOCID IS NULL', $sql);
+        self::assertStringContainsString('DOCID IN (10)', $sql);
+    }
+
+    public function testHistoryEntryQueryWithoutAllowedDocumentsOnlyKeepsOwnOrGeneralMails(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, []);
+
+        self::assertStringNotContainsString('DOCID IN', $sql);
+        self::assertStringContainsString('DOCID IS NULL OR UID', $sql);
+    }
+
+    public function testHistoryEntryQueryIgnoresSearchFilter(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, [10], ['search' => 'anything']);
+
+        self::assertStringNotContainsString('LIKE', $sql);
+    }
 }
