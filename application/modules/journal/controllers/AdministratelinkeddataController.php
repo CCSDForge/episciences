@@ -161,22 +161,27 @@ class AdministratelinkeddataController extends Zend_Controller_Action
 
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
-        if ((!$request->isXmlHttpRequest() || !$request->isPost()) && (Episciences_Auth::isAllowedToManagePaper() || Episciences_Auth::isAuthor())) {
-            ob_clean();
-            echo json_encode([false], JSON_THROW_ON_ERROR);
-            $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
+        if (!$request->isXmlHttpRequest() || !$request->isPost()) {
+            $this->denyLinkedDataRemoval();
             return;
         }
 
-        $docId = (int)$request->getPost('docId');
-        $paperId = filter_var(trim($request->getPost('paperId') ?? ''), FILTER_SANITIZE_SPECIAL_CHARS);
         $idLd = filter_var($request->getPost('id'), FILTER_SANITIZE_NUMBER_INT);
-        $datasetInDb = Episciences_Paper_DatasetsManager::findById($idLd);
+        $datasetInDb = Episciences_Paper_DatasetsManager::findById((int)$idLd);
         if (!$datasetInDb instanceof Episciences_Paper_Dataset) {
             ob_clean();
             echo json_encode([false], JSON_THROW_ON_ERROR);
             return;
         }
+
+        // The paper is derived from the stored dataset, never from the request
+        $docId = $datasetInDb->getDocId();
+        $paper = Episciences_PapersManager::get($docId, false, RVID);
+        if (!$paper instanceof Episciences_Paper || !$this->canManageLinkedData($paper)) {
+            $this->denyLinkedDataRemoval();
+            return;
+        }
+        $paperId = (string)$paper->getPaperid();
         $typeLd = htmlspecialchars($datasetInDb->getName() ?? '', ENT_QUOTES, 'UTF-8');
         $valueLd = htmlspecialchars($datasetInDb->getValue(), ENT_QUOTES, 'UTF-8');
         if (($ds = $datasetInDb->getIdPaperDatasetsMeta()) !== null){
@@ -194,6 +199,27 @@ class AdministratelinkeddataController extends Zend_Controller_Action
             echo json_encode([false], JSON_THROW_ON_ERROR);
         }
     $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_SUCCESS)->addMessage('Suppression de la donnée liée bien prise en compte');
+    }
+
+    private function denyLinkedDataRemoval(): void
+    {
+        ob_clean();
+        echo json_encode([false], JSON_THROW_ON_ERROR);
+        $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)->addMessage('Erreur: modification non autorisée');
+    }
+
+    /**
+     * Secretaries, editors assigned to the paper, and its owner or co-authors.
+     */
+    private function canManageLinkedData(Episciences_Paper $paper): bool
+    {
+        if (!Episciences_Auth::isLogged()) {
+            return false;
+        }
+
+        return Episciences_Auth::isSecretary()
+            || $paper->isEditor((int)Episciences_Auth::getUid())
+            || $paper->isOwnerOrCoAuthor();
     }
 
     public function ajaxgetldformAction()
