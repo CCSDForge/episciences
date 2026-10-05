@@ -1,0 +1,47 @@
+<?php if (
+        !$this->invitation->hasExpired() &&
+        !$this->invitation->isAnswered() &&
+        !$this->invitation->isCancelled()
+) : ?>
+
+    <div class="form-actions text-center">
+        <?php if ($this->user_form) : ?>
+            <button id="accept-button" type="button" class="btn btn-success" onclick="show_user_form()">
+                <?= $this->translate("J'accepte de relire cet article") ?>
+            </button>
+        <?php else : ?>
+            <form method="post" style="display:inline">
+                <button name="submitaccept" id="submitaccept" type="submit"
+                        class="btn btn-success"><?= $this->translate("J'accepte de relire cet article") ?></button>
+            </form>
+        <?php endif ?>
+        <button id="refuse-button" type="button" class="btn btn-danger"
+                onclick="refuseInvitation()"><?= $this->translate("Je refuse de relire cet article") ?></button>
+    </div>
+
+    <?php
+    if ($this->user_form) {
+        echo $this->user_form;
+    }
+    ?>
+
+    <div id="refuse_form" style="display: none">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h2 class="panel-title"><?= $this->translate('Détails de la réponse') ?></h2>
+            </div>
+            <div class="panel-body in">
+                <p class="text-danger">
+                    <strong><?= $this->translate("Vous ne souhaitez pas relire cet article") ?></strong></p>
+                <?= $this->refuse_form; ?>
+            </div>
+        </div>
+    </div>
+
+    <?php if ($this->invalid_form) : ?>
+        <script>
+            display_errors();
+        </script>
+    <?php endif; ?>
+
+<?php endif; // endif (!hasExpired && !isAnswered) ?>
