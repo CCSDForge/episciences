@@ -287,6 +287,12 @@ class Episciences_User extends Ccsd_User_Models_User
             $select->where($where);
             $select->limit(25);
             $result = $casDb->fetchAll($select);
+
+            // SCREEN_NAME lives in the local table, not in the CAS one
+            foreach ($result as &$row) {
+                $row['SCREEN_NAME'] = $users[$row['UID']]['SCREEN_NAME'] ?? '';
+            }
+            unset($row);
         }
 
         return ($result);

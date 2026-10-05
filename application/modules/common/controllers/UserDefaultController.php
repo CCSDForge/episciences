@@ -1717,7 +1717,7 @@ class UserDefaultController extends Zend_Controller_Action
         if ($request->isXmlHttpRequest()) {
             $users = [];
             foreach (Episciences_User::filterUsers($query, false) ?? [] as $user) {
-                $name = trim($user['FIRSTNAME'] . ' ' . $user['LASTNAME']);
+                $name = $user['SCREEN_NAME'] !== '' ? $user['SCREEN_NAME'] : trim($user['FIRSTNAME'] . ' ' . $user['LASTNAME']);
                 $users[] = [
                     'uid' => $user['UID'],
                     'name' => $name,
