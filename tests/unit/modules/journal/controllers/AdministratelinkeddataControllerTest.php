@@ -40,10 +40,16 @@ class AdministratelinkeddataControllerTest extends TestCase
     {
         $method = $this->extractMethod('removeldAction');
 
-        $this->assertStringContainsString(
-            "trim(\$request->getPost('paperId') ?? '')",
+        $this->assertStringNotContainsString(
+            "getPost('paperId')",
             $method,
-            'removeldAction must use null coalescing operator with trim() to avoid PHP 8.1 deprecation'
+            'removeldAction must derive the paper from the stored dataset, never from the request'
+        );
+
+        $this->assertStringContainsString(
+            '$datasetInDb->getDocId()',
+            $method,
+            'removeldAction must take the docId from the stored dataset'
         );
 
         $this->assertStringContainsString(
