@@ -874,8 +874,10 @@ class Episciences_Mail extends Zend_Mail
      */
     private function dataTableMailsSearchQuery(Zend_Db_Select $select, string $word = ''): Zend_Db_Select
     {
-        $where = "SUBJECT LIKE '%$word%' OR `TO` LIKE '%$word%' OR CC LIKE '%$word%' OR BCC LIKE '%$word%' OR CONVERT(`WHEN`, CHAR) LIKE '%$word%'";
-        $select->where($where);
+        // Escape LIKE wildcards, then let the adapter quote the pattern (same placeholder for each column)
+        $pattern = '%' . addcslashes($word, '%_\\') . '%';
+        $where = 'SUBJECT LIKE ? OR `TO` LIKE ? OR CC LIKE ? OR BCC LIKE ? OR CONVERT(`WHEN`, CHAR) LIKE ?';
+        $select->where($where, $pattern);
         return $select;
     }
 
