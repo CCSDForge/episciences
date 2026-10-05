@@ -196,6 +196,8 @@ class SectionController extends Zend_Controller_Action
 
         $section = Episciences_SectionsManager::find($sid, RVID);
         if (!$section) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
             return false;
         }
         $currentEditors = $section->getEditors();
@@ -262,6 +264,8 @@ class SectionController extends Zend_Controller_Action
 
         $section = Episciences_SectionsManager::find($sid, RVID);
         if (!$section) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
             return;
         }
         $editors = $section->getEditors();

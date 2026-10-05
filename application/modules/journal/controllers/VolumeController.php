@@ -152,6 +152,8 @@ class VolumeController extends Zend_Controller_Action
 
         $volume = Episciences_VolumesManager::find($vid, RVID);
         if (!$volume) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
             return false;
         }
         $currentEditors = $volume->getEditors();
@@ -225,6 +227,8 @@ class VolumeController extends Zend_Controller_Action
 
         $volume = Episciences_VolumesManager::find($vid, RVID);
         if (!$volume) {
+            $this->_helper->layout->disableLayout();
+            $this->_helper->viewRenderer->setNoRender();
             return;
         }
         $editors = $volume->getEditors();

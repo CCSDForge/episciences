@@ -97,6 +97,41 @@ final class JournalScopeGuardTest extends TestCase
     }
 
     /**
+     * The actions rendering a view must switch the rendering off before refusing an item of
+     * another journal, otherwise ZF1 renders a default script (or a full layout) instead of
+     * an empty answer.
+     *
+     * @dataProvider renderingActions
+     */
+    public function testRefusalStopsTheRenderingOfActionsWithAView(string $controller, string $action, string $variable): void
+    {
+        $method = $this->extractMethod(self::CONTROLLERS . $controller . '.php', $action);
+
+        $found = preg_match(
+            '/if \(!\$' . $variable . '\) \{(?<body>[^}]*)\}/',
+            $method,
+            $matches
+        );
+        self::assertSame(1, $found, "$controller::$action must refuse an unknown $variable");
+        self::assertStringContainsString('disableLayout()', $matches['body'], "$controller::$action must disable the layout");
+        self::assertStringContainsString('setNoRender()', $matches['body'], "$controller::$action must disable the rendering");
+        self::assertMatchesRegularExpression('/\breturn\b/', $matches['body'], "$controller::$action must stop");
+    }
+
+    /**
+     * @return array<string, array{string, string, string}>
+     */
+    public static function renderingActions(): array
+    {
+        return [
+            'volume editors form' => ['VolumeController', 'editorsformAction', 'volume'],
+            'volume display editors' => ['VolumeController', 'displayeditorsAction', 'volume'],
+            'section editors form' => ['SectionController', 'editorsformAction', 'section'],
+            'section display editors' => ['SectionController', 'displayeditorsAction', 'section'],
+        ];
+    }
+
+    /**
      * @return array<string, array{string, string}>
      */
     public static function unknownItemActions(): array
