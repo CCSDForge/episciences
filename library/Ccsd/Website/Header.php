@@ -264,6 +264,26 @@ class Ccsd_Website_Header
     }
 
     /**
+     * Escape a value for HTML text and attribute contexts
+     */
+    private static function esc(mixed $value): string
+    {
+        return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    /**
+     * Escape a link target, dropping any scheme other than http(s) and mailto
+     */
+    private static function safeHref(mixed $value): string
+    {
+        $value = trim((string)$value);
+        if (preg_match('/^[a-z][a-z0-9+.\-]*:/i', $value) && !preg_match('/^(https?|mailto):/i', $value)) {
+            return '';
+        }
+        return self::esc($value);
+    }
+
+    /**
      * Création du fichier en-tête en HTML
      */
     public function createHeader()
@@ -271,24 +291,24 @@ class Ccsd_Website_Header
         foreach ($this->_languages as $lang) {
             $content = "<table width=\"100%\" cellpadding=\"0\" style=\"position:relative;\">\n<tr>\n";
             foreach ($this->_logos as $logo) {
-                $content .= "<td align=\"" . $logo['align'] . "\">";
+                $content .= "<td align=\"" . self::esc($logo['align']) . "\">";
                 if ($logo['type'] == self::LOGO_IMG) {
                     if ($logo['img_href'] != "") {
-                        $content .= "<a href=\"" . $logo['img_href'] . "\" border=\"0\" target=\"_self\">";
+                        $content .= "<a href=\"" . self::safeHref($logo['img_href']) . "\" border=\"0\" target=\"_self\">";
                     }
                     if (substr($logo['img'], 0, 4) != "/img") {
                         $logo['img'] = $this->_publicUrl . $logo['img'];
                     }
 
-                    $content .= "<img src=\"" . $logo['img'] . "\"";
+                    $content .= "<img src=\"" . self::esc($logo['img']) . "\"";
                     if ($logo['img_width'] != "") {
-                        $content .= " width=\"" . $logo['img_width'] . "\"";
+                        $content .= " width=\"" . self::esc($logo['img_width']) . "\"";
                     }
                     if ($logo['img_height'] != "") {
-                        $content .= " height=\"" . $logo['img_height'] . "\"";
+                        $content .= " height=\"" . self::esc($logo['img_height']) . "\"";
                     }
                     if ($logo['img_alt'] != "") {
-                        $content .= " alt=\"" . $logo['img_alt'] . "\"";
+                        $content .= " alt=\"" . self::esc($logo['img_alt']) . "\"";
                     }
                     $content .= " />";
                     if ($logo['img_href'] != "") {
@@ -297,12 +317,12 @@ class Ccsd_Website_Header
                 } else {
                     $content .= "<span";
                     if ($logo['text_class'] != "") {
-                        $content .= " class=\"" . $logo['text_class'] . "\"";
+                        $content .= " class=\"" . self::esc($logo['text_class']) . "\"";
                     }
                     if ($logo['text_style'] != "") {
-                        $content .= " style=\"" . $logo['text_style'] . "\"";
+                        $content .= " style=\"" . self::esc($logo['text_style']) . "\"";
                     }
-                    $content .= ">" . (isset($logo['text'][$lang]) ? $logo['text'][$lang] : '') . "</span>";
+                    $content .= ">" . self::esc($logo['text'][$lang] ?? '') . "</span>";
                 }
                 $content .= "</td>\n";
             }
