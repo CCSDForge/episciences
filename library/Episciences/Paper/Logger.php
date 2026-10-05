@@ -267,6 +267,7 @@ class Episciences_Paper_Logger
         self::CODE_LD_ADDED                             => self::CATEGORY_EDITORIAL,
         self::CODE_LD_CHANGED                           => self::CATEGORY_EDITORIAL,
         self::CODE_LD_REMOVED                           => self::CATEGORY_EDITORIAL,
+        self::CODE_LICENSE_UPDATED                      => self::CATEGORY_EDITORIAL,
         self::CODE_MAIL_SENT                            => self::CATEGORY_COMMUNICATION,
         self::CODE_MAJOR_REVISION_REQUEST               => self::CATEGORY_EDITORIAL,
         self::CODE_MINOR_REVISION_REQUEST               => self::CATEGORY_EDITORIAL,
