@@ -194,7 +194,10 @@ class SectionController extends Zend_Controller_Action
             return false;
         }
 
-        $section = Episciences_SectionsManager::find($sid);
+        $section = Episciences_SectionsManager::find($sid, RVID);
+        if (!$section) {
+            return false;
+        }
         $currentEditors = $section->getEditors();
         $this->view->editorsForm = Episciences_SectionsManager::getEditorsForm($currentEditors);
 
@@ -217,7 +220,10 @@ class SectionController extends Zend_Controller_Action
             $editors = ($submittedEditors) ? array_map('intval', $submittedEditors) : [];
 
             // Rédacteurs déjà assignés
-            $section = Episciences_SectionsManager::find($sid);
+            $section = Episciences_SectionsManager::find($sid, RVID);
+            if (!$section) {
+                return;
+            }
             $currentEditors = ($section->getEditors()) ? array_keys($section->getEditors()) : [];
 
             // Tri des rédacteurs ajoutés des rédacteurs supprimés
@@ -254,7 +260,10 @@ class SectionController extends Zend_Controller_Action
         $params = $request->getPost();
         $sid = $params['sid'];
 
-        $section = Episciences_SectionsManager::find($sid);
+        $section = Episciences_SectionsManager::find($sid, RVID);
+        if (!$section) {
+            return;
+        }
         $editors = $section->getEditors();
 
         $this->view->editors = $editors;
