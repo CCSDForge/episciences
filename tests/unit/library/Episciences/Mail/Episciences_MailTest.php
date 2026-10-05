@@ -6,6 +6,7 @@ use Episciences_Mail;
 use Episciences_Mail_Tags;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use Zend_Db_Table_Abstract;
 
 /**
  * Unit tests for Episciences_Mail.
@@ -496,15 +497,31 @@ final class Episciences_MailTest extends TestCase
      * Regression: the DataTable search term must be bound (quoted by the adapter),
      * never interpolated into the WHERE clause.
      */
-    public function testDataTableMailsSearchQueryBindsSearchTerm(): void
+    public function testDataTableMailsSearchQueryQuotesSearchTerm(): void
     {
-        $method = new ReflectionMethod(Episciences_Mail::class, 'dataTableMailsSearchQuery');
-        $lines  = file($method->getFileName());
-        $source = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+        $sql = $this->buildSearchSql("'; DROP TABLE users; --");
 
-        self::assertStringNotContainsString('$word%', $source, 'Search term must not be interpolated into SQL');
-        self::assertStringContainsString('->where($where, $pattern)', $source);
-        self::assertStringContainsString("addcslashes(\$word, '%_\\\\')", $source);
+        // The quote is escaped by the adapter, so the term stays inside the string literal
+        self::assertStringContainsString("'%\\'; DROP TABLE users; --%'", $sql);
+        self::assertSame(5, substr_count($sql, 'LIKE'));
+    }
+
+    /**
+     * LIKE wildcards typed by the user must be matched literally.
+     */
+    public function testDataTableMailsSearchQueryEscapesLikeWildcards(): void
+    {
+        $sql = $this->buildSearchSql('50%_off');
+
+        self::assertSame(5, substr_count($sql, "'%50\\\\%\\\\_off%'"));
+    }
+
+    private function buildSearchSql(string $word): string
+    {
+        $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from('MAIL_LOG');
+        $method = new ReflectionMethod(Episciences_Mail::class, 'dataTableMailsSearchQuery');
+
+        return $method->invoke($this->mail, $select, $word)->assemble();
     }
 
     // =========================================================================
