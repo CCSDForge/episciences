@@ -121,19 +121,16 @@ class ReviewerController extends PaperDefaultController
             $isDeclinedToLInk = $hasDecision && $result['decision'] === 'declineToLink';
             $isAcceptedToLInk = $hasDecision && $result['decision'] === 'acceptToLink';
 
-            if ($isAcceptedToLInk || $isDeclinedToLInk) {
-
-                if ($isDeclinedToLInk) {
-                    $errorMsg = "Cette invitation ne vous est pas destinée";
-                    $this->view->errors = $errorMsg;
-
-                }
-
+            if ($isAcceptedToLInk) {
                 $this->view->displayLinkedInvitationForm = false;
+            } elseif ($isDeclinedToLInk) {
+                $this->view->errors = "Cette invitation ne vous est pas destinée";
+                $this->view->displayLinkedInvitationForm = false;
+                return;
             } else {
-                $errorMsg = "Cette invitation n'est pas liée au compte en cours";
-                $this->view->errors = $errorMsg;
+                $this->view->errors = "Cette invitation n'est pas liée au compte en cours";
                 $this->view->displayLinkedInvitationForm = true;
+                return;
             }
         }
 
