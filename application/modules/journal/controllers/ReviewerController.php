@@ -7,6 +7,14 @@ require_once APPLICATION_PATH . '/modules/common/controllers/PaperDefaultControl
 class ReviewerController extends PaperDefaultController
 {
     /**
+     * Fields of the account form accepted when creating an account from an invitation
+     */
+    private const ACCOUNT_CREATION_FIELDS = [
+        'USERNAME', 'PASSWORD', 'FIRSTNAME', 'LASTNAME', 'EMAIL', 'SCREEN_NAME', 'ORCID',
+        'AFFILIATIONS', 'SOCIAL_MEDIAS', 'WEB_SITES', 'BIOGRAPHY', 'LANGUEID',
+    ];
+
+    /**
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
      * @throws Zend_Db_Statement_Exception
@@ -329,7 +337,7 @@ class ReviewerController extends PaperDefaultController
 
     /**
      *  create new user (don't have an account yet)
-     * @param array $data
+     * @param array<string, mixed> $data
      * @return Episciences_Reviewer
      * @throws JsonException
      * @throws Zend_Db_Adapter_Exception
@@ -338,9 +346,22 @@ class ReviewerController extends PaperDefaultController
      */
     private function createNewReviewerWithoutAccountProcessing(array $data): Episciences_Reviewer
     {
+        // Only fields of the account form may reach the model: never let request data set UID, VALID, etc.
+        $allowedFields = array_flip(self::ACCOUNT_CREATION_FIELDS);
+        $data = array_filter(
+            $data,
+            static fn($key): bool => isset($allowedFields[strtoupper((string)$key)]),
+            ARRAY_FILTER_USE_KEY
+        );
+
         $user = new Episciences_Reviewer($data);
         $user->setTime_registered();
         $user->setValid(1);
+
+        if ($user->getUid()) { // must always be an INSERT
+            throw new RuntimeException('Unexpected UID while creating a new reviewer account');
+        }
+
         $uid = $user->save();
         $user->setUid($uid);
 
