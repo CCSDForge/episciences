@@ -87,6 +87,23 @@ class Ccsd_Website_HeaderTest extends TestCase
         self::assertStringNotContainsString('javascript:', $html);
     }
 
+    public function testObfuscatedLinkSchemeIsDropped(): void
+    {
+        foreach (["java\tscript:alert(1)", "java\nscript:alert(1)", " \x01javascript:alert(1)", "data:text/html,x"] as $href) {
+            $html = $this->render([
+                'type' => 'img',
+                'align' => 'left',
+                'img' => 'logo.png',
+                'img_href' => $href,
+                'img_width' => '',
+                'img_height' => '',
+                'img_alt' => '',
+            ]);
+
+            self::assertStringContainsString('<a href=""', $html, 'href kept: ' . json_encode($href));
+        }
+    }
+
     public function testRegularLinkIsKept(): void
     {
         $html = $this->render([

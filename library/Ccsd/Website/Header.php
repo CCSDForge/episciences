@@ -276,8 +276,10 @@ class Ccsd_Website_Header
      */
     private static function safeHref(mixed $value): string
     {
-        $value = trim((string)$value);
-        if (preg_match('/^[a-z][a-z0-9+.\-]*:/i', $value) && !preg_match('/^(https?|mailto):/i', $value)) {
+        $value = (string)$value;
+        // Browsers ignore whitespace and control characters inside a URL, so inspect the scheme without them
+        $normalized = preg_replace('/[\x00-\x20\x7f]+/', '', $value) ?? '';
+        if (preg_match('/^[a-z][a-z0-9+.\-]*:/i', $normalized) && !preg_match('/^(https?|mailto):/i', $normalized)) {
             return '';
         }
         return self::esc($value);
