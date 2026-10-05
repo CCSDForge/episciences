@@ -14,10 +14,10 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
         // Retrieve access rules
         $this->_acl = $this->getAcl();
         // Retrieve resource ID (to be modified)
-        $resource = $request->getControllerName() . '-' . $request->getActionName();
         if (APPLICATION_MODULE == OAI) {
             return true;
         }
+        $resource = $this->resolveResource($request->getControllerName(), $request->getActionName());
         if ($this->_acl->has($resource)) {
             // The requested resource exists
             if (!$this->isAllowed($resource)) {
@@ -48,6 +48,41 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
             $request->setControllerName('index');
             $request->setActionName('notfound');
         }
+    }
+
+    /**
+     * Normalize a controller or action name the way the dispatcher does before resolving the method
+     * (lowercase, non-alphanumeric characters removed), so that every spelling reaching the same
+     * action maps to the same string.
+     */
+    public static function normalizeName(string $name): string
+    {
+        return preg_replace('/[^a-z0-9]/', '', strtolower($name)) ?? '';
+    }
+
+    /**
+     * Return the ACL resource matching the requested controller/action.
+     *
+     * An exact match wins. Otherwise the names are compared in their dispatcher-normalized form, so that
+     * a case or delimiter variant of a protected action is checked against the rules of that action.
+     * When nothing matches, the raw "controller-action" key is returned (unknown resource).
+     */
+    public function resolveResource(string $controller, string $action): string
+    {
+        $raw = $controller . '-' . $action;
+        if ($this->_acl->has($raw)) {
+            return $raw;
+        }
+
+        $wanted = self::normalizeName($controller) . '-' . self::normalizeName($action);
+        foreach ($this->_acl->getResources() as $candidate) {
+            $parts = explode('-', (string)$candidate, 2);
+            if (count($parts) === 2 && self::normalizeName($parts[0]) . '-' . self::normalizeName($parts[1]) === $wanted) {
+                return (string)$candidate;
+            }
+        }
+
+        return $raw;
     }
 
     public function getAcl(): ?Episciences_Acl
