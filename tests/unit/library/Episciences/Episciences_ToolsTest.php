@@ -153,14 +153,39 @@ class Episciences_ToolsTest extends TestCase
         self::assertNull(Episciences_Tools::resolveAttachmentPath('/nonexistent/dir/', 'a.txt'));
     }
 
+    public function testFilterAttachmentNamesKeepsOnlyResolvableNames(): void
+    {
+        [$root, $base] = $this->makeAttachmentSandbox();
+        try {
+            $names = [0 => 'report 1.pdf', 1 => '../secret.txt', 2 => '', 3 => 'é.txt', 4 => 'sub/x.txt', 5 => ['a']];
+            self::assertSame(
+                [0 => 'report 1.pdf', 1 => 'é.txt'],
+                Episciences_Tools::filterAttachmentNames($base, $names)
+            );
+            self::assertSame([], Episciences_Tools::filterAttachmentNames($base, []));
+        } finally {
+            $this->removeSandbox($root);
+        }
+    }
+
     public function testMailAttachmentCallersUseResolveAttachmentPath(): void
     {
         $root = dirname(__DIR__, 4) . '/application/modules/';
-        foreach (['journal/controllers/AdministratemailController.php', 'common/controllers/PaperDefaultController.php'] as $file) {
+        foreach ([
+            'journal/controllers/AdministratemailController.php',
+            'common/controllers/PaperDefaultController.php',
+            'journal/controllers/AdministratepaperController.php',
+        ] as $file) {
             $source = file_get_contents($root . $file);
             self::assertStringContainsString('Episciences_Tools::resolveAttachmentPath(', $source, $file);
             self::assertStringNotContainsString('$filepath = $path . $attachment;', $source, $file);
         }
+    }
+
+    public function testCopyEditingAttachmentsAreFilteredBeforeUse(): void
+    {
+        $source = file_get_contents(dirname(__DIR__, 4) . '/application/modules/journal/controllers/AdministratepaperController.php');
+        self::assertStringContainsString('$attachments = Episciences_Tools::filterAttachmentNames(', $source);
     }
 }
 

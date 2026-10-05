@@ -1782,9 +1782,9 @@ class AdministratepaperController extends PaperDefaultController
 
         if (isset($post[Episciences_Mail_Send::ATTACHMENTS])) {
             $path = Episciences_Tools::getAttachmentsPath($paper->getDocid());
-            foreach ($post[Episciences_Mail_Send::ATTACHMENTS] as $attachment) {
-                $filepath = $path . $attachment;
-                if (file_exists($filepath)) {
+            foreach ((array)$post[Episciences_Mail_Send::ATTACHMENTS] as $attachment) {
+                $filepath = Episciences_Tools::resolveAttachmentPath($path, $attachment);
+                if ($filepath !== null) {
                     $mail->addAttachedFile($filepath);
                 }
             }
@@ -4271,7 +4271,10 @@ class AdministratepaperController extends PaperDefaultController
 
         if (!empty($post[Episciences_Mail_Send::ATTACHMENTS])) {
             // Errors : si une erreur s'est produite lors de la validation d'un fichier attaché par exemple(voir es.fileupload.js)
-            $attachments = Episciences_Tools::arrayFilterEmptyValues($post[Episciences_Mail_Send::ATTACHMENTS]);
+            $attachments = Episciences_Tools::filterAttachmentNames(
+                Episciences_Tools::getAttachmentsPath(),
+                (array)$post[Episciences_Mail_Send::ATTACHMENTS]
+            );
 
             if ($comment) {
                 try {
