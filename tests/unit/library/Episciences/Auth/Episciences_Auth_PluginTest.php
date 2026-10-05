@@ -71,6 +71,33 @@ class Episciences_Auth_PluginTest extends TestCase
         self::assertSame('foo-bar', $this->plugin->resolveResource('foo', 'bar'));
     }
 
+    public function testUnknownResourceIsDeniedForXhrRequests(): void
+    {
+        $request = new class extends Zend_Controller_Request_Http {
+            public function isXmlHttpRequest(): bool
+            {
+                return true;
+            }
+        };
+        $request->setControllerName('dup')->setActionName('OpenaireMetrics');
+
+        $this->plugin->denyUnknownResource($request);
+
+        self::assertSame(Ccsd_Auth_Plugin::FAIL_AUTH_CONTROLLER, $request->getControllerName());
+        self::assertSame(Ccsd_Auth_Plugin::FAIL_AUTH_ACTION, $request->getActionName());
+    }
+
+    public function testUnknownResourceIsNotFoundForRegularRequests(): void
+    {
+        $request = new Zend_Controller_Request_Http();
+        $request->setControllerName('foo')->setActionName('bar');
+
+        $this->plugin->denyUnknownResource($request);
+
+        self::assertSame('index', $request->getControllerName());
+        self::assertSame('notfound', $request->getActionName());
+    }
+
     public function testNormalizeName(): void
     {
         self::assertSame('findusers', Episciences_Auth_Plugin::normalizeName('Find-Users'));

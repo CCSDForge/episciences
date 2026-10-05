@@ -43,11 +43,27 @@ class Episciences_Auth_Plugin extends Ccsd_Auth_Plugin
                     $redirector->gotoUrl('user/edit');
                 }
             }
-        } else if (!$request->isXmlHttpRequest()) {
-            // The requested resource does not exist (not defined in the ACL)
-            $request->setControllerName('index');
-            $request->setActionName('notfound');
+        } else {
+            $this->denyUnknownResource($request);
         }
+    }
+
+    /**
+     * The requested resource is not defined in the ACL (or is ambiguous): never let it reach the
+     * dispatcher unchecked, whatever the request type.
+     */
+    public function denyUnknownResource(Zend_Controller_Request_Abstract $request): void
+    {
+        if ($request instanceof Zend_Controller_Request_Http && $request->isXmlHttpRequest()) {
+            $request->setControllerName(self::FAIL_AUTH_CONTROLLER);
+            $request->setActionName(self::FAIL_AUTH_ACTION);
+            $request->setParam('error_message', "Accès refusé");
+            $request->setParam('error_description', "Vous ne disposez pas des droits nécessaires pour accéder à cette page.");
+            return;
+        }
+
+        $request->setControllerName('index');
+        $request->setActionName('notfound');
     }
 
     /**
