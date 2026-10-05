@@ -8,6 +8,9 @@ use Episciences\Paper\Spdx\LicenseSpdxResolver;
 use PHPUnit\Framework\TestCase;
 
 
+/**
+ * @coversDefaultClass LicenseSpdxResolver
+ */
 class LicenseSpdxResolverTest extends TestCase
 {
     private LicenseSpdxResolver $resolver;
