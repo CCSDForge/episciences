@@ -70,4 +70,52 @@ final class UploadFormsMimeValidationTest extends TestCase
             unlink($path);
         }
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function loadConfiguredMimeTypes(): array
+    {
+        $config = json_decode(
+            (string) file_get_contents(APPLICATION_PATH . '/configs/journal.configurable.constants.json'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR
+        );
+
+        return (array) $config['allowed_mimes_types'];
+    }
+
+    /**
+     * Content types reported by recent versions of libmagic for files the journals accept
+     */
+    public function testConfiguredTypesCoverTheVariantsOfAllowedFiles(): void
+    {
+        $types = $this->loadConfiguredMimeTypes();
+
+        foreach ([
+                     'application/vnd.rar', // .rar
+                     'text/rtf', // .rtf
+                     'text/x-bibtex', // .bib
+                     'text/markdown', // .md
+                     'application/x-ole-storage', // legacy .doc / .xls
+                     'application/CDFV2',
+                     'text/plain', // .bib, .sty, .cls, .bst, .def, ...
+                     'text/x-tex', // .tex, .bbl
+                 ] as $type) {
+            self::assertContains($type, $types, $type);
+        }
+    }
+
+    /**
+     * Content types that run script in the browser must never be accepted
+     */
+    public function testConfiguredTypesDoNotAllowActiveContent(): void
+    {
+        $types = $this->loadConfiguredMimeTypes();
+
+        foreach (['image/svg+xml', 'text/xml', 'application/xml', 'application/xhtml+xml', 'text/javascript'] as $type) {
+            self::assertNotContains($type, $types, $type);
+        }
+    }
 }
