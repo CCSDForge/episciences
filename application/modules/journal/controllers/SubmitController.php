@@ -155,6 +155,13 @@ class SubmitController extends DefaultController
         array                        $post
     ): void
     {
+        if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->_helper->FlashMessenger
+                ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article."));
+            return;
+        }
+
         $canReplace = (bool)$request->getPost('can_replace');
 
         Episciences_Submit::normalizeSubmissionParameters($post);

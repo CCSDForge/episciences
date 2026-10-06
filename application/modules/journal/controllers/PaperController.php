@@ -1844,6 +1844,14 @@ class PaperController extends PaperDefaultController
             return;
         }
 
+        if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->redirectWithError(
+                "Une erreur s'est produite pendant l'enregistrement de votre article.",
+                $paper
+            );
+            return;
+        }
+
         $form = $this->buildNewVersionForm($paper);
 
         // Validate cover letter requirement before form validation

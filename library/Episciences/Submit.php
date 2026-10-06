@@ -13,6 +13,7 @@ class Episciences_Submit
 {
     public const SUBMIT_DOCUMENT_LABEL = 'Proposer un document';
 
+    public const CSRF_TOKEN_ELEMENT_NAME = 'csrf_token';
     public const COVER_LETTER_FILE_ELEMENT_NAME = 'file_comment_author';
     public const COVER_LETTER_COMMENT_ELEMENT_NAME = 'author_comment';
     public const DD_FILE_ELEMENT_NAME = 'file_data_descriptor';
@@ -151,6 +152,7 @@ class Episciences_Submit
         $xml->setDecorators(['ViewHelper']);
         $form->addElement($xml);
         $group[] = 'xml';
+        self::addCsrfElement($form, $group);
 
         $form->addElement('hidden', 'h_enrichment',
             ['decorators' => [
@@ -698,6 +700,7 @@ class Episciences_Submit
             $xml->setDecorators(['ViewHelper']);
             $form->addElement($xml);
             $group[] = 'xml';
+            self::addCsrfElement($form, $group);
 
             $form->addElement('hidden', 'h_enrichment',
                 ['decorators' => [
@@ -845,6 +848,22 @@ class Episciences_Submit
             return null;
         }
 
+    }
+
+    /**
+     * Add the hidden request token that the submission actions check (see Episciences_Csrf_Helper).
+     *
+     * @param Zend_Form $form
+     * @param array $group Names of the elements of the submission display group
+     * @throws Zend_Form_Exception
+     */
+    private static function addCsrfElement(Zend_Form $form, array &$group): void
+    {
+        $token = new Zend_Form_Element_Hidden(self::CSRF_TOKEN_ELEMENT_NAME);
+        $token->setValue(Episciences_Csrf_Helper::getSessionToken());
+        $token->setDecorators(['ViewHelper']);
+        $form->addElement($token);
+        $group[] = self::CSRF_TOKEN_ELEMENT_NAME;
     }
 
     /**
