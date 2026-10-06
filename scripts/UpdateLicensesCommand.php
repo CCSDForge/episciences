@@ -124,13 +124,13 @@ class UpdateLicensesCommand extends AbstractCommand
         $noAssertion = [];
         $resolvedLicences = [];
 
+        $spdxResolver = new LicenseSpdxResolver();
+
         if ($isProgressBarStarted) {
 
             $this->io->progressStart($count);
 
             foreach ($licenses as $docId => $url) {
-
-                $spdxResolver = new LicenseSpdxResolver();
 
                 $resolved = $spdxResolver->resolve($url);
                 $isResolved = $resolved !== LicenseSpdxResolver::NO_ASSERTION;
