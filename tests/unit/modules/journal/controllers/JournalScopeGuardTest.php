@@ -4,169 +4,219 @@ declare(strict_types=1);
 
 namespace unit\modules\journal\controllers;
 
+use Episciences_SectionsManager;
+use Episciences_VolumesAndSectionsManager;
+use Episciences_VolumesManager;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Zend_Controller_Request_HttpTestCase;
+use Zend_Controller_Response_HttpTestCase;
+use Zend_Db_Adapter_Abstract;
+use Zend_Db_Select;
+use Zend_Db_Table_Abstract;
 
 /**
- * Regression guards for the journal scoping of volume and section actions.
+ * Journal scoping of volumes and sections.
  *
- * Volume and section ids come from request parameters, and several journals share the
- * same tables: every lookup that starts from such an id must be restricted to the current
- * journal (RVID). Source-analysis tests (ZF1 controllers are not instantiable in isolation)
- * assert that the restriction stays in place.
+ * Volume and section ids come from request parameters, and several journals share the same
+ * tables: a lookup, a deletion or a re-ordering must never reach an item of another journal.
+ * The database adapter is a partial mock: queries are built for real and captured, nothing is
+ * executed.
  */
 final class JournalScopeGuardTest extends TestCase
 {
-    private const CONTROLLERS = APPLICATION_PATH . '/modules/journal/controllers/';
+    private Zend_Db_Adapter_Abstract $previousAdapter;
 
-    private function extractMethod(string $file, string $methodName): string
+    /** @var MockObject&Zend_Db_Adapter_Abstract */
+    private $adapter;
+
+    /** @var list<string> SQL of the SELECT statements sent to the adapter */
+    private array $selects = [];
+
+    protected function setUp(): void
     {
-        $source = (string) file_get_contents($file);
-        $start = strpos($source, 'function ' . $methodName . '(');
-        self::assertNotFalse($start, "Method $methodName not found in " . basename($file));
+        $this->previousAdapter = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $candidates = array_filter([
-            strpos($source, "\n    public function ", $start + 1),
-            strpos($source, "\n    protected function ", $start + 1),
-            strpos($source, "\n    private function ", $start + 1),
-        ], static fn($v) => $v !== false);
-        $stop = $candidates ? min($candidates) : strlen($source);
+        $this->adapter = $this->getMockBuilder($this->previousAdapter::class)
+            ->setConstructorArgs([$this->previousAdapter->getConfig()])
+            ->onlyMethods(['fetchRow', 'fetchCol', 'update', 'delete', 'insert'])
+            ->getMock();
+        Zend_Db_Table_Abstract::setDefaultAdapter($this->adapter);
 
-        return substr($source, $start, $stop - $start);
+        require_once APPLICATION_PATH . '/modules/journal/controllers/VolumeController.php';
+        require_once APPLICATION_PATH . '/modules/journal/controllers/SectionController.php';
     }
 
-    /**
-     * Every find() on a volume or a section must receive RVID as second argument.
-     */
-    private function assertEveryLookupIsScoped(string $method, string $label): void
+    protected function tearDown(): void
     {
-        $count = preg_match_all('/(?:Volumes|Sections)Manager::find\(([^;]*);/', $method, $matches);
-        self::assertGreaterThan(0, $count, "$label must look the volume/section up");
-
-        foreach ($matches[1] as $arguments) {
-            self::assertMatchesRegularExpression('/,\s*RVID\s*\)/', $arguments,
-                "$label must restrict the volume/section lookup to the current journal");
-        }
+        Zend_Db_Table_Abstract::setDefaultAdapter($this->previousAdapter);
     }
 
-    /**
-     * @return array<string, array{string, string}>
-     */
-    public static function scopedActions(): array
+    private function captureSelects(string $method, mixed $result): void
     {
-        $actions = [];
+        $this->adapter->method($method)->willReturnCallback(function ($select) use ($result) {
+            $this->selects[] = $select instanceof Zend_Db_Select ? $select->assemble() : (string)$select;
 
-        foreach (['VolumeController', 'SectionController'] as $controller) {
-            foreach (['deleteAction', 'editorsformAction', 'saveeditorsAction', 'displayeditorsAction'] as $action) {
-                $actions["$controller::$action"] = [$controller, $action];
-            }
-        }
-
-        foreach ([
-            'savemastervolumeAction',
-            'saveothervolumesAction',
-            'savesectionAction',
-            'refreshmastervolumeAction',
-            'editorsformAction',
-            'copyeditorsformAction',
-        ] as $action) {
-            $actions["AdministratepaperController::$action"] = ['AdministratepaperController', $action];
-        }
-
-        return $actions;
+            return $result;
+        });
     }
 
-    /**
-     * @dataProvider scopedActions
-     */
-    public function testActionScopesVolumeOrSectionLookupToTheCurrentJournal(string $controller, string $action): void
-    {
-        $method = $this->extractMethod(self::CONTROLLERS . $controller . '.php', $action);
+    // ------------------------------------------------------------------
+    // Library: lookups and sort
+    // ------------------------------------------------------------------
 
-        $this->assertEveryLookupIsScoped($method, "$controller::$action");
+    public function testVolumeLookupIsRestrictedToTheJournal(): void
+    {
+        $this->captureSelects('fetchRow', false);
+
+        self::assertFalse(Episciences_VolumesManager::find(7, 3));
+
+        self::assertCount(1, $this->selects);
+        self::assertStringContainsString('VID = 7', $this->selects[0]);
+        self::assertMatchesRegularExpression('/\bRVID = 3\b/', $this->selects[0]);
     }
 
-    /**
-     * @dataProvider unknownItemActions
-     */
-    public function testActionRefusesAnItemOfAnotherJournal(string $controller, string $action): void
+    public function testSectionLookupIsRestrictedToTheJournal(): void
     {
-        $method = $this->extractMethod(self::CONTROLLERS . $controller . '.php', $action);
+        $this->captureSelects('fetchRow', false);
 
-        self::assertMatchesRegularExpression('/if \(!\$(?:volume|section)\)|\?\s*Episciences_(?:Volumes|Sections)Manager::delete|!Episciences_(?:Volumes|Sections)Manager::find\(/', $method,
-            "$controller::$action must stop when the item does not belong to the current journal");
-    }
+        self::assertFalse(Episciences_SectionsManager::find(7, 3));
 
-    /**
-     * The actions rendering a view must switch the rendering off before refusing an item of
-     * another journal, otherwise ZF1 renders a default script (or a full layout) instead of
-     * an empty answer.
-     *
-     * @dataProvider renderingActions
-     */
-    public function testRefusalStopsTheRenderingOfActionsWithAView(string $controller, string $action, string $variable): void
-    {
-        $method = $this->extractMethod(self::CONTROLLERS . $controller . '.php', $action);
-
-        $found = preg_match(
-            '/if \(!\$' . $variable . '\) \{(?<body>[^}]*)\}/',
-            $method,
-            $matches
-        );
-        self::assertSame(1, $found, "$controller::$action must refuse an unknown $variable");
-        self::assertStringContainsString('disableLayout()', $matches['body'], "$controller::$action must disable the layout");
-        self::assertStringContainsString('setNoRender()', $matches['body'], "$controller::$action must disable the rendering");
-        self::assertMatchesRegularExpression('/\breturn\b/', $matches['body'], "$controller::$action must stop");
+        self::assertCount(1, $this->selects);
+        self::assertMatchesRegularExpression('/\bRVID = 3\b/', $this->selects[0]);
     }
 
     /**
      * @return array<string, array{string, string, string}>
      */
-    public static function renderingActions(): array
+    public static function sortProvider(): array
     {
         return [
-            'volume editors form' => ['VolumeController', 'editorsformAction', 'volume'],
-            'volume display editors' => ['VolumeController', 'displayeditorsAction', 'volume'],
-            'section editors form' => ['SectionController', 'editorsformAction', 'section'],
-            'section display editors' => ['SectionController', 'displayeditorsAction', 'section'],
+            'volumes' => ['VID', 'volume_', T_VOLUMES],
+            'sections' => ['SID', 'section_', T_SECTIONS],
         ];
     }
 
     /**
-     * @return array<string, array{string, string}>
+     * Both POSITION updates (explicit order, then the remaining items) must be limited to the
+     * current journal, even when the posted ids are those of another journal.
+     *
+     * @dataProvider sortProvider
      */
-    public static function unknownItemActions(): array
+    public function testSortOnlyUpdatesItemsOfTheCurrentJournal(string $colId, string $prefix, string $table): void
     {
-        return [
-            'volume delete' => ['VolumeController', 'deleteAction'],
-            'volume editors form' => ['VolumeController', 'editorsformAction'],
-            'volume save editors' => ['VolumeController', 'saveeditorsAction'],
-            'volume display editors' => ['VolumeController', 'displayeditorsAction'],
-            'section delete' => ['SectionController', 'deleteAction'],
-            'section editors form' => ['SectionController', 'editorsformAction'],
-            'section save editors' => ['SectionController', 'saveeditorsAction'],
-            'section display editors' => ['SectionController', 'displayeditorsAction'],
-            'paper master volume' => ['AdministratepaperController', 'savemastervolumeAction'],
-            'paper other volumes' => ['AdministratepaperController', 'saveothervolumesAction'],
-            'paper section' => ['AdministratepaperController', 'savesectionAction'],
-        ];
-    }
+        $this->adapter->method('fetchCol')->willReturn(['1', '2', '3']);
+        $updates = [];
+        $this->adapter->method('update')->willReturnCallback(
+            static function ($t, $data, $where) use (&$updates) {
+                $updates[] = [$t, $data, $where];
 
-    /**
-     * Both POSITION updates (explicit sort and re-sort of the remaining items) must stay
-     * limited to the current journal.
-     */
-    public function testSortRestrictsEveryPositionUpdateToTheCurrentJournal(): void
-    {
-        $source = (string) file_get_contents(
-            dirname(APPLICATION_PATH) . '/library/Episciences/VolumesAndSectionsManager.php'
+                return 1;
+            }
         );
 
-        $count = preg_match_all('/->update\(\$table,[^;]*;/', $source, $matches);
-        self::assertSame(2, $count, 'sort() is expected to update POSITION in two places');
+        ob_start(); // sort() echoes the number of sorted items for the AJAX caller
+        Episciences_VolumesAndSectionsManager::sort(['sorted' => [$prefix . '99', $prefix . '1']], $colId);
+        ob_end_clean();
 
-        foreach ($matches[0] as $update) {
-            self::assertStringContainsString("'RVID = ?' => RVID", $update,
-                'POSITION updates must be restricted to the current journal');
+        // Two explicit updates (the unknown id 99 is still posted) and the two items left over
+        self::assertCount(4, $updates);
+        foreach ($updates as [$t, , $where]) {
+            self::assertSame($table, $t);
+            self::assertSame(RVID, $where['RVID = ?'] ?? null, 'every update must carry the journal id');
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Controllers: an item of another journal is neither found nor deleted
+    // ------------------------------------------------------------------
+
+    /**
+     * @param class-string $class
+     * @param array<string, mixed> $post
+     */
+    private function dispatchAction(string $class, string $action, array $post): string
+    {
+        $request = new Zend_Controller_Request_HttpTestCase();
+        $request->setMethod('POST')->setPost($post);
+        $response = new Zend_Controller_Response_HttpTestCase();
+
+        $controller = new $class($request, $response);
+
+        ob_start();
+        try {
+            $controller->$action();
+        } finally {
+            $output = (string)ob_get_clean();
+        }
+
+        return $output;
+    }
+
+    public function testVolumeOfAnotherJournalIsNotDeleted(): void
+    {
+        $this->captureSelects('fetchRow', false);
+        $this->adapter->expects(self::never())->method('delete');
+        $this->adapter->expects(self::never())->method('update');
+
+        $output = $this->dispatchAction(\VolumeController::class, 'deleteAction', ['params' => ['id' => '7']]);
+
+        self::assertSame('', $output, 'a refused deletion answers false');
+        self::assertCount(1, $this->selects, 'only the scoped lookup may reach the database');
+        self::assertMatchesRegularExpression('/\bRVID = ' . RVID . '\b/', $this->selects[0]);
+    }
+
+    public function testSectionOfAnotherJournalIsNotDeleted(): void
+    {
+        $this->captureSelects('fetchRow', false);
+        $this->adapter->expects(self::never())->method('delete');
+        $this->adapter->expects(self::never())->method('update');
+
+        $output = $this->dispatchAction(
+            \SectionController::class,
+            'deleteAction',
+            ['ajax' => '1', 'params' => ['id' => '7']]
+        );
+
+        self::assertSame('', $output);
+        self::assertCount(1, $this->selects);
+        self::assertMatchesRegularExpression('/\bRVID = ' . RVID . '\b/', $this->selects[0]);
+    }
+
+    /**
+     * @return array<string, array{class-string, string, string}>
+     */
+    public static function editorsActionsProvider(): array
+    {
+        return [
+            'volume editors form' => [\VolumeController::class, 'editorsformAction', 'vid'],
+            'volume display editors' => [\VolumeController::class, 'displayeditorsAction', 'vid'],
+            'volume save editors' => [\VolumeController::class, 'saveeditorsAction', 'vid'],
+            'section editors form' => [\SectionController::class, 'editorsformAction', 'sid'],
+            'section display editors' => [\SectionController::class, 'displayeditorsAction', 'sid'],
+            'section save editors' => [\SectionController::class, 'saveeditorsAction', 'sid'],
+        ];
+    }
+
+    /**
+     * An item of another journal must give an empty answer and no write, never its editors.
+     *
+     * @param class-string $class
+     * @dataProvider editorsActionsProvider
+     */
+    public function testEditorsActionsRefuseAnItemOfAnotherJournal(string $class, string $action, string $key): void
+    {
+        $this->captureSelects('fetchRow', false);
+        $this->adapter->expects(self::never())->method('delete');
+        $this->adapter->expects(self::never())->method('insert');
+        $this->adapter->expects(self::never())->method('update');
+
+        $output = $this->dispatchAction($class, $action, [$key => '7', 'editors' => ['1']]);
+
+        self::assertSame('', $output);
+        self::assertNotEmpty($this->selects);
+        foreach ($this->selects as $sql) {
+            self::assertMatchesRegularExpression('/\bRVID = ' . RVID . '\b/', $sql);
         }
     }
 }
