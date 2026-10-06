@@ -2,7 +2,7 @@
 
 ## Framework & Structure
 - zf1-future (PHP 8.1+ compatible Zend Framework 1.x)
-- MySQL 8.0 dual database (main + auth)
+- MySQL 8.4 dual database (main + auth)
 - Apache Solr integration
 - Webpack Encore + Sass
 

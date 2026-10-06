@@ -188,15 +188,16 @@ class Episciences_Mail_RemindersManager
     /**
      * Trouve un reminder par son id, et charge ses données (bdd + translations)
      * @param $id
+     * @param int $rvid only a reminder of this journal is returned
      * @return Episciences_Mail_Reminder|null
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    public static function find($id): ?Episciences_Mail_Reminder
+    public static function find($id, int $rvid): ?Episciences_Mail_Reminder
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $select = $db->select()->from(T_MAIL_REMINDERS)->where('ID = ? ', $id);
+        $select = $db->select()->from(T_MAIL_REMINDERS)->where('ID = ? ', $id)->where('RVID = ?', $rvid);
         $result = $select->query()->fetch();
 
         if ($result) {
@@ -212,13 +213,16 @@ class Episciences_Mail_RemindersManager
     /**
      * Supprime un reminder par son id
      * @param $id
-     * @return bool
+     * @param int $rvid only a reminder of this journal is deleted
+     * @return bool false when no reminder of this journal matches $id
      */
-    public static function delete($id)
+    public static function delete($id, int $rvid): bool
     {
         // Supprimer entrée en base
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $db->delete(T_MAIL_REMINDERS, array('ID = ?' => $id));
+        if (!$db->delete(T_MAIL_REMINDERS, ['ID = ?' => $id, 'RVID = ?' => $rvid])) {
+            return false;
+        }
 
         // Supprimer templates custom
         foreach (scandir(REVIEW_LANG_PATH) as $lang) {
