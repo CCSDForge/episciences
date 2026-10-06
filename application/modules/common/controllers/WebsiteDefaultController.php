@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Upload\PublicFileStore;
 use Episciences\Upload\UploadChecker;
 
 class WebsiteDefaultController extends Zend_Controller_Action
@@ -143,7 +144,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
                 preg_match('/[^a-z0-9_\.-\/\\\\]/i', $_FILES['file']['name'], $matches);
 
-                $renamedFile = Ccsd_File::renameFile($_FILES['file']['name'], $dir, !$isOverwritten);
+                $renamedFile = Ccsd_File::renameFile(PublicFileStore::storedName((string)$_FILES['file']['name']), $dir, !$isOverwritten);
 
                 copy($_FILES['file']['tmp_name'], $dir . $renamedFile);
 
@@ -255,7 +256,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
                 $this->_session->website->getPage($pageid)->initForm();
 
                 if ($uploadError !== null) {
-                    $this->_session->website->getPage($pageid)->getForm($pageid)->getElement('src')->addError($uploadError);
+                    $this->_session->website->getPage($pageid)->setUploadError($uploadError);
                     $pagesDisplay[$pageid] = true;
                     $valid = false;
                 } elseif (!$isFilePage && !$this->_session->website->getPage($pageid)->getForm($pageid)->isValid($options)) {

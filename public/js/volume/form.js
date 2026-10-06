@@ -42,7 +42,8 @@ $(document).ready(function () {
         }, function (message) {
             // The server refused the file: show why, and forget the selection
             var feedback = document.getElementById('mFile_content');
-            feedback.textContent = message;
+            feedback.textContent =
+                message || 'The file could not be uploaded, please try again.';
             feedback.setAttribute('role', 'alert');
             feedback.classList.add('text-danger');
             event.target.value = '';
@@ -55,6 +56,15 @@ $(document).ready(function () {
         if (!file) {
             return;
         }
+
+        var coverFeedback = document.getElementById('cover-feedback');
+        coverFeedback.hidden = true;
+        coverFeedback.textContent = '';
+        coverFeedback.removeAttribute('role');
+
+        // Kept to restore the current cover if the new image is refused
+        var previousSrc = $coverPreview.attr('src');
+        var hadPreview = previousSrc !== undefined && previousSrc !== '';
 
         var reader = new FileReader();
         reader.onload = function (e) {
@@ -71,6 +81,16 @@ $(document).ready(function () {
                     tmpfile: JSON.stringify(serverFile),
                 })
             );
+        }, function (message) {
+            // The server refused the image: show why and go back to the previous state
+            coverFeedback.textContent =
+                message || 'The file could not be uploaded, please try again.';
+            coverFeedback.setAttribute('role', 'alert');
+            coverFeedback.hidden = false;
+            $coverPreview.attr('src', hadPreview ? previousSrc : '');
+            $coverPreviewContainer.toggle(hadPreview);
+            $coverUploadZone.toggle(!hadPreview);
+            $coverFile.val('');
         });
     });
 
@@ -114,7 +134,9 @@ function uploadFileToServer(file, callback, onError) {
             } catch (e) {
                 // The response is not the JSON error of the server
             }
-            onError(message);
+            if (typeof onError === 'function') {
+                onError(message);
+            }
         },
     });
 }

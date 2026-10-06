@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Upload\PublicFileStore;
 use Episciences\Upload\UploadChecker;
 
 /**
@@ -26,6 +27,12 @@ class Episciences_Website_Navigation_Page_File extends Episciences_Website_Navig
      * @var string
      */
     protected $_target = '';
+
+    /**
+     * Reason why the file sent with the form was refused, displayed on the 'src' element
+     * @var string|null
+     */
+    protected ?string $_uploadError = null;
 
 
     /**
@@ -117,9 +124,6 @@ class Episciences_Website_Navigation_Page_File extends Episciences_Website_Navig
     }
 
     /**
-     * Enregistrement des fichiers
-     */
-    /**
      * Checks the file sent through the form of a page ($_FILES['pages_<id>']).
      *
      * @param array<string, array<string, mixed>>|null $uploads entry of $_FILES for the page
@@ -141,6 +145,15 @@ class Episciences_Website_Navigation_Page_File extends Episciences_Website_Navig
         );
     }
 
+    public function setUploadError(?string $uploadError): self
+    {
+        $this->_uploadError = $uploadError;
+        return $this;
+    }
+
+    /**
+     * Enregistrement des fichiers
+     */
     public function saveFile()
     {
         //C'est pas super propre mais bon...
@@ -153,7 +166,7 @@ class Episciences_Website_Navigation_Page_File extends Episciences_Website_Navig
             }
 
             if (isset($_FILES['pages_' . $this->getPageId()]['tmp_name']['src']) && is_file($_FILES['pages_' . $this->getPageId()]['tmp_name']['src'])) {
-                $this->setSrc(Ccsd_Tools::getNewFileName($this->getSrc(), REVIEW_PATH . 'public/'));
+                $this->setSrc(Ccsd_Tools::getNewFileName(PublicFileStore::storedName($this->getSrc()), REVIEW_PATH . 'public/'));
                 rename($_FILES['pages_' . $this->getPageId()]['tmp_name']['src'], REVIEW_PATH . 'public/' . $this->getSrc());
             }
         }
@@ -167,13 +180,14 @@ class Episciences_Website_Navigation_Page_File extends Episciences_Website_Navig
     public function getForm($pageidx)
     {
         parent::getForm($pageidx);
-        // Keep the element when it already exists: it may carry the error of a refused file
-        if (!$this->_form->getElement('src')) {
-            $this->_form->addElement('file', 'src',
-                ['required' => true,
-                    'label' => 'Lien',
-                    'value' => $this->getSrc(),
-                    'belongsTo' => 'pages_' . $pageidx]);
+        // The form is rebuilt each time it is requested, so the error of a refused file is added here
+        $this->_form->addElement('file', 'src',
+            ['required' => true,
+                'label' => 'Lien',
+                'value' => $this->getSrc(),
+                'belongsTo' => 'pages_' . $pageidx]);
+        if ($this->_uploadError !== null) {
+            $this->_form->getElement('src')->addError($this->_uploadError);
         }
         $this->_form->addElement('select', 'target',
             ['required' => true,
