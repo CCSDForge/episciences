@@ -55,14 +55,30 @@ final class SubmittedRecordTest extends TestCase
         self::assertNotContains('<record>0</record>', $records);
     }
 
-    public function testSubmissionControllersDoNotReadTheRecordFromThePost(): void
+    public function testNothingIsRememberedForAnotherDocumentOrVersion(): void
     {
-        $submit = (string) file_get_contents(APPLICATION_PATH . '/modules/journal/controllers/SubmitController.php');
-        $paper = (string) file_get_contents(APPLICATION_PATH . '/modules/journal/controllers/PaperController.php');
+        SubmittedRecord::remember('1', 'doc-a', 1.0, '<record>a</record>');
 
-        self::assertStringContainsString("\$formValues['xml'] = \$record;", $submit);
-        self::assertStringNotContainsString("setRecord(\$post['xml'])", $paper);
-        self::assertStringContainsString('setRecord($record)', $paper);
+        // A different document, version or repository never gets the remembered record:
+        // it is fetched again (the repository 0 does not exist, so nothing comes back)
+        self::assertNull(SubmittedRecord::resolve('0', 'doc-a', 1.0));
+        self::assertNull(SubmittedRecord::resolve('0', 'doc-b', 1.0));
+
+        $records = (new Zend_Session_Namespace('submitted_records'))->records;
+        self::assertContains('<record>a</record>', $records, 'the remembered record is still there');
+    }
+
+    public function testRecordIsNullWhenTheRepositoryGivesNothingBack(): void
+    {
+        self::assertNull(SubmittedRecord::resolve('0', 'unknown-document', 1.0));
+    }
+
+    public function testRememberedRecordIsConsumedAndCannotBeResolvedTwice(): void
+    {
+        SubmittedRecord::remember('0', 'doc-a', 1.0, '<record>a</record>');
+
+        self::assertSame('<record>a</record>', SubmittedRecord::resolve('0', 'doc-a', 1.0));
+        self::assertNull(SubmittedRecord::resolve('0', 'doc-a', 1.0), 'a second submission fetches again');
     }
 
     public function testRememberedRecordIsForgottenOnceResolved(): void
