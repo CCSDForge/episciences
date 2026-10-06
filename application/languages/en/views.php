@@ -479,6 +479,7 @@ return array(
     'Information importante' => 'Important Information',
     'Licence manquante' => 'Missing license',
     'Licence non reconnue' => 'Unrecognized license',
+    'Définir la licence' => 'Set the license',
     'La licence choisie ne correspond pas à la licence choisie par la revue.' => 'The license selected does not match the license selected by the journal.',
     'Merci de préciser la licence pour cette publication avant sa mise en ligne.' => 'Kindly indicate the license for this publication before it is published.',
     "Opter pour un autre fichier principal" => "Opt for a different primary file",

@@ -7,8 +7,9 @@ if ($paper->ignoreLicenseCheck()) {
 }
 
 $icon = 'fa-bell';
+$isLicenceMissing = !$paper->getLicence();
 
-if (!$paper->getLicence()) {
+if ($isLicenceMissing) {
     $title = 'Licence manquante';
     $message = 'Merci de préciser la licence pour cette publication avant sa mise en ligne.';
 } else {
@@ -28,5 +29,18 @@ if (!$paper->getLicence()) {
         <p>
             <?= $this->escape($this->translate($message)) ?>
         </p>
+
+        <?php if ($isLicenceMissing) : ?>
+            <div class="info-license-actions">
+                <button
+                    type="button"
+                    class="btn btn-default btn-xs popover-link edit-license"
+                    data-docid="<?= (int)$paper->getDocid() ?>"
+                    onclick="getLicensesForm(this, <?= (int)$paper->getDocid() ?>)">
+                    <span class="fa-solid fa-pen-to-square" aria-hidden="true"></span>
+                    <?= $this->escape($this->translate('Définir la licence')) ?>
+                </button>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
