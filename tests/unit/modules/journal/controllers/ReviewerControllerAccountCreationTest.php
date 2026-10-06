@@ -7,44 +7,86 @@ namespace unit\modules\journal\controllers;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Checks that the account created from a reviewer invitation only receives
- * whitelisted form fields (source-pattern analysis, as in the sibling tests).
+ * The account created from a reviewer invitation must only receive the fields of the
+ * account form: request data must never be able to set UID (which would turn the INSERT
+ * into an UPDATE of an existing account), VALID, roles, etc.
  */
 final class ReviewerControllerAccountCreationTest extends TestCase
 {
-    private string $source;
-
     protected function setUp(): void
     {
-        $this->source = (string) file_get_contents(
-            APPLICATION_PATH . '/modules/journal/controllers/ReviewerController.php'
-        );
+        require_once APPLICATION_PATH . '/modules/journal/controllers/ReviewerController.php';
     }
 
-    public function testRequestDataIsFilteredBeforeBuildingTheReviewer(): void
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function privilegedKeyProvider(): array
     {
-        $start = strpos($this->source, 'function createNewReviewerWithoutAccountProcessing(');
-        self::assertNotFalse($start);
-        $end = strpos($this->source, 'private function', (int) $start + 1);
-        $method = substr($this->source, (int) $start, (int) $end - (int) $start);
-
-        $filterPos = strpos($method, 'ACCOUNT_CREATION_FIELDS');
-        $buildPos = strpos($method, 'new Episciences_Reviewer(');
-        self::assertNotFalse($filterPos);
-        self::assertNotFalse($buildPos);
-        self::assertLessThan($buildPos, $filterPos);
-        self::assertStringContainsString('getUid()', $method);
+        return [
+            'UID' => ['UID'],
+            'lower case uid' => ['uid'],
+            'mixed case Uid' => ['Uid'],
+            'VALID' => ['VALID'],
+            'ROLE' => ['ROLE'],
+            'ROLEID' => ['ROLEID'],
+            'TIME_REGISTERED' => ['TIME_REGISTERED'],
+            'UUID' => ['UUID'],
+            'key containing an allowed name' => ['EMAIL_VERIFIED'],
+            'allowed name with a prefix' => ['XEMAIL'],
+            'allowed name with a trailing space' => ['EMAIL '],
+        ];
     }
 
-    public function testWhitelistDoesNotContainPrivilegedFields(): void
+    /**
+     * @dataProvider privilegedKeyProvider
+     */
+    public function testPrivilegedKeysAreDropped(string $key): void
     {
-        self::assertSame(1, preg_match('/ACCOUNT_CREATION_FIELDS = \[(.*?)\];/s', $this->source, $m));
+        $filtered = \ReviewerController::filterAccountCreationData([
+            'EMAIL' => 'a@example.org',
+            $key => '1',
+        ]);
 
-        foreach (['UID', 'VALID', 'ROLE', 'TIME_REGISTERED', 'UUID'] as $forbidden) {
-            self::assertStringNotContainsString("'$forbidden'", $m[1]);
-        }
-        foreach (['EMAIL', 'FIRSTNAME', 'LASTNAME', 'PASSWORD'] as $expected) {
-            self::assertStringContainsString("'$expected'", $m[1]);
-        }
+        self::assertSame(['EMAIL' => 'a@example.org'], $filtered);
+    }
+
+    public function testLegitimateFieldsAreKeptWhateverTheirCase(): void
+    {
+        $data = [
+            'USERNAME' => 'jdoe',
+            'PASSWORD' => 'secret',
+            'firstname' => 'Jane',
+            'LastName' => 'Doe',
+            'EMAIL' => 'jane@example.org',
+            'SCREEN_NAME' => 'Jane Doe',
+            'ORCID' => '0000-0000-0000-0000',
+            'AFFILIATIONS' => [],
+            'SOCIAL_MEDIAS' => '',
+            'WEB_SITES' => '',
+            'BIOGRAPHY' => '',
+            'LANGUEID' => 'fr',
+        ];
+
+        self::assertSame($data, \ReviewerController::filterAccountCreationData($data));
+    }
+
+    public function testNumericKeysAndEmptyInputAreHandled(): void
+    {
+        self::assertSame([], \ReviewerController::filterAccountCreationData([]));
+        self::assertSame([], \ReviewerController::filterAccountCreationData([0 => 'x', 1 => 'y']));
+    }
+
+    public function testFilteredDataCannotSetTheUidOfTheReviewer(): void
+    {
+        $reviewer = new \Episciences_Reviewer(\ReviewerController::filterAccountCreationData([
+            'UID' => 42,
+            'uid' => 43,
+            'EMAIL' => 'a@example.org',
+            'FIRSTNAME' => 'Jane',
+        ]));
+
+        self::assertEmpty($reviewer->getUid(), 'a new account must never carry an UID');
+        self::assertSame('a@example.org', $reviewer->getEmail());
     }
 }
