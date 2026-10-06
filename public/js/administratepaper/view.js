@@ -1408,23 +1408,28 @@ function getEditingPopover(button, docId, preAction, postAction, targetToRefresh
 
                     if (response) {
 
-                        if (targetToRefreshId === 'paper-license-link' && response !== '') {
+                        // The action returns a JSON object. With dataType 'json', jQuery
+                        // parses it automatically; otherwise, it's a string that needs to be decoded
+                        let parsed = response;
+                        if (typeof response === 'string') {
+                            parsed = JSON.parse(response);
+                        }
 
-                            response = JSON.parse(response);
+                        if (targetToRefreshId === 'paper-license-link' && parsed && typeof parsed === 'object') {
 
-                            if (!response.error) {
-                                $target
-                                    .text(response.name)
-                                    .attr("href", response.href);
-
-                                if(response.reloadPage){
+                            if (!parsed.error) {
+                                if ($target.length) {
+                                    $target
+                                        .text(parsed.name)
+                                        .attr("href", parsed.href);
+                                } else if (parsed.reloadPage) {
                                     location.reload();
                                 }
                             } else {
-                                console.error(response.error);
+                                console.error(parsed.error);
                             }
 
-                        } else {
+                        } else if (typeof response === 'string') {
                             $target.html(response);
                         }
 
