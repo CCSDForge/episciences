@@ -777,6 +777,17 @@ final class Episciences_MailTest extends TestCase
         self::assertStringContainsString('abc123', $this->mail->getBody());
     }
 
+    public function testLoggableBodyMasksUsernameList(): void
+    {
+        $this->mail->setRawBody('Logins: ' . Episciences_Mail_Tags::TAG_MAIL_ACCOUNT_USERNAME_LIST);
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_MAIL_ACCOUNT_USERNAME_LIST, '- jdoe');
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getLoggableBody');
+        $method->setAccessible(true);
+
+        self::assertStringNotContainsString('jdoe', $method->invoke($this->mail));
+    }
+
     public function testLoggableBodyUnchangedWithoutTokenTag(): void
     {
         $this->mail->setRawBody('Hello');

@@ -4,8 +4,14 @@ use Episciences\AppRegistry;
 
 class Episciences_Mail extends Zend_Mail
 {
-    /** Placeholder stored in the mail log instead of credential-bearing links */
-    private const LOG_REDACTED_LINK = '[link not stored in the log]';
+    /** Placeholder stored in the mail log instead of account credentials or identifiers */
+    private const LOG_REDACTED_VALUE = '[not stored in the log]';
+
+    /** Tags whose values must never be stored in the mail log (readable by journal staff) */
+    private const LOG_REDACTED_TAGS = [
+        Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK,
+        Episciences_Mail_Tags::TAG_MAIL_ACCOUNT_USERNAME_LIST,
+    ];
 
     /**
      * We're fine
@@ -624,17 +630,21 @@ class Episciences_Mail extends Zend_Mail
     }
 
     /**
-     * Body stored in the mail log: credential-bearing links (account tokens) are masked,
+     * Body stored in the mail log: credential-bearing links and account identifiers are masked,
      * since the log is readable by journal staff. The mail actually sent is unaffected.
      */
     private function getLoggableBody(): string
     {
-        if (!array_key_exists(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $this->tags)) {
+        $sensitiveTags = array_intersect(self::LOG_REDACTED_TAGS, array_keys($this->tags));
+
+        if ($sensitiveTags === []) {
             return (string)$this->getDecodedBody();
         }
 
         $copy = clone $this;
-        $copy->tags[Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK] = self::LOG_REDACTED_LINK;
+        foreach ($sensitiveTags as $tag) {
+            $copy->tags[$tag] = self::LOG_REDACTED_VALUE;
+        }
 
         return (string)$copy->getDecodedBody();
     }
