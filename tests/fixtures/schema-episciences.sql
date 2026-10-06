@@ -987,7 +987,6 @@ CREATE TABLE `paper_projects` (
   PRIMARY KEY (`idproject`),
   UNIQUE KEY `paperid` (`paperid`),
   KEY `idx_source_id` (`source_id`),
-  CONSTRAINT `paper_projects_ibfk_1` FOREIGN KEY (`paperid`) REFERENCES `PAPERS` (`PAPERID`),
   CONSTRAINT `paper_projects_ibfk_2` FOREIGN KEY (`source_id`) REFERENCES `metadata_sources` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
