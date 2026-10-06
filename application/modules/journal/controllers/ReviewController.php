@@ -31,7 +31,7 @@ class ReviewController extends Zend_Controller_Action
 
         if ($request->isPost() && array_key_exists('submit', $request->getPost())) {
 
-            if ($form->isValid($request->getPost())) {
+            if ($form->isValid($request->getPost()) && Episciences_Review::hasValidDeadlineUnits($request->getPost())) {
 
                 $reviewSettingsToSave = array_merge($form->getValues(), [
                     'rating_deadline_unit' => $request->getPost('rating_deadline_unit'),
