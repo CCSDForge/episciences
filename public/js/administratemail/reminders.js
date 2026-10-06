@@ -22,6 +22,7 @@ function deleteReminder(btn) {
     bootbox.confirm(translate('Êtes-vous sûr ?'), function (result) {
         if (result) {
             let container = $(btn).parent('.reminder');
+            const previousContent = $(container).html();
             $(container).html(getLoader());
 
             $.ajax({
@@ -47,10 +48,11 @@ function deleteReminder(btn) {
                     // Suppression du reminder
                     $(container).remove();
                 },
-                error: function (response) {
+                error: function (jqXHR) {
+                    // Restore the reminder replaced by the loader
+                    $(container).html(previousContent);
                     bootbox.alert(
-                        translate('La suppression a échoué : ') +
-                            translate(response)
+                        translate('La suppression a échoué : ') + jqXHR.status
                     );
                 },
             });
@@ -66,6 +68,11 @@ function submit() {
             type: 'POST',
             headers: { 'X-CSRF-Token': getCsrfToken() },
             data: $('#reminder_form').serialize(),
+            error: function () {
+                bootbox.alert(
+                    translate('Une erreur est survenue, veuillez réessayer.')
+                );
+            },
             success: function (response) {
                 $('#modal-box').modal('hide');
                 let container = $('#reminders');

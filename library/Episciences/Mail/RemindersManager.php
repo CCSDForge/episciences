@@ -188,19 +188,16 @@ class Episciences_Mail_RemindersManager
     /**
      * Trouve un reminder par son id, et charge ses données (bdd + translations)
      * @param $id
-     * @param int|null $rvid when set, only a reminder of this journal is returned
+     * @param int $rvid only a reminder of this journal is returned
      * @return Episciences_Mail_Reminder|null
      * @throws Zend_Db_Statement_Exception
      * @throws Zend_Exception
      */
-    public static function find($id, ?int $rvid = null): ?Episciences_Mail_Reminder
+    public static function find($id, int $rvid): ?Episciences_Mail_Reminder
     {
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
 
-        $select = $db->select()->from(T_MAIL_REMINDERS)->where('ID = ? ', $id);
-        if ($rvid !== null) {
-            $select->where('RVID = ?', $rvid);
-        }
+        $select = $db->select()->from(T_MAIL_REMINDERS)->where('ID = ? ', $id)->where('RVID = ?', $rvid);
         $result = $select->query()->fetch();
 
         if ($result) {
@@ -216,19 +213,14 @@ class Episciences_Mail_RemindersManager
     /**
      * Supprime un reminder par son id
      * @param $id
-     * @param int|null $rvid when set, only a reminder of this journal is deleted
-     * @return bool false when $rvid is set and no reminder of this journal matches $id
+     * @param int $rvid only a reminder of this journal is deleted
+     * @return bool false when no reminder of this journal matches $id
      */
-    public static function delete($id, ?int $rvid = null)
+    public static function delete($id, int $rvid): bool
     {
         // Supprimer entrée en base
         $db = Zend_Db_Table_Abstract::getDefaultAdapter();
-        $where = ['ID = ?' => $id];
-        if ($rvid !== null) {
-            $where['RVID = ?'] = $rvid;
-        }
-
-        if (!$db->delete(T_MAIL_REMINDERS, $where) && $rvid !== null) {
+        if (!$db->delete(T_MAIL_REMINDERS, ['ID = ?' => $id, 'RVID = ?' => $rvid])) {
             return false;
         }
 

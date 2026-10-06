@@ -697,6 +697,7 @@ class AdministratemailController extends Zend_Controller_Action
             $reminder = Episciences_Mail_RemindersManager::find((int)$id, RVID);
             if (!$reminder) {
                 $this->_helper->viewRenderer->setNoRender();
+                $this->getResponse()->setHttpResponseCode(403);
                 return;
             }
         } else {
@@ -728,10 +729,12 @@ class AdministratemailController extends Zend_Controller_Action
         $recipient = $request->getParam('recipient');
         $type = $request->getParam('type');
         $templates = Episciences_Mail_RemindersManager::getTemplates();
-        $isExistTemplateForThisRecipient = array_key_exists($recipient, $templates[$type]);
 
-        if (!$isExistTemplateForThisRecipient) {
-            trigger_error('reminder (type = ' . $type . ') not saved: no template defined for ' . $recipient . 'recipient');
+        if (!is_string($type) || !is_string($recipient)
+            || !array_key_exists($type, $templates)
+            || !array_key_exists($recipient, $templates[$type])
+        ) {
+            $this->getResponse()->setHttpResponseCode(400);
             return;
         }
 
@@ -761,8 +764,13 @@ class AdministratemailController extends Zend_Controller_Action
         }
 
         $reminder = new Episciences_Mail_Reminder($options);
-        // save() returns a bool; echo it (as "1"/"0") to preserve the AJAX response body.
-        echo (int)$reminder->save();
+        if (!$reminder->save()) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
+        // Success body preserved for the AJAX caller
+        echo 1;
     }
 
     /**
