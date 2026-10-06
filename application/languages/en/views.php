@@ -477,6 +477,8 @@ return array(
     "Il est toujours possible de modifier cet ordre manuellement via l'édition du volume." => "It is always possible to change this order manually by editing the volume.",
     'Licence mise à jour' => 'License updated',
     'Information importante' => 'Important Information',
+    'Licence manquante' => 'Missing license',
+    'Licence non reconnue' => 'Unrecognized license',
     'La licence choisie ne correspond pas à la licence choisie par la revue.' => 'The license selected does not match the license selected by the journal.',
     'Merci de préciser la licence pour cette publication avant sa mise en ligne.' => 'Kindly indicate the license for this publication before it is published.',
     "Opter pour un autre fichier principal" => "Opt for a different primary file",

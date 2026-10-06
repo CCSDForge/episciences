@@ -6,24 +6,27 @@ if ($paper->ignoreLicenseCheck()) {
     return;
 }
 
-if (!$paper->getLicence()) {
-    $message = 'Merci de préciser la licence pour cette publication avant sa mise en ligne.';
+$icon = 'fa-bell';
 
+if (!$paper->getLicence()) {
+    $title = 'Licence manquante';
+    $message = 'Merci de préciser la licence pour cette publication avant sa mise en ligne.';
 } else {
+    $title = 'Licence non reconnue';
     $message = 'La licence choisie ne correspond pas à la licence choisie par la revue.';
 }
 
 
 ?>
-<div class="info-license-box">
-    <div class="info-icon">
-        <span class="fa-regular fa-bell fa-shake fa-sm"></span>
+<div class="info-license-box" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="info-icon" aria-hidden="true">
+        <span class="fa-regular <?= $this->escape($icon) ?> fa-shake fa-sm"></span>
     </div>
 
     <div class="info-content">
-        <h4><?= $this->translate('Information importante') ?></h4>
+        <h4><?= $this->escape($this->translate($title)) ?></h4>
         <p>
-            <?= $this->translate($message) ?>
+            <?= $this->escape($this->translate($message)) ?>
         </p>
     </div>
 </div>
