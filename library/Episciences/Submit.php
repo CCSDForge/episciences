@@ -152,7 +152,6 @@ class Episciences_Submit
         $xml->setDecorators(['ViewHelper']);
         $form->addElement($xml);
         $group[] = 'xml';
-        self::addCsrfElement($form, $group);
 
         $form->addElement('hidden', 'h_enrichment',
             ['decorators' => [
@@ -439,12 +438,7 @@ class Episciences_Submit
         $group[] = 'submitPaper';
 
 
-        $form->addDisplayGroup($group, 'submitDoc');
-        $form->getDisplayGroup('submitDoc')->setDecorators([
-            'FormElements',
-            [['wrapper2' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel-body']],
-            [['wrapper1' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel panel-default', 'style' => 'display: none', 'id' => 'submitForm']]
-        ]);
+        self::addSubmitDocGroup($form, $group);
 
 
         if ($defaults) {
@@ -700,8 +694,7 @@ class Episciences_Submit
             $xml->setDecorators(['ViewHelper']);
             $form->addElement($xml);
             $group[] = 'xml';
-            self::addCsrfElement($form, $group);
-
+    
             $form->addElement('hidden', 'h_enrichment',
                 ['decorators' => [
                     'ViewHelper',
@@ -827,12 +820,7 @@ class Episciences_Submit
             ]);
             $group[] = 'searchAgain';
 
-            $form->addDisplayGroup($group, 'submitDoc');
-            $form->getDisplayGroup('submitDoc')->setDecorators([
-                'FormElements',
-                [['wrapper2' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel-body']],
-                [['wrapper1' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel panel-default', 'style' => 'display: none', 'id' => 'submitForm']]
-            ]);
+            self::addSubmitDocGroup($form, $group);
 
             if (isset($defaults['version'], $defaults['docId'], $defaults['repoId'])) {
                 //#git 259 : Laisser le champ version vide quand on en soumet une nouvelle
@@ -851,19 +839,28 @@ class Episciences_Submit
     }
 
     /**
-     * Add the hidden request token that the submission actions check (see Episciences_Csrf_Helper).
+     * Build the (initially hidden) "submitDoc" display group shared by the submission and new version forms.
+     * The hidden request token checked by the submission actions (see Episciences_Csrf_Helper) is added here,
+     * so that no form using this group can omit it.
      *
      * @param Zend_Form $form
-     * @param array $group Names of the elements of the submission display group
+     * @param string[] $group Names of the elements of the submission display group
      * @throws Zend_Form_Exception
      */
-    private static function addCsrfElement(Zend_Form $form, array &$group): void
+    private static function addSubmitDocGroup(Zend_Form $form, array $group): void
     {
         $token = new Zend_Form_Element_Hidden(self::CSRF_TOKEN_ELEMENT_NAME);
         $token->setValue(Episciences_Csrf_Helper::getSessionToken());
         $token->setDecorators(['ViewHelper']);
         $form->addElement($token);
         $group[] = self::CSRF_TOKEN_ELEMENT_NAME;
+
+        $form->addDisplayGroup($group, 'submitDoc');
+        $form->getDisplayGroup('submitDoc')->setDecorators([
+            'FormElements',
+            [['wrapper2' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel-body']],
+            [['wrapper1' => 'HtmlTag'], ['tag' => 'div', 'class' => 'panel panel-default', 'style' => 'display: none', 'id' => 'submitForm']]
+        ]);
     }
 
     /**

@@ -1846,7 +1846,7 @@ class PaperController extends PaperDefaultController
 
         if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
             $this->redirectWithError(
-                "Une erreur s'est produite pendant l'enregistrement de votre article.",
+                "Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre nouvelle version n'a pas été enregistrée. Merci de recharger cette page puis de soumettre à nouveau votre nouvelle version.",
                 $paper
             );
             return;

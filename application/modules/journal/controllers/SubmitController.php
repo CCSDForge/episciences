@@ -156,9 +156,11 @@ class SubmitController extends DefaultController
     ): void
     {
         if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+            // Keep what the user typed; uploaded files cannot be restored by the browser
+            $form->populate($post);
             $this->_helper->FlashMessenger
                 ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
-                ->addMessage($this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article."));
+                ->addMessage($this->view->translate("Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre article n'a pas été enregistré. Les informations saisies ont été conservées, merci de sélectionner à nouveau vos fichiers puis de valider le formulaire."));
             return;
         }
 
