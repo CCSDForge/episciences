@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Episciences\Submit;
 
+use Episciences\AppRegistry;
 use Episciences_Repositories;
 use Episciences_Repositories_Common;
 use Episciences_Submit;
@@ -15,7 +16,8 @@ use Zend_Session_Namespace;
  * The record shown to the author when the document is searched in the repository is the one
  * stored with the paper: it must never be read back from the submission form, where the client
  * can change it. It is remembered in the session when the document is searched, and fetched
- * again from the repository when it is no longer there.
+ * again from the repository when it is no longer there. A remembered record is consumed by
+ * resolve(): it does not stay in the session once the document is submitted.
  */
 final class SubmittedRecord
 {
@@ -57,8 +59,9 @@ final class SubmittedRecord
     }
 
     /**
-     * Record to store for a submitted document: the one remembered in the session, otherwise
-     * fetched again from the repository. Returns null when the repository gives no record.
+     * Record to store for a submitted document: the one remembered in the session (and forgotten
+     * at once), otherwise fetched again from the repository. Returns null when the repository
+     * gives no record.
      */
     public static function resolve(string $repoId, string $docId, float $version, ?int $latestObsoleteDocId = null): ?string
     {
@@ -67,14 +70,28 @@ final class SubmittedRecord
         $key = self::key($repoId, $docId, $version);
 
         if (isset($records[$key]) && is_string($records[$key])) {
-            return $records[$key];
+            $record = $records[$key];
+            unset($records[$key]);
+            $session->records = $records;
+
+            return $record;
         }
+
+        AppRegistry::getMonoLogger()?->warning(sprintf(
+            'Submitted record not found in session (repository #%s): fetching it again',
+            $repoId
+        ));
 
         $id = $docId;
         $fetchedVersion = $version;
         $response = Episciences_Submit::getDoc((int)$repoId, $id, $fetchedVersion, $latestObsoleteDocId);
 
         if (array_key_exists('error', $response) || !array_key_exists('record', $response)) {
+            AppRegistry::getMonoLogger()?->warning(sprintf(
+                'Submitted record could not be fetched again from repository #%s',
+                $repoId
+            ));
+
             return null;
         }
 

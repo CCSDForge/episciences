@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace unit\library\Episciences\Submit;
 
 use Episciences\Submit\SubmittedRecord;
+use DOMDocument;
 use PHPUnit\Framework\TestCase;
+use XSLTProcessor;
 use Zend_Session_Namespace;
 
 /**
@@ -63,6 +65,19 @@ final class SubmittedRecordTest extends TestCase
         self::assertStringContainsString('setRecord($record)', $paper);
     }
 
+    public function testRememberedRecordIsForgottenOnceResolved(): void
+    {
+        SubmittedRecord::remember('1', 'doc-a', 1.0, '<record>a</record>');
+        SubmittedRecord::remember('1', 'doc-b', 1.0, '<record>b</record>');
+
+        self::assertSame('<record>a</record>', SubmittedRecord::resolve('1', 'doc-a', 1.0));
+
+        $records = (new Zend_Session_Namespace('submitted_records'))->records;
+
+        self::assertCount(1, $records);
+        self::assertContains('<record>b</record>', $records);
+    }
+
     /**
      * @return array<string, array{string}>
      */
@@ -72,15 +87,58 @@ final class SubmittedRecordTest extends TestCase
     }
 
     /**
+     * @return array<string, array{string, string, bool}>
+     */
+    public static function licenceProvider(): array
+    {
+        $cc = 'https://creativecommons.org/licenses/by/4.0/';
+
+        return [
+            'rights https url' => ['dc', $cc, true],
+            'rights http url' => ['dc', 'http://creativecommons.org/licenses/by/4.0/', true],
+            'rights javascript' => ['dc', 'javascript:alert(1)//href=', false],
+            'rights plain text' => ['dc', 'All rights reserved', false],
+            'paper licence https url' => ['paper', $cc, true],
+            'paper licence javascript' => ['paper', 'javascript:alert(1)', false],
+        ];
+    }
+
+    /**
      * @dataProvider stylesheetProvider
      */
-    public function testRightsLinkOnlyAcceptsHttpUrls(string $stylesheet): void
+    public function testLicenceIsLinkedOnlyForHttpUrls(string $stylesheet): void
     {
-        $source = (string) file_get_contents(APPLICATION_PATH . '/../public/xsl/' . $stylesheet);
+        foreach (self::licenceProvider() as $label => [$source, $licence, $linked]) {
+            $html = $this->renderLicence($stylesheet, $source, $licence);
 
-        self::assertStringContainsString(
-            "(starts-with(\$doc_rights, 'http://') or starts-with(\$doc_rights, 'https://'))",
-            $source
+            if ($linked) {
+                self::assertStringContainsString('Licence : <a rel="noopener" target="_blank" href="' . $licence . '"', $html, $label);
+            } else {
+                self::assertDoesNotMatchRegularExpression('/Licence : <a [^>]*href=/', $html, $label);
+            }
+        }
+    }
+
+    private function renderLicence(string $stylesheet, string $source, string $licence): string
+    {
+        $escaped = htmlspecialchars($licence, ENT_XML1);
+        $licenceNode = $source === 'paper' ? '<paperLicence>' . $escaped . '</paperLicence>' : '';
+        $rightsNode = $source === 'dc' ? '<dc:rights>' . $escaped . '</dc:rights>' : '';
+
+        $xml = new DOMDocument();
+        $xml->loadXML(
+            '<record xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/">'
+            . '<episciences>' . $licenceNode . '</episciences>'
+            . '<metadata><oai_dc:dc>' . $rightsNode . '</oai_dc:dc></metadata></record>'
         );
+
+        $xsl = new DOMDocument();
+        $xsl->load(APPLICATION_PATH . '/../public/xsl/' . $stylesheet);
+
+        $processor = new XSLTProcessor();
+        $processor->registerPHPFunctions('Ccsd_Tools::translate');
+        $processor->importStylesheet($xsl);
+
+        return (string) $processor->transformToXml($xml);
     }
 }
