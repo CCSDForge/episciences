@@ -4,7 +4,7 @@
     if ($this->style) {
         echo 'style="';
         foreach ($this->style as $property => $value) {
-            echo $property . ':' . $value . ';';
+            echo $this->escape($property . ':' . $value . ';');
         }
         echo '"';
     }
