@@ -28,7 +28,7 @@
 				type="text" 
 				class="form-control input-sm" 
 				style="display: inline-block; width: 40px"
-				value="<?php echo $delay_value; ?>" />
+				value="<?php echo $this->escape((string)$delay_value); ?>" />
 	
 		<select name="<?php echo $name; ?>_unit" class="form-control input-sm" style="display: inline-block; width: 200px">
 		<?php foreach ($delay_units as $value=>$label) : ?>
