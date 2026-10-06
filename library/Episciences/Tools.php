@@ -870,13 +870,13 @@ class Episciences_Tools
 
     public static function decodeLatex($string, $preserveLineBreaks = false): string
     {
-        return self::decodeAmpersand(self::latexToUtf8($string, (bool)$preserveLineBreaks));
+        return self::decodeAmpersand(self::latexToUtf8((string)$string, (bool)$preserveLineBreaks));
     }
 
     /**
      * Replace LaTeX sequences by UTF-8 characters and, optionally, line breaks by <br />
      */
-    private static function latexToUtf8($string, bool $preserveLineBreaks): string
+    private static function latexToUtf8(string $string, bool $preserveLineBreaks): string
     {
         $result = str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $string);
 
