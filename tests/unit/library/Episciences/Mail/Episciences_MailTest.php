@@ -6,6 +6,7 @@ use Episciences_Mail;
 use Episciences_Mail_Tags;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use Zend_Db_Table_Abstract;
 
 /**
  * Unit tests for Episciences_Mail.
@@ -492,6 +493,37 @@ final class Episciences_MailTest extends TestCase
         );
     }
 
+    /**
+     * Regression: the DataTable search term must be bound (quoted by the adapter),
+     * never interpolated into the WHERE clause.
+     */
+    public function testDataTableMailsSearchQueryQuotesSearchTerm(): void
+    {
+        $sql = $this->buildSearchSql("'; DROP TABLE users; --");
+
+        // The quote is escaped by the adapter, so the term stays inside the string literal
+        self::assertStringContainsString("'%\\'; DROP TABLE users; --%'", $sql);
+        self::assertSame(5, substr_count($sql, 'LIKE'));
+    }
+
+    /**
+     * LIKE wildcards typed by the user must be matched literally.
+     */
+    public function testDataTableMailsSearchQueryEscapesLikeWildcards(): void
+    {
+        $sql = $this->buildSearchSql('50%_off');
+
+        self::assertSame(5, substr_count($sql, "'%50\\\\%\\\\_off%'"));
+    }
+
+    private function buildSearchSql(string $word): string
+    {
+        $select = Zend_Db_Table_Abstract::getDefaultAdapter()->select()->from('MAIL_LOG');
+        $method = new ReflectionMethod(Episciences_Mail::class, 'dataTableMailsSearchQuery');
+
+        return $method->invoke($this->mail, $select, $word)->assemble();
+    }
+
     // =========================================================================
     // Sanitisation logic (pure, no DB)
     // =========================================================================
@@ -673,5 +705,55 @@ final class Episciences_MailTest extends TestCase
         self::assertSame($baseUrl . '/42', $tags[Episciences_Mail_Tags::TAG_PAPER_VIEW_URL]);
         self::assertSame($baseUrl . '/administratepaper/view/id/42', $tags[Episciences_Mail_Tags::TAG_PAPER_ADMINISTRATION_URL]);
         self::assertSame($baseUrl . '/paper/rating/id/42', $tags[Episciences_Mail_Tags::TAG_PAPER_RATING_URL]);
+    }
+
+    // =========================================================================
+    // isInHistory: a single mail log entry is scoped like the history list
+    // =========================================================================
+
+    public function testIsInHistoryRejectsNonPositiveIdWithoutQuerying(): void
+    {
+        self::assertFalse($this->mail->isInHistory(0, [1, 2]));
+        self::assertFalse($this->mail->isInHistory(-5, [1, 2]));
+    }
+
+    private function assembleHistoryEntryQuery(int $id, array $docIds, array $options = []): string
+    {
+        $this->mail->setRvid(3);
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getHistoryEntryQuery');
+        $method->setAccessible(true);
+        return $method->invoke($this->mail, $id, $docIds, $options)->assemble();
+    }
+
+    public function testHistoryEntryQueryIsScopedByIdAndJournal(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, [10, 11]);
+
+        self::assertStringContainsString('(ID = 42)', $sql);
+        self::assertStringContainsString('(RVID = 3)', $sql);
+        self::assertStringContainsString('DOCID IN (10,11)', $sql);
+    }
+
+    public function testHistoryEntryQueryStrictModeExcludesMailsWithoutDocument(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, [10], ['strict' => true]);
+
+        self::assertStringNotContainsString('DOCID IS NULL', $sql);
+        self::assertStringContainsString('DOCID IN (10)', $sql);
+    }
+
+    public function testHistoryEntryQueryWithoutAllowedDocumentsOnlyKeepsOwnOrGeneralMails(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, []);
+
+        self::assertStringNotContainsString('DOCID IN', $sql);
+        self::assertStringContainsString('DOCID IS NULL OR UID', $sql);
+    }
+
+    public function testHistoryEntryQueryIgnoresSearchFilter(): void
+    {
+        $sql = $this->assembleHistoryEntryQuery(42, [10], ['search' => 'anything']);
+
+        self::assertStringNotContainsString('LIKE', $sql);
     }
 }

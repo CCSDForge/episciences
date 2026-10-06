@@ -252,10 +252,19 @@ class AdministratemailController extends Episciences_Controller_Action
             $id = (int)$request->getParam('id');
             $oMail = new Episciences_Mail('UTF-8');
 
-            $mail = $oMail->find($id) ? $oMail->toArray(true) : [];
+            // same scope as the history list (journal, allowed documents, conflicts of interest)
+            $review = Episciences_ReviewsManager::find(RVID);
+            $review->loadSettings();
+            $options = [];
+            $docIds = $this->historyProcessing($review, $options);
 
-            $this->view->mail = $mail;
+            if (!$oMail->isInHistory($id, $docIds, $options) || !$oMail->find($id)) {
+                $this->getResponse()->setHttpResponseCode(404);
+                $this->view->mail = [];
+                return;
+            }
 
+            $this->view->mail = $oMail->toArray(true);
 
         } else {
             $this->getResponse()?->setHttpResponseCode(404);

@@ -237,6 +237,9 @@ class Episciences_User extends Ccsd_User_Models_User
 
     // Retourne les droits de l'utilisateur (pour toutes les revues / portails)
 
+    /** Columns returned by filterUsers(): identity data only, no credentials */
+    private const FILTER_USERS_COLUMNS = ['UID', 'USERNAME', 'EMAIL', 'LASTNAME', 'FIRSTNAME'];
+
     public static function filterUsers($filter, $withoutRoles = true)
     {
         $result = null;
@@ -257,7 +260,11 @@ class Episciences_User extends Ccsd_User_Models_User
 
         if ($users) {
             $casDb = Ccsd_Db_Adapter_Cas::getAdapter();
-            $select = $casDb->select()->from(T_CAS_USERS)->where('UID IN (?)', array_keys($users))->order('LASTNAME');
+            // Never select the whole row: T_CAS_USERS holds credential columns that must not reach callers
+            $select = $casDb->select()
+                ->from(T_CAS_USERS, self::FILTER_USERS_COLUMNS)
+                ->where('UID IN (?)', array_keys($users))
+                ->order('LASTNAME');
 
             $where = '(';
             $isFirstKeyword = true;
@@ -280,6 +287,12 @@ class Episciences_User extends Ccsd_User_Models_User
             $select->where($where);
             $select->limit(25);
             $result = $casDb->fetchAll($select);
+
+            // SCREEN_NAME lives in the local table, not in the CAS one
+            foreach ($result as &$row) {
+                $row['SCREEN_NAME'] = $users[$row['UID']]['SCREEN_NAME'] ?? '';
+            }
+            unset($row);
         }
 
         return ($result);

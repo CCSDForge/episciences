@@ -874,8 +874,10 @@ class Episciences_Mail extends Zend_Mail
      */
     private function dataTableMailsSearchQuery(Zend_Db_Select $select, string $word = ''): Zend_Db_Select
     {
-        $where = "SUBJECT LIKE '%$word%' OR `TO` LIKE '%$word%' OR CC LIKE '%$word%' OR BCC LIKE '%$word%' OR CONVERT(`WHEN`, CHAR) LIKE '%$word%'";
-        $select->where($where);
+        // Escape LIKE wildcards, then let the adapter quote the pattern (same placeholder for each column)
+        $pattern = '%' . addcslashes($word, '%_\\') . '%';
+        $where = 'SUBJECT LIKE ? OR `TO` LIKE ? OR CC LIKE ? OR BCC LIKE ? OR CONVERT(`WHEN`, CHAR) LIKE ?';
+        $select->where($where, $pattern);
         return $select;
     }
 
@@ -889,6 +891,35 @@ class Episciences_Mail extends Zend_Mail
     {
         $select = $this->getHistoryQuery($docIds, $options, true, $isFilterInfos);
         return (int)Zend_Db_Table_Abstract::getDefaultAdapter()->fetchOne($select);
+    }
+
+    /**
+     * Whether a mail log entry belongs to the history visible with the given scope
+     * (same restrictions as getHistory(): journal, allowed documents, conflicts of interest)
+     * @param int $id
+     * @param array $docIds
+     * @param array $options
+     * @return bool
+     */
+    public function isInHistory(int $id, array $docIds = [], array $options = []): bool
+    {
+        if ($id <= 0) {
+            return false;
+        }
+
+        $select = $this->getHistoryEntryQuery($id, $docIds, $options);
+        return (int)Zend_Db_Table_Abstract::getDefaultAdapter()->fetchOne($select) > 0;
+    }
+
+    /**
+     * @param int $id
+     * @param array $docIds
+     * @param array $options
+     * @return Zend_Db_Select
+     */
+    private function getHistoryEntryQuery(int $id, array $docIds = [], array $options = []): Zend_Db_Select
+    {
+        return $this->getHistoryQuery($docIds, $options, true)->where('ID = ?', $id);
     }
 
     /**
@@ -1001,7 +1032,6 @@ class Episciences_Mail extends Zend_Mail
 
     public function setSubject($subject = '', $charset = null, $encoding = Zend_Mime::ENCODING_QUOTEDPRINTABLE): void
     {
-        $subject = htmlspecialchars($subject);
         $subject = $this->replaceTags($subject);
         parent::setSubject($subject);
     }
