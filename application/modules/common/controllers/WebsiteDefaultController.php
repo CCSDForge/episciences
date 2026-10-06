@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Upload\UploadChecker;
+
 class WebsiteDefaultController extends Zend_Controller_Action
 {
     protected $_session = null;
@@ -124,6 +126,19 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
                 //Ajout d'un fichier
 
+                $uploadError = UploadChecker::firstError(
+                    (string)$_FILES['file']['tmp_name'],
+                    (string)($_FILES['file']['name'] ?? ''),
+                    (int)($_FILES['file']['error'] ?? UPLOAD_ERR_OK)
+                );
+
+                if ($uploadError !== null) {
+                    // Flash messages are displayed as HTML and the message contains the name sent by the browser
+                    $this->_helper->FlashMessenger->setNamespace(Ccsd_View_Helper_DisplayFlashMessages::MSG_ERROR)->addMessage(htmlspecialchars($uploadError, ENT_QUOTES));
+                    $this->_helper->redirector->goToUrl($request->getRequestUri());
+                    return;
+                }
+
                 $isOverwritten = isset($params['overwriteFile']) && $params['overwriteFile'] === 'on';
 
                 preg_match('/[^a-z0-9_\.-\/\\\\]/i', $_FILES['file']['name'], $matches);
@@ -142,7 +157,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
                     $message .= ' ';
                     $message .= $translator->translate('car');
                     $message .= ' "';
-                    $message .= $_FILES['file']['name'];
+                    $message .= htmlspecialchars((string)$_FILES['file']['name'], ENT_QUOTES);
                     $message .= '" ';
                     $message .= empty($matches) ? $translator->translate('existe déjà.') : $translator->translate('contient des caractères non valides');
                 }
