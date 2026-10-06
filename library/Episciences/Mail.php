@@ -4,6 +4,18 @@ use Episciences\AppRegistry;
 
 class Episciences_Mail extends Zend_Mail
 {
+    /** Placeholder stored in the mail log instead of account credentials or identifiers */
+    private const LOG_REDACTED_VALUE = '[not stored in the log]';
+
+    /** Tags whose values must never be stored in the mail log (readable by journal staff) */
+    private const LOG_REDACTED_TAGS = [
+        Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK,
+        Episciences_Mail_Tags::TAG_MAIL_ACCOUNT_USERNAME_LIST,
+        Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+        Episciences_Mail_Tags::TAG_INVITATION_URL,
+        Episciences_Mail_Tags::TAG_INVITATION_LINK,
+    ];
+
     /**
      * We're fine
      */
@@ -213,13 +225,7 @@ class Episciences_Mail extends Zend_Mail
         try {
             $this->write($debug);
         } catch (Exception $e) {
-            $details = [
-                'headers' => $this->getHeaders(),
-                'subject' => $this->getSubject(),
-                'body' => ($this->hasATemplate())
-                    ? $this->renderTemplate($this->getTemplatePath(), $this->getTemplateName())
-                    : $this->replaceTags($this->getRawBody())];
-            $message = $e->getCode() . ' - ' . $e->getMessage() . ' - ' . Zend_Json::encode($details);
+            $message = $e->getCode() . ' - ' . $e->getMessage() . ' - ' . Zend_Json::encode($this->buildFailureDetails());
             Ccsd_Log::message($message, false, Zend_Log::WARN, EPISCIENCES_EXCEPTIONS_LOG_PATH . $rvCode . '.mail');
             return false;
         }
@@ -235,6 +241,19 @@ class Episciences_Mail extends Zend_Mail
         }
 
         return true;
+    }
+
+    /**
+     * Details written to the exceptions log when a mail cannot be written (body masked like in the mail log)
+     * @return array<string, mixed>
+     */
+    private function buildFailureDetails(): array
+    {
+        return [
+            'headers' => $this->getHeaders(),
+            'subject' => $this->getSubject(),
+            'body' => $this->getLoggableBody(),
+        ];
     }
 
     /**
@@ -596,7 +615,24 @@ class Episciences_Mail extends Zend_Mail
             $attachments = null;
         }
 
-        $data = [
+        $data = $this->buildLogData($rvId, $from, $replyto, $to, $cc, $bcc, $attachments);
+
+        if ($db->insert(T_MAIL_LOG, $data)) {
+            return $db->lastInsertId();
+        }
+
+        error_log('Logging email in db failed.');
+        $message = "Database logging failed - " . Zend_Json::encode($data);
+        throw new Exception($message, self::STATUS_FAILED_DB_LOG);
+    }
+
+    /**
+     * Row inserted in the mail log (the body is masked, see getLoggableBody())
+     * @return array<string, mixed>
+     */
+    private function buildLogData(int $rvId, string $from, string $replyto, string $to, ?string $cc, ?string $bcc, ?string $attachments): array
+    {
+        return [
             'UID' => $this->getUid(),
             'RVID' => $rvId ?: $this->getRvid(),
             'DOCID' => $this->getDocid(),
@@ -606,18 +642,30 @@ class Episciences_Mail extends Zend_Mail
             'CC' => $cc,
             'BCC' => $bcc,
             'SUBJECT' => $this->getDecodedSubject(),
-            'CONTENT' => $this->getDecodedBody(),
+            'CONTENT' => $this->getLoggableBody(),
             'FILES' => $attachments,
             'WHEN' => new Zend_DB_Expr('NOW()')
         ];
+    }
 
-        if ($db->insert(T_MAIL_LOG, $data)) {
-            return $db->lastInsertId();
+    /**
+     * Body stored in the mail log: credential-bearing links and account identifiers are masked,
+     * since the log is readable by journal staff. The mail actually sent is unaffected.
+     */
+    private function getLoggableBody(): string
+    {
+        $sensitiveTags = array_intersect(self::LOG_REDACTED_TAGS, array_keys($this->tags));
+
+        if ($sensitiveTags === []) {
+            return (string)$this->getDecodedBody();
         }
 
-        error_log('Logging email in db failed.');
-        $message = "Database logging failed - " . Zend_Json::encode($data);
-        throw new Exception($message, self::STATUS_FAILED_DB_LOG);
+        $copy = clone $this;
+        foreach ($sensitiveTags as $tag) {
+            $copy->tags[$tag] = self::LOG_REDACTED_VALUE;
+        }
+
+        return (string)$copy->getDecodedBody();
     }
 
     public function getAttachments()
