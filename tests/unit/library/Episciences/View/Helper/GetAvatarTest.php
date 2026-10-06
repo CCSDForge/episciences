@@ -179,6 +179,36 @@ class GetAvatarTest extends TestCase
     }
 
     /**
+     * A leading # on the background color is tolerated
+     */
+    public function testAsSvgAcceptsHexBackgroundColorWithHash(): void
+    {
+        $this->assertStringContainsString('#FFC107', Episciences_View_Helper_GetAvatar::asSvg('John Doe', '#FFC107'));
+    }
+
+    /**
+     * A name made only of markup characters still produces a well formed SVG
+     */
+    public function testAsSvgFallsBackWhenTheNameIsOnlyMarkupCharacters(): void
+    {
+        $result = Episciences_View_Helper_GetAvatar::asSvg('<>&');
+
+        $this->assertNotFalse(simplexml_load_string($result), 'The SVG stays well formed');
+        $this->assertStringContainsString('?', $result);
+    }
+
+    /**
+     * Quotes are kept: they cannot break out of a text node
+     */
+    public function testAsSvgKeepsApostropheInTheName(): void
+    {
+        $result = Episciences_View_Helper_GetAvatar::asSvg("D'Artagnan");
+
+        $this->assertNotFalse(simplexml_load_string($result), 'The SVG stays well formed');
+        $this->assertStringContainsString('D', $result);
+    }
+
+    /**
      * Test that asPaperStatusSvg() returns '404.svg' for an unknown status
      */
     public function testAsPaperStatusSvgInvalidStatusReturns404(): void

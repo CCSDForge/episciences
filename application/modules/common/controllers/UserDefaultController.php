@@ -1764,6 +1764,9 @@ class UserDefaultController extends Zend_Controller_Action
         $uid = $this->getParam('uid', 0);
         $size = $this->getParam('size', Ccsd_User_Models_User::IMG_NAME_NORMAL);
         $backgroundColor = $this->getParam('bgcolor');
+        if (!is_string($backgroundColor)) {
+            $backgroundColor = null; // e.g. ?bgcolor[]=x
+        }
 
         $photoPathName = false;
         $data = false;
