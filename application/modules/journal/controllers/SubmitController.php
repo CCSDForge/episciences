@@ -1,5 +1,6 @@
 <?php
 
+use Episciences\Submit\SubmittedRecord;
 use Psr\Cache\InvalidArgumentException as InvalidArgumentExceptionAlias;
 
 require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.php';
@@ -181,6 +182,24 @@ class SubmitController extends DefaultController
         }
 
         $formValues = $this->mergeFormValuesWithPost($form->getValues(), $post);
+
+        // Never trust the record posted by the form: use the one of the searched document
+        $searchDoc = (array)($formValues['search_doc'] ?? []);
+        $record = SubmittedRecord::resolve(
+            (string)($searchDoc['repoId'] ?? ''),
+            (string)($searchDoc['docId'] ?? ''),
+            (float)($searchDoc['version'] ?? 1),
+            ((int)($searchDoc['newVersionOf'] ?? 0)) ?: null
+        );
+
+        if ($record === null) {
+            $this->_helper->FlashMessenger
+                ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
+                ->addMessage($this->view->translate("Une erreur s'est produite pendant l'enregistrement de votre article."));
+            return;
+        }
+
+        $formValues['xml'] = $record;
 
         if ($canReplace) {
             [$result, $message] = $this->handlePaperReplacement($formValues);
@@ -445,18 +464,15 @@ class SubmitController extends DefaultController
      */
     private function prepareRecord(array $response, array $params): array
     {
-        $response['record'] = preg_replace('#xmlns="(.*)"#', '', $response['record']);
+        $response = SubmittedRecord::clean($response, (string)$params['repoId']);
 
-        if ($params['repoId'] === Episciences_Repositories::CWI_REPO_ID) {
-            $response['record'] = Episciences_Repositories_Common::checkAndCleanRecord($response['record']);
-        }
-
-        // Apply repository hook
-        $hookData = array_merge($response, ['repoId' => $params['repoId']]);
-        $hookResult = Episciences_Repositories::callHook('hookCleanXMLRecordInput', $hookData);
-        unset($hookResult['repoId']);
-
-        $response = !empty($hookResult) ? $hookResult : $response;
+        // The record stored at submission is this one, never the one posted back by the form
+        SubmittedRecord::remember(
+            (string)$params['repoId'],
+            (string)$params['docId'],
+            (float)$params['version'],
+            (string)$response['record']
+        );
 
         // Determine data display options
         $response['ddOptions'] = [

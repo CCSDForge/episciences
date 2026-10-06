@@ -57,13 +57,13 @@
                     <?php if ((int)$this->log['uid'] === EPISCIENCES_UID) : ?>
                         <?= "Episciences" ?>
                     <?php else : ?>
-                        <?= $this->user['fullname'] ?>
+                        <?= $this->escape($this->user['fullname']) ?>
                     <?php endif; ?>
                 </td>
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Nom") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['fullname'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['fullname']) ?></td>
             </tr>
         </table>
         <?php break; ?>
@@ -75,15 +75,15 @@
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Nom") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['fullname'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['fullname']) ?></td>
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Identifiant") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['username'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['username']) ?></td>
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Adresse e-mail") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['email'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['email']) ?></td>
             </tr>
             <?php if (!empty($this->log['detail']['accepted_by']['fullname'])): ?>
                 <tr>
@@ -101,27 +101,27 @@
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Nom") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['fullname'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['fullname']) ?></td>
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Identifiant") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['username'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['username']) ?></td>
             </tr>
             <tr>
                 <td class="td-label"><?= $this->translate("Adresse e-mail") ?></td>
-                <td class="small"><?= $this->log['detail']['user']['email'] ?></td>
+                <td class="small"><?= $this->escape($this->log['detail']['user']['email']) ?></td>
             </tr>
         </table>
         <?php if ($this->log['detail']['reviewer_suggestion']) : ?>
             <div>
                 <span style="font-weight:bold"><?= $this->translate('Suggestion de relecteur :') ?></span>
-                <?= $this->log['detail']['reviewer_suggestion'] ?>
+                <?= $this->escape($this->log['detail']['reviewer_suggestion']) ?>
             </div>
         <?php endif; ?>
         <?php if ($this->log['detail']['refusal_reason']) : ?>
             <div>
                 <span style="font-weight:bold"><?= $this->translate('Motif du refus :') ?></span>
-                <?= $this->log['detail']['refusal_reason'] ?>
+                <?= $this->escape($this->log['detail']['refusal_reason']) ?>
             </div>
         <?php endif; ?>
         <?php break; ?>
@@ -235,7 +235,7 @@
             <tr>
                 <td class="td-label"><?= $this->translate("Effectué par") ?></td>
                 <td class="small">
-                    <?= $this->user['fullname'] ?>
+                    <?= $this->escape($this->user['fullname']) ?>
                 </td>
             </tr>
             <tr>
@@ -254,7 +254,7 @@
             <tr>
                 <td class="td-label"><?= $this->translate("Effectué par") ?></td>
                 <td class="small">
-                    <?= $this->user['fullname'] ?>
+                    <?= $this->escape($this->user['fullname']) ?>
                 </td>
             </tr>
             <tr>

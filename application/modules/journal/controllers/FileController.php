@@ -7,7 +7,8 @@ require_once APPLICATION_PATH . '/modules/common/controllers/DefaultController.p
 
 class FileController extends DefaultController
 {
-    public const APPLICATION_OCTET_STREAM = 'application/octet-stream';
+    /** Content types the browser may display instead of downloading */
+    private const INLINE_CONTENT_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
     public function indexAction(): void
     {
@@ -235,32 +236,68 @@ class FileController extends DefaultController
     }
 
     /**
+     * Whether a file of this content type may be displayed by the browser instead of downloaded
+     *
+     * @param string $contentType Value returned by Episciences_Tools::getMimeType() (may carry a charset)
+     */
+    public static function isInlineContentType(string $contentType): bool
+    {
+        $type = strtolower(trim(explode(';', $contentType)[0]));
+
+        return in_array($type, self::INLINE_CONTENT_TYPES, true);
+    }
+
+    /**
+     * Builds the response headers used to serve a file
+     *
+     * Only PDF and raster images are displayed in the browser: anything else (SVG, XML, text,
+     * application/octet-stream...) is downloaded, because it could run script on the journal origin.
+     *
+     * @param string $filename Base name of the file
+     * @param string $contentType Value returned by Episciences_Tools::getMimeType()
+     * @param int $size File size in bytes
+     * @param bool $forceDownload Download even if the browser could display the file
+     * @return list<string>
+     */
+    public static function buildFileHeaders(string $filename, string $contentType, int $size, bool $forceDownload = false): array
+    {
+        $downloadableFilename = '"' . $filename . '"';
+        $headers = ['X-Content-Type-Options: nosniff'];
+
+        if ($forceDownload || !self::isInlineContentType($contentType)) {
+            $headers[] = 'Content-Description: File Transfer';
+            $headers[] = 'Expires: 0';
+            $headers[] = 'Cache-Control: must-revalidate';
+            $headers[] = 'Pragma: public';
+            $headers[] = 'Content-Disposition: attachment;filename=' . $downloadableFilename;
+        } else {
+            $headers[] = 'Content-Disposition: inline; filename=' . $downloadableFilename;
+        }
+
+        $headers[] = 'Content-Type: ' . $contentType;
+        $headers[] = 'Content-Length: ' . $size;
+
+        return $headers;
+    }
+
+    /**
      * Reads a file and writes it to the output buffer
      * @param string $file
      * @param bool $forceDownload
      */
     protected function openFile(string $file, bool $forceDownload = false): void
     {
-        $contentType = Episciences_Tools::getMimeType($file);
-        $downloadableFilename = '"' . basename($file) . '"';
+        $headers = self::buildFileHeaders(
+            basename($file),
+            Episciences_Tools::getMimeType($file),
+            (int)filesize($file),
+            $forceDownload
+        );
 
-        if ($contentType === self::APPLICATION_OCTET_STREAM) {
-            // force download because application/octet-stream would burn user eyes anyway
-            $forceDownload = true;
-        } else {
-            header("Content-Disposition: inline; filename=$downloadableFilename");
+        foreach ($headers as $header) {
+            header($header);
         }
 
-        if ($forceDownload) {
-            header('Content-Description: File Transfer');
-            header('Expires: 0');
-            header('Cache-Control: must-revalidate');
-            header('Pragma: public');
-            header('Content-Disposition: attachment;filename=' . $downloadableFilename);
-        }
-
-        header("Content-Type: " . $contentType);
-        header("Content-Length: " . filesize($file));
         ob_clean();
         flush();
         readfile($file);
