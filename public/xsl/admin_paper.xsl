@@ -303,9 +303,11 @@
                         <div class="small">
                             <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
                             <a rel="noopener" target="_blank">
-                                <xsl:attribute name="href">
-                                    <xsl:value-of select="episciences/paperLicence/text()"/>
-                                </xsl:attribute>
+                                <xsl:if test="(starts-with(episciences/paperLicence/text(), 'http://') or starts-with(episciences/paperLicence/text(), 'https://'))">
+                                    <xsl:attribute name="href">
+                                        <xsl:value-of select="episciences/paperLicence/text()"/>
+                                    </xsl:attribute>
+                                </xsl:if>
                                 <xsl:value-of
                                         select="php:function('Ccsd_Tools::translate', string(episciences/paperLicence))"/>
                             </a>
@@ -319,7 +321,7 @@
                                 <div class="small">
                                     <xsl:value-of select="php:function('Ccsd_Tools::translate', 'Licence : ')"/>
                                     <a rel="noopener" target="_blank">
-                                        <xsl:if test="contains($doc_rights, 'href=') and not(contains($doc_rights, '[CC_NO]'))">
+                                        <xsl:if test="not(contains($doc_rights, '[CC_NO]')) and (starts-with($doc_rights, 'http://') or starts-with($doc_rights, 'https://'))">
                                             <xsl:attribute name="href">
                                                 <xsl:value-of select="$doc_rights"/>
                                             </xsl:attribute>
@@ -427,7 +429,7 @@
                         <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
                             <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
                         </xsl:if>
-                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
+                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatexToSafeHtml', string(.))" disable-output-escaping="yes"/>
                     </p>
                 </xsl:when>
                 <xsl:otherwise>
@@ -446,7 +448,7 @@
                         <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
                             <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
                         </xsl:if>
-                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
+                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatexToSafeHtml', string(.))" disable-output-escaping="yes"/>
                     </p>
                 </xsl:otherwise>
             </xsl:choose>

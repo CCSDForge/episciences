@@ -107,6 +107,8 @@ class Episciences_ReviewersManager
             'label' => 'Si vous le souhaitez, vous pouvez nous suggérer un autre relecteur :',
             'style' => 'width: 50%',
             'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Suggérez un relecteur'),
+            'filters' => ['StripTags', 'StringTrim'],
+            'validators' => [['StringLength', false, ['max' => 255]]],
             'decorators' => $decorators
         )));
 
@@ -118,6 +120,8 @@ class Episciences_ReviewersManager
             'label' => 'Si vous le souhaitez, vous pouvez nous indiquer la raison de votre refus :',
             'style' => 'width: 50%; height: 150px',
             'placeholder' => Zend_Registry::get('Zend_Translate')->translate('Motif de votre refus'),
+            'filters' => ['StripTags', 'StringTrim'],
+            'validators' => [['StringLength', false, ['max' => 5000]]],
             'decorators' => $decorators
         )));
 

@@ -353,7 +353,7 @@ class VolumeController extends Zend_Controller_Action
         /** @var Zend_Controller_Request_Http $request */
         $request = $this->getRequest();
         $vid = (int)$request->getParam('id');
-        $docId = $request->getParam('docid');
+        $docId = (int)$request->getParam('docid');
         $from = $request->getParam('from');
 
         if (!empty($from) && $from === 'view' && !empty($docId)) {

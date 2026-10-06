@@ -469,10 +469,13 @@ class ReviewerController extends PaperDefaultController
 
             $refused = (array_key_exists('submitrefuse', $request->getPost()));
 
+            // the refusal form is validated and filtered (tags stripped, trimmed) before anything is stored
+            $refusedFormIsValid = $refused && $refuse_form->isValid($request->getPost());
+
             if ($accepted || $refused) {
 
                 if (
-                    $refused ||
+                    $refusedFormIsValid ||
                     (
                         $accepted &&
                         (
@@ -484,10 +487,17 @@ class ReviewerController extends PaperDefaultController
 
                     $data = $request->isPost() ? $request->getPost() : ['is-accepted' => $accepted];
 
+                    if ($refusedFormIsValid) {
+                        $data = array_merge($data, $refuse_form->getValues());
+                    }
+
                     $this->saveanswer($invitation, $assignment, $paper, $data);
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($this->view->translate("Votre réponse a bien été enregistrée."));
 
 
+                } elseif ($refused) {
+                    // reopen the refusal form: it now displays its own validation errors
+                    $this->view->invalid_refuse_form = true;
                 } else {
                     $this->view->invalid_form = true;
                 }

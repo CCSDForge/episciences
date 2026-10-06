@@ -29,8 +29,19 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
      */
     public static function asSvg($stringToMakeAvatar, ?string $backgroundColor = null): string
     {
-        // Use custom color if provided, otherwise use default palette
-        $backgrounds = $backgroundColor ? ['#' . $backgroundColor] : self::$_defaultBackgroundColors;
+        // Use custom color if provided and well formed (3 or 6 hex digits, leading # tolerated),
+        // otherwise use default palette
+        $hexColor = $backgroundColor !== null ? ltrim($backgroundColor, '#') : '';
+        $backgrounds = preg_match('/^(?:[0-9a-fA-F]{3}){1,2}$/', $hexColor)
+            ? ['#' . $hexColor]
+            : self::$_defaultBackgroundColors;
+
+        // The initials are written as text in the SVG: drop the markup characters
+        // (quotes are harmless in a text node, so names like O'Brien keep their initials)
+        $stringToMakeAvatar = trim(str_replace(['<', '>', '&'], '', (string)$stringToMakeAvatar));
+        if ($stringToMakeAvatar === '') {
+            $stringToMakeAvatar = '?';
+        }
 
         $avatar = new Avatar([
             'shape' => 'circle', 'theme' => 'colorful', 'width' => 34, 'height' => 34, 'fontSize' => 16, 'backgrounds' => $backgrounds]);
