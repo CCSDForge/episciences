@@ -1845,6 +1845,14 @@ class PaperController extends PaperDefaultController
             return;
         }
 
+        if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
+            $this->redirectWithError(
+                "Votre session a expiré ou la page est restée ouverte trop longtemps : par sécurité, votre nouvelle version n'a pas été enregistrée. Merci de recharger cette page puis de soumettre à nouveau votre nouvelle version.",
+                $paper
+            );
+            return;
+        }
+
         $form = $this->buildNewVersionForm($paper);
 
         // Validate cover letter requirement before form validation
