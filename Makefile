@@ -38,7 +38,7 @@ SOLR_COLLECTION_CONFIG := /opt/configsets/episciences
 .PHONY: send-mails composer-install composer-update yarn-encore-production
 .PHONY: restart-httpd restart-php merge-pdf-volume
 .PHONY: get-classification-msc get-classification-jel can-i-use-update
-.PHONY: import-SPDX-license-list
+.PHONY: import-SPDX-license-list licenses
 .PHONY: enter-container-php
 .PHONY: update-geoip stats-process stats-update-robots-list stats-download-kpi
 .PHONY: format format-check format-tests format-file sonar
@@ -78,7 +78,7 @@ help: ## Display this help message
 	@grep -h -E '^deploy.*:.*##' $(MAKEFILE_LIST) 2>/dev/null | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}' || echo "  No deployment commands found"
 	@echo ""
 	@echo "📦 Other Commands:"
-	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use|import-apache-logs|import-SPDX-license-list):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@grep -E '^(send-mails|merge-pdf|get-classification|can-i-use|import-apache-logs|import-SPDX-license-list|licenses):.*##' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 
 # =============================================================================
 # Core Docker Commands
@@ -418,6 +418,39 @@ import-SPDX-license-list: ## Import / update the official SPDX license list into
 	@echo "Importing the official SPDX license list (dry-run)..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php import:spdx-license-list $(if $(filter 0,$(dry-run)),,--dry-run)
+
+licenses: ## Manage paper licenses via papers:licenses — normalize to an SPDX license with resolve=1, update with update=1 (dry-run by default; use dry-run=0 to write; optional: rvcode=CODE document=ID; update: license=CODE new-license=NEW [force=1]; optional: verbose=1)
+	# Prod (normalize): sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php papers:licenses --resolve [--rvcode=CODE] [--document=ID] [--dry-run] [-q]
+	# Prod (update):    sudo -u $(CNTR_APP_USER) php $(CNTR_APP_DIR)/scripts/console.php papers:licenses --update --license=CODE --new-license=NEW [--rvcode=CODE] [--document=ID] [--force] [--dry-run] [-q]
+	@if [ "$(resolve)" != "1" ] && [ "$(update)" != "1" ]; then \
+		echo "Error: specify resolve=1 (normalize to an SPDX license) or update=1 (update a license)."; \
+		echo "Usage: make licenses resolve=1 [rvcode=CODE] [document=ID] [dry-run=0] [verbose=1]"; \
+		echo "       make licenses update=1 license=CODE new-license=NEW [rvcode=CODE] [document=ID] [force=1] [dry-run=0] [verbose=1]"; \
+		exit 1; \
+	fi
+	@if [ "$(resolve)" = "1" ] && [ "$(update)" = "1" ]; then \
+		echo "Error: resolve=1 and update=1 are mutually exclusive."; \
+		exit 1; \
+	fi
+	@if [ "$(update)" = "1" ] && [ -z "$(license)" ]; then \
+		echo "Error: update requires license=CODE (existing license code or unnormalized URL)."; \
+		exit 1; \
+	fi
+	@if [ "$(update)" = "1" ] && [ -z "$(new-license)" ]; then \
+		echo "Error: update requires new-license=NEW (valid SPDX identifier)."; \
+		exit 1; \
+	fi
+	@echo "Running papers:licences ($(if $(filter 1,$(resolve)),normalization to SPDX,update))..."
+	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
+		php scripts/console.php papers:licenses \
+		$(if $(filter 1,$(resolve)),--resolve,--update) \
+		$(if $(license),--license=$(license)) \
+		$(if $(new-license),--new-license=$(new-license)) \
+		$(if $(rvcode),--rvcode=$(rvcode)) \
+		$(if $(document),--document=$(document)) \
+		$(if $(filter 1,$(force)),--force) \
+		$(if $(filter 1,$(verbose)),-v) \
+		$(if $(filter 0,$(dry-run)),,--dry-run)
 
 # --- Sitemap --------------------------------------------------------------------
 
