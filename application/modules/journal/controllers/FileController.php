@@ -9,6 +9,9 @@ class FileController extends DefaultController
 {
     public const APPLICATION_OCTET_STREAM = 'application/octet-stream';
 
+    /** Content types the browser may display instead of downloading */
+    private const INLINE_CONTENT_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+
     public function indexAction(): void
     {
         $this->_helper->layout()->disableLayout();
@@ -235,6 +238,18 @@ class FileController extends DefaultController
     }
 
     /**
+     * Whether a file of this content type may be displayed by the browser instead of downloaded
+     *
+     * @param string $contentType Value returned by Episciences_Tools::getMimeType() (may carry a charset)
+     */
+    public static function isInlineContentType(string $contentType): bool
+    {
+        $type = strtolower(trim(explode(';', $contentType)[0]));
+
+        return in_array($type, self::INLINE_CONTENT_TYPES, true);
+    }
+
+    /**
      * Reads a file and writes it to the output buffer
      * @param string $file
      * @param bool $forceDownload
@@ -244,12 +259,15 @@ class FileController extends DefaultController
         $contentType = Episciences_Tools::getMimeType($file);
         $downloadableFilename = '"' . basename($file) . '"';
 
-        if ($contentType === self::APPLICATION_OCTET_STREAM) {
-            // force download because application/octet-stream would burn user eyes anyway
+        if (!self::isInlineContentType($contentType)) {
+            // Only PDF and raster images are displayed in the browser: anything else (SVG, XML,
+            // text, application/octet-stream...) could run script on the journal origin
             $forceDownload = true;
         } else {
             header("Content-Disposition: inline; filename=$downloadableFilename");
         }
+
+        header('X-Content-Type-Options: nosniff');
 
         if ($forceDownload) {
             header('Content-Description: File Transfer');
