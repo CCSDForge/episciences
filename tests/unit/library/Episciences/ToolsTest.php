@@ -492,6 +492,41 @@ class ToolsTest extends TestCase
     }
 
     /**
+     * Descriptions printed without output escaping lose scripts, handlers and attributes
+     */
+    public function testDecodeLatexToSafeHtmlRemovesActiveContent(): void
+    {
+        $result = Episciences_Tools::decodeLatexToSafeHtml('Intro <img src=x onerror=alert(1)> <script>alert(2)</script><a href="javascript:alert(3)">link</a> <b onclick="x()">bold</b>');
+
+        $this->assertStringNotContainsString('<img', $result);
+        $this->assertStringNotContainsString('<script', $result);
+        $this->assertStringNotContainsString('<a', $result);
+        $this->assertStringNotContainsString('onerror', $result);
+        $this->assertStringNotContainsString('onclick', $result);
+        $this->assertStringContainsString('<b>bold</b>', $result);
+    }
+
+    /**
+     * Light formatting and line breaks of descriptions are kept
+     */
+    public function testDecodeLatexToSafeHtmlKeepsFormattingAndLineBreaks(): void
+    {
+        $result = Episciences_Tools::decodeLatexToSafeHtml("First paragraph.\n\nSecond with <i>emphasis</i> and H<sub>2</sub>O.");
+
+        $this->assertStringContainsString('<br />', $result);
+        $this->assertStringContainsString('<i>emphasis</i>', $result);
+        $this->assertStringContainsString('H<sub>2</sub>O', $result);
+    }
+
+    /**
+     * A bare comparison sign in a plain text abstract is displayed as text
+     */
+    public function testDecodeLatexToSafeHtmlEscapesPlainTextSigns(): void
+    {
+        $this->assertSame('if 1 &lt; 2 &amp; 3 &gt; 2', Episciences_Tools::decodeLatexToSafeHtml('if 1 < 2 & 3 > 2'));
+    }
+
+    /**
      * Test decodeLatex function without line break preservation (default behavior)
      */
     public function testDecodeLatexWithoutLineBreaks(): void

@@ -881,6 +881,20 @@ class Episciences_Tools
     }
 
     /**
+     * Decode a repository description (abstract) and return HTML that is safe to print unescaped.
+     *
+     * Descriptions are plain text or light HTML supplied by the depositor: line breaks are kept
+     * and the markup is reduced to a minimal allow-list (no attribute, no script, no handler).
+     */
+    public static function decodeLatexToSafeHtml(string $text): string
+    {
+        return (new Episciences_HTMLPurifier([
+            'HTML.AllowedElements' => ['p', 'br', 'b', 'i', 'u', 'em', 'strong', 'sub', 'sup', 'ul', 'ol', 'li'],
+            'HTML.AllowedAttributes' => [],
+        ]))->purifyHtml(self::decodeLatex($text, true));
+    }
+
+    /**
      * Check if a language code represents a right-to-left language
      *
      * @param string|null $langCode Language code (e.g., 'ar', 'he', 'fa')
