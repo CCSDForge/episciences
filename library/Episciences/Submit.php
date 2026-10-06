@@ -364,7 +364,8 @@ class Episciences_Submit
                 'validators' => [
                     'Count' => [false, 1],
                     'Extension' => [false, $implode_extensions],
-                    'Size' => [false, MAX_FILE_SIZE]
+                    'Size' => [false, MAX_FILE_SIZE],
+                    new Episciences_Form_Validate_MimeType()
                 ]
             ];
 
@@ -752,7 +753,8 @@ class Episciences_Submit
                     'validators' => [
                         'Count' => [false, 1],
                         'Extension' => [false, $implode_extensions],
-                        'Size' => [false, MAX_FILE_SIZE]
+                        'Size' => [false, MAX_FILE_SIZE],
+                        new Episciences_Form_Validate_MimeType()
                     ]
                 ]);
 
@@ -2874,7 +2876,8 @@ class Episciences_Submit
             'validators' => [
                 'Count' => [false, 1],
                 'Extension' => [false, implode(',', $availableExtensions)],
-                'Size' => [false, MAX_FILE_SIZE]
+                'Size' => [false, MAX_FILE_SIZE],
+                new Episciences_Form_Validate_MimeType([Episciences_Form_Validate_MimeType::ALLOWED_MIME_TYPE_KEY => ['application/pdf']])
             ]
         ]);
 

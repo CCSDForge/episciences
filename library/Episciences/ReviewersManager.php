@@ -183,7 +183,8 @@ class Episciences_ReviewersManager
             'validators'    =>  array(
                 'Count' =>  array(false, 1),
                 'Extension' => array(false, $implode_extensions),
-                'Size'  =>  array(false, MAX_FILE_SIZE))
+                'Size'  =>  array(false, MAX_FILE_SIZE),
+                new Episciences_Form_Validate_MimeType())
         ]);
 
         $form->addElement('button', 'send_reviewer_report_' . $id, array(
