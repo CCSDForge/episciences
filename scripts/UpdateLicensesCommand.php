@@ -82,13 +82,13 @@ class UpdateLicensesCommand extends AbstractCommand
         }
 
         if ($update && !$filterLicense) {
-            $this->io->error("You must specify --licence option.");
+            $this->io->error("You must specify --license option.");
             return Command::FAILURE;
         }
 
 
         if ($update && !$newLicense) {
-            $this->io->error("You must specify the --new-licence option.");
+            $this->io->error("You must specify the --new-license option.");
             return Command::FAILURE;
         }
 
