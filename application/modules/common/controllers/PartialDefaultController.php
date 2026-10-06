@@ -16,18 +16,31 @@ class PartialDefaultController extends Zend_Controller_Action
     {
         $this->_helper->getHelper('layout')->disableLayout();
 
-        // Only the layout options used by the JS caller are read from the request:
-        // never let the client choose the markup (content) or the style of the modal.
-        $request = $this->getRequest();
-        foreach (self::MODAL_BOOLEAN_PARAMS as $name) {
-            $value = $request->getParam($name);
-            if ($value !== null) {
-                $this->view->$name = filter_var($value, FILTER_VALIDATE_BOOLEAN);
-            }
+        foreach (self::extractModalOptions($this->getRequest()) as $name => $value) {
+            $this->view->$name = $value;
         }
 
         $this->renderScript('partials/modal.phtml');
 
     }
 
+
+    /**
+     * Only the layout options used by the JS caller are read from the request:
+     * never let the client choose the markup or the style of the modal.
+     * `buttons` and `hideSubmit` are cast to booleans ('false', '0', 'off' => false).
+     *
+     * @return array<string, bool>
+     */
+    public static function extractModalOptions(Zend_Controller_Request_Abstract $request): array
+    {
+        $options = [];
+        foreach (self::MODAL_BOOLEAN_PARAMS as $name) {
+            $value = $request->getParam($name);
+            if ($value !== null) {
+                $options[$name] = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+            }
+        }
+        return $options;
+    }
 }

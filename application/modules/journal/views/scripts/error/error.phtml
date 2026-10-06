@@ -1,7 +1,8 @@
 <div class="es-block-focus es-block-focus-red fixed">
     <h4 class="text-danger" style="margin-bottom: 20px"><?php echo $this->escape($this->translate($this->message)) ?></h4>
     <?php if (isset($this->description)) : ?>
-        <p><?php echo $this->escape($this->translate($this->description)); ?></p>
+        <?php // descriptionIsHtml: set only by controllers for static, trusted markup ?>
+        <p><?php echo !empty($this->descriptionIsHtml) ? $this->translate($this->description) : $this->escape($this->translate($this->description)); ?></p>
     <?php endif; ?>
     <?php if (isset($this->exception)) : ?>
         <p><?php echo $this->escape($this->translate($this->exception->getMessage())); ?></p>

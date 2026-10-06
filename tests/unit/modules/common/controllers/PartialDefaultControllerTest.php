@@ -9,22 +9,54 @@ use PHPUnit\Framework\TestCase;
 /**
  * The modal structure is reachable without authentication: the request must not be
  * able to choose the markup or the style rendered by the modal views, and the error
- * views must escape the messages they print (source-pattern analysis).
+ * view must escape the messages it prints unless the controller flags trusted markup.
  */
 final class PartialDefaultControllerTest extends TestCase
 {
-    private function read(string $relativePath): string
+    private const MODULES = APPLICATION_PATH . '/modules/';
+
+    protected function setUp(): void
     {
-        return (string) file_get_contents(APPLICATION_PATH . '/modules/' . $relativePath);
+        require_once self::MODULES . 'common/controllers/PartialDefaultController.php';
     }
 
-    public function testModalActionDoesNotCopyTheWholeRequestIntoTheView(): void
+    private function request(array $params): \Zend_Controller_Request_Simple
     {
-        $source = $this->read('common/controllers/PartialDefaultController.php');
+        $request = new \Zend_Controller_Request_Simple();
+        $request->setParams($params);
+        return $request;
+    }
 
-        self::assertStringNotContainsString('getParams()', $source);
-        self::assertStringContainsString("MODAL_BOOLEAN_PARAMS = ['buttons', 'hideSubmit']", $source);
-        self::assertStringContainsString('FILTER_VALIDATE_BOOLEAN', $source);
+    private function render(string $script, array $vars): string
+    {
+        $view = new class extends \Zend_View {
+            public function translate($messageid = null)
+            {
+                return (string) $messageid;
+            }
+        };
+        foreach ($vars as $name => $value) {
+            $view->$name = $value;
+        }
+        $view->setScriptPath(self::MODULES . dirname($script));
+        return $view->render(basename($script));
+    }
+
+    public function testOnlyBooleanLayoutOptionsAreExtracted(): void
+    {
+        $options = \PartialDefaultController::extractModalOptions($this->request([
+            'style' => ['x' => '" onload="alert(1)'],
+            'content' => '<script>alert(1)</script>',
+            'hideSubmit' => 'true',
+            'buttons' => 'false',
+        ]));
+
+        self::assertSame(['buttons' => false, 'hideSubmit' => true], $options);
+    }
+
+    public function testAbsentOptionsAreNotSet(): void
+    {
+        self::assertSame([], \PartialDefaultController::extractModalOptions($this->request([])));
     }
 
     /**
@@ -41,34 +73,54 @@ final class PartialDefaultControllerTest extends TestCase
     /**
      * @dataProvider modalViewProvider
      */
-    public function testModalViewsEscapeTheStyleAttribute(string $view): void
+    public function testModalViewsIgnoreInjectedStyleAndContent(string $view): void
     {
-        $source = $this->read($view);
+        $html = $this->render($view, [
+            'style' => ['x' => '" onload="alert(1)'],
+            'content' => '<script>alert(1)</script>',
+        ]);
 
-        self::assertStringContainsString("echo \$this->escape(\$property . ':' . \$value . ';');", $source);
-        self::assertStringNotContainsString("echo \$property . ':'", $source);
+        self::assertStringNotContainsString('onload', $html);
+        self::assertStringNotContainsString('alert(1)', $html);
     }
 
     /**
-     * @return array<string, array{string}>
+     * @dataProvider modalViewProvider
      */
-    public static function errorViewProvider(): array
+    public function testModalViewsHideButtonsOnlyWhenAskedTo(string $view): void
     {
-        return [
-            'error' => ['journal/views/scripts/error/error.phtml'],
-            'deny' => ['journal/views/scripts/error/deny.phtml'],
-            'http_error' => ['journal/views/scripts/error/http_error.phtml'],
-        ];
+        self::assertStringContainsString('modal-footer', $this->render($view, []));
+        self::assertStringNotContainsString('data-dismiss="modal">Fermer', $this->render($view, ['buttons' => false]));
     }
 
-    /**
-     * @dataProvider errorViewProvider
-     */
-    public function testErrorViewsEscapeTheirMessages(string $view): void
+    public function testErrorViewEscapesUntrustedMessages(): void
     {
-        $source = $this->read($view);
+        $html = $this->render('journal/views/scripts/error/error.phtml', [
+            'message' => '<img src=x onerror=alert(1)>',
+            'description' => '<script>alert(2)</script>',
+        ]);
 
-        self::assertDoesNotMatchRegularExpression('/echo \$this->translate\(\$this->/', $source);
-        self::assertStringContainsString('$this->escape($this->translate(', $source);
+        self::assertStringNotContainsString('<img', $html);
+        self::assertStringNotContainsString('<script>', $html);
+        self::assertStringContainsString('&lt;script&gt;', $html);
+    }
+
+    public function testErrorViewKeepsTrustedDescriptionMarkup(): void
+    {
+        $html = $this->render('journal/views/scripts/error/error.phtml', [
+            'message' => 'm',
+            'description' => "<a href='/user/login'>Login</a>",
+            'descriptionIsHtml' => true,
+        ]);
+
+        self::assertStringContainsString("<a href='/user/login'>Login</a>", $html);
+    }
+
+    public function testDenyAndHttpErrorViewsEscapeTheMessage(): void
+    {
+        foreach (['deny', 'http_error'] as $script) {
+            $html = $this->render("journal/views/scripts/error/$script.phtml", ['message' => '<b>x</b>']);
+            self::assertStringNotContainsString('<b>', $html, $script);
+        }
     }
 }
