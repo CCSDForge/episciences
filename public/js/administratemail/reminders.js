@@ -8,6 +8,15 @@ const TYPE_ARTICLE_BLOCKED_IN_ACCEPTED_STATE = 6;
 const TYPE_ARTICLES_BLOCKED_IN_SUBMITTED_STATE = 7;
 const TYPE_ARTICLES_BLOCKED_IN_REVIEWED_STATE = 8;
 
+/**
+ * Per-session request token (CSRF) exposed by the layout, required to save or delete a reminder.
+ * @returns {string}
+ */
+function getCsrfToken() {
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    return csrfMeta ? csrfMeta.content : '';
+}
+
 function deleteReminder(btn) {
     bootbox.setDefaults({ locale: locale });
     bootbox.confirm(translate('Êtes-vous sûr ?'), function (result) {
@@ -18,6 +27,7 @@ function deleteReminder(btn) {
             $.ajax({
                 url: $(btn).attr('href'),
                 type: 'POST',
+                headers: { 'X-CSRF-Token': getCsrfToken() },
                 success: function (response) {
                     // Suppression du séparateur suivant si le reminder était le premier de la liste
                     if (!$(container).prevAll('.reminder').length) {
@@ -54,6 +64,7 @@ function submit() {
         $.ajax({
             url: $('#reminder_form').attr('action'),
             type: 'POST',
+            headers: { 'X-CSRF-Token': getCsrfToken() },
             data: $('#reminder_form').serialize(),
             success: function (response) {
                 $('#modal-box').modal('hide');

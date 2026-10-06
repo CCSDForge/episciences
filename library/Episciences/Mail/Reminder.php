@@ -217,7 +217,7 @@ class Episciences_Mail_Reminder
         // Enregistrement en base
         if ($this->getId()) {
             $edit = true;
-            $db->update(T_MAIL_REMINDERS, $values, array('ID = ?' => $this->getId()));
+            $db->update(T_MAIL_REMINDERS, $values, ['ID = ?' => $this->getId(), 'RVID = ?' => $this->getRvid()]);
         } else {
             $edit = false;
             $db->insert(T_MAIL_REMINDERS, $values);

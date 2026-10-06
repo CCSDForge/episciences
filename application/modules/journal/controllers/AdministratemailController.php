@@ -693,7 +693,12 @@ class AdministratemailController extends Zend_Controller_Action
         $id = $request->getParam('id');
 
         if ($id) {
-            $reminder = Episciences_Mail_RemindersManager::find($id);
+            // Only reminders of the current journal can be edited
+            $reminder = Episciences_Mail_RemindersManager::find((int)$id, RVID);
+            if (!$reminder) {
+                $this->_helper->viewRenderer->setNoRender();
+                return;
+            }
         } else {
             $reminder = null;
         }
@@ -715,6 +720,11 @@ class AdministratemailController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender();
 
         $request = $this->getRequest();
+
+        if (!$this->isValidReminderWriteRequest($request)) {
+            return;
+        }
+
         $recipient = $request->getParam('recipient');
         $type = $request->getParam('type');
         $templates = Episciences_Mail_RemindersManager::getTemplates();
@@ -725,8 +735,15 @@ class AdministratemailController extends Zend_Controller_Action
             return;
         }
 
+        // Only reminders of the current journal can be modified
+        $id = $request->getParam('id');
+        if ($id && !Episciences_Mail_RemindersManager::find((int)$id, RVID)) {
+            $this->getResponse()->setHttpResponseCode(403);
+            return;
+        }
+
         $options = [
-            'id' => $request->getParam('id'),
+            'id' => $id ? (int)$id : null,
             'rvid' => RVID,
             'type' => $request->getParam('type'),
             'recipient' => $request->getParam('recipient'),
@@ -758,12 +775,33 @@ class AdministratemailController extends Zend_Controller_Action
         $this->_helper->viewRenderer->setNoRender();
 
         $request = $this->getRequest();
+
+        if (!$this->isValidReminderWriteRequest($request)) {
+            return false;
+        }
+
         $id = $request->getParam('id');
 
-        if (Episciences_Mail_RemindersManager::delete($id)) {
+        // Only reminders of the current journal can be deleted
+        if ($id && Episciences_Mail_RemindersManager::delete((int)$id, RVID)) {
             return true;
         }
 
+        $this->getResponse()->setHttpResponseCode(403);
+        return false;
+    }
+
+    /**
+     * Reminder changes must come from a POST request carrying the per-session request token (CSRF);
+     * otherwise the request is answered with HTTP 403.
+     */
+    private function isValidReminderWriteRequest(Zend_Controller_Request_Http $request): bool
+    {
+        if ($request->isPost() && Episciences_Csrf_Helper::validateRequestToken($request)) {
+            return true;
+        }
+
+        $this->getResponse()->setHttpResponseCode(403);
         return false;
     }
 
