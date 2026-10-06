@@ -440,7 +440,7 @@ licenses: ## Manage paper licenses via papers:licenses — normalize to an SPDX 
 		echo "Error: update requires new-license=NEW (valid SPDX identifier)."; \
 		exit 1; \
 	fi
-	@echo "Running papers:licences ($(if $(filter 1,$(resolve)),normalization to SPDX,update))..."
+	@echo "Running papers:licenses ($(if $(filter 1,$(resolve)),normalization to SPDX,update))..."
 	@$(DOCKER_COMPOSE) exec -u $(CNTR_APP_USER) -w $(CNTR_APP_DIR) $(CNTR_NAME_PHP) \
 		php scripts/console.php papers:licenses \
 		$(if $(filter 1,$(resolve)),--resolve,--update) \
