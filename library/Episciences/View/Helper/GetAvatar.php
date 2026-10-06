@@ -32,7 +32,7 @@ class Episciences_View_Helper_GetAvatar extends Zend_View_Helper_Abstract
         // Use custom color if provided and well formed (3 or 6 hex digits, leading # tolerated),
         // otherwise use default palette
         $hexColor = $backgroundColor !== null ? ltrim($backgroundColor, '#') : '';
-        $backgrounds = preg_match('/^(?:[0-9a-fA-F]{3}){1,2}$/', $hexColor)
+        $backgrounds = preg_match('/^(?:[0-9a-fA-F]{3}){1,2}$/D', $hexColor)
             ? ['#' . $hexColor]
             : self::$_defaultBackgroundColors;
 

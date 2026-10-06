@@ -167,6 +167,35 @@ class GetAvatarTest extends TestCase
     }
 
     /**
+     * @return array<string, array{string}>
+     */
+    public static function rejectedColorProvider(): array
+    {
+        return [
+            'trailing newline' => ["abc\n"],
+            'four digits' => ['abcd'],
+            'five digits' => ['abcde'],
+            'seven digits' => ['abcdef1'],
+            'not hexadecimal' => ['ggg'],
+            'attribute injection' => ['abc" onload="alert(1)'],
+        ];
+    }
+
+    /**
+     * Only 3 or 6 hex digits are written in the SVG: anything else gives the default palette
+     *
+     * @dataProvider rejectedColorProvider
+     */
+    public function testAsSvgOnlyWritesWellFormedColors(string $color): void
+    {
+        $result = Episciences_View_Helper_GetAvatar::asSvg('John Doe', $color);
+
+        $this->assertStringNotContainsString('#' . $color, $result);
+        $this->assertStringNotContainsString("\n\"", $result, 'no line break left inside an attribute');
+        $this->assertStringNotContainsString('onload', $result);
+    }
+
+    /**
      * The text of the avatar cannot inject markup into the SVG
      */
     public function testAsSvgStripsMarkupCharactersFromTheName(): void
