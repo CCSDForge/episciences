@@ -115,7 +115,7 @@ class Episciences_Paper_Projects_ViewFormatter
         }
 
         // URL
-        if (isset($vfunding[self::KEY_URL]) && $vfunding[self::KEY_URL] !== '') {
+        if (isset($vfunding[self::KEY_URL]) && preg_match('#^https?://#i', trim((string) $vfunding[self::KEY_URL]))) {
             $safeUrl = htmlspecialchars((string) $vfunding[self::KEY_URL], ENT_QUOTES, 'UTF-8');
             $html .= '; <a href="' . $safeUrl . '">' . $safeUrl . '</a>';
         }
