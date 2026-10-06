@@ -147,6 +147,38 @@ class GetAvatarTest extends TestCase
     }
 
     /**
+     * A well formed hex background color is written in the SVG
+     */
+    public function testAsSvgAcceptsHexBackgroundColor(): void
+    {
+        $this->assertStringContainsString('#FFC107', Episciences_View_Helper_GetAvatar::asSvg('John Doe', 'FFC107'));
+        $this->assertStringContainsString('#abc', Episciences_View_Helper_GetAvatar::asSvg('John Doe', 'abc'));
+    }
+
+    /**
+     * A background color that is not a hex code never reaches the SVG attributes
+     */
+    public function testAsSvgIgnoresMalformedBackgroundColor(): void
+    {
+        $result = Episciences_View_Helper_GetAvatar::asSvg('John Doe', 'red" onload="alert(1)');
+
+        $this->assertStringNotContainsString('onload', $result);
+        $this->assertStringNotContainsString('alert', $result);
+    }
+
+    /**
+     * The text of the avatar cannot inject markup into the SVG
+     */
+    public function testAsSvgStripsMarkupCharactersFromTheName(): void
+    {
+        $result = Episciences_View_Helper_GetAvatar::asSvg('<script>alert(1)</script> <x');
+
+        $this->assertStringNotContainsString('<script', $result);
+        $this->assertStringNotContainsString('<x', $result);
+        $this->assertNotFalse(simplexml_load_string($result), 'The SVG stays well formed');
+    }
+
+    /**
      * Test that asPaperStatusSvg() returns '404.svg' for an unknown status
      */
     public function testAsPaperStatusSvgInvalidStatusReturns404(): void
