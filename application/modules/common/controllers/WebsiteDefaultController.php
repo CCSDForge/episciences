@@ -224,7 +224,8 @@ class WebsiteDefaultController extends Zend_Controller_Action
                     $options['filter'] = implode(';', $options['filter']);
                 }
 
-                $isFilePage = $options['type'] === 'Episciences_Website_Navigation_Page_File';
+                // The class of the page stored in session decides, never the type sent by the browser
+                $isFilePage = $this->_session->website->getPage($pageid) instanceof Episciences_Website_Navigation_Page_File;
                 $uploadError = $isFilePage ? Episciences_Website_Navigation_Page_File::validateUpload($_FILES[$id] ?? null) : null;
 
                 if ($uploadError !== null) {

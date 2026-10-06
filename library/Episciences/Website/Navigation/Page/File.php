@@ -145,6 +145,13 @@ class Episciences_Website_Navigation_Page_File extends Episciences_Website_Navig
     {
         //C'est pas super propre mais bon...
         if ($this->getSrc() != '') {
+            $uploads = $_FILES['pages_' . $this->getPageId()] ?? null;
+
+            // Whatever the caller checked, a file whose content was not validated is never stored
+            if (self::validateUpload($uploads) !== null) {
+                return;
+            }
+
             if (isset($_FILES['pages_' . $this->getPageId()]['tmp_name']['src']) && is_file($_FILES['pages_' . $this->getPageId()]['tmp_name']['src'])) {
                 $this->setSrc(Ccsd_Tools::getNewFileName($this->getSrc(), REVIEW_PATH . 'public/'));
                 rename($_FILES['pages_' . $this->getPageId()]['tmp_name']['src'], REVIEW_PATH . 'public/' . $this->getSrc());

@@ -152,6 +152,33 @@ final class UploadFormsMimeValidationTest extends TestCase
     }
 
     /**
+     * The file is checked again where it is stored, whatever the controller did
+     */
+    public function testPageFileNeverStoresAFileThatIsNotValid(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'page');
+        $page = new Episciences_Website_Navigation_Page_File();
+        $page->setPageId(987654);
+        $page->setSrc('document.pdf');
+
+        $_FILES['pages_987654'] = [
+            'error' => ['src' => UPLOAD_ERR_OK],
+            'tmp_name' => ['src' => $path],
+            'name' => ['src' => 'document.pdf'],
+        ];
+
+        try {
+            $page->saveFile();
+
+            self::assertFileExists($path, 'the empty file was not moved');
+            self::assertSame('document.pdf', $page->getSrc());
+        } finally {
+            unset($_FILES['pages_987654']);
+            @unlink($path);
+        }
+    }
+
+    /**
      * @return \Generator<string, string> path => source
      */
     private function phpSources(): \Generator
