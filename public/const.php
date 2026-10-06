@@ -135,24 +135,24 @@ function defineJournalConstants(string $rvCode = null): void
         //configurable constants path
         define('CONFIGURABLE_CONSTANTS_PATH', APPLICATION_PATH . '/configs/' . APPLICATION_MODULE . '.configurable.constants.json');
 
+        $configurableConst = [];
+
         if (is_file(CONFIGURABLE_CONSTANTS_PATH)) {
-            /** @var array $configurableConst */
             try {
                 $configurableConst = json_decode(file_get_contents(CONFIGURABLE_CONSTANTS_PATH), true, 512, JSON_THROW_ON_ERROR);
             } catch (JsonException $e) {
+                // Uploads then fall back to PDF only
                 trigger_error($e->getMessage());
             }
-
-            $allowedExtensions = $configurableConst['allowed_extensions'] ?? ['pdf'];
-            $allowedMimesTypes = $configurableConst['allowed_mimes_types'] ?? ['application/pdf'];
-
-        } else {
-            $allowedExtensions = ['pdf'];
-            $allowedMimesTypes = ['application/pdf'];
         }
 
+        $allowedMimesByExtension = $configurableConst['allowed_mimes_by_extension'] ?? ['pdf' => ['application/pdf']];
+        $allowedExtensions = $configurableConst['allowed_extensions'] ?? array_keys($allowedMimesByExtension);
+
         define('ALLOWED_EXTENSIONS', $allowedExtensions);
-        define('ALLOWED_MIMES_TYPES', $allowedMimesTypes);
+        define('ALLOWED_MIMES_BY_EXTENSION', $allowedMimesByExtension);
+        // Every content type accepted for at least one extension
+        define('ALLOWED_MIMES_TYPES', array_values(array_unique(array_merge(...array_values($allowedMimesByExtension)))));
     }
 
     if (defined('REVIEW_PATH')) {
@@ -452,6 +452,7 @@ function fixUndefinedConstantsForCodeAnalysis(): void
         define('REVIEW_PATH', '');
         define('CONFIGURABLE_CONSTANTS_PATH', '');
         define('ALLOWED_EXTENSIONS', []);
+        define('ALLOWED_MIMES_BY_EXTENSION', []);
         define('ALLOWED_MIMES_TYPES', []);
         define('REVIEW_TMP_PATH', '');
         define('REVIEW_URL', '');

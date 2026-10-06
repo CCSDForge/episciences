@@ -133,4 +133,10 @@ return [
     "Unknown error while uploading file '%value%'" => "Erreur inconnue lors de l'envoi du fichier '%value%'",
     "Value is required and can't be empty" => "Cette valeur est obligatoire et ne peut être vide",
 
+    // Content check of uploaded files (Episciences_Form_Validate_MimeType)
+    "The file '%value%' cannot be accepted: its content does not match its extension. Please check that it is a valid file and that it has not been renamed." => "Le fichier '%value%' ne peut pas être accepté : son contenu ne correspond pas à son extension. Vérifiez qu'il s'agit d'un fichier valide et qu'il n'a pas été renommé.",
+    "The type of the file '%value%' could not be checked. Please try again with another copy of the file." => "Le type du fichier '%value%' n'a pas pu être vérifié. Veuillez réessayer avec une autre copie du fichier.",
+    "The file '%value%' could not be read. Please try to upload it again." => "Le fichier '%value%' n'a pas pu être lu. Veuillez essayer de le déposer à nouveau.",
+    "The file '%value%' is empty. Please choose a file that contains data." => "Le fichier '%value%' est vide. Veuillez choisir un fichier qui contient des données.",
+
 ];

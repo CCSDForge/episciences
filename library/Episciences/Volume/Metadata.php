@@ -1,5 +1,9 @@
 <?php
 
+use Episciences\AppRegistry;
+use Episciences\Upload\PublicFileStore;
+use Episciences\Upload\UploadChecker;
+
 class Episciences_Volume_Metadata
 {
     const TRANSLATION_FILE = 'volumes.php';
@@ -298,6 +302,19 @@ class Episciences_Volume_Metadata
         if ($this->getTmpfile()) {
             $file = $this->getTmpfile();
 
+            // The description of the file comes back from the browser: check it again before storing anything
+            $source = PublicFileStore::resolveTemporaryFile((string)($file['tmp_name'] ?? ''), REVIEW_TMP_PATH);
+            $error = $source === null
+                ? 'The file is not an upload of this journal'
+                : UploadChecker::firstPublicFileError($source, (string)($file['name'] ?? ''));
+
+            if ($error !== null) {
+                AppRegistry::getMonoLogger()?->warning('Volume file refused', ['vid' => $this->getVid(), 'reason' => $error]);
+                return false;
+            }
+
+            $file['tmp_name'] = $source;
+
             $path = REVIEW_PUBLIC_PATH . 'volumes/' . $this->getVid() . '/';
             if (!file_exists($path)) {
                 mkdir($path, 0777, true);
@@ -309,7 +326,7 @@ class Episciences_Volume_Metadata
             }
 
             // Déplacer le fichier dans son dossier final
-            $filename = Ccsd_Tools::getNewFileName($file['name'], $path);
+            $filename = Ccsd_Tools::getNewFileName(PublicFileStore::storedName((string)$file['name']), $path);
             if (file_exists($file['tmp_name'])) {
                 rename($file['tmp_name'], $path . $filename);
                 chmod($path . $filename, 0644);
@@ -323,15 +340,18 @@ class Episciences_Volume_Metadata
         if ($this->getDeletelist()) {
             foreach ($this->getDeletelist() as $item) {
                 if ($item['type'] == 'tmp_file') {
-                    if (file_exists($item['path'])) {
-                        unlink($item['path']);
+                    // The path comes back from the browser: only the uploads parked for this journal may be removed
+                    $temporaryFile = PublicFileStore::resolveTemporaryFile((string)($item['path'] ?? ''), REVIEW_TMP_PATH);
+                    if ($temporaryFile !== null) {
+                        unlink($temporaryFile);
                     }
                 } else {
                     // Files are stored under REVIEW_PUBLIC_PATH (see save() and getFilePath());
                     // deleting from REVIEW_FILES_PATH silently missed them and leaked the file.
                     $path = REVIEW_PUBLIC_PATH . 'volumes/' . $this->getVid() . '/';
-                    if (file_exists($path . $item['name'])) {
-                        unlink($path . $item['name']);
+                    $name = basename((string)($item['name'] ?? ''));
+                    if ($name !== '' && is_file($path . $name)) {
+                        unlink($path . $name);
                     }
                 }
             }
