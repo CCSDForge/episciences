@@ -362,17 +362,13 @@ class UpdateLicensesCommand extends AbstractCommand
         if (!$spdxResolver->isValid($newLicense, true)) {
             $this->io->error(sprintf('The license code [%s] is invalid', $newLicense));
             $this->io->info(sprintf('@see %s to select a valid Identifier', LicenseSpdxResolver::SPDX_LICENSE_LIST_URL));
-            if($isVerbose){
-                $this->standardizationAudit($this->fetchLicensesFromPaperLicenceCode($rvCode), $this->fetchLicensesNoYetNormalized($rvCode));
-            }
+            $this->showLicensesAudit($rvCode, $isVerbose);
             return Command::FAILURE;
         }
 
         if ($newLicense === $options['license']) {
             $this->io->warning(sprintf('Nothing to update: the new licence [%s] is identical to the previous one.', $newLicense));
-            if($isVerbose){
-                $this->standardizationAudit($this->fetchLicensesFromPaperLicenceCode($rvCode), $this->fetchLicensesNoYetNormalized($rvCode));
-            }
+            $this->showLicensesAudit($rvCode, $isVerbose);
             return Command::FAILURE;
         }
 
@@ -388,9 +384,7 @@ class UpdateLicensesCommand extends AbstractCommand
 
         if (empty($docIds)) {
             $this->io->success("Nothing to update.");
-            if($isVerbose){
-                $this->standardizationAudit($this->fetchLicensesFromPaperLicenceCode($rvCode), $this->fetchLicensesNoYetNormalized($rvCode));
-            }
+            $this->showLicensesAudit($rvCode, $isVerbose);
             return Command::SUCCESS;
         }
 
@@ -416,12 +410,20 @@ class UpdateLicensesCommand extends AbstractCommand
             $this->io->success('The Update process is complete');
         }
 
-        if($isVerbose){
-            $this->standardizationAudit($this->fetchLicensesFromPaperLicenceCode($rvCode), $this->fetchLicensesNoYetNormalized($rvCode));
-        }
+        $this->showLicensesAudit($rvCode, $isVerbose);
 
         return $res;
 
+    }
+
+    private function showLicensesAudit(string $rvCode = null, bool $isVerbose = false): void
+    {
+        if ($isVerbose) {
+            $this->standardizationAudit(
+                    $this->fetchLicensesFromPaperLicenceCode($rvCode),
+                    $this->fetchLicensesNoYetNormalized($rvCode)
+            );
+        }
     }
 
 
