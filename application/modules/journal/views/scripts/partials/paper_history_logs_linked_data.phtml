@@ -7,7 +7,7 @@
 ?>
 <span class="log-linked-data">
     <?= $this->translate('par') . ' ' ?>
-    <span class="log-user-name"><?= $this->username ?></span>
+    <span class="log-user-name"><?= $this->escape($this->username) ?></span>
     <?= $this->translate(' :') ?>
     <span class="log-ld-type"><?= $this->escape($this->typeLd) ?></span>
     <?= " =>" ?>
