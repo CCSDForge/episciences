@@ -262,16 +262,7 @@ class UpdateLicensesCommand extends AbstractCommand
     private function showConfiguration(array $options = []): void
     {
 
-        $allTableStr = 'ALL TABLE';
-        $isAll = $options['all'] ?? false;
-
-        if (isset($options['where'])) {
-            $target = isset($options['all']) ? $allTableStr : ("Condition");
-        } elseif (isset($options['license'])) {
-            $target = $isAll ? $allTableStr : (("Code"));
-        } else {
-            $target = $isAll ? $allTableStr : (("ID Doc"));
-        }
+        $target = isset($options['license']) ? 'Code' : 'ID Doc';
 
         $this->showTable(
                 ['Parameter', 'Value'],
