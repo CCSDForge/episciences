@@ -427,7 +427,7 @@
                         <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
                             <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
                         </xsl:if>
-                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
+                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatexToSafeHtml', string(.))" disable-output-escaping="yes"/>
                     </p>
                 </xsl:when>
                 <xsl:otherwise>
@@ -446,7 +446,7 @@
                         <xsl:if test="$displayable_desc_count > 1 and @xml:lang">
                             <strong>[<xsl:value-of select="@xml:lang"/>] </strong>
                         </xsl:if>
-                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatex', string(.), true())" disable-output-escaping="yes"/>
+                        <xsl:value-of select="php:function('Episciences_Tools::decodeLatexToSafeHtml', string(.))" disable-output-escaping="yes"/>
                     </p>
                 </xsl:otherwise>
             </xsl:choose>
