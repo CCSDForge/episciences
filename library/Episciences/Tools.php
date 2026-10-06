@@ -1856,7 +1856,7 @@ class Episciences_Tools
 
     /**
      * Keep only the attachment names that resolve inside the attachments directory
-     * (see resolveAttachmentPath()). Keys are preserved.
+     * (see resolveAttachmentPath()). The list is re-indexed.
      *
      * @param string $baseDir attachments directory
      * @param array<mixed> $names names submitted by the client
