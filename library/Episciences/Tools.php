@@ -856,7 +856,27 @@ class Episciences_Tools
         return trim($name);
     }
 
+    /** Elements kept in repository descriptions */
+    private const SAFE_DESCRIPTION_ELEMENTS = [
+        'a', 'b', 'blockquote', 'br', 'code', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'li', 'ol',
+        'p', 'pre', 's', 'span', 'strong', 'sub', 'sup', 'table', 'tbody', 'td', 'th', 'thead', 'tr', 'u', 'ul',
+    ];
+
+    /** Known HTML elements that are removed from repository descriptions */
+    private const DROPPED_DESCRIPTION_ELEMENTS = [
+        'script', 'style', 'img', 'iframe', 'object', 'embed', 'svg', 'math', 'form', 'input', 'button', 'link',
+        'meta', 'div', 'font', 'center', 'video', 'audio', 'base', 'frame', 'frameset', 'textarea', 'select',
+    ];
+
     public static function decodeLatex($string, $preserveLineBreaks = false): string
+    {
+        return self::decodeAmpersand(self::latexToUtf8($string, (bool)$preserveLineBreaks));
+    }
+
+    /**
+     * Replace LaTeX sequences by UTF-8 characters and, optionally, line breaks by <br />
+     */
+    private static function latexToUtf8($string, bool $preserveLineBreaks): string
     {
         $result = str_replace(array_keys(static::$latex2utf8), array_values(static::$latex2utf8), $string);
 
@@ -877,21 +897,34 @@ class Episciences_Tools
             $result = preg_replace('/\n/', '<br />', $result);
         }
 
-        return self::decodeAmpersand($result);
+        return $result;
     }
 
     /**
      * Decode a repository description (abstract) and return HTML that is safe to print unescaped.
      *
-     * Descriptions are plain text or light HTML supplied by the depositor: line breaks are kept
-     * and the markup is reduced to a minimal allow-list (no attribute, no script, no handler).
+     * Descriptions are plain text or light HTML supplied by the depositor: line breaks are kept,
+     * links are limited to http(s) and the markup is reduced to a restricted allow-list
+     * (no script, no image, no attribute except a.href).
+     * A "<" that does not start a known HTML tag (e.g. "n<m and m>k") is plain text and is kept.
      */
     public static function decodeLatexToSafeHtml(string $text): string
     {
-        return (new Episciences_HTMLPurifier([
-            'HTML.AllowedElements' => ['p', 'br', 'b', 'i', 'u', 'em', 'strong', 'sub', 'sup', 'ul', 'ol', 'li'],
-            'HTML.AllowedAttributes' => [],
-        ]))->purifyHtml(self::decodeLatex($text, true));
+        static $purifier = null;
+
+        if ($purifier === null) {
+            $purifier = new Episciences_HTMLPurifier([
+                'HTML.AllowedElements' => self::SAFE_DESCRIPTION_ELEMENTS,
+                'HTML.AllowedAttributes' => ['a.href'],
+                'URI.AllowedSchemes' => Episciences_HTMLPurifier::$URI_ALLOWED_SCHEMES,
+            ]);
+        }
+
+        // No decodeAmpersand() here: the purifier handles entities itself, a second decoding would alter the text
+        $knownTags = implode('|', array_merge(self::SAFE_DESCRIPTION_ELEMENTS, self::DROPPED_DESCRIPTION_ELEMENTS));
+        $text = preg_replace('#<(?!/?(?:' . $knownTags . ')(?:\s[^<>]*)?/?>)#i', '&lt;', $text) ?? $text;
+
+        return $purifier->purifyHtml(self::latexToUtf8($text, true));
     }
 
     /**

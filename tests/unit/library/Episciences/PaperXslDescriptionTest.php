@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace unit\library\Episciences;
 
 use DOMDocument;
+use DOMXPath;
 use PHPUnit\Framework\TestCase;
 use XSLTProcessor;
 
@@ -29,12 +30,27 @@ final class PaperXslDescriptionTest extends TestCase
     /**
      * @dataProvider stylesheetProvider
      */
-    public function testStylesheetSanitizesDescriptions(string $stylesheet): void
+    public function testDescriptionsAreNeverPrintedUnsanitized(string $stylesheet): void
     {
-        $source = (string) file_get_contents(APPLICATION_PATH . '/../public/xsl/' . $stylesheet);
+        $xsl = new DOMDocument();
+        $xsl->load(APPLICATION_PATH . '/../public/xsl/' . $stylesheet);
 
-        self::assertStringNotContainsString("'Episciences_Tools::decodeLatex', string(.), true()", $source);
-        self::assertSame(2, substr_count($source, "php:function('Episciences_Tools::decodeLatexToSafeHtml', string(.))"));
+        $xpath = new DOMXPath($xsl);
+        $xpath->registerNamespace('xsl', 'http://www.w3.org/1999/XSL/Transform');
+
+        $unescaped = $xpath->query("//xsl:value-of[@disable-output-escaping='yes']");
+        self::assertNotFalse($unescaped);
+
+        $safeDescriptions = 0;
+        foreach ($unescaped as $node) {
+            $select = $node->getAttribute('select');
+            self::assertStringNotContainsString("Episciences_Tools::decodeLatex'", $select);
+            if (str_contains($select, 'Episciences_Tools::decodeLatexToSafeHtml')) {
+                $safeDescriptions++;
+            }
+        }
+
+        self::assertGreaterThan(0, $safeDescriptions);
     }
 
     public function testSanitizedDescriptionIsRenderedAsHtmlThroughXslt(): void
