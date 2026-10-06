@@ -797,4 +797,52 @@ final class Episciences_MailTest extends TestCase
 
         self::assertSame('Hello', $method->invoke($this->mail));
     }
+
+    public function testLoggableBodyMasksUsernameAndInvitationLinks(): void
+    {
+        $this->mail->setRawBody(sprintf(
+            '%s %s %s',
+            Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME,
+            Episciences_Mail_Tags::TAG_INVITATION_URL,
+            Episciences_Mail_Tags::TAG_INVITATION_LINK
+        ));
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_RECIPIENT_USERNAME, 'jdoe');
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_URL, 'https://example.org/inv/secret1');
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_INVITATION_LINK, 'https://example.org/inv/secret2');
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getLoggableBody');
+        $method->setAccessible(true);
+        $logged = $method->invoke($this->mail);
+
+        self::assertStringNotContainsString('jdoe', $logged);
+        self::assertStringNotContainsString('secret1', $logged);
+        self::assertStringNotContainsString('secret2', $logged);
+    }
+
+    public function testLogDataContentIsMasked(): void
+    {
+        $url = 'https://example.org/user/reset/token/abc123';
+        $this->mail->setRawBody('Reset: ' . Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK);
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $url);
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'buildLogData');
+        $method->setAccessible(true);
+        $data = $method->invoke($this->mail, 1, 'a@example.org', 'a@example.org', 'b@example.org', null, null, null);
+
+        self::assertStringNotContainsString('abc123', $data['CONTENT']);
+        self::assertStringContainsString('Reset:', $data['CONTENT']);
+    }
+
+    public function testFailureDetailsBodyIsMasked(): void
+    {
+        $this->mail->setRawBody('Reset: ' . Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK);
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, 'https://example.org/user/reset/token/abc123');
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'buildFailureDetails');
+        $method->setAccessible(true);
+        $details = $method->invoke($this->mail);
+
+        self::assertStringNotContainsString('abc123', $details['body']);
+        self::assertStringContainsString('Reset:', $details['body']);
+    }
 }
