@@ -1,5 +1,7 @@
 <?php
 
+use Episciences\Upload\UploadChecker;
+
 /**
  * Lien exterieur
  * @author yannick
@@ -117,6 +119,28 @@ class Episciences_Website_Navigation_Page_File extends Episciences_Website_Navig
     /**
      * Enregistrement des fichiers
      */
+    /**
+     * Checks the file sent through the form of a page ($_FILES['pages_<id>']).
+     *
+     * @param array<string, array<string, mixed>>|null $uploads entry of $_FILES for the page
+     * @return string|null message for the user, null if the file is acceptable or if no file was sent
+     */
+    public static function validateUpload(?array $uploads): ?string
+    {
+        $uploadError = (int)($uploads['error']['src'] ?? UPLOAD_ERR_NO_FILE);
+
+        if ($uploadError === UPLOAD_ERR_NO_FILE) {
+            // Nothing sent: the current file is kept
+            return null;
+        }
+
+        return UploadChecker::firstError(
+            (string)($uploads['tmp_name']['src'] ?? ''),
+            (string)($uploads['name']['src'] ?? ''),
+            $uploadError
+        );
+    }
+
     public function saveFile()
     {
         //C'est pas super propre mais bon...
@@ -136,11 +160,14 @@ class Episciences_Website_Navigation_Page_File extends Episciences_Website_Navig
     public function getForm($pageidx)
     {
         parent::getForm($pageidx);
-        $this->_form->addElement('file', 'src',
-            ['required' => true,
-                'label' => 'Lien',
-                'value' => $this->getSrc(),
-                'belongsTo' => 'pages_' . $pageidx]);
+        // Keep the element when it already exists: it may carry the error of a refused file
+        if (!$this->_form->getElement('src')) {
+            $this->_form->addElement('file', 'src',
+                ['required' => true,
+                    'label' => 'Lien',
+                    'value' => $this->getSrc(),
+                    'belongsTo' => 'pages_' . $pageidx]);
+        }
         $this->_form->addElement('select', 'target',
             ['required' => true,
                 'label' => 'Cible', 'value' => $this->getTarget(),

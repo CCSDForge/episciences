@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace unit\library\Episciences;
 
+use Episciences\Upload\MimeTypePolicy;
 use Episciences_Form_Validate_MimeType;
+use Episciences_Website_Navigation_Page_File;
 use PHPUnit\Framework\TestCase;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use Zend_Form;
 
 /**
@@ -13,29 +17,36 @@ use Zend_Form;
  */
 final class UploadFormsMimeValidationTest extends TestCase
 {
-    private const SOURCES = [
-        'Rating/Manager.php' => 1,
-        'CommentsManager.php' => 4,
-        'Submit.php' => 3,
-        'ReviewersManager.php' => 1,
-    ];
+    private const CONFIGURATION = '/configs/journal.configurable.constants.json';
 
-    public function testEveryUploadFormAddsTheMimeTypeValidator(): void
+    /**
+     * Content types that run script in the browser must never be accepted
+     */
+    private const ACTIVE_CONTENT_TYPES = ['image/svg+xml', 'text/xml', 'application/xml', 'application/xhtml+xml', 'text/javascript', 'application/javascript'];
+
+    /**
+     * Every form element that checks the extension of an uploaded file also checks its content
+     */
+    public function testEveryExtensionCheckGoesWithAContentCheck(): void
     {
-        foreach (self::SOURCES as $file => $expected) {
-            $source = (string) file_get_contents(APPLICATION_PATH . '/../library/Episciences/' . $file);
+        $checked = 0;
 
-            self::assertSame(
-                $expected,
-                substr_count($source, 'new Episciences_Form_Validate_MimeType('),
-                $file
-            );
-            self::assertSame(
-                $expected,
-                preg_match_all("/'Extension'\s*=>\s*(array\(|\[)false/", $source),
-                $file . ': every extension check goes with a content type check'
+        foreach ($this->phpSources() as $path => $source) {
+            $extensionChecks = preg_match_all("/'Extension'\s*=>\s*(array\(|\[)\s*false/", $source);
+
+            if ($extensionChecks === 0) {
+                continue;
+            }
+
+            $checked++;
+            self::assertGreaterThanOrEqual(
+                $extensionChecks,
+                preg_match_all('/new\s+Episciences_Form_Validate_MimeType\s*\(/', $source),
+                $path . ': every extension check goes with a content type check'
             );
         }
+
+        self::assertGreaterThan(0, $checked, 'the scan found the upload forms');
     }
 
     public function testFileElementKeepsBothTheExtensionAndTheMimeTypeValidators(): void
@@ -55,67 +66,112 @@ final class UploadFormsMimeValidationTest extends TestCase
         self::assertInstanceOf(Episciences_Form_Validate_MimeType::class, $element->getValidator(Episciences_Form_Validate_MimeType::class));
     }
 
-    public function testSvgIsRejectedEvenWithAnAllowedExtension(): void
+    public function testEveryAllowedExtensionHasContentTypesAndNothingElse(): void
     {
-        $path = tempnam(sys_get_temp_dir(), 'svg');
-        file_put_contents($path, '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><script>alert(2)</script></svg>');
+        $config = $this->loadConfiguration();
+        $policy = MimeTypePolicy::fromJsonFile(APPLICATION_PATH . self::CONFIGURATION);
+
+        self::assertEqualsCanonicalizing($config['allowed_extensions'], $policy->extensions(), 'allowed_extensions and allowed_mimes_by_extension list the same extensions');
+
+        foreach ($config['allowed_extensions'] as $extension) {
+            self::assertTrue($policy->isExtensionAllowed($extension), $extension);
+        }
+    }
+
+    public function testConfiguredTypesDoNotAllowActiveContent(): void
+    {
+        $policy = MimeTypePolicy::fromJsonFile(APPLICATION_PATH . self::CONFIGURATION);
+
+        foreach (self::ACTIVE_CONTENT_TYPES as $type) {
+            self::assertNotContains($type, $policy->mimeTypes(), $type);
+        }
+    }
+
+    /**
+     * A generic container type is accepted only for the extensions that really use it
+     */
+    public function testContainerTypesAreNotSharedWithUnrelatedExtensions(): void
+    {
+        $policy = MimeTypePolicy::fromJsonFile(APPLICATION_PATH . self::CONFIGURATION);
+
+        foreach (['png', 'pdf', 'txt', 'tex'] as $extension) {
+            self::assertFalse($policy->accepts($extension, 'application/CDFV2'), $extension);
+            self::assertFalse($policy->accepts($extension, 'application/zip'), $extension);
+        }
+
+        self::assertTrue($policy->accepts('doc', 'application/CDFV2'));
+        self::assertTrue($policy->accepts('docx', 'application/zip'));
+    }
+
+    public function testRuntimeConstantsComeFromTheConfiguration(): void
+    {
+        if (!defined('ALLOWED_MIMES_BY_EXTENSION') || ALLOWED_MIMES_BY_EXTENSION === []) {
+            self::markTestSkipped('The journal constants are not defined in this environment');
+        }
+
+        $policy = MimeTypePolicy::fromJsonFile(APPLICATION_PATH . self::CONFIGURATION);
+
+        self::assertSame($policy->toArray(), ALLOWED_MIMES_BY_EXTENSION);
+        self::assertEqualsCanonicalizing($policy->mimeTypes(), ALLOWED_MIMES_TYPES);
+        self::assertEqualsCanonicalizing($policy->extensions(), ALLOWED_EXTENSIONS);
+    }
+
+    public function testPageFileUploadIsOptionalWhenNothingWasSent(): void
+    {
+        self::assertNull(Episciences_Website_Navigation_Page_File::validateUpload(null));
+        self::assertNull(Episciences_Website_Navigation_Page_File::validateUpload(['error' => ['src' => UPLOAD_ERR_NO_FILE]]));
+    }
+
+    public function testPageFileUploadRefusesAnEmptyFile(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'page');
 
         try {
-            $validator = new Episciences_Form_Validate_MimeType([
-                Episciences_Form_Validate_MimeType::ALLOWED_MIME_TYPE_KEY => ['image/png', 'application/pdf'],
+            $message = Episciences_Website_Navigation_Page_File::validateUpload([
+                'error' => ['src' => UPLOAD_ERR_OK],
+                'tmp_name' => ['src' => $path],
+                'name' => ['src' => 'document.pdf'],
             ]);
 
-            self::assertFalse($validator->isValid($path, ['name' => 'figure.png', 'tmp_name' => $path, 'type' => 'image/png']));
+            self::assertNotNull($message);
+            self::assertStringContainsString('document.pdf', $message);
         } finally {
             unlink($path);
+        }
+    }
+
+    public function testPageFileUploadRefusesAFailedTransfer(): void
+    {
+        $message = Episciences_Website_Navigation_Page_File::validateUpload([
+            'error' => ['src' => UPLOAD_ERR_INI_SIZE],
+            'tmp_name' => ['src' => ''],
+            'name' => ['src' => 'document.pdf'],
+        ]);
+
+        self::assertNotNull($message);
+    }
+
+    /**
+     * @return \Generator<string, string> path => source
+     */
+    private function phpSources(): \Generator
+    {
+        foreach (['/../library/Episciences', '/modules'] as $directory) {
+            $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(APPLICATION_PATH . $directory, RecursiveDirectoryIterator::SKIP_DOTS));
+
+            foreach ($iterator as $file) {
+                if ($file->getExtension() === 'php') {
+                    yield $file->getPathname() => (string)file_get_contents($file->getPathname());
+                }
+            }
         }
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function loadConfiguredMimeTypes(): array
+    private function loadConfiguration(): array
     {
-        $config = json_decode(
-            (string) file_get_contents(APPLICATION_PATH . '/configs/journal.configurable.constants.json'),
-            true,
-            512,
-            JSON_THROW_ON_ERROR
-        );
-
-        return (array) $config['allowed_mimes_types'];
-    }
-
-    /**
-     * Content types reported by recent versions of libmagic for files the journals accept
-     */
-    public function testConfiguredTypesCoverTheVariantsOfAllowedFiles(): void
-    {
-        $types = $this->loadConfiguredMimeTypes();
-
-        foreach ([
-                     'application/vnd.rar', // .rar
-                     'text/rtf', // .rtf
-                     'text/x-bibtex', // .bib
-                     'text/markdown', // .md
-                     'application/x-ole-storage', // legacy .doc / .xls
-                     'application/CDFV2',
-                     'text/plain', // .bib, .sty, .cls, .bst, .def, ...
-                     'text/x-tex', // .tex, .bbl
-                 ] as $type) {
-            self::assertContains($type, $types, $type);
-        }
-    }
-
-    /**
-     * Content types that run script in the browser must never be accepted
-     */
-    public function testConfiguredTypesDoNotAllowActiveContent(): void
-    {
-        $types = $this->loadConfiguredMimeTypes();
-
-        foreach (['image/svg+xml', 'text/xml', 'application/xml', 'application/xhtml+xml', 'text/javascript'] as $type) {
-            self::assertNotContains($type, $types, $type);
-        }
+        return json_decode((string)file_get_contents(APPLICATION_PATH . self::CONFIGURATION), true, 512, JSON_THROW_ON_ERROR);
     }
 }

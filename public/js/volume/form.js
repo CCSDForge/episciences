@@ -27,6 +27,8 @@ $(document).ready(function () {
             values.tmpfile = JSON.stringify(serverFile);
             $mTmpData.val(JSON.stringify(values));
             $('#mFile_content')
+                .removeClass('text-danger')
+                .removeAttr('role')
                 .empty()
                 .append(
                     formatFileLabel(
@@ -37,6 +39,13 @@ $(document).ready(function () {
                     )
                 );
             $('#value_mFile').val('');
+        }, function (message) {
+            // The server refused the file: show why, and forget the selection
+            var feedback = document.getElementById('mFile_content');
+            feedback.textContent = message;
+            feedback.setAttribute('role', 'alert');
+            feedback.classList.add('text-danger');
+            event.target.value = '';
         });
     });
 
@@ -85,7 +94,7 @@ $(document).ready(function () {
     }
 });
 
-function uploadFileToServer(file, callback) {
+function uploadFileToServer(file, callback, onError) {
     var data = new FormData();
     data.append('0', file);
     $.ajax({
@@ -97,6 +106,15 @@ function uploadFileToServer(file, callback) {
         contentType: false,
         success: function (response) {
             callback(JSON.parse(response).file);
+        },
+        error: function (xhr) {
+            var message = '';
+            try {
+                message = JSON.parse(xhr.responseText).message || '';
+            } catch (e) {
+                // The response is not the JSON error of the server
+            }
+            onError(message);
         },
     });
 }

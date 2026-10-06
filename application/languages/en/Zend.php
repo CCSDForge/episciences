@@ -241,4 +241,10 @@ return [
     "'%value%' is less than %min% characters long" => "'%value%' is less than %min% characters long",
     "'%value%' is more than %max% characters long" => "'%value%' is more than %max% characters long",
 
+    // Content check of uploaded files (Episciences_Form_Validate_MimeType)
+    "The file '%value%' cannot be accepted: its content does not match its extension. Please check that it is a valid file and that it has not been renamed." => "The file '%value%' cannot be accepted: its content does not match its extension. Please check that it is a valid file and that it has not been renamed.",
+    "The type of the file '%value%' could not be checked. Please try again with another copy of the file." => "The type of the file '%value%' could not be checked. Please try again with another copy of the file.",
+    "The file '%value%' could not be read. Please try to upload it again." => "The file '%value%' could not be read. Please try to upload it again.",
+    "The file '%value%' is empty. Please choose a file that contains data." => "The file '%value%' is empty. Please choose a file that contains data.",
+
 ];

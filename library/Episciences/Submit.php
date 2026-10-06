@@ -2893,7 +2893,7 @@ class Episciences_Submit
                 'Count' => [false, 1],
                 'Extension' => [false, implode(',', $availableExtensions)],
                 'Size' => [false, MAX_FILE_SIZE],
-                new Episciences_Form_Validate_MimeType([Episciences_Form_Validate_MimeType::ALLOWED_MIME_TYPE_KEY => ['application/pdf']])
+                new Episciences_Form_Validate_MimeType()
             ]
         ]);
 

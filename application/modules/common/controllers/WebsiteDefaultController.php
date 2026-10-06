@@ -224,10 +224,22 @@ class WebsiteDefaultController extends Zend_Controller_Action
                     $options['filter'] = implode(';', $options['filter']);
                 }
 
+                $isFilePage = $options['type'] === 'Episciences_Website_Navigation_Page_File';
+                $uploadError = $isFilePage ? Episciences_Website_Navigation_Page_File::validateUpload($_FILES[$id] ?? null) : null;
+
+                if ($uploadError !== null) {
+                    // Keep the file that was already attached to the page
+                    unset($options['src']);
+                }
+
                 $this->_session->website->setPage($pageid, $options);
                 $this->_session->website->getPage($pageid)->initForm();
 
-                if ($options['type'] !== 'Episciences_Website_Navigation_Page_File' && !$this->_session->website->getPage($pageid)->getForm($pageid)->isValid($options)) {
+                if ($uploadError !== null) {
+                    $this->_session->website->getPage($pageid)->getForm($pageid)->getElement('src')->addError($uploadError);
+                    $pagesDisplay[$pageid] = true;
+                    $valid = false;
+                } elseif (!$isFilePage && !$this->_session->website->getPage($pageid)->getForm($pageid)->isValid($options)) {
                     $pagesDisplay[$pageid] = true;
                     $valid = false;
                 } else {
