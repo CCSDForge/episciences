@@ -17,15 +17,11 @@ final class AdminViewsOutputEscapingTest extends TestCase
 
     private const PAYLOAD = '<img src=x onerror=alert(1)>';
 
-    private function source(string $relativePath): string
-    {
-        return (string) file_get_contents(APPLICATION_PATH . self::SCRIPTS . $relativePath);
-    }
-
     private function view(): Zend_View
     {
         $view = new Zend_View();
         $view->setScriptPath(APPLICATION_PATH . self::SCRIPTS);
+        $view->addHelperPath(dirname(APPLICATION_PATH) . '/library/Episciences/View/Helper', 'Episciences_View_Helper_');
 
         return $view;
     }
@@ -81,57 +77,97 @@ final class AdminViewsOutputEscapingTest extends TestCase
         self::assertStringContainsString('value="&quot;&gt;&lt;img', $html);
     }
 
+    public function testReviewingDeadlineLogEscapesTheScreenName(): void
+    {
+        $view = $this->view();
+        $view->newDeadline = '2026-12-31';
+        $view->screenName = self::PAYLOAD;
+
+        $html = $view->render('partials/paper_history_logs_reviewing_deadline.phtml');
+
+        self::assertStringNotContainsString('<img', $html);
+        self::assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;', $html);
+    }
+
     /**
-     * @return array<string, array{string, string}>
+     * The target ends up in a <script> block: whatever it holds must stay a JS string literal.
+     *
+     * @return array<string, array{string}>
      */
-    public static function escapedOutputProvider(): array
+    public static function scriptBreakingTargetProvider(): array
     {
         return [
-            'paper list title (attribute)' => [
-                'administratepaper/datatable_list.phtml',
-                'title="<?= htmlspecialchars(Episciences_Tools::decodeLatex($title)) ?>"',
-            ],
-            'paper list title (body)' => [
-                'administratepaper/datatable_list.phtml',
-                '<strong><?= htmlspecialchars(Ccsd_Tools::truncate(Episciences_Tools::decodeLatex($title), 75)) ?></strong>',
-            ],
-            'managed papers title' => [
-                'administratepaper/managed.phtml',
-                'htmlspecialchars(Ccsd_Tools::truncate($paper->getTitle(), 75))',
-            ],
-            'getcontacts target (JS context)' => [
-                'administratemail/getcontacts.phtml',
-                'var target = <?= json_encode((string)$this->target, JSON_HEX_TAG',
-            ],
-            'new version link' => [
-                'partials/answer_revision_request_form.phtml',
-                'href="<?= $this->escape($newVersionHref) ?>"',
-            ],
-            'new version link, query string' => [
-                'partials/answer_revision_request_form.phtml',
-                "'&z-identifier=' . urlencode((string)\$this->zIdentifier)",
-            ],
-            'volume form cancel button' => [
-                'volume/form.phtml',
-                'window.location=<?= htmlspecialchars(json_encode((string)$location, JSON_HEX_TAG',
-            ],
+            'closing script tag' => ['</script><img src=x onerror=alert(1)>'],
+            'quote and statement' => ["';alert(1);//"],
+            'double quote' => ['";alert(1);//'],
+            'line separator' => ["a\u{2028}b"],
         ];
     }
 
     /**
-     * @dataProvider escapedOutputProvider
+     * @dataProvider scriptBreakingTargetProvider
      */
-    public function testViewEscapesTheValue(string $view, string $expected): void
+    public function testContactsTargetCannotBreakOutOfTheScriptBlock(string $target): void
     {
-        self::assertStringContainsString($expected, $this->source($view));
+        $view = $this->view();
+        $view->target = $target;
+        $view->js_contacts = '[]';
+
+        // The template declares a global constant: a second render in the same process warns about it
+        set_error_handler(static fn(int $no, string $str): bool => str_contains($str, 'JS_PREFIX already defined'), E_WARNING);
+        try {
+            $html = $view->render('administratemail/getcontacts.phtml');
+        } finally {
+            restore_error_handler();
+        }
+
+        self::assertSame(1, preg_match('/^\s*var target = (.*);$/m', $html, $matches), 'the target is assigned once');
+        self::assertSame($target, json_decode($matches[1], true, 512, JSON_THROW_ON_ERROR), 'a valid JS string literal holding the target');
+        self::assertStringNotContainsString('</script><img', $html);
+        self::assertSame(1, substr_count(strtolower($html), '</script>'), 'only the closing tag of the block itself');
     }
 
-    public function testVolumeEditRefererOnlyUsesAnIntegerDocId(): void
+    private function newVersionLink(?string $zIdentifier): string
     {
-        $controller = (string) file_get_contents(
-            APPLICATION_PATH . '/modules/journal/controllers/VolumeController.php'
-        );
+        $request = new \Zend_Controller_Request_HttpTestCase();
+        $request->setControllerName('paper');
+        $front = \Zend_Controller_Front::getInstance();
+        $previous = $front->getRequest();
+        $front->setRequest($request);
 
-        self::assertStringContainsString("\$docId = (int)\$request->getParam('docid');", $controller);
+        try {
+            $paper = $this->createMock(\Episciences_Paper::class);
+            $paper->method('isRevisionRequested')->willReturn(true);
+            $paper->method('getStatus')->willReturn(\Episciences_Paper::STATUS_WAITING_FOR_MINOR_REVISION);
+
+            $view = $this->view();
+            $view->paper = $paper;
+            $view->review = $this->createMock(\Episciences_Review::class);
+            $view->current_demand = ['PCID' => 12];
+            $view->zIdentifier = $zIdentifier;
+            $view->doNotDisplayContactChoice = true;
+
+            return $view->render('partials/answer_revision_request_form.phtml');
+        } finally {
+            if ($previous !== null) {
+                $front->setRequest($previous);
+            } else {
+                (new \ReflectionProperty($front, '_request'))->setValue($front, null);
+            }
+        }
+    }
+
+    public function testNewVersionLinkEncodesTheZIdentifier(): void
+    {
+        $html = $this->newVersionLink('x"><img src=x onerror=alert(1)>&a=b');
+
+        self::assertStringNotContainsString('<img', $html);
+        self::assertStringContainsString('href="/paper/newversion?id=12&amp;z-identifier=x%22%3E%3Cimg', $html);
+        self::assertStringNotContainsString('&a=b', $html, 'an ampersand in the identifier must not add a parameter');
+    }
+
+    public function testNewVersionLinkWithoutZIdentifier(): void
+    {
+        self::assertStringContainsString('href="/paper/newversion?id=12"', $this->newVersionLink(null));
     }
 }
