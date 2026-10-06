@@ -65,6 +65,17 @@ final class MimeTypePolicyTest extends TestCase
         self::assertSame(['application/msword', 'application/CDFV2'], $policy->mimeTypes());
     }
 
+    public function testWithoutRemovesExtensionsAndLeavesTheOriginalUntouched(): void
+    {
+        $policy = new MimeTypePolicy(['png' => ['image/png'], 'html' => ['text/html'], 'pdf' => ['application/pdf']]);
+
+        $reduced = $policy->without('HTML', 'unknown');
+
+        self::assertFalse($reduced->isExtensionAllowed('html'));
+        self::assertTrue($reduced->accepts('png', 'image/png'));
+        self::assertTrue($policy->isExtensionAllowed('html'));
+    }
+
     /**
      * @dataProvider providerFileNames
      */

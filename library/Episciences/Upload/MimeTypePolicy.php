@@ -105,6 +105,16 @@ final class MimeTypePolicy
     }
 
     /**
+     * Same policy, without these extensions.
+     */
+    public function without(string ...$extensions): self
+    {
+        $excluded = array_map('strtolower', $extensions);
+
+        return new self(array_diff_key($this->mimeTypesByExtension, array_flip($excluded)));
+    }
+
+    /**
      * @return list<string> the extensions the policy knows about
      */
     public function extensions(): array

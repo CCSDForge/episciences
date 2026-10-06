@@ -259,7 +259,7 @@ class VolumeController extends Zend_Controller_Action
         $upload = new Zend_File_Transfer_Adapter_Http();
         $file = $upload->getFileInfo();
 
-        $error = UploadChecker::firstError(
+        $error = UploadChecker::firstPublicFileError(
             (string)($file[0]['tmp_name'] ?? ''),
             (string)($file[0]['name'] ?? ''),
             (int)($file[0]['error'] ?? UPLOAD_ERR_NO_FILE)

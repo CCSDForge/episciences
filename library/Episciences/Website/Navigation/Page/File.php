@@ -134,7 +134,7 @@ class Episciences_Website_Navigation_Page_File extends Episciences_Website_Navig
             return null;
         }
 
-        return UploadChecker::firstError(
+        return UploadChecker::firstPublicFileError(
             (string)($uploads['tmp_name']['src'] ?? ''),
             (string)($uploads['name']['src'] ?? ''),
             $uploadError

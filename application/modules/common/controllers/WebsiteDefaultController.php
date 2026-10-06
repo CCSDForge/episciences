@@ -126,7 +126,7 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
                 //Ajout d'un fichier
 
-                $uploadError = UploadChecker::firstError(
+                $uploadError = UploadChecker::firstPublicFileError(
                     (string)$_FILES['file']['tmp_name'],
                     (string)($_FILES['file']['name'] ?? ''),
                     (int)($_FILES['file']['error'] ?? UPLOAD_ERR_OK)

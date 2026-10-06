@@ -15,6 +15,28 @@ use Episciences_Form_Validate_MimeType;
 final class UploadChecker
 {
     /**
+     * Extensions that must not be stored in the directory served to the public: the browser would run
+     * their content on the journal's origin.
+     */
+    private const NOT_PUBLISHABLE_EXTENSIONS = ['html'];
+
+    /**
+     * Policy for the files stored in a directory that is served as is (site resources, volume files).
+     */
+    public static function publicFilesPolicy(): MimeTypePolicy
+    {
+        return Episciences_Form_Validate_MimeType::configuredPolicy()->without(...self::NOT_PUBLISHABLE_EXTENSIONS);
+    }
+
+    /**
+     * Same as firstError() for a file that will be served to the public.
+     */
+    public static function firstPublicFileError(string $temporaryPath, string $originalName, int $uploadError = UPLOAD_ERR_OK): ?string
+    {
+        return self::firstError($temporaryPath, $originalName, $uploadError, self::publicFilesPolicy());
+    }
+
+    /**
      * @param string $temporaryPath where the server stored the uploaded file
      * @param string $originalName file name sent by the browser
      * @param int $uploadError PHP upload error code ($_FILES[...]['error'])

@@ -135,7 +135,7 @@ class Episciences_Form_Validate_MimeType extends Zend_Validate_Abstract
     /**
      * Policy of the journal, with fallbacks for the constants not defined by older configurations.
      */
-    private static function configuredPolicy(): MimeTypePolicy
+    public static function configuredPolicy(): MimeTypePolicy
     {
         if (defined('ALLOWED_MIMES_BY_EXTENSION') && ALLOWED_MIMES_BY_EXTENSION !== []) {
             return new MimeTypePolicy(ALLOWED_MIMES_BY_EXTENSION);
