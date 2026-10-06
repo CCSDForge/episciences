@@ -12,6 +12,8 @@ class Episciences_Review
     public const STATUS_REFUSED = 2;
     /** Units accepted for the deadline settings (see the date/time relative formats of strtotime()) */
     public const DEADLINE_UNITS = ['day', 'week', 'month'];
+    /** Upper bound of the numeric part of a deadline setting (keeps strtotime() computations sane) */
+    public const DEADLINE_VALUE_MAX = 999;
 
     public const DEFAULT_INVITATION_DEADLINE = '1 month';
     public const DEFAULT_RATING_DEADLINE = '2 month';
@@ -987,38 +989,19 @@ class Episciences_Review
     }
 
     /**
-     * Validators of the numeric part of a deadline setting (a positive integer)
+     * Validators of the numeric part of a deadline setting (a positive integer, at most DEADLINE_VALUE_MAX, with a known unit)
      *
+     * @param string $unitKey name of the posted field holding the unit
      * @return array
      */
-    private static function getDeadlineValueValidators(): array
+    private static function getDeadlineValueValidators(string $unitKey): array
     {
         return [
+            new \Episciences\Form\Validate\DeadlineUnit($unitKey),
             ['Digits', true],
             ['GreaterThan', true, ['min' => 0]],
+            ['LessThan', true, ['max' => self::DEADLINE_VALUE_MAX + 1]],
         ];
-    }
-
-    /**
-     * Whether the units posted with the deadline settings are the expected ones
-     *
-     * @param array $post
-     * @return bool
-     */
-    public static function hasValidDeadlineUnits(array $post): bool
-    {
-        foreach ([
-                     self::SETTING_RATING_DEADLINE_UNIT,
-                     self::SETTING_RATING_DEADLINE_MIN_UNIT,
-                     self::SETTING_RATING_DEADLINE_MAX_UNIT,
-                     self::SETTING_INVITATION_DEADLINE_UNIT,
-                 ] as $unitKey) {
-            if (!isset($post[$unitKey]) || !in_array($post[$unitKey], self::DEADLINE_UNITS, true)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
@@ -1453,7 +1436,7 @@ class Episciences_Review
                 'style' => 'width: 40px',
                 'required' => true,
                 'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
-                'validators' => self::getDeadlineValueValidators()
+                'validators' => self::getDeadlineValueValidators(self::SETTING_INVITATION_DEADLINE_UNIT)
             ]
         );
 
@@ -1466,7 +1449,7 @@ class Episciences_Review
                 'style' => 'width: 40px',
                 'required' => true,
                 'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
-                'validators' => array_merge(self::getDeadlineValueValidators(), [new Episciences_Form_Validate_CheckDefaultRatingDeadline()])
+                'validators' => array_merge(self::getDeadlineValueValidators(self::SETTING_RATING_DEADLINE_UNIT), [new Episciences_Form_Validate_CheckDefaultRatingDeadline()])
             ]
         );
 
@@ -1479,7 +1462,7 @@ class Episciences_Review
                 'style' => 'width: 40px',
                 'required' => true,
                 'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
-                'validators' => array_merge(self::getDeadlineValueValidators(), [new Episciences_Form_Validate_CheckMinimumDeadlineDelay()])
+                'validators' => array_merge(self::getDeadlineValueValidators(self::SETTING_RATING_DEADLINE_MIN_UNIT), [new Episciences_Form_Validate_CheckMinimumDeadlineDelay()])
             ]
         );
 
@@ -1492,7 +1475,7 @@ class Episciences_Review
                 'style' => 'width: 40px',
                 'required' => true,
                 'decorators' => [['ViewScript', ['viewScript' => '/review/deadline_element.phtml']]],
-                'validators' => array_merge(self::getDeadlineValueValidators(), [new Episciences_Form_Validate_CheckMaximumDeadlineDelay()])
+                'validators' => array_merge(self::getDeadlineValueValidators(self::SETTING_RATING_DEADLINE_MAX_UNIT), [new Episciences_Form_Validate_CheckMaximumDeadlineDelay()])
             ]
         );
 
