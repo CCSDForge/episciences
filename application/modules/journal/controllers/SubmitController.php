@@ -157,7 +157,9 @@ class SubmitController extends DefaultController
     ): void
     {
         if (!Episciences_Csrf_Helper::validateRequestToken($request)) {
-            // Keep what the user typed; uploaded files cannot be restored by the browser
+            // Keep what the user typed (uploaded files cannot be restored by the browser), but never
+            // echo back the rejected token, nor the posted record: the form must keep its fresh token
+            unset($post[Episciences_Submit::CSRF_TOKEN_ELEMENT_NAME], $post['xml']);
             $form->populate($post);
             $this->_helper->FlashMessenger
                 ->setNamespace(Ccsd_View_Helper_Message::MSG_ERROR)
