@@ -1057,16 +1057,10 @@ class AdministratemailController extends Zend_Controller_Action
 
     private function allDocIds(Episciences_Review $journal): array
     {
+        // Only the identifiers are needed: do not hydrate every paper of the journal (memory)
+        $db = Zend_Db_Table_Abstract::getDefaultAdapter();
+        $select = $db->select()->from(T_PAPERS, ['DOCID'])->where('RVID = ?', $journal->getRvid());
 
-        $docIds = [];
-
-        try {
-            $docIds = array_keys($journal->getPapers());
-        } catch (Zend_Db_Select_Exception $e) {
-            trigger_error($e->getMessage());
-        }
-
-        return $docIds;
-
+        return array_map('intval', $db->fetchCol($select));
     }
 }
