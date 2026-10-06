@@ -339,10 +339,12 @@ class UpdateLicensesCommand extends AbstractCommand
             }
 
             if ($licenseFilter) {
-                $query->where('pl.licence = ?', $licenseFilter);
-
                 if ($action === 'update') {
-                    $query->orWhere('plc.code = ?', $licenseFilter);
+                    $or = '(' . $this->db->quoteInto('pl.licence = ?', $licenseFilter)
+                            . ' OR ' . $this->db->quoteInto('plc.code = ?', $licenseFilter) . ')';
+                    $query->where($or);
+                } else {
+                    $query->where('pl.licence = ?', $licenseFilter);
                 }
 
             } else {
