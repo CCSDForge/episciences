@@ -64,6 +64,10 @@ if ($this->results) {
             $section = '';
         }
 
+        // Solr dynamic fields may be multivalued: keep the first value only
+        $volume = is_array($volume) ? (string)reset($volume) : (string)$volume;
+        $section = is_array($section) ? (string)reset($section) : (string)$section;
+
         $docid = $this->escape($doc->docid);
         ?>
 
@@ -119,8 +123,7 @@ if ($this->results) {
         <?php
         if (!empty($doc->abstract_t)) {
             echo '<blockquote class="abstract">';
-            $abstract = Ccsd_Tools_String::truncate($doc->abstract_t[0], 300, '&nbsp;[&hellip;]');
-            echo $this->escape($abstract);
+            echo $this->escape(Ccsd_Tools_String::truncate($doc->abstract_t[0], 300, "\u{00A0}[…]"));
             echo '</blockquote>';
         }
         ?>
