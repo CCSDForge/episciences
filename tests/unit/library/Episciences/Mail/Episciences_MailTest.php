@@ -756,4 +756,34 @@ final class Episciences_MailTest extends TestCase
 
         self::assertStringNotContainsString('LIKE', $sql);
     }
+
+    // =========================================================================
+    // Credential-bearing links must not reach the mail log
+    // =========================================================================
+
+    public function testLoggableBodyMasksTokenLink(): void
+    {
+        $url = 'https://example.org/user/resetpassword/token/abc123';
+        $this->mail->setRawBody('Reset: ' . Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK);
+        $this->mail->addTag(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $url);
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getLoggableBody');
+        $method->setAccessible(true);
+        $logged = $method->invoke($this->mail);
+
+        self::assertStringNotContainsString('abc123', $logged);
+        self::assertStringContainsString('Reset:', $logged);
+        // The mail actually sent still carries the real link
+        self::assertStringContainsString('abc123', $this->mail->getBody());
+    }
+
+    public function testLoggableBodyUnchangedWithoutTokenTag(): void
+    {
+        $this->mail->setRawBody('Hello');
+
+        $method = new ReflectionMethod(Episciences_Mail::class, 'getLoggableBody');
+        $method->setAccessible(true);
+
+        self::assertSame('Hello', $method->invoke($this->mail));
+    }
 }

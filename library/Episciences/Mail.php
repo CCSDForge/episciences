@@ -4,6 +4,9 @@ use Episciences\AppRegistry;
 
 class Episciences_Mail extends Zend_Mail
 {
+    /** Placeholder stored in the mail log instead of credential-bearing links */
+    private const LOG_REDACTED_LINK = '[link not stored in the log]';
+
     /**
      * We're fine
      */
@@ -606,7 +609,7 @@ class Episciences_Mail extends Zend_Mail
             'CC' => $cc,
             'BCC' => $bcc,
             'SUBJECT' => $this->getDecodedSubject(),
-            'CONTENT' => $this->getDecodedBody(),
+            'CONTENT' => $this->getLoggableBody(),
             'FILES' => $attachments,
             'WHEN' => new Zend_DB_Expr('NOW()')
         ];
@@ -618,6 +621,22 @@ class Episciences_Mail extends Zend_Mail
         error_log('Logging email in db failed.');
         $message = "Database logging failed - " . Zend_Json::encode($data);
         throw new Exception($message, self::STATUS_FAILED_DB_LOG);
+    }
+
+    /**
+     * Body stored in the mail log: credential-bearing links (account tokens) are masked,
+     * since the log is readable by journal staff. The mail actually sent is unaffected.
+     */
+    private function getLoggableBody(): string
+    {
+        if (!array_key_exists(Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK, $this->tags)) {
+            return (string)$this->getDecodedBody();
+        }
+
+        $copy = clone $this;
+        $copy->tags[Episciences_Mail_Tags::TAG_TOKEN_VALIDATION_LINK] = self::LOG_REDACTED_LINK;
+
+        return (string)$copy->getDecodedBody();
     }
 
     public function getAttachments()
