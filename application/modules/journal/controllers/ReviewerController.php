@@ -495,6 +495,9 @@ class ReviewerController extends PaperDefaultController
                     $this->_helper->FlashMessenger->setNamespace('success')->addMessage($this->view->translate("Votre réponse a bien été enregistrée."));
 
 
+                } elseif ($refused) {
+                    // reopen the refusal form: it now displays its own validation errors
+                    $this->view->invalid_refuse_form = true;
                 } else {
                     $this->view->invalid_form = true;
                 }
