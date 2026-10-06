@@ -230,6 +230,9 @@ class WebsiteDefaultController extends Zend_Controller_Action
 
                 $pageid = str_replace('pages_', '', $id);
 
+                // The file of a page only comes from an upload, never from a field of the form
+                unset($options['src']);
+
                 if (isset($_FILES[$id]['name']) && is_array($_FILES[$id]['name'])) {
                     $options = array_merge($options, $_FILES[$id]['name']);
                 }

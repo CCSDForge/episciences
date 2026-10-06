@@ -56,9 +56,9 @@
 			<tr class="file">
 				<td width="10px"><span class="<?php echo Ccsd_File::getIconeExtension($ext);?> active"></span></td>
 				<td>
-					<a href="<?php echo REVIEW_URL . $name?>" target="_blank"><span class="name"><?php echo $name?></span></a>
-					<blockquote style="display:none;"><?php echo $this->translate("Lien"); ?> :  <b><?php echo REVIEW_URL . $name?></b><br />
-					<?php echo $this->translate("Extension"); ?> : <b><?php echo $ext?></b><br />
+					<a href="<?php echo $this->escape(REVIEW_URL . rawurlencode((string)$name)) ?>" target="_blank" rel="noopener"><span class="name"><?php echo $this->escape($name) ?></span></a>
+					<blockquote style="display:none;"><?php echo $this->translate("Lien"); ?> :  <b><?php echo $this->escape(REVIEW_URL . $name) ?></b><br />
+					<?php echo $this->translate("Extension"); ?> : <b><?php echo $this->escape($ext) ?></b><br />
 					<?php echo $this->translate("Taille"); ?> : <b><?php echo Ccsd_File::getSize($link);?></b><br/>
 					<?php echo $this->translate("Dernière modification"); ?> : <b><?php echo date ("d/m/Y", filemtime($link))?></b></blockquote>
 				</td>
