@@ -21,8 +21,8 @@ class FileController extends DefaultController
 
         // Only serve flat file names (same shape as the "files" route).
         if (
-            !preg_match('/^[\w ]+$/', $filename) ||
-            !preg_match('/^\w+$/', $extension) ||
+            !preg_match('/^[\w ]+$/D', $filename) ||
+            !preg_match('/^\w+$/D', $extension) ||
             str_ends_with($filename, '-crypto')
         ) {
             $this->getResponse()->setHttpResponseCode(404);
