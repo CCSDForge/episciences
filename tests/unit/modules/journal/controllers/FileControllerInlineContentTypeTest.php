@@ -46,11 +46,31 @@ final class FileControllerInlineContentTypeTest extends TestCase
         self::assertSame($expected, \FileController::isInlineContentType($contentType));
     }
 
-    public function testOpenFileSendsNosniffAndNoLongerTrustsAnyContentType(): void
+    public function testInlineTypeIsDisplayedWithNosniff(): void
     {
-        $source = (string) file_get_contents(APPLICATION_PATH . '/modules/journal/controllers/FileController.php');
+        $headers = \FileController::buildFileHeaders('paper.pdf', 'application/pdf; charset=binary', 42);
 
-        self::assertStringContainsString("header('X-Content-Type-Options: nosniff');", $source);
-        self::assertStringContainsString('!self::isInlineContentType($contentType)', $source);
+        self::assertContains('Content-Disposition: inline; filename="paper.pdf"', $headers);
+        self::assertContains('X-Content-Type-Options: nosniff', $headers);
+        self::assertContains('Content-Type: application/pdf; charset=binary', $headers);
+        self::assertContains('Content-Length: 42', $headers);
+        self::assertNotContains('Content-Description: File Transfer', $headers);
+    }
+
+    public function testNonInlineTypeIsForcedToDownload(): void
+    {
+        $headers = \FileController::buildFileHeaders('image.svg', 'image/svg+xml; charset=us-ascii', 10);
+
+        self::assertContains('Content-Disposition: attachment;filename="image.svg"', $headers);
+        self::assertContains('X-Content-Type-Options: nosniff', $headers);
+        self::assertNotContains('Content-Disposition: inline; filename="image.svg"', $headers);
+    }
+
+    public function testForceDownloadOverridesInlineType(): void
+    {
+        $headers = \FileController::buildFileHeaders('paper.pdf', 'application/pdf', 42, true);
+
+        self::assertContains('Content-Disposition: attachment;filename="paper.pdf"', $headers);
+        self::assertNotContains('Content-Disposition: inline; filename="paper.pdf"', $headers);
     }
 }
