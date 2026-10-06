@@ -22,10 +22,17 @@ final class AdminViewsOutputEscapingTest extends TestCase
         return (string) file_get_contents(APPLICATION_PATH . self::SCRIPTS . $relativePath);
     }
 
-    public function testLinkedDataLogEscapesTheActingUserName(): void
+    private function view(): Zend_View
     {
         $view = new Zend_View();
         $view->setScriptPath(APPLICATION_PATH . self::SCRIPTS);
+
+        return $view;
+    }
+
+    public function testLinkedDataLogEscapesTheActingUserName(): void
+    {
+        $view = $this->view();
         $view->username = self::PAYLOAD;
         $view->typeLd = 'doi';
         $view->valueLd = '10.1234/abc';
@@ -36,20 +43,50 @@ final class AdminViewsOutputEscapingTest extends TestCase
         self::assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;', $html);
     }
 
+    public function testLinkedDataLogToleratesAMissingUserName(): void
+    {
+        $view = $this->view();
+        $view->username = null;
+        $view->typeLd = 'doi';
+        $view->valueLd = '10.1234/abc';
+
+        self::assertStringContainsString('log-user-name"></span>', $view->render('partials/paper_history_logs_linked_data.phtml'));
+    }
+
+    public function testUserActionLogEscapesTheTagAndToleratesNull(): void
+    {
+        $view = $this->view();
+        $view->fullName = 'Jane Doe';
+        $view->tag = self::PAYLOAD;
+
+        $html = $view->render('partials/paper_history_logs_user_action.phtml');
+        self::assertStringNotContainsString('<img', $html);
+        self::assertStringContainsString('&lt;img src=x onerror=alert(1)&gt;', $html);
+
+        $view->tag = null;
+        self::assertStringContainsString('Jane Doe', $view->render('partials/paper_history_logs_user_action.phtml'));
+    }
+
+    public function testDeadlineElementEscapesTheStoredValue(): void
+    {
+        $element = new \Zend_Form_Element_Text('review_deadline');
+        $element->setValue('"><img src=x onerror=alert(1)> day');
+
+        $view = $this->view();
+        $view->element = $element;
+
+        $html = $view->render('review/deadline_element.phtml');
+
+        self::assertStringNotContainsString('<img', $html);
+        self::assertStringContainsString('value="&quot;&gt;&lt;img', $html);
+    }
+
     /**
      * @return array<string, array{string, string}>
      */
     public static function escapedOutputProvider(): array
     {
         return [
-            'deadline log screen name' => [
-                'partials/paper_history_logs_reviewing_deadline.phtml',
-                '<?= $this->escape($this->screenName) ?>',
-            ],
-            'user action log tag' => [
-                'partials/paper_history_logs_user_action.phtml',
-                '<?= $this->escape($this->tag) ?>',
-            ],
             'paper list title (attribute)' => [
                 'administratepaper/datatable_list.phtml',
                 'title="<?= htmlspecialchars(Episciences_Tools::decodeLatex($title)) ?>"',
@@ -76,11 +113,7 @@ final class AdminViewsOutputEscapingTest extends TestCase
             ],
             'volume form cancel button' => [
                 'volume/form.phtml',
-                'window.location=<?= htmlspecialchars(json_encode($location, JSON_HEX_TAG',
-            ],
-            'deadline value' => [
-                'review/deadline_element.phtml',
-                'value="<?php echo $this->escape($delay_value); ?>"',
+                'window.location=<?= htmlspecialchars(json_encode((string)$location, JSON_HEX_TAG',
             ],
         ];
     }

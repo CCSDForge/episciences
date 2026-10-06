@@ -166,7 +166,7 @@
 
         <div class="form-actions text-center">
             <?php $location = $this->element->getDecorator('ViewScript')->getOption('referer'); ?>
-            <button onclick="window.location=<?= htmlspecialchars(json_encode($location, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES) ?>" class="btn btn-default" type="button" id="back"
+            <button onclick="window.location=<?= htmlspecialchars(json_encode((string)$location, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES) ?>" class="btn btn-default" type="button" id="back"
                     name="back"><?= $this->translate('Annuler') ?></button>
             <button class="btn btn-primary" value="Valider" type="submit" id="submit"
                     name="submit"><?= $this->translate('Valider') ?></button>
