@@ -151,4 +151,81 @@ class Episciences_Auth_PluginTest extends TestCase
         self::assertSame('index', $request->getControllerName());
         self::assertSame('notfound', $request->getActionName());
     }
+
+    /**
+     * Run preDispatch() against the ACL of the application for a visitor holding the given roles
+     * (none: not logged in) and return the controller and action the request ends up on.
+     *
+     * @param list<string> $roles
+     * @return array{string, string}
+     */
+    private function dispatchWithApplicationAcl(string $controller, string $action, array $roles): array
+    {
+        $acl = new Episciences_Acl(); // acl.ini and the navigation files, as loaded by the application
+        $acl->loadFromNavigation([APPLICATION_PATH . '/configs/' . APPLICATION_MODULE . '.navigation.json']);
+
+        $previousStorage = Zend_Auth::getInstance()->getStorage();
+        Zend_Auth::getInstance()->setStorage(new Zend_Auth_Storage_NonPersistent());
+        try {
+            if ($roles !== []) {
+                $user = new Episciences_User(['UID' => 4242]);
+                $user->setRoles([RVID => $roles]); // roles are indexed by journal
+                Zend_Auth::getInstance()->getStorage()->write($user);
+            }
+
+            $request = new Zend_Controller_Request_Http();
+            $request->setControllerName($controller)->setActionName($action);
+            $plugin = new class($acl) extends Episciences_Auth_Plugin {
+                public function __construct(private readonly Episciences_Acl $applicationAcl)
+                {
+                }
+
+                public function getAcl(): Episciences_Acl
+                {
+                    return $this->applicationAcl;
+                }
+            };
+            $plugin->preDispatch($request);
+
+            return [$request->getControllerName(), $request->getActionName()];
+        } finally {
+            Zend_Auth::getInstance()->setStorage($previousStorage);
+        }
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function restrictedActionProvider(): array
+    {
+        return [
+            'exact spelling' => ['user', 'findusers'],
+            'case variant' => ['user', 'findUsers'],
+            'upper case' => ['USER', 'FINDUSERS'],
+            'delimiter variant' => ['user', 'find-users'],
+        ];
+    }
+
+    /**
+     * Every spelling of a restricted action reaches the same ACL resource: a visitor who is not
+     * logged in is sent to the login page, never to the action.
+     *
+     * @dataProvider restrictedActionProvider
+     */
+    public function testEverySpellingOfARestrictedActionIsDeniedToAGuest(string $controller, string $action): void
+    {
+        [$resolvedController, $resolvedAction] = $this->dispatchWithApplicationAcl($controller, $action, []);
+
+        self::assertSame(['user', 'login'], [$resolvedController, $resolvedAction]);
+    }
+
+    /**
+     * @dataProvider restrictedActionProvider
+     */
+    public function testEverySpellingOfARestrictedActionIsDeniedToAMemberWithoutTheRole(string $controller, string $action): void
+    {
+        [$resolvedController, $resolvedAction] = $this->dispatchWithApplicationAcl($controller, $action, [Episciences_Acl::ROLE_MEMBER]);
+
+        self::assertSame([Ccsd_Auth_Plugin::FAIL_AUTH_CONTROLLER, Ccsd_Auth_Plugin::FAIL_AUTH_ACTION], [$resolvedController, $resolvedAction]);
+    }
 }
