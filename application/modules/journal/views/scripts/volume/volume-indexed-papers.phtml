@@ -33,7 +33,7 @@
                                     'action' => 'index',
                                     'q' => '*',
                                     'author_fullname_t' => $this->escape($authorName)], null, true);
-                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $this->escape($url), $this->escape($authorName));
                             }
                             $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL) . ' <abbr lang="la" title="et alii">et al.</abbr>';
                         } else {
@@ -44,7 +44,7 @@
                                     'action' => 'index',
                                     'q' => '*',
                                     'author_fullname_t' => $this->escape($authorName)], null, true);
-                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+                                $arrayOfAuthorsWithURL[] = sprintf($outputFormat, $this->escape($url), $this->escape($authorName));
                             }
                             $authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
                             if (substr($authorList, -1) != '.') {

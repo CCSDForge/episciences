@@ -25,7 +25,7 @@
 			?>
 	
 			<?php // Titre de l'article ******************************** ?>
-			<h3><a href="/<?php echo $this->escape($doc['docid']); ?>"><?php echo $title ?></a></h3>
+			<h3><a href="/<?php echo $this->escape($doc['docid']); ?>"><?php echo htmlspecialchars(Episciences_Tools::decodeLatex($title)) ?></a></h3>
 	
 			<?php // Noms des auteurs *********************************** ?>
 			<?php if ($doc['author_fullname_s']) : ?>
@@ -54,7 +54,7 @@
 							'action' => 'index',
 							'q' => '*',
 							'author_fullname_t' => $this->escape($authorName)), null, TRUE);
-					$arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+					$arrayOfAuthorsWithURL[] = sprintf($outputFormat, $this->escape($url), $this->escape($authorName));
 				}
 				$authorList = implode($authorSeparator, $arrayOfAuthorsWithURL) . ' <abbr lang="la" title="et alii">et al.</abbr>';
 			} else {
@@ -65,7 +65,7 @@
 							'action' => 'index',
 							'q' => '*',
 							'author_fullname_t' => $this->escape($authorName)), null, TRUE);
-					$arrayOfAuthorsWithURL[] = sprintf($outputFormat, $url, $authorName);
+					$arrayOfAuthorsWithURL[] = sprintf($outputFormat, $this->escape($url), $this->escape($authorName));
 				}
 				$authorList = implode($authorSeparator, $arrayOfAuthorsWithURL);
 				if (substr($authorList, - 1) !== '.') {
@@ -82,7 +82,7 @@
 			<?php
 		        if ($abstract) {
 		            echo '<blockquote class="abstract">';
-		            echo Ccsd_Tools_String::truncate($abstract, ABSTRACT_MAX_LENGTH, '&nbsp;[&hellip;]');
+		            echo Episciences_Tools::decodeLatex(Ccsd_Tools_String::truncate(htmlspecialchars($abstract), ABSTRACT_MAX_LENGTH, '&nbsp;[&hellip;]'));
 		            echo '</blockquote>';
 		        }
 			?>
